@@ -1,0 +1,503 @@
+{
+  "schema_version": "coimnet-malecns-graph-values-audit/v1",
+  "command": "audit_dir=$(mktemp -d \"${TMPDIR:-/tmp}/coimnet-malecns-graph-audit.XXXXXX\") \u0026\u0026 cp evidence/malecns-source-20260913/graph-values-audit.go.txt \"$audit_dir/audit.go\" \u0026\u0026 go run \"$audit_dir/audit.go\" \u003e \"$audit_dir/report.json\" 2\u003e \"$audit_dir/run.log\" \u0026\u0026 cp \"$audit_dir/report.json\" evidence/malecns-source-20260913/graph-values-audit.json \u0026\u0026 cp \"$audit_dir/run.log\" evidence/malecns-source-20260913/graph-values-audit.log",
+  "environment": {
+    "arrow_go": "github.com/apache/arrow/go/v17 v17.0.0",
+    "go": "go1.26.5",
+    "goarch": "arm64",
+    "gomaxprocs": 8,
+    "goos": "darwin"
+  },
+  "limits": {
+    "max_annotation_rows": 1000000,
+    "max_arrow_bytes": 134217728,
+    "max_endpoint_map_keys": 5000000,
+    "max_endpoint_spill_runs": 4096,
+    "max_footer_bytes": 16777216,
+    "max_neurotransmitter_body_map_keys": 5000000,
+    "max_neurotransmitter_rows": 5000000,
+    "max_weight_rows": 250000000
+  },
+  "sources": [
+    {
+      "name": "weights",
+      "role": "raw_connectome_weights",
+      "path": "data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+      "receipt_path": "evidence/malecns-source-20260913/weights-download.json",
+      "receipt": {
+        "schema_version": "coimnet-download-receipt/v1",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "etag": "\"f30e9dcca25cfd021bf1e7b3d975599e\"",
+        "acquired_at": "2026-09-13T08:52:37.650737Z",
+        "sha256": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+        "hash_status": "upstream_verified",
+        "bytes": 1051241946,
+        "upstream_crc32c": "dKRPVQ=="
+      },
+      "scan_report": {
+        "schema_version": "coimnet-feather-report/v1",
+        "format": "feather_v2",
+        "fields": [
+          {
+            "name": "body_pre",
+            "type": "int64",
+            "nullable": true
+          },
+          {
+            "name": "body_post",
+            "type": "int64",
+            "nullable": true
+          },
+          {
+            "name": "weight",
+            "type": "int64",
+            "nullable": true
+          }
+        ],
+        "record_batches": 2318,
+        "rows": 151856684,
+        "file_bytes": 1051241946,
+        "peak_arrow_bytes": 2138240,
+        "complete": true
+      },
+      "sha256_before": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "sha256_after": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "bytes_before": 1051241946,
+      "bytes_after": 1051241946,
+      "before_matches_receipt": true,
+      "after_matches_receipt": true,
+      "hash_stable": true
+    },
+    {
+      "name": "annotations",
+      "role": "body_annotations",
+      "path": "data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+      "receipt_path": "evidence/malecns-source-20260913/annotations-download.json",
+      "receipt": {
+        "schema_version": "coimnet-download-receipt/v1",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+        "etag": "\"50a7718770c57220f160ba4f431ab89e\"",
+        "acquired_at": "2026-09-13T08:48:12.249929Z",
+        "sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+        "hash_status": "upstream_verified",
+        "bytes": 14483314,
+        "upstream_crc32c": "vjz9cg=="
+      },
+      "scan_report": {
+        "schema_version": "coimnet-feather-report/v1",
+        "format": "feather_v2",
+        "fields": [
+          {
+            "name": "assignedOlHex1",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "assignedOlHex2",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "bodyId",
+            "type": "int64",
+            "nullable": true
+          },
+          {
+            "name": "flywireType",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "group",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "instance",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "somaSide",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "statusLabel",
+            "type": "dictionary\u003cvalues=utf8, indices=int8, ordered=true\u003e",
+            "nullable": true
+          },
+          {
+            "name": "superclass",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "type",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "vfbId",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "hemibrainType",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "itoleeHl",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "supertype",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "birthtime",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "mancBodyid",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "mancGroup",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "mancType",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "subclass",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "synonyms",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "class",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "rootSide",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "somaNeuromere",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "trumanHl",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "dimorphism",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "matchingNotes",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "entryNerve",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "mancSerial",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "mcnsSerial",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "serialMotif",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "fruDsx",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "exitNerve",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "receptorType",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "somaLocation",
+            "type": "list\u003citem: int64, nullable\u003e",
+            "nullable": true
+          },
+          {
+            "name": "tosomaLocation",
+            "type": "list\u003citem: int64, nullable\u003e",
+            "nullable": true
+          },
+          {
+            "name": "status",
+            "type": "utf8",
+            "nullable": true
+          }
+        ],
+        "record_batches": 4,
+        "rows": 211577,
+        "file_bytes": 14483314,
+        "peak_arrow_bytes": 22485440,
+        "complete": true
+      },
+      "sha256_before": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "sha256_after": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "bytes_before": 14483314,
+      "bytes_after": 14483314,
+      "before_matches_receipt": true,
+      "after_matches_receipt": true,
+      "hash_stable": true
+    },
+    {
+      "name": "neurotransmitters",
+      "role": "body_neurotransmitters",
+      "path": "data/malecns-v1.0/body-neurotransmitters-male-cns-v1.0.feather",
+      "receipt_path": "evidence/malecns-source-20260913/neurotransmitters-download.json",
+      "receipt": {
+        "schema_version": "coimnet-download-receipt/v1",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-neurotransmitters-male-cns-v1.0.feather",
+        "etag": "\"3d842b12fe5c49eefade528d7dd24a1f\"",
+        "acquired_at": "2026-09-13T08:51:18.925999Z",
+        "sha256": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+        "hash_status": "upstream_verified",
+        "bytes": 43282834,
+        "upstream_crc32c": "jcpNFg=="
+      },
+      "scan_report": {
+        "schema_version": "coimnet-feather-report/v1",
+        "format": "feather_v2",
+        "fields": [
+          {
+            "name": "body",
+            "type": "int64",
+            "nullable": true
+          },
+          {
+            "name": "cell_type",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "total_nt_predictions",
+            "type": "int32",
+            "nullable": true
+          },
+          {
+            "name": "predicted_nt_confidence",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "predicted_nt",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "ground_truth",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "celltype_total_nt_predictions",
+            "type": "int32",
+            "nullable": true
+          },
+          {
+            "name": "celltype_predicted_nt",
+            "type": "utf8",
+            "nullable": true
+          },
+          {
+            "name": "celltype_predicted_nt_confidence",
+            "type": "float64",
+            "nullable": true
+          },
+          {
+            "name": "consensus_nt",
+            "type": "utf8",
+            "nullable": true
+          }
+        ],
+        "record_batches": 29,
+        "rows": 1835518,
+        "file_bytes": 43282834,
+        "peak_arrow_bytes": 9165504,
+        "complete": true
+      },
+      "sha256_before": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "sha256_after": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "bytes_before": 43282834,
+      "bytes_after": 43282834,
+      "before_matches_receipt": true,
+      "after_matches_receipt": true,
+      "hash_stable": true
+    }
+  ],
+  "annotations": {
+    "rows": 211577,
+    "body_id_null_rows": 0,
+    "body_id_negative_rows": 0,
+    "body_id_duplicate_rows": 0,
+    "body_id_unique_non_null": 211577,
+    "status_null_rows": 5472,
+    "status_value_counts": {
+      "Anchor": 611,
+      "Assign": 1832,
+      "Glia": 11864,
+      "Orphan": 15925,
+      "Traced": 165122,
+      "Unimportant": 10751
+    },
+    "status_label_null_rows": 887,
+    "status_label_value_counts": {
+      "0.5assign": 1832,
+      "Anchor": 283,
+      "Glia": 11864,
+      "Hard to trace": 104,
+      "Leaves": 528,
+      "Orphan": 12075,
+      "Orphan hotknife": 1428,
+      "Orphan-artifact": 2318,
+      "Out of scope": 4585,
+      "PRT Orphan": 140,
+      "Partially traced": 26,
+      "Prelim Roughly traced": 36387,
+      "RT Hard to trace": 2019,
+      "RT Orphan": 3,
+      "Reviewed": 54066,
+      "Roughly traced": 71979,
+      "Sensory Anchor": 101,
+      "Soma Anchor": 201,
+      "Unimportant": 10751
+    },
+    "traced_status_rows": 165122,
+    "traced_selected_unique_nodes": 165122,
+    "annotation_map_keys": 211577,
+    "duplicate_status_conflict_rows": 0
+  },
+  "weights": {
+    "raw_edge_rows": 151856684,
+    "body_pre": {
+      "null_rows": 0,
+      "negative_rows": 0,
+      "zero_rows": 0
+    },
+    "body_post": {
+      "null_rows": 0,
+      "negative_rows": 0,
+      "zero_rows": 0
+    },
+    "weight": {
+      "null_rows": 0,
+      "negative_rows": 0,
+      "zero_rows": 0
+    },
+    "raw_contact_total": 311833243,
+    "raw_contact_total_valid": true,
+    "raw_contact_rows_included": 151856684,
+    "self_edge_rows": 123,
+    "self_edge_contact_total": 542,
+    "independent_endpoint_count": 88384522,
+    "unannotated_unique_endpoint_count": 88192826,
+    "traced_both_edge_rows": 25563197,
+    "traced_both_contact_total": 124025046,
+    "traced_both_contact_total_valid": true,
+    "endpoint_map_peak_keys": 5000000,
+    "endpoint_spill_runs": 25
+  },
+  "neurotransmitters": {
+    "rows": 1835518,
+    "body_null_rows": 0,
+    "body_negative_rows": 0,
+    "body_duplicate_rows": 0,
+    "body_unique_non_null": 1835518,
+    "consensus_nt_null_rows": 0,
+    "consensus_nt_unknown_rows": 1671117,
+    "consensus_nt_unknown_ratio": 0.9104334580211145,
+    "consensus_nt_value_counts": {
+      "acetylcholine": 104193,
+      "dopamine": 396,
+      "gaba": 22196,
+      "glutamate": 29443,
+      "histamine": 8024,
+      "octopamine": 101,
+      "serotonin": 48,
+      "unclear": 1671117
+    },
+    "consensus_nt_unknown_value_counts": {
+      "unclear": 1671117
+    },
+    "nt_map_keys": 1835518
+  },
+  "source_fingerprints": [
+    {
+      "path": "evidence/malecns-source-20260913/graph-values-audit.go.txt",
+      "bytes": 30264,
+      "sha256": "392b55bba53300547741be81511dcb5d0d7399692a8167f7d822459f3edc7ca1"
+    },
+    {
+      "path": "feather/allocator.go",
+      "bytes": 2991,
+      "sha256": "fff0449081cc48fdf9e54763f81e9e54a578642a1f51e7671fa8b20bc8baf8d5"
+    },
+    {
+      "path": "feather/reader.go",
+      "bytes": 12253,
+      "sha256": "4005585eaf80a4bb46e12b770a0c8b2899d84682130fbcd6df42102b96ab731e"
+    },
+    {
+      "path": "feather/validate.go",
+      "bytes": 8555,
+      "sha256": "15722d7427397d4eb77339658606dbe95a759b434d74471f222d1e865b16cf1f"
+    }
+  ],
+  "selection": {
+    "candidate_scope": "annotation body IDs with status exactly Traced, including isolated nodes",
+    "contacts_on_edges_with_both_selected_endpoints": 124025046,
+    "edges_with_both_selected_endpoints": 25563197,
+    "rule": "status exactly Traced",
+    "selected_unique_nodes": 165122
+  },
+  "duplicate_pair_audit": "not performed; no full pair map or pair deduplication was attempted",
+  "limitations": [
+    "Counts are raw row observations from Feather record batches; weight totals are checked uint64 sums of non-negative non-null weight values.",
+    "The in-memory endpoint set is bounded at 5,000,000 keys per sorted spill run, with at most 4,096 temporary runs; the neurotransmitter body ID map is bounded at 5,000,000 keys and the Arrow allocator at 128 MiB. Exceeding a bound stops the audit.",
+    "The status==Traced selection is an explicit engineering candidate audit, not a biological completeness rule.",
+    "Duplicate endpoint pairs were not enumerated, deduplicated, or assigned aggregation semantics; source evidence does not establish whether repeated pairs are additive.",
+    "consensus_nt unknown counts classify null, empty, unknown-like tokens, and the observed value unclear as unknown."
+  ]
+}

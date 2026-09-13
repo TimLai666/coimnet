@@ -519,3 +519,20 @@ func writeRecordsWithOptions(t *testing.T, schema *arrow.Schema, options []ipc.O
 	}
 	return path
 }
+
+func TestScanAcceptsListColumnWithNoChildValues(t *testing.T) {
+	schema := arrow.NewSchema([]arrow.Field{
+		{Name: "id", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+		{Name: "tags", Type: arrow.ListOf(arrow.PrimitiveTypes.Int64), Nullable: true},
+	}, nil)
+	builder := array.NewRecordBuilder(memory.DefaultAllocator, schema)
+	builder.Field(0).(*array.Int64Builder).Append(7)
+	builder.Field(1).(*array.ListBuilder).AppendNull()
+	record := builder.NewRecord()
+	builder.Release()
+	path := writeRecords(t, schema, record)
+	report, err := Scan(context.Background(), path, validOptions(fileSize(t, path)), nil)
+	if err != nil || !report.Complete || report.Rows != 1 {
+		t.Fatalf("scan of list column without child values: report=%#v err=%v", report, err)
+	}
+}

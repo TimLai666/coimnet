@@ -119,7 +119,8 @@ func validateFixedWidth(data arrow.ArrayData, elements int) error {
 		return fmt.Errorf("fixed-width buffer size overflows")
 	}
 	values := data.Buffers()[1]
-	if values == nil || values.Len() < want {
+	// A zero-length array may carry a nil value buffer; that is valid.
+	if want > 0 && (values == nil || values.Len() < want) {
 		got := 0
 		if values != nil {
 			got = values.Len()

@@ -1,0 +1,24 @@
+{
+  "requirement": "DAT-05",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test -count=1 -v ./connectome/ ./internal/extsort/",
+    "go test -race -count=1 ./connectome/ ./internal/extsort/ ./internal/cli/",
+    "go vet ./connectome/ ./internal/extsort/ ./internal/cli/"
+  ],
+  "environment": [
+    "evidence/malecns-source-20260913/graph-v1/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/connectome-20260913/source.sha256"
+  ],
+  "observed_result": "Fixture with a repeated (10,20) pair, a (30,30) self-loop, an isolated selected neuron 60, a null weight and a zero weight: rows mode keeps all 7 annotated rows and reports unique_pairs=6, duplicate_pairs=1, duplicate_rows=1, self_loops=1, isolated_nodes=1, weight_sum=17 over 6 rows with 1 null; the raw view reports valid_pair_rows=9, unique_pairs=8, duplicate_pairs=1, weight_sum=25 over 10 rows. Duplicates are counted from adjacent runs of the bounded external sort (internal/extsort), never from a full pair map. aggregated_pairs is refused with ErrAggregationEvidence when duplicate_semantics is unknown or total_with_partitions; with additive_partitions it sums (10,20) to 7 and (30,30) to 7, labels them sum_of_2_rows, keeps the first source row position and refuses null weights. Tests: TestBuildHappyPathViewsAndReport, TestBuildRejectsAggregationWithoutEvidenceAndAggregatesAdditivePartitions, TestBuildIsDeterministicAcrossBatchSegmentationAndRunCounts (forced multi-run sort with identical results).",
+  "test_log": [
+    "evidence/connectome-20260913/sdk-test.log",
+    "evidence/connectome-20260913/sdk-race.log",
+    "evidence/connectome-20260913/sdk-vet.log"
+  ],
+  "limitations": [
+    "Real MaleCNS duplicate semantics remain declared unknown; the real-data report in evidence/DAT-03 records the observed duplicate counts without aggregation."
+  ]
+}

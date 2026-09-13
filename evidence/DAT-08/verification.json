@@ -1,0 +1,24 @@
+{
+  "requirement": "DAT-08",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test -count=1 -v ./connectome/ ./internal/extsort/",
+    "go test -race -count=1 ./connectome/ ./internal/extsort/ ./internal/cli/",
+    "go vet ./connectome/ ./internal/extsort/ ./internal/cli/"
+  ],
+  "environment": [
+    "evidence/malecns-source-20260913/graph-v1/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/connectome-20260913/source.sha256"
+  ],
+  "observed_result": "NodeRecord.Transmitter keeps status predicted/unknown/not_available with the source consensus, predicted and confidence values as nullable fields: a null or 'unclear' consensus stays unknown (not zero, not empty string), a neuron without a prediction row is not_available, and the annotated report counts unknown 4 of 5 with numerator, denominator and basis consensus_nt. EdgeRecord.Transmitter and Sign are always 'unknown' because the weights file carries no such evidence; no sign is derived from receptorType, predictions or column names. Receptor status is 'not_derived' and only the receptorType label null ratio (4 of 5) is reported separately. NaN confidence values are rejected. Tests: TestBuildHappyPathViewsAndReport, TestBuildRejectsWrongColumnTypesAndNonFiniteValues, TestBuildEmptyViewsAndZeroWeights (undefined ratios with zero denominators).",
+  "test_log": [
+    "evidence/connectome-20260913/sdk-test.log",
+    "evidence/connectome-20260913/sdk-race.log",
+    "evidence/connectome-20260913/sdk-vet.log"
+  ],
+  "limitations": [
+    "Chemical receptor records (ReceptorRecord) and action-sign modes are not implemented; this requirement only shows unknown values are preserved as unknown."
+  ]
+}

@@ -40,3 +40,4 @@ Status：partial
 
 - 尚未實作完整媒體重取樣、不同頻率的媒體／神經時間對齊、分塊尾端處理，亦未提供因果與離線非因果前處理 adapter。`OrderSignals` 僅處理已在同一整數時間單位的事件排序，因此 SIG-02／SIG-05／SIG-06 不標示完成。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。
+- 待修：`signal/json.go` 的重複鍵掃描（`scanJSONValue`）沒有巢狀深度上限，且每層以字串串接保存路徑，深層巢狀輸入會造成二次方配置（16 MiB 上限下可達數十 GB）。`connectome/manifest.go` 已改為深度上限 64 加路徑堆疊，同一做法應套回 `signal`，並加深層巢狀的回歸測試。2026-09-13 對抗性審查發現。

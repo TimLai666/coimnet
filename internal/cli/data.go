@@ -97,13 +97,15 @@ func runData(ctx context.Context, args []string, stdout, stderr io.Writer) error
 		return runDataDownload(ctx, args[1:], stdout, stderr)
 	case "inspect":
 		return runDataInspect(ctx, args[1:], stdout, stderr)
+	case "import":
+		return runDataImport(ctx, args[1:], stdout, stderr)
 	default:
 		return fmt.Errorf("unknown data command; use data --help")
 	}
 }
 
 func writeDataUsage(w io.Writer) error {
-	_, err := fmt.Fprintln(w, "Usage: coimnet data sources | download [flags] | inspect [flags]\nList audited MaleCNS sources, download a versioned file, or inspect every batch of a local Feather file.\nExamples:\n  coimnet data sources\n  coimnet data download --url URL --out FILE --max-bytes N\n  coimnet data inspect --input FILE --max-bytes N\nUse each command's --help for limits and errors. Unknown commands return an error.")
+	_, err := fmt.Fprintln(w, "Usage: coimnet data sources | download [flags] | inspect [flags] | import [flags]\nList audited MaleCNS sources, download a versioned file, inspect every batch of a local Feather file, or build graph views from a dataset manifest.\nExamples:\n  coimnet data sources\n  coimnet data download --url URL --out FILE --max-bytes N\n  coimnet data inspect --input FILE --max-bytes N\n  coimnet data import --manifest FILE\nUse each command's --help for limits and errors. Unknown commands return an error.")
 	return err
 }
 

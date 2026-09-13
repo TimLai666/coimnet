@@ -157,6 +157,28 @@ segments 後的 segment-to-segment strengths/full graph，沒有證實相同端�
 下載頁對另一個 `syn-points` 檔案描述 pre/post rows 與 encompassing ROIs，這不足以
 推導 weights 的重複或 ROI 語意；本次沒有下載或解析該 12.7 GB 檔案。
 
+## 標準化圖建構實測
+
+2026-09-13 以 [manifests/malecns-v1.0.json](../manifests/malecns-v1.0.json) 執行
+`coimnet data import`，完整報告與命令見
+[graph-v1](../evidence/malecns-source-20260913/graph-v1/verification.json)。
+建構前後三份原件的 SHA-256 不變，與上述獨立稽核程式共有的每個計數皆相等。
+新觀察如下，數字都是來源列的統計，不是生物語意：
+
+- weights 151,856,684 列中沒有 null 或負的端點與 `weight`，也沒有 0 值；
+  依 `(body_pre, body_post)` 排序後**沒有任何重複 pair**，所以本版本不需要
+  聚合。`duplicate_edge_semantics` 仍記為 unknown，因為零重複不能說明重複
+  出現時該如何解讀。
+- 端點 unique 88,384,522 個，其中 88,192,826 個沒有 annotation 列，對應
+  133,806,112 個端點出現次數。
+- `annotations.status == "Traced"` 選入 165,122 個 body（211,577 列中 46,455 列
+  predicate 為 false，含 5,472 列 `status` 為 null）。兩端都選入的邊 25,563,197
+  條，`weight` 加總 124,025,046；自環 101 條，孤立選入節點 535 個；因單端無
+  annotation 排除 125,828,298 列，因單端未選入排除 465,189 列。
+- 選入節點中 3,602 個沒有可用的 `consensus_nt` 預測（null／unclear／無列），
+  比例 2.18%；`receptorType` 為 null 的有 164,370 個（99.5%），受體證據本身
+  維持 `not_derived`。
+
 ## Insyra v0.3.2 與 upstream 查核
 
 指定模組 `/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2`

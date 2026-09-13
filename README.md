@@ -6,7 +6,7 @@
 
 目前的連續核心屬於稀疏的連續時間循環神經網路。接線圖決定哪些神經元相連，神經動態與學習方法則由框架提供。詳見[模型定位與可選機制](docs/model-and-mechanisms.md)，以及[記憶體與時間量測](docs/resources.md)。
 
-目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。官方 MaleCNS 資料可下載、校驗並逐批讀取 Feather。真實接線圖建構、脈衝模型、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
+目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。把接線圖接上訓練核心、固定格式的圖儲存、脈衝模型、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
 
 ## 建置與範例
 
@@ -52,6 +52,14 @@ data_dir=$(mktemp -d)
 
 命令讀取每個批次並報告欄位、資料列與 Arrow 配置量。檔案、footer、Arrow 配置量與資料列均有上限，可由 `--help` 查閱。失敗報告的 `complete` 為 `false`，退出碼非零。Arrow 配置量不包含整個程序的記憶體。讀取原件不代表已完成神經元篩選或建立訓練圖。
 
+由三份原件建立標準化接線圖並輸出報告：
+
+```sh
+./bin/coimnet data import --manifest manifests/malecns-v1.0.json > graph-report.json
+```
+
+[manifests/malecns-v1.0.json](manifests/malecns-v1.0.json) 明示官方欄位名稱、來源指紋、端點身份假設與選取條件（`annotations.status == "Traced"`，標為工程選取）。相對路徑以 manifest 所在目錄解析，原件保持只讀，讀取前後都比對 SHA-256。報告列出原始列數、選入節點、每一種排除原因、未對應註記的端點、unique／duplicate pair、自環、孤立節點、原始 `weight` 加總、傳導物質預測未知比例與受體 `not_derived` 狀態，每個比例都附分子、分母與依據欄位。記憶體、暫存空間、run 數與列數超限時直接失敗，不會偷偷縮圖。`weight` 是來源原始值，不是突觸數；重複 pair 預設保留每一列，只有 manifest 宣告可加總分割時才允許 `--edge-view aggregated_pairs`。這個命令只輸出報告，圖本身留在程序內，固定格式的圖儲存另行追蹤。
+
 ## Go SDK
 
 - `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
@@ -61,6 +69,7 @@ data_dir=$(mktemp -d)
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
 - `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
 - `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
+- `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。
 
 目前 `learning` 每次 `Step` 或 `Predict` 都從零神經狀態開始一段獨立序列，只讀取最後一步輸出。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
 
@@ -74,7 +83,7 @@ go build ./...
 go mod verify
 ```
 
-在 macOS 或 Linux 可用 `scripts/verify.sh NEW_OUTPUT_DIRECTORY` 一次執行上述檢查、三組學習對照，以及真正跨程序的 CLI 續訓比對，保存環境報告、來源指紋與日誌。目錄須尚未存在。
+在 macOS 或 Linux 可用 `scripts/verify.sh NEW_OUTPUT_DIRECTORY` 一次執行上述檢查、三組學習對照，以及真正跨程序的 CLI 續訓比對，保存環境報告、來源指紋與日誌。目錄須尚未存在。已下載三份官方原件時，`scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY` 會在計時下重跑真實接線圖建構並保存報告、環境與指紋。
 
 ## 開發入口
 

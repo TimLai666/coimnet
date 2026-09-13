@@ -23,6 +23,7 @@ Commands:
   data sources                   List audited official MaleCNS source metadata
   data download [flags]          Download and verify one bounded source file
   data inspect [flags]           Inspect every batch of a local Feather file
+  data import [flags]            Build graph views from a manifest and report JSON
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit

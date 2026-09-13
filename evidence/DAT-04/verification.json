@@ -1,0 +1,24 @@
+{
+  "requirement": "DAT-04",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test -count=1 -v ./connectome/ ./internal/extsort/",
+    "go test -race -count=1 ./connectome/ ./internal/extsort/ ./internal/cli/",
+    "go vet ./connectome/ ./internal/extsort/ ./internal/cli/"
+  ],
+  "environment": [
+    "evidence/malecns-source-20260913/graph-v1/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/connectome-20260913/source.sha256"
+  ],
+  "observed_result": "connectome.ParseExternalID and Graph.IndexOf/Node/NeuronIDs round-trip 9007199254740993 (2^53+1) and 18446744073709551615 (max uint64) as lossless decimal strings; leading zeros, signs, floats, hex, empty strings and values beyond uint64 are rejected; negative source IDs are excluded as invalid_id and never converted. Continuous indices follow numeric ID order inside the namespace (CanonicalKey zero-padded lexicographic order equals numeric order). Edge storage width is chosen from the node count; edge array, weight sum and record size multiplications are overflow-checked and fail with ErrCapacity instead of truncating. Tests: TestExternalIDsAreLosslessAndBounded, TestBuildHappyPathViewsAndReport, TestBuildCapacityCancellationAndCallbackErrors.",
+  "test_log": [
+    "evidence/connectome-20260913/sdk-test.log",
+    "evidence/connectome-20260913/sdk-race.log",
+    "evidence/connectome-20260913/sdk-vet.log"
+  ],
+  "limitations": [
+    "Index widths above 2^32 nodes are implemented (64-bit storage) but not exercised with a fixture of that size; the overflow paths are exercised through capacity errors."
+  ]
+}

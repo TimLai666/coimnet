@@ -1,0 +1,929 @@
+package main
+
+import (
+	"bufio"
+	"container/heap"
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"runtime"
+	"sort"
+	"strings"
+
+	"github.com/TimLai666/coimnet/feather"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/array"
+)
+
+const (
+	maxArrowBytes        int64 = 128 << 20
+	maxFooterBytes       int64 = 16 << 20
+	maxEndpointKeys            = 5_000_000
+	maxEndpointSpillRuns       = 4_096
+	maxNTKeys                  = 5_000_000
+	maxCategoryKeys            = 5_000_000
+	maxWeightRows        int64 = 250_000_000
+	maxAnnotationRows    int64 = 1_000_000
+	maxNTRows            int64 = 5_000_000
+	command                    = "audit_dir=$(mktemp -d \"${TMPDIR:-/tmp}/coimnet-malecns-graph-audit.XXXXXX\") && cp evidence/malecns-source-20260913/graph-values-audit.go.txt \"$audit_dir/audit.go\" && go run \"$audit_dir/audit.go\" > \"$audit_dir/report.json\" 2> \"$audit_dir/run.log\" && cp \"$audit_dir/report.json\" evidence/malecns-source-20260913/graph-values-audit.json && cp \"$audit_dir/run.log\" evidence/malecns-source-20260913/graph-values-audit.log"
+)
+
+const maxUint64 = ^uint64(0)
+
+type receipt struct {
+	SchemaVersion  string `json:"schema_version"`
+	URL            string `json:"url"`
+	ETag           string `json:"etag"`
+	AcquiredAt     string `json:"acquired_at"`
+	SHA256         string `json:"sha256"`
+	HashStatus     string `json:"hash_status"`
+	Bytes          int64  `json:"bytes"`
+	UpstreamCRC32C string `json:"upstream_crc32c"`
+}
+
+type sourceSpec struct {
+	Name        string
+	Role        string
+	Path        string
+	ReceiptPath string
+	MaxRows     int64
+}
+
+type sourceReport struct {
+	Name                 string         `json:"name"`
+	Role                 string         `json:"role"`
+	Path                 string         `json:"path"`
+	ReceiptPath          string         `json:"receipt_path"`
+	Receipt              receipt        `json:"receipt"`
+	Report               feather.Report `json:"scan_report"`
+	SHA256Before         string         `json:"sha256_before"`
+	SHA256After          string         `json:"sha256_after"`
+	BytesBefore          int64          `json:"bytes_before"`
+	BytesAfter           int64          `json:"bytes_after"`
+	BeforeMatchesReceipt bool           `json:"before_matches_receipt"`
+	AfterMatchesReceipt  bool           `json:"after_matches_receipt"`
+	HashStable           bool           `json:"hash_stable"`
+}
+
+type columnStats struct {
+	NullRows     uint64 `json:"null_rows"`
+	NegativeRows uint64 `json:"negative_rows"`
+	ZeroRows     uint64 `json:"zero_rows"`
+}
+
+type weightsStats struct {
+	RawEdgeRows                    uint64      `json:"raw_edge_rows"`
+	BodyPre                        columnStats `json:"body_pre"`
+	BodyPost                       columnStats `json:"body_post"`
+	Weight                         columnStats `json:"weight"`
+	RawContactTotal                uint64      `json:"raw_contact_total"`
+	RawContactTotalValid           bool        `json:"raw_contact_total_valid"`
+	RawContactRowsIncluded         uint64      `json:"raw_contact_rows_included"`
+	SelfEdgeRows                   uint64      `json:"self_edge_rows"`
+	SelfEdgeContactTotal           uint64      `json:"self_edge_contact_total"`
+	IndependentEndpointCount       uint64      `json:"independent_endpoint_count"`
+	UnannotatedUniqueEndpointCount uint64      `json:"unannotated_unique_endpoint_count"`
+	TracedBothEdgeRows             uint64      `json:"traced_both_edge_rows"`
+	TracedBothContactTotal         uint64      `json:"traced_both_contact_total"`
+	TracedBothContactTotalValid    bool        `json:"traced_both_contact_total_valid"`
+	EndpointMapPeakKeys            uint64      `json:"endpoint_map_peak_keys"`
+	EndpointSpillRuns              uint64      `json:"endpoint_spill_runs"`
+}
+
+type annotationStats struct {
+	Rows                        uint64            `json:"rows"`
+	BodyIDNullRows              uint64            `json:"body_id_null_rows"`
+	BodyIDNegativeRows          uint64            `json:"body_id_negative_rows"`
+	BodyIDDuplicateRows         uint64            `json:"body_id_duplicate_rows"`
+	BodyIDUniqueNonNull         uint64            `json:"body_id_unique_non_null"`
+	StatusNullRows              uint64            `json:"status_null_rows"`
+	StatusValueCounts           map[string]uint64 `json:"status_value_counts"`
+	StatusLabelNullRows         uint64            `json:"status_label_null_rows"`
+	StatusLabelValueCounts      map[string]uint64 `json:"status_label_value_counts"`
+	TracedStatusRows            uint64            `json:"traced_status_rows"`
+	TracedSelectedUniqueNodes   uint64            `json:"traced_selected_unique_nodes"`
+	AnnotationMapKeys           uint64            `json:"annotation_map_keys"`
+	DuplicateStatusConflictRows uint64            `json:"duplicate_status_conflict_rows"`
+}
+
+type ntStats struct {
+	Rows                        uint64            `json:"rows"`
+	BodyNullRows                uint64            `json:"body_null_rows"`
+	BodyNegativeRows            uint64            `json:"body_negative_rows"`
+	BodyDuplicateRows           uint64            `json:"body_duplicate_rows"`
+	BodyUniqueNonNull           uint64            `json:"body_unique_non_null"`
+	ConsensusNullRows           uint64            `json:"consensus_nt_null_rows"`
+	ConsensusUnknownRows        uint64            `json:"consensus_nt_unknown_rows"`
+	ConsensusUnknownRatio       float64           `json:"consensus_nt_unknown_ratio"`
+	ConsensusValueCounts        map[string]uint64 `json:"consensus_nt_value_counts"`
+	ConsensusUnknownValueCounts map[string]uint64 `json:"consensus_nt_unknown_value_counts"`
+	NTMapKeys                   uint64            `json:"nt_map_keys"`
+}
+
+type auditReport struct {
+	SchemaVersion      string              `json:"schema_version"`
+	Command            string              `json:"command"`
+	Environment        map[string]any      `json:"environment"`
+	Limits             map[string]any      `json:"limits"`
+	Sources            []sourceReport      `json:"sources"`
+	Annotations        annotationStats     `json:"annotations"`
+	Weights            weightsStats        `json:"weights"`
+	Neurotransmitters  ntStats             `json:"neurotransmitters"`
+	SourceFingerprints []sourceFingerprint `json:"source_fingerprints"`
+	Selection          map[string]any      `json:"selection"`
+	DuplicatePairAudit string              `json:"duplicate_pair_audit"`
+	Limitations        []string            `json:"limitations"`
+}
+
+type annotationInfo struct{ traced bool }
+
+func addUint64(dst *uint64, value uint64) error {
+	if maxUint64-*dst < value {
+		return fmt.Errorf("uint64 counter overflow: current=%d add=%d", *dst, value)
+	}
+	*dst += value
+	return nil
+}
+
+func inc(dst *uint64) error { return addUint64(dst, 1) }
+
+func addCategory(m map[string]uint64, value string) error {
+	count, ok := m[value]
+	if !ok {
+		if len(m) >= maxCategoryKeys {
+			return fmt.Errorf("category map limit exceeded: %d keys", maxCategoryKeys)
+		}
+	}
+	if err := inc(&count); err != nil {
+		return err
+	}
+	m[value] = count
+	return nil
+}
+
+type endpointSpiller struct {
+	dir  string
+	ids  map[uint64]struct{}
+	peak uint64
+	runs []string
+}
+
+func newEndpointSpiller() (*endpointSpiller, error) {
+	dir, err := os.MkdirTemp("", "coimnet-endpoint-spill-")
+	if err != nil {
+		return nil, fmt.Errorf("create endpoint spill directory: %w", err)
+	}
+	return &endpointSpiller{dir: dir, ids: make(map[uint64]struct{}, 1<<20)}, nil
+}
+
+func (s *endpointSpiller) add(value int64) error {
+	if value < 0 {
+		return nil
+	}
+	id := uint64(value)
+	if _, ok := s.ids[id]; ok {
+		return nil
+	}
+	if len(s.ids) >= maxEndpointKeys {
+		if err := s.flush(); err != nil {
+			return err
+		}
+	}
+	s.ids[id] = struct{}{}
+	if keys := uint64(len(s.ids)); keys > s.peak {
+		s.peak = keys
+	}
+	return nil
+}
+
+func (s *endpointSpiller) flush() error {
+	if len(s.ids) == 0 {
+		return nil
+	}
+	if len(s.runs) >= maxEndpointSpillRuns {
+		return fmt.Errorf("endpoint spill run limit exceeded: %d runs", maxEndpointSpillRuns)
+	}
+	values := make([]uint64, 0, len(s.ids))
+	for id := range s.ids {
+		values = append(values, id)
+	}
+	sort.Slice(values, func(i, j int) bool { return values[i] < values[j] })
+	file, err := os.CreateTemp(s.dir, "run-*.bin")
+	if err != nil {
+		return fmt.Errorf("create endpoint spill run: %w", err)
+	}
+	path := file.Name()
+	keep := false
+	defer func() {
+		if !keep {
+			_ = file.Close()
+			_ = os.Remove(path)
+		}
+	}()
+	writer := bufio.NewWriterSize(file, 1<<20)
+	var encoded [8]byte
+	for _, value := range values {
+		binary.LittleEndian.PutUint64(encoded[:], value)
+		if _, err := writer.Write(encoded[:]); err != nil {
+			return fmt.Errorf("write endpoint spill run: %w", err)
+		}
+	}
+	if err := writer.Flush(); err != nil {
+		return fmt.Errorf("flush endpoint spill run: %w", err)
+	}
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("sync endpoint spill run: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		return fmt.Errorf("close endpoint spill run: %w", err)
+	}
+	s.runs = append(s.runs, path)
+	s.ids = make(map[uint64]struct{}, 1<<20)
+	keep = true
+	return nil
+}
+
+type endpointRunReader struct {
+	file  *os.File
+	value uint64
+	ok    bool
+	buf   [8]byte
+}
+
+func (r *endpointRunReader) next() error {
+	n, err := io.ReadFull(r.file, r.buf[:])
+	switch err {
+	case nil:
+		r.value = binary.LittleEndian.Uint64(r.buf[:])
+		r.ok = true
+		return nil
+	case io.EOF:
+		if n != 0 {
+			return errors.New("truncated endpoint spill run")
+		}
+		r.ok = false
+		return nil
+	case io.ErrUnexpectedEOF:
+		return errors.New("truncated endpoint spill run")
+	default:
+		return fmt.Errorf("read endpoint spill run: %w", err)
+	}
+}
+
+type endpointHeapItem struct {
+	run   int
+	value uint64
+}
+
+type endpointHeap []endpointHeapItem
+
+func (h endpointHeap) Len() int           { return len(h) }
+func (h endpointHeap) Less(i, j int) bool { return h[i].value < h[j].value }
+func (h endpointHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *endpointHeap) Push(value any)    { *h = append(*h, value.(endpointHeapItem)) }
+func (h *endpointHeap) Pop() any {
+	old := *h
+	n := len(old)
+	value := old[n-1]
+	*h = old[:n-1]
+	return value
+}
+
+func (s *endpointSpiller) finish(annotations map[uint64]annotationInfo) (unique, unannotated, runs uint64, err error) {
+	if err := s.flush(); err != nil {
+		return 0, 0, 0, err
+	}
+	runs = uint64(len(s.runs))
+	readers := make([]endpointRunReader, len(s.runs))
+	defer func() {
+		for i := range readers {
+			if readers[i].file == nil {
+				continue
+			}
+			if closeErr := readers[i].file.Close(); err == nil && closeErr != nil {
+				err = fmt.Errorf("close endpoint spill run: %w", closeErr)
+			}
+		}
+	}()
+	queue := &endpointHeap{}
+	heap.Init(queue)
+	for i, path := range s.runs {
+		readers[i].file, err = os.Open(path)
+		if err != nil {
+			return 0, 0, runs, fmt.Errorf("open endpoint spill run: %w", err)
+		}
+		if err := readers[i].next(); err != nil {
+			return 0, 0, runs, err
+		}
+		if readers[i].ok {
+			heap.Push(queue, endpointHeapItem{run: i, value: readers[i].value})
+		}
+	}
+	var last uint64
+	haveLast := false
+	for queue.Len() > 0 {
+		item := heap.Pop(queue).(endpointHeapItem)
+		if !haveLast || item.value != last {
+			if err := inc(&unique); err != nil {
+				return 0, 0, runs, err
+			}
+			if _, ok := annotations[item.value]; !ok {
+				if err := inc(&unannotated); err != nil {
+					return 0, 0, runs, err
+				}
+			}
+			last, haveLast = item.value, true
+		}
+		reader := &readers[item.run]
+		if err := reader.next(); err != nil {
+			return 0, 0, runs, err
+		}
+		if reader.ok {
+			heap.Push(queue, endpointHeapItem{run: item.run, value: reader.value})
+		}
+	}
+	return unique, unannotated, runs, nil
+}
+
+func (s *endpointSpiller) cleanup() error {
+	if s == nil || s.dir == "" {
+		return nil
+	}
+	return os.RemoveAll(s.dir)
+}
+
+func addNTBody(m map[uint64]struct{}, value int64) error {
+	if value < 0 {
+		return nil
+	}
+	id := uint64(value)
+	if _, ok := m[id]; ok {
+		return nil
+	}
+	if len(m) >= maxNTKeys {
+		return fmt.Errorf("neurotransmitter body map limit exceeded: %d keys", maxNTKeys)
+	}
+	m[id] = struct{}{}
+	return nil
+}
+
+func field(record arrow.Record, name string) (arrow.Array, error) {
+	indices := record.Schema().FieldIndices(name)
+	if len(indices) != 1 {
+		return nil, fmt.Errorf("field %q has %d matches", name, len(indices))
+	}
+	return record.Column(indices[0]), nil
+}
+
+func int64Column(record arrow.Record, name string) (*array.Int64, error) {
+	column, err := field(record, name)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := column.(*array.Int64)
+	if !ok {
+		return nil, fmt.Errorf("field %q has type %T, want *array.Int64", name, column)
+	}
+	return values, nil
+}
+
+func stringColumn(record arrow.Record, name string) (*array.String, error) {
+	column, err := field(record, name)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := column.(*array.String)
+	if !ok {
+		return nil, fmt.Errorf("field %q has type %T, want *array.String", name, column)
+	}
+	return values, nil
+}
+
+func dictionaryColumn(record arrow.Record, name string) (*array.Dictionary, error) {
+	column, err := field(record, name)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := column.(*array.Dictionary)
+	if !ok {
+		return nil, fmt.Errorf("field %q has type %T, want *array.Dictionary", name, column)
+	}
+	return values, nil
+}
+
+func decodeReceipt(path string) (receipt, error) {
+	var out receipt
+	file, err := os.Open(path)
+	if err != nil {
+		return out, err
+	}
+	defer file.Close()
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&out); err != nil {
+		return out, fmt.Errorf("decode receipt %s: %w", path, err)
+	}
+	var extra any
+	if err := decoder.Decode(&extra); err != io.EOF {
+		return out, fmt.Errorf("receipt %s has trailing JSON", path)
+	}
+	if out.SchemaVersion != "coimnet-download-receipt/v1" || out.HashStatus != "upstream_verified" || out.Bytes <= 0 || len(out.SHA256) != sha256.Size*2 {
+		return out, fmt.Errorf("invalid receipt %s", path)
+	}
+	return out, nil
+}
+
+type fileHash struct {
+	bytes int64
+	sha   string
+}
+
+type sourceFingerprint struct {
+	Path   string `json:"path"`
+	Bytes  int64  `json:"bytes"`
+	SHA256 string `json:"sha256"`
+}
+
+func hashFile(ctx context.Context, path string) (fileHash, error) {
+	var out fileHash
+	if err := ctx.Err(); err != nil {
+		return out, err
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		return out, err
+	}
+	if !info.Mode().IsRegular() {
+		return out, fmt.Errorf("%s is not a regular file", path)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return out, err
+	}
+	defer file.Close()
+	stat, err := file.Stat()
+	if err != nil {
+		return out, err
+	}
+	if !stat.Mode().IsRegular() || stat.Size() < 0 {
+		return out, fmt.Errorf("%s changed to non-regular file", path)
+	}
+	h := sha256.New()
+	buffer := make([]byte, 1<<20)
+	for {
+		if err := ctx.Err(); err != nil {
+			return out, err
+		}
+		n, readErr := file.Read(buffer)
+		if n > 0 {
+			if int64(n) > math.MaxInt64-out.bytes {
+				return out, errors.New("file byte counter overflow")
+			}
+			out.bytes += int64(n)
+			if _, err := h.Write(buffer[:n]); err != nil {
+				return out, err
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			return out, readErr
+		}
+	}
+	out.sha = hex.EncodeToString(h.Sum(nil))
+	return out, nil
+}
+
+func scanOptions(maxFileBytes, maxRows int64) feather.Options {
+	return feather.Options{MaxFileBytes: maxFileBytes, MaxFooterBytes: maxFooterBytes, MaxArrowBytes: maxArrowBytes, MaxRows: maxRows}
+}
+
+func scanAnnotations(ctx context.Context, spec sourceSpec, rec receipt, source *sourceReport) (map[uint64]annotationInfo, annotationStats, error) {
+	ids := make(map[uint64]annotationInfo)
+	stats := annotationStats{StatusValueCounts: map[string]uint64{}, StatusLabelValueCounts: map[string]uint64{}}
+	report, err := feather.Scan(ctx, spec.Path, scanOptions(rec.Bytes, spec.MaxRows), func(record arrow.Record) error {
+		body, err := int64Column(record, "bodyId")
+		if err != nil {
+			return err
+		}
+		status, err := stringColumn(record, "status")
+		if err != nil {
+			return err
+		}
+		statusLabel, err := dictionaryColumn(record, "statusLabel")
+		if err != nil {
+			return err
+		}
+		rows := record.NumRows()
+		if rows < 0 {
+			return errors.New("negative annotation batch rows")
+		}
+		for i := 0; i < int(rows); i++ {
+			if err := inc(&stats.Rows); err != nil {
+				return err
+			}
+			if status.IsNull(i) {
+				if err := inc(&stats.StatusNullRows); err != nil {
+					return err
+				}
+			} else {
+				value := status.Value(i)
+				if err := addCategory(stats.StatusValueCounts, value); err != nil {
+					return err
+				}
+				if value == "Traced" {
+					if err := inc(&stats.TracedStatusRows); err != nil {
+						return err
+					}
+				}
+			}
+			if statusLabel.IsNull(i) {
+				if err := inc(&stats.StatusLabelNullRows); err != nil {
+					return err
+				}
+			} else if err := addCategory(stats.StatusLabelValueCounts, statusLabel.ValueStr(i)); err != nil {
+				return err
+			}
+			if body.IsNull(i) {
+				if err := inc(&stats.BodyIDNullRows); err != nil {
+					return err
+				}
+				continue
+			}
+			value := body.Value(i)
+			if value < 0 {
+				if err := inc(&stats.BodyIDNegativeRows); err != nil {
+					return err
+				}
+				continue
+			}
+			id := uint64(value)
+			traced := !status.IsNull(i) && status.Value(i) == "Traced"
+			previous, exists := ids[id]
+			if exists {
+				if err := inc(&stats.BodyIDDuplicateRows); err != nil {
+					return err
+				}
+				if previous.traced != traced {
+					if err := inc(&stats.DuplicateStatusConflictRows); err != nil {
+						return err
+					}
+				}
+				continue
+			}
+			if len(ids) >= maxEndpointKeys {
+				return fmt.Errorf("annotation ID map limit exceeded: %d keys", maxEndpointKeys)
+			}
+			ids[id] = annotationInfo{traced: traced}
+			if err := inc(&stats.BodyIDUniqueNonNull); err != nil {
+				return err
+			}
+			if traced {
+				if err := inc(&stats.TracedSelectedUniqueNodes); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, stats, err
+	}
+	if !report.Complete {
+		return nil, stats, errors.New("annotation scan incomplete")
+	}
+	stats.AnnotationMapKeys = uint64(len(ids))
+	source.Report = report
+	return ids, stats, nil
+}
+
+func updateColumnStats(stats *columnStats, value int64, valid bool) error {
+	if !valid {
+		return inc(&stats.NullRows)
+	}
+	if value < 0 {
+		return inc(&stats.NegativeRows)
+	}
+	if value == 0 {
+		return inc(&stats.ZeroRows)
+	}
+	return nil
+}
+
+func scanWeights(ctx context.Context, spec sourceSpec, rec receipt, annotations map[uint64]annotationInfo, source *sourceReport) (stats weightsStats, err error) {
+	stats = weightsStats{RawContactTotalValid: true, TracedBothContactTotalValid: true}
+	spiller, err := newEndpointSpiller()
+	if err != nil {
+		return stats, err
+	}
+	defer func() {
+		if cleanupErr := spiller.cleanup(); err == nil && cleanupErr != nil {
+			err = fmt.Errorf("cleanup endpoint spill: %w", cleanupErr)
+		}
+	}()
+	report, err := feather.Scan(ctx, spec.Path, scanOptions(rec.Bytes, spec.MaxRows), func(record arrow.Record) error {
+		pre, err := int64Column(record, "body_pre")
+		if err != nil {
+			return err
+		}
+		post, err := int64Column(record, "body_post")
+		if err != nil {
+			return err
+		}
+		weight, err := int64Column(record, "weight")
+		if err != nil {
+			return err
+		}
+		rows := record.NumRows()
+		if rows < 0 {
+			return errors.New("negative weight batch rows")
+		}
+		for i := 0; i < int(rows); i++ {
+			if err := inc(&stats.RawEdgeRows); err != nil {
+				return err
+			}
+			preValid, postValid, weightValid := !pre.IsNull(i), !post.IsNull(i), !weight.IsNull(i)
+			if err := updateColumnStats(&stats.BodyPre, pre.Value(i), preValid); err != nil {
+				return err
+			}
+			if err := updateColumnStats(&stats.BodyPost, post.Value(i), postValid); err != nil {
+				return err
+			}
+			if err := updateColumnStats(&stats.Weight, weight.Value(i), weightValid); err != nil {
+				return err
+			}
+			if weightValid {
+				w := weight.Value(i)
+				if w < 0 {
+					stats.RawContactTotalValid = false
+				} else {
+					if err := addUint64(&stats.RawContactTotal, uint64(w)); err != nil {
+						return fmt.Errorf("raw contact total: %w", err)
+					}
+					if err := inc(&stats.RawContactRowsIncluded); err != nil {
+						return err
+					}
+				}
+			}
+			if preValid && postValid {
+				pv, qv := pre.Value(i), post.Value(i)
+				if pv == qv {
+					if err := inc(&stats.SelfEdgeRows); err != nil {
+						return err
+					}
+					if weightValid && weight.Value(i) >= 0 {
+						if err := addUint64(&stats.SelfEdgeContactTotal, uint64(weight.Value(i))); err != nil {
+							return fmt.Errorf("self contact total: %w", err)
+						}
+					}
+				}
+				if err := spiller.add(pv); err != nil {
+					return err
+				}
+				if err := spiller.add(qv); err != nil {
+					return err
+				}
+				if pv >= 0 && qv >= 0 {
+					left, leftOK := annotations[uint64(pv)]
+					right, rightOK := annotations[uint64(qv)]
+					if leftOK && rightOK && left.traced && right.traced {
+						if err := inc(&stats.TracedBothEdgeRows); err != nil {
+							return err
+						}
+						if weightValid && weight.Value(i) < 0 {
+							stats.TracedBothContactTotalValid = false
+						} else if weightValid {
+							if err := addUint64(&stats.TracedBothContactTotal, uint64(weight.Value(i))); err != nil {
+								return fmt.Errorf("traced contact total: %w", err)
+							}
+						}
+					}
+				}
+			} else {
+				if preValid {
+					if err := spiller.add(pre.Value(i)); err != nil {
+						return err
+					}
+				}
+				if postValid {
+					if err := spiller.add(post.Value(i)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return stats, err
+	}
+	if !report.Complete {
+		return stats, errors.New("weights scan incomplete")
+	}
+	unique, unannotated, runs, err := spiller.finish(annotations)
+	if err != nil {
+		return stats, fmt.Errorf("merge endpoint spill runs: %w", err)
+	}
+	stats.IndependentEndpointCount = unique
+	stats.UnannotatedUniqueEndpointCount = unannotated
+	stats.EndpointMapPeakKeys = spiller.peak
+	stats.EndpointSpillRuns = runs
+	source.Report = report
+	return stats, nil
+}
+
+func unknownConsensus(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "", "unknown", "unclear", "none", "null", "na", "n/a":
+		return true
+	default:
+		return false
+	}
+}
+
+func scanNeurotransmitters(ctx context.Context, spec sourceSpec, rec receipt, source *sourceReport) (ntStats, error) {
+	stats := ntStats{ConsensusValueCounts: map[string]uint64{}, ConsensusUnknownValueCounts: map[string]uint64{}}
+	ids := make(map[uint64]struct{})
+	report, err := feather.Scan(ctx, spec.Path, scanOptions(rec.Bytes, spec.MaxRows), func(record arrow.Record) error {
+		body, err := int64Column(record, "body")
+		if err != nil {
+			return err
+		}
+		consensus, err := stringColumn(record, "consensus_nt")
+		if err != nil {
+			return err
+		}
+		rows := record.NumRows()
+		if rows < 0 {
+			return errors.New("negative neurotransmitter batch rows")
+		}
+		for i := 0; i < int(rows); i++ {
+			if err := inc(&stats.Rows); err != nil {
+				return err
+			}
+			if body.IsNull(i) {
+				if err := inc(&stats.BodyNullRows); err != nil {
+					return err
+				}
+			} else {
+				value := body.Value(i)
+				if value < 0 {
+					if err := inc(&stats.BodyNegativeRows); err != nil {
+						return err
+					}
+				} else {
+					id := uint64(value)
+					if _, exists := ids[id]; exists {
+						if err := inc(&stats.BodyDuplicateRows); err != nil {
+							return err
+						}
+					} else {
+						if len(ids) >= maxNTKeys {
+							return fmt.Errorf("neurotransmitter body map limit exceeded: %d keys", maxNTKeys)
+						}
+						ids[id] = struct{}{}
+						if err := inc(&stats.BodyUniqueNonNull); err != nil {
+							return err
+						}
+					}
+				}
+			}
+			if consensus.IsNull(i) {
+				if err := inc(&stats.ConsensusNullRows); err != nil {
+					return err
+				}
+				continue
+			}
+			value := consensus.Value(i)
+			if err := addCategory(stats.ConsensusValueCounts, value); err != nil {
+				return err
+			}
+			if unknownConsensus(value) {
+				if err := inc(&stats.ConsensusUnknownRows); err != nil {
+					return err
+				}
+				if err := addCategory(stats.ConsensusUnknownValueCounts, value); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return stats, err
+	}
+	if !report.Complete {
+		return stats, errors.New("neurotransmitter scan incomplete")
+	}
+	stats.NTMapKeys = uint64(len(ids))
+	if stats.Rows != 0 {
+		stats.ConsensusUnknownRatio = float64(stats.ConsensusUnknownRows) / float64(stats.Rows)
+	}
+	source.Report = report
+	return stats, nil
+}
+
+func verifySource(ctx context.Context, spec sourceSpec) (sourceReport, receipt, fileHash, error) {
+	var source sourceReport
+	rec, err := decodeReceipt(spec.ReceiptPath)
+	if err != nil {
+		return source, rec, fileHash{}, err
+	}
+	before, err := hashFile(ctx, spec.Path)
+	if err != nil {
+		return source, rec, fileHash{}, fmt.Errorf("hash before %s: %w", spec.Name, err)
+	}
+	source = sourceReport{Name: spec.Name, Role: spec.Role, Path: spec.Path, ReceiptPath: spec.ReceiptPath, Receipt: rec, BytesBefore: before.bytes, SHA256Before: before.sha, BeforeMatchesReceipt: before.bytes == rec.Bytes && strings.EqualFold(before.sha, rec.SHA256)}
+	if !source.BeforeMatchesReceipt {
+		return source, rec, before, fmt.Errorf("%s before hash does not match receipt", spec.Name)
+	}
+	return source, rec, before, nil
+}
+
+func finalizeSource(ctx context.Context, source *sourceReport, before fileHash) error {
+	after, err := hashFile(ctx, source.Path)
+	if err != nil {
+		return fmt.Errorf("hash after %s: %w", source.Name, err)
+	}
+	source.BytesAfter, source.SHA256After = after.bytes, after.sha
+	source.AfterMatchesReceipt = after.bytes == source.Receipt.Bytes && strings.EqualFold(after.sha, source.Receipt.SHA256)
+	source.HashStable = source.BeforeMatchesReceipt && source.AfterMatchesReceipt && before.bytes == after.bytes && before.sha == after.sha
+	if !source.HashStable {
+		return fmt.Errorf("%s hash changed during audit", source.Name)
+	}
+	return nil
+}
+
+func main() {
+	ctx := context.Background()
+	specs := []sourceSpec{
+		{Name: "weights", Role: "raw_connectome_weights", Path: "data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather", ReceiptPath: "evidence/malecns-source-20260913/weights-download.json", MaxRows: maxWeightRows},
+		{Name: "annotations", Role: "body_annotations", Path: "data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather", ReceiptPath: "evidence/malecns-source-20260913/annotations-download.json", MaxRows: maxAnnotationRows},
+		{Name: "neurotransmitters", Role: "body_neurotransmitters", Path: "data/malecns-v1.0/body-neurotransmitters-male-cns-v1.0.feather", ReceiptPath: "evidence/malecns-source-20260913/neurotransmitters-download.json", MaxRows: maxNTRows},
+	}
+	sources := make([]sourceReport, len(specs))
+	receipts := make([]receipt, len(specs))
+	before := make([]fileHash, len(specs))
+	for i, spec := range specs {
+		var err error
+		sources[i], receipts[i], before[i], err = verifySource(ctx, spec)
+		if err != nil {
+			panic(err)
+		}
+	}
+	annotations, annotationSummary, err := scanAnnotations(ctx, specs[1], receipts[1], &sources[1])
+	if err != nil {
+		panic(err)
+	}
+	weightsSummary, err := scanWeights(ctx, specs[0], receipts[0], annotations, &sources[0])
+	if err != nil {
+		panic(err)
+	}
+	ntSummary, err := scanNeurotransmitters(ctx, specs[2], receipts[2], &sources[2])
+	if err != nil {
+		panic(err)
+	}
+	for i := range sources {
+		if err := finalizeSource(ctx, &sources[i], before[i]); err != nil {
+			panic(err)
+		}
+	}
+	fingerprintPaths := []string{
+		"evidence/malecns-source-20260913/graph-values-audit.go.txt",
+		"feather/allocator.go",
+		"feather/reader.go",
+		"feather/validate.go",
+	}
+	fingerprints := make([]sourceFingerprint, 0, len(fingerprintPaths))
+	for _, path := range fingerprintPaths {
+		hash, err := hashFile(ctx, path)
+		if err != nil {
+			panic(fmt.Errorf("hash source fingerprint %s: %w", path, err))
+		}
+		fingerprints = append(fingerprints, sourceFingerprint{Path: path, Bytes: hash.bytes, SHA256: hash.sha})
+	}
+	report := auditReport{
+		SchemaVersion: "coimnet-malecns-graph-values-audit/v1",
+		Command:       command,
+		Environment:   map[string]any{"go": runtime.Version(), "goos": runtime.GOOS, "goarch": runtime.GOARCH, "gomaxprocs": runtime.GOMAXPROCS(0), "arrow_go": "github.com/apache/arrow/go/v17 v17.0.0"},
+		Limits:        map[string]any{"max_arrow_bytes": maxArrowBytes, "max_footer_bytes": maxFooterBytes, "max_weight_rows": maxWeightRows, "max_annotation_rows": maxAnnotationRows, "max_neurotransmitter_rows": maxNTRows, "max_endpoint_map_keys": maxEndpointKeys, "max_endpoint_spill_runs": maxEndpointSpillRuns, "max_neurotransmitter_body_map_keys": maxNTKeys},
+		Sources:       sources, Annotations: annotationSummary, Weights: weightsSummary, Neurotransmitters: ntSummary, SourceFingerprints: fingerprints,
+		Selection:          map[string]any{"rule": "status exactly Traced", "candidate_scope": "annotation body IDs with status exactly Traced, including isolated nodes", "selected_unique_nodes": annotationSummary.TracedSelectedUniqueNodes, "edges_with_both_selected_endpoints": weightsSummary.TracedBothEdgeRows, "contacts_on_edges_with_both_selected_endpoints": weightsSummary.TracedBothContactTotal},
+		DuplicatePairAudit: "not performed; no full pair map or pair deduplication was attempted",
+		Limitations:        []string{"Counts are raw row observations from Feather record batches; weight totals are checked uint64 sums of non-negative non-null weight values.", "The in-memory endpoint set is bounded at 5,000,000 keys per sorted spill run, with at most 4,096 temporary runs; the neurotransmitter body ID map is bounded at 5,000,000 keys and the Arrow allocator at 128 MiB. Exceeding a bound stops the audit.", "The status==Traced selection is an explicit engineering candidate audit, not a biological completeness rule.", "Duplicate endpoint pairs were not enumerated, deduplicated, or assigned aggregation semantics; source evidence does not establish whether repeated pairs are additive.", "consensus_nt unknown counts classify null, empty, unknown-like tokens, and the observed value unclear as unknown."},
+	}
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(report); err != nil {
+		panic(err)
+	}
+	fmt.Fprintln(os.Stderr, "graph values audit complete")
+}

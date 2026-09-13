@@ -29,6 +29,7 @@
 - 初期手動稀疏反向計算屬主規格允許方案。Insyra 必須實際參與張量與可用數值/學習操作，不能只是檔案讀取。若其 tape 無公開接合方法，使用明示且測過的完整向量梯度契約，禁止 unsafe/反射或假裝 detach 後仍可微。
 - 已查證 Insyra v0.3.2 的 tape 沒有外部運算接合 API。使用兩段新建 tape：讀出損失產生核心上游梯度，手動時間回推取得編碼器輸出梯度，再用內積將梯度傳回編碼器。相關缺口追蹤 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。
 - 第一版快照明確命名為 `episode-training/v1`，每個訓練步驟重設神經狀態。資料由固定版本、seed 與樣本索引決定。此格式不表示已保存持續個體、延遲歷史、快速權重或化學狀態，後續完整狀態須用不同 schema。
+- 接線圖建構器只消費 manifest 明示的內容：官方欄位名稱、來源指紋、端點身份假設（含 evidence）、選取 predicate 與重複語意。未宣告身份時拒絕 annotated view；未宣告可加總分割時拒絕聚合。節點 canonical 順序為同一 namespace 內的數值遞增，索引寬度依節點數選 32／64 位元。endpoint、raw pair 與 annotated edge 三條統計都走 `internal/extsort` 的有界 run＋k-way merge，重複只計數不合併；raw view 不在記憶體保存 151M 列，改以重新讀取原件並前後比對指紋。manifest hash 排除本機路徑，結果識別以來源 SHA-256、predicate hash、converter version 與 node index／edge order hash 為準。
 - 數值反向使用平滑數學公式的解析導數。小步長的輸入係數用 `-Expm1(-dt/tau)` 計算，避免 `1-exp(...)` 消去有效數字。有限差分須選可解析的尺度，不能以浮點捨入後差分為零要求解析梯度歸零。
 
 ## 功能流程、錯誤與驗證責任
@@ -42,6 +43,7 @@
 | 05 保存並接續學習 | 新程序恢復與連續執行比較 | 損壞/未知版本/形狀/拓撲不符拒絕 | 不覆寫、原子寫入、並行衝突失敗、取消清理；參數/最佳化器/游標/隨機一致 |
 | 06 取得官方資料 | SDK/CLI 至暫存、校驗、原子發布與來源回條 | 缺少長度/ETag、過大、磁碟不足或內容不符拒絕 | 取消與中斷可續傳，來源改版或忽略 Range 拒絕拼接，並行/既有成果不覆寫 |
 | 07 讀取 Feather 原件 | SDK callback / CLI 逐批讀取及 schema 報告 | 錯格式、未知型別、重複欄位、損壞內容與容量超限拒絕 | 取消或 callback 錯誤結束並釋放資源，部分讀取不得標示完整；保留 int64、字典、list 與 null |
+| 08 建立標準化接線圖 | `connectome.Build` 由 manifest 與三份原件產生兩個視圖與報告；CLI `data import` 輸出報告 | 空 rows／零選入節點產生空視圖與未定義比例；null／負 ID、缺註記、predicate false 各以單一原因排除；零／負限制、無效 manifest／predicate、缺身份證據、聚合無證據拒絕 | 指紋前後不符、schema／型別不符、NaN、容量、取消都不發布結果並清掉暫存；相同輸入與 predicate 重跑得到相同索引、順序與 hash；建構與匯出不共享可變切片 |
 
 每列對應單一 ticket 的驗收，測試由公開函式或命令進入，不針對私有實作逐函式寫鏡像測試。後續功能在實作前依原規格補相同檢查與可驗證 ticket。
 

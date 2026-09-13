@@ -18,6 +18,19 @@ Ubuntu 使用 GNU `/usr/bin/time -v`，原始 RSS 乘以 1024 換算成 bytes。
 
 600 次更新是範例命令的預設學習流程。它不等於三組 seed 加凍結／打亂對照的完整 `examples run delayed`，也沒有操作真實果蠅圖。讀取 weights 的程序則不建立完整訓練圖、不訓練模型。
 
+### 標準化接線圖建構（單次量測）
+
+2026-09-13 以 `data import` 在同一台 Mac 由三份官方原件建立 `raw_segments` 與 `annotated_neurons` 視圖，程式指紋見 [binary.sha256](../evidence/malecns-source-20260913/graph-v1/binary.sha256)，命令、時間與報告見 [graph-v1 驗證紀錄](../evidence/malecns-source-20260913/graph-v1/verification.json)。這是一次量測，不是三次中位數，且量測時同一台機器正在跑另一個工作階段的測試（load average 約 31–98），同一轉換器在較輕負載下的前一次執行為 176.38 秒、RSS 3,521,937,408 bytes，計數與 hash 相同。
+
+| 項目 | 數值 |
+| --- | --- |
+| 牆鐘時間 | 410.19 秒（user 276.71、sys 13.05） |
+| 最高程序 RSS | 3,396,730,880 bytes（約 3.16 GiB） |
+| 外部排序 run 數／暫存寫入量 | 7 個 run，4,108,079,877 bytes，結束後暫存目錄為空 |
+| 帳面保留峰值／實際持有高水位 | 4,294,967,296 bytes（`--max-memory-bytes` 4 GiB，排序緩衝依設計吃滿剩餘額度）／3,829,528,665 bytes |
+
+時間包含前後兩次三份原件的 SHA-256（約 1.03 GiB）、三次逐批掃描與三條排序合併。這個流程只產生視圖與報告，不建立訓練核心；把 25,563,197 條選入邊接上動態核心的記憶體另依上表估算。重跑方式為 `scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY`。
+
 ## 資料檔與平台
 
 三份已取得的 MaleCNS v1.0 原件共 **1,109,008,094 bytes（約 1.03 GiB）**。這是磁碟檔案大小。逐批讀取不需將所有原件常駐記憶體，後續圖建構、排序暫存與模型訓練會另外使用資源。原件大小與完整性見[官方資料驗證](../evidence/malecns-source-20260913/cli-v4/verification.json)及其中指向的讀取報告。

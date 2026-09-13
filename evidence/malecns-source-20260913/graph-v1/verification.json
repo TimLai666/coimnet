@@ -1,0 +1,134 @@
+{
+  "schema_version": "coimnet-graph-build-verification/v1",
+  "command_file": "evidence/malecns-source-20260913/graph-v1/command.txt",
+  "command": "scripts/graph-evidence.sh evidence/malecns-source-20260913/graph-v1 (runs: /usr/bin/time -l ./bin/coimnet data import --manifest manifests/malecns-v1.0.json --temp-dir TMP > report.json 2> run.log)",
+  "binary_sha256_file": "evidence/malecns-source-20260913/graph-v1/binary.sha256",
+  "manifest": "manifests/malecns-v1.0.json",
+  "manifest_sha256_file": "evidence/malecns-source-20260913/graph-v1/manifest.sha256",
+  "source_fingerprints": "evidence/connectome-20260913/source.sha256",
+  "environment": "evidence/malecns-source-20260913/graph-v1/doctor.json",
+  "started_at": "2026-09-13T14:11:41Z",
+  "finished_at": "2026-09-13T14:18:31Z",
+  "exit_code": 0,
+  "wall_seconds": 410.19,
+  "user_seconds": 276.71,
+  "sys_seconds": 13.05,
+  "max_resident_set_bytes": 3396730880,
+  "peak_memory_footprint_bytes": 7991417096,
+  "sort": {
+    "runs": 7,
+    "temp_bytes": 4108079877,
+    "reserved_peak_bytes": 4294967296,
+    "buffered_peak_bytes": 3829528665
+  },
+  "limits": {
+    "max_memory_bytes": 4294967296,
+    "max_temp_bytes": 17179869184,
+    "max_run_files": 256,
+    "max_arrow_bytes": 134217728,
+    "max_footer_bytes": 16777216,
+    "max_rows": 250000000
+  },
+  "temporary_directory_after_run": "evidence/malecns-source-20260913/graph-v1/temp-dir-after.txt (empty; removed)",
+  "report": "evidence/malecns-source-20260913/graph-v1/report.json",
+  "report_sha256": "5c65f4f4e5ba838471d878777cd939828f041f417212856e2e5848b09aeb0f7a",
+  "report_hashes": {
+    "node_index": "01fede32784e999d459a2e555112fcdc2cc56b302b3a6d151e78f442d045a264",
+    "edge_order": "42256dd3b21549fb7fed112a1727d7abd8def48f0efe7fbe7227286f0c619bf7",
+    "report": "6c741ff41165f649630f7cdc38d559df7216fb9334e9af267a79e76fc85c7a8d"
+  },
+  "sources": [
+    {
+      "role": "weights",
+      "rows": 151856684,
+      "record_batches": 2318,
+      "sha256_before": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "sha256_after": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "fingerprint_stable": true
+    },
+    {
+      "role": "annotations",
+      "rows": 211577,
+      "record_batches": 4,
+      "sha256_before": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "sha256_after": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "fingerprint_stable": true
+    },
+    {
+      "role": "neurotransmitters",
+      "rows": 1835518,
+      "record_batches": 29,
+      "sha256_before": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "sha256_after": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "fingerprint_stable": true
+    }
+  ],
+  "cross_check_against_independent_audit": {
+    "audit": "evidence/malecns-source-20260913/graph-values-audit.json",
+    "fields": {
+      "raw_rows": {
+        "build": 151856684,
+        "audit": 151856684,
+        "equal": true
+      },
+      "self_loop_rows": {
+        "build": 123,
+        "audit": 123,
+        "equal": true
+      },
+      "unique_endpoints": {
+        "build": 88384522,
+        "audit": 88384522,
+        "equal": true
+      },
+      "unannotated_unique_endpoints": {
+        "build": 88192826,
+        "audit": 88192826,
+        "equal": true
+      },
+      "raw_weight_sum": {
+        "build": 311833243,
+        "audit": 311833243,
+        "equal": true
+      },
+      "selected_nodes": {
+        "build": 165122,
+        "audit": 165122,
+        "equal": true
+      },
+      "annotated_edges": {
+        "build": 25563197,
+        "audit": 25563197,
+        "equal": true
+      },
+      "annotated_weight_sum": {
+        "build": 124025046,
+        "audit": 124025046,
+        "equal": true
+      },
+      "nt_unknown_rows": {
+        "build": 1671117,
+        "audit": 1671117,
+        "equal": true
+      },
+      "annotation_status_null_rows": {
+        "build": 5472,
+        "audit": 5472,
+        "equal": true
+      }
+    }
+  },
+  "new_observations": [
+    "duplicate (body_pre, body_post) pairs in the weights file: 0 of 151,856,684 rows (every valid pair row is a unique pair); the earlier audit had not enumerated pairs",
+    "annotated view: 535 isolated selected neurons, 101 self-loops, 465,189 weights rows excluded because one endpoint is annotated but not Traced, 125,828,298 rows excluded because one endpoint has no annotation row",
+    "annotated transmitter prediction unknown: 3,602 of 165,122 selected neurons (2.18%) by consensus_nt; receptorType label null for 164,370 of 165,122 (99.5%); receptor evidence itself is not_derived"
+  ],
+  "limitations": [
+    "weight is the source raw value; not a synapse or contact count claim",
+    "status == Traced is an engineering selection recorded in the manifest, not biological completeness",
+    "endpoint identity between the three files is a declared assumption with cited evidence",
+    "reserved_peak_bytes equals the 4 GiB limit because the sort buffers take the remaining budget by design; buffered_peak_bytes is the high-water mark of bytes actually held and measured max RSS is recorded separately",
+    "duplicate semantics stay declared unknown; the zero-duplicate observation makes aggregation unnecessary for this release but does not establish what a repeated pair would mean"
+  ],
+  "load_note": "Single measurement taken while another session ran unrelated R-based Go tests and macOS mediaanalysisd on the same machine (uptime load averages 97.9 / 58.3 / 31.1 right after the run). A run of the pre-review build of the same converter on the same inputs under lighter load took 176.38 s wall, 155.43 s user, max RSS 3,521,937,408 bytes with identical counts and hashes; treat both as observations, not benchmarks."
+}

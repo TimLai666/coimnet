@@ -1,0 +1,85 @@
+=== RUN   TestBuildHappyPathViewsAndReport
+--- PASS: TestBuildHappyPathViewsAndReport (0.03s)
+=== RUN   TestBuildIsDeterministicAcrossBatchSegmentationAndRunCounts
+--- PASS: TestBuildIsDeterministicAcrossBatchSegmentationAndRunCounts (0.11s)
+=== RUN   TestBuildRejectsInvalidManifestSelectionIdentityAndSourceChange
+--- PASS: TestBuildRejectsInvalidManifestSelectionIdentityAndSourceChange (0.03s)
+=== RUN   TestBuildRejectsAggregationWithoutEvidenceAndAggregatesAdditivePartitions
+--- PASS: TestBuildRejectsAggregationWithoutEvidenceAndAggregatesAdditivePartitions (0.11s)
+=== RUN   TestBuildCapacityCancellationAndCallbackErrors
+--- PASS: TestBuildCapacityCancellationAndCallbackErrors (0.02s)
+=== RUN   TestStreamRawSegmentsRejectsChangedSource
+--- PASS: TestStreamRawSegmentsRejectsChangedSource (0.02s)
+=== RUN   TestBuildEmptyViewsAndZeroWeights
+--- PASS: TestBuildEmptyViewsAndZeroWeights (0.00s)
+=== RUN   TestBuildRejectsWrongColumnTypesAndNonFiniteValues
+--- PASS: TestBuildRejectsWrongColumnTypesAndNonFiniteValues (0.02s)
+=== RUN   TestBuildReportsUnmappedOptionalColumnsAsNotMapped
+--- PASS: TestBuildReportsUnmappedOptionalColumnsAsNotMapped (0.02s)
+=== RUN   TestManifestJSONRoundTripIsStrict
+--- PASS: TestManifestJSONRoundTripIsStrict (0.00s)
+=== RUN   TestSelectionPredicateCanonicalFormAndHash
+--- PASS: TestSelectionPredicateCanonicalFormAndHash (0.00s)
+=== RUN   TestExternalIDsAreLosslessAndBounded
+--- PASS: TestExternalIDsAreLosslessAndBounded (0.00s)
+=== RUN   TestDecodeManifestBoundsNestingDepthWithoutQuadraticWork
+--- PASS: TestDecodeManifestBoundsNestingDepthWithoutQuadraticWork (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/connectome	0.865s
+=== RUN   TestMergeSortsRandomRecordsAcrossManyRuns
+--- PASS: TestMergeSortsRandomRecordsAcrossManyRuns (0.07s)
+=== RUN   TestMergeKeepsEveryByteIdenticalRecord
+--- PASS: TestMergeKeepsEveryByteIdenticalRecord (0.03s)
+=== RUN   TestDedupeDropsExactDuplicates
+=== RUN   TestDedupeDropsExactDuplicates/on
+=== RUN   TestDedupeDropsExactDuplicates/off
+--- PASS: TestDedupeDropsExactDuplicates (0.04s)
+    --- PASS: TestDedupeDropsExactDuplicates/on (0.02s)
+    --- PASS: TestDedupeDropsExactDuplicates/off (0.02s)
+=== RUN   TestMergeWithoutRecords
+--- PASS: TestMergeWithoutRecords (0.00s)
+=== RUN   TestAddRejectsWrongRecordLengthAndFailsSorter
+--- PASS: TestAddRejectsWrongRecordLengthAndFailsSorter (0.00s)
+=== RUN   TestTempBytesLimitLeavesNoExtraRunFile
+--- PASS: TestTempBytesLimitLeavesNoExtraRunFile (0.00s)
+=== RUN   TestMaxRunsLimitLeavesNoExtraRunFile
+--- PASS: TestMaxRunsLimitLeavesNoExtraRunFile (0.01s)
+=== RUN   TestCanceledContextStopsAddAndMerge
+=== RUN   TestCanceledContextStopsAddAndMerge/add
+=== RUN   TestCanceledContextStopsAddAndMerge/merge
+--- PASS: TestCanceledContextStopsAddAndMerge (0.09s)
+    --- PASS: TestCanceledContextStopsAddAndMerge/add (0.00s)
+    --- PASS: TestCanceledContextStopsAddAndMerge/merge (0.09s)
+=== RUN   TestVisitErrorStopsMerge
+--- PASS: TestVisitErrorStopsMerge (0.05s)
+=== RUN   TestMergeRejectsTruncatedRunFile
+--- PASS: TestMergeRejectsTruncatedRunFile (0.01s)
+=== RUN   TestMergeTwiceFailsAndCloseIsIdempotent
+--- PASS: TestMergeTwiceFailsAndCloseIsIdempotent (0.02s)
+=== RUN   TestStatsMatchRunFilesOnDisk
+--- PASS: TestStatsMatchRunFilesOnDisk (0.03s)
+=== RUN   TestNewRejectsInvalidConfig
+=== RUN   TestNewRejectsInvalidConfig/zero_record_bytes
+=== RUN   TestNewRejectsInvalidConfig/negative_record_bytes
+=== RUN   TestNewRejectsInvalidConfig/oversized_record_bytes
+=== RUN   TestNewRejectsInvalidConfig/zero_memory_bytes
+=== RUN   TestNewRejectsInvalidConfig/negative_memory_bytes
+=== RUN   TestNewRejectsInvalidConfig/memory_below_one_record
+=== RUN   TestNewRejectsInvalidConfig/zero_temp_bytes
+=== RUN   TestNewRejectsInvalidConfig/negative_temp_bytes
+=== RUN   TestNewRejectsInvalidConfig/zero_max_runs
+=== RUN   TestNewRejectsInvalidConfig/negative_max_runs
+--- PASS: TestNewRejectsInvalidConfig (0.02s)
+    --- PASS: TestNewRejectsInvalidConfig/zero_record_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/negative_record_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/oversized_record_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/zero_memory_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/negative_memory_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/memory_below_one_record (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/zero_temp_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/negative_temp_bytes (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/zero_max_runs (0.00s)
+    --- PASS: TestNewRejectsInvalidConfig/negative_max_runs (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/extsort	0.582s
+exit=0

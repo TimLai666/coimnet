@@ -1,0 +1,34 @@
+{
+  "requirement": "DAT-03",
+  "profile": "real-data",
+  "reproduction_command": [
+    "scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY (builds bin/coimnet and runs: coimnet data import --manifest manifests/malecns-v1.0.json --temp-dir TMP under /usr/bin/time)",
+    "go test -count=1 -v ./connectome/ ./internal/extsort/"
+  ],
+  "environment": [
+    "evidence/malecns-source-20260913/graph-v1/doctor.json"
+  ],
+  "input_fingerprints": [
+    "manifests/malecns-v1.0.json",
+    "evidence/malecns-source-20260913/graph-v1/manifest.sha256",
+    "evidence/malecns-source-20260913/graph-v1/binary.sha256",
+    "evidence/connectome-20260913/source.sha256",
+    "evidence/malecns-source-20260913/graph-v1/report.json (sources[].sha256 before and after)"
+  ],
+  "observed_result": "The three official MaleCNS v1.0 files build both named views in one bounded pass (410 s wall, 3.40 GB max RSS, 7 external sort runs, 4.1 GB temporary bytes, temp directory empty afterwards). raw_segments: 151,856,684 rows, 0 null or negative endpoints, 0 null/negative/zero weights, 123 self-loop rows, 88,384,522 unique endpoints of which 88,192,826 have no annotation row (133,806,112 endpoint occurrences), 0 duplicate pairs, raw weight sum 311,833,243. annotated_neurons (annotations.status == \"Traced\"): 165,122 selected of 211,577 annotation rows (46,455 predicate false, including 5,472 null status; 0 null, negative or duplicate IDs), 25,563,197 edges with 0 duplicate pairs, 101 self-loops, 535 isolated nodes, weight sum 124,025,046; excluded weights rows: 125,828,298 missing annotation, 465,189 predicate false, 0 null or invalid. Transmitter prediction unknown 3,602 / 165,122 by consensus_nt; receptor not_derived with receptorType null 164,370 / 165,122. Every count shared with the independent audit program (evidence/malecns-source-20260913/graph-values-audit.json) is equal. Source SHA-256 values are unchanged before and after the build; node index, edge order and report hashes are recorded.",
+  "test_log": [
+    "evidence/malecns-source-20260913/graph-v1/run.log",
+    "evidence/connectome-20260913/sdk-test.log",
+    "evidence/connectome-20260913/sdk-race.log",
+    "evidence/connectome-20260913/sdk-vet.log"
+  ],
+  "reports": [
+    "evidence/malecns-source-20260913/graph-v1/report.json",
+    "evidence/malecns-source-20260913/graph-v1/verification.json"
+  ],
+  "limitations": [
+    "The graph is not persisted; a durable GraphStore and its read-back verification are a separate ticket.",
+    "Selection is an engineering predicate; segment, neuron, pair and weight counts are reported separately and none is a synaptic contact or biological completeness claim.",
+    "Executed on macOS arm64 only; Ubuntu and Windows real-data runs are not yet recorded for this requirement."
+  ]
+}
