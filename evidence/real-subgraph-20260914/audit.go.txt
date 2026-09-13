@@ -1,0 +1,655 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strconv"
+
+	"github.com/TimLai666/coimnet/feather"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/array"
+)
+
+const (
+	namespace              = "malecns-v1.0"
+	annotationPath         = "data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather"
+	weightsPath            = "data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather"
+	maxArrowBytes    int64 = 128 << 20
+	maxFooterBytes   int64 = 16 << 20
+	maxRows          int64 = 250_000_000
+	maxSelectedNodes       = 2_000
+	maxSelectedEdges       = 100_000
+	edgeRecordBytes        = 33
+)
+
+const (
+	maxUint64 = ^uint64(0)
+	maxInt64  = int64(^uint64(0) >> 1)
+)
+
+type sourceFingerprint struct {
+	Role         string         `json:"role"`
+	Path         string         `json:"path"`
+	BytesBefore  int64          `json:"bytes_before"`
+	SHA256Before string         `json:"sha256_before"`
+	BytesAfter   int64          `json:"bytes_after"`
+	SHA256After  string         `json:"sha256_after"`
+	HashStable   bool           `json:"hash_stable"`
+	ScanMaxBytes int64          `json:"scan_max_file_bytes"`
+	ScanReport   feather.Report `json:"scan_report"`
+}
+
+type runtimeReport struct {
+	GoVersion  string `json:"go_version"`
+	GOOS       string `json:"goos"`
+	GOARCH     string `json:"goarch"`
+	GOMAXPROCS int    `json:"gomaxprocs"`
+}
+
+type limitReport struct {
+	MaxArrowBytes      int64  `json:"max_arrow_bytes"`
+	MaxFooterBytes     int64  `json:"max_footer_bytes"`
+	MaxRows            int64  `json:"max_rows_per_source"`
+	MaxSelectedNodes   int    `json:"max_selected_nodes"`
+	MaxSelectedEdges   int    `json:"max_selected_edges"`
+	MaxFileBytesPolicy string `json:"max_file_bytes_policy"`
+}
+
+type predicateReport struct {
+	Namespace  string `json:"namespace"`
+	Expression string `json:"expression"`
+	Field      string `json:"field"`
+	Equals     string `json:"equals"`
+	Exact      bool   `json:"exact"`
+	StatusRule string `json:"status_rule"`
+}
+
+type edgeRecord struct {
+	source      uint64
+	target      uint64
+	absoluteRow int64
+	valid       bool
+	weight      int64
+}
+
+type edgeReport struct {
+	SourceIndex uint64 `json:"source_index"`
+	TargetIndex uint64 `json:"target_index"`
+	AbsoluteRow int64  `json:"absolute_row"`
+	Valid       bool   `json:"valid"`
+	Weight      int64  `json:"weight"`
+}
+
+type auditReport struct {
+	SchemaVersion   string            `json:"schema_version"`
+	Command         string            `json:"command"`
+	Runtime         runtimeReport     `json:"runtime"`
+	Limits          limitReport       `json:"limits"`
+	Namespace       string            `json:"namespace"`
+	Predicate       predicateReport   `json:"predicate"`
+	Annotations     sourceFingerprint `json:"annotations"`
+	Weights         sourceFingerprint `json:"weights"`
+	NodeCount       uint64            `json:"node_count"`
+	EdgeCount       uint64            `json:"edge_count"`
+	WeightSum       uint64            `json:"weight_sum"`
+	SelfLoops       uint64            `json:"self_loops"`
+	IsolatedNodes   uint64            `json:"isolated_nodes"`
+	DuplicatePairs  uint64            `json:"duplicate_pairs"`
+	DuplicateRows   uint64            `json:"duplicate_pair_rows"`
+	SelectedIDs     []string          `json:"selected_ids"`
+	NodeIndexHash   string            `json:"node_index_hash"`
+	EdgeOrderHash   string            `json:"edge_order_hash"`
+	EdgeHashRecord  string            `json:"edge_hash_record"`
+	WeightSemantics string            `json:"weight_semantics"`
+	EdgeSemantics   string            `json:"edge_semantics"`
+	CanonicalEdges  []edgeReport      `json:"canonical_edges"`
+}
+
+type fileHash struct {
+	bytes int64
+	sum   string
+}
+
+type selection struct {
+	ids   []uint64
+	index map[uint64]uint64
+}
+
+func main() {
+	if err := run(); err != nil {
+		if _, writeErr := fmt.Fprintf(os.Stderr, "audit error: %v\n", err); writeErr != nil {
+			os.Exit(1)
+		}
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	annotationAbs, err := filepath.Abs(annotationPath)
+	if err != nil {
+		return fmt.Errorf("resolve annotations path: %w", err)
+	}
+	weightsAbs, err := filepath.Abs(weightsPath)
+	if err != nil {
+		return fmt.Errorf("resolve weights path: %w", err)
+	}
+
+	annotationBefore, err := hashFile(annotationAbs)
+	if err != nil {
+		return fmt.Errorf("hash annotations before scan: %w", err)
+	}
+	weightsBefore, err := hashFile(weightsAbs)
+	if err != nil {
+		return fmt.Errorf("hash weights before scan: %w", err)
+	}
+
+	ctx := context.Background()
+	selected, annotationScan, err := scanAnnotations(ctx, annotationAbs, annotationBefore.bytes)
+	if err != nil {
+		return err
+	}
+	edges, weightsScan, edgeStats, err := scanWeights(ctx, weightsAbs, weightsBefore.bytes, selected)
+	if err != nil {
+		return err
+	}
+
+	annotationAfter, err := hashFile(annotationAbs)
+	if err != nil {
+		return fmt.Errorf("hash annotations after scan: %w", err)
+	}
+	weightsAfter, err := hashFile(weightsAbs)
+	if err != nil {
+		return fmt.Errorf("hash weights after scan: %w", err)
+	}
+	if annotationBefore != annotationAfter {
+		return fmt.Errorf("annotations source changed during audit: before=%s/%d after=%s/%d", annotationBefore.sum, annotationBefore.bytes, annotationAfter.sum, annotationAfter.bytes)
+	}
+	if weightsBefore != weightsAfter {
+		return fmt.Errorf("weights source changed during audit: before=%s/%d after=%s/%d", weightsBefore.sum, weightsBefore.bytes, weightsAfter.sum, weightsAfter.bytes)
+	}
+	if !annotationScan.Complete {
+		return errors.New("annotations scan returned incomplete report")
+	}
+	if !weightsScan.Complete {
+		return errors.New("weights scan returned incomplete report")
+	}
+	if annotationScan.Rows < 0 || weightsScan.Rows < 0 {
+		return errors.New("scan report returned negative row count")
+	}
+
+	sort.Slice(edges, func(i, j int) bool {
+		if edges[i].source != edges[j].source {
+			return edges[i].source < edges[j].source
+		}
+		if edges[i].target != edges[j].target {
+			return edges[i].target < edges[j].target
+		}
+		return edges[i].absoluteRow < edges[j].absoluteRow
+	})
+	duplicatePairs, duplicateRows, err := duplicateCounts(edges)
+	if err != nil {
+		return err
+	}
+	nodeHash, err := hashNodeIndex(selected.ids)
+	if err != nil {
+		return fmt.Errorf("hash node index: %w", err)
+	}
+	edgeHash, err := hashEdgeOrder(edges)
+	if err != nil {
+		return fmt.Errorf("hash edge order: %w", err)
+	}
+	selectedIDs := make([]string, len(selected.ids))
+	for i, id := range selected.ids {
+		selectedIDs[i] = strconv.FormatUint(id, 10)
+	}
+	canonicalEdges := make([]edgeReport, len(edges))
+	for i, edge := range edges {
+		canonicalEdges[i] = edgeReport{
+			SourceIndex: edge.source,
+			TargetIndex: edge.target,
+			AbsoluteRow: edge.absoluteRow,
+			Valid:       edge.valid,
+			Weight:      edge.weight,
+		}
+	}
+
+	report := auditReport{
+		SchemaVersion: "coimnet-real-subgraph-audit/v1",
+		Command:       "go run /private/tmp/coimnet-alin-audit.go",
+		Runtime: runtimeReport{
+			GoVersion:  runtime.Version(),
+			GOOS:       runtime.GOOS,
+			GOARCH:     runtime.GOARCH,
+			GOMAXPROCS: runtime.GOMAXPROCS(0),
+		},
+		Limits: limitReport{
+			MaxArrowBytes:      maxArrowBytes,
+			MaxFooterBytes:     maxFooterBytes,
+			MaxRows:            maxRows,
+			MaxSelectedNodes:   maxSelectedNodes,
+			MaxSelectedEdges:   maxSelectedEdges,
+			MaxFileBytesPolicy: "each scan is bounded by the source bytes hashed immediately before that scan",
+		},
+		Namespace: namespace,
+		Predicate: predicateReport{
+			Namespace:  namespace,
+			Expression: `annotations.class == "ALIN"`,
+			Field:      "class",
+			Equals:     "ALIN",
+			Exact:      true,
+			StatusRule: "no status or Traced filter",
+		},
+		Annotations: sourceFingerprint{
+			Role:         "annotations",
+			Path:         annotationAbs,
+			BytesBefore:  annotationBefore.bytes,
+			SHA256Before: annotationBefore.sum,
+			BytesAfter:   annotationAfter.bytes,
+			SHA256After:  annotationAfter.sum,
+			HashStable:   annotationBefore == annotationAfter,
+			ScanMaxBytes: annotationBefore.bytes,
+			ScanReport:   annotationScan,
+		},
+		Weights: sourceFingerprint{
+			Role:         "weights",
+			Path:         weightsAbs,
+			BytesBefore:  weightsBefore.bytes,
+			SHA256Before: weightsBefore.sum,
+			BytesAfter:   weightsAfter.bytes,
+			SHA256After:  weightsAfter.sum,
+			HashStable:   weightsBefore == weightsAfter,
+			ScanMaxBytes: weightsBefore.bytes,
+			ScanReport:   weightsScan,
+		},
+		NodeCount:       uint64(len(selected.ids)),
+		EdgeCount:       uint64(len(edges)),
+		WeightSum:       edgeStats.weightSum,
+		SelfLoops:       edgeStats.selfLoops,
+		IsolatedNodes:   edgeStats.isolatedNodes,
+		DuplicatePairs:  duplicatePairs,
+		DuplicateRows:   duplicateRows,
+		SelectedIDs:     selectedIDs,
+		NodeIndexHash:   nodeHash,
+		EdgeOrderHash:   edgeHash,
+		EdgeHashRecord:  "sourceIndex:uint64be,targetIndex:uint64be,absoluteRow:uint64be,valid:uint8,int64Weight:uint64be (33 bytes per raw row)",
+		WeightSemantics: "raw non-negative int64 source weights; retained rows are summed without aggregation",
+		EdgeSemantics:   "all raw weight rows whose two endpoint IDs are selected; canonical hash order is source index, target index, absolute row",
+		CanonicalEdges:  canonicalEdges,
+	}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(report); err != nil {
+		return fmt.Errorf("encode report: %w", err)
+	}
+	if _, err := fmt.Fprintf(os.Stderr, "audit complete: nodes=%d edges=%d canonical_edges=%d weight_sum=%d self_loops=%d isolated_nodes=%d duplicate_pairs=%d\n", report.NodeCount, report.EdgeCount, len(report.CanonicalEdges), report.WeightSum, report.SelfLoops, report.IsolatedNodes, report.DuplicatePairs); err != nil {
+		return fmt.Errorf("write completion log: %w", err)
+	}
+	return nil
+}
+
+func scanOptions(maxFileBytes int64) (feather.Options, error) {
+	if maxFileBytes <= 0 {
+		return feather.Options{}, fmt.Errorf("source has non-positive size %d", maxFileBytes)
+	}
+	return feather.Options{
+		MaxFileBytes:   maxFileBytes,
+		MaxFooterBytes: maxFooterBytes,
+		MaxArrowBytes:  maxArrowBytes,
+		MaxRows:        maxRows,
+	}, nil
+}
+
+func scanAnnotations(ctx context.Context, path string, maxFileBytes int64) (selection, feather.Report, error) {
+	options, err := scanOptions(maxFileBytes)
+	if err != nil {
+		return selection{}, feather.Report{}, fmt.Errorf("annotations scan options: %w", err)
+	}
+	selected := selection{index: make(map[uint64]uint64, maxSelectedNodes)}
+	var absoluteRows int64
+	report, err := feather.Scan(ctx, path, options, func(record arrow.Record) error {
+		bodyIDs, err := int64Column(record, "bodyId")
+		if err != nil {
+			return fmt.Errorf("annotations bodyId: %w", err)
+		}
+		classes, err := stringColumn(record, "class")
+		if err != nil {
+			return fmt.Errorf("annotations class: %w", err)
+		}
+		rows := record.NumRows()
+		if rows < 0 {
+			return fmt.Errorf("annotations batch has negative row count %d", rows)
+		}
+		for i := 0; i < int(rows); i++ {
+			if classes.IsNull(i) || classes.Value(i) != "ALIN" {
+				continue
+			}
+			if bodyIDs.IsNull(i) {
+				return fmt.Errorf("annotations ALIN row %d has null bodyId", absoluteRows+int64(i))
+			}
+			id := bodyIDs.Value(i)
+			if id < 0 {
+				return fmt.Errorf("annotations ALIN row %d has negative bodyId %d", absoluteRows+int64(i), id)
+			}
+			uid := uint64(id)
+			if _, exists := selected.index[uid]; exists {
+				return fmt.Errorf("annotations ALIN row %d repeats selected bodyId %d", absoluteRows+int64(i), uid)
+			}
+			if len(selected.ids) >= maxSelectedNodes {
+				return fmt.Errorf("selected node limit %d exceeded at annotations row %d", maxSelectedNodes, absoluteRows+int64(i))
+			}
+			selected.index[uid] = uint64(len(selected.ids))
+			selected.ids = append(selected.ids, uid)
+		}
+		if rows > maxInt64-absoluteRows {
+			return errors.New("annotations absolute row counter overflow")
+		}
+		absoluteRows += rows
+		return nil
+	})
+	if err != nil {
+		return selection{}, report, fmt.Errorf("scan annotations: %w", err)
+	}
+	if !report.Complete {
+		return selection{}, report, errors.New("scan annotations returned incomplete report")
+	}
+	if report.Rows != absoluteRows {
+		return selection{}, report, fmt.Errorf("annotations row accounting mismatch: scan=%d callback=%d", report.Rows, absoluteRows)
+	}
+	sort.Slice(selected.ids, func(i, j int) bool { return selected.ids[i] < selected.ids[j] })
+	selected.index = make(map[uint64]uint64, len(selected.ids))
+	for i, id := range selected.ids {
+		selected.index[id] = uint64(i)
+	}
+	return selected, report, nil
+}
+
+type weightStats struct {
+	weightSum     uint64
+	selfLoops     uint64
+	isolatedNodes uint64
+}
+
+func scanWeights(ctx context.Context, path string, maxFileBytes int64, selected selection) ([]edgeRecord, feather.Report, weightStats, error) {
+	options, err := scanOptions(maxFileBytes)
+	if err != nil {
+		return nil, feather.Report{}, weightStats{}, fmt.Errorf("weights scan options: %w", err)
+	}
+	edges := make([]edgeRecord, 0, min(maxSelectedEdges, len(selected.ids)))
+	incident := make([]bool, len(selected.ids))
+	stats := weightStats{}
+	var absoluteRows int64
+	report, err := feather.Scan(ctx, path, options, func(record arrow.Record) error {
+		sources, err := int64Column(record, "body_pre")
+		if err != nil {
+			return fmt.Errorf("weights body_pre: %w", err)
+		}
+		targets, err := int64Column(record, "body_post")
+		if err != nil {
+			return fmt.Errorf("weights body_post: %w", err)
+		}
+		weights, err := int64Column(record, "weight")
+		if err != nil {
+			return fmt.Errorf("weights weight: %w", err)
+		}
+		rows := record.NumRows()
+		if rows < 0 {
+			return fmt.Errorf("weights batch has negative row count %d", rows)
+		}
+		for i := 0; i < int(rows); i++ {
+			if sources.IsNull(i) || targets.IsNull(i) {
+				continue
+			}
+			sourceID := sources.Value(i)
+			targetID := targets.Value(i)
+			if sourceID < 0 || targetID < 0 {
+				continue
+			}
+			sourceIndex, sourceOK := selected.index[uint64(sourceID)]
+			targetIndex, targetOK := selected.index[uint64(targetID)]
+			if !sourceOK || !targetOK {
+				continue
+			}
+			if len(edges) >= maxSelectedEdges {
+				return fmt.Errorf("selected edge limit %d exceeded at weights row %d", maxSelectedEdges, absoluteRows+int64(i))
+			}
+			if weights.IsNull(i) {
+				return fmt.Errorf("selected edge at weights row %d has null weight", absoluteRows+int64(i))
+			}
+			weight := weights.Value(i)
+			if weight < 0 {
+				return fmt.Errorf("selected edge at weights row %d has negative weight %d", absoluteRows+int64(i), weight)
+			}
+			if uint64(weight) > maxUint64-stats.weightSum {
+				return fmt.Errorf("selected edge weight sum overflows uint64 at weights row %d", absoluteRows+int64(i))
+			}
+			stats.weightSum += uint64(weight)
+			if sourceIndex == targetIndex {
+				if stats.selfLoops == maxUint64 {
+					return errors.New("self-loop counter overflow")
+				}
+				stats.selfLoops++
+			}
+			incident[sourceIndex] = true
+			incident[targetIndex] = true
+			edges = append(edges, edgeRecord{
+				source:      sourceIndex,
+				target:      targetIndex,
+				absoluteRow: absoluteRows + int64(i),
+				valid:       true,
+				weight:      weight,
+			})
+		}
+		if rows > maxInt64-absoluteRows {
+			return errors.New("weights absolute row counter overflow")
+		}
+		absoluteRows += rows
+		return nil
+	})
+	if err != nil {
+		return nil, report, weightStats{}, fmt.Errorf("scan weights: %w", err)
+	}
+	if !report.Complete {
+		return nil, report, weightStats{}, errors.New("scan weights returned incomplete report")
+	}
+	if report.Rows != absoluteRows {
+		return nil, report, weightStats{}, fmt.Errorf("weights row accounting mismatch: scan=%d callback=%d", report.Rows, absoluteRows)
+	}
+	for _, seen := range incident {
+		if !seen {
+			if stats.isolatedNodes == maxUint64 {
+				return nil, report, weightStats{}, errors.New("isolated node counter overflow")
+			}
+			stats.isolatedNodes++
+		}
+	}
+	return edges, report, stats, nil
+}
+
+func duplicateCounts(edges []edgeRecord) (uint64, uint64, error) {
+	var pairs, rows uint64
+	for i := 0; i < len(edges); {
+		j := i + 1
+		for j < len(edges) && edges[j].source == edges[i].source && edges[j].target == edges[i].target {
+			j++
+		}
+		groupSize := uint64(j - i)
+		if groupSize > 1 {
+			if pairs == maxUint64 {
+				return 0, 0, errors.New("duplicate pair counter overflow")
+			}
+			pairs++
+			if rows > maxUint64-(groupSize-1) {
+				return 0, 0, errors.New("duplicate row counter overflow")
+			}
+			rows += groupSize - 1
+		}
+		i = j
+	}
+	return pairs, rows, nil
+}
+
+func hashNodeIndex(ids []uint64) (string, error) {
+	h := sha256.New()
+	if _, err := h.Write([]byte(namespace)); err != nil {
+		return "", fmt.Errorf("write namespace: %w", err)
+	}
+	var encoded [8]byte
+	for _, id := range ids {
+		binary.BigEndian.PutUint64(encoded[:], id)
+		if _, err := h.Write(encoded[:]); err != nil {
+			return "", fmt.Errorf("write node id %d: %w", id, err)
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func hashEdgeOrder(edges []edgeRecord) (string, error) {
+	h := sha256.New()
+	var encoded [edgeRecordBytes]byte
+	for _, edge := range edges {
+		binary.BigEndian.PutUint64(encoded[0:8], edge.source)
+		binary.BigEndian.PutUint64(encoded[8:16], edge.target)
+		if edge.absoluteRow < 0 {
+			return "", fmt.Errorf("edge has negative absolute row %d", edge.absoluteRow)
+		}
+		binary.BigEndian.PutUint64(encoded[16:24], uint64(edge.absoluteRow))
+		if edge.valid {
+			encoded[24] = 1
+		} else {
+			encoded[24] = 0
+		}
+		binary.BigEndian.PutUint64(encoded[25:33], uint64(edge.weight))
+		if _, err := h.Write(encoded[:]); err != nil {
+			return "", fmt.Errorf("write edge record: %w", err)
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
+}
+
+func field(record arrow.Record, name string) (arrow.Array, error) {
+	indices := record.Schema().FieldIndices(name)
+	if len(indices) != 1 {
+		return nil, fmt.Errorf("field %q has %d matches", name, len(indices))
+	}
+	column := record.Column(indices[0])
+	if column == nil {
+		return nil, fmt.Errorf("field %q has nil column", name)
+	}
+	return column, nil
+}
+
+func int64Column(record arrow.Record, name string) (*array.Int64, error) {
+	column, err := field(record, name)
+	if err != nil {
+		return nil, err
+	}
+	values, ok := column.(*array.Int64)
+	if !ok {
+		return nil, fmt.Errorf("field %q has type %T, want *array.Int64", name, column)
+	}
+	return values, nil
+}
+
+type stringValues interface {
+	IsNull(int) bool
+	Value(int) string
+}
+
+type dictionaryStrings struct {
+	values *array.Dictionary
+}
+
+func (d dictionaryStrings) IsNull(i int) bool  { return d.values.IsNull(i) }
+func (d dictionaryStrings) Value(i int) string { return d.values.ValueStr(i) }
+
+func stringColumn(record arrow.Record, name string) (stringValues, error) {
+	column, err := field(record, name)
+	if err != nil {
+		return nil, err
+	}
+	switch values := column.(type) {
+	case *array.String:
+		return values, nil
+	case *array.Dictionary:
+		if _, ok := values.Dictionary().(*array.String); !ok {
+			return nil, fmt.Errorf("field %q has dictionary values of type %T, want *array.String", name, values.Dictionary())
+		}
+		return dictionaryStrings{values: values}, nil
+	default:
+		return nil, fmt.Errorf("field %q has type %T, want *array.String or *array.Dictionary", name, column)
+	}
+}
+
+func hashFile(path string) (result fileHash, retErr error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return result, err
+	}
+	if !info.Mode().IsRegular() {
+		return result, fmt.Errorf("source is not a regular file: mode=%s", info.Mode())
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		return result, err
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("close source: %w", closeErr))
+		}
+	}()
+	openedInfo, err := file.Stat()
+	if err != nil {
+		return result, err
+	}
+	if !openedInfo.Mode().IsRegular() {
+		return result, fmt.Errorf("opened source is not a regular file: mode=%s", openedInfo.Mode())
+	}
+	if openedInfo.Size() < 0 {
+		return result, fmt.Errorf("source has negative size %d", openedInfo.Size())
+	}
+	h := sha256.New()
+	buffer := make([]byte, 1<<20)
+	var total int64
+	for {
+		read, readErr := file.Read(buffer)
+		if read < 0 || read > len(buffer) {
+			return result, fmt.Errorf("source read returned invalid byte count %d", read)
+		}
+		if read > 0 {
+			if total > maxInt64-int64(read) {
+				return result, errors.New("source byte counter overflow")
+			}
+			total += int64(read)
+			if _, err := h.Write(buffer[:read]); err != nil {
+				return result, err
+			}
+		}
+		if readErr == io.EOF {
+			break
+		}
+		if readErr != nil {
+			return result, readErr
+		}
+	}
+	if total != openedInfo.Size() {
+		return result, fmt.Errorf("source size changed while hashing: stat=%d read=%d", openedInfo.Size(), total)
+	}
+	return fileHash{bytes: total, sum: hex.EncodeToString(h.Sum(nil))}, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

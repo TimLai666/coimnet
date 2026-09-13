@@ -2,11 +2,15 @@
 
 ## 目前階段
 
+真實子圖選取及短訓練範例已完成驗證（ticket 10、DAT-07）。原件與既有完整圖保持不變，證據見 [real-subgraph](evidence/real-subgraph-20260914/verification.json)。
+
 標準化接線圖已在真實 MaleCNS v1.0 三份原件上完成建構、落盤與讀回驗證（ticket 08、09）：`connectome.Build` 與 `data import` 依明示 manifest 產生 `raw_segments`／`annotated_neurons` 視圖與報告，165,122 個選入節點、25,563,197 條邊，所有與獨立稽核共有的計數相等。Mac 與 Ubuntu v7 同一份 95 檔來源的建置、單元、race、vet、模組驗證與跨程序續訓全通過。CPU 參考流程、官方資料下載與 Feather 讀取維持 v4／v5 驗證。完整目標維持原始 W01–W14。
 
 ## 階段目標
 
-把已落盤的不可變解剖圖接上動態核心做真實子圖訓練（DAT-07），同時補完訊號重取樣。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
+[10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
+
+下一階段補完訊號重取樣與不同頻率的時間對齊（ticket 03）。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
 ## 進行中
 
@@ -21,6 +25,7 @@
 | 07 | 使用者可逐批讀取 Feather 原件 | API agent / 主 agent | verified_scoped | annotations 211,577、NT 1,835,518、weights 151,856,684 列完整掃描，前後原件指紋一致 |
 | 09 | 使用者可保存並讀回標準化接線圖 | 主 agent | verified_scoped | 容量、溢位、竄改／截斷／順序／索引與路徑替換回歸通過；真實圖 664 MB 在 Mac／Ubuntu 讀回再保存的獨立 SHA-256 均與原件相同，見 graph-store-v2 |
 | 08 | 研究者可由官方原件建立可追溯標準化接線圖 | 主 agent（connectome）/ extsort subagent | verified_scoped | fixture 與真實資料皆通過；410 秒、RSS 3.40 GB、暫存 4.1 GB 後清空；raw 零重複 pair；durable GraphStore 切到 09 |
+| 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
 
 ## 目前阻礙
 
@@ -32,9 +37,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-DAT-07：把 09 讀回的圖接上 `dynamics`／`learning` 做真實子圖訓練（保存明示選取條件與指紋；既有 manifest 已支援單一註記欄位相等選取，依實驗需要判斷是否補複合條件），之後 03 補完跨頻率重取樣。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
+[03 訊號對齊](docs/tickets/03-signals.md)：補完跨頻率重取樣、因果／離線處理及分塊尾端語意。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
 
-本次來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 12 項附上通過證據（新增 DAT-03、DAT-04、DAT-05、DAT-08），其餘保留。
+圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 13 項附上通過證據（本次新增 DAT-07），其餘保留。最新全套日誌見 [Mac v10](evidence/cpu-reference-20260914/macos-v10/validation.log)、[Ubuntu v10](evidence/cpu-reference-20260914/ubuntu-v10/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v10.json)。
 
 ## 決策紀錄
 

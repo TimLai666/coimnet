@@ -1,0 +1,27 @@
+{
+  "requirement": "DAT-07",
+  "profile": "real-subgraph",
+  "reproduction_command": [
+    "See evidence/real-subgraph-20260914/build/command.txt",
+    "Follow examples/realsubgraph/README.md",
+    "python3 evidence/real-subgraph-20260914/compare.py"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v10/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v10/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/real-subgraph-20260914/build/input.sha256",
+    "evidence/cpu-reference-20260914/macos-v10/source.sha256"
+  ],
+  "observed_result": "All annotation class ALIN nodes selected, no status filter: 24 nodes and 110 internal rows; node and edge hashes match an independent Arrow scan. All source files and the existing full graph retain their original SHA256. Same store loads on Mac and Ubuntu, and all IDs, edges and initialized weights match the audit. The 20-update synthetic integration example changes only core weights. Per-platform repeated JSON is identical; cross-platform final parameter hashes differ, so bitwise cross-platform training equality is not claimed.",
+  "test_log": [
+    "evidence/real-subgraph-20260914/verification.json",
+    "evidence/cpu-reference-20260914/macos-v10/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v10/validation.log"
+  ],
+  "limitations": [
+    "This acceptance covers traceable selection without changing originals. Synthetic training has no held-out or biological acceptance.",
+    "Full-graph training, GPU and Windows runtime remain unverified."
+  ]
+}

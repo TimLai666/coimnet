@@ -1,0 +1,1074 @@
+{
+  "schema_version": "coimnet-real-subgraph-audit/v1",
+  "command": "go run /private/tmp/coimnet-alin-audit.go",
+  "runtime": {
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "gomaxprocs": 8
+  },
+  "limits": {
+    "max_arrow_bytes": 134217728,
+    "max_footer_bytes": 16777216,
+    "max_rows_per_source": 250000000,
+    "max_selected_nodes": 2000,
+    "max_selected_edges": 100000,
+    "max_file_bytes_policy": "each scan is bounded by the source bytes hashed immediately before that scan"
+  },
+  "namespace": "malecns-v1.0",
+  "predicate": {
+    "namespace": "malecns-v1.0",
+    "expression": "annotations.class == \"ALIN\"",
+    "field": "class",
+    "equals": "ALIN",
+    "exact": true,
+    "status_rule": "no status or Traced filter"
+  },
+  "annotations": {
+    "role": "annotations",
+    "path": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+    "bytes_before": 14483314,
+    "sha256_before": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+    "bytes_after": 14483314,
+    "sha256_after": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+    "hash_stable": true,
+    "scan_max_file_bytes": 14483314,
+    "scan_report": {
+      "schema_version": "coimnet-feather-report/v1",
+      "format": "feather_v2",
+      "fields": [
+        {
+          "name": "assignedOlHex1",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "assignedOlHex2",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "bodyId",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "flywireType",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "group",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "instance",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "somaSide",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "statusLabel",
+          "type": "dictionary\u003cvalues=utf8, indices=int8, ordered=true\u003e",
+          "nullable": true
+        },
+        {
+          "name": "superclass",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "type",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "vfbId",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "hemibrainType",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "itoleeHl",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "supertype",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "birthtime",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "mancBodyid",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "mancGroup",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "mancType",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "subclass",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "synonyms",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "class",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "rootSide",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "somaNeuromere",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "trumanHl",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "dimorphism",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "matchingNotes",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "entryNerve",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "mancSerial",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "mcnsSerial",
+          "type": "float64",
+          "nullable": true
+        },
+        {
+          "name": "serialMotif",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "fruDsx",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "exitNerve",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "receptorType",
+          "type": "utf8",
+          "nullable": true
+        },
+        {
+          "name": "somaLocation",
+          "type": "list\u003citem: int64, nullable\u003e",
+          "nullable": true
+        },
+        {
+          "name": "tosomaLocation",
+          "type": "list\u003citem: int64, nullable\u003e",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "utf8",
+          "nullable": true
+        }
+      ],
+      "record_batches": 4,
+      "rows": 211577,
+      "file_bytes": 14483314,
+      "peak_arrow_bytes": 22485440,
+      "complete": true
+    }
+  },
+  "weights": {
+    "role": "weights",
+    "path": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+    "bytes_before": 1051241946,
+    "sha256_before": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+    "bytes_after": 1051241946,
+    "sha256_after": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+    "hash_stable": true,
+    "scan_max_file_bytes": 1051241946,
+    "scan_report": {
+      "schema_version": "coimnet-feather-report/v1",
+      "format": "feather_v2",
+      "fields": [
+        {
+          "name": "body_pre",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "body_post",
+          "type": "int64",
+          "nullable": true
+        },
+        {
+          "name": "weight",
+          "type": "int64",
+          "nullable": true
+        }
+      ],
+      "record_batches": 2318,
+      "rows": 151856684,
+      "file_bytes": 1051241946,
+      "peak_arrow_bytes": 2138240,
+      "complete": true
+    }
+  },
+  "node_count": 24,
+  "edge_count": 110,
+  "weight_sum": 1514,
+  "self_loops": 0,
+  "isolated_nodes": 0,
+  "duplicate_pairs": 0,
+  "duplicate_pair_rows": 0,
+  "selected_ids": [
+    "10378",
+    "10491",
+    "10593",
+    "10737",
+    "11193",
+    "11558",
+    "11566",
+    "11644",
+    "12284",
+    "12371",
+    "12373",
+    "12616",
+    "12759",
+    "13232",
+    "20168",
+    "20326",
+    "21736",
+    "22457",
+    "23204",
+    "37275",
+    "514536",
+    "515801",
+    "524284",
+    "529602"
+  ],
+  "node_index_hash": "270799e51f5972888c8de398bfd0477c9cd5a7694403dccedf326c5c5457ec5d",
+  "edge_order_hash": "f3d1c57bd484d04adf8be450307000168032c418245c019bf9d1ffe9fa99fef9",
+  "edge_hash_record": "sourceIndex:uint64be,targetIndex:uint64be,absoluteRow:uint64be,valid:uint8,int64Weight:uint64be (33 bytes per raw row)",
+  "weight_semantics": "raw non-negative int64 source weights; retained rows are summed without aggregation",
+  "edge_semantics": "all raw weight rows whose two endpoint IDs are selected; canonical hash order is source index, target index, absolute row",
+  "canonical_edges": [
+    {
+      "source_index": 0,
+      "target_index": 2,
+      "absolute_row": 1653658,
+      "valid": true,
+      "weight": 14
+    },
+    {
+      "source_index": 0,
+      "target_index": 7,
+      "absolute_row": 19018360,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 0,
+      "target_index": 12,
+      "absolute_row": 137143325,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 1,
+      "target_index": 0,
+      "absolute_row": 135199765,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 1,
+      "target_index": 2,
+      "absolute_row": 135199693,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 1,
+      "target_index": 3,
+      "absolute_row": 9514658,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 1,
+      "target_index": 8,
+      "absolute_row": 135199710,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 1,
+      "target_index": 10,
+      "absolute_row": 3873517,
+      "valid": true,
+      "weight": 7
+    },
+    {
+      "source_index": 1,
+      "target_index": 11,
+      "absolute_row": 135199714,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 2,
+      "target_index": 0,
+      "absolute_row": 398930,
+      "valid": true,
+      "weight": 36
+    },
+    {
+      "source_index": 2,
+      "target_index": 11,
+      "absolute_row": 133928461,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 2,
+      "target_index": 15,
+      "absolute_row": 17399264,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 2,
+      "target_index": 16,
+      "absolute_row": 133928347,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 2,
+      "target_index": 18,
+      "absolute_row": 133928254,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 2,
+      "target_index": 21,
+      "absolute_row": 133927898,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 3,
+      "target_index": 1,
+      "absolute_row": 7400459,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 3,
+      "target_index": 10,
+      "absolute_row": 3806123,
+      "valid": true,
+      "weight": 7
+    },
+    {
+      "source_index": 3,
+      "target_index": 11,
+      "absolute_row": 3806072,
+      "valid": true,
+      "weight": 7
+    },
+    {
+      "source_index": 4,
+      "target_index": 5,
+      "absolute_row": 127070039,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 4,
+      "target_index": 6,
+      "absolute_row": 13283,
+      "valid": true,
+      "weight": 178
+    },
+    {
+      "source_index": 4,
+      "target_index": 7,
+      "absolute_row": 26452,
+      "valid": true,
+      "weight": 137
+    },
+    {
+      "source_index": 4,
+      "target_index": 9,
+      "absolute_row": 42975265,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 4,
+      "target_index": 12,
+      "absolute_row": 42975252,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 4,
+      "target_index": 13,
+      "absolute_row": 127070005,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 5,
+      "target_index": 8,
+      "absolute_row": 123882873,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 5,
+      "target_index": 11,
+      "absolute_row": 123882860,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 5,
+      "target_index": 19,
+      "absolute_row": 40281482,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 5,
+      "target_index": 21,
+      "absolute_row": 123882237,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 5,
+      "target_index": 22,
+      "absolute_row": 12115554,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 6,
+      "target_index": 0,
+      "absolute_row": 123810045,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 6,
+      "target_index": 2,
+      "absolute_row": 123810038,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 6,
+      "target_index": 7,
+      "absolute_row": 40224284,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 6,
+      "target_index": 12,
+      "absolute_row": 40224186,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 6,
+      "target_index": 13,
+      "absolute_row": 8569881,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 6,
+      "target_index": 16,
+      "absolute_row": 123809835,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 6,
+      "target_index": 18,
+      "absolute_row": 123809824,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 6,
+      "target_index": 22,
+      "absolute_row": 8569202,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 7,
+      "target_index": 0,
+      "absolute_row": 123117521,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 7,
+      "target_index": 4,
+      "absolute_row": 123117487,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 7,
+      "target_index": 6,
+      "absolute_row": 123117474,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 7,
+      "target_index": 9,
+      "absolute_row": 39633488,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 7,
+      "target_index": 13,
+      "absolute_row": 39633557,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 7,
+      "target_index": 19,
+      "absolute_row": 123117262,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 7,
+      "target_index": 22,
+      "absolute_row": 11887987,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 8,
+      "target_index": 16,
+      "absolute_row": 35202296,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 8,
+      "target_index": 17,
+      "absolute_row": 117528545,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 9,
+      "target_index": 5,
+      "absolute_row": 543235,
+      "valid": true,
+      "weight": 30
+    },
+    {
+      "source_index": 9,
+      "target_index": 7,
+      "absolute_row": 116889144,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 9,
+      "target_index": 23,
+      "absolute_row": 38317,
+      "valid": true,
+      "weight": 117
+    },
+    {
+      "source_index": 10,
+      "target_index": 1,
+      "absolute_row": 9687797,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 10,
+      "target_index": 3,
+      "absolute_row": 9688144,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 10,
+      "target_index": 7,
+      "absolute_row": 34659580,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 10,
+      "target_index": 11,
+      "absolute_row": 6240257,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 11,
+      "target_index": 0,
+      "absolute_row": 115440539,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 11,
+      "target_index": 2,
+      "absolute_row": 33230259,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 11,
+      "target_index": 10,
+      "absolute_row": 3225572,
+      "valid": true,
+      "weight": 8
+    },
+    {
+      "source_index": 12,
+      "target_index": 4,
+      "absolute_row": 3091694,
+      "valid": true,
+      "weight": 9
+    },
+    {
+      "source_index": 12,
+      "target_index": 6,
+      "absolute_row": 15266,
+      "valid": true,
+      "weight": 169
+    },
+    {
+      "source_index": 12,
+      "target_index": 7,
+      "absolute_row": 17328,
+      "valid": true,
+      "weight": 161
+    },
+    {
+      "source_index": 12,
+      "target_index": 9,
+      "absolute_row": 114613685,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 12,
+      "target_index": 13,
+      "absolute_row": 32422802,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 13,
+      "target_index": 4,
+      "absolute_row": 11202694,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 13,
+      "target_index": 6,
+      "absolute_row": 112131512,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 13,
+      "target_index": 12,
+      "absolute_row": 7610469,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 13,
+      "target_index": 18,
+      "absolute_row": 18549414,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 13,
+      "target_index": 23,
+      "absolute_row": 112131052,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 14,
+      "target_index": 18,
+      "absolute_row": 90055149,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 14,
+      "target_index": 20,
+      "absolute_row": 4578965,
+      "valid": true,
+      "weight": 6
+    },
+    {
+      "source_index": 15,
+      "target_index": 2,
+      "absolute_row": 89737520,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 15,
+      "target_index": 3,
+      "absolute_row": 89737522,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 15,
+      "target_index": 9,
+      "absolute_row": 354137,
+      "valid": true,
+      "weight": 39
+    },
+    {
+      "source_index": 15,
+      "target_index": 16,
+      "absolute_row": 6270498,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 15,
+      "target_index": 17,
+      "absolute_row": 6270510,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 15,
+      "target_index": 18,
+      "absolute_row": 281946,
+      "valid": true,
+      "weight": 44
+    },
+    {
+      "source_index": 15,
+      "target_index": 21,
+      "absolute_row": 34146438,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 16,
+      "target_index": 8,
+      "absolute_row": 87041566,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 16,
+      "target_index": 9,
+      "absolute_row": 318051,
+      "valid": true,
+      "weight": 41
+    },
+    {
+      "source_index": 16,
+      "target_index": 15,
+      "absolute_row": 87041528,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 16,
+      "target_index": 17,
+      "absolute_row": 4094412,
+      "valid": true,
+      "weight": 7
+    },
+    {
+      "source_index": 16,
+      "target_index": 18,
+      "absolute_row": 352334,
+      "valid": true,
+      "weight": 39
+    },
+    {
+      "source_index": 16,
+      "target_index": 21,
+      "absolute_row": 1977551,
+      "valid": true,
+      "weight": 12
+    },
+    {
+      "source_index": 17,
+      "target_index": 0,
+      "absolute_row": 85747480,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 17,
+      "target_index": 9,
+      "absolute_row": 508073,
+      "valid": true,
+      "weight": 31
+    },
+    {
+      "source_index": 17,
+      "target_index": 15,
+      "absolute_row": 5135199,
+      "valid": true,
+      "weight": 6
+    },
+    {
+      "source_index": 17,
+      "target_index": 16,
+      "absolute_row": 13622149,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 17,
+      "target_index": 18,
+      "absolute_row": 172464,
+      "valid": true,
+      "weight": 58
+    },
+    {
+      "source_index": 17,
+      "target_index": 21,
+      "absolute_row": 85747248,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 18,
+      "target_index": 5,
+      "absolute_row": 208451,
+      "valid": true,
+      "weight": 52
+    },
+    {
+      "source_index": 18,
+      "target_index": 15,
+      "absolute_row": 4585357,
+      "valid": true,
+      "weight": 6
+    },
+    {
+      "source_index": 18,
+      "target_index": 20,
+      "absolute_row": 84528606,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 18,
+      "target_index": 23,
+      "absolute_row": 511963,
+      "valid": true,
+      "weight": 31
+    },
+    {
+      "source_index": 19,
+      "target_index": 4,
+      "absolute_row": 66568333,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 19,
+      "target_index": 8,
+      "absolute_row": 66568355,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 19,
+      "target_index": 11,
+      "absolute_row": 66568343,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 20,
+      "target_index": 13,
+      "absolute_row": 100617952,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 20,
+      "target_index": 14,
+      "absolute_row": 20765864,
+      "valid": true,
+      "weight": 3
+    },
+    {
+      "source_index": 21,
+      "target_index": 9,
+      "absolute_row": 330591,
+      "valid": true,
+      "weight": 40
+    },
+    {
+      "source_index": 21,
+      "target_index": 15,
+      "absolute_row": 7051257,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 21,
+      "target_index": 16,
+      "absolute_row": 25900032,
+      "valid": true,
+      "weight": 2
+    },
+    {
+      "source_index": 21,
+      "target_index": 17,
+      "absolute_row": 7051259,
+      "valid": true,
+      "weight": 5
+    },
+    {
+      "source_index": 21,
+      "target_index": 18,
+      "absolute_row": 330632,
+      "valid": true,
+      "weight": 40
+    },
+    {
+      "source_index": 22,
+      "target_index": 4,
+      "absolute_row": 2973907,
+      "valid": true,
+      "weight": 9
+    },
+    {
+      "source_index": 22,
+      "target_index": 5,
+      "absolute_row": 108091582,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 22,
+      "target_index": 12,
+      "absolute_row": 3487303,
+      "valid": true,
+      "weight": 8
+    },
+    {
+      "source_index": 22,
+      "target_index": 13,
+      "absolute_row": 8174916,
+      "valid": true,
+      "weight": 4
+    },
+    {
+      "source_index": 23,
+      "target_index": 2,
+      "absolute_row": 110020337,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 23,
+      "target_index": 9,
+      "absolute_row": 110020457,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 23,
+      "target_index": 13,
+      "absolute_row": 2519140,
+      "valid": true,
+      "weight": 10
+    },
+    {
+      "source_index": 23,
+      "target_index": 14,
+      "absolute_row": 110020522,
+      "valid": true,
+      "weight": 1
+    },
+    {
+      "source_index": 23,
+      "target_index": 18,
+      "absolute_row": 110020543,
+      "valid": true,
+      "weight": 1
+    }
+  ]
+}
