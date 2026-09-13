@@ -7,11 +7,24 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
+
+	"github.com/TimLai666/coimnet/internal/jsonkey"
 )
 
 // MaxJSONBytes bounds JSON values accepted by the public decoding helpers.
 const MaxJSONBytes int64 = 16 << 20
+
+// maxJSONDepth bounds nesting during the duplicate-key walk; json.Decoder.Token
+// itself has no nesting limit.
+const maxJSONDepth = 64
+
+type jsonPathPart struct {
+	key   string
+	index int
+	array bool
+}
 
 // decodeStrict decodes exactly one JSON value and rejects unknown fields and
 // any non-whitespace data after it.
@@ -67,7 +80,8 @@ func isNilReader(r io.Reader) bool {
 func rejectDuplicateKeys(data []byte) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
-	if err := scanJSONValue(decoder, "$"); err != nil {
+	var path []jsonPathPart
+	if err := scanJSONValue(decoder, &path); err != nil {
 		return err
 	}
 	if _, err := decoder.Token(); err != io.EOF {
@@ -79,7 +93,13 @@ func rejectDuplicateKeys(data []byte) error {
 	return nil
 }
 
-func scanJSONValue(decoder *json.Decoder, path string) error {
+// scanJSONValue walks one JSON value. The path is kept as a stack and only
+// formatted when an error is reported, so the walk allocates per key, not per
+// key times depth.
+func scanJSONValue(decoder *json.Decoder, path *[]jsonPathPart) error {
+	if len(*path) > maxJSONDepth {
+		return fmt.Errorf("JSON nesting exceeds %d levels at %s", maxJSONDepth, formatJSONPath(*path))
+	}
 	token, err := decoder.Token()
 	if err != nil {
 		return err
@@ -98,14 +118,17 @@ func scanJSONValue(decoder *json.Decoder, path string) error {
 			}
 			key, ok := keyToken.(string)
 			if !ok {
-				return fmt.Errorf("JSON object at %s has a non-string key", path)
+				return fmt.Errorf("JSON object at %s has a non-string key", formatJSONPath(*path))
 			}
-			folded := strings.ToLower(key)
+			folded := jsonkey.Fold(key)
 			if _, exists := seen[folded]; exists {
-				return fmt.Errorf("duplicate JSON field %q at %s", key, path)
+				return fmt.Errorf("duplicate JSON field %q at %s", key, formatJSONPath(*path))
 			}
 			seen[folded] = struct{}{}
-			if err := scanJSONValue(decoder, path+"."+key); err != nil {
+			*path = append(*path, jsonPathPart{key: key})
+			err = scanJSONValue(decoder, path)
+			*path = (*path)[:len(*path)-1]
+			if err != nil {
 				return err
 			}
 		}
@@ -114,12 +137,15 @@ func scanJSONValue(decoder *json.Decoder, path string) error {
 			return err
 		}
 		if end != json.Delim('}') {
-			return fmt.Errorf("JSON object at %s is not closed", path)
+			return fmt.Errorf("JSON object at %s is not closed", formatJSONPath(*path))
 		}
 	case '[':
 		index := 0
 		for decoder.More() {
-			if err := scanJSONValue(decoder, fmt.Sprintf("%s[%d]", path, index)); err != nil {
+			*path = append(*path, jsonPathPart{index: index, array: true})
+			err = scanJSONValue(decoder, path)
+			*path = (*path)[:len(*path)-1]
+			if err != nil {
 				return err
 			}
 			index++
@@ -129,10 +155,26 @@ func scanJSONValue(decoder *json.Decoder, path string) error {
 			return err
 		}
 		if end != json.Delim(']') {
-			return fmt.Errorf("JSON array at %s is not closed", path)
+			return fmt.Errorf("JSON array at %s is not closed", formatJSONPath(*path))
 		}
 	default:
-		return fmt.Errorf("unexpected JSON delimiter %q at %s", delim, path)
+		return fmt.Errorf("unexpected JSON delimiter %q at %s", delim, formatJSONPath(*path))
 	}
 	return nil
+}
+
+func formatJSONPath(path []jsonPathPart) string {
+	var builder strings.Builder
+	builder.WriteByte('$')
+	for _, part := range path {
+		if part.array {
+			builder.WriteByte('[')
+			builder.WriteString(strconv.Itoa(part.index))
+			builder.WriteByte(']')
+			continue
+		}
+		builder.WriteByte('.')
+		builder.WriteString(part.key)
+	}
+	return builder.String()
 }

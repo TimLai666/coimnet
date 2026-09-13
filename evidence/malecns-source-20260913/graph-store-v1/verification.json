@@ -1,0 +1,94 @@
+{
+  "schema_version": "coimnet-graph-store-verification/v1",
+  "command": "scripts/graph-evidence.sh evidence/malecns-source-20260913/graph-store-v1 data/malecns-v1.0/graph-v1.coimgraph",
+  "command_file": "evidence/malecns-source-20260913/graph-store-v1/command.txt",
+  "binary_sha256_file": "evidence/malecns-source-20260913/graph-store-v1/binary.sha256",
+  "manifest_sha256_file": "evidence/malecns-source-20260913/graph-store-v1/manifest.sha256",
+  "environment": "evidence/malecns-source-20260913/graph-store-v1/doctor.json",
+  "import": {
+    "started_at": "2026-09-13T14:35:56Z",
+    "finished_at": "2026-09-13T14:38:35Z",
+    "output": "evidence/malecns-source-20260913/graph-store-v1/import.json",
+    "log": "evidence/malecns-source-20260913/graph-store-v1/run.log",
+    "wall_seconds": 158.97,
+    "user_seconds": 149.49,
+    "sys_seconds": 6.77,
+    "max_resident_set_bytes": 2932719616,
+    "sort": {
+      "runs": 7,
+      "temp_bytes": 4108079877,
+      "reserved_peak_bytes": 4294967296,
+      "buffered_peak_bytes": 3829528665
+    },
+    "temporary_directory_after_run": "empty; removed"
+  },
+  "store": {
+    "path": "data/malecns-v1.0/graph-v1.coimgraph (outside git)",
+    "bytes": 664407846,
+    "sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+    "sha256_file": "evidence/malecns-source-20260913/graph-store-v1/store.sha256",
+    "footer_sha256": "425bea07dbba8d709878280da55511acea3187f92111a0291885ce0bddc9baeb",
+    "node_count": 165122,
+    "edge_count": 25563197,
+    "durability_confirmed": true,
+    "sections": [
+      {
+        "name": "node_ids",
+        "offset": 8,
+        "length": 1320976,
+        "sha256": "b73175a5e5c0646c5914964e49b6b5d35c4837472c707166a5a7319f1b6eeab8"
+      },
+      {
+        "name": "node_meta",
+        "offset": 1320984,
+        "length": 23979615,
+        "sha256": "90a532a85f36ea6d3fa748f54f2f633a8ae770a937648b08a2adf92f2d4ea8e4"
+      },
+      {
+        "name": "edges",
+        "offset": 25300599,
+        "length": 639079925,
+        "sha256": "4c1b0efe44c7ee422d8815edea855b9c7baadde44ea3d3b1a7bd05a20f0844fa"
+      },
+      {
+        "name": "batch_starts",
+        "offset": 664380524,
+        "length": 18544,
+        "sha256": "989809c33dc4d8d15272d6855f3f9746f2321d5346799fe2b6b246fb2359495f"
+      },
+      {
+        "name": "report",
+        "offset": 664399068,
+        "length": 6624,
+        "sha256": "f5fbdcbe68b667c55d2c011db74cd20284b6c7360f109dc6f723462e1aa65fc1"
+      }
+    ]
+  },
+  "validate": {
+    "started_at": "2026-09-13T14:38:35Z",
+    "finished_at": "2026-09-13T14:38:38Z",
+    "output": "evidence/malecns-source-20260913/graph-store-v1/validate.json",
+    "log": "evidence/malecns-source-20260913/graph-store-v1/validate.log",
+    "wall_seconds": 2.63,
+    "user_seconds": 2.52,
+    "sys_seconds": 0.13,
+    "max_resident_set_bytes": 752779264,
+    "verified": true,
+    "bytes": 664407846,
+    "sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+    "nodes": 165122,
+    "edges": 25563197,
+    "hashes_equal_to_import_report": true,
+    "report_equal_to_import_report": true
+  },
+  "cross_check": {
+    "node_index_hash_equals_graph_v1": true,
+    "edge_order_hash_equals_graph_v1": true,
+    "graph_v1": "evidence/malecns-source-20260913/graph-v1/report.json"
+  },
+  "limitations": [
+    "single measurement; uptime load averages 5.75 / 13.29 / 21.02 right after the run",
+    "the store keeps only the weights source path and fingerprint; StreamRawSegments after Load still needs the original file",
+    "macOS arm64 only"
+  ]
+}

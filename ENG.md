@@ -30,6 +30,9 @@
 - 已查證 Insyra v0.3.2 的 tape 沒有外部運算接合 API。使用兩段新建 tape：讀出損失產生核心上游梯度，手動時間回推取得編碼器輸出梯度，再用內積將梯度傳回編碼器。相關缺口追蹤 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。
 - 第一版快照明確命名為 `episode-training/v1`，每個訓練步驟重設神經狀態。資料由固定版本、seed 與樣本索引決定。此格式不表示已保存持續個體、延遲歷史、快速權重或化學狀態，後續完整狀態須用不同 schema。
 - 接線圖建構器只消費 manifest 明示的內容：官方欄位名稱、來源指紋、端點身份假設（含 evidence）、選取 predicate 與重複語意。未宣告身份時拒絕 annotated view；未宣告可加總分割時拒絕聚合。節點 canonical 順序為同一 namespace 內的數值遞增，索引寬度依節點數選 32／64 位元。endpoint、raw pair 與 annotated edge 三條統計都走 `internal/extsort` 的有界 run＋k-way merge，重複只計數不合併；raw view 不在記憶體保存 151M 列，改以重新讀取原件並前後比對指紋。manifest hash 排除本機路徑，結果識別以來源 SHA-256、predicate hash、converter version 與 node index／edge order hash 為準。
+- 圖儲存（`coimnet-graph-store/v1`）用自訂固定寬度區段加 JSON footer：`node_ids`、`node_meta`、`edges`、`batch_starts`、`report` 各有 offset／length／SHA-256，footer 另有 SHA-256 與 magic 尾記；檔案不含時間戳，同一張圖位元組相同。發布沿用 checkpoint 的暫存檔＋hardlink＋目錄同步語意（實作各自保有）。讀回逐段校驗並重算三個結果 hash，結構不合法（順序、索引、列號、非有限值）即使 hash 一致也拒絕。store 不複製 weights 原件，只保存路徑、指紋與掃描設定。
+- `LoadWithReceipt` 從同一個已開啟檔案取得通過校驗的位元組並計算整檔 SHA-256，CLI 不重新開啟路徑取 hash。載入回條不宣告寫入耐久性。圖陣列、metadata、字串暫存、footer／report 輸入長度及 strict decoder 輸入副本、五段讀取緩衝在配置前計入限制；乘積先檢查溢位，各項分開保留以避免加總溢位。此帳面限制不含 Go 配置餘量、解碼後 JSON 物件與執行環境，不能當成 RSS 上限。未知 converter 版本拒絕讀取。
+- 所有嚴格 JSON 入口限制 64 層路徑深度；重複鍵依 Unicode simple fold 比對，涵蓋 `encoding/json` 接受的大小寫別名。錯誤路徑使用堆疊，僅回報錯誤時組字串。
 - 數值反向使用平滑數學公式的解析導數。小步長的輸入係數用 `-Expm1(-dt/tau)` 計算，避免 `1-exp(...)` 消去有效數字。有限差分須選可解析的尺度，不能以浮點捨入後差分為零要求解析梯度歸零。
 
 ## 功能流程、錯誤與驗證責任
@@ -43,6 +46,7 @@
 | 05 保存並接續學習 | 新程序恢復與連續執行比較 | 損壞/未知版本/形狀/拓撲不符拒絕 | 不覆寫、原子寫入、並行衝突失敗、取消清理；參數/最佳化器/游標/隨機一致 |
 | 06 取得官方資料 | SDK/CLI 至暫存、校驗、原子發布與來源回條 | 缺少長度/ETag、過大、磁碟不足或內容不符拒絕 | 取消與中斷可續傳，來源改版或忽略 Range 拒絕拼接，並行/既有成果不覆寫 |
 | 07 讀取 Feather 原件 | SDK callback / CLI 逐批讀取及 schema 報告 | 錯格式、未知型別、重複欄位、損壞內容與容量超限拒絕 | 取消或 callback 錯誤結束並釋放資源，部分讀取不得標示完整；保留 int64、字典、list 與 null |
+| 09 保存並讀回接線圖 | `connectome.Save`／`Load`／`LoadWithReceipt` 與 CLI `data import --out-store`、`data validate` | 空圖可往返；零長度字串、null 欄位、null weight 保留；零或負限制、空路徑、nil／未初始化圖拒絕 | 目標已存在、父目錄缺、取消時不發布不留暫存；竄改區段／footer、截斷、錯 magic／版本、順序或索引不合法拒絕；檔案／footer／記憶體超限回 `ErrCapacity`；發布後目錄同步失敗回報耐久性未確認 |
 | 08 建立標準化接線圖 | `connectome.Build` 由 manifest 與三份原件產生兩個視圖與報告；CLI `data import` 輸出報告 | 空 rows／零選入節點產生空視圖與未定義比例；null／負 ID、缺註記、predicate false 各以單一原因排除；零／負限制、無效 manifest／predicate、缺身份證據、聚合無證據拒絕 | 指紋前後不符、schema／型別不符、NaN、容量、取消都不發布結果並清掉暫存；相同輸入與 predicate 重跑得到相同索引、順序與 hash；建構與匯出不共享可變切片 |
 
 每列對應單一 ticket 的驗收，測試由公開函式或命令進入，不針對私有實作逐函式寫鏡像測試。後續功能在實作前依原規格補相同檢查與可驗證 ticket。

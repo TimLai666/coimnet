@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/TimLai666/coimnet/internal/jsonkey"
 )
 
 const (
@@ -427,7 +429,7 @@ func scanJSONValue(decoder *json.Decoder, path *[]string) error {
 			if !ok {
 				return fmt.Errorf("object key at %s is not a string", formatJSONPath(*path))
 			}
-			folded := strings.ToLower(key)
+			folded := jsonkey.Fold(key)
 			if _, exists := seen[folded]; exists {
 				return fmt.Errorf("duplicate JSON key %q at %s", key, formatJSONPath(*path))
 			}

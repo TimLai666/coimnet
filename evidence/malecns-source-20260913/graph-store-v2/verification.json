@@ -1,0 +1,62 @@
+{
+  "schema_version": "coimnet-graph-store-verification/v2",
+  "source_verification": "evidence/cpu-reference-20260913/verification-v7.json",
+  "source_archive_sha256": "37f9f27ba1bd0bc823c5b155f4651c7574f99affe9555b23ff5509e13bea199d",
+  "input_bytes": 664407846,
+  "input_sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+  "node_count": 165122,
+  "edge_count": 25563197,
+  "platforms": {
+    "macos": {
+      "started_at": "2026-09-13T15:46:35Z",
+      "finished_at": "2026-09-13T15:46:49Z",
+      "uptime": "23:46  up 8 days,  5:25, 1 user, load averages: 2.01 2.52 3.17",
+      "validated": true,
+      "report_equals_original_import": true,
+      "roundtrip_same_bytes": true,
+      "independent_output_hashes_equal": true,
+      "original_input_unchanged": true,
+      "validate": {
+        "wall_seconds": 2.91,
+        "max_resident_set_bytes": 752107520,
+        "output": "evidence/malecns-source-20260913/graph-store-v2/macos/validate.json",
+        "log": "evidence/malecns-source-20260913/graph-store-v2/macos/validate.log"
+      },
+      "roundtrip": {
+        "wall_seconds": 6.3,
+        "max_resident_set_bytes": 1376894976,
+        "output": "evidence/malecns-source-20260913/graph-store-v2/macos/roundtrip.json",
+        "log": "evidence/malecns-source-20260913/graph-store-v2/macos/roundtrip.log"
+      }
+    },
+    "ubuntu": {
+      "started_at": "2026-09-13T15:47:10Z",
+      "finished_at": "2026-09-13T15:48:53Z",
+      "uptime": "23:47:10 up 7 days,  9:54,  5 users,  load average: 3.26, 2.05, 1.61",
+      "validated": true,
+      "report_equals_original_import": true,
+      "roundtrip_same_bytes": true,
+      "independent_output_hashes_equal": true,
+      "original_input_unchanged": true,
+      "validate": {
+        "wall_seconds": 34.05,
+        "max_resident_set_bytes": 747655168,
+        "output": "evidence/malecns-source-20260913/graph-store-v2/ubuntu/validate.json",
+        "log": "evidence/malecns-source-20260913/graph-store-v2/ubuntu/validate.log"
+      },
+      "roundtrip": {
+        "wall_seconds": 61.56,
+        "max_resident_set_bytes": 1363136512,
+        "output": "evidence/malecns-source-20260913/graph-store-v2/ubuntu/roundtrip.json",
+        "log": "evidence/malecns-source-20260913/graph-store-v2/ubuntu/roundtrip.log"
+      }
+    }
+  },
+  "limitations": [
+    "Single observation per command, no cache flush or isolated hosts; includes process startup and output, excludes compilation.",
+    "Mac Windows cross-compilation overlapped part of the observation. Hosts differ and timings are not a hardware-controlled comparison.",
+    "No training or GPU execution; Ubuntu raw source streaming was not tested because the original weights path is on Mac.",
+    "Large roundtrip output files remain outside Git in exclusive temporary workspaces."
+  ],
+  "helper_sha256": "fea52b42838330e48e0f765f6912e492ffa67b6ea91360a5ff07799e298cdd9a"
+}

@@ -1,0 +1,41 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/connectome"
+)
+
+func run() error {
+	if len(os.Args) != 3 {
+		return fmt.Errorf("usage: store-roundtrip INPUT_STORE NEW_OUTPUT_STORE")
+	}
+	ctx := context.Background()
+	graph, loaded, err := connectome.LoadWithReceipt(ctx, os.Args[1], connectome.StoreLimits{MaxFileBytes: 8 << 30, MaxFooterBytes: 16 << 20, MaxMemoryBytes: 4 << 30})
+	if err != nil {
+		return err
+	}
+	saved, err := connectome.Save(ctx, os.Args[2], graph)
+	if err != nil {
+		return err
+	}
+	if loaded.SHA256 != saved.SHA256 || loaded.Bytes != saved.Bytes {
+		return fmt.Errorf("roundtrip bytes differ: %s vs %s", loaded.SHA256, saved.SHA256)
+	}
+	return json.NewEncoder(os.Stdout).Encode(struct {
+		Load      connectome.StoreReceipt `json:"load"`
+		Save      connectome.StoreReceipt `json:"save"`
+		Hashes    connectome.ResultHashes `json:"hashes"`
+		SameBytes bool                    `json:"same_bytes"`
+	}{loaded, saved, graph.Report().Hashes, true})
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}

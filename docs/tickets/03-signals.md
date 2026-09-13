@@ -21,7 +21,7 @@ Status：partial
 - `Mapping` 只依 `namespace`／`external_id` 建立連續索引；JSON 保存順序與索引，可重建並用 `ValidateAgainst`／`ValidateShape` 檢查外部圖與維度，不依賴 connectome 套件。
 - 公開解碼入口拒絕 JSON 未知欄位及尾隨資料；建構、讀取與匯出均不共享可變切片。
 - 目前 schema 版本固定為 `1.0` 並拒絕未知 schema；encoder／model 版本是獨立的 `Version`，可使用任何正 major、非負 minor 的使用者版本。
-- 嚴格 JSON 入口同時拒絕大小寫別名重複欄位，並限制單一輸入為 `16 MiB`。
+- 嚴格 JSON 入口拒絕 Unicode 大小寫別名重複欄位，限制單一輸入為 `16 MiB`，巢狀路徑深度最多 64 層。掃描只保存路徑堆疊，遇到錯誤才組合訊息，避免深層長欄位名稱造成二次方配置。
 
 ## 驗收
 
@@ -40,4 +40,3 @@ Status：partial
 
 - 尚未實作完整媒體重取樣、不同頻率的媒體／神經時間對齊、分塊尾端處理，亦未提供因果與離線非因果前處理 adapter。`OrderSignals` 僅處理已在同一整數時間單位的事件排序，因此 SIG-02／SIG-05／SIG-06 不標示完成。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。
-- 待修：`signal/json.go` 的重複鍵掃描（`scanJSONValue`）沒有巢狀深度上限，且每層以字串串接保存路徑，深層巢狀輸入會造成二次方配置（16 MiB 上限下可達數十 GB）。`connectome/manifest.go` 已改為深度上限 64 加路徑堆疊，同一做法應套回 `signal`，並加深層巢狀的回歸測試。2026-09-13 對抗性審查發現。

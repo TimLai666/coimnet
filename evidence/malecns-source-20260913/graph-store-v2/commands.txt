@@ -1,0 +1,7 @@
+Mac: snapshot /private/tmp/coimnet-validate-v7.4fq7439g; build helper with go build -o results/store-roundtrip /private/tmp/coimnet-store-roundtrip-v7.go
+/usr/bin/time -l results/coimnet data validate --store /Users/timlai/Developer/coimnet/data/malecns-v1.0/graph-v1.coimgraph
+/usr/bin/time -l results/store-roundtrip /Users/timlai/Developer/coimnet/data/malecns-v1.0/graph-v1.coimgraph real-store-v7/roundtrip.coimgraph
+Ubuntu: workspace /tmp/coimnet-takeover.uUDfOju6; build same helper with Go 1.26.5 from source-v7
+/usr/bin/time -v results-v7/coimnet data validate --store graph-v1.coimgraph
+/usr/bin/time -v results-v7/store-roundtrip graph-v1.coimgraph real-store-v7/roundtrip.coimgraph
+Independent SHA-256 before/after each platform: input.sha256 and output.sha256. Source manifest and environment: cpu-reference-20260913/{macos-v7,ubuntu-v7}.

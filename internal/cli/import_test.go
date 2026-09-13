@@ -200,3 +200,110 @@ func TestDataImportFailuresAndHelp(t *testing.T) {
 		t.Fatalf("overview missing data import: %v\n%s", err, out.String())
 	}
 }
+
+func TestDataImportStoreAndValidateRoundTrip(t *testing.T) {
+	dir := importFixture(t)
+	store := filepath.Join(dir, "graph.coimgraph")
+	var out, errout bytes.Buffer
+	err := Run(context.Background(), []string{"data", "import", "--manifest", filepath.Join(dir, "manifest.json"), "--temp-dir", t.TempDir(), "--out-store", store}, &out, &errout)
+	if err != nil {
+		t.Fatalf("data import --out-store: %v; stderr=%s", err, errout.String())
+	}
+	var imported struct {
+		SchemaVersion string `json:"schema_version"`
+		Report        struct {
+			Hashes struct {
+				Report string `json:"report"`
+			} `json:"hashes"`
+		} `json:"report"`
+		Store struct {
+			Path                string `json:"path"`
+			Bytes               int64  `json:"bytes"`
+			SHA256              string `json:"sha256"`
+			NodeCount           uint64 `json:"node_count"`
+			EdgeCount           uint64 `json:"edge_count"`
+			DurabilityConfirmed bool   `json:"durability_confirmed"`
+		} `json:"store"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &imported); err != nil {
+		t.Fatalf("invalid import JSON: %v\n%s", err, out.String())
+	}
+	info, err := os.Stat(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if imported.SchemaVersion != "coimnet-graph-import/v1" || imported.Store.Path != store || imported.Store.Bytes != info.Size() || imported.Store.NodeCount != 2 || imported.Store.EdgeCount != 2 || !imported.Store.DurabilityConfirmed || len(imported.Store.SHA256) != 64 {
+		t.Fatalf("import output = %s", out.String())
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"data", "import", "--manifest", filepath.Join(dir, "manifest.json"), "--temp-dir", t.TempDir(), "--out-store", store}, &out, &errout); err == nil {
+		t.Fatal("second import overwrote the store")
+	}
+
+	out.Reset()
+	if err := Run(context.Background(), []string{"data", "validate", "--store", store}, &out, &errout); err != nil {
+		t.Fatalf("data validate: %v; stderr=%s", err, errout.String())
+	}
+	var validated struct {
+		SchemaVersion string `json:"schema_version"`
+		Bytes         int64  `json:"bytes"`
+		SHA256        string `json:"sha256"`
+		Nodes         uint64 `json:"nodes"`
+		Edges         uint64 `json:"edges"`
+		EdgeView      string `json:"edge_view"`
+		Verified      bool   `json:"verified"`
+		Hashes        struct {
+			Report string `json:"report"`
+		} `json:"hashes"`
+		Report struct {
+			SchemaVersion string `json:"schema_version"`
+		} `json:"report"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &validated); err != nil {
+		t.Fatalf("invalid validate JSON: %v\n%s", err, out.String())
+	}
+	if validated.SchemaVersion != "coimnet-graph-validate/v1" || validated.Bytes != info.Size() || validated.SHA256 != imported.Store.SHA256 || validated.Nodes != 2 || validated.Edges != 2 || validated.EdgeView != "rows" || !validated.Verified || validated.Hashes.Report != imported.Report.Hashes.Report || validated.Report.SchemaVersion != "coimnet-graph-report/v1" {
+		t.Fatalf("validate output = %s", out.String())
+	}
+
+	corrupt := filepath.Join(dir, "corrupt.coimgraph")
+	data, err := os.ReadFile(store)
+	if err != nil {
+		t.Fatal(err)
+	}
+	data[len(data)/2] ^= 0x01
+	if err := os.WriteFile(corrupt, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{
+		{"data", "validate"},
+		{"data", "validate", "--store", corrupt},
+		{"data", "validate", "--store", filepath.Join(dir, "absent.coimgraph")},
+		{"data", "validate", "--store", store, "--max-bytes", "10"},
+		{"data", "validate", "--store", store, "--max-memory-bytes", "0"},
+		{"data", "validate", "--store", store, "extra"},
+		{"data", "validate", "--unknown"},
+	} {
+		var out, errout bytes.Buffer
+		if err := Run(context.Background(), args, &out, &errout); err == nil {
+			t.Fatalf("accepted %v", args)
+		}
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"data", "validate", "--help"}, &out, &errout); err != nil {
+		t.Fatal(err)
+	}
+	for _, word := range []string{"--store", "max-bytes", "max-footer-bytes", "max-memory-bytes", "Example:", "Errors:"} {
+		if !strings.Contains(out.String(), word) {
+			t.Fatalf("validate help missing %s", word)
+		}
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"data", "import", "--help"}, &out, &errout); err != nil || !strings.Contains(out.String(), "out-store") {
+		t.Fatalf("import help missing out-store: %v", err)
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"--help"}, &out, &errout); err != nil || !strings.Contains(out.String(), "data validate") {
+		t.Fatalf("overview missing data validate: %v", err)
+	}
+}

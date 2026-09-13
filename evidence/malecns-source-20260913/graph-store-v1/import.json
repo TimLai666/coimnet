@@ -1,0 +1,245 @@
+{
+  "schema_version": "coimnet-graph-import/v1",
+  "report": {
+    "schema_version": "coimnet-graph-report/v1",
+    "converter_version": "coimnet-connectome-builder/v1",
+    "dataset": "MaleCNS",
+    "namespace": "malecns-v1.0",
+    "source_version": "v1.0",
+    "license": {
+      "name": "CC-BY-4.0",
+      "url": "https://creativecommons.org/licenses/by/4.0/"
+    },
+    "acquired_at": "2026-09-13T08:52:37.650737Z",
+    "manifest_hash": "567c490eb5440abd023e45046d4f758192bc8a2b00f94c87ecdc7bf97466cddc",
+    "edge_view": "rows",
+    "sources": [
+      {
+        "role": "weights",
+        "path": "data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "etag": "\"f30e9dcca25cfd021bf1e7b3d975599e\"",
+        "bytes": 1051241946,
+        "sha256": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+        "sha256_after": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+        "hash_status": "upstream_verified",
+        "fingerprint_stable": true,
+        "record_batches": 2318,
+        "rows": 151856684
+      },
+      {
+        "role": "annotations",
+        "path": "data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+        "etag": "\"50a7718770c57220f160ba4f431ab89e\"",
+        "bytes": 14483314,
+        "sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+        "sha256_after": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+        "hash_status": "upstream_verified",
+        "fingerprint_stable": true,
+        "record_batches": 4,
+        "rows": 211577
+      },
+      {
+        "role": "neurotransmitters",
+        "path": "data/malecns-v1.0/body-neurotransmitters-male-cns-v1.0.feather",
+        "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-neurotransmitters-male-cns-v1.0.feather",
+        "etag": "\"3d842b12fe5c49eefade528d7dd24a1f\"",
+        "bytes": 43282834,
+        "sha256": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+        "sha256_after": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+        "hash_status": "upstream_verified",
+        "fingerprint_stable": true,
+        "record_batches": 29,
+        "rows": 1835518
+      }
+    ],
+    "predicate": {
+      "canonical": "annotations.status == \"Traced\"",
+      "hash": "e32b911f73174731da7ea17a49f1dbef3dcd59831d15480c6a128cedd2b7bd4f",
+      "label": "engineering selection: annotation status exactly Traced; not a biological completeness claim"
+    },
+    "identity": {
+      "weights_endpoints_are_annotation_ids": true,
+      "neurotransmitter_ids_are_annotation_ids": true,
+      "evidence": "Engineering identity assumption: the official MaleCNS download page (https://male-cns.janelia.org/download/, checked 2026-09-13) describes the weights file as segment-to-segment connection strengths of the same v1.0 minconf-0.5 release whose per-body annotations and per-neuron aggregate neurotransmitter predictions are the other two files; body_pre/body_post, bodyId and body are all signed int64 body identifiers. The source value audit (evidence/malecns-source-20260913/graph-values-audit.json) found 165,122 status==Traced bodies with unique IDs and 25,563,197 weights rows whose two endpoints are both Traced bodies. This is not a measured biological mapping."
+    },
+    "raw_segments": {
+      "name": "raw_segments",
+      "rows": 151856684,
+      "source": {
+        "null_rows": 0,
+        "negative_rows": 0,
+        "zero_rows": 0
+      },
+      "target": {
+        "null_rows": 0,
+        "negative_rows": 0,
+        "zero_rows": 0
+      },
+      "weight": {
+        "null_rows": 0,
+        "negative_rows": 0,
+        "zero_rows": 0
+      },
+      "self_loop_rows": 123,
+      "unique_endpoints": 88384522,
+      "unannotated_unique_endpoints": 88192826,
+      "unannotated_endpoint_occurrences": 133806112,
+      "valid_pair_rows": 151856684,
+      "unique_pairs": 151856684,
+      "duplicate_pairs": 0,
+      "duplicate_rows": 0,
+      "weight_sum": {
+        "value": 311833243,
+        "rows": 151856684,
+        "null_rows": 0,
+        "valid": true,
+        "basis": "weight"
+      },
+      "duplicate_semantics": "unknown",
+      "aggregation": "not_permitted",
+      "transmitter": {
+        "rows": 1835518,
+        "unique_ids": 1835518,
+        "duplicate_rows": 0,
+        "null_ids": 0,
+        "invalid_ids": 0,
+        "consensus_status": "mapped",
+        "unknown_rows": 1671117,
+        "unknown_ratio": {
+          "numerator": 1671117,
+          "denominator": 1835518,
+          "value": 0.9104334580211145,
+          "defined": true,
+          "basis": "consensus_nt"
+        },
+        "unknown_definition": "null, empty or the token 'unclear' (case-insensitive) in the consensus column; nodes without a prediction row count as unknown in the annotated view"
+      }
+    },
+    "annotated_neurons": {
+      "name": "annotated_neurons",
+      "annotation_rows": 211577,
+      "nodes": 165122,
+      "edges": 25563197,
+      "annotation_exclusions": {
+        "null_id": 0,
+        "invalid_id": 0,
+        "duplicate_id": 0,
+        "predicate_false": 46455,
+        "predicate_field_null": 5472
+      },
+      "weight_exclusions": {
+        "null_endpoint": 0,
+        "invalid_id": 0,
+        "missing_annotation": 125828298,
+        "predicate_false": 465189
+      },
+      "unique_pairs": 25563197,
+      "duplicate_pairs": 0,
+      "duplicate_rows": 0,
+      "self_loops": 101,
+      "isolated_nodes": 535,
+      "weight_sum": {
+        "value": 124025046,
+        "rows": 25563197,
+        "null_rows": 0,
+        "valid": true,
+        "basis": "weight"
+      },
+      "transmitter": {
+        "status": "mapped",
+        "predicted": 161520,
+        "unknown": 3602,
+        "unknown_ratio": {
+          "numerator": 3602,
+          "denominator": 165122,
+          "value": 0.0218141737624302,
+          "defined": true,
+          "basis": "consensus_nt"
+        },
+        "unknown_definition": "null, empty or the token 'unclear' (case-insensitive) in the consensus column; nodes without a prediction row count as unknown in the annotated view",
+        "measured": "not_available"
+      },
+      "receptor": {
+        "status": "not_derived",
+        "label_status": "mapped",
+        "label_null_ratio": {
+          "numerator": 164370,
+          "denominator": 165122,
+          "value": 0.9954457915965165,
+          "defined": true,
+          "basis": "receptorType"
+        }
+      }
+    },
+    "hashes": {
+      "node_index": "01fede32784e999d459a2e555112fcdc2cc56b302b3a6d151e78f442d045a264",
+      "edge_order": "42256dd3b21549fb7fed112a1727d7abd8def48f0efe7fbe7227286f0c619bf7",
+      "report": "6c741ff41165f649630f7cdc38d559df7216fb9334e9af267a79e76fc85c7a8d"
+    },
+    "limits": {
+      "max_memory_bytes": 4294967296,
+      "max_temp_bytes": 17179869184,
+      "max_run_files": 256,
+      "max_arrow_bytes": 134217728,
+      "max_footer_bytes": 16777216,
+      "max_rows": 250000000
+    },
+    "sort": {
+      "runs": 7,
+      "temp_bytes": 4108079877,
+      "reserved_peak_bytes": 4294967296,
+      "buffered_peak_bytes": 3829528665
+    },
+    "limitations": [
+      "weight_sum and edge weights are the source raw values under the official column name; they are not synapse or contact count claims",
+      "the selection predicate is an explicit engineering rule recorded in the report; it does not establish biological completeness",
+      "duplicate pair semantics come from the manifest declaration; in rows mode no rows were merged, and aggregation is refused without additive evidence",
+      "transmitter fields are source predictions; no measured synaptic action, sign or receptor evidence is derived",
+      "endpoint identity between weights, annotations and predictions is a declared assumption with the cited evidence, not a verified biological mapping",
+      "memory accounting covers builder structures and sort buffers only, not process RSS; Arrow allocations are bounded separately by max_arrow_bytes"
+    ]
+  },
+  "store": {
+    "path": "data/malecns-v1.0/graph-v1.coimgraph",
+    "bytes": 664407846,
+    "sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+    "footer_sha256": "425bea07dbba8d709878280da55511acea3187f92111a0291885ce0bddc9baeb",
+    "node_count": 165122,
+    "edge_count": 25563197,
+    "sections": [
+      {
+        "name": "node_ids",
+        "offset": 8,
+        "length": 1320976,
+        "sha256": "b73175a5e5c0646c5914964e49b6b5d35c4837472c707166a5a7319f1b6eeab8"
+      },
+      {
+        "name": "node_meta",
+        "offset": 1320984,
+        "length": 23979615,
+        "sha256": "90a532a85f36ea6d3fa748f54f2f633a8ae770a937648b08a2adf92f2d4ea8e4"
+      },
+      {
+        "name": "edges",
+        "offset": 25300599,
+        "length": 639079925,
+        "sha256": "4c1b0efe44c7ee422d8815edea855b9c7baadde44ea3d3b1a7bd05a20f0844fa"
+      },
+      {
+        "name": "batch_starts",
+        "offset": 664380524,
+        "length": 18544,
+        "sha256": "989809c33dc4d8d15272d6855f3f9746f2321d5346799fe2b6b246fb2359495f"
+      },
+      {
+        "name": "report",
+        "offset": 664399068,
+        "length": 6624,
+        "sha256": "f5fbdcbe68b667c55d2c011db74cd20284b6c7360f109dc6f723462e1aa65fc1"
+      }
+    ],
+    "durability_confirmed": true
+  }
+}
