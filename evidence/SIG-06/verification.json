@@ -1,0 +1,34 @@
+{
+  "requirement": "SIG-06",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test ./signal -run 'TestResample|ExampleNewStreamingResampler' -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v14/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v14/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v14/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v14/source.sha256"
+  ],
+  "observed_result": "CausalHold and OfflineLinear modes are explicitly labeled. The realtime constructor rejects OfflineLinear. Changing future values from -1e100 to 1e100 leaves emitted causal prefix [2,2,2,2] unchanged. Offline interpolation yields [2,3,4,5,6,6,6] from the same declared source times. No future-window statistics are calculated. Chunk boundaries and tail handling preserve the causal result.",
+  "test_log": [
+    "evidence/signal-resampling-20260914/red.log",
+    "evidence/signal-resampling-20260914/interpolation-red.log",
+    "evidence/signal-resampling-20260914/final-green.log",
+    "evidence/cpu-reference-20260914/macos-v14/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v14/validation.log",
+    "evidence/signal-resampling-20260914/review-red.log",
+    "evidence/signal-resampling-20260914/complement-red.log"
+  ],
+  "limitations": [
+    "Only zero-duration continuous/activity/modulation point samples with fixed per-stream metadata and common zero origin.",
+    "Generic scalar/vector interpolation, not an audio codec, antialiasing filter, differentiable encoder, or biological time calibration.",
+    "Channels align independently; combining them into one Observation requires a declared shared source-sequence mapping not implemented here.",
+    "MaxValues bounds logical slots, not process RSS; no new throughput or training-resource measurement was performed.",
+    "Windows crosscompile passed; Windows runtime and GPU execution were not run."
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "schema_version": "coimnet-signal-resampling-evidence/v1",
+  "reproduction_command": [
+    "go test ./signal -run 'TestResample|ExampleNewStreamingResampler' -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v14/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v14/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v14/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v14/source.sha256"
+  ],
+  "fixture": "Deterministic point samples embedded in signal/resample_test.go, resample_edges_test.go, resample_example_test.go; exact event-selection oracle uses math/big independently of production bits arithmetic. Review regressions in signal/resample_review_test.go use exact rational values and an independent power-of-two scaling oracle.",
+  "observed_result": {
+    "result": "passed",
+    "source_files": 103,
+    "same_sources_on_mac_and_ubuntu": true,
+    "hand_values": {
+      "source_times": [
+        0,
+        2
+      ],
+      "source_values": [
+        2,
+        6
+      ],
+      "source_ticks_per_neural_step": "1/2",
+      "requested_steps": "[0,7)",
+      "causal_hold": [
+        2,
+        2,
+        2,
+        2,
+        6,
+        6,
+        6
+      ],
+      "offline_linear": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        6,
+        6
+      ]
+    },
+    "chunk_partitions": 8,
+    "simultaneous_rule": "source sequence ascending, last sample overwrites; group at exclusive watermark remains open",
+    "causal_future_values_tested": [
+      -1e+100,
+      1e+100
+    ],
+    "causal_prefix": [
+      2,
+      2,
+      2,
+      2
+    ],
+    "constant_valid_range_regression": "0.1 remains exactly 0.1; initial floating-point overshoot reproduced in interpolation-red.log and fixed",
+    "checks": [
+      "128-bit intermediate rational products against math/big",
+      "event selection above 2^53",
+      "shared output clock for ms and us sources",
+      "empty stream and leading gaps",
+      "explicit hold-last tail",
+      "late samples, duplicate/regressing source sequences and watermarks rejected",
+      "invalid metadata, unsupported point kinds, capacity and time overflow rejected",
+      "failed calls leave state retryable",
+      "offline mode rejected by streaming constructor",
+      "per-batch mode label",
+      "executable external-package Go example",
+      "all build/unit/race/vet/module checks on macOS and Ubuntu",
+      "three-seed controls and cross-process 80+40 versus 120 checkpoint equality on each platform",
+      "legal exclusive endpoint and empty horizon near int64 limits",
+      "large interpolation gaps preserve both endpoint contributions"
+    ]
+  },
+  "test_log": [
+    "evidence/signal-resampling-20260914/red.log",
+    "evidence/signal-resampling-20260914/interpolation-red.log",
+    "evidence/signal-resampling-20260914/final-green.log",
+    "evidence/cpu-reference-20260914/macos-v14/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v14/validation.log",
+    "evidence/signal-resampling-20260914/review-red.log",
+    "evidence/signal-resampling-20260914/complement-red.log"
+  ],
+  "requirements": {
+    "SIG-06": "passed",
+    "SIG-02": "partial; pulse/interval and full media semantics pending",
+    "SIG-05": "pending end-to-end custom adapter through neural core"
+  },
+  "limitations": [
+    "Only zero-duration continuous/activity/modulation point samples with fixed per-stream metadata and common zero origin.",
+    "Generic scalar/vector interpolation, not an audio codec, antialiasing filter, differentiable encoder, or biological time calibration.",
+    "Channels align independently; combining them into one Observation requires a declared shared source-sequence mapping not implemented here.",
+    "MaxValues bounds logical slots, not process RSS; no new throughput or training-resource measurement was performed.",
+    "Windows crosscompile passed; Windows runtime and GPU execution were not run."
+  ]
+}

@@ -10,7 +10,7 @@ Status：partial
 
 ## 交付
 
-提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序及可驗證映射。
+提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射及連續值時間點重取樣。
 
 ## 已完成
 
@@ -22,6 +22,8 @@ Status：partial
 - 公開解碼入口拒絕 JSON 未知欄位及尾隨資料；建構、讀取與匯出均不共享可變切片。
 - 目前 schema 版本固定為 `1.0` 並拒絕未知 schema；encoder／model 版本是獨立的 `Version`，可使用任何正 major、非負 minor 的使用者版本。
 - 嚴格 JSON 入口拒絕 Unicode 大小寫別名重複欄位，限制單一輸入為 `16 MiB`，巢狀路徑深度最多 64 層。掃描只保存路徑堆疊，遇到錯誤才組合訊息，避免深層長欄位名稱造成二次方配置。
+
+- `NewStreamingResampler` 與 `ResampleOffline` 提供整數比率時間對齊、因果保持與離線線性插值。兩個入口共用數值路徑，結果保留模式。使用者指南見 [訊號取樣](../signal-resampling.md)。
 
 ## 驗收
 
@@ -35,8 +37,24 @@ Status：partial
 
 - Red：在實作前執行 `go test ./signal`，因 `Version`、`Timestamp`、`SignalSpec` 等公開型別尚不存在而編譯失敗。
 - Green：實作後 `go test ./signal` 通過（所有 signal tests）；`go test -race ./signal` 通過；`go vet ./signal` 通過。
+- 重取樣：103 檔同源的 Mac／Ubuntu v14 建置、單元、race、vet、模組與跨程序恢復全部通過。13 組取樣測試及 Go example 的詳細結果見 [驗證](../../evidence/signal-resampling-20260914/verification.json)。SIG-06 附上 [fixture 證據](../../evidence/SIG-06/verification.json) 後標示通過。
+
+## 本次取樣契約與驗收
+
+輸入經 `Signal` 驗證、來源時間比率與 watermark 對齊後，輸出具神經時鐘的 `Signal`。持續時間為零的連續／活動／調節樣本才適用，同時群組以最大來源序號覆寫。以公開 API 與可執行 Go example 驗證，無資料庫或舊格式遷移。
+
+| 路徑 | 規則與測試 | 狀態 |
+| --- | --- | --- |
+| 模式與取值 | 0／2 ms 的 2／6，半毫秒位置的因果值 2、離線值 3／4／5；即時建構器拒絕離線模式 | Mac／Ubuntu 通過 |
+| 時間與形狀 | 44.1 比率、超過 float64 精確整數範圍、128 位元中間乘積，對照獨立大整數參考；時間戳溢位拒絕 | Mac／Ubuntu 通過 |
+| 同時樣本與分塊 | 同時序號 3 先於 2 到達，所有 8 種切塊結果一致；watermark 可重複，舊時間與序號拒絕 | Mac／Ubuntu 通過 |
+| 空值與結尾 | nil／空輸入產生空訊號，前段缺值省略，最後樣本保持至 EndStep；再次結束與結束後輸入拒絕 | Mac／Ubuntu 通過 |
+| 失敗與取消 | nil context、取消、錯 metadata／模式／單位、容量與來源順序錯誤不提交候選狀態，可重試 | Mac／Ubuntu 通過 |
+| 數值與資源 | 固定有效範圍不因插值擴張，正負極大有限端點不溢位；buffer、輸出步數與邏輯值數量先檢查 | Mac／Ubuntu 通過 |
+
+測試來源：`signal/resample_test.go`、`resample_edges_test.go` 與 `resample_example_test.go`。初始失敗日誌及後續結果見 `evidence/signal-resampling-20260914/`。
 
 ## 限制與未完成
 
-- 尚未實作完整媒體重取樣、不同頻率的媒體／神經時間對齊、分塊尾端處理，亦未提供因果與離線非因果前處理 adapter。`OrderSignals` 僅處理已在同一整數時間單位的事件排序，因此 SIG-02／SIG-05／SIG-06 不標示完成。
+- 跨頻率的連續值取樣與分塊已實作。區間訊號、脈衝事件對齊、媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。
