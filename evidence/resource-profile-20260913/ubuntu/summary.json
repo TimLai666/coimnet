@@ -1,0 +1,142 @@
+{
+  "schema_version": "coimnet-resource-profile/ubuntu/v1",
+  "measured_at_utc": "2026-09-13T09:51:41.568974+00:00",
+  "host": "tingzhen@100.79.146.102",
+  "binary": {
+    "path": "/tmp/coimnet-validation.irVFk8MV/results-v4/coimnet",
+    "sha256": "82581b24a363276e2aecd0cf3d8607f296b57e4219056f98fb2d0ec7d2972eb3",
+    "sha256_all_runs": [
+      "82581b24a363276e2aecd0cf3d8607f296b57e4219056f98fb2d0ec7d2972eb3"
+    ]
+  },
+  "source_archive_sha256": "b88dc61a1ce062a1f9ce93311e8252888f4293cd653667eda1c2988a23372141",
+  "source_archive_sha256_verified": false,
+  "source_archive_note": "The measurement did not verify the archive location or checksum. Root later verified source-v4.tgz and the binary; see root-verification.json.",
+  "doctor_evidence": "evidence/cpu-reference-20260913/ubuntu-v4/doctor.json",
+  "doctor_evidence_sha256": "243602a8837977e359fe5ee34210cdf0484a34b8da60080cc955c0c4cdba820a",
+  "environment": {
+    "uname": {
+      "system": "Linux",
+      "node": "ubuntuserver",
+      "release": "6.8.0-139-generic",
+      "version": "#139-Ubuntu SMP PREEMPT_DYNAMIC Sat Aug  1 03:52:05 UTC 2026",
+      "machine": "x86_64",
+      "processor": "x86_64"
+    },
+    "os_release": {
+      "PRETTY_NAME": "Ubuntu 24.04.4 LTS",
+      "NAME": "Ubuntu",
+      "VERSION_ID": "24.04",
+      "VERSION": "24.04.4 LTS (Noble Numbat)",
+      "VERSION_CODENAME": "noble",
+      "ID": "ubuntu",
+      "ID_LIKE": "debian",
+      "HOME_URL": "https://www.ubuntu.com/",
+      "SUPPORT_URL": "https://help.ubuntu.com/",
+      "BUG_REPORT_URL": "https://bugs.launchpad.net/ubuntu/",
+      "PRIVACY_POLICY_URL": "https://www.ubuntu.com/legal/terms-and-policies/privacy-policy",
+      "UBUNTU_CODENAME": "noble",
+      "LOGO": "ubuntu-logo"
+    },
+    "hostname": "ubuntuserver",
+    "python": "3.12.3 (main, Jul 15 2026, 23:46:41) [GCC 13.3.0]",
+    "logical_cpus": 4,
+    "gpu_execution": "not used; command is CPU delayed example"
+  },
+  "method": {
+    "runs": 3,
+    "independent_processes": true,
+    "command": "train delayed --steps 600 --checkpoint <new unique remote temp>/example.json",
+    "timed_command": "/usr/bin/time -v -o <run>/time-v.log <binary> train delayed --steps 600 --checkpoint <run>/example.json",
+    "wall_clock": "Python time.monotonic_ns around the timed child process",
+    "wall_unit": "seconds",
+    "peak_rss_source": "GNU /usr/bin/time -v Maximum resident set size (kbytes)",
+    "peak_rss_conversion": "kbytes * 1024 = bytes",
+    "checkpoint_policy": "new tempfile directory and example.json per run"
+  },
+  "runs": [
+    {
+      "run_number": 1,
+      "exit_code": 0,
+      "wall_seconds": 0.180201407,
+      "peak_rss_kb": 19700,
+      "peak_rss_bytes": 20172800,
+      "checkpoint": {
+        "path": "/tmp/coimnet-resource-profile-run-0omz5z0e/example.json",
+        "bytes": 1179,
+        "sha256": "31ca4d0a4c6f812f364619a51625c7bd1bbf89212a25ea38a04e940d64da3dcd"
+      },
+      "local_logs": {
+        "stdout": "run-01.stdout.log",
+        "stderr": "run-01.stderr.log",
+        "time_v": "run-01.time-v.log",
+        "raw": "run-01.raw.log",
+        "ssh_stdout": "run-01.ssh-stdout.log",
+        "ssh_stderr": "run-01.ssh-stderr.log"
+      }
+    },
+    {
+      "run_number": 2,
+      "exit_code": 0,
+      "wall_seconds": 0.144418002,
+      "peak_rss_kb": 19012,
+      "peak_rss_bytes": 19468288,
+      "checkpoint": {
+        "path": "/tmp/coimnet-resource-profile-run-bt72p2oe/example.json",
+        "bytes": 1179,
+        "sha256": "31ca4d0a4c6f812f364619a51625c7bd1bbf89212a25ea38a04e940d64da3dcd"
+      },
+      "local_logs": {
+        "stdout": "run-02.stdout.log",
+        "stderr": "run-02.stderr.log",
+        "time_v": "run-02.time-v.log",
+        "raw": "run-02.raw.log",
+        "ssh_stdout": "run-02.ssh-stdout.log",
+        "ssh_stderr": "run-02.ssh-stderr.log"
+      }
+    },
+    {
+      "run_number": 3,
+      "exit_code": 0,
+      "wall_seconds": 0.144173493,
+      "peak_rss_kb": 19500,
+      "peak_rss_bytes": 19968000,
+      "checkpoint": {
+        "path": "/tmp/coimnet-resource-profile-run-y0fqyib1/example.json",
+        "bytes": 1179,
+        "sha256": "31ca4d0a4c6f812f364619a51625c7bd1bbf89212a25ea38a04e940d64da3dcd"
+      },
+      "local_logs": {
+        "stdout": "run-03.stdout.log",
+        "stderr": "run-03.stderr.log",
+        "time_v": "run-03.time-v.log",
+        "raw": "run-03.raw.log",
+        "ssh_stdout": "run-03.ssh-stdout.log",
+        "ssh_stderr": "run-03.ssh-stderr.log"
+      }
+    }
+  ],
+  "aggregate": {
+    "wall_seconds_range": [
+      0.144173493,
+      0.180201407
+    ],
+    "wall_seconds_median": 0.144418002,
+    "peak_rss_kb_range": [
+      19012,
+      19700
+    ],
+    "peak_rss_bytes_range": [
+      19468288,
+      20172800
+    ],
+    "peak_rss_bytes_median": 19968000,
+    "peak_rss_bytes_max": 20172800
+  },
+  "limitations": [
+    "This is the artificial delayed training example only, not a whole-connectome graph workload.",
+    "The GPU was present in the existing doctor evidence but was not used by this CPU command.",
+    "The source archive SHA-256 was supplied by root and is recorded, not recomputed in this measurement.",
+    "GNU time reports the timed child process peak RSS; it is not a whole-host RSS trace."
+  ]
+}

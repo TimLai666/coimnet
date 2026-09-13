@@ -1,0 +1,33 @@
+{
+  "requirement": "DAT-02",
+  "ticket": "07",
+  "scope": "feather SDK local fixture verification",
+  "reproduction_command": "go test -count=1 ./feather",
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "github.com/apache/arrow/go/v17 v17.0.0"
+  ],
+  "input_fingerprints": [
+    {
+      "path": "feather/feather_test.go",
+      "sha256": "005a76cec057aa2acb39c2c9301ac16abea2f8977cb9f11f82b66f292b5244b3"
+    },
+    {
+      "path": "feather/reader.go",
+      "sha256": "4005585eaf80a4bb46e12b770a0c8b2899d84682130fbcd6df42102b96ab731e"
+    },
+    {
+      "path": "feather/validate.go",
+      "sha256": "15722d7427397d4eb77339658606dbe95a759b434d74471f222d1e865b16cf1f"
+    }
+  ],
+  "observed_result": "Generated Feather V2 fixtures passed schema, nullable value, list value, dictionary value, int64 and uint64 values above 2^53, compressed ZSTD decoding, callback retention, cancellation, callback error, malformed record, malformed footer, unsupported type, duplicate field, file/footer/Arrow/row limits, symlink, FIFO, and source immutability checks.",
+  "arrow_allocation_limit": "MaxArrowBytes accounts for bytes requested through the Arrow allocator, including decompression and temporary reallocation overlap; it is not process RSS.",
+  "test_log": [
+    "evidence/DAT-02/feather-sdk-test.log",
+    "evidence/DAT-02/feather-sdk-race.log",
+    "evidence/DAT-02/feather-sdk-vet.log"
+  ],
+  "limitations": "This artifact records the local SDK fixture run. Official-source scan, CLI integration, and cross-platform evidence are recorded by the parent integration run.",
+  "complete": false
+}

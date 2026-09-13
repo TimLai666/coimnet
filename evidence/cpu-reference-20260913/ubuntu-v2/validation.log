@@ -1,0 +1,48 @@
+COMMAND: go version
+go version go1.26.5 linux/amd64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+linux
+amd64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-13T08:27:39Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	0.517s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	0.006s
+ok  	github.com/TimLai666/coimnet/experiment	1.148s
+ok  	github.com/TimLai666/coimnet/internal/cli	2.281s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.005s
+ok  	github.com/TimLai666/coimnet/learning	0.069s
+ok  	github.com/TimLai666/coimnet/signal	0.062s
+COMMAND: go test -race -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	2.641s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	1.025s
+ok  	github.com/TimLai666/coimnet/experiment	4.544s
+ok  	github.com/TimLai666/coimnet/internal/cli	3.811s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.028s
+ok  	github.com/TimLai666/coimnet/learning	1.211s
+ok  	github.com/TimLai666/coimnet/signal	1.488s
+COMMAND: go vet ./...
+COMMAND: go build -o /tmp/coimnet-validation.irVFk8MV/results-v2/coimnet ./cmd/coimnet
+2026/09/13 16:28:00 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:28:00 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:28:00 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:28:01 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:28:01 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+COMMAND: cmp /tmp/coimnet-validation.irVFk8MV/results-v2/resumed.json /tmp/coimnet-validation.irVFk8MV/results-v2/continuous.json
+RESULT: all verification commands passed

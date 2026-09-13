@@ -1,0 +1,59 @@
+COMMAND: go version
+go version go1.26.5 darwin/arm64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+darwin
+arm64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-13T10:17:47Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.519s
+ok  	github.com/TimLai666/coimnet/checkpoint	0.884s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/download	2.250s
+ok  	github.com/TimLai666/coimnet/dynamics	1.454s
+ok  	github.com/TimLai666/coimnet/experiment	1.553s
+ok  	github.com/TimLai666/coimnet/feather	2.052s
+ok  	github.com/TimLai666/coimnet/internal/cli	5.029s
+ok  	github.com/TimLai666/coimnet/internal/fileio	2.106s
+ok  	github.com/TimLai666/coimnet/internal/sparse	2.978s
+ok  	github.com/TimLai666/coimnet/learning	2.981s
+ok  	github.com/TimLai666/coimnet/signal	2.757s
+COMMAND: go test -race -count=1 ./...
+ok  	github.com/TimLai666/coimnet	1.684s
+ok  	github.com/TimLai666/coimnet/checkpoint	2.723s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/download	3.705s
+ok  	github.com/TimLai666/coimnet/dynamics	2.292s
+ok  	github.com/TimLai666/coimnet/experiment	3.759s
+ok  	github.com/TimLai666/coimnet/feather	1.978s
+ok  	github.com/TimLai666/coimnet/internal/cli	5.799s
+ok  	github.com/TimLai666/coimnet/internal/fileio	3.464s
+ok  	github.com/TimLai666/coimnet/internal/sparse	3.456s
+ok  	github.com/TimLai666/coimnet/learning	2.462s
+ok  	github.com/TimLai666/coimnet/signal	2.734s
+COMMAND: go vet ./...
+COMMAND: go build -o /private/tmp/coimnet-validate-v5.x9225agv/results/coimnet ./cmd/coimnet
+2026/09/13 18:18:11 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 18:18:11 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 18:18:11 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 18:18:12 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 18:18:12 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 18:18:12 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+COMMAND: cmp /private/tmp/coimnet-validate-v5.x9225agv/results/resumed.json /private/tmp/coimnet-validate-v5.x9225agv/results/continuous.json
+RESULT: all verification commands passed

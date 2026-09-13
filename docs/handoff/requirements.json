@@ -1,0 +1,1721 @@
+{
+  "schema_version": "coimnet-handoff-requirements/v1",
+  "document_version": "1.0",
+  "as_of": "2026-09-11",
+  "status_semantics": "specified means required by the plan; it does not mean implemented or tested",
+  "implementation_status": "not_implemented_by_this_handoff",
+  "canonical_document": "CoImNet_Implementation_Plan.zh-TW.md",
+  "count": 85,
+  "requirements": [
+    {
+      "id": "GOV-01",
+      "group": "定位、依賴與交接",
+      "role": "維護者",
+      "requirement": "維護者可以核對完整需求及決策，並在既有工作目錄中安全接手。",
+      "acceptance": "有需求追蹤與決策紀錄；沒有未授權刪除、遠端寫入或範圍縮減。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-01/"
+    },
+    {
+      "id": "GOV-02",
+      "group": "定位、依賴與交接",
+      "role": "維護者",
+      "requirement": "維護者可以以 Go 與鎖定的 Insyra 版本建置專案。",
+      "acceptance": "依賴版本及提交可追溯；一般執行無 Python 必要依賴。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-02/"
+    },
+    {
+      "id": "GOV-03",
+      "group": "定位、依賴與交接",
+      "role": "開發者",
+      "requirement": "開發者可以在實際計算與資料工作中使用 Insyra。",
+      "acceptance": "列出真正使用的公開 API；核心反向路徑不中斷，不以外部主要引擎替代。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-03/"
+    },
+    {
+      "id": "GOV-04",
+      "group": "定位、依賴與交接",
+      "role": "使用者",
+      "requirement": "使用者可以閱讀準確的能力與研究限制。",
+      "acceptance": "初始化、人工圖、真實圖、工具輔助與核心能力清楚分開。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-04/"
+    },
+    {
+      "id": "GOV-05",
+      "group": "定位、依賴與交接",
+      "role": "維護者",
+      "requirement": "維護者可以依法整理程式、資料、模型及參考來源。",
+      "acceptance": "授權盤點可查；發布授權未確認時不公開發布。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-05/"
+    },
+    {
+      "id": "GOV-06",
+      "group": "定位、依賴與交接",
+      "role": "接手 agent",
+      "requirement": "接手 agent 可以從單一主文件完成實作與驗收。",
+      "acceptance": "README、API、例子、格式、來源、風險、需求證據齊備，不依賴原對話。",
+      "required": true,
+      "profile": "all",
+      "section": "01–04、19–22",
+      "work_package": "W01/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/GOV-06/"
+    },
+    {
+      "id": "DAT-01",
+      "group": "接線資料與匯入",
+      "role": "使用者",
+      "requirement": "使用者可以下載並檢查官方 MaleCNS 資料。",
+      "acceptance": "有版本、來源、大小、雜湊性質及完整下載／取消／續傳測試。",
+      "required": true,
+      "profile": "real-data",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-01/"
+    },
+    {
+      "id": "DAT-02",
+      "group": "接線資料與匯入",
+      "role": "使用者",
+      "requirement": "使用者可以直接匯入來源使用的 Feather 格式。",
+      "acceptance": "真實檔案 schema 與小型 fixture 均通過；錯版本或欄位不支援時拒絕。",
+      "required": true,
+      "profile": "real-data",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-02/"
+    },
+    {
+      "id": "DAT-03",
+      "group": "接線資料與匯入",
+      "role": "研究者",
+      "requirement": "研究者可以區分分段完整圖與選定神經元視圖。",
+      "acceptance": "報告選入、排除、未知端點、配對及接點數，不靠文宣數量修資料。",
+      "required": true,
+      "profile": "real-data",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-03/"
+    },
+    {
+      "id": "DAT-04",
+      "group": "接線資料與匯入",
+      "role": "使用者",
+      "requirement": "使用者可以保存無損外部 ID 與可逆內部索引。",
+      "acceptance": "大於浮點精確整數範圍的測試 ID 可往返，索引溢位會失敗。",
+      "required": true,
+      "profile": "fixture",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-04/"
+    },
+    {
+      "id": "DAT-05",
+      "group": "接線資料與匯入",
+      "role": "研究者",
+      "requirement": "研究者可以保留原始接點數並正確處理聚合。",
+      "acceptance": "重複、區域加總、總數重複、孤立及自我連線各有測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-05/"
+    },
+    {
+      "id": "DAT-06",
+      "group": "接線資料與匯入",
+      "role": "研究者",
+      "requirement": "研究者可以匯入獨立 FlyWire 實驗資料。",
+      "acceptance": "版本、ID 空間與映射獨立；禁止與 MaleCNS 無證據拼接。",
+      "required": true,
+      "profile": "real-data",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-06/"
+    },
+    {
+      "id": "DAT-07",
+      "group": "接線資料與匯入",
+      "role": "研究者",
+      "requirement": "研究者可以選取真實子圖而不改寫原始圖。",
+      "acceptance": "保存選取條件與指紋，對外結果明示子圖範圍。",
+      "required": true,
+      "profile": "real-subgraph",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-07/"
+    },
+    {
+      "id": "DAT-08",
+      "group": "接線資料與匯入",
+      "role": "使用者",
+      "requirement": "使用者可以在缺少生物欄位時保留未知狀態。",
+      "acceptance": "未知傳導物質／受體不被自動當成零或固定正負。",
+      "required": true,
+      "profile": "fixture",
+      "section": "05",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/DAT-08/"
+    },
+    {
+      "id": "SIG-01",
+      "group": "訊號與時間",
+      "role": "使用者",
+      "requirement": "使用者可以將多模態資料轉成具名且有版本的訊號。",
+      "acceptance": "至少處理連續、活動、脈衝與調節來源；型別、單位、形狀皆驗證。",
+      "required": true,
+      "profile": "fixture",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-01/"
+    },
+    {
+      "id": "SIG-02",
+      "group": "訊號與時間",
+      "role": "使用者",
+      "requirement": "使用者可以對齊不同頻率的串流。",
+      "acceptance": "神經、媒體與實際時間分離；亂序、同時事件、分塊與尾端處理可重現。",
+      "required": true,
+      "profile": "fixture",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-02/"
+    },
+    {
+      "id": "SIG-03",
+      "group": "訊號與時間",
+      "role": "研究者",
+      "requirement": "研究者可以將觀察、目標與事後回饋分開。",
+      "acceptance": "資料流測試證明目前答案不進入前向或調節控制器。",
+      "required": true,
+      "profile": "all",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-03/"
+    },
+    {
+      "id": "SIG-04",
+      "group": "訊號與時間",
+      "role": "使用者",
+      "requirement": "使用者可以保存與替換輸入輸出映射。",
+      "acceptance": "同一映射可重建；不存在的細胞或形狀不符要報錯。",
+      "required": true,
+      "profile": "fixture",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-04/"
+    },
+    {
+      "id": "SIG-05",
+      "group": "訊號與時間",
+      "role": "開發者",
+      "requirement": "開發者可以擴充編碼器與任務而不修改核心語意。",
+      "acceptance": "有一個自訂 adapter 的端到端範例與相容性測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-05/"
+    },
+    {
+      "id": "SIG-06",
+      "group": "訊號與時間",
+      "role": "研究者",
+      "requirement": "研究者可以選擇因果串流或離線非因果處理。",
+      "acceptance": "模式有標記；即時模式不能讀取未來資料或整段未來統計。",
+      "required": true,
+      "profile": "fixture",
+      "section": "06",
+      "work_package": "W02",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/SIG-06/"
+    },
+    {
+      "id": "COR-01",
+      "group": "神經核心與梯度",
+      "role": "使用者",
+      "requirement": "使用者可以分開保存解剖、基礎參數、個體及訓練器狀態。",
+      "acceptance": "重設一類狀態不影響其他類，原始圖指紋不因訓練改變。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-01/"
+    },
+    {
+      "id": "COR-02",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以執行可訓練的連續動態模型。",
+      "acceptance": "多步結果、步長收斂與平滑梯度檢查通過。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-02/"
+    },
+    {
+      "id": "COR-03",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以執行 LIF 模型。",
+      "acceptance": "漏電、放電、不應期、重設、延遲及突觸衰退時序可手算比對。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-03/"
+    },
+    {
+      "id": "COR-04",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以訓練基礎放電閾值並啟用短期適應與慢速穩定。",
+      "acceptance": "各項可獨立開關；閾值梯度、範圍、更新與任務影響有證據。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-04/"
+    },
+    {
+      "id": "COR-05",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以依神經元類型混合連續與脈衝規則。",
+      "acceptance": "跨類型傳訊與同步更新正確，不雙重計入輸出。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-05/"
+    },
+    {
+      "id": "COR-06",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以使用純量或多維節點與共享或逐項參數。",
+      "acceptance": "形狀與共享梯度正確；不同容量分開報告。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-06/"
+    },
+    {
+      "id": "COR-07",
+      "group": "神經核心與梯度",
+      "role": "使用者",
+      "requirement": "使用者可以以稀疏格式計算真實連線。",
+      "acceptance": "手算三節點與小型稠密參考一致；全圖不建立 N×N 矩陣。",
+      "required": true,
+      "profile": "fixture/male-full",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-07/"
+    },
+    {
+      "id": "COR-08",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以取得核心及外圍完整路徑梯度。",
+      "acceptance": "連續模型有限差分、核心非零更新、輸入／輸出梯度及凍結對照通過。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-08/"
+    },
+    {
+      "id": "COR-09",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以用宣告的替代梯度訓練脈衝網路。",
+      "acceptance": "前向硬事件與反向近似分開驗證，不用錯誤有限差分判準。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-09/"
+    },
+    {
+      "id": "COR-10",
+      "group": "神經核心與梯度",
+      "role": "使用者",
+      "requirement": "使用者可以限制可更新參數、符號與數值範圍。",
+      "acceptance": "遮罩涵蓋動量及權重衰減；快速變化不翻轉受限作用符號。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-10/"
+    },
+    {
+      "id": "COR-11",
+      "group": "神經核心與梯度",
+      "role": "研究者",
+      "requirement": "研究者可以施加具名細胞與通道干預。",
+      "acceptance": "干預開始、結束、對象與效果可追查，正常推論不能任意鉗制狀態。",
+      "required": true,
+      "profile": "fixture",
+      "section": "07–09",
+      "work_package": "W03/W04",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/COR-11/"
+    },
+    {
+      "id": "LRN-01",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以執行完整及有限時間窗的反向訓練。",
+      "acceptance": "保留狀態與切斷梯度分開，人工跨時間任務可學。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-01/"
+    },
+    {
+      "id": "LRN-02",
+      "group": "訓練與持續學習",
+      "role": "使用者",
+      "requirement": "使用者可以以重算降低反向歷史記憶體。",
+      "acceptance": "與完整歷史參考一致，無重複學習、重複隨機事件或教師呼叫。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-02/"
+    },
+    {
+      "id": "LRN-03",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以使用完整損失與最佳化器流程。",
+      "acceptance": "損失縮放、梯度累積、裁切、排程與最佳化器恢復皆測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-03/"
+    },
+    {
+      "id": "LRN-04",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以比較活動相關與脈衝時序相關的局部更新。",
+      "acceptance": "各規則有方程式、限制與前後時序測試，不以名稱代替實作。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-04/"
+    },
+    {
+      "id": "LRN-05",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以使用近期參與紀錄與調節控制的可塑性。",
+      "acceptance": "延遲回饋、閘門關閉、衰退與更新順序均有數值測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-05/"
+    },
+    {
+      "id": "LRN-06",
+      "group": "訓練與持續學習",
+      "role": "使用者",
+      "requirement": "使用者可以在運行中依新經驗學習。",
+      "acceptance": "推論、回饋與更新分開；輸出不被後到教師回應回寫。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-06/"
+    },
+    {
+      "id": "LRN-07",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以使用受限容量的重播與長期狀態。",
+      "acceptance": "容量、取樣、刪除政策、狀態保留與不重播對照皆可查。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-07/"
+    },
+    {
+      "id": "LRN-08",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以衡量先學 A 再學 B 後的保持與適應。",
+      "acceptance": "產生完整階段矩陣，所有 seed 與失敗執行均保留。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-08/"
+    },
+    {
+      "id": "LRN-09",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以完成專家模仿與行動回饋學習。",
+      "acceptance": "至少一套完整算法可在環境改善；遞迴狀態、策略版本及回饋時間一致。",
+      "required": true,
+      "profile": "fixture",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-09/"
+    },
+    {
+      "id": "LRN-10",
+      "group": "訓練與持續學習",
+      "role": "研究者",
+      "requirement": "研究者可以進行不污染保留資料的適應性評估。",
+      "acceptance": "預先宣告可用回饋、適應／評分分割與狀態重設政策。",
+      "required": true,
+      "profile": "all",
+      "section": "10",
+      "work_package": "W04/W05/W09",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/LRN-10/"
+    },
+    {
+      "id": "MOD-01",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以選擇外部、神經、控制器、身體或重播來源。",
+      "acceptance": "每種來源都有實際執行路徑；目前測試答案不流入來源。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-01/"
+    },
+    {
+      "id": "MOD-02",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以運行有時間衰退的區域調節狀態。",
+      "acceptance": "非負濃度、穩態、清除、單位及中性狀態有參考測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-02/"
+    },
+    {
+      "id": "MOD-03",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以設定選擇性接收端與反應曲線。",
+      "acceptance": "未知／無反應／假設分離，飽和與極端數值穩定。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-03/"
+    },
+    {
+      "id": "MOD-04",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以調節當下敏感度及有效閾值。",
+      "acceptance": "中性值與未啟用相同；基礎參數不被暫時效果永久覆寫。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-04/"
+    },
+    {
+      "id": "MOD-05",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以調節局部學習與記錄的時間窗。",
+      "acceptance": "閘門、衰退、延遲回饋與關閉效果分開驗證。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-05/"
+    },
+    {
+      "id": "MOD-06",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以控制記憶表現及較慢狀態的寫入。",
+      "acceptance": "不誤算為永久學習；重複寫入防護與恢復測試通過。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-06/"
+    },
+    {
+      "id": "MOD-07",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以訓練小型調節控制器。",
+      "acceptance": "梯度路徑及容量可查；無題目旁路，具容量匹配對照。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-07/"
+    },
+    {
+      "id": "MOD-08",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以將獎懲與內在需求映射為調節輸入。",
+      "acceptance": "原始回饋不可被模型修改；負回饋不當成負濃度。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-08/"
+    },
+    {
+      "id": "MOD-09",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以執行有來源的生物啟發干預。",
+      "acceptance": "至少時機與記憶表現兩種協定；人工數值不標為定量生物重現。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-09/"
+    },
+    {
+      "id": "MOD-10",
+      "group": "化學與荷爾蒙調節",
+      "role": "研究者",
+      "requirement": "研究者可以比較調節作用與較簡單替代模型。",
+      "acceptance": "無調節、直接獎懲、固定規則、可訓練與容量匹配組均有實驗流程。",
+      "required": true,
+      "profile": "fixture",
+      "section": "11",
+      "work_package": "W06",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/MOD-10/"
+    },
+    {
+      "id": "TCH-01",
+      "group": "教師與蒸餾",
+      "role": "使用者",
+      "requirement": "使用者可以使用離線標籤與 JSONL 教師。",
+      "acceptance": "沒有網路及金鑰也能訓練與重播，保留教師與輸入版本。",
+      "required": true,
+      "profile": "fixture",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-01/"
+    },
+    {
+      "id": "TCH-02",
+      "group": "教師與蒸餾",
+      "role": "使用者",
+      "requirement": "使用者可以設定經允許的 HTTP 教師。",
+      "acceptance": "有逾時、有限重試、限速、預算、去重及測試伺服器驗證。",
+      "required": true,
+      "profile": "fixture/service",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-02/"
+    },
+    {
+      "id": "TCH-03",
+      "group": "教師與蒸餾",
+      "role": "研究者",
+      "requirement": "研究者可以以教師答案或行動序列蒸餾。",
+      "acceptance": "學生使用自己的編碼；訓練與保留資料分開。",
+      "required": true,
+      "profile": "fixture",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-03/"
+    },
+    {
+      "id": "TCH-04",
+      "group": "教師與蒸餾",
+      "role": "研究者",
+      "requirement": "研究者可以在合法對齊下做分布蒸餾。",
+      "acceptance": "詞表、溫度、縮放與 top-k 限制驗證；不相容時拒絕。",
+      "required": true,
+      "profile": "fixture",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-04/"
+    },
+    {
+      "id": "TCH-05",
+      "group": "教師與蒸餾",
+      "role": "研究者",
+      "requirement": "研究者可以完全移除教師評估學生。",
+      "acceptance": "學生評估封鎖教師與網路，結果與常駐教師模式分開。",
+      "required": true,
+      "profile": "all",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-05/"
+    },
+    {
+      "id": "TCH-06",
+      "group": "教師與蒸餾",
+      "role": "使用者",
+      "requirement": "使用者可以安全處理教師及外部工具的內容。",
+      "acceptance": "回應當資料，不執行內文指令，不外傳未授權欄位或更改安全設定。",
+      "required": true,
+      "profile": "fixture",
+      "section": "12",
+      "work_package": "W07",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TCH-06/"
+    },
+    {
+      "id": "TSK-01",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以訓練、推論與評估 OCR 文字序列。",
+      "acceptance": "單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-01/"
+    },
+    {
+      "id": "TSK-02",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以訓練、推論與評估語音轉文字。",
+      "acceptance": "整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-02/"
+    },
+    {
+      "id": "TSK-03",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以訓練並由核心生成文字。",
+      "acceptance": "因果前綴、結束條件、採樣與 UTF-8 正確，保留語料與教師移除評估可執行。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-03/"
+    },
+    {
+      "id": "TSK-04",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以由核心產生文字條件影像。",
+      "acceptance": "核心生成表示或像素，解碼器無提示旁路，有保留條件與容量對照。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-04/"
+    },
+    {
+      "id": "TSK-05",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以由核心產生文字條件音訊。",
+      "acceptance": "音訊區塊可還原、取樣率與長度正確，有保留條件測試。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-05/"
+    },
+    {
+      "id": "TSK-06",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以由核心產生文字條件影片與同步音訊。",
+      "acceptance": "影格序列、音訊與時間線完整；時間變化、同步及依賴失敗可驗證。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-06/"
+    },
+    {
+      "id": "TSK-07",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以比較固定還原器及外部影音工具模式。",
+      "acceptance": "模型與角色可查，工具結果不計為核心自身生成能力。",
+      "required": true,
+      "profile": "fixture/service",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-07/"
+    },
+    {
+      "id": "TSK-08",
+      "group": "任務與多模態",
+      "role": "研究者",
+      "requirement": "研究者可以在二維空間環境訓練導航及位置記憶。",
+      "acceptance": "有限觀察、隱藏狀態、碰撞、轉向、目標記憶與新地圖測試完整。",
+      "required": true,
+      "profile": "fixture",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-08/"
+    },
+    {
+      "id": "TSK-09",
+      "group": "任務與多模態",
+      "role": "研究者",
+      "requirement": "研究者可以讓多個模態與任務共用同一核心。",
+      "acceptance": "模型與狀態指紋可查，不為各任務暗建獨立核心。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-09/"
+    },
+    {
+      "id": "TSK-10",
+      "group": "任務與多模態",
+      "role": "研究者",
+      "requirement": "研究者可以建立配對、缺失與非同步多模態資料。",
+      "acceptance": "實體 ID 不直接成答案；缺失與零值分離；配對與未見組合可評估。",
+      "required": true,
+      "profile": "fixture",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-10/"
+    },
+    {
+      "id": "TSK-11",
+      "group": "任務與多模態",
+      "role": "使用者",
+      "requirement": "使用者可以將有授權的真實任務資料帶入框架。",
+      "acceptance": "每類任務皆有實際匯入、訓練、推論與評估，不只介面或人工例子。",
+      "required": true,
+      "profile": "real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-11/"
+    },
+    {
+      "id": "TSK-12",
+      "group": "任務與多模態",
+      "role": "研究者",
+      "requirement": "研究者可以比較核心、外圍與接線本身的貢獻。",
+      "acceptance": "凍結、移除後重訓、重新接線、一般網路與預算匹配對照可執行。",
+      "required": true,
+      "profile": "fixture/real-data",
+      "section": "13–14",
+      "work_package": "W08/W09/W10/W11",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/TSK-12/"
+    },
+    {
+      "id": "STA-01",
+      "group": "保存與安全",
+      "role": "使用者",
+      "requirement": "使用者可以分別匯出模型包、個體快照與訓練快照。",
+      "acceptance": "三者含正確資料，只有權重的檔案不得稱完整恢復。",
+      "required": true,
+      "profile": "fixture",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-01/"
+    },
+    {
+      "id": "STA-02",
+      "group": "保存與安全",
+      "role": "使用者",
+      "requirement": "使用者可以在安全同步點保存快照。",
+      "acceptance": "中斷寫入不可被恢復；檔案校驗、版本與形狀不符均報錯。",
+      "required": true,
+      "profile": "fixture",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-02/"
+    },
+    {
+      "id": "STA-03",
+      "group": "保存與安全",
+      "role": "使用者",
+      "requirement": "使用者可以從中斷處精確接續參考訓練。",
+      "acceptance": "同環境與連續執行對照，包含隨機、資料、快速權重、化學與最佳化器。",
+      "required": true,
+      "profile": "fixture",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-03/"
+    },
+    {
+      "id": "STA-04",
+      "group": "保存與安全",
+      "role": "使用者",
+      "requirement": "使用者可以由同一基礎模型建立隔離個體。",
+      "acceptance": "一個體的學習不影響另一個體，含競態與共享記憶體測試。",
+      "required": true,
+      "profile": "fixture",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-04/"
+    },
+    {
+      "id": "STA-05",
+      "group": "保存與安全",
+      "role": "維護者",
+      "requirement": "維護者可以安全遷移外部格式。",
+      "acceptance": "不覆寫原檔，有相容性檢查與資訊損失報告。",
+      "required": true,
+      "profile": "fixture",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-05/"
+    },
+    {
+      "id": "STA-06",
+      "group": "保存與安全",
+      "role": "使用者",
+      "requirement": "使用者可以限制原始內容、金鑰與重播資料的保存與外傳。",
+      "acceptance": "日誌遮罩、資料路徑及提交掃描，預設無外傳。",
+      "required": true,
+      "profile": "all",
+      "section": "15",
+      "work_package": "W05/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/STA-06/"
+    },
+    {
+      "id": "OPS-01",
+      "group": "介面、平台與規模",
+      "role": "使用者",
+      "requirement": "使用者可以以 SDK 執行核心工作並取消長任務。",
+      "acceptance": "API 例子可執行，錯誤不 panic，取消後釋放資源。",
+      "required": true,
+      "profile": "fixture",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-01/"
+    },
+    {
+      "id": "OPS-02",
+      "group": "介面、平台與規模",
+      "role": "使用者",
+      "requirement": "使用者可以以 CLI 完成資料、模型、訓練、恢復、評估與報告。",
+      "acceptance": "每個命令有端到端與失敗測試；沒有固定假輸出。",
+      "required": true,
+      "profile": "fixture",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-02/"
+    },
+    {
+      "id": "OPS-03",
+      "group": "介面、平台與規模",
+      "role": "使用者",
+      "requirement": "使用者可以取得嚴格驗證且全部展開的組態。",
+      "acceptance": "未知欄位拒絕，覆寫順序與來源可查，dry-run 不學習不呼叫教師。",
+      "required": true,
+      "profile": "fixture",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-03/"
+    },
+    {
+      "id": "OPS-04",
+      "group": "介面、平台與規模",
+      "role": "使用者",
+      "requirement": "使用者可以在目標平台使用 CPU 參考路徑。",
+      "acceptance": "各平台編譯與實際執行分開標記；至少有參考環境的完整測試。",
+      "required": true,
+      "profile": "cpu-platforms",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-04/"
+    },
+    {
+      "id": "OPS-05",
+      "group": "介面、平台與規模",
+      "role": "研究者",
+      "requirement": "研究者可以使用可驗證的裝置稀疏前向與反向。",
+      "acceptance": "與 CPU 比對、裝置更新／恢復測試及實際量測；未測不標通過。",
+      "required": true,
+      "profile": "device",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-05/"
+    },
+    {
+      "id": "OPS-06",
+      "group": "介面、平台與規模",
+      "role": "使用者",
+      "requirement": "使用者可以在啟動前檢查記憶體與資源上限。",
+      "acceptance": "計算包含邊狀態歷史與外圍模型；不足時拒絕，不自動縮減。",
+      "required": true,
+      "profile": "fixture/male-full",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-06/"
+    },
+    {
+      "id": "OPS-07",
+      "group": "介面、平台與規模",
+      "role": "研究者",
+      "requirement": "研究者可以執行完整主要圖的短訓練與保存恢復。",
+      "acceptance": "真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體有證據。",
+      "required": true,
+      "profile": "male-full",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-07/"
+    },
+    {
+      "id": "OPS-08",
+      "group": "介面、平台與規模",
+      "role": "研究者",
+      "requirement": "研究者可以重現效能與活動量報告。",
+      "acceptance": "初始化、傳輸、暖機及穩態分開；無功率量測不宣稱能耗。",
+      "required": true,
+      "profile": "fixture/device/male-full",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-08/"
+    },
+    {
+      "id": "OPS-09",
+      "group": "介面、平台與規模",
+      "role": "維護者",
+      "requirement": "維護者可以以自動測試防止資料、數值與安全退步。",
+      "acceptance": "格式、編譯、單元、race、vet、相依性及破損輸入測試可重跑。",
+      "required": true,
+      "profile": "all",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-09/"
+    },
+    {
+      "id": "OPS-10",
+      "group": "介面、平台與規模",
+      "role": "接手者",
+      "requirement": "接手者可以從乾淨環境重跑全部已宣稱能力。",
+      "acceptance": "命令、設定、來源、硬體與證據齊全；缺少項目明示受阻。",
+      "required": true,
+      "profile": "all",
+      "section": "16–18",
+      "work_package": "W12/W13/W14",
+      "status": "specified",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/OPS-10/"
+    }
+  ],
+  "allowed_statuses": [
+    "specified",
+    "implemented_unverified",
+    "passed",
+    "failed",
+    "blocked_hardware",
+    "blocked_data",
+    "blocked_permission"
+  ],
+  "pass_rule": "Every passed item must include actual evidence; conditional profiles cannot be silently removed."
+}

@@ -1,0 +1,67 @@
+COMMAND: go version
+go version go1.26.5 linux/amd64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+linux
+amd64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-13T09:26:44Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+go: downloading github.com/apache/arrow/go/v17 v17.0.0
+go: downloading golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597
+go: downloading golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
+go: downloading github.com/google/flatbuffers v25.12.19+incompatible
+go: downloading github.com/klauspost/compress v1.19.0
+go: downloading github.com/pierrec/lz4/v4 v4.1.27
+go: downloading github.com/zeebo/xxh3 v1.1.0
+go: downloading github.com/klauspost/cpuid/v2 v2.4.0
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.034s
+ok  	github.com/TimLai666/coimnet/checkpoint	0.557s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/download	3.055s
+ok  	github.com/TimLai666/coimnet/dynamics	0.003s
+ok  	github.com/TimLai666/coimnet/experiment	1.360s
+ok  	github.com/TimLai666/coimnet/feather	0.021s
+ok  	github.com/TimLai666/coimnet/internal/cli	3.835s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.007s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.004s
+ok  	github.com/TimLai666/coimnet/learning	0.049s
+ok  	github.com/TimLai666/coimnet/signal	0.062s
+COMMAND: go test -race -count=1 ./...
+ok  	github.com/TimLai666/coimnet	1.123s
+ok  	github.com/TimLai666/coimnet/checkpoint	3.074s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/download	3.742s
+ok  	github.com/TimLai666/coimnet/dynamics	1.033s
+ok  	github.com/TimLai666/coimnet/experiment	4.503s
+ok  	github.com/TimLai666/coimnet/feather	1.082s
+ok  	github.com/TimLai666/coimnet/internal/cli	4.515s
+ok  	github.com/TimLai666/coimnet/internal/fileio	1.032s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.021s
+ok  	github.com/TimLai666/coimnet/learning	1.126s
+ok  	github.com/TimLai666/coimnet/signal	1.304s
+COMMAND: go vet ./...
+COMMAND: go build -o /tmp/coimnet-validation.irVFk8MV/results-v4/coimnet ./cmd/coimnet
+2026/09/13 17:27:48 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 17:27:48 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 17:27:48 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 17:27:49 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 17:27:49 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 17:27:49 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+COMMAND: cmp /tmp/coimnet-validation.irVFk8MV/results-v4/resumed.json /tmp/coimnet-validation.irVFk8MV/results-v4/continuous.json
+RESULT: all verification commands passed

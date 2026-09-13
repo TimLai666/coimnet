@@ -1,0 +1,48 @@
+COMMAND: go version
+go version go1.26.5 darwin/arm64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+darwin
+arm64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-13T08:27:40Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	1.262s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	0.378s
+ok  	github.com/TimLai666/coimnet/experiment	1.126s
+ok  	github.com/TimLai666/coimnet/internal/cli	4.536s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.460s
+ok  	github.com/TimLai666/coimnet/learning	1.889s
+ok  	github.com/TimLai666/coimnet/signal	2.644s
+COMMAND: go test -race -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	3.759s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	1.387s
+ok  	github.com/TimLai666/coimnet/experiment	3.995s
+ok  	github.com/TimLai666/coimnet/internal/cli	4.560s
+ok  	github.com/TimLai666/coimnet/internal/sparse	3.347s
+ok  	github.com/TimLai666/coimnet/learning	3.793s
+ok  	github.com/TimLai666/coimnet/signal	1.816s
+COMMAND: go vet ./...
+COMMAND: go build -o /private/tmp/coimnet-validate-v2.n6IR6Y/results/coimnet ./cmd/coimnet
+2026/09/13 16:27:57 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:27:57 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:27:57 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:27:57 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+2026/09/13 16:27:57 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+COMMAND: cmp /private/tmp/coimnet-validate-v2.n6IR6Y/results/resumed.json /private/tmp/coimnet-validate-v2.n6IR6Y/results/continuous.json
+RESULT: all verification commands passed

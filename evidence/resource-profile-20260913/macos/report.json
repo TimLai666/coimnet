@@ -1,0 +1,135 @@
+{
+  "schema_version": "coimnet-resource-profile/v1",
+  "source_archive_sha256": "b88dc61a1ce062a1f9ce93311e8252888f4293cd653667eda1c2988a23372141",
+  "binary_sha256": "f826741dc2713c06d1272b2e431b3bfa09da0187158d42e33744efca28b2d94f",
+  "environment": "evidence/cpu-reference-20260913/macos-v4/doctor.json",
+  "method": "Three fresh child processes per workload. Wall time includes process launch and output/checkpoint IO. macOS /usr/bin/time -l maximum resident set size is bytes. OS file cache not flushed; other desktop tasks may run. CPU execution only. No build time. No whole-graph training.",
+  "runs": [
+    {
+      "name": "train-delayed",
+      "trial": 1,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "600",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-profile-iphhm0jw/example.json"
+      ],
+      "started_at": "2026-09-13T09:43:44.017011+00:00",
+      "wall_seconds": 0.10549366700000001,
+      "peak_rss_bytes": 23691264,
+      "exit_code": 0,
+      "stdout": "train-delayed-1.json",
+      "stderr": "train-delayed-1.log"
+    },
+    {
+      "name": "train-delayed",
+      "trial": 2,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "600",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-profile-011s08vv/example.json"
+      ],
+      "started_at": "2026-09-13T09:43:44.123337+00:00",
+      "wall_seconds": 0.048929583,
+      "peak_rss_bytes": 23658496,
+      "exit_code": 0,
+      "stdout": "train-delayed-2.json",
+      "stderr": "train-delayed-2.log"
+    },
+    {
+      "name": "train-delayed",
+      "trial": 3,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "600",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-profile-b8qsyyp8/example.json"
+      ],
+      "started_at": "2026-09-13T09:43:44.173008+00:00",
+      "wall_seconds": 0.047947375000000014,
+      "peak_rss_bytes": 24035328,
+      "exit_code": 0,
+      "stdout": "train-delayed-3.json",
+      "stderr": "train-delayed-3.log"
+    },
+    {
+      "name": "inspect-weights",
+      "trial": 1,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "--max-bytes",
+        "1051241946"
+      ],
+      "started_at": "2026-09-13T09:43:44.221396+00:00",
+      "wall_seconds": 2.053822958,
+      "peak_rss_bytes": 39845888,
+      "exit_code": 0,
+      "stdout": "inspect-weights-1.json",
+      "stderr": "inspect-weights-1.log"
+    },
+    {
+      "name": "inspect-weights",
+      "trial": 2,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "--max-bytes",
+        "1051241946"
+      ],
+      "started_at": "2026-09-13T09:43:46.275610+00:00",
+      "wall_seconds": 2.239173209,
+      "peak_rss_bytes": 80674816,
+      "exit_code": 0,
+      "stdout": "inspect-weights-2.json",
+      "stderr": "inspect-weights-2.log"
+    },
+    {
+      "name": "inspect-weights",
+      "trial": 3,
+      "command": [
+        "/usr/bin/time",
+        "-l",
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "--max-bytes",
+        "1051241946"
+      ],
+      "started_at": "2026-09-13T09:43:48.515217+00:00",
+      "wall_seconds": 2.0296238750000004,
+      "peak_rss_bytes": 44367872,
+      "exit_code": 0,
+      "stdout": "inspect-weights-3.json",
+      "stderr": "inspect-weights-3.log"
+    }
+  ]
+}

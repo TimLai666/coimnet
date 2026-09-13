@@ -1,0 +1,31 @@
+COMMAND: go version
+go version go1.26.5 linux/amd64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+linux
+amd64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-13T08:21:22Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	0.585s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	0.020s
+ok  	github.com/TimLai666/coimnet/experiment	1.147s
+ok  	github.com/TimLai666/coimnet/internal/cli	2.326s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.015s
+ok  	github.com/TimLai666/coimnet/learning	0.085s
+ok  	github.com/TimLai666/coimnet/signal	0.085s
+COMMAND: go test -race -count=1 ./...
+ok  	github.com/TimLai666/coimnet/checkpoint	2.718s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/dynamics	1.043s
+ok  	github.com/TimLai666/coimnet/experiment	4.144s
+ok  	github.com/TimLai666/coimnet/internal/cli	3.603s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.024s
+ok  	github.com/TimLai666/coimnet/learning	1.144s
+ok  	github.com/TimLai666/coimnet/signal	1.348s
+COMMAND: go vet ./...
+learning/trainer.go:226:20: github.com/TimLai666/coimnet/dynamics.Parameters struct literal uses unkeyed fields

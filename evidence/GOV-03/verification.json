@@ -1,0 +1,19 @@
+{
+  "requirement": "GOV-03",
+  "profile": "CPU reference; additional profiles remain tracked by their own requirements",
+  "reproduction_command": "scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+  "environment": [
+    "evidence/cpu-reference-20260913/macos-v5/doctor.json",
+    "evidence/cpu-reference-20260913/ubuntu-v5/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260913/macos-v5/source.sha256",
+    "evidence/cpu-reference-20260913/ubuntu-v5/source.sha256"
+  ],
+  "observed_result": "Insyra nn tapes execute encoder and readout operations. The explicit VJP bridge propagates loss through the recurrent core to the encoder; full-path finite differences and real learning tests pass.",
+  "test_log": [
+    "evidence/cpu-reference-20260913/macos-v5/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v5/validation.log"
+  ],
+  "learning_report": "evidence/cpu-reference-20260913/macos-v5/delayed.json"
+}

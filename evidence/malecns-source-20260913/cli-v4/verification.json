@@ -1,0 +1,85 @@
+{
+  "schema_version": "coimnet-source-validation/v1",
+  "source_archive_sha256": "b88dc61a1ce062a1f9ce93311e8252888f4293cd653667eda1c2988a23372141",
+  "binary_sha256": "f826741dc2713c06d1272b2e431b3bfa09da0187158d42e33744efca28b2d94f",
+  "environment": "evidence/cpu-reference-20260913/macos-v4/doctor.json",
+  "input_fingerprints": "evidence/cpu-reference-20260913/macos-v4/source.sha256",
+  "runs": [
+    {
+      "role": "annotations",
+      "command": [
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+        "--max-bytes",
+        "14483314"
+      ],
+      "started_at": "2026-09-13T09:27:20.812197+00:00",
+      "exit_code": 0,
+      "source_sha256_before": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "source_sha256_after": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2",
+      "report": "annotations-inspect.json",
+      "stderr": "annotations-inspect.log"
+    },
+    {
+      "role": "neurotransmitters",
+      "command": [
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/body-neurotransmitters-male-cns-v1.0.feather",
+        "--max-bytes",
+        "43282834"
+      ],
+      "started_at": "2026-09-13T09:27:20.904941+00:00",
+      "exit_code": 0,
+      "source_sha256_before": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "source_sha256_after": "95c9289220663abeb3409f3ad9e5a7f8a53f8093f5139d15502cd08da8879621",
+      "report": "neurotransmitters-inspect.json",
+      "stderr": "neurotransmitters-inspect.log"
+    },
+    {
+      "role": "weights",
+      "command": [
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "inspect",
+        "--input",
+        "/Users/timlai/Developer/coimnet/data/malecns-v1.0/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
+        "--max-bytes",
+        "1051241946"
+      ],
+      "started_at": "2026-09-13T09:27:21.442059+00:00",
+      "exit_code": 0,
+      "source_sha256_before": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "source_sha256_after": "e35da783d1c686b2b58b3b87cd6a403ae43bfcfba8bff28e08ef752c1a56afc1",
+      "report": "weights-inspect.json",
+      "stderr": "weights-inspect.log"
+    },
+    {
+      "role": "automatic_provider_crc32c_download",
+      "command": [
+        "/private/tmp/coimnet-validate-v4.mh8pyakb/results/coimnet",
+        "data",
+        "download",
+        "--url",
+        "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather",
+        "--out",
+        "/private/tmp/coimnet-source-validation-v4.hn0v4uh1/annotations-fresh.feather",
+        "--max-bytes",
+        "20000000"
+      ],
+      "exit_code": 0,
+      "report": "automatic-crc-download.json",
+      "stderr": "automatic-crc-download.log",
+      "expected_sha256": "2177e246113e4cfbf1e7772ec37c6da1955ff22e8063d0b1f833101f99a9a3b2"
+    }
+  ],
+  "limitations": [
+    "The Arrow allocation peak excludes other process memory.",
+    "Raw row counts are not neuron counts or evidence of learned task capability."
+  ]
+}

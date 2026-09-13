@@ -1,0 +1,19 @@
+{
+  "requirement": "COR-08",
+  "profile": "CPU reference; additional profiles remain tracked by their own requirements",
+  "reproduction_command": "scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+  "environment": [
+    "evidence/cpu-reference-20260913/macos-v5/doctor.json",
+    "evidence/cpu-reference-20260913/ubuntu-v5/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260913/macos-v5/source.sha256",
+    "evidence/cpu-reference-20260913/ubuntu-v5/source.sha256"
+  ],
+  "observed_result": "Core, neural-parameter, encoder, readout and input gradients pass finite differences. All three fixed seeds update core weights with unchanged periphery; frozen and training-label-permutation controls pass.",
+  "test_log": [
+    "evidence/cpu-reference-20260913/macos-v5/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v5/validation.log"
+  ],
+  "learning_report": "evidence/cpu-reference-20260913/macos-v5/delayed.json"
+}

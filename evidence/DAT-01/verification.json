@@ -1,0 +1,33 @@
+{
+  "requirement": "DAT-01",
+  "profile": "real-data",
+  "reproduction_command": [
+    "scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "coimnet data download --url OFFICIAL_SOURCE_URL --out NEW_FILE --max-bytes SOURCE_SIZE; exact successful commands in evidence/malecns-source-20260913/cli-v4/verification.json"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260913/macos-v4/doctor.json",
+    "evidence/cpu-reference-20260913/ubuntu-v4/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260913/macos-v4/source.sha256",
+    "evidence/cpu-reference-20260913/ubuntu-v4/source.sha256",
+    "evidence/malecns-source-20260913/cli-v4/verification.json"
+  ],
+  "observed_result": "All three MaleCNS v1.0 official files downloaded and verified against provider CRC32C. Fixed v4 CLI independently downloads the official annotations source and automatically verifies provider CRC32C; receipt includes source version URL, size, acquisition time, public response metadata and separately identified local SHA-256. Controlled HTTP tests cover cancellation, resume, bounded retries, changed ETag, ignored Range, invalid Content-Range, size and checksum failures, conflicts and response/output errors.",
+  "test_log": [
+    "evidence/cpu-reference-20260913/macos-v4/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v4/validation.log",
+    "evidence/malecns-source-20260913/cli-v4/automatic-crc-download.log"
+  ],
+  "receipts": [
+    "evidence/malecns-source-20260913/annotations-download.json",
+    "evidence/malecns-source-20260913/neurotransmitters-download.json",
+    "evidence/malecns-source-20260913/weights-download.json",
+    "evidence/malecns-source-20260913/cli-v4/automatic-crc-download.json"
+  ],
+  "limitations": [
+    "Abrupt process kill may leave a stale lock or inconsistent partial state; the downloader preserves and rejects those artifacts rather than claiming automatic crash recovery.",
+    "Windows was crosscompiled only; real execution remains unverified."
+  ]
+}

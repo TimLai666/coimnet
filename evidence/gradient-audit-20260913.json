@@ -1,0 +1,1341 @@
+{
+  "schema_version": "coimnet-gradient-audit/v1",
+  "as_of": "2026-09-13",
+  "command": "audit_dir=$(mktemp -d /private/tmp/coimnet-gradient-audit.XXXXXX) && cp evidence/gradient-audit-20260913/audit.go.txt \"$audit_dir/audit.go\" && go run \"$audit_dir/audit.go\" > \"$audit_dir/report.json\" 2> \"$audit_dir/run.log\"",
+  "execution": {
+    "command": "audit_dir=$(mktemp -d /private/tmp/coimnet-gradient-audit.XXXXXX) && cp evidence/gradient-audit-20260913/audit.go.txt \"$audit_dir/audit.go\" && go run \"$audit_dir/audit.go\" > \"$audit_dir/report.json\" 2> \"$audit_dir/run.log\"",
+    "temp_artifact_pattern": "/private/tmp/coimnet-gradient-audit.XXXXXX",
+    "temp_artifact_directory": "/private/tmp/coimnet-gradient-audit.xIDJtH",
+    "exit_code": 0,
+    "stdout_bytes": 105265,
+    "stdout_json_valid": true,
+    "observed_stderr": "2026/09/13 17:21:38 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!\\nOfficial website: https://insyra.hazelnut-paradise.com\\n\\ngradient audit complete\\n"
+  },
+  "environment": {
+    "go": "go1.26.5",
+    "goarch": "arm64",
+    "gomaxprocs": 8,
+    "goos": "darwin"
+  },
+  "source_fingerprints": {
+    "algorithm": "SHA-256",
+    "audit_program": {
+      "path": "evidence/gradient-audit-20260913/audit.go.txt",
+      "sha256": "a9b41f3e30a26c11fa35b9c4cce41be2b6d0b58e470207de07d630483c3a52c6"
+    },
+    "production": [
+      {
+        "path": "learning/network.go",
+        "sha256": "83bbe7dbf9028692d5f34e5d7e1a9191670df8abb0d465b0c70c66238a2614cc"
+      },
+      {
+        "path": "dynamics/continuous.go",
+        "sha256": "8778b799d0dfae978420a1978fe1a876d903e9f1b3e6df1397e394ebc5ac65f2"
+      }
+    ],
+    "fixture": [
+      {
+        "path": "learning/network_test.go",
+        "sha256": "38f72c5ebbabc2488cff8710871bd8d4c786044efaddf168d904ea1b3c1a3715"
+      }
+    ]
+  },
+  "inputs": {
+    "bridge_config": {
+      "activation": "tanh",
+      "dt": 0.5,
+      "input_size": 1,
+      "nodes": 2,
+      "output_size": 1,
+      "readout_nodes": [
+        1
+      ],
+      "sources": [
+        0,
+        1
+      ],
+      "targets": [
+        1,
+        0
+      ]
+    },
+    "bridge_input": [
+      [
+        0.7
+      ],
+      [
+        -0.2
+      ],
+      [
+        0.1
+      ]
+    ],
+    "bridge_parameters": {
+      "core_bias": [
+        0.1,
+        -0.1
+      ],
+      "core_logtau": [
+        0.1,
+        0.2
+      ],
+      "core_weights": [
+        0.3,
+        -0.2
+      ],
+      "encoder": [
+        0.5,
+        0.1
+      ],
+      "readout": [
+        0.8
+      ]
+    },
+    "bridge_target": [
+      0.4
+    ],
+    "core_existing_test_config": {
+      "activations": [
+        "tanh",
+        "softplus"
+      ],
+      "delays": [
+        0,
+        1,
+        0
+      ],
+      "dt": 0.3,
+      "nodes": 2,
+      "sources": [
+        0,
+        1,
+        1
+      ],
+      "targets": [
+        1,
+        0,
+        1
+      ]
+    },
+    "core_parameters": {
+      "bias": [
+        0.1,
+        -0.2
+      ],
+      "initial": [
+        0.2,
+        -0.3
+      ],
+      "inputs": [
+        [
+          0.1,
+          0.3
+        ],
+        [
+          -0.2,
+          0.4
+        ],
+        [
+          0.5,
+          -0.1
+        ]
+      ],
+      "logtau": [
+        0.2,
+        -0.1
+      ],
+      "upstream": [
+        [
+          0.2,
+          -0.3
+        ],
+        [
+          0.1,
+          0.4
+        ],
+        [
+          -0.5,
+          0.6
+        ]
+      ],
+      "weights": [
+        0.2,
+        -0.1,
+        0.15
+      ]
+    },
+    "epsilons": [
+      0.01,
+      0.002,
+      0.001,
+      0.0001
+    ]
+  },
+  "spec": {
+    "audit_combined_atol": 1e-05,
+    "audit_combined_check": "absolute_error <= 1e-5 + 1e-4*abs(fd); selected for this audit, not a verbatim Chapter 9.4 formula",
+    "audit_combined_rtol": 0.0001,
+    "audit_near_zero_fd_abs_threshold": 1e-05,
+    "audit_relative_error_count_threshold": 0.0001,
+    "bridge_test_atol": 2e-05,
+    "bridge_test_rtol": 0.001,
+    "chapter_9_4_float64_near_zero_absolute_check": "required separately; numeric threshold is not specified by Chapter 9.4",
+    "chapter_9_4_float64_relative_starting_threshold": 0.0001,
+    "relative_definition": "abs(fd-analytic)/max(abs(fd),abs(analytic)); zero denominator is 0"
+  },
+  "observations": [
+    {
+      "name": "insyra_bridge_full_gradient",
+      "groups": [
+        {
+          "name": "core.weights",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 1.2262893223785598e-07,
+              "max_relative_error": 0.00032738801891179364,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 4.002309313773833e-07,
+              "max_relative_error": 0.0015839542836350387,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.2091852245236612e-06,
+              "max_relative_error": 0.00479306449588099,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.2754610137270805e-05,
+              "max_relative_error": 0.020304254918860617,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 2,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.bias",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 9.785546566665193e-06,
+              "max_relative_error": 2.012059001797291e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 9.288636276180706e-07,
+              "max_relative_error": 1.6203922334482116e-05,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.3187745945275609e-06,
+              "max_relative_error": 2.7115962108939505e-06,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 2.064854317196385e-05,
+              "max_relative_error": 8.63492751981948e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.logtau",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 2.4279937492314996e-07,
+              "max_relative_error": 1.58460773266651e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 4.362345944423224e-07,
+              "max_relative_error": 5.26336908602143e-05,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.2409426723928446e-06,
+              "max_relative_error": 0.0001497253858957969,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.646259916843716e-05,
+              "max_relative_error": 0.0019823500592207484,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 1,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "encoder",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 6.010795933208968e-08,
+              "max_relative_error": 3.4161320755598386e-06,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 4.997866769884673e-07,
+              "max_relative_error": 2.389015993630491e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.1892026673399059e-06,
+              "max_relative_error": 6.758628010970167e-05,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 2.050219641325235e-05,
+              "max_relative_error": 0.0011652069304130927,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 1,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 2,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "readout",
+          "count": 1,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 2.932255710463849e-08,
+              "max_relative_error": 8.477598033252129e-07,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 5.119982759427266e-07,
+              "max_relative_error": 1.4802443699222113e-05,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 2.927097950689017e-07,
+              "max_relative_error": 8.462693338210222e-06,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.4192184655481555e-05,
+              "max_relative_error": 0.00041014973838664025,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 1,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 1,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "input",
+          "count": 3,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 1.632260611117431e-07,
+              "max_relative_error": 7.040571079198579e-06,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 2.6661319707521614e-07,
+              "max_relative_error": 9.551793303655907e-06,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.445990171378142e-06,
+              "max_relative_error": 6.237158570014908e-05,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 8.210606711855917e-06,
+              "max_relative_error": 0.0003540323214703658,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 2,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pure_float64_core",
+      "activation": "tanh",
+      "groups": [
+        {
+          "name": "core.weights",
+          "count": 3,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 1.837468113358165e-07,
+              "max_relative_error": 2.12095329955172e-06,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 7.349965594483088e-09,
+              "max_relative_error": 8.483937983354957e-08,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.8374966409551163e-09,
+              "max_relative_error": 2.1209906819319974e-08,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.8160292714064497e-11,
+              "max_relative_error": 2.0962113115239302e-10,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.bias",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 6.846299290153013e-06,
+              "max_relative_error": 1.3501575435613124e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 2.73856001875572e-07,
+              "max_relative_error": 5.400709655122026e-07,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 6.846404154714492e-08,
+              "max_relative_error": 1.3501782238840287e-07,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 6.847246103447446e-10,
+              "max_relative_error": 1.3503442644535266e-09,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.logtau",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 2.0956663713544987e-06,
+              "max_relative_error": 2.4439228703879474e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 8.382721358723977e-08,
+              "max_relative_error": 9.775756639848072e-07,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 2.095682413716382e-08,
+              "max_relative_error": 2.443941578659282e-07,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 2.097187146166135e-10,
+              "max_relative_error": 2.445696366586422e-09,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 1,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.initial",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 3.4731829374051726e-06,
+              "max_relative_error": 5.775531735390113e-05,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 1.3893079427174104e-07,
+              "max_relative_error": 2.31027050921444e-06,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 3.4732730899711406e-08,
+              "max_relative_error": 5.775681649464655e-07,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 3.471601200955021e-10,
+              "max_relative_error": 5.772901476855071e-09,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.input",
+          "count": 6,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 4.938133165710568e-07,
+              "max_relative_error": 5.465085850864761e-06,
+              "worst_absolute_index": 3,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 1.9752588398258553e-08,
+              "max_relative_error": 2.1860358661360678e-07,
+              "worst_absolute_index": 3,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 4.938147057931275e-09,
+              "max_relative_error": 5.465005070119417e-08,
+              "worst_absolute_index": 3,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 4.941180797857214e-11,
+              "max_relative_error": 5.398713178947723e-10,
+              "worst_absolute_index": 3,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pure_float64_core",
+      "activation": "softplus",
+      "groups": [
+        {
+          "name": "core.weights",
+          "count": 3,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 6.489090229322425e-07,
+              "max_relative_error": 3.9169563149185594e-06,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 2.595634460145213e-08,
+              "max_relative_error": 1.5667874326644678e-07,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 6.489069587223284e-09,
+              "max_relative_error": 3.9169590440299274e-08,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 6.456976620050625e-11,
+              "max_relative_error": 3.8975871054925754e-10,
+              "worst_absolute_index": 2,
+              "worst_relative_index": 2,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.bias",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 2.7736776833653387e-08,
+              "max_relative_error": 2.983164360436031e-07,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 1.109470917914912e-09,
+              "max_relative_error": 1.193265577003984e-08,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 2.7730324980712595e-10,
+              "max_relative_error": 2.9824704464363195e-09,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 2.3842733343215627e-12,
+              "max_relative_error": 2.5643495922915465e-11,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.logtau",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 1.6745943829249432e-06,
+              "max_relative_error": 3.066692911929356e-05,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 6.69840741623906e-08,
+              "max_relative_error": 1.2267180035197191e-06,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.674605208668023e-08,
+              "max_relative_error": 3.0668065219283676e-07,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.6723043783084535e-10,
+              "max_relative_error": 3.0716790899260357e-09,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.initial",
+          "count": 2,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 1.9691830610568672e-08,
+              "max_relative_error": 2.4059516903851664e-06,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 7.876385099692129e-10,
+              "max_relative_error": 9.62378521031297e-08,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 1.9702761644424527e-10,
+              "max_relative_error": 2.406370818360249e-08,
+              "worst_absolute_index": 1,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 1.896600064499321e-12,
+              "max_relative_error": 2.580415639190642e-10,
+              "worst_absolute_index": 0,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        },
+        {
+          "name": "core.input",
+          "count": 6,
+          "epsilons": [
+            {
+              "epsilon": 0.01,
+              "max_absolute_error": 2.178468641589326e-09,
+              "max_relative_error": 8.634519203312096e-07,
+              "worst_absolute_index": 4,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.002,
+              "max_absolute_error": 8.714153010291881e-11,
+              "max_relative_error": 3.4580797750398256e-08,
+              "worst_absolute_index": 4,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.001,
+              "max_absolute_error": 2.1804905103728345e-11,
+              "max_relative_error": 8.720083784276853e-09,
+              "worst_absolute_index": 4,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            },
+            {
+              "epsilon": 0.0001,
+              "max_absolute_error": 7.22449877699205e-13,
+              "max_relative_error": 1.238367794078208e-09,
+              "worst_absolute_index": 5,
+              "worst_relative_index": 0,
+              "audit_combined_failures": 0,
+              "bridge_failures": 0,
+              "relative_error_gt_1e-4_count": 0,
+              "near_zero_fd_abs_le_1e-5_count": 0,
+              "near_zero_fd_abs_le_1e-5_max_absolute_error": 0
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "conclusion": {
+    "bridge_test_epsilon": 0.002,
+    "bridge_test_passes_at_epsilon": true,
+    "audit_combined_passes_at_bridge_test_epsilon": true,
+    "bridge_max_absolute_error_at_epsilon_0.002": 9.288636276180706e-07,
+    "bridge_max_relative_error_at_epsilon_0.002": 0.0015839542836350387,
+    "bridge_audit_combined_failures_at_epsilon_0.0001": 3,
+    "bridge_test_failures_at_epsilon_0.0001": 0,
+    "pure_float64_relative_error_gt_1e-4_counts_by_group": {
+      "tanh": {
+        "core.weights": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.bias": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.logtau": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.initial": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.input": [
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "softplus": {
+        "core.weights": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.bias": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.logtau": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.initial": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "core.input": [
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "pure_float64_near_zero_absolute_by_group": {
+      "threshold_abs_fd": 1e-05,
+      "values": {
+        "tanh": {
+          "core.weights": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.bias": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.logtau": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.initial": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.input": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ]
+        },
+        "softplus": {
+          "core.weights": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.bias": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.logtau": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.initial": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ],
+          "core.input": [
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            },
+            {
+              "count": 0,
+              "max_absolute_error": 0
+            }
+          ]
+        }
+      }
+    },
+    "assessment": "The existing eps=2e-3 bridge check passes its bridge tolerance and the audit_combined_atol_1e-5_rtol_1e-4 comparison selected here. That comparison is not a verbatim Chapter 9.4 formula: Chapter 9.4 gives a float64 relative starting threshold and a separate near-zero absolute check. At eps=1e-4, three bridge components fail the selected combined comparison because of the Insyra float32 boundary, while the bridge tolerance still passes. Every pure float64 group has zero relative_error_gt_1e-4_count at all four epsilons and zero near-zero components under the audit reporting cutoff; retain the per-group maximum absolute errors above."
+  },
+  "limitations": [
+    "The bridge encoder, readout, input tensor and MSE path cross Insyra float32 boundaries; pure core measurements are float64 only.",
+    "The Chapter 9.4 float64 FD text gives a relative starting threshold and a separate near-zero absolute check; audit_combined_atol_1e-5_rtol_1e-4 is a selected comparison criterion, not a verbatim specification formula.",
+    "The relative_error_gt_1e-4_count and near_zero_fd_abs_le_1e-5_* fields use reporting cutoffs selected by this audit, not new specification thresholds.",
+    "This audit probes the fixed small network and the existing continuous core fixture, not full-size training or all activations/configurations.",
+    "The bridge objective follows learning/network_test.go squared error for one output; LossGradient uses the same scalar MSE value here."
+  ]
+}

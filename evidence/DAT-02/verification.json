@@ -1,0 +1,35 @@
+{
+  "requirement": "DAT-02",
+  "profile": "real-data",
+  "reproduction_command": [
+    "scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "coimnet data inspect --input OFFICIAL_FILE --max-bytes SOURCE_SIZE; exact successful commands in evidence/malecns-source-20260913/cli-v4/verification.json"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260913/macos-v4/doctor.json",
+    "evidence/cpu-reference-20260913/ubuntu-v4/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260913/macos-v4/source.sha256",
+    "evidence/cpu-reference-20260913/ubuntu-v4/source.sha256",
+    "evidence/malecns-source-20260913/cli-v4/verification.json"
+  ],
+  "observed_result": "The Go Feather V2 SDK decodes all official MaleCNS v1.0 batches: annotations 211577 rows / 4 batches, neurotransmitters 1835518 / 29, weights 151856684 / 2318. Source SHA-256 is unchanged after every scan. Generated fixtures verify nullable/list/dictionary values, signed and unsigned IDs beyond 2^53, ZSTD decompression, file/footer/allocator/row limits, malformed records and offsets, wrong magic/version/type/duplicate fields, cancellation and borrowed-record lifetime. CLI partial scans emit complete=false and fail. Independent reader review found no confirmed correctness defect.",
+  "test_log": [
+    "evidence/cpu-reference-20260913/macos-v4/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v4/validation.log",
+    "evidence/malecns-source-20260913/cli-v4/annotations-inspect.log",
+    "evidence/malecns-source-20260913/cli-v4/neurotransmitters-inspect.log",
+    "evidence/malecns-source-20260913/cli-v4/weights-inspect.log"
+  ],
+  "reports": [
+    "evidence/malecns-source-20260913/cli-v4/annotations-inspect.json",
+    "evidence/malecns-source-20260913/cli-v4/neurotransmitters-inspect.json",
+    "evidence/malecns-source-20260913/cli-v4/weights-inspect.json"
+  ],
+  "limitations": [
+    "This reader does not select neurons, normalize anatomical records, aggregate edges, or build a trainable graph. Those are separate tracked requirements.",
+    "Arrow allocator accounting excludes other process memory; ReadAt itself cannot be forcibly interrupted by context.",
+    "Windows crosscompiled only, not executed."
+  ]
+}

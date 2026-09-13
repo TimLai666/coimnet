@@ -1,0 +1,259 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"runtime"
+	"sort"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+type measurement struct {
+	Index          int     `json:"index"`
+	Analytic       float64 `json:"analytic"`
+	FiniteDiff     float64 `json:"finite_difference"`
+	AbsoluteError  float64 `json:"absolute_error"`
+	RelativeError  float64 `json:"relative_error"`
+	AuditCombinedPass bool  `json:"audit_combined_atol_1e-5_rtol_1e-4"`
+	BridgePass        bool  `json:"bridge_atol_2e-5_rtol_1e-3"`
+}
+
+type epsReport struct {
+	Epsilon       float64       `json:"epsilon"`
+	Measurements []measurement `json:"measurements"`
+	MaxAbs        float64       `json:"max_absolute_error"`
+	MaxRel        float64       `json:"max_relative_error"`
+	AuditCombinedFailures int     `json:"audit_combined_failures"`
+	BridgeFails           int     `json:"bridge_failures"`
+	RelativeOverThreshold int     `json:"relative_error_gt_1e-4_count"`
+	NearZeroCount         int     `json:"near_zero_fd_abs_le_1e-5_count"`
+	NearZeroMaxAbs        float64 `json:"near_zero_fd_abs_le_1e-5_max_absolute_error"`
+}
+
+type groupReport struct {
+	Name  string      `json:"name"`
+	Count int         `json:"count"`
+	Eps  []epsReport `json:"epsilons"`
+}
+
+type auditReport struct {
+	Name      string        `json:"name"`
+	Activation string       `json:"activation,omitempty"`
+	Groups    []groupReport `json:"groups"`
+}
+
+type evidence struct {
+	SchemaVersion string `json:"schema_version"`
+	AsOf         string `json:"as_of"`
+	Command      string `json:"command"`
+	Environment  map[string]any `json:"environment"`
+	Inputs       map[string]any `json:"inputs"`
+	Spec         map[string]any `json:"spec"`
+	Observations []auditReport `json:"observations"`
+	Limits       []string `json:"limitations"`
+}
+
+func cloneLearningParameters(p learning.Parameters) learning.Parameters {
+	return learning.Parameters{
+		Core: dynamics.Parameters{
+			Weights: append([]float64(nil), p.Core.Weights...),
+			Bias: append([]float64(nil), p.Core.Bias...),
+			LogTau: append([]float64(nil), p.Core.LogTau...),
+		},
+		Encoder: append([]float64(nil), p.Encoder...),
+		Readout: append([]float64(nil), p.Readout...),
+	}
+}
+
+func cloneRows(rows [][]float64) [][]float64 {
+	out := make([][]float64, len(rows))
+	for i, row := range rows {
+		out[i] = append([]float64(nil), row...)
+	}
+	return out
+}
+
+func learningObjective(n *learning.Network, p learning.Parameters, x [][]float64, target []float64) (float64, error) {
+	y, err := n.Predict(context.Background(), p, x)
+	if err != nil {
+		return 0, err
+	}
+	var value float64
+	for i := range y {
+		value += (y[i] - target[i]) * (y[i] - target[i])
+	}
+	return value, nil
+}
+
+type learningGroup struct {
+	name string
+	count int
+	mutate func(*learning.Parameters, [][]float64, int, float64)
+}
+
+func learningGroups(p learning.Parameters, x [][]float64) []learningGroup {
+	return []learningGroup{
+		{name: "core.weights", count: len(p.Core.Weights), mutate: func(p *learning.Parameters, _ [][]float64, i int, v float64) { p.Core.Weights[i] = v }},
+		{name: "core.bias", count: len(p.Core.Bias), mutate: func(p *learning.Parameters, _ [][]float64, i int, v float64) { p.Core.Bias[i] = v }},
+		{name: "core.logtau", count: len(p.Core.LogTau), mutate: func(p *learning.Parameters, _ [][]float64, i int, v float64) { p.Core.LogTau[i] = v }},
+		{name: "encoder", count: len(p.Encoder), mutate: func(p *learning.Parameters, _ [][]float64, i int, v float64) { p.Encoder[i] = v }},
+		{name: "readout", count: len(p.Readout), mutate: func(p *learning.Parameters, _ [][]float64, i int, v float64) { p.Readout[i] = v }},
+		{name: "input", count: len(x) * len(x[0]), mutate: func(_ *learning.Parameters, x [][]float64, i int, v float64) { x[i/len(x[0])][i%len(x[0])] = v }},
+	}
+}
+
+func bridgeAudit() auditReport {
+	n, err := learning.NewNetwork(learning.Config{
+		Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, DT: .5, Activation: "tanh"},
+		InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1},
+	})
+	if err != nil { panic(err) }
+	p := learning.Parameters{
+		Core: dynamics.Parameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.1}, LogTau: []float64{.1, .2}},
+		Encoder: []float64{.5, .1}, Readout: []float64{.8},
+	}
+	x := [][]float64{{.7}, {-.2}, {.1}}
+	target := []float64{.4}
+	_, g, err := n.LossGradient(context.Background(), p, x, target, 0)
+	if err != nil { panic(err) }
+	groups := learningGroups(p, x)
+	gradFor := []func(int) float64{
+		func(i int) float64 { return g.Core.Weights[i] },
+		func(i int) float64 { return g.Core.Bias[i] },
+		func(i int) float64 { return g.Core.LogTau[i] },
+		func(i int) float64 { return g.Encoder[i] },
+		func(i int) float64 { return g.Readout[i] },
+	}
+	for i := range x { for j := range x[i] { idx := i*len(x[i])+j; gradFor = append(gradFor, func(k int) float64 { return g.Inputs[k/len(x[0])][k%len(x[0])] }); _ = idx } }
+	epsilons := []float64{1e-2, 2e-3, 1e-3, 1e-4}
+	out := auditReport{Name: "insyra_bridge_full_gradient", Groups: make([]groupReport, len(groups))}
+	for gi, group := range groups {
+		report := groupReport{Name: group.name, Count: group.count, Eps: make([]epsReport, 0, len(epsilons))}
+		for _, eps := range epsilons {
+			er := epsReport{Epsilon: eps, Measurements: make([]measurement, group.count)}
+			for i := 0; i < group.count; i++ {
+				pPlus, xPlus := cloneLearningParameters(p), cloneRows(x)
+				pMinus, xMinus := cloneLearningParameters(p), cloneRows(x)
+				var values []float64
+				switch gi {
+				case 0: values = p.Core.Weights
+				case 1: values = p.Core.Bias
+				case 2: values = p.Core.LogTau
+				case 3: values = p.Encoder
+				case 4: values = p.Readout
+				case 5: values = x[i/len(x[0])]
+				}
+			var old float64
+			if gi == 5 { old = x[i/len(x[0])][i%len(x[0])] } else { old = values[i] }
+			group.mutate(&pPlus, xPlus, i, old+eps)
+			group.mutate(&pMinus, xMinus, i, old-eps)
+			plus, err := learningObjective(n, pPlus, xPlus, target); if err != nil { panic(err) }
+			minus, err := learningObjective(n, pMinus, xMinus, target); if err != nil { panic(err) }
+			fd := (plus-minus)/(2*eps)
+			analytic := gradFor[gi](i)
+			absErr := math.Abs(fd-analytic)
+			denom := math.Max(math.Abs(fd), math.Abs(analytic))
+			rel := 0.0; if denom != 0 { rel = absErr/denom }
+			m := measurement{Index: i, Analytic: analytic, FiniteDiff: fd, AbsoluteError: absErr, RelativeError: rel, AuditCombinedPass: absErr <= 1e-5+1e-4*math.Abs(fd), BridgePass: absErr <= 2e-5+1e-3*math.Abs(fd)}
+			er.Measurements[i] = m
+			if absErr > er.MaxAbs { er.MaxAbs = absErr }
+			if rel > er.MaxRel { er.MaxRel = rel }
+			if rel > 1e-4 { er.RelativeOverThreshold++ }
+			if math.Abs(fd) <= 1e-5 { er.NearZeroCount++; if absErr > er.NearZeroMaxAbs { er.NearZeroMaxAbs = absErr } }
+			if !m.AuditCombinedPass { er.AuditCombinedFailures++ }
+			if !m.BridgePass { er.BridgeFails++ }
+		}
+		report.Eps = append(report.Eps, er)
+	}
+		out.Groups[gi] = report
+	}
+	return out
+}
+
+type coreGroup struct {
+	name string
+	count int
+	mutate func(*dynamics.Parameters, []float64, [][]float64, int, float64)
+	grad func(dynamics.Gradient, int) float64
+}
+
+func cloneDynamicsParameters(p dynamics.Parameters) dynamics.Parameters {
+	return dynamics.Parameters{Weights: append([]float64(nil), p.Weights...), Bias: append([]float64(nil), p.Bias...), LogTau: append([]float64(nil), p.LogTau...)}
+}
+
+func coreAudit(activation string) auditReport {
+	m, err := dynamics.NewContinuous(dynamics.Config{Nodes: 2, Sources: []int{0, 1, 1}, Targets: []int{1, 0, 1}, Delays: []int{0, 1, 0}, DT: .3, Activation: activation})
+	if err != nil { panic(err) }
+	p := dynamics.Parameters{Weights: []float64{.2, -.1, .15}, Bias: []float64{.1, -.2}, LogTau: []float64{.2, -.1}}
+	initial := []float64{.2, -.3}
+	inputs := [][]float64{{.1, .3}, {-.2, .4}, {.5, -.1}}
+	up := [][]float64{{.2, -.3}, {.1, .4}, {-.5, .6}}
+	tr, err := m.Forward(context.Background(), p, initial, inputs); if err != nil { panic(err) }
+	g, err := m.Backward(context.Background(), tr, up, 0); if err != nil { panic(err) }
+	objective := func(p dynamics.Parameters, initial []float64, inputs [][]float64) float64 {
+		tr, err := m.Forward(context.Background(), p, initial, inputs); if err != nil { panic(err) }
+		var result float64
+		for s, row := range tr.Outputs() { for i, v := range row { result += v * up[s][i] } }
+		return result
+	}
+	groups := []coreGroup{
+		{name: "core.weights", count: len(p.Weights), mutate: func(p *dynamics.Parameters, _ []float64, _ [][]float64, i int, v float64) { p.Weights[i] = v }, grad: func(g dynamics.Gradient, i int) float64 { return g.Weights[i] }},
+		{name: "core.bias", count: len(p.Bias), mutate: func(p *dynamics.Parameters, _ []float64, _ [][]float64, i int, v float64) { p.Bias[i] = v }, grad: func(g dynamics.Gradient, i int) float64 { return g.Bias[i] }},
+		{name: "core.logtau", count: len(p.LogTau), mutate: func(p *dynamics.Parameters, _ []float64, _ [][]float64, i int, v float64) { p.LogTau[i] = v }, grad: func(g dynamics.Gradient, i int) float64 { return g.LogTau[i] }},
+		{name: "core.initial", count: len(initial), mutate: func(_ *dynamics.Parameters, initial []float64, _ [][]float64, i int, v float64) { initial[i] = v }, grad: func(g dynamics.Gradient, i int) float64 { return g.Initial[i] }},
+		{name: "core.input", count: len(inputs)*len(inputs[0]), mutate: func(_ *dynamics.Parameters, _ []float64, inputs [][]float64, i int, v float64) { inputs[i/len(inputs[0])][i%len(inputs[0])] = v }, grad: func(g dynamics.Gradient, i int) float64 { return g.Inputs[i/len(inputs[0])][i%len(inputs[0])] }},
+	}
+	epsilons := []float64{1e-2, 2e-3, 1e-3, 1e-4}
+	out := auditReport{Name: "pure_float64_core", Activation: activation, Groups: make([]groupReport, len(groups))}
+	for gi, group := range groups {
+		report := groupReport{Name: group.name, Count: group.count, Eps: make([]epsReport, 0, len(epsilons))}
+		for _, eps := range epsilons {
+			er := epsReport{Epsilon: eps, Measurements: make([]measurement, group.count)}
+			for i := 0; i < group.count; i++ {
+				pPlus, pMinus := cloneDynamicsParameters(p), cloneDynamicsParameters(p)
+				initialPlus, initialMinus := append([]float64(nil), initial...), append([]float64(nil), initial...)
+				inputsPlus, inputsMinus := cloneRows(inputs), cloneRows(inputs)
+				var old float64
+				switch gi { case 0: old=p.Weights[i]; case 1: old=p.Bias[i]; case 2: old=p.LogTau[i]; case 3: old=initial[i]; case 4: old=inputs[i/len(inputs[0])][i%len(inputs[0])] }
+				group.mutate(&pPlus, initialPlus, inputsPlus, i, old+eps)
+				group.mutate(&pMinus, initialMinus, inputsMinus, i, old-eps)
+				fd := (objective(pPlus, initialPlus, inputsPlus)-objective(pMinus, initialMinus, inputsMinus))/(2*eps)
+				analytic := group.grad(g,i); absErr:=math.Abs(fd-analytic); denom:=math.Max(math.Abs(fd),math.Abs(analytic)); rel:=0.0; if denom!=0 {rel=absErr/denom}
+				m := measurement{Index:i, Analytic:analytic, FiniteDiff:fd, AbsoluteError:absErr, RelativeError:rel, AuditCombinedPass:absErr <= 1e-5+1e-4*math.Abs(fd), BridgePass:absErr <= 2e-5+1e-3*math.Abs(fd)}
+				er.Measurements[i]=m; if absErr>er.MaxAbs {er.MaxAbs=absErr}; if rel>er.MaxRel {er.MaxRel=rel}; if rel>1e-4 {er.RelativeOverThreshold++}; if math.Abs(fd)<=1e-5 {er.NearZeroCount++; if absErr>er.NearZeroMaxAbs {er.NearZeroMaxAbs=absErr}}; if !m.AuditCombinedPass {er.AuditCombinedFailures++}; if !m.BridgePass {er.BridgeFails++}
+			}
+			report.Eps=append(report.Eps,er)
+		}
+		out.Groups[gi]=report
+	}
+	return out
+}
+
+func main() {
+	observations := []auditReport{bridgeAudit(), coreAudit("tanh"), coreAudit("softplus")}
+	sort.Slice(observations, func(i,j int) bool { return observations[i].Name < observations[j].Name })
+	e := evidence{
+		SchemaVersion: "coimnet-gradient-audit/v1",
+		AsOf: "2026-09-13",
+		Command: "audit_dir=$(mktemp -d /private/tmp/coimnet-gradient-audit.XXXXXX) && cp evidence/gradient-audit-20260913/audit.go.txt \"$audit_dir/audit.go\" && go run \"$audit_dir/audit.go\" > \"$audit_dir/report.json\" 2> \"$audit_dir/run.log\"",
+		Environment: map[string]any{"go": runtime.Version(), "goos": runtime.GOOS, "goarch": runtime.GOARCH, "gomaxprocs": runtime.GOMAXPROCS(0)},
+		Inputs: map[string]any{
+			"bridge_config": map[string]any{"nodes":2,"sources":[]int{0,1},"targets":[]int{1,0},"dt":0.5,"activation":"tanh","input_size":1,"output_size":1,"readout_nodes":[]int{1}},
+			"bridge_parameters": map[string]any{"core_weights":[]float64{.3,-.2},"core_bias":[]float64{.1,-.1},"core_logtau":[]float64{.1,.2},"encoder":[]float64{.5,.1},"readout":[]float64{.8}},
+			"bridge_input": [][]float64{{.7},{-.2},{.1}}, "bridge_target": []float64{.4},
+			"core_existing_test_config": map[string]any{"nodes":2,"sources":[]int{0,1,1},"targets":[]int{1,0,1},"delays":[]int{0,1,0},"dt":.3,"activations":[]string{"tanh","softplus"}},
+			"core_parameters": map[string]any{"weights":[]float64{.2,-.1,.15},"bias":[]float64{.1,-.2},"logtau":[]float64{.2,-.1},"initial":[]float64{.2,-.3},"inputs":[][]float64{{.1,.3},{-.2,.4},{.5,-.1}},"upstream":[][]float64{{.2,-.3},{.1,.4},{-.5,.6}}},
+			"epsilons": []float64{1e-2,2e-3,1e-3,1e-4},
+		},
+		Spec: map[string]any{"chapter_9_4_float64_relative_starting_threshold":1e-4,"chapter_9_4_float64_near_zero_absolute_check":"required separately; numeric threshold is not specified by Chapter 9.4","audit_combined_atol":1e-5,"audit_combined_rtol":1e-4,"audit_combined_check":"absolute_error <= 1e-5 + 1e-4*abs(fd); selected for this audit, not a verbatim Chapter 9.4 formula","audit_relative_error_count_threshold":1e-4,"audit_near_zero_fd_abs_threshold":1e-5,"bridge_test_atol":2e-5,"bridge_test_rtol":1e-3,"relative_definition":"abs(fd-analytic)/max(abs(fd),abs(analytic)); zero denominator is 0"},
+		Observations: observations,
+		Limits: []string{"The bridge encoder, readout, input tensor and MSE path cross Insyra float32 boundaries; pure core measurements are float64 only.", "The Chapter 9.4 float64 FD text gives a relative starting threshold and a separate near-zero absolute check; audit_combined_atol_1e-5_rtol_1e-4 is a selected comparison criterion, not a verbatim specification formula.", "The relative_error_gt_1e-4_count and near_zero_fd_abs_le_1e-5_* fields use reporting cutoffs selected by this audit, not new specification thresholds.", "This audit probes the fixed small network and the existing continuous core fixture, not full-size training or all activations/configurations.", "The bridge objective follows learning/network_test.go squared error for one output; LossGradient uses the same scalar MSE value here."},
+	}
+	enc:=json.NewEncoder(os.Stdout); enc.SetIndent("","  "); if err:=enc.Encode(e); err!=nil { panic(err) }
+	fmt.Fprintln(os.Stderr,"gradient audit complete")
+}

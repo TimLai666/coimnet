@@ -1,0 +1,32 @@
+{
+  "scope": "Initial framework milestone through Feather reader, relative to f11467ccf0b80260893da58015a8ef7dc6c3f4ea; excludes draft ticket 08 and graph-values-audit artifacts",
+  "review": "Full v4 implementation reviewed by root and adversarial Luna reviewer; final v5 corrections reviewed by root",
+  "resolved_findings": [
+    {
+      "severity": "P2",
+      "file": "dynamics/continuous.go",
+      "trigger": "Forward on a zero-value Continuous could divide by zero",
+      "fix": "Reject uninitialized node count",
+      "regression": "dynamics/zero_value_test.go",
+      "red": "TestUninitializedContinuousForwardReturnsError reproduced divide-by-zero before fix"
+    },
+    {
+      "severity": "P2",
+      "file": "learning/trainer.go",
+      "trigger": "Predict or Step could wait behind a held trainer lock after context cancellation",
+      "fix": "Context-aware acquisition with cancellation recheck and unchanged atomic snapshots",
+      "regression": "learning/trainer_cancel_test.go",
+      "red": "Held-lock public Predict and Step calls failed to return on cancellation before fix"
+    }
+  ],
+  "remaining_confirmed_findings": [],
+  "validation": [
+    "evidence/cpu-reference-20260913/macos-v5/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v5/validation.log"
+  ],
+  "limits": [
+    "Original 85-requirement framework remains incomplete",
+    "Resource performance measurements use explicitly identified v4 binaries",
+    "Windows compiled but not executed; GPU training is not implemented"
+  ]
+}

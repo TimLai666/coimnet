@@ -1,0 +1,19 @@
+{
+  "requirement": "OPS-09",
+  "profile": "CPU reference; additional profiles remain tracked by their own requirements",
+  "reproduction_command": "scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+  "environment": [
+    "evidence/cpu-reference-20260913/macos-v5/doctor.json",
+    "evidence/cpu-reference-20260913/ubuntu-v5/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260913/macos-v5/source.sha256",
+    "evidence/cpu-reference-20260913/ubuntu-v5/source.sha256"
+  ],
+  "observed_result": "Formatting, build, uncached unit tests, race tests, vet, module verification and malformed-input regressions pass. The verification script records exact source hashes.",
+  "test_log": [
+    "evidence/cpu-reference-20260913/macos-v5/validation.log",
+    "evidence/cpu-reference-20260913/ubuntu-v5/validation.log"
+  ],
+  "learning_report": "evidence/cpu-reference-20260913/macos-v5/delayed.json"
+}
