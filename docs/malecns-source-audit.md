@@ -199,6 +199,68 @@ Feather issue。現有 [#375](https://github.com/HazelnutParadise/insyra/issues/
 是 optimizer state 與 tape graph reset，兩者都不是 Feather 讀取 API；鄰近的
 Parquet API issues 也不提供 Feather API。
 
+## 2026-09-14 新增原件（參數 adapter 用）
+
+四份檔案已於 2026-09-14 以 `coimnet data download` 下載並完成逐批讀取驗證。
+
+### 下載回條
+
+| 檔案 | bytes | ETag | 上游 CRC32C | SHA-256 | hash_status |
+|---|---:|---|---|---|---|
+| `body-stats-male-cns-v1.0-minconf-0.5.feather` | 778,062,826 | `404c3349c28580148e16815eb99f382a` | `MGOCPQ==` | `ca5dc83a26382ae70c8d8f42fc09ce2dbc1af7c03f3a001a1936b5e142540647` | `upstream_verified` |
+| `tbar-neurotransmitters-male-cns-v1.0.feather` | 2,651,680,218 | `51b02c11690662aedef28f86d394ff0d` | `RrR5/g==` | `bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d` | `upstream_verified` |
+| `syn-partners-male-cns-v1.0-minconf-0.5.feather` | 6,777,179,098 | `58efcf712f8c4d4de5f2ad51e97def76` | `jTlNIA==` | `959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07` | `upstream_verified` |
+| `Neuprint_Meta.csv` | 1,247,784 | `ee9e55000a7e81813c959a88cbc47886` | `qW0Qsg==` | `227ff1e873881a1ab124b10aa51ada94012773ddb9c4ad986e5cc83df8d360f7` | `upstream_verified` |
+
+### 逐批掃描結果
+
+| 檔案 | 列數 | 批數 | 欄數 | complete |
+|---|---:|---:|---:|---|
+| `body-stats-male-cns-v1.0-minconf-0.5.feather` | 88,384,522 | 1,349 | 11 | `true` |
+| `tbar-neurotransmitters-male-cns-v1.0.feather` | 45,656,140 | 697 | 17 | `true` |
+| `syn-partners-male-cns-v1.0-minconf-0.5.feather` | 311,833,243 | 4,759 | 11 | `true` |
+
+### 欄位與型別
+
+`body-stats`：`body int64`、`pre int32`、`post int32`、
+`status_fine dictionary<values=utf8, indices=int8, ordered=true>`、`superclass utf8`、
+`class utf8`、`type utf8`、`instance utf8`、`downstream int64`、`synweight int64`、
+`rank int64`。
+
+`tbar-neurotransmitters`：`point_id uint64`、`x int32`、`y int32`、`z int32`、
+`conf float32`、`sv int64`、`body int64`、
+`major dictionary<values=utf8, indices=int8, ordered=true>`、
+`primary dictionary<values=utf8, indices=int16, ordered=true>`、
+`nt_acetylcholine_prob float32`、`nt_dopamine_prob float32`、
+`nt_gaba_prob float32`、`nt_glutamate_prob float32`、
+`nt_histamine_prob float32`、`nt_octopamine_prob float32`、
+`nt_serotonin_prob float32`、
+`split dictionary<values=utf8, indices=int8, ordered=false>`。
+
+`syn-partners`：`x_pre int32`、`y_pre int32`、`z_pre int32`、`body_pre int64`、
+`conf_pre float32`、`x_post int32`、`y_post int32`、`z_post int32`、
+`body_post int64`、`conf_post float32`、
+`primary_post dictionary<values=utf8, indices=int16, ordered=true>`。
+
+`Neuprint_Meta.csv`：本票只讀 `roiHierarchy`、`roiInfo` 與門檻欄位
+（`postHighAccuracyThreshold`、`preHPThreshold`、`postHPThreshold`）。
+
+### 交叉核對
+
+- `body-stats` 88,384,522 列 = `connectome-weights` 的 unique endpoint 數（票 13 核對）。
+- `tbar-neurotransmitters` 45,656,140 列 = `Neuprint_Meta.csv` 的 `totalPreCount`（票 13 核對）。
+- `syn-partners` 311,833,243 列 = `Neuprint_Meta.csv` 的 `totalPostCount` = `connectome-weights` 的 `weight` 加總 311,833,243（票 13 核對）。
+
+### 下載命令
+
+```
+coimnet data download --url <url> --out <path> --max-bytes <size> [--timeout <d>]
+```
+
+`--max-bytes` 設為官方檔案大小；syn-partners 因 6.78 GB 另設 `--timeout 90m`。
+
+回條位於 `evidence/malecns-source-20260914/*-download.json`，逐批掃描報告位於 `*-inspect.json`。
+
 ## 建議與未決事項
 
 Arrow Go v17 公開 `ipc.NewFileReader` 已能讀取這些檔案的 footer/schema，
