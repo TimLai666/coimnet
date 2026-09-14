@@ -1,0 +1,114 @@
+=== RUN   TestContinuousTruncationPreservesForwardState
+--- PASS: TestContinuousTruncationPreservesForwardState (0.00s)
+=== RUN   TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory
+=== RUN   TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory/tanh
+=== RUN   TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory/softplus
+--- PASS: TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory (0.00s)
+    --- PASS: TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory/tanh (0.00s)
+    --- PASS: TestContinuousStateAcceptsBoundedCPURoundingWithoutRewritingHistory/softplus (0.00s)
+=== RUN   TestContinuousStateFullAndSplitAdvanceMatchIndependentReference
+=== RUN   TestContinuousStateFullAndSplitAdvanceMatchIndependentReference/tanh
+=== RUN   TestContinuousStateFullAndSplitAdvanceMatchIndependentReference/softplus
+--- PASS: TestContinuousStateFullAndSplitAdvanceMatchIndependentReference (0.00s)
+    --- PASS: TestContinuousStateFullAndSplitAdvanceMatchIndependentReference/tanh (0.00s)
+    --- PASS: TestContinuousStateFullAndSplitAdvanceMatchIndependentReference/softplus (0.00s)
+=== RUN   TestContinuousStateDelayZeroUsesPriorStepAndHistoryIsBounded
+--- PASS: TestContinuousStateDelayZeroUsesPriorStepAndHistoryIsBounded (0.00s)
+=== RUN   TestContinuousStateHugeDelayDoesNotPreallocateDelayHistory
+--- PASS: TestContinuousStateHugeDelayDoesNotPreallocateDelayHistory (0.00s)
+=== RUN   TestContinuousStateClonesInputsParametersAndSnapshots
+--- PASS: TestContinuousStateClonesInputsParametersAndSnapshots (0.00s)
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/schema
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/hash
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/voltage_length
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/missing_history
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/history_row_length
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/history_nil_row
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/history_nonfinite
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/history_tanh_range
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/latest_mismatch
+=== RUN   TestContinuousStateRejectsInvalidStatesAndConfigurations/steps/history_mismatch
+--- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/schema (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/hash (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/voltage_length (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/missing_history (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/history_row_length (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/history_nil_row (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/history_nonfinite (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/history_tanh_range (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/latest_mismatch (0.00s)
+    --- PASS: TestContinuousStateRejectsInvalidStatesAndConfigurations/steps/history_mismatch (0.00s)
+=== RUN   TestContinuousStateRejectsMalformedInputsParametersAndZeroModels
+=== RUN   TestContinuousStateRejectsMalformedInputsParametersAndZeroModels/nil
+=== RUN   TestContinuousStateRejectsMalformedInputsParametersAndZeroModels/zero
+--- PASS: TestContinuousStateRejectsMalformedInputsParametersAndZeroModels (0.00s)
+    --- PASS: TestContinuousStateRejectsMalformedInputsParametersAndZeroModels/nil (0.00s)
+    --- PASS: TestContinuousStateRejectsMalformedInputsParametersAndZeroModels/zero (0.00s)
+=== RUN   TestContinuousStateFailureAtomicOnNonfiniteResultAndStepOverflow
+--- PASS: TestContinuousStateFailureAtomicOnNonfiniteResultAndStepOverflow (0.00s)
+=== RUN   TestContinuousStateCapacityChecksBeforeAllocatingOutputsOrHistory
+--- PASS: TestContinuousStateCapacityChecksBeforeAllocatingOutputsOrHistory (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/dynamics	0.180s
+2026/09/14 13:16:03 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestIndividualContinuousMatchesEpisodeAndSplit
+--- PASS: TestIndividualContinuousMatchesEpisodeAndSplit (0.00s)
+=== RUN   TestIndividualFourWaySeparationAndResets
+--- PASS: TestIndividualFourWaySeparationAndResets (0.00s)
+=== RUN   TestIndividualOwnsAllBuffers
+--- PASS: TestIndividualOwnsAllBuffers (0.00s)
+=== RUN   TestIndividualFailureAtomicityAndVersions
+--- PASS: TestIndividualFailureAtomicityAndVersions (0.00s)
+=== RUN   TestIndividualConcurrentIsolationAndSyncSnapshots
+--- PASS: TestIndividualConcurrentIsolationAndSyncSnapshots (0.00s)
+=== RUN   TestIndividualReadoutFailurePreservesWholeCall
+--- PASS: TestIndividualReadoutFailurePreservesWholeCall (0.00s)
+=== RUN   TestIndividualSelectedInputsPersist
+--- PASS: TestIndividualSelectedInputsPersist (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	0.197s
+2026/09/14 13:16:03 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestNewStateCopiesAndValidates
+--- PASS: TestNewStateCopiesAndValidates (0.00s)
+=== RUN   TestIndividualNullNeverBecomesValidZero
+=== RUN   TestIndividualNullNeverBecomesValidZero/update_count
+=== RUN   TestIndividualNullNeverBecomesValidZero/step_count
+=== RUN   TestIndividualNullNeverBecomesValidZero/decay
+=== RUN   TestIndividualNullNeverBecomesValidZero/source_zero
+=== RUN   TestIndividualNullNeverBecomesValidZero/voltage_zero
+--- PASS: TestIndividualNullNeverBecomesValidZero (0.00s)
+    --- PASS: TestIndividualNullNeverBecomesValidZero/update_count (0.00s)
+    --- PASS: TestIndividualNullNeverBecomesValidZero/step_count (0.00s)
+    --- PASS: TestIndividualNullNeverBecomesValidZero/decay (0.00s)
+    --- PASS: TestIndividualNullNeverBecomesValidZero/source_zero (0.00s)
+    --- PASS: TestIndividualNullNeverBecomesValidZero/voltage_zero (0.00s)
+=== RUN   TestSaveLoadIndividualRoundTripAndAliasIsolation
+--- PASS: TestSaveLoadIndividualRoundTripAndAliasIsolation (0.01s)
+=== RUN   TestSaveLoadIndividualSupportsZeroEdgeModel
+--- PASS: TestSaveLoadIndividualSupportsZeroEdgeModel (0.01s)
+=== RUN   TestLoadIndividualRejectsOldSchemaAndMalformedDocuments
+--- PASS: TestLoadIndividualRejectsOldSchemaAndMalformedDocuments (0.00s)
+=== RUN   TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner
+--- PASS: TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner (0.02s)
+=== RUN   TestIndividualCheckpointSubprocessResume
+--- PASS: TestIndividualCheckpointSubprocessResume (0.03s)
+=== RUN   TestIndividualCheckpointHelperProcess
+--- PASS: TestIndividualCheckpointHelperProcess (0.00s)
+=== RUN   ExampleSaveIndividual
+--- PASS: ExampleSaveIndividual (0.02s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.468s
+2026/09/14 13:16:03 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestIndividualLearningPreservesAnatomyStore
+    individual_test.go:74: anatomy SHA-256 unchanged: fd76caf99ff830cbbbc8c954d2d0398786b7a488d58536667d577c122d77a15c
+--- PASS: TestIndividualLearningPreservesAnatomyStore (0.03s)
+PASS
+ok  	github.com/TimLai666/coimnet/connectome	0.553s

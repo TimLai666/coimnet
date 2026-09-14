@@ -1,5 +1,5 @@
-// Package checkpoint persists the independent-episode training snapshot.
-// Continuous individual state has a separate, unsupported snapshot profile.
+// Package checkpoint persists versioned independent-episode and continuous-
+// individual snapshots. The two formats intentionally remain separate.
 package checkpoint
 
 import (
@@ -125,6 +125,68 @@ func Save(ctx context.Context, path string, state State) (retErr error) {
 	if err := contextError(ctx); err != nil {
 		return err
 	}
+	return publishDocument(ctx, path, document)
+}
+
+// Load reads and validates one complete checkpoint using a fixed size bound.
+func Load(ctx context.Context, path string) (state State, retErr error) {
+	if err := contextError(ctx); err != nil {
+		return State{}, err
+	}
+	if path == "" {
+		return State{}, fmt.Errorf("checkpoint path must not be empty")
+	}
+	data, err := fileio.ReadRegular(ctx, path, maxCheckpointBytes)
+	if err != nil {
+		return State{}, fmt.Errorf("read checkpoint: %w", err)
+	}
+	if err := contextError(ctx); err != nil {
+		return State{}, err
+	}
+	state, err = decodeDocument(data)
+	if err != nil {
+		return State{}, err
+	}
+	if err := contextError(ctx); err != nil {
+		return State{}, err
+	}
+	return state, nil
+}
+
+func marshalEnvelope(payload []byte) ([]byte, error) {
+	return marshalEnvelopeFor(SchemaVersion, payload)
+}
+
+func marshalEnvelopeFor(schema string, payload []byte) ([]byte, error) {
+	if schema == "" {
+		return nil, fmt.Errorf("checkpoint schema must not be empty")
+	}
+	if len(payload) > maxCheckpointBytes {
+		return nil, fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
+	}
+	sum := sha256.Sum256(payload)
+	document, err := json.Marshal(envelope{SchemaVersion: schema, Payload: json.RawMessage(payload), Checksum: hex.EncodeToString(sum[:])})
+	if err != nil {
+		return nil, err
+	}
+	if len(document) > maxCheckpointBytes {
+		return nil, fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
+	}
+	return document, nil
+}
+
+// publishDocument writes and publishes one already validated JSON document.
+// The temporary file is created next to the destination, synced, and linked
+// with exclusive-create semantics. Existing callers depend on cancellation
+// before publication cleaning up the temporary file, while cancellation after
+// publication still completes the durability step.
+func publishDocument(ctx context.Context, path string, document []byte) (retErr error) {
+	if path == "" {
+		return fmt.Errorf("checkpoint path must not be empty")
+	}
+	if len(document) > maxCheckpointBytes {
+		return fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
+	}
 
 	dir := filepath.Dir(path)
 	temp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
@@ -187,46 +249,6 @@ func Save(ctx context.Context, path string, state State) (retErr error) {
 		retErr = errors.Join(retErr, fmt.Errorf("checkpoint published; context ended after publication: %w", contextErr))
 	}
 	return retErr
-}
-
-// Load reads and validates one complete checkpoint using a fixed size bound.
-func Load(ctx context.Context, path string) (state State, retErr error) {
-	if err := contextError(ctx); err != nil {
-		return State{}, err
-	}
-	if path == "" {
-		return State{}, fmt.Errorf("checkpoint path must not be empty")
-	}
-	data, err := fileio.ReadRegular(ctx, path, maxCheckpointBytes)
-	if err != nil {
-		return State{}, fmt.Errorf("read checkpoint: %w", err)
-	}
-	if err := contextError(ctx); err != nil {
-		return State{}, err
-	}
-	state, err = decodeDocument(data)
-	if err != nil {
-		return State{}, err
-	}
-	if err := contextError(ctx); err != nil {
-		return State{}, err
-	}
-	return state, nil
-}
-
-func marshalEnvelope(payload []byte) ([]byte, error) {
-	if len(payload) > maxCheckpointBytes {
-		return nil, fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
-	}
-	sum := sha256.Sum256(payload)
-	document, err := json.Marshal(envelope{SchemaVersion: SchemaVersion, Payload: json.RawMessage(payload), Checksum: hex.EncodeToString(sum[:])})
-	if err != nil {
-		return nil, err
-	}
-	if len(document) > maxCheckpointBytes {
-		return nil, fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
-	}
-	return document, nil
 }
 
 func decodeDocument(data []byte) (State, error) {
@@ -294,10 +316,18 @@ type jsonPathPart struct {
 // checkUniqueJSON is a small token scanner because encoding/json's strict
 // decoder rejects unknown fields but accepts duplicate object keys.
 func checkUniqueJSON(data []byte) error {
+	return checkUniqueJSONWithOptions(data, false)
+}
+
+func checkUniqueJSONRejectNull(data []byte) error {
+	return checkUniqueJSONWithOptions(data, true)
+}
+
+func checkUniqueJSONWithOptions(data []byte, rejectNull bool) error {
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.UseNumber()
 	var path []jsonPathPart
-	if err := scanJSONValue(decoder, &path); err != nil {
+	if err := scanJSONValueWithOptions(decoder, &path, rejectNull); err != nil {
 		return fmt.Errorf("invalid JSON: %w", err)
 	}
 	if token, err := decoder.Token(); err != io.EOF {
@@ -309,10 +339,10 @@ func checkUniqueJSON(data []byte) error {
 	return nil
 }
 
-// scanJSONValue walks one JSON value. The path is kept as a stack and only
+// scanJSONValueWithOptions walks one JSON value. The path is kept as a stack and only
 // formatted when an error is reported, so the walk allocates per key, not per
 // key times depth.
-func scanJSONValue(decoder *json.Decoder, path *[]jsonPathPart) error {
+func scanJSONValueWithOptions(decoder *json.Decoder, path *[]jsonPathPart, rejectNull bool) error {
 	if len(*path) > maxJSONDepth {
 		return fmt.Errorf("JSON nesting exceeds %d levels at %s", maxJSONDepth, formatJSONPath(*path))
 	}
@@ -323,7 +353,12 @@ func scanJSONValue(decoder *json.Decoder, path *[]jsonPathPart) error {
 	delim, isDelim := token.(json.Delim)
 	if !isDelim {
 		switch token.(type) {
-		case nil, bool, string, json.Number:
+		case nil:
+			if rejectNull {
+				return fmt.Errorf("JSON null is not permitted at %s", formatJSONPath(*path))
+			}
+			return nil
+		case bool, string, json.Number:
 			return nil
 		default:
 			return fmt.Errorf("unexpected token %T at %s", token, formatJSONPath(*path))
@@ -347,7 +382,7 @@ func scanJSONValue(decoder *json.Decoder, path *[]jsonPathPart) error {
 			}
 			seen[folded] = key
 			*path = append(*path, jsonPathPart{key: key})
-			err = scanJSONValue(decoder, path)
+			err = scanJSONValueWithOptions(decoder, path, rejectNull)
 			*path = (*path)[:len(*path)-1]
 			if err != nil {
 				return err
@@ -365,7 +400,7 @@ func scanJSONValue(decoder *json.Decoder, path *[]jsonPathPart) error {
 		index := 0
 		for decoder.More() {
 			*path = append(*path, jsonPathPart{index: index, array: true})
-			err = scanJSONValue(decoder, path)
+			err = scanJSONValueWithOptions(decoder, path, rejectNull)
 			*path = (*path)[:len(*path)-1]
 			if err != nil {
 				return err

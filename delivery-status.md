@@ -2,7 +2,9 @@
 
 ## 目前階段
 
-SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 fixture 驗收。127 檔同源的 Mac／Ubuntu v22 完整檢查、選定輸入節點的跨程序續訓與 Windows 交叉編譯通過，詳見 [映射驗證](evidence/SIG-04/verification.json)。完整需求為 18／85。SIG-01／02／05／06 維持通過。
+COR-01 狀態分離、STA-02 安全保存、STA-04 個體隔離通過 fixture 驗收。Mac／Ubuntu v25 同源 137 檔的完整 build、unit、race、vet、模組與 CLI 檢查，以及 27 個相關頂層測試／範例全部通過；快照雙向跨機器讀回並接續成功。Windows 僅交叉編譯通過。完整需求為 21／85，證據見 [v25](evidence/cpu-reference-20260914/verification-v25.json) 與 [ticket 05](docs/tickets/05-resume.md)。
+
+SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 fixture 驗收。127 檔同源的 Mac／Ubuntu v22 完整檢查、選定輸入節點的跨程序續訓與 Windows 交叉編譯通過，詳見 [映射驗證](evidence/SIG-04/verification.json)。該階段累計為 18／85。SIG-01／02／05／06 維持通過。
 
 真實子圖選取及短訓練範例已完成驗證（ticket 10、DAT-07）。原件與既有完整圖保持不變，證據見 [real-subgraph](evidence/real-subgraph-20260914/verification.json)。
 
@@ -12,7 +14,7 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 [10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
 
-SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料（ticket 03）。接續 ticket 05 的持續個體狀態，先補 COR-01 的狀態分離與重設契約，再接續完整保存／恢復驗收。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
+SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料（ticket 03）。ticket 05 已加入持續個體、選擇性重設、安全快照與隔離驗收。下一步先修舊 episode 快照缺失／null scalar 靜默變零，再接續原規格的 LIF 放電核心。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
 ## 進行中
 
@@ -22,7 +24,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 02 | 使用者可計算稀疏前向與完整梯度 | sparse agent | verified_scoped | 手算、獨立稠密參考、形狀錯誤、有限差分已通過 |
 | 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | SIG-01／02／04／05／06 fixture 已通過；SIG-03 控制器資料流待完成 |
 | 04 | 研究者可訓練連續核心 | 主 agent | verified_scoped | 報告 v2 只置換訓練標籤並拒絕資料流重疊；Mac/Ubuntu v5 來源三個 seed 皆通過 |
-| 05 | 使用者可中斷並接續學習 | sparse agent / 主 agent | verified_scoped | 新程序完整參數與 Adam 狀態一致，特殊檔案及輸出錯誤回歸測試通過；完整持續個體另做 |
+| 05 | 使用者可中斷並接續學習 | sparse agent / 主 agent | verified_scoped | COR-01／STA-02／STA-04 fixture 通過；持續電位／延遲史、隔離重設、安全保存與新程序接續已驗證，STA-01／03 尚待完整機制 |
 | 06 | 使用者可保存並續傳官方資料 | sparse agent / 主 agent | verified_scoped | 三份官方原件共 1,109,008,094 bytes，CRC32C 全通過；v4 CLI 另實測自動 CRC32C 驗證 |
 | 07 | 使用者可逐批讀取 Feather 原件 | API agent / 主 agent | verified_scoped | annotations 211,577、NT 1,835,518、weights 151,856,684 列完整掃描，前後原件指紋一致 |
 | 09 | 使用者可保存並讀回標準化接線圖 | 主 agent | verified_scoped | 容量、溢位、竄改／截斷／順序／索引與路徑替換回歸通過；真實圖 664 MB 在 Mac／Ubuntu 讀回再保存的獨立 SHA-256 均與原件相同，見 graph-store-v2 |
@@ -39,9 +41,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-[05 狀態保存](docs/tickets/05-resume.md)：依 COR-01 與主規格第 7–9 章，補上可持續推進的個體狀態，驗證重設個體不改解剖圖、基礎參數或訓練器。實作前在該 ticket 固定公開狀態與分段計算契約，保留現有 episode 快照格式。SIG-03 隨調節控制器驗證。LIF、可塑性、調節與全腦／GPU 仍在原始待辦範圍。
+[05 狀態保存](docs/tickets/05-resume.md#後續缺口舊-episode-必填欄位)：先修舊 episode 讀取器的 P1 缺口，讓缺失／null 的必填 scalar 明確報錯，保留合法零值與舊檔相容性。新個體格式已拒絕這些輸入，三項 fixture 驗收不受影響。之後接續 LIF；SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
 
-圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 18 項附上通過證據，其餘保留。最新全套日誌見 [Mac v22](evidence/cpu-reference-20260914/macos-v22/validation.log)、[Ubuntu v22](evidence/cpu-reference-20260914/ubuntu-v22/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v22.json)。
+圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 21 項附上通過證據，其餘保留。最新全套日誌見 [Mac v25](evidence/cpu-reference-20260914/macos-v25/validation.log)、[Ubuntu v25](evidence/cpu-reference-20260914/ubuntu-v25/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v25.json)。
 
 ## 決策紀錄
 
@@ -62,6 +64,8 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 2026-09-14：訊號持久化數值欄位拒絕明確 null，已宣告可空的品質分數／範圍與省略欄位預設保持原語意。SIG-01 依四種人工數值來源驗收，媒體解碼與生物映射分開追蹤。SIG-04 的明確集合局部測試不取代完整保存／替換流程。
 
 2026-09-14：SIG-04 以獨立 Projection 保存加權映射，既有 Mapping 格式保持相容。InputNodes 指定集合時只配置對應的編碼器欄位，完整梯度經選定索引傳遞。替換保留核心、使用提供的兩側係數並建立新最佳化器。容量與來源條件見 [映射指南](docs/signal-projections.md)。
+
+2026-09-14：本輪依使用者一次三項的要求完成 COR-01／STA-02／STA-04 fixture。新個體 profile 固定 CPU 精度及生命週期，不推論完整訓練工作恢復。跨 CPU 活化值最多四個相鄰 float64 值的載入容許範圍保留歷史原值；雙向真實傳檔驗證見 [跨機器證據](evidence/STA-02/crosscpu-verification.json)。舊 episode 缺失欄位缺口優先列入 ticket 05；checkpoint 分工的測試時序偏差已如實保存。
 
 ## 來源與接手
 

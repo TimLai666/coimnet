@@ -1,0 +1,159 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+type envelope struct {
+	SchemaVersion string          `json:"schema_version"`
+	Payload       json.RawMessage `json:"payload"`
+	Checksum      string          `json:"checksum"`
+}
+
+func checksum(payload []byte) string {
+	sum := sha256.Sum256(payload)
+	return hex.EncodeToString(sum[:])
+}
+
+func main() {
+	dir, err := os.MkdirTemp("", "coimnet-episode-presence-")
+	if err != nil {
+		panic(err)
+	}
+	defer os.RemoveAll(dir)
+
+	trainer, err := experiment.NewDelayedTrainer(7, .02, false)
+	if err != nil {
+		panic(err)
+	}
+	state, err := checkpoint.NewState(trainer.Snapshot(), 1001, 0)
+	if err != nil {
+		panic(err)
+	}
+	validPath := filepath.Join(dir, "valid.json")
+	if err := checkpoint.Save(context.Background(), validPath, state); err != nil {
+		panic(err)
+	}
+	validBytes, err := os.ReadFile(validPath)
+	if err != nil {
+		panic(err)
+	}
+	var valid envelope
+	if err := json.Unmarshal(validBytes, &valid); err != nil {
+		panic(err)
+	}
+
+	cases := []struct {
+		name   string
+		mutate func(map[string]json.RawMessage)
+	}{
+		{
+			name: "missing-data-seed",
+			mutate: func(payload map[string]json.RawMessage) {
+				delete(payload, "data_seed")
+			},
+		},
+		{
+			name: "null-data-seed",
+			mutate: func(payload map[string]json.RawMessage) {
+				payload["data_seed"] = json.RawMessage("null")
+			},
+		},
+		{
+			name: "missing-weight-decay",
+			mutate: func(payload map[string]json.RawMessage) {
+				var training, options map[string]json.RawMessage
+				mustUnmarshal(payload["training"], &training)
+				mustUnmarshal(training["options"], &options)
+				delete(options, "weight_decay")
+				training["options"] = mustMarshal(options)
+				payload["training"] = mustMarshal(training)
+			},
+		},
+		{
+			name: "null-weight-decay",
+			mutate: func(payload map[string]json.RawMessage) {
+				var training, options map[string]json.RawMessage
+				mustUnmarshal(payload["training"], &training)
+				mustUnmarshal(training["options"], &options)
+				options["weight_decay"] = json.RawMessage("null")
+				training["options"] = mustMarshal(options)
+				payload["training"] = mustMarshal(training)
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		var payload map[string]json.RawMessage
+		mustUnmarshal(valid.Payload, &payload)
+		tc.mutate(payload)
+		payloadBytes := mustMarshal(payload)
+		document := mustMarshal(envelope{
+			SchemaVersion: valid.SchemaVersion,
+			Payload:       payloadBytes,
+			Checksum:      checksum(payloadBytes),
+		})
+		path := filepath.Join(dir, tc.name+".json")
+		if err := os.WriteFile(path, document, 0600); err != nil {
+			panic(err)
+		}
+		loaded, loadErr := checkpoint.Load(context.Background(), path)
+		fmt.Printf("%-22s accepted=%-5v err=%v loaded_data_seed=%d loaded_updates=%d\n", tc.name, loadErr == nil, loadErr, loaded.DataSeed, loaded.Training.Updates)
+	}
+
+	zeroConfig := learning.Config{
+		Dynamics:     dynamics.Config{Nodes: 2, DT: .5, Activation: "tanh"},
+		InputSize:    1,
+		OutputSize:   1,
+		ReadoutNodes: []int{1},
+	}
+	zeroParameters := learning.Parameters{
+		Core:    dynamics.Parameters{Bias: []float64{.1, -.1}, LogTau: []float64{0, 0}},
+		Encoder: []float64{.5, .2},
+		Readout: []float64{.8},
+	}
+	zeroTrainer, err := learning.NewTrainer(zeroConfig, zeroParameters, learning.DefaultOptions())
+	if err != nil {
+		panic(err)
+	}
+	zeroState, err := checkpoint.NewState(zeroTrainer.Snapshot(), 1001, 0)
+	if err != nil {
+		panic(err)
+	}
+	zeroPath := filepath.Join(dir, "zero-edge.json")
+	if err := checkpoint.Save(context.Background(), zeroPath, zeroState); err != nil {
+		panic(err)
+	}
+	zeroBytes, err := os.ReadFile(zeroPath)
+	if err != nil {
+		panic(err)
+	}
+	zeroLoaded, zeroLoadErr := checkpoint.Load(context.Background(), zeroPath)
+	fmt.Printf("%-22s save_json_null=%-5v load_accepted=%-5v load_err=%v weights_nil=%v\n", "zero-edge", strings.Contains(string(zeroBytes), "null"), zeroLoadErr == nil, zeroLoadErr, zeroLoaded.Training.Parameters.Core.Weights == nil)
+}
+
+func mustUnmarshal(data []byte, destination any) {
+	if err := json.Unmarshal(data, destination); err != nil {
+		panic(err)
+	}
+}
+
+func mustMarshal(value any) []byte {
+	data, err := json.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+	return data
+}

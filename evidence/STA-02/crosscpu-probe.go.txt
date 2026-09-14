@@ -1,0 +1,5 @@
+package main
+import("context";"fmt";"os";"github.com/TimLai666/coimnet/checkpoint";"github.com/TimLai666/coimnet/learning";"github.com/TimLai666/coimnet/dynamics")
+func main(){if len(os.Args)!=4{panic("save|load activation path")};ctx:=context.Background();path:=os.Args[3]
+ if os.Args[1]=="save"{const n=10000;c:=learning.Config{Dynamics:dynamics.Config{Nodes:n,DT:.5,Activation:os.Args[2]},InputSize:1,OutputSize:1,ReadoutNodes:[]int{0}};p:=learning.Parameters{Core:dynamics.Parameters{Bias:make([]float64,n),LogTau:make([]float64,n)},Encoder:make([]float64,n),Readout:[]float64{1}};initial:=make([]float64,n);for j:=range initial{initial[j]=-20+40*float64(j)/float64(n-1)};i,e:=learning.NewIndividual(c,p,learning.DefaultOptions(),initial);if e!=nil{panic(e)};if e=checkpoint.SaveIndividual(ctx,path,i.Snapshot());e!=nil{panic(e)}
+ }else{s,e:=checkpoint.LoadIndividual(ctx,path);if e!=nil{panic(e)};i,e:=learning.RestoreIndividual(s);if e!=nil{panic(e)};if _,e=i.Advance(ctx,[][]float64{{0}});e!=nil{panic(e)}};fmt.Println("PASS",os.Args[1],os.Args[2])}

@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scope": "Continuous individuals: COR-01, STA-02, STA-04 fixture acceptance; not whole-brain, full training-job restore or GPU validation",
+  "source_files": 137,
+  "source_sha256": "88e220724cf933c06207ea26480a5204946a3ec83e80418f264c6a84c855d49c",
+  "source_archive": {
+    "snapshot": "/private/tmp/coimnet-validate-v25.hg2imq6i",
+    "archive": "/private/tmp/coimnet-validate-v25.hg2imq6i.tgz",
+    "sha256": "d4dcf1f6d9d37af2a87a69ffe2ccc2b2c69d044cc6c6cd2ec577dd9973f75f90",
+    "source_files": 137
+  },
+  "source_manifests_identical": true,
+  "working_tree_matches_source_manifest": true,
+  "platforms": {
+    "macos-v25": {
+      "passed": true,
+      "log": "macos-v25/validation.log",
+      "source_manifest": "macos-v25/source.sha256",
+      "individual_log": "macos-v25/individuals.log"
+    },
+    "ubuntu-v25": {
+      "passed": true,
+      "log": "ubuntu-v25/validation.log",
+      "source_manifest": "ubuntu-v25/source.sha256",
+      "individual_log": "ubuntu-v25/individuals.log"
+    }
+  },
+  "windows": {
+    "command": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...",
+    "exit_code": 0,
+    "runtime_tested": false
+  },
+  "gpu_tested": false
+}

@@ -1,0 +1,34 @@
+{
+  "requirement": "STA-02",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test ./dynamics ./learning ./checkpoint ./connectome -run \"Individual|State\" -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v25/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v25/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v25/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v25/source.sha256"
+  ],
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v25/validation.log",
+    "evidence/cpu-reference-20260914/macos-v25/individuals.log",
+    "evidence/cpu-reference-20260914/ubuntu-v25/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v25/individuals.log"
+  ],
+  "observed_result": "Snapshot waits for complete Advance/TrainEpisode operations. SaveIndividual validates, writes a same-directory 0600 temporary file, syncs, publishes exclusively and syncs the directory. Tests cover cancellation, concurrent writers, no overwrite, malformed/truncated/unknown/null/Unicode/deep JSON, checksums, versions, profile and shapes. A genuinely separate process restores the individual, matches every resumed output and the complete final snapshot. Valid zero-edge models round-trip. Four synthetic 10000-node snapshots load and advance successfully in both Mac-to-Ubuntu and Ubuntu-to-Mac directions; saved history is retained, with at most four adjacent float64 values allowed when validating the latest activation. All 27 matching top-level tests/examples and the full build/unit/race/vet/module/CLI suites passed on both platforms from the same 137 source files. Windows crosscompilation passed.",
+  "limitations": [
+    "Continuous CPU fixture profile only; no LIF, chemical state, local plasticity, whole-brain training, GPU execution or Windows runtime validation.",
+    "TrainEpisode starts an independent zero-state sequence; no gradient crosses Advance calls. Data-provider cursor and external RNG are not part of this individual snapshot. STA-01 and STA-03 remain specified.",
+    "Per-matrix/history element limits and the 64 MiB JSON limit are not process memory bounds.",
+    "Cross-CPU loading is verified for the synthetic probes, not bit-identical future trajectories or arbitrary hardware.",
+    "Legacy episode Load still accepts some missing/null scalar fields as zero; this pre-existing issue is recorded in ticket 05. The new individual loader rejects them."
+  ],
+  "details": "evidence/cpu-reference-20260914/verification-v25.json",
+  "usage_guide": "docs/individual-state.md",
+  "cross_cpu": "evidence/STA-02/crosscpu-verification.json"
+}

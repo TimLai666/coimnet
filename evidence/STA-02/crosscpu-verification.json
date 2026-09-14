@@ -1,0 +1,40 @@
+{
+  "compiler": "Go 1.26.5",
+  "producer_consumer": [
+    "darwin/arm64 -> linux/amd64",
+    "linux/amd64 -> darwin/arm64"
+  ],
+  "inputs": {
+    "coimnet-crosscpu-tanh.json": "6f87ff977bd45774dc9ab5f9123a6f8543fe501452153076fc94a4c4aad81295",
+    "coimnet-crosscpu-softplus.json": "796253a5940fccf90a9a5d8519dde54e5e7062cb59b43cfb32e225683d97dc29",
+    "coimnet-crosscpu-v25-ubuntu-tanh.json": "e11fcecc49aeabe0a2cb9c5ee7e54a04a96b62e6498bf4ee925793df681a5141",
+    "coimnet-crosscpu-v25-ubuntu-softplus.json": "afa030fae2e6ecaf80f6e088ddc7984a8adf24d4933416d827704ea5b9aa7d75"
+  },
+  "input_hashes_match_transferred_files": true,
+  "fixture": "10000 zero-edge neurons, initial voltage from -20 to 20, dt=0.5, tanh and softplus; artificial diagnostic only",
+  "before_fix": {
+    "tanh_mismatches": 18,
+    "tanh_max_ulp": 1,
+    "softplus_mismatches": 793,
+    "softplus_max_ulp": 2,
+    "load_result": "tanh rejected at history index 4333; initial script stopped before softplus load"
+  },
+  "after_fix": {
+    "maximum_allowed_ulp": 4,
+    "saved_history_rewritten": false,
+    "bidirectional_load_and_advance": "passed for both activations",
+    "future_cross_cpu_bit_identity_claimed": false
+  },
+  "reproduction": [
+    "Copy crosscpu-probe.go.txt to an external temporary .go file. Run from the repository module with Go 1.26.5.",
+    "On producer: go run /ABS/PROBE.go save tanh /ABS/NEW_SNAPSHOT.json (repeat softplus).",
+    "Transfer exact snapshot bytes, compare SHA-256, then on consumer: go run /ABS/PROBE.go load tanh /ABS/SNAPSHOT.json. Repeat in the reverse direction."
+  ],
+  "logs": [
+    "crosscpu-before-fix.log",
+    "crosscpu-analysis.jsonl",
+    "crosscpu-ubuntu.log",
+    "crosscpu-macos.log",
+    "portability-red.log"
+  ]
+}
