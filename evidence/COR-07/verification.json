@@ -1,0 +1,29 @@
+{
+  "requirement": "COR-07",
+  "profile": "fixture/male-full",
+  "reproduction_command": [
+    "go test -count=1 -v -run 'TestForwardAndBackwardHandCalculation' ./internal/sparse/",
+    "scripts/simulate-evidence.sh evidence/NAT-01/fullgraph-uniform-v1 evidence/NAT-01/protocol-fullgraph-uniform.json"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime at the test run: 7:08 up 9 days, load averages 1.88 2.91 2.60"
+  ],
+  "input_fingerprints": [
+    "internal/sparse/operator_test.go sha256 5a4803f23d90c26711d546a0e128a3469827af0c7da5b9ea98cecef450f1e104",
+    "internal/sparse/operator.go sha256 9a2e24431bdc0e397ece663ed7d59c490f01423d3ec700309e73961625e8b4b8",
+    "evidence/NAT-01/fullgraph-uniform-v1/store.sha256: a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd data/malecns-v1.0/graph-v1.coimgraph"
+  ],
+  "observed_result": "Master specification section 9.2 (docs/handoff/CoImNet_Implementation_Plan.zh-TW.md lines 408 and 410) fixes the edges 1->2=0.5, 3->2=-0.25, 2->3=0.75 for three neurons, so that input [2,4,8] gives output [0,-1,3], and an upstream gradient [1,2,3] gives weight gradients [4,16,12] and input gradients [1,2.25,-0.5]. internal/sparse/operator_test.go asserts exactly these values at lines 16 (weights), 22 (output), 31 (weight gradients) and 34 (input gradients) in TestForwardAndBackwardHandCalculation, which passed (see the log). The whole-brain run recorded in evidence/NAT-01/verification.json executed 25,563,197 edges with accounted arrays of 24 bytes per edge held twice (simulate/runner.go lines 24-33) plus per-node arrays, measuring 4,378,574,848 bytes maximum resident set size, while a dense 165,122 x 165,122 float64 matrix would need 218,122,199,072 bytes, so no N×N matrix is ever allocated.",
+  "assumption_statement": "the dense reference in the sparse tests is a small comparison only; the sparse operator is the only path used on the real graph; normalization never overwrites raw contact counts (the raw weight stays in the graph store).",
+  "test_log": [
+    "evidence/COR-07/sparse-touchstone-test.log"
+  ],
+  "reports": [
+    "evidence/NAT-01/fullgraph-uniform-v1/report.json"
+  ],
+  "limitations": [
+    "The touchstone is a fixture; the whole-brain evidence is the NAT-01 run on macOS arm64 only.",
+    "No dedicated N×N-allocation guard test exists beyond the accounting refusal test TestBuildRefusesOversizedGraphsInsteadOfDownsizing in simulate/simulate_test.go (line 375)."
+  ]
+}

@@ -74,7 +74,8 @@ func LearningRateAt(o Options, updates uint64) float64
 - [ ] 第二階段：`LossScale` 縮放前後更新在 1e-12 內相同、溢位拒絕；累積 k 步等於一次大 batch 的
   平均梯度（手算小例）、中途快照恢復逐位相同；三種排程的 LR 曲線手算、恢復後接續；裁切順序測試；
   `evidence/LRN-03/`、`evidence/COR-10/`；ticket、ENG、README。
-- [ ] COR-07 證據紀錄與 requirements-status（root）。
+- [x] COR-07 證據紀錄與 requirements-status（root；`evidence/COR-07/verification.json` 由 opencode 依 root
+  查證的事實寫成，root 逐項核對後標 passed）。
 
 ## 依據
 
