@@ -60,11 +60,21 @@ type Individual struct {
 // and persistent neural state at initial voltage. Anatomy is immutable; changing
 // connectivity requires creating a new individual. This does not mutate c or p.
 func NewIndividual(c Config, p Parameters, o Options, initial []float64) (*Individual, error) {
+	// Spiking individuals need voltage, synaptic trace, adaptation and
+	// refractory counters in a separate snapshot profile, so the continuous
+	// model must never stand in for them.
+	if c.LIF != nil {
+		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	}
 	tr, err := NewTrainer(c, p, o)
 	if err != nil {
 		return nil, err
 	}
-	state, err := tr.network.core.NewState(initial)
+	core := tr.network.core.continuous()
+	if core == nil {
+		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	}
+	state, err := core.NewState(initial)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +94,9 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.Profile != IndividualProfile {
 		return nil, fmt.Errorf("unsupported individual profile %q", s.Profile)
 	}
+	if s.Config.LIF != nil {
+		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	}
 	tr, err := RestoreTrainer(TrainingSnapshot{SchemaVersion: "coimnet-episode-training/v1", Config: s.Config, Parameters: s.Parameters, Options: s.Optimizer.Options, Optimizer: s.Optimizer.State, Updates: s.Optimizer.Updates})
 	if err != nil {
 		return nil, err
@@ -95,7 +108,11 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.ConfigHash != hash {
 		return nil, fmt.Errorf("individual configuration fingerprint mismatch")
 	}
-	if err = tr.network.core.ValidateState(s.Neural); err != nil {
+	core := tr.network.core.continuous()
+	if core == nil {
+		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	}
+	if err = core.ValidateState(s.Neural); err != nil {
 		return nil, fmt.Errorf("individual neural state: %w", err)
 	}
 	return &Individual{trainer: tr, neural: copyNeural(s.Neural), configHash: hash}, nil
@@ -133,7 +150,12 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	if err != nil {
 		return nil, err
 	}
-	for _, width := range []int{n.config.InputSize, n.config.Dynamics.Nodes, inputWidth(n.config), len(n.config.ReadoutNodes), n.config.OutputSize} {
+	core := n.core.continuous()
+	if core == nil {
+		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	}
+	nodes := configNodes(n.config)
+	for _, width := range []int{n.config.InputSize, nodes, inputWidth(n.config), len(n.config.ReadoutNodes), n.config.OutputSize} {
 		cells, err := size(len(input), width)
 		if err != nil {
 			return nil, err
@@ -169,13 +191,13 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(input))
 		for t, row := range encoded {
-			coreInputs[t] = make([]float64, n.config.Dynamics.Nodes)
+			coreInputs[t] = make([]float64, nodes)
 			for j, id := range n.config.InputNodes {
 				coreInputs[t][id] = row[j]
 			}
 		}
 	}
-	state, outputs, err := n.core.Advance(ctx, p.Core, i.neural, coreInputs)
+	state, outputs, err := core.Advance(ctx, p.Core, i.neural, coreInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +256,11 @@ func (i *Individual) ResetNeural(ctx context.Context, initial []float64) error {
 		return err
 	}
 	defer i.mu.Unlock()
-	state, err := i.trainer.network.core.NewState(initial)
+	core := i.trainer.network.core.continuous()
+	if core == nil {
+		return fmt.Errorf("LIF individuals are not supported yet")
+	}
+	state, err := core.NewState(initial)
 	if err != nil {
 		return err
 	}
@@ -278,6 +304,9 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	}
 	defer i.mu.Unlock()
 	if err := validateOptions(o); err != nil {
+		return err
+	}
+	if err := validateTrainable(o.Trainable, i.trainer.network.core.theta()); err != nil {
 		return err
 	}
 	count := len(i.trainer.optimizer.First)

@@ -14,8 +14,11 @@ import (
 // struct, a missing array without omitempty, or a null element inside an
 // array of scalars. A nil array (JSON null) stays legal because the episode
 // format writes nil slices as null (for example core.weights of a graph with
-// no edges), and fields tagged omitempty may be absent. Unknown keys and
-// type mismatches are left to the strict decoder.
+// no edges), and fields tagged omitempty may be absent. An optional pointer to
+// a struct (the LIF core of a spiking snapshot) is legal when absent or null,
+// because a nil pointer is the declared "this core is not configured" value
+// rather than a silently zeroed one; when present it is walked like a nested
+// struct. Unknown keys and type mismatches are left to the strict decoder.
 func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 	if target.Kind() != reflect.Struct {
 		return fmt.Errorf("required-field check needs a struct, got %s", target.Kind())
@@ -56,6 +59,22 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 				return fmt.Errorf("%s is missing", fieldPath)
 			}
 			if err := checkRequiredFields(raw, field.Type, fieldPath); err != nil {
+				return err
+			}
+		case reflect.Pointer:
+			if !present {
+				if omitEmpty {
+					continue
+				}
+				return fmt.Errorf("%s is missing", fieldPath)
+			}
+			if isJSONNull(raw) {
+				continue
+			}
+			if field.Type.Elem().Kind() != reflect.Struct {
+				return fmt.Errorf("%s has unsupported pointer element kind %s", fieldPath, field.Type.Elem().Kind())
+			}
+			if err := checkRequiredFields(raw, field.Type.Elem(), fieldPath); err != nil {
 				return err
 			}
 		case reflect.Slice:

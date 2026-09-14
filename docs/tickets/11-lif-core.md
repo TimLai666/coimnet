@@ -8,7 +8,7 @@ User Story：研究者可以用與連續核心同一套拓撲、延遲與同步�
 
 Blocked by：02 稀疏算子、04 連續核心訓練
 
-Status：in_progress（第一階段 dynamics 已驗證；第二階段 learning 整合進行中）
+Status：in_progress（第一、二階段已驗證並提交；第三階段 CLI／文件／證據進行中）
 
 對應需求：COR-03（LIF 時序）、COR-09（替代梯度）、COR-04 的基礎閾值可訓練與短期
 適應部分。慢速穩定（homeostasis）、化學調節、按類型混合（COR-05）與個體持續狀態
@@ -150,10 +150,51 @@ Opus subagent 先寫 `dynamics/lif_test.go`（11 個測試、59 個子測試）�
    `examples/lifthreshold`、`checkpoint`；既有連續模型的所有測試與 `scripts/verify.sh`
    維持通過；實作前先有失敗測試紀錄。
 
-## 第三階段
+### 第二階段證據
 
-CLI `examples run lif-threshold`、README／機制文件更新、需求證據 COR-03、COR-09 與
-COR-04（閾值可訓練與短期適應部分）的 verification.json。
+Opus subagent 先寫 `learning/lif_test.go`、`learning/lif_flatten_test.go`、
+`experiment/lif_delayed_test.go`、`checkpoint/lif_snapshot_test.go`、
+`examples/lifthreshold/main_test.go` 取得紅燈（未定義欄位／函式），再實作
+`learning/core.go`（私有 `coreModel` 介面與兩個 adapter）、`Config.LIF`、`ThetaRaw`、
+`Trainable.Theta`、攤平順序、`Trainer.Spikes`、`experiment.NewDelayedLIFTrainer` 與
+`examples/lifthreshold`。root 審查 diff 後接受以下偏離：
+
+- `checkpoint/required.go` 加入指標欄位規則（`omitempty` 指標可省略或為 null，存在時
+  依結構走訪），否則含 `Config.LIF` 指標的所有 episode 快照都無法讀回；連續快照序列化
+  仍無 `lif`／`theta_raw`／`theta` 鍵，最佳化器 13 個位置順序不變。
+- `learning/projections.go` 改用共用節點／邊數取值，並帶入 `ThetaRaw`。
+- 範例的 LIF 設定與初始值由 subagent 重調（`theta_min=0.05`、`theta_max=1`、讀出神經元
+  tonic bias 0.3、`theta_raw=-2`），因為契約建議值下閾值訓練反而讓保留損失變差；門檻
+  未放寬。三個 seed 只擾動第一條邊權重，theta-only 結果相同，這證明可重現而非初始化
+  變異，README 已註明。
+- 「無 spike 時 `ThetaRaw` 梯度為零」不成立（替代梯度處處為正），改測「無讀出路徑的
+  神經元梯度為零」。
+- 全部 `go test ./...`、race（learning／experiment／checkpoint／examples）、vet、gofmt
+  通過；`go run ./examples/lifthreshold` 三個 seed：theta-only 保留 MSE 0.2324→0.0522、
+  `theta_base` 最大變化 0.496、放電率 0.198→0.091；all 0.0535～0.0541；frozen 不變。
+  LIF 個體與 `Advance` 持續狀態尚未支援（明確錯誤）。
+
+## 第三階段契約（CLI、文件、證據）
+
+1. **CLI**：`coimnet examples list` 多列 `lif-threshold`（profile `fixture`），
+   `coimnet examples run lif-threshold [--updates N]` 執行 `examples/lifthreshold` 的同一
+   套流程（把流程放進可被 CLI 與範例 main 共用的套件函式，避免兩份邏輯），輸出報告
+   JSON，門檻未過回非零；help、未知旗標、取消與輸出失敗有測試。
+2. **文件**：README「Go SDK」加 `dynamics.NewLIF`／`learning.Config.LIF` 說明與範例命令；
+   `docs/model-and-mechanisms.md` 的機制表把「LIF、適應性閾值」改為已實作（按類型混合
+   仍待實作），寫明產品硬模式、替代梯度公式、重設不傳梯度、不應期語意與適應開關；
+   `ENG.md` 共用決策加一條 LIF／替代梯度／theta 參數群組與快照相容規則。
+3. **需求證據**：`evidence/COR-03/verification.json`（LIF 時序：手算、延遲、不應期、重設、
+   突觸衰減）、`evidence/COR-09/verification.json`（替代梯度：前向硬事件與反向近似分開驗證、
+   tangent 參考與平滑模式有限差分）、`evidence/COR-04/verification.json`（基礎閾值可訓練與
+   短期適應：梯度、範圍、更新與任務影響；慢速穩定未實作須明寫為部分）。三者的
+   `reproduction_command`、`environment`（新的 `scripts/verify.sh` 輸出目錄 doctor.json）、
+   `input_fingerprints`（source.sha256）、`observed_result`、`test_log` 都指向實際檔案；
+   `docs/requirements-status.json` 只把 COR-03、COR-09 標 `passed`；COR-04 因慢速穩定
+   （homeostasis）尚未實作，維持 `specified`，已完成的閾值訓練與短期適應部分只在 ticket
+   與 `evidence/COR-04/` 記錄，不提前標通過。
+4. **驗證**：`scripts/verify.sh` 新目錄全套通過（含 race），Windows／Linux 交叉編譯紀錄；
+   `delivery-status.md` 更新 11 的狀態與下一步（LIF 個體狀態與快照、按類型混合）。
 
 ## 依據
 

@@ -11,29 +11,35 @@ import (
 	"github.com/TimLai666/coimnet/dynamics"
 )
 
-// Config selects a continuous CPU model, the neurons receiving encoded input,
-// and the neurons readable by its output. The readout receives only current
-// core activity, never raw observations.
+// Config selects exactly one CPU core, the neurons receiving encoded input,
+// and the neurons readable by its output. Dynamics declares the continuous
+// core and LIF the spiking core; setting both, or neither, is an error. The
+// readout receives only current core activity, never raw observations.
 type Config struct {
-	Dynamics     dynamics.Config `json:"dynamics"`
-	InputSize    int             `json:"input_size"`
-	OutputSize   int             `json:"output_size"`
-	ReadoutNodes []int           `json:"readout_nodes"`
-	InputNodes   []int           `json:"input_nodes,omitempty"`
+	Dynamics     dynamics.Config     `json:"dynamics"`
+	LIF          *dynamics.LIFConfig `json:"lif,omitempty"`
+	InputSize    int                 `json:"input_size"`
+	OutputSize   int                 `json:"output_size"`
+	ReadoutNodes []int               `json:"readout_nodes"`
+	InputNodes   []int               `json:"input_nodes,omitempty"`
 }
 
 // Parameters uses a row-major encoder [input,input-node] (or [input,node]
 // when InputNodes is nil) and readout [selected,output]. The float64 storage is
-// converted with validation at Insyra's float32 boundary.
+// converted with validation at Insyra's float32 boundary. ThetaRaw is the
+// bounded base-threshold parameter of a LIF core, one value per neuron; a
+// continuous core must leave it empty.
 type Parameters struct {
-	Core    dynamics.Parameters `json:"core"`
-	Encoder []float64           `json:"encoder"`
-	Readout []float64           `json:"readout"`
+	Core     dynamics.Parameters `json:"core"`
+	ThetaRaw []float64           `json:"theta_raw,omitempty"`
+	Encoder  []float64           `json:"encoder"`
+	Readout  []float64           `json:"readout"`
 }
 
 // Gradient follows Parameters and includes gradients with respect to observations.
 type Gradient struct {
 	Core             dynamics.Gradient
+	ThetaRaw         []float64
 	Encoder, Readout []float64
 	Inputs           [][]float64
 }
@@ -41,7 +47,7 @@ type Gradient struct {
 // Network is immutable; callers own parameter versions and independent episodes.
 type Network struct {
 	config Config
-	core   *dynamics.Continuous
+	core   coreModel
 }
 
 // NewNetwork validates dimensions and copies connectivity and readout selection.
@@ -49,12 +55,13 @@ func NewNetwork(c Config) (*Network, error) {
 	if c.InputSize <= 0 || c.OutputSize <= 0 || len(c.ReadoutNodes) == 0 {
 		return nil, fmt.Errorf("input, output and readout dimensions must be positive")
 	}
-	core, err := dynamics.NewContinuous(c.Dynamics)
+	core, err := newCore(&c)
 	if err != nil {
 		return nil, err
 	}
+	nodes := core.nodes()
 	if c.InputNodes == nil {
-		if _, err := size(c.InputSize, c.Dynamics.Nodes); err != nil {
+		if _, err := size(c.InputSize, nodes); err != nil {
 			return nil, err
 		}
 	} else {
@@ -63,7 +70,7 @@ func NewNetwork(c Config) (*Network, error) {
 		}
 		seenInput := make(map[int]bool, len(c.InputNodes))
 		for _, id := range c.InputNodes {
-			if id < 0 || id >= c.Dynamics.Nodes || seenInput[id] {
+			if id < 0 || id >= nodes || seenInput[id] {
 				return nil, fmt.Errorf("invalid or duplicate input neuron %d", id)
 			}
 			seenInput[id] = true
@@ -77,12 +84,11 @@ func NewNetwork(c Config) (*Network, error) {
 	}
 	seen := map[int]bool{}
 	for _, id := range c.ReadoutNodes {
-		if id < 0 || id >= c.Dynamics.Nodes || seen[id] {
+		if id < 0 || id >= nodes || seen[id] {
 			return nil, fmt.Errorf("invalid or duplicate readout neuron %d", id)
 		}
 		seen[id] = true
 	}
-	c.Dynamics = core.Config()
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	return &Network{c, core}, nil
@@ -96,11 +102,12 @@ func (n *Network) Config() Config {
 	}
 	c := n.config
 	if n.core != nil {
-		c.Dynamics = n.core.Config()
+		n.core.fill(&c)
 	} else {
 		c.Dynamics.Sources = append([]int(nil), c.Dynamics.Sources...)
 		c.Dynamics.Targets = append([]int(nil), c.Dynamics.Targets...)
 		c.Dynamics.Delays = append([]int(nil), c.Dynamics.Delays...)
+		c.LIF = copyLIF(c.LIF)
 	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
@@ -110,7 +117,7 @@ func (n *Network) Config() Config {
 type execution struct {
 	encoderTape, readoutTape                    *nn.Tape
 	x, encoder, encoded, h, readout, prediction *nn.Tensor
-	trace                                       *dynamics.Trace
+	trace                                       coreTrace
 }
 
 // Predict starts an independent episode at zero voltage and returns only the
@@ -121,6 +128,16 @@ func (n *Network) Predict(ctx context.Context, p Parameters, input [][]float64) 
 		return nil, err
 	}
 	return doubles(e.prediction.Data()), nil
+}
+
+// spikeEvents runs one independent frozen episode and returns the 0/1 events of
+// every neuron after each step. Only a LIF core produces events.
+func (n *Network) spikeEvents(ctx context.Context, p Parameters, input [][]float64) ([][]float64, error) {
+	e, err := n.forward(ctx, p, input)
+	if err != nil {
+		return nil, err
+	}
+	return n.core.events(e.trace)
 }
 
 // LossGradient computes mean squared error and derivatives through Insyra's
@@ -157,15 +174,16 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	if err != nil {
 		return 0, empty, err
 	}
+	nodes := configNodes(n.config)
 	up := make([][]float64, len(input))
 	for i := range up {
-		up[i] = make([]float64, n.config.Dynamics.Nodes)
+		up[i] = make([]float64, nodes)
 	}
 	hGradient := dh.Data()
 	for j, id := range n.config.ReadoutNodes {
 		up[len(up)-1][id] = float64(hGradient[j])
 	}
-	cg, err := n.core.Backward(ctx, e.trace, up, window)
+	cg, err := n.core.backward(ctx, e.trace, up, window)
 	if err != nil {
 		return 0, empty, err
 	}
@@ -173,7 +191,7 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	// This scalar is a reverse-pass device, not the optimization objective.
 	encoderWidth := inputWidth(n.config)
 	flat := make([]float64, 0, len(input)*encoderWidth)
-	for _, row := range cg.Inputs {
+	for _, row := range cg.core.Inputs {
 		if n.config.InputNodes == nil {
 			flat = append(flat, row...)
 			continue
@@ -205,7 +223,7 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	if err != nil {
 		return 0, empty, err
 	}
-	g := Gradient{Core: cg, Encoder: doubles(de.Data()), Readout: doubles(dr.Data()), Inputs: rows(doubles(dx.Data()), n.config.InputSize)}
+	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: doubles(de.Data()), Readout: doubles(dr.Data()), Inputs: rows(doubles(dx.Data()), n.config.InputSize)}
 	l := float64(loss.Data()[0])
 	if !finite(l) {
 		return 0, empty, fmt.Errorf("non-finite loss")
@@ -247,7 +265,8 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	if _, err := size(len(input), n.config.Dynamics.Nodes); err != nil {
+	nodes := configNodes(n.config)
+	if _, err := size(len(input), nodes); err != nil {
 		return nil, err
 	}
 	flat := make([]float64, 0, count)
@@ -282,17 +301,16 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(encodedRows))
 		for t, row := range encodedRows {
-			coreInputs[t] = make([]float64, n.config.Dynamics.Nodes)
+			coreInputs[t] = make([]float64, nodes)
 			for i, id := range n.config.InputNodes {
 				coreInputs[t][id] = row[i]
 			}
 		}
 	}
-	tr, err := n.core.Forward(ctx, p.Core, make([]float64, n.config.Dynamics.Nodes), coreInputs)
+	tr, y, err := n.core.forward(ctx, p, make([]float64, nodes), coreInputs)
 	if err != nil {
 		return nil, err
 	}
-	y := tr.Outputs()
 	selected := make([]float64, len(n.config.ReadoutNodes))
 	for i, id := range n.config.ReadoutNodes {
 		selected[i] = y[len(y)-1][id]
@@ -373,7 +391,7 @@ func inputWidth(c Config) int {
 	if c.InputNodes != nil {
 		return len(c.InputNodes)
 	}
-	return c.Dynamics.Nodes
+	return configNodes(c)
 }
 
 func finite(x float64) bool { return !math.IsNaN(x) && !math.IsInf(x, 0) }

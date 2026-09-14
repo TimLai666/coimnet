@@ -14,8 +14,9 @@ import (
 // optimizer moments from the old projection must not be reused.
 func BindProjections(c Config, p Parameters, candidates []signal.NeuronCandidate, input, output signal.Projection) (Config, Parameters, error) {
 	fail := func(err error) (Config, Parameters, error) { return Config{}, Parameters{}, err }
-	if len(candidates) != c.Dynamics.Nodes {
-		return fail(fmt.Errorf("candidate graph has %d nodes, want %d", len(candidates), c.Dynamics.Nodes))
+	nodes := configNodes(c)
+	if len(candidates) != nodes {
+		return fail(fmt.Errorf("candidate graph has %d nodes, want %d", len(candidates), nodes))
 	}
 	if input.Direction() != signal.ProjectionInput || output.Direction() != signal.ProjectionOutput {
 		return fail(fmt.Errorf("projections must have input and output directions respectively"))
@@ -31,7 +32,7 @@ func BindProjections(c Config, p Parameters, candidates []signal.NeuronCandidate
 	if input.InputSize() != c.InputSize || output.OutputSize() != c.OutputSize {
 		return fail(fmt.Errorf("projection channel dimensions do not match network input/output sizes"))
 	}
-	if len(p.Core.Weights) != len(c.Dynamics.Sources) || len(p.Core.Bias) != c.Dynamics.Nodes || len(p.Core.LogTau) != c.Dynamics.Nodes {
+	if len(p.Core.Weights) != configEdges(c) || len(p.Core.Bias) != nodes || len(p.Core.LogTau) != nodes {
 		return fail(fmt.Errorf("core parameter shape mismatch"))
 	}
 	c.InputNodes = inputNodes
@@ -40,7 +41,7 @@ func BindProjections(c Config, p Parameters, candidates []signal.NeuronCandidate
 	if err != nil {
 		return fail(err)
 	}
-	candidate := Parameters{Core: p.Core, Encoder: input.Weights(), Readout: output.Weights()}
+	candidate := Parameters{Core: p.Core, ThetaRaw: p.ThetaRaw, Encoder: input.Weights(), Readout: output.Weights()}
 	// Use the same executable validation as NewTrainer, including float32
 	// representability and dynamics parameter checks, before publishing values.
 	if _, err := n.Predict(context.Background(), candidate, [][]float64{make([]float64, c.InputSize)}); err != nil {
