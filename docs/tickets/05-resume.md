@@ -80,8 +80,10 @@ func Load(ctx context.Context, path string) (State, error)
 
 載入時，最新歷史輸出與電位經活化函數的計算值最多容許相鄰四個 float64 值的差異（4 ULP），不改寫保存的歷史。Go 1.26.5 的 Mac arm64／Ubuntu amd64 實測曾出現 tanh 1 ULP、softplus 2 ULP 差異；此容許範圍只用於狀態驗證，不保證跨處理器後續運算逐位元相等。
 
-## 後續缺口：舊 episode 必填欄位
+## 已修正缺口：舊 episode 必填欄位
 
-P1，下一個優先修正。`checkpoint.Load` 的舊 episode 格式會將缺失或明確 `null` 的 `data_seed` 等 scalar 解碼為零；重算 checksum 後仍會接受，可能改變後續資料序列。新 `LoadIndividual` 已拒絕這類輸入。修正時先加入重現測試，驗證省略／null 的 seed、cursor、updates、最佳化器設定與遮罩不得靜默變零，同時保留舊 Save 合法輸出的零邊 nullable 陣列、可省略 InputNodes／Delays，以及明確合法零值。此項不計為另一條原始需求。
+原為 P1。`checkpoint.Load` 的舊 episode 格式曾把缺失或明確 `null` 的 `data_seed` 等 scalar 解碼為零，重算 checksum 後仍接受。2026-09-14 修正：`decodeDocument` 在嚴格解碼前先以 `checkRequiredFields` 依 `State` 的結構逐欄檢查，缺失或 `null` 的 scalar／巢狀結構、缺失的陣列，以及陣列裡的 `null` 元素都以「is missing／is null」加 JSON 路徑拒絕；`null` 陣列（零邊 `core.weights`）、`omitempty` 的 `input_nodes`／`delays`、明確零值維持合法。`LoadIndividual` 本來就拒絕所有 `null`，不變。此項不計為另一條原始需求。
 
-重現：將 [probe](../../evidence/STA-02/episode-presence-probe.go.txt) 複製為 Git 外的 `.go` 檔，在 module 內以 `go run /ABS/PROBE.go` 執行。[實際日誌](../../evidence/STA-02/episode-presence.log) 確認 seed 1001 因缺失／null 被讀為 0。
+- Red：實作前 `go test -run TestEpisodeLoad ./checkpoint/` 有 21 個子案例失敗（被接受或只被下游形狀檢查以不相關訊息擋下），見 [episode-required-red.log](../../evidence/STA-02/episode-required-red.log)。
+- Green：`checkpoint/episode_required_test.go` 的 26 個缺失／null 案例全部以路徑訊息拒絕，合法零值、零邊 null 陣列與省略／null 的可選陣列仍可讀回；`go test`、`go test -race`、`go vet ./checkpoint/` 通過。
+- 重現探針修正後的輸出見 [episode-presence-after-fix.log](../../evidence/STA-02/episode-presence-after-fix.log)：四個缺失／null 案例都 `accepted=false`，零邊案例仍 `load_accepted=true`。原始重現見 [episode-presence.log](../../evidence/STA-02/episode-presence.log)。

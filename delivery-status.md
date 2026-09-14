@@ -14,7 +14,7 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 [10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
 
-SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料（ticket 03）。ticket 05 已加入持續個體、選擇性重設、安全快照與隔離驗收。下一步先修舊 episode 快照缺失／null scalar 靜默變零，再接續原規格的 LIF 放電核心。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
+SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料（ticket 03）。ticket 05 已加入持續個體、選擇性重設、安全快照與隔離驗收，舊 episode 快照缺失／null scalar 靜默變零的 P1 缺口已於 2026-09-14 修正。下一步接續原規格的 LIF 放電核心。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
 ## 進行中
 
@@ -41,7 +41,7 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-[05 狀態保存](docs/tickets/05-resume.md#後續缺口舊-episode-必填欄位)：先修舊 episode 讀取器的 P1 缺口，讓缺失／null 的必填 scalar 明確報錯，保留合法零值與舊檔相容性。新個體格式已拒絕這些輸入，三項 fixture 驗收不受影響。之後接續 LIF；SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
+LIF 放電核心（主規格 8.2、8.3，COR 需求群）：先固定放電模型與替代梯度契約、寫失敗測試，再實作可與連續核心並列的 LIF 動態與可訓練閾值。舊 episode 讀取器缺口已修（[ticket 05](docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位)）。SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
 
 圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 21 項附上通過證據，其餘保留。最新全套日誌見 [Mac v25](evidence/cpu-reference-20260914/macos-v25/validation.log)、[Ubuntu v25](evidence/cpu-reference-20260914/ubuntu-v25/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v25.json)。
 

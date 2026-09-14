@@ -13,6 +13,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -275,6 +276,11 @@ func decodeDocument(data []byte) (State, error) {
 	want := sha256.Sum256(raw.Payload)
 	if !bytes.Equal(got, want[:]) {
 		return State{}, fmt.Errorf("checkpoint payload checksum mismatch")
+	}
+	// Missing or null required values must fail before encoding/json would
+	// silently decode them as zero.
+	if err := checkRequiredFields(raw.Payload, reflect.TypeOf(State{}), "payload"); err != nil {
+		return State{}, fmt.Errorf("decode checkpoint payload: %w", err)
 	}
 	var state State
 	if err := decodeStrict(raw.Payload, &state); err != nil {

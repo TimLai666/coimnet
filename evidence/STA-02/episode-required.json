@@ -1,0 +1,29 @@
+{
+  "gap": "episode checkpoint required scalars decoded as zero when missing or null",
+  "ticket": "docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位",
+  "fixed_on": "2026-09-14",
+  "fix": "checkpoint/required.go checkRequiredFields walks State's struct type before strict decoding: missing/null scalars and nested structs, missing arrays (unless omitempty) and null array elements are rejected with the JSON path; null arrays and omitempty fields stay legal",
+  "red": {
+    "command": "go test -count=1 -run TestEpisodeLoad ./checkpoint/",
+    "log": "evidence/STA-02/episode-required-red.log",
+    "result": "21 sub-cases failed before the fix (accepted, or rejected only by unrelated downstream shape checks)"
+  },
+  "green": {
+    "commands": [
+      "go test -count=1 ./checkpoint/",
+      "go test -race -count=1 ./checkpoint/",
+      "go vet ./checkpoint/",
+      "go test -count=1 ./..."
+    ],
+    "result": "all pass; 26 missing/null cases rejected by path, legal zeros, null arrays and omitted optional fields accepted"
+  },
+  "probe": {
+    "command": "cp evidence/STA-02/episode-presence-probe.go.txt TMP/probe.go && go run TMP/probe.go",
+    "before": "evidence/STA-02/episode-presence.log",
+    "after": "evidence/STA-02/episode-presence-after-fix.log",
+    "result": "missing/null data_seed and weight_decay now accepted=false with path messages; zero-edge checkpoint still loads with weights null"
+  },
+  "tests": [
+    "checkpoint/episode_required_test.go"
+  ]
+}

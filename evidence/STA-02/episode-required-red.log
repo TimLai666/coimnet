@@ -1,0 +1,60 @@
+2026/09/14 19:30:34 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars (0.22s)
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_data_seed (0.02s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=0 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_data_seed (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=0 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_next_sample (0.01s)
+        episode_required_test.go:114: error "next sample 0 does not equal training updates 2" does not name next_sample as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_next_sample (0.01s)
+        episode_required_test.go:114: error "next sample 0 does not equal training updates 2" does not name next_sample as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_generator (0.01s)
+        episode_required_test.go:114: error "unsupported checkpoint generator \"\"" does not name generator as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training (0.01s)
+        episode_required_test.go:114: error "next sample 2 does not equal training updates 0" does not name training as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_training (0.01s)
+        episode_required_test.go:114: error "next sample 2 does not equal training updates 0" does not name training as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training.updates (0.01s)
+        episode_required_test.go:114: error "next sample 2 does not equal training updates 0" does not name training.updates as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_training.updates (0.01s)
+        episode_required_test.go:114: error "next sample 2 does not equal training updates 0" does not name training.updates as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_options.weight_decay (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_options.weight_decay (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_options.learning_rate (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: invalid optimizer option range" does not name learning_rate as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_options.truncation (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_trainable.weights (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_trainable (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_config.input_size (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: input, output and readout dimensions must be positive" does not name input_size as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_config.dynamics.dt (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: nodes and finite dt must be positive" does not name dynamics.dt as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_config.dynamics.nodes (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: nodes and finite dt must be positive" does not name dynamics.nodes as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_config.dynamics.activation (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: unsupported activation \"\"" does not name activation as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_parameters (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: parameter shape mismatch" does not name parameters as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_parameters.core (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: parameter shape mismatch" does not name parameters.core as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_optimizer (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: optimizer shape mismatch" does not name optimizer as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_core.bias (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_optimizer.steps (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: nonzero moments without updates at parameter 1" does not name optimizer.steps[1] as missing or null
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_readout_nodes (0.01s)
+        episode_required_test.go:111: accepted checkpoint; data_seed=1001 updates=2
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training.schema_version (0.01s)
+        episode_required_test.go:114: error "invalid training snapshot: unsupported training snapshot \"\"" does not name training.schema_version as missing or null
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	0.666s
+FAIL
+exit=
