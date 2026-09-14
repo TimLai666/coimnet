@@ -8,7 +8,7 @@ User Story：研究者可以把 GraphStore 讀回的接線接上任一動態模�
 
 Blocked by：09 GraphStore、11 LIF 核心
 
-Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選）
+Status：in_progress（第一階段 dynamics 已驗證；第二階段 simulate／CLI 進行中）
 
 對應需求：NAT-01（原生執行）、COR-03 的持續狀態部分。參數推導屬 13，空模型與判讀屬 14。
 
@@ -77,8 +77,10 @@ Bias, LogTau, ThetaRaw, Source string, Hash string}`，由 `engineering_uniform_
 
 ## 驗收
 
-- [ ] LIF `Advance` 與 `Forward` 逐位一致（含延遲、不應期、適應），狀態 JSON 往返與
-  fingerprint 檢查，非法狀態拒絕；`go test`、race、vet。
+- [x] LIF `Advance` 與 `Forward` 逐位一致（含延遲、不應期、適應），狀態 JSON 往返與
+  fingerprint 檢查，非法狀態拒絕；`go test`、race、vet。（Opus 先寫失敗測試再實作；
+  30 組隨機設定 × 4 種切分逐位相等；六種突變皆被測試擋下；`Advance` 拒絕測試用平滑模式；
+  突觸跡上限採相對容差 `1/(1-kappa)` 加 `1e-9*(1+1/(1-kappa))`。）
 - [ ] runner fixture：三顆神經元固定注入與探針，手算探針時序；兩種核心同一 protocol；
   選擇器由註記解析並寫入報告；監控與門檻旗標；取消與非有限值不留半次狀態；兩次執行
   位元相同；中途保存狀態再接續結果相同。
