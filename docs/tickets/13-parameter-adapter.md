@@ -24,6 +24,22 @@ Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選�
 
 `syn-points`（13 GB）與骨架本票不納入；`-traced-only`／`-significant-only` 變體不使用。
 
+## 已核對的來源事實（2026-09-14 下載後）
+
+- 四份檔案已用 `data download` 取得並有回條（`evidence/malecns-source-20260914/*-download.json`，
+  提供者 CRC32C 驗證）。
+- `body-stats`：88,384,522 列、1,349 批，欄位 `body int64`、`pre int32`、`post int32`、
+  `status_fine dictionary<int8,utf8,ordered>`、`superclass`／`class`／`type`／`instance utf8`、
+  `downstream int64`、`synweight int64`、`rank int64`。列數與 weights 的 unique endpoint 數
+  88,384,522 相同，是身份對應的交叉核對點；`status_fine` 與 annotations 的 `statusLabel`
+  關係待核。
+- `tbar-neurotransmitters`：`conf` 為 `float32`，現有 `feather` 讀取器拒絕；已派工擴充
+  fixed-width 型別（int16／uint8／uint16／uint32／float32），完成後補 schema 與列數。
+- `Neuprint_Meta.csv`：欄位含 `voxelSize float[]`、`primaryRois string[]`、`superLevelRois`、
+  `totalPreCount`、`totalPostCount`、`postHighAccuracyThreshold`／`preHPThreshold`／
+  `postHPThreshold`；本票只讀 `roiHierarchy`、`roiInfo` 與門檻欄位。
+- `syn-partners`：下載中（6.78 GB），schema 待 `data inspect`。
+
 ## Root 決策（2026-09-14）
 
 1. **取得與驗證**：四份檔案加入 `data sources`（URL、大小、下載時記錄 ETag／CRC32C），以
