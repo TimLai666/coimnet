@@ -22,9 +22,9 @@ CoImNet 的新意需要透過方法、實作及對照實驗逐步建立。專案
 
 Google 與 HHMI Janelia 等合作團隊公布的 MaleCNS 是果蠅腦與腹神經索的接線資源。它讓研究者取得結構與註記，再據此建立運作模型。[Google Research 專案介紹](https://research.google/blog/a-connectomics-milestone-mapping-the-complete-male-fruit-fly-brain/)
 
-目前 CoImNet 已下載並完整讀取三份原件：細胞註記、每個 body 的傳導物質預測，以及 segment 之間的連線強度。官方另有細部突觸座標、突觸配對及每個突觸前位置的傳導物質機率等資料，可在所選機制需要時取得。[MaleCNS 官方下載說明](https://male-cns.janelia.org/download/)
+目前 CoImNet 已下載並完整讀取七份原件：細胞註記、每個 body 的傳導物質預測、segment 之間的連線強度，以及推導邊參數用的每個 body 統計、逐突觸前位置傳導物質機率、逐突觸配對與 `Neuprint_Meta.csv` 的 ROI 階層。官方另有細部突觸座標與骨架等資料，可在所選機制需要時取得。[MaleCNS 官方下載說明](https://male-cns.janelia.org/download/)
 
-這些資料沒有包含每個細胞所有受體、離子通道、電生理參數與當下化學狀態的完整量測。資料能否支持某項機制，必須逐欄與研究證據核對。目前只讀取了傳導物質表，還沒有將其轉成作用符號或接上化學調節。註記中名為 `receptorType` 的欄位不能在沒有定義依據時當成神經傳導物質受體。實際取得欄位與限制見[來源稽核](malecns-source-audit.md)。
+這些資料沒有包含每個細胞所有受體、離子通道、電生理參數與當下化學狀態的完整量測。資料能否支持某項機制，必須逐欄與研究證據核對。目前已讀取每個 body 的傳導物質表，另外也已取得逐突觸傳導物質機率、突觸配對、body 統計與 ROI 階層四份檔案，並依明示規則把它們轉成每條邊的作用符號與強度（見下表「由發布資料推導的邊參數」），但符號是規則推導的結果，不是量測到的作用；化學調節仍未接上。註記中名為 `receptorType` 的欄位不能在沒有定義依據時當成神經傳導物質受體。實際取得欄位與限制見[來源稽核](malecns-source-audit.md)。
 
 Shiu 等人的全腦 LIF 模型，已能在味覺與理毛等研究情境產生可驗證預測，但作者明確省略了神經形態、不同受體動態、電突觸、非脈衝細胞、內在狀態與長距離神經胜肽等因素。這提供簡化模型仍可能有研究價值的例子，也說明「全腦」描述的是涵蓋範圍，並不等於全部生物機制。[Shiu 等，Nature 2024](https://www.nature.com/articles/s41586-024-07763-9)
 
@@ -44,7 +44,8 @@ Shiu 等人的全腦 LIF 模型，已能在味覺與理毛等研究情境產生�
 | --- | --- | --- |
 | 連續動態、延遲、權重／偏置／時間常數學習 | 已有 CPU 實作 | 使用合法拓撲與參數，通過手算、時間步收斂與梯度驗證。 |
 | LIF 放電核心、可訓練基礎閾值、短期適應 | 已有 CPU 實作 | 產品使用的硬放電模式每步最多產生一次事件，達到閾值就把膜電位重設為 `v_reset`，接下來的不應期保持重設值並忽略當步輸入，對外輸出是會衰減的突觸跡。基礎閾值經 `theta_min + (theta_max - theta_min) * sigmoid(theta_raw)` 限制在設定範圍內，可以單獨訓練。短期適應是可以開關的設定，關閉後前向與反向和未啟用逐位相同。反向使用宣告的 `fast_sigmoid` 替代梯度 `psi(u) = 1/(1 + scale*|u|)^2`，重設分支不傳梯度，硬放電事件不做有限差分。每步一次事件是離散時間步的表示上限，不是量測到的生理放電頻率。 |
-| 原生模擬 runner（固定注入、具名探針、不經訓練） | 已有 CPU 實作 | `simulate` 套件把 GraphStore 的節點與邊直接接上連續或 LIF 核心，刺激經固定線性注入進入指定神經元，活動經探針的宣告 reduce 讀出，沒有 encoder、readout 或最佳化器。參數必須明示來源，目前只有 `engineering_uniform_positive`（`gain × 原始 weight`、全興奮、統一 bias／log_tau／theta_raw、延遲零），報告與文件都寫明這是工程假設而非生物參數；全圖 300 步實測見 ticket 12。由發布資料推導參數（ticket 13）與空模型歸因（ticket 14）待做。 |
+| 原生模擬 runner（固定注入、具名探針、不經訓練） | 已有 CPU 實作 | `simulate` 套件把 GraphStore 的節點與邊直接接上連續或 LIF 核心，刺激經固定線性注入進入指定神經元，活動經探針的宣告 reduce 讀出，沒有 encoder、readout 或最佳化器。參數必須明示來源，目前有 `engineering_uniform_positive`（`gain × 原始 weight`、全興奮、統一 bias／log_tau／theta_raw、延遲零）與 `derived_release/v1`（見下一列）兩種，報告與文件都寫明兩者都是明示假設而非生物參數；全圖 300 步實測見 ticket 12（uniform）與 ticket 13（derived）。空模型歸因（ticket 14）待做。 |
+| 由發布資料推導的邊參數（正負號與強度） | 已有 CPU 實作 | `params` 依規則檔 `coimnet-derivation-rules/v1` 讀四份官方發布檔，產生每條邊的正負號、信心度、傳導物質與正規化強度，`simulate run --params` 以 `weight_scale × sign × 推導強度` 執行同一張圖。**正負號是規則推導的，不是量測值**：發布資料只提供每個突觸前位置的傳導物質預測機率，規則取配對突觸的平均機率選出勝出的傳導物質，再換成 `+1`／`-1`／unknown；果蠅 glutamate 多為抑制屬工程假設，規則檔的 basis 必須寫明。未知保持未知：沒配到突觸、低於機率門檻、低於配對比例門檻或規則本身標為 unknown 的邊都不補預設值，由 protocol 的 `unknown_sign`（`exclude`／`excitatory`／`inhibitory`）明示處理並分開計數。bias、log_tau、theta_raw 與零延遲仍是統一工程值，不是細胞類型差異。全圖實測（配對比例 1.000、sign 53.3%／35.9%／10.8%）見 [ticket 13](tickets/13-parameter-adapter.md) 與 `evidence/NAT-02/`。 |
 | 按類型混合、慢速穩定、LIF 個體持續狀態 | 待實作 | 混合時要明示細胞分群依據，不得重複計入同一筆訊號。慢速穩定（homeostasis）與個體電位、突觸跡、適應值的保存各自另行驗收。目前 `learning.NewIndividual` 遇到 LIF 設定會回明確錯誤，不退回連續核心。 |
 | 暫時連線狀態、局部學習、近期參與紀錄 | 待實作 | 分開保存基礎參數及暫時狀態，驗證更新次序、關閉效果與恢復。 |
 | 人工調節與有證據支持的生物調節 | 待實作 | 人工設定使用功能名稱。生物設定附來源、單位、接收端與未知欄位，不能只改名冒充荷爾蒙。 |

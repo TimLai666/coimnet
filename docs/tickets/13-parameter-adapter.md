@@ -8,7 +8,7 @@ User Story：研究者可以把 MaleCNS 發布中的突觸統計、逐突觸傳�
 
 Blocked by：08 標準化接線圖、09 GraphStore、12 runner（消費者）
 
-Status：第一階段（`params` 套件、檔案格式、`data derive`、`data validate --params`、`data sources`、fixture 與測試）已完成並驗證；第二階段（`simulate` 整合與真實資料實跑）未開始。驗收項目驗證後才勾選。
+Status：verified_scoped（兩階段皆已驗證：`params` 套件與檔案格式、`data derive`／`data validate --params`、`simulate` 的 `derived_release/v1` 來源與 `simulate run --params`、全圖推導與對照實跑；NAT-02 標 passed。範圍限制：全圖只在 macOS arm64 跑過，unknown 政策只有 `exclude` 跑過全圖，`min_matched_fraction` 門檻在真實資料上沒有觸發，節點純量仍是統一工程值）
 
 對應需求：NAT-02；主規格 5.1（只有所選機制需要時才取得細部資料）、5.3、5.5
 （`EdgeRecord` 的傳導物質與作用符號證據）、7.4（有依據固定符號、未知明示假設或可訓練）。
@@ -175,11 +175,14 @@ exclude 為權重 0），`simulate run --params FILE` 讀參數集、`CheckGraph
   相符、null 機率皆有明確處理與測試。
 - [x] bounded external sort 路徑走多 run；取消與容量錯誤不留暫存；參數集往返、竄改拒絕、
   與 GraphStore hash 不符拒絕。
-- [ ] 真實資料：四份原件下載回條與逐批讀取驗證；全部選入邊推導完成，報告配對率、sign
+- [x] 真實資料：四份原件下載回條與逐批讀取驗證；全部選入邊推導完成，報告配對率、sign
   分布、unknown 比例與耗時／記憶體；12 的 runner 以此參數集執行至少一次並記錄與
-  `engineering_uniform_positive` 的差異。
-- [ ] 文件：來源稽核、機制文件（正負號為規則推導，非量測）、README、delivery-status；
-  `evidence/NAT-02/`。
+  `engineering_uniform_positive` 的差異。（25,563,197 條邊、配對比例 1.000、sign
+  +13,636,628／−9,172,513／unknown 2,754,056、207.31 s、3.87 GB RSS；對照見下節與
+  `evidence/NAT-02/verification.json`。）
+- [x] 文件：來源稽核、機制文件（正負號為規則推導，非量測）、README、delivery-status；
+  `evidence/NAT-02/`。（來源稽核於 2026-09-14 新增原件章節；機制文件與 README 由 Opus 更新；
+  delivery-status 與 requirements-status 的 NAT-02 由 root 補齊。）
 
 ## 依據
 
@@ -291,3 +294,124 @@ ETag、CRC32C、大小對回 `evidence/malecns-source-20260914/*-download.json`�
 gofmt／vet／`go test ./...`／race 全數通過（params 與 cli 共 53 個測試）。接受第一階段的九項
 契約偏離。待改善（不阻擋）：`alignEdges` 只信任 connectome 的邊序，沒有在執行期檢查 (source,
 target) 單調遞增，建議加一個便宜的防護；重複 pair 緩衝的記憶體保留只增不減。
+
+## 第二階段證據（2026-09-15）
+
+### 交付
+
+`simulate` 新增第二個參數來源 `derived_release/v1`：`protocol.go` 的
+`DerivedParameters{unknown_sign, weight_scale}`（兩個欄位都必填、沒有預設值）與
+`validateParameterSource`，`parameters.go` 的 `FromDerived`、`DerivedSummary` 與放寬後的
+`validate`，`report.go` 的五個新報告欄位，`runner.go` 依來源改寫 `assumptions`。
+CLI：`internal/cli/simulate.go` 加 `--params` 與 `simulateParameters`（derived 必填、uniform 拒絕，
+以 `params.LoadWithReceipt` 讀檔後 `CheckGraph` 再 `FromDerived`）。
+腳本：`scripts/derive-evidence.sh`（新增）與 `scripts/simulate-evidence.sh` 的第三個參數。
+文件：README 的 `simulate run`／`data derive` 兩節、ENG 的 `simulate`／`params` 兩條、
+`docs/model-and-mechanisms.md` 的「由發布資料推導的邊參數」一列。
+
+### 先寫失敗測試
+
+`evidence/NAT-02/red-stage2-simulate.log`（`undefined: ParameterSourceDerived`、
+`undefined: FromDerived`、`unknown field Derived in struct literal of type Protocol`，build failed）與
+`evidence/NAT-02/red-stage2-cli.log`（`undefined: simulate.DerivedParameters`、
+`p.Derived undefined`，build failed）。實作後兩個套件全綠。
+
+### 手算 fixture
+
+`simulate/derived_fixture_test.go` 重建第一階段的四份推導來源與四節點六邊圖（Go 不能跨套件
+import 測試檔，因此複製寫入器與列表，期望值另外由票面表格寫出），`simulate/derived_test.go`
+以 `params.Derive` 真的推導一次再套 `FromDerived`。基準規則 `gain = 2`、`normalizer = post_total`
+的六條邊為 sign `+1 / −1 / 0 / −1 / 0 / 0`、強度 `2 / 2·2/6 / 0 / 1 / 0 / 2·8/7`，取
+`weight_scale = 4`（2 的冪，乘法逐位精確）後三種政策的期望權重為：
+
+| 政策 | 邊 0 | 邊 1 | 邊 2 | 邊 3 | 邊 4 | 邊 5 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| exclude | 8 | −4·(4/6) | 0 | −4 | 0 | 0 |
+| excitatory | 8 | −4·(4/6) | 0 | −4 | 0 | 4·(16/7) |
+| inhibitory | 8 | −4·(4/6) | 0 | −4 | 0 | −4·(16/7) |
+
+`DerivedSummary` 為 +1 一條、−1 兩條、unknown 三條。另有：兩種核心 × 三種政策實跑、
+報告五個新欄位與 `assumptions` 內容、兩次執行 JSON 位元組相同、中途保存狀態再接續與一次跑完
+相同、參數集對不上的圖被拒、hash 隨參數集檔 SHA-256／政策／scale 改變而 uniform 的 hash 不變、
+以及八種不合法 protocol。CLI 另測 `data derive` → `simulate run --params` 全流程、
+uniform 報告不帶 derived 欄位、`--state-out`／`--state-in` 接續，以及缺 `--params`、
+uniform 配 `--params`、uniform protocol 帶 `derived` 區塊、缺政策、derived 配 `uniform.gain`
+等八種失敗。
+
+### 真實資料
+
+命令與完整判讀見 `evidence/NAT-02/verification.json`。
+
+| 項目 | 實測 |
+| --- | --- |
+| 推導規模 | 165,122 節點、25,563,197 條邊；四份來源 SHA-256 與下載回條相同 |
+| 座標配對 | 45,656,140 個 T-bar 鍵，0 個重複鍵、0 個 null 機率鍵；配對比例 124,025,046／124,025,046 = 1.000，未配對 0 |
+| pair | 25,563,197 個，`pairs_not_in_graph` 0，`edges_without_match` 0 |
+| sign 分布 | +13,636,628／−9,172,513／unknown 2,754,056（10.77%） |
+| unknown 原因 | 沒配對 0、低於 `min_probability` 1,038,293、低於 `min_matched_fraction` 0、規則對應 unknown 1,715,763 |
+| 每種傳導物質邊數 | acetylcholine 13,947,812、gaba 4,705,861、glutamate 4,633,150、dopamine 1,233,608、serotonin 581,130、octopamine 314,307、histamine 147,329 |
+| 強度分位數 | p0 8.02e-06、p25 0.000899、p50 0.002311、p75 0.005682、p100 1；`normalizer_zero_edges` 0 |
+| 外部排序 | tbar 3 runs／1.87 GB、syn-partners 5 runs／2.48 GB、pair 7 runs／4.46 GB、ROI 2 runs／0.78 GB；中介檔 1.87 GB 與 1.74 GB；暫存目錄跑完為空 |
+| 推導資源 | 牆鐘 207.31 s、max RSS 3,870,539,776 B、帳面峰值 3,557,271,500 B（上限 6 GiB 記憶體、40 GiB 暫存皆未觸及） |
+| 參數集 | 463,451,966 B、SHA-256 `c4db0f3f…0c58c77`；`data validate --params --store` 在新程序通過 |
+
+`weight_scale` 取 21.6：非零推導強度的中位數是 0.002310803004043905，
+`0.05 / 0.002310803004043905 = 21.6375`，取 21.6 後中位權重大小為 0.0499，與 NAT-01 用
+`gain 0.025 × 中位原始 weight 2 = 0.05` 同一量級，兩次執行因此可比。
+
+與 `engineering_uniform_positive`（`evidence/NAT-01/fullgraph-uniform-v1/report.json`）在同一
+store、同一 protocol 形狀與同一刺激下的差異：
+
+| 觀察 | uniform | derived（exclude、21.6） |
+| --- | --- | --- |
+| 沉默比例 | 0.0206514（3,410 顆） | 0.6439844（106,336 顆） |
+| 放電率分位數 | 0、0.47333、0.47333、0.47667、0.48333 | 0、0、0、0.02333、0.48333 |
+| 最大全群放電比例 | 0.5466564（第 130 步） | 0.0793474（第 167 步） |
+| 第 31 步後平均全群放電比例 | 0.4878298 | 0.0668042（最小 0.0269437、末步 0.0722799） |
+| 穩定旗標 | `["max_population_rate_exceeded"]` | `[]`（同一組門檻） |
+| `alin_injected_spikes` 峰值 | 1（第 10 步） | 1（第 10 步） |
+| `alin_injected_trace` 峰值 | 3.0332448（第 186 步） | 1.7441003（第 25 步） |
+| `descending_neuron_spikes` 峰值 | 0.5936073（第 15 步） | 0.1255708（第 68 步） |
+| `vnc_motor_spikes` 峰值 | 0.5169492（第 20 步） | 0.1200565（第 114 步） |
+| 牆鐘／max RSS | 93.08 s／4,378,574,848 B | 82.57 s／5,976,768,512 B |
+
+同一份推導以兩個不同 build、兩個行程各跑一次，除了耗時、峰值記憶體與因此改變的參數集檔
+hash 外，每個計數、比例、直方圖與分位數都相同；兩次全圖模擬的探針時序與 monitors 也完全
+相同，只有 `parameter_hash` 因為納入參數集檔 SHA-256 而不同。保留的證據是第二次（其
+`binary.sha256` 對應現在的原始碼）。
+
+### 與票面契約的差異（皆為刻意）
+
+1. `FromDerived` 的簽章多一個參數：票面寫 `FromDerived(set, protocol)`，但同一句要求 hash 納入
+   參數集檔的 SHA-256，而 `params.Set` 不帶該指紋，因此改為
+   `FromDerived(set *params.Set, setSHA256 string, protocol Protocol)`，由呼叫端傳入。
+2. derived 來源的 uniform `gain` 規則定為「不寫或為零」，非零即拒絕（有測試）。理由是邊強度
+   來自參數集與 `weight_scale`，留一個會被忽略的第二個強度旋鈕是陷阱。兩種來源都仍需要
+   uniform 區塊，因為 bias／log_tau／theta_raw 沒有別的來源。
+3. `RunReport.unknown_sign_edges` 是 `*uint64`：其餘四個 derived 欄位用 `omitempty` 即可，但
+   unknown 邊數為 0 是有意義的結果，指標讓 derived 一定印出、uniform 一定不印。
+4. hash 只納入票面點名的四項出處（參數集檔 SHA-256、規則 hash、政策、scale）加四組陣列；
+   `DerivedSummary` 的三個計數不入 hash，因為它們由陣列與政策決定。編碼寫在 `FromDerived`
+   的註解，uniform 的既有編碼未變（NAT-01 的 `parameter_hash` 仍可重現，有測試）。
+5. 乘積為零時一律存正零，避免 `-0` 進到 hash 與報告。
+6. `min_matched_fraction 0.5` 在真實資料上沒有擋掉任何一條邊（所有配對比例都是 1.0），因此
+   這個門檻只在 fixture 上驗證過。
+7. 既有測試 `TestProtocolValidationRejectsUnsupportedConfigurations` 原本要求錯誤訊息寫出
+   「ticket 13」，改為要求列出兩個實際可用的來源。
+8. `docs/model-and-mechanisms.md` 除了票面要求的新增一列，另修正兩句已被本次結果推翻的敘述
+   （runner 那列的「目前只有 `engineering_uniform_positive`」與「還沒有將其轉成作用符號」）。
+9. 第一次全圖推導用的是第二階段改動前的 build。為了讓證據裡的 `binary.sha256` 對應交付的
+   原始碼，推導與模擬都以最終 build 重跑一次，只保留第二次；第一次的數值一致性記在上面。
+
+### 尚未完成
+
+空模型對照（NAT-03）與具名神經元判讀（NAT-04）依 ticket 14 處理。`excitatory`／`inhibitory`
+兩種政策只在 fixture 上跑過，全圖只跑 `exclude`；全圖也只在 macOS arm64 上跑過。
+
+### root 審查（2026-09-15，第二階段）
+
+逐檔讀過 `simulate` 四個檔的 diff、CLI、兩支證據腳本、規則檔與 `verification.json`；報告裡的
+三個總和（sign、四個 unknown 原因、七種傳導物質）都等於 25,563,197，unknown 原因的拆解與各傳導物質
+低於門檻的邊數互相吻合，規則檔兩份 SHA-256 相同，`validate.json` 確認參數集與 store 的 hash 相符。
+root 重跑 gofmt／vet／`go test ./...`／race 全數通過（simulate、params、cli 共 81 個測試）。接受九項
+契約偏離。delivery-status 與 requirements-status 由 root 補齊後勾選「文件」。

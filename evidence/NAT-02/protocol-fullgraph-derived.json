@@ -1,0 +1,90 @@
+{
+  "schema_version": "coimnet-simulate-protocol/v1",
+  "core": "lif",
+  "lif": {
+    "dt": 1,
+    "tau_syn": 5,
+    "theta_min": 0.1,
+    "theta_max": 2,
+    "v_reset": -0.5,
+    "refractory_steps": 1,
+    "adaptation": {
+      "enabled": false,
+      "tau_adapt": 0,
+      "beta": 0
+    },
+    "surrogate": {
+      "kind": "fast_sigmoid",
+      "scale": 2
+    }
+  },
+  "injection_groups": [
+    {
+      "channel": 0,
+      "selector": {
+        "field": "class",
+        "equals": "ALIN"
+      },
+      "gain": 1
+    }
+  ],
+  "probes": [
+    {
+      "name": "alin_injected_spikes",
+      "selector": {
+        "field": "class",
+        "equals": "ALIN"
+      },
+      "reduce": "spike_fraction"
+    },
+    {
+      "name": "alin_injected_trace",
+      "selector": {
+        "field": "class",
+        "equals": "ALIN"
+      },
+      "reduce": "mean_output"
+    },
+    {
+      "name": "descending_neuron_spikes",
+      "selector": {
+        "field": "superclass",
+        "equals": "descending_neuron"
+      },
+      "reduce": "spike_fraction"
+    },
+    {
+      "name": "vnc_motor_spikes",
+      "selector": {
+        "field": "superclass",
+        "equals": "vnc_motor"
+      },
+      "reduce": "spike_fraction"
+    }
+  ],
+  "stimulus": {
+    "pulse": {
+      "channels": 1,
+      "steps": 300,
+      "channel": 0,
+      "onset": 10,
+      "duration": 20,
+      "amplitude": 2
+    }
+  },
+  "thresholds": {
+    "max_population_rate": 0.2,
+    "min_active_fraction": 0.01
+  },
+  "parameter_source": "derived_release/v1",
+  "uniform": {
+    "gain": 0,
+    "bias": 0,
+    "log_tau": 0,
+    "theta_raw": 0
+  },
+  "derived": {
+    "unknown_sign": "exclude",
+    "weight_scale": 21.6
+  }
+}

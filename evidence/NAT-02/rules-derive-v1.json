@@ -1,0 +1,48 @@
+{
+  "schema_version": "coimnet-derivation-rules/v1",
+  "sources": {
+    "body_stats": {
+      "path": "body-stats-male-cns-v1.0-minconf-0.5.feather",
+      "sha256": "ca5dc83a26382ae70c8d8f42fc09ce2dbc1af7c03f3a001a1936b5e142540647"
+    },
+    "tbar": {
+      "path": "tbar-neurotransmitters-male-cns-v1.0.feather",
+      "sha256": "bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d"
+    },
+    "syn_partners": {
+      "path": "syn-partners-male-cns-v1.0-minconf-0.5.feather",
+      "sha256": "959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07"
+    },
+    "neuprint_meta": {
+      "path": "Neuprint_Meta.csv",
+      "sha256": "227ff1e873881a1ab124b10aa51ada94012773ddb9c4ad986e5cc83df8d360f7"
+    }
+  },
+  "sign": {
+    "schema_version": "coimnet-sign-rule/v1",
+    "mapping": {
+      "acetylcholine": "+1",
+      "dopamine": "unknown",
+      "gaba": "-1",
+      "glutamate": "-1",
+      "histamine": "-1",
+      "octopamine": "unknown",
+      "serotonin": "unknown"
+    },
+    "basis": {
+      "acetylcholine": "Cholinergic central neurons of Drosophila are reported to act through fast excitatory nicotinic receptors, so the rule fixes the sign at +1.",
+      "dopamine": "Dopamine acts through several G-protein-coupled receptor types whose effect depends on the receptor the postsynaptic cell expresses, which the release does not report, so the sign stays unknown.",
+      "gaba": "GABA is reported to act through the Rdl GABA-A chloride conductance in the fly central nervous system, so the rule fixes the sign at -1.",
+      "glutamate": "Fly glutamatergic connections are frequently inhibitory through the GluCl chloride channel while excitatory glutamate receptors also exist, so a fixed -1 is an engineering 假設 (engineering assumption) recorded here, not evidence in the release.",
+      "histamine": "Histamine is reported to gate the ort/HisCl chloride channels in the fly, so the rule fixes the sign at -1.",
+      "octopamine": "Octopamine is a modulator acting through G-protein-coupled receptors whose effect depends on the postsynaptic receptor, which the release does not report, so the sign stays unknown.",
+      "serotonin": "Serotonin acts through several G-protein-coupled receptor subtypes with opposite effects depending on the receptor, which the release does not report, so the sign stays unknown."
+    },
+    "min_probability": 0.5,
+    "min_matched_fraction": 0.5
+  },
+  "strength": {
+    "gain": 1,
+    "normalizer": "post_total"
+  }
+}

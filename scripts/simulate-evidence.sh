@@ -1,23 +1,31 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-if [[ $# -ne 2 || $1 == --help || $1 == -h ]]; then
-  echo 'Usage: scripts/simulate-evidence.sh NEW_OUTPUT_DIRECTORY PROTOCOL_FILE'
+if [[ $# -lt 2 || $# -gt 3 || $1 == --help || $1 == -h ]]; then
+  echo 'Usage: scripts/simulate-evidence.sh NEW_OUTPUT_DIRECTORY PROTOCOL_FILE [PARAMS_FILE]'
   echo 'Builds the CLI, records doctor/binary/protocol/store fingerprints and the'
   echo 'machine load, then runs'
   echo '  coimnet simulate run --store data/malecns-v1.0/graph-v1.coimgraph --protocol PROTOCOL_FILE'
   echo 'under /usr/bin/time, saving report.json, run.log, started-at/finished-at and'
   echo 'the fingerprint of the state snapshot written after the run. The state file'
   echo 'itself is removed once hashed; only its size and SHA-256 are kept.'
+  echo 'With PARAMS_FILE the run adds --params PARAMS_FILE, which the derived_release/v1'
+  echo 'parameter source requires, and the SHA-256 of that parameter set is recorded in'
+  echo 'params.sha256. The parameter set itself is read only and never modified.'
   echo 'Requires the whole-brain graph store at data/malecns-v1.0/graph-v1.coimgraph.'
   echo 'The output directory must not exist. Run from the repository root with Go on PATH.'
   if [[ $# -ge 1 && ($1 == --help || $1 == -h) ]]; then exit 0; fi
   exit 2
 fi
 protocol=$2
+parameters=${3:-}
 store=data/malecns-v1.0/graph-v1.coimgraph
 if [[ ! -f $protocol ]]; then
   echo "protocol file $protocol does not exist" >&2
+  exit 2
+fi
+if [[ -n $parameters && ! -f $parameters ]]; then
+  echo "parameter set $parameters does not exist" >&2
   exit 2
 fi
 if [[ ! -f $store ]]; then
@@ -36,9 +44,14 @@ fi
 "${hash_command[@]}" bin/coimnet > "$output/binary.sha256"
 "${hash_command[@]}" "$protocol" > "$output/protocol.sha256"
 "${hash_command[@]}" "$store" > "$output/store.sha256"
+run_args=(simulate run --store "$store" --protocol "$protocol")
+if [[ -n $parameters ]]; then
+  "${hash_command[@]}" "$parameters" > "$output/params.sha256"
+  run_args+=(--params "$parameters")
+fi
 ./bin/coimnet doctor > "$output/doctor.json"
 uptime > "$output/load-average.txt"
-printf 'scripts/simulate-evidence.sh %q %q\n' "$1" "$protocol" > "$output/command.txt"
+printf 'scripts/simulate-evidence.sh %q %q %q\n' "$1" "$protocol" "$parameters" > "$output/command.txt"
 if [[ $(uname -s) == Darwin ]]; then
   time_command=(/usr/bin/time -l)
 else
@@ -47,8 +60,7 @@ fi
 state="$output/state.json"
 date -u '+%Y-%m-%dT%H:%M:%SZ' > "$output/started-at.txt"
 set +e
-"${time_command[@]}" ./bin/coimnet simulate run \
-  --store "$store" --protocol "$protocol" --state-out "$state" \
+"${time_command[@]}" ./bin/coimnet "${run_args[@]}" --state-out "$state" \
   > "$output/report.json" 2> "$output/run.log"
 status=$?
 set -e

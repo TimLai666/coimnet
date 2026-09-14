@@ -10,6 +10,7 @@ import (
 	"math"
 
 	"github.com/TimLai666/coimnet/connectome"
+	"github.com/TimLai666/coimnet/params"
 )
 
 // parameterHashDomain separates this hash from any other SHA-256 in the
@@ -20,14 +21,30 @@ const parameterHashDomain = "coimnet-simulate-parameters/v1"
 // Weights follow the canonical edge order of the graph; Bias, LogTau and
 // ThetaRaw follow the node index order. ThetaRaw is empty for the continuous
 // core, which has no threshold. Source names the derivation rule and Hash
-// fingerprints the whole set.
+// fingerprints the whole set. Derived is set only for the derived source and
+// records which file, rules, policy and scale produced these weights.
 type ParameterSet struct {
-	Source   string    `json:"source"`
-	Weights  []float64 `json:"weights"`
-	Bias     []float64 `json:"bias"`
-	LogTau   []float64 `json:"log_tau"`
-	ThetaRaw []float64 `json:"theta_raw"`
-	Hash     string    `json:"hash"`
+	Source   string          `json:"source"`
+	Weights  []float64       `json:"weights"`
+	Bias     []float64       `json:"bias"`
+	LogTau   []float64       `json:"log_tau"`
+	ThetaRaw []float64       `json:"theta_raw"`
+	Derived  *DerivedSummary `json:"derived,omitempty"`
+	Hash     string          `json:"hash"`
+}
+
+// DerivedSummary records where a derived parameter set came from and what the
+// unknown sign policy actually did. The three counts are over the edges of the
+// parameter set, in canonical edge order: an edge counts as unknown when the
+// derivation left its sign unknown, whatever the policy then applied to it.
+type DerivedSummary struct {
+	ParameterSetSHA256 string  `json:"parameter_set_sha256"`
+	RulesHash          string  `json:"rules_hash"`
+	UnknownSignPolicy  string  `json:"unknown_sign_policy"`
+	WeightScale        float64 `json:"weight_scale"`
+	PositiveEdges      uint64  `json:"positive_edges"`
+	NegativeEdges      uint64  `json:"negative_edges"`
+	UnknownSignEdges   uint64  `json:"unknown_sign_edges"`
 }
 
 // UniformPositive derives the engineering_uniform_positive parameter set from a
@@ -89,6 +106,128 @@ func UniformPositive(ctx context.Context, g *connectome.Graph, u UniformParamete
 	return set, nil
 }
 
+// FromDerived turns a derived parameter set into the runner's parameters:
+//
+//	weight[i] = weight_scale * sign[i] * set.EdgeWeight[i]
+//
+// for a sign of +1 or -1. An edge whose sign the rules left unknown (sign 0)
+// follows the protocol's declared policy: exclude gives 0, excitatory gives
+// +|weight| and inhibitory gives -|weight|. No sign is guessed: the policy is
+// recorded in the returned summary, in the parameter hash and in the run
+// report. A product that is zero is stored as positive zero, so the hash and
+// the report never distinguish -0 from 0.
+//
+// Bias, log_tau and theta_raw still come from the protocol's uniform block:
+// the release carries no per-neuron time constant or threshold, and nothing
+// here invents one. setSHA256 is the SHA-256 of the parameter set file the set
+// was read from; it enters the hash so a report names the exact file. The
+// ticket sketch of this function had no such parameter, but the same sentence
+// requires the file fingerprint in the hash and a *params.Set does not carry
+// it, so the caller passes it in.
+//
+// The hash extends the encoding documented on UniformPositive: after the
+// source and its zero byte, a derived set writes setSHA256, a zero byte, the
+// rules hash, a zero byte, the policy, a zero byte and the weight scale's
+// IEEE-754 bits as a little-endian uint64; then the four value groups follow
+// exactly as before. A uniform set writes nothing between the source and the
+// groups, so hashes recorded before this addition are unchanged.
+func FromDerived(set *params.Set, setSHA256 string, protocol Protocol) (ParameterSet, DerivedSummary, error) {
+	var (
+		empty   ParameterSet
+		summary DerivedSummary
+	)
+	if set == nil {
+		return empty, summary, errors.New("simulate: nil derived parameter set")
+	}
+	if protocol.ParameterSource != ParameterSourceDerived {
+		return empty, summary, fmt.Errorf("simulate: the protocol declares parameter source %q, FromDerived produces %q", protocol.ParameterSource, ParameterSourceDerived)
+	}
+	if err := protocol.validateParameterSource(); err != nil {
+		return empty, summary, err
+	}
+	if set.Source != params.SetSource {
+		return empty, summary, fmt.Errorf("simulate: parameter set source %q, want %q", set.Source, params.SetSource)
+	}
+	if !isLowerHex(setSHA256) {
+		return empty, summary, fmt.Errorf("simulate: parameter set fingerprint %q is not 64 lowercase hexadecimal characters", setSHA256)
+	}
+	if !isLowerHex(set.RulesHash) {
+		return empty, summary, fmt.Errorf("simulate: parameter set rules hash %q is not 64 lowercase hexadecimal characters", set.RulesHash)
+	}
+	if len(set.EdgeSign) != len(set.EdgeWeight) {
+		return empty, summary, fmt.Errorf("simulate: parameter set has %d weights and %d signs", len(set.EdgeWeight), len(set.EdgeSign))
+	}
+	nodes := len(set.NodePreTotal)
+	if nodes == 0 || len(set.NodePostTotal) != nodes {
+		return empty, summary, fmt.Errorf("simulate: parameter set declares %d nodes", nodes)
+	}
+	policy, scale := protocol.Derived.UnknownSign, protocol.Derived.WeightScale
+	weights := make([]float64, len(set.EdgeWeight))
+	for i, derived := range set.EdgeWeight {
+		if !finite(derived) {
+			return empty, summary, fmt.Errorf("simulate: derived weight %d is not finite", i)
+		}
+		sign := 0.0
+		switch set.EdgeSign[i] {
+		case 1:
+			summary.PositiveEdges++
+			sign = 1
+		case -1:
+			summary.NegativeEdges++
+			sign = -1
+		case 0:
+			summary.UnknownSignEdges++
+			switch policy {
+			case UnknownSignExcitatory:
+				sign = 1
+			case UnknownSignInhibitory:
+				sign = -1
+			default: // UnknownSignExclude
+				sign = 0
+			}
+			derived = math.Abs(derived)
+		default:
+			return empty, summary, fmt.Errorf("simulate: derived sign %d at edge %d is not -1, 0 or +1", set.EdgeSign[i], i)
+		}
+		weight := scale * sign * derived
+		if !finite(weight) {
+			return empty, summary, fmt.Errorf("simulate: edge %d weight %g*%g*%g is not representable", i, scale, sign, derived)
+		}
+		if weight == 0 {
+			weight = 0 // never store negative zero
+		}
+		weights[i] = weight
+	}
+	summary.ParameterSetSHA256 = setSHA256
+	summary.RulesHash = set.RulesHash
+	summary.UnknownSignPolicy = policy
+	summary.WeightScale = scale
+	parameters := ParameterSet{
+		Source:   ParameterSourceDerived,
+		Weights:  weights,
+		Bias:     fill(nodes, protocol.Uniform.Bias),
+		LogTau:   fill(nodes, protocol.Uniform.LogTau),
+		ThetaRaw: fill(nodes, protocol.Uniform.ThetaRaw),
+		Derived:  &DerivedSummary{},
+	}
+	*parameters.Derived = summary
+	parameters.Hash = parameters.fingerprint()
+	return parameters, summary, nil
+}
+
+func isLowerHex(value string) bool {
+	if len(value) != sha256.Size*2 {
+		return false
+	}
+	for i := 0; i < len(value); i++ {
+		c := value[i]
+		if (c < '0' || c > '9') && (c < 'a' || c > 'f') {
+			return false
+		}
+	}
+	return true
+}
+
 func fill(n int, value float64) []float64 {
 	values := make([]float64, n)
 	for i := range values {
@@ -105,6 +244,16 @@ func (p ParameterSet) fingerprint() string {
 	digest.Write([]byte(p.Source))
 	digest.Write([]byte{0})
 	buffer := make([]byte, 8)
+	if p.Derived != nil {
+		digest.Write([]byte(p.Derived.ParameterSetSHA256))
+		digest.Write([]byte{0})
+		digest.Write([]byte(p.Derived.RulesHash))
+		digest.Write([]byte{0})
+		digest.Write([]byte(p.Derived.UnknownSignPolicy))
+		digest.Write([]byte{0})
+		binary.LittleEndian.PutUint64(buffer, math.Float64bits(p.Derived.WeightScale))
+		digest.Write(buffer)
+	}
 	for _, group := range [][]float64{p.Weights, p.Bias, p.LogTau, p.ThetaRaw} {
 		binary.LittleEndian.PutUint64(buffer, uint64(len(group)))
 		digest.Write(buffer)
@@ -119,8 +268,28 @@ func (p ParameterSet) fingerprint() string {
 // validate checks a caller supplied parameter set against the graph shape and
 // the core that will consume it.
 func (p ParameterSet) validate(nodes, edges int, core string) error {
-	if p.Source != ParameterSourceUniform {
-		return fmt.Errorf("simulate: parameter source %q is not available until ticket 13; this ticket only accepts %q", p.Source, ParameterSourceUniform)
+	switch p.Source {
+	case ParameterSourceUniform:
+		if p.Derived != nil {
+			return fmt.Errorf("simulate: parameter source %q carries a derived summary", ParameterSourceUniform)
+		}
+	case ParameterSourceDerived:
+		if p.Derived == nil {
+			return fmt.Errorf("simulate: parameter source %q carries no derived summary", ParameterSourceDerived)
+		}
+		if !isLowerHex(p.Derived.ParameterSetSHA256) || !isLowerHex(p.Derived.RulesHash) {
+			return errors.New("simulate: the derived summary must name the parameter set and rules hashes")
+		}
+		switch p.Derived.UnknownSignPolicy {
+		case UnknownSignExclude, UnknownSignExcitatory, UnknownSignInhibitory:
+		default:
+			return fmt.Errorf("simulate: derived unknown sign policy %q is not declared", p.Derived.UnknownSignPolicy)
+		}
+		if !finite(p.Derived.WeightScale) || p.Derived.WeightScale <= 0 {
+			return fmt.Errorf("simulate: derived weight scale is %v, want a finite value above zero", p.Derived.WeightScale)
+		}
+	default:
+		return fmt.Errorf("simulate: unsupported parameter source %q; choose %q or %q", p.Source, ParameterSourceUniform, ParameterSourceDerived)
 	}
 	if len(p.Weights) != edges {
 		return fmt.Errorf("simulate: parameter set has %d weights, the graph has %d edges", len(p.Weights), edges)

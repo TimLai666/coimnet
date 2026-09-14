@@ -12,12 +12,13 @@ import (
 
 	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/internal/fileio"
+	"github.com/TimLai666/coimnet/params"
 	"github.com/TimLai666/coimnet/simulate"
 )
 
 func runSimulateCommand(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "-h")) {
-		_, err := fmt.Fprintln(stdout, "Usage: coimnet simulate run --store FILE --protocol FILE [flags]\nRun a stored connectome graph through one dynamics core with fixed injections and named probes, without any training. Use 'coimnet simulate run --help' for options, limits and errors.")
+		_, err := fmt.Fprintln(stdout, "Usage: coimnet simulate run --store FILE --protocol FILE [--params FILE] [flags]\nRun a stored connectome graph through one dynamics core with fixed injections and named probes, without any training. Parameters come from the protocol's uniform engineering scalars or, with --params, from a derived parameter set. Use 'coimnet simulate run --help' for options, limits and errors.")
 		return err
 	}
 	if args[0] != "run" {
@@ -29,11 +30,12 @@ func runSimulateCommand(ctx context.Context, args []string, stdout, stderr io.Wr
 func runSimulateRun(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	fs := flag.NewFlagSet("simulate run", flag.ContinueOnError)
 	fs.SetOutput(stderr)
-	var storePath, protocolPath, stateIn, stateOut string
+	var storePath, protocolPath, parameterPath, stateIn, stateOut string
 	var memoryBytes int64
 	storeLimits := connectome.StoreLimits{}
 	fs.StringVar(&storePath, "store", "", "graph store file written by data import --out-store (regular file, no symlink)")
 	fs.StringVar(&protocolPath, "protocol", "", "run protocol JSON: core settings, injections, probes, stimulus, thresholds and the parameter source")
+	fs.StringVar(&parameterPath, "params", "", "parameter set file written by data derive --out; required by the derived_release/v1 source and refused by engineering_uniform_positive")
 	fs.StringVar(&stateIn, "state-in", "", "optional state snapshot JSON to continue from; it must match this core and configuration")
 	fs.StringVar(&stateOut, "state-out", "", "optional new file for the state snapshot after the run; never overwritten")
 	fs.Int64Var(&memoryBytes, "max-memory-bytes", 8<<30, "accounted limit applied separately to loading the store and to the simulation arrays; excludes decoded JSON and runtime overhead")
@@ -41,7 +43,7 @@ func runSimulateRun(ctx context.Context, args []string, stdout, stderr io.Writer
 	fs.Int64Var(&storeLimits.MaxFooterBytes, "max-footer-bytes", 16<<20, "maximum store footer bytes")
 	w := &outputCapture{writer: stdout}
 	fs.Usage = func() {
-		fmt.Fprintln(w, "Usage: coimnet simulate run --store FILE --protocol FILE [flags]\nLoad a verified graph store, build the protocol's core from the stored topology, inject the declared stimulus into the declared neurons and print the run report as JSON. No encoder, readout, optimizer or training step is involved.\nThe only parameter source this command accepts is engineering_uniform_positive: every edge weight is gain times its raw source weight, every connection is therefore excitatory and every neuron shares one bias, log_tau and theta_raw. That is an explicit engineering assumption, stated in the report, and not a biological parameter set; parameters derived from the release belong to a later ticket.\nStability thresholds only add flags to the report; they never change the run and never change the exit status. Memory limits fail the run; the graph is never downsized and the step count is never lowered.\nExample: coimnet simulate run --store graph.coimgraph --protocol protocol.json --state-out state.json > run.json\nErrors: missing or invalid options, unreadable or corrupt store, invalid protocol JSON, an unavailable parameter source, a selector that matches nothing, a probe reduction the core cannot produce, exceeded file/footer/memory limits, a non-finite value, an existing state-out path, cancellation or output failure.\nOptions:")
+		fmt.Fprintln(w, "Usage: coimnet simulate run --store FILE --protocol FILE [--params FILE] [flags]\nLoad a verified graph store, build the protocol's core from the stored topology, inject the declared stimulus into the declared neurons and print the run report as JSON. No encoder, readout, optimizer or training step is involved.\nThe protocol must name one of two parameter sources. engineering_uniform_positive needs no --params: every edge weight is gain times its raw source weight, every connection is therefore excitatory and every neuron shares one bias, log_tau and theta_raw. derived_release/v1 requires --params with a parameter set written by data derive, plus a derived block declaring unknown_sign (exclude, excitatory or inhibitory) and a positive weight_scale; each edge weight becomes weight_scale times the derived sign times the derived strength, and an edge whose sign the rules left unknown follows the declared policy and is counted in the report. Its signs are rule-derived from predicted transmitter probabilities, not measured, and bias, log_tau and theta_raw stay uniform engineering values, so neither source is a biological parameter set. The report states the assumptions either way.\nStability thresholds only add flags to the report; they never change the run and never change the exit status. Memory limits fail the run; the graph is never downsized and the step count is never lowered.\nExample: coimnet simulate run --store graph.coimgraph --protocol protocol.json --state-out state.json > run.json\nExample: coimnet simulate run --store graph.coimgraph --protocol derived.json --params params.coimparams > run.json\nErrors: missing or invalid options, unreadable or corrupt store, invalid protocol JSON, a parameter source that does not match the --params flag, a corrupt parameter set or one derived for different wiring, a selector that matches nothing, a probe reduction the core cannot produce, exceeded file/footer/memory limits, a non-finite value, an existing state-out path, cancellation or output failure.\nOptions:")
 		fs.SetOutput(w)
 		fs.PrintDefaults()
 		fs.SetOutput(stderr)
@@ -93,11 +95,15 @@ func runSimulateRun(ctx context.Context, args []string, stdout, stderr io.Writer
 	if err != nil {
 		return err
 	}
-	params, err := simulate.UniformPositive(ctx, graph, *protocol.Uniform)
+	parameters, err := simulateParameters(ctx, graph, protocol, parameterPath, params.LoadLimits{
+		MaxFileBytes:   storeLimits.MaxFileBytes,
+		MaxFooterBytes: storeLimits.MaxFooterBytes,
+		MaxMemoryBytes: memoryBytes,
+	})
 	if err != nil {
 		return err
 	}
-	runner, err := simulate.Build(ctx, graph, params, protocol, simulate.Limits{MaxMemoryBytes: memoryBytes})
+	runner, err := simulate.Build(ctx, graph, parameters, protocol, simulate.Limits{MaxMemoryBytes: memoryBytes})
 	if err != nil {
 		return err
 	}
@@ -118,6 +124,34 @@ func runSimulateRun(ctx context.Context, args []string, stdout, stderr io.Writer
 		}
 	}
 	return writeJSON(stdout, report)
+}
+
+// simulateParameters builds the parameter set the protocol declares. The
+// derived source reads a parameter set file, checks it against this exact
+// graph and applies the declared unknown sign policy and weight scale; the
+// uniform source derives its weights from the raw edge stream and refuses a
+// parameter set file, so a run can never silently ignore one. The loaded set
+// is released when this function returns: only the runner's own arrays stay
+// live for the run itself.
+func simulateParameters(ctx context.Context, graph *connectome.Graph, protocol simulate.Protocol, path string, limits params.LoadLimits) (simulate.ParameterSet, error) {
+	if protocol.ParameterSource != simulate.ParameterSourceDerived {
+		if path != "" {
+			return simulate.ParameterSet{}, fmt.Errorf("--params is only used by the %s parameter source; this protocol declares %s, which derives its weights from the store", simulate.ParameterSourceDerived, protocol.ParameterSource)
+		}
+		return simulate.UniformPositive(ctx, graph, *protocol.Uniform)
+	}
+	if path == "" {
+		return simulate.ParameterSet{}, fmt.Errorf("--params is required: the protocol declares the %s parameter source, whose edge signs and strengths come from a parameter set file written by data derive", simulate.ParameterSourceDerived)
+	}
+	set, receipt, err := params.LoadWithReceipt(ctx, path, limits)
+	if err != nil {
+		return simulate.ParameterSet{}, err
+	}
+	if err := set.CheckGraph(graph); err != nil {
+		return simulate.ParameterSet{}, err
+	}
+	parameters, _, err := simulate.FromDerived(set, receipt.SHA256, protocol)
+	return parameters, err
 }
 
 // writeNewJSON writes one JSON document to a path that must not exist. O_EXCL

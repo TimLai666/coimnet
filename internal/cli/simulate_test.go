@@ -3,6 +3,8 @@ package cli
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -71,13 +73,19 @@ type simulateOutput struct {
 	CoreConfigHash  string `json:"core_config_hash"`
 	ParameterSource string `json:"parameter_source"`
 	ParameterHash   string `json:"parameter_hash"`
-	ProtocolHash    string `json:"protocol_hash"`
-	Steps           int    `json:"steps"`
-	StepsBefore     uint64 `json:"steps_before"`
-	StepsAfter      uint64 `json:"steps_after"`
-	Nodes           int    `json:"nodes"`
-	Edges           int    `json:"edges"`
-	GraphHashes     struct {
+	// The five derived fields are absent from a uniform report.
+	ParameterSetSHA256 string  `json:"parameter_set_sha256"`
+	RulesHash          string  `json:"rules_hash"`
+	UnknownSignPolicy  string  `json:"unknown_sign_policy"`
+	UnknownSignEdges   *uint64 `json:"unknown_sign_edges"`
+	WeightScale        float64 `json:"weight_scale"`
+	ProtocolHash       string  `json:"protocol_hash"`
+	Steps              int     `json:"steps"`
+	StepsBefore        uint64  `json:"steps_before"`
+	StepsAfter         uint64  `json:"steps_after"`
+	Nodes              int     `json:"nodes"`
+	Edges              int     `json:"edges"`
+	GraphHashes        struct {
 		NodeIndex string `json:"node_index"`
 		EdgeOrder string `json:"edge_order"`
 	} `json:"graph_hashes"`
@@ -410,4 +418,152 @@ func sameSeries(got, want []float64) bool {
 		}
 	}
 	return true
+}
+
+// derivedSimulateProtocol drives the same two-neuron store from the derived
+// parameter source. The uniform block carries only the node scalars: its gain
+// must stay zero, because the edge strengths come from the parameter set.
+func derivedSimulateProtocol(steps int, policy string, scale float64) simulate.Protocol {
+	p := lifSimulateProtocol(steps)
+	p.ParameterSource = simulate.ParameterSourceDerived
+	p.Uniform = &simulate.UniformParameters{}
+	p.Derived = &simulate.DerivedParameters{UnknownSign: policy, WeightScale: scale}
+	return p
+}
+
+// deriveParameterSet runs data derive over the derivation fixture and returns
+// the parameter set path with its SHA-256.
+func deriveParameterSet(t *testing.T, dir, store, rules, name string) (string, string) {
+	t.Helper()
+	out := filepath.Join(dir, name)
+	var stdout, stderr bytes.Buffer
+	args := []string{"data", "derive", "--store", store, "--rules", rules, "--out", out, "--temp-dir", t.TempDir()}
+	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
+		t.Fatalf("data derive: %v; stderr=%s", err, stderr.String())
+	}
+	data, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(data)
+	return out, hex.EncodeToString(sum[:])
+}
+
+func TestSimulateRunAppliesADerivedParameterSet(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	params, sum := deriveParameterSet(t, dir, store, rules, "params.coimparams")
+	protocol := writeProtocol(t, dir, "derived.json", derivedSimulateProtocol(4, "exclude", 2))
+	report, raw := runSimulate(t, "simulate", "run", "--store", store, "--protocol", protocol, "--params", params)
+
+	if report.ParameterSource != "derived_release/v1" || len(report.ParameterHash) != 64 {
+		t.Fatalf("report identity = %s", raw)
+	}
+	if report.ParameterSetSHA256 != sum || len(report.RulesHash) != 64 {
+		t.Fatalf("report provenance = %s", raw)
+	}
+	if report.UnknownSignPolicy != "exclude" || report.WeightScale != 2 {
+		t.Fatalf("report policy = %s", raw)
+	}
+	// Both fixture edges carry a derived sign, so the count is present and zero.
+	if report.UnknownSignEdges == nil || *report.UnknownSignEdges != 0 {
+		t.Fatalf("report unknown_sign_edges = %v in %s", report.UnknownSignEdges, raw)
+	}
+	assumptions := strings.Join(report.Assumptions, " ")
+	for _, phrase := range []string{"transmitter", "exclude", "bias", "log_tau", "theta_raw"} {
+		if !strings.Contains(assumptions, phrase) {
+			t.Fatalf("assumptions do not mention %q: %v", phrase, report.Assumptions)
+		}
+	}
+	if strings.Contains(assumptions, "engineering_uniform_positive") {
+		t.Fatalf("a derived run still claims the uniform source: %v", report.Assumptions)
+	}
+
+	_, again := runSimulate(t, "simulate", "run", "--store", store, "--protocol", protocol, "--params", params)
+	if again != raw {
+		t.Fatalf("two identical derived runs produced different output:\n%s\n%s", raw, again)
+	}
+
+	// A uniform run over the same store must differ: the derived set makes the
+	// second edge inhibitory, which the uniform source cannot express.
+	uniform := writeProtocol(t, dir, "uniform-compare.json", lifSimulateProtocol(4))
+	uniformReport, _ := runSimulate(t, "simulate", "run", "--store", store, "--protocol", uniform)
+	if uniformReport.ParameterHash == report.ParameterHash {
+		t.Fatal("the derived and uniform parameter sets share a hash")
+	}
+	if uniformReport.ParameterSetSHA256 != "" || uniformReport.RulesHash != "" ||
+		uniformReport.UnknownSignPolicy != "" || uniformReport.WeightScale != 0 || uniformReport.UnknownSignEdges != nil {
+		t.Fatalf("a uniform report carries derived fields: %+v", uniformReport)
+	}
+}
+
+func TestSimulateRunContinuesADerivedRunFromAState(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	params, _ := deriveParameterSet(t, dir, store, rules, "params.coimparams")
+	whole := writeProtocol(t, dir, "derived-whole.json", derivedSimulateProtocol(4, "excitatory", 1.5))
+	single, _ := runSimulate(t, "simulate", "run", "--store", store, "--protocol", whole, "--params", params)
+
+	firstHalf := derivedSimulateProtocol(2, "excitatory", 1.5)
+	secondHalf := derivedSimulateProtocol(2, "excitatory", 1.5)
+	secondHalf.Stimulus = simulate.StimulusSpec{Inline: [][]float64{{0}, {0}}}
+	firstPath := writeProtocol(t, dir, "derived-first.json", firstHalf)
+	secondPath := writeProtocol(t, dir, "derived-second.json", secondHalf)
+	statePath := filepath.Join(dir, "derived-state.json")
+
+	partA, _ := runSimulate(t, "simulate", "run", "--store", store, "--protocol", firstPath, "--params", params, "--state-out", statePath)
+	partB, _ := runSimulate(t, "simulate", "run", "--store", store, "--protocol", secondPath, "--params", params, "--state-in", statePath)
+	if partA.StepsAfter != 2 || partB.StepsBefore != 2 || partB.StepsAfter != 4 {
+		t.Fatalf("split derived steps = %d, %d..%d", partA.StepsAfter, partB.StepsBefore, partB.StepsAfter)
+	}
+	for _, name := range []string{"driven", "population"} {
+		joined := append(append([]float64(nil), probeByName(t, partA, name)...), probeByName(t, partB, name)...)
+		if want := probeByName(t, single, name); !sameSeries(joined, want) {
+			t.Fatalf("derived probe %q split = %v, single = %v", name, joined, want)
+		}
+	}
+}
+
+func TestSimulateRunDerivedParameterFailuresAndHelp(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	params, _ := deriveParameterSet(t, dir, store, rules, "params.coimparams")
+	derived := writeProtocol(t, dir, "derived-fail.json", derivedSimulateProtocol(2, "exclude", 2))
+	uniform := writeProtocol(t, dir, "uniform-fail.json", lifSimulateProtocol(2))
+
+	// A derived block on the uniform source is refused by the protocol itself.
+	mixed := lifSimulateProtocol(2)
+	mixed.Derived = &simulate.DerivedParameters{UnknownSign: "exclude", WeightScale: 1}
+	mixedPath := writeProtocol(t, dir, "mixed.json", mixed)
+
+	noPolicy := derivedSimulateProtocol(2, "", 2)
+	noPolicyPath := writeProtocol(t, dir, "no-policy.json", noPolicy)
+
+	gainSet := derivedSimulateProtocol(2, "exclude", 2)
+	gainSet.Uniform = &simulate.UniformParameters{Gain: .2}
+	gainPath := writeProtocol(t, dir, "derived-gain.json", gainSet)
+
+	for name, args := range map[string][]string{
+		"derived without params":   {"simulate", "run", "--store", store, "--protocol", derived},
+		"uniform with params":      {"simulate", "run", "--store", store, "--protocol", uniform, "--params", params},
+		"missing params file":      {"simulate", "run", "--store", store, "--protocol", derived, "--params", filepath.Join(dir, "absent.coimparams")},
+		"params is not a set":      {"simulate", "run", "--store", store, "--protocol", derived, "--params", store},
+		"derived block on uniform": {"simulate", "run", "--store", store, "--protocol", mixedPath, "--params", params},
+		"no unknown policy":        {"simulate", "run", "--store", store, "--protocol", noPolicyPath, "--params", params},
+		"uniform gain on derived":  {"simulate", "run", "--store", store, "--protocol", gainPath, "--params", params},
+		// --max-store-bytes bounds both the store and the parameter set file.
+		"tiny file limit": {"simulate", "run", "--store", store, "--protocol", derived, "--params", params, "--max-store-bytes", "64"},
+	} {
+		var out, errout bytes.Buffer
+		if err := Run(context.Background(), args, &out, &errout); err == nil {
+			t.Errorf("%s accepted", name)
+		}
+	}
+
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "run", "--help"}, &out, &errout); err != nil {
+		t.Fatal(err)
+	}
+	for _, word := range []string{"--params", "derived_release/v1", "unknown_sign"} {
+		if !strings.Contains(out.String(), word) {
+			t.Fatalf("simulate run help missing %s:\n%s", word, out.String())
+		}
+	}
 }

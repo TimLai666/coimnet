@@ -70,11 +70,18 @@ data_dir=$(mktemp -d)
   --store data/malecns-v1.0/graph-v1.coimgraph \
   --protocol evidence/NAT-01/protocol-fullgraph-uniform.json \
   > run.json
+./bin/coimnet simulate run \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol evidence/NAT-02/protocol-fullgraph-derived.json \
+  --params params-derive-v1.coimparams \
+  > run-derived.json
 ```
 
 `simulate run` 把 store 的節點與邊直接接上連續核心或 LIF 核心，用固定注入把刺激送進指定神經元，再以具名探針讀出指定神經元的活動。過程不經 encoder、readout、最佳化器或任何訓練步驟，也沒有可訓練矩陣。protocol 是嚴格 JSON，宣告核心設定（不含拓撲，節點與邊一律由圖提供）、注入、探針、刺激、門檻與參數來源。探針的 `reduce` 可選 `mean_output`、`sum_output`，LIF 另有 `spike_count` 與 `spike_fraction`；節點可直接給索引，也可用 `class`、`type`、`superclass`、`subclass`、`instance`、`soma_side` 的選擇器解析，解析結果寫進報告。報告含核心設定、圖、參數與 protocol 四個指紋、每步探針時序、沉默比例、每步全群放電比例、放電率分位數與穩定旗標。相同輸入兩次執行的 JSON 位元組相同；`--state-out` 保存狀態，`--state-in` 接續，分兩段跑的結果與一次跑完相同。
 
-參數必須明示來源。目前只接受 `engineering_uniform_positive`：每條邊的權重是 `gain × 原始 weight`（因此全部是興奮性），每顆神經元共用同一組 bias、log_tau 與 theta_raw，延遲一律為零。**這是工程假設，不是生物參數**：發布資料沒有突觸正負號、模型單位的強度、時間常數、閾值與傳導延遲，本命令也不推導它們。報告的 `assumptions` 會原樣寫出這句話。由發布資料推導參數屬 [ticket 13](docs/tickets/13-parameter-adapter.md)，要把觀察歸因於接線本身還需要 [ticket 14](docs/tickets/14-null-models-and-behavior.md) 的空模型對照。全圖實測與完整數據見 [evidence/NAT-01/verification.json](evidence/NAT-01/verification.json)。
+參數必須明示來源，目前有兩種。`engineering_uniform_positive` 不需要 `--params`：每條邊的權重是 `gain × 原始 weight`（因此全部是興奮性），每顆神經元共用同一組 bias、log_tau 與 theta_raw，延遲一律為零。`derived_release/v1` 必須加 `--params`，讀 `data derive` 產生的參數集，權重為 `weight_scale × 推導 sign × 推導強度`；protocol 要多一個 `derived` 區塊宣告 `unknown_sign`（`exclude` 權重為 0、`excitatory` 取 +|w|、`inhibitory` 取 −|w|）與大於零的 `weight_scale`，兩個欄位都沒有預設值，unknown 的邊數寫進報告。這個來源的節點純量仍由 protocol 的 `uniform` 區塊提供，所以該區塊的 `gain` 必須不寫或為零；命令會先比對參數集與 store 的 node index／edge order hash，不符就拒絕。
+
+**兩種來源都是明示假設，不是生物參數。** uniform 的全興奮與統一純量是工程佔位；derived 的正負號是由「預測傳導物質機率」依規則推導的，不是量測到的突觸作用，而 bias、log_tau、theta_raw 與零延遲仍然是統一工程值。報告的 `assumptions` 會依來源原樣寫出這些話。要把觀察歸因於接線本身還需要 [ticket 14](docs/tickets/14-null-models-and-behavior.md) 的空模型對照。全圖實測與完整數據見 [evidence/NAT-01/verification.json](evidence/NAT-01/verification.json)（uniform）與 [evidence/NAT-02/verification.json](evidence/NAT-02/verification.json)（derived，含兩者的逐項比較）。
 
 由發布資料推導動態參數：
 
@@ -93,7 +100,9 @@ data_dir=$(mktemp -d)
 
 推導報告寫在 JSON 輸出裡，也嵌在參數集檔中：四份來源指紋、規則 hash、每一步的計數與比例（附分子、分母與依據）、每種傳導物質的邊數、sign 分布、unknown 比例、強度分位數、`normalizer_zero_edges`、四個外部排序的 run 數與暫存位元組，以及耗時。整條流程有界：逐突觸資料一律走 `internal/extsort` 的固定寬度記錄，記憶體、暫存、run 數、Arrow 與列數都有上限，超限或取消時不產生輸出也不留暫存檔。`data validate --params` 在新程序讀回，逐段比對 SHA-256、footer 與結構不變量；加 `--store` 會再比對 node index／edge order hash，確認參數集確實屬於那張圖。同一份參數集兩次落盤位元組相同。
 
-把參數集接到 `simulate run` 是第二階段的工作（見 [ticket 13](docs/tickets/13-parameter-adapter.md)）；目前 `simulate run` 仍只接受 `engineering_uniform_positive`。
+**全圖實測（2026-09-15）**：25,563,197 條邊全部推導完成，耗時 207.31 s、最大 RSS 3.87 GB（6 GiB 記憶體與 40 GiB 暫存上限都沒觸及），參數集檔 463,451,966 B。逐突觸座標的配對比例是 124,025,046／124,025,046 = 1.000（分母是兩端神經元都被選入的突觸列），沒有重複座標的 T-bar，也沒有配不到的突觸；正負號為 +13,636,628（53.3%）／−9,172,513（35.9%）／unknown 2,754,056（10.8%），unknown 全部來自「平均機率低於 0.5」1,038,293 與「規則把該傳導物質標為 unknown」1,715,763，沒有任何一條是因為配不到突觸。完整數字（每種傳導物質的邊數、強度分位數、四個排序的 run 數與暫存量）見 [evidence/NAT-02/verification.json](evidence/NAT-02/verification.json)，規則檔原件見 [evidence/NAT-02/rules-derive-v1.json](evidence/NAT-02/rules-derive-v1.json)。
+
+產生的參數集用 `simulate run --params` 執行同一張圖：以 `unknown_sign: exclude`、`weight_scale: 21.6` 跑完 NAT-01 的同一份 protocol 後，沉默比例由 0.0207 升到 0.6440、最大全群放電比例由 0.5467 降到 0.0793，穩定旗標也由 `max_population_rate_exceeded` 變成沒有旗標。這是兩組參數假設在同一張接線圖上的差異，不是果蠅生理的結論。
 
 真實子圖的選取與短訓練見 [ALIN 範例](examples/realsubgraph/README.md)。範例明示人工脈衝任務、初始化假設及更新範圍，輸出來源與參數指紋。
 

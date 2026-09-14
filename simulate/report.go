@@ -62,23 +62,32 @@ type Monitors struct {
 // bytes. StepsBefore and StepsAfter are the core step counter around this call,
 // so a run continued from a saved state can be audited.
 type RunReport struct {
-	SchemaVersion   string              `json:"schema_version"`
-	Core            string              `json:"core"`
-	CoreConfigHash  string              `json:"core_config_hash"`
-	GraphHashes     GraphHashes         `json:"graph_hashes"`
-	ParameterSource string              `json:"parameter_source"`
-	ParameterHash   string              `json:"parameter_hash"`
-	ProtocolHash    string              `json:"protocol_hash"`
-	Steps           int                 `json:"steps"`
-	StepsBefore     uint64              `json:"steps_before"`
-	StepsAfter      uint64              `json:"steps_after"`
-	Nodes           int                 `json:"nodes"`
-	Edges           int                 `json:"edges"`
-	Injections      []ResolvedInjection `json:"injections"`
-	Probes          []ProbeResult       `json:"probes"`
-	Monitors        Monitors            `json:"monitors"`
-	StabilityFlags  []string            `json:"stability_flags"`
-	Assumptions     []string            `json:"assumptions"`
+	SchemaVersion   string      `json:"schema_version"`
+	Core            string      `json:"core"`
+	CoreConfigHash  string      `json:"core_config_hash"`
+	GraphHashes     GraphHashes `json:"graph_hashes"`
+	ParameterSource string      `json:"parameter_source"`
+	ParameterHash   string      `json:"parameter_hash"`
+	// The five fields below describe the derived parameter source and are
+	// absent from a report of the uniform source. UnknownSignEdges is a
+	// pointer so that a derived run with no unknown edge still reports the
+	// zero instead of hiding the field.
+	ParameterSetSHA256 string              `json:"parameter_set_sha256,omitempty"`
+	RulesHash          string              `json:"rules_hash,omitempty"`
+	UnknownSignPolicy  string              `json:"unknown_sign_policy,omitempty"`
+	UnknownSignEdges   *uint64             `json:"unknown_sign_edges,omitempty"`
+	WeightScale        float64             `json:"weight_scale,omitempty"`
+	ProtocolHash       string              `json:"protocol_hash"`
+	Steps              int                 `json:"steps"`
+	StepsBefore        uint64              `json:"steps_before"`
+	StepsAfter         uint64              `json:"steps_after"`
+	Nodes              int                 `json:"nodes"`
+	Edges              int                 `json:"edges"`
+	Injections         []ResolvedInjection `json:"injections"`
+	Probes             []ProbeResult       `json:"probes"`
+	Monitors           Monitors            `json:"monitors"`
+	StabilityFlags     []string            `json:"stability_flags"`
+	Assumptions        []string            `json:"assumptions"`
 }
 
 // Stability flag names. They report an observation and never change a run.

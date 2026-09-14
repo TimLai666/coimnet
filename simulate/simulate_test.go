@@ -593,9 +593,11 @@ func TestProtocolValidationRejectsUnsupportedConfigurations(t *testing.T) {
 	if _, err := Build(context.Background(), nil, params, base, testLimits()); err == nil {
 		t.Fatal("nil graph accepted")
 	}
+	// The refusal must name both sources that do exist, so the message tells
+	// the reader what to write instead of what is missing.
 	_, err := Build(context.Background(), g, params, badSource, testLimits())
-	if err == nil || !strings.Contains(err.Error(), "ticket 13") {
-		t.Fatalf("the foreign parameter source error must name ticket 13: %v", err)
+	if err == nil || !strings.Contains(err.Error(), ParameterSourceUniform) || !strings.Contains(err.Error(), ParameterSourceDerived) {
+		t.Fatalf("the foreign parameter source error must name both available sources: %v", err)
 	}
 }
 

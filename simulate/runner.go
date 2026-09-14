@@ -507,7 +507,7 @@ func (r *Runner) report(state StateSnapshot, steps int, series [][]float64, spik
 	if r.stabilityBounds.MinActiveFraction > 0 && 1-monitors.SilentFraction < r.stabilityBounds.MinActiveFraction {
 		flags = append(flags, FlagMinActiveFractionBelow)
 	}
-	return RunReport{
+	report := RunReport{
 		SchemaVersion:   RunReportSchemaVersion,
 		Core:            r.core.name(),
 		CoreConfigHash:  r.coreConfigHash,
@@ -525,19 +525,51 @@ func (r *Runner) report(state StateSnapshot, steps int, series [][]float64, spik
 		Monitors:        monitors,
 		StabilityFlags:  flags,
 		Assumptions:     r.assumptions(),
-	}, nil
+	}
+	if derived := r.params.Derived; derived != nil {
+		unknown := derived.UnknownSignEdges
+		report.ParameterSetSHA256 = derived.ParameterSetSHA256
+		report.RulesHash = derived.RulesHash
+		report.UnknownSignPolicy = derived.UnknownSignPolicy
+		report.UnknownSignEdges = &unknown
+		report.WeightScale = derived.WeightScale
+	}
+	return report, nil
 }
 
 func (r *Runner) assumptions() []string {
-	lines := []string{
-		"The parameter source " + ParameterSourceUniform + " is an explicit engineering assumption and is not a biological parameter set: every edge weight is gain times its raw source weight, every connection is therefore excitatory, and every neuron shares one bias, log_tau and theta_raw. No sign, transmitter, time constant or threshold was derived from the release.",
+	var lines []string
+	if derived := r.params.Derived; derived != nil {
+		lines = append(lines,
+			"The parameter source "+ParameterSourceDerived+" takes every edge sign and strength from a parameter set derived from the official release under the rules with hash "+derived.RulesHash+", read from the file with SHA-256 "+derived.ParameterSetSHA256+". The signs are rule-derived from predicted per-T-bar transmitter probabilities, not measured synaptic actions, and the rule that maps a transmitter to a sign is an explicit assumption recorded in that file's derivation report.",
+			fmt.Sprintf("Edges whose sign the rules left unknown were handled by the declared policy %q: %d of %d edges were unknown (%d positive, %d negative), and under this policy an unknown edge contributes %s. No sign was guessed and no default was substituted.",
+				derived.UnknownSignPolicy, derived.UnknownSignEdges, r.edges, derived.PositiveEdges, derived.NegativeEdges, unknownSignEffect(derived.UnknownSignPolicy)),
+			fmt.Sprintf("Every derived strength was multiplied by the declared weight_scale %v, which is an engineering choice of units and not a measured synaptic conductance.", derived.WeightScale),
+			"bias, log_tau and theta_raw are still uniform engineering values from the protocol: the release carries no per-neuron time constant or threshold and none was derived here.",
+		)
+	} else {
+		lines = append(lines, "The parameter source "+ParameterSourceUniform+" is an explicit engineering assumption and is not a biological parameter set: every edge weight is gain times its raw source weight, every connection is therefore excitatory, and every neuron shares one bias, log_tau and theta_raw. No sign, transmitter, time constant or threshold was derived from the release.")
+	}
+	lines = append(lines,
 		"Every edge delay is zero. The release carries no conduction delay and none was invented.",
 		"Node indices, edge order and raw weights come from the graph store; the run changes nothing about the wiring.",
-	}
+	)
 	if !r.core.spiking() {
 		lines = append(lines, "The continuous core emits no events, so population_rate_per_step is empty, rate_quantiles are zero and silent_fraction counts neurons whose output never left the value held before the run.")
 	}
 	return lines
+}
+
+// unknownSignEffect states in words what one unknown edge contributed.
+func unknownSignEffect(policy string) string {
+	switch policy {
+	case UnknownSignExcitatory:
+		return "the positive magnitude of its derived strength"
+	case UnknownSignInhibitory:
+		return "the negative magnitude of its derived strength"
+	default:
+		return "weight zero, so it was excluded from the run"
+	}
 }
 
 func stepCount(s StateSnapshot) uint64 {

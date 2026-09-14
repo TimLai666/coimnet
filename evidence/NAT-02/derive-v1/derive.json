@@ -1,0 +1,374 @@
+{
+  "schema_version": "coimnet-parameter-derive/v1",
+  "report": {
+    "schema_version": "coimnet-derivation-report/v1",
+    "source": "derived_release/v1",
+    "rules_hash": "9cb5aa45c96c1242a642257ab86fca7a7ae24df91159deeb3e48b90d10738ee1",
+    "rules": {
+      "schema_version": "coimnet-derivation-rules/v1",
+      "sources": {
+        "body_stats": {
+          "path": "body-stats-male-cns-v1.0-minconf-0.5.feather",
+          "sha256": "ca5dc83a26382ae70c8d8f42fc09ce2dbc1af7c03f3a001a1936b5e142540647"
+        },
+        "tbar": {
+          "path": "tbar-neurotransmitters-male-cns-v1.0.feather",
+          "sha256": "bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d"
+        },
+        "syn_partners": {
+          "path": "syn-partners-male-cns-v1.0-minconf-0.5.feather",
+          "sha256": "959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07"
+        },
+        "neuprint_meta": {
+          "path": "Neuprint_Meta.csv",
+          "sha256": "227ff1e873881a1ab124b10aa51ada94012773ddb9c4ad986e5cc83df8d360f7"
+        }
+      },
+      "sign": {
+        "schema_version": "coimnet-sign-rule/v1",
+        "mapping": {
+          "acetylcholine": "+1",
+          "dopamine": "unknown",
+          "gaba": "-1",
+          "glutamate": "-1",
+          "histamine": "-1",
+          "octopamine": "unknown",
+          "serotonin": "unknown"
+        },
+        "basis": {
+          "acetylcholine": "Cholinergic central neurons of Drosophila are reported to act through fast excitatory nicotinic receptors, so the rule fixes the sign at +1.",
+          "dopamine": "Dopamine acts through several G-protein-coupled receptor types whose effect depends on the receptor the postsynaptic cell expresses, which the release does not report, so the sign stays unknown.",
+          "gaba": "GABA is reported to act through the Rdl GABA-A chloride conductance in the fly central nervous system, so the rule fixes the sign at -1.",
+          "glutamate": "Fly glutamatergic connections are frequently inhibitory through the GluCl chloride channel while excitatory glutamate receptors also exist, so a fixed -1 is an engineering 假設 (engineering assumption) recorded here, not evidence in the release.",
+          "histamine": "Histamine is reported to gate the ort/HisCl chloride channels in the fly, so the rule fixes the sign at -1.",
+          "octopamine": "Octopamine is a modulator acting through G-protein-coupled receptors whose effect depends on the postsynaptic receptor, which the release does not report, so the sign stays unknown.",
+          "serotonin": "Serotonin acts through several G-protein-coupled receptor subtypes with opposite effects depending on the receptor, which the release does not report, so the sign stays unknown."
+        },
+        "min_probability": 0.5,
+        "min_matched_fraction": 0.5
+      },
+      "strength": {
+        "gain": 1,
+        "normalizer": "post_total"
+      }
+    },
+    "sources": [
+      {
+        "role": "body_stats",
+        "path": "body-stats-male-cns-v1.0-minconf-0.5.feather",
+        "bytes": 778062826,
+        "sha256": "ca5dc83a26382ae70c8d8f42fc09ce2dbc1af7c03f3a001a1936b5e142540647",
+        "rows": 88384522,
+        "record_batches": 1349,
+        "format": "feather_v2"
+      },
+      {
+        "role": "tbar",
+        "path": "tbar-neurotransmitters-male-cns-v1.0.feather",
+        "bytes": 2651680218,
+        "sha256": "bade84c9eab431dd537ff644aaf3d203d639a819c739ecedb338e7d109064f4d",
+        "rows": 45656140,
+        "record_batches": 697,
+        "format": "feather_v2"
+      },
+      {
+        "role": "syn_partners",
+        "path": "syn-partners-male-cns-v1.0-minconf-0.5.feather",
+        "bytes": 6777179098,
+        "sha256": "959d8ef4173b35382a3e6acfaf5167c795b6d10b877572d146af04e1b487bc07",
+        "rows": 311833243,
+        "record_batches": 4759,
+        "format": "feather_v2"
+      },
+      {
+        "role": "neuprint_meta",
+        "path": "Neuprint_Meta.csv",
+        "bytes": 1247784,
+        "sha256": "227ff1e873881a1ab124b10aa51ada94012773ddb9c4ad986e5cc83df8d360f7",
+        "rows": 1,
+        "record_batches": 0,
+        "format": "csv"
+      }
+    ],
+    "graph": {
+      "namespace": "malecns-v1.0",
+      "nodes": 165122,
+      "edges": 25563197,
+      "node_index_hash": "01fede32784e999d459a2e555112fcdc2cc56b302b3a6d151e78f442d045a264",
+      "edge_order_hash": "42256dd3b21549fb7fed112a1727d7abd8def48f0efe7fbe7227286f0c619bf7",
+      "edge_order_finding": "connectome sorts annotated edges by (source index, target index, absolute source row), so the aggregated pairs were merge joined against the edge stream without building an index"
+    },
+    "neuprint_meta": {
+      "status": "measured",
+      "dataset": "male-cns",
+      "post_high_accuracy_threshold": 0.5,
+      "pre_hp_threshold": 0,
+      "post_hp_threshold": 0.7,
+      "thresholds_applied": false,
+      "roi_hierarchy_root": "CNS",
+      "roi_hierarchy_levels": 5,
+      "roi_hierarchy_level_counts": [
+        1,
+        5,
+        101,
+        193,
+        5337
+      ],
+      "roi_hierarchy_nodes": 5637
+    },
+    "body_stats": {
+      "rows": 88384522,
+      "rows_selected": 164789,
+      "rows_not_selected": 88219733,
+      "null_body_rows": 0,
+      "negative_body_rows": 0,
+      "duplicate_rows": 0,
+      "null_count_rows": 0,
+      "bodies_missing_from_body_stats": 333,
+      "coverage": {
+        "numerator": 164789,
+        "denominator": 165122,
+        "value": 0.9979833093106915,
+        "defined": true,
+        "basis": "selected bodies with a body-stats row / selected bodies"
+      }
+    },
+    "tbar": {
+      "rows": 45656140,
+      "rows_skipped_null_coordinate": 0,
+      "rows_skipped_null_body": 0,
+      "rows_sorted": 45656140,
+      "rows_with_null_probability": 0,
+      "rows_in_ambiguous_keys": 0,
+      "keys": 45656140,
+      "ambiguous_keys": 0,
+      "keys_with_null_probability": 0,
+      "usable_keys": 45656140,
+      "keys_without_synapse": 5350855,
+      "usable_ratio": {
+        "numerator": 45656140,
+        "denominator": 45656140,
+        "value": 1,
+        "defined": true,
+        "basis": "T-bar keys with exactly one row and no null probability / distinct T-bar keys"
+      }
+    },
+    "syn_partners": {
+      "rows": 311833243,
+      "rows_null_coordinate": 0,
+      "rows_null_body": 0,
+      "rows_body_not_selected": 187808197,
+      "rows_sorted": 124025046,
+      "matched_synapses": 124025046,
+      "unmatched_synapses": 0,
+      "synapses_on_ambiguous_key": 0,
+      "synapses_on_null_probability_key": 0,
+      "matched_ratio": {
+        "numerator": 124025046,
+        "denominator": 124025046,
+        "value": 1,
+        "defined": true,
+        "basis": "synapses matched to a usable T-bar key / synapse rows between two selected neurons"
+      }
+    },
+    "pairs": {
+      "pairs": 25563197,
+      "pairs_in_graph": 25563197,
+      "pairs_not_in_graph": 0
+    },
+    "edges": {
+      "edges": 25563197,
+      "edges_with_match": 25563197,
+      "edges_without_match": 0,
+      "duplicate_pair_edges": 0,
+      "null_raw_weight_edges": 0,
+      "transmitter_edges": {
+        "acetylcholine": 13947812,
+        "dopamine": 1233608,
+        "gaba": 4705861,
+        "glutamate": 4633150,
+        "histamine": 147329,
+        "octopamine": 314307,
+        "serotonin": 581130
+      },
+      "transmitter_unmatched": 0,
+      "sign": {
+        "positive": 13636628,
+        "negative": 9172513,
+        "unknown": 2754056
+      },
+      "unknown_ratio": {
+        "numerator": 2754056,
+        "denominator": 25563197,
+        "value": 0.10773519446726479,
+        "defined": true,
+        "basis": "edges with an unknown sign / edges"
+      },
+      "unknown_without_match": 0,
+      "unknown_below_min_probability": 1038293,
+      "unknown_below_min_matched_fraction": 0,
+      "unknown_by_mapping": 1715763,
+      "matched_fraction": {
+        "numerator": 124025046,
+        "denominator": 124025046,
+        "value": 1,
+        "defined": true,
+        "basis": "matched synapses of matched pairs / raw release weight of the same pairs"
+      },
+      "normalizer_zero_edges": 0,
+      "normalizer_basis": "gain * raw_weight / body-stats post of the target neuron",
+      "weight_quantiles": {
+        "status": "measured",
+        "count": 25563197,
+        "p0": 0.000008022076755230393,
+        "p25": 0.0008986340762041696,
+        "p50": 0.002310803004043905,
+        "p75": 0.005681818181818182,
+        "p100": 1
+      }
+    },
+    "primary_roi": {
+      "status": "measured",
+      "basis": "mode of primary_post over synapse rows whose body_post is a selected neuron",
+      "rows": 130413767,
+      "null_roi_rows": 0,
+      "distinct_roi_names": 144,
+      "nodes_with_roi": 164722,
+      "nodes_without_roi": 400
+    },
+    "sorts": [
+      {
+        "name": "tbar_keys",
+        "record_bytes": 41,
+        "records": 45656140,
+        "emitted": 45656140,
+        "runs": 3,
+        "temp_bytes": 1871901740,
+        "peak_memory_bytes": 721297125,
+        "peak_buffered_bytes": 721297125
+      },
+      {
+        "name": "syn_partners",
+        "record_bytes": 20,
+        "records": 124025046,
+        "emitted": 124025046,
+        "runs": 5,
+        "temp_bytes": 2480500920,
+        "peak_memory_bytes": 721297152,
+        "peak_buffered_bytes": 721297152
+      },
+      {
+        "name": "primary_roi",
+        "record_bytes": 6,
+        "records": 130413767,
+        "emitted": 130413767,
+        "runs": 2,
+        "temp_bytes": 782482602,
+        "peak_memory_bytes": 721297160,
+        "peak_buffered_bytes": 721297160
+      },
+      {
+        "name": "pair_probabilities",
+        "record_bytes": 36,
+        "records": 124025046,
+        "emitted": 124025046,
+        "runs": 7,
+        "temp_bytes": 4464901656,
+        "peak_memory_bytes": 721297160,
+        "peak_buffered_bytes": 721297160
+      }
+    ],
+    "spills": [
+      {
+        "name": "tbar_keys",
+        "record_bytes": 41,
+        "records": 45656140,
+        "bytes": 1871901740
+      },
+      {
+        "name": "pair_aggregates",
+        "record_bytes": 68,
+        "records": 25563197,
+        "bytes": 1738297396
+      }
+    ],
+    "limits": {
+      "max_memory_bytes": 6442450944,
+      "max_temp_bytes": 42949672960,
+      "max_run_files": 512,
+      "max_arrow_bytes": 536870912,
+      "max_rows": 400000000
+    },
+    "peak_accounted_bytes": 3557271500,
+    "wall_time_seconds": 200.582422666,
+    "limitations": [
+      "edge signs are derived from predicted per-T-bar transmitter probabilities under the recorded rule; they are not measured synaptic actions",
+      "inhibitory glutamate is an engineering assumption stated in the rule basis, not evidence in the release",
+      "an edge whose winning transmitter maps to unknown, or that misses a threshold, or that no synapse matched, stays unknown; no default sign is substituted",
+      "sign_confidence is the mean of the winning probability over the matched synapses of the pair; it is kept for unknown edges too",
+      "matched_fraction uses the raw release weight of the pair as its denominator; the release does not promise that weight equals the number of T-bar to partner contacts",
+      "neuprint confidence thresholds are recorded, not applied: the sources are the already filtered minconf-0.5 release files and the per-synapse conf columns are not used in this stage",
+      "the primary ROI is the mode of primary_post over synapses onto the node; ties are broken by the ROI name so the result is reproducible, not biologically ranked",
+      "memory accounting covers this package's arrays and buffers only, not process RSS; Arrow allocations are bounded separately by max_arrow_bytes"
+    ]
+  },
+  "set": {
+    "path": "data/malecns-v1.0/params-derive-v1.coimparams",
+    "bytes": 463451966,
+    "sha256": "c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77",
+    "footer_sha256": "778105ff4da4c1613737c5cb8cdfc2ad7c134e925c8ace7caba623475594d88a",
+    "node_count": 165122,
+    "edge_count": 25563197,
+    "sections": [
+      {
+        "name": "edge_weight",
+        "offset": 8,
+        "length": 204505576,
+        "sha256": "60788e219f8f642b8647c7e48a163135f1c4efc6bc6e4d2a052c7b166a72f0f6"
+      },
+      {
+        "name": "edge_sign",
+        "offset": 204505584,
+        "length": 25563197,
+        "sha256": "f0bf9e812be235f322e2dc79f2cecc7f8cf4f62be22dff2e7f4d3ad376ea0bd4"
+      },
+      {
+        "name": "edge_sign_confidence",
+        "offset": 230068781,
+        "length": 102252788,
+        "sha256": "187dc7d8811ec4e59878ef6824ce41cbdf33cfd291ea19e4463fda11526b0b6c"
+      },
+      {
+        "name": "edge_transmitter",
+        "offset": 332321569,
+        "length": 25563197,
+        "sha256": "ad01a9ced137b0ab79aeba6d4e2442bf8f4fa3eefa409a7d13a7944e442e933b"
+      },
+      {
+        "name": "edge_matched_synapses",
+        "offset": 357884766,
+        "length": 102252788,
+        "sha256": "c3467baa0e0dbcf80cbb5dc31469f9f4dcdfbc816ecb981e5bacfc7f0855bfca"
+      },
+      {
+        "name": "node_totals",
+        "offset": 460137554,
+        "length": 2641952,
+        "sha256": "1a02eaefafe2258272026f35800110b624c8851e1b5d5e1464340a4a8991173f"
+      },
+      {
+        "name": "node_primary_roi",
+        "offset": 462779506,
+        "length": 661819,
+        "sha256": "c277f6a69192e69dbbbbd80763270a418fc0a87d49f6968722236e0b8e20e716"
+      },
+      {
+        "name": "derivation_report",
+        "offset": 463441325,
+        "length": 8975,
+        "sha256": "edea70334eacb5b25756fd5e3322c06414721140804f8a6ede008b5e2586aa0c"
+      }
+    ],
+    "durability_confirmed": true
+  }
+}

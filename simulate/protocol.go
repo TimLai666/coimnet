@@ -4,12 +4,16 @@
 // linear injections and activity leaves it through named probes, so a run is
 // "this wiring plus these declared rules produced this", never a trained model.
 //
-// Every parameter of a run is an explicit assumption. In this ticket the only
-// available parameter source is engineering_uniform_positive, which makes every
-// edge excitatory with weight gain*raw_weight and gives every neuron the same
-// bias, log_tau and theta_raw. That is an engineering placeholder, not a
-// biological parameter set; deriving parameters from the release belongs to
-// ticket 13.
+// Every parameter of a run is an explicit assumption. Two parameter sources
+// exist. engineering_uniform_positive makes every edge excitatory with weight
+// gain*raw_weight and gives every neuron the same bias, log_tau and theta_raw;
+// it is an engineering placeholder, not a biological parameter set.
+// derived_release/v1 reads per edge signs and strengths from a parameter set
+// the params package derived from the official release under recorded rules,
+// scales them by the declared weight_scale and handles the edges the rules
+// left unknown by the declared policy. Its signs are rule-derived from
+// predicted transmitter probabilities, not measured, and the node scalars are
+// still the uniform engineering values.
 package simulate
 
 import (
@@ -42,8 +46,21 @@ const (
 	CoreContinuous = "continuous"
 	CoreLIF        = "lif"
 
-	// ParameterSourceUniform is the only parameter source this ticket accepts.
+	// ParameterSourceUniform is the engineering placeholder source: every edge
+	// weight is gain times its raw source weight and every neuron shares one
+	// bias, log_tau and theta_raw.
 	ParameterSourceUniform = "engineering_uniform_positive"
+	// ParameterSourceDerived reads edge signs and strengths from a parameter
+	// set file derived from the release under recorded rules. It is the same
+	// label params.SetSource writes into that file.
+	ParameterSourceDerived = "derived_release/v1"
+
+	// Unknown sign policies of the derived source. An edge whose sign the
+	// rules left unknown gets weight zero, +|weight| or -|weight|; the policy
+	// is declared in the protocol, counted in the report and never guessed.
+	UnknownSignExclude    = "exclude"
+	UnknownSignExcitatory = "excitatory"
+	UnknownSignInhibitory = "inhibitory"
 
 	// Probe reductions. The continuous core has no events, so it accepts only
 	// the first two.
@@ -128,6 +145,20 @@ type UniformParameters struct {
 	ThetaRaw float64 `json:"theta_raw"`
 }
 
+// DerivedParameters are the settings of the derived_release/v1 source. Both
+// fields are required and have no default: UnknownSign says what happens to an
+// edge whose sign the rules left unknown, and WeightScale multiplies every
+// derived strength, which carries the units the derivation rule chose.
+//
+// The node scalars still come from the uniform block, because the release
+// carries no per-neuron time constant or threshold. That block's gain must be
+// zero here: edge strengths come from the parameter set and WeightScale, so a
+// second, silently ignored strength knob would be a trap.
+type DerivedParameters struct {
+	UnknownSign string  `json:"unknown_sign"`
+	WeightScale float64 `json:"weight_scale"`
+}
+
 // Protocol is the complete, serializable description of one run. The core
 // configuration carries only the scalar model settings: nodes, sources, targets
 // and delays come from the graph, so declaring them here is an error rather
@@ -144,6 +175,7 @@ type Protocol struct {
 	Thresholds      Thresholds          `json:"thresholds"`
 	ParameterSource string              `json:"parameter_source"`
 	Uniform         *UniformParameters  `json:"uniform,omitempty"`
+	Derived         *DerivedParameters  `json:"derived,omitempty"`
 }
 
 // DecodeProtocol reads exactly one strict JSON protocol and validates
@@ -195,19 +227,8 @@ func (p Protocol) Validate() error {
 	default:
 		return fmt.Errorf("simulate: unsupported core %q; choose %q or %q", p.Core, CoreContinuous, CoreLIF)
 	}
-	if p.ParameterSource != ParameterSourceUniform {
-		return fmt.Errorf("simulate: parameter source %q is not available until ticket 13; this ticket only accepts %q", p.ParameterSource, ParameterSourceUniform)
-	}
-	if p.Uniform == nil {
-		return fmt.Errorf("simulate: parameter source %q requires the uniform scalars", ParameterSourceUniform)
-	}
-	for name, value := range map[string]float64{
-		"uniform.gain": p.Uniform.Gain, "uniform.bias": p.Uniform.Bias,
-		"uniform.log_tau": p.Uniform.LogTau, "uniform.theta_raw": p.Uniform.ThetaRaw,
-	} {
-		if !finite(value) {
-			return fmt.Errorf("simulate: %s is not finite", name)
-		}
+	if err := p.validateParameterSource(); err != nil {
+		return err
 	}
 	if len(p.Probes) == 0 {
 		return errors.New("simulate: the protocol must declare at least one probe")
@@ -256,6 +277,47 @@ func (p Protocol) Validate() error {
 	}
 	_, err := p.Stimulus.matrix()
 	return err
+}
+
+// validateParameterSource checks the declared source and exactly the blocks it
+// needs. Both sources take the uniform node scalars; only the derived source
+// takes a derived block, and only the uniform source takes a uniform gain.
+func (p Protocol) validateParameterSource() error {
+	switch p.ParameterSource {
+	case ParameterSourceUniform:
+		if p.Derived != nil {
+			return fmt.Errorf("simulate: parameter source %q does not accept a derived block; edge signs and strengths come from the uniform gain alone", ParameterSourceUniform)
+		}
+	case ParameterSourceDerived:
+		if p.Derived == nil {
+			return fmt.Errorf("simulate: parameter source %q requires the derived block with unknown_sign and weight_scale", ParameterSourceDerived)
+		}
+		switch p.Derived.UnknownSign {
+		case UnknownSignExclude, UnknownSignExcitatory, UnknownSignInhibitory:
+		default:
+			return fmt.Errorf("simulate: derived.unknown_sign %q must be %q, %q or %q; there is no default", p.Derived.UnknownSign, UnknownSignExclude, UnknownSignExcitatory, UnknownSignInhibitory)
+		}
+		if !finite(p.Derived.WeightScale) || p.Derived.WeightScale <= 0 {
+			return fmt.Errorf("simulate: derived.weight_scale is %v, want a finite value above zero", p.Derived.WeightScale)
+		}
+		if p.Uniform != nil && p.Uniform.Gain != 0 {
+			return fmt.Errorf("simulate: parameter source %q takes its edge strengths from the parameter set and derived.weight_scale, so uniform.gain must be absent or zero, got %v", ParameterSourceDerived, p.Uniform.Gain)
+		}
+	default:
+		return fmt.Errorf("simulate: unsupported parameter source %q; choose %q or %q", p.ParameterSource, ParameterSourceUniform, ParameterSourceDerived)
+	}
+	if p.Uniform == nil {
+		return fmt.Errorf("simulate: parameter source %q requires the uniform node scalars bias, log_tau and theta_raw", p.ParameterSource)
+	}
+	for name, value := range map[string]float64{
+		"uniform.gain": p.Uniform.Gain, "uniform.bias": p.Uniform.Bias,
+		"uniform.log_tau": p.Uniform.LogTau, "uniform.theta_raw": p.Uniform.ThetaRaw,
+	} {
+		if !finite(value) {
+			return fmt.Errorf("simulate: %s is not finite", name)
+		}
+	}
+	return nil
 }
 
 func emptyTopology(nodes int, sources, targets, delays []int) error {
