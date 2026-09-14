@@ -88,6 +88,20 @@ Bias, LogTau, ThetaRaw, Source string, Hash string}`，由 `engineering_uniform_
   工程假設，不是生物參數。
 - [ ] 文件：README、ENG.md、機制文件、delivery-status 更新；`evidence/NAT-01/`。
 
+## 探索紀錄（2026-09-14，唯讀盤點）
+
+- `learning.Individual` 整條路徑綁定連續核心：`IndividualProfile` 字串含 `continuous`、
+  `IndividualSnapshot.Neural` 是具體的 `dynamics.State`、`NewIndividual`／`RestoreIndividual`／
+  `Advance`／`ResetNeural` 都經 `core.continuous()`；`checkpoint/individual.go` 的必填檢查要求
+  `config.dynamics` 與 `neural{schema_version,config_hash,steps,voltage,history}` 的連續形狀。
+  因此 runner 不得建立在 `Individual` 之上；LIF 個體另開票時要新增 profile／schema 版本
+  （`coimnet-individual/v1`、`coimnet-individual-checkpoint/v1` 的 LIF 變體與
+  `coimnet-lif-state/v1`），並讓 `coreModel` 提供 LIF 的狀態操作。
+- `learning.NewNetwork`／`NewTrainer` 要求 `InputSize`、`OutputSize`、`ReadoutNodes`、encoder
+  與 readout 矩陣都存在，`Advance` 一律經 Insyra float32 matmul；這正是原生 runner 要繞開的。
+- `signal.Projection`／`BindProjections` 只產生 encoder／readout 矩陣並以完整前向驗證，
+  runner 的固定注入不沿用它，但選擇器解析可共用 `connectome.Graph` 的節點註記。
+
 ## 依據
 
 - [研究方向](../research-directions/connectome-native.md)、主規格 7.2（固定模型評估）、
