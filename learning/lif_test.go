@@ -369,24 +369,216 @@ func TestLIFSnapshotRoundTrip(t *testing.T) {
 	}
 }
 
-func TestLIFIndividualsAreRejected(t *testing.T) {
-	const want = "LIF individuals are not supported yet"
-	_, err := learning.NewIndividual(lifConfig(), lifParameters(), learning.DefaultOptions(), make([]float64, 3))
-	if err == nil || err.Error() != want {
-		t.Fatalf("NewIndividual error = %v, want %q", err, want)
-	}
-	tr, err := learning.NewTrainer(lifConfig(), lifParameters(), learning.DefaultOptions())
+// lifHomeostasisConfig is the same spiking fixture with the slow stabiliser
+// switched on, so the individual has to carry its rate estimate and threshold
+// offset across calls as well.
+func lifHomeostasisConfig() learning.Config {
+	core := lifCore()
+	core.Homeostasis = &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2, TargetRate: .3, Eta: 1.5, HMax: .4}
+	return learning.Config{LIF: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+}
+
+// lifReadoutReference runs dynamics.LIF.Forward over the whole sequence and
+// returns what an individual's readout must produce for it. The encoder is the
+// identity onto neuron 0 and the readout is 1 on neuron 2, so the only
+// transformation left is Insyra's float32 boundary.
+func lifReadoutReference(t *testing.T, c learning.Config, p learning.Parameters, input [][]float64) [][]float64 {
+	t.Helper()
+	m, err := dynamics.NewLIF(*c.LIF)
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := tr.Snapshot()
-	_, err = learning.RestoreIndividual(learning.IndividualSnapshot{
-		SchemaVersion: learning.IndividualVersion, Profile: learning.IndividualProfile,
-		Config: s.Config, Parameters: s.Parameters,
-		Optimizer: learning.OptimizerSnapshot{Options: s.Options, State: s.Optimizer, Updates: s.Updates},
-	})
-	if err == nil || err.Error() != want {
-		t.Fatalf("RestoreIndividual error = %v, want %q", err, want)
+	coreInputs := make([][]float64, len(input))
+	for step, row := range input {
+		coreInputs[step] = []float64{row[0], 0, 0}
+	}
+	tr, err := m.Forward(context.Background(), dynamics.LIFParameters{
+		Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
+	}, make([]float64, c.LIF.Nodes), coreInputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := make([][]float64, len(input))
+	for step, row := range tr.Outputs() {
+		want[step] = []float64{float64(float32(row[c.ReadoutNodes[0]]))}
+	}
+	return want
+}
+
+// TestLIFIndividualAdvanceMatchesForward is the contract of the new profile:
+// continuing a persistent spiking individual in two chunks must equal one
+// dynamics.LIF.Forward over the concatenated sequence, with the slow stabiliser
+// both off and on.
+func TestLIFIndividualAdvanceMatchesForward(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		config learning.Config
+	}{{"homeostasis_off", lifConfig()}, {"homeostasis_on", lifHomeostasisConfig()}} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := lifParameters()
+			input := [][]float64{{1}, {0}, {1}, {0}, {0}, {1}}
+			want := lifReadoutReference(t, tc.config, p, input)
+			a, err := learning.NewIndividual(tc.config, p, learning.DefaultOptions(), make([]float64, tc.config.LIF.Nodes))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var got [][]float64
+			for _, part := range [][][]float64{input[:2], input[2:]} {
+				out, err := a.Advance(context.Background(), part)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got = append(got, out...)
+			}
+			if !reflect.DeepEqual(got, want) {
+				t.Fatalf("persistent readout differs from Forward:\n got %v\nwant %v", got, want)
+			}
+			s := a.Snapshot()
+			if s.Profile != learning.IndividualProfileLIF {
+				t.Fatalf("profile = %q", s.Profile)
+			}
+			if s.Neural.Core != learning.NeuralCoreLIF || s.Neural.LIF == nil || s.Neural.Continuous != nil {
+				t.Fatalf("neural union = %+v", s.Neural)
+			}
+			if s.Neural.LIF.Steps != uint64(len(input)) {
+				t.Fatalf("steps = %d, want %d", s.Neural.LIF.Steps, len(input))
+			}
+			stabilising := tc.config.LIF.Homeostasis != nil && tc.config.LIF.Homeostasis.Enabled
+			if stabilising != (s.Neural.LIF.Rate != nil) || stabilising != (s.Neural.LIF.Homeostasis != nil) {
+				t.Fatalf("homeostasis arrays do not follow the declared mechanism: %+v", s.Neural.LIF)
+			}
+			if stabilising {
+				var raised bool
+				for _, h := range s.Neural.LIF.Homeostasis {
+					if h > 0 {
+						raised = true
+					}
+				}
+				if !raised {
+					t.Fatal("the stabilised fixture never raised a threshold offset")
+				}
+			}
+			// A fresh restore of the same snapshot continues the same way.
+			b, err := learning.RestoreIndividual(s)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(b.Snapshot(), s) {
+				t.Fatal("snapshot round trip changed the individual")
+			}
+			extra := [][]float64{{0}, {1}}
+			fromA, err := a.Advance(context.Background(), extra)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fromB, err := b.Advance(context.Background(), extra)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(fromA, fromB) {
+				t.Fatalf("restored individual diverged: %v vs %v", fromA, fromB)
+			}
+			longer := lifReadoutReference(t, tc.config, p, append(append([][]float64{}, input...), extra...))
+			if !reflect.DeepEqual(append(got, fromA...), longer) {
+				t.Fatal("continuing after a snapshot left the single Forward trajectory")
+			}
+		})
+	}
+}
+
+// TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches covers the union:
+// a restored individual shares nothing with the snapshot, and a snapshot whose
+// declared core does not match its configuration is refused.
+func TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches(t *testing.T) {
+	c, p := lifHomeostasisConfig(), lifParameters()
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), make([]float64, c.LIF.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.Advance(context.Background(), lifInput()); err != nil {
+		t.Fatal(err)
+	}
+	s := a.Snapshot()
+	b, err := learning.RestoreIndividual(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Neural.LIF.Voltage[0] = 99
+	s.Neural.LIF.Homeostasis[0] = .1
+	s.Parameters.ThetaRaw[0] = 99
+	if !reflect.DeepEqual(a.Snapshot(), b.Snapshot()) {
+		t.Fatal("restore retained aliases into the snapshot")
+	}
+	for name, mutate := range map[string]func(s *learning.IndividualSnapshot){
+		"continuous profile": func(s *learning.IndividualSnapshot) { s.Profile = learning.IndividualProfile },
+		"continuous core":    func(s *learning.IndividualSnapshot) { s.Neural.Core = learning.NeuralCoreContinuous },
+		"missing lif state":  func(s *learning.IndividualSnapshot) { s.Neural.LIF = nil },
+		"both cores": func(s *learning.IndividualSnapshot) {
+			s.Neural.Continuous = &dynamics.State{SchemaVersion: dynamics.ContinuousStateVersion}
+		},
+		"foreign offsets": func(s *learning.IndividualSnapshot) {
+			s.Neural.LIF.Homeostasis = make([]float64, len(s.Neural.LIF.Homeostasis)+1)
+		},
+		"offset above ceiling": func(s *learning.IndividualSnapshot) {
+			s.Neural.LIF.Homeostasis[0] = s.Config.LIF.Homeostasis.HMax + 1
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			bad := a.Snapshot()
+			mutate(&bad)
+			if _, err := learning.RestoreIndividual(bad); err == nil {
+				t.Fatalf("accepted %s", name)
+			}
+		})
+	}
+}
+
+// TestLIFIndividualTrainsThresholdAndResetsNeural checks that the episode
+// trainer of a spiking individual moves theta_raw, that training leaves the
+// persistent state alone, and that ResetNeural starts a new trajectory without
+// touching parameters or the optimizer.
+func TestLIFIndividualTrainsThresholdAndResetsNeural(t *testing.T) {
+	c, p := lifConfig(), lifParameters()
+	o := learning.DefaultOptions()
+	o.Trainable = learning.Trainable{Theta: true}
+	a, err := learning.NewIndividual(c, p, o, make([]float64, c.LIF.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.Advance(context.Background(), lifInput()); err != nil {
+		t.Fatal(err)
+	}
+	advanced := a.Snapshot()
+	for range 20 {
+		if _, err = a.TrainEpisode(context.Background(), lifInput(), []float64{.4}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	trained := a.Snapshot()
+	if reflect.DeepEqual(trained.Parameters.ThetaRaw, advanced.Parameters.ThetaRaw) {
+		t.Fatal("episode training did not move theta_raw")
+	}
+	if !reflect.DeepEqual(trained.Parameters.Core, advanced.Parameters.Core) || !reflect.DeepEqual(trained.Parameters.Encoder, advanced.Parameters.Encoder) {
+		t.Fatal("a theta-only optimizer changed another group")
+	}
+	if !reflect.DeepEqual(trained.Neural, advanced.Neural) {
+		t.Fatal("episode training changed the persistent spiking state")
+	}
+	if trained.Optimizer.Updates != 20 {
+		t.Fatalf("updates = %d", trained.Optimizer.Updates)
+	}
+	if err = a.ResetNeural(context.Background(), make([]float64, c.LIF.Nodes)); err != nil {
+		t.Fatal(err)
+	}
+	reset := a.Snapshot()
+	if reset.Neural.Core != learning.NeuralCoreLIF || reset.Neural.LIF == nil || reset.Neural.LIF.Steps != 0 {
+		t.Fatalf("neural reset did not restart the spiking trajectory: %+v", reset.Neural)
+	}
+	if !reflect.DeepEqual(reset.Parameters, trained.Parameters) || !reflect.DeepEqual(reset.Optimizer, trained.Optimizer) {
+		t.Fatal("neural reset crossed ownership")
+	}
+	if err = a.ResetNeural(context.Background(), make([]float64, c.LIF.Nodes+1)); err == nil {
+		t.Fatal("accepted an initial voltage of the wrong width")
 	}
 }
 

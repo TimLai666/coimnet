@@ -19,7 +19,27 @@ const (
 	// episodes. This deterministic profile has no random generator, local
 	// plasticity, chemical state, replay store or external teacher.
 	IndividualProfile = "continuous-f64-insyra-f32-persistent-inference-episode-learning/v1"
+	// IndividualProfileLIF is the same lifecycle on the spiking core. Its
+	// persistent state adds the synaptic trace, the adaptation, the refractory
+	// counters and, when declared, the slow stabiliser; it is a separate profile
+	// so a continuous reader can never mistake one for the other.
+	IndividualProfileLIF = "lif-f64-insyra-f32-persistent-inference-episode-learning/v1"
+
+	// NeuralCoreContinuous and NeuralCoreLIF are the declared core names of a
+	// persistent neural snapshot.
+	NeuralCoreContinuous = "continuous"
+	NeuralCoreLIF        = "lif"
 )
+
+// NeuralState is the persistent neural state of whichever core an individual
+// drives. Core names it and exactly one of the two states is present, so a
+// reader never has to guess which mechanism a document belongs to and a missing
+// half is an error rather than a zero-valued trajectory.
+type NeuralState struct {
+	Core       string             `json:"core"`
+	Continuous *dynamics.State    `json:"continuous,omitempty"`
+	LIF        *dynamics.LIFState `json:"lif,omitempty"`
+}
 
 // OptimizerSnapshot contains trainer state without anatomy or model parameters.
 // Its arrays follow the parameter order documented by AdamState.
@@ -40,7 +60,7 @@ type IndividualSnapshot struct {
 	ConfigHash    string            `json:"config_hash"`
 	Config        Config            `json:"config"`
 	Parameters    Parameters        `json:"parameters"`
-	Neural        dynamics.State    `json:"neural"`
+	Neural        NeuralState       `json:"neural"`
 	Optimizer     OptimizerSnapshot `json:"optimizer"`
 }
 
@@ -52,7 +72,8 @@ type IndividualSnapshot struct {
 type Individual struct {
 	mu         cancellableMutex
 	trainer    *Trainer
-	neural     dynamics.State
+	neural     NeuralState
+	profile    string
 	configHash string
 }
 
@@ -60,21 +81,12 @@ type Individual struct {
 // and persistent neural state at initial voltage. Anatomy is immutable; changing
 // connectivity requires creating a new individual. This does not mutate c or p.
 func NewIndividual(c Config, p Parameters, o Options, initial []float64) (*Individual, error) {
-	// Spiking individuals need voltage, synaptic trace, adaptation and
-	// refractory counters in a separate snapshot profile, so the continuous
-	// model must never stand in for them.
-	if c.LIF != nil {
-		return nil, fmt.Errorf("LIF individuals are not supported yet")
-	}
 	tr, err := NewTrainer(c, p, o)
 	if err != nil {
 		return nil, err
 	}
-	core := tr.network.core.continuous()
-	if core == nil {
-		return nil, fmt.Errorf("LIF individuals are not supported yet")
-	}
-	state, err := core.NewState(initial)
+	core := tr.network.core
+	state, err := core.newState(initial)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +94,7 @@ func NewIndividual(c Config, p Parameters, o Options, initial []float64) (*Indiv
 	if err != nil {
 		return nil, err
 	}
-	return &Individual{trainer: tr, neural: state, configHash: hash}, nil
+	return &Individual{trainer: tr, neural: state, profile: core.profile(), configHash: hash}, nil
 }
 
 // RestoreIndividual validates all parts before creating an isolated individual.
@@ -91,11 +103,8 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.SchemaVersion != IndividualVersion {
 		return nil, fmt.Errorf("unsupported individual schema %q", s.SchemaVersion)
 	}
-	if s.Profile != IndividualProfile {
+	if s.Profile != IndividualProfile && s.Profile != IndividualProfileLIF {
 		return nil, fmt.Errorf("unsupported individual profile %q", s.Profile)
-	}
-	if s.Config.LIF != nil {
-		return nil, fmt.Errorf("LIF individuals are not supported yet")
 	}
 	tr, err := RestoreTrainer(TrainingSnapshot{SchemaVersion: "coimnet-episode-training/v1", Config: s.Config, Parameters: s.Parameters, Options: s.Optimizer.Options, Optimizer: s.Optimizer.State, Updates: s.Optimizer.Updates})
 	if err != nil {
@@ -108,14 +117,14 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.ConfigHash != hash {
 		return nil, fmt.Errorf("individual configuration fingerprint mismatch")
 	}
-	core := tr.network.core.continuous()
-	if core == nil {
-		return nil, fmt.Errorf("LIF individuals are not supported yet")
+	core := tr.network.core
+	if s.Profile != core.profile() {
+		return nil, fmt.Errorf("individual profile %q does not match the configured core", s.Profile)
 	}
-	if err = core.ValidateState(s.Neural); err != nil {
+	if err = core.validateState(s.Neural); err != nil {
 		return nil, fmt.Errorf("individual neural state: %w", err)
 	}
-	return &Individual{trainer: tr, neural: copyNeural(s.Neural), configHash: hash}, nil
+	return &Individual{trainer: tr, neural: copyNeural(s.Neural), profile: s.Profile, configHash: hash}, nil
 }
 
 // Snapshot returns an independent copy of all four parts at a completed
@@ -127,7 +136,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	s := i.trainer.Snapshot()
-	return IndividualSnapshot{IndividualVersion, IndividualProfile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates}}
+	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates}}
 }
 
 // Advance consumes observations using persistent voltage and delayed output
@@ -149,10 +158,6 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	count, err := size(len(input), n.config.InputSize)
 	if err != nil {
 		return nil, err
-	}
-	core := n.core.continuous()
-	if core == nil {
-		return nil, fmt.Errorf("LIF individuals are not supported yet")
 	}
 	nodes := configNodes(n.config)
 	for _, width := range []int{n.config.InputSize, nodes, inputWidth(n.config), len(n.config.ReadoutNodes), n.config.OutputSize} {
@@ -197,7 +202,7 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 			}
 		}
 	}
-	state, outputs, err := core.Advance(ctx, p.Core, i.neural, coreInputs)
+	state, outputs, err := n.core.advance(ctx, p, i.neural, coreInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -256,11 +261,7 @@ func (i *Individual) ResetNeural(ctx context.Context, initial []float64) error {
 		return err
 	}
 	defer i.mu.Unlock()
-	core := i.trainer.network.core.continuous()
-	if core == nil {
-		return fmt.Errorf("LIF individuals are not supported yet")
-	}
-	state, err := core.NewState(initial)
+	state, err := i.trainer.network.core.newState(initial)
 	if err != nil {
 		return err
 	}
@@ -328,12 +329,37 @@ func individualConfigHash(c Config) (string, error) {
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
 }
-func copyNeural(s dynamics.State) dynamics.State {
-	s.Voltage = append([]float64(nil), s.Voltage...)
-	history := make([][]float64, len(s.History))
-	for t, row := range s.History {
-		history[t] = append([]float64(nil), row...)
+
+// copyNeural deep copies whichever half of the union is present, so a snapshot
+// never shares a buffer with the running individual.
+func copyNeural(s NeuralState) NeuralState {
+	owned := NeuralState{Core: s.Core}
+	if s.Continuous != nil {
+		state := *s.Continuous
+		state.Voltage = append([]float64(nil), state.Voltage...)
+		state.History = copyRows(state.History)
+		owned.Continuous = &state
 	}
-	s.History = history
-	return s
+	if s.LIF != nil {
+		state := *s.LIF
+		state.Voltage = append([]float64(nil), state.Voltage...)
+		state.History = copyRows(state.History)
+		state.Adaptation = append([]float64(nil), state.Adaptation...)
+		state.Refractory = append([]int(nil), state.Refractory...)
+		state.Rate = append([]float64(nil), state.Rate...)
+		state.Homeostasis = append([]float64(nil), state.Homeostasis...)
+		owned.LIF = &state
+	}
+	return owned
+}
+
+func copyRows(rows [][]float64) [][]float64 {
+	if rows == nil {
+		return nil
+	}
+	owned := make([][]float64, len(rows))
+	for t, row := range rows {
+		owned[t] = append([]float64(nil), row...)
+	}
+	return owned
 }

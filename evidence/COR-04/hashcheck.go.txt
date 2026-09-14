@@ -1,0 +1,29 @@
+package main
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/simulate"
+)
+
+// hashcheck recomputes the NAT-01 protocol hash from the committed protocol
+// document with the working tree's code, so a changed dynamics.LIFConfig
+// encoding would show up immediately.
+func main() {
+	file, err := os.Open(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	p, err := simulate.DecodeProtocol(file)
+	if err != nil {
+		panic(err)
+	}
+	h, err := p.Hash()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("protocol_hash", h)
+	fmt.Println("lif homeostasis is nil:", p.LIF.Homeostasis == nil)
+}

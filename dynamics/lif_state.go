@@ -18,9 +18,13 @@ const LIFStateVersion = "coimnet-lif-state/v1"
 // and the row at time zero is the zero prehistory that Forward assumes. Voltage
 // is the membrane after any reset, Adaptation stays at zero while the mechanism
 // is disabled, and Refractory counts the steps each neuron still holds v_reset.
-// ConfigHash binds the canonical LIFConfig JSON including edge order, delays,
-// DT, the event parameters and the declared surrogate. It contains no
-// optimizer, parameters, backward tape or disabled mechanisms.
+// Rate and Homeostasis are the slow stabiliser's activity estimate and bounded
+// threshold offset; both are absent, not zero filled, while that mechanism is
+// disabled, which keeps the schema unchanged and every state document written
+// before it existed readable. ConfigHash binds the canonical LIFConfig JSON
+// including edge order, delays, DT, the event parameters, the declared
+// surrogate and the declared homeostasis block. It contains no optimizer,
+// parameters, backward tape or disabled mechanisms.
 type LIFState struct {
 	SchemaVersion string      `json:"schema_version"`
 	ConfigHash    string      `json:"config_hash"`
@@ -29,6 +33,8 @@ type LIFState struct {
 	History       [][]float64 `json:"history"`
 	Adaptation    []float64   `json:"adaptation"`
 	Refractory    []int       `json:"refractory"`
+	Rate          []float64   `json:"rate,omitempty"`
+	Homeostasis   []float64   `json:"homeostasis,omitempty"`
 }
 
 // NewState starts a trajectory without allocating a delay-sized history. The
@@ -47,7 +53,7 @@ func (m *LIF) NewState(initial []float64) (LIFState, error) {
 	if err != nil {
 		return LIFState{}, err
 	}
-	return LIFState{
+	s := LIFState{
 		SchemaVersion: LIFStateVersion,
 		ConfigHash:    hash,
 		Steps:         0,
@@ -55,7 +61,11 @@ func (m *LIF) NewState(initial []float64) (LIFState, error) {
 		History:       [][]float64{make([]float64, n)},
 		Adaptation:    make([]float64, n),
 		Refractory:    make([]int, n),
-	}, nil
+	}
+	if m.homeostatic() {
+		s.Rate, s.Homeostasis = make([]float64, n), make([]float64, n)
+	}
+	return s, nil
 }
 
 // ValidateState rejects an incompatible configuration, missing or malformed
@@ -121,6 +131,29 @@ func (m *LIF) ValidateState(s LIFState) error {
 	for i, r := range s.Refractory {
 		if r < 0 || r > m.config.RefractorySteps {
 			return fmt.Errorf("refractory[%d] is %d, outside [0, %d]", i, r, m.config.RefractorySteps)
+		}
+	}
+	if !m.homeostatic() {
+		// Absent rather than zero filled: carrying the arrays would be state the
+		// declared model does not own, and a document from before the mechanism
+		// existed has neither key.
+		if s.Rate != nil {
+			return fmt.Errorf("state rate is present while homeostasis is disabled")
+		}
+		if s.Homeostasis != nil {
+			return fmt.Errorf("state homeostasis is present while the mechanism is disabled")
+		}
+		return nil
+	}
+	if err = vector(s.Rate, n, "state rate"); err != nil {
+		return err
+	}
+	if err = vector(s.Homeostasis, n, "state homeostasis"); err != nil {
+		return err
+	}
+	for i, h := range s.Homeostasis {
+		if h < 0 || h > m.config.Homeostasis.HMax {
+			return fmt.Errorf("homeostasis[%d] is %g, outside [0, %g]", i, h, m.config.Homeostasis.HMax)
 		}
 	}
 	return nil
@@ -203,7 +236,10 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 	voltage := append([]float64(nil), s.Voltage...)
 	adaptation := append([]float64(nil), s.Adaptation...)
 	refractory := append([]int(nil), s.Refractory...)
+	rate := append([]float64(nil), s.Rate...)
+	homeostasis := append([]float64(nil), s.Homeostasis...)
 	adapting := m.config.Adaptation.Enabled
+	stabilising := m.homeostatic()
 	outputs := make([][]float64, len(inputs))
 	spikes := make([][]float64, len(inputs))
 	for t, input := range inputs {
@@ -229,6 +265,10 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 		trace := ring[(head+length-1)%capacity]
 		nextV, spike := make([]float64, n), make([]float64, n)
 		synapse, nextA := make([]float64, n), make([]float64, n)
+		var nextRate, nextH []float64
+		if stabilising {
+			nextRate, nextH = make([]float64, n), make([]float64, n)
+		}
 		nextR := make([]int, n)
 		for i := range drive {
 			drive[i] += p.Bias[i]
@@ -236,6 +276,9 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 			theta := base[i]
 			if adapting {
 				theta += adaptation[i]
+			}
+			if stabilising {
+				theta += homeostasis[i]
 			}
 			if refractory[i] > 0 {
 				// Hold and ignore: the drive of this step never reaches the
@@ -255,12 +298,19 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 			if adapting {
 				nextA[i] = m.rho*adaptation[i] + m.config.Adaptation.Beta*spike[i]
 			}
+			if stabilising {
+				nextRate[i], nextH[i] = m.stabilise(rate[i], homeostasis[i], spike[i])
+				if !finite(nextRate[i]) || !finite(nextH[i]) {
+					return LIFState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
+				}
+			}
 			if !finite(drive[i]) || !finite(cand) || !finite(nextV[i]) || !finite(synapse[i]) || !finite(nextA[i]) {
 				return LIFState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
 			}
 		}
 		outputs[t], spikes[t] = synapse, spike
 		voltage, adaptation, refractory = nextV, nextA, nextR
+		rate, homeostasis = nextRate, nextH
 		if length < capacity {
 			ring[(head+length)%capacity] = synapse
 			length++
@@ -276,7 +326,7 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 	if err = ctx.Err(); err != nil {
 		return LIFState{}, nil, nil, err
 	}
-	return LIFState{LIFStateVersion, s.ConfigHash, finalSteps, voltage, history, adaptation, refractory}, outputs, spikes, nil
+	return LIFState{LIFStateVersion, s.ConfigHash, finalSteps, voltage, history, adaptation, refractory, rate, homeostasis}, outputs, spikes, nil
 }
 
 // lifLeak repeats the Forward membrane coefficients. -Expm1 avoids cancellation

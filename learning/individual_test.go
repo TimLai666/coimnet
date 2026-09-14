@@ -7,9 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -122,7 +124,7 @@ func TestIndividualFourWaySeparationAndResets(t *testing.T) {
 		t.Fatal(err)
 	}
 	s := a.Snapshot()
-	if !reflect.DeepEqual(s.Parameters, learned.Parameters) || !reflect.DeepEqual(s.Optimizer, learned.Optimizer) || !reflect.DeepEqual(s.Config, learned.Config) || s.Neural.Steps != 0 {
+	if !reflect.DeepEqual(s.Parameters, learned.Parameters) || !reflect.DeepEqual(s.Optimizer, learned.Optimizer) || !reflect.DeepEqual(s.Config, learned.Config) || s.Neural.Continuous.Steps != 0 {
 		t.Fatal("neural reset crossed ownership")
 	}
 	if err = a.ResetParameters(context.Background(), initial.Parameters); err != nil {
@@ -167,8 +169,8 @@ func TestIndividualOwnsAllBuffers(t *testing.T) {
 	}
 	before.Config.ReadoutNodes[0] = 99
 	before.Parameters.Readout[0] = 99
-	before.Neural.Voltage[0] = 99
-	before.Neural.History[0][0] = 99
+	before.Neural.Continuous.Voltage[0] = 99
+	before.Neural.Continuous.History[0][0] = 99
 	before.Optimizer.State.First[0] = 99
 	if !reflect.DeepEqual(a.Snapshot(), b.Snapshot()) {
 		t.Fatal("restore retained aliases")
@@ -224,7 +226,7 @@ func TestIndividualFailureAtomicityAndVersions(t *testing.T) {
 	if !reflect.DeepEqual(before, a.Snapshot()) {
 		t.Fatal("failed operation changed state")
 	}
-	for _, mutate := range []func(*learning.IndividualSnapshot){func(s *learning.IndividualSnapshot) { s.SchemaVersion = "unknown" }, func(s *learning.IndividualSnapshot) { s.Profile = "lif" }, func(s *learning.IndividualSnapshot) { s.ConfigHash = "bad" }, func(s *learning.IndividualSnapshot) { s.Config.ReadoutNodes[0] = 0 }, func(s *learning.IndividualSnapshot) { s.Neural.History = nil }, func(s *learning.IndividualSnapshot) { s.Optimizer.State.First[0] = 1 }} {
+	for _, mutate := range []func(*learning.IndividualSnapshot){func(s *learning.IndividualSnapshot) { s.SchemaVersion = "unknown" }, func(s *learning.IndividualSnapshot) { s.Profile = "lif" }, func(s *learning.IndividualSnapshot) { s.ConfigHash = "bad" }, func(s *learning.IndividualSnapshot) { s.Config.ReadoutNodes[0] = 0 }, func(s *learning.IndividualSnapshot) { s.Neural.Continuous.History = nil }, func(s *learning.IndividualSnapshot) { s.Neural.Core = "lif" }, func(s *learning.IndividualSnapshot) { s.Neural.LIF = &dynamics.LIFState{} }, func(s *learning.IndividualSnapshot) { s.Optimizer.State.First[0] = 1 }} {
 		s := a.Snapshot()
 		mutate(&s)
 		if _, err = learning.RestoreIndividual(s); err == nil {
@@ -286,8 +288,8 @@ func TestIndividualConcurrentIsolationAndSyncSnapshots(t *testing.T) {
 		t.Fatal("concurrent learning crossed individuals")
 	}
 	s := a.Snapshot()
-	if s.Neural.Steps != 40 || s.Optimizer.Updates != 20 {
-		t.Fatalf("lost/partial update: %d/%d", s.Neural.Steps, s.Optimizer.Updates)
+	if s.Neural.Continuous.Steps != 40 || s.Optimizer.Updates != 20 {
+		t.Fatalf("lost/partial update: %d/%d", s.Neural.Continuous.Steps, s.Optimizer.Updates)
 	}
 }
 
@@ -344,5 +346,38 @@ func TestIndividualSelectedInputsPersist(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got[0], want) {
 		t.Fatalf("selected input restore: %v != %v", got, want)
+	}
+}
+
+// TestContinuousIndividualDeclaresItsCore pins the union shape of the neural
+// snapshot for the core that existed first: the profile is unchanged, the core
+// names itself and the spiking half is absent rather than zero valued.
+func TestContinuousIndividualDeclaresItsCore(t *testing.T) {
+	n, p := network(t)
+	c := n.Config()
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), make([]float64, c.Dynamics.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := a.Snapshot()
+	if s.Profile != learning.IndividualProfile {
+		t.Fatalf("profile = %q", s.Profile)
+	}
+	if s.Neural.Core != learning.NeuralCoreContinuous || s.Neural.Continuous == nil || s.Neural.LIF != nil {
+		t.Fatalf("neural union = %+v", s.Neural)
+	}
+	encoded, err := json.Marshal(s.Neural)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(string(encoded), `{"core":"continuous","continuous":{`) || strings.Contains(string(encoded), `"lif"`) {
+		t.Fatalf("neural JSON = %s", encoded)
+	}
+	// The LIF profile names a different core, so it must not be accepted for
+	// this snapshot even though every other part is valid.
+	wrong := a.Snapshot()
+	wrong.Profile = learning.IndividualProfileLIF
+	if _, err := learning.RestoreIndividual(wrong); err == nil {
+		t.Fatal("a continuous snapshot was restored under the LIF profile")
 	}
 }

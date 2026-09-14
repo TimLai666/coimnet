@@ -1,0 +1,41 @@
+# The new checkpoint union tests run against checkpoint/individual.go as committed at 8187315,
+# with only the learning union in place. Captured after the fact: the checkpoint change was
+# written before its tests, so this log is the discrimination proof rather than a first red.
+# go test -count=1 ./checkpoint/
+2026/09/15 07:10:34 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestSaveLoadIndividualRoundTripAndAliasIsolation (0.01s)
+    individual_test.go:41: missing required field $.payload.neural.schema_version
+--- FAIL: TestSaveLoadIndividualSupportsZeroEdgeModel (0.01s)
+    individual_test.go:72: missing required field $.payload.neural.schema_version
+--- FAIL: TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner (0.02s)
+    individual_test.go:229: concurrent winner is not loadable: missing required field $.payload.neural.schema_version
+--- FAIL: TestIndividualCheckpointSubprocessResume (0.02s)
+    individual_test.go:262: individual helper failed: exit status 1
+        2026/09/15 07:10:34 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+        Official website: https://insyra.hazelnut-paradise.com
+        
+        --- FAIL: TestIndividualCheckpointHelperProcess (0.00s)
+            individual_test.go:301: missing required field $.payload.neural.schema_version
+        FAIL
+--- FAIL: TestSaveLoadLIFIndividualRoundTrip (0.01s)
+    individual_test.go:405: missing required field $.payload.neural.schema_version
+--- FAIL: TestLoadIndividualReadsPreUnionContinuousCheckpoint (0.00s)
+    individual_test.go:444: a pre-union continuous checkpoint must stay readable: decode individual checkpoint payload: json: unknown field "schema_version"
+--- FAIL: TestLIFIndividualCheckpointSubprocessResume (0.02s)
+    individual_test.go:629: LIF individual helper failed: exit status 1
+        2026/09/15 07:10:34 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+        Official website: https://insyra.hazelnut-paradise.com
+        
+        --- FAIL: TestLIFIndividualCheckpointHelperProcess (0.00s)
+            individual_test.go:677: missing required field $.payload.neural.schema_version
+        FAIL
+--- FAIL: ExampleSaveIndividual (0.01s)
+got:
+load: missing required field $.payload.neural.schema_version
+want:
+2 1 true
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	1.020s
+FAIL

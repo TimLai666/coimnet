@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -19,7 +20,10 @@ import (
 	"github.com/TimLai666/coimnet/learning"
 )
 
-const individualHelperEnv = "COIMNET_INDIVIDUAL_CHECKPOINT_HELPER"
+const (
+	individualHelperEnv    = "COIMNET_INDIVIDUAL_CHECKPOINT_HELPER"
+	lifIndividualHelperEnv = "COIMNET_LIF_INDIVIDUAL_CHECKPOINT_HELPER"
+)
 
 func TestSaveLoadIndividualRoundTripAndAliasIsolation(t *testing.T) {
 	individual := newCheckpointIndividual(t, false)
@@ -40,7 +44,7 @@ func TestSaveLoadIndividualRoundTripAndAliasIsolation(t *testing.T) {
 		t.Fatal("round trip changed individual snapshot")
 	}
 	got.Parameters.Core.Weights[0] = 88
-	got.Neural.History[0][0] = 77
+	got.Neural.Continuous.History[0][0] = 77
 	again, err := LoadIndividual(context.Background(), path)
 	if err != nil {
 		t.Fatal(err)
@@ -347,4 +351,390 @@ func mustIndividualJSON(t *testing.T, value learning.IndividualSnapshot) []byte 
 func duplicateIndividualPayloadDocument(payload []byte) []byte {
 	sum := sha256.Sum256(payload)
 	return []byte(`{"schema_version":"` + IndividualSchemaVersion + `","schema_version":"` + IndividualSchemaVersion + `","payload":` + string(payload) + `,"checksum":"` + hex.EncodeToString(sum[:]) + `"}`)
+}
+
+// newCheckpointLIFIndividual is a three neuron spiking fixture with one delayed
+// edge and the slow stabiliser on, so its persistent state carries every part
+// the union has to survive: voltage, synaptic history, adaptation, refractory
+// counters, rate estimate and threshold offset.
+func newCheckpointLIFIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	core := dynamics.LIFConfig{
+		Nodes: 3, Sources: []int{0, 1, 1}, Targets: []int{1, 1, 2}, Delays: []int{0, 1, 0},
+		DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1,
+		Adaptation:  dynamics.LIFAdaptation{Enabled: true, TauAdapt: 2, Beta: .3},
+		Homeostasis: &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2, TargetRate: .3, Eta: 1.5, HMax: .4},
+		Surrogate:   dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+	c := learning.Config{LIF: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+	p := learning.Parameters{
+		Core:     dynamics.Parameters{Weights: []float64{.65, .25, .7}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}},
+		ThetaRaw: []float64{-1, -1, -1},
+		Encoder:  []float64{1, 0, 0},
+		Readout:  []float64{1},
+	}
+	individual, err := learning.NewIndividual(c, p, learning.DefaultOptions(), make([]float64, core.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return individual
+}
+
+func TestSaveLoadLIFIndividualRoundTrip(t *testing.T) {
+	individual := newCheckpointLIFIndividual(t)
+	if _, err := individual.Advance(context.Background(), [][]float64{{1}, {0}, {1}, {0}}); err != nil {
+		t.Fatal(err)
+	}
+	want := individual.Snapshot()
+	if want.Profile != learning.IndividualProfileLIF {
+		t.Fatalf("profile = %q", want.Profile)
+	}
+	path := filepath.Join(t.TempDir(), "lif-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`"neural":{"core":"lif","lif":{`)) {
+		t.Fatalf("saved document does not carry the declared union: %s", raw)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal("round trip changed the spiking individual snapshot")
+	}
+	if got.Neural.LIF == nil || len(got.Neural.LIF.Homeostasis) != 3 || len(got.Neural.LIF.Rate) != 3 {
+		t.Fatalf("round trip lost the slow stabiliser state: %+v", got.Neural.LIF)
+	}
+	got.Neural.LIF.Voltage[0] = 88
+	again, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatal("LoadIndividual returned buffers aliased with a later caller mutation")
+	}
+	restored, err := learning.RestoreIndividual(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), again) {
+		t.Fatal("loaded spiking snapshot changed during restore")
+	}
+}
+
+// TestLoadIndividualReadsPreUnionContinuousCheckpoint reads a committed file
+// written by the released code before IndividualSnapshot.Neural became a union,
+// where "neural" is the continuous dynamics.State itself.
+func TestLoadIndividualReadsPreUnionContinuousCheckpoint(t *testing.T) {
+	const path = "testdata/continuous-individual-pre-union.json"
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`"neural":{"schema_version"`)) || bytes.Contains(raw, []byte(`"neural":{"core"`)) {
+		t.Fatal("the fixture is not a pre-union document")
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatalf("a pre-union continuous checkpoint must stay readable: %v", err)
+	}
+	if got.Profile != learning.IndividualProfile {
+		t.Fatalf("profile = %q", got.Profile)
+	}
+	if got.Neural.Core != learning.NeuralCoreContinuous || got.Neural.Continuous == nil || got.Neural.LIF != nil {
+		t.Fatalf("pre-union document did not become a continuous union: %+v", got.Neural)
+	}
+	// The fixture was produced by three Advance steps of the same model the
+	// other tests build, so a fresh individual must reach the same state.
+	fresh := newCheckpointIndividual(t, false)
+	if _, err := fresh.Advance(context.Background(), [][]float64{{.7}, {0}, {.2}}); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, fresh.Snapshot()) {
+		t.Fatal("the pre-union document did not restore the recorded trajectory")
+	}
+	// Resaving it publishes the union, and that file reads back identically.
+	path2 := filepath.Join(t.TempDir(), "upgraded.json")
+	if err := SaveIndividual(context.Background(), path2, got); err != nil {
+		t.Fatal(err)
+	}
+	upgraded, err := LoadIndividual(context.Background(), path2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(upgraded, got) {
+		t.Fatal("republishing a pre-union checkpoint changed it")
+	}
+}
+
+// TestLoadIndividualRejectsInconsistentNeuralUnion covers the union rules a
+// strict decoder alone cannot enforce.
+func TestLoadIndividualRejectsInconsistentNeuralUnion(t *testing.T) {
+	lifPayload := mustIndividualJSON(t, newCheckpointLIFIndividual(t).Snapshot())
+	continuousPayload := mustIndividualJSON(t, newCheckpointIndividual(t, false).Snapshot())
+	// A model whose longest delay is zero keeps exactly one history row at every
+	// step, so an omitted step count would decode as a plausible step-0 state
+	// instead of being rejected. That is the defect only the presence check
+	// catches; every other case below is also refused further down.
+	undelayedConfig := learning.Config{
+		Dynamics:     dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{0}, DT: .5, Activation: "tanh"},
+		InputSize:    1,
+		OutputSize:   1,
+		ReadoutNodes: []int{1},
+	}
+	undelayed, err := learning.NewIndividual(undelayedConfig, learning.Parameters{
+		Core:    dynamics.Parameters{Weights: []float64{.25}, Bias: []float64{.1, -.1}, LogTau: []float64{0, 0}},
+		Encoder: []float64{.5, .2},
+		Readout: []float64{.8},
+	}, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := undelayed.Advance(context.Background(), [][]float64{{.4}, {0}}); err != nil {
+		t.Fatal(err)
+	}
+	undelayedPayload := mustIndividualJSON(t, undelayed.Snapshot())
+	preUnion, err := os.ReadFile("testdata/continuous-individual-pre-union.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var preUnionEnvelope struct {
+		Payload json.RawMessage `json:"payload"`
+	}
+	if err := json.Unmarshal(preUnion, &preUnionEnvelope); err != nil {
+		t.Fatal(err)
+	}
+	rewrite := func(payload []byte, change func(map[string]json.RawMessage)) []byte {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(payload, &object); err != nil {
+			t.Fatal(err)
+		}
+		change(object)
+		changed, err := json.Marshal(object)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return envelopeJSON(IndividualSchemaVersion, changed, checksumHex(changed))
+	}
+	cases := map[string][]byte{
+		"lif neural without a lif configuration": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			var config map[string]json.RawMessage
+			if err := json.Unmarshal(object["config"], &config); err != nil {
+				t.Fatal(err)
+			}
+			delete(config, "lif")
+			encoded, err := json.Marshal(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["config"] = encoded
+		}),
+		"continuous core against a lif configuration": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			object["neural"] = json.RawMessage(`{"core":"continuous","continuous":{"schema_version":"` + dynamics.ContinuousStateVersion + `","config_hash":"x","steps":0,"voltage":[0,0,0],"history":[[0,0,0]]}}`)
+		}),
+		"unknown core": rewrite(continuousPayload, func(object map[string]json.RawMessage) {
+			var neural map[string]json.RawMessage
+			if err := json.Unmarshal(object["neural"], &neural); err != nil {
+				t.Fatal(err)
+			}
+			neural["core"] = json.RawMessage(`"spiking"`)
+			encoded, err := json.Marshal(neural)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["neural"] = encoded
+		}),
+		"both halves present": rewrite(continuousPayload, func(object map[string]json.RawMessage) {
+			var neural map[string]json.RawMessage
+			if err := json.Unmarshal(object["neural"], &neural); err != nil {
+				t.Fatal(err)
+			}
+			neural["lif"] = json.RawMessage(`{"schema_version":"` + dynamics.LIFStateVersion + `","config_hash":"x","steps":0,"voltage":[0],"history":[[0]],"adaptation":[0],"refractory":[0]}`)
+			encoded, err := json.Marshal(neural)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["neural"] = encoded
+		}),
+		"continuous state without a step count": rewrite(undelayedPayload, func(object map[string]json.RawMessage) {
+			var neural, state map[string]json.RawMessage
+			if err := json.Unmarshal(object["neural"], &neural); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(neural["continuous"], &state); err != nil {
+				t.Fatal(err)
+			}
+			delete(state, "steps")
+			encodedState, err := json.Marshal(state)
+			if err != nil {
+				t.Fatal(err)
+			}
+			neural["continuous"] = encodedState
+			encoded, err := json.Marshal(neural)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["neural"] = encoded
+		}),
+		"missing declared half": rewrite(continuousPayload, func(object map[string]json.RawMessage) {
+			object["neural"] = json.RawMessage(`{"core":"continuous"}`)
+		}),
+		"pre-union shape with a lif configuration": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			object["neural"] = preUnionEnvelope.Payload
+		}),
+		"lif state missing its refractory counters": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			var neural, state map[string]json.RawMessage
+			if err := json.Unmarshal(object["neural"], &neural); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(neural["lif"], &state); err != nil {
+				t.Fatal(err)
+			}
+			delete(state, "refractory")
+			encodedState, err := json.Marshal(state)
+			if err != nil {
+				t.Fatal(err)
+			}
+			neural["lif"] = encodedState
+			encoded, err := json.Marshal(neural)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["neural"] = encoded
+		}),
+		"lif configuration missing its edge sources": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			var config, lif map[string]json.RawMessage
+			if err := json.Unmarshal(object["config"], &config); err != nil {
+				t.Fatal(err)
+			}
+			if err := json.Unmarshal(config["lif"], &lif); err != nil {
+				t.Fatal(err)
+			}
+			delete(lif, "sources")
+			encodedLIF, err := json.Marshal(lif)
+			if err != nil {
+				t.Fatal(err)
+			}
+			config["lif"] = encodedLIF
+			encoded, err := json.Marshal(config)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["config"] = encoded
+		}),
+	}
+	dir := t.TempDir()
+	index := 0
+	for name, document := range cases {
+		index++
+		path := filepath.Join(dir, fmt.Sprintf("case-%d.json", index))
+		writeRaw(t, path, document)
+		if _, err := LoadIndividual(context.Background(), path); err == nil {
+			t.Fatalf("accepted %s", name)
+		}
+	}
+}
+
+func TestLIFIndividualCheckpointSubprocessResume(t *testing.T) {
+	if os.Getenv(lifIndividualHelperEnv) == "1" {
+		t.Skip("helper is tested separately")
+	}
+	dir := t.TempDir()
+	midPath := filepath.Join(dir, "mid.json")
+	finalPath := filepath.Join(dir, "final.json")
+	outputPath := filepath.Join(dir, "outputs.json")
+	full := newCheckpointLIFIndividual(t)
+	part := newCheckpointLIFIndividual(t)
+	first := [][]float64{{1}, {0}}
+	second := [][]float64{{1}, {0}, {0}}
+	if _, err := full.Advance(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	fullSuffix, err := full.Advance(context.Background(), second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := part.Advance(context.Background(), first); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveIndividual(context.Background(), midPath, part.Snapshot()); err != nil {
+		t.Fatal(err)
+	}
+	cmd := exec.Command(os.Args[0], "-test.run=^TestLIFIndividualCheckpointHelperProcess$", "--", midPath, finalPath, outputPath)
+	cmd.Env = append(os.Environ(), lifIndividualHelperEnv+"=1")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("LIF individual helper failed: %v\n%s", err, output)
+	}
+	resumed, err := LoadIndividual(context.Background(), finalPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(resumed, full.Snapshot()) {
+		t.Fatal("new-process spiking state differs from uninterrupted state")
+	}
+	data, err := os.ReadFile(outputPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var resumedSuffix [][]float64
+	if err := json.Unmarshal(data, &resumedSuffix); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(resumedSuffix, fullSuffix) {
+		t.Fatalf("new-process outputs differ: got %v want %v", resumedSuffix, fullSuffix)
+	}
+	var fired bool
+	for _, row := range fullSuffix {
+		if row[0] != 0 {
+			fired = true
+		}
+	}
+	if !fired {
+		t.Fatal("the resumed window produced no activity, the comparison would be vacuous")
+	}
+}
+
+func TestLIFIndividualCheckpointHelperProcess(t *testing.T) {
+	if os.Getenv(lifIndividualHelperEnv) != "1" {
+		return
+	}
+	args := os.Args
+	separator := -1
+	for i, arg := range args {
+		if arg == "--" {
+			separator = i
+			break
+		}
+	}
+	if separator < 0 || len(args)-separator != 4 {
+		t.Fatalf("helper arguments = %#v", args)
+	}
+	loaded, err := LoadIndividual(context.Background(), args[separator+1])
+	if err != nil {
+		t.Fatal(err)
+	}
+	individual, err := learning.RestoreIndividual(loaded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputs, err := individual.Advance(context.Background(), [][]float64{{1}, {0}, {0}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveIndividual(context.Background(), args[separator+2], individual.Snapshot()); err != nil {
+		t.Fatal(err)
+	}
+	data, err := json.Marshal(outputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(args[separator+3], data, 0600); err != nil {
+		t.Fatal(err)
+	}
 }

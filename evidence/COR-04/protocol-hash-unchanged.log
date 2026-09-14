@@ -1,0 +1,25 @@
+# Recorded hashes must not move when dynamics.LIFConfig gains the optional
+# homeostasis pointer. 2026-09-15, macOS arm64, go1.26.5, load average 1.50.
+#
+# 1. The NAT-01 whole-graph protocol hash, recomputed from the committed
+#    protocol document with the working tree's code. hashcheck.go.txt is the
+#    program; it was built in a scratch module with
+#    replace github.com/TimLai666/coimnet => <this repository>
+#    so nothing was added to the repository itself.
+#
+#    go run . evidence/NAT-01/protocol-fullgraph-uniform.json
+protocol_hash befa9f1d340a49d8dbeed50a67ca72d711bc601710764d22cdfbef353ea6ce42
+lif homeostasis is nil: true
+recorded in evidence/NAT-01/verification.json: befa9f1d340a49d8dbeed50a67ca72d711bc601710764d22cdfbef353ea6ce42
+MATCH
+
+# 2. The canonical LIFConfig JSON itself, pinned byte for byte in
+#    dynamics.TestLIFConfigJSONIsUnchangedWithoutHomeostasis, for the NAT-01
+#    protocol block and for a populated topology whose SHA-256
+#    8a64827606764d7f9f36dab81bed2c003fee2e30db54dbc2cac7b699f9088172 was
+#    measured before the field existed. An omitted pointer emits no key, so the
+#    encoding of every configuration that does not declare the mechanism, the
+#    whole MaleCNS graph included, is unchanged. The recorded NAT-01
+#    core_config_hash 61e0e242c1031775fedbd9e6c5aabe93d73595d1fbffe85aa19d24267d55a951
+#    was NOT re-measured: that needs the 25,563,197 edge graph store and a
+#    90 second whole-graph run, which this stage did not repeat.

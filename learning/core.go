@@ -22,10 +22,18 @@ type coreModel interface {
 	events(tr coreTrace) ([][]float64, error)
 	// fill writes this core's owned configuration copy into c.
 	fill(c *Config)
-	// continuous is the persistent-individual core, nil for spiking models.
-	continuous() *dynamics.Continuous
 	// theta reports whether the core owns a trainable threshold group.
 	theta() bool
+	// profile names the individual snapshot profile this core persists under.
+	profile() string
+	// newState starts a persistent trajectory at the given initial voltage.
+	newState(initial []float64) (NeuralState, error)
+	// validateState rejects a persistent state that does not belong here.
+	validateState(s NeuralState) error
+	// advance continues a persistent state and returns the values the readout
+	// observes after each step: activated outputs for the continuous core and
+	// the synaptic trace x for the LIF core, matching forward.
+	advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error)
 }
 
 // coreTrace is one forward history. Only the core that produced it interprets
@@ -79,8 +87,37 @@ func (c continuousCore) fill(config *Config) {
 	config.LIF = nil
 }
 
-func (c continuousCore) continuous() *dynamics.Continuous { return c.model }
-func (c continuousCore) theta() bool                      { return false }
+func (c continuousCore) theta() bool     { return false }
+func (c continuousCore) profile() string { return IndividualProfile }
+
+func (c continuousCore) newState(initial []float64) (NeuralState, error) {
+	state, err := c.model.NewState(initial)
+	if err != nil {
+		return NeuralState{}, err
+	}
+	return NeuralState{Core: NeuralCoreContinuous, Continuous: &state}, nil
+}
+
+func (c continuousCore) validateState(s NeuralState) error {
+	if s.Core != NeuralCoreContinuous || s.Continuous == nil || s.LIF != nil {
+		return fmt.Errorf("neural state declares core %q, want a single %q state", s.Core, NeuralCoreContinuous)
+	}
+	return c.model.ValidateState(*s.Continuous)
+}
+
+func (c continuousCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error) {
+	if err := c.validateState(s); err != nil {
+		return NeuralState{}, nil, err
+	}
+	if len(p.ThetaRaw) != 0 {
+		return NeuralState{}, nil, fmt.Errorf("theta_raw requires a LIF core")
+	}
+	next, outputs, err := c.model.Advance(ctx, p.Core, *s.Continuous, inputs)
+	if err != nil {
+		return NeuralState{}, nil, err
+	}
+	return NeuralState{Core: NeuralCoreContinuous, Continuous: &next}, outputs, nil
+}
 
 type lifCore struct {
 	model                *dynamics.LIF
@@ -134,8 +171,41 @@ func (l lifCore) fill(config *Config) {
 	config.Dynamics = dynamics.Config{}
 }
 
-func (l lifCore) continuous() *dynamics.Continuous { return nil }
-func (l lifCore) theta() bool                      { return true }
+func (l lifCore) theta() bool     { return true }
+func (l lifCore) profile() string { return IndividualProfileLIF }
+
+func (l lifCore) newState(initial []float64) (NeuralState, error) {
+	state, err := l.model.NewState(initial)
+	if err != nil {
+		return NeuralState{}, err
+	}
+	return NeuralState{Core: NeuralCoreLIF, LIF: &state}, nil
+}
+
+func (l lifCore) validateState(s NeuralState) error {
+	if s.Core != NeuralCoreLIF || s.LIF == nil || s.Continuous != nil {
+		return fmt.Errorf("neural state declares core %q, want a single %q state", s.Core, NeuralCoreLIF)
+	}
+	return l.model.ValidateState(*s.LIF)
+}
+
+func (l lifCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error) {
+	if err := l.validateState(s); err != nil {
+		return NeuralState{}, nil, err
+	}
+	if len(p.ThetaRaw) != l.nodeCount {
+		return NeuralState{}, nil, fmt.Errorf("theta_raw has %d values, want %d", len(p.ThetaRaw), l.nodeCount)
+	}
+	// The persistent readout observes the same decaying synaptic trace as the
+	// episode path; the 0/1 events stay inside the core.
+	next, outputs, _, err := l.model.Advance(ctx, dynamics.LIFParameters{
+		Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
+	}, *s.LIF, inputs)
+	if err != nil {
+		return NeuralState{}, nil, err
+	}
+	return NeuralState{Core: NeuralCoreLIF, LIF: &next}, outputs, nil
+}
 
 // newCore selects exactly one core and replaces c's connectivity with the
 // model's own copy, so the network never aliases caller-owned configuration.

@@ -24,7 +24,32 @@ type LIFConfig struct {
 	VReset          float64       `json:"v_reset"`
 	RefractorySteps int           `json:"refractory_steps"`
 	Adaptation      LIFAdaptation `json:"adaptation"`
-	Surrogate       LIFSurrogate  `json:"surrogate"`
+	// Homeostasis is the optional slow activity stabiliser. The pointer is
+	// omitted when no block is declared, so every configuration written before
+	// the mechanism existed keeps its exact canonical JSON and therefore its
+	// recorded fingerprint.
+	Homeostasis *LIFHomeostasis `json:"homeostasis,omitempty"`
+	Surrogate   LIFSurrogate    `json:"surrogate"`
+}
+
+// LIFHomeostasis is the slow activity stabiliser of the spiking core. Each
+// neuron keeps one activity estimate r and one threshold offset h:
+//
+//	r(t+1) = r(t) + (dt/TauRate) * (spike(t+1) - r(t))
+//	h(t+1) = clamp(h(t) + Eta*dt*(r(t+1) - TargetRate), 0, HMax)
+//
+// and the event of a step compares against theta_base + adaptation + h. The
+// offset only raises the threshold or falls back to zero, which is the bounded
+// adjustment the specification asks for, never an unbounded gain. Both values
+// are state, not learnable parameters: the reverse pass treats h as a constant
+// exactly as it treats the adaptation. Disabled leaves r and h at zero and
+// restores the behaviour of a model that never had the mechanism.
+type LIFHomeostasis struct {
+	Enabled    bool    `json:"enabled"`
+	TauRate    float64 `json:"tau_rate"`
+	TargetRate float64 `json:"target_rate"`
+	Eta        float64 `json:"eta"`
+	HMax       float64 `json:"h_max"`
 }
 
 // LIFAdaptation is the short term threshold adaptation
@@ -68,6 +93,10 @@ type LIF struct {
 	config LIFConfig
 	kappa  float64
 	rho    float64
+	// rateStep is dt/tau_rate and offsetStep is eta*dt; both are zero while the
+	// slow stabiliser is disabled.
+	rateStep   float64
+	offsetStep float64
 	// smooth replaces the hard event with a differentiable spike so that the
 	// declared reverse pass can be checked with central finite differences.
 	// It is a test reference inside this package, never a product mode, and
@@ -80,6 +109,8 @@ type LIF struct {
 type LIFTrace struct {
 	model      *LIF
 	parameters LIFParameters
+	rate       [][]float64 // steps+1 rows, activity estimate r; row 0 is zero
+	homeo      [][]float64 // steps+1 rows, threshold offset h; row 0 is zero
 	voltage    [][]float64 // steps+1 rows, after reset; row 0 is the initial voltage
 	cand       [][]float64 // steps rows, membrane candidate before the event
 	drive      [][]float64 // steps rows, input + bias + edge contributions
@@ -125,6 +156,38 @@ func NewLIF(c LIFConfig) (*LIF, error) {
 		}
 		rho = math.Exp(-c.DT / c.Adaptation.TauAdapt)
 	}
+	rateStep, offsetStep := 0.0, 0.0
+	if c.Homeostasis != nil {
+		// The block is owned from here on, exactly like the edge arrays.
+		owned := *c.Homeostasis
+		c.Homeostasis = &owned
+		if owned.Enabled {
+			if !finite(owned.TauRate) || owned.TauRate <= 0 {
+				return nil, fmt.Errorf("finite tau_rate must be positive")
+			}
+			if !finite(owned.TargetRate) || owned.TargetRate < 0 || owned.TargetRate > 1 {
+				return nil, fmt.Errorf("target_rate must lie in [0, 1]")
+			}
+			if !finite(owned.Eta) || owned.Eta < 0 {
+				return nil, fmt.Errorf("finite eta must not be negative")
+			}
+			if !finite(owned.HMax) || owned.HMax < 0 {
+				return nil, fmt.Errorf("finite h_max must not be negative")
+			}
+			// The offset only raises the threshold, so the highest effective
+			// threshold the mechanism can reach is theta_min + h_max plus the
+			// adaptation. Requiring that ceiling to stay finite and above
+			// v_reset keeps v_reset < theta_effective true at every step.
+			ceiling := c.ThetaMin + owned.HMax
+			if !finite(ceiling) || c.VReset >= ceiling {
+				return nil, fmt.Errorf("theta_min + h_max must be finite and above v_reset")
+			}
+			rateStep, offsetStep = c.DT/owned.TauRate, owned.Eta*c.DT
+			if !finite(rateStep) || !finite(offsetStep) {
+				return nil, fmt.Errorf("dt/tau_rate and eta*dt must be representable")
+			}
+		}
+	}
 	if len(c.Sources) != len(c.Targets) || (len(c.Delays) != 0 && len(c.Delays) != len(c.Sources)) {
 		return nil, fmt.Errorf("edge arrays have different lengths")
 	}
@@ -140,7 +203,30 @@ func NewLIF(c LIFConfig) (*LIF, error) {
 			return nil, fmt.Errorf("edge %d has invalid endpoint or delay", e)
 		}
 	}
-	return &LIF{config: c, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho}, nil
+	return &LIF{config: c, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho, rateStep: rateStep, offsetStep: offsetStep}, nil
+}
+
+// homeostatic reports whether a declared and enabled slow stabiliser exists.
+// Everything downstream branches on this one answer, so an absent block and a
+// disabled block behave identically.
+func (m *LIF) homeostatic() bool {
+	return m.config.Homeostasis != nil && m.config.Homeostasis.Enabled
+}
+
+// stabilise applies the two declared rules of one neuron for one step and
+// returns the new activity estimate and the new bounded threshold offset.
+func (m *LIF) stabilise(rate, offset, spike float64) (float64, float64) {
+	h := m.config.Homeostasis
+	next := rate + m.rateStep*(spike-rate)
+	shifted := offset + m.offsetStep*(next-h.TargetRate)
+	// Plain comparisons so a non-finite value survives the clamp and is
+	// rejected by the caller's finite check instead of being hidden as zero.
+	if shifted < 0 {
+		shifted = 0
+	} else if shifted > h.HMax {
+		shifted = h.HMax
+	}
+	return next, shifted
 }
 
 // Config returns an independent topology/configuration copy.
@@ -153,6 +239,10 @@ func (m *LIF) Config() LIFConfig {
 	c.Sources = append([]int(nil), c.Sources...)
 	c.Targets = append([]int(nil), c.Targets...)
 	c.Delays = append([]int(nil), c.Delays...)
+	if c.Homeostasis != nil {
+		owned := *c.Homeostasis
+		c.Homeostasis = &owned
+	}
 	return c
 }
 
@@ -230,13 +320,16 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 		voltage: make([][]float64, steps+1), cand: make([][]float64, steps),
 		drive: make([][]float64, steps), syn: make([][]float64, steps+1),
 		spike: make([][]float64, steps+1), adapt: make([][]float64, steps+1),
+		rate: make([][]float64, steps+1), homeo: make([][]float64, steps+1),
 		refract: make([][]int, steps+1), reset: make([][]float64, steps),
 		dspike: make([][]float64, steps), thetaSlope: slope,
 		lambda: lambda, alpha: alpha,
 	}
 	tr.voltage[0] = append([]float64(nil), initial...)
 	tr.syn[0], tr.spike[0], tr.adapt[0] = make([]float64, n), make([]float64, n), make([]float64, n)
+	tr.rate[0], tr.homeo[0] = make([]float64, n), make([]float64, n)
 	tr.refract[0] = make([]int, n)
+	stabilising := m.homeostatic()
 	for t, in := range inputs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -257,6 +350,7 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 		cand, voltage := make([]float64, n), make([]float64, n)
 		spike, synapse := make([]float64, n), make([]float64, n)
 		adapt, reset := make([]float64, n), make([]float64, n)
+		rate, homeo := make([]float64, n), make([]float64, n)
 		derivative := make([]float64, n)
 		refract := make([]int, n)
 		for i := range drive {
@@ -265,6 +359,9 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 			theta := base[i]
 			if m.config.Adaptation.Enabled {
 				theta += tr.adapt[t][i]
+			}
+			if stabilising {
+				theta += tr.homeo[t][i]
 			}
 			switch {
 			case !m.smooth && tr.refract[t][i] > 0:
@@ -284,13 +381,17 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 			if m.config.Adaptation.Enabled {
 				adapt[i] = m.rho*tr.adapt[t][i] + m.config.Adaptation.Beta*spike[i]
 			}
-			if !finite(drive[i]) || !finite(cand[i]) || !finite(voltage[i]) || !finite(synapse[i]) || !finite(adapt[i]) {
+			if stabilising {
+				rate[i], homeo[i] = m.stabilise(tr.rate[t][i], tr.homeo[t][i], spike[i])
+			}
+			if !finite(drive[i]) || !finite(cand[i]) || !finite(voltage[i]) || !finite(synapse[i]) || !finite(adapt[i]) || !finite(rate[i]) || !finite(homeo[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
 		}
 		tr.drive[t], tr.cand[t], tr.reset[t], tr.dspike[t] = drive, cand, reset, derivative
 		tr.voltage[t+1], tr.spike[t+1], tr.syn[t+1] = voltage, spike, synapse
 		tr.adapt[t+1], tr.refract[t+1] = adapt, refract
+		tr.rate[t+1], tr.homeo[t+1] = rate, homeo
 	}
 	return tr, nil
 }
@@ -422,8 +523,12 @@ func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, 
 			}
 			du := dspike * tr.dspike[t][i]
 			dcand := gv[i]*tr.reset[t][i] + du
-			// theta_effective = theta_base + a(t), so the threshold gradient
-			// is -du on both the bounded transform and the adaptation state.
+			// theta_effective = theta_base + a(t) + h(t), so the threshold
+			// gradient is -du on both the bounded transform and the adaptation
+			// state. The slow stabiliser offset h is a declared constant of the
+			// reverse pass, exactly like the adaptation inside one step: it
+			// carries no gradient and opens no path back to the events that
+			// raised it.
 			if adapting && keep {
 				prevA[i] -= du
 			}

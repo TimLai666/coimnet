@@ -5,10 +5,15 @@ package dynamics
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -832,5 +837,384 @@ func TestLIFTraceAndConfigAreIndependentCopies(t *testing.T) {
 	if (*LIFTrace)(nil).Outputs() != nil || (*LIFTrace)(nil).Spikes() != nil ||
 		(*LIFTrace)(nil).Voltages() != nil || (*LIFTrace)(nil).FinalVoltage() != nil {
 		t.Fatal("nil trace must return nil slices")
+	}
+}
+
+// lifHomeostasisHandConfig fixes dt = ln 2 with tau = tau_syn = 1 so that
+// lambda = alpha = kappa = 0.5 and theta_raw = 0 so that theta_base = 1. The
+// slow stabiliser uses dt/tau_rate = 0.5 and eta*dt = 1, which reduces its two
+// rules to r' = 0.5*r + 0.5*spike' and h' = clamp(h + r' - 0.25, 0, 0.4).
+// Adaptation stays off so the table isolates homeostasis.
+func lifHomeostasisHandConfig() LIFConfig {
+	return LIFConfig{
+		Nodes:           2,
+		Sources:         []int{0},
+		Targets:         []int{1},
+		Delays:          []int{0},
+		DT:              math.Ln2,
+		TauSyn:          1,
+		ThetaMin:        0,
+		ThetaMax:        2,
+		VReset:          -1,
+		RefractorySteps: 0,
+		Surrogate:       LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+		Homeostasis:     &LIFHomeostasis{Enabled: true, TauRate: 2 * math.Ln2, TargetRate: .25, Eta: 1 / math.Ln2, HMax: .4},
+	}
+}
+
+// lifHomeostasisHandInputs drives neuron 0 hard for four steps and then stops,
+// so its estimate rises past the target, its offset clamps at h_max and both
+// fall back once the neuron goes quiet. Neuron 1 sees neuron 0 through a zero
+// delay edge of weight 2.5 and lags behind it.
+func lifHomeostasisHandInputs() (LIFParameters, []float64, [][]float64) {
+	p := LIFParameters{Weights: []float64{2.5}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}, ThetaRaw: []float64{0, 0}}
+	inputs := make([][]float64, 8)
+	for t := range inputs {
+		inputs[t] = []float64{0, 0}
+		if t < 4 {
+			inputs[t][0] = 4
+		}
+	}
+	return p, []float64{0, 0}, inputs
+}
+
+// lifHomeostasisHandTable is the hand-calculated expectation of that fixture.
+// theta_eff of a step uses the offset carried into it, so row t of homeostasis
+// is the value the step after it compares against.
+func lifHomeostasisHandTable() (spikes, voltages, outputs, rate, homeostasis [][]float64) {
+	spikes = [][]float64{{1, 0}, {1, 1}, {1, 1}, {1, 1}, {0, 1}, {0, 0}, {0, 0}, {0, 0}}
+	voltages = [][]float64{
+		{-1, 0}, {-1, -1}, {-1, -1}, {-1, -1},
+		{-.5, -1}, {-.25, .671875}, {-.125, .921875}, {-.0625, .75390625},
+	}
+	outputs = [][]float64{
+		{1, 0}, {1.5, 1}, {1.75, 1.5}, {1.875, 1.75},
+		{.9375, 1.875}, {.46875, .9375}, {.234375, .46875}, {.1171875, .234375},
+	}
+	rate = [][]float64{
+		{.5, 0}, {.75, .5}, {.875, .75}, {.9375, .875},
+		{.46875, .9375}, {.234375, .46875}, {.1171875, .234375}, {.05859375, .1171875},
+	}
+	homeostasis = [][]float64{
+		{.25, 0}, {.4, .25}, {.4, .4}, {.4, .4},
+		{.4, .4}, {.384375, .4}, {.2515625, .384375}, {.06015625, .2515625},
+	}
+	return
+}
+
+// TestLIFHomeostasisHandCalculatedTiming checks the rate estimate, the
+// threshold offset and every value they change against a table computed by
+// hand. Neuron 0 clamps at h_max from step 1 and falls back from step 5;
+// neuron 1 shows the lower clamp at step 0, where its estimate is still below
+// the target.
+func TestLIFHomeostasisHandCalculatedTiming(t *testing.T) {
+	m, err := NewLIF(lifHomeostasisHandConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, initial, inputs := lifHomeostasisHandInputs()
+	tr, err := m.Forward(context.Background(), p, initial, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	spikes, voltages, outputs, rate, homeostasis := lifHomeostasisHandTable()
+	lifRows(t, "spikes", tr.Spikes(), spikes, lifTol)
+	lifRows(t, "voltages", tr.Voltages(), voltages, lifTol)
+	lifRows(t, "outputs", tr.Outputs(), outputs, lifTol)
+	lifRows(t, "rate", tr.rate[1:], rate, lifTol)
+	lifRows(t, "homeostasis", tr.homeo[1:], homeostasis, lifTol)
+	for _, row := range tr.homeo {
+		for i, h := range row {
+			if h < 0 || h > m.config.Homeostasis.HMax {
+				t.Fatalf("offset %g of neuron %d left [0, %g]", h, i, m.config.Homeostasis.HMax)
+			}
+		}
+	}
+}
+
+// TestLIFDisabledHomeostasisMatchesUnsetHomeostasis pins the requirement that
+// switching the mechanism off restores the reference model bit for bit, in both
+// directions, whether the block is absent or present and disabled.
+func TestLIFDisabledHomeostasisMatchesUnsetHomeostasis(t *testing.T) {
+	unset := lifHandConfig(true)
+	off := lifHandConfig(true)
+	off.Homeostasis = &LIFHomeostasis{Enabled: false, TauRate: 3, TargetRate: .5, Eta: 2, HMax: 7}
+	p, initial, inputs := lifHandInputs()
+	up := [][]float64{{.2, -.3, .1}, {-.1, .5, .3}, {.4, .1, -.3}, {.3, -.4, .2}, {-.2, .2, .5}}
+	var traces []*LIFTrace
+	var grads []LIFGradient
+	for _, c := range []LIFConfig{unset, off} {
+		m, err := NewLIF(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tr, err := m.Forward(context.Background(), p, initial, inputs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g, err := m.Backward(context.Background(), tr, up, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		traces, grads = append(traces, tr), append(grads, g)
+	}
+	if !reflect.DeepEqual(traces[0].Outputs(), traces[1].Outputs()) ||
+		!reflect.DeepEqual(traces[0].Spikes(), traces[1].Spikes()) ||
+		!reflect.DeepEqual(traces[0].Voltages(), traces[1].Voltages()) {
+		t.Fatal("disabled homeostasis changed the forward pass")
+	}
+	if !reflect.DeepEqual(grads[0], grads[1]) {
+		t.Fatal("disabled homeostasis changed the reverse pass")
+	}
+	for _, tr := range traces {
+		for _, row := range tr.homeo {
+			for _, h := range row {
+				if h != 0 {
+					t.Fatalf("disabled homeostasis produced a nonzero offset %g", h)
+				}
+			}
+		}
+		for _, row := range tr.rate {
+			for _, v := range row {
+				if v != 0 {
+					t.Fatalf("disabled homeostasis produced a nonzero rate estimate %g", v)
+				}
+			}
+		}
+	}
+}
+
+// TestLIFConfigJSONIsUnchangedWithoutHomeostasis is the compatibility proof of
+// the new field: an omitted pointer must leave the canonical LIFConfig JSON,
+// and therefore every recorded core_config_hash and protocol_hash, byte
+// identical. The first fixture is the LIF block of the NAT-01 whole-graph
+// protocol (evidence/NAT-01/protocol-fullgraph-uniform.json) as a protocol
+// carries it, with the topology supplied by the graph store.
+func TestLIFConfigJSONIsUnchangedWithoutHomeostasis(t *testing.T) {
+	protocolBlock := LIFConfig{
+		DT: 1, TauSyn: 5, ThetaMin: .1, ThetaMax: 2, VReset: -.5, RefractorySteps: 1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+	const wantProtocolBlock = `{"nodes":0,"sources":null,"targets":null,"dt":1,"tau_syn":5,"theta_min":0.1,"theta_max":2,"v_reset":-0.5,"refractory_steps":1,"adaptation":{"enabled":false,"tau_adapt":0,"beta":0},"surrogate":{"kind":"fast_sigmoid","scale":2}}`
+	populated := LIFConfig{
+		Nodes: 3, Sources: []int{0, 1}, Targets: []int{1, 2}, Delays: []int{0, 1},
+		DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+	const wantPopulated = `{"nodes":3,"sources":[0,1],"targets":[1,2],"delays":[0,1],"dt":1,"tau_syn":1,"theta_min":0.05,"theta_max":1,"v_reset":-0.5,"refractory_steps":1,"adaptation":{"enabled":false,"tau_adapt":0,"beta":0},"surrogate":{"kind":"fast_sigmoid","scale":2}}`
+	// Recorded before the homeostasis field existed, so a changed digest here is
+	// a changed core_config_hash everywhere.
+	const wantPopulatedHash = "8a64827606764d7f9f36dab81bed2c003fee2e30db54dbc2cac7b699f9088172"
+	for _, tc := range []struct{ name, want string }{{"nat01_protocol_block", wantProtocolBlock}, {"populated", wantPopulated}} {
+		c := protocolBlock
+		if tc.name == "populated" {
+			c = populated
+		}
+		encoded, err := json.Marshal(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(encoded) != tc.want {
+			t.Fatalf("%s JSON changed:\n got %s\nwant %s", tc.name, encoded, tc.want)
+		}
+		if strings.Contains(string(encoded), "homeostasis") {
+			t.Fatalf("%s emitted a homeostasis key without a declared block", tc.name)
+		}
+	}
+	encoded, err := json.Marshal(populated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := fmt.Sprintf("%x", sha256.Sum256(encoded)); got != wantPopulatedHash {
+		t.Fatalf("configuration digest changed: got %s want %s", got, wantPopulatedHash)
+	}
+	// A declared block is a different configuration and must change the digest,
+	// otherwise the fingerprint would not bind the mechanism at all.
+	declared := populated
+	declared.Homeostasis = &LIFHomeostasis{Enabled: true, TauRate: 10, TargetRate: .2, Eta: .05, HMax: 1}
+	withBlock, err := json.Marshal(declared)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(withBlock), `"homeostasis":{"enabled":true,"tau_rate":10,"target_rate":0.2,"eta":0.05,"h_max":1}`) {
+		t.Fatalf("declared homeostasis JSON = %s", withBlock)
+	}
+	if fmt.Sprintf("%x", sha256.Sum256(withBlock)) == wantPopulatedHash {
+		t.Fatal("a declared homeostasis block left the configuration digest unchanged")
+	}
+}
+
+// TestLIFConfigAndTraceDoNotAliasHomeostasis checks that the new pointer is
+// owned like every other part of the configuration.
+func TestLIFConfigAndTraceDoNotAliasHomeostasis(t *testing.T) {
+	c := lifHomeostasisHandConfig()
+	m, err := NewLIF(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Homeostasis.HMax = 99
+	if got := m.Config().Homeostasis.HMax; got != .4 {
+		t.Fatalf("constructor aliased the caller's block: h_max = %g", got)
+	}
+	owned := m.Config()
+	owned.Homeostasis.TargetRate = 99
+	if got := m.Config().Homeostasis.TargetRate; got != .25 {
+		t.Fatalf("Config aliased the model's block: target_rate = %g", got)
+	}
+}
+
+func TestLIFConstructionRejectsInvalidHomeostasis(t *testing.T) {
+	valid := lifHomeostasisHandConfig()
+	if _, err := NewLIF(valid); err != nil {
+		t.Fatal(err)
+	}
+	mutations := map[string]func(h *LIFHomeostasis, c *LIFConfig){
+		"zero tau_rate":     func(h *LIFHomeostasis, c *LIFConfig) { h.TauRate = 0 },
+		"negative tau_rate": func(h *LIFHomeostasis, c *LIFConfig) { h.TauRate = -1 },
+		"nan tau_rate":      func(h *LIFHomeostasis, c *LIFConfig) { h.TauRate = math.NaN() },
+		"inf tau_rate":      func(h *LIFHomeostasis, c *LIFConfig) { h.TauRate = math.Inf(1) },
+		"negative target":   func(h *LIFHomeostasis, c *LIFConfig) { h.TargetRate = -.1 },
+		"target above one":  func(h *LIFHomeostasis, c *LIFConfig) { h.TargetRate = 1.1 },
+		"nan target":        func(h *LIFHomeostasis, c *LIFConfig) { h.TargetRate = math.NaN() },
+		"negative eta":      func(h *LIFHomeostasis, c *LIFConfig) { h.Eta = -1 },
+		"nan eta":           func(h *LIFHomeostasis, c *LIFConfig) { h.Eta = math.NaN() },
+		"inf eta":           func(h *LIFHomeostasis, c *LIFConfig) { h.Eta = math.Inf(1) },
+		"negative h_max":    func(h *LIFHomeostasis, c *LIFConfig) { h.HMax = -.1 },
+		"nan h_max":         func(h *LIFHomeostasis, c *LIFConfig) { h.HMax = math.NaN() },
+		"inf h_max":         func(h *LIFHomeostasis, c *LIFConfig) { h.HMax = math.Inf(1) },
+		"unreachable ceiling": func(h *LIFHomeostasis, c *LIFConfig) {
+			h.HMax = math.MaxFloat64
+			c.ThetaMin = math.MaxFloat64
+			c.ThetaMax = math.Inf(1)
+		},
+	}
+	for name, mutate := range mutations {
+		t.Run(name, func(t *testing.T) {
+			c := lifHomeostasisHandConfig()
+			block := *c.Homeostasis
+			c.Homeostasis = &block
+			mutate(c.Homeostasis, &c)
+			if _, err := NewLIF(c); err == nil {
+				t.Fatalf("accepted %s", name)
+			}
+		})
+	}
+	// A disabled block carries no promise about its numbers, exactly like the
+	// existing disabled adaptation block.
+	disabled := lifHomeostasisHandConfig()
+	disabled.Homeostasis = &LIFHomeostasis{Enabled: false, TauRate: -5, TargetRate: 9, Eta: -1, HMax: -1}
+	if _, err := NewLIF(disabled); err != nil {
+		t.Fatalf("rejected a disabled homeostasis block: %v", err)
+	}
+	// Boundary values of the declared ranges stay legal.
+	for name, mutate := range map[string]func(h *LIFHomeostasis){
+		"zero target": func(h *LIFHomeostasis) { h.TargetRate = 0 },
+		"unit target": func(h *LIFHomeostasis) { h.TargetRate = 1 },
+		"zero eta":    func(h *LIFHomeostasis) { h.Eta = 0 },
+		"zero h_max":  func(h *LIFHomeostasis) { h.HMax = 0 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			c := lifHomeostasisHandConfig()
+			block := *c.Homeostasis
+			c.Homeostasis = &block
+			mutate(c.Homeostasis)
+			if _, err := NewLIF(c); err != nil {
+				t.Fatalf("rejected %s: %v", name, err)
+			}
+		})
+	}
+}
+
+// lifHomeostasisDrivenFixture is one neuron with no edges and a constant drive
+// large enough to make it fire on every step while the mechanism is off. The
+// only way its rate can fall is the threshold offset.
+func lifHomeostasisDrivenFixture(enabled bool) (LIFConfig, LIFParameters, []float64, [][]float64) {
+	c := LIFConfig{
+		Nodes: 1, DT: 1, TauSyn: 1, ThetaMin: .5, ThetaMax: 1.5, VReset: -.5,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+	if enabled {
+		c.Homeostasis = &LIFHomeostasis{Enabled: true, TauRate: 50, TargetRate: .2, Eta: .05, HMax: 5}
+	}
+	p := LIFParameters{Weights: []float64{}, Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	inputs := make([][]float64, 4000)
+	for t := range inputs {
+		inputs[t] = []float64{2}
+	}
+	return c, p, []float64{0}, inputs
+}
+
+// TestLIFHomeostasisConvergesTowardTargetRate is the COR-04 effect evidence:
+// the same driven neuron fires on every one of 4,000 steps with the mechanism
+// off, and settles at the declared target rate with it on. Setting
+// COIMNET_COR04_EVIDENCE to an absolute directory (go test runs in the package
+// directory) also writes the reported curve there.
+func TestLIFHomeostasisConvergesTowardTargetRate(t *testing.T) {
+	const reportEvery = 100
+	type sample struct {
+		Step          int     `json:"step"`
+		RateEstimate  float64 `json:"rate_estimate"`
+		Offset        float64 `json:"homeostasis"`
+		SpikeFraction float64 `json:"spike_fraction_so_far"`
+	}
+	run := func(enabled bool) ([]sample, float64) {
+		c, p, initial, inputs := lifHomeostasisDrivenFixture(enabled)
+		m, err := NewLIF(c)
+		if err != nil {
+			t.Fatal(err)
+		}
+		tr, err := m.Forward(context.Background(), p, initial, inputs)
+		if err != nil {
+			t.Fatal(err)
+		}
+		spikes := tr.Spikes()
+		var fired float64
+		var curve []sample
+		for t := range spikes {
+			fired += spikes[t][0]
+			if (t+1)%reportEvery == 0 {
+				curve = append(curve, sample{t + 1, tr.rate[t+1][0], tr.homeo[t+1][0], fired / float64(t+1)})
+			}
+		}
+		return curve, fired / float64(len(spikes))
+	}
+	onCurve, onFraction := run(true)
+	offCurve, offFraction := run(false)
+	if offFraction != 1 {
+		t.Fatalf("the undriven reference is not a spike on every step: %g", offFraction)
+	}
+	for _, s := range offCurve {
+		if s.RateEstimate != 0 || s.Offset != 0 {
+			t.Fatalf("disabled homeostasis accumulated state at step %d: %+v", s.Step, s)
+		}
+	}
+	final := onCurve[len(onCurve)-1]
+	if math.Abs(final.RateEstimate-.2) > .05 {
+		t.Fatalf("rate estimate %g is not within 0.05 of the target 0.2", final.RateEstimate)
+	}
+	if onFraction >= offFraction {
+		t.Fatalf("homeostasis did not reduce the spike fraction: %g vs %g", onFraction, offFraction)
+	}
+	if dir := os.Getenv("COIMNET_COR04_EVIDENCE"); dir != "" {
+		document := map[string]any{
+			"fixture":                    "one LIF neuron, no edges, constant input 2, dt 1, tau 1, tau_syn 1, theta_min 0.5, theta_max 1.5, theta_raw 0 (theta_base 1), v_reset -0.5, no refractory step, adaptation off",
+			"homeostasis":                LIFHomeostasis{Enabled: true, TauRate: 50, TargetRate: .2, Eta: .05, HMax: 5},
+			"steps":                      4000,
+			"report_every":               reportEvery,
+			"enabled_curve":              onCurve,
+			"enabled_spike_fraction":     onFraction,
+			"disabled_spike_fraction":    offFraction,
+			"final_rate_estimate":        final.RateEstimate,
+			"final_absolute_deviation":   math.Abs(final.RateEstimate - .2),
+			"reproduction_command":       "COIMNET_COR04_EVIDENCE=$PWD/evidence/COR-04 go test -count=1 -v -run TestLIFHomeostasisConvergesTowardTargetRate ./dynamics/ (from the repository root)",
+			"disabled_curve_is_all_zero": true,
+		}
+		data, err := json.MarshalIndent(document, "", "  ")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "homeostasis-convergence.json"), append(data, '\n'), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

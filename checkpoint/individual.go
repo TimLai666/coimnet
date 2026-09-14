@@ -7,20 +7,22 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strconv"
 	"unicode/utf8"
 
+	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/TimLai666/coimnet/learning"
 )
 
-// IndividualSchemaVersion identifies the envelope used for a continuous
-// individual snapshot. It is deliberately distinct from SchemaVersion, which
-// is the independent-episode checkpoint format.
+// IndividualSchemaVersion identifies the envelope used for a persistent
+// individual snapshot of either core. It is deliberately distinct from
+// SchemaVersion, which is the independent-episode checkpoint format.
 const IndividualSchemaVersion = "coimnet-individual-checkpoint/v1"
 
-// SaveIndividual validates and publishes a complete continuous individual
-// snapshot. The caller's snapshot is never retained, and an existing path is
+// SaveIndividual validates and publishes a complete individual snapshot of
+// either core. The caller's snapshot is never retained, and an existing path is
 // never replaced.
 func SaveIndividual(ctx context.Context, path string, snapshot learning.IndividualSnapshot) error {
 	if err := contextError(ctx); err != nil {
@@ -57,10 +59,12 @@ func SaveIndividual(ctx context.Context, path string, snapshot learning.Individu
 	return publishDocument(ctx, path, document)
 }
 
-// LoadIndividual reads one complete continuous individual snapshot. It
+// LoadIndividual reads one complete individual snapshot of either core. It
 // validates raw JSON before encoding/json can replace invalid Unicode or turn
 // null numeric values into Go zero values, then validates the semantic snapshot
-// through learning.RestoreIndividual.
+// through learning.RestoreIndividual. A document written before the neural
+// union existed, whose "neural" object is the continuous state itself, is read
+// as a continuous individual.
 func LoadIndividual(ctx context.Context, path string) (learning.IndividualSnapshot, error) {
 	if err := contextError(ctx); err != nil {
 		return learning.IndividualSnapshot{}, err
@@ -118,8 +122,12 @@ func decodeIndividualDocument(data []byte) (learning.IndividualSnapshot, error) 
 	if !bytes.Equal(got, want[:]) {
 		return empty, fmt.Errorf("individual checkpoint payload checksum mismatch")
 	}
+	payload, err = upgradeIndividualNeural(raw.Payload)
+	if err != nil {
+		return empty, err
+	}
 	var snapshot learning.IndividualSnapshot
-	if err := decodeStrict(raw.Payload, &snapshot); err != nil {
+	if err := decodeStrict(payload, &snapshot); err != nil {
 		return empty, fmt.Errorf("decode individual checkpoint payload: %w", err)
 	}
 	individual, err := learning.RestoreIndividual(snapshot)
@@ -150,11 +158,9 @@ func requireIndividualFields(data []byte) error {
 	if err != nil {
 		return err
 	}
-	dynamics, err := requiredObject(config["dynamics"], "$.payload.config.dynamics", "nodes", "sources", "targets", "dt", "activation")
-	if err != nil {
+	if _, err = requiredObject(config["dynamics"], "$.payload.config.dynamics", "nodes", "sources", "targets", "dt", "activation"); err != nil {
 		return err
 	}
-	_ = dynamics
 	parameters, err := requiredObject(payloadObject["parameters"], "$.payload.parameters", "core", "encoder", "readout")
 	if err != nil {
 		return err
@@ -176,10 +182,87 @@ func requireIndividualFields(data []byte) error {
 	if _, err = requiredObject(optimizer["state"], "$.payload.optimizer.state", "first", "second", "steps"); err != nil {
 		return err
 	}
-	if _, err = requiredObject(payloadObject["neural"], "$.payload.neural", "schema_version", "config_hash", "steps", "voltage", "history"); err != nil {
+	return requireIndividualNeural(config, payloadObject["neural"])
+}
+
+// requireIndividualNeural checks the neural union of a checkpoint: which core it
+// declares, that exactly one state accompanies that declaration, and that the
+// declaration agrees with the configured core. A document written before the
+// union existed carries the continuous state directly and is always continuous,
+// because the spiking core had no persistent individual then.
+func requireIndividualNeural(config map[string]json.RawMessage, raw json.RawMessage) error {
+	neural, err := requiredObject(raw, "$.payload.neural")
+	if err != nil {
 		return err
 	}
-	return nil
+	configuredLIF := presentAndNotNull(config, "lif")
+	if _, ok := neural["core"]; !ok {
+		if configuredLIF {
+			return fmt.Errorf("$.payload.neural has no core and a LIF configuration cannot be a pre-union individual checkpoint")
+		}
+		return checkRequiredFields(raw, reflect.TypeOf(dynamics.State{}), "$.payload.neural")
+	}
+	var core string
+	if err := json.Unmarshal(neural["core"], &core); err != nil {
+		return fmt.Errorf("$.payload.neural.core must be a string: %w", err)
+	}
+	switch core {
+	case learning.NeuralCoreContinuous:
+		if configuredLIF {
+			return fmt.Errorf("$.payload.neural declares the continuous core while $.payload.config.lif declares a spiking core")
+		}
+		if presentAndNotNull(neural, "lif") {
+			return fmt.Errorf("$.payload.neural declares the continuous core and also carries a lif state")
+		}
+		if !presentAndNotNull(neural, "continuous") {
+			return fmt.Errorf("missing required field $.payload.neural.continuous")
+		}
+		return checkRequiredFields(neural["continuous"], reflect.TypeOf(dynamics.State{}), "$.payload.neural.continuous")
+	case learning.NeuralCoreLIF:
+		if !configuredLIF {
+			return fmt.Errorf("$.payload.neural declares the LIF core but $.payload.config.lif is missing")
+		}
+		if presentAndNotNull(neural, "continuous") {
+			return fmt.Errorf("$.payload.neural declares the LIF core and also carries a continuous state")
+		}
+		if !presentAndNotNull(neural, "lif") {
+			return fmt.Errorf("missing required field $.payload.neural.lif")
+		}
+		if err := checkRequiredFields(config["lif"], reflect.TypeOf(dynamics.LIFConfig{}), "$.payload.config.lif"); err != nil {
+			return err
+		}
+		return checkRequiredFields(neural["lif"], reflect.TypeOf(dynamics.LIFState{}), "$.payload.neural.lif")
+	default:
+		return fmt.Errorf("$.payload.neural.core %q is not a known core", core)
+	}
+}
+
+func presentAndNotNull(object map[string]json.RawMessage, field string) bool {
+	raw, ok := object[field]
+	return ok && !isJSONNull(raw)
+}
+
+// upgradeIndividualNeural rewrites the pre-union neural object into the union
+// so one decoder serves both. The checksum is verified against the original
+// bytes before this runs, so the rewrite can never launder a damaged file.
+func upgradeIndividualNeural(payload []byte) ([]byte, error) {
+	var object map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &object); err != nil {
+		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
+	}
+	neural, ok := object["neural"]
+	if !ok {
+		return payload, nil
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(neural, &fields); err != nil {
+		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
+	}
+	if _, ok := fields["core"]; ok {
+		return payload, nil
+	}
+	object["neural"] = json.RawMessage(`{"core":"` + learning.NeuralCoreContinuous + `","continuous":` + string(neural) + `}`)
+	return json.Marshal(object)
 }
 
 func requiredObject(data []byte, path string, fields ...string) (map[string]json.RawMessage, error) {
@@ -205,6 +288,27 @@ func normalizeIndividualSnapshot(s learning.IndividualSnapshot) learning.Individ
 	s.Config.Dynamics.Sources = nonNilInts(s.Config.Dynamics.Sources)
 	s.Config.Dynamics.Targets = nonNilInts(s.Config.Dynamics.Targets)
 	s.Config.Dynamics.Delays = nonNilInts(s.Config.Dynamics.Delays)
+	if s.Config.LIF != nil {
+		lif := *s.Config.LIF
+		lif.Sources = nonNilInts(lif.Sources)
+		lif.Targets = nonNilInts(lif.Targets)
+		lif.Delays = nonNilInts(lif.Delays)
+		s.Config.LIF = &lif
+	}
+	if s.Neural.LIF != nil {
+		// Rate and Homeostasis stay as they are: omitempty means an absent key
+		// is the documented "this mechanism is off", not a zero-length array.
+		state := *s.Neural.LIF
+		state.Voltage = nonNilFloats(state.Voltage)
+		state.Adaptation = nonNilFloats(state.Adaptation)
+		state.Refractory = nonNilInts(state.Refractory)
+		s.Neural.LIF = &state
+	}
+	if s.Neural.Continuous != nil {
+		state := *s.Neural.Continuous
+		state.Voltage = nonNilFloats(state.Voltage)
+		s.Neural.Continuous = &state
+	}
 	s.Parameters.Core.Weights = nonNilFloats(s.Parameters.Core.Weights)
 	s.Parameters.Core.Bias = nonNilFloats(s.Parameters.Core.Bias)
 	s.Parameters.Core.LogTau = nonNilFloats(s.Parameters.Core.LogTau)

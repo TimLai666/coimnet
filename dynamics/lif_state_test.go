@@ -88,6 +88,8 @@ func lifCloneState(s LIFState) LIFState {
 		History:       cloneRows(s.History),
 		Adaptation:    append([]float64(nil), s.Adaptation...),
 		Refractory:    append([]int(nil), s.Refractory...),
+		Rate:          append([]float64(nil), s.Rate...),
+		Homeostasis:   append([]float64(nil), s.Homeostasis...),
 	}
 }
 
@@ -611,5 +613,239 @@ func TestLIFAdvanceIsDeterministicAndOwnsItsResults(t *testing.T) {
 	}
 	if again.Steps != 8 {
 		t.Fatalf("steps %d", again.Steps)
+	}
+}
+
+// lifHomeostasisBlock is a fast stabiliser: with dt 0.4 the rate estimate moves
+// about 0.11 per step and the offset about 0.8 per unit of rate error, so a
+// twelve step fixture reaches the ceiling and comes back down again.
+func lifHomeostasisBlock() *LIFHomeostasis {
+	return &LIFHomeostasis{Enabled: true, TauRate: 3.5, TargetRate: .3, Eta: 2, HMax: .5}
+}
+
+// TestLIFHomeostasisAdvanceMatchesForwardBitForBit continues the same spiking
+// trajectory in four chunkings and compares the rate estimate and threshold
+// offset, not just the values the earlier mechanisms owned.
+func TestLIFHomeostasisAdvanceMatchesForwardBitForBit(t *testing.T) {
+	offsets := 0
+	for _, seed := range []uint64{1, 3, 8} {
+		for _, adapt := range []bool{false, true} {
+			for _, refractory := range []int{0, 2} {
+				name := fmt.Sprintf("seed%d_adapt%v_refractory%d", seed, adapt, refractory)
+				t.Run(name, func(t *testing.T) {
+					c, p, initial, inputs := lifRandomFixture(seed, adapt, refractory)
+					c.Homeostasis = lifHomeostasisBlock()
+					m, err := NewLIF(c)
+					if err != nil {
+						t.Fatal(err)
+					}
+					tr, err := m.Forward(context.Background(), p, initial, inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					wantOutputs, wantSpikes := tr.Outputs(), tr.Spikes()
+					fired := 0
+					for _, row := range wantSpikes {
+						for _, v := range row {
+							fired += int(v)
+						}
+					}
+					if fired == 0 {
+						t.Fatal("fixture never spiked, the comparison would be vacuous")
+					}
+					for _, row := range tr.homeo {
+						for _, h := range row {
+							if h > 0 {
+								offsets++
+							}
+							if h < 0 || h > c.Homeostasis.HMax {
+								t.Fatalf("offset %g left [0, %g]", h, c.Homeostasis.HMax)
+							}
+						}
+					}
+					start, err := m.NewState(initial)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(start.Rate) != c.Nodes || len(start.Homeostasis) != c.Nodes {
+						t.Fatalf("new state rate %d offsets %d, want %d each", len(start.Rate), len(start.Homeostasis), c.Nodes)
+					}
+					for _, chunks := range lifChunkings {
+						final, outputs, spikes := lifChainAdvance(t, m, p, start, inputs, chunks)
+						if !reflect.DeepEqual(outputs, wantOutputs) || !reflect.DeepEqual(spikes, wantSpikes) {
+							t.Fatalf("chunks %v: outputs or spikes differ from Forward", chunks)
+						}
+						if !reflect.DeepEqual(final.Voltage, tr.FinalVoltage()) {
+							t.Fatalf("chunks %v: voltage %v want %v", chunks, final.Voltage, tr.FinalVoltage())
+						}
+						if !reflect.DeepEqual(final.Rate, tr.rate[len(inputs)]) {
+							t.Fatalf("chunks %v: rate %v want %v", chunks, final.Rate, tr.rate[len(inputs)])
+						}
+						if !reflect.DeepEqual(final.Homeostasis, tr.homeo[len(inputs)]) {
+							t.Fatalf("chunks %v: offsets %v want %v", chunks, final.Homeostasis, tr.homeo[len(inputs)])
+						}
+					}
+				})
+			}
+		}
+	}
+	if offsets == 0 {
+		t.Fatal("no fixture ever raised a threshold offset")
+	}
+}
+
+// TestLIFHomeostasisStateRoundTripAndValidation covers the two new arrays: they
+// travel through JSON unchanged, they are required while the mechanism is on,
+// they must be absent while it is off, and the offset must stay inside the
+// declared ceiling.
+func TestLIFHomeostasisStateRoundTripAndValidation(t *testing.T) {
+	c, p, initial, inputs := lifRandomFixture(3, true, 1)
+	c.Homeostasis = lifHomeostasisBlock()
+	m, err := NewLIF(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	start, err := m.NewState(initial)
+	if err != nil {
+		t.Fatal(err)
+	}
+	valid, _, _, err := m.Advance(context.Background(), p, start, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := m.ValidateState(valid); err != nil {
+		t.Fatalf("rejected a state it produced: %v", err)
+	}
+	encoded, err := json.Marshal(valid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(encoded), `"rate":`) || !strings.Contains(string(encoded), `"homeostasis":`) {
+		t.Fatalf("enabled state omitted its arrays: %s", encoded)
+	}
+	var decoded LIFState
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(decoded, valid) {
+		t.Fatalf("json round trip changed the state: %#v", decoded)
+	}
+	if err := m.ValidateState(decoded); err != nil {
+		t.Fatalf("rejected a decoded state: %v", err)
+	}
+	for name, mutate := range map[string]func(s *LIFState){
+		"missing rate":       func(s *LIFState) { s.Rate = nil },
+		"missing offsets":    func(s *LIFState) { s.Homeostasis = nil },
+		"short rate":         func(s *LIFState) { s.Rate = s.Rate[:len(s.Rate)-1] },
+		"short offsets":      func(s *LIFState) { s.Homeostasis = s.Homeostasis[:len(s.Homeostasis)-1] },
+		"non-finite rate":    func(s *LIFState) { s.Rate[0] = math.NaN() },
+		"non-finite offset":  func(s *LIFState) { s.Homeostasis[0] = math.Inf(1) },
+		"negative offset":    func(s *LIFState) { s.Homeostasis[0] = -1e-9 },
+		"offset above h_max": func(s *LIFState) { s.Homeostasis[0] = c.Homeostasis.HMax + 1e-9 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			bad := lifCloneState(valid)
+			mutate(&bad)
+			if err := m.ValidateState(bad); err == nil {
+				t.Fatalf("accepted %s", name)
+			}
+		})
+	}
+	// The mechanism is off, so the arrays are not just optional: carrying them
+	// would be state the declared model cannot own.
+	plainConfig, plainParameters, plainInitial, plainInputs := lifRandomFixture(3, true, 1)
+	plain, err := NewLIF(plainConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plainStart, err := plain.NewState(plainInitial)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plainStart.Rate != nil || plainStart.Homeostasis != nil {
+		t.Fatalf("disabled homeostasis allocated state: %#v", plainStart)
+	}
+	plainState, _, _, err := plain.Advance(context.Background(), plainParameters, plainStart, plainInputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if plainState.Rate != nil || plainState.Homeostasis != nil {
+		t.Fatalf("disabled homeostasis produced arrays: %#v", plainState)
+	}
+	plainJSON, err := json.Marshal(plainState)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(plainJSON), `"rate"`) || strings.Contains(string(plainJSON), `"homeostasis"`) {
+		t.Fatalf("disabled homeostasis serialized its arrays: %s", plainJSON)
+	}
+	for name, mutate := range map[string]func(s *LIFState){
+		"rate while disabled":    func(s *LIFState) { s.Rate = make([]float64, plainConfig.Nodes) },
+		"offsets while disabled": func(s *LIFState) { s.Homeostasis = make([]float64, plainConfig.Nodes) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			bad := lifCloneState(plainState)
+			mutate(&bad)
+			if err := plain.ValidateState(bad); err == nil {
+				t.Fatalf("accepted %s", name)
+			}
+		})
+	}
+	// A state of the stabilised model must not be accepted by the plain one and
+	// the other way round: the configuration fingerprint covers the block.
+	if err := plain.ValidateState(valid); err == nil {
+		t.Fatal("a model without homeostasis accepted a stabilised state")
+	}
+	if err := m.ValidateState(plainState); err == nil {
+		t.Fatal("a stabilised model accepted a state without the arrays")
+	}
+}
+
+// TestLIFStateWithoutHomeostasisArraysStillLoads reads a state document written
+// before the two arrays existed. coimnet-lif-state/v1 is unchanged, so an
+// omitted optional field must stay readable on a model that has the mechanism
+// off.
+func TestLIFStateWithoutHomeostasisArraysStillLoads(t *testing.T) {
+	m, err := NewLIF(lifHandConfig(false))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p, _, inputs := lifHandInputs()
+	hash, err := m.lifStateConfigHash()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Written by hand in the pre-homeostasis field order, with no rate and no
+	// homeostasis key at all: two steps of a three neuron model whose largest
+	// delay is two, so the history carries the zero prehistory and two rows.
+	old := fmt.Sprintf(`{"schema_version":%q,"config_hash":%q,"steps":2,"voltage":[-1,-1,0],"history":[[0,0,0],[1,0,0],[0.5,1,0]],"adaptation":[0,0,0],"refractory":[0,1,0]}`,
+		LIFStateVersion, hash)
+	var decoded LIFState
+	if err := json.Unmarshal([]byte(old), &decoded); err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Rate != nil || decoded.Homeostasis != nil {
+		t.Fatalf("an omitted array decoded into state: %#v", decoded)
+	}
+	if err := m.ValidateState(decoded); err != nil {
+		t.Fatalf("rejected a pre-homeostasis state document: %v", err)
+	}
+	next, _, _, err := m.Advance(context.Background(), p, decoded, inputs[2:])
+	if err != nil {
+		t.Fatalf("could not continue a pre-homeostasis state: %v", err)
+	}
+	if next.Rate != nil || next.Homeostasis != nil {
+		t.Fatalf("continuing a disabled model created arrays: %#v", next)
+	}
+	// The same document must not be accepted once the mechanism is declared,
+	// because then the two arrays are required state rather than optional keys.
+	stabilised := lifHandConfig(false)
+	stabilised.Homeostasis = lifHomeostasisBlock()
+	sm, err := NewLIF(stabilised)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := sm.ValidateState(decoded); err == nil {
+		t.Fatal("a stabilised model accepted a state document with no arrays")
 	}
 }
