@@ -1,0 +1,183 @@
+{
+  "schema_version": "coimnet-simulate-compare/v1",
+  "run": {
+    "schema_version": "coimnet-simulate-protocol/v1",
+    "core": "continuous",
+    "continuous": {
+      "dt": 1,
+      "activation": "tanh"
+    },
+    "injection_groups": [
+      {
+        "channel": 0,
+        "selector": {
+          "field": "class",
+          "equals": "ALIN"
+        },
+        "gain": 1
+      }
+    ],
+    "probes": [
+      {
+        "name": "alin_injected_trace",
+        "selector": {
+          "field": "class",
+          "equals": "ALIN"
+        },
+        "reduce": "mean_output"
+      },
+      {
+        "name": "descending_neuron_trace",
+        "selector": {
+          "field": "superclass",
+          "equals": "descending_neuron"
+        },
+        "reduce": "mean_output"
+      },
+      {
+        "name": "vnc_motor_trace",
+        "selector": {
+          "field": "superclass",
+          "equals": "vnc_motor"
+        },
+        "reduce": "mean_output"
+      }
+    ],
+    "stimulus": {
+      "pulse": {
+        "channels": 1,
+        "steps": 300,
+        "channel": 0,
+        "onset": 10,
+        "duration": 20,
+        "amplitude": 2
+      }
+    },
+    "thresholds": {
+      "min_active_fraction": 0.01
+    },
+    "parameter_source": "derived_release/v1",
+    "uniform": {
+      "gain": 0,
+      "bias": 0,
+      "log_tau": 0,
+      "theta_raw": 0
+    },
+    "derived": {
+      "unknown_sign": "exclude",
+      "weight_scale": 21.6
+    }
+  },
+  "sets": [
+    {
+      "name": "alin",
+      "selectors": [
+        {
+          "field": "class",
+          "equals": "ALIN"
+        }
+      ]
+    },
+    {
+      "name": "descending_neuron",
+      "selectors": [
+        {
+          "field": "superclass",
+          "equals": "descending_neuron"
+        }
+      ]
+    },
+    {
+      "name": "vnc_motor",
+      "selectors": [
+        {
+          "field": "superclass",
+          "equals": "vnc_motor"
+        }
+      ]
+    }
+  ],
+  "metrics": [
+    {
+      "name": "alin_mean_output_from_onset",
+      "kind": "mean_output",
+      "set": "alin",
+      "window": [10, 300]
+    },
+    {
+      "name": "alin_mean_output_after",
+      "kind": "mean_output",
+      "set": "alin",
+      "window": [30, 300]
+    },
+    {
+      "name": "descending_neuron_mean_output_from_onset",
+      "kind": "mean_output",
+      "set": "descending_neuron",
+      "window": [10, 300]
+    },
+    {
+      "name": "descending_neuron_mean_output_after",
+      "kind": "mean_output",
+      "set": "descending_neuron",
+      "window": [30, 300]
+    },
+    {
+      "name": "vnc_motor_mean_output_from_onset",
+      "kind": "mean_output",
+      "set": "vnc_motor",
+      "window": [10, 300]
+    },
+    {
+      "name": "vnc_motor_mean_output_after",
+      "kind": "mean_output",
+      "set": "vnc_motor",
+      "window": [30, 300]
+    }
+  ],
+  "thresholds": [
+    {
+      "metric": "alin_mean_output_from_onset",
+      "op": ">=",
+      "value": 0.01
+    },
+    {
+      "metric": "alin_mean_output_after",
+      "op": ">=",
+      "value": 0.01
+    },
+    {
+      "metric": "descending_neuron_mean_output_from_onset",
+      "op": ">=",
+      "value": 0.001
+    },
+    {
+      "metric": "descending_neuron_mean_output_after",
+      "op": ">=",
+      "value": 0.001
+    },
+    {
+      "metric": "vnc_motor_mean_output_from_onset",
+      "op": ">=",
+      "value": 0.001
+    },
+    {
+      "metric": "vnc_motor_mean_output_after",
+      "op": ">=",
+      "value": 0.001
+    }
+  ],
+  "null_models": [
+    {
+      "kind": "degree_preserving_rewire",
+      "swap_factor": 1
+    },
+    {
+      "kind": "sign_shuffle"
+    },
+    {
+      "kind": "weight_shuffle"
+    }
+  ],
+  "seeds": [1, 2, 3]
+}

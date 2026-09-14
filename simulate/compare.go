@@ -48,8 +48,22 @@ type CompareProtocol struct {
 	Seeds         []uint64        `json:"seeds,omitempty"`
 }
 
+// MetricDelta is one cell's metric minus the original cell's value for the
+// same metric. It is defined only when both sides have a value: a difference
+// against something that was never measured is not zero, it does not exist.
+// An undefined delta carries no value, exactly as an undefined metric does.
+type MetricDelta struct {
+	Metric  string  `json:"metric"`
+	Value   float64 `json:"value"`
+	Defined bool    `json:"defined"`
+}
+
 // CompareCell is one variant run with its metrics and thresholds. WallSeconds
 // is the only field that differs between two identical comparisons.
+//
+// Deltas follows the declared metric order and holds this cell's difference
+// from the original cell. The original's own deltas are therefore zero
+// wherever its metrics are defined.
 type CompareCell struct {
 	Index       int               `json:"index"`
 	Variant     string            `json:"variant"`
@@ -58,6 +72,7 @@ type CompareCell struct {
 	Null        *NullModelReport  `json:"null_model,omitempty"`
 	Run         RunReport         `json:"run"`
 	Metrics     []MetricResult    `json:"metrics"`
+	Deltas      []MetricDelta     `json:"deltas_from_original"`
 	Thresholds  []ThresholdResult `json:"thresholds"`
 	WallSeconds float64           `json:"wall_seconds"`
 }
@@ -255,6 +270,7 @@ func Compare(ctx context.Context, g *connectome.Graph, set *params.Set, setSHA25
 	if err != nil {
 		return empty, err
 	}
+	cell.Deltas = deltasFromOriginal(cell.Metrics, cell.Metrics)
 	report.Cells = append(report.Cells, cell)
 	for _, spec := range cp.NullModels {
 		for _, seed := range cp.Seeds {
@@ -268,6 +284,7 @@ func Compare(ctx context.Context, g *connectome.Graph, set *params.Set, setSHA25
 			if err != nil {
 				return empty, err
 			}
+			cell.Deltas = deltasFromOriginal(report.Cells[0].Metrics, cell.Metrics)
 			report.Cells = append(report.Cells, cell)
 		}
 	}
@@ -310,6 +327,22 @@ func runCell(ctx context.Context, g *connectome.Graph, v Variant, cp CompareProt
 		*cell.Null = *v.Null
 	}
 	return cell, nil
+}
+
+// deltasFromOriginal subtracts the original cell's metric values from one
+// cell's, in the declared metric order. Both slices are the evaluation of the
+// same declared metrics, so they are the same length and the same order; a
+// metric that either side left undefined produces an undefined delta.
+func deltasFromOriginal(original, cell []MetricResult) []MetricDelta {
+	deltas := make([]MetricDelta, 0, len(cell))
+	for i, result := range cell {
+		delta := MetricDelta{Metric: result.Name}
+		if result.Defined && original[i].Defined {
+			delta.Value, delta.Defined = result.Value-original[i].Value, true
+		}
+		deltas = append(deltas, delta)
+	}
+	return deltas
 }
 
 // summarize places the original metric value inside the distribution each null

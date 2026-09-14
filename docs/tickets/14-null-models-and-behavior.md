@@ -7,7 +7,11 @@ User Story：研究者可以對同一份刺激，在原始接線、打亂接線�
 
 Blocked by：12 runner、13 參數集
 
-Status：ready（契約已於 2026-09-15 定案，分兩階段派工；驗收項目驗證後才勾選）
+Status：verified_scoped（兩階段皆已驗證：fixture 的空模型、集合、指標、門檻與比較矩陣，以及
+全腦 LIF 與連續核心各十格的真實資料對照，見「第二階段證據」。範圍限制：只在 macOS arm64 跑過，
+每種空模型三個 seed，`unknown_sign` 只有 `exclude`、`weight_scale` 只有 21.6、`swap_factor` 只有 1，
+兩個核心沒有字面共用的指標種類，`population_sync` 未實作。`docs/requirements-status.json` 的
+NAT-03／NAT-04／NAT-05 由 root 依本票證據更新）
 
 對應需求：NAT-03（空模型）、NAT-04（判讀協定）、NAT-05（同圖多模型）。
 
@@ -93,10 +97,10 @@ LIF 核心跑原圖＋三種空模型 × 3 seeds（NAT-03），集合 `descendin
 
 - [x] fixture：小圖上三種空模型的度數、pair 唯一性、符號與權重計數守恆與 seed 可重現；
   原圖與參數集不變（hash 相同）；指標與門檻的手算案例；latency 在無放電時為未定義而非 0。
-- [ ] 同圖兩核心與至少一種空模型的比較矩陣可執行，報告差異與分位數。
-- [ ] 真實資料：13 的參數集在原圖與三種空模型（各 ≥ 3 個 seed）上執行同一刺激協定，
+- [x] 同圖兩核心與至少一種空模型的比較矩陣可執行，報告差異與分位數。
+- [x] 真實資料：13 的參數集在原圖與三種空模型（各 ≥ 3 個 seed）上執行同一刺激協定，
   記錄命令、環境、指紋、耗時；報告只陳述指標，不做行為宣稱。
-- [ ] 文件與 `evidence/NAT-03/`、`NAT-04/`、`NAT-05/`。
+- [x] 文件與 `evidence/NAT-03/`、`NAT-04/`、`NAT-05/`。
 
 ## 第一階段證據（2026-09-15，fixture）
 
@@ -203,6 +207,177 @@ derived 缺 `--params`、uniform 多給 `--params` 等十五種失敗與說明�
 map 對照測試。root 重跑 gofmt／vet／`go test ./...`／race 全數通過。接受五項契約偏離。裁決：
 「與原圖的差」補為每格每個指標的 `delta_from_original{value, defined}`（兩邊都有定義才有值），
 第二階段一併做；驗收第二項待第二階段真實資料的兩核心矩陣跑過再勾。
+
+## 第二階段證據（2026-09-15，真實全腦）
+
+### 交付
+
+`simulate/compare.go` 加 `MetricDelta` 與 `CompareCell.Deltas`（JSON `deltas_from_original`），
+依指標順序記每一格與原圖的差，兩邊都有定義才有值，原圖那一格在指標有定義時是 0。
+其餘報告欄位不動。新增 `scripts/compare-evidence.sh`（比照 `simulate-evidence.sh`：建置、
+`doctor`、二進位／store／protocol／參數集的 SHA-256、前後 `uptime`、`/usr/bin/time -l`、
+起訖時間、`command.txt`，每格另存 run report）。兩份事前寫定的 compare protocol：
+`evidence/NAT-03/compare-fullgraph-derived-lif.json` 與
+`evidence/NAT-05/compare-fullgraph-derived-continuous.json`。三份驗證紀錄
+`evidence/NAT-03/verification.json`、`NAT-04/verification.json`、`NAT-05/verification.json`。
+文件：README 比較一節、ENG 空模型一條、[機制說明](../model-and-mechanisms.md)新增一列。
+
+先寫失敗測試：`evidence/NAT-03/red-stage2.log`（`CompareCell has no field or method Deltas`，
+build failed）。實作後 `simulate` 與 `internal/cli` 全綠，CLI 測試不必改。
+
+### 執行
+
+同一份 store（SHA-256 `a6c0ddff…`）、同一份 `params-derive-v1.coimparams`（`c4db0f3f…`）、
+同一份刺激（一通道 300 步，步 10–29 打 2 個單位進 24 個 ALIN），兩個核心各跑一次十格矩陣
+（原圖 + 三種空模型 × seed 1、2、3），每格 165,122 個神經元、25,563,197 條邊、300 步。
+集合由註記解析：`alin`（class ALIN）24 個、`descending_neuron`（superclass）1,314 個、
+`vnc_motor`（superclass）708 個，節點 hash 兩個矩陣相同。LIF 的第 0 格與 NAT-02 的單次全腦
+執行完全相同（`protocol_hash 55fb6132…`，probe 與 monitor 序列逐位元相同）。
+
+兩個矩陣是兩個獨立行程，十格的變體名稱、seed、`topology_hash`、`parameter_hash` 與整個
+`null_model` 區塊逐格相同，所以「原 store 加 seed 可重算出同一份衍生物」有了實測。
+
+### 空模型計數
+
+| kind | seed | attempts | applied | 拒絕 self_loop | 拒絕 duplicate |
+| --- | --- | --- | --- | --- | --- |
+| `degree_preserving_rewire`（swap_factor 1） | 1 | 25,563,197 | 25,235,685 | 724 | 326,788 |
+| `degree_preserving_rewire` | 2 | 25,563,197 | 25,234,331 | 715 | 328,151 |
+| `degree_preserving_rewire` | 3 | 25,563,197 | 25,233,927 | 768 | 328,502 |
+| `sign_shuffle` | 1／2／3 | 25,563,196 | 25,563,196 | 0 | 0 |
+| `weight_shuffle` | 1／2／3 | 25,563,196 | 25,563,196 | 0 | 0 |
+
+三個 rewire seed 的 `applied + self_loop + duplicate` 都正好等於嘗試次數，參數 hash 維持原圖的
+`2a93e2b0…`（權重與符號跟著邊走），拓撲 hash 三個各不相同。兩種 shuffle 的抽樣次數是
+Fisher–Yates 的 n−1，拓撲 hash 維持原圖的 `5d205bf8…`。
+
+### 指標與百分位
+
+值四捨五入到四位有效數字，完整值見各 `compare.json`。三個 seed 有定義時，最近秩讓
+p0 = p25、p75 = p100，所以 p0／p50／p100 就是完整的分位數集合。百分位是
+`(小於的個數 + 0.5 × 相等的個數) ÷ 有定義的個數`，三個 seed 只可能是 0、1/6、1/3、1/2、2/3、5/6、1。
+**這是位置，不是檢定**，本票沒有宣告任何檢定，也沒有做。
+
+LIF（`evidence/NAT-03/compare-lif-v1/compare.json`）：
+
+| 指標 | 原圖 | rewire p0／p50／p100（百分位） | sign_shuffle（百分位） | weight_shuffle（百分位） |
+| --- | --- | --- | --- | --- |
+| `alin_spike_fraction` | 1 | 1／1／1（0.5） | 1／1／1（0.5） | 1／1／1（0.5） |
+| `alin_mean_rate` | 0.2465 | 0.1511／0.1903／0.2156（1） | 0.4586／0.4784／0.4892（0） | 0.3699／0.4106／0.4488（0） |
+| `alin_latency` | 0 | 0／0／0（0.5） | 0／0／0（0.5） | 0／0／0（0.5） |
+| `alin_activity_ratio` | 0.7302 | 0.3681／0.4268／0.4747（1） | 0.9656／0.9992／1.053（0） | 0.8578／0.9254／0.9531（0） |
+| `descending_neuron_spike_fraction` | 0.5639 | 0.8097／0.8105／0.8204（0） | 0.9399／0.9482／0.9536（0） | 0.6469／0.6537／0.6606（0） |
+| `descending_neuron_mean_rate` | 0.0879 | 0.2097／0.21／0.2125（0） | 0.4436／0.4466／0.4479（0） | 0.2426／0.2474／0.2521（0） |
+| `descending_neuron_latency` | 13 | 3／3／5（1） | 2／2／2（1） | 2／2／3（1） |
+| `descending_neuron_activity_ratio` | 56.34 | 28.5／29.99／36.26（1） | 5.144／5.217／7.069（1） | 2.409／2.482／2.655（1） |
+| `vnc_motor_spike_fraction` | 0.5989 | 0.7514／0.774／0.7853（0） | 0.9195／0.9223／0.9266（0） | 0.589／0.637／0.6427（0.3333） |
+| `vnc_motor_mean_rate` | 0.07604 | 0.1746／0.1913／0.1928（0） | 0.4221／0.4303／0.4309（0） | 0.1695／0.1779／0.1896（0） |
+| `vnc_motor_latency` | 21 | 5／5／5（1） | 5／6／7（1） | 6／6／6（1） |
+| `vnc_motor_activity_ratio` | 未定義 | 29.45／33.3／44.16（未定義） | 7.792／10.95／16.02（未定義） | 2.014／2.16／2.232（未定義） |
+
+連續核心（`evidence/NAT-05/compare-continuous-v1/compare.json`）：
+
+| 指標 | 原圖 | rewire p0／p50／p100（百分位） | sign_shuffle（百分位） | weight_shuffle（百分位） |
+| --- | --- | --- | --- | --- |
+| `alin_mean_output_from_onset` | 0.08336 | -0.003683／0.02009／0.05195（1） | 0.7082／0.7254／0.88（0） | -0.03694／0.232／0.2879（0.3333） |
+| `alin_mean_output_after` | 0.04322 | -0.03862／-0.0183／0.02792（1） | 0.691／0.707／0.8734（0） | -0.06623／0.2214／0.2733（0.3333） |
+| `descending_neuron_mean_output_from_onset` | 0.07222 | -0.007528／-0.0006945／0.001589（1） | 0.6472／0.6718／0.6839（0） | -0.03931／0.02034／0.06988（1） |
+| `descending_neuron_mean_output_after` | 0.07501 | -0.008943／-0.001327／0.002248（1） | 0.6674／0.6953／0.7059（0） | -0.04413／0.02264／0.06944（1） |
+| `vnc_motor_mean_output_from_onset` | -0.008258 | -0.006127／-0.004247／0.005597（0） | 0.5539／0.5767／0.6227（0） | -0.0003445／0.001195／0.01239（0） |
+| `vnc_motor_mean_output_after` | -0.003608 | -0.005168／-0.003227／0.006304（0.3333） | 0.5726／0.5946／0.6437（0） | -0.00185／0.001345／0.01225（0） |
+
+`vnc_motor_activity_ratio` 在原圖未定義：該集合在 baseline 窗 [10,30) 一次都沒放電，分母為 0，
+報告寫未定義而不是 0，也因此不給百分位；九個空模型格反而都有值。每一格的
+`deltas_from_original` 也依同一條規則：`vnc_motor_activity_ratio` 十格全部未定義，
+`descending_neuron_mean_rate` 的差是 rewire +0.1246／+0.1218／+0.1221、
+sign_shuffle +0.3587／+0.3557／+0.3600、weight_shuffle +0.1547／+0.1642／+0.1595。
+
+**同一份接線，換一個核心，百分位方向可以相反。** 可比的是同集合同窗的速率類讀出
+（LIF 的 `mean_rate` 對連續核心的 `mean_output`）：對 `sign_shuffle`，三個集合在兩個核心都是
+百分位 0；對 `degree_preserving_rewire` 與 `weight_shuffle`，`descending_neuron` 在 LIF 是 0
+（比每個 seed 都低）、在連續核心是 1（比每個 seed 都高）。同一個 LIF 矩陣內部，換一個指標
+定義也一樣：`descending_neuron` 與 `vnc_motor` 的 `spike_fraction` 與 `mean_rate` 在三種空模型
+下幾乎都是百分位 0（只有 `vnc_motor_spike_fraction` 對 `weight_shuffle` 是 1/3），但同樣兩個
+集合的 `latency` 三種都是 1，`descending_neuron_activity_ratio` 三種也都是 1。歸因結論必須連同
+核心、參數來源、空模型種類與指標定義一起陳述。
+
+### 門檻
+
+五條 LIF 門檻與六條連續核心門檻都在跑之前寫進 protocol，protocol 的 SHA-256 也在跑之前記下
+（`de8319fc…`、`5b64b248…`），事後沒有調整。門檻結果不改退出碼，兩個矩陣都是 exit 0。
+
+| LIF 門檻（事前寫定） | 原圖觀察值 | 原圖 | 九個空模型格通過 |
+| --- | --- | --- | --- |
+| `alin_spike_fraction >= 0.5` | 1 | 通過 | 9／9 |
+| `descending_neuron_spike_fraction >= 0.1` | 0.5639 | 通過 | 9／9 |
+| `vnc_motor_spike_fraction >= 0.1` | 0.5989 | 通過 | 9／9 |
+| `descending_neuron_latency < 100` | 13 | 通過 | 9／9 |
+| `vnc_motor_latency < 150` | 21 | 通過 | 9／9 |
+
+| 連續核心門檻（事前寫定） | 原圖觀察值 | 原圖 | 九個空模型格通過 |
+| --- | --- | --- | --- |
+| `alin_mean_output_from_onset >= 0.01` | 0.08336 | 通過 | 7／9 |
+| `alin_mean_output_after >= 0.01` | 0.04322 | 通過 | 6／9 |
+| `descending_neuron_mean_output_from_onset >= 0.001` | 0.07222 | 通過 | 6／9 |
+| `descending_neuron_mean_output_after >= 0.001` | 0.07501 | 通過 | 6／9 |
+| `vnc_motor_mean_output_from_onset >= 0.001` | -0.008258 | 未通過 | 6／9 |
+| `vnc_motor_mean_output_after >= 0.001` | -0.003608 | 未通過 | 6／9 |
+
+LIF 的五條門檻在十格全部通過，所以它們分不出真實接線與打亂的接線；通過只能表述為
+「在此規則下該集合的指標達到宣告值」，不能當成關於接線或行為的證據。連續核心的六條有真的
+失敗：原圖的兩條 `vnc_motor` 門檻未通過，因為該集合的平均輸出是負的（tanh 可以為負，
+放電比例不行），而九個空模型格的通過數也各不相同。
+
+### 資源
+
+| 矩陣 | 牆鐘 | 十格合計 | 最大 RSS | 峰值記憶體 | 起訖（UTC） |
+| --- | --- | --- | --- | --- | --- |
+| LIF | 890.94 s（user 820.68、sys 65.05） | 852.24 s | 5,909,626,880 B | 9,543,671,152 B | 21:48:19 → 22:03:10 |
+| 連續核心 | 929.97 s（user 815.61、sys 98.44） | 890.17 s | 5,659,115,520 B | 10,513,997,816 B | 22:03:25 → 22:18:55 |
+
+每格 80.4–91.7 s。兩個矩陣先後執行，沒有同時跑。預設 8 GiB 的帳面上限都沒碰到，沒有降過
+seed、步數、指標或邊。機器是 macOS arm64、8 核、17,179,869,184 B 記憶體，一分鐘負載
+LIF 前 3.03 後 2.65、連續核心前 2.82 後 2.48。
+
+### 與契約及派工的偏離
+
+1. 差的欄位取 root 裁決的語意，但放成 `CompareCell.Deltas`（JSON `deltas_from_original`）的
+   切片，每一筆自帶 `metric` 名稱，讀者不必靠索引對齊兩份清單。裁決原句寫的是每個指標一個
+   `delta_from_original{value, defined}`，語意相同。
+2. `NAT-05` 的空模型宣告順序沿用 NAT-03 的（rewire、sign_shuffle、weight_shuffle），派工單
+   列舉時的順序是 rewire、weight_shuffle、sign_shuffle。這樣兩個矩陣的第 i 格才是同一個變體，
+   本票的兩核心逐格比對才成立。
+3. 連續核心的 protocol 只宣告 `min_active_fraction`，刻意不寫 `max_population_rate`：該核心
+   不產生事件，那個界限永遠不會觸發，寫了就是一個被默默忽略的旋鈕。
+4. LIF compare protocol 的 `run` 區塊是 `evidence/NAT-02/protocol-fullgraph-derived.json`
+   逐位元貼進去的（只差檔尾換行），所以那一段沿用原檔自己的兩格縮排，在巢狀物件裡看起來少
+   縮一層。這是為了「與 NAT-02 同一份 protocol」可以逐位元檢查；`protocol_hash` 也確認相同。
+5. LIF protocol 沒有宣告 `mean_output`（派工單指定四種事件指標），連續核心只能用
+   `mean_output`，所以兩個矩陣沒有任何一種指標種類是字面共用的。共用的是圖、參數集、刺激、
+   三個集合與 [10,300)、[30,300) 兩個窗，跨核心比較的是百分位的方向而不是同一個量。
+6. `population_sync` 仍未實作，與第一階段相同。
+
+### 已知限制
+
+- 每種空模型只有三個 seed。分位數是某個 seed 真的產生過的值，百分位只是位置。
+- 只有一份 protocol、一種 `unknown_sign` 政策、一個 `weight_scale`、一個 `swap_factor`、
+  一台 macOS arm64 機器，沒有 Ubuntu 或 Windows 的真實資料執行。
+- 不做行為宣稱。`alin`、`descending_neuron`、`vnc_motor` 是註記值，不是已證實的行為單元。
+- `degree_preserving_rewire` 保住每個節點的出入度，但不保住自環數：它拒絕造出自環，卻可以
+  換掉原本就有的自環。這份 store 的匯入報告記 101 個自環與 0 個重複 pair。
+- 兩個矩陣各跑一次。逐位元重現由 fixture 上的套件與 CLI 測試直接驗證；全腦這邊的重現證據是
+  第 0 格對上 NAT-02 的單次執行，以及兩個行程之間逐格相同的衍生物 hash 與計數。
+- 牆鐘與最大 RSS 是共用機器上的單次取樣；帳面上限只涵蓋本套件配置的陣列，實測 RSS 還包含
+  載入的 store、參數集陣列、Go 配置器餘裕與執行期額外開銷。
+
+### root 審查（2026-09-15，第二階段）
+
+逐檔讀過 delta 欄位的 diff 與測試、證據腳本、兩份事前寫定的 protocol、三份驗證紀錄與文件；
+以兩份 `compare.json` 獨立核對：各 10 格、三個 rewire seed 的 `applied + self_loop + duplicate`
+等於嘗試次數、每格 `deltas_from_original` 依規則重算一致、LIF 第 0 格的 protocol hash／monitors／
+probes 與 NAT-02 相同、兩核心逐格的 `topology_hash`／`parameter_hash`／`null_model` 相同、
+百分位與門檻通過數與本節表格一致。root 重跑 gofmt／vet／`go test ./...`／race 全數通過。
+接受六項偏離。NAT-03／NAT-04／NAT-05 由 root 標 passed。
 
 ## 依據
 

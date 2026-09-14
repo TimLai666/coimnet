@@ -2,11 +2,13 @@
 
 ## 目前階段
 
+空模型對照與判讀協定（ticket 14、NAT-03／04／05）已在真實全圖驗證：`simulate compare` 用同一份刺激跑原圖與三種空模型（保留度數的重連、打亂正負號、打亂權重）各 3 個 seed，LIF 與連續核心各 10 格（每格 165,122 節點、25,563,197 邊、300 步，兩個矩陣各約 15 分鐘）。指標與門檻事前寫進 protocol；五條 LIF 門檻在原圖與九個空模型格全部通過，所以它們分不出真實與打亂的接線；同一份接線換核心後，原圖在空模型分布中的百分位方向可以相反，歸因結論必須連同核心、參數來源、空模型種類與指標定義一起陳述。報告只陳述指標與位置，不做行為宣稱。證據見 [NAT-03](evidence/NAT-03/verification.json)、[NAT-04](evidence/NAT-04/verification.json)、[NAT-05](evidence/NAT-05/verification.json)。
+
 發布資料到動態參數的 adapter（ticket 13、NAT-02）已在真實全圖驗證：`data derive` 依明示規則檔把逐突觸傳導物質機率經座標配對到全部 25,563,197 條邊（配對比例 1.000、207 秒、RSS 3.87 GB），正負號 +53.3%／−35.9%／unknown 10.8%，unknown 只來自機率門檻與規則本身標 unknown，不補預設值；`simulate run --params` 以推導參數集跑 NAT-01 的同一協定，沉默比例由 2.1% 升到 64.4%、最大全群放電比例由 0.547 降到 0.079、不再觸發旗標。這是兩組參數假設在同一張接線圖上的差異，不是生理結論；歸因仍需 ticket 14 的空模型。證據見 [NAT-02](evidence/NAT-02/verification.json)。
 
 原生模擬 runner（ticket 12、NAT-01）已在真實全圖驗證：`simulate run` 不經 encoder、readout 或訓練器，把 165,122 節點、25,563,197 條邊接上 LIF 核心跑 300 步，93.08 秒、RSS 4.38 GB、無非有限值；參數為明示的工程假設 `engineering_uniform_positive`（全興奮、統一 bias／log_tau／theta_raw），報告與文件皆寫明不是生物參數。刺激結束後活動自我維持並觸發 `max_population_rate_exceeded` 旗標，歸因需 ticket 14 的空模型。證據見 [NAT-01](evidence/NAT-01/verification.json)。
 
-COR-01 狀態分離、STA-02 安全保存、STA-04 個體隔離通過 fixture 驗收。Mac／Ubuntu v25 同源 137 檔的完整 build、unit、race、vet、模組與 CLI 檢查，以及 27 個相關頂層測試／範例全部通過；快照雙向跨機器讀回並接續成功。Windows 僅交叉編譯通過。完整需求為 23／85，另有 6 項 NAT 增補需求（原生模擬），其中 NAT-01、NAT-02 已通過，其餘尚未通過，證據見 [v25](evidence/cpu-reference-20260914/verification-v25.json) 與 [ticket 05](docs/tickets/05-resume.md)。
+COR-01 狀態分離、STA-02 安全保存、STA-04 個體隔離通過 fixture 驗收。Mac／Ubuntu v25 同源 137 檔的完整 build、unit、race、vet、模組與 CLI 檢查，以及 27 個相關頂層測試／範例全部通過；快照雙向跨機器讀回並接續成功。Windows 僅交叉編譯通過。完整需求為 23／85，另有 6 項 NAT 增補需求（原生模擬），其中 NAT-01 到 NAT-05 已通過，NAT-06 尚未，證據見 [v25](evidence/cpu-reference-20260914/verification-v25.json) 與 [ticket 05](docs/tickets/05-resume.md)。
 
 SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 fixture 驗收。127 檔同源的 Mac／Ubuntu v22 完整檢查、選定輸入節點的跨程序續訓與 Windows 交叉編譯通過，詳見 [映射驗證](evidence/SIG-04/verification.json)。該階段累計為 18／85。SIG-01／02／05／06 維持通過。
 
@@ -38,7 +40,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 11 | 研究者可執行並訓練 LIF 放電核心 | 主 agent 指揮 / Opus 實作 | verified_scoped | 手算時序、tangent 參考與平滑模式有限差分通過，CLI `examples run lif-threshold` 三組 seed 只訓練閾值把保留 MSE 由 0.232 降到 0.052，COR-03／COR-09 已標 passed，COR-04 因慢速穩定未實作維持 specified |
 | 12 | 研究者可不經訓練直接執行接線圖（LIF 持續狀態、原生 runner） | 主 agent 指揮 / Opus 實作 | verified_scoped | `LIFState`／`Advance` 與 `Forward` 逐位一致；`simulate` 手算 fixture、兩核心、決定性、分段接續、選擇器、門檻、容量與嚴格 JSON 測試通過；真實全圖 300 步 93 s／4.38 GB，NAT-01 passed；只在 macOS 實測，參數僅工程假設 |
 | 13 | 研究者可由發布資料推導動態參數 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `params` 套件與 `coimnet-parameter-set/v1` 檔案格式、`data derive`／`data validate --params`、`simulate run --params`（`derived_release/v1`，unknown 政策明示）；手算 fixture 由 root 獨立重算一致；真實全圖 25,563,197 條邊推導配對比例 1.000、sign +13.6M／−9.2M／unknown 2.75M，推導參數與均一參數同協定對照；NAT-02 passed；只在 macOS 實測，全圖只跑 exclude 政策 |
-| 14 | 研究者可用空模型與判讀協定歸因 | 待派工 | draft | 契約已定：三種空模型、具名集合、指標門檻、比較矩陣 |
+| 14 | 研究者可用空模型與判讀協定歸因 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 三種空模型（記憶體衍生物，seed 加 hash 重現）、具名集合、四種指標、事前門檻、`simulate compare`；fixture 手算由 root 重算一致；真實全圖 LIF 與連續核心各 10 格，NAT-03／04／05 passed；每種空模型 3 個 seed、只在 macOS、`population_sync` 未做 |
 | 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
 
 ## 目前阻礙
@@ -53,7 +55,7 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-[14 空模型與判讀](docs/tickets/14-null-models-and-behavior.md)：對同一份刺激，在原圖、保留度數的隨機重連、打亂正負號與打亂權重的衍生物之間，以事前寫定的具名神經元集合、指標與門檻比較活動，輸出可逐格重跑的比較矩陣；這是把 NAT-01／NAT-02 的觀察歸因於接線本身的前提（NAT-03、NAT-04、NAT-05）。
+研究方向的 12→13→14 序列已完成，下一步待使用者決定，候選有：(a) NAT-06 在 runner 之上開啟可塑性並做學習前後對照矩陣；(b) LIF 個體持續狀態（`learning.Individual` 的 LIF 變體與新 schema）與慢速穩定（COR-04）；(c) SIG-03 控制器資料流；(d) Ubuntu 上重跑 v26 以後的真實資料證據；(e) `signal/json.go` 的 JSON 深度防護與 `download` 續傳缺口。
 
 LIF 個體持續狀態與按類型混合（主規格 8.2、8.3、10.2）：目前 `learning.NewIndividual` 遇到 LIF 設定直接回錯，下一步是把電位、突觸跡、適應值與不應期計數納入 `dynamics.State`，讓 `Advance` 可以接續放電狀態，再用新的 schema 保存並在新程序讀回，舊 episode 快照不得被解讀成持續個體。之後接按類型混合（COR-05），混合要明示細胞分群依據，同一筆訊號不得重複計入。慢速穩定（homeostasis）補齊後 COR-04 才能標為通過。舊 episode 讀取器缺口已修（[ticket 05](docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位)）。SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
 

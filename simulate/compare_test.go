@@ -26,6 +26,11 @@ func compareFixtureProtocol(steps int) CompareProtocol {
 			{Name: "alin_fraction", Kind: MetricSpikeFraction, Set: "alin", Window: [2]int{0, steps}},
 			{Name: "alin_rate", Kind: MetricMeanRate, Set: "alin", Window: [2]int{0, steps}},
 			{Name: "alpn_rate", Kind: MetricMeanRate, Set: "alpn", Window: [2]int{0, steps}},
+			// The original fixture run is silent over its last step, so this
+			// latency is undefined there and its delta has to stay undefined
+			// rather than read as a difference of zero.
+			{Name: "alpn_latency", Kind: MetricLatencyToFirstSpike, Set: "alpn", Window: [2]int{0, steps}},
+			{Name: "alpn_latency_quiet", Kind: MetricLatencyToFirstSpike, Set: "alpn", Window: [2]int{steps - 1, steps}},
 		},
 		Thresholds: []Threshold{
 			{Metric: "alin_fraction", Op: OpAtLeast, Value: 0.5},
@@ -116,10 +121,42 @@ func TestCompareRunsTheOriginalAndEveryNullModelSeed(t *testing.T) {
 	if got := original["alpn_rate"]; !got.Defined || got.Numerator != 2 || got.Denominator != 12 {
 		t.Fatalf("original alpn_rate = %+v", got)
 	}
+	// Node 1 spikes at step 1, so the latency over the whole run is 1, and
+	// nothing spikes over the last step, so that latency is undefined.
+	if got := original["alpn_latency"]; !got.Defined || got.Value != 1 {
+		t.Fatalf("original alpn_latency = %+v", got)
+	}
+	if got := original["alpn_latency_quiet"]; got.Defined || got.Value != 0 {
+		t.Fatalf("original alpn_latency_quiet = %+v", got)
+	}
 	// The declared thresholds are reported, and a failing one is not an error.
 	thresholds := report.Cells[0].Thresholds
 	if !thresholds[0].Passed || thresholds[1].Passed {
 		t.Fatalf("original thresholds = %+v", thresholds)
+	}
+	// Every cell carries one difference from the original per metric, in metric
+	// order. The original's own differences are zero wherever its metric is
+	// defined and stay undefined where it has no value.
+	if len(report.Cells[0].Deltas) != len(cp.Metrics) {
+		t.Fatalf("the original carries %d deltas for %d metrics", len(report.Cells[0].Deltas), len(cp.Metrics))
+	}
+	for d, delta := range report.Cells[0].Deltas {
+		metric := report.Cells[0].Metrics[d]
+		if delta.Metric != metric.Name || delta.Value != 0 || delta.Defined != metric.Defined {
+			t.Fatalf("original delta %d = %+v against metric %+v", d, delta, metric)
+		}
+	}
+	// Hand-checked differences of alpn_rate, whose original value is 2/12: both
+	// rewire seeds leave it there, both sign shuffle seeds silence the set and
+	// both weight shuffle seeds halve it.
+	for _, want := range []struct {
+		cell  int
+		value float64
+	}{{1, 0}, {2, 0}, {3, -2.0 / 12.0}, {4, -2.0 / 12.0}, {5, -1.0 / 12.0}, {6, -1.0 / 12.0}} {
+		delta := report.Cells[want.cell].Deltas[2]
+		if delta.Metric != "alpn_rate" || !delta.Defined || delta.Value != want.value {
+			t.Fatalf("cell %d alpn_rate delta = %+v, want %v", want.cell, delta, want.value)
+		}
 	}
 	// Hand-checked summary of alpn_rate: the original is 2/12, both sign
 	// shuffle seeds silence the ALPN set (0) and both weight shuffle seeds
@@ -263,6 +300,25 @@ func TestCompareIsDeterministicApartFromWallTime(t *testing.T) {
 	for _, cell := range first.Cells {
 		if cell.WallSeconds < 0 {
 			t.Fatalf("cell %d wall seconds = %v", cell.Index, cell.WallSeconds)
+		}
+		// The declared rule, recomputed from the cells themselves: one delta per
+		// metric in metric order, defined only when both sides are, and equal to
+		// the cell's value minus the original's.
+		if len(cell.Deltas) != len(cp.Metrics) {
+			t.Fatalf("cell %d carries %d deltas for %d metrics", cell.Index, len(cell.Deltas), len(cp.Metrics))
+		}
+		for d, delta := range cell.Deltas {
+			metric, original := cell.Metrics[d], first.Cells[0].Metrics[d]
+			want := metric.Defined && original.Defined
+			if delta.Metric != metric.Name || delta.Defined != want {
+				t.Fatalf("cell %d delta %d = %+v against %+v and original %+v", cell.Index, d, delta, metric, original)
+			}
+			if want && delta.Value != metric.Value-original.Value {
+				t.Fatalf("cell %d delta %q = %v, want %v", cell.Index, delta.Metric, delta.Value, metric.Value-original.Value)
+			}
+			if !want && delta.Value != 0 {
+				t.Fatalf("cell %d undefined delta %q carries the value %v", cell.Index, delta.Metric, delta.Value)
+			}
 		}
 	}
 }
