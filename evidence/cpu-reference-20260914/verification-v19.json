@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scope": "CPU reference and synthetic multichannel adapter; not whole-brain or GPU validation",
+  "source_files": 115,
+  "source_sha256": "87c1657b231fac9fe629e76619bfc979d052add266757bd70325b9f5e42a1d1b",
+  "source_archive": {
+    "snapshot": "/private/tmp/coimnet-validate-v19._iu7pst7",
+    "archive": "/private/tmp/coimnet-validate-v19._iu7pst7.tgz",
+    "sha256": "3b95908bd8c66d128a7434f6643ff31a1d52e46fbeb42ca7ad2357c5ba23b6b2",
+    "source_files": 115
+  },
+  "source_manifests_identical": true,
+  "working_tree_matches_source_manifest": true,
+  "platforms": {
+    "macos-v19": {
+      "passed": true,
+      "log": "macos-v19/validation.log",
+      "source_manifest": "macos-v19/source.sha256",
+      "adapter_log": "macos-v19/multichannel.log"
+    },
+    "ubuntu-v19": {
+      "passed": true,
+      "log": "ubuntu-v19/validation.log",
+      "source_manifest": "ubuntu-v19/source.sha256",
+      "adapter_log": "ubuntu-v19/multichannel.log"
+    }
+  },
+  "windows": {
+    "command": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...",
+    "exit_code": 0,
+    "runtime_tested": false
+  },
+  "gpu_tested": false
+}

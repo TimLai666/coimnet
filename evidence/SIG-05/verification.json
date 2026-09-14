@@ -1,0 +1,35 @@
+{
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test ./examples/multichannel -count=1 -v",
+    "go test ./signal -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v19/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v19/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v19/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v19/source.sha256"
+  ],
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v19/validation.log",
+    "evidence/cpu-reference-20260914/macos-v19/multichannel.log",
+    "evidence/cpu-reference-20260914/ubuntu-v19/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v19/multichannel.log",
+    "evidence/multichannel-20260914/range-red.log",
+    "evidence/multichannel-20260914/range-green.log"
+  ],
+  "limitations": [
+    "Synthetic scalar streams, fixed six-feature adapter and two-node artificial network; no biological performance claim.",
+    "Source timestamps and ratios are separate from the model-step clock and wall time. Adapt returns only after completing the finite sources; it does not measure real-time latency.",
+    "Interval values and durations must be known at their start. Media decoding, antialiasing, sensory anatomy and modulation controller are not part of this fixture.",
+    "Windows crosscompile only; Windows runtime and GPU execution were not run.",
+    "32 samples per channel and 80 logical value slots per resampler do not bound caller-owned Observation allocations or process RSS."
+  ],
+  "requirement": "SIG-05",
+  "observed_result": "Adapter and native reference matrices produce identical complete gradients and 50 AdamW updates, including final parameters and optimizer state. Encoder, recurrent weights, readout and input gradients are finite and nonzero. Core weights change; the artificial target is passed only to training. Changing targets leaves pre-update predictions unchanged. Both platforms pass ExampleAdapt and record a lower synthetic training error. Final feature magnitudes above MaxFloat32 are rejected before training; large canceling pulse events retain a valid zero and presence=1.",
+  "details": "evidence/multichannel-20260914/verification.json"
+}

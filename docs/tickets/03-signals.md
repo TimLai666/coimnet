@@ -10,7 +10,7 @@ Status：partial
 
 ## 交付
 
-提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射、連續值時間點重取樣、脈衝事件對齊及固定值區間取樣。
+提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射、連續值時間點重取樣、脈衝事件對齊及固定值區間取樣。自訂 adapter 範例將多通道結果接入既有核心與訓練器。
 
 ## 已完成
 
@@ -82,9 +82,24 @@ Status：partial
 | 容量與取消 | 配置前檢查保留＋輸入、整段輸出及邏輯值數量；到期區間釋放但序號不遺忘；取消／超限後可重試 | Mac／Ubuntu 通過 |
 | SDK 相容性 | 三種訊號的形狀／值／有效範圍不共用可變切片，輸出可建 Observation，可執行 Go example 示範恢復與結尾 | Mac／Ubuntu 通過 |
 
-8 組測試、1 個 Go example、111 檔同源的 Mac／Ubuntu v17 完整驗證見 [區間證據](../../evidence/interval-alignment-20260914/verification.json)。SIG-02 的多通道整合證據與 SIG-05 自訂 adapter 接入核心仍待完成，完整需求通過數維持 14／85。
+8 組測試、1 個 Go example、111 檔同源的 Mac／Ubuntu v17 完整驗證見 [區間證據](../../evidence/interval-alignment-20260914/verification.json)。這個階段完成區間本身的契約，多通道整合驗收見下方。
+
+## 多通道 adapter 契約與驗收
+
+人工範例 [multichannel](../../examples/multichannel/README.md) 使用既有公開 API：三個獨立 Observation → 各自取樣器的 Push／Finish → 固定 8 步、6 欄矩陣 → Network／Trainer。答案只傳給訓練呼叫。沒有修改核心語意、外部資料或資料庫遷移。
+
+| 路徑 | 驗收 | 狀態 |
+| --- | --- | --- |
+| 不同頻率與分塊 | 2／3／4 來源刻度對應同一 model_step；chunkSize 1／2／3／32 全部等於手算矩陣 | Mac／Ubuntu 通過 |
+| 缺值、重疊與尾端 | 缺值與零各有 presence，區間到期恢復舊值，連續值保持尾端，脈衝相消仍保留 presence | Mac／Ubuntu 通過 |
+| 身份、順序與版本 | 獨立串流可重複使用來源序號；錯 experience／channel／kind／shape／unit／encoder 與序號倒退拒絕 | Mac／Ubuntu 通過 |
+| 空值、取消與錯誤 | 明確空觀察填滿零值及 absence 列；零觀察、nil／取消、錯 chunkSize、超出時間或容量、加總溢位或最終值超出 float32 範圍回 nil | Mac／Ubuntu 通過 |
+| 核心與學習 | 對照手算矩陣的完整梯度、50 次更新及快照完全相同；編碼器、核心、讀出與輸入梯度非零，核心權重確實更新 | Mac／Ubuntu 通過 |
+| 答案分離 | 更換答案只改損失，相同參數下前向預測及觀察矩陣維持不變 | Mac／Ubuntu 通過 |
+
+5 組測試與 `ExampleAdapt`、115 檔同源的 Mac／Ubuntu v19 完整檢查及 Windows 交叉編譯已通過，見 [整合證據](../../evidence/multichannel-20260914/verification.json)。SIG-02 與 SIG-05 附上 fixture 驗收證據後標示通過，完整需求為 16／85。Windows 實機與 GPU 執行沒有驗證。
 
 ## 限制與未完成
 
-- 跨頻率的連續值取樣與分塊已實作。媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
+- 自訂 adapter 是固定人工範例，整段完成後才回傳。一般媒體解碼／濾波及生物感官映射尚未完成。SIG-01、SIG-04 待逐項核對原始驗收並補齊證據；SIG-03 的調節控制器資料流要隨控制器實作驗證。多通道保留獨立序號，以神經步號對齊即可，不需要另建共用來源序號。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。
