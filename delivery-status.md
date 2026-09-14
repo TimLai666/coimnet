@@ -33,7 +33,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 08 | 研究者可由官方原件建立可追溯標準化接線圖 | 主 agent（connectome）/ extsort subagent | verified_scoped | fixture 與真實資料皆通過；410 秒、RSS 3.40 GB、暫存 4.1 GB 後清空；raw 零重複 pair；durable GraphStore 切到 09 |
 | 11 | 研究者可執行並訓練 LIF 放電核心 | 主 agent 指揮 / Opus 實作 | verified_scoped | 手算時序、tangent 參考與平滑模式有限差分通過，CLI `examples run lif-threshold` 三組 seed 只訓練閾值把保留 MSE 由 0.232 降到 0.052，COR-03／COR-09 已標 passed，COR-04 因慢速穩定未實作維持 specified |
 | 12 | 研究者可不經訓練直接執行接線圖（LIF 持續狀態、原生 runner） | 主 agent 指揮 / Opus 實作 | in_progress | 第一階段 `dynamics.LIFState`／`Advance` 實作中；runner、CLI 與全圖實測待做 |
-| 13 | 研究者可由發布資料推導動態參數 | 待派工 | draft | 契約已定：四份新原件、逐邊正負號規則、正規化、參數集檔案 |
+| 13 | 研究者可由發布資料推導動態參數 | 待派工 | draft | 契約已定：逐邊正負號規則、正規化、參數集檔案；四份新原件（body-stats、tbar-neurotransmitters、syn-partners、Neuprint_Meta）已下載、CRC32C 上游驗證並逐批掃描，schema 與列數交叉核對記在 ticket |
 | 14 | 研究者可用空模型與判讀協定歸因 | 待派工 | draft | 契約已定：三種空模型、具名集合、指標門檻、比較矩陣 |
 | 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
 
@@ -42,6 +42,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 2026-09-13 使用者要求接回 Claude 的進度，分工優先 Spark `xhigh`；本次重新呼叫仍回報用量限制，改用 Luna `max`。Insyra 自訂 tape 梯度接合與最佳化器序列化缺少公開 API，已提 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前使用有完整數值測試的兩段 tape 接合，以及 CoImNet 自有可保存 AdamW。
 
 嚴格 JSON 的深度與路徑配置缺口已修正，並將 Unicode 重複鍵檢查同步至訊號、快照、下載 metadata 與 manifest。圖檔補上配置前記憶體檢查、計數溢位、未初始化圖、未知 converter 與同次讀取 hash 回條；回歸測試及兩平台 v7 全套驗證通過。
+
+`data download` 的續傳只在前一次傳輸「可重試失敗」後有效：`bytes` 只在一次傳輸結束時寫回 `.part.meta.json`，程序被砍時 meta 仍為 0、與 `.part` 長度不符，重跑會以「existing files preserved」拒絕；`.lock` 也不回收失效 pid。2026-09-14 syn-partners 因 session 中斷留下 4.35 GB 殘檔，已清除後從頭重抓（9 分鐘，回條 `upstream_verified`）。待辦：傳輸中定期寫回 `bytes`（或以 `.part` 實際長度續傳並靠整檔 CRC32C 把關）與失效鎖偵測，歸 ticket 06。
 
 Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，Go 工具放在 `/tmp/coimnet-validation.irVFk8MV`。PC 的 App 主機連線存在，但本輪沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
 
