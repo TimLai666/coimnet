@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode/utf8"
 )
 
 // NeuronID is an opaque, lossless identifier from an external graph source.
@@ -15,6 +16,9 @@ type NeuronID struct {
 }
 
 func (id NeuronID) validate() error {
+	if !utf8.ValidString(id.Namespace) || !utf8.ValidString(id.ExternalID) {
+		return fmt.Errorf("neuron ID must contain valid UTF-8")
+	}
 	if strings.TrimSpace(id.Namespace) == "" {
 		return fmt.Errorf("neuron namespace must not be empty")
 	}

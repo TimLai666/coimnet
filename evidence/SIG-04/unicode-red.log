@@ -1,0 +1,20 @@
+=== RUN   TestSignalJSONRejectsLossyUnicode
+=== RUN   TestSignalJSONRejectsLossyUnicode/signal
+    json_unicode_test.go:40: accepted lossy JSON text: ff
+=== RUN   TestSignalJSONRejectsLossyUnicode/mapping
+    json_unicode_test.go:40: accepted lossy JSON text: ff
+=== RUN   TestSignalJSONRejectsLossyUnicode/neuron
+    json_unicode_test.go:40: accepted lossy JSON text: ff
+--- FAIL: TestSignalJSONRejectsLossyUnicode (0.00s)
+    --- FAIL: TestSignalJSONRejectsLossyUnicode/signal (0.00s)
+    --- FAIL: TestSignalJSONRejectsLossyUnicode/mapping (0.00s)
+    --- FAIL: TestSignalJSONRejectsLossyUnicode/neuron (0.00s)
+=== RUN   TestNeuronIDRejectsInvalidUTF8BeforePersistence
+    json_unicode_test.go:53: invalid UTF-8 neuron ID was silently normalized during marshal
+    json_unicode_test.go:56: mapping accepted invalid UTF-8 neuron ID
+    json_unicode_test.go:53: invalid UTF-8 neuron ID was silently normalized during marshal
+    json_unicode_test.go:56: mapping accepted invalid UTF-8 neuron ID
+--- FAIL: TestNeuronIDRejectsInvalidUTF8BeforePersistence (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/signal	0.428s
+FAIL

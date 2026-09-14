@@ -1,0 +1,40 @@
+{
+  "requirement": "SIG-04",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test ./signal ./learning ./checkpoint -run 'Projection|InputNodes|Unicode|UTF8' -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v22/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v22/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v22/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v22/source.sha256"
+  ],
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v22/validation.log",
+    "evidence/cpu-reference-20260914/macos-v22/projections.log",
+    "evidence/cpu-reference-20260914/ubuntu-v22/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v22/projections.log",
+    "evidence/SIG-04/projection-red.log",
+    "evidence/SIG-04/binding-red.log",
+    "evidence/SIG-04/shape-red.log",
+    "evidence/SIG-04/review-red.log",
+    "evidence/SIG-04/unicode-red.log"
+  ],
+  "observed_result": "All 20 matching top-level tests/examples passed on Mac and Ubuntu from the identical 127-file source snapshot. Input and output projections round-trip with coefficients, selection provenance, ordered neuron IDs/hash and dimensions. Explicit, cell-type and region selection plus fixed-seed random coefficients reconstruct deterministically. Binding resolves changed graph index order and rejects missing/duplicate cells, changed selected metadata, incompatible shape/direction, malformed core parameters, null numeric values and corrupt hashes. Compact input selection matches a dense expansion for predictions and all gradient groups; finite differences cover core weights/bias/tau, encoder, readout and observations. Replacement preserves the supplied core, leaves the old trainer untouched and initializes a new optimizer. A checkpoint with selected input nodes resumes in a genuinely separate process to exactly the uninterrupted parameters, optimizer and predictions. Default nil InputNodes preserves legacy configuration JSON. Full module/build/test/race/vet/CLI restore checks passed on both platforms; Windows crosscompilation passed. Metadata-selected neuron lists with noncanonical order now fail during decoding even with a matching hash. Signal decoding rejects invalid UTF-8 and unpaired UTF-16 escapes before Go can replace them, including legacy Signal/Mapping/NeuronID paths. NeuronID builders/marshaling reject invalid UTF-8; valid replacement runes, surrogate pairs and literal escaped backslashes retain their values.",
+  "limitations": [
+    "Artificial graph fixture; no biological mapping efficacy, whole-brain training, GPU execution or Windows runtime claim.",
+    "Candidates must be supplied in the actual dynamics graph index order. Framework validates consistency against that supplied identity/metadata list, not independent biological provenance.",
+    "Projection neuron hash covers ordered IDs only; it is not a checksum of coefficients or the whole graph.",
+    "Replacing projections replaces both encoder and readout with the supplied coefficients and starts a fresh optimizer. Trained projection coefficients must be explicitly exported from a snapshot.",
+    "JSON limits are 16 MiB/depth 64; candidate/selected neurons and coefficients each have a 1,048,576 count limit. These are not process RSS bounds.",
+    "Input/output channel rank is checked via ValidateChannelShape before flattening; BindProjections checks the model channel widths."
+  ],
+  "details": "evidence/cpu-reference-20260914/verification-v22.json",
+  "usage_guide": "docs/signal-projections.md",
+  "regression_reproduction": "evidence/SIG-04/red-reproduction.json"
+}

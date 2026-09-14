@@ -86,7 +86,11 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	}
 	// Validate supplied arrays before allocating buffers from untrusted declared
 	// dimensions (for example, a compact but malformed checkpoint).
-	if len(p.Core.Weights) != len(c.Dynamics.Sources) || len(p.Core.Bias) != c.Dynamics.Nodes || len(p.Core.LogTau) != c.Dynamics.Nodes || len(p.Encoder) != c.InputSize*c.Dynamics.Nodes || len(p.Readout) != len(c.ReadoutNodes)*c.OutputSize {
+	encoderSize, sizeErr := size(c.InputSize, inputWidth(c))
+	if sizeErr != nil {
+		return nil, sizeErr
+	}
+	if len(p.Core.Weights) != len(c.Dynamics.Sources) || len(p.Core.Bias) != c.Dynamics.Nodes || len(p.Core.LogTau) != c.Dynamics.Nodes || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*c.OutputSize {
 		return nil, fmt.Errorf("parameter shape mismatch")
 	}
 	if _, err = n.Predict(context.Background(), p, [][]float64{make([]float64, c.InputSize)}); err != nil {

@@ -1,0 +1,20 @@
+{
+  "commands": [
+    "go test ./signal -run 'TestProjectionRejectsNoncanonicalMetadataOrder|TestProjectionRejectsLossyUnicode' -count=1 -v",
+    "go test ./signal -run 'TestSignalJSONRejectsLossyUnicode|TestNeuronIDRejectsInvalidUTF8BeforePersistence' -count=1 -v"
+  ],
+  "observed_exit_codes": [
+    1,
+    1
+  ],
+  "before_fix_source_manifest": "evidence/cpu-reference-20260914/macos-v21/source.sha256",
+  "regression_test_sha256": {
+    "signal/projection_review_test.go": "038981db9867b803265c9e63cfc0be59d03408b15b1ff0eda42cf9e5b046eb55",
+    "signal/json_unicode_test.go": "ec52a31a76a3ef5c3194957e00320e5ab3863618651b69b621ab9a8d6690ae07"
+  },
+  "root_cause": [
+    "Metadata neuron order was verified only when binding against a graph, allowing a decoded projection that could never bind.",
+    "encoding/json replaces invalid UTF-8 and unpaired UTF-16 escape sequences with U+FFFD before ordinary field validation; validating only the decoded strings was too late."
+  ],
+  "coverage": "Tests were added and observed failing before changes to projection.go, json.go and mapping.go; unchanged regression tests pass after the fix."
+}

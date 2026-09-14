@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/TimLai666/coimnet/internal/jsonkey"
 )
@@ -38,6 +39,9 @@ func decodeStrict(r io.Reader, dst any) error {
 	}
 	if int64(len(data)) > MaxJSONBytes {
 		return fmt.Errorf("JSON input exceeds %d bytes", MaxJSONBytes)
+	}
+	if err := validateJSONUnicode(data); err != nil {
+		return err
 	}
 	if err := rejectDuplicateKeys(data); err != nil {
 		return err
@@ -212,5 +216,48 @@ func (v *jsonValues) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	*v = values
+	return nil
+}
+
+// validateJSONUnicode runs before encoding/json can replace invalid UTF-8 or
+// unpaired UTF-16 escapes with U+FFFD. Other syntax remains the decoder's job.
+func validateJSONUnicode(data []byte) error {
+	if !utf8.Valid(data) {
+		return fmt.Errorf("JSON text must be valid UTF-8")
+	}
+	for i := 0; i < len(data); i++ {
+		if data[i] != '\\' {
+			continue
+		}
+		i++
+		if i >= len(data) {
+			return fmt.Errorf("incomplete JSON escape")
+		}
+		if data[i] != 'u' {
+			continue
+		}
+		if i+4 >= len(data) {
+			return fmt.Errorf("incomplete JSON Unicode escape")
+		}
+		code, err := strconv.ParseUint(string(data[i+1:i+5]), 16, 16)
+		if err != nil {
+			return fmt.Errorf("invalid JSON Unicode escape")
+		}
+		i += 4
+		if code >= 0xdc00 && code <= 0xdfff {
+			return fmt.Errorf("unpaired low surrogate in JSON text")
+		}
+		if code < 0xd800 || code > 0xdbff {
+			continue
+		}
+		if i+6 >= len(data) || data[i+1] != '\\' || data[i+2] != 'u' {
+			return fmt.Errorf("unpaired high surrogate in JSON text")
+		}
+		low, err := strconv.ParseUint(string(data[i+3:i+7]), 16, 16)
+		if err != nil || low < 0xdc00 || low > 0xdfff {
+			return fmt.Errorf("invalid low surrogate in JSON text")
+		}
+		i += 6
+	}
 	return nil
 }

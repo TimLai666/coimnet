@@ -79,3 +79,13 @@
 目前沒有資料庫或已發布格式，不需要資料庫遷移。建立第一版外部格式後，版本變更必須保存舊原件並提供相容性驗證。
 
 減法審查：沿用原始完整規格與需求追蹤，不再複製 85 條定義。只為立即可做的使用流程細分 tickets，不建空套件或假命令。
+
+## 投影映射實作契約
+
+保留既有 `Mapping` 格式。新增 `signal.Projection` 保存方向、通道形狀、來源／人工標記／證據、選取條件、已解析外部 ID、依序排列的神經元清單指紋及 row-major 係數。明確集合保留指定順序，細胞類型／區域選取使用呼叫者提供的 metadata，按 namespace／external ID 排序，未知空欄位不推論。固定隨機係數使用明示版本的演算法、seed 與 scale，保存實際係數並驗證重建一致。
+
+輸入投影係數為 `[channel, selected neuron]`，輸出為 `[selected neuron, channel]`。`learning.Config.InputNodes` 的 nil 保留既有全節點語意，指定集合時只為所選神經元配置 encoder 欄位，前向 scatter、反向 gather 維持完整梯度。映射載入／接合核對 caller 提供且與動態索引同序的神經元 metadata，不假造圖身份。替換建立獨立 Config／Parameters／Trainer，保留呼叫者核心參數、替換 encoder／readout 並明確重新初始化最佳化器，不變更原訓練器。
+
+訊號套件在 JSON 解碼前檢查 UTF-8 與 Unicode surrogate 配對，避免 encoding/json 靜默改寫身份或來源字串。NeuronID 的建構／保存也拒絕非法 UTF-8。metadata 投影在載入時核對標準排序，不能等到 Bind 才發現無法重建。
+
+JSON 沿用 16 MiB／64 層嚴格入口，投影最多選取 1,048,576 個神經元及 1,048,576 個係數。乘積與上限先檢查再配置隨機係數。限制為邏輯數量及輸入位元組，不是程序 RSS 上限。大型投影需另行設計儲存格式，不以本 fixture 宣告全腦投影已驗證。

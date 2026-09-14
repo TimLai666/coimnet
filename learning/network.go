@@ -11,17 +11,20 @@ import (
 	"github.com/TimLai666/coimnet/dynamics"
 )
 
-// Config selects a continuous CPU model and the neurons readable by its output.
-// The readout receives only current core activity, never raw observations.
+// Config selects a continuous CPU model, the neurons receiving encoded input,
+// and the neurons readable by its output. The readout receives only current
+// core activity, never raw observations.
 type Config struct {
 	Dynamics     dynamics.Config `json:"dynamics"`
 	InputSize    int             `json:"input_size"`
 	OutputSize   int             `json:"output_size"`
 	ReadoutNodes []int           `json:"readout_nodes"`
+	InputNodes   []int           `json:"input_nodes,omitempty"`
 }
 
-// Parameters uses row-major encoder [input,node] and readout [selected,output].
-// The float64 storage is converted with validation at Insyra's float32 boundary.
+// Parameters uses a row-major encoder [input,input-node] (or [input,node]
+// when InputNodes is nil) and readout [selected,output]. The float64 storage is
+// converted with validation at Insyra's float32 boundary.
 type Parameters struct {
 	Core    dynamics.Parameters `json:"core"`
 	Encoder []float64           `json:"encoder"`
@@ -50,8 +53,24 @@ func NewNetwork(c Config) (*Network, error) {
 	if err != nil {
 		return nil, err
 	}
-	if _, err := size(c.InputSize, c.Dynamics.Nodes); err != nil {
-		return nil, err
+	if c.InputNodes == nil {
+		if _, err := size(c.InputSize, c.Dynamics.Nodes); err != nil {
+			return nil, err
+		}
+	} else {
+		if len(c.InputNodes) == 0 {
+			return nil, fmt.Errorf("input_nodes must be non-empty when specified")
+		}
+		seenInput := make(map[int]bool, len(c.InputNodes))
+		for _, id := range c.InputNodes {
+			if id < 0 || id >= c.Dynamics.Nodes || seenInput[id] {
+				return nil, fmt.Errorf("invalid or duplicate input neuron %d", id)
+			}
+			seenInput[id] = true
+		}
+		if _, err := size(c.InputSize, len(c.InputNodes)); err != nil {
+			return nil, err
+		}
 	}
 	if _, err := size(len(c.ReadoutNodes), c.OutputSize); err != nil {
 		return nil, err
@@ -65,6 +84,7 @@ func NewNetwork(c Config) (*Network, error) {
 	}
 	c.Dynamics = core.Config()
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
+	c.InputNodes = append([]int(nil), c.InputNodes...)
 	return &Network{c, core}, nil
 }
 
@@ -83,6 +103,7 @@ func (n *Network) Config() Config {
 		c.Dynamics.Delays = append([]int(nil), c.Dynamics.Delays...)
 	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
+	c.InputNodes = append([]int(nil), c.InputNodes...)
 	return c
 }
 
@@ -150,9 +171,16 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	}
 	// Seed the encoder VJP with <encoded, stop_gradient(core_input_gradient)>.
 	// This scalar is a reverse-pass device, not the optimization objective.
-	flat := make([]float64, 0, len(input)*n.config.Dynamics.Nodes)
+	encoderWidth := inputWidth(n.config)
+	flat := make([]float64, 0, len(input)*encoderWidth)
 	for _, row := range cg.Inputs {
-		flat = append(flat, row...)
+		if n.config.InputNodes == nil {
+			flat = append(flat, row...)
+			continue
+		}
+		for _, id := range n.config.InputNodes {
+			flat = append(flat, row[id])
+		}
 	}
 	seed, err := tensor([]int{len(flat)}, flat)
 	if err != nil {
@@ -233,7 +261,8 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	encoder, err := tensor([]int{n.config.InputSize, n.config.Dynamics.Nodes}, p.Encoder)
+	encoderWidth := inputWidth(n.config)
+	encoder, err := tensor([]int{n.config.InputSize, encoderWidth}, p.Encoder)
 	if err != nil {
 		return nil, err
 	}
@@ -248,7 +277,18 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	tr, err := n.core.Forward(ctx, p.Core, make([]float64, n.config.Dynamics.Nodes), rows(doubles(z.Data()), n.config.Dynamics.Nodes))
+	encodedRows := rows(doubles(z.Data()), encoderWidth)
+	coreInputs := encodedRows
+	if n.config.InputNodes != nil {
+		coreInputs = make([][]float64, len(encodedRows))
+		for t, row := range encodedRows {
+			coreInputs[t] = make([]float64, n.config.Dynamics.Nodes)
+			for i, id := range n.config.InputNodes {
+				coreInputs[t][id] = row[i]
+			}
+		}
+	}
+	tr, err := n.core.Forward(ctx, p.Core, make([]float64, n.config.Dynamics.Nodes), coreInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -328,4 +368,12 @@ func size(a, b int) (int, error) {
 	}
 	return a * b, nil
 }
+
+func inputWidth(c Config) int {
+	if c.InputNodes != nil {
+		return len(c.InputNodes)
+	}
+	return c.Dynamics.Nodes
+}
+
 func finite(x float64) bool { return !math.IsNaN(x) && !math.IsInf(x, 0) }
