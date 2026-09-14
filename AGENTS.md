@@ -2,7 +2,9 @@
 
 ## 目標與來源
 
-CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可訓練神經網路框架。採用 Go 與 Insyra，MaleCNS 為主要資料來源，FlyWire 用於比較。
+CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、可訓練的神經網路框架。採用 Go 與 Insyra，MaleCNS 為主要資料來源，FlyWire 用於比較。
+
+2026-09-14 使用者決定：框架有兩條並列的一級研究路徑，底層架構不得綁死其中一種。(1) Connectome 原生模擬：真實接線加上明示的神經元／突觸動態規則與參數假設，不經訓練直接輸入感覺刺激、觀察指定神經元的輸出；(2) 可學習模式：在原生模擬之上加入可調整機制。生物原始結構、動態模型、感覺輸入轉換、運動輸出轉換、學習機制五層必須各自可替換。「未訓練」不等於「沒有假設」，每個由發布資料推導的參數都要記錄來源、規則與未知；歸因必須有打亂接線的空模型對照。完整原則、需求編號（NAT）與 ticket 順序見 `docs/research-directions/connectome-native.md`。
 
 開始工作前，先讀 `README.md`、`docs/initialization.md`，再讀 `docs/handoff/AGENT_START_HERE.zh-TW.md` 與完整主規格。依相關需求查閱 `docs/handoff/requirements.json` 與 `sources.json`。
 
@@ -42,6 +44,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可訓練神
 ## 資料與操作範圍
 
 - 保留 `docs/handoff/` 原件與校驗碼，原始接線、訓練參數及執行狀態分開保存。
+- MaleCNS v1.0 官方發布中能接上機制的檔案都屬納入範圍（盤點見 `docs/malecns-release-catalog.md`）；每份新檔案沿用 `data download` 回條與逐批讀取驗證，adapter 須記錄用了哪些欄位、推導規則版本與未知計數。下載頁未描述的過濾變體不得使用。受體表現不在發布內，須另接明示來源的外部資料集。
 - 大型資料、模型、快照與訓練輸出放在 Git 外的本機目錄。小型測試資料須有來源、授權與指紋。
 - 儲存庫只交付框架。特定模型的資料處理、訓練程式與模型若納入，必須明示為範例；個人訓練專案留在 repo 外。新任務範例放 `examples/`，既有 `experiment` 為人工驗證範例。`evidence/` 中的小型人工快照僅作恢復測試證據，不作模型產品發布。
 - 更動模型定位或可選生物機制前讀 `docs/model-and-mechanisms.md`。更動效能或硬體需求前讀 `docs/resources.md`，區分實測、算術估算與尚未驗證的完整圖訓練。

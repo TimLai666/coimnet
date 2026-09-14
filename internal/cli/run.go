@@ -17,6 +17,8 @@ Commands:
   doctor                        Report local runtime and device capabilities as JSON
   examples list                 List executable reference tasks
   examples run delayed [flags]  Run the synthetic delayed-pulse learning protocol
+  examples run lif-threshold [flags]
+                                Train the spiking fixture's base firing threshold
   train delayed [flags]         Train the fixture and save an episode checkpoint
   resume [flags]                Continue training into a new checkpoint
   predict [flags]               Predict from observation-only JSON
@@ -106,14 +108,20 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags]\nRun 'coimnet examples run delayed --help' for the fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
-			return writeJSON(stdout, []map[string]string{{"name": "delayed", "profile": "fixture", "description": "Five-step delayed pulse, three synthetic neurons, trainable core weights and fixed periphery"}})
+			return writeJSON(stdout, []map[string]string{
+				{"name": "delayed", "profile": "fixture", "description": "Five-step delayed pulse, three synthetic neurons, trainable core weights and fixed periphery"},
+				{"name": "lif-threshold", "profile": "fixture", "description": "Five-step delayed pulse, three leaky integrate-and-fire neurons, trainable base firing threshold against frozen and fully trainable controls"},
+			})
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "delayed" {
 			return runDelayed(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "lif-threshold" {
+			return runLIFThreshold(ctx, args[3:], stdout, stderr)
 		}
 	}
 	return fmt.Errorf("unknown command; use coimnet --help")
@@ -145,6 +153,45 @@ func runDelayed(ctx context.Context, args []string, stdout, stderr io.Writer) er
 	}
 	if !report.Passed {
 		return fmt.Errorf("delayed fixture failed its declared learning gate; see JSON report")
+	}
+	return nil
+}
+
+func runLIFThreshold(ctx context.Context, args []string, stdout, stderr io.Writer) error {
+	updates := experiment.LIFThresholdDefaultUpdates
+	fs := flag.NewFlagSet("examples run lif-threshold", flag.ContinueOnError)
+	fs.SetOutput(stderr)
+	usageOutput := &outputCapture{writer: stdout}
+	fs.IntVar(&updates, "updates", updates, fmt.Sprintf("updates per seed and condition (%d..%d)", experiment.LIFThresholdMinUpdates, experiment.LIFThresholdMaxUpdates))
+	fs.Usage = func() {
+		fmt.Fprintf(usageOutput, "Usage: coimnet examples run lif-threshold [--updates %d]\n", experiment.LIFThresholdDefaultUpdates)
+		fmt.Fprintln(usageOutput, "Trains the base firing threshold of a three-neuron leaky integrate-and-fire core on the synthetic five-step delayed-pulse fixture. Three fixed seeds run three matched controls: every group trainable, only the threshold group trainable, and every group frozen. This is a numerical learnability check on generated data, not a biological firing claim.")
+		fmt.Fprintln(usageOutput, "Outputs JSON including every seed, the fixed core settings and the acceptance gates. Changing the update budget creates a different protocol.")
+		fmt.Fprintln(usageOutput, "Gates: "+experiment.LIFThresholdGateDescription+". A failing gate prints the full report and returns a nonzero exit status.")
+		fmt.Fprintln(usageOutput, "Example: coimnet examples run lif-threshold > lif-threshold.json")
+		fmt.Fprintln(usageOutput, "Errors: invalid budget, cancellation, numerical failure, failed learning gate or output failure.")
+		fmt.Fprintf(usageOutput, "Options:\n  --updates int  Updates per seed and condition, default %d (%d..%d)\n", experiment.LIFThresholdDefaultUpdates, experiment.LIFThresholdMinUpdates, experiment.LIFThresholdMaxUpdates)
+	}
+	if err := fs.Parse(args); errors.Is(err, flag.ErrHelp) {
+		return usageOutput.Err()
+	} else if err != nil {
+		return err
+	}
+	if fs.NArg() != 0 {
+		return fmt.Errorf("unexpected positional arguments")
+	}
+	if updates < experiment.LIFThresholdMinUpdates || updates > experiment.LIFThresholdMaxUpdates {
+		return fmt.Errorf("--updates must be between %d and %d", experiment.LIFThresholdMinUpdates, experiment.LIFThresholdMaxUpdates)
+	}
+	report, err := experiment.RunLIFThreshold(ctx, updates)
+	if err != nil {
+		return err
+	}
+	if err = writeJSON(stdout, report); err != nil {
+		return err
+	}
+	if !report.Passed {
+		return fmt.Errorf("lif-threshold fixture failed its declared learning gate; see JSON report")
 	}
 	return nil
 }

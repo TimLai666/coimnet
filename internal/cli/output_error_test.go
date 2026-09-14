@@ -12,6 +12,7 @@ func TestHelpReturnsUsageWriteError(t *testing.T) {
 	for _, args := range [][]string{
 		{"doctor", "--help"},
 		{"examples", "run", "delayed", "--help"},
+		{"examples", "run", "lif-threshold", "--help"},
 		{"train", "delayed", "--help"},
 		{"resume", "--help"},
 		{"predict", "--help"},

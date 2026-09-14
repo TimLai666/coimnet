@@ -1,0 +1,29 @@
+{
+  "requirement": "COR-09",
+  "profile": "fixture",
+  "reproduction_command": [
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "go test -count=1 -v ./dynamics/ -run 'TestLIFSurrogateGradientMatchesForwardModeReference|TestLIFSmoothModeFiniteDifference|TestLIFForwardIsDeterministicAndBinary|TestLIFBackwardWindowSemantics'",
+    "go test -count=1 ./learning/ ./experiment/ ./examples/lifthreshold/"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v26/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v26/source.sha256"
+  ],
+  "observed_result": "The hard forward events and the declared reverse rule are verified separately. Forward: spikes are exactly 0 or 1, two Forward calls on the same input are bit-identical, and the event timing itself is checked against the hand calculation recorded for COR-03. Hard spikes were never finite-differenced. Reverse, reference (a): an independent forward-mode (tangent) implementation of the declared rules - psi(u) = 1/(1+scale*|u|)^2 with u = v_cand - theta_eff, d spike/d v_cand = psi, d spike/d theta_eff = -psi, a detached reset so d v_next/d v_cand = 1 - spike, and zero gradient on refractory steps - runs on a two-neuron, four-step fixture whose trace contains spiking, refractory and quiet neuron-steps at once (the test fails if any branch is missing). All 18 directional probes (2 weights, 2 bias, 2 log_tau, 2 theta_raw, 2 initial voltages and 8 input entries) agree with Backward to a relative tolerance of 1e-12. Reverse, reference (b): a test-only smooth mode replaces the hard event with sigma(u) = 0.5*(1 + scale*u/(1+scale*|u|)), whose exact derivative is 0.5*scale*psi(u) and whose reset branch keeps d v_next/d spike = v_reset - v_cand, so Backward is the exact gradient of that smooth model and can be checked by central differences. On a four-neuron, six-edge fixture with delays 0, 1 and 2 over six steps, every smooth spike stays strictly inside (0,1) and all 46 central differences per case (6 weights, 4 bias, 4 log_tau, 4 theta_raw, 4 initial voltages, 24 input entries; step eps = 1e-5) satisfy |gradient - fd| <= 1e-4*|fd| or <= 1e-7, for adaptation off at scale 2, adaptation on at scale 2 and adaptation on at scale 1.3. The finite-difference chain therefore covers delays, the synaptic trace, adaptation, the bounded theta_raw transform and the Backward window. The window semantics test confirms a truncated window drops exactly the older contributions. Eight mutation checks recorded in the stage-one report (removed smooth reset gradient, removed theta_raw bounded-transform factor, ignored window, missing 0.5*scale in the smooth derivative, refractory gradient leak, hard-mode reset passing gradient, removed adaptation beta path, removed synaptic-trace kappa path) were each caught by a test. Above the core, learning.LossGradient reproduces the core Backward result through the Insyra encoder and readout, and the theta_only control of the threshold fixture trains through the surrogate to a lower holdout MSE than the frozen control.",
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v26/validation.log",
+    "evidence/COR-03/lif-dynamics-test.log",
+    "evidence/COR-03/lif-dynamics-race.log",
+    "evidence/COR-03/lif-dynamics-vet.log",
+    "evidence/COR-03/stage1-subagent-report.md"
+  ],
+  "learning_report": "evidence/COR-04/lifthreshold-report.json",
+  "limitations": [
+    "The surrogate is a declared engineering rule, not a measured biological derivative; agreement with the tangent reference and the smooth model says the implementation matches the declaration, not that the rule is biologically correct.",
+    "The smooth mode exists only in the dynamics package tests. The product hard mode keeps the detached reset, so its gradient is an approximation and must not be finite-differenced.",
+    "Executed on macOS arm64 (Go 1.26.5) only; Ubuntu and Windows runs for this requirement are not recorded yet."
+  ]
+}

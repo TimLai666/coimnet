@@ -42,6 +42,8 @@
 
 - 多通道整合保留獨立來源 Observation 與序號，以共同神經步號填入固定欄位矩陣。缺值用獨立 presence 欄位表示，同一步脈衝按宣告順序加總。自訂 adapter 及人工投影放在 `examples/multichannel`，直接使用既有 `signal`／`learning` API，核心不依賴任務格式。範例整段完成後回傳，不能用於即時延遲量測。欄位、容量、錯誤與相容性驗收見 [ticket 03](docs/tickets/03-signals.md)。
 
+- LIF 放電核心與連續核心並列，`learning.Config` 的 `Dynamics` 與 `LIF` 二選一，節點數與邊數改由選中的核心取得，內部用私有介面包住兩種核心，不公開新抽象。膜電位沿用相同的指數漏電與可訓練 `log_tau`，對外輸出改為衰減突觸跡 `x`，讀出與 upstream 都對 `x`，float32 邊界與既有路徑相同。基礎閾值用 `theta_base = theta_min + (theta_max - theta_min) * sigmoid(theta_raw)` 保持在設定範圍內，建構時要求 `v_reset < theta_min < theta_max`。`theta_raw` 是新的可訓練參數群組，遮罩為 `Trainable.Theta`，連續模型設為 true 回錯。反向只驗證宣告的 `fast_sigmoid` 替代梯度 `psi(u) = 1/(1 + scale*|u|)^2`：重設分支與不應期步不傳梯度，硬放電事件不做有限差分，有限差分只用在套件私有的測試專用平滑模式，該模式不是產品模式。快照沿用 `coimnet-episode-training/v1`，新增欄位全部 `omitempty`，AdamW 攤平順序固定為 `weights, bias, log_tau, theta_raw, encoder, readout`，連續模型的 `theta_raw` 長度為 0，既有快照的位置與序列化結果不變。LIF 個體持續狀態尚未支援，`NewIndividual`／`RestoreIndividual` 遇到 LIF 設定回明確錯誤，不退回連續模型。範例協定放在 `experiment.RunLIFThreshold`，`examples/lifthreshold` 與 CLI `examples run lif-threshold` 共用同一份實作。決策、驗收與證據見 [ticket 11](docs/tickets/11-lif-core.md)。
+
 ## 功能流程、錯誤與驗證責任
 
 | 功能/負責 ticket | 正常流程與測試入口 | 空值/零與錯誤處理 | 互動與失敗情況 |

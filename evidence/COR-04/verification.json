@@ -1,0 +1,32 @@
+{
+  "requirement": "COR-04",
+  "profile": "fixture",
+  "status": "partial; the requirement stays specified in docs/requirements-status.json because slow homeostasis is not implemented",
+  "reproduction_command": [
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "go build -o bin/coimnet ./cmd/coimnet && ./bin/coimnet examples run lif-threshold > evidence/COR-04/lifthreshold-report.json",
+    "go test -count=1 -v ./learning/ -run 'TestThetaRawAndThetaMaskValidation|TestLIFThetaOnlyStepChangesOnlyTheta|TestLIFLossGradientMatchesCoreBackward|TestLIFThetaGradientIsZeroWithoutAReadoutPath'",
+    "go test -count=1 -v ./dynamics/ -run 'TestLIFDisabledAdaptationMatchesUnsetAdaptation|TestLIFHandCalculatedTiming'"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v26/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v26/source.sha256"
+  ],
+  "observed_result": "Completed part. Trainable base threshold: theta_raw is its own parameter group, mapped by the declared bounded transform theta_base = theta_min + (theta_max-theta_min)*sigmoid(theta_raw), so theta_base stays strictly inside the configured (0.05, 1) for every condition before and after training. Its gradient matches the core Backward result through the Insyra encoder and readout, a theta-only optimizer step moves theta_raw and nothing else, and a neuron with no path to the readout gets zero threshold gradient. Task impact, from the preregistered run at 300 updates recorded in lifthreshold-report.json: for all three seeds (7, 42, 123) the theta-only control moves the holdout MSE from 0.232354 to 0.052194 while the fully frozen control stays at 0.232354 and the all-trainable control reaches 0.053478, 0.054142 and 0.053964. theta_base moves from 0.163243 to [0.551178, 0.651735, 0.659591] (largest change 0.496348, gate 1e-3) and the holdout spike rate moves from 0.197917 to 0.090625, strictly inside (0,1). All three preregistered gates pass. Short-term adaptation on/off: the mechanism is a configuration switch, and with Enabled false the forward and reverse passes are bit-identical to an unset adaptation block (reflect.DeepEqual on outputs, spikes, voltages and the whole gradient), which is the required reference behavior when the mechanism is off. With adaptation enabled the hand-calculated table for beta = 0.5 matches step by step, including the step whose spike adaptation suppresses. Not implemented, so this requirement is NOT passed: slow homeostasis has no implementation, no configuration field and no evidence. Per-type mixing (COR-05) and LIF persistent individual state are also absent; learning.NewIndividual and RestoreIndividual reject a LIF configuration with an explicit error instead of falling back to the continuous core.",
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v26/validation.log",
+    "evidence/COR-03/lif-dynamics-test.log",
+    "evidence/COR-03/lif-dynamics-race.log",
+    "evidence/COR-03/lif-dynamics-vet.log"
+  ],
+  "learning_report": "evidence/COR-04/lifthreshold-report.json",
+  "limitations": [
+    "Slow homeostasis is required by COR-04 and is not implemented, so the requirement is not marked passed. Only the trainable base threshold and the short-term adaptation switch are covered here.",
+    "tau_adapt and beta are fixed configuration, not trainable parameters.",
+    "The numbers come from a synthetic five-step delayed-pulse generator with three neurons. Falling holdout loss shows the threshold is learnable on this fixture; it is not a generalization, real-connectome or biological firing claim.",
+    "The three seeds only perturb the first edge weight, so the theta-only results are identical across seeds. They show the protocol reproduces, not initialization variance.",
+    "Executed on macOS arm64 (Go 1.26.5) only; Ubuntu and Windows runs for this requirement are not recorded yet."
+  ]
+}

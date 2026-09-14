@@ -8,7 +8,7 @@ User Story：研究者可以用與連續核心同一套拓撲、延遲與同步�
 
 Blocked by：02 稀疏算子、04 連續核心訓練
 
-Status：in_progress（第一、二階段已驗證並提交；第三階段 CLI／文件／證據進行中）
+Status：verified_scoped（三個階段皆已驗證。COR-03、COR-09 標為 passed；COR-04 只完成基礎閾值與短期適應，慢速穩定未實作，需求維持 specified）
 
 對應需求：COR-03（LIF 時序）、COR-09（替代梯度）、COR-04 的基礎閾值可訓練與短期
 適應部分。慢速穩定（homeostasis）、化學調節、按類型混合（COR-05）與個體持續狀態
@@ -195,6 +195,51 @@ Opus subagent 先寫 `learning/lif_test.go`、`learning/lif_flatten_test.go`、
    與 `evidence/COR-04/` 記錄，不提前標通過。
 4. **驗證**：`scripts/verify.sh` 新目錄全套通過（含 race），Windows／Linux 交叉編譯紀錄；
    `delivery-status.md` 更新 11 的狀態與下一步（LIF 個體狀態與快照、按類型混合）。
+
+### 第三階段驗收
+
+- [x] `coimnet examples list` 多一列 `lif-threshold`（profile `fixture`），`coimnet examples run
+  lif-threshold [--updates N]` 輸出同一份報告 JSON，門檻未過回非零。
+- [x] 範例流程移到 `experiment.RunLIFThreshold`，`examples/lifthreshold` 只留旗標解析、
+  列印與退出狀態，CLI 與範例 main 共用同一份實作，沒有第二套邏輯。
+- [x] CLI 測試涵蓋清單項目、小預算通過門檻的可解析報告、未過門檻仍輸出報告、非法預算、
+  未知旗標、多餘參數、取消與 help 寫入失敗；實作前先有紅燈紀錄。
+- [x] README 補 `dynamics.NewLIF`、`learning.Config.LIF`／`Trainable.Theta` 與新命令；
+  `docs/model-and-mechanisms.md` 的機制表拆成已實作與待實作兩列；`ENG.md` 共用決策新增
+  一條 LIF、替代梯度、theta 群組與快照相容規則。
+- [x] `evidence/COR-03/`、`evidence/COR-09/`、`evidence/COR-04/` 各有 verification.json，
+  指向新的 `scripts/verify.sh` 輸出目錄與實際日誌；`docs/requirements-status.json` 只把
+  COR-03、COR-09 標為 passed。
+- [x] `scripts/verify.sh evidence/cpu-reference-20260914/macos-v26` 全套通過（含 race），
+  Windows／Linux 交叉編譯通過。
+- [ ] Ubuntu 與 Windows 實機重跑本階段：本輪只有 macOS arm64 實際執行。
+
+### 第三階段證據
+
+Root 先寫失敗測試：`experiment/lif_threshold_test.go` 與 `internal/cli/run_test.go` 的新測試
+先取得建置紅燈（`undefined: RunLIFThreshold`、`undefined: experiment.LIFThresholdGateDescription`），
+移入 `experiment.RunLIFThreshold` 後 CLI 測試仍紅（`examples list has no lif-threshold entry`、
+`failing run did not print an honest report`），再加上 `internal/cli/run.go` 的命令才轉綠。
+
+`scripts/verify.sh evidence/cpu-reference-20260914/macos-v26` 的 build、`go test`、
+`go test -race`、`go vet`、`go mod verify`、doctor 與既有 CLI 續訓比對全部通過
+（[validation.log](../../evidence/cpu-reference-20260914/macos-v26/validation.log)、
+[doctor.json](../../evidence/cpu-reference-20260914/macos-v26/doctor.json)、
+[source.sha256](../../evidence/cpu-reference-20260914/macos-v26/source.sha256)，依慣例已移除目錄內複製的
+`coimnet` 執行檔）。`GOOS=windows GOARCH=amd64` 與 `GOOS=linux GOARCH=amd64` 的 `go build ./...` 通過。
+
+`./bin/coimnet examples run lif-threshold` 的 300 更新報告存為
+[lifthreshold-report.json](../../evidence/COR-04/lifthreshold-report.json)：三組 seed 的
+theta-only 保留 MSE 皆 0.232354 → 0.052194，frozen 維持 0.232354，all 為 0.053478／0.054142／
+0.053964，`theta_base` 由 0.163243 移到 0.551178／0.651735／0.659591（最大變化 0.496348），
+放電率 0.197917 → 0.090625，三項門檻全過。
+
+需求證據：[COR-03](../../evidence/COR-03/verification.json)（手算時序、延遲、不應期、重設、
+突觸衰減）、[COR-09](../../evidence/COR-09/verification.json)（前向硬事件與反向近似分開驗證，
+tangent 參考 1e-12、平滑模式中心差分，硬放電未做有限差分）、
+[COR-04](../../evidence/COR-04/verification.json)（基礎閾值可訓練與短期適應開關的完成部分）。
+COR-04 因慢速穩定未實作，`docs/requirements-status.json` 維持 `specified`，完成部分只記錄在本票
+與 `evidence/COR-04/`。
 
 ## 依據
 

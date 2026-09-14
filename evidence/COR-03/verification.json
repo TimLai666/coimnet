@@ -1,0 +1,29 @@
+{
+  "requirement": "COR-03",
+  "profile": "fixture",
+  "reproduction_command": [
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "go test -count=1 -v ./dynamics/ -run TestLIF",
+    "go test -race -count=1 ./dynamics/",
+    "go vet ./dynamics/"
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v26/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v26/source.sha256"
+  ],
+  "observed_result": "Leak, spike, reset, refractory, delay and synaptic decay timing match a hand calculation to 1e-12 on a three-neuron fixture (edges 0->1 at delay 0 with weight 2 and 0->2 at delay 2 with weight 4; dt = ln 2 with tau = tau_syn = tau_adapt = 1, so lambda = alpha = kappa = rho = 0.5; theta_raw = 0 gives theta_base = 1; v_reset = -1; refractory_steps = 1; input to node 0 is 4, 4, 3.2, 0, 4). With adaptation disabled the five steps give spikes [1,0,0], [0,1,0], [1,0,0], [0,0,1], [1,1,0]; post-reset voltages [-1,0,0], [-1,-1,0], [-1,-1,0], [-1,0.75,-1], [-1,-1,-1]; synaptic traces [1,0,0], [0.5,1,0], [1.25,0.5,0], [0.625,0.25,1], [1.3125,1.125,0.5]. The table covers all four required cases: node 0 crosses the threshold and is reset, the following refractory step drops its input of 4 instead of integrating it, node 2 fires only at step 3 because the delayed edge reads node 0's trace from two steps earlier, and every trace decays by kappa = 0.5 per step. With adaptation enabled (beta = 0.5) the same inputs give the second hand-calculated table, including the step-2 spike that adaptation suppresses. Repeated Forward calls on the same input are bit-identical and every spike is exactly 0 or 1. Zero-edge models run and train; empty sequences, non-finite inputs and parameters, wrong shapes, inverted theta bounds, v_reset at or above theta_min, non-positive dt, tau_syn, tau_adapt or surrogate scale, negative refractory steps and unknown surrogate kinds are all rejected without leaving a partial trace. 11 tests and 59 subtests pass under go test, go test -race and go vet, and the full suite passes again inside the macos-v26 verification run.",
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v26/validation.log",
+    "evidence/COR-03/lif-dynamics-test.log",
+    "evidence/COR-03/lif-dynamics-race.log",
+    "evidence/COR-03/lif-dynamics-vet.log",
+    "evidence/COR-03/stage1-subagent-report.md"
+  ],
+  "limitations": [
+    "Executed on macOS arm64 (Go 1.26.5) only; Ubuntu and Windows runs for this requirement are not recorded yet, and Windows and Linux are covered only by cross compilation.",
+    "One spike per step is the discrete-step representation limit of this model, not a measured biological firing rate. The synthetic three-neuron fixture is a numerical reference, not fly physiology.",
+    "Only cancellation before the call is exercised; the per-step cancellation checkpoints mirror the continuous core and were not triggered in a test."
+  ]
+}

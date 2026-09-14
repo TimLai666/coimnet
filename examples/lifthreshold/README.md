@@ -14,7 +14,14 @@ go run ./examples/lifthreshold --updates 300   # 預設值，可調 1..100000
 go run ./examples/lifthreshold --help
 ```
 
-程式只把一份 JSON 報告寫到標準輸出，不寫檔案、不保存模型參數。門檻沒過時仍輸出完整報告，並以非零狀態結束。
+CLI 也能跑同一份協定，報告內容相同：
+
+```sh
+./bin/coimnet examples run lif-threshold > report.json
+./bin/coimnet examples run lif-threshold --help
+```
+
+兩個入口共用 `experiment.RunLIFThreshold`，這個 main 只負責解析旗標、列印報告與決定退出狀態。程式只把一份 JSON 報告寫到標準輸出，不寫檔案、不保存模型參數。門檻沒過時仍輸出完整報告，並以非零狀態結束。
 
 ## 模型與初始化
 
@@ -36,7 +43,7 @@ go run ./examples/lifthreshold --help
 
 訓練樣本取自 seed 1001 的計數器串流，保留樣本取自 seed 1003 共 128 筆。程式會逐一比對兩邊實際產生的計數器，重疊就直接報錯，不只比較 seed。
 
-事前寫死的門檻（`main.go` 常數）：
+事前寫死的門檻（`experiment/lif_threshold.go` 常數）：
 
 1. 每組 seed 的 `theta_only` 保留 MSE 必須低於 `frozen`。
 2. `theta_only` 至少一顆神經元的 `theta_base` 變化超過 `1e-3`。

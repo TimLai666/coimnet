@@ -1,0 +1,126 @@
+{
+  "schema_version": "coimnet-requirements-addendum/v1",
+  "as_of": "2026-09-14",
+  "decided_by": "user decision recorded in AGENTS.md and docs/research-directions/connectome-native.md",
+  "status_semantics": "specified means required by the addendum; it does not mean implemented or tested",
+  "allowed_statuses": [
+    "specified",
+    "implemented_unverified",
+    "passed",
+    "failed",
+    "blocked_hardware",
+    "blocked_data",
+    "blocked_permission"
+  ],
+  "pass_rule": "Every passed item must include actual evidence; engineering assumptions must be named in the report.",
+  "requirements": [
+    {
+      "id": "NAT-01",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以不經訓練，以指定動態模型直接執行完整選入圖並觀察指定神經元的輸出。",
+      "acceptance": "給定 GraphStore、動態模型、參數集、固定注入與探針，可對刺激序列執行並輸出探針活動、放電率與沉默／全群放電監控；不依賴 encoder、readout 或訓練器；真實全圖有容量與時間實測。",
+      "required": true,
+      "profile": "fixture/male-full",
+      "ticket": "12",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-01/"
+    },
+    {
+      "id": "NAT-02",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以由官方發布資料推導動態參數，並取得每項假設、規則版本與未知計數的報告。",
+      "acceptance": "逐邊正負號與信心度來自逐突觸傳導物質機率與突觸配對；權重由突觸數與正規化規則推導；未知保持未知；參數集檔案可校驗讀回，推導報告含來源指紋與規則。",
+      "required": true,
+      "profile": "real-data",
+      "ticket": "13",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-02/"
+    },
+    {
+      "id": "NAT-03",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以用空模型對照把輸出歸因到接線、參數或巧合。",
+      "acceptance": "至少提供度數保留重連、正負號打亂與權重打亂三種空模型，固定 seed 可重現，原圖不變；同一刺激下報告與原圖的指標差異。",
+      "required": true,
+      "profile": "fixture/real-subgraph",
+      "ticket": "14",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-03/"
+    },
+    {
+      "id": "NAT-04",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以用具名神經元集合與明示指標把活動轉成可比較的行為判讀。",
+      "acceptance": "神經元集合由註記欄位選取並保存來源；指標與門檻事前寫定；報告不宣稱生物行為證明。",
+      "required": true,
+      "profile": "fixture/real-subgraph",
+      "ticket": "14",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-04/"
+    },
+    {
+      "id": "NAT-05",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以在同一份接線上切換動態模型並比較判讀結果。",
+      "acceptance": "連續與 LIF 核心使用同一張圖、同一組注入與探針，輸出可並排比較的報告。",
+      "required": true,
+      "profile": "fixture/real-subgraph",
+      "ticket": "14",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-05/"
+    },
+    {
+      "id": "NAT-06",
+      "group": "原生模擬",
+      "role": "研究者",
+      "requirement": "研究者可以在原生模擬之上開啟學習或可塑性，並報告原有輸出被增強、修改或破壞。",
+      "acceptance": "學習前後在相同刺激與判讀協定下的對照矩陣；關閉學習可還原原生行為。",
+      "required": true,
+      "profile": "fixture",
+      "ticket": "待可塑性",
+      "evidence_required": [
+        "reproduction_command",
+        "environment",
+        "input_fingerprints",
+        "observed_result",
+        "test_log"
+      ],
+      "expected_evidence_directory": "evidence/NAT-06/"
+    }
+  ]
+}

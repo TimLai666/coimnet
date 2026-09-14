@@ -1,0 +1,87 @@
+{
+  "schema_version": "coimnet-doctor/v1",
+  "runtime": {
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64"
+  },
+  "build_info": {
+    "status": "available",
+    "main": {
+      "path": "github.com/TimLai666/coimnet",
+      "version": "v0.0.0-20260914152124-7dc34be9961d+dirty",
+      "sum": "",
+      "replace": null
+    },
+    "insyra": {
+      "path": "github.com/HazelnutParadise/insyra",
+      "version": "v0.3.2",
+      "sum": "h1:27FjljioVb94rBwyKJ7BPBwgCtzuHk5wRxpomQUHUFI=",
+      "replace": null
+    }
+  },
+  "cpu": {
+    "logical_cpus": 8,
+    "physical_memory_bytes": 17179869184,
+    "physical_memory_status": "available"
+  },
+  "gpu": {
+    "status": "available",
+    "probe": "system_profiler",
+    "devices": [
+      {
+        "name": "Apple M3",
+        "vendor": "sppci_vendor_Apple",
+        "memory_bytes": null
+      }
+    ]
+  },
+  "insyra": {
+    "probe": {
+      "status": "passed",
+      "operation": "nn.Tape.MatMul+MSELoss+Backward",
+      "output": [
+        23
+      ],
+      "loss": [
+        484
+      ],
+      "gradient": [
+        88,
+        132
+      ]
+    },
+    "matrix_acceleration": {
+      "status": "available_in_dependency",
+      "execution": "not_probed",
+      "scope": "2d_float32_matmul",
+      "core_gpu_equivalent": false,
+      "note": "The probe is an Insyra API check and is not a CoImNet core GPU test."
+    }
+  },
+  "core": {
+    "cpu": {
+      "continuous_forward": "implemented",
+      "continuous_backward": "implemented",
+      "continuous_training": "implemented",
+      "sparse_forward": "implemented",
+      "sparse_backward": "implemented",
+      "sparse_training": "implemented"
+    },
+    "gpu": {
+      "continuous_forward": "not_implemented",
+      "continuous_backward": "not_implemented",
+      "continuous_training": "not_implemented",
+      "sparse_forward": "not_implemented",
+      "sparse_backward": "not_implemented",
+      "sparse_training": "not_implemented"
+    },
+    "insyra_matrix_acceleration": {
+      "status": "available_in_dependency",
+      "execution": "not_probed",
+      "scope": "2d_float32_matmul",
+      "core_gpu_equivalent": false,
+      "note": "Insyra matrix acceleration does not implement the CoImNet sparse recurrent core."
+    }
+  }
+}
