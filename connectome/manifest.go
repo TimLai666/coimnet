@@ -6,20 +6,18 @@
 package connectome
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/TimLai666/coimnet/internal/jsonkey"
+	"github.com/TimLai666/coimnet/internal/strictjson"
 )
 
 const (
@@ -338,7 +336,7 @@ func (m DatasetManifest) Hash() (string, error) {
 // DecodeManifest reads exactly one strict JSON manifest and validates it.
 func DecodeManifest(r io.Reader) (DatasetManifest, error) {
 	var manifest DatasetManifest
-	if err := decodeStrict(r, MaxManifestBytes, &manifest); err != nil {
+	if err := strictjson.Decode(r, MaxManifestBytes, &manifest); err != nil {
 		return DatasetManifest{}, fmt.Errorf("%w: %v", ErrInvalidManifest, err)
 	}
 	if err := manifest.Validate(); err != nil {
@@ -357,109 +355,4 @@ func isLowerHex(value string, length int) bool {
 		}
 	}
 	return true
-}
-
-// decodeStrict decodes one JSON value, rejecting unknown fields, duplicate
-// keys (compared case-insensitively, as encoding/json matches fields) and
-// trailing data.
-func decodeStrict(r io.Reader, maxBytes int64, dst any) error {
-	if r == nil || (reflect.ValueOf(r).Kind() == reflect.Pointer && reflect.ValueOf(r).IsNil()) {
-		return errors.New("JSON reader must not be nil")
-	}
-	data, err := io.ReadAll(io.LimitReader(r, maxBytes+1))
-	if err != nil {
-		return err
-	}
-	if int64(len(data)) > maxBytes {
-		return fmt.Errorf("JSON input exceeds %d bytes", maxBytes)
-	}
-	if err := rejectDuplicateKeys(data); err != nil {
-		return err
-	}
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.DisallowUnknownFields()
-	if err := decoder.Decode(dst); err != nil {
-		return err
-	}
-	var extra json.RawMessage
-	if err := decoder.Decode(&extra); err != io.EOF {
-		if err == nil {
-			return errors.New("trailing JSON data")
-		}
-		return fmt.Errorf("trailing JSON data: %w", err)
-	}
-	return nil
-}
-
-// maxJSONDepth bounds nesting during the duplicate-key walk; json.Decoder.Token
-// itself has no nesting limit.
-const maxJSONDepth = 64
-
-func rejectDuplicateKeys(data []byte) error {
-	decoder := json.NewDecoder(bytes.NewReader(data))
-	decoder.UseNumber()
-	var path []string
-	return scanJSONValue(decoder, &path)
-}
-
-// scanJSONValue walks one JSON value. The path is kept as a stack and only
-// formatted when an error is reported, so the walk allocates per key, not
-// per key times depth.
-func scanJSONValue(decoder *json.Decoder, path *[]string) error {
-	if len(*path) > maxJSONDepth {
-		return fmt.Errorf("JSON nesting exceeds %d levels at %s", maxJSONDepth, formatJSONPath(*path))
-	}
-	token, err := decoder.Token()
-	if err != nil {
-		return err
-	}
-	delim, ok := token.(json.Delim)
-	if !ok {
-		return nil
-	}
-	switch delim {
-	case '{':
-		seen := map[string]struct{}{}
-		for decoder.More() {
-			keyToken, err := decoder.Token()
-			if err != nil {
-				return err
-			}
-			key, ok := keyToken.(string)
-			if !ok {
-				return fmt.Errorf("object key at %s is not a string", formatJSONPath(*path))
-			}
-			folded := jsonkey.Fold(key)
-			if _, exists := seen[folded]; exists {
-				return fmt.Errorf("duplicate JSON key %q at %s", key, formatJSONPath(*path))
-			}
-			seen[folded] = struct{}{}
-			*path = append(*path, key)
-			if err := scanJSONValue(decoder, path); err != nil {
-				return err
-			}
-			*path = (*path)[:len(*path)-1]
-		}
-		_, err = decoder.Token()
-		return err
-	case '[':
-		for i := 0; decoder.More(); i++ {
-			*path = append(*path, strconv.Itoa(i))
-			if err := scanJSONValue(decoder, path); err != nil {
-				return err
-			}
-			*path = (*path)[:len(*path)-1]
-		}
-		_, err = decoder.Token()
-		return err
-	default:
-		return fmt.Errorf("unexpected JSON delimiter %v at %s", delim, formatJSONPath(*path))
-	}
-}
-
-func formatJSONPath(path []string) string {
-	if len(path) == 0 {
-		return "$"
-	}
-	return "$." + strings.Join(path, ".")
 }

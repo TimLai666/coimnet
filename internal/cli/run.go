@@ -27,6 +27,8 @@ Commands:
   data inspect [flags]           Inspect every batch of a local Feather file
   data import [flags]            Build graph views from a manifest and report JSON
   data validate [flags]          Verify a graph store and print its report
+  simulate run [flags]           Run a graph store through one dynamics core
+                                 with fixed injections and probes, no training
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit
@@ -86,6 +88,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runPredict(ctx, args[1:], stdout, stderr)
 	case "data":
 		return runData(ctx, args[1:], stdout, stderr)
+	case "simulate":
+		return runSimulateCommand(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 		fs.SetOutput(stderr)

@@ -19,6 +19,7 @@ import (
 
 	"github.com/TimLai666/coimnet/feather"
 	"github.com/TimLai666/coimnet/internal/fileio"
+	"github.com/TimLai666/coimnet/internal/strictjson"
 )
 
 const (
@@ -669,7 +670,7 @@ func LoadWithReceipt(ctx context.Context, path string, limits StoreLimits) (grap
 		return nil, receipt, fmt.Errorf("%w: footer sha256 mismatch", ErrStoreCorrupt)
 	}
 	var footer storeFooter
-	if err := decodeStrict(bytes.NewReader(footerJSON), footerLength, &footer); err != nil {
+	if err := strictjson.Decode(bytes.NewReader(footerJSON), footerLength, &footer); err != nil {
 		return nil, receipt, fmt.Errorf("%w: footer: %v", ErrStoreCorrupt, err)
 	}
 	if err := ctx.Err(); err != nil {
@@ -937,7 +938,7 @@ func LoadWithReceipt(ctx context.Context, path string, limits StoreLimits) (grap
 		return nil, receipt, err
 	}
 	var report GraphReport
-	if err := decodeStrict(bytes.NewReader(reportJSON), int64(len(reportJSON)), &report); err != nil {
+	if err := strictjson.Decode(bytes.NewReader(reportJSON), int64(len(reportJSON)), &report); err != nil {
 		return nil, receipt, fmt.Errorf("%w: report: %v", ErrStoreCorrupt, err)
 	}
 	if err := verifyStoredReport(report, footer); err != nil {

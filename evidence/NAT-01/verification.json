@@ -1,0 +1,46 @@
+{
+  "requirement": "NAT-01",
+  "profile": "real-data",
+  "reproduction_command": [
+    "scripts/simulate-evidence.sh evidence/NAT-01/fullgraph-uniform-v1 evidence/NAT-01/protocol-fullgraph-uniform.json (builds bin/coimnet and runs: coimnet simulate run --store data/malecns-v1.0/graph-v1.coimgraph --protocol evidence/NAT-01/protocol-fullgraph-uniform.json --state-out STATE under /usr/bin/time -l)",
+    "go test -count=1 ./...",
+    "go test -race -count=1 ./simulate/ ./internal/strictjson/ ./internal/cli/ ./connectome/",
+    "go vet ./...",
+    "gofmt -l ."
+  ],
+  "environment": [
+    "evidence/NAT-01/fullgraph-uniform-v1/doctor.json",
+    "evidence/NAT-01/fullgraph-uniform-v1/load-average.txt (1-minute load average 2.44 before the run and 3.96 after, well under the 10 the record would have had to flag)",
+    "macOS arm64, go1.26.5; a large unrelated download was writing to data/malecns-v1.0/ during the run"
+  ],
+  "input_fingerprints": [
+    "evidence/NAT-01/fullgraph-uniform-v1/store.sha256 (a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd, the same store recorded in evidence/malecns-source-20260913/graph-store-v1/store.sha256)",
+    "evidence/NAT-01/fullgraph-uniform-v1/protocol.sha256 (36d424f47e41bee4d21ec25b0d19719a11166f08aee2345ac29ad311407c4ab7)",
+    "evidence/NAT-01/fullgraph-uniform-v1/binary.sha256",
+    "report graph_hashes.node_index 01fede32784e999d459a2e555112fcdc2cc56b302b3a6d151e78f442d045a264, graph_hashes.edge_order 42256dd3b21549fb7fed112a1727d7abd8def48f0efe7fbe7227286f0c619bf7",
+    "report protocol_hash befa9f1d340a49d8dbeed50a67ca72d711bc601710764d22cdfbef353ea6ce42, parameter_hash 425f9268a58a89444b27b7d4bbb96bebf300a8727968ae70b1ee1ca9ad3f158b, core_config_hash 61e0e242c1031775fedbd9e6c5aabe93d73595d1fbffe85aa19d24267d55a951"
+  ],
+  "observed_result": "The whole MaleCNS v1.0 annotated graph (165,122 nodes, 25,563,197 edges) ran 300 LIF steps in one bounded pass: 93.08 s wall (85.09 s user, 6.35 s sys), 4,378,574,848 bytes maximum resident set size, 5,192,913,168 bytes peak memory footprint, exit 0, no non-finite value (monitors.non_finite false). The 8 GiB accounted limit was not reached and the graph was never downsized. Injection resolved class == \"ALIN\" to 24 nodes (indices 350..132605) and received a one-channel pulse of amplitude 2 over steps 10..29. Probes resolved from annotations: alin_injected (24 nodes), descending_neuron (superclass == \"descending_neuron\", 1,314 nodes), vnc_motor (superclass == \"vnc_motor\", 708 nodes). Monitors: silent_fraction 0.020651397148774845 (3,410 of 165,122 neurons never spiked), rate_quantiles [p0 0, p25 0.47333333333333333, p50 0.47333333333333333, p75 0.4766666666666667, p100 0.48333333333333334] spikes per step per neuron, population rate zero for the first ten steps, rising from 0.000145 at step 10 to 0.2104 at step 14 and reaching its maximum 0.5466564116229212 at step 130; from step 31 to step 299 it alternates in a two-step cycle between about 0.4292 and 0.5466 (mean 0.4878, minimum 0.4292). Activity therefore does not decay after the pulse ends at step 29: under this parameter set the network settles into a self-sustaining alternating discharge, with descending_neuron locked at 0.406393/0.593607 and vnc_motor at about 0.4816/0.5155 for the rest of the run. stability_flags is [\"max_population_rate_exceeded\"] against the declared max_population_rate 0.2; min_active_fraction 0.01 was met and raised no flag. Flags did not change the exit status. The state snapshot written after the run is 9,402,221 bytes, SHA-256 c7d3104ada708f4ddedf51955b3c7be7ac3c12afc53852fa12c1f054e9f1e417 (hashed then removed; it is derived data, not a committed artifact). The protocol was executed twice, in separate processes and from two different builds of the CLI, while the simulate package was being finished; every reported value was identical across both runs (core_config_hash, parameter_hash, protocol_hash, graph hashes, silent_fraction, rate_quantiles, the whole population rate series and the 9,402,221 byte state snapshot SHA-256). Only wall time and resident set size differed (the earlier run took 106.16 s with 4,545,953,792 bytes maximum RSS). The evidence directory keeps the later run, whose binary.sha256 matches the committed source.",
+  "assumption_statement": "parameter_source is engineering_uniform_positive. Every edge weight is 0.025 times its raw source weight, which makes every one of the 25,563,197 connections excitatory; every neuron shares bias 0, log_tau 0 (tau = 1) and theta_raw 0, which under theta_min 0.1 and theta_max 2 gives the same base threshold 1.05; every delay is zero. The gain was chosen so that the median per-edge weight is about 0.05: the median raw weight of the annotated view is 2 (nearest-rank over 25,563,197 edges; p25 = 1, p75 = 4, p90 = 10, minimum 1, maximum 2,591), so 0.025 * 2 = 0.05. dt 1, tau_syn 5, v_reset -0.5, one refractory step, fast_sigmoid surrogate scale 2 and adaptation disabled are likewise declared engineering settings. None of these is a biological parameter set: the release carries no synaptic sign, strength in model units, time constant, threshold or conduction delay, and none was derived here. The self-sustaining activity reported above is a property of this uniform all-excitatory assumption, not a claim about fly physiology. The max_population_rate 0.2 and min_active_fraction 0.01 thresholds are arbitrary engineering monitoring bounds, not acceptance criteria. Attribution of any observation to the wiring itself requires the null models of ticket 14; parameters derived from the release are ticket 13.",
+  "test_log": [
+    "evidence/NAT-01/fullgraph-uniform-v1/run.log",
+    "evidence/NAT-01/red-simulate.log (first failing output of the simulate package tests before the package existed)",
+    "evidence/NAT-01/red-cli.log (first failing output of the simulate run CLI tests before the command existed)",
+    "evidence/NAT-01/test.log",
+    "evidence/NAT-01/race.log",
+    "evidence/NAT-01/vet.log",
+    "evidence/NAT-01/gofmt.log"
+  ],
+  "reports": [
+    "evidence/NAT-01/fullgraph-uniform-v1/report.json",
+    "evidence/NAT-01/protocol-fullgraph-uniform.json"
+  ],
+  "limitations": [
+    "Parameters are an engineering assumption, not biology; see assumption_statement. The report repeats the same statement in its assumptions field.",
+    "No null model was run. Nothing here separates the contribution of the wiring from the contribution of the uniform parameter set; that comparison is ticket 14 (NAT-03).",
+    "One protocol on one machine: macOS arm64 only, no Ubuntu or Windows real-data run, and an unrelated large download was competing for disk during both runs.",
+    "The 8 GiB --max-memory-bytes limit is an accounting limit over the declared arrays; the measured 4.38 GB maximum resident set size includes the loaded store, Go allocator slack and runtime overhead that the accounting deliberately excludes.",
+    "The whole-brain protocol was run twice with identical results, which is a reproducibility observation rather than the byte-identical guarantee the package and CLI tests verify directly; timing and resident set size are single-machine samples and varied between the two runs.",
+    "Probe node sets were selected by annotation value only. descending_neuron and vnc_motor are official superclass labels; calling them behaviourally meaningful sets is not established here and belongs to the named-neuron protocol of ticket 14 (NAT-04)."
+  ]
+}
