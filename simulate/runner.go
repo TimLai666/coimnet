@@ -61,12 +61,78 @@ type Runner struct {
 	state           StateSnapshot
 	maxChunk        int
 	stabilityBounds Thresholds
+	topologyHash    string
+	null            *NullModelReport
+	limits          Limits
+	accounted       int64
+	tracked         []trackedSet
+	trackWindows    [][2]int
+	measurements    Measurements
 }
 
-// Build validates the protocol against the graph, resolves every selector,
-// accounts the memory the run needs and constructs the core. The graph is read
-// here and never retained, so the caller can release it once Build returns.
+// trackedSet is one resolved node set the run measures alongside the probes.
+// Tracking never changes a probe, a parameter or the trajectory.
+type trackedSet struct {
+	name  string
+	nodes []int
+}
+
+// Build runs the protocol on the wiring the graph itself carries. It is
+// BuildVariant applied to the original variant: the topology is streamed from
+// the graph here, and every later step, including the accounting, the core and
+// the report, is the one code path BuildVariant owns. The graph is read here
+// and never retained, so the caller can release it once Build returns.
 func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protocol Protocol, limits Limits) (*Runner, error) {
+	nodes, edges, err := buildPreflight(ctx, g, protocol, limits)
+	if err != nil {
+		return nil, err
+	}
+	sources, targets, err := streamTopology(ctx, g, nodes, edges)
+	if err != nil {
+		return nil, err
+	}
+	return BuildVariant(ctx, g, Variant{Name: VariantOriginal, Sources: sources, Targets: targets, Params: params}, protocol, limits)
+}
+
+// buildPreflight repeats the cheap checks and the memory accounting before the
+// edge arrays are read, so an oversized graph is refused instead of allocated.
+// BuildVariant checks everything again on the variant it is handed.
+func buildPreflight(ctx context.Context, g *connectome.Graph, protocol Protocol, limits Limits) (int, int, error) {
+	if ctx == nil {
+		return 0, 0, errors.New("simulate: nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return 0, 0, fmt.Errorf("simulate: %w", err)
+	}
+	if g == nil || g.NodeCount() == 0 {
+		return 0, 0, errors.New("simulate: nil or empty graph")
+	}
+	if limits.MaxMemoryBytes <= 0 {
+		return 0, 0, fmt.Errorf("%w: the memory limit must be positive, got %d", ErrCapacity, limits.MaxMemoryBytes)
+	}
+	if err := protocol.Validate(); err != nil {
+		return 0, 0, err
+	}
+	nodes, edges, err := graphShape(g)
+	if err != nil {
+		return 0, 0, err
+	}
+	stimulus, err := protocol.Stimulus.matrix()
+	if err != nil {
+		return 0, 0, err
+	}
+	if _, err := account(limits, nodes, edges, len(stimulus), len(stimulus[0]), len(protocol.Probes)); err != nil {
+		return 0, 0, err
+	}
+	return nodes, edges, nil
+}
+
+// BuildVariant validates the protocol against the graph, takes the topology
+// from the variant instead of the graph, resolves every selector, accounts the
+// memory the run needs and constructs the core. The variant's edge arrays are
+// handed to the core, which copies them, so the runner retains neither the
+// graph nor the caller's slices.
+func BuildVariant(ctx context.Context, g *connectome.Graph, v Variant, protocol Protocol, limits Limits) (*Runner, error) {
 	if ctx == nil {
 		return nil, errors.New("simulate: nil context")
 	}
@@ -82,15 +148,26 @@ func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protoc
 	if err := protocol.Validate(); err != nil {
 		return nil, err
 	}
-	nodes, edges := int(g.NodeCount()), int(g.EdgeCount())
-	if uint64(nodes) != g.NodeCount() || uint64(edges) != g.EdgeCount() {
-		return nil, fmt.Errorf("%w: graph size does not fit this platform's int", ErrCapacity)
-	}
-	if err := params.validate(nodes, edges, protocol.Core); err != nil {
+	nodes, edges, err := graphShape(g)
+	if err != nil {
 		return nil, err
 	}
-	if params.Source != protocol.ParameterSource {
-		return nil, fmt.Errorf("simulate: parameter set source %q does not match the protocol source %q", params.Source, protocol.ParameterSource)
+	if v.Name == "" {
+		return nil, errors.New("simulate: the variant has no name")
+	}
+	if len(v.Sources) != edges || len(v.Targets) != edges {
+		return nil, fmt.Errorf("simulate: variant %q carries %d sources and %d targets, the graph declares %d edges", v.Name, len(v.Sources), len(v.Targets), edges)
+	}
+	for i, source := range v.Sources {
+		if source < 0 || source >= nodes || v.Targets[i] < 0 || v.Targets[i] >= nodes {
+			return nil, fmt.Errorf("simulate: variant %q edge %d (%d->%d) leaves the node range [0,%d)", v.Name, i, source, v.Targets[i], nodes)
+		}
+	}
+	if err := v.Params.validate(nodes, edges, protocol.Core); err != nil {
+		return nil, err
+	}
+	if v.Params.Source != protocol.ParameterSource {
+		return nil, fmt.Errorf("simulate: parameter set source %q does not match the protocol source %q", v.Params.Source, protocol.ParameterSource)
 	}
 	stimulus, err := protocol.Stimulus.matrix()
 	if err != nil {
@@ -98,15 +175,12 @@ func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protoc
 	}
 	steps, channels := len(stimulus), len(stimulus[0])
 
-	if err := account(limits, nodes, edges, steps, channels, len(protocol.Probes)); err != nil {
-		return nil, err
-	}
-
-	sources, targets, err := streamTopology(ctx, g, nodes, edges)
+	accounted, err := account(limits, nodes, edges, steps, channels, len(protocol.Probes))
 	if err != nil {
 		return nil, err
 	}
-	built, coreHash, err := newCore(protocol, nodes, sources, targets)
+
+	built, coreHash, err := newCore(protocol, nodes, v.Sources, v.Targets)
 	if err != nil {
 		return nil, err
 	}
@@ -114,9 +188,13 @@ func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protoc
 	if err != nil {
 		return nil, err
 	}
+	topology, err := topologyHash(v.Sources, v.Targets)
+	if err != nil {
+		return nil, err
+	}
 	runner := &Runner{
 		core:            built,
-		params:          params,
+		params:          v.Params,
 		protocolHash:    protocolHash,
 		coreConfigHash:  coreHash,
 		graphHashes:     GraphHashes{NodeIndex: g.Report().Hashes.NodeIndex, EdgeOrder: g.Report().Hashes.EdgeOrder},
@@ -126,6 +204,13 @@ func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protoc
 		edges:           edges,
 		maxChunk:        built.maxStepsPerCall(),
 		stabilityBounds: protocol.Thresholds,
+		topologyHash:    topology,
+		limits:          limits,
+		accounted:       accounted,
+	}
+	if v.Null != nil {
+		runner.null = &NullModelReport{}
+		*runner.null = *v.Null
 	}
 	if err := runner.resolveInjections(ctx, g, protocol, channels); err != nil {
 		return nil, err
@@ -137,6 +222,15 @@ func Build(ctx context.Context, g *connectome.Graph, params ParameterSet, protoc
 		return nil, err
 	}
 	return runner, nil
+}
+
+// graphShape returns the node and edge counts as platform ints.
+func graphShape(g *connectome.Graph) (int, int, error) {
+	nodes, edges := int(g.NodeCount()), int(g.EdgeCount())
+	if uint64(nodes) != g.NodeCount() || uint64(edges) != g.EdgeCount() {
+		return 0, 0, fmt.Errorf("%w: graph size does not fit this platform's int", ErrCapacity)
+	}
+	return nodes, edges, nil
 }
 
 // streamTopology reads the canonical edge stream once. Delays are zero for
@@ -306,6 +400,169 @@ func (r *Runner) RestoreState(s StateSnapshot) error {
 	return nil
 }
 
+// TrackSets fixes the node sets Run measures and the step windows it measures
+// them over. It changes nothing about the probes, the parameters or the
+// trajectory: tracking only counts, per tracked node, the spikes inside each
+// window and the first step of the window at which the set spiked, plus the
+// summed core output the continuous core needs. Windows are step ranges
+// [start, end) inside one Run call and are validated against the step count
+// the protocol declares. Calling it again replaces the previous request and
+// discards the measurements of an earlier run.
+func (r *Runner) TrackSets(sets []ResolvedSet, windows [][2]int) error {
+	steps := len(r.stimulus)
+	tracked := make([]trackedSet, 0, len(sets))
+	seenSet := map[string]struct{}{}
+	for i, set := range sets {
+		if set.Name == "" {
+			return fmt.Errorf("simulate: tracked set %d has no name", i)
+		}
+		if _, exists := seenSet[set.Name]; exists {
+			return fmt.Errorf("simulate: duplicate tracked set %q", set.Name)
+		}
+		seenSet[set.Name] = struct{}{}
+		nodes, err := checkNodes(set.nodes, r.nodes, "tracked set "+set.Name)
+		if err != nil {
+			return err
+		}
+		tracked = append(tracked, trackedSet{name: set.Name, nodes: nodes})
+	}
+	seenWindow := map[[2]int]struct{}{}
+	for _, window := range windows {
+		if err := checkWindow(window, steps, "tracked"); err != nil {
+			return err
+		}
+		if _, exists := seenWindow[window]; exists {
+			return fmt.Errorf("simulate: duplicate tracked window %v", window)
+		}
+		seenWindow[window] = struct{}{}
+	}
+	if err := r.accountTracking(tracked, len(windows)); err != nil {
+		return err
+	}
+	r.tracked = tracked
+	r.trackWindows = append([][2]int(nil), windows...)
+	r.measurements = Measurements{}
+	return nil
+}
+
+// accountTracking adds the per set, per window counters to the bytes the run
+// already accounts for and refuses the request if the sum leaves the limit.
+func (r *Runner) accountTracking(sets []trackedSet, windows int) error {
+	total := r.accounted
+	for _, set := range sets {
+		// One spike counter per node and window, plus the fixed per window
+		// record with its first spike step and output sum.
+		counters, err := checkedProduct(int64(len(set.nodes)), 4, int64(windows))
+		if err != nil {
+			return err
+		}
+		fixed, err := checkedProduct(int64(windows), bytesPerTrackedWindow, 1)
+		if err != nil {
+			return err
+		}
+		if total > math.MaxInt64-counters || total+counters > math.MaxInt64-fixed {
+			return fmt.Errorf("%w: accounted bytes overflow", ErrCapacity)
+		}
+		total += counters + fixed
+	}
+	if total > r.limits.MaxMemoryBytes {
+		return fmt.Errorf("%w: tracking %d sets over %d windows raises the accounted bytes to %d, over the %d byte limit", ErrCapacity, len(sets), windows, total, r.limits.MaxMemoryBytes)
+	}
+	return nil
+}
+
+// bytesPerTrackedWindow is the fixed record one tracked set keeps per window.
+const bytesPerTrackedWindow = 64
+
+// Measurements returns an independent copy of what the most recent successful
+// Run recorded for the tracked sets. It is empty before the first run and
+// before any set is tracked. A failed Run leaves the previous measurements in
+// place, exactly as it leaves the trajectory.
+func (r *Runner) Measurements() Measurements {
+	return Measurements{Windows: append([]WindowMeasurement(nil), r.measurements.Windows...)}
+}
+
+// tracker holds the counters of one Run while it is in progress.
+type tracker struct {
+	counts [][][]uint32
+	first  [][]int
+	sums   [][]float64
+}
+
+func (r *Runner) newTracker(steps int) (*tracker, error) {
+	if len(r.tracked) == 0 {
+		return nil, nil
+	}
+	for _, window := range r.trackWindows {
+		if window[1] > steps {
+			return nil, fmt.Errorf("simulate: tracked window %v leaves the %d steps of this run", window, steps)
+		}
+	}
+	t := &tracker{
+		counts: make([][][]uint32, len(r.tracked)),
+		first:  make([][]int, len(r.tracked)),
+		sums:   make([][]float64, len(r.tracked)),
+	}
+	for s, set := range r.tracked {
+		t.counts[s] = make([][]uint32, len(r.trackWindows))
+		t.first[s] = make([]int, len(r.trackWindows))
+		t.sums[s] = make([]float64, len(r.trackWindows))
+		for w := range r.trackWindows {
+			t.counts[s][w] = make([]uint32, len(set.nodes))
+			t.first[s][w] = -1
+		}
+	}
+	return t, nil
+}
+
+// observe records one step of one chunk. step is the absolute step index
+// inside this Run call, which is what a window range refers to.
+func (r *Runner) observe(t *tracker, step int, outputs, spikes []float64) {
+	for w, window := range r.trackWindows {
+		if step < window[0] || step >= window[1] {
+			continue
+		}
+		for s, set := range r.tracked {
+			for i, node := range set.nodes {
+				t.sums[s][w] += outputs[node]
+				if spikes == nil || spikes[node] == 0 {
+					continue
+				}
+				t.counts[s][w][i]++
+				if t.first[s][w] < 0 {
+					t.first[s][w] = step
+				}
+			}
+		}
+	}
+}
+
+// measurements turns the counters into the per set, per window records a
+// metric is evaluated from.
+func (r *Runner) trackedMeasurements(t *tracker) Measurements {
+	if t == nil {
+		return Measurements{}
+	}
+	windows := make([]WindowMeasurement, 0, len(r.tracked)*len(r.trackWindows))
+	for s, set := range r.tracked {
+		for w, window := range r.trackWindows {
+			measurement := WindowMeasurement{
+				Set: set.name, Window: window, Nodes: len(set.nodes),
+				Steps: window[1] - window[0], Spiking: r.core.spiking(),
+				FirstSpikeStep: t.first[s][w], OutputSum: t.sums[s][w],
+			}
+			for _, count := range t.counts[s][w] {
+				if count > 0 {
+					measurement.SpikedNodes++
+				}
+				measurement.Spikes += uint64(count)
+			}
+			windows = append(windows, measurement)
+		}
+	}
+	return Measurements{Windows: windows}
+}
+
 // Run advances the persistent state over the supplied stimulus and returns the
 // report of exactly those steps. The state is committed only after the whole
 // sequence and the whole report succeed, so cancellation, a non-finite value or
@@ -336,6 +593,10 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 	}
 	spikeCounts := make([]uint64, r.nodes)
 	populationRate := make([]float64, 0, steps)
+	tracking, err := r.newTracker(steps)
+	if err != nil {
+		return empty, err
+	}
 	baseline := append([]float64(nil), r.core.baseline(r.state)...)
 	changed := make([]bool, r.nodes)
 
@@ -354,6 +615,9 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 			return empty, fmt.Errorf("simulate: advance steps %d..%d: %w", start, end, err)
 		}
 		for t := range outputs {
+			if tracking != nil {
+				r.observe(tracking, start+t, outputs[t], spikeRow(spikes, t))
+			}
 			for i, probe := range r.probes {
 				value, err := reduce(probe, outputs[t], spikeRow(spikes, t))
 				if err != nil {
@@ -388,6 +652,7 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 		return empty, err
 	}
 	r.state = state
+	r.measurements = r.trackedMeasurements(tracking)
 	return report, nil
 }
 
@@ -512,6 +777,7 @@ func (r *Runner) report(state StateSnapshot, steps int, series [][]float64, spik
 		Core:            r.core.name(),
 		CoreConfigHash:  r.coreConfigHash,
 		GraphHashes:     r.graphHashes,
+		TopologyHash:    r.topologyHash,
 		ParameterSource: r.params.Source,
 		ParameterHash:   r.params.Hash,
 		ProtocolHash:    r.protocolHash,
@@ -525,6 +791,10 @@ func (r *Runner) report(state StateSnapshot, steps int, series [][]float64, spik
 		Monitors:        monitors,
 		StabilityFlags:  flags,
 		Assumptions:     r.assumptions(),
+	}
+	if r.null != nil {
+		report.NullModel = &NullModelReport{}
+		*report.NullModel = *r.null
 	}
 	if derived := r.params.Derived; derived != nil {
 		unknown := derived.UnknownSignEdges
@@ -584,7 +854,7 @@ func stepCount(s StateSnapshot) uint64 {
 
 // account refuses a run whose declared arrays exceed the limit. Every product
 // is checked for overflow before it is added.
-func account(limits Limits, nodes, edges, steps, channels, probes int) error {
+func account(limits Limits, nodes, edges, steps, channels, probes int) (int64, error) {
 	chunk := min(maxSteps(nodes), steps)
 	terms := [][3]int64{
 		{int64(edges), bytesPerEdgeHere, 1},
@@ -599,17 +869,17 @@ func account(limits Limits, nodes, edges, steps, channels, probes int) error {
 	for _, term := range terms {
 		product, err := checkedProduct(term[0], term[1], term[2])
 		if err != nil {
-			return err
+			return 0, err
 		}
 		if total > math.MaxInt64-product {
-			return fmt.Errorf("%w: accounted bytes overflow", ErrCapacity)
+			return 0, fmt.Errorf("%w: accounted bytes overflow", ErrCapacity)
 		}
 		total += product
 	}
 	if total > limits.MaxMemoryBytes {
-		return fmt.Errorf("%w: the run accounts %d bytes for %d nodes, %d edges and %d steps, over the %d byte limit", ErrCapacity, total, nodes, edges, steps, limits.MaxMemoryBytes)
+		return 0, fmt.Errorf("%w: the run accounts %d bytes for %d nodes, %d edges and %d steps, over the %d byte limit", ErrCapacity, total, nodes, edges, steps, limits.MaxMemoryBytes)
 	}
-	return nil
+	return total, nil
 }
 
 func checkedProduct(values ...int64) (int64, error) {

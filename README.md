@@ -104,6 +104,31 @@ data_dir=$(mktemp -d)
 
 產生的參數集用 `simulate run --params` 執行同一張圖：以 `unknown_sign: exclude`、`weight_scale: 21.6` 跑完 NAT-01 的同一份 protocol 後，沉默比例由 0.0207 升到 0.6440、最大全群放電比例由 0.5467 降到 0.0793，穩定旗標也由 `max_population_rate_exceeded` 變成沒有旗標。這是兩組參數假設在同一張接線圖上的差異，不是果蠅生理的結論。
 
+比較原圖與空模型：
+
+```sh
+./bin/coimnet simulate compare \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol compare.json \
+  --params params-derive-v1.coimparams \
+  --out-dir cells \
+  > compare.json
+```
+
+`simulate compare` 用同一份 protocol、同一份刺激先跑原始接線，再跑每一種空模型的每一個 seed，每一格都是一份完整的 `simulate run` 報告。加上 `--out-dir` 會把每一格另存成 `cell-<編號>-<變體>.json`，那個目錄必須還不存在。
+
+**空模型是記憶體裡的衍生物，不會另存成一張圖。** 三種空模型都不改 store 與參數集檔。`degree_preserving_rewire` 固定每個節點的出度與入度，用 double-edge swap 交換兩條邊的目標，嘗試次數是 `ceil(swap_factor × 邊數)`，提議只要會做出自環或重複 pair 就拒絕，兩種原因分開計數，每條邊的權重與正負號跟著自己那條邊走。`sign_shuffle` 只把正負號標籤在邊之間置換，`+1`／`-1`／unknown 各自的數量不變，而且只有 `derived_release/v1` 能用，因為 uniform 的邊全部是興奮性，沒有標籤可以換。`weight_shuffle` 只置換強度，正負號留在原來的邊上。
+
+亂數是 `math/rand/v2` 的 PCG(seed, 0)，報告寫出 kind、seed、`prng`、嘗試次數、成功次數、兩種拒絕原因，以及衍生拓撲與參數的 SHA-256。拿原本的 store 加上這幾個欄位就能重算出同一份衍生物再比對 hash，所以不需要把假的「來源指紋」寫進第一層的圖格式。
+
+**指標與門檻寫在 protocol 裡，跑之前就定案。** 具名神經元集合是多個選擇器的交集，報告記錄每個選擇器解析到什麼、節點數，以及節點索引的 SHA-256。集合名稱由使用者給，框架不預設任何集合代表某種行為。LIF 核心可用 `spike_fraction`、`mean_rate`、`latency_to_first_spike` 與 `activity_ratio_vs_baseline`，連續核心沒有事件，只能用 `mean_output`。窗是 `[start, end)` 的步數範圍，超出這次執行的步數就拒絕。
+
+**沒有值的指標就是未定義，不是 0。** 集合在窗內完全沒有放電時 latency 沒有值，baseline 的放電率為 0 時 activity ratio 沒有值，門檻碰到未定義的指標一律 fail 並記下 `undefined`。門檻結果只寫進報告，不改退出碼。
+
+多個 seed 的結果以分布呈現。每一種空模型對每個指標給 p0、p25、p50、p75、p100（最近秩，不內插），以及原圖的值落在該分布的百分位 `(小於的個數 + 0.5 × 相等的個數) ÷ 有定義的個數`。原圖或全部 seed 都沒有值時就不給百分位。報告只陳述這些數字與事前宣告的門檻結果，不做沒有宣告過的檢定，也不宣稱任何生物行為。
+
+目前只在 fixture 上驗過。真實全圖的空模型對照、具名集合與多核心比較是 [ticket 14](docs/tickets/14-null-models-and-behavior.md) 的第二階段，證據會放在 `evidence/NAT-03/`、`NAT-04/` 與 `NAT-05/`。
+
 真實子圖的選取與短訓練見 [ALIN 範例](examples/realsubgraph/README.md)。範例明示人工脈衝任務、初始化假設及更新範圍，輸出來源與參數指紋。
 
 [多通道 adapter 範例](examples/multichannel/README.md) 將不同頻率的連續值、區間與脈衝轉成六欄輸入，接到既有核心與訓練器。執行 `go test ./examples/multichannel -run ExampleAdapt -count=1 -v` 可跑人工資料的完整流程。

@@ -32,6 +32,9 @@ Commands:
                                  its report
   simulate run [flags]           Run a graph store through one dynamics core
                                  with fixed injections and probes, no training
+  simulate compare [flags]       Run one protocol on the original wiring and on
+                                 seeded null models and report the declared
+                                 metrics and thresholds
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit

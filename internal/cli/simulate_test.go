@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/simulate"
+	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/array"
 )
 
 // simulateStore builds the shared two-neuron import fixture into a graph store.
@@ -565,5 +568,416 @@ func TestSimulateRunDerivedParameterFailuresAndHelp(t *testing.T) {
 		if !strings.Contains(out.String(), word) {
 			t.Fatalf("simulate run help missing %s:\n%s", word, out.String())
 		}
+	}
+}
+
+// compareStore builds a four neuron store whose annotations carry a class
+// column, so a compare protocol can resolve named sets. Bodies 1..4 become
+// node indices 0..3 with classes A, A, B and B; the six edges are
+// 0->1, 0->2, 1->2, 1->3, 2->3 and 3->0 with raw weights 5, 6, 4, 1, 3 and 2.
+func compareStore(t *testing.T) (dir, store string) {
+	t.Helper()
+	dir = t.TempDir()
+	writeImportFeather(t, filepath.Join(dir, "annotations.feather"), arrow.NewSchema([]arrow.Field{
+		{Name: "bodyId", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+		{Name: "status", Type: arrow.BinaryTypes.String, Nullable: true},
+		{Name: "class", Type: arrow.BinaryTypes.String, Nullable: true},
+	}, nil), func(b *array.RecordBuilder) {
+		b.Field(0).(*array.Int64Builder).AppendValues([]int64{1, 2, 3, 4}, nil)
+		b.Field(1).(*array.StringBuilder).AppendValues([]string{"Traced", "Traced", "Traced", "Traced"}, nil)
+		b.Field(2).(*array.StringBuilder).AppendValues([]string{"A", "A", "B", "B"}, nil)
+	})
+	writeImportFeather(t, filepath.Join(dir, "weights.feather"), arrow.NewSchema([]arrow.Field{
+		{Name: "body_pre", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+		{Name: "body_post", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+		{Name: "weight", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+	}, nil), func(b *array.RecordBuilder) {
+		b.Field(0).(*array.Int64Builder).AppendValues([]int64{1, 1, 2, 2, 3, 4}, nil)
+		b.Field(1).(*array.Int64Builder).AppendValues([]int64{2, 3, 3, 4, 4, 1}, nil)
+		b.Field(2).(*array.Int64Builder).AppendValues([]int64{5, 6, 4, 1, 3, 2}, nil)
+	})
+	writeImportFeather(t, filepath.Join(dir, "nt.feather"), arrow.NewSchema([]arrow.Field{
+		{Name: "body", Type: arrow.PrimitiveTypes.Int64, Nullable: true},
+		{Name: "consensus_nt", Type: arrow.BinaryTypes.String, Nullable: true},
+	}, nil), func(b *array.RecordBuilder) {
+		b.Field(0).(*array.Int64Builder).AppendValues([]int64{1}, nil)
+		b.Field(1).(*array.StringBuilder).AppendValues([]string{"acetylcholine"}, nil)
+	})
+	weights := fingerprintJSON(t, dir, "weights.feather")
+	weights["role"] = "weights"
+	annotations := fingerprintJSON(t, dir, "annotations.feather")
+	annotations["role"] = "annotations"
+	nt := fingerprintJSON(t, dir, "nt.feather")
+	nt["role"] = "neurotransmitters"
+	manifest := map[string]any{
+		"schema_version": "coimnet-dataset-manifest/v1",
+		"dataset":        "compare-fixture",
+		"namespace":      "compare-fixture-v1",
+		"source_version": "v1",
+		"license":        map[string]any{"name": "CC-BY-4.0", "url": "https://creativecommons.org/licenses/by/4.0/"},
+		"acquired_at":    "2026-09-15T00:00:00Z",
+		"files":          []any{weights, annotations, nt},
+		"field_mapping": map[string]any{
+			"weights":           map[string]any{"source": "body_pre", "target": "body_post", "value": "weight"},
+			"annotations":       map[string]any{"id": "bodyId", "status": "status", "class": "class"},
+			"neurotransmitters": map[string]any{"id": "body", "consensus": "consensus_nt"},
+		},
+		"identity": map[string]any{
+			"weights_endpoints_are_annotation_ids":    true,
+			"neurotransmitter_ids_are_annotation_ids": true,
+			"evidence": "fixture",
+		},
+		"selection":           map[string]any{"source": "annotations", "field": "status", "equals": "Traced", "label": "engineering selection"},
+		"duplicate_semantics": "unknown",
+		"coordinate_unit":     "unverified",
+		"transform_history":   []any{map[string]any{"step": "generate", "description": "fixture", "version": "test"}},
+	}
+	encoded, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "manifest.json"), encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	store = filepath.Join(dir, "graph.coimgraph")
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), []string{"data", "import", "--manifest", filepath.Join(dir, "manifest.json"), "--temp-dir", t.TempDir(), "--out-store", store}, &out, &errout); err != nil {
+		t.Fatalf("data import: %v; stderr=%s", err, errout.String())
+	}
+	return dir, store
+}
+
+// uniformCompareProtocol drives the four neuron compare store with the uniform
+// engineering source and the two null models that source supports.
+func uniformCompareProtocol(steps int) simulate.CompareProtocol {
+	run := lifSimulateProtocol(steps)
+	run.Uniform = &simulate.UniformParameters{Gain: .5}
+	run.Probes = []simulate.Probe{{Name: "population", Nodes: []int{0, 1, 2, 3}, Reduce: simulate.ReduceSpikeFraction}}
+	return simulate.CompareProtocol{
+		SchemaVersion: simulate.CompareProtocolSchemaVersion,
+		Run:           run,
+		Sets: []simulate.NamedSet{
+			{Name: "class_a", Selectors: []simulate.Selector{{Field: "class", Equals: "A"}}},
+			{Name: "class_b", Selectors: []simulate.Selector{{Field: "class", Equals: "B"}}},
+		},
+		Metrics: []simulate.Metric{
+			{Name: "a_fraction", Kind: simulate.MetricSpikeFraction, Set: "class_a", Window: [2]int{0, steps}},
+			{Name: "b_rate", Kind: simulate.MetricMeanRate, Set: "class_b", Window: [2]int{0, steps}},
+		},
+		Thresholds: []simulate.Threshold{
+			{Metric: "a_fraction", Op: simulate.OpAtLeast, Value: 0.5},
+			{Metric: "b_rate", Op: simulate.OpAbove, Value: 10},
+		},
+		NullModels: []simulate.NullModelSpec{
+			{Kind: simulate.NullDegreePreservingRewire, SwapFactor: 2},
+			{Kind: simulate.NullWeightShuffle},
+		},
+		Seeds: []uint64{1, 2},
+	}
+}
+
+func writeCompareProtocol(t *testing.T, dir, name string, cp simulate.CompareProtocol) string {
+	t.Helper()
+	encoded, err := json.MarshalIndent(cp, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, encoded, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+type compareOutput struct {
+	SchemaVersion      string `json:"schema_version"`
+	ProtocolHash       string `json:"protocol_hash"`
+	ParameterSource    string `json:"parameter_source"`
+	ParameterSetSHA256 string `json:"parameter_set_sha256"`
+	Reproduction       string `json:"reproduction"`
+	Sets               []struct {
+		Name     string `json:"name"`
+		Count    int    `json:"count"`
+		NodeHash string `json:"node_hash"`
+	} `json:"sets"`
+	Cells []struct {
+		Index   int    `json:"index"`
+		Variant string `json:"variant"`
+		Kind    string `json:"kind"`
+		Seed    uint64 `json:"seed"`
+		Null    *struct {
+			Kind         string `json:"kind"`
+			Seed         uint64 `json:"seed"`
+			PRNG         string `json:"prng"`
+			Attempts     uint64 `json:"attempts"`
+			Applied      uint64 `json:"applied"`
+			TopologyHash string `json:"topology_hash"`
+		} `json:"null_model"`
+		Run struct {
+			SchemaVersion string `json:"schema_version"`
+			TopologyHash  string `json:"topology_hash"`
+		} `json:"run"`
+		Metrics []struct {
+			Name    string  `json:"name"`
+			Value   float64 `json:"value"`
+			Defined bool    `json:"defined"`
+		} `json:"metrics"`
+		Thresholds []struct {
+			Metric string `json:"metric"`
+			Passed bool   `json:"passed"`
+			Reason string `json:"reason"`
+		} `json:"thresholds"`
+		WallSeconds float64 `json:"wall_seconds"`
+	} `json:"cells"`
+	Summary []struct {
+		Metric  string `json:"metric"`
+		PerKind []struct {
+			Kind      string     `json:"kind"`
+			Seeds     int        `json:"seeds"`
+			Defined   int        `json:"defined"`
+			Quantiles [5]float64 `json:"quantiles"`
+		} `json:"per_kind"`
+	} `json:"summary"`
+}
+
+func runCompare(t *testing.T, args ...string) (compareOutput, string) {
+	t.Helper()
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), args, &out, &errout); err != nil {
+		t.Fatalf("%v: %v; stderr=%s", args, err, errout.String())
+	}
+	var decoded compareOutput
+	if err := json.Unmarshal(out.Bytes(), &decoded); err != nil {
+		t.Fatalf("invalid compare report JSON: %v\n%s", err, out.String())
+	}
+	return decoded, out.String()
+}
+
+// maskWallSeconds removes the only field two identical compares may differ in.
+func maskWallSeconds(t *testing.T, raw string) string {
+	t.Helper()
+	var document map[string]any
+	if err := json.Unmarshal([]byte(raw), &document); err != nil {
+		t.Fatal(err)
+	}
+	cells, _ := document["cells"].([]any)
+	for _, cell := range cells {
+		if object, ok := cell.(map[string]any); ok {
+			delete(object, "wall_seconds")
+		}
+	}
+	encoded, err := json.Marshal(document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(encoded)
+}
+
+func TestSimulateCompareRunsTheMatrixAndWritesEveryCell(t *testing.T) {
+	dir, store := compareStore(t)
+	protocol := writeCompareProtocol(t, dir, "compare.json", uniformCompareProtocol(6))
+	outDir := filepath.Join(dir, "cells")
+	report, raw := runCompare(t, "simulate", "compare", "--store", store, "--protocol", protocol, "--out-dir", outDir)
+
+	if report.SchemaVersion != "coimnet-simulate-compare-report/v1" || len(report.ProtocolHash) != 64 {
+		t.Fatalf("report identity = %s", raw)
+	}
+	if report.ParameterSource != "engineering_uniform_positive" || report.ParameterSetSHA256 != "" {
+		t.Fatalf("report provenance = %q %q", report.ParameterSource, report.ParameterSetSHA256)
+	}
+	if len(report.Cells) != 5 {
+		t.Fatalf("got %d cells, want 1 original and 2 kinds x 2 seeds", len(report.Cells))
+	}
+	if report.Cells[0].Variant != "original" || report.Cells[0].Null != nil {
+		t.Fatalf("cell 0 = %+v", report.Cells[0])
+	}
+	if len(report.Sets) != 2 || report.Sets[0].Count != 2 || report.Sets[1].Count != 2 {
+		t.Fatalf("resolved sets = %+v", report.Sets)
+	}
+	for i, cell := range report.Cells[1:] {
+		if cell.Null == nil || cell.Null.PRNG != "pcg" || cell.Null.Seed != cell.Seed {
+			t.Fatalf("cell %d null model = %+v", i+1, cell.Null)
+		}
+		if cell.Run.TopologyHash != cell.Null.TopologyHash {
+			t.Fatalf("cell %d topology hash %q does not match its null model %q", i+1, cell.Run.TopologyHash, cell.Null.TopologyHash)
+		}
+	}
+	// The declared threshold on b_rate cannot pass, and that is not an error.
+	for _, cell := range report.Cells {
+		if len(cell.Thresholds) != 2 || cell.Thresholds[1].Passed {
+			t.Fatalf("cell %d thresholds = %+v", cell.Index, cell.Thresholds)
+		}
+	}
+	if len(report.Summary) != 2 || len(report.Summary[0].PerKind) != 2 || report.Summary[0].PerKind[0].Seeds != 2 {
+		t.Fatalf("summary = %+v", report.Summary)
+	}
+
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != len(report.Cells) {
+		t.Fatalf("out-dir holds %d files for %d cells", len(entries), len(report.Cells))
+	}
+	for _, cell := range report.Cells {
+		path := filepath.Join(outDir, fmt.Sprintf("cell-%d-%s.json", cell.Index, cell.Variant))
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("cell file %s: %v", path, err)
+		}
+		var run simulateOutput
+		if err := json.Unmarshal(data, &run); err != nil {
+			t.Fatalf("cell file %s is not a run report: %v", path, err)
+		}
+		if run.SchemaVersion != "coimnet-simulate-run/v1" || run.Steps != 6 {
+			t.Fatalf("cell file %s = %s", path, data)
+		}
+	}
+
+	_, again := runCompare(t, "simulate", "compare", "--store", store, "--protocol", protocol)
+	if maskWallSeconds(t, raw) != maskWallSeconds(t, again) {
+		t.Fatalf("two identical compares differ:\n%s\n%s", maskWallSeconds(t, raw), maskWallSeconds(t, again))
+	}
+}
+
+// TestSimulateCompareRunsTheDerivedSource uses the two neuron derivation
+// fixture, whose annotations carry no class column; both sets therefore
+// declare allow_empty and resolve to zero nodes, which makes every metric
+// undefined and every threshold fail with that reason. It is the end to end
+// check that an undefined metric is reported, never silently zero.
+func TestSimulateCompareRunsTheDerivedSource(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	paramsPath, sum := deriveParameterSet(t, dir, store, rules, "compare-params.coimparams")
+	cp := uniformCompareProtocol(4)
+	cp.Run = derivedSimulateProtocol(4, "exclude", 2)
+	cp.Run.Probes = []simulate.Probe{{Name: "population", Nodes: []int{0, 1}, Reduce: simulate.ReduceSpikeFraction}}
+	cp.Sets = []simulate.NamedSet{
+		{Name: "unlabeled", Selectors: []simulate.Selector{{Field: "class", Equals: "ALIN", AllowEmpty: true}}},
+	}
+	cp.Metrics = []simulate.Metric{{Name: "unlabeled_rate", Kind: simulate.MetricMeanRate, Set: "unlabeled", Window: [2]int{0, 4}}}
+	cp.Thresholds = []simulate.Threshold{{Metric: "unlabeled_rate", Op: simulate.OpAtLeast, Value: 0}}
+	cp.NullModels = []simulate.NullModelSpec{
+		{Kind: simulate.NullDegreePreservingRewire, SwapFactor: 1},
+		{Kind: simulate.NullSignShuffle},
+		{Kind: simulate.NullWeightShuffle},
+	}
+	cp.Seeds = []uint64{4}
+	protocol := writeCompareProtocol(t, dir, "derived-compare.json", cp)
+
+	report, raw := runCompare(t, "simulate", "compare", "--store", store, "--protocol", protocol, "--params", paramsPath)
+	if report.ParameterSource != "derived_release/v1" || report.ParameterSetSHA256 != sum {
+		t.Fatalf("derived compare provenance = %s", raw)
+	}
+	if len(report.Cells) != 4 {
+		t.Fatalf("got %d cells, want 1 original and 3 kinds x 1 seed", len(report.Cells))
+	}
+	for _, cell := range report.Cells {
+		if cell.Metrics[0].Defined {
+			t.Fatalf("cell %d reports a defined metric over an empty set: %+v", cell.Index, cell.Metrics)
+		}
+		if cell.Thresholds[0].Passed || cell.Thresholds[0].Reason != "undefined" {
+			t.Fatalf("cell %d threshold = %+v", cell.Index, cell.Thresholds)
+		}
+	}
+	for _, summary := range report.Summary {
+		for _, perKind := range summary.PerKind {
+			if perKind.Defined != 0 || perKind.Quantiles != [5]float64{} {
+				t.Fatalf("summary %+v claims a distribution of undefined values", perKind)
+			}
+		}
+	}
+}
+
+func TestSimulateCompareFailuresAndHelp(t *testing.T) {
+	dir, store := compareStore(t)
+	valid := writeCompareProtocol(t, dir, "valid-compare.json", uniformCompareProtocol(4))
+
+	unknownKind := uniformCompareProtocol(4)
+	unknownKind.NullModels = []simulate.NullModelSpec{{Kind: "rewire", SwapFactor: 1}}
+	unknownKindPath := writeCompareProtocol(t, dir, "unknown-kind.json", unknownKind)
+
+	duplicateSeed := uniformCompareProtocol(4)
+	duplicateSeed.Seeds = []uint64{3, 3}
+	duplicateSeedPath := writeCompareProtocol(t, dir, "duplicate-seed.json", duplicateSeed)
+
+	strayThreshold := uniformCompareProtocol(4)
+	strayThreshold.Thresholds = []simulate.Threshold{{Metric: "absent", Op: simulate.OpAtLeast, Value: 1}}
+	strayThresholdPath := writeCompareProtocol(t, dir, "stray-threshold.json", strayThreshold)
+
+	signOnUniform := uniformCompareProtocol(4)
+	signOnUniform.NullModels = []simulate.NullModelSpec{{Kind: simulate.NullSignShuffle}}
+	signOnUniformPath := writeCompareProtocol(t, dir, "sign-on-uniform.json", signOnUniform)
+
+	runProtocol := writeProtocol(t, dir, "plain-run.json", lifSimulateProtocol(4))
+
+	malformed := filepath.Join(dir, "malformed-compare.json")
+	if err := os.WriteFile(malformed, []byte(`{"schema_version":"coimnet-simulate-compare/v1",}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	existing := filepath.Join(dir, "existing-out")
+	if err := os.Mkdir(existing, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	derivedDir, derivedStore, rules := deriveFixture(t)
+	paramsPath, _ := deriveParameterSet(t, derivedDir, derivedStore, rules, "fail-params.coimparams")
+
+	for name, args := range map[string][]string{
+		"no flags":            {"simulate", "compare"},
+		"no store":            {"simulate", "compare", "--protocol", valid},
+		"no protocol":         {"simulate", "compare", "--store", store},
+		"missing protocol":    {"simulate", "compare", "--store", store, "--protocol", filepath.Join(dir, "absent.json")},
+		"malformed protocol":  {"simulate", "compare", "--store", store, "--protocol", malformed},
+		"run protocol":        {"simulate", "compare", "--store", store, "--protocol", runProtocol},
+		"unknown kind":        {"simulate", "compare", "--store", store, "--protocol", unknownKindPath},
+		"duplicate seed":      {"simulate", "compare", "--store", store, "--protocol", duplicateSeedPath},
+		"threshold no metric": {"simulate", "compare", "--store", store, "--protocol", strayThresholdPath},
+		"sign on uniform":     {"simulate", "compare", "--store", store, "--protocol", signOnUniformPath},
+		"existing out-dir":    {"simulate", "compare", "--store", store, "--protocol", valid, "--out-dir", existing},
+		"uniform with params": {"simulate", "compare", "--store", store, "--protocol", valid, "--params", paramsPath},
+		"tiny memory":         {"simulate", "compare", "--store", store, "--protocol", valid, "--max-memory-bytes", "16"},
+		"positional":          {"simulate", "compare", "--store", store, "--protocol", valid, "extra"},
+		"unknown flag":        {"simulate", "compare", "--surprise"},
+	} {
+		var out, errout bytes.Buffer
+		if err := Run(context.Background(), args, &out, &errout); err == nil {
+			t.Errorf("%s accepted", name)
+		}
+	}
+
+	// The derived source still requires its parameter set.
+	derivedCompare := uniformCompareProtocol(4)
+	derivedCompare.Run = derivedSimulateProtocol(4, "exclude", 2)
+	derivedCompare.Run.Probes = []simulate.Probe{{Name: "population", Nodes: []int{0, 1}, Reduce: simulate.ReduceSpikeFraction}}
+	derivedCompare.Sets = []simulate.NamedSet{{Name: "unlabeled", Selectors: []simulate.Selector{{Field: "class", Equals: "ALIN", AllowEmpty: true}}}}
+	derivedCompare.Metrics = []simulate.Metric{{Name: "unlabeled_rate", Kind: simulate.MetricMeanRate, Set: "unlabeled", Window: [2]int{0, 4}}}
+	derivedCompare.Thresholds = nil
+	derivedCompare.NullModels = []simulate.NullModelSpec{{Kind: simulate.NullSignShuffle}}
+	derivedCompare.Seeds = []uint64{1}
+	derivedPath := writeCompareProtocol(t, derivedDir, "needs-params.json", derivedCompare)
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "compare", "--store", derivedStore, "--protocol", derivedPath}, &out, &errout); err == nil {
+		t.Error("a derived compare ran without --params")
+	}
+
+	out.Reset()
+	if err := Run(context.Background(), []string{"simulate", "compare", "--help"}, &out, &errout); err != nil {
+		t.Fatal(err)
+	}
+	for _, word := range []string{"--store", "--protocol", "--params", "--out-dir", "Example:", "Errors:", "Options:",
+		"degree_preserving_rewire", "sign_shuffle", "weight_shuffle"} {
+		if !strings.Contains(out.String(), word) {
+			t.Fatalf("simulate compare help missing %s:\n%s", word, out.String())
+		}
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"simulate"}, &out, &errout); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out.String(), "simulate compare") {
+		t.Fatalf("simulate usage = %s", out.String())
+	}
+	out.Reset()
+	if err := Run(context.Background(), []string{"--help"}, &out, &errout); err != nil || !strings.Contains(out.String(), "simulate compare") {
+		t.Fatalf("overview missing simulate compare: %v\n%s", err, out.String())
 	}
 }

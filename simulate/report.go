@@ -62,12 +62,18 @@ type Monitors struct {
 // bytes. StepsBefore and StepsAfter are the core step counter around this call,
 // so a run continued from a saved state can be audited.
 type RunReport struct {
-	SchemaVersion   string      `json:"schema_version"`
-	Core            string      `json:"core"`
-	CoreConfigHash  string      `json:"core_config_hash"`
-	GraphHashes     GraphHashes `json:"graph_hashes"`
-	ParameterSource string      `json:"parameter_source"`
-	ParameterHash   string      `json:"parameter_hash"`
+	SchemaVersion  string      `json:"schema_version"`
+	Core           string      `json:"core"`
+	CoreConfigHash string      `json:"core_config_hash"`
+	GraphHashes    GraphHashes `json:"graph_hashes"`
+	// TopologyHash fingerprints the edge arrays the run was executed on: the
+	// graph's own wiring for an original run, the derivative's for a null
+	// model. NullModel is present only for a null model and records the kind,
+	// the seed and the counts a reader needs to rebuild the same derivative.
+	TopologyHash    string           `json:"topology_hash"`
+	NullModel       *NullModelReport `json:"null_model,omitempty"`
+	ParameterSource string           `json:"parameter_source"`
+	ParameterHash   string           `json:"parameter_hash"`
 	// The five fields below describe the derived parameter source and are
 	// absent from a report of the uniform source. UnknownSignEdges is a
 	// pointer so that a derived run with no unknown edge still reports the

@@ -1,0 +1,17 @@
+# first failing state for ticket 14 stage one, recorded before any implementation
+# 2026-09-14T21:17:05Z   5:17  up 9 days, 10:55, 1 user, load averages: 1.32 1.38 1.59
+$ go test -count=1 ./internal/cli/
+# github.com/TimLai666/coimnet/internal/cli [github.com/TimLai666/coimnet/internal/cli.test]
+internal/cli/simulate_test.go:641:49: undefined: simulate.CompareProtocol
+internal/cli/simulate_test.go:645:18: undefined: simulate.CompareProtocol
+internal/cli/simulate_test.go:646:27: undefined: simulate.CompareProtocolSchemaVersion
+internal/cli/simulate_test.go:648:20: undefined: simulate.NamedSet
+internal/cli/simulate_test.go:652:23: undefined: simulate.Metric
+internal/cli/simulate_test.go:653:40: undefined: simulate.MetricSpikeFraction
+internal/cli/simulate_test.go:654:36: undefined: simulate.MetricMeanRate
+internal/cli/simulate_test.go:656:26: undefined: simulate.Threshold
+internal/cli/simulate_test.go:657:40: undefined: simulate.OpAtLeast
+internal/cli/simulate_test.go:668:71: undefined: simulate.CompareProtocol
+internal/cli/simulate_test.go:657:40: too many errors
+FAIL	github.com/TimLai666/coimnet/internal/cli [build failed]
+FAIL
