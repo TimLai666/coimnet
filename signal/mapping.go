@@ -64,6 +64,7 @@ func (s MappingSpec) Validate() error {
 
 // MappingEntry exposes the persisted continuous index assigned to one opaque
 // neuron identifier.
+// Decode persisted mappings with DecodeMapping to validate every entry.
 type MappingEntry struct {
 	Namespace  string `json:"namespace"`
 	ExternalID string `json:"external_id"`
@@ -190,18 +191,28 @@ func (m Mapping) ValidateAgainst(available []NeuronID) error {
 	return nil
 }
 
+type mappingEntryJSON struct {
+	Namespace  string          `json:"namespace"`
+	ExternalID string          `json:"external_id"`
+	Index      jsonNumber[int] `json:"index"`
+}
+
 type mappingJSON struct {
-	SchemaVersion Version        `json:"schema_version"`
-	Source        string         `json:"source"`
-	InputShape    []int          `json:"input_shape"`
-	Entries       []MappingEntry `json:"entries"`
+	SchemaVersion Version            `json:"schema_version"`
+	Source        string             `json:"source"`
+	InputShape    []int              `json:"input_shape"`
+	Entries       []mappingEntryJSON `json:"entries"`
 }
 
 func (m Mapping) MarshalJSON() ([]byte, error) {
 	if err := m.Validate(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(mappingJSON{SchemaVersion: m.schemaVersion, Source: m.source, InputShape: append([]int(nil), m.inputShape...), Entries: m.Entries()})
+	entries := make([]mappingEntryJSON, len(m.neurons))
+	for i, id := range m.neurons {
+		entries[i] = mappingEntryJSON{Namespace: id.Namespace, ExternalID: id.ExternalID, Index: jsonNumber[int]{i}}
+	}
+	return json.Marshal(mappingJSON{SchemaVersion: m.schemaVersion, Source: m.source, InputShape: append([]int(nil), m.inputShape...), Entries: entries})
 }
 
 func (m *Mapping) UnmarshalJSON(data []byte) error {
@@ -214,8 +225,8 @@ func (m *Mapping) UnmarshalJSON(data []byte) error {
 	}
 	neurons := make([]NeuronID, len(raw.Entries))
 	for i, entry := range raw.Entries {
-		if entry.Index != i {
-			return fmt.Errorf("entries[%d] has index %d; want contiguous index %d", i, entry.Index, i)
+		if entry.Index.value != i {
+			return fmt.Errorf("entries[%d] has index %d; want contiguous index %d", i, entry.Index.value, i)
 		}
 		neurons[i] = NeuronID{Namespace: entry.Namespace, ExternalID: entry.ExternalID}
 	}

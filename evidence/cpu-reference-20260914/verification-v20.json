@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scope": "CPU reference and named signal JSON contracts; not whole-brain or GPU validation",
+  "source_files": 117,
+  "source_sha256": "5855c48f5678f4417c5061bfb09b9969da0532977b0d75c1c2a0abf96d04e418",
+  "source_archive": {
+    "snapshot": "/private/tmp/coimnet-validate-v20.pbz0cv2x",
+    "archive": "/private/tmp/coimnet-validate-v20.pbz0cv2x.tgz",
+    "sha256": "61b26608eb2e885d6f34ef3db4e5f06d901544ca95886d5b3c887499faf7a6d0",
+    "source_files": 117
+  },
+  "source_manifests_identical": true,
+  "working_tree_matches_source_manifest": true,
+  "platforms": {
+    "macos-v20": {
+      "passed": true,
+      "log": "macos-v20/validation.log",
+      "source_manifest": "macos-v20/source.sha256",
+      "signal_log": "macos-v20/signal.log"
+    },
+    "ubuntu-v20": {
+      "passed": true,
+      "log": "ubuntu-v20/validation.log",
+      "source_manifest": "ubuntu-v20/source.sha256",
+      "signal_log": "ubuntu-v20/signal.log"
+    }
+  },
+  "windows": {
+    "command": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...",
+    "exit_code": 0,
+    "runtime_tested": false
+  },
+  "gpu_tested": false
+}

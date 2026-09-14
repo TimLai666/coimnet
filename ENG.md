@@ -33,6 +33,7 @@
 - 圖儲存（`coimnet-graph-store/v1`）用自訂固定寬度區段加 JSON footer：`node_ids`、`node_meta`、`edges`、`batch_starts`、`report` 各有 offset／length／SHA-256，footer 另有 SHA-256 與 magic 尾記；檔案不含時間戳，同一張圖位元組相同。發布沿用 checkpoint 的暫存檔＋hardlink＋目錄同步語意（實作各自保有）。讀回逐段校驗並重算三個結果 hash，結構不合法（順序、索引、列號、非有限值）即使 hash 一致也拒絕。store 不複製 weights 原件，只保存路徑、指紋與掃描設定。
 - `LoadWithReceipt` 從同一個已開啟檔案取得通過校驗的位元組並計算整檔 SHA-256，CLI 不重新開啟路徑取 hash。載入回條不宣告寫入耐久性。圖陣列、metadata、字串暫存、footer／report 輸入長度及 strict decoder 輸入副本、五段讀取緩衝在配置前計入限制；乘積先檢查溢位，各項分開保留以避免加總溢位。此帳面限制不含 Go 配置餘量、解碼後 JSON 物件與執行環境，不能當成 RSS 上限。未知 converter 版本拒絕讀取。
 - 所有嚴格 JSON 入口限制 64 層路徑深度；重複鍵依 Unicode simple fold 比對，涵蓋 `encoding/json` 接受的大小寫別名。錯誤路徑使用堆疊，僅回報錯誤時組字串。
+- 訊號套件的數值 JSON 欄位保留型別資訊到驗證結束，明確 `null` 必須拒絕，不能由 Go 解碼器轉成零。已宣告可空的品質分數及有效範圍保持可空，省略欄位沿用既有預設。嚴格檔案入口使用 `DecodeSignal`／各容器解碼器，`SignalSpec` 是呼叫端建構資料。錯誤發生時不替換既有物件。
 - 真實子圖範例沿用 manifest 選取、GraphStore 與既有訓練 API。框架不因範例新增模型工廠或圖格式；範例保存選取與初始化假設，人工任務結果與生物行為驗收分開。範例範圍、錯誤及證據由 [ticket 10](docs/tickets/10-real-subgraph-example.md) 管理。
 - 訊號時間點重取樣沿用 `Signal` 與 `Clock`，以整數比率對齊共用零起點。即時入口只接受 `CausalHold`，離線入口可用 `OfflineLinear`，回傳結果標明模式。來源 watermark 封閉其以前的樣本群，同時樣本依序號覆寫，結尾以明示 `HoldLast` 延伸。輸入限持續時間為零的連續／活動／調節樣本，脈衝使用獨立的 `PulseAligner`，固定值區間使用 `IntervalResampler`。容量、錯誤與驗收責任見 [ticket 03](docs/tickets/03-signals.md)，公開用法見 [訊號取樣](docs/signal-resampling.md)。
 - 脈衝時間點以 `ceil(sourceTime * SimulationSteps / SourceTicks)` 對齊，不提前事件。保留每筆數值與來源序號，同一步的碰撞事件逐筆輸出。watermark 嚴格超過目的步的來源位置才整組輸出，`Finish` 只排空事件。時間運算使用精確整數中間值，容量與失敗原子性由 [ticket 03](docs/tickets/03-signals.md) 驗收。

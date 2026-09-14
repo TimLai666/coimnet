@@ -1,0 +1,34 @@
+{
+  "requirement": "SIG-01",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test ./signal -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./..."
+  ],
+  "environment": [
+    "evidence/cpu-reference-20260914/macos-v20/doctor.json",
+    "evidence/cpu-reference-20260914/ubuntu-v20/doctor.json"
+  ],
+  "input_fingerprints": [
+    "evidence/cpu-reference-20260914/macos-v20/source.sha256",
+    "evidence/cpu-reference-20260914/ubuntu-v20/source.sha256"
+  ],
+  "test_log": [
+    "evidence/cpu-reference-20260914/macos-v20/validation.log",
+    "evidence/cpu-reference-20260914/macos-v20/signal.log",
+    "evidence/cpu-reference-20260914/ubuntu-v20/validation.log",
+    "evidence/cpu-reference-20260914/ubuntu-v20/signal.log",
+    "evidence/signal-json-20260914/red.log"
+  ],
+  "observed_result": "All 48 signal package top-level tests/examples passed on Mac and Ubuntu. Continuous, activity, pulse and modulation named numeric sources preserve versions, shape, units, values and metadata through NewSignal/JSON/DecodeSignal. Invalid kind/unit/name/shape/range/encoder/quality are rejected. Ten previously accepted numeric-null fields now fail without replacing receivers; Observation and Target propagate rejection. Explicit zero, optional null quality score/range, existing omitted scalar defaults, int64/uint64 limits and float64 extremes remain supported. An independent negative control restores the five implementation files from ed916bb with the final regression test unchanged and reproduces all ten null acceptances plus the four source-kind null failures.",
+  "limitations": [
+    "Artificial already-decoded numeric sources; media codecs, biological sensory mappings and modulation controllers are not validated by this fixture.",
+    "Strict persistence contracts apply to DecodeSignal/DecodeMapping/DecodeClock/DecodeObservation/DecodeTarget/DecodeFeedback and their runtime JSON types. Plain Go builder specs and standalone MappingEntry use ordinary encoding/json semantics.",
+    "SIG-04 remains unaccepted: full input/output mapping binding/replacement, selection modes and reconstruction provenance are outstanding.",
+    "Windows crosscompile only; Windows runtime and GPU execution were not tested.",
+    "JSON byte/depth limits are not process RSS bounds."
+  ],
+  "details": "evidence/cpu-reference-20260914/verification-v20.json",
+  "regression_reproduction": "evidence/signal-json-20260914/red-reproduction.json"
+}

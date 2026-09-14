@@ -118,17 +118,17 @@ func (c Clock) StepFor(timestamp Timestamp) (int64, error) {
 }
 
 type clockJSON struct {
-	SchemaVersion Version  `json:"schema_version"`
-	Unit          TimeUnit `json:"unit"`
-	StepSize      int64    `json:"step_size"`
-	CurrentStep   int64    `json:"current_step"`
+	SchemaVersion Version           `json:"schema_version"`
+	Unit          TimeUnit          `json:"unit"`
+	StepSize      jsonNumber[int64] `json:"step_size"`
+	CurrentStep   jsonNumber[int64] `json:"current_step"`
 }
 
 func (c Clock) MarshalJSON() ([]byte, error) {
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(clockJSON{SchemaVersion: c.version, Unit: c.unit, StepSize: c.stepSize, CurrentStep: c.currentStep})
+	return json.Marshal(clockJSON{SchemaVersion: c.version, Unit: c.unit, StepSize: jsonNumber[int64]{c.stepSize}, CurrentStep: jsonNumber[int64]{c.currentStep}})
 }
 
 func (c *Clock) UnmarshalJSON(data []byte) error {
@@ -136,14 +136,14 @@ func (c *Clock) UnmarshalJSON(data []byte) error {
 	if err := decodeStrictBytes(data, &raw); err != nil {
 		return err
 	}
-	clock, err := NewClock(raw.SchemaVersion, raw.Unit, raw.StepSize)
+	clock, err := NewClock(raw.SchemaVersion, raw.Unit, raw.StepSize.value)
 	if err != nil {
 		return err
 	}
-	if raw.CurrentStep < 0 {
+	if raw.CurrentStep.value < 0 {
 		return fmt.Errorf("current step must be non-negative")
 	}
-	clock.currentStep = raw.CurrentStep
+	clock.currentStep = raw.CurrentStep.value
 	if err := clock.Validate(); err != nil {
 		return err
 	}

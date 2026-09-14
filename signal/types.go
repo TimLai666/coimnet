@@ -192,7 +192,7 @@ func (q Quality) validate() error {
 }
 
 // SignalSpec is the input to NewSignal. Its slices are copied by the
-// constructor.
+// constructor. Decode untrusted JSON with DecodeSignal, then call Spec.
 type SignalSpec struct {
 	SchemaVersion      Version     `json:"schema_version"`
 	ExperienceID       string      `json:"experience_id"`
@@ -426,21 +426,21 @@ func (s Signal) SourceSequence() uint64     { return s.sourceSequence }
 func (s Signal) InterventionTarget() string { return s.interventionTarget }
 
 type signalJSON struct {
-	SchemaVersion      Version     `json:"schema_version"`
-	ExperienceID       string      `json:"experience_id"`
-	StreamID           string      `json:"stream_id"`
-	Channel            string      `json:"channel"`
-	Kind               SignalKind  `json:"kind"`
-	Start              Timestamp   `json:"start"`
-	Duration           int64       `json:"duration"`
-	Shape              []int       `json:"shape"`
-	Values             []float64   `json:"values"`
-	Unit               SignalUnit  `json:"unit"`
-	ValidRange         *ValueRange `json:"valid_range,omitempty"`
-	Quality            *Quality    `json:"quality"`
-	EncoderVersion     Version     `json:"encoder_version"`
-	SourceSequence     uint64      `json:"source_sequence"`
-	InterventionTarget string      `json:"intervention_target,omitempty"`
+	SchemaVersion      Version            `json:"schema_version"`
+	ExperienceID       string             `json:"experience_id"`
+	StreamID           string             `json:"stream_id"`
+	Channel            string             `json:"channel"`
+	Kind               SignalKind         `json:"kind"`
+	Start              Timestamp          `json:"start"`
+	Duration           jsonNumber[int64]  `json:"duration"`
+	Shape              []int              `json:"shape"`
+	Values             jsonValues         `json:"values"`
+	Unit               SignalUnit         `json:"unit"`
+	ValidRange         *ValueRange        `json:"valid_range,omitempty"`
+	Quality            *Quality           `json:"quality"`
+	EncoderVersion     Version            `json:"encoder_version"`
+	SourceSequence     jsonNumber[uint64] `json:"source_sequence"`
+	InterventionTarget string             `json:"intervention_target,omitempty"`
 }
 
 func (s Signal) MarshalJSON() ([]byte, error) {
@@ -448,10 +448,10 @@ func (s Signal) MarshalJSON() ([]byte, error) {
 	return json.Marshal(signalJSON{
 		SchemaVersion: s.schemaVersion, ExperienceID: s.experienceID,
 		StreamID: s.streamID, Channel: s.channel, Kind: s.kind, Start: s.start,
-		Duration: s.duration, Shape: append([]int(nil), s.shape...),
+		Duration: jsonNumber[int64]{s.duration}, Shape: append([]int(nil), s.shape...),
 		Values: append([]float64(nil), s.values...), Unit: s.unit,
 		ValidRange: s.ValidRange(), Quality: &quality,
-		EncoderVersion: s.encoderVersion, SourceSequence: s.sourceSequence,
+		EncoderVersion: s.encoderVersion, SourceSequence: jsonNumber[uint64]{s.sourceSequence},
 		InterventionTarget: s.interventionTarget,
 	})
 }
@@ -467,10 +467,10 @@ func (s *Signal) UnmarshalJSON(data []byte) error {
 	built, err := NewSignal(SignalSpec{
 		SchemaVersion: raw.SchemaVersion, ExperienceID: raw.ExperienceID,
 		StreamID: raw.StreamID, Channel: raw.Channel, Kind: raw.Kind,
-		Start: raw.Start, Duration: raw.Duration, Shape: raw.Shape,
+		Start: raw.Start, Duration: raw.Duration.value, Shape: raw.Shape,
 		Values: raw.Values, Unit: raw.Unit, ValidRange: raw.ValidRange,
 		Quality: *raw.Quality, EncoderVersion: raw.EncoderVersion,
-		SourceSequence: raw.SourceSequence, InterventionTarget: raw.InterventionTarget,
+		SourceSequence: raw.SourceSequence.value, InterventionTarget: raw.InterventionTarget,
 	})
 	if err != nil {
 		return err
@@ -505,12 +505,14 @@ func (v Version) MarshalJSON() ([]byte, error) {
 }
 
 func (v *Version) UnmarshalJSON(data []byte) error {
-	type versionAlias Version
-	var decoded versionAlias
+	var decoded struct {
+		Major jsonNumber[int] `json:"major"`
+		Minor jsonNumber[int] `json:"minor"`
+	}
 	if err := decodeStrictBytes(data, &decoded); err != nil {
 		return err
 	}
-	value := Version(decoded)
+	value := Version{Major: decoded.Major.value, Minor: decoded.Minor.value}
 	if err := value.validate("version"); err != nil {
 		return err
 	}
@@ -527,12 +529,14 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 }
 
 func (t *Timestamp) UnmarshalJSON(data []byte) error {
-	type timestampAlias Timestamp
-	var decoded timestampAlias
+	var decoded struct {
+		Value jsonNumber[int64] `json:"value"`
+		Unit  TimeUnit          `json:"unit"`
+	}
 	if err := decodeStrictBytes(data, &decoded); err != nil {
 		return err
 	}
-	value := Timestamp(decoded)
+	value := Timestamp{Value: decoded.Value.value, Unit: decoded.Unit}
 	if err := value.validate("timestamp"); err != nil {
 		return err
 	}
@@ -549,12 +553,14 @@ func (r ValueRange) MarshalJSON() ([]byte, error) {
 }
 
 func (r *ValueRange) UnmarshalJSON(data []byte) error {
-	type rangeAlias ValueRange
-	var decoded rangeAlias
+	var decoded struct {
+		Min jsonNumber[float64] `json:"min"`
+		Max jsonNumber[float64] `json:"max"`
+	}
 	if err := decodeStrictBytes(data, &decoded); err != nil {
 		return err
 	}
-	value := ValueRange(decoded)
+	value := ValueRange{Min: decoded.Min.value, Max: decoded.Max.value}
 	if err := (&value).validate(); err != nil {
 		return err
 	}

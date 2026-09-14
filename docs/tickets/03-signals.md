@@ -31,7 +31,8 @@ Status：partial
 - [x] 時間倒退、重複序號、負持續時間與不支援單位拒絕。
 - [x] 相同時間依來源序號排序，空觀察以明確空陣列表示，缺少訊號陣列的 JSON 拒絕。
 - [x] 觀察、Target 與 Feedback 型別分離，回饋取得時間不可提前。
-- [x] 映射持久化後重建一致，未知神經元與維度不符拒絕。
+- [x] 明確神經元集合的映射持久化後重建一致，呼叫外部圖／形狀驗證時拒絕未知神經元與維度不符。
+- [ ] SIG-04 完整輸入／輸出映射保存、替換及模型接合驗收。
 
 ## 驗證證據
 
@@ -101,5 +102,28 @@ Status：partial
 
 ## 限制與未完成
 
-- 自訂 adapter 是固定人工範例，整段完成後才回傳。一般媒體解碼／濾波及生物感官映射尚未完成。SIG-01、SIG-04 待逐項核對原始驗收並補齊證據；SIG-03 的調節控制器資料流要隨控制器實作驗證。多通道保留獨立序號，以神經步號對齊即可，不需要另建共用來源序號。
+- 自訂 adapter 是固定人工範例，整段完成後才回傳。一般媒體解碼／濾波及生物感官映射尚未完成。SIG-04 的完整保存／替換尚未驗收；SIG-03 的調節控制器資料流要隨控制器實作驗證。多通道保留獨立序號，以神經步號對齊即可，不需要另建共用來源序號。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。
+
+## 四種訊號與數值 JSON 驗收
+
+SIG-01 的人工來源 fixture 已通過。`ExampleNewSignal` 示範 vision／audio-activity／events／drive 四種已解碼數值來源的建構、保存與讀回。48 組 signal 測試與範例在 Mac／Ubuntu 通過，117 檔同源 v20 的完整檢查與 Windows 交叉編譯通過。證據見 [SIG-01](../../evidence/SIG-01/verification.json) 與 [審查紀錄](../../evidence/signal-json-20260914/review.md)，完整需求為 17／85。
+
+| 路徑 | 驗收 | 結果 |
+| --- | --- | --- |
+| 具名來源 | continuous／activity／pulse／modulation 保存 schema、encoder 版本、通道、單位、形狀、值與品質 | Mac／Ubuntu 通過 |
+| 型別與 metadata | 拒絕未知種類／單位、空名稱、形狀不符、超出範圍與非法 encoder／品質，建構與匯出資料隔離 | Mac／Ubuntu 通過 |
+| 數值空值 | Signal 值／持續時間／序號、Timestamp、Version、ValueRange、Clock、Mapping index 與 Feedback score 的明確 null 拒絕，失敗不改既有物件 | Mac／Ubuntu 通過 |
+| 巢狀與相容性 | Observation／Target 傳遞數值 null 拒絕；零、可空品質分數／範圍、省略欄位既有預設及整數／浮點極值保留 | Mac／Ubuntu 通過 |
+
+負對照使用最終回歸測試，將五個實作檔還原為 `ed916bb` 後重現十個欄位的 null 被接受，以及四種訊號的 null 值錯誤。命令與測試指紋見 [重現回條](../../evidence/signal-json-20260914/red-reproduction.json)。正式持久化由 `Decode*` 與對應 runtime 型別驗證，Go builder specs 和單筆 `MappingEntry` 的一般 JSON 解碼不是嚴格讀取入口。
+
+## 映射後續驗收範圍
+
+現有 `Mapping` 保存明確外部 ID 集合、順序、來源與輸入形狀，`ValidateAgainst` 由呼叫者提供圖的神經元集合。這項局部測試不涵蓋 SIG-04 的完整使用流程。接續工作須補上：
+
+- 輸入與輸出兩側對外部 ID 的連結，以及更換映射後的維度檢查、舊物件隔離與模型運算證據。
+- 依原規格 §6.4 保存選取來源、seed、投影參數、輸入／輸出維度與神經元集合指紋，並提供明確集合、細胞類型、區域與固定隨機投影的可重建選取方式。
+- 載入或替換時核對實際圖，拒絕不存在的神經元與不相容形狀。
+
+不要求為「替換」另造一個方法名稱。驗收依使用者能安全建立並切換映射的完整行為判斷。

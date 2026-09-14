@@ -178,3 +178,39 @@ func formatJSONPath(path []jsonPathPart) string {
 	}
 	return builder.String()
 }
+
+// jsonNumber preserves the distinction between a numeric zero and JSON null.
+// Omitted scalar fields retain their existing zero-value defaults.
+type jsonNumber[T int | int64 | uint64 | float64] struct{ value T }
+
+func (n jsonNumber[T]) MarshalJSON() ([]byte, error) { return json.Marshal(n.value) }
+
+func (n *jsonNumber[T]) UnmarshalJSON(data []byte) error {
+	if bytes.Equal(bytes.TrimSpace(data), []byte("null")) {
+		return fmt.Errorf("numeric JSON value must not be null")
+	}
+	var value T
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	n.value = value
+	return nil
+}
+
+// jsonValues uses the ordinary numeric array representation when marshaling.
+type jsonValues []float64
+
+func (v *jsonValues) UnmarshalJSON(data []byte) error {
+	// A valid numeric array cannot contain this literal. Other invalid types
+	// (including strings containing "null") are rejected by the slice decoder.
+	// Check the bytes once so large arrays do not need per-number decoders.
+	if bytes.Contains(data, []byte("null")) {
+		return fmt.Errorf("numeric JSON array must not contain null")
+	}
+	var values []float64
+	if err := json.Unmarshal(data, &values); err != nil {
+		return err
+	}
+	*v = values
+	return nil
+}

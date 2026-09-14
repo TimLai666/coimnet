@@ -327,21 +327,21 @@ func (f Feedback) Score() float64         { return f.score }
 func (f Feedback) ModelVersion() Version  { return f.modelVersion }
 
 type feedbackJSON struct {
-	SchemaVersion Version   `json:"schema_version"`
-	ExperienceID  string    `json:"experience_id"`
-	ActionID      string    `json:"action_id"`
-	ProducedAt    Timestamp `json:"produced_at"`
-	AvailableAt   Timestamp `json:"available_at"`
-	Source        string    `json:"source"`
-	Score         float64   `json:"score"`
-	ModelVersion  Version   `json:"model_version"`
+	SchemaVersion Version             `json:"schema_version"`
+	ExperienceID  string              `json:"experience_id"`
+	ActionID      string              `json:"action_id"`
+	ProducedAt    Timestamp           `json:"produced_at"`
+	AvailableAt   Timestamp           `json:"available_at"`
+	Source        string              `json:"source"`
+	Score         jsonNumber[float64] `json:"score"`
+	ModelVersion  Version             `json:"model_version"`
 }
 
 func (f Feedback) MarshalJSON() ([]byte, error) {
 	if err := f.Validate(); err != nil {
 		return nil, err
 	}
-	return json.Marshal(feedbackJSON{SchemaVersion: f.schemaVersion, ExperienceID: f.experienceID, ActionID: f.actionID, ProducedAt: f.producedAt, AvailableAt: f.availableAt, Source: f.source, Score: f.score, ModelVersion: f.modelVersion})
+	return json.Marshal(feedbackJSON{SchemaVersion: f.schemaVersion, ExperienceID: f.experienceID, ActionID: f.actionID, ProducedAt: f.producedAt, AvailableAt: f.availableAt, Source: f.source, Score: jsonNumber[float64]{f.score}, ModelVersion: f.modelVersion})
 }
 
 func (f *Feedback) UnmarshalJSON(data []byte) error {
@@ -349,7 +349,7 @@ func (f *Feedback) UnmarshalJSON(data []byte) error {
 	if err := decodeStrictBytes(data, &raw); err != nil {
 		return err
 	}
-	built, err := NewFeedback(FeedbackSpec{SchemaVersion: raw.SchemaVersion, ExperienceID: raw.ExperienceID, ActionID: raw.ActionID, ProducedAt: raw.ProducedAt, AvailableAt: raw.AvailableAt, Source: raw.Source, Score: raw.Score, ModelVersion: raw.ModelVersion})
+	built, err := NewFeedback(FeedbackSpec{SchemaVersion: raw.SchemaVersion, ExperienceID: raw.ExperienceID, ActionID: raw.ActionID, ProducedAt: raw.ProducedAt, AvailableAt: raw.AvailableAt, Source: raw.Source, Score: raw.Score.value, ModelVersion: raw.ModelVersion})
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,58 @@
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/signal_value
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[null,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7}
+    json_numbers_test.go:58: failed decode changed receiver: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7} -> {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/duration
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":null,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7}
+    json_numbers_test.go:58: failed decode changed receiver: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7} -> {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":0,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/sequence
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":null}
+    json_numbers_test.go:58: failed decode changed receiver: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":7} -> {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","stream_id":"stream-1","channel":"vision","kind":"continuous","start":{"value":3,"unit":"ms"},"duration":1,"shape":[2],"values":[0.25,0.75],"unit":"normalized","quality":{"label":""},"encoder_version":{"major":1,"minor":0},"source_sequence":0}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/timestamp
+    json_numbers_test.go:51: accepted numeric null: {"value":null,"unit":"ms"}
+    json_numbers_test.go:58: failed decode changed receiver: {"value":3,"unit":"ms"} -> {"value":0,"unit":"ms"}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/version
+    json_numbers_test.go:51: accepted numeric null: {"major":1,"minor":null}
+    json_numbers_test.go:58: failed decode changed receiver: {"major":1,"minor":2} -> {"major":1,"minor":0}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/range_min
+    json_numbers_test.go:51: accepted numeric null: {"min":null,"max":1}
+    json_numbers_test.go:58: failed decode changed receiver: {"min":-1,"max":1} -> {"min":0,"max":1}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/range_max
+    json_numbers_test.go:51: accepted numeric null: {"min":-1,"max":null}
+    json_numbers_test.go:58: failed decode changed receiver: {"min":-1,"max":1} -> {"min":-1,"max":0}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/clock
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"unit":"ms","step_size":1,"current_step":null}
+    json_numbers_test.go:58: failed decode changed receiver: {"schema_version":{"major":1,"minor":0},"unit":"ms","step_size":1,"current_step":3} -> {"schema_version":{"major":1,"minor":0},"unit":"ms","step_size":1,"current_step":0}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/mapping_index
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"source":"fixture","input_shape":[1],"entries":[{"namespace":"fixture","external_id":"cell-1","index":null}]}
+=== RUN   TestJSONRejectsNullNumbersWithoutChangingReceiver/feedback_score
+    json_numbers_test.go:51: accepted numeric null: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","action_id":"act-1","produced_at":{"value":0,"unit":"ms"},"available_at":{"value":1,"unit":"ms"},"source":"fixture","score":null,"model_version":{"major":1,"minor":0}}
+    json_numbers_test.go:58: failed decode changed receiver: {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","action_id":"act-1","produced_at":{"value":0,"unit":"ms"},"available_at":{"value":1,"unit":"ms"},"source":"fixture","score":0.5,"model_version":{"major":1,"minor":0}} -> {"schema_version":{"major":1,"minor":0},"experience_id":"exp-1","action_id":"act-1","produced_at":{"value":0,"unit":"ms"},"available_at":{"value":1,"unit":"ms"},"source":"fixture","score":0,"model_version":{"major":1,"minor":0}}
+--- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/signal_value (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/duration (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/sequence (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/timestamp (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/version (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/range_min (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/range_max (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/clock (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/mapping_index (0.00s)
+    --- FAIL: TestJSONRejectsNullNumbersWithoutChangingReceiver/feedback_score (0.00s)
+=== RUN   TestSignalJSONNumericValuesAndNullableMetadata
+=== RUN   TestSignalJSONNumericValuesAndNullableMetadata/continuous
+    json_numbers_test.go:95: accepted nonnumeric value null
+=== RUN   TestSignalJSONNumericValuesAndNullableMetadata/activity
+    json_numbers_test.go:95: accepted nonnumeric value null
+=== RUN   TestSignalJSONNumericValuesAndNullableMetadata/pulse
+    json_numbers_test.go:95: accepted nonnumeric value null
+=== RUN   TestSignalJSONNumericValuesAndNullableMetadata/modulation
+    json_numbers_test.go:95: accepted nonnumeric value null
+--- FAIL: TestSignalJSONNumericValuesAndNullableMetadata (0.00s)
+    --- FAIL: TestSignalJSONNumericValuesAndNullableMetadata/continuous (0.00s)
+    --- FAIL: TestSignalJSONNumericValuesAndNullableMetadata/activity (0.00s)
+    --- FAIL: TestSignalJSONNumericValuesAndNullableMetadata/pulse (0.00s)
+    --- FAIL: TestSignalJSONNumericValuesAndNullableMetadata/modulation (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/signal	0.426s
+FAIL

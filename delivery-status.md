@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-多通道自訂 adapter 已接上既有核心：不同頻率的連續值、區間與脈衝轉成固定步數與欄位，缺值另有標記。115 檔同源的 Mac／Ubuntu v19 完整檢查通過，詳見 [整合驗證](evidence/multichannel-20260914/verification.json)。SIG-02、SIG-05 fixture 驗收通過，完整需求為 16／85。
+四種具名訊號來源的 SIG-01 fixture 驗收通過，修正 JSON 數值 null 被當成零的問題。117 檔同源的 Mac／Ubuntu v20 完整檢查與 Windows 交叉編譯通過，詳見 [訊號驗證](evidence/SIG-01/verification.json)。完整需求為 17／85。多通道 adapter 的 SIG-02、SIG-05 驗收維持通過。
 
 真實子圖選取及短訓練範例已完成驗證（ticket 10、DAT-07）。原件與既有完整圖保持不變，證據見 [real-subgraph](evidence/real-subgraph-20260914/verification.json)。
 
@@ -12,7 +12,7 @@
 
 [10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
 
-下一階段核對 SIG-01 的多種訊號來源與 SIG-04 的映射保存／替換，補齊原始驗收證據（ticket 03）。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
+下一階段完成 SIG-04 的輸入／輸出映射保存、替換與模型接合。現有明確 ID 集合往返只完成局部流程，還需依 §6.4 保存選取與投影的重建資料（ticket 03）。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
 ## 進行中
 
@@ -20,7 +20,7 @@
 | --- | --- | --- | --- | --- |
 | 01 | 開發者可核對環境與 Insyra 實際能力 | 主 agent / API 查核 agent | verified_scoped | Mac 與 Ubuntu 實際 doctor、Insyra 數值探測通過 |
 | 02 | 使用者可計算稀疏前向與完整梯度 | sparse agent | verified_scoped | 手算、獨立稠密參考、形狀錯誤、有限差分已通過 |
-| 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | 型別、映射、嚴格 JSON、時間點／脈衝／區間與多通道核心整合通過；其餘訊號需求逐項核對 |
+| 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | SIG-01／02／05／06 fixture 已通過；SIG-04 完整映射與 SIG-03 控制器資料流待完成 |
 | 04 | 研究者可訓練連續核心 | 主 agent | verified_scoped | 報告 v2 只置換訓練標籤並拒絕資料流重疊；Mac/Ubuntu v5 來源三個 seed 皆通過 |
 | 05 | 使用者可中斷並接續學習 | sparse agent / 主 agent | verified_scoped | 新程序完整參數與 Adam 狀態一致，特殊檔案及輸出錯誤回歸測試通過；完整持續個體另做 |
 | 06 | 使用者可保存並續傳官方資料 | sparse agent / 主 agent | verified_scoped | 三份官方原件共 1,109,008,094 bytes，CRC32C 全通過；v4 CLI 另實測自動 CRC32C 驗證 |
@@ -39,9 +39,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-[03 訊號對齊](docs/tickets/03-signals.md)：逐項核對 SIG-01、SIG-04 現有公開 API 與測試，補上來源轉換與映射保存／替換的驗收缺口及證據。多通道 adapter、時間點的因果／離線處理、脈衝事件與固定值區間的分塊尾端均已驗證。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
+[03 訊號對齊](docs/tickets/03-signals.md)：補上 SIG-04 的輸入／輸出映射連結、安全替換與實際圖驗證，保存來源、seed、投影參數、輸入／輸出維度及神經元集合指紋，並驗證各選取方式可重建。多通道 adapter、時間點的因果／離線處理、脈衝事件與固定值區間的分塊尾端均已驗證。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
 
-圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 16 項附上通過證據，其餘保留。最新全套日誌見 [Mac v19](evidence/cpu-reference-20260914/macos-v19/validation.log)、[Ubuntu v19](evidence/cpu-reference-20260914/ubuntu-v19/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v19.json)。
+圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 17 項附上通過證據，其餘保留。最新全套日誌見 [Mac v20](evidence/cpu-reference-20260914/macos-v20/validation.log)、[Ubuntu v20](evidence/cpu-reference-20260914/ubuntu-v20/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v20.json)。
 
 ## 決策紀錄
 
@@ -58,6 +58,8 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 2026-09-13：使用者明確界定 repo 僅提供框架，特定模型的訓練程式與模型限定為範例。維持原需求，五類任務與全圖訓練採範例／驗收流程。資源量測寫入 [resources](docs/resources.md)，現有神經網路的關係與可選機制寫入 [model-and-mechanisms](docs/model-and-mechanisms.md)。機制可選沿用原規格，不新增無法查證的全生物機制模式。
 
 2026-09-14：ticket 03 的多通道範例保留各串流的來源序號，以共同神經步號填入矩陣，缺值用 presence 區分。同一步脈衝只在範例內明示加總，核心 API 保持通用。
+
+2026-09-14：訊號持久化數值欄位拒絕明確 null，已宣告可空的品質分數／範圍與省略欄位預設保持原語意。SIG-01 依四種人工數值來源驗收，媒體解碼與生物映射分開追蹤。SIG-04 的明確集合局部測試不取代完整保存／替換流程。
 
 ## 來源與接手
 
