@@ -42,7 +42,12 @@ Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選�
 - `Neuprint_Meta.csv`：欄位含 `voxelSize float[]`、`primaryRois string[]`、`superLevelRois`、
   `totalPreCount`、`totalPostCount`、`postHighAccuracyThreshold`／`preHPThreshold`／
   `postHPThreshold`；本票只讀 `roiHierarchy`、`roiInfo` 與門檻欄位。
-- `syn-partners`：下載中（6.78 GB），schema 待 `data inspect`。
+- `syn-partners`：311,833,243 列、4,759 批（等於 `Neuprint_Meta.csv` 的 `totalPostCount`，也等於
+  weights 的 weight 總和 311,833,243，交叉核對點）。11 欄皆 nullable：`x_pre`／`y_pre`／`z_pre int32`、
+  `body_pre int64`、`conf_pre float32`、`x_post`／`y_post`／`z_post int32`、`body_post int64`、
+  `conf_post float32`、`primary_post dictionary<int16,utf8,ordered>`。`data inspect` 逐批讀完 13.35 秒、
+  peak RSS 135 MB（負載平均 6.0，另有其他工作同時執行）。tbar 的 `(x,y,z)` 對應本檔的
+  `(x_pre,y_pre,z_pre)`；配對率須在實作時以真實資料抽樣核對並寫進報告。
 
 ## Root 決策（2026-09-14）
 
