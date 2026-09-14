@@ -3,7 +3,7 @@ set -euo pipefail
 
 if [[ $# != 1 || $1 == --help || $1 == -h ]]; then
   echo 'Usage: scripts/verify.sh NEW_OUTPUT_DIRECTORY'
-  echo 'Runs build, tests, race, vet, module verification, doctor and the delayed fixture.'
+  echo 'Runs build, tests, race, vet, module verification, doctor, the delayed fixture and the lif-threshold fixture.'
   echo 'The output directory must not exist. Run from the repository root with Go on PATH.'
   if [[ $# == 1 && ($1 == --help || $1 == -h) ]]; then exit 0; fi
   exit 2
@@ -50,6 +50,7 @@ run go build -o "$output/coimnet" ./cmd/coimnet
 "$output/coimnet" doctor > "$output/doctor.json"
 "$output/coimnet" data sources > "$output/data-sources.json"
 "$output/coimnet" examples run delayed > "$output/delayed.json"
+"$output/coimnet" examples run lif-threshold > "$output/lif-threshold.json"
 "$output/coimnet" train delayed --steps 80 --checkpoint "$output/first.json" > "$output/train-first.json"
 "$output/coimnet" resume --checkpoint "$output/first.json" --steps 40 --out "$output/resumed.json" > "$output/train-resumed.json"
 "$output/coimnet" train delayed --steps 120 --checkpoint "$output/continuous.json" > "$output/train-continuous.json"
