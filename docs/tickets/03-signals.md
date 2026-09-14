@@ -10,7 +10,7 @@ Status：partial
 
 ## 交付
 
-提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射及連續值時間點重取樣。
+提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射、連續值時間點重取樣及脈衝事件對齊。
 
 ## 已完成
 
@@ -54,7 +54,22 @@ Status：partial
 
 測試來源：`signal/resample_test.go`、`resample_edges_test.go` 與 `resample_example_test.go`。初始失敗日誌及後續結果見 `evidence/signal-resampling-20260914/`。
 
+## 脈衝事件契約與驗收
+
+`NewPulseAligner` 接受單通道、固定 metadata 的 `pulse` 時間點，映射至 `ceil(sourceTime × SimulationSteps / SourceTicks)`，輸出保留每筆來源序號及值。同一步的事件按來源時間及序號逐筆輸出，沒有振幅覆寫、加總或保持。所有資料由呼叫者提供，不新增外部資料、資料庫或格式遷移。
+
+| 路徑 | 驗收 | 狀態 |
+| --- | --- | --- |
+| 呼叫與下游 | `Push`／`Finish` 產生 Signal，可建 Observation；Go example 展示保留 10／20 序號的同一步事件 | Mac／Ubuntu 通過 |
+| 碰撞與分塊 | 目的步來源位置嚴格早於 watermark 才輸出全組；5 筆事件所有 16 種切塊結果相同；未封閉同時群可補較小序號 | Mac／Ubuntu 通過 |
+| 數值與排序 | 整數比率對照獨立大整數；128 位元乘積、商進位及 Clock 溢位拒絕；來源序號不連續仍保留 | Mac／Ubuntu 通過 |
+| 空值與結束 | nil／空輸入不產生空白步號或 held tail；nil context／零實例拒絕；Finish 排空且只成功一次 | Mac／Ubuntu 通過 |
+| 錯誤與重試 | 重複／舊序號、時間倒退、metadata／種類／持續時間／單位錯誤、取消及容量超限均不提交狀態，可重試 | Mac／Ubuntu 通過 |
+| 容量 | pending＋incoming 受事件數上限；`(2 × (pending + incoming) + 1) × valuesPerSignal` 在 payload 驗證前檢查，保留候選輸入／輸出及一筆來源事件 | Mac／Ubuntu 通過 |
+
+初始缺少公開 API 的失敗測試、8 組測試與可執行範例、107 檔同源的 Mac／Ubuntu v15 完整驗證見 [脈衝證據](../../evidence/pulse-alignment-20260914/verification.json)。本次只完成 SIG-02 的脈衝時間點部分，完整需求通過數維持 14／85。
+
 ## 限制與未完成
 
-- 跨頻率的連續值取樣與分塊已實作。區間訊號、脈衝事件對齊、媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
+- 跨頻率的連續值取樣與分塊已實作。區間訊號、媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。

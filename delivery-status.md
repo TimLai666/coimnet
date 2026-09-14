@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-連續值時間點重取樣已完成：即時因果保持、離線線性插值、整數比率對齊與分塊結尾。103 檔同源的 Mac／Ubuntu v14 完整檢查通過，詳見 [取樣驗證](evidence/signal-resampling-20260914/verification.json)。ticket 03 的脈衝／區間與自訂 adapter 整合繼續處理。
+脈衝事件對齊已完成：保留每筆事件、整數比率向上對齊、同一步整組輸出與失敗後重試。107 檔同源的 Mac／Ubuntu v15 完整檢查通過，詳見 [脈衝驗證](evidence/pulse-alignment-20260914/verification.json)。連續值因果／離線取樣沿用既有驗證，ticket 03 接續區間訊號與自訂 adapter 整合。
 
 真實子圖選取及短訓練範例已完成驗證（ticket 10、DAT-07）。原件與既有完整圖保持不變，證據見 [real-subgraph](evidence/real-subgraph-20260914/verification.json)。
 
@@ -12,7 +12,7 @@
 
 [10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
 
-下一階段補完脈衝／區間訊號對齊與多通道 adapter 的核心整合（ticket 03）。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
+下一階段補完區間訊號對齊與多通道 adapter 的核心整合（ticket 03）。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
 ## 進行中
 
@@ -20,7 +20,7 @@
 | --- | --- | --- | --- | --- |
 | 01 | 開發者可核對環境與 Insyra 實際能力 | 主 agent / API 查核 agent | verified_scoped | Mac 與 Ubuntu 實際 doctor、Insyra 數值探測通過 |
 | 02 | 使用者可計算稀疏前向與完整梯度 | sparse agent | verified_scoped | 手算、獨立稠密參考、形狀錯誤、有限差分已通過 |
-| 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | 型別、映射、嚴格 JSON 及連續值重取樣通過；脈衝／區間與多通道 adapter 待做 |
+| 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | 型別、映射、嚴格 JSON、連續值及脈衝對齊通過；區間與多通道 adapter 待做 |
 | 04 | 研究者可訓練連續核心 | 主 agent | verified_scoped | 報告 v2 只置換訓練標籤並拒絕資料流重疊；Mac/Ubuntu v5 來源三個 seed 皆通過 |
 | 05 | 使用者可中斷並接續學習 | sparse agent / 主 agent | verified_scoped | 新程序完整參數與 Adam 狀態一致，特殊檔案及輸出錯誤回歸測試通過；完整持續個體另做 |
 | 06 | 使用者可保存並續傳官方資料 | sparse agent / 主 agent | verified_scoped | 三份官方原件共 1,109,008,094 bytes，CRC32C 全通過；v4 CLI 另實測自動 CRC32C 驗證 |
@@ -39,9 +39,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-[03 訊號對齊](docs/tickets/03-signals.md)：補完脈衝／區間的跨頻率規則，再以多通道 adapter 範例接入核心。連續時間點取樣的因果／離線處理及分塊尾端已驗證。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
+[03 訊號對齊](docs/tickets/03-signals.md)：補完區間的跨頻率規則，再以多通道 adapter 範例接入核心。連續時間點取樣的因果／離線處理及分塊尾端已驗證。完整個體狀態、LIF、可塑性、調節與全腦/GPU 驗收都還在原始待辦範圍。
 
-圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 14 項附上通過證據（本次新增 SIG-06），其餘保留。最新全套日誌見 [Mac v14](evidence/cpu-reference-20260914/macos-v14/validation.log)、[Ubuntu v14](evidence/cpu-reference-20260914/ubuntu-v14/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v14.json)。
+圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 14 項附上通過證據，其餘保留。最新全套日誌見 [Mac v15](evidence/cpu-reference-20260914/macos-v15/validation.log)、[Ubuntu v15](evidence/cpu-reference-20260914/ubuntu-v15/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v15.json)。
 
 ## 決策紀錄
 

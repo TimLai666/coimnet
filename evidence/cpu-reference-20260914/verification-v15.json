@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "scope": "CPU reference and pulse alignment; not whole-brain or GPU validation",
+  "source_files": 107,
+  "source_sha256": "b18f78311bac662051a3c89982336c7be62ed62a92e618149947c205251d4411",
+  "source_archive": {
+    "snapshot": "/private/tmp/coimnet-validate-v15.eybv3von",
+    "archive": "/private/tmp/coimnet-validate-v15.eybv3von.tgz",
+    "sha256": "7ff09215c44ff5ef920512b3de9f13a2ac18c9fa08b8cedec479db295691bffc",
+    "source_files": 107
+  },
+  "source_manifests_identical": true,
+  "working_tree_matches_source_manifest": true,
+  "platforms": {
+    "macos-v15": {
+      "passed": true,
+      "log": "macos-v15/validation.log",
+      "source_manifest": "macos-v15/source.sha256"
+    },
+    "ubuntu-v15": {
+      "passed": true,
+      "log": "ubuntu-v15/validation.log",
+      "source_manifest": "ubuntu-v15/source.sha256"
+    }
+  },
+  "windows": {
+    "command": "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...",
+    "exit_code": 0,
+    "runtime_tested": false
+  },
+  "gpu_tested": false
+}
