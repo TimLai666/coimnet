@@ -25,6 +25,15 @@ SDK 先檢查一般檔案、容量與 Arrow IPC file magic，再以固定 Arrow 
 
 容量報告要區分 Arrow 配置器追蹤的位元組與整個程序的實際記憶體，不能互相代替。
 
+## 2026-09-14 型別擴充
+
+為讀取 `tbar-neurotransmitters`（`conf` 與七個 `nt_*_prob` 為 `float32`）與後續發布檔案，
+`supportedType` 與 `validateArray` 擴充到 int8／16／32／64、uint8／16／32／64、float32／64
+（utf8、list、dictionary 不變；bool、date、timestamp、decimal、struct、map、float16、binary、
+large 變體仍拒絕）。Opus 先寫失敗測試（`int16` 被拒）再修，新測試釘住型別字串、null、
+極值與 float32 NaN／Inf 照存回報、bool 仍以原訊息拒絕。真實檔逐批讀取 45,656,140 列、
+697 批、Arrow 配置峰值 8,592,704 bytes，`complete=true`。
+
 ## 官方來源與整合驗證
 
 固定 v4 來源完成 [Mac](../../evidence/cpu-reference-20260913/macos-v4/validation.log) 與 [Ubuntu](../../evidence/cpu-reference-20260913/ubuntu-v4/validation.log) 完整驗證。三份官方原件的 CLI 掃描皆為 `complete=true`，掃描前後 SHA-256 一致，命令與指紋見 [驗證紀錄](../../evidence/malecns-source-20260913/cli-v4/verification.json)。

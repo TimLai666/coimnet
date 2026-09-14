@@ -33,8 +33,12 @@ Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選�
   `downstream int64`、`synweight int64`、`rank int64`。列數與 weights 的 unique endpoint 數
   88,384,522 相同，是身份對應的交叉核對點；`status_fine` 與 annotations 的 `statusLabel`
   關係待核。
-- `tbar-neurotransmitters`：`conf` 為 `float32`，現有 `feather` 讀取器拒絕；已派工擴充
-  fixed-width 型別（int16／uint8／uint16／uint32／float32），完成後補 schema 與列數。
+- `tbar-neurotransmitters`：45,656,140 列、697 批（等於 `Neuprint_Meta.csv` 的
+  `totalPreCount`，交叉核對點）。17 欄皆 nullable：`point_id uint64`、`x`／`y`／`z int32`、
+  `conf float32`、`sv int64`、`body int64`、`major dictionary<int8,utf8,ordered>`、
+  `primary dictionary<int16,utf8,ordered>`、七個 `nt_*_prob float32`（acetylcholine、dopamine、
+  gaba、glutamate、histamine、octopamine、serotonin）、`split dictionary<int8,utf8>`。
+  `feather` 讀取器已擴充 float32 等 fixed-width 型別後完整讀取。
 - `Neuprint_Meta.csv`：欄位含 `voxelSize float[]`、`primaryRois string[]`、`superLevelRois`、
   `totalPreCount`、`totalPostCount`、`postHighAccuracyThreshold`／`preHPThreshold`／
   `postHPThreshold`；本票只讀 `roiHierarchy`、`roiInfo` 與門檻欄位。

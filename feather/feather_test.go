@@ -536,3 +536,86 @@ func TestScanAcceptsListColumnWithNoChildValues(t *testing.T) {
 		t.Fatalf("scan of list column without child values: report=%#v err=%v", report, err)
 	}
 }
+
+func TestScanAcceptsAllFixedWidthPrimitiveTypes(t *testing.T) {
+	path := writeFixedWidthFixture(t)
+	var retained arrow.Record
+	report, err := Scan(context.Background(), path, validOptions(fileSize(t, path)), func(record arrow.Record) error {
+		record.Retain()
+		retained = record
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !report.Complete || report.RecordBatches != 1 || report.Rows != 4 {
+		t.Fatalf("report = %#v", report)
+	}
+	wantTypes := []string{"int16", "uint8", "uint16", "uint32", "float32"}
+	if len(report.Fields) != len(wantTypes) {
+		t.Fatalf("fields = %#v, want %d", report.Fields, len(wantTypes))
+	}
+	for i, field := range report.Fields {
+		if field.Type != wantTypes[i] || !field.Nullable {
+			t.Fatalf("field[%d] = %#v, want nullable type %q", i, field, wantTypes[i])
+		}
+	}
+	if retained == nil {
+		t.Fatal("callback did not retain a record")
+	}
+	defer retained.Release()
+
+	i16 := retained.Column(0).(*array.Int16)
+	if i16.Value(0) != math.MinInt16 || !i16.IsNull(1) || i16.Value(2) != math.MaxInt16 || i16.Value(3) != -1 {
+		t.Fatalf("int16 values = %v", i16)
+	}
+	u8 := retained.Column(1).(*array.Uint8)
+	if u8.Value(0) != 0 || !u8.IsNull(1) || u8.Value(2) != math.MaxUint8 || u8.Value(3) != 7 {
+		t.Fatalf("uint8 values = %v", u8)
+	}
+	u16 := retained.Column(2).(*array.Uint16)
+	if u16.Value(0) != 0 || !u16.IsNull(1) || u16.Value(2) != math.MaxUint16 || u16.Value(3) != 513 {
+		t.Fatalf("uint16 values = %v", u16)
+	}
+	u32 := retained.Column(3).(*array.Uint32)
+	if u32.Value(0) != 0 || !u32.IsNull(1) || u32.Value(2) != math.MaxUint32 || u32.Value(3) != 70000 {
+		t.Fatalf("uint32 values = %v", u32)
+	}
+	// NaN and +Inf are reported as stored; the reader must not reject them.
+	f32 := retained.Column(4).(*array.Float32)
+	if !math.IsNaN(float64(f32.Value(0))) || !f32.IsNull(1) || !math.IsInf(float64(f32.Value(2)), 1) || f32.Value(3) != math.MaxFloat32 {
+		t.Fatalf("float32 values = %v", f32)
+	}
+}
+
+func TestScanRejectsBooleanColumn(t *testing.T) {
+	path := writeUnsupportedFixture(t)
+	report, err := scanWithoutPanic(t, path, validOptions(fileSize(t, path)))
+	if err == nil || report.Complete {
+		t.Fatalf("accepted bool column: report=%#v err=%v", report, err)
+	}
+	if !strings.Contains(err.Error(), `unsupported Arrow type "bool"`) {
+		t.Fatalf("bool rejection error = %v", err)
+	}
+}
+
+func writeFixedWidthFixture(t *testing.T) string {
+	t.Helper()
+	schema := arrow.NewSchema([]arrow.Field{
+		{Name: "i16", Type: arrow.PrimitiveTypes.Int16, Nullable: true},
+		{Name: "u8", Type: arrow.PrimitiveTypes.Uint8, Nullable: true},
+		{Name: "u16", Type: arrow.PrimitiveTypes.Uint16, Nullable: true},
+		{Name: "u32", Type: arrow.PrimitiveTypes.Uint32, Nullable: true},
+		{Name: "conf", Type: arrow.PrimitiveTypes.Float32, Nullable: true},
+	}, nil)
+	builder := array.NewRecordBuilder(memory.DefaultAllocator, schema)
+	valid := []bool{true, false, true, true}
+	builder.Field(0).(*array.Int16Builder).AppendValues([]int16{math.MinInt16, 0, math.MaxInt16, -1}, valid)
+	builder.Field(1).(*array.Uint8Builder).AppendValues([]uint8{0, 0, math.MaxUint8, 7}, valid)
+	builder.Field(2).(*array.Uint16Builder).AppendValues([]uint16{0, 0, math.MaxUint16, 513}, valid)
+	builder.Field(3).(*array.Uint32Builder).AppendValues([]uint32{0, 0, math.MaxUint32, 70000}, valid)
+	builder.Field(4).(*array.Float32Builder).AppendValues([]float32{float32(math.NaN()), 0, float32(math.Inf(1)), math.MaxFloat32}, valid)
+	record := builder.NewRecord()
+	builder.Release()
+	return writeRecords(t, schema, record)
+}

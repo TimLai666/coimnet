@@ -93,7 +93,7 @@ func validateArray(ctx context.Context, value arrow.Array, depth int) (retErr er
 	switch data.DataType().ID() {
 	case arrow.INT8, arrow.INT16, arrow.INT32, arrow.INT64,
 		arrow.UINT8, arrow.UINT16, arrow.UINT32, arrow.UINT64,
-		arrow.FLOAT64:
+		arrow.FLOAT32, arrow.FLOAT64:
 		return validateFixedWidth(data, total)
 	case arrow.STRING:
 		return validateString(data, offset, total)

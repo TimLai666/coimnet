@@ -325,7 +325,9 @@ func supportedType(dataType arrow.DataType, depth int) (typeName string, retErr 
 		return "", err
 	}
 	switch id {
-	case arrow.INT8, arrow.INT32, arrow.INT64, arrow.UINT64, arrow.FLOAT64, arrow.STRING:
+	case arrow.INT8, arrow.INT16, arrow.INT32, arrow.INT64,
+		arrow.UINT8, arrow.UINT16, arrow.UINT32, arrow.UINT64,
+		arrow.FLOAT32, arrow.FLOAT64, arrow.STRING:
 		return typeName, nil
 	case arrow.LIST:
 		list, ok := dataType.(arrow.ListLikeType)
