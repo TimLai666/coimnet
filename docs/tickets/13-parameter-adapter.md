@@ -8,7 +8,7 @@ User Story：研究者可以把 MaleCNS 發布中的突觸統計、逐突觸傳�
 
 Blocked by：08 標準化接線圖、09 GraphStore、12 runner（消費者）
 
-Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選）
+Status：ready（契約已於 2026-09-15 定案，分兩階段派工；驗收項目驗證後才勾選）
 
 對應需求：NAT-02；主規格 5.1（只有所選機制需要時才取得細部資料）、5.3、5.5
 （`EdgeRecord` 的傳導物質與作用符號證據）、7.4（有依據固定符號、未知明示假設或可訓練）。
@@ -82,20 +82,91 @@ Status：draft（root 決策已定，待派工；驗收項目驗證後才勾選�
    比例（分子分母）、強度分位數、`post_total = 0` 邊數、耗時與峰值記憶體。所有比例附
    basis。真實資料實測：全部 25,563,197 條選入邊，走 bounded external sort，暫存上限明示。
 
-## 契約
+## 契約（2026-09-15 root 定案，分兩階段派工）
+
+新套件 `params`（第三層「動態參數來源」，與 `simulate` 平行；依賴 `connectome`、`feather`、
+`internal/extsort`、`internal/strictjson`，不依賴 `learning`，不用 Insyra）。與 root 決策 1 的差異：
+不改 manifest，改用獨立的規則檔 `coimnet-derivation-rules/v1` 記錄來源與規則，理由是 manifest 與
+GraphStore 屬第一層不可變結構，推導輸入屬第三層，分開後既有 manifest hash 不變。
 
 ```go
-package connectome  // 或 params 子套件；命名依既有慣例
+package params
 
-type SignRule struct { ... }
-type DerivationRequest struct { Graph *Graph (或 store 路徑); Sources ParameterSources; Sign SignRule; Strength StrengthRule; Limits ResourceLimits; TempDir string }
-func DeriveParameters(ctx, req DerivationRequest) (*ParameterSet, DerivationReport, error)
-func SaveParameterSet(ctx, path string, set *ParameterSet) (receipt, error)
-func LoadParameterSet(ctx, path string, limits StoreLimits) (*ParameterSet, error)
+const RulesSchemaVersion = "coimnet-derivation-rules/v1"
+type SourceRef struct { Path string; SHA256 string }             // 相對規則檔目錄；使用前比對 SHA-256
+type Sources struct { BodyStats, Tbar, SynPartners, NeuprintMeta SourceRef }
+type SignRule struct {
+    SchemaVersion string                 // "coimnet-sign-rule/v1"
+    Mapping map[string]string            // acetylcholine:"+1" gaba:"-1" glutamate:"-1" histamine:"-1" dopamine/octopamine/serotonin:"unknown"
+    Basis map[string]string              // 每個鍵的依據字串；glutamate 必須含「假設」
+    MinProbability float64               // 主要傳導物質平均機率門檻
+    MinMatchedFraction float64           // matched_synapses / raw_weight 門檻
+}
+type StrengthRule struct { Gain float64; Normalizer string }     // none | post_total | pre_total
+type Rules struct { SchemaVersion string; Sources Sources; Sign SignRule; Strength StrengthRule }
+func DecodeRules(r io.Reader) (Rules, error)                      // strictjson；Mapping 七鍵齊全、值限 +1/-1/unknown
+
+type Limits struct { MaxMemoryBytes, MaxTempBytes int64; MaxRunFiles int; MaxArrowBytes int64; MaxRows int64; TempDir string }
+func Derive(ctx, g *connectome.Graph, rules Rules, rulesDir string, limits Limits) (*Set, Report, error)
+
+const SetSchemaVersion = "coimnet-parameter-set/v1"
+type Set struct {                       // 全部依 GraphStore 的 canonical edge／node 順序
+    Source string                       // "derived_release/v1"
+    RulesHash string
+    GraphHashes simulate.GraphHashes 同形（node_index, edge_order）
+    EdgeWeight []float64                // gain * raw_weight / normalizer；normalizer 為 0 者為 0 並計數
+    EdgeSign []int8                     // +1 / -1 / 0 = unknown
+    EdgeSignConfidence []float32        // 主要傳導物質平均機率；unknown 亦保留數值
+    EdgeTransmitter []uint8             // 0..6 依固定表 acetylcholine,dopamine,gaba,glutamate,histamine,octopamine,serotonin；255 = 無配對
+    EdgeMatchedSynapses []uint32
+    NodePrimaryROI []string 或 dictionary（syn-partners primary_post 對 body_post 的眾數；無則空）
+    NodePreTotal, NodePostTotal []int64 // body-stats pre／post
+    Report Report
+}
+func Save(ctx, path string, set *Set) (SaveReceipt, error)        // 區段＋footer＋SHA-256，不覆寫，格式同 GraphStore 精神
+func Load(ctx, path string, limits LoadLimits) (*Set, error)      // 逐段校驗；schema／hash 不符即拒絕
+func (s *Set) CheckGraph(g *connectome.Graph) error               // node_index／edge_order hash 相符
 ```
 
-CLI：`data sources`（新增四筆）、`data download`（既有）、`data derive --store FILE
---manifest FILE --rules FILE --out FILE`（輸出推導報告）、`data validate --params FILE`。
+推導流程（全部有界、可取消、暫存自清）：
+
+1. 讀規則檔，逐一比對四份來源 SHA-256（有界讀取）。
+2. 以 `g.NeuronIDs()` 建立 165,122 個 body 的集合；串流 `body-stats` 一次取選入 body 的
+   `pre`／`post`（未出現於 body-stats 的選入 body 計數，`post_total` 視為 0）。
+3. 串流 `tbar-neurotransmitters`：記錄 = 鍵 `(x,y,z)`（int32 各以 XOR 符號位轉 big-endian uint32，
+   使位元組序等於數值序）12 B ＋ 7 個機率 float32 28 B ＋ 一個位元的「有 null 機率」旗標；任一機率
+   null 者只計數不參與平均。走 `extsort` 依鍵排序。同鍵重複的 tbar 列計為 `ambiguous_tbar_keys`，
+   整鍵不用。
+4. 串流 `syn-partners`：只保留 `body_pre` 與 `body_post` 都在集合內且都非 null 的列（其餘計數），
+   記錄 = 鍵 `(x_pre,y_pre,z_pre)` 12 B ＋ pre 索引 uint32 ＋ post 索引 uint32；走 `extsort`
+   依鍵排序。
+5. 兩個排序串流做 merge-join：syn-partners 列配到 tbar 鍵者輸出 `(pre,post,probs)`；未配到者計數
+   `unmatched_synapses`。輸出再以 `(pre,post)` 為鍵走 `extsort`，聚合成每條 pair 的
+   `matched_synapses` 與機率平均。
+6. 與 `g.StreamAnnotatedEdges` 對齊：先確認 canonical edge 順序是否為 `(source,target)` 索引遞增
+   （讀 `connectome` 程式碼並寫進報告）；是則 merge-join，否則建有界索引。圖中沒配到任何突觸的邊
+   計 `edges_without_match`；聚合結果中不在圖上的 pair 計 `pairs_not_in_graph`（理論上為 0，
+   非 0 要報）。
+7. 每條邊：`transmitter = argmax(mean probs)`、`sign_confidence = 該平均機率`；
+   `sign = Mapping[transmitter]` 若 `sign_confidence >= MinProbability` 且
+   `matched_synapses / raw_weight >= MinMatchedFraction`，否則 unknown。
+   `weight = Gain * raw_weight / normalizer`，normalizer 依規則取目標 `post_total` 或來源 `pre_total`，
+   為 0 時 weight 為 0 並計數。原始 `raw_weight` 只在 GraphStore。
+8. 報告：來源指紋、規則 hash、每一步的計數與比例（分子、分母、basis）、每種傳導物質的邊數、sign
+   分布、unknown 比例、強度分位數、`normalizer_zero_edges`、extsort 統計（runs、暫存位元組、
+   峰值記憶體）、耗時。
+
+CLI：`data sources` 新增四筆；`data derive --store FILE --rules FILE --out FILE [--temp-dir DIR]
+[--max-memory-bytes N] [--max-temp-bytes N] [--max-run-files N] [--max-arrow-bytes N]
+[--max-rows N]` 印出推導報告；`data validate --params FILE [--store FILE]` 讀回校驗並印報告。
+
+第二階段（runner 整合，改 `simulate` 與 CLI）：protocol 新增 `parameter_source:
+"derived_release/v1"` 與 `derived{unknown_sign: "exclude"|"excitatory"|"inhibitory"}`（必填，
+exclude 為權重 0），`simulate run --params FILE` 讀參數集、`CheckGraph`、以
+`sign * weight`（unknown 依宣告處理並計數）配合 protocol 的 uniform 節點純量產生
+`simulate.ParameterSet`，`Hash` 納入參數集檔 hash；報告 `assumptions` 寫明規則版本與 unknown 處理。
+真實資料：`data derive` 跑完整 25,563,197 條邊，`simulate run` 以推導參數集與
+`engineering_uniform_positive` 各跑同一 protocol，記錄差異，證據進 `evidence/NAT-02/`。
 
 ## 驗收
 
