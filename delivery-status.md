@@ -18,6 +18,9 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 ## 階段目標
 
+2026-09-15 使用者決定：把整個規格做完。原始 85 項已通過 28 項、NAT 六項通過五項，剩餘 62 項依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
+15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
+
 2026-09-14 使用者定下兩條並列的一級路徑：Connectome 原生模擬（不經訓練直接執行）與可學習模式，見 [研究方向](docs/research-directions/connectome-native.md)、`AGENTS.md` 與 [NAT 增補需求](docs/requirements-addendum.json)。接下來依序做 [12 原生 runner](docs/tickets/12-native-runner.md)、[13 參數 adapter](docs/tickets/13-parameter-adapter.md)、[14 空模型與判讀](docs/tickets/14-null-models-and-behavior.md)，官方發布中能接的檔案（`body-stats`、`tbar-neurotransmitters`、`syn-partners`、`Neuprint_Meta.csv`）在 13 納入，盤點見 [發布盤點](docs/malecns-release-catalog.md)。
 
 [10 真實子圖整合範例](docs/tickets/10-real-subgraph-example.md) 已驗證。98 檔同源的 Mac／Ubuntu v10 建置、單元、race、vet、模組與跨程序恢復驗證全部通過。ALIN 24 節點、110 邊的來源稽核、運算邊與初始化權重核對相等。
