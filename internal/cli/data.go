@@ -18,6 +18,10 @@ const (
 	maleCNSVersion           = "v1.0"
 	maleCNSLicenseURL        = "https://creativecommons.org/licenses/by/4.0/"
 	maleCNSAuditDate         = "2026-09-13"
+	// maleCNSParameterAuditDate is the audit date of the four files added for
+	// the parameter adapter; the report's top level AuditDate stays the date
+	// of the first audit, and each source carries its own.
+	maleCNSParameterAuditDate = "2026-09-14"
 )
 
 // DataSourcesReport describes the fixed MaleCNS source metadata checked on
@@ -84,6 +88,57 @@ var maleCNSSources = []DataSource{
 		SizeBytes:    43282834,
 		CRC32C:       "jcpNFg==",
 	},
+	// Downloaded and scanned on 2026-09-14 for the parameter adapter; the
+	// ETag, CRC32C and checked_at values below are the download receipts in
+	// evidence/malecns-source-20260914/.
+	{
+		Filename:     "body-stats-male-cns-v1.0-minconf-0.5.feather",
+		URL:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-stats-male-cns-v1.0-minconf-0.5.feather",
+		Role:         "per body pre, post, downstream, synweight and rank counts",
+		LicenseURL:   maleCNSLicenseURL,
+		AuditDate:    maleCNSParameterAuditDate,
+		CheckedAt:    "2026-09-14T15:32:37Z",
+		LastModified: "Wed, 03 Jun 2026 13:54:48 GMT",
+		ETag:         "404c3349c28580148e16815eb99f382a",
+		SizeBytes:    778062826,
+		CRC32C:       "MGOCPQ==",
+	},
+	{
+		Filename:     "tbar-neurotransmitters-male-cns-v1.0.feather",
+		URL:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/tbar-neurotransmitters-male-cns-v1.0.feather",
+		Role:         "per synapse neurotransmitter probabilities at the presynaptic site",
+		LicenseURL:   maleCNSLicenseURL,
+		AuditDate:    maleCNSParameterAuditDate,
+		CheckedAt:    "2026-09-14T15:36:33Z",
+		LastModified: "Mon, 08 Jun 2026 05:02:07 GMT",
+		ETag:         "51b02c11690662aedef28f86d394ff0d",
+		SizeBytes:    2651680218,
+		CRC32C:       "RrR5/g==",
+	},
+	{
+		Filename:     "syn-partners-male-cns-v1.0-minconf-0.5.feather",
+		URL:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather",
+		Role:         "per synapse pre and post body, confidence and primary post ROI",
+		LicenseURL:   maleCNSLicenseURL,
+		AuditDate:    maleCNSParameterAuditDate,
+		CheckedAt:    "2026-09-14T16:06:12Z",
+		LastModified: "Wed, 03 Jun 2026 13:55:42 GMT",
+		ETag:         "58efcf712f8c4d4de5f2ad51e97def76",
+		SizeBytes:    6777179098,
+		CRC32C:       "jTlNIA==",
+	},
+	{
+		Filename:     "Neuprint_Meta.csv",
+		URL:          "https://storage.googleapis.com/flyem-male-cns/v1.0/database/neuprint-inputs/Neuprint_Meta.csv",
+		Role:         "ROI hierarchy, ROI synapse counts and confidence thresholds",
+		LicenseURL:   maleCNSLicenseURL,
+		AuditDate:    maleCNSParameterAuditDate,
+		CheckedAt:    "2026-09-14T15:32:40Z",
+		LastModified: "Mon, 08 Jun 2026 05:07:35 GMT",
+		ETag:         "ee9e55000a7e81813c959a88cbc47886",
+		SizeBytes:    1247784,
+		CRC32C:       "qW0Qsg==",
+	},
 }
 
 func runData(ctx context.Context, args []string, stdout, stderr io.Writer) error {
@@ -99,6 +154,8 @@ func runData(ctx context.Context, args []string, stdout, stderr io.Writer) error
 		return runDataInspect(ctx, args[1:], stdout, stderr)
 	case "import":
 		return runDataImport(ctx, args[1:], stdout, stderr)
+	case "derive":
+		return runDataDerive(ctx, args[1:], stdout, stderr)
 	case "validate":
 		return runDataValidate(ctx, args[1:], stdout, stderr)
 	default:
@@ -107,7 +164,7 @@ func runData(ctx context.Context, args []string, stdout, stderr io.Writer) error
 }
 
 func writeDataUsage(w io.Writer) error {
-	_, err := fmt.Fprintln(w, "Usage: coimnet data sources | download [flags] | inspect [flags] | import [flags] | validate [flags]\nList audited MaleCNS sources, download a versioned file, inspect every batch of a local Feather file, build graph views from a dataset manifest, or verify a graph store.\nExamples:\n  coimnet data sources\n  coimnet data download --url URL --out FILE --max-bytes N\n  coimnet data inspect --input FILE --max-bytes N\n  coimnet data import --manifest FILE --out-store STORE\n  coimnet data validate --store STORE\nUse each command's --help for limits and errors. Unknown commands return an error.")
+	_, err := fmt.Fprintln(w, "Usage: coimnet data sources | download [flags] | inspect [flags] | import [flags] | derive [flags] | validate [flags]\nList audited MaleCNS sources, download a versioned file, inspect every batch of a local Feather file, build graph views from a dataset manifest, derive dynamics parameters from the release files, or verify a graph store or parameter set.\nExamples:\n  coimnet data sources\n  coimnet data download --url URL --out FILE --max-bytes N\n  coimnet data inspect --input FILE --max-bytes N\n  coimnet data import --manifest FILE --out-store STORE\n  coimnet data derive --store STORE --rules RULES --out PARAMS\n  coimnet data validate --store STORE\n  coimnet data validate --params PARAMS --store STORE\nUse each command's --help for limits and errors. Unknown commands return an error.")
 	return err
 }
 

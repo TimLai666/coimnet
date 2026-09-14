@@ -76,6 +76,25 @@ data_dir=$(mktemp -d)
 
 參數必須明示來源。目前只接受 `engineering_uniform_positive`：每條邊的權重是 `gain × 原始 weight`（因此全部是興奮性），每顆神經元共用同一組 bias、log_tau 與 theta_raw，延遲一律為零。**這是工程假設，不是生物參數**：發布資料沒有突觸正負號、模型單位的強度、時間常數、閾值與傳導延遲，本命令也不推導它們。報告的 `assumptions` 會原樣寫出這句話。由發布資料推導參數屬 [ticket 13](docs/tickets/13-parameter-adapter.md)，要把觀察歸因於接線本身還需要 [ticket 14](docs/tickets/14-null-models-and-behavior.md) 的空模型對照。全圖實測與完整數據見 [evidence/NAT-01/verification.json](evidence/NAT-01/verification.json)。
 
+由發布資料推導動態參數：
+
+```sh
+./bin/coimnet data derive \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --rules rules.json \
+  --out params.coimparams \
+  > derive.json
+./bin/coimnet data validate --params params.coimparams --store data/malecns-v1.0/graph-v1.coimgraph
+```
+
+`data derive` 讀四份官方原件（`body-stats`、`tbar-neurotransmitters`、`syn-partners`、`Neuprint_Meta.csv`），依規則檔 `coimnet-derivation-rules/v1` 產生每條邊的**正負號、信心度、傳導物質、配對突觸數**與**正規化強度**，以及每個神經元的 pre／post 突觸數與主要 ROI，寫成不覆寫的參數集檔 `coimnet-parameter-set/v1`。規則檔用相對路徑與 SHA-256 指定四份原件，開始排序前先逐一比對指紋。
+
+**正負號是規則推導的，不是量測值。** 發布資料只有每個突觸前位置的傳導物質「預測機率」；命令取配對突觸的平均機率、選出機率最高的傳導物質，再用規則檔的對應表換成 `+1`／`-1`／unknown。果蠅 glutamate 多為抑制屬工程假設，規則檔的 `basis` 必須寫出「假設」或 "assumption" 才會通過驗證。**未知保持未知**：沒配到突觸、平均機率低於 `min_probability`、配對比例低於 `min_matched_fraction`，或規則本身把該傳導物質標為 unknown 的邊，正負號一律是 unknown，不補預設值；報告分開計算這四種原因。強度是 `gain × 原始 weight ÷ normalizer`，`normalizer` 可選 `none`、`post_total`（目標的 body-stats post）或 `pre_total`（來源的 pre），normalizer 為 0 的邊權重為 0 並計數。
+
+推導報告寫在 JSON 輸出裡，也嵌在參數集檔中：四份來源指紋、規則 hash、每一步的計數與比例（附分子、分母與依據）、每種傳導物質的邊數、sign 分布、unknown 比例、強度分位數、`normalizer_zero_edges`、四個外部排序的 run 數與暫存位元組，以及耗時。整條流程有界：逐突觸資料一律走 `internal/extsort` 的固定寬度記錄，記憶體、暫存、run 數、Arrow 與列數都有上限，超限或取消時不產生輸出也不留暫存檔。`data validate --params` 在新程序讀回，逐段比對 SHA-256、footer 與結構不變量；加 `--store` 會再比對 node index／edge order hash，確認參數集確實屬於那張圖。同一份參數集兩次落盤位元組相同。
+
+把參數集接到 `simulate run` 是第二階段的工作（見 [ticket 13](docs/tickets/13-parameter-adapter.md)）；目前 `simulate run` 仍只接受 `engineering_uniform_positive`。
+
 真實子圖的選取與短訓練見 [ALIN 範例](examples/realsubgraph/README.md)。範例明示人工脈衝任務、初始化假設及更新範圍，輸出來源與參數指紋。
 
 [多通道 adapter 範例](examples/multichannel/README.md) 將不同頻率的連續值、區間與脈衝轉成六欄輸入，接到既有核心與訓練器。執行 `go test ./examples/multichannel -run ExampleAdapt -count=1 -v` 可跑人工資料的完整流程。
@@ -96,6 +115,7 @@ data_dir=$(mktemp -d)
 - `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。
 - `simulate.Build` 以 `connectome.Graph`、`ParameterSet` 與 `Protocol` 建立核心無關的 `Runner`，`Run` 推進持續狀態並回傳 `RunReport`，`State`／`RestoreState` 保存與接續。`simulate.UniformPositive` 由原始 weight 產生 `engineering_uniform_positive` 參數集。套件不使用 Insyra，也不碰 `learning`。
 - `connectome.Save`、`Load` 以固定區段格式落盤與讀回同一個 `Graph`：每段與 footer 都有 SHA-256，讀回時重算 node index／edge order／report hash 並檢查順序與索引範圍，不符即 `ErrStoreCorrupt`。`LoadWithReceipt` 另回傳實際驗證位元組的 SHA-256，供 CLI 報告使用。檔案、footer 與記憶體受 `StoreLimits` 限制。
+- `params.DecodeRules` 讀取 `coimnet-derivation-rules/v1`，`params.Derive` 依規則由四份發布原件推導每條邊的正負號、信心度與強度，`Save`／`Load`／`LoadWithReceipt` 以區段加 footer 加 SHA-256 的格式落盤與讀回，`Set.CheckGraph` 比對 node index／edge order hash。套件不使用 Insyra，也不碰 `learning` 與 `simulate`。
 
 `signal.NewSignal` 接受呼叫者已解碼的數值來源，連續、活動、脈衝與調節的具名訊號可用 `go test ./signal -run ExampleNewSignal -count=1 -v` 查看保存與讀回範例。訊號 JSON 的數值欄位拒絕 `null`，例如 `values:[null]` 不會被當成零。`quality.score` 與整個 `valid_range` 可用 `null` 表示未知，省略原本可省略的數值欄位則維持既有預設。從 JSON 建立訊號請使用 `DecodeSignal`，不要先以一般 JSON 解碼器讀入 `SignalSpec`，以免在驗證前就遺失缺值資訊。
 

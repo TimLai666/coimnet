@@ -26,7 +26,10 @@ Commands:
   data download [flags]          Download and verify one bounded source file
   data inspect [flags]           Inspect every batch of a local Feather file
   data import [flags]            Build graph views from a manifest and report JSON
-  data validate [flags]          Verify a graph store and print its report
+  data derive [flags]            Derive edge signs and strengths from the release
+                                 files under an explicit rules document
+  data validate [flags]          Verify a graph store or parameter set and print
+                                 its report
   simulate run [flags]           Run a graph store through one dynamics core
                                  with fixed injections and probes, no training
 

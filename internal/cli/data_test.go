@@ -52,12 +52,13 @@ func TestDataSourcesReportsAuditedMaleCNSSources(t *testing.T) {
 	if report.SchemaVersion == "" || report.Dataset != "MaleCNS" || report.Version != "v1.0" || report.LicenseURL != "https://creativecommons.org/licenses/by/4.0/" || report.AuditDate != "2026-09-13" {
 		t.Fatalf("unexpected report identity: %#v", report)
 	}
-	if len(report.Sources) != 3 {
-		t.Fatalf("source count = %d, want 3", len(report.Sources))
+	if len(report.Sources) != 7 {
+		t.Fatalf("source count = %d, want 7", len(report.Sources))
 	}
 	want := map[string]struct {
 		url, role, etag, crc, lastModified, checkedAt string
 		sizeBytes                                     int64
+		auditDate                                     string
 	}{
 		"connectome-weights-male-cns-v1.0-minconf-0.5.feather": {
 			url:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/connectome-weights-male-cns-v1.0-minconf-0.5.feather",
@@ -86,10 +87,53 @@ func TestDataSourcesReportsAuditedMaleCNSSources(t *testing.T) {
 			lastModified: "Mon, 08 Jun 2026 05:01:39 GMT",
 			checkedAt:    "2026-09-13T08:24:07Z",
 		},
+		"body-stats-male-cns-v1.0-minconf-0.5.feather": {
+			url:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-stats-male-cns-v1.0-minconf-0.5.feather",
+			role:         "per body pre, post, downstream, synweight and rank counts",
+			etag:         "404c3349c28580148e16815eb99f382a",
+			crc:          "MGOCPQ==",
+			sizeBytes:    778062826,
+			lastModified: "Wed, 03 Jun 2026 13:54:48 GMT",
+			checkedAt:    "2026-09-14T15:32:37Z",
+			auditDate:    "2026-09-14",
+		},
+		"tbar-neurotransmitters-male-cns-v1.0.feather": {
+			url:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/tbar-neurotransmitters-male-cns-v1.0.feather",
+			role:         "per synapse neurotransmitter probabilities at the presynaptic site",
+			etag:         "51b02c11690662aedef28f86d394ff0d",
+			crc:          "RrR5/g==",
+			sizeBytes:    2651680218,
+			lastModified: "Mon, 08 Jun 2026 05:02:07 GMT",
+			checkedAt:    "2026-09-14T15:36:33Z",
+			auditDate:    "2026-09-14",
+		},
+		"syn-partners-male-cns-v1.0-minconf-0.5.feather": {
+			url:          "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather",
+			role:         "per synapse pre and post body, confidence and primary post ROI",
+			etag:         "58efcf712f8c4d4de5f2ad51e97def76",
+			crc:          "jTlNIA==",
+			sizeBytes:    6777179098,
+			lastModified: "Wed, 03 Jun 2026 13:55:42 GMT",
+			checkedAt:    "2026-09-14T16:06:12Z",
+			auditDate:    "2026-09-14",
+		},
+		"Neuprint_Meta.csv": {
+			url:          "https://storage.googleapis.com/flyem-male-cns/v1.0/database/neuprint-inputs/Neuprint_Meta.csv",
+			role:         "ROI hierarchy, ROI synapse counts and confidence thresholds",
+			etag:         "ee9e55000a7e81813c959a88cbc47886",
+			crc:          "qW0Qsg==",
+			sizeBytes:    1247784,
+			lastModified: "Mon, 08 Jun 2026 05:07:35 GMT",
+			checkedAt:    "2026-09-14T15:32:40Z",
+			auditDate:    "2026-09-14",
+		},
 	}
 	for _, source := range report.Sources {
 		wantSource, ok := want[source.Filename]
-		if !ok || source.URL != wantSource.url || source.Role != wantSource.role || source.ETag != wantSource.etag || source.CRC32C != wantSource.crc || source.SizeBytes != wantSource.sizeBytes || source.LastModified != wantSource.lastModified || source.CheckedAt != wantSource.checkedAt || source.LicenseURL != report.LicenseURL || source.AuditDate != report.AuditDate {
+		if wantSource.auditDate == "" {
+			wantSource.auditDate = report.AuditDate
+		}
+		if !ok || source.URL != wantSource.url || source.Role != wantSource.role || source.ETag != wantSource.etag || source.CRC32C != wantSource.crc || source.SizeBytes != wantSource.sizeBytes || source.LastModified != wantSource.lastModified || source.CheckedAt != wantSource.checkedAt || source.LicenseURL != report.LicenseURL || source.AuditDate != wantSource.auditDate {
 			t.Fatalf("incomplete source record: %#v", source)
 		}
 		if !strings.HasPrefix(source.URL, "https://storage.googleapis.com/flyem-male-cns/v1.0/") {

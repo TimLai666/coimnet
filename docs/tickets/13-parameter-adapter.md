@@ -8,7 +8,7 @@ User Story：研究者可以把 MaleCNS 發布中的突觸統計、逐突觸傳�
 
 Blocked by：08 標準化接線圖、09 GraphStore、12 runner（消費者）
 
-Status：ready（契約已於 2026-09-15 定案，分兩階段派工；驗收項目驗證後才勾選）
+Status：第一階段（`params` 套件、檔案格式、`data derive`、`data validate --params`、`data sources`、fixture 與測試）已完成並驗證；第二階段（`simulate` 整合與真實資料實跑）未開始。驗收項目驗證後才勾選。
 
 對應需求：NAT-02；主規格 5.1（只有所選機制需要時才取得細部資料）、5.3、5.5
 （`EdgeRecord` 的傳導物質與作用符號證據）、7.4（有依據固定符號、未知明示假設或可訓練）。
@@ -170,10 +170,10 @@ exclude 為權重 0），`simulate run --params FILE` 讀參數集、`CheckGraph
 
 ## 驗收
 
-- [ ] fixture：小型 tbar／syn-partners／body-stats／Meta 檔案，手算每條邊的機率平均、sign、
+- [x] fixture：小型 tbar／syn-partners／body-stats／Meta 檔案，手算每條邊的機率平均、sign、
   信心度、正規化強度與 unknown 計數；未配對突觸、`post_total = 0`、規則缺欄位、座標不
   相符、null 機率皆有明確處理與測試。
-- [ ] bounded external sort 路徑走多 run；取消與容量錯誤不留暫存；參數集往返、竄改拒絕、
+- [x] bounded external sort 路徑走多 run；取消與容量錯誤不留暫存；參數集往返、竄改拒絕、
   與 GraphStore hash 不符拒絕。
 - [ ] 真實資料：四份原件下載回條與逐批讀取驗證；全部選入邊推導完成，報告配對率、sign
   分布、unknown 比例與耗時／記憶體；12 的 runner 以此參數集執行至少一次並記錄與
@@ -185,3 +185,109 @@ exclude 為權重 0），`simulate run --params FILE` 讀參數集、`CheckGraph
 
 - [研究方向](../research-directions/connectome-native.md)、[發布盤點](../malecns-release-catalog.md)、
   主規格 5.1–5.5、7.4、11.7、S16（chemoconnectome，僅作背景）。
+
+## 第一階段證據（2026-09-15）
+
+### 交付
+
+新套件 `params`：`rules.go`（`DecodeRules`、驗證、規則 hash）、`derive.go`（八步流程、
+`Limits`、記憶體與暫存帳）、`set.go`（`Set`、`Save`、`Load`、`LoadWithReceipt`、
+`CheckGraph`、區段＋footer＋SHA-256 格式）、`report.go`（`Report` 與分位數）、
+`meta.go`（`Neuprint_Meta.csv` 有界讀取）、`columns.go`（Arrow 欄位存取）。
+CLI：`internal/cli/derive.go`（`data derive`、`data validate --params` 的實作），
+`internal/cli/validate.go` 加 `--params`，`internal/cli/data.go` 加四筆來源與 `derive`
+分派，`internal/cli/run.go` 加總覽行。
+
+### 先寫失敗測試
+
+`evidence/NAT-02/red-params.log`（`go test -count=1 ./params/`：`undefined: Set`、
+`undefined: Rules`、`undefined: Limits` 等，build failed）與
+`evidence/NAT-02/red-cli.log`（`go test -count=1 ./internal/cli/`：
+`source count = 3, want 7`、`data derive: unknown data command`）。
+
+### 手算 fixture
+
+四個 body（10、20、30、40，節點索引 0..3）、12 列 tbar、14 列 syn-partners、6 列
+body-stats、6 條邊。機率一律取 16 分之一的整數倍，float32 與 float64 都精確，期望值是
+寫下來的，不是用同一段程式重算的。基準規則為 `gain = 2`、`min_probability = 0.5`、
+`min_matched_fraction = 0.25`、`normalizer = post_total`。
+
+| 邊 | pair | raw | 配對突觸 | 勝出機率平均 | 傳導物質 | sign | 配對比例 | post_total 權重 | pre_total 權重 | none 權重 |
+| --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | (0,1) | 4 | 2 | (0.75+0.5)/2 = 0.625 | acetylcholine | +1 | 2/4 = 0.5 | 2·4/4 = 2 | 2·4/5 = 1.6 | 8 |
+| 1 | (0,2) | 2 | 1 | 0.6875 | gaba | −1 | 1/2 = 0.5 | 2·2/6 | 2·2/5 = 0.8 | 4 |
+| 2 | (0,3) | 4 | 1 | 0.625 | dopamine | 0 | 1/4 = 0.25（含邊界） | 0（post_total 為 0） | 2·4/5 = 1.6 | 8 |
+| 3 | (1,2) | 3 | 1 | 0.5625 | glutamate | −1 | 1/3 | 2·3/6 = 1 | 2·3/3 = 2 | 6 |
+| 4 | (2,3) | 1 | 0 | 無（唯一突觸配到 null 機率 T-bar） | 無 | 0 | 未定義 | 0（post_total 為 0） | 2·1/2 = 1 | 2 |
+| 5 | (3,0) | 8 | 0 | 無（唯一突觸座標 z 差一格） | 無 | 0 | 未定義 | 2·8/7 | 0（pre_total 為 0） | 16 |
+
+body-stats 的 pre／post 為 10:(5,7)、20:(3,4)、30:(2,6)，body 40 整列缺席（`bodies_missing_from_body_stats = 1`，
+pre／post 視為 0）。body 20 有重複列且第一列勝出，另有一列 null body 與一列未選入的 body 99。
+sign 分布為 +1 一條、−1 兩條、unknown 三條，`unknown_ratio = 3/6`；unknown 原因為
+「規則對應 unknown」一條、「沒有配對」兩條。傳導物質邊數為 acetylcholine、dopamine、gaba、
+glutamate 各一條，histamine／octopamine／serotonin 各零條，未配對兩條。
+`normalizer_zero_edges` 在 post_total 為 2、pre_total 為 1、none 為 0。權重分位數用
+nearest-rank：排序後 0、0、2·2/6、1、2、2·8/7，p0 = 0、p25 = 0、p50 = 2·2/6、p75 = 2、
+p100 = 2·8/7。
+
+計數驗證涵蓋：tbar 12 列（1 列 null 座標、1 列 null body 跳過，10 列進排序，9 個相異鍵，
+1 個 ambiguous 鍵含 2 列，1 個 null 機率鍵，7 個可用鍵，1 個鍵沒有對應突觸）；
+syn-partners 14 列（1 列 null body、1 列 null 座標、2 列 body 未選入，10 列進排序，
+6 個配對、2 個未配對、1 個落在 ambiguous 鍵、1 個落在 null 機率鍵）；pair 5 個，
+其中 (1,3) 不在圖上（`pairs_not_in_graph = 1`）；`edges_without_match = 2`。
+`primary_post` 眾數為 ["", "AL", "MB", "CX"]，節點 0 只有 null ROI。
+門檻另以兩組規則驗證：`min_probability = 0.65` 得 +0／−1／unknown 5，
+`min_matched_fraction = 0.4` 得 +1／−1／unknown 4。
+
+測試入口：`params/derive_test.go` 的 `TestDeriveMatchesTheHandCalculatedFixture`、
+`TestDeriveNormalizersAndZeroCounts`、`TestDeriveThresholdsTurnEdgesUnknown`、
+`TestDeriveKeepsConfidenceForUnknownSigns`、`TestDeriveIsDeterministic`、
+`TestDeriveRejectsChangedSources`；規則檔缺欄位、glutamate basis 缺「假設」、
+值域與路徑限制在 `params/rules_test.go`。
+
+### 有界排序與檔案格式
+
+`TestDeriveUsesMultipleSortRuns` 用 2,000 對突觸與 200 KiB 記憶體限制，確認四個排序中至少
+兩個走多 run 且都寫出暫存位元組，結束後暫存目錄為空。
+`TestDeriveCancellationAndCapacityLeaveNoTemporaryFiles` 確認取消（`context.Canceled`）
+與暫存超限（同時包住 `params.ErrCapacity` 與 `extsort.ErrCapacity`）都不留檔案。
+`params/set_test.go` 覆蓋往返一致、兩次落盤位元組相同、拒絕覆寫、八種竄改（頭尾 magic、
+區段位元組、中段位元組、footer 長度、footer hash、截斷、刪一個位元組）、三種上限與
+`CheckGraph` 對不同圖與被改過的 hash 的拒絕。
+
+### CLI
+
+`internal/cli/derive_test.go` 以 `importFixture` 建的 store 走完
+`data derive` → `data validate --params`（含 `--store` 與不含 `--store` 兩種），確認輸出
+schema、檔案大小與 SHA-256 一致、第二次 derive 不覆寫，以及 15 種失敗參數與說明文字。
+`data sources` 的既有三筆維持原值，新增四筆的 URL、角色、大小、ETag、CRC32C 取自
+`evidence/malecns-source-20260914/*-download.json`，`audit_date` 為 2026-09-14，
+`checked_at` 取回條的 `acquired_at`。
+
+### 驗證命令
+
+```
+gofmt -l .                                          # 無輸出
+go vet ./...                                        # 無輸出
+go test -count=1 ./...                              # 全部 ok，含 params 與 internal/cli
+go test -race -count=1 ./params/ ./internal/cli/    # 兩個套件皆 ok
+```
+
+環境：Go 1.26.5、darwin/arm64。
+
+### 尚未完成
+
+真實資料推導（25,563,197 條邊）與 `simulate` 整合屬第二階段，本階段未執行，
+因此「真實資料」與「文件」兩項驗收保持未勾選：`delivery-status.md` 與
+`docs/model-and-mechanisms.md` 不在本次派工的可修改範圍。
+`post_total = 0` 以「body 40 不在 body-stats」的路徑驗證（`normalizer <= 0` 同一條分支），
+body-stats 內明寫 0 的列未另外建 fixture。
+
+### root 審查（2026-09-15）
+
+逐檔讀過 `params` 六個檔、CLI 與四筆來源；手算表由 root 獨立重算一次（九個 tbar 鍵、六個配對、
+五個 pair、六條邊的 sign／三種 normalizer 權重／分位數／ROI 眾數）與程式一致；來源四筆的
+ETag、CRC32C、大小對回 `evidence/malecns-source-20260914/*-download.json`。root 重跑
+gofmt／vet／`go test ./...`／race 全數通過（params 與 cli 共 53 個測試）。接受第一階段的九項
+契約偏離。待改善（不阻擋）：`alignEdges` 只信任 connectome 的邊序，沒有在執行期檢查 (source,
+target) 單調遞增，建議加一個便宜的防護；重複 pair 緩衝的記憶體保留只增不減。

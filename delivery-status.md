@@ -35,7 +35,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 08 | 研究者可由官方原件建立可追溯標準化接線圖 | 主 agent（connectome）/ extsort subagent | verified_scoped | fixture 與真實資料皆通過；410 秒、RSS 3.40 GB、暫存 4.1 GB 後清空；raw 零重複 pair；durable GraphStore 切到 09 |
 | 11 | 研究者可執行並訓練 LIF 放電核心 | 主 agent 指揮 / Opus 實作 | verified_scoped | 手算時序、tangent 參考與平滑模式有限差分通過，CLI `examples run lif-threshold` 三組 seed 只訓練閾值把保留 MSE 由 0.232 降到 0.052，COR-03／COR-09 已標 passed，COR-04 因慢速穩定未實作維持 specified |
 | 12 | 研究者可不經訓練直接執行接線圖（LIF 持續狀態、原生 runner） | 主 agent 指揮 / Opus 實作 | verified_scoped | `LIFState`／`Advance` 與 `Forward` 逐位一致；`simulate` 手算 fixture、兩核心、決定性、分段接續、選擇器、門檻、容量與嚴格 JSON 測試通過；真實全圖 300 步 93 s／4.38 GB，NAT-01 passed；只在 macOS 實測，參數僅工程假設 |
-| 13 | 研究者可由發布資料推導動態參數 | 待派工 | draft | 契約已定：逐邊正負號規則、正規化、參數集檔案；四份新原件（body-stats、tbar-neurotransmitters、syn-partners、Neuprint_Meta）已下載、CRC32C 上游驗證並逐批掃描，schema 與列數交叉核對記在 ticket |
+| 13 | 研究者可由發布資料推導動態參數 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段已驗證：`params` 套件（規則檔、八步 extsort 推導、`coimnet-parameter-set/v1` 檔案格式）、`data derive`／`data validate --params`／四筆新來源，手算 fixture 由 root 獨立重算一致，多 run、取消、竄改與 hash 不符皆有測試；第二階段（真實 25,563,197 條邊推導、`simulate run --params`）待做 |
 | 14 | 研究者可用空模型與判讀協定歸因 | 待派工 | draft | 契約已定：三種空模型、具名集合、指標門檻、比較矩陣 |
 | 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
 
