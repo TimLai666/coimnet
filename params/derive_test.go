@@ -6,8 +6,10 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/internal/extsort"
 )
 
@@ -460,5 +462,48 @@ func TestQuantileOfSortedValues(t *testing.T) {
 	}
 	if math.IsNaN(q.P50) {
 		t.Fatal("quantiles must not produce NaN")
+	}
+}
+
+// TestOrderedEdgesRejectsADecreasingStream drives the package-private wrapper
+// that alignEdges installs around the canonical edge callback. A decreasing
+// (source, target) pair would silently mis-join against the sorted pair
+// aggregates, so it has to stop the stream instead.
+func TestOrderedEdgesRejectsADecreasingStream(t *testing.T) {
+	delivered := 0
+	guard := orderedEdges(func(connectome.EdgeRecord) error {
+		delivered++
+		return nil
+	})
+	// Equal pairs repeat (duplicate edges of one pair) and the stream rises
+	// until the last record steps back from (3,0) to (2,9).
+	stream := [][2]uint64{{1, 2}, {1, 5}, {3, 0}, {3, 0}, {2, 9}}
+	var err error
+	for _, pair := range stream {
+		if err = guard(connectome.EdgeRecord{Source: pair[0], Target: pair[1]}); err != nil {
+			break
+		}
+	}
+	if err == nil || !strings.Contains(err.Error(), "params: edge stream is not ordered") {
+		t.Fatalf("orderedEdges() error = %v, want an unordered edge stream error", err)
+	}
+	if delivered != 4 {
+		t.Fatalf("edges delivered before the refusal = %d, want 4", delivered)
+	}
+}
+
+func TestOrderedEdgesPassesANonDecreasingStream(t *testing.T) {
+	delivered := 0
+	guard := orderedEdges(func(connectome.EdgeRecord) error {
+		delivered++
+		return nil
+	})
+	for _, pair := range [][2]uint64{{0, 0}, {0, 0}, {0, 1}, {7, 0}, {7, 7}} {
+		if err := guard(connectome.EdgeRecord{Source: pair[0], Target: pair[1]}); err != nil {
+			t.Fatalf("orderedEdges() rejected an ordered pair %v: %v", pair, err)
+		}
+	}
+	if delivered != 5 {
+		t.Fatalf("edges delivered = %d, want 5", delivered)
 	}
 }

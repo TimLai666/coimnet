@@ -999,6 +999,22 @@ func (c *pairCursor) before(source, target uint32) bool {
 	return c.current.source < source || (c.current.source == source && c.current.target < target)
 }
 
+// orderedEdges wraps an edge callback and refuses a canonical stream whose
+// (source, target) pair decreases. The merge join below advances the pair
+// cursor forward only, so a stream that steps back would silently mis-join the
+// remaining edges instead of failing.
+func orderedEdges(deliver func(connectome.EdgeRecord) error) func(connectome.EdgeRecord) error {
+	var source, target uint64
+	have := false
+	return func(edge connectome.EdgeRecord) error {
+		if have && (edge.Source < source || (edge.Source == source && edge.Target < target)) {
+			return fmt.Errorf("params: edge stream is not ordered: pair (%d,%d) follows (%d,%d)", edge.Source, edge.Target, source, target)
+		}
+		source, target, have = edge.Source, edge.Target, true
+		return deliver(edge)
+	}
+}
+
 // alignEdges walks the canonical edge stream and the sorted pair aggregates
 // together, producing the parameter set arrays.
 func (d *deriver) alignEdges(aggregates *spillFile, primary []string) (*Set, error) {
@@ -1065,7 +1081,7 @@ func (d *deriver) alignEdges(aggregates *spillFile, primary []string) (*Set, err
 	}
 
 	position := int64(0)
-	streamErr := d.graph.StreamAnnotatedEdges(d.ctx, func(edge connectome.EdgeRecord) error {
+	streamErr := d.graph.StreamAnnotatedEdges(d.ctx, orderedEdges(func(edge connectome.EdgeRecord) error {
 		if position >= edges {
 			return fmt.Errorf("params: the edge stream produced more than the declared %d edges", edges)
 		}
@@ -1087,11 +1103,6 @@ func (d *deriver) alignEdges(aggregates *spillFile, primary []string) (*Set, err
 		if len(groupRaw) >= maxPairEdges {
 			return fmt.Errorf("%w: pair (%d,%d) has more than %d edges", ErrCapacity, source, target, maxPairEdges)
 		}
-		if cap(groupRaw) == len(groupRaw) {
-			if err := d.memory.reserve(8*int64(max(len(groupRaw), 1)), "duplicate pair buffer"); err != nil {
-				return err
-			}
-		}
 		raw := int64(0)
 		if edge.Weight.Valid {
 			raw = edge.Weight.Value
@@ -1099,10 +1110,19 @@ func (d *deriver) alignEdges(aggregates *spillFile, primary []string) (*Set, err
 			summary.NullRawWeightEdges++
 			raw = -1
 		}
+		// Only the capacity this append actually adds is new memory; the
+		// buffer is reused across pairs, so its existing capacity is already
+		// reserved.
+		before := cap(groupRaw)
 		groupRaw = append(groupRaw, raw)
+		if cap(groupRaw) > before {
+			if err := d.memory.reserve(8*int64(cap(groupRaw)-before), "duplicate pair buffer"); err != nil {
+				return err
+			}
+		}
 		position++
 		return nil
-	})
+	}))
 	if streamErr != nil {
 		return nil, streamErr
 	}

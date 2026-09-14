@@ -1,0 +1,32 @@
+# final verification, 2026-09-14T23:04:55Z,  7:04  up 9 days, 12:43, 1 user, load averages: 5.71 3.65 2.68
+$ gofmt -l .
+
+$ go vet ./...
+
+$ go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.218s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.122s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	1.520s
+ok  	github.com/TimLai666/coimnet/download	1.454s
+ok  	github.com/TimLai666/coimnet/dynamics	0.818s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.098s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.152s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.509s
+ok  	github.com/TimLai666/coimnet/experiment	1.985s
+ok  	github.com/TimLai666/coimnet/feather	0.891s
+ok  	github.com/TimLai666/coimnet/internal/cli	9.721s
+ok  	github.com/TimLai666/coimnet/internal/extsort	1.316s
+ok  	github.com/TimLai666/coimnet/internal/fileio	1.218s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	1.096s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.186s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	1.195s
+ok  	github.com/TimLai666/coimnet/learning	1.143s
+ok  	github.com/TimLai666/coimnet/params	1.890s
+ok  	github.com/TimLai666/coimnet/signal	0.891s
+ok  	github.com/TimLai666/coimnet/simulate	2.744s
+
+$ go test -race -count=1 ./signal/ ./download/ ./params/
+ok  	github.com/TimLai666/coimnet/signal	1.572s
+ok  	github.com/TimLai666/coimnet/download	1.902s
+ok  	github.com/TimLai666/coimnet/params	2.319s

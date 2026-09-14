@@ -20,6 +20,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/TimLai666/coimnet/internal/jsonkey"
@@ -36,6 +37,12 @@ const (
 
 	maxMetadataBytes = 64 << 10
 	maxHashReadBytes = 32 << 10
+	maxLockBytes     = 1 << 10
+
+	// defaultCheckpointBytes is how much a transfer may advance before the
+	// partial file is fsynced and its byte count written back, so a killed
+	// process loses at most this much progress.
+	defaultCheckpointBytes = 64 << 20
 )
 
 // Options bounds a source transfer and optionally supplies authoritative
@@ -45,6 +52,10 @@ type Options struct {
 	Retries        int
 	ExpectedSHA256 string
 	ExpectedCRC32C string
+	// CheckpointBytes is how many transferred bytes may accumulate before the
+	// partial file is fsynced and its metadata rewritten. Zero selects
+	// defaultCheckpointBytes; negative values are rejected.
+	CheckpointBytes int64
 }
 
 // Receipt records the source identity, selected public response metadata, the
@@ -67,6 +78,13 @@ type Receipt struct {
 	// UpstreamCRC32C is kept for compatibility with the v1 receipt fields and
 	// mirrors ProviderHashes["crc32c"] when the provider supplied that hash.
 	UpstreamCRC32C string `json:"upstream_crc32c,omitempty"`
+	// ResumedFromBytes is the checkpointed byte count a resumed transfer
+	// continued from, TruncatedBytes the unsynced tail discarded before it and
+	// ReclaimedStaleLock records that a lock left by a dead process was taken
+	// over. All three are written only when they happened.
+	ResumedFromBytes   int64 `json:"resumed_from_bytes,omitempty"`
+	TruncatedBytes     int64 `json:"truncated_bytes,omitempty"`
+	ReclaimedStaleLock bool  `json:"reclaimed_stale_lock,omitempty"`
 }
 
 type partialMetadata struct {
@@ -91,10 +109,11 @@ type sourceInfo struct {
 }
 
 type validatedOptions struct {
-	maxBytes       int64
-	retries        int
-	expectedSHA256 []byte
-	expectedCRC32C []byte
+	maxBytes        int64
+	retries         int
+	expectedSHA256  []byte
+	expectedCRC32C  []byte
+	checkpointBytes int64
 }
 
 var (
@@ -138,7 +157,7 @@ func Fetch(ctx context.Context, client *http.Client, sourceURL, targetPath strin
 		return Receipt{}, err
 	}
 
-	lock, err := acquireLock(targetPath + lockSuffix)
+	lock, reclaimedStaleLock, err := acquireLock(targetPath + lockSuffix)
 	if err != nil {
 		return Receipt{}, err
 	}
@@ -163,10 +182,11 @@ func Fetch(ctx context.Context, client *http.Client, sourceURL, targetPath strin
 		return Receipt{}, err
 	}
 
-	metadata, hasPartial, err := inspectPartial(targetPath, sourceURL)
+	metadata, partBytes, hasPartial, err := inspectPartial(targetPath, sourceURL)
 	if err != nil {
 		return Receipt{}, err
 	}
+	var resumedFromBytes, truncatedBytes int64
 	partPath := targetPath + partSuffix
 	metadataPath := targetPath + metadataSuffix
 	var source sourceInfo
@@ -214,6 +234,15 @@ func Fetch(ctx context.Context, client *http.Client, sourceURL, targetPath strin
 				if metadata.Length != source.length || metadata.ETag != source.etag {
 					return Receipt{}, fmt.Errorf("partial metadata does not match current source ETag or length")
 				}
+				// The bytes past the last checkpoint were never fsynced, so
+				// they are discarded rather than trusted.
+				if partBytes > metadata.Bytes {
+					if err := truncatePart(partPath, metadata.Bytes); err != nil {
+						return Receipt{}, err
+					}
+					truncatedBytes = partBytes - metadata.Bytes
+				}
+				resumedFromBytes = metadata.Bytes
 			} else {
 				metadata = partialMetadata{SchemaVersion: partialSchemaVersion, URL: sourceURL, ETag: source.etag, Length: source.length, Bytes: 0}
 				if err := createPart(partPath); err != nil {
@@ -239,7 +268,7 @@ func Fetch(ctx context.Context, client *http.Client, sourceURL, targetPath strin
 			if err := checkDiskSpace(dir, source.length-metadata.Bytes); err != nil {
 				return Receipt{}, err
 			}
-			attemptErr := downloadAttempt(ctx, client, part, &source, &metadata, metadataPath)
+			attemptErr := downloadAttempt(ctx, client, part, &source, &metadata, metadataPath, validated.checkpointBytes)
 			if attemptErr != nil {
 				if ctxErr := contextError(ctx); ctxErr != nil {
 					return Receipt{}, errors.Join(ctxErr, attemptErr)
@@ -343,6 +372,10 @@ func Fetch(ctx context.Context, client *http.Client, sourceURL, targetPath strin
 		HashStatus:     "locally_recorded",
 		Bytes:          source.length,
 		UpstreamCRC32C: source.upstreamCRC32C,
+
+		ResumedFromBytes:   resumedFromBytes,
+		TruncatedBytes:     truncatedBytes,
+		ReclaimedStaleLock: reclaimedStaleLock,
 	}
 	if upstreamVerified {
 		receipt.HashStatus = "upstream_verified"
@@ -357,7 +390,14 @@ func validateOptions(options Options) (validatedOptions, error) {
 	if options.Retries < 0 || options.Retries > 3 {
 		return validatedOptions{}, fmt.Errorf("Retries must be between 0 and 3")
 	}
-	validated := validatedOptions{maxBytes: options.MaxBytes, retries: options.Retries}
+	if options.CheckpointBytes < 0 {
+		return validatedOptions{}, fmt.Errorf("CheckpointBytes must not be negative")
+	}
+	checkpointBytes := options.CheckpointBytes
+	if checkpointBytes == 0 {
+		checkpointBytes = defaultCheckpointBytes
+	}
+	validated := validatedOptions{maxBytes: options.MaxBytes, retries: options.Retries, checkpointBytes: checkpointBytes}
 	if options.ExpectedSHA256 != "" {
 		if len(options.ExpectedSHA256) != sha256.Size*2 {
 			return validatedOptions{}, fmt.Errorf("ExpectedSHA256 must be 64 hexadecimal characters")
@@ -444,7 +484,7 @@ func sameSource(first, second sourceInfo) error {
 	return nil
 }
 
-func downloadAttempt(ctx context.Context, client *http.Client, part *os.File, source *sourceInfo, metadata *partialMetadata, metadataPath string) (retErr error) {
+func downloadAttempt(ctx context.Context, client *http.Client, part *os.File, source *sourceInfo, metadata *partialMetadata, metadataPath string, checkpointBytes int64) (retErr error) {
 	offset := metadata.Bytes
 	if offset < 0 || offset > source.length {
 		return fmt.Errorf("partial offset %d is outside source length %d", offset, source.length)
@@ -531,10 +571,20 @@ func downloadAttempt(ctx context.Context, client *http.Client, part *os.File, so
 	if _, err := part.Seek(offset, io.SeekStart); err != nil {
 		return fmt.Errorf("seek partial download: %w", err)
 	}
-	written, copyErr := copyResponse(ctx, response.Body, part, wantLength)
+	checkpoint := func(written int64) error {
+		return retainPartial(part, metadataPath, metadata, offset+written)
+	}
+	written, copyErr := copyResponse(ctx, response.Body, part, wantLength, checkpointBytes, checkpoint)
 	if errors.Is(copyErr, errResponseTooLong) {
 		rollbackErr := rollbackPartial(part, offset)
-		return errors.Join(copyErr, rollbackErr)
+		// A checkpoint may already have recorded a byte count this rollback
+		// just discarded, so the metadata is put back with the partial.
+		var metadataErr error
+		if metadata.Bytes != offset {
+			metadata.Bytes = offset
+			metadataErr = writeMetadata(context.Background(), metadataPath, *metadata)
+		}
+		return errors.Join(copyErr, rollbackErr, metadataErr)
 	}
 	retainErr := retainPartial(part, metadataPath, metadata, offset+written)
 	if copyErr != nil {
@@ -552,8 +602,11 @@ func downloadAttempt(ctx context.Context, client *http.Client, part *os.File, so
 	return nil
 }
 
-func copyResponse(ctx context.Context, reader io.Reader, writer io.Writer, expected int64) (int64, error) {
-	var written int64
+// copyResponse streams the response body into the partial file, calling
+// checkpoint once every checkpointBytes of progress so a killed process can
+// resume from the last durable byte count.
+func copyResponse(ctx context.Context, reader io.Reader, writer io.Writer, expected, checkpointBytes int64, checkpoint func(int64) error) (int64, error) {
+	var written, sinceCheckpoint int64
 	buffer := make([]byte, maxHashReadBytes)
 	for {
 		count, readErr := reader.Read(buffer)
@@ -569,11 +622,18 @@ func copyResponse(ctx context.Context, reader io.Reader, writer io.Writer, expec
 				return written, fmt.Errorf("invalid partial write count %d", writtenCount)
 			}
 			written += int64(writtenCount)
+			sinceCheckpoint += int64(writtenCount)
 			if writeErr != nil {
 				return written, fmt.Errorf("write partial download: %w", writeErr)
 			}
 			if writtenCount != count {
 				return written, io.ErrShortWrite
+			}
+			if checkpointBytes > 0 && sinceCheckpoint >= checkpointBytes && written < expected {
+				if err := checkpoint(written); err != nil {
+					return written, err
+				}
+				sinceCheckpoint = 0
 			}
 		}
 		if err := contextError(ctx); err != nil {
@@ -668,7 +728,11 @@ func responseLength(response *http.Response) (int64, error) {
 	return length, nil
 }
 
-func inspectPartial(targetPath, sourceURL string) (partialMetadata, bool, error) {
+// inspectPartial reads the partial metadata and returns it with the observed
+// .part size. A .part longer than the recorded byte count carries a tail that
+// was never fsynced and is truncated later, once the source has been confirmed;
+// a shorter one has lost fsynced bytes and is refused here.
+func inspectPartial(targetPath, sourceURL string) (partialMetadata, int64, bool, error) {
 	partPath := targetPath + partSuffix
 	metadataPath := targetPath + metadataSuffix
 	partInfo, partErr := os.Lstat(partPath)
@@ -676,38 +740,41 @@ func inspectPartial(targetPath, sourceURL string) (partialMetadata, bool, error)
 	partExists := partErr == nil
 	metaExists := metaErr == nil
 	if partErr != nil && !os.IsNotExist(partErr) {
-		return partialMetadata{}, false, fmt.Errorf("inspect partial download: %w", partErr)
+		return partialMetadata{}, 0, false, fmt.Errorf("inspect partial download: %w", partErr)
 	}
 	if metaErr != nil && !os.IsNotExist(metaErr) {
-		return partialMetadata{}, false, fmt.Errorf("inspect partial metadata: %w", metaErr)
+		return partialMetadata{}, 0, false, fmt.Errorf("inspect partial metadata: %w", metaErr)
 	}
 	if !partExists && !metaExists {
-		return partialMetadata{}, false, nil
+		return partialMetadata{}, 0, false, nil
 	}
 	if partExists != metaExists {
-		return partialMetadata{}, false, fmt.Errorf("partial download and metadata are incomplete; existing files preserved")
+		return partialMetadata{}, 0, false, fmt.Errorf("partial download and metadata are incomplete; existing files preserved")
 	}
 	if !partInfo.Mode().IsRegular() || !metaInfo.Mode().IsRegular() {
-		return partialMetadata{}, false, fmt.Errorf("partial download artifacts must be regular files")
+		return partialMetadata{}, 0, false, fmt.Errorf("partial download artifacts must be regular files")
 	}
 	if metaInfo.Size() < 0 || metaInfo.Size() > maxMetadataBytes {
-		return partialMetadata{}, false, fmt.Errorf("partial metadata exceeds %d byte limit", maxMetadataBytes)
+		return partialMetadata{}, 0, false, fmt.Errorf("partial metadata exceeds %d byte limit", maxMetadataBytes)
 	}
 	data, err := readRegularBounded(context.Background(), metadataPath, maxMetadataBytes)
 	if err != nil {
-		return partialMetadata{}, false, fmt.Errorf("read partial metadata: %w", err)
+		return partialMetadata{}, 0, false, fmt.Errorf("read partial metadata: %w", err)
 	}
 	var metadata partialMetadata
 	if err := decodeStrictJSON(data, &metadata); err != nil {
-		return partialMetadata{}, false, fmt.Errorf("decode partial metadata: %w", err)
+		return partialMetadata{}, 0, false, fmt.Errorf("decode partial metadata: %w", err)
 	}
 	if metadata.SchemaVersion != partialSchemaVersion || metadata.URL != sourceURL || metadata.ETag == "" || metadata.Length < 0 || metadata.Bytes < 0 || metadata.Bytes > metadata.Length {
-		return partialMetadata{}, false, fmt.Errorf("partial metadata is invalid or belongs to another source; existing files preserved")
+		return partialMetadata{}, 0, false, fmt.Errorf("partial metadata is invalid or belongs to another source; existing files preserved")
 	}
-	if partInfo.Size() != metadata.Bytes {
-		return partialMetadata{}, false, fmt.Errorf("partial length %d does not match metadata bytes %d; existing files preserved", partInfo.Size(), metadata.Bytes)
+	if partInfo.Size() < metadata.Bytes {
+		return partialMetadata{}, 0, false, fmt.Errorf("partial length %d is below metadata bytes %d; existing files preserved", partInfo.Size(), metadata.Bytes)
 	}
-	return metadata, true, nil
+	if partInfo.Size() > metadata.Length {
+		return partialMetadata{}, 0, false, fmt.Errorf("partial length %d exceeds source length %d; existing files preserved", partInfo.Size(), metadata.Length)
+	}
+	return metadata, partInfo.Size(), true, nil
 }
 
 func readRegularBounded(ctx context.Context, path string, limit int64) (data []byte, retErr error) {
@@ -815,6 +882,37 @@ func openPartForWrite(path string, expectedBytes int64) (*os.File, error) {
 		return nil, fmt.Errorf("partial file changed or is not regular")
 	}
 	return part, nil
+}
+
+// truncatePart drops the unsynced tail of a partial file and fsyncs the result
+// so the recorded byte count and the file agree before the transfer resumes.
+func truncatePart(path string, size int64) (retErr error) {
+	if size < 0 {
+		return fmt.Errorf("negative partial byte count")
+	}
+	lstat, err := os.Lstat(path)
+	if err != nil {
+		return fmt.Errorf("inspect partial download: %w", err)
+	}
+	if !lstat.Mode().IsRegular() {
+		return fmt.Errorf("partial download must be a regular file")
+	}
+	file, err := os.OpenFile(path, os.O_WRONLY, 0600)
+	if err != nil {
+		return fmt.Errorf("open partial download for truncation: %w", err)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("close truncated partial download: %w", closeErr))
+		}
+	}()
+	if err := file.Truncate(size); err != nil {
+		return fmt.Errorf("truncate partial download to %d bytes: %w", size, err)
+	}
+	if err := file.Sync(); err != nil {
+		return fmt.Errorf("sync truncated partial download: %w", err)
+	}
+	return nil
 }
 
 func createPart(path string) error {
@@ -1118,13 +1216,43 @@ func rejectExistingTarget(path string) error {
 	return nil
 }
 
-func acquireLock(path string) (*os.File, error) {
+// acquireLock creates the exclusive lock file. A lock left behind by a process
+// that no longer exists is reclaimed once and reported; a lock held by a live
+// process, one whose owner cannot be determined and one that does not record a
+// pid at all are all refused, so a running transfer is never disturbed.
+func acquireLock(path string) (*os.File, bool, error) {
+	lock, err := createLock(path)
+	if err == nil {
+		return lock, false, nil
+	}
+	if !os.IsExist(err) {
+		return nil, false, fmt.Errorf("create download lock: %w", err)
+	}
+	pid, pidErr := readLockPID(path)
+	if pidErr != nil {
+		return nil, false, fmt.Errorf("download lock exists and may be stale: %w", pidErr)
+	}
+	alive, known := processExists(pid)
+	if !known {
+		return nil, false, fmt.Errorf("download lock exists and may be stale: process %d cannot be checked", pid)
+	}
+	if alive {
+		return nil, false, fmt.Errorf("download lock is held by live process %d", pid)
+	}
+	if removeErr := os.Remove(path); removeErr != nil && !os.IsNotExist(removeErr) {
+		return nil, false, fmt.Errorf("reclaim download lock of dead process %d: %w", pid, removeErr)
+	}
+	lock, err = createLock(path)
+	if err != nil {
+		return nil, false, fmt.Errorf("create download lock after reclaiming process %d: %w", pid, err)
+	}
+	return lock, true, nil
+}
+
+func createLock(path string) (*os.File, error) {
 	lock, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
-		if os.IsExist(err) {
-			return nil, fmt.Errorf("download lock exists and may be stale: %w", err)
-		}
-		return nil, fmt.Errorf("create download lock: %w", err)
+		return nil, err
 	}
 	if _, err := fmt.Fprintf(lock, "pid=%d\n", os.Getpid()); err != nil {
 		_ = lock.Close()
@@ -1132,6 +1260,44 @@ func acquireLock(path string) (*os.File, error) {
 		return nil, fmt.Errorf("write download lock: %w", err)
 	}
 	return lock, nil
+}
+
+// readLockPID accepts only the exact "pid=<digits>" record this package writes.
+func readLockPID(path string) (int, error) {
+	data, err := readRegularBounded(context.Background(), path, maxLockBytes)
+	if err != nil {
+		return 0, fmt.Errorf("read download lock: %w", err)
+	}
+	text := strings.TrimSpace(string(data))
+	if !strings.HasPrefix(text, "pid=") {
+		return 0, fmt.Errorf("download lock does not record a pid")
+	}
+	pid, err := strconv.Atoi(strings.TrimPrefix(text, "pid="))
+	if err != nil || pid <= 0 {
+		return 0, fmt.Errorf("download lock records an unusable pid")
+	}
+	return pid, nil
+}
+
+// processExists reports whether pid is still running and whether that could be
+// decided at all. On Unix the zero signal is the kill(pid, 0) liveness probe:
+// ESRCH means the process is gone, EPERM means it exists under another user.
+func processExists(pid int) (alive, known bool) {
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		return false, false
+	}
+	err = process.Signal(syscall.Signal(0))
+	switch {
+	case err == nil:
+		return true, true
+	case errors.Is(err, os.ErrProcessDone), errors.Is(err, syscall.ESRCH):
+		return false, true
+	case errors.Is(err, syscall.EPERM):
+		return true, true
+	default:
+		return false, false
+	}
 }
 
 func retryablef(format string, args ...any) error {

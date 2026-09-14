@@ -49,7 +49,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 嚴格 JSON 的深度與路徑配置缺口已修正，並將 Unicode 重複鍵檢查同步至訊號、快照、下載 metadata 與 manifest。圖檔補上配置前記憶體檢查、計數溢位、未初始化圖、未知 converter 與同次讀取 hash 回條；回歸測試及兩平台 v7 全套驗證通過。
 
-`data download` 的續傳只在前一次傳輸「可重試失敗」後有效：`bytes` 只在一次傳輸結束時寫回 `.part.meta.json`，程序被砍時 meta 仍為 0、與 `.part` 長度不符，重跑會以「existing files preserved」拒絕；`.lock` 也不回收失效 pid。2026-09-14 syn-partners 因 session 中斷留下 4.35 GB 殘檔，已清除後從頭重抓（9 分鐘，回條 `upstream_verified`）。待辦：傳輸中定期寫回 `bytes`（或以 `.part` 實際長度續傳並靠整檔 CRC32C 把關）與失效鎖偵測，歸 ticket 06。
+`data download` 的續傳缺口（程序被砍後 meta 仍為 0、失效鎖不回收；2026-09-14 syn-partners 因此重抓）已於 [ticket 15](docs/tickets/15-hardening.md) 修正：每 64 MiB fsync 後寫回 `bytes`，`.part` 長於記錄者截斷後續傳，死 pid 的鎖回收並寫進回條。
 
 Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，Go 工具放在 `/tmp/coimnet-validation.irVFk8MV`。PC 的 App 主機連線存在，但本輪沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
 

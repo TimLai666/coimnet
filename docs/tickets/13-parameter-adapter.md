@@ -293,7 +293,8 @@ body-stats 內明寫 0 的列未另外建 fixture。
 ETag、CRC32C、大小對回 `evidence/malecns-source-20260914/*-download.json`。root 重跑
 gofmt／vet／`go test ./...`／race 全數通過（params 與 cli 共 53 個測試）。接受第一階段的九項
 契約偏離。待改善（不阻擋）：`alignEdges` 只信任 connectome 的邊序，沒有在執行期檢查 (source,
-target) 單調遞增，建議加一個便宜的防護；重複 pair 緩衝的記憶體保留只增不減。
+target) 單調遞增，建議加一個便宜的防護；重複 pair 緩衝的記憶體保留只增不減。（兩項已於
+ticket 15 補上：`orderedEdges` 防護與只計成長差額的保留。）
 
 ## 第二階段證據（2026-09-15）
 

@@ -1,0 +1,14 @@
+# ticket 15 item 1 red state attempt, 2026-09-14T22:57:23Z
+# NOTE: signal/json.go already carries maxJSONDepth = 64 (committed before this ticket),
+# so the depth test below is green before the strictjson refactor. Recorded as-is.
+$ go test -count=1 -v -run 'NestingAtSixtyFour|ExcessiveJSONNesting|CaseFolded' ./signal/
+=== RUN   TestDecodeSignalRejectsExcessiveJSONNestingWithLongKeys
+--- PASS: TestDecodeSignalRejectsExcessiveJSONNestingWithLongKeys (0.00s)
+=== RUN   TestDecodeSignalRejectsCaseFoldedDuplicateKeys
+--- PASS: TestDecodeSignalRejectsCaseFoldedDuplicateKeys (0.00s)
+=== RUN   TestDecodeSignalRejectsUnicodeCaseFoldedDuplicateKeys
+--- PASS: TestDecodeSignalRejectsUnicodeCaseFoldedDuplicateKeys (0.00s)
+=== RUN   TestDecodeSignalBoundsNestingAtSixtyFourLevels
+--- PASS: TestDecodeSignalBoundsNestingAtSixtyFourLevels (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/signal	0.154s

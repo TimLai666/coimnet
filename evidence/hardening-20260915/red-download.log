@@ -1,0 +1,14 @@
+# ticket 15 item 2 red state, 2026-09-14T22:58:09Z
+$ go test -count=1 -v -run 'Truncates|ShorterThanMetadata|Reclaims|LockOfLive|Checkpoints' ./download/
+# github.com/TimLai666/coimnet/download [github.com/TimLai666/coimnet/download.test]
+download/resume_test.go:91:11: whole.ResumedFromBytes undefined (type Receipt has no field or method ResumedFromBytes)
+download/resume_test.go:91:42: whole.TruncatedBytes undefined (type Receipt has no field or method TruncatedBytes)
+download/resume_test.go:91:71: whole.ReclaimedStaleLock undefined (type Receipt has no field or method ReclaimedStaleLock)
+download/resume_test.go:109:13: resumed.ResumedFromBytes undefined (type Receipt has no field or method ResumedFromBytes)
+download/resume_test.go:110:64: resumed.ResumedFromBytes undefined (type Receipt has no field or method ResumedFromBytes)
+download/resume_test.go:112:13: resumed.TruncatedBytes undefined (type Receipt has no field or method TruncatedBytes)
+download/resume_test.go:113:61: resumed.TruncatedBytes undefined (type Receipt has no field or method TruncatedBytes)
+download/resume_test.go:187:14: receipt.ReclaimedStaleLock undefined (type Receipt has no field or method ReclaimedStaleLock)
+download/resume_test.go:255:122: unknown field CheckpointBytes in struct literal of type Options
+FAIL	github.com/TimLai666/coimnet/download [build failed]
+FAIL

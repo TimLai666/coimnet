@@ -1,0 +1,19 @@
+package main
+
+import "fmt"
+
+func main() {
+	var buf []int64
+	var old, new int64
+	for i := 0; i < 20000; i++ {
+		if cap(buf) == len(buf) {
+			old += 8 * int64(max(len(buf), 1))
+		}
+		before := cap(buf)
+		buf = append(buf, 0)
+		if cap(buf) > before {
+			new += 8 * int64(cap(buf)-before)
+		}
+	}
+	fmt.Printf("elements=%d final cap=%d actual bytes=%d old reserve=%d new reserve=%d\n", len(buf), cap(buf), 8*cap(buf), old, new)
+}
