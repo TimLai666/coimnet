@@ -10,7 +10,7 @@ Status：partial
 
 ## 交付
 
-提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射、連續值時間點重取樣及脈衝事件對齊。
+提供具版本/形狀/單位的訊號、整數時鐘、確定性同時事件排序、可驗證映射、連續值時間點重取樣、脈衝事件對齊及固定值區間取樣。
 
 ## 已完成
 
@@ -69,7 +69,22 @@ Status：partial
 
 初始缺少公開 API 的失敗測試、8 組測試與可執行範例、107 檔同源的 Mac／Ubuntu v15 完整驗證見 [脈衝證據](../../evidence/pulse-alignment-20260914/verification.json)。本次只完成 SIG-02 的脈衝時間點部分，完整需求通過數維持 14／85。
 
+## 固定值區間契約與驗收
+
+`NewIntervalResampler` 將正持續時間的 continuous／activity／modulation 區間轉成神經時間點，值在 `[start, start+duration)` 生效。重疊取最新起點及最大來源序號，較新區間結束後恢復仍有效的舊區間。區間值與持續時間必須在起點已知，才能作為即時輸入。所有輸入由呼叫者提供，沿用 Signal／Clock／ResampleLimits，沒有資料庫或格式遷移。
+
+| 路徑 | 驗收 | 狀態 |
+| --- | --- | --- |
+| 重疊、空白與結尾 | 同時起點按序號覆寫，較新區間到期後舊區間恢復；前段／中間／尾段空白省略，終點不包含且不延長 | Mac／Ubuntu 通過 |
+| 頻率與數值 | 分數位置、128 位元乘積、int64 邊界對照獨立大整數；40 組固定 seed 隨機區間逐步比對獨立有理數參考 | Mac／Ubuntu 通過 |
+| 分塊與時鐘 | 全部 8 種切塊相同；watermark 相等時群組保持開放；只輸出其以前的步號，EndStep 不包含 | Mac／Ubuntu 通過 |
+| 空值與錯誤 | nil context、零實例、錯版本／時鐘／比率／範圍、零持續時間、脈衝種類、倒退／重複序號、錯單位／metadata 拒絕 | Mac／Ubuntu 通過 |
+| 容量與取消 | 配置前檢查保留＋輸入、整段輸出及邏輯值數量；到期區間釋放但序號不遺忘；取消／超限後可重試 | Mac／Ubuntu 通過 |
+| SDK 相容性 | 三種訊號的形狀／值／有效範圍不共用可變切片，輸出可建 Observation，可執行 Go example 示範恢復與結尾 | Mac／Ubuntu 通過 |
+
+8 組測試、1 個 Go example、111 檔同源的 Mac／Ubuntu v17 完整驗證見 [區間證據](../../evidence/interval-alignment-20260914/verification.json)。SIG-02 的多通道整合證據與 SIG-05 自訂 adapter 接入核心仍待完成，完整需求通過數維持 14／85。
+
 ## 限制與未完成
 
-- 跨頻率的連續值取樣與分塊已實作。區間訊號、媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
+- 跨頻率的連續值取樣與分塊已實作。媒體解碼／濾波、自訂 adapter 的核心端到端範例尚未完成。SIG-02 與 SIG-05 保留未通過。通道各自輸出獨立 Observation，多通道共用來源序號的合併流程待補。
 - `Mapping.ValidateAgainst` 需要呼叫者提供外部圖的 `NeuronID` 集合；本 ticket 不假造 MaleCNS 或 FlyWire 查詢。

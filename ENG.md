@@ -34,8 +34,9 @@
 - `LoadWithReceipt` 從同一個已開啟檔案取得通過校驗的位元組並計算整檔 SHA-256，CLI 不重新開啟路徑取 hash。載入回條不宣告寫入耐久性。圖陣列、metadata、字串暫存、footer／report 輸入長度及 strict decoder 輸入副本、五段讀取緩衝在配置前計入限制；乘積先檢查溢位，各項分開保留以避免加總溢位。此帳面限制不含 Go 配置餘量、解碼後 JSON 物件與執行環境，不能當成 RSS 上限。未知 converter 版本拒絕讀取。
 - 所有嚴格 JSON 入口限制 64 層路徑深度；重複鍵依 Unicode simple fold 比對，涵蓋 `encoding/json` 接受的大小寫別名。錯誤路徑使用堆疊，僅回報錯誤時組字串。
 - 真實子圖範例沿用 manifest 選取、GraphStore 與既有訓練 API。框架不因範例新增模型工廠或圖格式；範例保存選取與初始化假設，人工任務結果與生物行為驗收分開。範例範圍、錯誤及證據由 [ticket 10](docs/tickets/10-real-subgraph-example.md) 管理。
-- 訊號時間點重取樣沿用 `Signal` 與 `Clock`，以整數比率對齊共用零起點。即時入口只接受 `CausalHold`，離線入口可用 `OfflineLinear`，回傳結果標明模式。來源 watermark 封閉其以前的樣本群，同時樣本依序號覆寫，結尾以明示 `HoldLast` 延伸。輸入限持續時間為零的連續／活動／調節樣本，脈衝使用獨立的 `PulseAligner`，區間語意待補。容量、錯誤與驗收責任見 [ticket 03](docs/tickets/03-signals.md)，公開用法見 [訊號取樣](docs/signal-resampling.md)。
+- 訊號時間點重取樣沿用 `Signal` 與 `Clock`，以整數比率對齊共用零起點。即時入口只接受 `CausalHold`，離線入口可用 `OfflineLinear`，回傳結果標明模式。來源 watermark 封閉其以前的樣本群，同時樣本依序號覆寫，結尾以明示 `HoldLast` 延伸。輸入限持續時間為零的連續／活動／調節樣本，脈衝使用獨立的 `PulseAligner`，固定值區間使用 `IntervalResampler`。容量、錯誤與驗收責任見 [ticket 03](docs/tickets/03-signals.md)，公開用法見 [訊號取樣](docs/signal-resampling.md)。
 - 脈衝時間點以 `ceil(sourceTime * SimulationSteps / SourceTicks)` 對齊，不提前事件。保留每筆數值與來源序號，同一步的碰撞事件逐筆輸出。watermark 嚴格超過目的步的來源位置才整組輸出，`Finish` 只排空事件。時間運算使用精確整數中間值，容量與失敗原子性由 [ticket 03](docs/tickets/03-signals.md) 驗收。
+- 固定值區間採 `[start, start+duration)`，重疊時以較晚起點及較大序號優先，較新區間到期後恢復仍有效的舊區間。輸出為已宣告範圍內的時間點，空白省略、結尾不延長區間。即時使用的前提是起點已知值與持續時間。容量及錯誤沿用取樣契約，已到期區間釋放後仍保留最後封閉來源的序號與 metadata，避免重複輸入或切換通道。
 - 數值反向使用平滑數學公式的解析導數。小步長的輸入係數用 `-Expm1(-dt/tau)` 計算，避免 `1-exp(...)` 消去有效數字。有限差分須選可解析的尺度，不能以浮點捨入後差分為零要求解析梯度歸零。
 
 ## 功能流程、錯誤與驗證責任

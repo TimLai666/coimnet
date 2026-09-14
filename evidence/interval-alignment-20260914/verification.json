@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "scope": "ticket 03 fixed-value interval resampling; SIG-02 and SIG-05 remain partial",
+  "passed": true,
+  "source_verification": "../cpu-reference-20260914/verification-v17.json",
+  "commands": [
+    "go test ./signal -run TestInterval -count=1 (red before implementation)",
+    "go test ./signal -run 'TestInterval|ExampleNewInterval' -count=1 -v",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY (macOS and Ubuntu)",
+    "GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build ./...",
+    "go doc ./signal.IntervalResampleConfig"
+  ],
+  "logs": {
+    "red": "red.log",
+    "green": "green.log",
+    "macos": "../cpu-reference-20260914/macos-v17/validation.log",
+    "ubuntu": "../cpu-reference-20260914/ubuntu-v17/validation.log"
+  },
+  "tests": [
+    "signal/interval_test.go",
+    "signal/interval_edges_test.go",
+    "signal/interval_example_test.go"
+  ],
+  "observed": {
+    "tests": 8,
+    "executable_examples": 1,
+    "chunk_partitions": 8,
+    "randomized_coverage_cases": 40,
+    "random_seed": 17,
+    "independent_time_reference": "math/big integers and rationals",
+    "whole_framework_requirements_passed": 14,
+    "whole_framework_requirements_total": 85
+  },
+  "not_verified": [
+    "multichannel core adapter",
+    "Windows runtime",
+    "GPU training"
+  ],
+  "review": "review.md"
+}
