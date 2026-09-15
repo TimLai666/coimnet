@@ -2,6 +2,10 @@
 
 ## 目前階段
 
+LIF 個體、慢速穩定與模型包（ticket 16、COR-04、STA-01）已在 fixture 驗證：`learning.NewIndividual` 對連續與 LIF 核心走同一條路徑，神經狀態改為指名核心的聯集，舊的連續個體檔仍可讀；LIF 可選的慢速穩定用每顆神經元的活動估計調整閾值偏移，手算時序與收斂數字記在 ticket；`coimnet-model-package/v1` 是第三種保存物，只有拓撲指紋、設定、參數、單位與證據清單，六種交叉載入都會被拒絕並指名讀到的是哪一種，LIF 個體跨程序恢復後續跑與不中斷逐項相等。COR-04、STA-01 標 passed，證據見 [COR-04](evidence/COR-04/verification.json)、[STA-01](evidence/STA-01/verification.json)。
+
+受限更新（ticket 17 第一階段、COR-10 的核心）已在 fixture 驗證：逐邊／逐節點遮罩讓凍結項在含 weight decay 的 50 步後逐位不變、動量與步數為零；固定符號邊改用對數幅度參數化，`learning_rate=1.0` 跑 1,000 步符號不翻轉、幅度 > 0，鏈鎖梯度與中央差分最差相對誤差 4.91e-05；範圍投影計數正確且不動動量；推導參數集的符號依 free／excitatory／inhibitory 政策帶入並回報計數。全零符號與舊快照逐位等於改前。第二階段（損失縮放、梯度累積、排程）進行中，COR-10 與 LRN-03 待第二階段證據後登記。
+
 空模型對照與判讀協定（ticket 14、NAT-03／04／05）已在真實全圖驗證：`simulate compare` 用同一份刺激跑原圖與三種空模型（保留度數的重連、打亂正負號、打亂權重）各 3 個 seed，LIF 與連續核心各 10 格（每格 165,122 節點、25,563,197 邊、300 步，兩個矩陣各約 15 分鐘）。指標與門檻事前寫進 protocol；五條 LIF 門檻在原圖與九個空模型格全部通過，所以它們分不出真實與打亂的接線；同一份接線換核心後，原圖在空模型分布中的百分位方向可以相反，歸因結論必須連同核心、參數來源、空模型種類與指標定義一起陳述。報告只陳述指標與位置，不做行為宣稱。證據見 [NAT-03](evidence/NAT-03/verification.json)、[NAT-04](evidence/NAT-04/verification.json)、[NAT-05](evidence/NAT-05/verification.json)。
 
 發布資料到動態參數的 adapter（ticket 13、NAT-02）已在真實全圖驗證：`data derive` 依明示規則檔把逐突觸傳導物質機率經座標配對到全部 25,563,197 條邊（配對比例 1.000、207 秒、RSS 3.87 GB），正負號 +53.3%／−35.9%／unknown 10.8%，unknown 只來自機率門檻與規則本身標 unknown，不補預設值；`simulate run --params` 以推導參數集跑 NAT-01 的同一協定，沉默比例由 2.1% 升到 64.4%、最大全群放電比例由 0.547 降到 0.079、不再觸發旗標。這是兩組參數假設在同一張接線圖上的差異，不是生理結論；歸因仍需 ticket 14 的空模型。證據見 [NAT-02](evidence/NAT-02/verification.json)。
@@ -18,7 +22,7 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 ## 階段目標
 
-2026-09-15 使用者決定：把整個規格做完。原始 85 項已通過 28 項、NAT 六項通過五項，剩餘 62 項依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
+2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
 
 2026-09-14 使用者定下兩條並列的一級路徑：Connectome 原生模擬（不經訓練直接執行）與可學習模式，見 [研究方向](docs/research-directions/connectome-native.md)、`AGENTS.md` 與 [NAT 增補需求](docs/requirements-addendum.json)。接下來依序做 [12 原生 runner](docs/tickets/12-native-runner.md)、[13 參數 adapter](docs/tickets/13-parameter-adapter.md)、[14 空模型與判讀](docs/tickets/14-null-models-and-behavior.md)，官方發布中能接的檔案（`body-stats`、`tbar-neurotransmitters`、`syn-partners`、`Neuprint_Meta.csv`）在 13 納入，盤點見 [發布盤點](docs/malecns-release-catalog.md)。
@@ -45,6 +49,10 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 13 | 研究者可由發布資料推導動態參數 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `params` 套件與 `coimnet-parameter-set/v1` 檔案格式、`data derive`／`data validate --params`、`simulate run --params`（`derived_release/v1`，unknown 政策明示）；手算 fixture 由 root 獨立重算一致；真實全圖 25,563,197 條邊推導配對比例 1.000、sign +13.6M／−9.2M／unknown 2.75M，推導參數與均一參數同協定對照；NAT-02 passed；只在 macOS 實測，全圖只跑 exclude 政策 |
 | 14 | 研究者可用空模型與判讀協定歸因 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 三種空模型（記憶體衍生物，seed 加 hash 重現）、具名集合、四種指標、事前門檻、`simulate compare`；fixture 手算由 root 重算一致；真實全圖 LIF 與連續核心各 10 格，NAT-03／04／05 passed；每種空模型 3 個 seed、只在 macOS、`population_sync` 未做 |
 | 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
+| 15 | 強化：續傳、共用嚴格 JSON、邊順序守衛 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `.part` 截斷續傳、死 pid 鎖回收、`signal` 改用 `strictjson`、推導的邊順序守衛皆有回歸測試 |
+| 16 | 研究者可建立 LIF 個體、開啟慢速穩定並發布模型包 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 神經狀態聯集與舊檔升級、慢速穩定手算時序與收斂、模型包六種交叉拒絕、LIF 個體跨程序恢復逐項相等；COR-04、STA-01 passed；只有 fixture、只在 macOS |
+| 17 | 使用者可限制可更新參數、符號與範圍，並使用完整最佳化器流程 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段（遮罩、固定符號、範圍、推導符號）驗證通過；第二階段（損失縮放、累積、排程）進行中，COR-10／LRN-03 待登記 |
+| 18 | 研究者可使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段（`plasticity` 套件與個體整合）派工中 |
 
 ## 目前阻礙
 
@@ -58,9 +66,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-研究方向的 12→13→14 序列已完成，下一步待使用者決定，候選有：(a) NAT-06 在 runner 之上開啟可塑性並做學習前後對照矩陣；(b) LIF 個體持續狀態（`learning.Individual` 的 LIF 變體與新 schema）與慢速穩定（COR-04）；(c) SIG-03 控制器資料流；(d) Ubuntu 上重跑 v26 以後的真實資料證據；(e) `signal/json.go` 的 JSON 深度防護與 `download` 續傳缺口。
+研究方向的 12→13→14 序列已完成；2026-09-15 使用者決定把整個規格做完，路線見「階段目標」，ticket 15、16 與 17 第一階段已驗證，17 第二階段與 18 第一階段進行中。原先列出的候選（保留作紀錄）：(a) NAT-06 在 runner 之上開啟可塑性並做學習前後對照矩陣；(b) LIF 個體持續狀態（`learning.Individual` 的 LIF 變體與新 schema）與慢速穩定（COR-04）；(c) SIG-03 控制器資料流；(d) Ubuntu 上重跑 v26 以後的真實資料證據；(e) `signal/json.go` 的 JSON 深度防護與 `download` 續傳缺口。
 
-LIF 個體持續狀態與按類型混合（主規格 8.2、8.3、10.2）：目前 `learning.NewIndividual` 遇到 LIF 設定直接回錯，下一步是把電位、突觸跡、適應值與不應期計數納入 `dynamics.State`，讓 `Advance` 可以接續放電狀態，再用新的 schema 保存並在新程序讀回，舊 episode 快照不得被解讀成持續個體。之後接按類型混合（COR-05），混合要明示細胞分群依據，同一筆訊號不得重複計入。慢速穩定（homeostasis）補齊後 COR-04 才能標為通過。舊 episode 讀取器缺口已修（[ticket 05](docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位)）。SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
+LIF 個體持續狀態已由 ticket 16 完成（`dynamics.LIFState` 保存電位、突觸跡歷史、適應值、不應期計數與慢速穩定狀態，`coimnet-individual-checkpoint/v1` 以聯集指名核心，舊 episode 快照與模型包都不會被解讀成持續個體）。按類型混合（COR-05），混合要明示細胞分群依據，同一筆訊號不得重複計入。慢速穩定（homeostasis）補齊後 COR-04 才能標為通過。舊 episode 讀取器缺口已修（[ticket 05](docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位)）。SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
 
 圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 23 項附上通過證據，其餘保留。LIF 階段的來源、日誌與環境見 [macOS v26](evidence/cpu-reference-20260914/macos-v26/validation.log) 與 [ticket 11](docs/tickets/11-lif-core.md#第三階段證據)。最新全套日誌見 [Mac v25](evidence/cpu-reference-20260914/macos-v25/validation.log)、[Ubuntu v25](evidence/cpu-reference-20260914/ubuntu-v25/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v25.json)。
 
