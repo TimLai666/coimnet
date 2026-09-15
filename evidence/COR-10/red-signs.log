@@ -1,0 +1,25 @@
+# Red state for ticket 17 stage one, fixed signs with log-magnitude parametrization (root decision 2).
+# Stub EffectiveWeights returns the raw weights unchanged, so nothing is fixed and nothing is projected.
+$ go test -count=1 -run 'EffectiveWeights|EdgeSigns|SnapshotWithoutEdgeSigns|FixedSign|MinLogMagnitude|ChainRule|AllZeroEdgeSigns' ./learning/
+2026/09/15 07:29:04 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestFixedSignEdgesAreCappedInLogSpace (0.00s)
+    ranges_test.go:149: no weight was capped: map[]
+--- FAIL: TestEffectiveWeightsMapsRawValuesThroughTheDeclaredSigns (0.00s)
+    signs_test.go:58: effective weight 0 = -0.51082562376599072, want 0.59999999999999998
+--- FAIL: TestEdgeSignsAndMinLogMagnitudeAreValidated (0.00s)
+    signs_test.go:97: NewNetwork accepted short signs
+--- FAIL: TestMinLogMagnitudeProjectionKeepsTheMagnitudeRepresentable (0.00s)
+    signs_test.go:273: the floor never engaged, the fixture proves nothing
+--- FAIL: TestChainRuleGradientMatchesCentralFiniteDifferences (0.00s)
+    signs_test.go:324: chain-rule gradient against central finite differences (eps=0.01)
+        edge   sign   analytic               central difference     relative error
+        0      1      -0.0301465593382247    -0.0301464933168211    2.19e-06
+        1      0      0.0647976198895952     0.0647975557025338     9.91e-07
+        2      -1     0.00365418010612066    0.00365413149105986    1.33e-05
+        3      0      -0.138397294581783     -0.138397670675483     2.72e-06
+    signs_test.go:348: edge 0 chain rule gave -0.030146559338224733, want d loss/d w * w = 0.015399634978347102
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.300s
+FAIL

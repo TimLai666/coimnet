@@ -202,7 +202,11 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 			}
 		}
 	}
-	state, outputs, err := n.core.advance(ctx, p, i.neural, coreInputs)
+	core, err := n.coreParameters(p)
+	if err != nil {
+		return nil, err
+	}
+	state, outputs, err := n.core.advance(ctx, core, i.neural, coreInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -310,12 +314,18 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	if err := validateTrainable(o.Trainable, i.trainer.network.core.theta()); err != nil {
 		return err
 	}
+	if err := validateMasks(o.Masks, i.trainer.network.core.nodes(), i.trainer.network.core.edges()); err != nil {
+		return err
+	}
+	if err := validateRangesAgainstSigns(i.trainer.network.config, o.Ranges); err != nil {
+		return err
+	}
 	count := len(i.trainer.optimizer.First)
 	state := AdamState{make([]float64, count), make([]float64, count), make([]uint64, count)}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	i.trainer.options = o
+	i.trainer.options = copyOptions(o)
 	i.trainer.optimizer = state
 	i.trainer.updates = 0
 	return nil

@@ -31,13 +31,23 @@ type Options struct {
 	ClipNorm     float64   `json:"clip_norm"`
 	Truncation   int       `json:"truncation"`
 	Trainable    Trainable `json:"trainable"`
+	// Masks narrows a trainable group to individual edges and nodes. The
+	// effective mask is the group flag AND the per-item mask; nil means every
+	// item of every group follows its group flag alone.
+	Masks *UpdateMasks `json:"masks,omitempty"`
+	// Ranges bounds parameter values by projection after each update. nil, and
+	// every zero field inside it, mean unlimited.
+	Ranges *ParameterRanges `json:"ranges,omitempty"`
 }
 
 // DefaultOptions returns every group of the continuous core trainable and a
 // declared AdamW baseline. The LIF threshold group stays frozen; a spiking
 // model must enable it explicitly.
 func DefaultOptions() Options {
-	return Options{.01, .9, .999, 1e-8, 0, 1, 0, Trainable{Encoder: true, Weights: true, Bias: true, Tau: true, Readout: true}}
+	return Options{
+		LearningRate: .01, Beta1: .9, Beta2: .999, Epsilon: 1e-8, WeightDecay: 0, ClipNorm: 1, Truncation: 0,
+		Trainable: Trainable{Encoder: true, Weights: true, Bias: true, Tau: true, Readout: true},
+	}
 }
 
 // AdamState is ordered weights, bias, log_tau, theta_raw, encoder, readout.
@@ -62,12 +72,18 @@ type TrainingSnapshot struct {
 	Updates       uint64     `json:"updates"`
 }
 
-// StepResult records the pre-update loss and parameter update size.
+// StepResult records the pre-update loss, the parameter update size, how many
+// parameters each projection moved and the learning rate the update used.
+// Projected is nil when no projection changed anything; its keys are the
+// parameter groups "weights", "bias", "log_tau" and "theta_raw" plus
+// "min_log_magnitude" for the fixed-sign underflow floor.
 type StepResult struct {
-	Loss         float64 `json:"loss"`
-	GradientNorm float64 `json:"gradient_norm"`
-	UpdateNorm   float64 `json:"update_norm"`
-	Updates      uint64  `json:"updates"`
+	Loss         float64        `json:"loss"`
+	GradientNorm float64        `json:"gradient_norm"`
+	UpdateNorm   float64        `json:"update_norm"`
+	Updates      uint64         `json:"updates"`
+	Projected    map[string]int `json:"projected,omitempty"`
+	LearningRate float64        `json:"learning_rate"`
 }
 
 // Trainer serializes updates. Context-aware operations can stop while waiting
@@ -93,6 +109,12 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if err := validateTrainable(o.Trainable, n.core.theta()); err != nil {
 		return nil, err
 	}
+	if err := validateMasks(o.Masks, n.core.nodes(), n.core.edges()); err != nil {
+		return nil, err
+	}
+	if err := validateRangesAgainstSigns(n.config, o.Ranges); err != nil {
+		return nil, err
+	}
 	// Validate supplied arrays before allocating buffers from untrusted declared
 	// dimensions (for example, a compact but malformed checkpoint).
 	encoderSize, sizeErr := size(c.InputSize, inputWidth(n.config))
@@ -110,7 +132,7 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 		return nil, fmt.Errorf("invalid model: %w", err)
 	}
 	count := len(flatParameters(p))
-	return &Trainer{network: n, parameters: copyParameters(p), options: o, optimizer: AdamState{make([]float64, count), make([]float64, count), make([]uint64, count)}}, nil
+	return &Trainer{network: n, parameters: copyParameters(p), options: copyOptions(o), optimizer: AdamState{make([]float64, count), make([]float64, count), make([]uint64, count)}}, nil
 }
 
 // RestoreTrainer rejects unsupported snapshots and invalid optimizer state.
@@ -147,7 +169,7 @@ func (tr *Trainer) Snapshot() TrainingSnapshot {
 	}
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
-	return TrainingSnapshot{"coimnet-episode-training/v1", tr.network.Config(), copyParameters(tr.parameters), tr.options, copyAdam(tr.optimizer), tr.updates}
+	return TrainingSnapshot{"coimnet-episode-training/v1", tr.network.Config(), copyParameters(tr.parameters), copyOptions(tr.options), copyAdam(tr.optimizer), tr.updates}
 }
 
 // Predict runs a frozen, independent episode without changing trainer state.
@@ -202,7 +224,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	}
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
-	mask := parameterMask(tr.parameters, tr.options.Trainable)
+	mask := parameterMask(tr.parameters, tr.options)
 	state := copyAdam(tr.optimizer)
 	var norm float64
 	for i, v := range grad {
@@ -216,6 +238,13 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	scale := 1.0
 	if tr.options.ClipNorm > 0 && norm > tr.options.ClipNorm {
 		scale = tr.options.ClipNorm / norm
+	}
+	// Only a constrained model pays for the pre-update copy the projection
+	// needs to report an update norm that includes the projection.
+	project := constrained(tr.network.fixed, tr.options.Ranges)
+	var before []float64
+	if project {
+		before = append([]float64(nil), p...)
 	}
 	var updateNorm float64
 	for i, v := range p {
@@ -235,7 +264,21 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 		if !finite(p[i]) || !finite(state.First[i]) || !finite(state.Second[i]) {
 			return zero, fmt.Errorf("non-finite optimizer result at parameter %d", i)
 		}
-		updateNorm = math.Hypot(updateNorm, p[i]-v)
+		if !project {
+			updateNorm = math.Hypot(updateNorm, p[i]-v)
+		}
+	}
+	var projected map[string]int
+	if project {
+		if projected, err = doProject(tr.network.config, tr.options.Ranges, p, mask, tr.parameters); err != nil {
+			return zero, err
+		}
+		for i := range p {
+			if !mask[i] {
+				continue
+			}
+			updateNorm = math.Hypot(updateNorm, p[i]-before[i])
+		}
 	}
 	candidate := unflatten(p, tr.parameters)
 	// Includes positive representable tau, tensor casts and finite forward state.
@@ -251,7 +294,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	tr.parameters = candidate
 	tr.optimizer = state
 	tr.updates++
-	return StepResult{loss, norm, updateNorm, tr.updates}, nil
+	return StepResult{Loss: loss, GradientNorm: norm, UpdateNorm: updateNorm, Updates: tr.updates, Projected: projected, LearningRate: tr.options.LearningRate}, nil
 }
 
 type cancellableMutex struct {
@@ -308,7 +351,7 @@ func validateOptions(o Options) error {
 	if o.LearningRate <= 0 || o.Beta1 < 0 || o.Beta1 >= 1 || o.Beta2 < 0 || o.Beta2 >= 1 || o.Epsilon <= 0 || o.WeightDecay < 0 || o.ClipNorm < 0 || o.Truncation < 0 {
 		return fmt.Errorf("invalid optimizer option range")
 	}
-	return nil
+	return validateRanges(o.Ranges)
 }
 
 // validateTrainable rejects a threshold group the configured core does not own,
@@ -348,14 +391,33 @@ func unflatten(v []float64, shape Parameters) Parameters {
 	}
 	return p
 }
-func parameterMask(p Parameters, m Trainable) []bool {
+
+// parameterMask is the effective mask: the group flag of Options.Trainable AND
+// the per-item entry of Options.Masks. The edge half applies to the weight
+// group and the node half to bias, log_tau and theta_raw; the encoder and the
+// readout have no per-item mask and follow their group flag alone.
+func parameterMask(p Parameters, o Options) []bool {
+	var edges, nodes []bool
+	if o.Masks != nil {
+		edges, nodes = o.Masks.Edges, o.Masks.Nodes
+	}
+	m := o.Trainable
 	var out []bool
 	for _, g := range []struct {
 		size    int
 		enabled bool
-	}{{len(p.Core.Weights), m.Weights}, {len(p.Core.Bias), m.Bias}, {len(p.Core.LogTau), m.Tau}, {len(p.ThetaRaw), m.Theta}, {len(p.Encoder), m.Encoder}, {len(p.Readout), m.Readout}} {
-		for range g.size {
-			out = append(out, g.enabled)
+		item    []bool
+	}{
+		{len(p.Core.Weights), m.Weights, edges}, {len(p.Core.Bias), m.Bias, nodes},
+		{len(p.Core.LogTau), m.Tau, nodes}, {len(p.ThetaRaw), m.Theta, nodes},
+		{len(p.Encoder), m.Encoder, nil}, {len(p.Readout), m.Readout, nil},
+	} {
+		for i := range g.size {
+			enabled := g.enabled
+			if enabled && i < len(g.item) {
+				enabled = g.item[i]
+			}
+			out = append(out, enabled)
 		}
 	}
 	return out

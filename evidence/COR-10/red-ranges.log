@@ -1,0 +1,21 @@
+# Red state for ticket 17 stage one, parameter ranges (root decision 3).
+# Options.Ranges exists as a field only: nothing validates it, projects with it or counts it.
+$ go test -count=1 -run 'Range|Projected|ThetaRawRange|InvalidRanges' ./learning/
+2026/09/15 07:29:15 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestRangeProjectionClampsEveryGroupAndCountsIt (0.00s)
+    ranges_test.go:35: projected = map[], want map[bias:2 log_tau:2 weights:2]
+--- FAIL: TestRangeProjectionLeavesTheOptimizerStateAlone (0.00s)
+    ranges_test.go:89: the projection did not change any parameter, the fixture proves nothing
+--- FAIL: TestMaskedParametersAreNotProjected (0.00s)
+    ranges_test.go:126: frozen weight 0 moved: 0.30999999796827649 != 0.29999999999999999
+--- FAIL: TestThetaRawRangeAppliesOnTheSpikingCore (0.00s)
+    ranges_test.go:183: projected = map[], want three thresholds
+--- FAIL: TestInvalidRangesAreRejected (0.00s)
+    ranges_test.go:206: NewTrainer accepted inverted log tau
+--- FAIL: TestRangesTravelWithTheSnapshotAndAreOwned (0.00s)
+    ranges_test.go:232: trainer aliased the caller's ranges: &{WeightMagnitudeMax:0.1 BiasAbsMax:99 LogTauMin:-0.01 LogTauMax:0.01 ThetaRawAbsMax:0}
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.257s
+FAIL

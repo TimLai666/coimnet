@@ -1,0 +1,22 @@
+# Red state for ticket 17 stage one, fine-grained update masks (root decision 1).
+# Stub API in learning/constrained.go: the types exist so the tests compile, no masking behaviour yet.
+$ go test -count=1 -run 'Mask|GroupFlag|OptionsWithout' ./learning/
+2026/09/15 07:29:03 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestPerItemMasksFreezeOneEdgeAndOneNodeThroughWeightDecay (0.01s)
+    masks_test.go:66: weights[0] moved: 0.69510264574731961 != 0.29999999999999999
+--- FAIL: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate (0.00s)
+    --- FAIL: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_on,_item_off (0.00s)
+        masks_test.go:128: weights moved=true, want false ([0.3 -0.2] -> [0.3099999979682765 -0.209999603627764])
+--- FAIL: TestMaskLengthsAreValidatedAgainstTheTopology (0.00s)
+    masks_test.go:147: NewTrainer accepted short edges
+--- FAIL: TestMasksTravelWithTheSnapshotAndAreOwned (0.00s)
+    masks_test.go:182: trainer aliased the caller's mask: &{Edges:[true true] Nodes:[true false]}
+--- FAIL: TestNodeMaskFreezesThetaRawOnTheSpikingCore (0.00s)
+    masks_test.go:237: masked theta_raw[0] moved: -2.9540670597332261 != -1
+--- FAIL: TestMaskedParametersAreNotProjected (0.00s)
+    ranges_test.go:126: frozen weight 0 moved: 0.30999999796827649 != 0.29999999999999999
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.477s
+FAIL

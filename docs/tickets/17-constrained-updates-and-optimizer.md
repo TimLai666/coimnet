@@ -66,16 +66,100 @@ func LearningRateAt(o Options, updates uint64) float64
 
 ## 驗收
 
-- [ ] 第一階段：逐項遮罩下凍結項在含 weight decay 的多步後逐位不變、動量與步數不動；固定符號邊在
+- [x] 第一階段：逐項遮罩下凍結項在含 weight decay 的多步後逐位不變、動量與步數不動；固定符號邊在
   大學習率下跑 1,000 步符號不翻轉且幅度 > 0；鏈鎖梯度以連續核心的有限差分驗證（`EdgeSigns` 混合
   自由與固定）；`EdgeSigns` 全零逐位等於改前；範圍投影計數正確且不動動量；舊快照可讀；
   `SignsFromParameterSet` 對 ticket 13 的 fixture 參數集給出 +1／−1／unknown 計數與政策結果；
-  `go test`、race、vet。
+  `go test`、race、vet 全數通過。
 - [ ] 第二階段：`LossScale` 縮放前後更新在 1e-12 內相同、溢位拒絕；累積 k 步等於一次大 batch 的
   平均梯度（手算小例）、中途快照恢復逐位相同；三種排程的 LR 曲線手算、恢復後接續；裁切順序測試；
   `evidence/LRN-03/`、`evidence/COR-10/`；ticket、ENG、README。
 - [x] COR-07 證據紀錄與 requirements-status（root；`evidence/COR-07/verification.json` 由 opencode 依 root
   查證的事實寫成，root 逐項核對後標 passed）。
+
+## 第一階段證據
+
+`evidence/COR-10/`（2026-09-15，macOS，`uptime` 記於 `verification-full.log`：up 9 days, load 2.04）。
+先寫失敗測試再實作：`learning/constrained.go` 先只放型別與空實作，四份 `red-*.log` 是行為紅燈而不是
+編譯錯誤，實作後同樣的 `-run` 過濾器產生對應的 `green-*.log`。
+
+- 遮罩：`red-masks.log` → `green-masks.log`。`TestPerItemMasksFreezeOneEdgeAndOneNodeThroughWeightDecay`
+  在 `weight_decay=0.1` 下跑 50 步，被遮罩的 `weights[0]`、`bias[0]`、`log_tau[0]` 值逐位不變，
+  `First`／`Second`／`Steps` 全為 0，未遮罩的三項都動且 `Steps=50`。群組旗標與逐項遮罩的 AND 由
+  `TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate` 三格釘住；長度驗證涵蓋 `NewTrainer` 與
+  `RestoreTrainer`；`theta_raw` 的節點遮罩在 LIF 核心上另有一測。
+- 固定符號：`red-signs.log` → `green-signs.log`。
+  `TestFixedSignEdgesNeverFlipUnderALargeLearningRate` 在 `learning_rate=1.0` 下跑 1,000 步，
+  每一步都檢查有效權重的符號：edge 0（`+1`）最小幅度 0.07602767734034184，
+  edge 2（`−1`）最小幅度 0.47519607783859258，兩者都 > 0 且從未翻轉；最終 raw 值
+  `[-1.9782315349015838 -0.9886289490396335 0.4029712819746961 0.95797632963738]`。
+  `MinLogMagnitude` 投影在 `TestMinLogMagnitudeProjectionKeepsTheMagnitudeRepresentable`
+  的 30 步中觸發 17 次，raw 值從未低於地板。`EdgeSigns` 全零與「不宣告」在 20 步後的
+  `Parameters`／`Optimizer`／`Updates` JSON 位元組相同；沒有 `edge_signs` 的舊快照載入為全自由，
+  且 `Predict` 結果逐位相同。
+- 鏈鎖梯度（連續核心，中央差分 `eps=0.01`，混合自由與固定邊）：
+
+  | edge | sign | analytic | central difference | relative error |
+  | --- | --- | --- | --- | --- |
+  | 0 | +1 | -0.0169804527869481 | -0.01698069649127 | 1.44e-05 |
+  | 1 | 0 | -0.018380476235569 | -0.0183803676063465 | 5.91e-06 |
+  | 2 | -1 | -0.00118676156045005 | -0.00118681987066049 | 4.91e-05 |
+  | 3 | 0 | -0.128878357933245 | -0.128878545411534 | 1.45e-06 |
+
+  最差相對誤差 4.91e-05，低於票面的 1e-4。同一測試另外比對
+  `d loss/d rho == d loss/d w * w`（1e-12 相對誤差內），並確認該 fixture 上兩者確實不同，
+  所以「少乘一次 w」的實作不可能通過。
+- 範圍：`red-ranges.log` → `green-ranges.log`。一步之後 `Projected` 為
+  `map[weights:2 bias:2 log_tau:2]`，三組都夾到宣告的界線；與沒有 `Ranges` 的對照訓練器相比
+  `AdamState` 逐位相同、`GradientNorm` 相同，證明投影不動動量。被遮罩的群組不投影，
+  `Projected` 也不會出現該鍵。固定符號邊的 `WeightMagnitudeMax` 在 log 空間夾成
+  `log(max)`，有效權重正好等於上限。非有限、負的幅度上限、反轉的 log_tau 區間，
+  以及低於對數幅度地板的權重上限都被 `NewTrainer` 拒絕。
+- 推導參數集：`red-signs-from-set.log` → `green-signs-from-set.log`。
+  `learning/derived_fixture_test.go` 把 ticket 13 的四節點 fixture 重建一份（真的跑
+  `params.Derive`，不是抄答案），六條邊的符號為 `[1 -1 0 -1 0 0]`。三種政策的結果與計數：
+  `free` → `[1 -1 0 -1 0 0]`、`excitatory` → `[1 -1 1 -1 1 1]`、`inhibitory` → `[1 -1 -1 -1 -1 -1]`，
+  三者的 `SignSummary` 都是 `PositiveEdges:1 NegativeEdges:2 UnknownEdges:3` 加上該政策名。
+- 快照相容：`red-checkpoint-compat.log` → `green-checkpoint-compat.log`
+  （`checkpoint/options_compat_test.go`，新檔案，沒有動 `checkpoint/individual_test.go`）。
+  未使用時 `masks`、`ranges`、`edge_signs`、`min_log_magnitude` 都不寫出；手工剝掉這四個欄位的
+  payload 仍可載入且載入為無限制；四個欄位可完整往返；欄位內的 JSON null 被必填檢查擋下，
+  但整個可選指標為 null 仍合法；長度不符的遮罩在 `Load` 就被拒絕。
+- 全套驗證：`verification-full.log`（`gofmt -l .` 無輸出、`go vet ./...`、`go test -count=1 ./...`）
+  與 `verification-race.log`（`go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/...`）。
+  `learning`、`checkpoint`、`experiment`、`examples/lifthreshold`、`examples/realsubgraph` 全綠。
+
+偏離與待決策：
+
+1. **`SignsFromParameterSet` 的簽章與票面不同。** 票面寫
+   `SignsFromParameterSet(set *params.Set, unknownPolicy string)`，但 `params` 依賴 `connectome`，
+   而 `connectome/individual_test.go` 是 `package connectome` 的內部測試且 import `learning`
+   （commit `d357b69`，早於本票）。`learning` 一旦 import `params` 就在 connectome 的測試 binary
+   形成 import cycle，`go test ./connectome/` 直接編譯失敗。因為 `connectome/` 不在本輪可改範圍，
+   改為 `SignsFromParameterSet(set DerivedSigns, unknownPolicy string)`，`DerivedSigns` 只帶
+   `Source`／`EdgeSigns`／`Edges` 三個欄位，呼叫端一行轉換：
+   `learning.DerivedSigns{Source: set.Source, EdgeSigns: set.EdgeSign, Edges: set.Edges()}`。
+   `learning.DerivedSetSource` 重複了 `params.SetSource` 的字串，外部測試套件
+   （可以同時 import 兩者）有一測釘住兩者相等。若 root 願意把
+   `connectome/individual_test.go` 改成 `package connectome_test`，就能把簽章換回票面原樣。
+2. **`Individual.Advance` 也走 `EffectiveWeights`。** 票面只點名 `Predict`、`spikeEvents`、
+   `LossGradient` 與 `Step`，但持續個體的推進若不換算，固定符號邊會把對數幅度當權重用。
+   已一併接上，並有測試比對「固定符號 + raw」與「自由符號 + 有效權重」兩條路徑逐位相同。
+3. **`examples/multichannel/example_test.go:111` 已在本輪修好。** `StepResult` 依票面新增
+   `Projected map[string]int` 後不再是可比較型別，該行原本的 `if a != b` 無法編譯；
+   經 root 同意後改成 `if !reflect.DeepEqual(a, b) {`（該檔本來就 import `reflect`），
+   語意不變。修正後 `gofmt -l .` 無輸出，`go vet ./...`、`go test -count=1 ./...` 與
+   `go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/...` 全數通過
+   （`evidence/COR-10/verification-full.log` 第三段與 `verification-race.log`）。
+4. **`Projected` 的鍵。** 票面只說「各群組被投影的數量」。實作用
+   `weights`／`bias`／`log_tau`／`theta_raw` 四個群組鍵，另加 `min_log_magnitude`
+   給固定符號邊的下溢地板，因為那是 root 決策 2 的規則而不是 root 決策 3 的範圍。
+   沒有任何投影時 `Projected` 為 nil（`omitempty`）。
+5. **投影只作用在可更新的參數。** 若對被遮罩的參數也投影，「凍結項逐位不變」就不成立，
+   兩條 root 決策會互相矛盾。已在 `ParameterRanges` 的註解與測試中寫明。
+6. **`StepResult` 多了 `learning_rate` 欄位，`internal/cli` 的 `last_step` JSON 因此多一個鍵。**
+   `internal/cli/train.go` 直接序列化 `learning.StepResult`。這是純新增欄位，沒有既有測試比對
+   該 JSON 的位元組，但 `evidence/` 裡舊的 `train-*.json` 不再與新輸出逐位相同。
 
 ## 依據
 

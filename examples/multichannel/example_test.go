@@ -108,7 +108,7 @@ func TestAdaptCoreTrainingCompatibility(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if a != b {
+		if !reflect.DeepEqual(a, b) {
 			t.Fatalf("update %d differs", i)
 		}
 	}

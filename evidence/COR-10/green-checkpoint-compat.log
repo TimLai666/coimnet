@@ -1,0 +1,27 @@
+# Green: ticket 17 stage one, snapshot compatibility of the new Options/Config fields.
+$ go test -count=1 -v -run 'EpisodeCheckpoint' ./checkpoint/
+2026/09/15 09:17:10 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestLIFEpisodeCheckpointRoundTrip
+--- PASS: TestLIFEpisodeCheckpointRoundTrip (0.01s)
+=== RUN   TestEpisodeCheckpointOmitsUnusedConstraintFields
+--- PASS: TestEpisodeCheckpointOmitsUnusedConstraintFields (0.01s)
+=== RUN   TestEpisodeCheckpointCarriesMasksRangesAndEdgeSigns
+--- PASS: TestEpisodeCheckpointCarriesMasksRangesAndEdgeSigns (0.01s)
+=== RUN   TestEpisodeCheckpointRejectsAMaskThatDoesNotMatchTheTopology
+--- PASS: TestEpisodeCheckpointRejectsAMaskThatDoesNotMatchTheTopology (0.01s)
+=== RUN   TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs
+=== RUN   TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_edge_sign
+=== RUN   TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_min_log_magnitude
+=== RUN   TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_mask_element
+=== RUN   TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_range_bound
+--- PASS: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs (0.03s)
+    --- PASS: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_edge_sign (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_min_log_magnitude (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_mask_element (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_range_bound (0.01s)
+=== RUN   TestEpisodeCheckpointStillLoadsAHandWrittenPreTicketPayload
+--- PASS: TestEpisodeCheckpointStillLoadsAHandWrittenPreTicketPayload (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.269s

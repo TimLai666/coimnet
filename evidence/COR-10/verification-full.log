@@ -1,0 +1,84 @@
+$ uptime
+ 9:18  up 9 days, 14:57, 1 user, load averages: 2.27 2.22 1.92
+
+$ gofmt -l .
+(end)
+
+$ go vet ./...
+# github.com/TimLai666/coimnet/examples/multichannel_test
+# [github.com/TimLai666/coimnet/examples/multichannel_test]
+vet: examples/multichannel/example_test.go:111:6: invalid operation: a != b (struct containing map[string]int cannot be compared)
+(exit 1)
+
+$ go test -count=1 ./...
+# github.com/TimLai666/coimnet/examples/multichannel_test [github.com/TimLai666/coimnet/examples/multichannel.test]
+examples/multichannel/example_test.go:111:6: invalid operation: a != b (struct containing map[string]int cannot be compared)
+ok  	github.com/TimLai666/coimnet	0.266s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.676s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	1.747s
+ok  	github.com/TimLai666/coimnet/download	1.598s
+ok  	github.com/TimLai666/coimnet/dynamics	0.788s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	0.977s
+FAIL	github.com/TimLai666/coimnet/examples/multichannel [build failed]
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.526s
+ok  	github.com/TimLai666/coimnet/experiment	1.889s
+ok  	github.com/TimLai666/coimnet/feather	1.391s
+ok  	github.com/TimLai666/coimnet/internal/cli	13.096s
+ok  	github.com/TimLai666/coimnet/internal/extsort	1.024s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.456s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.570s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.719s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.865s
+ok  	github.com/TimLai666/coimnet/learning	1.777s
+ok  	github.com/TimLai666/coimnet/params	2.187s
+ok  	github.com/TimLai666/coimnet/signal	1.365s
+ok  	github.com/TimLai666/coimnet/simulate	2.639s
+FAIL
+(exit 1)
+
+$ go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/...
+# github.com/TimLai666/coimnet/examples/multichannel_test [github.com/TimLai666/coimnet/examples/multichannel.test]
+examples/multichannel/example_test.go:111:6: invalid operation: a != b (struct containing map[string]int cannot be compared)
+ok  	github.com/TimLai666/coimnet/learning	2.296s
+ok  	github.com/TimLai666/coimnet/checkpoint	7.422s
+ok  	github.com/TimLai666/coimnet/experiment	3.409s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.955s
+FAIL	github.com/TimLai666/coimnet/examples/multichannel [build failed]
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	2.424s
+FAIL
+(exit 1)
+
+=== rerun after fixing examples/multichannel/example_test.go:111 ===
+$ uptime
+ 9:20  up 9 days, 14:59, 1 user, load averages: 2.16 2.50 2.10
+
+$ gofmt -l .
+(end)
+
+$ go vet ./...
+(exit 0)
+
+$ go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	1.414s
+ok  	github.com/TimLai666/coimnet/checkpoint	2.781s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	3.061s
+ok  	github.com/TimLai666/coimnet/download	3.186s
+ok  	github.com/TimLai666/coimnet/dynamics	3.018s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	3.502s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	3.755s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	4.051s
+ok  	github.com/TimLai666/coimnet/experiment	5.324s
+ok  	github.com/TimLai666/coimnet/feather	4.481s
+ok  	github.com/TimLai666/coimnet/internal/cli	15.550s
+ok  	github.com/TimLai666/coimnet/internal/extsort	5.130s
+ok  	github.com/TimLai666/coimnet/internal/fileio	5.098s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	5.102s
+ok  	github.com/TimLai666/coimnet/internal/sparse	5.128s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	4.790s
+ok  	github.com/TimLai666/coimnet/learning	3.162s
+ok  	github.com/TimLai666/coimnet/params	3.423s
+ok  	github.com/TimLai666/coimnet/signal	2.209s
+ok  	github.com/TimLai666/coimnet/simulate	3.251s
+(exit 0)

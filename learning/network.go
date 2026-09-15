@@ -22,6 +22,13 @@ type Config struct {
 	OutputSize   int                 `json:"output_size"`
 	ReadoutNodes []int               `json:"readout_nodes"`
 	InputNodes   []int               `json:"input_nodes,omitempty"`
+	// EdgeSigns fixes the sign of individual edges. +1 or -1 switches that
+	// edge to the log-magnitude parametrization, 0 leaves it free, and a nil
+	// or empty array leaves every edge free. Its length is the edge count.
+	EdgeSigns []int8 `json:"edge_signs,omitempty"`
+	// MinLogMagnitude is the floor a fixed-sign edge's log magnitude is
+	// projected to after each update. Zero selects the declared default -20.
+	MinLogMagnitude float64 `json:"min_log_magnitude,omitempty"`
 }
 
 // Parameters uses a row-major encoder [input,input-node] (or [input,node]
@@ -45,9 +52,12 @@ type Gradient struct {
 }
 
 // Network is immutable; callers own parameter versions and independent episodes.
+// fixed caches whether any edge left the free parametrization, so a model
+// without fixed signs never pays for the conversion.
 type Network struct {
 	config Config
 	core   coreModel
+	fixed  bool
 }
 
 // NewNetwork validates dimensions and copies connectivity and readout selection.
@@ -89,9 +99,13 @@ func NewNetwork(c Config) (*Network, error) {
 		}
 		seen[id] = true
 	}
+	if err := validateSignConfig(c, core.edges()); err != nil {
+		return nil, err
+	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
-	return &Network{c, core}, nil
+	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
+	return &Network{c, core, hasFixedSigns(c.EdgeSigns)}, nil
 }
 
 // Config returns an independent copy of the complete model configuration.
@@ -111,13 +125,33 @@ func (n *Network) Config() Config {
 	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
+	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	return c
+}
+
+// coreParameters converts stored raw parameters into the values the core
+// integrates. A model that declares no fixed sign is returned unchanged, so it
+// allocates nothing and stays bit-identical to the behaviour before ticket 17.
+func (n *Network) coreParameters(p Parameters) (Parameters, error) {
+	if !n.fixed {
+		return p, nil
+	}
+	weights, err := EffectiveWeights(n.config, p)
+	if err != nil {
+		return Parameters{}, err
+	}
+	p.Core.Weights = weights
+	return p, nil
 }
 
 type execution struct {
 	encoderTape, readoutTape                    *nn.Tape
 	x, encoder, encoded, h, readout, prediction *nn.Tensor
 	trace                                       coreTrace
+	// weights are the effective weights this pass integrated, kept so the
+	// reverse pass can apply the log-magnitude chain rule without recomputing
+	// them. It is nil when no edge carries a fixed sign.
+	weights []float64
 }
 
 // Predict starts an independent episode at zero voltage and returns only the
@@ -186,6 +220,20 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	cg, err := n.core.backward(ctx, e.trace, up, window)
 	if err != nil {
 		return 0, empty, err
+	}
+	// A fixed-sign edge stores rho, not w. The core differentiated with respect
+	// to w = sign * exp(rho), so the chain rule gives
+	// d loss/d rho = d loss/d w * d w/d rho = d loss/d w * w. A free edge stores
+	// its weight directly and needs no conversion.
+	if n.fixed {
+		if len(cg.core.Weights) != len(n.config.EdgeSigns) || len(e.weights) != len(n.config.EdgeSigns) {
+			return 0, empty, fmt.Errorf("weight gradient has %d values, the core declares %d signs", len(cg.core.Weights), len(n.config.EdgeSigns))
+		}
+		for i, sign := range n.config.EdgeSigns {
+			if sign != 0 {
+				cg.core.Weights[i] *= e.weights[i]
+			}
+		}
 	}
 	// Seed the encoder VJP with <encoded, stop_gradient(core_input_gradient)>.
 	// This scalar is a reverse-pass device, not the optimization objective.
@@ -307,7 +355,11 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 			}
 		}
 	}
-	tr, y, err := n.core.forward(ctx, p, make([]float64, nodes), coreInputs)
+	core, err := n.coreParameters(p)
+	if err != nil {
+		return nil, err
+	}
+	tr, y, err := n.core.forward(ctx, core, make([]float64, nodes), coreInputs)
 	if err != nil {
 		return nil, err
 	}
@@ -342,7 +394,11 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	return &execution{et, rt, x, encoder, z, h, r, pred, tr}, nil
+	effective := []float64(nil)
+	if n.fixed {
+		effective = core.Core.Weights
+	}
+	return &execution{et, rt, x, encoder, z, h, r, pred, tr, effective}, nil
 }
 
 func tensor(shape []int, values []float64) (*nn.Tensor, error) {
