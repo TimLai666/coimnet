@@ -6,7 +6,7 @@
 
 目前的連續核心屬於稀疏的連續時間循環神經網路。接線圖決定哪些神經元相連，神經動態與學習方法則由框架提供。詳見[模型定位與可選機制](docs/model-and-mechanisms.md)，以及[記憶體與時間量測](docs/resources.md)。
 
-目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值。官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。完整圖訓練、按類型混合、慢速穩定、LIF 個體持續狀態、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
+目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值，也可以開啟慢速穩定，讓每顆神經元依自己的活動估計調整閾值偏移。連續與 LIF 都能建立持續個體，把電位、延遲歷史、突觸跡、適應、不應期與慢速穩定狀態一起保存和接續。模型包、個體快照與訓練快照是三種分開版本的保存物，彼此不能互相當成完整恢復來源。官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。完整圖訓練、按類型混合、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
 
 ## 建置與範例
 
@@ -33,6 +33,8 @@ printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
 ```
 
 快照保存這個獨立序列模式的完整參數、最佳化器、資料 seed 與下一筆樣本位置，沒有持續個體或化學狀態。檔案上限為 64 MiB，以校驗碼、版本與形狀檢查後恢復。目的路徑已存在時拒絕覆寫，檔案系統須支援 hardlink 與目錄同步。
+
+三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。
 
 取得官方原始資料：
 
@@ -137,13 +139,14 @@ data_dir=$(mktemp -d)
 
 - `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
 - `dynamics.NewLIF` 用同一套拓撲、延遲與時鐘建立 LIF 放電核心。神經元達到閾值就產生一次事件並把電位重設，對外輸出是會衰減的突觸跡，不應期內保持重設值並忽略當步輸入。`Backward` 依宣告的 `fast_sigmoid` 替代梯度回推，重設分支不傳梯度。
-- `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。LIF 的持續個體尚未支援，`learning.NewIndividual` 遇到 LIF 設定會回明確錯誤。
+- `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。`LIFConfig.Homeostasis` 是可選的慢速穩定區塊，開啟後每顆神經元多一個活動估計與一個只會抬高或回落到零的閾值偏移，放電判定用的是 `theta_base + 適應 + 偏移`；不宣告這個區塊的設定，編碼與既有指紋完全不變。
 - `learning.NewNetwork` 將 Insyra 編碼器及讀出接到核心，`LossGradient` 回傳整條路徑的梯度。
 - `learning.NewTrainer` 使用可保存的 AdamW 狀態。凍結參數群組時，權重、動量、步數與衰減一起凍結。
 - `signal` 提供具版本訊號、時鐘驗證與事件排序、觀察／答案／回饋分離及無損外部 ID 映射。`NewStreamingResampler` 支援連續值的因果取樣，`ResampleOffline` 另支援離線線性插值。`NewPulseAligner` 將脈衝對齊至當下或下一個神經步號，逐筆保留事件。`NewIntervalResampler` 依起訖時間取樣固定值區間，詳見[時間對齊與限制](docs/signal-resampling.md)。
 - `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
-- `learning.NewIndividual` 建立隔離的持續個體，`ResetNeural`／`ResetParameters`／`ResetOptimizer` 各自只重設指定資料。`checkpoint.SaveIndividual`／`LoadIndividual` 保存持續電位與延遲歷史，詳見[個體狀態與保存](docs/individual-state.md)。
+- `learning.NewIndividual` 對連續與 LIF 兩種核心建立隔離的持續個體，`ResetNeural`／`ResetParameters`／`ResetOptimizer` 各自只重設指定資料。`checkpoint.SaveIndividual`／`LoadIndividual` 保存持續神經狀態，LIF 個體另外保存突觸跡、適應、不應期與慢速穩定狀態，詳見[個體狀態與保存](docs/individual-state.md)。
+- `checkpoint.NewModelPackage`、`SaveModelPackage`、`LoadModelPackage` 保存模型包，`NewIndividualFromPackage` 由模型包建立新個體，結果與用同一份設定、參數直接呼叫 `learning.NewIndividual` 相同。
 - `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
 - `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
 - `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。

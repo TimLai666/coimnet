@@ -8,11 +8,11 @@ User Story：研究者可以用與連續核心同一套拓撲、延遲與同步�
 
 Blocked by：02 稀疏算子、04 連續核心訓練
 
-Status：verified_scoped（三個階段皆已驗證。COR-03、COR-09 標為 passed；COR-04 只完成基礎閾值與短期適應，慢速穩定未實作，需求維持 specified）
+Status：verified_scoped（三個階段皆已驗證。COR-03、COR-09 標為 passed；COR-04 的基礎閾值與短期適應在本票完成，慢速穩定已於 [ticket 16](16-lif-individual-and-model-package.md) 補齊，COR-04 三項機制到齊，`docs/requirements-status.json` 的狀態更新由該票後續處理）
 
 對應需求：COR-03（LIF 時序）、COR-09（替代梯度）、COR-04 的基礎閾值可訓練與短期
-適應部分。慢速穩定（homeostasis）、化學調節、按類型混合（COR-05）與個體持續狀態
-另開票，本票不加無作用欄位。
+適應部分。慢速穩定（homeostasis）與 LIF 個體持續狀態另開 ticket 16，並已於 2026-09-15
+實作與驗證；化學調節與按類型混合（COR-05）仍未實作。本票不加無作用欄位。
 
 ## Root 決策（2026-09-14）
 
@@ -187,12 +187,13 @@ Opus subagent 先寫 `learning/lif_test.go`、`learning/lif_flatten_test.go`、
 3. **需求證據**：`evidence/COR-03/verification.json`（LIF 時序：手算、延遲、不應期、重設、
    突觸衰減）、`evidence/COR-09/verification.json`（替代梯度：前向硬事件與反向近似分開驗證、
    tangent 參考與平滑模式有限差分）、`evidence/COR-04/verification.json`（基礎閾值可訓練與
-   短期適應：梯度、範圍、更新與任務影響；慢速穩定未實作須明寫為部分）。三者的
+   短期適應：梯度、範圍、更新與任務影響；當時慢速穩定未實作，紀錄明寫為部分，該檔已由
+   ticket 16 改寫成涵蓋三項機制的完整紀錄）。三者的
    `reproduction_command`、`environment`（新的 `scripts/verify.sh` 輸出目錄 doctor.json）、
    `input_fingerprints`（source.sha256）、`observed_result`、`test_log` 都指向實際檔案；
-   `docs/requirements-status.json` 只把 COR-03、COR-09 標 `passed`；COR-04 因慢速穩定
-   （homeostasis）尚未實作，維持 `specified`，已完成的閾值訓練與短期適應部分只在 ticket
-   與 `evidence/COR-04/` 記錄，不提前標通過。
+   `docs/requirements-status.json` 只把 COR-03、COR-09 標 `passed`；COR-04 在本票完成時因慢速穩定
+   尚未實作而維持 `specified`，已完成的閾值訓練與短期適應部分只在 ticket 與 `evidence/COR-04/`
+   記錄，不提前標通過。慢速穩定於 ticket 16 補齊後，COR-04 的三項機制到齊，狀態更新屬該票範圍。
 4. **驗證**：`scripts/verify.sh` 新目錄全套通過（含 race），Windows／Linux 交叉編譯紀錄；
    `delivery-status.md` 更新 11 的狀態與下一步（LIF 個體狀態與快照、按類型混合）。
 
@@ -238,8 +239,15 @@ theta-only 保留 MSE 皆 0.232354 → 0.052194，frozen 維持 0.232354，all �
 突觸衰減）、[COR-09](../../evidence/COR-09/verification.json)（前向硬事件與反向近似分開驗證，
 tangent 參考 1e-12、平滑模式中心差分，硬放電未做有限差分）、
 [COR-04](../../evidence/COR-04/verification.json)（基礎閾值可訓練與短期適應開關的完成部分）。
-COR-04 因慢速穩定未實作，`docs/requirements-status.json` 維持 `specified`，完成部分只記錄在本票
-與 `evidence/COR-04/`。
+本票完成時 COR-04 因慢速穩定未實作而在 `docs/requirements-status.json` 維持 `specified`，完成部分
+只記錄在本票與 `evidence/COR-04/`。
+
+**2026-09-15 更新**：慢速穩定（homeostasis）已在 [ticket 16](16-lif-individual-and-model-package.md)
+實作並驗證，`evidence/COR-04/verification.json` 改寫為完整紀錄，保留本票的閾值訓練與短期適應
+證據，並補上慢速穩定的規則、手算時序表位置、收斂數字、關閉逐位相同與既有指紋不變的證明。
+COR-04 的三項機制（可訓練基礎閾值、短期適應、慢速穩定）到此到齊，且可各自獨立開關；反向把
+適應與慢速穩定都視為常數。`docs/requirements-status.json` 的狀態更新不在 ticket 16 第二階段的
+檔案範圍內，是唯一剩下的登記步驟。
 
 ## 依據
 

@@ -97,15 +97,19 @@ func decodeIndividualDocument(data []byte) (learning.IndividualSnapshot, error) 
 	if err := checkUniqueJSONRejectNull(data); err != nil {
 		return empty, err
 	}
-	if err := requireIndividualFields(data); err != nil {
-		return empty, err
-	}
 	var raw envelope
 	if err := decodeStrict(data, &raw); err != nil {
 		return empty, fmt.Errorf("decode individual checkpoint envelope: %w", err)
 	}
+	// Which artefact this file is has to be settled before the individual
+	// specific presence walk, so a reader who opened a model package or an
+	// episode checkpoint is told which kind it is instead of receiving a
+	// missing-field path from a document that was never an individual snapshot.
 	if raw.SchemaVersion != IndividualSchemaVersion {
-		return empty, fmt.Errorf("unsupported individual checkpoint schema %q", raw.SchemaVersion)
+		return empty, individualKindError(raw.SchemaVersion)
+	}
+	if err := requireIndividualFields(data); err != nil {
+		return empty, err
 	}
 	payload := bytes.TrimSpace(raw.Payload)
 	if len(payload) == 0 || bytes.Equal(payload, []byte("null")) {

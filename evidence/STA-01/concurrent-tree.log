@@ -1,0 +1,37 @@
+# go test -count=1 ./... in the SHARED working tree at 07:27 CST, while the concurrent ticket 17 agent was mid-edit in learning/.
+# Only learning fails, and only because that agent's new test files reference APIs it has not written yet.
+# The clean run of the same commands on the isolated tree is verification.log.
+# github.com/TimLai666/coimnet/learning_test [github.com/TimLai666/coimnet/learning.test]
+learning/ranges_test.go:15:32: undefined: learning.ParameterRanges
+learning/masks_test.go:44:4: o.Masks undefined (type learning.Options has no field or method Masks)
+learning/masks_test.go:44:22: undefined: learning.UpdateMasks
+learning/masks_test.go:106:6: o.Masks undefined (type *learning.Options has no field or method Masks)
+learning/masks_test.go:106:24: undefined: learning.UpdateMasks
+learning/masks_test.go:109:6: o.Masks undefined (type *learning.Options has no field or method Masks)
+learning/masks_test.go:109:24: undefined: learning.UpdateMasks
+learning/masks_test.go:112:6: o.Masks undefined (type *learning.Options has no field or method Masks)
+learning/masks_test.go:112:24: undefined: learning.UpdateMasks
+learning/masks_test.go:138:48: undefined: learning.UpdateMasks
+learning/masks_test.go:138:48: too many errors
+ok  	github.com/TimLai666/coimnet	0.398s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.320s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	1.592s
+ok  	github.com/TimLai666/coimnet/download	1.710s
+ok  	github.com/TimLai666/coimnet/dynamics	1.373s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.838s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	2.093s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	2.673s
+ok  	github.com/TimLai666/coimnet/experiment	3.325s
+ok  	github.com/TimLai666/coimnet/feather	2.291s
+ok  	github.com/TimLai666/coimnet/internal/cli	10.729s
+ok  	github.com/TimLai666/coimnet/internal/extsort	2.678s
+ok  	github.com/TimLai666/coimnet/internal/fileio	2.726s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	2.913s
+ok  	github.com/TimLai666/coimnet/internal/sparse	3.024s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	2.744s
+FAIL	github.com/TimLai666/coimnet/learning [build failed]
+ok  	github.com/TimLai666/coimnet/params	3.193s
+ok  	github.com/TimLai666/coimnet/signal	2.603s
+ok  	github.com/TimLai666/coimnet/simulate	3.166s
+FAIL

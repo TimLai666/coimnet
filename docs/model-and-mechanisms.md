@@ -11,7 +11,7 @@ CoImNet 是建立、訓練及保存接線約束神經網路的框架。接線圖
 | 循環神經網路（RNN） | 目前核心所屬的主要類型。連線權重、偏置與狀態消退時間可訓練，沿時間回推誤差。 |
 | 接線約束、任務最佳化模型 | 最接近的研究方向。Lappalainen 等人的 DMN 用果蠅視覺接線限制網路，透過任務訓練求得未知參數。CoImNet 並未重現該論文所有機制或成果。 |
 | 圖神經網路（GNN） | 沿有向邊收集鄰居活動的運算方式相近，可從圖上傳訊理解。但目前核心沒有一般 GNN 常見的逐層特徵轉換，不能因此視為某套既有 GNN 架構的完整實作。 |
-| 脈衝神經網路（SNN） | `dynamics.NewLIF` 已實作這一類：膜電位累積輸入，超過閾值就產生離散事件並重設。訓練用的是宣告的替代梯度，不是真實放電函數的導數。按類型混合、慢速穩定與個體持續狀態尚未完成。 |
+| 脈衝神經網路（SNN） | `dynamics.NewLIF` 已實作這一類：膜電位累積輸入，超過閾值就產生離散事件並重設。訓練用的是宣告的替代梯度，不是真實放電函數的導數。慢速穩定與個體持續狀態已有 CPU 實作，按類型混合尚未完成。 |
 | 固定循環核心、只訓練讀出的 reservoir computing | 可作比較條件。CoImNet 已實作核心參數的學習，預設不是只能訓練讀出端。 |
 
 DMN 的作者將其模型描述為連續時間神經微分方程及卷積循環網路，研究對象是果蠅視覺系統。CoImNet 借鏡接線限制與可訓練動態的做法，目前並沒有因此取得該視覺架構或一般語言能力。[Lappalainen 等，Nature 2024](https://www.nature.com/articles/s41586-024-07939-3)
@@ -47,7 +47,9 @@ Shiu 等人的全腦 LIF 模型，已能在味覺與理毛等研究情境產生�
 | 原生模擬 runner（固定注入、具名探針、不經訓練） | 已有 CPU 實作 | `simulate` 套件把 GraphStore 的節點與邊直接接上連續或 LIF 核心，刺激經固定線性注入進入指定神經元，活動經探針的宣告 reduce 讀出，沒有 encoder、readout 或最佳化器。參數必須明示來源，目前有 `engineering_uniform_positive`（`gain × 原始 weight`、全興奮、統一 bias／log_tau／theta_raw、延遲零）與 `derived_release/v1`（見下一列）兩種，報告與文件都寫明兩者都是明示假設而非生物參數；全圖 300 步實測見 ticket 12（uniform）與 ticket 13（derived）。空模型歸因見下面的「空模型對照與判讀協定」一列。 |
 | 由發布資料推導的邊參數（正負號與強度） | 已有 CPU 實作 | `params` 依規則檔 `coimnet-derivation-rules/v1` 讀四份官方發布檔，產生每條邊的正負號、信心度、傳導物質與正規化強度，`simulate run --params` 以 `weight_scale × sign × 推導強度` 執行同一張圖。**正負號是規則推導的，不是量測值**：發布資料只提供每個突觸前位置的傳導物質預測機率，規則取配對突觸的平均機率選出勝出的傳導物質，再換成 `+1`／`-1`／unknown；果蠅 glutamate 多為抑制屬工程假設，規則檔的 basis 必須寫明。未知保持未知：沒配到突觸、低於機率門檻、低於配對比例門檻或規則本身標為 unknown 的邊都不補預設值，由 protocol 的 `unknown_sign`（`exclude`／`excitatory`／`inhibitory`）明示處理並分開計數。bias、log_tau、theta_raw 與零延遲仍是統一工程值，不是細胞類型差異。全圖實測（配對比例 1.000、sign 53.3%／35.9%／10.8%）見 [ticket 13](tickets/13-parameter-adapter.md) 與 `evidence/NAT-02/`。 |
 | 空模型對照與判讀協定（歸因用，非機制） | 已有 CPU 實作 | `simulate compare` 用同一份刺激跑原圖與三種空模型（`degree_preserving_rewire`、`sign_shuffle`、`weight_shuffle`）的每個 seed，報告每格的指標、與原圖的差、事前寫定的門檻結果，以及原圖在多 seed 分布中的分位數與百分位。空模型只是記憶體裡的衍生物，不改接線圖與參數集檔，靠 seed 加 PCG 重算後比對 hash。**這一列不是生物機制，是判讀規則**：集合名稱由使用者給，框架不預設任何集合等於某種行為；門檻必須在跑之前寫進 protocol 並進 hash，通過只能表述為「在此規則下該集合的指標達到宣告值」，沒有值的指標記未定義而不是 0。全圖實測（LIF 與連續核心各十格、三個 seed）顯示同一份接線在不同核心下，百分位的方向可以相反，所以歸因結論必須連同核心、參數來源與空模型種類一起陳述。三個 seed 的百分位是位置，不是檢定。見 [ticket 14](tickets/14-null-models-and-behavior.md) 與 `evidence/NAT-03/`、`NAT-04/`、`NAT-05/`。 |
-| 按類型混合、慢速穩定、LIF 個體持續狀態 | 待實作 | 混合時要明示細胞分群依據，不得重複計入同一筆訊號。慢速穩定（homeostasis）與個體電位、突觸跡、適應值的保存各自另行驗收。目前 `learning.NewIndividual` 遇到 LIF 設定會回明確錯誤，不退回連續核心。 |
+| 慢速穩定（homeostasis） | 已有 CPU 實作 | 每顆神經元多一個活動估計 `r` 與一個閾值偏移 `h`：`r(t+1) = r(t) + (dt/tau_rate) * (spike(t+1) - r(t))`、`h(t+1) = clamp(h(t) + eta*dt*(r(t+1) - target_rate), 0, h_max)`，放電判定用 `theta_eff = theta_base + 適應 + h`，比對的是上一步結束時的 `h`。偏移只會抬高閾值或回落到零，是受限調整而不是無上限的增益；`h >= 0` 加上既有的 `v_reset < theta_min`，保證 `v_reset < theta_eff` 恆成立。`r` 與 `h` 是狀態不是可訓練參數，反向與適應一樣視為常數。這是可以單獨開關的設定：關閉時兩個陣列不存在，前向與反向和從未宣告該機制的模型逐位相同，沒有宣告的設定其編碼與既有指紋也完全不變。`tau_rate`、`target_rate`、`eta`、`h_max` 是固定設定，不參與訓練。手算時序、關閉逐位相同與收斂證據見 [ticket 16](tickets/16-lif-individual-and-model-package.md) 與 `evidence/COR-04/`。 |
+| LIF 個體持續狀態 | 已有 CPU 實作 | `learning.NewIndividual` 對連續與 LIF 兩種核心走同一條路徑，LIF 個體有自己的 profile。持續保存的是電位、延遲所需的突觸跡歷史、適應值、不應期計數，以及慢速穩定開啟時的活動估計與閾值偏移；`Advance` 的結果與同輸入的 `dynamics.LIF.Forward` 逐位相同，跨程序恢復後續跑與不中斷執行逐項相等。訓練仍是獨立 episode，梯度不跨 `Advance`。見 [ticket 16](tickets/16-lif-individual-and-model-package.md) 與 `evidence/STA-01/`。 |
+| 按類型混合 | 待實作 | 混合時要明示細胞分群依據，不得重複計入同一筆訊號。目前只能整個模型選一種核心。 |
 | 暫時連線狀態、局部學習、近期參與紀錄 | 待實作 | 分開保存基礎參數及暫時狀態，驗證更新次序、關閉效果與恢復。 |
 | 人工調節與有證據支持的生物調節 | 待實作 | 人工設定使用功能名稱。生物設定附來源、單位、接收端與未知欄位，不能只改名冒充荷爾蒙。 |
 | 更細的形態、電突觸、離子通道等模型 | 未納入已實作能力，未承諾全部納入 | 先確認研究用途與可用資料，再決定是否值得新增獨立實驗機制。 |

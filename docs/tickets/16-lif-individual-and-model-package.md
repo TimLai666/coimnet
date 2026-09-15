@@ -8,7 +8,7 @@ User Story：研究者可以用 LIF 核心建立持續個體（電位、突觸�
 
 Blocked by：11 LIF 核心、12 LIF 持續狀態、05 保存
 
-Status：第一階段 verified（dynamics 慢速穩定與 learning／checkpoint 的 LIF 個體已驗證，見「第一階段證據」）；第二階段（模型包、STA-01／STA-03 證據、文件）未開始
+Status：verified（兩個階段皆已驗證。第二階段完成模型包、三種保存物的互相拒絕、由模型包建立個體、跨程序精確接續、COR-04／STA-01 證據與文件，見「第二階段證據」）
 
 對應需求：COR-04（慢速穩定，補齊後才可標 passed）、STA-01（三種保存物）、STA-03 的一部分
 （LIF 個體含最佳化器與資料游標的精確接續；快速權重與化學狀態尚不存在，STA-03 維持 specified
@@ -81,9 +81,10 @@ func NewIndividualFromPackage(pkg ModelPackage, o learning.Options, initial []fl
 - [x] 第一階段：慢速穩定手算時序（含上限與回落）、關閉逐位相同、`Forward`／`Advance` 一致、
   狀態往返與非法狀態拒絕、既有 hash 不變；LIF 個體 `Advance` 等於 `Forward`、快照往返、
   舊連續個體檔仍可讀、`TrainEpisode` 更新 theta；`go test`、race、vet。
-- [ ] 第二階段：模型包保存讀回、篡改拒絕、模型包當個體讀取被拒（訊息明確）、由模型包啟動的
+- [x] 第二階段：模型包保存讀回、篡改拒絕、模型包當個體讀取被拒（訊息明確）、由模型包啟動的
   個體與直接建立相同；新程序精確接續（subprocess）；`evidence/COR-04/`、`evidence/STA-01/`；
-  ticket 11 的 COR-04 備註更新；README、ENG、機制文件、delivery-status。
+  ticket 11 的 COR-04 備註更新；README、ENG、機制文件。`delivery-status.md` 與
+  `docs/requirements-status.json` 不在本階段的檔案範圍，未動。
 
 ### 第一階段證據（2026-09-15）
 
@@ -186,8 +187,104 @@ learning.NeuralCoreContinuous`）。`checkpoint` 是例外：實作寫在測試�
 - `LIFState` 的 `Rate`／`Homeostasis` 放在 `Refractory` 之後，舊文件是新編碼的前綴。
 - README、ENG.md、`docs/model-and-mechanisms.md`、`docs/individual-state.md` 與
   `delivery-status.md` 仍寫著「LIF 個體尚未支援」，`docs/requirements-status.json` 的 COR-04 仍是
-  `specified`；這些屬第二階段，本輪未動。
+  `specified`；這些屬第二階段，本輪未動。（第二階段已更正前四份文件，`delivery-status.md` 與
+  `docs/requirements-status.json` 不在其檔案範圍，仍待處理。）
 - 只在 macOS arm64 實測；`evidence/COR-07/` 是同時段另一位 agent 產生的未追蹤目錄，未動。
+
+### 第二階段證據（2026-09-15）
+
+先寫失敗測試：`evidence/COR-04/red-package.log`。整份 `checkpoint/package_test.go` 在
+`checkpoint/package.go` 存在以前就寫完並執行，輸出是 11 個 `undefined:`（`Units`、`ModelPackage`、
+`NewModelPackage`、`ModelPackageSchemaVersion`、`CompatibleVersions`、`SaveModelPackage`、
+`LoadModelPackage` 等）後編譯器放棄，`FAIL ... [build failed]`。
+
+**模型包**（`checkpoint/package.go`）。`ModelPackage`（`coimnet-model-package/v1`）帶
+`TopologyFingerprint{Nodes, Edges, SHA256}`、`learning.Config`、`learning.Parameters`、
+`Units{TimeStep, TimeConstant}`、`EvidenceRegistry []string` 與
+`CompatibleVersions{Individual, Training}`。`SaveModelPackage`／`LoadModelPackage` 沿用個體快照
+那一套 envelope、SHA-256 payload checksum、`checkUniqueJSONRejectNull`、必填走訪、嚴格解碼、
+同目錄暫存檔加排他 hardlink 與目錄同步。載入時以 `learning.NewTrainer` 重建整個模型（建核心、
+檢查每組參數形狀、跑一次預測）並重算拓撲指紋，指紋與設定不符就拒絕。
+
+**拓撲指紋的編碼**。sources 全部再 targets 全部、各以 little-endian uint32 編碼後取 SHA-256，
+與 `simulate/nullmodel.go` 的 `topologyHash` 同一種編碼，但在 `checkpoint` 私下重寫，避免
+`checkpoint` 依賴 `simulate`。一條邊 `0→1` 的指紋是
+`01acecb507abfe1a354aa8064f4af5d3f1acd019e37db3c11c97523b71c76e9d`，就是 8 個位元組
+`00 00 00 00 01 00 00 00` 的 SHA-256（在 Go 以外另算過）；測試對每個 fixture 另用一個最直白的
+編碼器重算一次。同一組邊換順序指紋就不同，所以它認的是保存下來的邊陣列，不是抽象的圖。
+
+**六種交叉載入全部拒絕**（`TestArtefactKindsRefuseEachOther`），實際訊息：
+
+| 讀法 | 檔案 | 訊息 |
+| --- | --- | --- |
+| `LoadIndividual` | 模型包 | `"coimnet-model-package/v1" is a model package, which declares configuration and parameters only and is not an individual snapshot: seed a new individual with NewIndividualFromPackage instead of restoring one` |
+| `LoadIndividual` | 訓練快照 | `"coimnet-episode-checkpoint/v1" is an episode training checkpoint, which carries no persistent neural state, and is not an individual snapshot` |
+| `LoadModelPackage` | 個體快照 | `"coimnet-individual-checkpoint/v1" is an individual snapshot, which carries persistent neural state and optimizer moments, not a model package` |
+| `LoadModelPackage` | 訓練快照 | `"coimnet-episode-checkpoint/v1" is an episode training checkpoint, which carries trainer state and a data cursor, not a model package` |
+| `Load` | 模型包 | `unsupported checkpoint schema "coimnet-model-package/v1"` |
+| `Load` | 個體快照 | `unsupported checkpoint schema "coimnet-individual-checkpoint/v1"` |
+
+**往返與拒絕**。連續與 LIF 兩種模型各驗一次：保存後讀回 `reflect.DeepEqual` 相同，同一份包存兩次
+位元組相同，把讀回的再存一次還是同樣的位元組，發布的文件裡沒有 `null`，改動讀回的值不影響下一次
+載入。載入拒絕 23 種情況：翻轉 payload 位元組、歸零 checksum、過短 checksum、截斷、envelope 版本
+超前、payload 版本超前、指紋摘要被改、指紋邊數被改、指紋節點數被改、缺 `units`、缺
+`time_constant`、空的 `time_step`、缺 `evidence_registry`、缺 `compatible_versions`、宣告不認識的
+individual schema、絕對路徑的證據、含 `..` 的證據、陣列裡的 `null`、缺 `parameters`、參數形狀與設定
+不符、未知欄位、重複鍵、尾端多餘資料；同一個測試也確認未篡改的 fixture 讀得回來，所以這些拒絕不是
+空的。取消的保存不會留下檔案或暫存檔，同一路徑第二次保存失敗且不改動已發布的位元組，空路徑與零值
+包被拒絕。
+
+**由模型包建立個體**（`TestNewIndividualFromPackageEqualsNewIndividual`）。
+`NewIndividualFromPackage(pkg, options, initial)` 的快照與用同一份設定、參數、選項、初始電位呼叫
+`learning.NewIndividual` 的快照 `reflect.DeepEqual` 相同，接著同一段輸入的 `Advance` 輸出與推進後的
+狀態也都相同；連續模型與開啟慢速穩定的 LIF 模型各一組。建立之後改動模型包的陣列不影響已建立的個體。
+
+**跨程序精確接續**（`TestLIFIndividualFromPackageSubprocessResume`）。由保存的模型包建立 LIF 個體，
+推進四步、開啟 `Trainable.Theta` 訓練兩個 episode，保存快照；真正的新程序（exec 測試執行檔，以
+`COIMNET_MODEL_PACKAGE_HELPER` 分流）讀回快照、跑完五步的尾段再保存。接續後的快照與不中斷執行
+逐項相同：神經狀態（含活動估計與閾值偏移）、參數、Adam 一階與二階動量、每個參數的步數、更新次數，
+尾段讀出也逐值相同。測試同時擋掉空洞比較：更新次數必須是 2、訓練必須真的改變參數、至少一個 Adam
+動量不為零、接續後的閾值偏移不為零（實測 `[0.3748046875, 0.4, 0.0445312500000001]`，第 1 顆貼在宣告的
+`h_max = 0.4`）、比較的視窗裡必須有放電。
+
+**突變檢查**。把 `canonicalModelPackage` 的指紋重算關掉，三個測試立刻紅：被改摘要的篡改案例被接受、
+`SaveModelPackage` 接受與設定不符的指紋、`NewIndividualFromPackage` 由這種包建立個體。把
+`individualKindError` 換回原本的 `unsupported individual checkpoint schema`，交叉載入測試在模型包那一
+項失敗。
+
+**驗證指令與結果**（macOS arm64、go1.26.5、Insyra v0.3.2，load average 執行前 2.09、執行後 2.20）：
+`gofmt -l .` 無輸出；`go vet ./...` 通過；`go test -count=1 ./...` 21 個套件全過；
+`go test -race -count=1 ./checkpoint/ ./learning/ ./dynamics/` 全過。日誌見
+[verification.log](../../evidence/STA-01/verification.log)。
+
+**偏離與限制**：
+
+- 票面第二階段的契約沒有列建構函式，但 `SaveModelPackage` 需要一份已經算好指紋的包，而指紋的編碼是
+  套件私有的，呼叫者算不出來。因此另加 `NewModelPackage(config, parameters, units, evidence)`，
+  由它驗證並算好指紋；`SaveModelPackage` 仍會重算一次並比對，所以「指紋與設定不符」還是可以測。
+- `NewIndividualFromPackage` 的簽章比票面多一個 `learning.Options`。沒有它就得在 `checkpoint` 裡預設
+  一組最佳化器設定，而那是呼叫者的決定；票面第二階段的契約本來也寫成收 options 的形式。
+- 三種交叉載入裡，`Load`（episode）那兩種是靠 `checkpoint/checkpoint.go` 既有的版本檢查拒絕，訊息用
+  schema 字串指名讀到的是哪一種，不是一句完整說明。`checkpoint.go` 不在本階段的檔案範圍，沒有改。
+- `checkpoint/individual.go` 只動了 12 行：把 envelope 的嚴格解碼與版本判定移到必填走訪之前，並改叫
+  新的 `individualKindError`。這樣讀錯檔案的人拿到的是「這是哪一種保存物」，而不是一份本來就不是個體
+  快照的文件缺了哪個欄位。既有的拒絕案例全部仍然拒絕。
+- 拓撲指紋與 `simulate` 的 `topologyHash` 同編碼這件事，是靠文件寫明的規則加上測試裡的獨立重算，不是
+  呼叫 `simulate` 的私有函式。兩邊的實作有可能各自漂移而不被測試發現。
+- `EvidenceRegistry` 的路徑原樣保存，只檢查是相對路徑、沒有反斜線、沒有 `..` 片段；框架不會開啟它們，
+  也不驗證那些紀錄存在或真的描述這個模型。
+- 單位字串只是宣告，框架不做任何換算，也不代表毫秒或任何量測到的生物時間尺度。
+- 全部是 fixture：兩顆神經元的連續模型與三顆神經元的 LIF 模型，沒有用真實接線圖建過模型包。
+- STA-03 維持 specified。訓練快照的「完整」只涵蓋訓練器實際擁有的東西（參數、最佳化器選項、Adam 動量、
+  每個參數的步數、更新次數，episode 格式另有資料 seed 與樣本游標）。重播庫、教師訊號、快速權重、化學
+  狀態與亂數流在整個框架都還不存在。
+- `delivery-status.md` 與 `docs/requirements-status.json` 不在本階段的檔案範圍，未動；COR-04 與 STA-01
+  的狀態登記是剩下的步驟。
+- 記錄那次全綠的執行是在工作樹的隔離副本上跑的：同一時間另一位 agent 正在改 `learning/`（ticket 17），
+  他未完成的檔案當下編譯不過。副本移除了他的未追蹤檔案並把 `learning/` 還原到 32a72fd，其餘與工作樹
+  相同。ticket 16 的 21 個測試在工作樹本身也全過，工作樹當下唯一的失敗是那位 agent 自己尚未實作的紅燈
+  測試。共存狀態記在 [concurrent-tree.log](../../evidence/STA-01/concurrent-tree.log)。
+- 只在 macOS arm64 實測。
 
 ### root 審查（2026-09-15，第一階段）
 

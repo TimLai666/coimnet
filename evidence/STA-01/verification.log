@@ -1,0 +1,36 @@
+# Isolated verification tree = the working tree minus the concurrent ticket 17 agent's unfinished files.
+# removed: checkpoint/options_compat_test.go; learning/ restored to commit 32a72fd with: git archive HEAD learning
+# Everything else, including every ticket 16 change, is exactly the working tree.
+ 9:20  up 9 days, 14:59, 1 user, load averages: 2.09 2.50 2.10
+go version go1.26.5 darwin/arm64
+=== gofmt -l . ===
+(no output above means clean)
+=== go vet ./... ===
+(no output above means clean)
+=== go test -count=1 ./... ===
+ok  	github.com/TimLai666/coimnet	0.430s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.705s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	2.081s
+ok  	github.com/TimLai666/coimnet/download	2.189s
+ok  	github.com/TimLai666/coimnet/dynamics	1.854s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	2.397s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	2.613s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	3.066s
+ok  	github.com/TimLai666/coimnet/experiment	3.827s
+ok  	github.com/TimLai666/coimnet/feather	2.202s
+ok  	github.com/TimLai666/coimnet/internal/cli	14.410s
+ok  	github.com/TimLai666/coimnet/internal/extsort	2.735s
+ok  	github.com/TimLai666/coimnet/internal/fileio	2.787s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	2.863s
+ok  	github.com/TimLai666/coimnet/internal/sparse	3.004s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	2.713s
+ok  	github.com/TimLai666/coimnet/learning	2.517s
+ok  	github.com/TimLai666/coimnet/params	3.178s
+ok  	github.com/TimLai666/coimnet/signal	2.275s
+ok  	github.com/TimLai666/coimnet/simulate	3.319s
+=== go test -race -count=1 ./checkpoint/ ./learning/ ./dynamics/ ===
+ok  	github.com/TimLai666/coimnet/checkpoint	10.481s
+ok  	github.com/TimLai666/coimnet/learning	5.045s
+ok  	github.com/TimLai666/coimnet/dynamics	5.506s
+ 9:21  up 9 days, 14:59, 1 user, load averages: 2.20 2.50 2.11
