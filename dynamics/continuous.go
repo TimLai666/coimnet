@@ -18,6 +18,12 @@ type Config struct {
 	Delays     []int   `json:"delays,omitempty"`
 	DT         float64 `json:"dt"`
 	Activation string  `json:"activation"`
+	// Workers selects the forward execution mode: 0 or 1 is the single
+	// threaded reference mode; more than 1 enables controlled parallelism
+	// that partitions work by target node across a fixed number of workers,
+	// summing each target's inputs in declared edge order so the result is
+	// bit-identical to the single threaded pass.
+	Workers int `json:"workers,omitempty"`
 }
 
 // Parameters separates learnable quantities from immutable anatomy. Tau is
@@ -52,6 +58,9 @@ type Gradient struct {
 // additive connections in the declared order; source importers must resolve
 // whether upstream duplicates are legitimate before constructing this model.
 func NewContinuous(c Config) (*Continuous, error) {
+	if c.Workers < 0 || c.Workers > 1024 {
+		return nil, fmt.Errorf("workers must be in [0, 1024]")
+	}
 	if c.Nodes <= 0 || !finite(c.DT) || c.DT <= 0 {
 		return nil, fmt.Errorf("nodes and finite dt must be positive")
 	}
