@@ -64,15 +64,22 @@ const (
 // DecayPre, DecayPost, APlus and AMinus. A rate rule that sets a pair field is
 // rejected rather than silently ignoring it.
 type Rule struct {
-	Kind       string  `json:"kind"`
-	DecayE     float64 `json:"decay_e"`
-	DecayP     float64 `json:"decay_p"`
-	PlasticMax float64 `json:"plastic_max"`
-	WMin       float64 `json:"w_min"`
-	DecayPre   float64 `json:"decay_pre,omitempty"`
-	DecayPost  float64 `json:"decay_post,omitempty"`
-	APlus      float64 `json:"a_plus,omitempty"`
-	AMinus     float64 `json:"a_minus,omitempty"`
+	Kind           string  `json:"kind"`
+	DecayE         float64 `json:"decay_e"`
+	DecayP         float64 `json:"decay_p"`
+	PlasticMax     float64 `json:"plastic_max"`
+	WMin           float64 `json:"w_min"`
+	DecayPre       float64 `json:"decay_pre,omitempty"`
+	DecayPost      float64 `json:"decay_post,omitempty"`
+	APlus          float64 `json:"a_plus,omitempty"`
+	AMinus         float64 `json:"a_minus,omitempty"`
+	GateReceptor   *int    `json:"gate_receptor,omitempty"`
+	GateScale      float64 `json:"gate_scale,omitempty"`
+	DecayEReceptor *int    `json:"decay_e_receptor,omitempty"`
+	DecayEBase     float64 `json:"decay_e_base,omitempty"`
+	DecayESpan     float64 `json:"decay_e_span,omitempty"`
+	DecayEMin      float64 `json:"decay_e_min,omitempty"`
+	DecayEMax      float64 `json:"decay_e_max,omitempty"`
 }
 
 // Config declares one rule and the edges that follow it. Edges holds edge
@@ -156,6 +163,36 @@ func validateRule(r Rule) error {
 	}
 	if !finite(r.WMin) || r.WMin <= 0 {
 		return fmt.Errorf("w_min is %g, want a finite positive floor", r.WMin)
+	}
+	if r.GateReceptor != nil {
+		if *r.GateReceptor < 0 {
+			return fmt.Errorf("gate_receptor is %d, want a value >= 0", *r.GateReceptor)
+		}
+		if !finite(r.GateScale) {
+			return fmt.Errorf("gate_scale is %g, want a finite value", r.GateScale)
+		}
+	} else if r.GateScale != 0 {
+		return fmt.Errorf("gate_scale is %g but rule %q declares no gate_receptor", r.GateScale, r.Kind)
+	}
+	if r.DecayEReceptor != nil {
+		if *r.DecayEReceptor < 0 {
+			return fmt.Errorf("decay_e_receptor is %d, want a value >= 0", *r.DecayEReceptor)
+		}
+		if !finite(r.DecayESpan) {
+			return fmt.Errorf("decay_e_span is %g, want a finite value", r.DecayESpan)
+		}
+		if !(r.DecayEMin > 0 && r.DecayEMin <= r.DecayEBase && r.DecayEBase <= r.DecayEMax && r.DecayEMax < 1) {
+			return fmt.Errorf("decay_e_min/base/max are %g/%g/%g, want 0 < min <= base <= max < 1", r.DecayEMin, r.DecayEBase, r.DecayEMax)
+		}
+	} else {
+		for _, f := range []struct {
+			name  string
+			value float64
+		}{{"decay_e_base", r.DecayEBase}, {"decay_e_span", r.DecayESpan}, {"decay_e_min", r.DecayEMin}, {"decay_e_max", r.DecayEMax}} {
+			if f.value != 0 {
+				return fmt.Errorf("%s is %g but rule %q declares no decay_e_receptor", f.name, f.value, r.Kind)
+			}
+		}
 	}
 	if r.Kind == RuleHebbianRate {
 		for _, f := range []struct {
@@ -263,12 +300,23 @@ func (m *Model) ValidateState(s State) error {
 	return nil
 }
 
-// Step advances the fast state by one core step. pre and post are node-level
-// activity values, spikesPre and spikesPost node-level 0/1 events (nil on a
-// core that produces none, which stdp_pair therefore refuses). sources and
-// targets are the full edge arrays of the core, so an enabled edge index reads
-// its own endpoints. The returned state is new; the arguments are untouched.
-func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate float64, sources, targets []int) (State, Report, error) {
+// StepInput carries one step's signals. DecayE, when non-nil, overrides the
+// rule's DecayE for this step only (a receptor-driven eligibility window);
+// it must lie in [0, 1).
+type StepInput struct {
+	Pre, Post, SpikesPre, SpikesPost []float64
+	Gate                             float64
+	DecayE                           *float64
+}
+
+// StepWith advances the fast state by one core step. It is Step with the
+// rule's DecayE optionally replaced for this step by in.DecayE, which must lie
+// in [0, 1) when present. pre and post are node-level activity values,
+// spikesPre and spikesPost node-level 0/1 events (nil on a core that produces
+// none, which stdp_pair therefore refuses). sources and targets are the full
+// edge arrays of the core, so an enabled edge index reads its own endpoints.
+// The returned state is new; the arguments are untouched.
+func (m *Model) StepWith(s State, in StepInput, sources, targets []int) (State, Report, error) {
 	var report Report
 	if m == nil {
 		return State{}, report, fmt.Errorf("uninitialized plasticity model")
@@ -276,14 +324,21 @@ func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate f
 	if err := m.ValidateState(s); err != nil {
 		return State{}, report, err
 	}
-	if !finite(gate) {
+	if !finite(in.Gate) {
 		return State{}, report, fmt.Errorf("gate is not finite")
+	}
+	decayE := m.rule.DecayE
+	if in.DecayE != nil {
+		if !finite(*in.DecayE) || *in.DecayE < 0 || *in.DecayE >= 1 {
+			return State{}, report, fmt.Errorf("decay_e override is %g, want a value in [0, 1)", *in.DecayE)
+		}
+		decayE = *in.DecayE
 	}
 	if len(sources) != m.total || len(targets) != m.total {
 		return State{}, report, fmt.Errorf("topology has %d sources and %d targets, the model declares %d edges", len(sources), len(targets), m.total)
 	}
 	pair := m.rule.Kind == RuleSTDPPair
-	nodes, err := stepSignals(pre, post, spikesPre, spikesPost, pair)
+	nodes, err := stepSignals(in.Pre, in.Post, in.SpikesPre, in.SpikesPost, pair)
 	if err != nil {
 		return State{}, report, err
 	}
@@ -298,22 +353,22 @@ func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate f
 	}
 	for k, e := range m.edges {
 		j, i := sources[e], targets[e]
-		elig := m.rule.DecayE * s.Eligibility[k]
+		elig := decayE * s.Eligibility[k]
 		if pair {
 			// Decay first, read the decayed traces, add this step's own events
 			// last: the two orders the package documentation pins.
 			preTrace := m.rule.DecayPre * s.PreTrace[k]
 			postTrace := m.rule.DecayPost * s.PostTrace[k]
-			if spikesPost[i] != 0 {
+			if in.SpikesPost[i] != 0 {
 				elig += m.rule.APlus * preTrace
 			}
-			if spikesPre[j] != 0 {
+			if in.SpikesPre[j] != 0 {
 				elig -= m.rule.AMinus * postTrace
 			}
-			if spikesPre[j] != 0 {
+			if in.SpikesPre[j] != 0 {
 				preTrace++
 			}
-			if spikesPost[i] != 0 {
+			if in.SpikesPost[i] != 0 {
 				postTrace++
 			}
 			if !finite(preTrace) || !finite(postTrace) {
@@ -321,9 +376,9 @@ func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate f
 			}
 			out.PreTrace[k], out.PostTrace[k] = preTrace, postTrace
 		} else {
-			elig += pre[j] * post[i]
+			elig += in.Pre[j] * in.Post[i]
 		}
-		plastic := m.rule.DecayP*s.Plastic[k] + gate*elig
+		plastic := m.rule.DecayP*s.Plastic[k] + in.Gate*elig
 		if !finite(elig) || !finite(plastic) {
 			return State{}, Report{}, fmt.Errorf("edge %d produced a non-finite fast change", e)
 		}
@@ -335,6 +390,16 @@ func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate f
 		out.Eligibility[k], out.Plastic[k] = elig, plastic
 	}
 	return out, report, nil
+}
+
+// Step advances the fast state by one core step and is exactly StepWith with
+// no DecayE override. pre and post are node-level activity values, spikesPre
+// and spikesPost node-level 0/1 events (nil on a core that produces none,
+// which stdp_pair therefore refuses). sources and targets are the full edge
+// arrays of the core, so an enabled edge index reads its own endpoints. The
+// returned state is new; the arguments are untouched.
+func (m *Model) Step(s State, pre, post, spikesPre, spikesPost []float64, gate float64, sources, targets []int) (State, Report, error) {
+	return m.StepWith(s, StepInput{Pre: pre, Post: post, SpikesPre: spikesPre, SpikesPost: spikesPost, Gate: gate}, sources, targets)
 }
 
 // stepSignals checks the node-level arguments of one step and returns the node
@@ -378,6 +443,38 @@ func stepSignals(pre, post, spikesPre, spikesPost []float64, pair bool) (int, er
 		}
 	}
 	return nodes, nil
+}
+
+// WindowFor returns clamp(DecayEBase + DecayESpan*occupancy, DecayEMin,
+// DecayEMax) or false when the rule declares no DecayEReceptor. A non-finite
+// occupancy is treated as 0.
+func (m *Model) WindowFor(occupancy float64) (float64, bool) {
+	if m == nil || m.rule.DecayEReceptor == nil {
+		return 0, false
+	}
+	if !finite(occupancy) {
+		occupancy = 0
+	}
+	window := m.rule.DecayEBase + m.rule.DecayESpan*occupancy
+	if window < m.rule.DecayEMin {
+		window = m.rule.DecayEMin
+	}
+	if window > m.rule.DecayEMax {
+		window = m.rule.DecayEMax
+	}
+	return window, true
+}
+
+// GateFor returns GateScale*occupancy or false when the rule declares no
+// GateReceptor. A non-finite occupancy is treated as 0.
+func (m *Model) GateFor(occupancy float64) (float64, bool) {
+	if m == nil || m.rule.GateReceptor == nil {
+		return 0, false
+	}
+	if !finite(occupancy) {
+		occupancy = 0
+	}
+	return m.rule.GateScale * occupancy, true
 }
 
 // Effective returns the weights the core integrates, given the effective base
