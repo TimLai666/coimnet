@@ -273,18 +273,16 @@ func (m *LIF) AdvanceModulated(ctx context.Context, p LIFParameters, s LIFState,
 		step := s.Steps + uint64(t)
 		first := step - uint64(length-1)
 		drive := append([]float64(nil), input...)
-		for e, source := range m.config.Sources {
-			if e%4096 == 0 {
-				if err = ctx.Err(); err != nil {
-					return LIFState{}, nil, nil, err
-				}
+		r := ringReader{ring: ring, sources: m.config.Sources, delays: m.config.Delays, head: head, capacity: capacity, step: step, first: first}
+		if m.partition != nil {
+			if err = m.lifSynapticDriveParallel(drive, p.Weights, &r); err != nil {
+				return LIFState{}, nil, nil, err
 			}
-			past := uint64(0)
-			if uint64(m.config.Delays[e]) < step {
-				past = step - uint64(m.config.Delays[e])
-			}
-			offset := int(past - first)
-			drive[m.config.Targets[e]] += p.Weights[e] * ring[(head+offset)%capacity][source]
+		} else {
+			r.accumulateSerial(drive, p.Weights, m.config.Targets)
+		}
+		if err = ctx.Err(); err != nil {
+			return LIFState{}, nil, nil, err
 		}
 		trace := ring[(head+length-1)%capacity]
 		nextV, spike := make([]float64, n), make([]float64, n)

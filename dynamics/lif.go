@@ -30,6 +30,12 @@ type LIFConfig struct {
 	// recorded fingerprint.
 	Homeostasis *LIFHomeostasis `json:"homeostasis,omitempty"`
 	Surrogate   LIFSurrogate    `json:"surrogate"`
+	// Workers selects the forward and persistent-state execution mode: 0 or 1
+	// is the single threaded reference mode; more than 1 enables controlled
+	// parallelism that partitions work by target node across a fixed number
+	// of workers, summing each target's inputs in declared edge order so the
+	// result is bit-identical to the single threaded pass.
+	Workers int `json:"workers,omitempty"`
 }
 
 // LIFHomeostasis is the slow activity stabiliser of the spiking core. Each
@@ -91,8 +97,11 @@ type LIFGradient struct {
 // LIF is immutable and safe for concurrent independent trajectories.
 type LIF struct {
 	config LIFConfig
-	kappa  float64
-	rho    float64
+	// partition groups edges by target for Workers > 1. The reference mode
+	// keeps it nil and uses the original eager accumulation.
+	partition *targetPartition
+	kappa     float64
+	rho       float64
 	// rateStep is dt/tau_rate and offsetStep is eta*dt; both are zero while the
 	// slow stabiliser is disabled.
 	rateStep   float64
@@ -128,6 +137,9 @@ type LIFTrace struct {
 // NewLIF validates and copies the topology. Duplicate edges are separate
 // additive connections in the declared order, exactly as in NewContinuous.
 func NewLIF(c LIFConfig) (*LIF, error) {
+	if c.Workers < 0 || c.Workers > 1024 {
+		return nil, fmt.Errorf("workers must be in [0, 1024]")
+	}
 	if c.Nodes <= 0 || !finite(c.DT) || c.DT <= 0 {
 		return nil, fmt.Errorf("nodes and finite dt must be positive")
 	}
@@ -203,7 +215,18 @@ func NewLIF(c LIFConfig) (*LIF, error) {
 			return nil, fmt.Errorf("edge %d has invalid endpoint or delay", e)
 		}
 	}
-	return &LIF{config: c, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho, rateStep: rateStep, offsetStep: offsetStep}, nil
+	// The partition is built only for parallel runs, after every validation,
+	// so a huge declared node count never allocates before an invalid
+	// configuration is rejected.
+	var partition *targetPartition
+	if c.Workers > 1 {
+		var err error
+		partition, err = newTargetPartition(c.Nodes, c.Workers, c.Sources, c.Targets)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &LIF{config: c, partition: partition, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho, rateStep: rateStep, offsetStep: offsetStep}, nil
 }
 
 // homeostatic reports whether a declared and enabled slow stabiliser exists.
@@ -335,17 +358,16 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 			return nil, err
 		}
 		drive := append([]float64(nil), in...)
-		for e, s := range m.config.Sources {
-			if e%4096 == 0 {
-				if err := ctx.Err(); err != nil {
-					return nil, err
-				}
+		r := forwardReader{output: tr.syn, sources: m.config.Sources, delays: m.config.Delays, t: t}
+		if m.partition != nil {
+			if err := m.lifSynapticDriveParallel(drive, p.Weights, &r); err != nil {
+				return nil, err
 			}
-			past := 0
-			if m.config.Delays[e] < t {
-				past = t - m.config.Delays[e]
-			} // avoid subtraction overflow
-			drive[m.config.Targets[e]] += p.Weights[e] * tr.syn[past][s]
+		} else {
+			r.accumulateSerial(drive, p.Weights, m.config.Targets)
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		cand, voltage := make([]float64, n), make([]float64, n)
 		spike, synapse := make([]float64, n), make([]float64, n)
@@ -394,6 +416,18 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 		tr.rate[t+1], tr.homeo[t+1] = rate, homeo
 	}
 	return tr, nil
+}
+
+// lifSynapticDriveParallel accumulates weights[e]*r.at(e) into drive[target]
+// on the owning worker. Each target's addition order stays the declared edge
+// order, so results are bit-identical to the single threaded pass.
+func (m *LIF) lifSynapticDriveParallel(drive, weights []float64, r reader) error {
+	return m.partition.Run(func(target int, edges []int) error {
+		for _, e := range edges {
+			drive[target] += weights[e] * r.at(e)
+		}
+		return nil
+	})
 }
 
 // event returns the emitted spike and the declared derivative of that spike
