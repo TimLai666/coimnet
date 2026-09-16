@@ -70,6 +70,8 @@
 
 暫時效果不進 `Parameters`。增益、偏移與閾值是單次核心呼叫的引數，跑一百步之後基礎參數（含 `theta_raw`）逐位不變。`TrainEpisode` 的前向與反向目前不接調節，所以獨立 episode 訓練看不到化學層。
 
+記憶表現與較慢狀態在快照的位置：`snapshot.Chemical` 可選區塊的 `expression` 是讀出增益（`ExpressionGain{nodes, receptor, scale, min, max}`），只對指定讀出節點在讀出前乘 `clamp(1 + scale*occ, min, max)`，統計入報告的 `expression_gain_applied`；它不進 `Parameters`、`plastic` 或 `eligibility`，增益回到 1 後輸出逐位恢復，這是被抑制的表現而不是遺忘。`snapshot.Plastic` 可選區塊的 `slow`（`SlowState{values, last_episode, budget, used}`）是穩定化寫入的較慢一層，只在 `EnableConsolidation` 宣告時存在，有效權重為 `base + slow + plastic`；`Consolidate` 由受體佔用率閘門、每 episode 一次的去重與 `budget` 上限約束，同 episode 第二次呼叫回 `ErrAlreadyConsolidated` 且狀態不變。兩者是可選狀態，未開啟時其鍵不存在，關閉後前向與從未宣告逐位相同。證據見 [ticket 22](tickets/22-modulated-learning-memory-controller-and-interventions.md) 與 `evidence/MOD-05/`、`evidence/MOD-06/`。
+
 ## 保存與讀回
 
 `checkpoint.SaveIndividual(ctx, path, individual.Snapshot())` 保存新格式 `coimnet-individual-checkpoint/v1`。`LoadIndividual` 讀回後，以 `learning.RestoreIndividual` 建立隔離個體，再呼叫 `Advance` 即可接續。

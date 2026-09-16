@@ -9,7 +9,7 @@ User Story：研究者可以讓受體佔用率決定局部學習閘門與參與�
 
 Blocked by：18 局部可塑性（第一階段）、20 調節來源、21 化學濃度與效果（兩階段）、17 最佳化器
 
-Status：draft（契約已於 2026-09-15 定案；分三階段派工，待 21 完成後開始）
+Status：第一階段已驗證（2026-09-17）；第二階段（干預）、第三階段（控制器與對照）待派工
 
 對應需求：MOD-05（閘門、衰退、延遲回饋與關閉效果分開驗證；受體來源）、MOD-06（不誤算為永久學習；
 重複寫入防護與恢復）、COR-11（干預開始、結束、對象與效果可追查；正常推論不能任意鉗制）、MOD-07
@@ -42,6 +42,19 @@ Status：draft（契約已於 2026-09-15 定案；分三階段派工，待 21 �
    快照：`IndividualSnapshot.Plastic` 加 `Slow *SlowState`。恢復測試：中途快照接續後 `Consolidate`
    的去重判斷與連續執行相同。
 4. 證據：`evidence/MOD-05/`、`evidence/MOD-06/`。
+
+## 第一階段證據（2026-09-17）
+
+驗證指令：`cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v -run 'TestReceptor|TestExpression|TestConsolidat|TestSlowState|TestRuleReceptor|TestStepWith|TestWindowAndGate|TestExplicitGate|TestDisableChemistry' ./plasticity/ ./learning/ > evidence/MOD-05/test.log 2>&1; cp evidence/MOD-05/test.log evidence/MOD-06/test.log`
+
+19 個頂層測試全 PASS、0 FAIL、無 panic，`-race` 下兩套件都 `ok`（plasticity 1.447s、learning 1.735s；go1.26.5 darwin/arm64）。四張小票的證據與手算常數：
+
+- **plasticity 受體欄位**（`plasticity/receptor_test.go`）：`TestRuleReceptorFieldsValidated` 拒絕 `gate_scale` 無受體、負受體索引、`decay_e` 的 min/max/base/span 各種錯誤組合；`TestStepWithDecayEOverride` 手算每步覆寫（eligibility = `decay_e*elig + pre*post`：0.5×0+1×1=1、0.25×1+1=1.25、0.75×1.25+1=1.9375，`decay_e`=1 或 NaN 拒絕）；`TestWindowAndGateFor` 夾限 `WindowFor`（occ 0→0.5、1→0.8、−1→0.3、NaN→0.5）與 `GateFor(0.25)=2×0.25=0.5`，無受體時回 false。
+- **個體受體閘門**（`learning/receptor_gate_test.go`）：閘門關時 plastic=0、forward 與化學-only 逐位相同、eligibility 0.4579164488274385 持續追蹤；閘門開時 occ1=0.611481100422978、mid plastic=0.1315724355959273=occ1×elig1（elig1=0.2151700772189281）、最終 plastic 0.3052627141695012；時間窗 `decay_e(occ1)=0.5−0.4×0.611481100422978=0.2554075598308088`，最終 eligibility 0.4158818857906775 低於固定 0.5 衰退的 0.4579164488274385；無化學拒絕、越界受體（7）拒絕、明確閘門與受體閘門不得並用（失敗呼叫不提交任何狀態）、規則指向受體時 `DisableChemistry` 拒絕。
+- **表現增益**（`learning/memory_test.go`）：`TestExpressionGainScalesOnlyTheReadout` 證明只動讀出（兩快照除 Expression 外 `DeepEqual`）、row 0 增益=1 逐位相同、row 1 讀出=twins×`1−0.5×0.611481100422978`；`TestExpressionGainStateSwitchIsNotForgetting` 清除後下一列逐位恢復；驗證與快照往返各過。
+- **穩定化**（`learning/consolidation_test.go`）：`TestConsolidateHandComputed` 以 Rate 0.5／Retain 0.25 手算一次寫入（slow=0.5×P1、plastic=0.25×P1，三層 L2 分開：BaseL2=0.9、SlowL2=|0.5×P1|、PlasticL2=|0.25×P1|，計數器 {episode 0, last 1, used 1}）；同 episode 第二次拒絕（slow `DeepEqual`、plastic fast `sameBits` 逐位不變）；預算用盡、閘門關各拒絕且狀態不變；slow 折進基礎後輸出／報告／電位逐位相同；JSON 快照接續後去重判斷與連續執行相同。
+
+`evidence/MOD-05/verification.json`（閘門／窗口）、`evidence/MOD-06/verification.json`（表現／穩定化），皆 `profile: fixture`。限制：fixture 規模（一至兩顆神經元、單一受體、數列）；只有 `hebbian_rate` 在個體上驗證受體閘門（`stdp_pair` 共用同一 `Model` 機械但沒有個體受體閘門測試）；時間窗只驗證單一受體；穩定化閘門只看最近一次 advance 的佔用率報告；無真實任務；本 log 只含上述 `-race` 目標測試，完整 `go test ./...` 與 `go vet ./...` 不在本次指令範圍。
 
 ### 第二階段：具名干預（COR-11）
 
@@ -109,7 +122,7 @@ func RunAblation(ctx context.Context, c AblationConfig) (AblationReport, error)
 
 ## 驗收
 
-- [ ] 第一階段：閘門關、時間窗可區分、關閉效果、記憶表現狀態切換（不是遺忘）、穩定化去重與預算、
+- [x] 第一階段：閘門關、時間窗可區分、關閉效果、記憶表現狀態切換（不是遺忘）、穩定化去重與預算、
   三層 L2 分開、快照接續；`go test`、race、vet；`evidence/MOD-05/`、`evidence/MOD-06/`。
 - [ ] 第二階段：八種干預各有測試、未授權不改狀態、期間與結束後行為、四種差值計算；
   `evidence/COR-11/`；`simulate run` 的 `interventions` 區塊與 `RunReport.interventions`。
