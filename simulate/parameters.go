@@ -23,9 +23,22 @@ const parameterHashDomain = "coimnet-simulate-parameters/v1"
 // core, which has no threshold. Source names the derivation rule and Hash
 // fingerprints the whole set. Derived is set only for the derived source and
 // records which file, rules, policy and scale produced these weights.
+// Signs is the sign each edge was actually built with: +1 or -1 for an edge
+// whose sign the derivation rules fixed, and 0 for a free edge, which is every
+// edge of the uniform source and every edge the unknown sign policy excluded.
+// It is what plasticity.Model.Effective needs to keep a fixed sign edge from
+// crossing zero, and it is absent from the uniform source, where no sign was
+// ever derived.
+//
+// Signs is deliberately outside the fingerprint below. That encoding is a
+// recorded contract of earlier runs, and the field adds no information the
+// hash does not already cover: for a derived set the hash names the parameter
+// set file, the rules hash, the unknown sign policy and the weight scale, and
+// the signs are a function of exactly those.
 type ParameterSet struct {
 	Source   string          `json:"source"`
 	Weights  []float64       `json:"weights"`
+	Signs    []int8          `json:"signs,omitempty"`
 	Bias     []float64       `json:"bias"`
 	LogTau   []float64       `json:"log_tau"`
 	ThetaRaw []float64       `json:"theta_raw"`
@@ -163,6 +176,7 @@ func FromDerived(set *params.Set, setSHA256 string, protocol Protocol) (Paramete
 	}
 	policy, scale := protocol.Derived.UnknownSign, protocol.Derived.WeightScale
 	weights := make([]float64, len(set.EdgeWeight))
+	signs := make([]int8, len(set.EdgeWeight))
 	for i, derived := range set.EdgeWeight {
 		if !finite(derived) {
 			return empty, summary, fmt.Errorf("simulate: derived weight %d is not finite", i)
@@ -197,6 +211,10 @@ func FromDerived(set *params.Set, setSHA256 string, protocol Protocol) (Paramete
 			weight = 0 // never store negative zero
 		}
 		weights[i] = weight
+		// The sign the weight was actually built with. An unknown edge the
+		// exclude policy zeroed keeps sign 0, so local plasticity treats it as
+		// a free edge rather than pinning it to a sign the rules never found.
+		signs[i] = int8(sign)
 	}
 	summary.ParameterSetSHA256 = setSHA256
 	summary.RulesHash = set.RulesHash
@@ -205,6 +223,7 @@ func FromDerived(set *params.Set, setSHA256 string, protocol Protocol) (Paramete
 	parameters := ParameterSet{
 		Source:   ParameterSourceDerived,
 		Weights:  weights,
+		Signs:    signs,
 		Bias:     fill(nodes, protocol.Uniform.Bias),
 		LogTau:   fill(nodes, protocol.Uniform.LogTau),
 		ThetaRaw: fill(nodes, protocol.Uniform.ThetaRaw),
@@ -273,9 +292,20 @@ func (p ParameterSet) validate(nodes, edges int, core string) error {
 		if p.Derived != nil {
 			return fmt.Errorf("simulate: parameter source %q carries a derived summary", ParameterSourceUniform)
 		}
+		if p.Signs != nil {
+			return fmt.Errorf("simulate: parameter source %q derives no edge sign, so the set must carry none, got %d", ParameterSourceUniform, len(p.Signs))
+		}
 	case ParameterSourceDerived:
 		if p.Derived == nil {
 			return fmt.Errorf("simulate: parameter source %q carries no derived summary", ParameterSourceDerived)
+		}
+		if len(p.Signs) != edges {
+			return fmt.Errorf("simulate: parameter source %q has %d edge signs, the graph has %d edges", ParameterSourceDerived, len(p.Signs), edges)
+		}
+		for i, sign := range p.Signs {
+			if sign < -1 || sign > 1 {
+				return fmt.Errorf("simulate: edge sign %d is %d, want -1, 0 or +1", i, sign)
+			}
 		}
 		if !isLowerHex(p.Derived.ParameterSetSHA256) || !isLowerHex(p.Derived.RulesHash) {
 			return errors.New("simulate: the derived summary must name the parameter set and rules hashes")

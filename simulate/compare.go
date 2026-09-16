@@ -13,6 +13,7 @@ import (
 	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/internal/strictjson"
 	"github.com/TimLai666/coimnet/params"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 const (
@@ -33,6 +34,11 @@ const reproduction = "Every cell is one independent run of the same protocol. " 
 	" generator and then running that protocol; the recorded topology_hash and parameter_hash must match before the numbers are compared. " +
 	"The report states metric values, thresholds declared before the run and the position of the original inside the null model distribution. It makes no claim about behaviour."
 
+// learningReproduction is appended to reproduction when the comparison declares
+// learning variants, so a comparison that declares none keeps the exact string
+// earlier reports recorded.
+const learningReproduction = " The learning variants run on the original wiring: original is the same protocol with the plasticity block removed, plastic runs the block as declared, and learned_then_frozen reruns the same stimulus with the weights fixed at base plus the fast changes the plastic cell ended with and no further update. Each cell's plasticity block reports the rule, the enabled edges, the gate channel, both clamp counts and the Euclidean norm of the fast changes before and after the run."
+
 // CompareProtocol is the complete, serializable description of one comparison
 // matrix: one run protocol, the named neuron sets, the metrics and thresholds
 // written before the run, the null models and the seeds they are run with.
@@ -46,6 +52,14 @@ type CompareProtocol struct {
 	Thresholds    []Threshold     `json:"thresholds"`
 	NullModels    []NullModelSpec `json:"null_models,omitempty"`
 	Seeds         []uint64        `json:"seeds,omitempty"`
+	// LearningVariants declares which of original, plastic and
+	// learned_then_frozen run on the original wiring, in that order. It is
+	// declared exactly when the run protocol declares a plasticity block:
+	// original strips the block and is the ticket 14 cell, plastic runs it,
+	// and learned_then_frozen reruns the same stimulus with w_eff fixed at
+	// base plus the fast changes the plastic cell ended with. Without the
+	// field the matrix is the single original cell it always was.
+	LearningVariants []string `json:"learning_variants,omitempty"`
 }
 
 // MetricDelta is one cell's metric minus the original cell's value for the
@@ -140,10 +154,54 @@ func (c CompareProtocol) Hash() (string, error) {
 	return hex.EncodeToString(sum[:]), nil
 }
 
+// learningVariants returns the cells the matrix runs on the original wiring, in
+// declaration order. A comparison that declares none is the single original
+// cell of ticket 14.
+func (c CompareProtocol) learningVariants() []string {
+	if len(c.LearningVariants) == 0 {
+		return []string{VariantOriginal}
+	}
+	return c.LearningVariants
+}
+
+// validateLearningVariants checks the learning matrix on its own. The block and
+// the variant list are declared together, original comes first because every
+// delta is taken from it, and learned_then_frozen needs the plastic cell that
+// produces the fast changes it freezes.
+func (c CompareProtocol) validateLearningVariants() error {
+	if c.Run.Plasticity == nil && len(c.LearningVariants) != 0 {
+		return fmt.Errorf("simulate: learning_variants are declared but the run protocol carries no plasticity block, so %q and %q would have no rule to run", VariantPlastic, VariantLearnedThenFrozen)
+	}
+	if c.Run.Plasticity != nil && len(c.LearningVariants) == 0 {
+		return fmt.Errorf("simulate: the run protocol declares a plasticity block, so the comparison must declare learning_variants and say which of %q, %q and %q to run", VariantOriginal, VariantPlastic, VariantLearnedThenFrozen)
+	}
+	seen := make(map[string]struct{}, len(c.LearningVariants))
+	for i, name := range c.LearningVariants {
+		switch name {
+		case VariantOriginal, VariantPlastic, VariantLearnedThenFrozen:
+		default:
+			return fmt.Errorf("simulate: learning variant %q is not %q, %q or %q", name, VariantOriginal, VariantPlastic, VariantLearnedThenFrozen)
+		}
+		if _, exists := seen[name]; exists {
+			return fmt.Errorf("simulate: duplicate learning variant %q", name)
+		}
+		if i == 0 && name != VariantOriginal {
+			return fmt.Errorf("simulate: learning variant %q is declared first, but %q is the cell every delta is taken from and must come first", name, VariantOriginal)
+		}
+		if name == VariantLearnedThenFrozen {
+			if _, exists := seen[VariantPlastic]; !exists {
+				return fmt.Errorf("simulate: learning variant %q freezes the fast changes of %q, which must be declared before it", VariantLearnedThenFrozen, VariantPlastic)
+			}
+		}
+		seen[name] = struct{}{}
+	}
+	return nil
+}
+
 // Validate checks everything that does not need a graph: the run protocol, the
 // declared names, the metric definitions against the core and the step count,
-// the thresholds against the metrics, and the null models against the seeds
-// and the parameter source.
+// the thresholds against the metrics, the null models against the seeds and the
+// parameter source, and the learning variants against the plasticity block.
 func (c CompareProtocol) Validate() error {
 	if c.SchemaVersion != CompareProtocolSchemaVersion {
 		return fmt.Errorf("simulate: unsupported compare protocol schema %q, want %q", c.SchemaVersion, CompareProtocolSchemaVersion)
@@ -216,7 +274,7 @@ func (c CompareProtocol) Validate() error {
 		}
 		seeds[seed] = struct{}{}
 	}
-	return nil
+	return c.validateLearningVariants()
 }
 
 // Compare runs the original wiring and then every declared null model kind
@@ -258,29 +316,59 @@ func Compare(ctx context.Context, g *connectome.Graph, set *params.Set, setSHA25
 		Sets:            sets,
 		Reproduction:    reproduction,
 	}
+	if len(cp.LearningVariants) != 0 {
+		report.Reproduction += learningReproduction
+	}
 	if cp.Run.ParameterSource == ParameterSourceDerived {
 		report.ParameterSetSHA256 = setSHA256
 	}
 
-	original, err := OriginalVariant(ctx, g, set, setSHA256, cp.Run, limits)
-	if err != nil {
-		return empty, err
+	// The learning variants run first and on the untouched wiring, so cell 0
+	// is the original every delta is taken from whether or not the comparison
+	// declares any of them.
+	var learned plasticity.State
+	for _, name := range cp.learningVariants() {
+		run, initial, err := cp.learningCell(name, learned)
+		if err != nil {
+			return empty, err
+		}
+		variant, err := OriginalVariant(ctx, g, set, setSHA256, run, limits)
+		if err != nil {
+			return empty, err
+		}
+		variant.Name = name
+		cell, final, err := runCell(ctx, g, cellRequest{
+			variant: variant, run: run, index: len(report.Cells), plastic: initial,
+		}, cp, sets, windows, limits)
+		if err != nil {
+			return empty, err
+		}
+		if name == VariantPlastic {
+			learned = final
+		}
+		if len(report.Cells) == 0 {
+			cell.Deltas = deltasFromOriginal(cell.Metrics, cell.Metrics)
+		} else {
+			cell.Deltas = deltasFromOriginal(report.Cells[0].Metrics, cell.Metrics)
+		}
+		report.Cells = append(report.Cells, cell)
 	}
-	cell, err := runCell(ctx, g, original, cp, sets, windows, limits, 0, "", 0)
-	if err != nil {
-		return empty, err
-	}
-	cell.Deltas = deltasFromOriginal(cell.Metrics, cell.Metrics)
-	report.Cells = append(report.Cells, cell)
+	// A null model cell is the ticket 14 cell and carries no plasticity: this
+	// matrix compares learning against the original wiring, and comparing it
+	// against shuffled wiring is a different question with its own protocol.
+	nullRun := cp.Run
+	nullRun.Plasticity = nil
 	for _, spec := range cp.NullModels {
 		for _, seed := range cp.Seeds {
 			seeded := spec
 			seeded.Seed = seed
-			variant, _, err := DeriveNullModel(ctx, g, set, setSHA256, cp.Run, seeded, limits)
+			variant, _, err := DeriveNullModel(ctx, g, set, setSHA256, nullRun, seeded, limits)
 			if err != nil {
 				return empty, err
 			}
-			cell, err := runCell(ctx, g, variant, cp, sets, windows, limits, len(report.Cells), spec.Kind, seed)
+			cell, _, err := runCell(ctx, g, cellRequest{
+				variant: variant, run: nullRun, index: len(report.Cells), kind: spec.Kind, seed: seed,
+			}, cp, sets, windows, limits)
 			if err != nil {
 				return empty, err
 			}
@@ -292,15 +380,56 @@ func Compare(ctx context.Context, g *connectome.Graph, set *params.Set, setSHA25
 	return report, nil
 }
 
-// runCell builds, tracks, runs and evaluates one variant.
-func runCell(ctx context.Context, g *connectome.Graph, v Variant, cp CompareProtocol, sets []ResolvedSet, windows [][2]int, limits Limits, index int, kind string, seed uint64) (CompareCell, error) {
-	started := time.Now()
-	fail := func(err error) (CompareCell, error) {
-		return CompareCell{}, fmt.Errorf("simulate: compare cell %d (%s): %w", index, v.Name, err)
+// learningCell returns the run protocol one learning variant uses and, for
+// learned_then_frozen, the fast state it starts from. original strips the
+// block, plastic runs it as declared, and learned_then_frozen declares the same
+// block with updates frozen and is handed the fast changes the plastic cell
+// ended with, so the weights it integrates are base plus exactly those.
+func (c CompareProtocol) learningCell(name string, learned plasticity.State) (Protocol, *plasticity.State, error) {
+	run := c.Run
+	switch name {
+	case VariantOriginal:
+		run.Plasticity = nil
+		return run, nil, nil
+	case VariantPlastic:
+		return run, nil, nil
+	case VariantLearnedThenFrozen:
+		frozen := *c.Run.Plasticity
+		frozen.Frozen = true
+		run.Plasticity = &frozen
+		state := clonePlasticState(learned)
+		return run, &state, nil
 	}
-	runner, err := BuildVariant(ctx, g, v, cp.Run, limits)
+	return Protocol{}, nil, fmt.Errorf("simulate: unsupported learning variant %q", name)
+}
+
+// cellRequest is one cell of the matrix: the variant to run, the run protocol
+// that cell uses, which is the declared one with the plasticity block stripped,
+// declared or frozen, and the fast state the cell starts from.
+type cellRequest struct {
+	variant Variant
+	run     Protocol
+	index   int
+	kind    string
+	seed    uint64
+	plastic *plasticity.State
+}
+
+// runCell builds, tracks, runs and evaluates one cell and returns the fast
+// state it ended with, which learned_then_frozen freezes.
+func runCell(ctx context.Context, g *connectome.Graph, req cellRequest, cp CompareProtocol, sets []ResolvedSet, windows [][2]int, limits Limits) (CompareCell, plasticity.State, error) {
+	started := time.Now()
+	fail := func(err error) (CompareCell, plasticity.State, error) {
+		return CompareCell{}, plasticity.State{}, fmt.Errorf("simulate: compare cell %d (%s): %w", req.index, req.variant.Name, err)
+	}
+	runner, err := BuildVariant(ctx, g, req.variant, req.run, limits)
 	if err != nil {
 		return fail(err)
+	}
+	if req.plastic != nil {
+		if err := runner.RestorePlasticState(*req.plastic); err != nil {
+			return fail(err)
+		}
 	}
 	if err := runner.TrackSets(sets, windows); err != nil {
 		return fail(err)
@@ -318,15 +447,15 @@ func runCell(ctx context.Context, g *connectome.Graph, v Variant, cp CompareProt
 		return fail(err)
 	}
 	cell := CompareCell{
-		Index: index, Variant: v.Name, Kind: kind, Seed: seed,
+		Index: req.index, Variant: req.variant.Name, Kind: req.kind, Seed: req.seed,
 		Run: run, Metrics: metrics, Thresholds: thresholds,
 		WallSeconds: time.Since(started).Seconds(),
 	}
-	if v.Null != nil {
+	if req.variant.Null != nil {
 		cell.Null = &NullModelReport{}
-		*cell.Null = *v.Null
+		*cell.Null = *req.variant.Null
 	}
-	return cell, nil
+	return cell, runner.PlasticState(), nil
 }
 
 // deltasFromOriginal subtracts the original cell's metric values from one

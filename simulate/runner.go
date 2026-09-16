@@ -8,6 +8,7 @@ import (
 
 	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 // Limits bounds the accounted arrays of one runner. MaxMemoryBytes covers the
@@ -68,6 +69,19 @@ type Runner struct {
 	tracked         []trackedSet
 	trackWindows    [][2]int
 	measurements    Measurements
+	// The plasticity fields are all zero on a run without the block. The
+	// runner keeps its own copy of the edge endpoints because
+	// plasticity.Step reads them for every enabled edge, and it holds the
+	// fast state exactly as it holds the neural one: a failed Run leaves it
+	// where it was.
+	plastic        *plasticity.Model
+	plasticState   plasticity.State
+	plasticRule    plasticity.Rule
+	plasticGate    int
+	plasticScale   float64
+	plasticFrozen  bool
+	plasticSources []int
+	plasticTargets []int
 }
 
 // trackedSet is one resolved node set the run measures alongside the probes.
@@ -221,7 +235,41 @@ func BuildVariant(ctx context.Context, g *connectome.Graph, v Variant, protocol 
 	if runner.state, err = built.initial(); err != nil {
 		return nil, err
 	}
+	if err := runner.enablePlasticity(ctx, g, v, protocol); err != nil {
+		return nil, err
+	}
 	return runner, nil
+}
+
+// enablePlasticity resolves the declared block against this variant's topology
+// and fixes the chunk size at one step. It is the last construction step, so a
+// refused block leaves nothing behind.
+func (r *Runner) enablePlasticity(ctx context.Context, g *connectome.Graph, v Variant, protocol Protocol) error {
+	block := protocol.Plasticity
+	if block == nil {
+		return nil
+	}
+	enabled, err := plasticEdges(ctx, g, *block, v.Sources, v.Targets)
+	if err != nil {
+		return err
+	}
+	if err := r.accountPlasticity(len(enabled), block.Rule.Kind == plasticity.RuleSTDPPair); err != nil {
+		return err
+	}
+	model, err := plasticity.New(plasticity.Config{Rule: block.Rule, Edges: enabled}, r.edges)
+	if err != nil {
+		return fmt.Errorf("simulate: %w", err)
+	}
+	r.plastic = model
+	r.plasticState = model.NewState()
+	r.plasticRule = block.Rule
+	r.plasticGate, r.plasticScale, r.plasticFrozen = block.GateChannel, block.GateScale, block.Frozen
+	r.plasticSources = append([]int(nil), v.Sources...)
+	r.plasticTargets = append([]int(nil), v.Targets...)
+	// The fast changes of one step decide the weights of the next one, so the
+	// core can no longer be handed a whole chunk.
+	r.maxChunk = 1
+	return nil
 }
 
 // graphShape returns the node and edge counts as platform ints.
@@ -601,6 +649,15 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 	changed := make([]bool, r.nodes)
 
 	state := r.state
+	fast := clonePlasticState(r.plasticState)
+	var plastic *PlasticityReport
+	if r.plastic != nil {
+		plastic = &PlasticityReport{
+			Rule: r.plasticRule.Kind, EnabledEdges: r.plastic.Edges(), GateChannel: r.plasticGate,
+			Frozen: r.plasticFrozen, PlasticL2Before: l2Norm(fast.Plastic),
+			ChunkSize: r.maxChunk, WallClockPenaltyNote: wallClockPenaltyNote,
+		}
+	}
 	for start := 0; start < steps; start += r.maxChunk {
 		if err := ctx.Err(); err != nil {
 			return empty, fmt.Errorf("simulate: %w", err)
@@ -610,9 +667,26 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 		if err != nil {
 			return empty, err
 		}
-		next, outputs, spikes, err := r.core.advance(ctx, r.params, state, inputs)
+		parameters := r.params
+		if r.plastic != nil {
+			weights, held, err := r.plastic.Effective(r.params.Weights, r.params.Signs, fast)
+			if err != nil {
+				return empty, fmt.Errorf("simulate: effective weights at step %d: %w", start, err)
+			}
+			plastic.ClampedByWMin += uint64(held.HeldAtWMin)
+			parameters.Weights = weights
+		}
+		next, outputs, spikes, err := r.core.advance(ctx, parameters, state, inputs)
 		if err != nil {
 			return empty, fmt.Errorf("simulate: advance steps %d..%d: %w", start, end, err)
+		}
+		if r.plastic != nil && !r.plasticFrozen {
+			updated, stepReport, err := r.plasticStep(fast, outputs[0], spikeRow(spikes, 0), stimulus[start])
+			if err != nil {
+				return empty, fmt.Errorf("simulate: plasticity at step %d: %w", start, err)
+			}
+			fast = updated
+			plastic.ClampedByPlasticMax += uint64(stepReport.Clamped)
 		}
 		for t := range outputs {
 			if tracking != nil {
@@ -651,9 +725,41 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 	if err != nil {
 		return empty, err
 	}
+	if plastic != nil {
+		plastic.PlasticL2After = l2Norm(fast.Plastic)
+		// A norm that left the finite range would make the report
+		// unencodable; refuse the run instead, exactly as a non-finite probe
+		// value does. It needs a plastic_max above 1e150 on a whole-brain
+		// graph, but the report must never be the place that finds out.
+		if err := checkFinite([]float64{plastic.PlasticL2Before, plastic.PlasticL2After}, "plastic l2"); err != nil {
+			return empty, err
+		}
+		report.Plasticity = plastic
+	}
 	r.state = state
+	r.plasticState = fast
 	r.measurements = r.trackedMeasurements(tracking)
 	return report, nil
+}
+
+// plasticStep updates the fast state from one core step, in the order both the
+// plasticity package and learning.Individual.AdvanceGated fix: the core has
+// already integrated the weights this step was given, the eligibility and the
+// pair traces then take the pre and post signals of that step, and the gate
+// turns the eligibility into a bounded fast change the next step integrates.
+//
+// The pre signal is the value the edge carries after this step: the activated
+// output on the continuous core and the synaptic trace on the spiking one. The
+// post signal is the 0/1 event where the core produces one and the same output
+// where it does not.
+func (r *Runner) plasticStep(fast plasticity.State, outputs, spikes, stimulus []float64) (plasticity.State, plasticity.Report, error) {
+	pre, post := outputs, outputs
+	var eventsPre, eventsPost []float64
+	if spikes != nil {
+		post, eventsPre, eventsPost = spikes, spikes, spikes
+	}
+	gate := r.plasticScale * stimulus[r.plasticGate]
+	return r.plastic.Step(fast, pre, post, eventsPre, eventsPost, gate, r.plasticSources, r.plasticTargets)
 }
 
 // inputs turns one stimulus chunk into the per-step node input matrix.
@@ -824,6 +930,9 @@ func (r *Runner) assumptions() []string {
 		"Every edge delay is zero. The release carries no conduction delay and none was invented.",
 		"Node indices, edge order and raw weights come from the graph store; the run changes nothing about the wiring.",
 	)
+	if r.plastic != nil {
+		lines = append(lines, r.plasticAssumption())
+	}
 	if !r.core.spiking() {
 		lines = append(lines, "The continuous core emits no events, so population_rate_per_step is empty, rate_quantiles are zero and silent_fraction counts neurons whose output never left the value held before the run.")
 	}

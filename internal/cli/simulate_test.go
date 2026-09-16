@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/plasticity"
 	"github.com/TimLai666/coimnet/simulate"
 	"github.com/apache/arrow/go/v17/arrow"
 	"github.com/apache/arrow/go/v17/arrow/array"
@@ -121,6 +122,18 @@ type simulateOutput struct {
 	} `json:"monitors"`
 	StabilityFlags []string `json:"stability_flags"`
 	Assumptions    []string `json:"assumptions"`
+	Plasticity     *struct {
+		Rule                 string  `json:"rule"`
+		EnabledEdges         int     `json:"enabled_edges"`
+		GateChannel          int     `json:"gate_channel"`
+		Frozen               bool    `json:"frozen"`
+		ClampedByWMin        uint64  `json:"clamped_by_w_min"`
+		ClampedByPlasticMax  uint64  `json:"clamped_by_plastic_max"`
+		PlasticL2Before      float64 `json:"plastic_l2_before"`
+		PlasticL2After       float64 `json:"plastic_l2_after"`
+		ChunkSize            int     `json:"chunk_size"`
+		WallClockPenaltyNote string  `json:"wall_clock_penalty_note"`
+	} `json:"plasticity"`
 }
 
 func runSimulate(t *testing.T, args ...string) (simulateOutput, string) {
@@ -716,7 +729,18 @@ type compareOutput struct {
 		Run struct {
 			SchemaVersion string `json:"schema_version"`
 			TopologyHash  string `json:"topology_hash"`
+			Plasticity    *struct {
+				Rule           string  `json:"rule"`
+				EnabledEdges   int     `json:"enabled_edges"`
+				Frozen         bool    `json:"frozen"`
+				PlasticL2After float64 `json:"plastic_l2_after"`
+			} `json:"plasticity"`
 		} `json:"run"`
+		Deltas []struct {
+			Metric  string  `json:"metric"`
+			Value   float64 `json:"value"`
+			Defined bool    `json:"defined"`
+		} `json:"deltas_from_original"`
 		Metrics []struct {
 			Name    string  `json:"name"`
 			Value   float64 `json:"value"`
@@ -979,5 +1003,161 @@ func TestSimulateCompareFailuresAndHelp(t *testing.T) {
 	out.Reset()
 	if err := Run(context.Background(), []string{"--help"}, &out, &errout); err != nil || !strings.Contains(out.String(), "simulate compare") {
 		t.Fatalf("overview missing simulate compare: %v\n%s", err, out.String())
+	}
+}
+
+// plasticSimulateProtocol is lifSimulateProtocol with a second stimulus channel
+// carrying a constant learning gate and the plasticity block that reads it. The
+// gain is raised so node 1 reaches the threshold at step 1, which is what makes
+// the first eligibility of edge 0 non-zero.
+func plasticSimulateProtocol(steps int) simulate.Protocol {
+	p := lifSimulateProtocol(steps)
+	p.Uniform = &simulate.UniformParameters{Gain: .5}
+	inline := make([][]float64, steps)
+	for t := range inline {
+		inline[t] = []float64{0, 1}
+	}
+	inline[0][0] = 2
+	p.Stimulus = simulate.StimulusSpec{Inline: inline}
+	p.Plasticity = &simulate.Plasticity{
+		Rule: plasticity.Rule{
+			Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625,
+		},
+		All: true, GateChannel: 1, GateScale: 1,
+	}
+	return p
+}
+
+// TestSimulateRunAcceptsThePlasticityBlock is the CLI half of the runner work:
+// the block is read out of the protocol, no new flag exists, and the report
+// carries the plasticity block. The same protocol without the block is the run
+// it always was.
+func TestSimulateRunAcceptsThePlasticityBlock(t *testing.T) {
+	dir, store := simulateStore(t)
+	protocol := writeProtocol(t, dir, "plastic.json", plasticSimulateProtocol(4))
+	report, raw := runSimulate(t, "simulate", "run", "--store", store, "--protocol", protocol)
+
+	if report.Plasticity == nil {
+		t.Fatalf("the CLI report carries no plasticity block: %s", raw)
+	}
+	got := *report.Plasticity
+	if got.Rule != plasticity.RuleHebbianRate || got.EnabledEdges != 2 || got.GateChannel != 1 || got.Frozen {
+		t.Fatalf("plasticity block = %+v", got)
+	}
+	if got.ChunkSize != 1 || got.WallClockPenaltyNote == "" {
+		t.Fatalf("plasticity block = %+v, want the forced chunk size and its note", got)
+	}
+	if got.PlasticL2Before != 0 || got.PlasticL2After <= 0 {
+		t.Fatalf("plastic l2 = %v..%v, want a run that moved", got.PlasticL2Before, got.PlasticL2After)
+	}
+	if !strings.Contains(strings.Join(report.Assumptions, " "), "Local plasticity was enabled") {
+		t.Fatalf("assumptions = %v", report.Assumptions)
+	}
+	plain := writeProtocol(t, dir, "plain.json", lifSimulateProtocol(4))
+	base, _ := runSimulate(t, "simulate", "run", "--store", store, "--protocol", plain)
+	if base.Plasticity != nil {
+		t.Fatalf("a protocol without the block reported plasticity %+v", base.Plasticity)
+	}
+
+	// No flag was added: the block travels in the protocol only.
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "run", "--plasticity", "x", "--store", store, "--protocol", protocol}, &out, &errout); err == nil {
+		t.Fatal("simulate run accepted a --plasticity flag")
+	}
+	var help bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "run", "--help"}, &help, &errout); err != nil {
+		t.Fatalf("simulate run --help: %v", err)
+	}
+	if !strings.Contains(help.String(), "plasticity block") || !strings.Contains(help.String(), "gate_channel") {
+		t.Fatalf("simulate run --help does not describe the block:\n%s", help.String())
+	}
+}
+
+// TestSimulateCompareAcceptsTheLearningVariants is the CLI half of the compare
+// work: the three cells are declared in the protocol, written to --out-dir
+// under their variant names, and the original cell carries no plasticity.
+func TestSimulateCompareAcceptsTheLearningVariants(t *testing.T) {
+	dir, store := compareStore(t)
+	cp := uniformCompareProtocol(6)
+	inline := make([][]float64, 6)
+	for t := range inline {
+		inline[t] = []float64{0, 1}
+	}
+	inline[0][0] = 2
+	cp.Run.Stimulus = simulate.StimulusSpec{Inline: inline}
+	cp.Run.Plasticity = &simulate.Plasticity{
+		Rule: plasticity.Rule{
+			Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625,
+		},
+		All: true, GateChannel: 1, GateScale: 1,
+	}
+	cp.LearningVariants = []string{"original", "plastic", "learned_then_frozen"}
+	protocol := writeCompareProtocol(t, dir, "learning.json", cp)
+	outDir := filepath.Join(dir, "learning-cells")
+	report, raw := runCompare(t, "simulate", "compare", "--store", store, "--protocol", protocol, "--out-dir", outDir)
+
+	if len(report.Cells) != 3+len(cp.NullModels)*len(cp.Seeds) {
+		t.Fatalf("got %d cells: %s", len(report.Cells), raw)
+	}
+	for i, want := range []string{"original", "plastic", "learned_then_frozen"} {
+		if report.Cells[i].Variant != want || report.Cells[i].Kind != "" {
+			t.Fatalf("cell %d = %+v, want the %q variant", i, report.Cells[i], want)
+		}
+	}
+	if report.Cells[0].Run.Plasticity != nil {
+		t.Fatalf("the original cell reports plasticity %+v", report.Cells[0].Run.Plasticity)
+	}
+	if report.Cells[1].Run.Plasticity == nil || report.Cells[1].Run.Plasticity.Frozen {
+		t.Fatalf("the plastic cell = %+v", report.Cells[1].Run.Plasticity)
+	}
+	frozen := report.Cells[2].Run.Plasticity
+	if frozen == nil || !frozen.Frozen || frozen.PlasticL2After != report.Cells[1].Run.Plasticity.PlasticL2After {
+		t.Fatalf("the frozen cell = %+v", frozen)
+	}
+	for _, cell := range report.Cells[3:] {
+		if cell.Run.Plasticity != nil {
+			t.Fatalf("null model cell %d reports plasticity %+v", cell.Index, cell.Run.Plasticity)
+		}
+	}
+	for _, delta := range report.Cells[0].Deltas {
+		if delta.Defined && delta.Value != 0 {
+			t.Fatalf("the original cell has a non-zero delta %+v", delta)
+		}
+	}
+	if !strings.Contains(report.Reproduction, "learned_then_frozen") {
+		t.Fatalf("reproduction = %q", report.Reproduction)
+	}
+	for _, name := range []string{"cell-0-original.json", "cell-1-plastic.json", "cell-2-learned_then_frozen.json"} {
+		if _, err := os.Stat(filepath.Join(outDir, name)); err != nil {
+			t.Fatalf("out-dir is missing %s: %v", name, err)
+		}
+	}
+
+	var out, errout bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "compare", "--learning-variants", "plastic", "--store", store, "--protocol", protocol}, &out, &errout); err == nil {
+		t.Fatal("simulate compare accepted a --learning-variants flag")
+	}
+	var help bytes.Buffer
+	if err := Run(context.Background(), []string{"simulate", "compare", "--help"}, &help, &errout); err != nil {
+		t.Fatalf("simulate compare --help: %v", err)
+	}
+	if !strings.Contains(help.String(), "learning_variants") || !strings.Contains(help.String(), "learned_then_frozen") {
+		t.Fatalf("simulate compare --help does not describe the variants:\n%s", help.String())
+	}
+}
+
+// TestSimulateRunRefusesStateFlagsWithThePlasticityBlock pins the one
+// combination the block cannot support: the state snapshot is the core's state
+// and holds no fast changes, so a split run would restart them at zero.
+func TestSimulateRunRefusesStateFlagsWithThePlasticityBlock(t *testing.T) {
+	dir, store := simulateStore(t)
+	protocol := writeProtocol(t, dir, "plastic-state.json", plasticSimulateProtocol(4))
+	for _, flag := range []string{"--state-out", "--state-in"} {
+		var out, errout bytes.Buffer
+		args := []string{"simulate", "run", "--store", store, "--protocol", protocol, flag, filepath.Join(dir, "state.json")}
+		err := Run(context.Background(), args, &out, &errout)
+		if err == nil || !strings.Contains(err.Error(), "plasticity block") {
+			t.Fatalf("%s with a plasticity block = %v", flag, err)
+		}
 	}
 }

@@ -133,6 +133,29 @@ data_dir=$(mktemp -d)
 
 真實全圖跑過兩次矩陣，每次十格（原圖加三種空模型 × seed 1、2、3），都是 165,122 個神經元與 25,563,197 條邊的 300 步。集合由註記解析成 `alin` 24 個、`descending_neuron` 1,314 個、`vnc_motor` 708 個節點。LIF 矩陣 890.94 s、最大 RSS 5,909,626,880 B；連續核心矩陣 929.97 s、最大 RSS 5,659,115,520 B；兩邊每一格的拓撲與參數 hash 逐格相同。指標的位置會隨核心改變：LIF 的 `descending_neuron_mean_rate` 原圖 0.0879，在三種空模型的三個 seed 分布中百分位都是 0（比每個 seed 都低），但連續核心的 `descending_neuron_mean_output` 原圖在 rewire 與 weight_shuffle 的分布中百分位是 1。三個 seed 的百分位只是位置，不是檢定。證據見 `evidence/NAT-03/`、`NAT-04/` 與 `NAT-05/`，指令封裝在 `scripts/compare-evidence.sh`。
 
+在原生模擬之上開啟可塑性：
+
+```sh
+./bin/coimnet simulate compare \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol evidence/NAT-06/compare-fullgraph-derived-plastic.json \
+  --params params-derive-v1.coimparams \
+  --out-dir cells \
+  > compare.json
+```
+
+protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，`simulate run` 與 `simulate compare` 都吃這個區塊，兩個命令都沒有新旗標。`rule` 選 `hebbian_rate`（LIF 核心另有 `stdp_pair`）並帶 `decay_e`、`decay_p`、`plastic_max` 與 `w_min`；`all` 與 `edges` 選擇器二擇一決定哪些連線參與，選擇器解析出一組神經元後啟用「兩端都在這組裡」的邊；`gate_channel` 與 `gate_scale` 直接從刺激矩陣的一個通道讀學習閘門，所以不必另外給一份輸入。閘門通道必須是刺激宣告的通道，而且不能是任何注入使用的通道，否則同一個通道既驅動神經元又開閘門，事後分不出是哪一個造成的。
+
+每一步的權重是「參數集的權重加上該條邊有上限的快速變化」，在推進之前重算；固定符號的邊被 `w_min` 擋在零的同一側，永遠不會翻成相反的作用；快速變化不寫回參數集。因為下一步的權重取決於這一步的快速變化，開啟後分塊大小強制為 1，報告的 `plasticity` 區塊會寫出規則、啟用邊數、閘門通道、`w_min` 與 `plastic_max` 各擋下幾次、快速變化的 L2 範數（執行前後）、分塊大小與這個耗時代價。沒有宣告 `plasticity` 的 protocol 逐位元等於這個區塊出現以前的執行與報告。
+
+`simulate compare` 的 `learning_variants` 用同一份刺激跑三格：`original` 是把 `plasticity` 區塊拿掉的執行，也是所有差值的基準，報告逐位元等於沒有宣告區塊的那一格；`plastic` 開啟區塊；`learned_then_frozen` 以 `plastic` 跑完的快速變化把權重固定住、不再更新，重跑同一份刺激。三格加上空模型那幾格共用同一組指標與門檻，空模型那幾格不帶可塑性。
+
+**報告只給差值與百分位，不做文字判斷。** 每一格的 `deltas_from_original` 是它與 `original` 的逐指標差，兩邊都有定義才有值；「增強、修改或破壞」由讀者從差值和門檻結果自己判斷，框架不寫這種句子。**規則與四個常數是明示的工程假設**，不是量測到的果蠅可塑性，報告的 `assumptions` 會原樣寫出來。
+
+真實全圖跑過兩次三格矩陣（2026-09-16），同一份 store、同一份參數集與同一份刺激，只有 `decay_p` 不同：0.5 與 0.999。每一格都是 165,122 個神經元、25,563,197 條邊、300 步，`all: true` 啟用全部 25,563,197 條邊。刺激是 NAT-02 的同一個脈衝（通道 0，第 10–29 步）加上通道 1 的閘門（第 30–49 步常數 1）。兩次都是 1252.44 s 與 1217.28 s、最大 RSS 6.61 GB 與 6.56 GB，可塑性那一格各約 610 s 與 599 s。`original` 那一格的四個探針序列、monitors 與 assumptions 與 NAT-02 的全腦單次執行逐位相同。
+
+`decay_p` 0.999 時快速變化撐到最後（L2 範數 11.90），`learned_then_frozen` 拿到的正是那組值：ALIN 的 `mean_rate` 在閘門之後 +0.0585（凍結後 +0.0728），`descending_neuron` 的 `spike_fraction` −0.0723（凍結後 −0.0502），`vnc_motor` 的首次放電延遲在凍結那一格少 3 步。`decay_p` 0.5 時閘門關上之後 `plastic` 每步衰減一半，250 步後整個陣列只剩 8.08e-75，所以 `learned_then_frozen` 的報告與 `original` 位元組相同，十四個有定義的差值全部是 0（剩下那一個三格都未定義），但 `plastic` 那一格仍然有差。**快速變化撐不撐得到最後由 `decay_p` 決定**，不是實作的選擇。完整數字、假設與限制見 [evidence/NAT-06/verification.json](evidence/NAT-06/verification.json)，指令封裝在 `scripts/plasticity-evidence.sh`。
+
 真實子圖的選取與短訓練見 [ALIN 範例](examples/realsubgraph/README.md)。範例明示人工脈衝任務、初始化假設及更新範圍，輸出來源與參數指紋。
 
 [多通道 adapter 範例](examples/multichannel/README.md) 將不同頻率的連續值、區間與脈衝轉成六欄輸入，接到既有核心與訓練器。執行 `go test ./examples/multichannel -run ExampleAdapt -count=1 -v` 可跑人工資料的完整流程。

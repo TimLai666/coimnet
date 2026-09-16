@@ -176,6 +176,10 @@ type Protocol struct {
 	ParameterSource string              `json:"parameter_source"`
 	Uniform         *UniformParameters  `json:"uniform,omitempty"`
 	Derived         *DerivedParameters  `json:"derived,omitempty"`
+	// Plasticity is absent from a run without local fast changes. It is a
+	// pointer with omitempty so a protocol that does not declare it encodes
+	// exactly as it did before the field existed and keeps its recorded hash.
+	Plasticity *Plasticity `json:"plasticity,omitempty"`
 }
 
 // DecodeProtocol reads exactly one strict JSON protocol and validates
@@ -275,8 +279,11 @@ func (p Protocol) Validate() error {
 		!finite(p.Thresholds.MinActiveFraction) || p.Thresholds.MinActiveFraction < 0 {
 		return errors.New("simulate: thresholds must be finite and not negative")
 	}
-	_, err := p.Stimulus.matrix()
-	return err
+	stimulus, err := p.Stimulus.matrix()
+	if err != nil {
+		return err
+	}
+	return p.validatePlasticity(len(stimulus[0]))
 }
 
 // validateParameterSource checks the declared source and exactly the blocks it

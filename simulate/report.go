@@ -94,6 +94,10 @@ type RunReport struct {
 	Monitors           Monitors            `json:"monitors"`
 	StabilityFlags     []string            `json:"stability_flags"`
 	Assumptions        []string            `json:"assumptions"`
+	// Plasticity is present only when the protocol declared the block, so a
+	// report of a run without local fast changes encodes exactly as it did
+	// before the field existed.
+	Plasticity *PlasticityReport `json:"plasticity,omitempty"`
 }
 
 // Stability flag names. They report an observation and never change a run.
