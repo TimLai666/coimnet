@@ -423,3 +423,145 @@ func TestResetOptimizerClosesTheAccumulationWindow(t *testing.T) {
 		t.Fatalf("the step after a reset applied %v with %d accumulated; the previous window was still open", again.Applied, again.Accumulated)
 	}
 }
+
+// TestIndividualSnapshotCarriesTheAccumulationWindow is the mid-window
+// snapshot contract of ticket 17 root decision 3: a persistent individual that
+// is saved in the middle of an accumulation window must not lose the gradients
+// that window already holds. The window travels in the optimizer part, because
+// that is the part it belongs to, and it round trips bit for bit.
+func TestIndividualSnapshotCarriesTheAccumulationWindow(t *testing.T) {
+	n, p := network(t)
+	c := n.Config()
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	a, err := learning.NewIndividual(c, p, o, make([]float64, c.Dynamics.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	x, target := [][]float64{{.7}, {0}, {0}}, []float64{.4}
+	for step := 1; step <= 2; step++ {
+		result, err := a.TrainEpisode(context.Background(), x, target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if result.Applied || result.Accumulated != step {
+			t.Fatalf("step %d applied %v with %d accumulated", step, result.Applied, result.Accumulated)
+		}
+	}
+	s := a.Snapshot()
+	if s.Optimizer.Accumulator == nil {
+		t.Fatal("a snapshot taken inside an accumulation window carries no accumulator")
+	}
+	if s.Optimizer.Accumulator.Count != 2 {
+		t.Fatalf("accumulator count = %d, want 2", s.Optimizer.Accumulator.Count)
+	}
+	if len(s.Optimizer.Accumulator.Sum) != len(s.Optimizer.State.First) {
+		t.Fatalf("accumulator holds %d values, the model has %d parameters", len(s.Optimizer.Accumulator.Sum), len(s.Optimizer.State.First))
+	}
+	var nonzero bool
+	for _, v := range s.Optimizer.Accumulator.Sum {
+		if v != 0 {
+			nonzero = true
+		}
+	}
+	if !nonzero {
+		t.Fatal("the accumulated window is all zero; it holds no gradient")
+	}
+	b, err := learning.RestoreIndividual(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(b.Snapshot(), s) {
+		t.Fatalf("the window did not round trip:\n got %+v\nwant %+v", b.Snapshot().Optimizer.Accumulator, s.Optimizer.Accumulator)
+	}
+	// The restored individual must own its copy: writing into the caller's
+	// snapshot after the restore cannot reach it.
+	s.Optimizer.Accumulator.Sum[0] = 77
+	if b.Snapshot().Optimizer.Accumulator.Sum[0] == 77 {
+		t.Fatal("RestoreIndividual aliased the caller's accumulator")
+	}
+	// Continuing from the restored individual closes the same window: the third
+	// step applies on both and lands on bit-identical parameters.
+	first, err := a.TrainEpisode(context.Background(), x, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := b.TrainEpisode(context.Background(), x, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !first.Applied || !second.Applied {
+		t.Fatalf("the third step did not close the window: %v %v", first.Applied, second.Applied)
+	}
+	if !reflect.DeepEqual(a.Snapshot(), b.Snapshot()) {
+		t.Fatal("a resumed window produced different parameters than an uninterrupted one")
+	}
+	if a.Snapshot().Optimizer.Accumulator != nil {
+		t.Fatal("an applied step left the window open")
+	}
+}
+
+// TestIndividualSnapshotOmitsAnUnusedAccumulator keeps every individual
+// snapshot written before this field existed byte-identical: a trainer that
+// applies every step never opens a window, so the key is never written.
+func TestIndividualSnapshotOmitsAnUnusedAccumulator(t *testing.T) {
+	n, p := network(t)
+	c := n.Config()
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), make([]float64, c.Dynamics.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.TrainEpisode(context.Background(), [][]float64{{.7}, {0}, {0}}, []float64{.4}); err != nil {
+		t.Fatal(err)
+	}
+	s := a.Snapshot()
+	if s.Optimizer.Accumulator != nil {
+		t.Fatalf("an applied step opened a window: %+v", s.Optimizer.Accumulator)
+	}
+	encoded, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(encoded), "accumulator") {
+		t.Fatalf("an unused accumulator was written: %s", encoded)
+	}
+}
+
+// TestRestoreIndividualRejectsAMalformedAccumulator pins that the window is
+// validated on the way in, not trusted. The trainer already owns the rule; the
+// individual has to route the field through it rather than around it.
+func TestRestoreIndividualRejectsAMalformedAccumulator(t *testing.T) {
+	n, p := network(t)
+	c := n.Config()
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	a, err := learning.NewIndividual(c, p, o, make([]float64, c.Dynamics.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = a.TrainEpisode(context.Background(), [][]float64{{.7}, {0}, {0}}, []float64{.4}); err != nil {
+		t.Fatal(err)
+	}
+	good := a.Snapshot()
+	for name, damage := range map[string]func(*learning.GradientAccumulator){
+		"count at the window size": func(g *learning.GradientAccumulator) { g.Count = 3 },
+		"negative count":           func(g *learning.GradientAccumulator) { g.Count = -1 },
+		"short sum":                func(g *learning.GradientAccumulator) { g.Sum = g.Sum[:len(g.Sum)-1] },
+		"non-finite sum":           func(g *learning.GradientAccumulator) { g.Sum[0] = math.Inf(1) },
+		"gradient without a count": func(g *learning.GradientAccumulator) { g.Count = 0 },
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := a.Snapshot()
+			if s.Optimizer.Accumulator == nil {
+				t.Fatal("the fixture snapshot has no window to damage")
+			}
+			damage(s.Optimizer.Accumulator)
+			if _, err := learning.RestoreIndividual(s); err == nil {
+				t.Fatal("a malformed accumulation window was restored")
+			}
+		})
+	}
+	if _, err := learning.RestoreIndividual(good); err != nil {
+		t.Fatalf("the undamaged fixture stopped restoring: %v", err)
+	}
+}

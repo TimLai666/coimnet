@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/replay"
 )
 
 // TestEpisodeCheckpointOmitsUnusedConstraintFields keeps every checkpoint
@@ -336,4 +337,177 @@ func accumulatingPayload(t *testing.T) (envelope, map[string]any) {
 		t.Fatal(err)
 	}
 	return raw, payload
+}
+
+// replayBuffer is the declaration the checkpoint tests below persist: a small
+// capacity with every policy named, so the saved document has to carry them.
+func replayBuffer() replay.Buffer {
+	return replay.Buffer{
+		Capacity: 4, Sampling: replay.SamplingTaskBalanced, Eviction: replay.EvictionReservoir,
+		Seed: 7, Privacy: replay.PrivacyPolicy{StoreRaw: true, Retention: replay.RetentionKeepUntilEvicted},
+	}
+}
+
+func replaySnapshot(t *testing.T) replay.Snapshot {
+	t.Helper()
+	store, err := replay.New(replayBuffer())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for step := uint64(1); step <= 6; step++ {
+		item := replay.Experience{
+			TaskID: "delayed", Step: step,
+			Input:  [][]float64{{float64(step)}, {0}},
+			Target: [][]float64{{1}},
+			Weight: 1, Split: replay.SplitTrain,
+		}
+		if err := store.Add(item); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, _, err := store.Sample(2); err != nil {
+		t.Fatal(err)
+	}
+	return store.Snapshot()
+}
+
+// TestEpisodeCheckpointOmitsAnAbsentReplayPart keeps every checkpoint written
+// before the replay store existed loadable, and makes "no replay" a readable
+// answer rather than an empty store.
+func TestEpisodeCheckpointOmitsAnAbsentReplayPart(t *testing.T) {
+	trainer := newDelayedTrainer(t, 7)
+	train(t, trainer, 1001, 0, 2)
+	state, err := NewState(trainer.Snapshot(), 1001, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "no-replay.json")
+	if err := Save(context.Background(), path, state); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(data), "replay") {
+		t.Fatalf("a run without a replay store wrote a replay part: %s", data)
+	}
+	loaded, err := Load(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Replay != nil {
+		t.Fatalf("an old-shaped checkpoint loaded with a replay store: %+v", loaded.Replay)
+	}
+}
+
+// TestEpisodeCheckpointCarriesTheReplayPart is the round trip of the declared
+// buffer and its reached state, including the draw count a resumed store needs
+// to continue the same sample sequence.
+func TestEpisodeCheckpointCarriesTheReplayPart(t *testing.T) {
+	trainer := newDelayedTrainer(t, 7)
+	train(t, trainer, 1001, 0, 2)
+	state, err := NewState(trainer.Snapshot(), 1001, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := replaySnapshot(t)
+	state.Replay = &want
+	path := filepath.Join(t.TempDir(), "replay.json")
+	if err := Save(context.Background(), path, state); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := Load(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Replay == nil {
+		t.Fatal("the replay part did not survive the round trip")
+	}
+	if !reflect.DeepEqual(*loaded.Replay, want) {
+		t.Fatalf("replay part changed:\n got %+v\nwant %+v", *loaded.Replay, want)
+	}
+	// The loaded part is a usable store, and continuing it draws what the
+	// original store would have drawn next.
+	resumed, err := replay.RestoreSnapshot(*loaded.Replay)
+	if err != nil {
+		t.Fatal(err)
+	}
+	original, err := replay.RestoreSnapshot(want)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, gotReport, err := resumed.Sample(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expected, expectedReport, err := original.Sample(2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, expected) || gotReport.Draws != expectedReport.Draws {
+		t.Fatalf("a resumed store sampled %+v, the original %+v", got, expected)
+	}
+}
+
+// TestEpisodeCheckpointRejectsMalformedReplayParts keeps a hand-edited replay
+// block from decoding as a valid store. Every case replaces the whole "replay"
+// value, so the rejected shapes are written out in full.
+func TestEpisodeCheckpointRejectsMalformedReplayParts(t *testing.T) {
+	trainer := newDelayedTrainer(t, 7)
+	train(t, trainer, 1001, 0, 2)
+	state, err := NewState(trainer.Snapshot(), 1001, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := replaySnapshot(t)
+	state.Replay = &want
+	path := filepath.Join(t.TempDir(), "replay.json")
+	if err := Save(context.Background(), path, state); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw envelope
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]json.RawMessage
+	if err := json.Unmarshal(raw.Payload, &payload); err != nil {
+		t.Fatal(err)
+	}
+	full := payload["replay"]
+	var part map[string]json.RawMessage
+	if err := json.Unmarshal(full, &part); err != nil {
+		t.Fatal(err)
+	}
+	for name, damaged := range map[string]string{
+		"missing buffer":    `{"state":` + string(part["state"]) + `}`,
+		"missing state":     `{"buffer":` + string(part["buffer"]) + `}`,
+		"empty object":      `{}`,
+		"unknown sampling":  strings.Replace(string(full), `"task_balanced"`, `"priority"`, 1),
+		"unknown eviction":  strings.Replace(string(full), `"reservoir"`, `"lru"`, 1),
+		"unknown retention": strings.Replace(string(full), `"keep_until_evicted"`, `"forever"`, 1),
+		"unknown schema":    strings.Replace(string(full), `"coimnet-replay/v1"`, `"coimnet-replay/v0"`, 1),
+		"test split inside": strings.Replace(string(full), `"split":"train"`, `"split":"test"`, 1),
+	} {
+		t.Run(name, func(t *testing.T) {
+			object := map[string]json.RawMessage{}
+			for key, value := range payload {
+				object[key] = value
+			}
+			object["replay"] = json.RawMessage(damaged)
+			changed, err := json.Marshal(object)
+			if err != nil {
+				t.Fatal(err)
+			}
+			bad := filepath.Join(t.TempDir(), "bad-replay.json")
+			writeRaw(t, bad, envelopeJSON(SchemaVersion, changed, checksumHex(changed)))
+			if _, err := Load(context.Background(), bad); err == nil {
+				t.Fatal("accepted a malformed replay part")
+			}
+		})
+	}
 }

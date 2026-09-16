@@ -1,0 +1,44 @@
+{
+  "requirement": "LRN-06",
+  "profile": "fixture",
+  "scope": "Ticket 23 stage one, part one: the Act / Receive / Update online learning loop with no write-back of an answer already given, plus the open gradient-accumulation window of a persistent individual (ticket 17 root decision 3 item 3). Stage two, the adaptive evaluation of LRN-10, is not covered here.",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet",
+    "gofmt -l .",
+    "go vet ./...",
+    "go test -count=1 ./...",
+    "go test -count=1 -v ./learning/",
+    "go test -count=1 -v -run 'Accumulat|NoWindow' ./checkpoint/",
+    "go test -race -count=1 ./learning/ ./replay/ ./checkpoint/ ./signal/"
+  ],
+  "environment": [
+    "macOS arm64 (darwin 25.6.0), go1.26.5",
+    "uptime at the start of the recorded run: 19:22 up 11 days, 1:01, load averages 4.92 5.34 4.46 (a shared machine; two other agents were building and testing the same repository during this run, so wall times in test.log are not timing measurements)",
+    "no external data, no network, no data/ input: every fixture is built in the test"
+  ],
+  "input_fingerprints": [
+    "learning/online.go and learning/online_test.go (the loop and its tests, created by this work)",
+    "learning/individual.go OptimizerSnapshot.Accumulator (the new optional part)",
+    "checkpoint/individual.go requireIndividualAccumulator (the presence walk for that part)",
+    "fixture model: learning.Config{Dynamics{Nodes 2, Sources [0 1], Targets [1 0], DT .5, tanh}, InputSize 1, OutputSize 1, ReadoutNodes [1]}, parameters weights [.3 -.2], bias [.1 -.1], log_tau [.1 .2], encoder [.5 .1], readout [.8]; three input rows {.7} {0} {.2} per action",
+    "plastic fixture: plasticity.Rule{hebbian_rate, decay_e .5, decay_p .5, plastic_max 8, w_min .0625} on edges [0 1]",
+    "reward gate: modulation.RewardMapper{baseline none, kind relu} wired through learning.RewardGateFunc"
+  ],
+  "observed_result": "The three steps are separated by construction and the separation is enforced. Order: Receive for act-0 before any Act is refused; the first Act returns ActionID act-0 at step 3 (the learner counts one model step per input row and records the step of the last output row); an Update at now = 5 for a feedback whose AvailableAt is 10 consumes nothing, reports Deferred 1 and leaves the individual's snapshot bit-identical; the same Update at now = 10 consumes it and runs one gradient step; a further Update finds nothing, so consumed feedback does not return. Forged times: a feedback produced at step 2 for an action at step 3 is refused, an unknown ActionID is refused, a feedback on the millisecond clock is refused, a feedback about another experience is refused, and a second feedback from the same source for the same action is refused while a different source is accepted and both are consumed. No write-back: the record's OutputHash equals the independently recomputed SHA-256 over the little-endian IEEE-754 bits of the output in row-major order, and after Receive plus a gradient Update the logged record's Output and OutputHash are unchanged; writing into a record a caller holds, or into a copy returned by Log, does not reach the learner's own copy. Evaluate mode: with feedback still deferred the Update succeeds and reports Deferred 1; once the feedback has arrived the Update returns ErrEvaluateMode, the individual's snapshot is unchanged, and a repeated call refuses again with the feedback still queued. Path separation: a gradient Update changes Parameters and leaves the plastic part and the persistent neural state bit-identical; a plastic Update leaves Parameters bit-identical, changes the fast state and does not advance the optimizer update count. Loss weight: w = clamp(score, 0, 1) is applied by moving the target to prediction + w*(target - prediction); for scores .5, 2, -1 and 1 the resulting parameters are bit-identical to a twin individual trained directly on that hand-computed effective target, a score of -1 (w = 0) leaves the parameters bit-identical, and every positive weight moves them. UpdateEvery: three gradient-eligible feedbacks under UpdateEvery 2 are all consumed and run exactly one gradient step; an action with no declared target is consumed without moving the counter. The next answer reflects the update: an updated learner and an untouched control give the identical first answer and different second answers, the updated learner's ModelVersion changes with its parameters and the control's does not, and the second action is act-1 at step 6. Accumulation window: with AccumulateSteps 3 and two steps taken, IndividualSnapshot.Optimizer.Accumulator holds a nonzero sum of two gradients over the whole parameter vector; RestoreIndividual round trips it bit for bit, owns its copy, and the third step closes the same window on both the original and the restored individual with bit-identical parameters; a trainer that applies every step writes no accumulator key at all. Restore refuses a count at the window size, a negative count, a short sum, a non-finite sum and a nonzero sum with a zero count. The individual checkpoint carries the window as an optional part: an individual with no open window writes no \"accumulator\" key, one with an open window writes \"accumulator\":{\"sum\":[...],...} and round trips through SaveIndividual and LoadIndividual bit for bit without aliasing, and a hand-edited window missing sum, missing count, empty, with a null sum, a null count, a null inside the sum, a short sum, a count at the window size, a negative count, a gradient without a count, an unknown key, or an explicit null part is refused.",
+  "assumption_statement": "This is a software-contract result on a two-neuron fixture, not a learning result and not a biological one. Nothing here says that online updates improve any task; the tests establish who may change what, when, and that an answer already given is never rewritten. The loss-weight rule is a declared engineering choice implemented in one function (learning.weightedTarget): the squared-error gradient is proportional to the residual, so interpolating the target between the model's own episode prediction and the declared target scales the gradient by exactly w. A zero weight still runs the optimizer, which advances the per-parameter step counters and applies weight decay if any is declared; with the default zero weight decay the parameters do not move. The action clock is the learner's own model-step counter, one step per input row, which is the only clock signal.TimeUnitModelStep can mean here; no wall-clock feedback is accepted.",
+  "test_log": [
+    "evidence/LRN-06/red-online.log (first failing output before learning/online.go existed)",
+    "evidence/LRN-06/red-accumulator.log (first failing output before OptimizerSnapshot.Accumulator existed)",
+    "evidence/LRN-06/test.log (gofmt, vet, the verbose learning and checkpoint runs and the race run)"
+  ],
+  "limitations": [
+    "Fixture scale only: two neurons, two edges, one input and one output, three model steps per action. No full-graph run and no real connectome.",
+    "One platform: macOS arm64, go1.26.5. No Ubuntu or Windows run.",
+    "Teacher sources are not implemented (ticket 27). The rule that evaluate mode must not call a teacher is pinned here only as \"Update refuses and changes nothing\"; there is no teacher to call yet, so the test cannot observe a call that did not happen.",
+    "Adaptive evaluation is stage two of this ticket (LRN-10). The Evaluate flag is the refusal only; there is no adaptation or scoring split, no reset policy and no contamination report here.",
+    "NewOnlineLearner takes a learning.RewardGate rather than the *modulation.RewardMapper named in the ticket contract: learning cannot import modulation, which imports simulate, which imports connectome, whose own in-package test imports learning (go vet: \"import cycle not allowed in test\"). The declared mapping rule is unchanged and is wired in through learning.RewardGateFunc in the tests; the deviation is recorded in the ticket.",
+    "The replay store is not carried by learning.TrainingSnapshot. It is an optional part of checkpoint.State instead; see evidence/LRN-07/ and the ticket deviations.",
+    "An Update that fails partway leaves the updates it already applied in place. This is declared behaviour, reported through the partial UpdateReport returned with the error, not a rollback.",
+    "Concurrency is covered only by the race detector over single-goroutine tests; no test drives one learner from several goroutines."
+  ]
+}

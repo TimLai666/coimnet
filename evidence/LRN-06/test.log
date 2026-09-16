@@ -1,0 +1,475 @@
+# LRN-06 (online learning loop and the individual accumulation window)
+# 2026-09-16T11:22:22Z go version go1.26.5 darwin/arm64, macOS arm64
+# uptime at the start of this run: 19:22  up 11 days,  1:01, 1 user, load averages: 4.92 5.34 4.46
+
+$ gofmt -l .
+(no output: every file is formatted)
+
+$ go vet ./...
+(no output: vet is clean)
+
+$ go test -count=1 -v ./learning/
+2026/09/16 19:22:24 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestFlatLayoutPlacesThetaAfterLogTau
+--- PASS: TestFlatLayoutPlacesThetaAfterLogTau (0.00s)
+=== RUN   TestContinuousFlatLayoutIsUnchanged
+--- PASS: TestContinuousFlatLayoutIsUnchanged (0.00s)
+=== RUN   TestTrainerPredictCanceledBeforeLock
+--- PASS: TestTrainerPredictCanceledBeforeLock (0.00s)
+=== RUN   TestTrainerStepCanceledWhileWaitingForLock
+--- PASS: TestTrainerStepCanceledWhileWaitingForLock (0.00s)
+=== RUN   TestTrainerNilAndZeroValuesReturnWithoutBlocking
+--- PASS: TestTrainerNilAndZeroValuesReturnWithoutBlocking (0.00s)
+=== RUN   TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient
+--- PASS: TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient (0.00s)
+=== RUN   TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically
+--- PASS: TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically (0.00s)
+=== RUN   TestAccumulateStepsAndAccumulatorValidation
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/count_at_the_window
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/count_above_window
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/negative_count
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/empty_nonzero_sum
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/non-finite_sum_entry
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/accumulator_without_a_window
+=== RUN   TestAccumulateStepsAndAccumulatorValidation/short_sum
+--- PASS: TestAccumulateStepsAndAccumulatorValidation (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/count_at_the_window (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/count_above_window (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/negative_count (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/empty_nonzero_sum (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/non-finite_sum_entry (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/accumulator_without_a_window (0.00s)
+    --- PASS: TestAccumulateStepsAndAccumulatorValidation/short_sum (0.00s)
+=== RUN   TestAdamWFirstUpdateMatchesIndependentScalarReference
+--- PASS: TestAdamWFirstUpdateMatchesIndependentScalarReference (0.00s)
+=== RUN   TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW
+--- PASS: TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW (0.00s)
+=== RUN   TestIndividualContinuousMatchesEpisodeAndSplit
+--- PASS: TestIndividualContinuousMatchesEpisodeAndSplit (0.00s)
+=== RUN   TestIndividualFourWaySeparationAndResets
+--- PASS: TestIndividualFourWaySeparationAndResets (0.00s)
+=== RUN   TestIndividualOwnsAllBuffers
+--- PASS: TestIndividualOwnsAllBuffers (0.00s)
+=== RUN   TestIndividualFailureAtomicityAndVersions
+--- PASS: TestIndividualFailureAtomicityAndVersions (0.00s)
+=== RUN   TestIndividualConcurrentIsolationAndSyncSnapshots
+--- PASS: TestIndividualConcurrentIsolationAndSyncSnapshots (0.00s)
+=== RUN   TestIndividualReadoutFailurePreservesWholeCall
+--- PASS: TestIndividualReadoutFailurePreservesWholeCall (0.00s)
+=== RUN   TestIndividualSelectedInputsPersist
+--- PASS: TestIndividualSelectedInputsPersist (0.00s)
+=== RUN   TestContinuousIndividualDeclaresItsCore
+--- PASS: TestContinuousIndividualDeclaresItsCore (0.00s)
+=== RUN   TestResetOptimizerClosesTheAccumulationWindow
+--- PASS: TestResetOptimizerClosesTheAccumulationWindow (0.00s)
+=== RUN   TestIndividualSnapshotCarriesTheAccumulationWindow
+--- PASS: TestIndividualSnapshotCarriesTheAccumulationWindow (0.00s)
+=== RUN   TestIndividualSnapshotOmitsAnUnusedAccumulator
+--- PASS: TestIndividualSnapshotOmitsAnUnusedAccumulator (0.00s)
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator/count_at_the_window_size
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator/negative_count
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator/short_sum
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator/non-finite_sum
+=== RUN   TestRestoreIndividualRejectsAMalformedAccumulator/gradient_without_a_count
+--- PASS: TestRestoreIndividualRejectsAMalformedAccumulator (0.00s)
+    --- PASS: TestRestoreIndividualRejectsAMalformedAccumulator/count_at_the_window_size (0.00s)
+    --- PASS: TestRestoreIndividualRejectsAMalformedAccumulator/negative_count (0.00s)
+    --- PASS: TestRestoreIndividualRejectsAMalformedAccumulator/short_sum (0.00s)
+    --- PASS: TestRestoreIndividualRejectsAMalformedAccumulator/non-finite_sum (0.00s)
+    --- PASS: TestRestoreIndividualRejectsAMalformedAccumulator/gradient_without_a_count (0.00s)
+=== RUN   TestInputNodesMatchDenseEncoderExpansionAndFullGradient
+--- PASS: TestInputNodesMatchDenseEncoderExpansionAndFullGradient (0.00s)
+=== RUN   TestInputNodesGradientsMatchFiniteDifferences
+--- PASS: TestInputNodesGradientsMatchFiniteDifferences (0.00s)
+=== RUN   TestInputNodesValidationAndConfigIsolation
+=== RUN   TestInputNodesValidationAndConfigIsolation/empty
+=== RUN   TestInputNodesValidationAndConfigIsolation/duplicate
+=== RUN   TestInputNodesValidationAndConfigIsolation/negative
+=== RUN   TestInputNodesValidationAndConfigIsolation/out_of_range
+--- PASS: TestInputNodesValidationAndConfigIsolation (0.00s)
+    --- PASS: TestInputNodesValidationAndConfigIsolation/empty (0.00s)
+    --- PASS: TestInputNodesValidationAndConfigIsolation/duplicate (0.00s)
+    --- PASS: TestInputNodesValidationAndConfigIsolation/negative (0.00s)
+    --- PASS: TestInputNodesValidationAndConfigIsolation/out_of_range (0.00s)
+=== RUN   TestInputNodesTrainerUsesCompactEncoderAndRestoresSelection
+--- PASS: TestInputNodesTrainerUsesCompactEncoderAndRestoresSelection (0.00s)
+=== RUN   TestNilInputNodesKeepsLegacyConfigJSON
+--- PASS: TestNilInputNodesKeepsLegacyConfigJSON (0.00s)
+=== RUN   TestTrainerRejectsHugeDeclaredShapeBeforeAllocation
+--- PASS: TestTrainerRejectsHugeDeclaredShapeBeforeAllocation (0.00s)
+=== RUN   TestNewNetworkRequiresExactlyOneCore
+--- PASS: TestNewNetworkRequiresExactlyOneCore (0.00s)
+=== RUN   TestLIFConfigIsCopiedAndIndependent
+--- PASS: TestLIFConfigIsCopiedAndIndependent (0.00s)
+=== RUN   TestThetaRawAndThetaMaskValidation
+--- PASS: TestThetaRawAndThetaMaskValidation (0.00s)
+=== RUN   TestLIFPredictMatchesSynapticTraceReadout
+--- PASS: TestLIFPredictMatchesSynapticTraceReadout (0.00s)
+=== RUN   TestLIFLossGradientMatchesCoreBackward
+--- PASS: TestLIFLossGradientMatchesCoreBackward (0.00s)
+=== RUN   TestLIFThetaGradientIsZeroWithoutAReadoutPath
+--- PASS: TestLIFThetaGradientIsZeroWithoutAReadoutPath (0.00s)
+=== RUN   TestLIFThetaOnlyStepChangesOnlyTheta
+--- PASS: TestLIFThetaOnlyStepChangesOnlyTheta (0.00s)
+=== RUN   TestLIFSnapshotRoundTrip
+--- PASS: TestLIFSnapshotRoundTrip (0.00s)
+=== RUN   TestLIFIndividualAdvanceMatchesForward
+=== RUN   TestLIFIndividualAdvanceMatchesForward/homeostasis_off
+=== RUN   TestLIFIndividualAdvanceMatchesForward/homeostasis_on
+--- PASS: TestLIFIndividualAdvanceMatchesForward (0.00s)
+    --- PASS: TestLIFIndividualAdvanceMatchesForward/homeostasis_off (0.00s)
+    --- PASS: TestLIFIndividualAdvanceMatchesForward/homeostasis_on (0.00s)
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/continuous_profile
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/continuous_core
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/missing_lif_state
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/both_cores
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/foreign_offsets
+=== RUN   TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/offset_above_ceiling
+--- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/continuous_profile (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/continuous_core (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/missing_lif_state (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/both_cores (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/foreign_offsets (0.00s)
+    --- PASS: TestLIFIndividualSnapshotOwnsItsBuffersAndRejectsMismatches/offset_above_ceiling (0.00s)
+=== RUN   TestLIFIndividualTrainsThresholdAndResetsNeural
+--- PASS: TestLIFIndividualTrainsThresholdAndResetsNeural (0.00s)
+=== RUN   TestTrainerSpikesRequireALIFCore
+--- PASS: TestTrainerSpikesRequireALIFCore (0.00s)
+=== RUN   TestLossScaleLeavesTheUpdateUnchanged
+--- PASS: TestLossScaleLeavesTheUpdateUnchanged (0.00s)
+=== RUN   TestNonFiniteScaledGradientRejectsTheWholeStep
+--- PASS: TestNonFiniteScaledGradientRejectsTheWholeStep (0.00s)
+=== RUN   TestLossScaleValidation
+=== RUN   TestLossScaleValidation/negative
+=== RUN   TestLossScaleValidation/not_a_num
+=== RUN   TestLossScaleValidation/infinite
+--- PASS: TestLossScaleValidation (0.00s)
+    --- PASS: TestLossScaleValidation/negative (0.00s)
+    --- PASS: TestLossScaleValidation/not_a_num (0.00s)
+    --- PASS: TestLossScaleValidation/infinite (0.00s)
+=== RUN   TestPerItemMasksFreezeOneEdgeAndOneNodeThroughWeightDecay
+--- PASS: TestPerItemMasksFreezeOneEdgeAndOneNodeThroughWeightDecay (0.00s)
+=== RUN   TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate
+=== RUN   TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_off,_item_on
+=== RUN   TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_on,_item_off
+=== RUN   TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_on,_item_on
+--- PASS: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate (0.00s)
+    --- PASS: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_off,_item_on (0.00s)
+    --- PASS: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_on,_item_off (0.00s)
+    --- PASS: TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate/group_on,_item_on (0.00s)
+=== RUN   TestMaskLengthsAreValidatedAgainstTheTopology
+--- PASS: TestMaskLengthsAreValidatedAgainstTheTopology (0.00s)
+=== RUN   TestMasksTravelWithTheSnapshotAndAreOwned
+--- PASS: TestMasksTravelWithTheSnapshotAndAreOwned (0.00s)
+=== RUN   TestOptionsWithoutMasksStaySerializedExactlyAsBefore
+--- PASS: TestOptionsWithoutMasksStaySerializedExactlyAsBefore (0.00s)
+=== RUN   TestNodeMaskFreezesThetaRawOnTheSpikingCore
+--- PASS: TestNodeMaskFreezesThetaRawOnTheSpikingCore (0.00s)
+=== RUN   TestInsyraBridgeFullGradient
+--- PASS: TestInsyraBridgeFullGradient (0.00s)
+=== RUN   TestNetworkRejectsInvalidAndCopiesConfiguration
+--- PASS: TestNetworkRejectsInvalidAndCopiesConfiguration (0.00s)
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/invalid_mapper
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/no_clock_unit
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/wall_clock_unit
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/no_mechanism
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/plastic_without_a_gate
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/gate_without_a_plastic_policy
+=== RUN   TestNewOnlineLearnerRejectsAnUndeclaredLoop/plastic_without_the_mechanism
+--- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/invalid_mapper (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/no_clock_unit (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/wall_clock_unit (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/no_mechanism (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/plastic_without_a_gate (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/gate_without_a_plastic_policy (0.00s)
+    --- PASS: TestNewOnlineLearnerRejectsAnUndeclaredLoop/plastic_without_the_mechanism (0.00s)
+=== RUN   TestOnlineOrderIsEnforced
+--- PASS: TestOnlineOrderIsEnforced (0.00s)
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates/produced_before_the_action
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates/unknown_action
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates/available_before_produced
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates/another_clock
+=== RUN   TestReceiveRejectsForgedTimesAndDuplicates/another_experience
+--- PASS: TestReceiveRejectsForgedTimesAndDuplicates (0.00s)
+    --- PASS: TestReceiveRejectsForgedTimesAndDuplicates/produced_before_the_action (0.00s)
+    --- PASS: TestReceiveRejectsForgedTimesAndDuplicates/unknown_action (0.00s)
+    --- PASS: TestReceiveRejectsForgedTimesAndDuplicates/available_before_produced (0.00s)
+    --- PASS: TestReceiveRejectsForgedTimesAndDuplicates/another_clock (0.00s)
+    --- PASS: TestReceiveRejectsForgedTimesAndDuplicates/another_experience (0.00s)
+=== RUN   TestOnlineOutputIsNeverRewritten
+--- PASS: TestOnlineOutputIsNeverRewritten (0.00s)
+=== RUN   TestOnlineEvaluateModeRefusesUpdates
+--- PASS: TestOnlineEvaluateModeRefusesUpdates (0.00s)
+=== RUN   TestGradientPathChangesOnlyBaseParameters
+--- PASS: TestGradientPathChangesOnlyBaseParameters (0.00s)
+=== RUN   TestPlasticPathChangesOnlyTheFastState
+--- PASS: TestPlasticPathChangesOnlyTheFastState (0.00s)
+=== RUN   TestLossWeightScalesTheTargetResidual
+=== RUN   TestLossWeightScalesTheTargetResidual/half
+=== RUN   TestLossWeightScalesTheTargetResidual/clamped_up
+=== RUN   TestLossWeightScalesTheTargetResidual/clamped_to_zero
+=== RUN   TestLossWeightScalesTheTargetResidual/whole
+--- PASS: TestLossWeightScalesTheTargetResidual (0.00s)
+    --- PASS: TestLossWeightScalesTheTargetResidual/half (0.00s)
+    --- PASS: TestLossWeightScalesTheTargetResidual/clamped_up (0.00s)
+    --- PASS: TestLossWeightScalesTheTargetResidual/clamped_to_zero (0.00s)
+    --- PASS: TestLossWeightScalesTheTargetResidual/whole (0.00s)
+=== RUN   TestUpdateEveryCountsAvailableFeedback
+--- PASS: TestUpdateEveryCountsAvailableFeedback (0.00s)
+=== RUN   TestActReflectsTheUpdate
+--- PASS: TestActReflectsTheUpdate (0.00s)
+=== RUN   TestActionRecordNamesTheModelThatProducedIt
+--- PASS: TestActionRecordNamesTheModelThatProducedIt (0.00s)
+=== RUN   TestSetTargetsRefusesWhatTheTrainerCannotUse
+=== RUN   TestSetTargetsRefusesWhatTheTrainerCannotUse/wrong_width
+=== RUN   TestSetTargetsRefusesWhatTheTrainerCannotUse/empty_target
+=== RUN   TestSetTargetsRefusesWhatTheTrainerCannotUse/non-finite
+=== RUN   TestSetTargetsRefusesWhatTheTrainerCannotUse/unknown_action
+--- PASS: TestSetTargetsRefusesWhatTheTrainerCannotUse (0.00s)
+    --- PASS: TestSetTargetsRefusesWhatTheTrainerCannotUse/wrong_width (0.00s)
+    --- PASS: TestSetTargetsRefusesWhatTheTrainerCannotUse/empty_target (0.00s)
+    --- PASS: TestSetTargetsRefusesWhatTheTrainerCannotUse/non-finite (0.00s)
+    --- PASS: TestSetTargetsRefusesWhatTheTrainerCannotUse/unknown_action (0.00s)
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged/lif
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged/continuous
+--- PASS: TestAdvanceWithoutPlasticityIsUnchanged (0.00s)
+    --- PASS: TestAdvanceWithoutPlasticityIsUnchanged/lif (0.00s)
+    --- PASS: TestAdvanceWithoutPlasticityIsUnchanged/continuous (0.00s)
+=== RUN   TestGatedAdvanceFollowsTheHandComputedOrder
+--- PASS: TestGatedAdvanceFollowsTheHandComputedOrder (0.00s)
+=== RUN   TestPlainAdvanceKeepsTheGateClosed
+--- PASS: TestPlainAdvanceKeepsTheGateClosed (0.00s)
+=== RUN   TestDelayedGatePulseChangesLaterRows
+--- PASS: TestDelayedGatePulseChangesLaterRows (0.00s)
+=== RUN   TestFixedSignEdgeStaysOnItsSignAndCountsTheHold
+--- PASS: TestFixedSignEdgeStaysOnItsSignAndCountsTheHold (0.00s)
+=== RUN   TestEnablePlasticityValidatesAndReplaces
+--- PASS: TestEnablePlasticityValidatesAndReplaces (0.00s)
+=== RUN   TestSTDPPairRunsOnTheSpikingIndividual
+--- PASS: TestSTDPPairRunsOnTheSpikingIndividual (0.00s)
+=== RUN   TestPlasticSnapshotRoundTrip
+--- PASS: TestPlasticSnapshotRoundTrip (0.00s)
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/short_state
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/extra_state
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/pair_traces_on_a_rate_rule
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/plastic_past_the_bound
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/non-finite_eligibility
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/unknown_rule
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/edge_out_of_range
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/no_edges
+--- PASS: TestRestoreIndividualRejectsMalformedPlasticParts (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/short_state (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/extra_state (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/pair_traces_on_a_rate_rule (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/plastic_past_the_bound (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/non-finite_eligibility (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/unknown_rule (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/edge_out_of_range (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/no_edges (0.00s)
+=== RUN   TestAdvanceGatedRejectsMismatchedGates
+--- PASS: TestAdvanceGatedRejectsMismatchedGates (0.00s)
+=== RUN   TestBindProjectionsRoundTripAndReplacement
+--- PASS: TestBindProjectionsRoundTripAndReplacement (0.00s)
+=== RUN   TestBindProjectionsRejectsInvalidBoundary
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/direction
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/input_width
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/output_width
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/node_count
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/absent_ID
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/core_shape
+=== RUN   TestBindProjectionsRejectsInvalidBoundary/core_nonfinite
+--- PASS: TestBindProjectionsRejectsInvalidBoundary (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/direction (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/input_width (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/output_width (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/node_count (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/absent_ID (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/core_shape (0.00s)
+    --- PASS: TestBindProjectionsRejectsInvalidBoundary/core_nonfinite (0.00s)
+=== RUN   TestRangeProjectionClampsEveryGroupAndCountsIt
+--- PASS: TestRangeProjectionClampsEveryGroupAndCountsIt (0.00s)
+=== RUN   TestRangeProjectionLeavesTheOptimizerStateAlone
+--- PASS: TestRangeProjectionLeavesTheOptimizerStateAlone (0.00s)
+=== RUN   TestMaskedParametersAreNotProjected
+--- PASS: TestMaskedParametersAreNotProjected (0.00s)
+=== RUN   TestFixedSignEdgesAreCappedInLogSpace
+--- PASS: TestFixedSignEdgesAreCappedInLogSpace (0.00s)
+=== RUN   TestThetaRawRangeAppliesOnTheSpikingCore
+--- PASS: TestThetaRawRangeAppliesOnTheSpikingCore (0.00s)
+=== RUN   TestInvalidRangesAreRejected
+--- PASS: TestInvalidRangesAreRejected (0.00s)
+=== RUN   TestRangesTravelWithTheSnapshotAndAreOwned
+--- PASS: TestRangesTravelWithTheSnapshotAndAreOwned (0.00s)
+=== RUN   TestLearningRateTablesForTheThreeKinds
+=== RUN   TestLearningRateTablesForTheThreeKinds/no_schedule_at_all
+=== RUN   TestLearningRateTablesForTheThreeKinds/constant_with_a_four-update_warmup
+=== RUN   TestLearningRateTablesForTheThreeKinds/step,_halved_every_five_updates
+=== RUN   TestLearningRateTablesForTheThreeKinds/step_behind_a_three-update_warmup
+=== RUN   TestLearningRateTablesForTheThreeKinds/cosine_from_a_four-update_warmup_over_eight_updates_down_to_a_tenth
+--- PASS: TestLearningRateTablesForTheThreeKinds (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/no_schedule_at_all (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/constant_with_a_four-update_warmup (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/step,_halved_every_five_updates (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/step_behind_a_three-update_warmup (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/cosine_from_a_four-update_warmup_over_eight_updates_down_to_a_tenth (0.00s)
+=== RUN   TestStepReportsTheScheduledLearningRateAndUsesIt
+--- PASS: TestStepReportsTheScheduledLearningRateAndUsesIt (0.00s)
+=== RUN   TestScheduleResumesOnTheSameCurve
+--- PASS: TestScheduleResumesOnTheSameCurve (0.00s)
+=== RUN   TestInvalidSchedulesAreRejected
+=== RUN   TestInvalidSchedulesAreRejected/step_with_a_final_factor
+=== RUN   TestInvalidSchedulesAreRejected/constant_with_a_decay_window
+=== RUN   TestInvalidSchedulesAreRejected/step_without_a_period
+=== RUN   TestInvalidSchedulesAreRejected/cosine_without_a_decay
+=== RUN   TestInvalidSchedulesAreRejected/final_factor_above_one
+=== RUN   TestInvalidSchedulesAreRejected/cosine_with_a_step_period
+=== RUN   TestInvalidSchedulesAreRejected/non-finite_final_factor
+=== RUN   TestInvalidSchedulesAreRejected/unknown_kind
+=== RUN   TestInvalidSchedulesAreRejected/empty_kind
+=== RUN   TestInvalidSchedulesAreRejected/step_without_a_factor
+=== RUN   TestInvalidSchedulesAreRejected/step_with_a_negative_factor
+=== RUN   TestInvalidSchedulesAreRejected/negative_final_factor
+=== RUN   TestInvalidSchedulesAreRejected/constant_with_a_step_factor
+--- PASS: TestInvalidSchedulesAreRejected (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/step_with_a_final_factor (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/constant_with_a_decay_window (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/step_without_a_period (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/cosine_without_a_decay (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/final_factor_above_one (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/cosine_with_a_step_period (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/non-finite_final_factor (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/unknown_kind (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/empty_kind (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/step_without_a_factor (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/step_with_a_negative_factor (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/negative_final_factor (0.00s)
+    --- PASS: TestInvalidSchedulesAreRejected/constant_with_a_step_factor (0.00s)
+=== RUN   TestDerivedSetSourceMatchesTheParamsPackage
+--- PASS: TestDerivedSetSourceMatchesTheParamsPackage (0.00s)
+=== RUN   TestSignsFromParameterSetAppliesEveryUnknownPolicy
+=== RUN   TestSignsFromParameterSetAppliesEveryUnknownPolicy/free
+=== RUN   TestSignsFromParameterSetAppliesEveryUnknownPolicy/excitatory
+=== RUN   TestSignsFromParameterSetAppliesEveryUnknownPolicy/inhibitory
+--- PASS: TestSignsFromParameterSetAppliesEveryUnknownPolicy (0.04s)
+    --- PASS: TestSignsFromParameterSetAppliesEveryUnknownPolicy/free (0.00s)
+    --- PASS: TestSignsFromParameterSetAppliesEveryUnknownPolicy/excitatory (0.00s)
+    --- PASS: TestSignsFromParameterSetAppliesEveryUnknownPolicy/inhibitory (0.00s)
+=== RUN   TestSignsFromParameterSetRejectsUndeclaredInput
+--- PASS: TestSignsFromParameterSetRejectsUndeclaredInput (0.03s)
+=== RUN   TestSignsFromParameterSetFeedsAConfig
+    signs_from_set_test.go:115: derived fixture: {Policy:excitatory PositiveEdges:1 NegativeEdges:2 UnknownEdges:3}
+--- PASS: TestSignsFromParameterSetFeedsAConfig (0.03s)
+=== RUN   TestEffectiveWeightsMapsRawValuesThroughTheDeclaredSigns
+--- PASS: TestEffectiveWeightsMapsRawValuesThroughTheDeclaredSigns (0.00s)
+=== RUN   TestEdgeSignsAndMinLogMagnitudeAreValidated
+--- PASS: TestEdgeSignsAndMinLogMagnitudeAreValidated (0.00s)
+=== RUN   TestAllZeroEdgeSignsAreBitIdenticalToNoDeclarationAtAll
+--- PASS: TestAllZeroEdgeSignsAreBitIdenticalToNoDeclarationAtAll (0.00s)
+=== RUN   TestSnapshotWithoutEdgeSignsLoadsAsAllFree
+--- PASS: TestSnapshotWithoutEdgeSignsLoadsAsAllFree (0.00s)
+=== RUN   TestFixedSignEdgesNeverFlipUnderALargeLearningRate
+    signs_test.go:237: edge 0 smallest magnitude over 1000 steps: 0.07602767734034184
+    signs_test.go:237: edge 2 smallest magnitude over 1000 steps: 0.47519607783859258
+    signs_test.go:240: final raw weights: [-1.9782315349015838 -0.9886289490396335 0.4029712819746961 0.95797632963738]
+--- PASS: TestFixedSignEdgesNeverFlipUnderALargeLearningRate (0.06s)
+=== RUN   TestMinLogMagnitudeProjectionKeepsTheMagnitudeRepresentable
+    signs_test.go:275: min_log_magnitude projections over 30 steps: 17
+--- PASS: TestMinLogMagnitudeProjectionKeepsTheMagnitudeRepresentable (0.00s)
+=== RUN   TestChainRuleGradientMatchesCentralFiniteDifferences
+    signs_test.go:324: chain-rule gradient against central finite differences (eps=0.01)
+        edge   sign   analytic               central difference     relative error
+        0      1      -0.0169804527869481    -0.01698069649127      1.44e-05
+        1      0      -0.018380476235569     -0.0183803676063465    5.91e-06
+        2      -1     -0.00118676156045005   -0.00118681987066049   4.91e-05
+        3      0      -0.128878357933245     -0.128878545411534     1.45e-06
+--- PASS: TestChainRuleGradientMatchesCentralFiniteDifferences (0.00s)
+=== RUN   TestFixedSignWeightsReachTheCoreAndThePersistentPath
+--- PASS: TestFixedSignWeightsReachTheCoreAndThePersistentPath (0.00s)
+=== RUN   TestTrainerLearnsAndMaskFreezesMomentum
+--- PASS: TestTrainerLearnsAndMaskFreezesMomentum (0.01s)
+=== RUN   TestTrainerFailureAndSnapshotIsolation
+--- PASS: TestTrainerFailureAndSnapshotIsolation (0.00s)
+=== RUN   ExampleBindProjections
+--- PASS: ExampleBindProjections (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	0.454s
+
+$ go test -count=1 -v -run 'Accumulat|NoWindow' ./checkpoint/
+2026/09/16 19:22:25 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestSaveLoadIndividualCarriesTheAccumulatorPart
+--- PASS: TestSaveLoadIndividualCarriesTheAccumulatorPart (0.02s)
+=== RUN   TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow
+--- PASS: TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow (0.01s)
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/negative_count
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/unknown_accumulator_key
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/null_sum
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/null_inside_sum
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/short_sum
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/count_at_the_window
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/gradient_without_count
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/null_accumulator
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/missing_sum
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/empty_object
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/missing_count
+=== RUN   TestLoadIndividualRejectsMalformedAccumulatorParts/null_count
+--- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts (0.02s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/negative_count (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/unknown_accumulator_key (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/null_sum (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/null_inside_sum (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/short_sum (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/count_at_the_window (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/gradient_without_count (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/null_accumulator (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/missing_sum (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/empty_object (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/missing_count (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedAccumulatorParts/null_count (0.00s)
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/unknown_schedule_kind
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_loss_scale
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/short_sum
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_at_the_window
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/no_window_declared
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_sum_element
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_count
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_schedule_kind
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_above_the_window
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_count
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_sum
+=== RUN   TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_count
+--- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel (0.10s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/unknown_schedule_kind (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_loss_scale (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/short_sum (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_at_the_window (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/no_window_declared (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_sum_element (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_count (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_schedule_kind (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_above_the_window (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_count (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_sum (0.01s)
+    --- PASS: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_count (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.610s
+
+$ go test -race -count=1 ./learning/ ./checkpoint/ ./signal/
+ok  	github.com/TimLai666/coimnet/learning	1.928s
+ok  	github.com/TimLai666/coimnet/checkpoint	8.371s
+ok  	github.com/TimLai666/coimnet/signal	2.434s
+
+# uptime at the end of this run: 19:22  up 11 days,  1:01, 1 user, load averages: 4.34 5.20 4.42

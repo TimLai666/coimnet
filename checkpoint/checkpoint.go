@@ -20,6 +20,7 @@ import (
 	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/TimLai666/coimnet/internal/jsonkey"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/replay"
 )
 
 const (
@@ -41,6 +42,12 @@ type State struct {
 	Generator     string                    `json:"generator"`
 	DataSeed      uint64                    `json:"data_seed"`
 	NextSample    uint64                    `json:"next_sample"`
+	// Replay is the capacity-limited replay store the run owned, present only
+	// when one was declared. Absent means the run replayed nothing, which is
+	// the NoReplay control rather than an empty store, so an old checkpoint
+	// keeps its meaning and its bytes. The declaration travels with the state
+	// because neither alone can rebuild the store.
+	Replay *replay.Snapshot `json:"replay,omitempty"`
 }
 
 type envelope struct {
@@ -64,10 +71,11 @@ func NewState(snapshot learning.TrainingSnapshot, dataSeed, next uint64) (State,
 	return State{SchemaVersion: SchemaVersion, Training: owned, Generator: Generator, DataSeed: dataSeed, NextSample: next}, nil
 }
 
-// Validate checks the versioned generator contract and the complete trainer
-// snapshot without exposing or retaining a mutable trainer.
+// Validate checks the versioned generator contract, the complete trainer
+// snapshot and the optional replay store without exposing or retaining a
+// mutable trainer or store.
 func (s State) Validate() error {
-	_, err := canonicalTraining(s)
+	_, err := canonicalState(s)
 	return err
 }
 
@@ -94,6 +102,17 @@ func canonicalState(s State) (State, error) {
 		return State{}, err
 	}
 	s.Training = training
+	if s.Replay != nil {
+		// The store validates its own state, including whether it could have
+		// reached this state under the declared policies, so a hand edited
+		// replay block is refused here rather than resumed.
+		store, err := replay.RestoreSnapshot(*s.Replay)
+		if err != nil {
+			return State{}, fmt.Errorf("invalid replay state: %w", err)
+		}
+		owned := store.Snapshot()
+		s.Replay = &owned
+	}
 	return s, nil
 }
 

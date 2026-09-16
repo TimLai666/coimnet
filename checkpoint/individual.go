@@ -187,10 +187,27 @@ func requireIndividualFields(data []byte) error {
 	if _, err = requiredObject(optimizer["state"], "$.payload.optimizer.state", "first", "second", "steps"); err != nil {
 		return err
 	}
+	if err = requireIndividualAccumulator(optimizer); err != nil {
+		return err
+	}
 	if err = requireIndividualPlastic(payloadObject); err != nil {
 		return err
 	}
 	return requireIndividualNeural(config, payloadObject["neural"])
+}
+
+// requireIndividualAccumulator checks the optional open accumulation window.
+// Absent or null is the declared "no window is open", so it is legal and
+// nothing else is required; present means the whole window is required, because
+// a count that is omitted rather than written would otherwise decode as a
+// perfectly valid zero and turn a partial sum into a window holding nothing.
+// The values themselves are validated by learning.RestoreIndividual, which
+// owns the rule the episode trainer already applies.
+func requireIndividualAccumulator(optimizer map[string]json.RawMessage) error {
+	if !presentAndNotNull(optimizer, "accumulator") {
+		return nil
+	}
+	return checkRequiredFields(optimizer["accumulator"], reflect.TypeOf(learning.GradientAccumulator{}), "$.payload.optimizer.accumulator")
 }
 
 // requireIndividualPlastic checks the optional local plasticity part. Absent or
@@ -344,6 +361,11 @@ func normalizeIndividualSnapshot(s learning.IndividualSnapshot) learning.Individ
 	s.Optimizer.State.First = nonNilFloats(s.Optimizer.State.First)
 	s.Optimizer.State.Second = nonNilFloats(s.Optimizer.State.Second)
 	s.Optimizer.State.Steps = nonNilUint64(s.Optimizer.State.Steps)
+	if s.Optimizer.Accumulator != nil {
+		window := *s.Optimizer.Accumulator
+		window.Sum = nonNilFloats(window.Sum)
+		s.Optimizer.Accumulator = &window
+	}
 	if s.Plastic != nil {
 		// PreTrace and PostTrace stay as they are: omitempty means an absent key
 		// is the documented "this rule does not own that trace", not a

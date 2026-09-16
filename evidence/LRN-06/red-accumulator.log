@@ -1,0 +1,26 @@
+# red state: the individual snapshot has no accumulator part yet
+# 2026-09-16T11:02:06Z go version go1.26.5 darwin/arm64
+$ go test -count=1 -run 'Accumulat' ./learning/ ./checkpoint/
+# github.com/TimLai666/coimnet/learning_test [github.com/TimLai666/coimnet/learning.test]
+learning/individual_test.go:452:17: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:455:17: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:456:58: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:458:21: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:459:88: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:462:32: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:475:89: b.Snapshot().Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:475:114: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:479:14: s.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:480:28: b.Snapshot().Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+learning/individual_test.go:480:28: too many errors
+FAIL	github.com/TimLai666/coimnet/learning [build failed]
+# github.com/TimLai666/coimnet/checkpoint [github.com/TimLai666/coimnet/checkpoint.test]
+checkpoint/individual_test.go:912:20: want.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:928:80: got.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:928:108: want.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:930:16: got.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:981:21: got.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:982:84: got.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+checkpoint/individual_test.go:994:42: want.Optimizer.Accumulator undefined (type learning.OptimizerSnapshot has no field or method Accumulator)
+FAIL	github.com/TimLai666/coimnet/checkpoint [build failed]
+FAIL

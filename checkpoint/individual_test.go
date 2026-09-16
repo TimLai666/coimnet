@@ -876,3 +876,146 @@ func TestLoadIndividualRejectsMalformedPlasticParts(t *testing.T) {
 		})
 	}
 }
+
+// newAccumulatingCheckpointIndividual is a two neuron fixture whose optimizer
+// averages three gradients per update and has taken exactly one of them, so its
+// snapshot sits in the middle of an accumulation window.
+func newAccumulatingCheckpointIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{1}, DT: .5, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.25}, Bias: []float64{.1, -.1}, LogTau: []float64{0, 0}}, Encoder: []float64{.5, .2}, Readout: []float64{.8}}
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	individual, err := learning.NewIndividual(c, p, o, []float64{0, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := individual.TrainEpisode(context.Background(), [][]float64{{.7}, {0}, {0}}, []float64{.4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Applied || result.Accumulated != 1 {
+		t.Fatalf("the fixture step applied %v with %d accumulated", result.Applied, result.Accumulated)
+	}
+	return individual
+}
+
+// TestSaveLoadIndividualCarriesTheAccumulatorPart is the optional-part contract
+// of the open accumulation window: absent while no window is open, complete and
+// bit-identical once one is.
+func TestSaveLoadIndividualCarriesTheAccumulatorPart(t *testing.T) {
+	plain := newCheckpointIndividual(t, false).Snapshot()
+	if bytes.Contains(savedIndividualPayload(t, plain), []byte(`"accumulator"`)) {
+		t.Fatal("an individual with no open window wrote an accumulator part")
+	}
+	want := newAccumulatingCheckpointIndividual(t).Snapshot()
+	if want.Optimizer.Accumulator == nil {
+		t.Fatal("the fixture did not open an accumulation window")
+	}
+	payload := savedIndividualPayload(t, want)
+	if !bytes.Contains(payload, []byte(`"accumulator":{"sum":[`)) {
+		t.Fatalf("saved payload does not carry the window: %s", payload)
+	}
+	path := filepath.Join(t.TempDir(), "accumulating-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round trip changed the window:\n got %+v\nwant %+v", got.Optimizer.Accumulator, want.Optimizer.Accumulator)
+	}
+	got.Optimizer.Accumulator.Sum[0] = 77
+	again, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatal("LoadIndividual returned an accumulator aliased with a later caller mutation")
+	}
+	restored, err := learning.RestoreIndividual(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), again) {
+		t.Fatal("the loaded window changed during restore")
+	}
+}
+
+// TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow keeps documents written
+// before this part existed readable: no key is the declared "no window is
+// open". An explicit null is not a second spelling of it, because this document
+// format permits no null anywhere; the plastic part is refused the same way.
+func TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow(t *testing.T) {
+	want := newCheckpointIndividual(t, false).Snapshot()
+	payload := savedIndividualPayload(t, want)
+	if bytes.Contains(payload, []byte(`"accumulator"`)) {
+		t.Fatalf("the fixture already carries a window: %s", payload)
+	}
+	path := filepath.Join(t.TempDir(), "no-window.json")
+	writeRaw(t, path, envelopeJSON(IndividualSchemaVersion, payload, checksumHex(payload)))
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Optimizer.Accumulator != nil {
+		t.Fatalf("an absent accumulator loaded as an open window: %+v", got.Optimizer.Accumulator)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal("a document without a window did not round trip")
+	}
+}
+
+// TestLoadIndividualRejectsMalformedAccumulatorParts keeps a hand-edited window
+// from decoding as a valid partial sum. Every case replaces the whole
+// "accumulator" value, so the rejected shapes are written out in full.
+func TestLoadIndividualRejectsMalformedAccumulatorParts(t *testing.T) {
+	want := newAccumulatingCheckpointIndividual(t).Snapshot()
+	payload := savedIndividualPayload(t, want)
+	sum, err := json.Marshal(want.Optimizer.Accumulator.Sum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for name, part := range map[string]string{
+		"null accumulator":        `null`,
+		"missing sum":             `{"count":1}`,
+		"missing count":           `{"sum":` + string(sum) + `}`,
+		"empty object":            `{}`,
+		"null sum":                `{"sum":null,"count":1}`,
+		"null count":              `{"sum":` + string(sum) + `,"count":null}`,
+		"null inside sum":         `{"sum":[null,0,0,0,0,0,0,0],"count":1}`,
+		"short sum":               `{"sum":[0,0,0],"count":1}`,
+		"count at the window":     `{"sum":` + string(sum) + `,"count":3}`,
+		"negative count":          `{"sum":` + string(sum) + `,"count":-1}`,
+		"gradient without count":  `{"sum":` + string(sum) + `,"count":0}`,
+		"unknown accumulator key": `{"sum":` + string(sum) + `,"count":1,"mean":[0]}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal(payload, &object); err != nil {
+				t.Fatal(err)
+			}
+			var optimizer map[string]json.RawMessage
+			if err := json.Unmarshal(object["optimizer"], &optimizer); err != nil {
+				t.Fatal(err)
+			}
+			optimizer["accumulator"] = json.RawMessage(part)
+			encoded, err := json.Marshal(optimizer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			object["optimizer"] = encoded
+			changed, err := json.Marshal(object)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "bad-window.json")
+			writeRaw(t, path, envelopeJSON(IndividualSchemaVersion, changed, checksumHex(changed)))
+			if _, err := LoadIndividual(context.Background(), path); err == nil {
+				t.Fatal("accepted a malformed accumulation window")
+			}
+		})
+	}
+}

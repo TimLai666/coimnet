@@ -10,7 +10,7 @@ User Story：使用者可以讓一個持續個體在運行中先作答、再收�
 Blocked by：18 局部可塑性、20 三分離與來源、21 化學狀態（重設政策要能重設它）、17 最佳化器（運行中
 梯度更新只動授權參數）
 
-Status：draft（契約已於 2026-09-15 定案；分兩階段派工，待 18／20 完成後第一階段可開始）
+Status：stage_one_done（第一階段已於 2026-09-16 實作並驗證，證據見「第一階段證據」；第二階段適應性評估未開始）
 
 對應需求：LRN-06（推論、回饋與更新分開；輸出不被後到教師回應回寫）、LRN-07（容量、取樣、刪除政策、
 狀態保留與不重播對照皆可查）、LRN-10（預先宣告可用回饋、適應／評分分割與狀態重設政策）。
@@ -92,11 +92,78 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 
 ## 驗收
 
-- [ ] 第一階段：`Act → Receive → Update` 順序、偽造時間拒絕、輸出 hash 不變、`Evaluate` 模式拒絕更新、
+- [x] 第一階段：`Act → Receive → Update` 順序、偽造時間拒絕、輸出 hash 不變、`Evaluate` 模式拒絕更新、
   三種抽樣與兩種淘汰的手算（小容量、固定 seed）、測試資料拒絕、快照接續抽樣序列相同；
   `go test`、race、vet；`evidence/LRN-06/`、`evidence/LRN-07/`。
 - [ ] 第二階段：兩種模式、三種重設政策、污染檢查三項、打亂順序逐位相同、CLI `examples run evaluate`
   把模式寫進結果；`evidence/LRN-10/`；文件。
+
+## 第一階段證據（2026-09-16）
+
+環境：macOS arm64、go1.26.5，全部為 fixture 規模，不用外部資料。命令與結果：`gofmt -l .`（無輸出）、
+`go vet ./...`（無輸出）、`go test -count=1 ./...`（全部 ok）、
+`go test -race -count=1 ./learning/ ./replay/ ./checkpoint/ ./signal/`（全部 ok）。
+
+- `evidence/LRN-06/`：`verification.json`、`test.log`、`red-online.log`（online.go 之前的失敗輸出）、
+  `red-accumulator.log`（`OptimizerSnapshot.Accumulator` 之前的失敗輸出）。
+- `evidence/LRN-07/`：`verification.json`、`test.log`、`red-replay.log`（replay 套件之前的失敗輸出）。
+
+新增與修改：`learning/online.go`、`learning/online_test.go`、`replay/`（`policy.go`、`store.go`、
+`sampling.go`、`replay_test.go`）為新增；`learning/individual.go`（`OptimizerSnapshot.Accumulator`）、
+`learning/individual_test.go`、`checkpoint/checkpoint.go`（`State.Replay`）、`checkpoint/individual.go`
+（累積器必填走訪與正規化）、`checkpoint/individual_test.go`、`checkpoint/options_compat_test.go` 為修改。
+
+手算序列（容量 4、seed 7、`rand.New(rand.NewPCG(7, 0))`，前六個抽值已在測試中釘住並對生成器本身核對）：
+
+| 項目 | 手算 | 實測 |
+| --- | --- | --- |
+| fifo 淘汰（加入 step 1..6） | 留下 3, 4, 5, 6，seen 6，draws 0 | 相同 |
+| reservoir 接受／拒絕（加入 step 1..10） | e5 % 5 = 2 換槽 2、e6 % 6 = 2 換槽 2、e7 % 7 = 2 換槽 2、e8 % 8 = 5 丟棄、e9 % 9 = 0 換槽 0、e10 % 10 = 1 換槽 1；留下 9, 10, 7, 4，draws 6 | 相同 |
+| uniform 抽樣（4 筆取 2） | 洗牌 [2 3 1 0]，回傳 step 3, 4，draws 3 | 相同 |
+| task_balanced（a:1,2,4；b:3） | a 洗成 2,1,4，輪流取得 2, 3, 1, 4；每任務 a:3 b:1，draws 2 | 相同 |
+| time_balanced（step 10,20,30,40） | ceil(sqrt(4)) = 2 桶，兩桶皆不換位，輪流取得 10, 30, 20, 40；每桶 [2 2]，draws 2 | 相同 |
+| 運行中迴圈順序 | Act 前的 Receive 被拒；act-0 在 step 3；`AvailableAt` 10 的回饋在 now = 5 只計 Deferred 1、快照逐位不變；now = 10 消費並做一次梯度更新；再更新一次沒有回饋 | 相同 |
+
+## 第一階段偏離（2026-09-16）
+
+1. **`NewOnlineLearner` 的第三個參數改為 `learning.RewardGate` 介面**，不是契約寫的
+   `*modulation.RewardMapper`。`learning` 不能 import `modulation`：`modulation` import `simulate`、
+   `simulate` import `connectome`，而 `connectome` 的套件內測試 import `learning`，`go vet` 直接回
+   「import cycle not allowed in test」。映射規則沒有改變，測試以 `learning.RewardGateFunc` 把 ticket 20
+   的 `RewardMapper` 接進來，閘門仍是 `mapper.Map(score).Applied[0]`。
+2. **重播狀態放在 `checkpoint.State.Replay *replay.Snapshot`，不是 `learning.TrainingSnapshot.Replay`。**
+   訓練器不擁有重播存放區，這個欄位不會有人寫，`Trainer.Snapshot()` 只能永遠回 nil，等於留一個假欄位。
+   `learning/trainer.go` 因此完全沒有改動。舊 checkpoint 沒有 `replay` 鍵，載入後 `Replay` 為 nil，
+   意義就是「不重播」的對照組。
+3. **型別命名**：套件是 `replay`，宣告是 `Buffer`、活的物件是 `Store`、狀態是 `State`、落盤的一對是
+   `Snapshot{Buffer, State}`。契約的 `ReplayState` 只帶 `Items`／`Seen`／`RNGState`，但 `Restore(b, s)`
+   同時需要宣告與狀態，所以多一個 `Snapshot` 把兩者綁在一起；`State` 另帶 `schema_version`，與專案其他
+   落盤型別一致。RNG 狀態以 `Draws`（已取用的抽值數）表示，`Restore` 重放同樣次數。
+4. **`Retention` 是列舉而不是自由字串**，兩個值都有實際行為：`keep_until_evicted`（預設，靠容量淘汰）與
+   `drop_after_sample`（抽中即移出）。只記錄不執行的政策字串等於佔位。註記：`drop_after_sample` 與
+   `reservoir` 併用時，存放區不再是「看過的全部」的均勻樣本，套件文件與 `Report` 都寫明這一點。
+5. **`Split` 是宣告好的四個值**（`train`／`adaptation`／`scoring`／`test`），未知字串一律拒絕，避免打錯的
+   `"tes"` 變成第五種可以繞過 test 阻擋的分割。`scoring` 目前可以進重播，第二階段的污染檢查再加上計數拒絕。
+6. **`Experience` 多了 `Raw`、`InputHash`、`TargetHash` 三個由存放區自己寫的欄位**，這是
+   `StoreRaw == false` 只留 hash 的必要表示；呼叫端自帶這三個欄位會被拒絕。指紋在兩種模式都會算，所以
+   兩種存放區描述同一筆經驗的方式一致。
+7. **`ActionRecord.OutputHash` 的原像不含形狀**（依提示字面實作：row-major float64 的 little-endian
+   IEEE-754 位元組）。同一個個體的輸出寬度固定，所以這不造成碰撞。
+8. **個體 checkpoint 的累積器只有「不存在」代表沒有開啟的視窗，明寫 `null` 會被拒絕。** 這個文件格式本來
+   就不允許任何 null（`checkUniqueJSONRejectNull`），可選的 `plastic` 也是同樣待遇。在 `learning` 層
+   直接解碼 `IndividualSnapshot` 時，`null` 仍然解成 nil。
+9. **`OnlinePolicy.UpdateEvery` 為 0 時等於 1**，與 `Options.AccumulateSteps` 的慣例一致。
+10. **多了幾條提示沒寫、但屬於同一句話的拒絕**：沒有可塑政策卻給了 reward gate、可塑政策卻沒有先開啟
+    局部可塑性、回饋的 experience 與該行動的 observation 不同、回饋的時間單位不是 `model_step`、
+    `SetTargets` 指向不存在的行動或寬度不符的目標。
+11. **`Sample` 會先把整個順序定下來再取前 n 筆**，因此一次抽樣的抽值次數只由存放區內容與政策決定，與 n
+    無關。這正是「中途快照接續後序列相同」能成立的原因。
+12. **`Update` 中途失敗不回滾**：已消費的回饋離開佇列、已套用的更新留著，錯誤與當下的 `UpdateReport`
+    一起回傳，讓呼叫端看得到做到哪裡。
+13. **`checkpoint/state.go` 不存在**，`checkpoint.State` 住在 `checkpoint/checkpoint.go`，改動落在該檔。
+14. **尚未處理**：ticket 17 root 裁決 3 要求 ENG 的個體段落寫明「視窗中間存檔會遺失部分累積」這個限制。
+    累積器補上後該限制已消失，但 `ENG.md` 本輪由 ticket 19 的執行者持有，這段文字需要由持有者更新；
+    `docs/requirements-status.json` 與 `delivery-status.md` 同樣不在本輪範圍內。
 
 ## 依據
 

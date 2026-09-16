@@ -48,6 +48,13 @@ type OptimizerSnapshot struct {
 	Options Options   `json:"options"`
 	State   AdamState `json:"state"`
 	Updates uint64    `json:"updates"`
+	// Accumulator is the open gradient-accumulation window, present only when
+	// Options.AccumulateSteps is above one and the window is partly filled.
+	// Without it a persistent individual saved in the middle of a window would
+	// lose the gradients that window already holds; a trainer that applies
+	// every step never opens one, so the key is absent and every snapshot
+	// written before this field existed stays byte-identical.
+	Accumulator *GradientAccumulator `json:"accumulator,omitempty"`
 }
 
 // PlasticPart is the local fast-change mechanism of one individual: the rule
@@ -137,7 +144,10 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.Profile != IndividualProfile && s.Profile != IndividualProfileLIF {
 		return nil, fmt.Errorf("unsupported individual profile %q", s.Profile)
 	}
-	tr, err := RestoreTrainer(TrainingSnapshot{SchemaVersion: "coimnet-episode-training/v1", Config: s.Config, Parameters: s.Parameters, Options: s.Optimizer.Options, Optimizer: s.Optimizer.State, Updates: s.Optimizer.Updates})
+	// The window is routed through RestoreTrainer rather than validated here,
+	// so the individual and the episode trainer accept exactly the same
+	// windows: RestoreTrainer owns validateAccumulator.
+	tr, err := RestoreTrainer(TrainingSnapshot{SchemaVersion: "coimnet-episode-training/v1", Config: s.Config, Parameters: s.Parameters, Options: s.Optimizer.Options, Optimizer: s.Optimizer.State, Updates: s.Optimizer.Updates, Accumulator: s.Optimizer.Accumulator})
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +240,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	if i.plastic != nil {
 		plastic = &PlasticPart{Config: i.plastic.model.Config(), State: copyPlasticState(i.plastic.state)}
 	}
-	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates}, plastic}
+	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator}, plastic}
 }
 
 // Advance consumes observations using persistent voltage and delayed output

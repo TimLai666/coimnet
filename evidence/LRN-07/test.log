@@ -1,0 +1,166 @@
+# LRN-07 (capacity-limited replay, three sampling and two eviction policies)
+# 2026-09-16T11:18:26Z go version go1.26.5 darwin/arm64, macOS arm64
+# uptime at the start of this run: 19:18  up 11 days, 57 mins, 1 user, load averages: 6.39 4.98 4.07
+
+$ gofmt -l .
+(no output: every file is formatted)
+
+$ go vet ./...
+(no output: vet is clean)
+
+$ go test -count=1 -v ./replay/
+=== RUN   TestPinnedPCGStream
+--- PASS: TestPinnedPCGStream (0.00s)
+=== RUN   TestFIFOEvictionOrder
+--- PASS: TestFIFOEvictionOrder (0.00s)
+=== RUN   TestReservoirAcceptRejectSequence
+--- PASS: TestReservoirAcceptRejectSequence (0.00s)
+=== RUN   TestUniformSampleOrder
+--- PASS: TestUniformSampleOrder (0.00s)
+=== RUN   TestTaskBalancedSampleCounts
+--- PASS: TestTaskBalancedSampleCounts (0.00s)
+=== RUN   TestTimeBalancedSampleBuckets
+--- PASS: TestTimeBalancedSampleBuckets (0.00s)
+=== RUN   TestSampleWithoutReplacement
+=== RUN   TestSampleWithoutReplacement/uniform
+=== RUN   TestSampleWithoutReplacement/task_balanced
+=== RUN   TestSampleWithoutReplacement/time_balanced
+--- PASS: TestSampleWithoutReplacement (0.00s)
+    --- PASS: TestSampleWithoutReplacement/uniform (0.00s)
+    --- PASS: TestSampleWithoutReplacement/task_balanced (0.00s)
+    --- PASS: TestSampleWithoutReplacement/time_balanced (0.00s)
+=== RUN   TestSampleRejectsNonPositiveSizeAndEmptyStoreIsEmpty
+--- PASS: TestSampleRejectsNonPositiveSizeAndEmptyStoreIsEmpty (0.00s)
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/no_target
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/non-finite
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/caller_hash
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/caller_raw_flag
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/test_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_task
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/negative_weight
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/nan_weight
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_input_row
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/ragged_input
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/unknown_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/fifo/no_input
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/nan_weight
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/no_input
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_input_row
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/ragged_input
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/non-finite
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/caller_hash
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/test_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/unknown_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_split
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_task
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/negative_weight
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/no_target
+=== RUN   TestAddRejectsTestSplitAndMalformedExperiences/reservoir/caller_raw_flag
+--- PASS: TestAddRejectsTestSplitAndMalformedExperiences (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/no_target (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/non-finite (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/caller_hash (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/caller_raw_flag (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/test_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_task (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/negative_weight (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/nan_weight (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_input_row (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/ragged_input (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/unknown_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/empty_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/fifo/no_input (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/nan_weight (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/no_input (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_input_row (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/ragged_input (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/non-finite (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/caller_hash (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/test_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/unknown_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_split (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/empty_task (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/negative_weight (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/no_target (0.00s)
+    --- PASS: TestAddRejectsTestSplitAndMalformedExperiences/reservoir/caller_raw_flag (0.00s)
+=== RUN   TestPrivacyStoreRawFalseKeepsOnlyHashes
+--- PASS: TestPrivacyStoreRawFalseKeepsOnlyHashes (0.00s)
+=== RUN   TestNewRejectsUndeclaredPolicies
+=== RUN   TestNewRejectsUndeclaredPolicies/empty_eviction
+=== RUN   TestNewRejectsUndeclaredPolicies/unknown_retention
+=== RUN   TestNewRejectsUndeclaredPolicies/empty_retention
+=== RUN   TestNewRejectsUndeclaredPolicies/zero_capacity
+=== RUN   TestNewRejectsUndeclaredPolicies/negative_capacity
+=== RUN   TestNewRejectsUndeclaredPolicies/unknown_sampling
+=== RUN   TestNewRejectsUndeclaredPolicies/empty_sampling
+=== RUN   TestNewRejectsUndeclaredPolicies/unknown_eviction
+--- PASS: TestNewRejectsUndeclaredPolicies (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/empty_eviction (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/unknown_retention (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/empty_retention (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/zero_capacity (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/negative_capacity (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/unknown_sampling (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/empty_sampling (0.00s)
+    --- PASS: TestNewRejectsUndeclaredPolicies/unknown_eviction (0.00s)
+=== RUN   TestRetentionDropAfterSample
+--- PASS: TestRetentionDropAfterSample (0.00s)
+=== RUN   TestRestoreContinuesTheSameSampleSequence
+--- PASS: TestRestoreContinuesTheSameSampleSequence (0.00s)
+=== RUN   TestRestoreRejectsAnImpossibleState
+=== RUN   TestRestoreRejectsAnImpossibleState/test_split_inside
+=== RUN   TestRestoreRejectsAnImpossibleState/hash_without_flag
+=== RUN   TestRestoreRejectsAnImpossibleState/unknown_schema
+=== RUN   TestRestoreRejectsAnImpossibleState/more_items_than_seen
+=== RUN   TestRestoreRejectsAnImpossibleState/over_capacity
+--- PASS: TestRestoreRejectsAnImpossibleState (0.00s)
+    --- PASS: TestRestoreRejectsAnImpossibleState/test_split_inside (0.00s)
+    --- PASS: TestRestoreRejectsAnImpossibleState/hash_without_flag (0.00s)
+    --- PASS: TestRestoreRejectsAnImpossibleState/unknown_schema (0.00s)
+    --- PASS: TestRestoreRejectsAnImpossibleState/more_items_than_seen (0.00s)
+    --- PASS: TestRestoreRejectsAnImpossibleState/over_capacity (0.00s)
+=== RUN   TestStateAndReportDoNotAliasTheStore
+--- PASS: TestStateAndReportDoNotAliasTheStore (0.00s)
+=== RUN   TestNoReplayIsTheControl
+--- PASS: TestNoReplayIsTheControl (0.00s)
+=== RUN   TestReportNamesEveryDeclaredPolicy
+--- PASS: TestReportNamesEveryDeclaredPolicy (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/replay	0.169s
+
+$ go test -count=1 -v -run 'Replay' ./checkpoint/
+2026/09/16 19:18:28 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestEpisodeCheckpointOmitsAnAbsentReplayPart
+--- PASS: TestEpisodeCheckpointOmitsAnAbsentReplayPart (0.02s)
+=== RUN   TestEpisodeCheckpointCarriesTheReplayPart
+--- PASS: TestEpisodeCheckpointCarriesTheReplayPart (0.01s)
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/test_split_inside
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/empty_object
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/missing_buffer
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/missing_state
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_sampling
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_eviction
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_retention
+=== RUN   TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_schema
+--- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts (0.02s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/test_split_inside (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/empty_object (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/missing_buffer (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/missing_state (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_sampling (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_eviction (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_retention (0.00s)
+    --- PASS: TestEpisodeCheckpointRejectsMalformedReplayParts/unknown_schema (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.267s
+
+$ go test -race -count=1 ./replay/ ./checkpoint/
+ok  	github.com/TimLai666/coimnet/replay	1.190s
+ok  	github.com/TimLai666/coimnet/checkpoint	7.731s
+
+# uptime at the end of this run: 19:18  up 11 days, 57 mins, 1 user, load averages: 6.09 4.96 4.08
