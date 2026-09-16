@@ -36,6 +36,10 @@ type ChemistryReport struct {
 	ClampedBeta    int                          `json:"clamped_beta"`
 	ClampedTheta   int                          `json:"clamped_theta"`
 	ReleaseTotal   []float64                    `json:"release_total,omitempty"`
+	// ExpressionGainApplied counts the rows of this call on which a declared
+	// expression gain was not exactly 1, the way the clamp counters count rows.
+	// The gain itself lives on the readout path of the individual, not here.
+	ExpressionGainApplied int `json:"expression_gain_applied"`
 }
 
 // ChemicalPart is the chemical layer of one individual at a completed
@@ -54,6 +58,11 @@ type ChemicalPart struct {
 	State           modulation.ChemistryState  `json:"state"`
 	Resources       map[string]float64         `json:"resources"`
 	PendingFeedback []signal.FeedbackSpec      `json:"pending_feedback"`
+	// Expression is the readout-only gain, absent while it was never declared
+	// or after it was cleared. The snapshot carries a copy and a restored
+	// individual validates it, but the forward path reads it from the
+	// individual rather than this part.
+	Expression *ExpressionGain `json:"expression,omitempty"`
 }
 
 // chemicalRuntime is the enabled chemical layer of one individual: nil means
@@ -242,6 +251,9 @@ func (i *Individual) DisableChemistry() error {
 		if rule.GateReceptor != nil || rule.DecayEReceptor != nil {
 			return fmt.Errorf("rule %q still references a receptor; disable plasticity before chemistry", rule.Kind)
 		}
+	}
+	if i.expression != nil {
+		return fmt.Errorf("an expression gain still references a receptor; clear it before disabling chemistry")
 	}
 	i.chemical = nil
 	return nil

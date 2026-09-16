@@ -125,6 +125,10 @@ type Individual struct {
 	configHash string
 	plastic    *plasticRuntime
 	chemical   *chemicalRuntime
+	// expression is the declared readout-only gain, nil while none is set. It
+	// is suppressed expression, not a state change: clearing it restores the
+	// untouched readout bit for bit.
+	expression *ExpressionGain
 }
 
 // plasticRuntime is the enabled local mechanism of one individual: nil means
@@ -223,6 +227,12 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 				return nil, fmt.Errorf("individual chemical part: pending feedback %d uses time unit %q, want %q", i, spec.AvailableAt.Unit, modulation.ReleaseTimeUnit)
 			}
 			runtime.pending = append(runtime.pending, feedback)
+		}
+		if s.Chemical.Expression != nil {
+			if err := s.Chemical.Expression.Validate(tr.network.config.ReadoutNodes, len(runtime.config.Receptors.Records)); err != nil {
+				return nil, fmt.Errorf("individual chemical part: %w", err)
+			}
+			restored.expression = copyExpression(s.Chemical.Expression)
 		}
 		restored.chemical = runtime
 	}
@@ -338,6 +348,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 			State:           copyChemicalState(i.chemical.state),
 			Resources:       resources,
 			PendingFeedback: pending,
+			Expression:      copyExpression(i.expression),
 		}
 	}
 	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator}, plastic, chemical}
@@ -468,10 +479,34 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		}
 		state, outputs, report = stepwise.neural, stepwise.outputs, stepwise.plastic
 	}
+	// Readout-only expression: before each row's readout nodes are copied into
+	// the selected tensor, each node the gain names is multiplied by
+	// clamp(1 + Scale*occ, Min, Max), where occ is the mean occupancy of the
+	// declared receptor on that same row. The core outputs, the concentration
+	// and every other state stay exactly as the un-gained path produced them,
+	// so clearing the gain restores the untouched readout bit for bit.
+	gainNodes := make(map[int]bool)
+	if i.expression != nil {
+		for _, node := range i.expression.Nodes {
+			gainNodes[node] = true
+		}
+	}
 	selected := make([]float64, 0, len(input)*len(n.config.ReadoutNodes))
-	for _, row := range outputs {
+	for t, row := range outputs {
+		var gain float64 = 1
+		if i.expression != nil && t < len(stepwise.rowOccupancy) {
+			occ := meanOccupancy(stepwise.rowOccupancy[t], i.expression.Receptor)
+			gain = clamp(1+i.expression.Scale*occ, i.expression.Min, i.expression.Max)
+			if gain != 1 {
+				stepwise.chemistry.ExpressionGainApplied++
+			}
+		}
 		for _, id := range n.config.ReadoutNodes {
-			selected = append(selected, row[id])
+			value := row[id]
+			if gainNodes[id] {
+				value *= gain
+			}
+			selected = append(selected, value)
 		}
 	}
 	h, err := tensor([]int{len(input), len(n.config.ReadoutNodes)}, selected)
@@ -516,6 +551,11 @@ type stepwiseResult struct {
 	plastic   PlasticReport
 	chemical  modulation.ChemistryState
 	chemistry ChemistryReport
+	// rowOccupancy holds the occupancy records of every input row, in row
+	// order, so a readout path can read the same occupancy a row's modulation
+	// itself was built from. ChemistryReport.Occupancy keeps only the last
+	// row's records.
+	rowOccupancy [][]modulation.OccupancyRecord
 }
 
 // advanceStepwise runs the enabled mechanisms one core step at a time, because
@@ -569,6 +609,7 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			result.chemical, mod = chemical.state, chemical.modulated
 			result.chemistry.Steps++
 			result.chemistry.Occupancy = chemical.occupancy
+			result.rowOccupancy = append(result.rowOccupancy, chemical.occupancy)
 			result.chemistry.Assumed = chemical.summary.Assumed
 			result.chemistry.UnknownSkipped = chemical.summary.UnknownSkipped
 			result.chemistry.Unresponsive = chemical.summary.Unresponsive
