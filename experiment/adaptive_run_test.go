@@ -78,11 +78,11 @@ func TestRunAdaptiveEvaluationFixedMode(t *testing.T) {
 		if report.Contamination.ScoringFeedbackRejected != 0 {
 			t.Fatalf("scoring_feedback_rejected = %d, want 0", report.Contamination.ScoringFeedbackRejected)
 		}
-		if report.Contamination.ReplayRejected != 0 {
-			t.Fatalf("replay_rejected = %d, want 0", report.Contamination.ReplayRejected)
+		if report.Contamination.ReplayRejected != len(e.Scoring) {
+			t.Fatalf("replay_rejected = %d, want %d", report.Contamination.ReplayRejected, len(e.Scoring))
 		}
-		if report.Contamination.ShuffleInvariant != nil {
-			t.Fatalf("shuffle_invariant = %v, want nil", *report.Contamination.ShuffleInvariant)
+		if report.Contamination.ShuffleInvariant == nil || !*report.Contamination.ShuffleInvariant {
+			t.Fatalf("shuffle_invariant = %v, want non-nil true", report.Contamination.ShuffleInvariant)
 		}
 		if len(report.Scores) != 2 {
 			t.Fatalf("len(scores) = %d, want 2", len(report.Scores))

@@ -52,23 +52,26 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 		return runAdaptiveEvaluation(ctx, ind, e)
 	}
 	// Fixed mode implementation.
-	before := ind.Snapshot().Parameters
-	scores := make([]ItemScore, 0, len(e.Scoring))
-	for _, item := range e.Scoring {
-		if err := resetForItem(ctx, ind, e, item.ID); err != nil {
-			return EvaluationReport{}, err
-		}
-		out, err := ind.Advance(ctx, item.Input)
-		if err != nil {
-			return EvaluationReport{}, err
-		}
-		mse, err := itemMSE(out, item)
-		if err != nil {
-			return EvaluationReport{}, err
-		}
-		scores = append(scores, ItemScore{ID: item.ID, MSE: mse, Output: out})
+	startSnapshot := ind.Snapshot()
+	scores, err := scoreItems(ctx, ind, e.Scoring, e.Reset)
+	if err != nil {
+		return EvaluationReport{}, err
 	}
 	after := ind.Snapshot().Parameters
+
+	replayRejected, err := ReplayRejectionCount(e)
+	if err != nil {
+		return EvaluationReport{}, err
+	}
+	var shuffleInvariant *bool
+	if e.Reset.NeuralAtItemStart && e.Reset.PlasticAtItemStart && e.Reset.ChemicalAtItemStart {
+		ok, err := ShuffleInvariance(ctx, startSnapshot, e)
+		if err != nil {
+			return EvaluationReport{}, err
+		}
+		shuffleInvariant = &ok
+	}
+
 	return EvaluationReport{
 		SchemaVersion:     evalSchemaVersion,
 		Mode:              e.Mode,
@@ -78,7 +81,9 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 		ScoringItems:      len(e.Scoring),
 		Scores:            scores,
 		Contamination: ContaminationChecks{
-			ParametersUnchanged: reflect.DeepEqual(before, after),
+			ParametersUnchanged: reflect.DeepEqual(startSnapshot.Parameters, after),
+			ReplayRejected:      replayRejected,
+			ShuffleInvariant:    shuffleInvariant,
 		},
 	}, nil
 }
@@ -117,7 +122,7 @@ func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 	}
 	version := signal.CurrentSchemaVersion()
 	for _, item := range e.Adaptation {
-		if err := resetForItem(ctx, ind, e, item.ID); err != nil {
+		if err := resetForItem(ctx, ind, e.Reset, item.ID); err != nil {
 			return EvaluationReport{}, err
 		}
 		obs, err := signal.NewObservation(version, item.ID, "adaptive", nil)
@@ -161,23 +166,27 @@ func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 		}
 	}
 
-	scores := make([]ItemScore, 0, len(e.Scoring))
-	for _, item := range e.Scoring {
-		if err := resetForItem(ctx, ind, e, item.ID); err != nil {
-			return EvaluationReport{}, err
-		}
-		out, err := ind.Advance(ctx, item.Input)
-		if err != nil {
-			return EvaluationReport{}, err
-		}
-		mse, err := itemMSE(out, item)
-		if err != nil {
-			return EvaluationReport{}, err
-		}
-		scores = append(scores, ItemScore{ID: item.ID, MSE: mse, Output: out})
+	startSnapshot := ind.Snapshot()
+	scores, err := scoreItems(ctx, ind, e.Scoring, e.Reset)
+	if err != nil {
+		return EvaluationReport{}, err
 	}
 
 	after := ind.Snapshot().Parameters
+
+	replayRejected, err := ReplayRejectionCount(e)
+	if err != nil {
+		return EvaluationReport{}, err
+	}
+	var shuffleInvariant *bool
+	if e.Reset.NeuralAtItemStart && e.Reset.PlasticAtItemStart && e.Reset.ChemicalAtItemStart {
+		ok, err := ShuffleInvariance(ctx, startSnapshot, e)
+		if err != nil {
+			return EvaluationReport{}, err
+		}
+		shuffleInvariant = &ok
+	}
+
 	return EvaluationReport{
 		SchemaVersion:     evalSchemaVersion,
 		Mode:              EvaluationModeAdaptive,
@@ -189,21 +198,46 @@ func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 		Contamination: ContaminationChecks{
 			ParametersUnchanged:     reflect.DeepEqual(before, after),
 			ScoringFeedbackRejected: scoringRejected,
+			ReplayRejected:          replayRejected,
+			ShuffleInvariant:        shuffleInvariant,
 		},
 	}, nil
+}
+
+// scoreItems runs the closed-gate scoring flow of one partition on an
+// individual: it applies the declared reset before every item, advances the
+// individual, records the output and its MSE, and returns the item scores in
+// the order the items were given.
+func scoreItems(ctx context.Context, ind *learning.Individual, items []EvaluationItem, reset ResetPolicy) ([]ItemScore, error) {
+	scores := make([]ItemScore, 0, len(items))
+	for _, item := range items {
+		if err := resetForItem(ctx, ind, reset, item.ID); err != nil {
+			return nil, err
+		}
+		out, err := ind.Advance(ctx, item.Input)
+		if err != nil {
+			return nil, err
+		}
+		mse, err := itemMSE(out, item)
+		if err != nil {
+			return nil, err
+		}
+		scores = append(scores, ItemScore{ID: item.ID, MSE: mse, Output: out})
+	}
+	return scores, nil
 }
 
 // resetForItem applies the declared reset policy before one item. The plasticity
 // reset re-enables the mechanism from the config that was active before the
 // reset, which starts the fast state over.
-func resetForItem(ctx context.Context, ind *learning.Individual, e AdaptiveEvaluation, itemID string) error {
-	if e.Reset.NeuralAtItemStart {
+func resetForItem(ctx context.Context, ind *learning.Individual, reset ResetPolicy, itemID string) error {
+	if reset.NeuralAtItemStart {
 		nodes := len(ind.Snapshot().Parameters.Core.Bias)
 		if err := ind.ResetNeural(ctx, make([]float64, nodes)); err != nil {
 			return err
 		}
 	}
-	if e.Reset.PlasticAtItemStart {
+	if reset.PlasticAtItemStart {
 		snap := ind.Snapshot()
 		if snap.Plastic != nil {
 			ind.DisablePlasticity()
@@ -212,7 +246,7 @@ func resetForItem(ctx context.Context, ind *learning.Individual, e AdaptiveEvalu
 			}
 		}
 	}
-	if e.Reset.ChemicalAtItemStart {
+	if reset.ChemicalAtItemStart {
 		snap := ind.Snapshot()
 		if snap.Chemical != nil {
 			ind.DisableChemistry()
