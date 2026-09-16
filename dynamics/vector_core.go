@@ -24,12 +24,20 @@ type VectorParameters struct {
 	LogTau  []float64 `json:"log_tau"`
 }
 
-// VectorTrace keeps per-step voltages and outputs as [step][node*C+component].
-// It owns its buffers and contains no optimizer, mutable anatomy or external
+// VectorTrace owns the parameter snapshot, per-step drive and neural history
+// of one forward pass, mirroring Trace. Voltage and output are
+// [step][node*C+component] rows; drive holds each step's external plus
+// synaptic input after bias is added; lambda and alpha derive from the
+// snapshot's log_tau. It contains no optimizer, mutable anatomy or external
 // side effects.
 type VectorTrace struct {
-	voltage [][]float64
-	output  [][]float64
+	model      *VectorContinuous
+	parameters VectorParameters
+	voltage    [][]float64
+	output     [][]float64
+	drive      [][]float64
+	lambda     []float64
+	alpha      []float64
 }
 
 // VectorContinuous is the continuous core with a C-dimensional state per
@@ -212,7 +220,15 @@ func (m *VectorContinuous) Forward(ctx context.Context, p VectorParameters, init
 			}
 		}
 	}
-	tr := &VectorTrace{voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1)}
+	tr := &VectorTrace{
+		model:      m,
+		parameters: VectorParameters{Weights: append([]float64(nil), p.Weights...), Bias: append([]float64(nil), p.Bias...), LogTau: append([]float64(nil), p.LogTau...)},
+		voltage:    make([][]float64, len(inputs)+1),
+		output:     make([][]float64, len(inputs)+1),
+		drive:      make([][]float64, len(inputs)),
+		lambda:     lambda,
+		alpha:      alpha,
+	}
 	tr.voltage[0] = append([]float64(nil), initial...)
 	tr.output[0] = make([]float64, nv)
 	for i, v := range initial {
@@ -248,6 +264,7 @@ func (m *VectorContinuous) Forward(ctx context.Context, p VectorParameters, init
 				}
 			}
 		}
+		tr.drive[t] = drive
 		tr.voltage[t+1] = vnext
 		tr.output[t+1] = ynext
 	}
@@ -502,4 +519,144 @@ func (m *VectorContinuous) stateConfigHash() (string, error) {
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// VectorGradient mirrors Gradient with the vector layouts: Weights has
+// layout.WeightValues() entries (matrix edges: dL/dW_ji[r][c] at
+// edge*C*C + r*C + c), Bias N*C, LogTau N (summed over the C components),
+// Inputs [step][N*C], Initial N*C.
+type VectorGradient struct {
+	Weights, Bias, LogTau []float64
+	Inputs                [][]float64
+	Initial               []float64
+}
+
+// Backward mirrors Continuous.Backward for the vector core: upstream is
+// [step][N*C] (dL/d out at each step), window is the truncation window with
+// the same meaning as the scalar core.
+func (m *VectorContinuous) Backward(ctx context.Context, tr *VectorTrace, upstream [][]float64, window int) (VectorGradient, error) {
+	var empty VectorGradient
+	if ctx == nil {
+		return empty, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return empty, err
+	}
+	if m == nil || tr == nil || tr.model != m {
+		return empty, fmt.Errorf("trace belongs to a different model")
+	}
+	steps, nv := len(tr.drive), m.layout.NodeValues()
+	n := m.config.Nodes
+	if window < 0 || len(upstream) != steps {
+		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if m.layout.C <= 0 || m.layout.Edges != len(m.config.Sources) {
+		return empty, fmt.Errorf("layout does not match configuration")
+	}
+	deriv := func(v float64) float64 {
+		if m.config.Activation == "tanh" {
+			y := math.Tanh(v)
+			return 1 - y*y
+		}
+		if v >= 0 {
+			return 1 / (1 + math.Exp(-v))
+		}
+		e := math.Exp(v)
+		return e / (1 + e)
+	}
+	gy := make([][]float64, steps+1)
+	for t := range gy {
+		gy[t] = make([]float64, nv)
+	}
+	for t, row := range upstream {
+		if err := vector(row, nv, "upstream"); err != nil {
+			return empty, err
+		}
+		copy(gy[t+1], row)
+	}
+	g := VectorGradient{Weights: make([]float64, m.layout.WeightValues()), Bias: make([]float64, nv), LogTau: make([]float64, n), Inputs: make([][]float64, steps), Initial: make([]float64, nv)}
+	gv := make([]float64, nv)
+	c := m.layout.C
+	for t := steps - 1; t >= 0; t-- {
+		if err := ctx.Err(); err != nil {
+			return empty, err
+		}
+		start := 0
+		if window > 0 {
+			start = t / window * window
+		}
+		prev := make([]float64, nv)
+		g.Inputs[t] = make([]float64, nv)
+		for i := 0; i < n; i++ {
+			base := i * c
+			// d exp(-dt/exp(log_tau)) / d log_tau = lambda*dt/tau.
+			dlambda := tr.lambda[i] * (m.config.DT / math.Exp(tr.parameters.LogTau[i]))
+			// Underflowed lambda has zero derivative, even if dt/tau overflowed.
+			if tr.lambda[i] == 0 {
+				dlambda = 0
+			}
+			for r := 0; r < c; r++ {
+				k := base + r
+				dv := gv[k] + gy[t+1][k]*deriv(tr.voltage[t+1][k])
+				g.Inputs[t][k] = tr.alpha[i] * dv
+				g.Bias[k] += g.Inputs[t][k]
+				g.LogTau[i] += dv * (tr.voltage[t][k] - tr.drive[t][k]) * dlambda
+				if t > start || start == 0 {
+					prev[k] = tr.lambda[i] * dv
+				}
+			}
+		}
+		for e, s := range m.config.Sources {
+			if e%4096 == 0 {
+				if err := ctx.Err(); err != nil {
+					return empty, err
+				}
+			}
+			past := 0
+			if m.config.Delays[e] < t {
+				past = t - m.config.Delays[e]
+			}
+			ti := m.config.Targets[e]
+			outJ := m.layout.NodeSlice(tr.output[past], s)
+			if m.layout.Matrix {
+				w := m.layout.EdgeMatrix(tr.parameters.Weights, e)
+				for r := 0; r < c; r++ {
+					driveGrad := g.Inputs[t][ti*c+r]
+					rowBase := r * c
+					for cc := 0; cc < c; cc++ {
+						g.Weights[e*c*c+rowBase+cc] += driveGrad * outJ[cc]
+					}
+					if past > start || start == 0 {
+						for cc := 0; cc < c; cc++ {
+							gy[past][s*c+cc] += w[rowBase+cc] * driveGrad
+						}
+					}
+				}
+			} else {
+				w := tr.parameters.Weights[e]
+				for r := 0; r < c; r++ {
+					driveGrad := g.Inputs[t][ti*c+r]
+					g.Weights[e] += driveGrad * outJ[r]
+					if past > start || start == 0 {
+						gy[past][s*c+r] += w * driveGrad
+					}
+				}
+			}
+		}
+		gv = prev
+	}
+	for i := range gv {
+		g.Initial[i] = gv[i] + gy[0][i]*deriv(tr.voltage[0][i])
+	}
+	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.Initial} {
+		if err := vector(v, len(v), "gradient"); err != nil {
+			return empty, err
+		}
+	}
+	for _, v := range g.Inputs {
+		if err := vector(v, len(v), "input gradient"); err != nil {
+			return empty, err
+		}
+	}
+	return g, nil
 }
