@@ -22,7 +22,7 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 標準化接線圖已在真實 MaleCNS v1.0 三份原件上完成建構、落盤與讀回驗證（ticket 08、09）：`connectome.Build` 與 `data import` 依明示 manifest 產生 `raw_segments`／`annotated_neurons` 視圖與報告，165,122 個選入節點、25,563,197 條邊，所有與獨立稽核共有的計數相等。Mac 與 Ubuntu v7 同一份 95 檔來源的建置、單元、race、vet、模組驗證與跨程序續訓全通過。CPU 參考流程、官方資料下載與 Feather 讀取維持 v4／v5 驗證。完整目標維持原始 W01–W14。
 
-化學濃度、受體與效果（ticket 21 第一階段、MOD-02、MOD-03）與運行中學習與重播（ticket 23 第一階段、LRN-06、LRN-07）已在 fixture 驗證：濃度依 `lambda = exp(-dt/tau)` 衰退並收斂到 `tau*q`（幾何級數手算），區域傳輸不增加總量，負釋放率與非法傳輸都被拒絕；受體佔用率在對數域計算，`c = 1e300, n = 8` 仍為有限值，`unresponsive`／`unknown`／`hypothesized` 三種狀態分開報告且未知係數只在明示允許時才用並標為假設；效果映射在濃度為零時逐位等於未啟用，兩個核心的 `AdvanceModulated` 在 nil 與中性調節下逐位等於 `Advance`。運行中學習把作答、收回饋、更新三步分開，已輸出的答案 hash 在回饋與更新後不變，評估模式拒絕任何更新；重播存放區的先進先出與水塘淘汰、三種抽樣都有固定 seed 的手算序列，中途快照接續的抽樣序列與連續執行相同，測試分割永遠進不了重播。證據見 [MOD-02](evidence/MOD-02/verification.json)、[MOD-03](evidence/MOD-03/verification.json)、[LRN-06](evidence/LRN-06/verification.json)、[LRN-07](evidence/LRN-07/verification.json)。
+化學濃度、受體與效果（ticket 21 第一階段、MOD-02、MOD-03）與運行中學習與重播（ticket 23 第一階段、LRN-06、LRN-07）已在 fixture 驗證：濃度依 `lambda = exp(-dt/tau)` 衰退並收斂到 `tau*q`（幾何級數手算），區域傳輸不增加總量，負釋放率與非法傳輸都被拒絕；受體佔用率在對數域計算，`c = 1e300, n = 8` 仍為有限值，`unresponsive`／`unknown`／`hypothesized` 三種狀態分開報告且未知係數只在明示允許時才用並標為假設；效果映射在濃度為零時逐位等於未啟用，兩個核心的 `AdvanceModulated` 在 nil 與中性調節下逐位等於 `Advance`。第二階段把化學層接上持續個體：每一步固定走來源釋放 → 濃度 → 佔用率 → 效果陣列 → 調節後的核心一步 → 可塑性，連續與 LIF 各有四步手算表（LIF 的閾值效果抑制了原本會發生的放電），100 步後基礎參數逐位不變，中途快照帶濃度、資源與待處理回饋接續後逐位相同；MOD-04 標 passed，證據見 [MOD-04](evidence/MOD-04/verification.json)。運行中學習把作答、收回饋、更新三步分開，已輸出的答案 hash 在回饋與更新後不變，評估模式拒絕任何更新；重播存放區的先進先出與水塘淘汰、三種抽樣都有固定 seed 的手算序列，中途快照接續的抽樣序列與連續執行相同，測試分割永遠進不了重播。證據見 [MOD-02](evidence/MOD-02/verification.json)、[MOD-03](evidence/MOD-03/verification.json)、[LRN-06](evidence/LRN-06/verification.json)、[LRN-07](evidence/LRN-07/verification.json)。
 
 ## 階段目標
 
@@ -60,7 +60,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 17 | 使用者可以限制可更新參數、符號與範圍，並使用完整最佳化器流程 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 遮罩、固定符號（1,000 步不翻轉、有限差分 4.91e-05）、範圍投影、推導符號；損失縮放逐位相同、累積手算、三種排程手算與恢復接續、裁切順序；COR-10、LRN-03 passed；只有 fixture、只在 macOS |
 | 18 | 研究者可以使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：兩種規則手算時序、閘門關／延遲閘門／衰退／上限／`w_min`、關閉逐位還原、快照往返，LRN-04、LRN-05 passed；第二階段（runner 對照，NAT-06）由 ticket 19 進行 |
 | 20 | 研究者可以把觀察、目標與事後回饋分開，並選擇調節訊號的來源 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `AvailableFeedback`、四種來源手算、獎懲映射四值分開、靜態 import 檢查腳本與 NaN 汙染測試；SIG-03、MOD-01、MOD-08 passed；控制器來源只保留名字（MOD-07） |
-| 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；MOD-02、MOD-03 passed；第二階段（個體整合與快照）進行中 |
+| 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；個體每步順序在連續與 LIF 各有手算表、100 步 `Parameters` 逐位不變、中途快照接續逐位相同、`modulation` 不再依賴 `simulate`；MOD-02、MOD-03、MOD-04 passed；來源對所有區域一致、只有 fixture |
 | 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）待派工 |
 
 ## 目前阻礙
