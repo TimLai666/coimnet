@@ -4,7 +4,9 @@
 
 LIF 個體、慢速穩定與模型包（ticket 16、COR-04、STA-01）已在 fixture 驗證：`learning.NewIndividual` 對連續與 LIF 核心走同一條路徑，神經狀態改為指名核心的聯集，舊的連續個體檔仍可讀；LIF 可選的慢速穩定用每顆神經元的活動估計調整閾值偏移，手算時序與收斂數字記在 ticket；`coimnet-model-package/v1` 是第三種保存物，只有拓撲指紋、設定、參數、單位與證據清單，六種交叉載入都會被拒絕並指名讀到的是哪一種，LIF 個體跨程序恢復後續跑與不中斷逐項相等。COR-04、STA-01 標 passed，證據見 [COR-04](evidence/COR-04/verification.json)、[STA-01](evidence/STA-01/verification.json)。
 
-受限更新（ticket 17 第一階段、COR-10 的核心）已在 fixture 驗證：逐邊／逐節點遮罩讓凍結項在含 weight decay 的 50 步後逐位不變、動量與步數為零；固定符號邊改用對數幅度參數化，`learning_rate=1.0` 跑 1,000 步符號不翻轉、幅度 > 0，鏈鎖梯度與中央差分最差相對誤差 4.91e-05；範圍投影計數正確且不動動量；推導參數集的符號依 free／excitatory／inhibitory 政策帶入並回報計數。全零符號與舊快照逐位等於改前。第二階段（損失縮放、梯度累積、排程）進行中，COR-10 與 LRN-03 待第二階段證據後登記。
+受限更新與完整最佳化器流程（ticket 17、COR-10、LRN-03）已在 fixture 驗證：逐邊／逐節點遮罩讓凍結項在含 weight decay 的 50 步後逐位不變、動量與步數為零；固定符號邊改用對數幅度參數化，`learning_rate=1.0` 跑 1,000 步符號不翻轉、幅度 > 0，鏈鎖梯度與中央差分最差相對誤差 4.91e-05；範圍投影計數正確且不動動量；推導參數集的符號依 free／excitatory／inhibitory 政策帶入並回報計數。全零符號與舊快照逐位等於改前。第二階段：損失縮放前後參數逐位相同、溢位整步拒絕；累積三步等於平均梯度的一次 AdamW（手算）、視窗中途快照接續逐位相同；三種排程的學習率表手算、恢復後接續；裁切在平均之後、AdamW 之前。COR-10、LRN-03 標 passed，證據見 [COR-10](evidence/COR-10/verification.json)、[LRN-03](evidence/LRN-03/verification.json)。
+
+局部可塑性（ticket 18 第一階段、LRN-04、LRN-05）與調節來源（ticket 20、SIG-03、MOD-01、MOD-08）已在 fixture 驗證：`plasticity` 套件的活動相關與脈衝時序規則各有手算時序（閘門關只衰退、延遲閘門用殘留參與紀錄、上限與 `w_min` 計數、固定符號不跨零），持續個體的 `AdvanceGated` 逐步套用新的有效權重，關閉時逐位還原，快照帶可選的 `plastic` 區塊；`modulation` 套件的四種來源（外部時序、具名集合活動、內在資源、重播）只產生非負有限的釋放率，獎懲映射把原始值、期望值、轉換值與套用值分開，負回饋變成清除項而不是負濃度；`scripts/check-target-flow.sh` 與 NaN 汙染測試證明目標只進損失。證據見 [LRN-04](evidence/LRN-04/verification.json)、[LRN-05](evidence/LRN-05/verification.json)、[SIG-03](evidence/SIG-03/verification.json)、[MOD-01](evidence/MOD-01/verification.json)、[MOD-08](evidence/MOD-08/verification.json)。
 
 空模型對照與判讀協定（ticket 14、NAT-03／04／05）已在真實全圖驗證：`simulate compare` 用同一份刺激跑原圖與三種空模型（保留度數的重連、打亂正負號、打亂權重）各 3 個 seed，LIF 與連續核心各 10 格（每格 165,122 節點、25,563,197 邊、300 步，兩個矩陣各約 15 分鐘）。指標與門檻事前寫進 protocol；五條 LIF 門檻在原圖與九個空模型格全部通過，所以它們分不出真實與打亂的接線；同一份接線換核心後，原圖在空模型分布中的百分位方向可以相反，歸因結論必須連同核心、參數來源、空模型種類與指標定義一起陳述。報告只陳述指標與位置，不做行為宣稱。證據見 [NAT-03](evidence/NAT-03/verification.json)、[NAT-04](evidence/NAT-04/verification.json)、[NAT-05](evidence/NAT-05/verification.json)。
 
@@ -53,8 +55,9 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 10 | 研究者可選取真實子圖並接上訓練核心 | 主 agent / Luna | verified_scoped | 獨立稽核及全部 ID／運算邊／初始化權重一致；兩平台各重跑一致、固定參數不變；跨平台最後參數指紋不同，僅作人工整合範例 |
 | 15 | 強化：續傳、共用嚴格 JSON、邊順序守衛 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `.part` 截斷續傳、死 pid 鎖回收、`signal` 改用 `strictjson`、推導的邊順序守衛皆有回歸測試 |
 | 16 | 研究者可建立 LIF 個體、開啟慢速穩定並發布模型包 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 神經狀態聯集與舊檔升級、慢速穩定手算時序與收斂、模型包六種交叉拒絕、LIF 個體跨程序恢復逐項相等；COR-04、STA-01 passed；只有 fixture、只在 macOS |
-| 17 | 使用者可限制可更新參數、符號與範圍，並使用完整最佳化器流程 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段（遮罩、固定符號、範圍、推導符號）驗證通過；第二階段（損失縮放、累積、排程）進行中，COR-10／LRN-03 待登記 |
-| 18 | 研究者可使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段（`plasticity` 套件與個體整合）派工中 |
+| 17 | 使用者可以限制可更新參數、符號與範圍，並使用完整最佳化器流程 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 遮罩、固定符號（1,000 步不翻轉、有限差分 4.91e-05）、範圍投影、推導符號；損失縮放逐位相同、累積手算、三種排程手算與恢復接續、裁切順序；COR-10、LRN-03 passed；只有 fixture、只在 macOS |
+| 18 | 研究者可以使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：兩種規則手算時序、閘門關／延遲閘門／衰退／上限／`w_min`、關閉逐位還原、快照往返，LRN-04、LRN-05 passed；第二階段（runner 對照，NAT-06）由 ticket 19 進行 |
+| 20 | 研究者可以把觀察、目標與事後回饋分開，並選擇調節訊號的來源 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `AvailableFeedback`、四種來源手算、獎懲映射四值分開、靜態 import 檢查腳本與 NaN 汙染測試；SIG-03、MOD-01、MOD-08 passed；控制器來源只保留名字（MOD-07） |
 
 ## 目前阻礙
 

@@ -7,7 +7,7 @@ User Story：使用者可以按邊與節點集合指定哪些參數能更新，�
 
 Blocked by：04 連續核心訓練、11 LIF 核心、13 參數 adapter（推導的符號是固定符號的來源）
 
-Status：ready（契約已於 2026-09-15 定案，分兩階段派工；驗收項目驗證後才勾選）
+Status：verified_scoped（兩階段皆已驗證，2026-09-16；COR-10、LRN-03 標 passed；只有 fixture、只在 macOS，見「Root 裁決」的後續項目）
 
 對應需求：COR-10（遮罩涵蓋動量及權重衰減；快速變化不翻轉受限作用符號）、LRN-03（損失縮放、
 梯度累積、裁切、排程與最佳化器恢復皆測試）、COR-07（證據紀錄：`internal/sparse` 的三節點試金石
