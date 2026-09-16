@@ -41,13 +41,13 @@ func TestFlatLayoutPlacesThetaAfterLogTau(t *testing.T) {
 	if len(back.ThetaRaw) != 3 || back.ThetaRaw[0] != -9 {
 		t.Fatalf("unflatten lost theta_raw: %v", back.ThetaRaw)
 	}
-	mask := parameterMask(p, Options{Trainable: Trainable{Theta: true}})
+	mask := parameterMask(p, Options{Trainable: Trainable{Theta: true}}, nil)
 	for i, enabled := range mask {
 		if enabled != (i >= 8 && i < 11) {
 			t.Fatalf("theta-only mask at %d = %v", i, enabled)
 		}
 	}
-	full := parameterMask(p, Options{Trainable: Trainable{Encoder: true, Weights: true, Bias: true, Tau: true, Theta: true, Readout: true}})
+	full := parameterMask(p, Options{Trainable: Trainable{Encoder: true, Weights: true, Bias: true, Tau: true, Theta: true, Readout: true}}, nil)
 	for i, enabled := range full {
 		if !enabled {
 			t.Fatalf("full mask disabled parameter %d", i)
@@ -78,7 +78,7 @@ func TestContinuousFlatLayoutIsUnchanged(t *testing.T) {
 	if withTheta.ThetaRaw[0] != 1 {
 		t.Fatal("copyParameters aliases theta_raw")
 	}
-	mask := parameterMask(p, Options{Trainable: Trainable{Theta: true}})
+	mask := parameterMask(p, Options{Trainable: Trainable{Theta: true}}, nil)
 	for i, enabled := range mask {
 		if enabled {
 			t.Fatalf("continuous mask enabled parameter %d with only the theta group trainable", i)

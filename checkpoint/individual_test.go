@@ -1213,3 +1213,203 @@ func TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled(t *testing.T) {
 		t.Fatal("an absent chemical part changed the rest of the snapshot")
 	}
 }
+
+func newCheckpointMixedIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	core := dynamics.MixedConfig{
+		Nodes: 3, Sources: []int{0, 1}, Targets: []int{1, 2}, Delays: []int{0, 1},
+		DT: 1, NodeRule: []uint8{0, 1, 0},
+		Continuous: dynamics.ContinuousRule{Activation: "tanh"},
+		LIF: dynamics.LIFRule{
+			TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1,
+			Adaptation:  dynamics.LIFAdaptation{Enabled: true, TauAdapt: 2, Beta: .3},
+			Homeostasis: &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2, TargetRate: .3, Eta: 1.5, HMax: .4},
+			Surrogate:   dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+		},
+	}
+	c := learning.Config{Mixed: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+	p := learning.Parameters{
+		Core:     dynamics.Parameters{Weights: []float64{.65, .7}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}},
+		ThetaRaw: []float64{-1},
+		Encoder:  []float64{1, 0, 0},
+		Readout:  []float64{1},
+	}
+	individual, err := learning.NewIndividual(c, p, learning.DefaultOptions(), make([]float64, core.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return individual
+}
+
+func TestSaveLoadMixedIndividualRoundTrip(t *testing.T) {
+	individual := newCheckpointMixedIndividual(t)
+	if _, err := individual.Advance(context.Background(), [][]float64{{1}, {0}, {1}, {0}}); err != nil {
+		t.Fatal(err)
+	}
+	want := individual.Snapshot()
+	if want.Profile != learning.IndividualProfileMixed {
+		t.Fatalf("profile = %q", want.Profile)
+	}
+	path := filepath.Join(t.TempDir(), "mixed-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(raw, []byte(`"neural":{"core":"mixed","mixed":{`)) {
+		t.Fatalf("saved document does not carry the declared union: %s", raw)
+	}
+	if !bytes.Contains(raw, []byte(`"lif_index":[1]`)) {
+		t.Fatalf("saved document does not carry the theta index: %s", raw)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal("round trip changed the mixed individual snapshot")
+	}
+	if got.Neural.Mixed == nil || got.Neural.Continuous != nil || got.Neural.LIF != nil {
+		t.Fatalf("round trip changed the neural union: %+v", got.Neural)
+	}
+	if len(got.Neural.Mixed.Index.LIFNodes) != 1 || got.Neural.Mixed.Index.LIFNodes[0] != 1 {
+		t.Fatalf("round trip lost the node map: %+v", got.Neural.Mixed.Index)
+	}
+	if len(got.Neural.Mixed.LIF.Homeostasis) != 1 || len(got.Neural.Mixed.LIF.Rate) != 1 {
+		t.Fatalf("round trip lost the slow stabiliser state: %+v", got.Neural.Mixed.LIF)
+	}
+	restored, err := learning.RestoreIndividual(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), want) {
+		t.Fatal("loaded mixed snapshot changed during restore")
+	}
+}
+
+func TestLoadIndividualRejectsMixedNeuralUnionDefects(t *testing.T) {
+	mixed := newCheckpointMixedIndividual(t)
+	if _, err := mixed.Advance(context.Background(), [][]float64{{1}}); err != nil {
+		t.Fatal(err)
+	}
+	mixedPayload := mustIndividualJSON(t, mixed.Snapshot())
+	continuousPayload := mustIndividualJSON(t, newCheckpointIndividual(t, false).Snapshot())
+	lifPayload := mustIndividualJSON(t, newCheckpointLIFIndividual(t).Snapshot())
+
+	rewrite := func(payload []byte, change func(map[string]json.RawMessage)) []byte {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(payload, &object); err != nil {
+			t.Fatal(err)
+		}
+		change(object)
+		changed, err := json.Marshal(object)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return envelopeJSON(IndividualSchemaVersion, changed, checksumHex(changed))
+	}
+	editConfig := func(object map[string]json.RawMessage, change func(map[string]json.RawMessage)) {
+		var config map[string]json.RawMessage
+		if err := json.Unmarshal(object["config"], &config); err != nil {
+			t.Fatal(err)
+		}
+		change(config)
+		encoded, err := json.Marshal(config)
+		if err != nil {
+			t.Fatal(err)
+		}
+		object["config"] = encoded
+	}
+	editNeural := func(object map[string]json.RawMessage, change func(map[string]json.RawMessage)) {
+		var neural map[string]json.RawMessage
+		if err := json.Unmarshal(object["neural"], &neural); err != nil {
+			t.Fatal(err)
+		}
+		change(neural)
+		encoded, err := json.Marshal(neural)
+		if err != nil {
+			t.Fatal(err)
+		}
+		object["neural"] = encoded
+	}
+	mixedConfigOf := func(payload []byte) json.RawMessage {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(payload, &object); err != nil {
+			t.Fatal(err)
+		}
+		var config map[string]json.RawMessage
+		if err := json.Unmarshal(object["config"], &config); err != nil {
+			t.Fatal(err)
+		}
+		return config["mixed"]
+	}
+
+	cases := map[string][]byte{
+		"mixed neural without a mixed configuration": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			editConfig(object, func(config map[string]json.RawMessage) { delete(config, "mixed") })
+		}),
+		"continuous core against a mixed configuration": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			object["neural"] = json.RawMessage(`{"core":"continuous","continuous":{"schema_version":"` + dynamics.ContinuousStateVersion + `","config_hash":"x","steps":0,"voltage":[0,0,0],"history":[[0,0,0]]}}`)
+		}),
+		"mixed core also carrying a continuous half": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			editNeural(object, func(neural map[string]json.RawMessage) {
+				neural["continuous"] = json.RawMessage(`{"schema_version":"` + dynamics.ContinuousStateVersion + `","config_hash":"x","steps":0,"voltage":[0,0,0],"history":[[0,0,0]]}`)
+			})
+		}),
+		"mixed core also carrying a lif half": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			editNeural(object, func(neural map[string]json.RawMessage) {
+				neural["lif"] = json.RawMessage(`{"schema_version":"` + dynamics.LIFStateVersion + `","config_hash":"x","steps":0,"voltage":[0,0,0],"history":[[0,0,0]],"adaptation":[0,0,0],"refractory":[0,0,0]}`)
+			})
+		}),
+		"mixed core without a mixed half": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			editNeural(object, func(neural map[string]json.RawMessage) { delete(neural, "mixed") })
+		}),
+		"mixed neural against a continuous configuration": rewrite(continuousPayload, func(object map[string]json.RawMessage) {
+			editNeural(object, func(neural map[string]json.RawMessage) { neural["core"] = json.RawMessage(`"mixed"`) })
+		}),
+		"lif neural against a mixed configuration": rewrite(lifPayload, func(object map[string]json.RawMessage) {
+			editConfig(object, func(config map[string]json.RawMessage) {
+				config["mixed"] = mixedConfigOf(mixedPayload)
+			})
+		}),
+		"configuration declaring two cores": rewrite(mixedPayload, func(object map[string]json.RawMessage) {
+			editConfig(object, func(config map[string]json.RawMessage) {
+				var lifConfig map[string]json.RawMessage
+				if err := json.Unmarshal(lifPayload, &lifConfig); err != nil {
+					t.Fatal(err)
+				}
+				var inner map[string]json.RawMessage
+				if err := json.Unmarshal(lifConfig["config"], &inner); err != nil {
+					t.Fatal(err)
+				}
+				config["lif"] = inner["lif"]
+			})
+		}),
+	}
+	for name, document := range cases {
+		t.Run(name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "union.json")
+			if err := os.WriteFile(path, document, 0o600); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := LoadIndividual(context.Background(), path); err == nil {
+				t.Fatalf("accepted %s", name)
+			}
+		})
+	}
+}
+
+// TestMixedModelPackageIsRefused pins the boundary of ticket 25 stage one: the
+// persistent individual snapshot carries the mixed core, the model package does
+// not. The package's topology fingerprint reads only the continuous and the
+// spiking configuration, so accepting a mixed one would publish a file that
+// claims no nodes and no edges and cannot be read back.
+func TestMixedModelPackageIsRefused(t *testing.T) {
+	s := newCheckpointMixedIndividual(t).Snapshot()
+	units := Units{TimeStep: "model_step", TimeConstant: "model_step"}
+	if _, err := NewModelPackage(s.Config, s.Parameters, units, nil); err == nil {
+		t.Fatal("accepted a model package carrying the mixed core")
+	}
+}

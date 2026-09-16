@@ -277,9 +277,13 @@ func requireIndividualNeural(config map[string]json.RawMessage, raw json.RawMess
 		return err
 	}
 	configuredLIF := presentAndNotNull(config, "lif")
+	configuredMixed := presentAndNotNull(config, "mixed")
+	if configuredLIF && configuredMixed {
+		return fmt.Errorf("$.payload.config declares both a lif and a mixed core")
+	}
 	if _, ok := neural["core"]; !ok {
-		if configuredLIF {
-			return fmt.Errorf("$.payload.neural has no core and a LIF configuration cannot be a pre-union individual checkpoint")
+		if configuredLIF || configuredMixed {
+			return fmt.Errorf("$.payload.neural has no core and only a continuous configuration can be a pre-union individual checkpoint")
 		}
 		return checkRequiredFields(raw, reflect.TypeOf(dynamics.State{}), "$.payload.neural")
 	}
@@ -287,35 +291,71 @@ func requireIndividualNeural(config map[string]json.RawMessage, raw json.RawMess
 	if err := json.Unmarshal(neural["core"], &core); err != nil {
 		return fmt.Errorf("$.payload.neural.core must be a string: %w", err)
 	}
+	// Whatever the declaration is, exactly one half may accompany it.
+	halves := map[string]string{
+		learning.NeuralCoreContinuous: "continuous",
+		learning.NeuralCoreLIF:        "lif",
+		learning.NeuralCoreMixed:      "mixed",
+	}
+	own, known := halves[core]
+	if !known {
+		return fmt.Errorf("$.payload.neural.core %q is not a known core", core)
+	}
+	for named, half := range halves {
+		if half == own {
+			continue
+		}
+		if presentAndNotNull(neural, half) {
+			return fmt.Errorf("$.payload.neural declares the %s core and also carries a %s state", core, named)
+		}
+	}
+	if !presentAndNotNull(neural, own) {
+		return fmt.Errorf("missing required field $.payload.neural.%s", own)
+	}
 	switch core {
 	case learning.NeuralCoreContinuous:
-		if configuredLIF {
-			return fmt.Errorf("$.payload.neural declares the continuous core while $.payload.config.lif declares a spiking core")
-		}
-		if presentAndNotNull(neural, "lif") {
-			return fmt.Errorf("$.payload.neural declares the continuous core and also carries a lif state")
-		}
-		if !presentAndNotNull(neural, "continuous") {
-			return fmt.Errorf("missing required field $.payload.neural.continuous")
+		if configuredLIF || configuredMixed {
+			return fmt.Errorf("$.payload.neural declares the continuous core while $.payload.config declares another core")
 		}
 		return checkRequiredFields(neural["continuous"], reflect.TypeOf(dynamics.State{}), "$.payload.neural.continuous")
 	case learning.NeuralCoreLIF:
 		if !configuredLIF {
 			return fmt.Errorf("$.payload.neural declares the LIF core but $.payload.config.lif is missing")
 		}
-		if presentAndNotNull(neural, "continuous") {
-			return fmt.Errorf("$.payload.neural declares the LIF core and also carries a continuous state")
-		}
-		if !presentAndNotNull(neural, "lif") {
-			return fmt.Errorf("missing required field $.payload.neural.lif")
-		}
 		if err := checkRequiredFields(config["lif"], reflect.TypeOf(dynamics.LIFConfig{}), "$.payload.config.lif"); err != nil {
 			return err
 		}
 		return checkRequiredFields(neural["lif"], reflect.TypeOf(dynamics.LIFState{}), "$.payload.neural.lif")
 	default:
-		return fmt.Errorf("$.payload.neural.core %q is not a known core", core)
+		if !configuredMixed {
+			return fmt.Errorf("$.payload.neural declares the mixed core but $.payload.config.mixed is missing")
+		}
+		if err := requireMixedConfig(config["mixed"]); err != nil {
+			return err
+		}
+		return checkRequiredFields(neural["mixed"], reflect.TypeOf(dynamics.MixedState{}), "$.payload.neural.mixed")
 	}
+}
+
+// requireMixedConfig checks the presence of every required field of a mixed
+// core configuration. It lists them by hand rather than walking the struct,
+// because node_rule is a []uint8 and encoding/json writes a byte slice as a
+// base64 string; the generic array walk would reject that string as "not a
+// JSON array" instead of checking presence.
+func requireMixedConfig(raw json.RawMessage) error {
+	mixed, err := requiredObject(raw, "$.payload.config.mixed", "nodes", "sources", "targets", "dt", "node_rule", "continuous", "lif")
+	if err != nil {
+		return err
+	}
+	for _, field := range []string{"nodes", "sources", "targets", "dt", "node_rule"} {
+		if isJSONNull(mixed[field]) {
+			return fmt.Errorf("$.payload.config.mixed.%s is null", field)
+		}
+	}
+	if err := checkRequiredFields(mixed["continuous"], reflect.TypeOf(dynamics.ContinuousRule{}), "$.payload.config.mixed.continuous"); err != nil {
+		return err
+	}
+	return checkRequiredFields(mixed["lif"], reflect.TypeOf(dynamics.LIFRule{}), "$.payload.config.mixed.lif")
 }
 
 func presentAndNotNull(object map[string]json.RawMessage, field string) bool {
@@ -376,19 +416,33 @@ func normalizeIndividualSnapshot(s learning.IndividualSnapshot) learning.Individ
 		lif.Delays = nonNilInts(lif.Delays)
 		s.Config.LIF = &lif
 	}
+	if s.Config.Mixed != nil {
+		mixed := *s.Config.Mixed
+		mixed.Sources = nonNilInts(mixed.Sources)
+		mixed.Targets = nonNilInts(mixed.Targets)
+		mixed.Delays = nonNilInts(mixed.Delays)
+		s.Config.Mixed = &mixed
+	}
 	if s.Neural.LIF != nil {
-		// Rate and Homeostasis stay as they are: omitempty means an absent key
-		// is the documented "this mechanism is off", not a zero-length array.
-		state := *s.Neural.LIF
-		state.Voltage = nonNilFloats(state.Voltage)
-		state.Adaptation = nonNilFloats(state.Adaptation)
-		state.Refractory = nonNilInts(state.Refractory)
+		state := normalizeLIFState(*s.Neural.LIF)
 		s.Neural.LIF = &state
 	}
 	if s.Neural.Continuous != nil {
 		state := *s.Neural.Continuous
 		state.Voltage = nonNilFloats(state.Voltage)
 		s.Neural.Continuous = &state
+	}
+	if s.Neural.Mixed != nil {
+		// A half that covers no node still has to be written as an empty array
+		// rather than null, exactly like every other required array here.
+		state := *s.Neural.Mixed
+		state.Continuous.Voltage = nonNilFloats(state.Continuous.Voltage)
+		state.Continuous.History = nonNilFloatRows(state.Continuous.History)
+		state.LIF = normalizeLIFState(state.LIF)
+		state.LIF.History = nonNilFloatRows(state.LIF.History)
+		state.Index.ContinuousNodes = nonNilInts(state.Index.ContinuousNodes)
+		state.Index.LIFNodes = nonNilInts(state.Index.LIFNodes)
+		s.Neural.Mixed = &state
 	}
 	s.Parameters.Core.Weights = nonNilFloats(s.Parameters.Core.Weights)
 	s.Parameters.Core.Bias = nonNilFloats(s.Parameters.Core.Bias)
@@ -477,6 +531,17 @@ func nonNilFloatRows(rows [][]float64) [][]float64 {
 		owned[i] = nonNilFloats(row)
 	}
 	return owned
+}
+
+// normalizeLIFState turns the required arrays of one spiking half into empty
+// arrays rather than null. Rate and Homeostasis stay as they are: omitempty
+// means an absent key is the documented "this mechanism is off", not a
+// zero-length array.
+func normalizeLIFState(s dynamics.LIFState) dynamics.LIFState {
+	s.Voltage = nonNilFloats(s.Voltage)
+	s.Adaptation = nonNilFloats(s.Adaptation)
+	s.Refractory = nonNilInts(s.Refractory)
+	return s
 }
 
 func nonNilInts(values []int) []int {

@@ -146,10 +146,7 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if sizeErr != nil {
 		return nil, sizeErr
 	}
-	nodes, theta := n.core.nodes(), 0
-	if n.core.theta() {
-		theta = nodes
-	}
+	nodes, theta := n.core.nodes(), n.core.thetaCount()
 	if len(p.Core.Weights) != n.core.edges() || len(p.Core.Bias) != nodes || len(p.Core.LogTau) != nodes || len(p.ThetaRaw) != theta || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*c.OutputSize {
 		return nil, fmt.Errorf("parameter shape mismatch")
 	}
@@ -260,7 +257,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	}
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
-	mask := parameterMask(tr.parameters, tr.options)
+	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes())
 	state := copyAdam(tr.optimizer)
 	// Loss scaling multiplies and divides back here, before the gradient
 	// reaches the accumulator or the clip: a product that leaves the
@@ -511,10 +508,23 @@ func unflatten(v []float64, shape Parameters) Parameters {
 // the per-item entry of Options.Masks. The edge half applies to the weight
 // group and the node half to bias, log_tau and theta_raw; the encoder and the
 // readout have no per-item mask and follow their group flag alone.
-func parameterMask(p Parameters, o Options) []bool {
+//
+// thetaNodes maps each theta_raw entry to its node, which the node half of the
+// mask is indexed by. It is nil where that map is the identity, which is every
+// core whose threshold group covers all of its nodes; a mixed core's group
+// covers only its LIF nodes and needs the map, or the node mask would land on
+// the wrong thresholds.
+func parameterMask(p Parameters, o Options, thetaNodes []int) []bool {
 	var edges, nodes []bool
 	if o.Masks != nil {
 		edges, nodes = o.Masks.Edges, o.Masks.Nodes
+	}
+	theta := nodes
+	if len(thetaNodes) != 0 && len(nodes) != 0 {
+		theta = make([]bool, len(thetaNodes))
+		for k, node := range thetaNodes {
+			theta[k] = node < len(nodes) && nodes[node]
+		}
 	}
 	m := o.Trainable
 	var out []bool
@@ -524,7 +534,7 @@ func parameterMask(p Parameters, o Options) []bool {
 		item    []bool
 	}{
 		{len(p.Core.Weights), m.Weights, edges}, {len(p.Core.Bias), m.Bias, nodes},
-		{len(p.Core.LogTau), m.Tau, nodes}, {len(p.ThetaRaw), m.Theta, nodes},
+		{len(p.Core.LogTau), m.Tau, nodes}, {len(p.ThetaRaw), m.Theta, theta},
 		{len(p.Encoder), m.Encoder, nil}, {len(p.Readout), m.Readout, nil},
 	} {
 		for i := range g.size {

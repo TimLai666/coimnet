@@ -13,15 +13,28 @@ import (
 
 // Config selects exactly one CPU core, the neurons receiving encoded input,
 // and the neurons readable by its output. Dynamics declares the continuous
-// core and LIF the spiking core; setting both, or neither, is an error. The
-// readout receives only current core activity, never raw observations.
+// core, LIF the spiking core and Mixed the core whose nodes follow either rule
+// under one clock; setting more than one, or none, is an error. The readout
+// receives only current core activity, never raw observations.
 type Config struct {
-	Dynamics     dynamics.Config     `json:"dynamics"`
-	LIF          *dynamics.LIFConfig `json:"lif,omitempty"`
-	InputSize    int                 `json:"input_size"`
-	OutputSize   int                 `json:"output_size"`
-	ReadoutNodes []int               `json:"readout_nodes"`
-	InputNodes   []int               `json:"input_nodes,omitempty"`
+	Dynamics dynamics.Config     `json:"dynamics"`
+	LIF      *dynamics.LIFConfig `json:"lif,omitempty"`
+	// Mixed declares the by-type mixed core. Whole-brain uniform mixing is not
+	// a default and is not supported by any experiment here; it is an optional
+	// mechanism a caller selects deliberately.
+	Mixed *dynamics.MixedConfig `json:"mixed,omitempty"`
+	// LIFIndex maps each theta_raw entry to its node, in ascending node order.
+	// Only the mixed core owns one, because only there does the threshold group
+	// cover a subset of the nodes; the other two cores leave it absent, so every
+	// configuration written before this field existed keeps its exact canonical
+	// JSON and therefore its recorded fingerprint. Network.Config fills it in,
+	// and a declared value that contradicts the rule assignment is refused
+	// rather than replaced.
+	LIFIndex     []int `json:"lif_index,omitempty"`
+	InputSize    int   `json:"input_size"`
+	OutputSize   int   `json:"output_size"`
+	ReadoutNodes []int `json:"readout_nodes"`
+	InputNodes   []int `json:"input_nodes,omitempty"`
 	// EdgeSigns fixes the sign of individual edges. +1 or -1 switches that
 	// edge to the log-magnitude parametrization, 0 leaves it free, and a nil
 	// or empty array leaves every edge free. Its length is the edge count.
@@ -105,6 +118,7 @@ func NewNetwork(c Config) (*Network, error) {
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
+	c.LIFIndex = append([]int(nil), c.LIFIndex...)
 	return &Network{c, core, hasFixedSigns(c.EdgeSigns)}, nil
 }
 
@@ -122,10 +136,12 @@ func (n *Network) Config() Config {
 		c.Dynamics.Targets = append([]int(nil), c.Dynamics.Targets...)
 		c.Dynamics.Delays = append([]int(nil), c.Dynamics.Delays...)
 		c.LIF = copyLIF(c.LIF)
+		c.Mixed = copyMixed(c.Mixed)
 	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
+	c.LIFIndex = append([]int(nil), c.LIFIndex...)
 	return c
 }
 

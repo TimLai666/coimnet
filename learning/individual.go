@@ -28,21 +28,31 @@ const (
 	// counters and, when declared, the slow stabiliser; it is a separate profile
 	// so a continuous reader can never mistake one for the other.
 	IndividualProfileLIF = "lif-f64-insyra-f32-persistent-inference-episode-learning/v1"
+	// IndividualProfileMixed is the same lifecycle on the by-type mixed core.
+	// Its persistent state carries both halves, each restricted to the nodes
+	// that follow that rule, plus the node map that says which is which. It is a
+	// separate profile so neither single-rule reader can mistake one for the
+	// other.
+	IndividualProfileMixed = "mixed-f64-insyra-f32-persistent-inference-episode-learning/v1"
 
-	// NeuralCoreContinuous and NeuralCoreLIF are the declared core names of a
-	// persistent neural snapshot.
+	// NeuralCoreContinuous, NeuralCoreLIF and NeuralCoreMixed are the declared
+	// core names of a persistent neural snapshot.
 	NeuralCoreContinuous = "continuous"
 	NeuralCoreLIF        = "lif"
+	NeuralCoreMixed      = "mixed"
 )
 
 // NeuralState is the persistent neural state of whichever core an individual
-// drives. Core names it and exactly one of the two states is present, so a
+// drives. Core names it and exactly one of the three states is present, so a
 // reader never has to guess which mechanism a document belongs to and a missing
-// half is an error rather than a zero-valued trajectory.
+// half is an error rather than a zero-valued trajectory. The mixed state is one
+// member of this union, not the continuous and the spiking member together: it
+// owns its own schema, its own fingerprint and the node map of the two rules.
 type NeuralState struct {
-	Core       string             `json:"core"`
-	Continuous *dynamics.State    `json:"continuous,omitempty"`
-	LIF        *dynamics.LIFState `json:"lif,omitempty"`
+	Core       string               `json:"core"`
+	Continuous *dynamics.State      `json:"continuous,omitempty"`
+	LIF        *dynamics.LIFState   `json:"lif,omitempty"`
+	Mixed      *dynamics.MixedState `json:"mixed,omitempty"`
 }
 
 // OptimizerSnapshot contains trainer state without anatomy or model parameters.
@@ -148,7 +158,7 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if s.SchemaVersion != IndividualVersion {
 		return nil, fmt.Errorf("unsupported individual schema %q", s.SchemaVersion)
 	}
-	if s.Profile != IndividualProfile && s.Profile != IndividualProfileLIF {
+	if s.Profile != IndividualProfile && s.Profile != IndividualProfileLIF && s.Profile != IndividualProfileMixed {
 		return nil, fmt.Errorf("unsupported individual profile %q", s.Profile)
 	}
 	// The window is routed through RestoreTrainer rather than validated here,
@@ -225,8 +235,12 @@ func newPlasticRuntime(c Config, pc plasticity.Config) (*plasticRuntime, error) 
 	if err != nil {
 		return nil, err
 	}
+	// The pair rule reads a 0/1 event at both ends of an edge. Only the spiking
+	// core gives every node one: a continuous node owns no event, on a mixed
+	// core as much as on a continuous one, and treating its missing event as
+	// "never fired" would be a silent wrong answer rather than a refusal.
 	if pc.Rule.Kind == plasticity.RuleSTDPPair && c.LIF == nil {
-		return nil, fmt.Errorf("rule %q needs the 0/1 events of a spiking core", plasticity.RuleSTDPPair)
+		return nil, fmt.Errorf("rule %q needs the 0/1 events of a spiking core at both ends of every enabled edge", plasticity.RuleSTDPPair)
 	}
 	return &plasticRuntime{model: model, state: model.NewState()}, nil
 }
@@ -488,6 +502,9 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 	n := i.trainer.network
 	nodes := configNodes(n.config)
 	sources, targets := configEdgeEnds(n.config)
+	// spiking is nil unless the core answers "does this node emit an event"
+	// differently per node, which only the mixed core does.
+	spiking := configSpikingNodes(n.config)
 	neural := i.neural
 	var fast plasticity.State
 	if i.plastic != nil {
@@ -543,14 +560,28 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 		}
 		if i.plastic != nil {
 			// The pre signal is the value the edge carries after this step,
-			// which is the activated output on the continuous core and the
-			// synaptic trace on the spiking one. The post signal is the 0/1
-			// event where the core produces one, and the same output where it
-			// does not.
+			// which is the activated output on a continuous node and the
+			// synaptic trace on a LIF node. The post signal is the 0/1 event
+			// wherever the target node produces one, and the same output series
+			// where it does not, so on a mixed core it is chosen per node: the
+			// event on a LIF target and the output on a continuous target.
 			pre, post := values[0], values[0]
 			var eventsPre, eventsPost []float64
-			if spikes != nil {
+			switch {
+			case spikes == nil:
+				// A core that emits no event at all; post stays the output.
+			case spiking == nil:
 				post, eventsPre, eventsPost = spikes[0], spikes[0], spikes[0]
+			default:
+				blended := make([]float64, len(values[0]))
+				for node := range blended {
+					if spiking[node] {
+						blended[node] = spikes[0][node]
+					} else {
+						blended[node] = values[0][node]
+					}
+				}
+				post = blended
 			}
 			g := 0.0
 			if gate != nil {
@@ -691,16 +722,31 @@ func copyNeural(s NeuralState) NeuralState {
 		owned.Continuous = &state
 	}
 	if s.LIF != nil {
-		state := *s.LIF
-		state.Voltage = append([]float64(nil), state.Voltage...)
-		state.History = copyRows(state.History)
-		state.Adaptation = append([]float64(nil), state.Adaptation...)
-		state.Refractory = append([]int(nil), state.Refractory...)
-		state.Rate = append([]float64(nil), state.Rate...)
-		state.Homeostasis = append([]float64(nil), state.Homeostasis...)
+		state := copyLIFState(*s.LIF)
 		owned.LIF = &state
 	}
+	if s.Mixed != nil {
+		state := *s.Mixed
+		state.Continuous.Voltage = append([]float64(nil), state.Continuous.Voltage...)
+		state.Continuous.History = copyRows(state.Continuous.History)
+		state.LIF = copyLIFState(state.LIF)
+		state.Index.ContinuousNodes = append([]int(nil), state.Index.ContinuousNodes...)
+		state.Index.LIFNodes = append([]int(nil), state.Index.LIFNodes...)
+		owned.Mixed = &state
+	}
 	return owned
+}
+
+// copyLIFState deep copies one spiking half, keeping an absent slow stabiliser
+// absent rather than turning it into an empty array.
+func copyLIFState(s dynamics.LIFState) dynamics.LIFState {
+	s.Voltage = append([]float64(nil), s.Voltage...)
+	s.History = copyRows(s.History)
+	s.Adaptation = append([]float64(nil), s.Adaptation...)
+	s.Refractory = append([]int(nil), s.Refractory...)
+	s.Rate = append([]float64(nil), s.Rate...)
+	s.Homeostasis = append([]float64(nil), s.Homeostasis...)
+	return s
 }
 
 // copyPlasticState deep copies the fast state, keeping an absent pair trace

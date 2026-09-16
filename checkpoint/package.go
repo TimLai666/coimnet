@@ -194,6 +194,16 @@ func canonicalModelPackage(pkg ModelPackage) (ModelPackage, error) {
 	if err := validateUnits(pkg.Units); err != nil {
 		return empty, err
 	}
+	// The mixed core of ticket 25 stage one is not part of this artefact yet:
+	// the topology helpers below read only the continuous and the spiking
+	// configuration, so a mixed package would carry a fingerprint describing no
+	// nodes and no edges at all, and its base64 node_rule array does not survive
+	// the required-field walk on the way back in. Refusing it here keeps the
+	// format from accepting a file it cannot describe or reload; the persistent
+	// individual snapshot is the artefact that carries a mixed core today.
+	if pkg.Config.Mixed != nil {
+		return empty, fmt.Errorf("a model package cannot carry the mixed core yet; save a persistent individual instead")
+	}
 	if err := validateCompatibleVersions(pkg.CompatibleVersions); err != nil {
 		return empty, err
 	}

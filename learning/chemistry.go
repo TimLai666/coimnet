@@ -313,6 +313,10 @@ func neuralSteps(s NeuralState) uint64 {
 	if s.LIF != nil {
 		return s.LIF.Steps
 	}
+	if s.Mixed != nil {
+		// Both halves advance on the one clock the mixed state carries.
+		return s.Mixed.Steps
+	}
 	return 0
 }
 
@@ -329,6 +333,22 @@ func previousActivity(s NeuralState) []float64 {
 		steps, history = s.Continuous.Steps, s.Continuous.History
 	case s.LIF != nil:
 		steps, history = s.LIF.Steps, s.LIF.History
+	case s.Mixed != nil:
+		// The mixed state keeps its newest row split between the two halves, so
+		// it is scattered back into one node-indexed vector here.
+		if s.Mixed.Steps == 0 || len(s.Mixed.Continuous.History) == 0 {
+			return nil
+		}
+		last := len(s.Mixed.Continuous.History) - 1
+		nodes := len(s.Mixed.Index.ContinuousNodes) + len(s.Mixed.Index.LIFNodes)
+		activity := make([]float64, nodes)
+		for k, node := range s.Mixed.Index.ContinuousNodes {
+			activity[node] = s.Mixed.Continuous.History[last][k]
+		}
+		for k, node := range s.Mixed.Index.LIFNodes {
+			activity[node] = s.Mixed.LIF.History[last][k]
+		}
+		return activity
 	default:
 		return nil
 	}
