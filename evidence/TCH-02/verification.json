@@ -1,0 +1,32 @@
+{
+  "requirement": "TCH-02 使用者可以設定經允許的 HTTP 教師。驗收：有逾時、有限重試、限速、預算、去重及測試伺服器驗證。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./teacher/ > evidence/TCH-02/test.log 2>&1（與 TCH-01 同一份輸出）",
+    "go list -deps ./teacher | grep -E '^net/http$|^net$' > evidence/TCH-02/no-network.log"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 錄製當下原文）： 0:37  up 11 days,  6:15, 1 user, load averages: 2.61 2.77 3.11",
+    "test.log 首行為 Insyra banner：2026/09/17 00:37:21 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（teacher 透過 signal 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "無外部資料：所有 HTTP 教師都對測試內建的本機 httptest.NewServer（replyServer 記錄收到呼叫數、body 與 Authorization header）發送；fixture 請求為 Request{InputHash 64 個小寫 hex, Kind label, ModelVersion \"v1\"}",
+    "受測原始碼：teacher/http.go 與 teacher/http_test.go（另含 teacher.go 的 Request/Response/Descriptor 型別與約束）"
+  ],
+  "observed_result": "9 個 HTTP 測試全部在 24 個 PASS 具名測試內（evidence/TCH-02/test.log，grep -c \"^--- PASS\" = 24、0 FAIL）。逾時：TestHTTPTimeout 以 Timeout 20ms 對 200ms 才回應的伺服器，Ask 回 deadline 類錯誤。有限重試（次數精確、只對 5xx／傳輸錯誤）：TestHTTPRetriesOnServerErrorsExactly 證明 MaxRetries 2 時伺服器收到 3 次呼叫且成功，MaxRetries 1 全 503 時回錯誤且伺服器收到恰好 2 次。4xx 不重試：TestHTTPDoesNotRetryClientErrors 證明 400 只呼叫 1 次。限速：TestHTTPRateLimit 證明 RateLimit 1 requests/s 下緊接的第二次呼叫回 ErrRateLimited，伺服器只收到 1 次。預算：TestHTTPBudget 證明 MaxRequests 1 時第一次成功、第二次 ErrBudgetExhausted（伺服器 1 次）；MaxRequests 0 且 MaxCost 0 時每次呼叫都 ErrBudgetExhausted、伺服器 0 次。去重：TestHTTPDedupByRequestID 證明同 RequestID 第二次呼叫回逐位相同的快取回應、伺服器 1 次、Used().MaxRequests 仍為 1。允許清單：TestHTTPSendsOnlyAllowedFields 以 AllowedFields=[\"prompt\"] 證明伺服器端收到的 fields 只有 prompt、body 不含被排除的 raw_audio。金鑰只在 header 不在 body：TestHTTPSecretIsBearerAndNeverInBody 證明 Authorization 為 \"Bearer sekrit-123\" 且 body 不含密鑰值；密鑰未設定時在任何傳送前就失敗（伺服器 0 次）。教師識別：TestHTTPDescribe 證明 Kind 為 http 且 ID/Version 沿用設定。",
+  "assumption_statement": "所有驗證都對本機 httptest 伺服器；真實遠端服務未驗證。",
+  "test_log": [
+    "evidence/TCH-02/test.log（與 TCH-01 相同，cp 副本）",
+    "evidence/TCH-02/no-network.log（go list -deps 探測）"
+  ],
+  "reports": [],
+  "limitations": [
+    "MaxCost 用盡路徑未直接測：TestHTTPBudget 只驅動 MaxRequests 用盡與零預算，依 cost 累積觸發拒絕（response 帶 Usage.Cost）的路徑在測試中沒有被走到。",
+    "3xx 不重試為保守解讀：測試沒有覆蓋 3xx；依 http.go request() 的分支，300–399 被歸為 unexpected status 立即失敗，是否重試是程式碼解讀而非測試證明。",
+    "真實遠端未驗證：全部 9 個測試都打本機 httptest 伺服器，沒有連過任何真實教師服務，具體服務 adapter 依官方文件另做。",
+    "限速測試證明的是「緊接的第二次呼叫被拒、伺服器只收到 1 次」，不是以計時量測的請求間隔。",
+    "只在 macOS arm64 fixture 跑過；本輪未另行跑 gofmt、go vet 與其他套件測試。"
+  ]
+}

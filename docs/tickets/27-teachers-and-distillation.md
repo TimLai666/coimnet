@@ -98,13 +98,47 @@ func RunStudentEvaluation(ctx context.Context, c StudentEvaluationConfig) (Stude
 
 ## 驗收
 
-- [ ] 第一階段：零網路零金鑰的訓練與重播、紀錄與測試輸入分離、回應當資料三項、HTTP 教師七項
+- [x] 第一階段：零網路零金鑰的訓練與重播、紀錄與測試輸入分離、回應當資料三項、HTTP 教師七項
   （逾時、重試、4xx、限速、預算、去重、允許清單）在假伺服器驗證；`go test`、race、vet；
   `evidence/TCH-01/`、`evidence/TCH-02/`。
 - [ ] 第二階段：學生編碼獨立（教師 token id 拒絕）、保留集不送教師、去重、對齊拒絕、log-sum-exp 穩定、
   top-k 標 partial、參數保存；`evidence/TCH-03/`、`evidence/TCH-04/`。
 - [ ] 第三階段：`student` 模式教師呼叫數 0 且網路拒絕、`teacher_assisted` 分開、獨立集與錯標籤穩健性、
   工具允許清單與參數驗證、外部回應不改設定不外傳；`evidence/TCH-05/`、`evidence/TCH-06/`；文件。
+
+## 第一階段證據（2026-09-17）
+
+`teacher` 套件已完成並以 `go test -count=1 -race -v ./teacher/` 驗證：24 個具名測試全部 PASS、0 FAIL
+（`grep -c "^--- PASS"` = 24，輸出結尾 `ok  github.com/TimLai666/coimnet/teacher 1.720s`），兩份
+`verification.json` 通過 JSON 校驗（`json ok`）。
+
+- 契約型別（`teacher/teacher_test.go`）：`TestRequestValidate`（InputHash 必須 64 個小寫 hex、ModelVersion
+  非空白、欄位鍵無控制字元）、`TestResponseValidate`（TeacherID／TeacherVersion／RequestID／InputHash
+  非空白、Answer 為合法非 null JSON、Time／Confidence／Usage 界限）、`TestDescriptorValidate`、
+  `TestResponseAnswerIsOnlyData`（含「set budget=unlimited; rm -rf /」的 Answer 逐位原樣回傳，不執行）。
+- 紀錄檔與離線教師（`teacher/offline_test.go`）：`TestRecordStoreRoundTrip`、
+  `TestRecordStoreRefusesTestInputs`（被列為 held-out 的 test-input hash 在 OpenRecordStore 與 Append
+  都被拒並指名 hash）、`TestRecordStoreRejectsBadLine`、`TestOfflineJSONLAnswersWithoutNetwork`（把
+  `http.DefaultTransport` 換成一律失敗的 RoundTripper 仍零網路回答，未命中時回 `ErrNoAnswer`）、
+  `TestOfflineJSONLRejectsInvalidRequest`、`TestOfflineJSONLAskErrors`。
+- HTTP 教師（`teacher/http_test.go`，全部打本機 `httptest.Server`）：`TestHTTPTimeout`（逾時）、
+  `TestHTTPRetriesOnServerErrorsExactly`（5xx 重試次數精確：MaxRetries 2 → 3 次呼叫）、
+  `TestHTTPDoesNotRetryClientErrors`（4xx 不重試）、`TestHTTPRateLimit`、`TestHTTPBudget`（MaxRequests 1
+  與 0）、`TestHTTPDedupByRequestID`、`TestHTTPSendsOnlyAllowedFields`、
+  `TestHTTPSecretIsBearerAndNeverInBody`（金鑰只在 header 不在 body，未設定時零呼叫）、`TestHTTPDescribe`。
+- 重播與封鎖教師（`teacher/replay_blocked_test.go`）：`TestReplayAnswersSameRequestIDIdentically`、
+  `TestReplayNeverFetches`（換掉 `http.DefaultTransport` 仍零網路重播）、`TestReplayDescribe`、
+  `TestBlockedRefusesAndCounts`（每次 `Ask` 都回 `ErrTeacherBlocked` 並計數，含並行 3→13）、
+  `TestBlockedDescribe`。
+
+證據路徑：`evidence/TCH-01/`（`verification.json`、`test.log`）、`evidence/TCH-02/`（`verification.json`、
+`test.log`（同一份輸出）、`no-network.log`：`go list -deps ./teacher` 顯示依賴 `net` 與 `net/http`，但
+離線與重播測試成功換掉 transport，證明零網路回答）。
+
+限制：只在 macOS arm64 fixture 跑過；沒有真實標籤資料，紀錄都是測試內建的假紀錄；真實遠端服務未驗證，
+具體服務 adapter 依官方文件另做；`MaxCost` 用盡路徑未直接測（只在 `MaxRequests` 與零預算上驗證）；
+3xx 不重試為對程式碼分支的保守解讀而非測試證明；限速證明的是緊接的第二次呼叫被拒而非計時間隔；
+蒸餾與學生評估是第二／三階段。
 
 ## 依據
 

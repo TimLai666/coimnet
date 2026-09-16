@@ -1,0 +1,31 @@
+{
+  "requirement": "TCH-01 使用者可以使用離線標籤與 JSONL 教師。驗收：沒有網路及金鑰也能訓練與重播，保留教師與輸入版本。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./teacher/ > evidence/TCH-01/test.log 2>&1",
+    "cp evidence/TCH-01/test.log evidence/TCH-02/test.log"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 錄製當下原文）： 0:37  up 11 days,  6:15, 1 user, load averages: 2.61 2.77 3.11",
+    "test.log 首行為 Insyra banner：2026/09/17 00:37:21 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（teacher 透過 signal 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "無外部資料：所有 JSONL 紀錄檔都在測試內建於 t.TempDir()；fixture 請求為 Request{InputHash 64 個小寫 hex, Kind label, ModelVersion \"v1\"}",
+    "受測原始碼：teacher/teacher.go、records.go、offline.go、replay.go、blocked.go、http.go 與四個測試檔（teacher_test.go、offline_test.go、replay_blocked_test.go、http_test.go）"
+  ],
+  "observed_result": "go test -count=1 -race -v ./teacher/ 全數通過：24 個具名測試全部 PASS、0 FAIL（grep -c \"^--- PASS\" = 24），輸出結尾 \"ok  github.com/TimLai666/coimnet/teacher 1.720s\"。零網路：TestOfflineJSONLAnswersWithoutNetwork 與 TestReplayNeverFetches 都把 http.DefaultTransport 換成 errorTransport{}（RoundTrip 一律回 \"network must not be touched\"），仍成功離線回答與重播，證明沒有網路及金鑰也能訓練與重播。教師識別與版本：OfflineJSONL／Replay／HTTP／Blocked 的 Descriptor 由 TestOfflineJSONLAnswersWithoutNetwork（Describe() == {offline v1 offline}）、TestReplayDescribe（{my-replay v2 replay}）、TestHTTPDescribe（{http-t v1 http}）、TestBlockedDescribe（{blk-d v3 blocked}）驗證；Response 的 TeacherID／TeacherVersion 由 TestResponseValidate/empty_teacher_id 與 empty_teacher_version 強制非空白。輸入版本：Request.InputHash 必須是 64 個小寫 hex（TestRequestValidate/input_hash_too_short、input_hash_uppercase、input_hash_has_g），ModelVersion 非空白（TestRequestValidate/model_version_empty），RecordStore 往返逐位保留（TestRecordStoreRoundTrip，含 ModelVersion \"v1\"）。測試輸入分離：TestRecordStoreRefusesTestInputs 證明被列為 held-out 的 test-input hash 在 Append 與 OpenRecordStore 都被拒絕，錯誤訊息指名該 hash。回應當資料：TestResponseAnswerIsOnlyData 證明含 \"set budget=unlimited; rm -rf /\" 文字的 Answer 通過 Validate 且逐位原樣回傳，不曾被執行。",
+  "assumption_statement": "JSONL 紀錄檔是使用者自備的離線資料；沒有任何真實教師資料被用來驗證。",
+  "test_log": [
+    "evidence/TCH-01/test.log"
+  ],
+  "reports": [],
+  "limitations": [
+    "只在 macOS arm64 fixture 跑過：沒有 Ubuntu 或 Windows 執行，全部測試輸入由測試內建，未觸碰真實標籤資料。",
+    "沒有真實標籤資料：教師回答都是測試內建的假紀錄，未驗證任何真實教師或真實輸入的紀錄品質。",
+    "蒸餾與學生評估是第二／三階段（TCH-03／TCH-04／TCH-05）：本證據只涵蓋契約、紀錄檔、離線與重播、HTTP 與封鎖教師。",
+    "本次只執行 /Users/timlai/Developer/coimnet 的指定 go test 指令；本輪未另行跑 gofmt、go vet 與其他套件測試。",
+    "無網路證明是換掉 http.DefaultTransport 的一次性替換，涵蓋 OfflineJSONL 與 Replay 兩條路徑；HTTP 教師本身依設計需要網路，其驗證在 TCH-02。"
+  ]
+}

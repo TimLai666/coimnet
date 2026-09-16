@@ -1,0 +1,4 @@
+net
+net/http
+
+The teacher package's import graph reaches net and net/http (above). The HTTP teacher needs a real transport, but the offline and replay teachers must not: TestOfflineJSONLAnswersWithoutNetwork (teacher/offline_test.go) and TestReplayNeverFetches (teacher/replay_blocked_test.go) replace http.DefaultTransport with errorTransport{}, whose RoundTrip always returns errors.New("network must not be touched"), and both tests still pass (PASS in evidence/TCH-02/test.log). That proves zero-network answering and replay on top of a package that imports net/http.
