@@ -28,6 +28,8 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 組態與資源預估（ticket 24 第一階段、OPS-03、OPS-06）已在 fixture 驗證：`config` 套件用共用的嚴格 JSON 解碼 `coimnet-config/v1`，從宣告的預設值出發，依檔案、環境變數、`--set` 的固定優先序覆寫並記錄每個葉節點的來源，所有名稱都要對到有版本的實作（未實作就拒絕，不替代），金鑰只以 `{"ref": "env:NAME"}` 保存、展開輸出永不出現值；`resources` 套件逐項估算記憶體並印出代入數字的公式，規格 17.1 的 `16E` 與 15.36 GB 兩個算術示例由測試釘住，超限時 `Check` 拒絕且不改計畫；`coimnet run --config … --dry-run` 展開組態、檢查模型檔與 generator、對 `max_memory_mib` 預估後印出 `coimnet-dry-run/v1` 報告，零副作用、教師呼叫次數 0，退出碼成功 0、拒絕 2、用法錯誤 1。全圖（165,122 節點、25,563,197 邊、f64、AdamW、不留反向歷史）預估 1,026,490,952 bytes，與 NAT-01 實測最大 RSS 4.38 GB 並列但不宣稱吻合。證據見 [OPS-03](evidence/OPS-03/verification.json)、[OPS-06](evidence/OPS-06/verification.json)。
 
+按類型混合（ticket 25 第一階段、COR-05）已在 fixture 驗證：`dynamics.Mixed` 讓每個節點只跟一種規則，連續節點輸出 `phi(v)`、LIF 節點輸出突觸跡，兩種目標都用同一條 `I = external + Σ w·out(t − delay)`，延遲 0 讀本步開始時的輸出，LIF 事件只經突觸跡進下游一次；3 節點手算圖、不雙重計入、4 節點重新編號順序無關都逐位相符；全連續指派逐位等於 `Continuous`、全 LIF 指派逐位等於 `LIF`（`-race` 建置下既有 LIF 核心自己的膜電位差一個 ULP，混合核心把膜電位運算放進不內聯函式固定融合，差異由 build tag 常數釘住並在測試裡檢核）；梯度以平滑測試模式的中央差分與硬事件的手算兩步梯度驗證。`learning` 多了第三個核心、`LIFIndex` 對照與混合個體 profile，`checkpoint` 接受第三種神經狀態；模型包暫時拒絕混合核心（指紋與必填走訪尚未支援）。證據見 [COR-05](evidence/COR-05/verification.json)。
+
 ## 階段目標
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
@@ -68,6 +70,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；個體每步順序在連續與 LIF 各有手算表、100 步 `Parameters` 逐位不變、中途快照接續逐位相同、`modulation` 不再依賴 `simulate`；MOD-02、MOD-03、MOD-04 passed；來源對所有區域一致、只有 fixture |
 | 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）切成小票派給 opencode 進行中 |
 | 24 | 使用者可以用嚴格展開的組態、啟動前的資源預估、完整 CLI 與 SDK，並安全遷移格式與保護敏感資料 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`coimnet-config/v1` 嚴格解碼、四層來源追蹤、金鑰只存參照、名稱註冊表拒絕未實作；資源預估兩個規格算術釘住、超限拒絕不縮減、全圖預估 0.96 GiB 與 NAT-01 實測 RSS 並列；`run --config --dry-run` 零副作用、退出碼 0／2／1；OPS-03、OPS-06 passed；第二、三階段待派工 |
+| 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 
 ## 目前阻礙
 
