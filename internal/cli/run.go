@@ -19,6 +19,9 @@ Commands:
   examples run delayed [flags]  Run the synthetic delayed-pulse learning protocol
   examples run lif-threshold [flags]
                                 Train the spiking fixture's base firing threshold
+  examples run evaluate [flags]
+                                Score the delayed-correlation fixture under a
+                                fixed or adaptive protocol and write the report
   run --config FILE --dry-run   Expand a strict configuration, report where every
                                 value came from, estimate the memory one run needs
                                 and refuse instead of shrinking anything
@@ -123,13 +126,14 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
 			return writeJSON(stdout, []map[string]string{
 				{"name": "delayed", "profile": "fixture", "description": "Five-step delayed pulse, three synthetic neurons, trainable core weights and fixed periphery"},
 				{"name": "lif-threshold", "profile": "fixture", "description": "Five-step delayed pulse, three leaky integrate-and-fire neurons, trainable base firing threshold against frozen and fully trainable controls"},
+				{"name": "evaluate", "profile": "fixture", "description": "Two-node delayed-correlation core with local plasticity, eight adaptation and eight scoring items under a fixed or adaptive protocol"},
 			})
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "delayed" {
@@ -137,6 +141,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "lif-threshold" {
 			return runLIFThreshold(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "evaluate" {
+			return runEvaluate(ctx, args[3:], stdout, stderr)
 		}
 	}
 	return fmt.Errorf("unknown command; use coimnet --help")
