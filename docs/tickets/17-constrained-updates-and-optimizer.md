@@ -267,8 +267,8 @@ load averages 4.52 4.42 3.15。工作樹同時有 ticket 18／20 另外兩個 ag
    前提是同一次訓練的 `accumulate_steps` 固定不變（`resume` 在選項與快照不一致時拒絕，除非明示
    `--allow-option-change`，見 ticket 24 第二階段）。在 CLI 尚未暴露 `accumulate_steps` 之前，CLI 不會寫出
    這種 checkpoint，因此這條改動與 CLI 的旗標一起落在 ticket 24 第二階段。`IndividualSnapshot` 的累積器欄位
-   （`Optimizer.Accumulator`）併入 ticket 23 第一階段（該票本來就要動 `OptimizerSnapshot` 與運行中更新）；
-   在此之前，持續個體在視窗中間存檔會遺失部分累積，ENG 的個體段落要寫明這個限制。
+   （`Optimizer.Accumulator`）已於 ticket 23 第一階段補上（2026-09-16，`OptimizerSnapshot.Accumulator`，
+   checkpoint 以可選部件走訪），持續個體在視窗中間存檔不再遺失累積，ENG 不需要另寫限制。
 4. `StepResult` 新欄位、排程的嚴格驗證：接受。
 5. 暖身第一步學習率為 0：維持字面實作（`updates / WarmupUpdates`），文件已寫明；動量與步數照常累積是
    宣告行為，不改。
