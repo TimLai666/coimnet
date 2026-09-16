@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/TimLai666/coimnet/signal"
-	"github.com/TimLai666/coimnet/simulate"
 )
 
 // stepFeedback builds valid feedback on the model-step clock a release step is
@@ -64,7 +63,7 @@ func fixtureSources(t *testing.T) (map[string]Source, SourceContext) {
 	t.Helper()
 	sources := map[string]Source{
 		"external_timeline": ExternalTimeline{ChannelCount: 2, Entries: []TimelineEntry{{Step: 0, Channel: 0, Rate: 0.5}, {Step: 2, Channel: 1, Rate: 2}}},
-		"neural_activity":   NeuralActivity{Set: fixtureSet(t, "alpn"), Gain: 0.5, Channel: 1},
+		"neural_activity":   fixtureNeural(t, "alpn", 0.5, 1),
 		"internal_resource": InternalResource{Resource: "energy", Coefficient: 2, Threshold: 0.25, Channel: 0},
 		"replay":            Replay{Trace: [][]float64{{0, 1.5}, {2, 0}, {0.25, 0.25}}},
 	}
@@ -141,7 +140,7 @@ func TestExternalTimelineRejectsAnInvalidDeclaration(t *testing.T) {
 	}
 }
 
-// Hand table, NeuralActivity{Set: alpn (nodes 1 and 2), Gain: 0.5, Channel: 1}:
+// Hand table, NeuralActivity{Nodes: alpn (nodes 1 and 2), Gain: 0.5, Channel: 1}:
 //
 //	activity [10, 0.25, 0.75] -> mean (0.25+0.75)/2 = 0.5, x 0.5 = 0.25 -> [0, 0.25]
 //	activity [10, -1, -3]     -> mean (-1-3)/2 = -2,  x 0.5 = -1 -> clamped [0, 0]
@@ -150,7 +149,7 @@ func TestExternalTimelineRejectsAnInvalidDeclaration(t *testing.T) {
 // Node 0 is outside the set and is never read, which is what "the set must be
 // explicit" buys: activity[0] is large and changes nothing.
 func TestNeuralActivityAveragesTheResolvedSetTimesGain(t *testing.T) {
-	source := NeuralActivity{Set: fixtureSet(t, "alpn"), Gain: 0.5, Channel: 1}
+	source := fixtureNeural(t, "alpn", 0.5, 1)
 	if source.Channels() != 2 {
 		t.Fatalf("Channels() = %d, want 2 (channel 1 plus the zero channels below it)", source.Channels())
 	}
@@ -173,18 +172,21 @@ func TestNeuralActivityAveragesTheResolvedSetTimesGain(t *testing.T) {
 }
 
 func TestNeuralActivityRequiresAnExplicitSetAndUsableActivity(t *testing.T) {
-	set := fixtureSet(t, "alpn")
+	set := fixtureSet(t, "alpn").Nodes()
 	for name, c := range map[string]struct {
 		source   NeuralActivity
 		activity []float64
 	}{
-		"no activity":         {NeuralActivity{Set: set, Gain: 1, Channel: 0}, nil},
-		"activity too short":  {NeuralActivity{Set: set, Gain: 1, Channel: 0}, []float64{1, 2}},
-		"activity not finite": {NeuralActivity{Set: set, Gain: 1, Channel: 0}, []float64{1, math.NaN(), 3}},
-		"unresolved set":      {NeuralActivity{Gain: 1, Channel: 0}, []float64{1, 2, 3}},
-		"declared empty set":  {NeuralActivity{Set: fixtureSet(t, "none"), Gain: 1, Channel: 0}, []float64{1, 2, 3}},
-		"gain not finite":     {NeuralActivity{Set: set, Gain: math.Inf(1), Channel: 0}, []float64{1, 2, 3}},
-		"negative channel":    {NeuralActivity{Set: set, Gain: 1, Channel: -1}, []float64{1, 2, 3}},
+		"no activity":          {NeuralActivity{Nodes: set, Gain: 1, Channel: 0}, nil},
+		"activity too short":   {NeuralActivity{Nodes: set, Gain: 1, Channel: 0}, []float64{1, 2}},
+		"activity not finite":  {NeuralActivity{Nodes: set, Gain: 1, Channel: 0}, []float64{1, math.NaN(), 3}},
+		"undeclared node list": {NeuralActivity{Gain: 1, Channel: 0}, []float64{1, 2, 3}},
+		"declared empty set":   {NeuralActivity{Nodes: fixtureSet(t, "none").Nodes(), Gain: 1, Channel: 0}, []float64{1, 2, 3}},
+		"descending nodes":     {NeuralActivity{Nodes: []int{2, 1}, Gain: 1, Channel: 0}, []float64{1, 2, 3}},
+		"repeated node":        {NeuralActivity{Nodes: []int{1, 1}, Gain: 1, Channel: 0}, []float64{1, 2, 3}},
+		"negative node":        {NeuralActivity{Nodes: []int{-1}, Gain: 1, Channel: 0}, []float64{1, 2, 3}},
+		"gain not finite":      {NeuralActivity{Nodes: set, Gain: math.Inf(1), Channel: 0}, []float64{1, 2, 3}},
+		"negative channel":     {NeuralActivity{Nodes: set, Gain: 1, Channel: -1}, []float64{1, 2, 3}},
 	} {
 		if _, err := c.source.Release(0, SourceContext{Activity: c.activity}); err == nil {
 			t.Errorf("%s: Release() error = nil", name)
@@ -368,7 +370,7 @@ func TestControllerSourceIsReservedButNotImplemented(t *testing.T) {
 // none of their signatures, because this package has no access to one.
 var (
 	_ Source = ExternalTimeline{}
-	_ Source = NeuralActivity{Set: simulate.ResolvedSet{}}
+	_ Source = NeuralActivity{}
 	_ Source = InternalResource{}
 	_ Source = Replay{}
 )

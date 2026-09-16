@@ -14,7 +14,9 @@ import (
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/signal"
 )
 
 // IndividualSchemaVersion identifies the envelope used for a persistent
@@ -193,6 +195,9 @@ func requireIndividualFields(data []byte) error {
 	if err = requireIndividualPlastic(payloadObject); err != nil {
 		return err
 	}
+	if err = requireIndividualChemical(payloadObject); err != nil {
+		return err
+	}
 	return requireIndividualNeural(config, payloadObject["neural"])
 }
 
@@ -227,6 +232,38 @@ func requireIndividualPlastic(payload map[string]json.RawMessage) error {
 		return err
 	}
 	return checkRequiredFields(part["state"], reflect.TypeOf(plasticity.State{}), "$.payload.plastic.state")
+}
+
+// requireIndividualChemical checks the optional chemical modulation part.
+// Absent or null is the declared "this layer was never enabled", so it is legal
+// and nothing else is required; present means the whole part is required,
+// because a step count or a resource map that is omitted rather than written
+// would otherwise decode as a perfectly valid zero and turn a running chemistry
+// into a different one. The values themselves are validated by
+// learning.RestoreIndividual, which owns the rule the runtime already applies.
+func requireIndividualChemical(payload map[string]json.RawMessage) error {
+	if !presentAndNotNull(payload, "chemical") {
+		return nil
+	}
+	part, err := requiredObject(payload["chemical"], "$.payload.chemical", "config", "state", "resources", "pending_feedback")
+	if err != nil {
+		return err
+	}
+	if err = checkRequiredFields(part["config"], reflect.TypeOf(modulation.ChemistryConfig{}), "$.payload.chemical.config"); err != nil {
+		return err
+	}
+	if err = checkRequiredFields(part["state"], reflect.TypeOf(modulation.ChemistryState{}), "$.payload.chemical.state"); err != nil {
+		return err
+	}
+	// The resource map is data rather than a declared struct, so only its shape
+	// is checked here: it must be an object and it must not be null.
+	if _, err = requiredObject(part["resources"], "$.payload.chemical.resources"); err != nil {
+		return err
+	}
+	if isJSONNull(part["pending_feedback"]) {
+		return fmt.Errorf("$.payload.chemical.pending_feedback is null")
+	}
+	return checkArrayElements(part["pending_feedback"], reflect.TypeOf(signal.FeedbackSpec{}), "$.payload.chemical.pending_feedback")
 }
 
 // requireIndividualNeural checks the neural union of a checkpoint: which core it
@@ -376,7 +413,70 @@ func normalizeIndividualSnapshot(s learning.IndividualSnapshot) learning.Individ
 		part.State.Plastic = nonNilFloats(part.State.Plastic)
 		s.Plastic = &part
 	}
+	if s.Chemical != nil {
+		part := normalizeChemicalPart(*s.Chemical)
+		s.Chemical = &part
+	}
 	return s
+}
+
+// normalizeChemicalPart changes every nil required array and the resource map
+// to their empty forms, so their JSON representation is [] or {} rather than
+// null. The optional transport and the optional source bodies keep their
+// absence: omitempty means an absent key is the documented "this declaration
+// does not have one".
+func normalizeChemicalPart(part learning.ChemicalPart) learning.ChemicalPart {
+	part.Config.Chemistry.Tau = nonNilFloats(part.Config.Chemistry.Tau)
+	if part.Config.Chemistry.Transport != nil {
+		transport := modulation.Transport{Fraction: nonNilFloatRows(part.Config.Chemistry.Transport.Fraction)}
+		part.Config.Chemistry.Transport = &transport
+	}
+	sources := make([]modulation.SourceSpec, len(part.Config.Sources))
+	for i, spec := range part.Config.Sources {
+		if spec.Timeline != nil {
+			timeline := *spec.Timeline
+			if timeline.Entries == nil {
+				timeline.Entries = []modulation.TimelineEntry{}
+			}
+			spec.Timeline = &timeline
+		}
+		if spec.Neural != nil {
+			neural := *spec.Neural
+			neural.Nodes = nonNilInts(neural.Nodes)
+			spec.Neural = &neural
+		}
+		if spec.Replay != nil {
+			spec.Replay = &modulation.Replay{Trace: nonNilFloatRows(spec.Replay.Trace)}
+		}
+		sources[i] = spec
+	}
+	part.Config.Sources = sources
+	records := make([]modulation.Receptor, len(part.Config.Receptors.Records))
+	for i, record := range part.Config.Receptors.Records {
+		record.Cells = nonNilInts(record.Cells)
+		records[i] = record
+	}
+	part.Config.Receptors.Records = records
+	if part.Config.Effects == nil {
+		part.Config.Effects = []modulation.Effect{}
+	}
+	part.Config.Regions.NodeRegion = nonNilInts(part.Config.Regions.NodeRegion)
+	part.State.Concentration = nonNilFloatRows(part.State.Concentration)
+	if part.Resources == nil {
+		part.Resources = map[string]float64{}
+	}
+	if part.PendingFeedback == nil {
+		part.PendingFeedback = []signal.FeedbackSpec{}
+	}
+	return part
+}
+
+func nonNilFloatRows(rows [][]float64) [][]float64 {
+	owned := make([][]float64, len(rows))
+	for i, row := range rows {
+		owned[i] = nonNilFloats(row)
+	}
+	return owned
 }
 
 func nonNilInts(values []int) []int {

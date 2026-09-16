@@ -37,6 +37,12 @@ type coreModel interface {
 	// core produces; the continuous core returns nil there. Local plasticity
 	// reads both, so they leave the core together rather than staying inside it.
 	advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error)
+	// advanceModulated is advance with the per-step, per-node modulation a
+	// chemical layer produced for exactly these steps. A nil modulation is
+	// advance itself, bit for bit; the continuous core refuses a threshold row
+	// that is not zero, because it has no threshold to move. Nothing here
+	// reaches Parameters: the modulation is an argument of one call.
+	advanceModulated(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64, mod *dynamics.Modulation) (NeuralState, [][]float64, [][]float64, error)
 }
 
 // coreTrace is one forward history. Only the core that produced it interprets
@@ -109,13 +115,17 @@ func (c continuousCore) validateState(s NeuralState) error {
 }
 
 func (c continuousCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error) {
+	return c.advanceModulated(ctx, p, s, inputs, nil)
+}
+
+func (c continuousCore) advanceModulated(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64, mod *dynamics.Modulation) (NeuralState, [][]float64, [][]float64, error) {
 	if err := c.validateState(s); err != nil {
 		return NeuralState{}, nil, nil, err
 	}
 	if len(p.ThetaRaw) != 0 {
 		return NeuralState{}, nil, nil, fmt.Errorf("theta_raw requires a LIF core")
 	}
-	next, outputs, err := c.model.Advance(ctx, p.Core, *s.Continuous, inputs)
+	next, outputs, err := c.model.AdvanceModulated(ctx, p.Core, *s.Continuous, inputs, mod)
 	if err != nil {
 		return NeuralState{}, nil, nil, err
 	}
@@ -195,6 +205,10 @@ func (l lifCore) validateState(s NeuralState) error {
 }
 
 func (l lifCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error) {
+	return l.advanceModulated(ctx, p, s, inputs, nil)
+}
+
+func (l lifCore) advanceModulated(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64, mod *dynamics.Modulation) (NeuralState, [][]float64, [][]float64, error) {
 	if err := l.validateState(s); err != nil {
 		return NeuralState{}, nil, nil, err
 	}
@@ -204,9 +218,9 @@ func (l lifCore) advance(ctx context.Context, p Parameters, s NeuralState, input
 	// The persistent readout observes the same decaying synaptic trace as the
 	// episode path. The 0/1 events come back alongside it because local
 	// plasticity uses them as the post signal.
-	next, outputs, spikes, err := l.model.Advance(ctx, dynamics.LIFParameters{
+	next, outputs, spikes, err := l.model.AdvanceModulated(ctx, dynamics.LIFParameters{
 		Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
-	}, *s.LIF, inputs)
+	}, *s.LIF, inputs, mod)
 	if err != nil {
 		return NeuralState{}, nil, nil, err
 	}

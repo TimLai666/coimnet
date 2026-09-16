@@ -18,7 +18,9 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/signal"
 )
 
 const (
@@ -1017,5 +1019,197 @@ func TestLoadIndividualRejectsMalformedAccumulatorParts(t *testing.T) {
 				t.Fatal("accepted a malformed accumulation window")
 			}
 		})
+	}
+}
+
+// newChemicalCheckpointIndividual is the spiking fixture with a chemical layer
+// enabled: two regions, one channel fed by a declared timeline, one
+// hypothesized and one unresponsive receptor, a threshold effect, a declared
+// resource and one feedback still queued. A few steps have run, so the saved
+// document carries a concentration that is not zero.
+func newChemicalCheckpointIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	individual := newCheckpointLIFIndividual(t)
+	if err := individual.EnableChemistry(chemicalCheckpointConfig()); err != nil {
+		t.Fatal(err)
+	}
+	if err := individual.SetResource("energy", 1.25); err != nil {
+		t.Fatal(err)
+	}
+	if err := individual.OfferFeedback(chemicalCheckpointFeedback(t)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := individual.Advance(context.Background(), [][]float64{{1}, {0}, {1}}); err != nil {
+		t.Fatal(err)
+	}
+	return individual
+}
+
+func chemicalCheckpointConfig() modulation.ChemistryConfig {
+	return modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 2, Channels: 1, DT: 1, Tau: []float64{2}, Units: modulation.UnitNormalized},
+		Sources: []modulation.SourceSpec{{
+			Kind: modulation.SourceExternalTimeline, Channel: 0,
+			Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 0, Channel: 0, Rate: 1.5}}},
+		}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{
+			{Cells: []int{0, 1}, CellType: "fixture", Signal: "octopamine", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1,
+				Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "chem-fixture/v1"},
+			{Cells: []int{2}, Signal: "octopamine", Channel: 0, Status: modulation.StatusUnresponsive,
+				Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "chem-fixture/v1"},
+		}, Mix: modulation.MixSum},
+		Effects: []modulation.Effect{{Kind: modulation.EffectThreshold, Receptor: 0, ThetaScale: .25, ThetaAbsMax: 1}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0, 0, 1}},
+	}
+}
+
+func chemicalCheckpointFeedback(t *testing.T) signal.Feedback {
+	t.Helper()
+	f, err := signal.NewFeedback(signal.FeedbackSpec{
+		SchemaVersion: signal.CurrentSchemaVersion(),
+		ExperienceID:  "exp-chem",
+		ActionID:      "act-chem",
+		ProducedAt:    signal.Timestamp{Value: 1, Unit: signal.TimeUnitModelStep},
+		AvailableAt:   signal.Timestamp{Value: 9, Unit: signal.TimeUnitModelStep},
+		Source:        "teacher",
+		Score:         .5,
+		ModelVersion:  signal.CurrentSchemaVersion(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
+// TestSaveLoadIndividualCarriesTheChemicalPart is the optional-part contract of
+// the chemical layer: absent while it was never enabled, complete and
+// bit-identical once it was.
+func TestSaveLoadIndividualCarriesTheChemicalPart(t *testing.T) {
+	plain := newCheckpointLIFIndividual(t).Snapshot()
+	if bytes.Contains(savedIndividualPayload(t, plain), []byte(`"chemical"`)) {
+		t.Fatal("an individual that never enabled chemistry wrote a chemical part")
+	}
+	want := newChemicalCheckpointIndividual(t).Snapshot()
+	if want.Chemical == nil {
+		t.Fatal("the fixture did not enable chemistry")
+	}
+	payload := savedIndividualPayload(t, want)
+	for _, key := range []string{`"chemical"`, `"engineering_kd"`, `"node_region"`, `"pending_feedback"`, `"resources"`, `"external_timeline"`} {
+		if !bytes.Contains(payload, []byte(key)) {
+			t.Fatalf("saved payload does not carry %s: %s", key, payload)
+		}
+	}
+	if bytes.Contains(payload, []byte(`null`)) {
+		t.Fatalf("saved payload carries a null: %s", payload)
+	}
+	path := filepath.Join(t.TempDir(), "chemical-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round trip changed the chemical part:\n got %+v\nwant %+v", got.Chemical, want.Chemical)
+	}
+	got.Chemical.State.Concentration[0][0] = 77
+	again, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatal("LoadIndividual returned a chemical part aliased with a later caller mutation")
+	}
+	restored, err := learning.RestoreIndividual(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), again) {
+		t.Fatal("loaded chemical part changed during restore")
+	}
+	if _, err := LoadModelPackage(context.Background(), path); err == nil {
+		t.Fatal("the model package loader accepted an individual checkpoint")
+	}
+}
+
+// TestLoadIndividualRejectsMalformedChemicalParts keeps a hand-edited chemical
+// block from decoding as a silently different declaration. Every case replaces
+// the whole "chemical" value, so the rejected shapes are written out in full.
+func TestLoadIndividualRejectsMalformedChemicalParts(t *testing.T) {
+	want := newChemicalCheckpointIndividual(t).Snapshot()
+	payload := savedIndividualPayload(t, want)
+	var intact map[string]json.RawMessage
+	if err := json.Unmarshal(payload, &intact); err != nil {
+		t.Fatal(err)
+	}
+	var part map[string]json.RawMessage
+	if err := json.Unmarshal(intact["chemical"], &part); err != nil {
+		t.Fatal(err)
+	}
+	config, state := string(part["config"]), string(part["state"])
+	resources, pending := string(part["resources"]), string(part["pending_feedback"])
+	full := func(fields ...string) string { return "{" + strings.Join(fields, ",") + "}" }
+	for name, block := range map[string]string{
+		"null part":              `null`,
+		"missing config":         full(`"state":`+state, `"resources":`+resources, `"pending_feedback":`+pending),
+		"missing state":          full(`"config":`+config, `"resources":`+resources, `"pending_feedback":`+pending),
+		"missing resources":      full(`"config":`+config, `"state":`+state, `"pending_feedback":`+pending),
+		"missing pending":        full(`"config":`+config, `"state":`+state, `"resources":`+resources),
+		"null state":             full(`"config":`+config, `"state":null`, `"resources":`+resources, `"pending_feedback":`+pending),
+		"missing concentration":  full(`"config":`+config, `"state":{"steps":3}`, `"resources":`+resources, `"pending_feedback":`+pending),
+		"missing steps":          full(`"config":`+config, `"state":{"concentration":[[0.5],[0.5]]}`, `"resources":`+resources, `"pending_feedback":`+pending),
+		"one region":             full(`"config":`+config, `"state":{"concentration":[[0.5]],"steps":3}`, `"resources":`+resources, `"pending_feedback":`+pending),
+		"negative concentration": full(`"config":`+config, `"state":{"concentration":[[-0.5],[0.5]],"steps":3}`, `"resources":`+resources, `"pending_feedback":`+pending),
+		"null inside concentration": full(`"config":`+config, `"state":{"concentration":[[null],[0.5]],"steps":3}`,
+			`"resources":`+resources, `"pending_feedback":`+pending),
+		"config has no chemistry": full(`"config":{"sources":[],"receptors":{"records":[],"allow_assumed_coefficients":false},"effects":[],"regions":{"node_region":[0,0,1]}}`,
+			`"state":`+state, `"resources":`+resources, `"pending_feedback":`+pending),
+		"config has no regions": full(`"config":`+strings.Replace(config, `,"regions"`, `,"unused_regions"`, 1),
+			`"state":`+state, `"resources":`+resources, `"pending_feedback":`+pending),
+		"receptor without mapping_version": full(`"config":`+strings.Replace(config, `"mapping_version":"chem-fixture/v1"`, `"mapping_version_typo":"chem-fixture/v1"`, 1),
+			`"state":`+state, `"resources":`+resources, `"pending_feedback":`+pending),
+		"feedback without source": full(`"config":`+config, `"state":`+state, `"resources":`+resources,
+			`"pending_feedback":[{"schema_version":{"major":1,"minor":0},"experience_id":"exp-chem","action_id":"act-chem","produced_at":{"value":1,"unit":"model_step"},"available_at":{"value":9,"unit":"model_step"},"score":0.5,"model_version":{"major":1,"minor":0}}]`),
+		"feedback on another clock": full(`"config":`+config, `"state":`+state, `"resources":`+resources,
+			`"pending_feedback":[{"schema_version":{"major":1,"minor":0},"experience_id":"exp-chem","action_id":"act-chem","produced_at":{"value":1,"unit":"ms"},"available_at":{"value":9,"unit":"ms"},"source":"teacher","score":0.5,"model_version":{"major":1,"minor":0}}]`),
+		"resource is not finite": full(`"config":`+config, `"state":`+state, `"resources":{"energy":1e999}`, `"pending_feedback":`+pending),
+	} {
+		t.Run(name, func(t *testing.T) {
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal(payload, &object); err != nil {
+				t.Fatal(err)
+			}
+			object["chemical"] = json.RawMessage(block)
+			changed, err := json.Marshal(object)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "bad.json")
+			writeRaw(t, path, envelopeJSON(IndividualSchemaVersion, changed, checksumHex(changed)))
+			if _, err := LoadIndividual(context.Background(), path); err == nil {
+				t.Fatal("accepted a malformed chemical part")
+			}
+		})
+	}
+}
+
+// TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled keeps documents written
+// before this part existed readable: no key is the declared "the layer was
+// never enabled".
+func TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled(t *testing.T) {
+	want := newCheckpointLIFIndividual(t).Snapshot()
+	payload := savedIndividualPayload(t, want)
+	path := filepath.Join(t.TempDir(), "no-chemical.json")
+	writeRaw(t, path, envelopeJSON(IndividualSchemaVersion, payload, checksumHex(payload)))
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Chemical != nil {
+		t.Fatalf("an absent chemical part loaded as %+v", got.Chemical)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatal("an absent chemical part changed the rest of the snapshot")
 	}
 }

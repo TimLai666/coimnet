@@ -9,8 +9,8 @@ User Story：研究者可以讓 ticket 20 的釋放率驅動每個區域、每�
 
 Blocked by：20 調節來源（釋放率 q）、16 LIF 個體（持續路徑與快照）、11 LIF 核心（`theta_base`）
 
-Status：第一階段完成（2026-09-16，`modulation` 濃度／受體／效果與 `dynamics.Modulation` 已實作並驗證，
-證據見下方「第一階段證據」）；第二階段（個體整合、報告、快照）待派工
+Status：兩階段皆完成（2026-09-16）。第一階段 `modulation` 濃度／受體／效果與 `dynamics.Modulation`，
+證據見下方「第一階段證據」；第二階段個體整合、每步順序、`ChemistryReport` 與快照，證據見「第二階段證據」
 
 對應需求：MOD-02（非負濃度、穩態、清除、單位、中性狀態）、MOD-03（未知／無反應／假設分離，
 飽和與極端數值穩定）、MOD-04（中性值與未啟用相同；基礎參數不被暫時效果永久覆寫）。主規格 5.5
@@ -120,9 +120,9 @@ func (i *Individual) SetResource(name string, value float64) error
   極端值（`c = 1e300, n = 8`、`c = 0`、`c = Kd`）無 NaN／Inf；三種狀態分離且報告標示；混合規則
   手算；效果中性逐位等於未啟用（連續與 LIF 各一）；`AdvanceModulated(nil)` 逐位等於 `Advance`；
   `go test`、race、vet；`evidence/MOD-02/`、`evidence/MOD-03/`。
-- [ ] 第二階段：個體每步順序手算（2 區域、1 通道、2 受體）；100 步後 `Parameters` 逐位不變；回饋
-  早於可取得時間不進來源；中途快照接續逐位相同；`checkpoint` 拒絕非法化學區塊；
-  `evidence/MOD-04/`；文件。
+- [x] 第二階段：個體每步順序手算（2 區域、1 通道、2 受體，連續與 LIF 兩個核心各一張表）；100 步後
+  `Parameters` 逐位不變（含 `theta_raw`）；回饋早於可取得時間不進來源；中途快照接續逐位相同；
+  `checkpoint` 拒絕非法化學區塊；`evidence/MOD-04/`；文件。
 
 ## 第一階段證據（2026-09-16）
 
@@ -251,6 +251,99 @@ JSON 欄位名為 `engineering_kd`／`engineering_n`。
 
 尚未做到（第二階段或另票）：個體整合與每步順序、`ChemistryReport`、快照、`Forward`／反向的可微調節路徑
 （MOD-07，ticket 22）、跑 100 步後 `Parameters` 逐位不變的長跑檢查、真實資料與全腦規模。
+
+## 第二階段證據（2026-09-16）
+
+證據目錄：`evidence/MOD-04/`，有 `verification.json`、`test.log` 與三份紅燈日誌。
+環境：go1.26.5 darwin/arm64、macOS 26.6.2 arm64，共用機器，`uptime` 在這批命令前是
+`19:46 up 11 days, 1:24, load averages: 3.86 3.88 3.94`，之後是 `19:47 …, 6.70 4.58 4.19`。
+驗證命令全部通過：`gofmt -l .`（無輸出）、`go vet ./...`、`go test -count=1 ./...`、
+`go test -race -count=1 ./modulation/ ./learning/ ./checkpoint/ ./dynamics/`、
+`go list -deps ./modulation | grep TimLai666`、`bash scripts/check-target-flow.sh`。
+
+### 先寫失敗測試
+
+| 紅燈日誌 | 當時的失敗內容 |
+| --- | --- |
+| `evidence/MOD-04/red-config.log` | `undefined: ChemistryConfig`／`SourceSpec`／`RegionAssignment`，`modulation/config.go` 還不存在 |
+| `evidence/MOD-04/red-individual.log` | `EnableChemistry`／`DisableChemistry`／`OfferFeedback`／`ChemistryReport` 在 `*learning.Individual` 上都還不存在 |
+| `evidence/MOD-04/red-snapshot.log` | `checkpoint` 還沒有 `requireIndividualChemical`，三個手改過的化學區塊（少 `steps`、少 `resources`、少 `pending_feedback`）被接受 |
+
+`learning` 這一側的快照（`IndividualSnapshot.Chemical`、`Snapshot`／`RestoreIndividual`）與個體整合寫在同一次
+改動裡，測試緊接在後而不是在前；`checkpoint` 那一半是先寫測試的。這一點也寫進 `verification.json` 的 limitations。
+
+### 每步順序（固定，不可重排）
+
+來源釋放（活動＝上一步的節點輸出，回饋先過 `signal.AvailableFeedback`，資源由 `SetResource` 提供）
+→ 濃度一步 → 佔用率 → 效果陣列 → `AdvanceModulated` 走一步 → 可塑性（若啟用）。
+步數是個體自己的模型步數（持續神經狀態的 `Steps`），釋放與回饋過濾用的是同一個數。
+
+### 連續核心手算表（2 節點 2 區域 1 通道，`dt = 1`、`tau = 2`、`lambda = exp(-0.5) = 0.6065306597126334`）
+
+宣告：`external_timeline` 在 step 1 釋放 1；受體 0 `hypothesized`（節點 0，`Kd = 0.5`、`n = 1`），
+受體 1 `unresponsive`（節點 1）；效果 `sensitivity`、`GammaScale = 1`；節點 0 每列輸入 1。
+膜更新 `v' = exp(-1)*v + (1-exp(-1))*gamma`。
+
+| 列 | 濃度 期望／實際 | 佔用率 期望／實際 | gamma 期望／實際 | 節點 0 電位 期望／實際 |
+| --- | --- | --- | --- | --- |
+| 0 | 0／0 | 0／0 | 1／1 | 0.6321205588285577／0.6321205588285577 |
+| 1 | 0.7869386805747332／相同 | 0.611481100422978／0.6114811004229779 | 1.6114811004229779／相同 | 1.2511944916758613／1.2511944916758615 |
+| 2 | 0.4773024370823822／相同 | 0.48838764641507565／相同 | 1.4883876464150756／相同 | 1.401129161199922／1.4011291611999221 |
+| 3 | 0.289498562046025／相同 | 0.3666866235902634／相同 | 1.3666866235902635／相同 | 1.379357325078631／相同 |
+
+差異最多 1 ULP，全部在 1e-12 內。節點 1 每列電位是逐位精確的 0；不反應的受體每列都回報宣告的 0，
+狀態標 `unresponsive`，計數為 `{assumed 0, unknown_skipped 0, unresponsive 1}`。
+一次四列的呼叫與四次一列的呼叫結果相同，釋放總量回報 `[1]`。
+
+### LIF 核心手算表（同一份化學，效果改為 `threshold`、`ThetaScale = 0.5`、`ThetaAbsMax = 1`）
+
+`theta_min 0.1`、`theta_max 2`、`theta_raw 0`，所以 `theta_base = 1.05`；節點 0 每列輸入 2。
+
+| 列 | 閾值位移 期望／實際 | 有效閾值 | 候選膜電位 | 事件 | 電位 期望／實際 |
+| --- | --- | --- | --- | --- | --- |
+| 0 | 0／0 | 1.05 | 1.2642411176571153 | 放電 | -0.5／-0.5 |
+| 1 | 0.305740550211489／0.30574055021148894 | 1.355740550211489 | 1.0803013970713942 | 抑制 | 1.0803013970713942／相同 |
+| 2 | 0.24419382320753782／相同 | 1.2941938232075378 | 1.6616617919084682 | 放電 | -0.5／-0.5 |
+| 3 | 0.1833433117951317／相同 | 1.2333433117951318 | 1.0803013970713942 | 抑制 | 1.0803013970713942／相同 |
+
+同一份 fixture 不宣告效果時四列全部放電（每個候選都越過 1.05，每列都落到重設值 -0.5），測試裡一併驗證，
+所以被抑制的事件確實是效果造成的。第 2 列會放電，正是因為第 1 列被抑制後膜電位留在 1.08。
+
+### 其餘驗收項目
+
+| 檢查 | 結果 |
+| --- | --- |
+| 未啟用逐位相同 | 開啟再關閉後，兩個核心的輸出與電位與從未啟用逐位相同；未啟用時 `ChemistryReport()` 回零值 |
+| 濃度為 0 逐位相同 | 宣告好的化學但來源不釋放時，佔用率精確為 0、無夾限，兩個核心輸出與電位逐位等於未宣告 |
+| `Parameters` 不被寫回 | LIF 核心跑 100 列、每 3 步一個脈衝、結束時佔用率仍大於 0，weights／bias／log_tau／theta_raw／encoder／readout 位元樣式全部不變 |
+| 回饋不提早進來源 | `AvailableAt = 3` 的回饋排隊後，step 0–2 與 step 3 都推進成功；同一個來源拿到未過濾的佇列在 step 0 直接拒絕，所以成功不是沉默略過 |
+| 活動來源 | 神經來源在全新個體的第一列拒絕（沒有上一步可平均），暖機一步後釋放的正是該步節點 0 的輸出 `tanh(1-exp(-1)) = 0.5595106570525964`，經一步動力學得到 0.44030057822847224 |
+| 資源 | 未宣告資源時來源拒絕且該次推進不提交任何步；`SetResource("energy", 0.75)` 後依宣告規則 `2*max(0.75-0.25,0) = 1`，濃度同為 0.7869386805747332 |
+| 中途快照接續 | 3 列 → JSON 快照 → 還原 → 3 列，與不中斷的 6 列在輸出、濃度、佔用率、釋放總量與電位上逐位相同，使用的是讀上一步活動的神經來源 |
+| `RestoreIndividual` 拒絕 | 11 種壞掉的化學區塊（區域數不符、負值、非有限、區域圖節點數不符、缺來源、受體缺 mapping_version、效果指向不存在的受體、資源非有限、資源無名稱、回饋時間單位錯、回饋本身不合法） |
+| `checkpoint` 可選區塊 | 未啟用時不寫 `chemical` 鍵；缺鍵載入為未啟用且其餘部分不變；啟用時存讀逐位相同且文件中沒有任何 `null`；16 種手改區塊被拒絕 |
+| 與可塑性併用 | 兩者同時啟用時，靜默的化學讓輸出、`PlasticReport` 與快速狀態逐位等於只開可塑性；同一宣告帶脈衝時輸出不同，所以這個 fixture 不是空測 |
+| import 相依 | `go list -deps ./modulation` 只列 `internal/jsonkey`、`internal/strictjson`、`signal`，沒有 `simulate` 與 `connectome`；`scripts/check-target-flow.sh` 仍然通過 |
+
+### 與票面的偏離與補充決策（第二階段）
+
+| 項目 | 票面 | 實作 | 理由 |
+| --- | --- | --- | --- |
+| `NeuralActivity` 的集合 | `simulate.ResolvedSet` | `Nodes []int`（遞增、非空）＋ `SetName string`（只作標示） | root 2026-09-16 決策。`modulation` import `simulate`、`simulate` → `connectome`，而 `connectome` 的套件內測試 import `learning`，所以 `learning` 一旦 import `modulation` 就在測試 binary 形成 import cycle。呼叫端改為傳 `set.Nodes()` 與 `set.Name`，解析仍然只能來自 `ResolveSets`。ticket 20 的手算數字不變 |
+| `experiment/target_taint_test.go` | 不在本票可改範圍 | 改了一行，改用新的 `NeuralActivity` 欄位 | 上一列的型別改動會讓這個測試檔無法編譯。只動建構那一行，語意與斷言不變 |
+| 報告的回傳方式 | 與 18 的 `PlasticReport` 併成一個 `AdvanceReport` | `Advance`／`AdvanceGated` 簽名不變，另加 `ChemistryReport()` | 改簽名會直接打斷 ticket 23 的 `OnlineLearner`（`Act` 用 `Advance`、`Update` 用 `AdvanceGated`）。報告是「最近一次推進」的結果，推進失敗時不覆寫 |
+| `SourceSpec` 與通道的關係 | 「每通道一個來源」 | `Sources[k].Channel` 必須等於 `k`，來源本身宣告的通道數必須剛好 `Channel+1`，而且執行時只讀 `rates[Channel]`，其他位置非零就拒絕 | 四種來源本來就把 `Channel` 當成釋放向量的最後一格；這樣宣告過寬或錯位的來源會被拒絕，不會被安靜丟掉 |
+| 來源的區域範圍 | 未指明 | 本階段來源對所有區域全域：一個通道的釋放率加到每個區域 | 票面沒有決定每個來源屬於哪個區域。全域是唯一不需要新宣告欄位的讀法，已寫進文件與 `verification.json` 的 limitations，逐區域來源留給後續決策 |
+| `ChemicalPart` 的內容 | `{Config, State}` | 另加 `Resources map[string]float64` 與 `PendingFeedback []signal.FeedbackSpec` | 少了這兩項，中途快照接續時資源來源會拒絕、回饋佇列會消失，「接續逐位相同」就不成立 |
+| 上一步活動 | 未指明怎麼保存 | 不另外保存，從持續神經狀態的延遲歷史最新一列讀回 | 那一列就是上一步的節點輸出（連續是活化輸出，LIF 是突觸跡）。多存一份會是同一個數字的第二個真相來源 |
+| 報告的計數語意 | 只寫「計數」 | `Assumed`／`UnknownSkipped`／`Unresponsive` 描述最後一步的佔用率紀錄（與 `Occupancy` 一致），三個夾限計數則整次呼叫累加（與 `PlasticReport` 一致） | 兩組計數描述的東西不同：一組數的是紀錄，一組數的是每列發生的事件 |
+| `SetResource`／`OfferFeedback` | 未指明前提 | 必須先啟用化學層，否則拒絕 | 個體其他部分都不讀這兩項，未啟用時快照也沒有地方放，拒絕比存了又在下次保存時消失誠實 |
+| 連續核心上的 threshold 效果 | 「只對 LIF」 | 不在 `EnableChemistry` 拒絕，等位移第一次非零時由連續核心拒絕 | 宣告了 threshold 效果但濃度為 0 時，結果與未宣告逐位相同；提早拒絕會打破「中性等於未啟用」 |
+| 回饋佇列 | 未指明 | 抵達後不移出佇列 | 四種來源都不讀分數，留著不改變任何數字；`pending_feedback` 是宣告不是消耗品。代價是每步都排入回饋的呼叫端佇列會一直長大，已寫進 limitations |
+| 新增 API | 未提 | `ChemistryConfig.Validate/ValidateState/Clone`、`SourceSpec.Build`、`NeuralActivity.Validate`、`Source*` 常數、`coreModel.advanceModulated` | 設定要能在啟用與還原時被完整檢查並被個體擁有；`advanceModulated` 讓 `advance` 變成它的 nil 呼叫，兩者逐位相同 |
+
+尚未做到（另票）：`Forward`／反向的可微調節路徑（MOD-07，ticket 22）、逐區域來源、真實資料與全腦規模、
+跨平台執行。
 
 ## 依據
 

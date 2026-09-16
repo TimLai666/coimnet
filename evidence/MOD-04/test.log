@@ -1,0 +1,204 @@
+# MOD-04 stage two: chemistry on the persistent individual
+
+$ go version
+go version go1.26.5 darwin/arm64
+
+$ uptime
+19:46  up 11 days,  1:24, 1 user, load averages: 3.86 3.88 3.94
+
+$ sw_vers -productVersion / uname -m
+26.6.2
+arm64
+
+$ gofmt -l .
+(no output above means clean)
+
+$ go vet ./...
+(no output above means clean)
+
+$ go test -count=1 -v -run 'Chemistry|Chemical|NeuralSource|ResourceAndFeedback|PlasticityAndChemistry' ./learning/
+2026/09/16 19:46:21 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestChemistryHandTableOnTheContinuousCore
+    chemistry_test.go:198: row 0: concentration want 0 got 0 | occupancy want 0 got 0 | gamma want 1 got 1 | node-0 voltage want 0.6321205588285577 got 0.6321205588285577 | node-1 voltage 0
+    chemistry_test.go:198: row 1: concentration want 0.7869386805747332 got 0.7869386805747332 | occupancy want 0.611481100422978 got 0.6114811004229779 | gamma want 1.6114811004229779 got 1.6114811004229779 | node-0 voltage want 1.2511944916758613 got 1.2511944916758615 | node-1 voltage 0
+    chemistry_test.go:198: row 2: concentration want 0.4773024370823822 got 0.4773024370823822 | occupancy want 0.48838764641507565 got 0.48838764641507565 | gamma want 1.4883876464150756 got 1.4883876464150756 | node-0 voltage want 1.401129161199922 got 1.4011291611999221 | node-1 voltage 0
+    chemistry_test.go:198: row 3: concentration want 0.289498562046025 got 0.289498562046025 | occupancy want 0.3666866235902634 got 0.3666866235902634 | gamma want 1.3666866235902635 got 1.3666866235902635 | node-0 voltage want 1.379357325078631 got 1.379357325078631 | node-1 voltage 0
+--- PASS: TestChemistryHandTableOnTheContinuousCore (0.00s)
+=== RUN   TestChemistryOneCallEqualsFourCalls
+--- PASS: TestChemistryOneCallEqualsFourCalls (0.00s)
+=== RUN   TestChemistryHandTableOnTheLIFCore
+    chemistry_test.go:293: row 0: occupancy want 0 got 0 | threshold shift want 0 got 0 | effective threshold 1.05 | voltage want -0.5 got -0.5 | spiked true (unmodulated voltage -0.5)
+    chemistry_test.go:293: row 1: occupancy want 0.611481100422978 got 0.6114811004229779 | threshold shift want 0.305740550211489 got 0.30574055021148894 | effective threshold 1.355740550211489 | voltage want 1.0803013970713942 got 1.0803013970713942 | spiked false (unmodulated voltage -0.5)
+    chemistry_test.go:293: row 2: occupancy want 0.48838764641507565 got 0.48838764641507565 | threshold shift want 0.24419382320753782 got 0.24419382320753782 | effective threshold 1.2941938232075378 | voltage want -0.5 got -0.5 | spiked true (unmodulated voltage -0.5)
+    chemistry_test.go:293: row 3: occupancy want 0.3666866235902634 got 0.3666866235902634 | threshold shift want 0.1833433117951317 got 0.1833433117951317 | effective threshold 1.2333433117951318 | voltage want 1.0803013970713942 got 1.0803013970713942 | spiked false (unmodulated voltage -0.5)
+--- PASS: TestChemistryHandTableOnTheLIFCore (0.00s)
+=== RUN   TestChemistryDisabledIsBitIdentical
+--- PASS: TestChemistryDisabledIsBitIdentical (0.00s)
+=== RUN   TestChemistryAtZeroConcentrationIsBitIdentical
+--- PASS: TestChemistryAtZeroConcentrationIsBitIdentical (0.00s)
+=== RUN   TestChemistryNeverWritesParameters
+--- PASS: TestChemistryNeverWritesParameters (0.00s)
+=== RUN   TestChemistryNeverHandsAnEarlyFeedbackToASource
+--- PASS: TestChemistryNeverHandsAnEarlyFeedbackToASource (0.00s)
+=== RUN   TestChemistryReadsDeclaredResources
+--- PASS: TestChemistryReadsDeclaredResources (0.00s)
+=== RUN   TestEnableChemistryValidatesAndRestarts
+--- PASS: TestEnableChemistryValidatesAndRestarts (0.00s)
+=== RUN   TestResourceAndFeedbackNeedAnEnabledChemistry
+--- PASS: TestResourceAndFeedbackNeedAnEnabledChemistry (0.00s)
+=== RUN   TestNeuralSourceReadsThePreviousRowOutputs
+--- PASS: TestNeuralSourceReadsThePreviousRowOutputs (0.00s)
+=== RUN   TestChemicalSnapshotRoundTripsBitIdentically
+--- PASS: TestChemicalSnapshotRoundTripsBitIdentically (0.00s)
+=== RUN   TestChemicalMidRunSnapshotContinues
+--- PASS: TestChemicalMidRunSnapshotContinues (0.00s)
+=== RUN   TestRestoreIndividualRefusesABrokenChemicalPart
+--- PASS: TestRestoreIndividualRefusesABrokenChemicalPart (0.00s)
+=== RUN   TestPlasticityAndChemistryRunInOneAdvance
+--- PASS: TestPlasticityAndChemistryRunInOneAdvance (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	0.275s
+
+$ go test -count=1 -v -run 'SourceSpec|ChemistryConfig|NeuralActivity' ./modulation/
+=== RUN   TestSourceSpecBuildsExactlyTheDeclaredBody
+--- PASS: TestSourceSpecBuildsExactlyTheDeclaredBody (0.00s)
+=== RUN   TestSourceSpecRefusesAnAmbiguousOrMismatchedDeclaration
+--- PASS: TestSourceSpecRefusesAnAmbiguousOrMismatchedDeclaration (0.00s)
+=== RUN   TestChemistryConfigValidatesAgainstTheNodeCount
+--- PASS: TestChemistryConfigValidatesAgainstTheNodeCount (0.00s)
+=== RUN   TestChemistryConfigValidateStateChecksShapeAndSign
+--- PASS: TestChemistryConfigValidateStateChecksShapeAndSign (0.00s)
+=== RUN   TestChemistryConfigRoundTripsThroughJSON
+--- PASS: TestChemistryConfigRoundTripsThroughJSON (0.00s)
+=== RUN   TestChemistryConfigCloneSharesNothing
+--- PASS: TestChemistryConfigCloneSharesNothing (0.00s)
+=== RUN   TestNeuralActivityAveragesTheResolvedSetTimesGain
+--- PASS: TestNeuralActivityAveragesTheResolvedSetTimesGain (0.02s)
+=== RUN   TestNeuralActivityRequiresAnExplicitSetAndUsableActivity
+--- PASS: TestNeuralActivityRequiresAnExplicitSetAndUsableActivity (0.03s)
+PASS
+ok  	github.com/TimLai666/coimnet/modulation	0.432s
+
+$ go test -count=1 -v -run 'Chemical' ./checkpoint/
+2026/09/16 19:46:23 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestSaveLoadIndividualCarriesTheChemicalPart
+--- PASS: TestSaveLoadIndividualCarriesTheChemicalPart (0.02s)
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/negative_concentration
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/null_inside_concentration
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/config_has_no_chemistry
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/config_has_no_regions
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/receptor_without_mapping_version
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_concentration
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/feedback_on_another_clock
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/null_part
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/null_state
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_steps
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/one_region
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_config
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_state
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_resources
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/missing_pending
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/feedback_without_source
+=== RUN   TestLoadIndividualRejectsMalformedChemicalParts/resource_is_not_finite
+--- PASS: TestLoadIndividualRejectsMalformedChemicalParts (0.02s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/negative_concentration (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/null_inside_concentration (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/config_has_no_chemistry (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/config_has_no_regions (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/receptor_without_mapping_version (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_concentration (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/feedback_on_another_clock (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/null_part (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/null_state (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_steps (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/one_region (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_config (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_state (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_resources (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/missing_pending (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/feedback_without_source (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedChemicalParts/resource_is_not_finite (0.00s)
+=== RUN   TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled
+--- PASS: TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.287s
+
+$ go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.409s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.774s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	1.672s
+ok  	github.com/TimLai666/coimnet/download	1.608s
+ok  	github.com/TimLai666/coimnet/dynamics	1.085s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.400s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.480s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.587s
+ok  	github.com/TimLai666/coimnet/experiment	2.507s
+ok  	github.com/TimLai666/coimnet/feather	0.979s
+ok  	github.com/TimLai666/coimnet/internal/cli	23.797s
+ok  	github.com/TimLai666/coimnet/internal/extsort	1.239s
+ok  	github.com/TimLai666/coimnet/internal/fileio	1.111s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	1.258s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.323s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	1.296s
+ok  	github.com/TimLai666/coimnet/learning	1.382s
+ok  	github.com/TimLai666/coimnet/modulation	0.833s
+ok  	github.com/TimLai666/coimnet/params	1.684s
+ok  	github.com/TimLai666/coimnet/plasticity	1.030s
+ok  	github.com/TimLai666/coimnet/replay	1.148s
+ok  	github.com/TimLai666/coimnet/signal	1.296s
+ok  	github.com/TimLai666/coimnet/simulate	2.359s
+
+$ go test -race -count=1 ./modulation/ ./learning/ ./checkpoint/ ./dynamics/
+ok  	github.com/TimLai666/coimnet/modulation	1.372s
+ok  	github.com/TimLai666/coimnet/learning	1.919s
+ok  	github.com/TimLai666/coimnet/checkpoint	8.271s
+ok  	github.com/TimLai666/coimnet/dynamics	2.060s
+
+$ go list -deps ./modulation | grep TimLai666
+github.com/TimLai666/coimnet/internal/jsonkey
+github.com/TimLai666/coimnet/internal/strictjson
+github.com/TimLai666/coimnet/signal
+github.com/TimLai666/coimnet/modulation
+
+$ bash scripts/check-target-flow.sh
+repository: /Users/timlai/Developer/coimnet
+go: go version go1.26.5 darwin/arm64
+
+PASS dynamics: no signal.Target and no NewTarget( in 5 non-test Go files
+PASS simulate: no signal.Target and no NewTarget( in 10 non-test Go files
+PASS modulation: no signal.Target and no NewTarget( in 7 non-test Go files
+PASS plasticity: no signal.Target and no NewTarget( in 1 non-test Go files
+PASS learning: no signal.Target and no NewTarget( in 10 non-test Go files
+
+PASS dynamics does not depend on github.com/TimLai666/coimnet/learning. Its github.com/TimLai666/coimnet dependencies are:
+  github.com/TimLai666/coimnet/dynamics
+PASS simulate does not depend on github.com/TimLai666/coimnet/learning. Its github.com/TimLai666/coimnet dependencies are:
+  github.com/TimLai666/coimnet/internal/fileio
+  github.com/TimLai666/coimnet/feather
+  github.com/TimLai666/coimnet/internal/extsort
+  github.com/TimLai666/coimnet/internal/jsonkey
+  github.com/TimLai666/coimnet/internal/strictjson
+  github.com/TimLai666/coimnet/signal
+  github.com/TimLai666/coimnet/connectome
+  github.com/TimLai666/coimnet/dynamics
+  github.com/TimLai666/coimnet/params
+  github.com/TimLai666/coimnet/plasticity
+  github.com/TimLai666/coimnet/simulate
+PASS modulation does not depend on github.com/TimLai666/coimnet/learning. Its github.com/TimLai666/coimnet dependencies are:
+  github.com/TimLai666/coimnet/internal/jsonkey
+  github.com/TimLai666/coimnet/internal/strictjson
+  github.com/TimLai666/coimnet/signal
+  github.com/TimLai666/coimnet/modulation
+PASS plasticity does not depend on github.com/TimLai666/coimnet/learning. Its github.com/TimLai666/coimnet dependencies are:
+  github.com/TimLai666/coimnet/plasticity
+
+RESULT: a target reaches no forward or modulation package (SIG-03 compile-time check passed)
+
+$ uptime (after the runs above)
+19:47  up 11 days,  1:25, 1 user, load averages: 6.70 4.58 4.19

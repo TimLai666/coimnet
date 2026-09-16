@@ -3,8 +3,6 @@ package modulation
 import (
 	"fmt"
 	"strings"
-
-	"github.com/TimLai666/coimnet/simulate"
 )
 
 var (
@@ -79,30 +77,54 @@ func (t ExternalTimeline) Release(step uint64, c SourceContext) ([]float64, erro
 	return checkedRelease(rates, t.ChannelCount)
 }
 
-// NeuralActivity releases in proportion to the mean activity of a named set of
-// neurons. The set must be an explicit resolution: a modulatory population is
-// named by the researcher and is never inferred here, so an unresolved or empty
-// set is an error rather than a guess. Channels is Channel+1: the release
-// vector is indexed by channel and every channel below the declared one
-// releases zero.
+// NeuralActivity releases in proportion to the mean activity of a declared set
+// of neurons. Nodes is that set, as explicit ascending node indices: a
+// modulatory population is named by the researcher and is never inferred here,
+// so an empty or unordered list is an error rather than a guess. A caller that
+// resolved the population from a connectome hands in simulate.ResolvedSet's
+// Nodes() and Name; SetName is carried for reports only and is never read as a
+// selector, which is why this package needs no access to the resolver and can
+// stay below the packages that own one.
+//
+// Channels is Channel+1: the release vector is indexed by channel and every
+// channel below the declared one releases zero.
 type NeuralActivity struct {
-	Set     simulate.ResolvedSet `json:"set"`
-	Gain    float64              `json:"gain"`
-	Channel int                  `json:"channel"`
+	Nodes   []int   `json:"nodes"`
+	SetName string  `json:"set_name,omitempty"`
+	Gain    float64 `json:"gain"`
+	Channel int     `json:"channel"`
 }
 
 func (n NeuralActivity) Channels() int { return n.Channel + 1 }
 
-func (n NeuralActivity) Release(step uint64, c SourceContext) ([]float64, error) {
+// Validate checks the declaration itself: a non-empty, strictly ascending,
+// non-negative node list, a finite gain and a declared channel.
+func (n NeuralActivity) Validate() error {
 	if n.Channel < 0 {
-		return nil, fmt.Errorf("modulation: neural source declares channel %d", n.Channel)
+		return fmt.Errorf("modulation: neural source declares channel %d", n.Channel)
 	}
 	if !finite(n.Gain) {
-		return nil, fmt.Errorf("modulation: neural source declares a non-finite gain")
+		return fmt.Errorf("modulation: neural source declares a non-finite gain")
 	}
-	nodes := n.Set.Nodes()
-	if len(nodes) == 0 {
-		return nil, fmt.Errorf("modulation: neural source needs an explicitly resolved, non-empty named set; %q resolved to %d nodes", n.Set.Name, len(nodes))
+	if len(n.Nodes) == 0 {
+		return fmt.Errorf("modulation: neural source %q needs an explicit, non-empty node list", n.SetName)
+	}
+	previous := -1
+	for _, node := range n.Nodes {
+		if node < 0 {
+			return fmt.Errorf("modulation: neural source %q names node %d", n.SetName, node)
+		}
+		if node <= previous {
+			return fmt.Errorf("modulation: neural source %q must name ascending nodes, %d follows %d", n.SetName, node, previous)
+		}
+		previous = node
+	}
+	return nil
+}
+
+func (n NeuralActivity) Release(step uint64, c SourceContext) ([]float64, error) {
+	if err := n.Validate(); err != nil {
+		return nil, err
 	}
 	if err := c.checkFeedback(step); err != nil {
 		return nil, err
@@ -111,9 +133,9 @@ func (n NeuralActivity) Release(step uint64, c SourceContext) ([]float64, error)
 		return nil, fmt.Errorf("modulation: neural source has no activity for step %d", step)
 	}
 	var sum float64
-	for _, node := range nodes {
-		if node < 0 || node >= len(c.Activity) {
-			return nil, fmt.Errorf("modulation: node %d of set %q is outside the %d activity values of step %d", node, n.Set.Name, len(c.Activity), step)
+	for _, node := range n.Nodes {
+		if node >= len(c.Activity) {
+			return nil, fmt.Errorf("modulation: node %d of set %q is outside the %d activity values of step %d", node, n.SetName, len(c.Activity), step)
 		}
 		if !finite(c.Activity[node]) {
 			return nil, fmt.Errorf("modulation: activity of node %d is not finite at step %d", node, step)
@@ -121,7 +143,7 @@ func (n NeuralActivity) Release(step uint64, c SourceContext) ([]float64, error)
 		sum += c.Activity[node]
 	}
 	rates := make([]float64, n.Channels())
-	rates[n.Channel] = nonNegative(sum / float64(len(nodes)) * n.Gain)
+	rates[n.Channel] = nonNegative(sum / float64(len(n.Nodes)) * n.Gain)
 	return checkedRelease(rates, n.Channels())
 }
 

@@ -6,10 +6,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/HazelnutParadise/insyra/nn"
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/signal"
 )
 
 const (
@@ -81,6 +84,9 @@ type IndividualSnapshot struct {
 	Neural        NeuralState       `json:"neural"`
 	Optimizer     OptimizerSnapshot `json:"optimizer"`
 	Plastic       *PlasticPart      `json:"plastic,omitempty"`
+	// Chemical is the chemical modulation layer, absent while it was never
+	// enabled, exactly like Plastic.
+	Chemical *ChemicalPart `json:"chemical,omitempty"`
 }
 
 // PlasticReport counts what one gated advance did to the fast state: how many
@@ -106,6 +112,7 @@ type Individual struct {
 	profile    string
 	configHash string
 	plastic    *plasticRuntime
+	chemical   *chemicalRuntime
 }
 
 // plasticRuntime is the enabled local mechanism of one individual: nil means
@@ -177,6 +184,36 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 		runtime.state = copyPlasticState(s.Plastic.State)
 		restored.plastic = runtime
 	}
+	if s.Chemical != nil {
+		runtime, err := newChemicalRuntime(s.Chemical.Config, configNodes(tr.network.config))
+		if err != nil {
+			return nil, fmt.Errorf("individual chemical part: %w", err)
+		}
+		if err = s.Chemical.Config.ValidateState(s.Chemical.State); err != nil {
+			return nil, fmt.Errorf("individual chemical part: %w", err)
+		}
+		runtime.state = copyChemicalState(s.Chemical.State)
+		for name, amount := range s.Chemical.Resources {
+			if strings.TrimSpace(name) == "" {
+				return nil, fmt.Errorf("individual chemical part: a resource needs a name")
+			}
+			if !finite(amount) {
+				return nil, fmt.Errorf("individual chemical part: resource %q is %v", name, amount)
+			}
+			runtime.resources[name] = amount
+		}
+		for i, spec := range s.Chemical.PendingFeedback {
+			feedback, err := signal.NewFeedback(spec)
+			if err != nil {
+				return nil, fmt.Errorf("individual chemical part: pending feedback %d: %w", i, err)
+			}
+			if spec.AvailableAt.Unit != modulation.ReleaseTimeUnit {
+				return nil, fmt.Errorf("individual chemical part: pending feedback %d uses time unit %q, want %q", i, spec.AvailableAt.Unit, modulation.ReleaseTimeUnit)
+			}
+			runtime.pending = append(runtime.pending, feedback)
+		}
+		restored.chemical = runtime
+	}
 	return restored, nil
 }
 
@@ -240,7 +277,24 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	if i.plastic != nil {
 		plastic = &PlasticPart{Config: i.plastic.model.Config(), State: copyPlasticState(i.plastic.state)}
 	}
-	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator}, plastic}
+	var chemical *ChemicalPart
+	if i.chemical != nil {
+		resources := make(map[string]float64, len(i.chemical.resources))
+		for name, amount := range i.chemical.resources {
+			resources[name] = amount
+		}
+		pending := make([]signal.FeedbackSpec, len(i.chemical.pending))
+		for t, feedback := range i.chemical.pending {
+			pending[t] = feedback.Spec()
+		}
+		chemical = &ChemicalPart{
+			Config:          i.chemical.config.Clone(),
+			State:           copyChemicalState(i.chemical.state),
+			Resources:       resources,
+			PendingFeedback: pending,
+		}
+	}
+	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator}, plastic, chemical}
 }
 
 // Advance consumes observations using persistent voltage and delayed output
@@ -353,17 +407,20 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		return nil, PlasticReport{}, err
 	}
 	var (
-		state   NeuralState
-		outputs [][]float64
-		fast    plasticity.State
-		report  PlasticReport
+		state    NeuralState
+		outputs  [][]float64
+		stepwise stepwiseResult
+		report   PlasticReport
 	)
-	if i.plastic == nil {
+	if i.plastic == nil && i.chemical == nil {
 		if state, outputs, _, err = n.core.advance(ctx, core, i.neural, coreInputs); err != nil {
 			return nil, PlasticReport{}, err
 		}
-	} else if state, outputs, fast, report, err = i.advancePlastic(ctx, core, coreInputs, gate); err != nil {
-		return nil, PlasticReport{}, err
+	} else {
+		if stepwise, err = i.advanceStepwise(ctx, core, coreInputs, gate); err != nil {
+			return nil, PlasticReport{}, err
+		}
+		state, outputs, report = stepwise.neural, stepwise.outputs, stepwise.plastic
 	}
 	selected := make([]float64, 0, len(input)*len(n.config.ReadoutNodes))
 	for _, row := range outputs {
@@ -394,59 +451,129 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	}
 	i.neural = state
 	if i.plastic != nil {
-		i.plastic.state = fast
+		i.plastic.state = stepwise.fast
+	}
+	if i.chemical != nil {
+		i.chemical.state = stepwise.chemical
+		i.chemical.report = stepwise.chemistry
 	}
 	return rows(values, n.config.OutputSize), report, nil
 }
 
-// advancePlastic runs the enabled mechanism one core step at a time, because
-// the weights the next step integrates depend on the fast change this step
-// produced. Nothing is committed here: the caller owns the candidate neural
-// and fast states until the whole call has succeeded.
-func (i *Individual) advancePlastic(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64) (NeuralState, [][]float64, plasticity.State, PlasticReport, error) {
-	var report PlasticReport
+// stepwiseResult is the candidate state of one row-by-row advance. Nothing in
+// it is committed: the caller owns every field until the whole call has
+// succeeded.
+type stepwiseResult struct {
+	neural    NeuralState
+	outputs   [][]float64
+	fast      plasticity.State
+	plastic   PlasticReport
+	chemical  modulation.ChemistryState
+	chemistry ChemistryReport
+}
+
+// advanceStepwise runs the enabled mechanisms one core step at a time, because
+// each of them changes what the next step integrates: a fast change moves the
+// weights, and a concentration moves the input current and the effective
+// threshold. Each row runs in one fixed order:
+//
+//	source release -> concentration -> occupancy -> effect arrays
+//	-> the modulated core step -> the local plastic update
+//
+// With chemistry disabled no modulation is built and the core step is the
+// unmodulated one, bit for bit. With plasticity disabled the plastic report
+// stays at its zero value.
+func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64) (stepwiseResult, error) {
+	var result stepwiseResult
 	n := i.trainer.network
+	nodes := configNodes(n.config)
 	sources, targets := configEdgeEnds(n.config)
-	neural, fast := i.neural, i.plastic.state
+	neural := i.neural
+	var fast plasticity.State
+	if i.plastic != nil {
+		fast = i.plastic.state
+	}
+	var activity []float64
+	var base uint64
+	if i.chemical != nil {
+		result.chemical = i.chemical.state
+		// The activity a source averages over is the node outputs of the step
+		// before this one, which the persistent history already holds, and is
+		// nil before any step has run.
+		activity = previousActivity(i.neural)
+		base = neuralSteps(i.neural)
+		result.chemistry.ReleaseTotal = make([]float64, i.chemical.config.Chemistry.Channels)
+	}
 	outputs := make([][]float64, 0, len(coreInputs))
 	for t, row := range coreInputs {
 		if err := ctx.Err(); err != nil {
-			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+			return stepwiseResult{}, err
 		}
-		weights, held, err := i.plastic.model.Effective(core.Core.Weights, n.config.EdgeSigns, fast)
-		if err != nil {
-			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+		var mod *dynamics.Modulation
+		if i.chemical != nil {
+			chemical, err := i.chemical.advanceOne(result.chemical, base+uint64(t), activity, nodes)
+			if err != nil {
+				return stepwiseResult{}, fmt.Errorf("individual chemistry: %w", err)
+			}
+			result.chemical, mod = chemical.state, chemical.modulated
+			result.chemistry.Steps++
+			result.chemistry.Occupancy = chemical.occupancy
+			result.chemistry.Assumed = chemical.summary.Assumed
+			result.chemistry.UnknownSkipped = chemical.summary.UnknownSkipped
+			result.chemistry.Unresponsive = chemical.summary.Unresponsive
+			result.chemistry.ClampedGamma += chemical.clamped.Gamma
+			result.chemistry.ClampedBeta += chemical.clamped.Beta
+			result.chemistry.ClampedTheta += chemical.clamped.Theta
+			for k, rate := range chemical.release {
+				result.chemistry.ReleaseTotal[k] += rate
+			}
 		}
 		step := core
-		step.Core.Weights = weights
-		next, values, spikes, err := n.core.advance(ctx, step, neural, [][]float64{row})
+		var held plasticity.ClampReport
+		if i.plastic != nil {
+			weights, effective, err := i.plastic.model.Effective(core.Core.Weights, n.config.EdgeSigns, fast)
+			if err != nil {
+				return stepwiseResult{}, err
+			}
+			step.Core.Weights, held = weights, effective
+		}
+		next, values, spikes, err := n.core.advanceModulated(ctx, step, neural, [][]float64{row}, mod)
 		if err != nil {
-			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+			return stepwiseResult{}, err
 		}
-		// The pre signal is the value the edge carries after this step, which
-		// is the activated output on the continuous core and the synaptic
-		// trace on the spiking one. The post signal is the 0/1 event where the
-		// core produces one, and the same output where it does not.
-		pre, post := values[0], values[0]
-		var eventsPre, eventsPost []float64
-		if spikes != nil {
-			post, eventsPre, eventsPost = spikes[0], spikes[0], spikes[0]
+		if i.plastic != nil {
+			// The pre signal is the value the edge carries after this step,
+			// which is the activated output on the continuous core and the
+			// synaptic trace on the spiking one. The post signal is the 0/1
+			// event where the core produces one, and the same output where it
+			// does not.
+			pre, post := values[0], values[0]
+			var eventsPre, eventsPost []float64
+			if spikes != nil {
+				post, eventsPre, eventsPost = spikes[0], spikes[0], spikes[0]
+			}
+			g := 0.0
+			if gate != nil {
+				g = gate[t]
+			}
+			changed, stepReport, err := i.plastic.model.Step(fast, pre, post, eventsPre, eventsPost, g, sources, targets)
+			if err != nil {
+				return stepwiseResult{}, err
+			}
+			fast = changed
+			result.plastic.Steps++
+			result.plastic.Clamped += stepReport.Clamped
+			result.plastic.HeldAtWMin += held.HeldAtWMin
 		}
-		g := 0.0
-		if gate != nil {
-			g = gate[t]
-		}
-		changed, stepReport, err := i.plastic.model.Step(fast, pre, post, eventsPre, eventsPost, g, sources, targets)
-		if err != nil {
-			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
-		}
-		neural, fast = next, changed
+		neural = next
+		activity = values[0]
 		outputs = append(outputs, values[0])
-		report.Steps++
-		report.Clamped += stepReport.Clamped
-		report.HeldAtWMin += held.HeldAtWMin
 	}
-	return neural, outputs, fast, report, nil
+	if i.chemical != nil {
+		result.chemistry.Concentration = copyRows(result.chemical.Concentration)
+	}
+	result.neural, result.outputs, result.fast = neural, outputs, fast
+	return result, nil
 }
 
 // TrainEpisode updates only this individual's parameters and optimizer using

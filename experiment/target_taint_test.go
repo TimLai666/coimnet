@@ -95,7 +95,7 @@ func TestATaintedTargetReachesTheLossAndNothingElse(t *testing.T) {
 	}
 	for name, source := range map[string]modulation.Source{
 		"external_timeline": modulation.ExternalTimeline{ChannelCount: 2, Entries: []modulation.TimelineEntry{{Step: 2, Channel: 1, Rate: 0.5}}},
-		"neural_activity":   modulation.NeuralActivity{Set: taintSet(t), Gain: 0.5, Channel: 1},
+		"neural_activity":   taintNeural(t),
 		"internal_resource": modulation.InternalResource{Resource: "energy", Coefficient: 2, Threshold: 0.25},
 		"replay":            modulation.Replay{Trace: [][]float64{{0, 1.5}, {2, 0}, {0.25, 0.25}}},
 	} {
@@ -194,6 +194,12 @@ func taintFeedback(t *testing.T, availableAt int64) signal.Feedback {
 // taintSet resolves the named set the neural source averages over. The set has
 // to be resolved against a real graph: simulate.ResolvedSet keeps its node
 // indices private, so a test cannot declare one into existence either.
+func taintNeural(t *testing.T) modulation.NeuralActivity {
+	t.Helper()
+	set := taintSet(t)
+	return modulation.NeuralActivity{Nodes: set.Nodes(), SetName: set.Name, Gain: 0.5, Channel: 1}
+}
+
 func taintSet(t *testing.T) simulate.ResolvedSet {
 	t.Helper()
 	resolved, err := simulate.ResolveSets(context.Background(), taintGraph(t), []simulate.NamedSet{

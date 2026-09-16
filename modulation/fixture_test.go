@@ -126,6 +126,11 @@ func fixtureGraph(t *testing.T) *connectome.Graph {
 
 // fixtureSet resolves one named set of the fixture graph. "alpn" is nodes 1 and
 // 2; "alin" is node 0; "none" is the declared empty intersection.
+//
+// The package under test no longer names simulate: a neural source carries the
+// node indices themselves. The resolver still runs here, in the test, because
+// that is how a caller obtains those indices, and because a ResolvedSet keeps
+// them private, so the fixture cannot forge a resolution either.
 func fixtureSet(t *testing.T, name string) simulate.ResolvedSet {
 	t.Helper()
 	declared := map[string][]simulate.Selector{
@@ -142,4 +147,13 @@ func fixtureSet(t *testing.T, name string) simulate.ResolvedSet {
 		t.Fatalf("resolve fixture set %q: %v", name, err)
 	}
 	return resolved[0]
+}
+
+// fixtureNeural builds the neural source of one resolved fixture set, the way a
+// caller outside this package does: the ascending node indices of the
+// resolution, plus its name as a label for reports.
+func fixtureNeural(t *testing.T, name string, gain float64, channel int) NeuralActivity {
+	t.Helper()
+	set := fixtureSet(t, name)
+	return NeuralActivity{Nodes: set.Nodes(), SetName: set.Name, Gain: gain, Channel: channel}
 }
