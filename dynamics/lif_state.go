@@ -167,7 +167,27 @@ func (m *LIF) ValidateState(s LIFState) error {
 // occurred and no gradients cross calls. Errors or cancellation return zero
 // results and leave arguments intact. The caller must not mutate arguments
 // concurrently with this call.
+//
+// It is AdvanceModulated without a modulation.
 func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [][]float64) (LIFState, [][]float64, [][]float64, error) {
+	return m.AdvanceModulated(ctx, p, s, inputs, nil)
+}
+
+// AdvanceModulated is Advance with a per-step, per-node modulation. The
+// external input plus the delayed synaptic contribution of node i at step t
+// becomes gain[t][i]*I + offset[t][i] before the bias is added and before the
+// membrane update, and the effective threshold of that step becomes
+//
+//	max(theta_base + adaptation + homeostasis + threshold[t][i], theta_min)
+//
+// A nil modulation is the unmodulated path, with no extra arithmetic at all,
+// and a neutral one (gain 1, offset 0, threshold 0) produces bit-identical
+// events and traces. A modulation whose shape does not match the call, or whose
+// entries are not finite, is refused before any state is computed.
+//
+// The modulation lasts exactly this call: the threshold offset moves the
+// comparison of these steps and is never written back into p.ThetaRaw.
+func (m *LIF) AdvanceModulated(ctx context.Context, p LIFParameters, s LIFState, inputs [][]float64, mod *Modulation) (LIFState, [][]float64, [][]float64, error) {
 	if ctx == nil {
 		return LIFState{}, nil, nil, fmt.Errorf("nil context")
 	}
@@ -226,6 +246,10 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 			return LIFState{}, nil, nil, fmt.Errorf("input[%d]: %w", t, err)
 		}
 	}
+	if err = mod.validate(len(inputs), n, true); err != nil {
+		return LIFState{}, nil, nil, err
+	}
+	driven, shifted := mod.drives(), mod.shifts()
 	// Ring slots refer only to our copies or newly computed traces. A slot is
 	// replaced, never modified, so earlier returned outputs remain unchanged.
 	ring := make([][]float64, capacity)
@@ -271,6 +295,9 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 		}
 		nextR := make([]int, n)
 		for i := range drive {
+			if driven {
+				drive[i] = modulatedDrive(drive[i], mod, t, i)
+			}
 			drive[i] += p.Bias[i]
 			cand := lambda[i]*voltage[i] + alpha[i]*drive[i]
 			theta := base[i]
@@ -279,6 +306,9 @@ func (m *LIF) Advance(ctx context.Context, p LIFParameters, s LIFState, inputs [
 			}
 			if stabilising {
 				theta += homeostasis[i]
+			}
+			if shifted {
+				theta = modulatedThreshold(theta, mod, t, i, m.config.ThetaMin)
 			}
 			if refractory[i] > 0 {
 				// Hold and ignore: the drive of this step never reaches the

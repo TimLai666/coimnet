@@ -1,0 +1,88 @@
+$ go version
+go version go1.26.5 darwin/arm64
+
+$ uptime
+19:13  up 11 days, 51 mins, 1 user, load averages: 2.57 3.31 3.37
+
+$ go test -count=1 -v -run 'Kinetics|NewChemistry' ./modulation/
+=== RUN   TestKineticsReachesTheHandComputedSteadyState
+--- PASS: TestKineticsReachesTheHandComputedSteadyState (0.00s)
+=== RUN   TestKineticsClearsExponentiallyWithoutRelease
+--- PASS: TestKineticsClearsExponentiallyWithoutRelease (0.00s)
+=== RUN   TestKineticsNeutralStateStaysExactlyZero
+--- PASS: TestKineticsNeutralStateStaysExactlyZero (0.00s)
+=== RUN   TestKineticsStaysNonNegativeOverRandomRelease
+--- PASS: TestKineticsStaysNonNegativeOverRandomRelease (0.00s)
+=== RUN   TestKineticsTransportMovesMassWithoutCreatingIt
+--- PASS: TestKineticsTransportMovesMassWithoutCreatingIt (0.00s)
+=== RUN   TestKineticsClearanceBoostSpeedsDecay
+--- PASS: TestKineticsClearanceBoostSpeedsDecay (0.00s)
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/no_region
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/no_channel
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/zero_dt
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/non-finite_dt
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/tau_count
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/zero_tau
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/negative_tau
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/non-finite_tau
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/frozen_tau
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/transport_shape
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/transport_row_shape
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/transport_diagonal
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/negative_fraction
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/non-finite_fraction
+=== RUN   TestNewChemistryRejectsAnInvalidDeclaration/row_sum_above_one
+--- PASS: TestNewChemistryRejectsAnInvalidDeclaration (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/no_region (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/no_channel (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/zero_dt (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/non-finite_dt (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/tau_count (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/zero_tau (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/negative_tau (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/non-finite_tau (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/frozen_tau (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/transport_shape (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/transport_row_shape (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/transport_diagonal (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/negative_fraction (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/non-finite_fraction (0.00s)
+    --- PASS: TestNewChemistryRejectsAnInvalidDeclaration/row_sum_above_one (0.00s)
+=== RUN   TestKineticsDeclaresItsUnitWithoutConverting
+--- PASS: TestKineticsDeclaresItsUnitWithoutConverting (0.00s)
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_release
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_release
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/release_rows
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/release_columns
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/nil_release
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_boost
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_boost
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/boost_shape
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/state_rows
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/state_columns
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_concentration
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_concentration
+=== RUN   TestKineticsStepRejectsInvalidStateReleaseOrBoost/step_overflow
+--- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_release (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_release (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/release_rows (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/release_columns (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/nil_release (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_boost (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_boost (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/boost_shape (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/state_rows (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/state_columns (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/negative_concentration (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/non-finite_concentration (0.00s)
+    --- PASS: TestKineticsStepRejectsInvalidStateReleaseOrBoost/step_overflow (0.00s)
+=== RUN   TestKineticsOwnsItsStateAndDeclaration
+--- PASS: TestKineticsOwnsItsStateAndDeclaration (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/modulation	0.206s
+
+$ go test -race -count=1 -run 'Kinetics|NewChemistry' ./modulation/
+ok  	github.com/TimLai666/coimnet/modulation	1.254s

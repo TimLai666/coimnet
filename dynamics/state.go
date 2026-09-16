@@ -113,7 +113,26 @@ func activationMatches(saved, expected float64) bool {
 // outputs retain the values computed when they occurred. No gradients cross
 // calls. Errors or cancellation return zero results and leave arguments intact.
 // The caller must not mutate arguments concurrently with this call.
+//
+// It is AdvanceModulated without a modulation.
 func (m *Continuous) Advance(ctx context.Context, p Parameters, s State, inputs [][]float64) (State, [][]float64, error) {
+	return m.AdvanceModulated(ctx, p, s, inputs, nil)
+}
+
+// AdvanceModulated is Advance with a per-step, per-node modulation of the input
+// current: the external input plus the delayed synaptic contribution of node i
+// at step t becomes gain[t][i]*I + offset[t][i] before the bias is added and
+// before the membrane update. The bias is a parameter of the neuron, not an
+// input current, so it is outside the gain.
+//
+// A nil modulation is the unmodulated path, with no extra arithmetic at all,
+// and a neutral one (gain 1, offset 0) produces bit-identical results. The
+// continuous core has no threshold, so a Threshold array is accepted only while
+// every entry is zero. A modulation whose shape does not match the call, or
+// whose entries are not finite, is refused before any state is computed.
+//
+// The modulation lasts exactly this call. Nothing here writes into p.
+func (m *Continuous) AdvanceModulated(ctx context.Context, p Parameters, s State, inputs [][]float64, mod *Modulation) (State, [][]float64, error) {
 	if ctx == nil {
 		return State{}, nil, fmt.Errorf("nil context")
 	}
@@ -164,6 +183,10 @@ func (m *Continuous) Advance(ctx context.Context, p Parameters, s State, inputs 
 			return State{}, nil, fmt.Errorf("input[%d]: %w", t, err)
 		}
 	}
+	if err = mod.validate(len(inputs), n, false); err != nil {
+		return State{}, nil, err
+	}
+	driven := mod.drives()
 	// Ring slots refer only to our copies or newly computed outputs. A slot is
 	// replaced, never modified, so earlier returned outputs remain unchanged.
 	ring := make([][]float64, capacity)
@@ -195,6 +218,9 @@ func (m *Continuous) Advance(ctx context.Context, p Parameters, s State, inputs 
 		}
 		next, output := make([]float64, n), make([]float64, n)
 		for i := range drive {
+			if driven {
+				drive[i] = modulatedDrive(drive[i], mod, t, i)
+			}
 			drive[i] += p.Bias[i]
 			next[i] = lambda[i]*voltage[i] + alpha[i]*drive[i]
 			output[i] = m.activate(next[i])

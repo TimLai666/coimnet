@@ -1,0 +1,203 @@
+$ go version
+go version go1.26.5 darwin/arm64
+
+$ uptime
+19:13  up 11 days, 52 mins, 1 user, load averages: 2.33 3.23 3.34
+
+$ go test -count=1 -v -run 'Occupancy|Receptors|ApplyEffects|DeclaredEffects' ./modulation/
+=== RUN   TestApplyEffectsIsNeutralWithoutOccupancy
+--- PASS: TestApplyEffectsIsNeutralWithoutOccupancy (0.00s)
+=== RUN   TestApplyEffectsMixesTwoReceptorsOnOneCell
+=== RUN   TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_sum
+=== RUN   TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_
+=== RUN   TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_max
+--- PASS: TestApplyEffectsMixesTwoReceptorsOnOneCell (0.00s)
+    --- PASS: TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_sum (0.00s)
+    --- PASS: TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_ (0.00s)
+    --- PASS: TestApplyEffectsMixesTwoReceptorsOnOneCell/mix_max (0.00s)
+=== RUN   TestApplyEffectsClampsAndCountsEachBound
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/gamma_at_the_upper_default
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/gamma_at_the_lower_default
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/beta_at_the_upper_default
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/beta_at_the_lower_default
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/gamma_and_beta_together
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/declared_bounds_beat_the_defaults
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/theta_above_its_bound
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/theta_below_its_bound
+=== RUN   TestApplyEffectsClampsAndCountsEachBound/inside_every_bound
+--- PASS: TestApplyEffectsClampsAndCountsEachBound (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/gamma_at_the_upper_default (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/gamma_at_the_lower_default (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/beta_at_the_upper_default (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/beta_at_the_lower_default (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/gamma_and_beta_together (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/declared_bounds_beat_the_defaults (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/theta_above_its_bound (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/theta_below_its_bound (0.00s)
+    --- PASS: TestApplyEffectsClampsAndCountsEachBound/inside_every_bound (0.00s)
+=== RUN   TestApplyEffectsIgnoresUnboundReceptorsAndRecords
+--- PASS: TestApplyEffectsIgnoresUnboundReceptorsAndRecords (0.00s)
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/unknown_kind
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/empty_kind
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_receptor
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/threshold_without_a_bound
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_theta_bound
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_beta_bound
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/gamma_bounds_crossed
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_gamma_minimum
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/non-finite_scale
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/sensitivity_with_a_threshold_knob
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/threshold_with_a_sensitivity_knob
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/unknown_mix
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/no_node
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/cell_past_the_node_count
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_cell
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/occupancy_above_one
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/negative_occupancy
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/non-finite_occupancy
+=== RUN   TestApplyEffectsRejectsAnInvalidDeclaration/two_scales_on_one_cell
+--- PASS: TestApplyEffectsRejectsAnInvalidDeclaration (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/unknown_kind (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/empty_kind (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_receptor (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/threshold_without_a_bound (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_theta_bound (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_beta_bound (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/gamma_bounds_crossed (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_gamma_minimum (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/non-finite_scale (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/sensitivity_with_a_threshold_knob (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/threshold_with_a_sensitivity_knob (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/unknown_mix (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/no_node (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/cell_past_the_node_count (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_cell (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/occupancy_above_one (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/negative_occupancy (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/non-finite_occupancy (0.00s)
+    --- PASS: TestApplyEffectsRejectsAnInvalidDeclaration/two_scales_on_one_cell (0.00s)
+=== RUN   TestDeclaredEffectsAtZeroConcentrationChangeNeitherCore
+--- PASS: TestDeclaredEffectsAtZeroConcentrationChangeNeitherCore (0.00s)
+=== RUN   TestOccupancyFollowsTheHandComputedCurve
+--- PASS: TestOccupancyFollowsTheHandComputedCurve (0.00s)
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations/saturated
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations/vanishing
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations/largest_float
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations/smallest_subnormal
+=== RUN   TestOccupancyIsStableAtExtremeConcentrations/tiny_Kd
+--- PASS: TestOccupancyIsStableAtExtremeConcentrations (0.00s)
+    --- PASS: TestOccupancyIsStableAtExtremeConcentrations/saturated (0.00s)
+    --- PASS: TestOccupancyIsStableAtExtremeConcentrations/vanishing (0.00s)
+    --- PASS: TestOccupancyIsStableAtExtremeConcentrations/largest_float (0.00s)
+    --- PASS: TestOccupancyIsStableAtExtremeConcentrations/smallest_subnormal (0.00s)
+    --- PASS: TestOccupancyIsStableAtExtremeConcentrations/tiny_Kd (0.00s)
+=== RUN   TestOccupancyIsUndefinedOutsideItsDomain
+--- PASS: TestOccupancyIsUndefinedOutsideItsDomain (0.00s)
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/unknown_mix
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_cell
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/descending_cells
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/repeated_cell
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/negative_cell
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/cell_past_the_node_count
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/channel_past_the_count
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/negative_channel
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/unknown_status
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_evidence
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_measurement_kind
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_mapping_version
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_without_Kd
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_a_negative_Kd
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_n_below_one
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_a_non-finite_Kd
+=== RUN   TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/half_declared_unknown
+--- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/unknown_mix (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_cell (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/descending_cells (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/repeated_cell (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/negative_cell (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/cell_past_the_node_count (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/channel_past_the_count (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/negative_channel (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/unknown_status (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_evidence (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_measurement_kind (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/no_mapping_version (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_without_Kd (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_a_negative_Kd (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_n_below_one (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/hypothesized_with_a_non-finite_Kd (0.00s)
+    --- PASS: TestReceptorsValidateRejectsAnIncompleteOrOutOfRangeRecord/half_declared_unknown (0.00s)
+=== RUN   TestReceptorsSeparateUnresponsiveUnknownAndHypothesized
+--- PASS: TestReceptorsSeparateUnresponsiveUnknownAndHypothesized (0.00s)
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/no_concentration
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/ragged_concentration
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/negative_concentration
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/non-finite_concentration
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/no_region_map
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/region_out_of_range
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/negative_region
+=== RUN   TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/region_map_shorter_than_the_cells
+--- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/no_concentration (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/ragged_concentration (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/negative_concentration (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/non-finite_concentration (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/no_region_map (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/region_out_of_range (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/negative_region (0.00s)
+    --- PASS: TestReceptorsOccupanciesRejectsAnInvalidStateOrRegionMap/region_map_shorter_than_the_cells (0.00s)
+=== RUN   TestReceptorsOwnTheirRecordsAndResults
+--- PASS: TestReceptorsOwnTheirRecordsAndResults (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/modulation	0.311s
+
+$ go test -count=1 -v -run 'Modulated|Modulation' ./dynamics/
+=== RUN   TestContinuousAdvanceModulatedNilAndNeutralMatchAdvance
+--- PASS: TestContinuousAdvanceModulatedNilAndNeutralMatchAdvance (0.00s)
+=== RUN   TestLIFAdvanceModulatedNilAndNeutralMatchAdvance
+--- PASS: TestLIFAdvanceModulatedNilAndNeutralMatchAdvance (0.00s)
+=== RUN   TestContinuousAdvanceModulatedScalesAndOffsetsOneNode
+--- PASS: TestContinuousAdvanceModulatedScalesAndOffsetsOneNode (0.00s)
+=== RUN   TestContinuousModulationScalesTheSynapticDriveButNotTheBias
+--- PASS: TestContinuousModulationScalesTheSynapticDriveButNotTheBias (0.00s)
+=== RUN   TestLIFAdvanceModulatedThresholdSuppressesASpike
+--- PASS: TestLIFAdvanceModulatedThresholdSuppressesASpike (0.00s)
+=== RUN   TestLIFAdvanceModulatedThresholdFloorsAtThetaMin
+--- PASS: TestLIFAdvanceModulatedThresholdFloorsAtThetaMin (0.00s)
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/gain_rows
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/gain_row_width
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/non-finite_gain
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/offset_rows
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/non-finite_offset
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/threshold_on_the_continuous_core
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/threshold_rows_on_the_continuous_core
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/lif_threshold_row_width
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/lif_non-finite_threshold
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/lif_gain_rows
+=== RUN   TestAdvanceModulatedRejectsAMalformedModulation/lif_offset_row_width
+--- PASS: TestAdvanceModulatedRejectsAMalformedModulation (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/gain_rows (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/gain_row_width (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/non-finite_gain (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/offset_rows (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/non-finite_offset (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/threshold_on_the_continuous_core (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/threshold_rows_on_the_continuous_core (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/lif_threshold_row_width (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/lif_non-finite_threshold (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/lif_gain_rows (0.00s)
+    --- PASS: TestAdvanceModulatedRejectsAMalformedModulation/lif_offset_row_width (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/dynamics	0.150s
+
+$ go test -race -count=1 -run 'Occupancy|Receptors|ApplyEffects|DeclaredEffects' ./modulation/
+ok  	github.com/TimLai666/coimnet/modulation	1.238s
+
+$ go test -race -count=1 -run 'Modulated|Modulation' ./dynamics/
+ok  	github.com/TimLai666/coimnet/dynamics	1.196s
