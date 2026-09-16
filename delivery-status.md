@@ -26,6 +26,8 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：protocol 可宣告 `plasticity` 區塊（規則、邊選擇、閘門通道與比例），runner 在開啟時強制每步一次核心呼叫、每步先由快速狀態算有效權重再更新參與紀錄，`simulate compare` 新增 `original`／`plastic`／`learned_then_frozen` 三格；fixture 三神經元手算逐位相同，NAT-01 的 `protocol_hash` 由測試釘住不變；全腦（165,122 節點、25,563,197 邊、300 步、全部邊啟用、`hebbian_rate`）各跑兩次三格（`decay_p` 0.5 與 0.999），每格約 600 秒、最大 RSS 約 6.6 GB，`original` 格與 NAT-02 的全腦執行逐位相同；`decay_p` 0.999 時 ALIN 集合的 `mean_rate_after` 由 0.246 升到 0.305（凍結後 0.319），下行神經元的 `activity_ratio_after` 由 56.5 降到 54.4（凍結後 6.3），這些是同一刺激下的差值與百分位，報告不做文字判斷；`decay_p` 0.5 時關閉閘門 250 步後快速變化衰退到 8e-75，`learned_then_frozen` 與 `original` 逐位相同，是規則時間常數造成的。證據見 [NAT-06](evidence/NAT-06/verification.json)。
 
+組態與資源預估（ticket 24 第一階段、OPS-03、OPS-06）已在 fixture 驗證：`config` 套件用共用的嚴格 JSON 解碼 `coimnet-config/v1`，從宣告的預設值出發，依檔案、環境變數、`--set` 的固定優先序覆寫並記錄每個葉節點的來源，所有名稱都要對到有版本的實作（未實作就拒絕，不替代），金鑰只以 `{"ref": "env:NAME"}` 保存、展開輸出永不出現值；`resources` 套件逐項估算記憶體並印出代入數字的公式，規格 17.1 的 `16E` 與 15.36 GB 兩個算術示例由測試釘住，超限時 `Check` 拒絕且不改計畫；`coimnet run --config … --dry-run` 展開組態、檢查模型檔與 generator、對 `max_memory_mib` 預估後印出 `coimnet-dry-run/v1` 報告，零副作用、教師呼叫次數 0，退出碼成功 0、拒絕 2、用法錯誤 1。全圖（165,122 節點、25,563,197 邊、f64、AdamW、不留反向歷史）預估 1,026,490,952 bytes，與 NAT-01 實測最大 RSS 4.38 GB 並列但不宣稱吻合。證據見 [OPS-03](evidence/OPS-03/verification.json)、[OPS-06](evidence/OPS-06/verification.json)。
+
 ## 階段目標
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
@@ -64,7 +66,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 19 | 研究者可以在原生模擬之上開啟可塑性，並報告原有輸出被增強、修改或破壞 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | protocol `plasticity` 區塊、runner 逐步有效權重、`simulate compare` 三格（original／plastic／learned_then_frozen）；fixture 手算逐位相同、NAT-01 `protocol_hash` 不變；全腦兩次各三格（`decay_p` 0.5 與 0.999，每格約 600 s、RSS 6.6 GB），報告只給差值與百分位；NAT-06 passed；只在 macOS、`stdp_pair` 只有 fixture |
 | 20 | 研究者可以把觀察、目標與事後回饋分開，並選擇調節訊號的來源 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `AvailableFeedback`、四種來源手算、獎懲映射四值分開、靜態 import 檢查腳本與 NaN 汙染測試；SIG-03、MOD-01、MOD-08 passed；控制器來源只保留名字（MOD-07） |
 | 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；個體每步順序在連續與 LIF 各有手算表、100 步 `Parameters` 逐位不變、中途快照接續逐位相同、`modulation` 不再依賴 `simulate`；MOD-02、MOD-03、MOD-04 passed；來源對所有區域一致、只有 fixture |
-| 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）待派工 |
+| 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）切成小票派給 opencode 進行中 |
+| 24 | 使用者可以用嚴格展開的組態、啟動前的資源預估、完整 CLI 與 SDK，並安全遷移格式與保護敏感資料 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`coimnet-config/v1` 嚴格解碼、四層來源追蹤、金鑰只存參照、名稱註冊表拒絕未實作；資源預估兩個規格算術釘住、超限拒絕不縮減、全圖預估 0.96 GiB 與 NAT-01 實測 RSS 並列；`run --config --dry-run` 零副作用、退出碼 0／2／1；OPS-03、OPS-06 passed；第二、三階段待派工 |
 
 ## 目前阻礙
 
