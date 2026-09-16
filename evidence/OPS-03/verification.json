@@ -1,0 +1,47 @@
+{
+  "requirement": "OPS-03",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test -count=1 ./config/ ./resources/ ./internal/cli/",
+    "go test -race -count=1 ./config/ ./resources/ ./internal/cli/",
+    "go test -count=1 ./...",
+    "go vet ./...",
+    "gofmt -l .",
+    "go run ./cmd/coimnet run --help",
+    "go build -o bin/coimnet ./cmd/coimnet && COIMNET_TEACHER_TOKEN=SENTINEL-not-a-real-token-4f2a bin/coimnet run --config evidence/OPS-03/fixture/config.json --dry-run > evidence/OPS-03/fixture/dry-run.json (exit 0)",
+    "COIMNET_TEACHER_TOKEN=SENTINEL-not-a-real-token-4f2a bin/coimnet run --config evidence/OPS-03/fixture/config.json --set resources.max_memory_mib=0 --dry-run > evidence/OPS-03/fixture/refused.json (exit 2)",
+    "the fixture model package is written by checkpoint.NewModelPackage and checkpoint.SaveModelPackage from the configuration in evidence/OPS-03/fixture/config.json: three neurons, edges 0->1 and 1->2, weights 0.5 and -0.25, dt 0.1, tanh, one input channel, one readout neuron"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime at the recorded run: 00:10 up 11 days, 5:48, 1 user, load averages 3.04 3.03 2.52 (shared machine; the ticket 25 agent was editing dynamics/, learning/ and checkpoint/ during this session, so go vet ./... was polled until the whole tree compiled before the recorded run)",
+    "macOS arm64, Insyra v0.3.2"
+  ],
+  "input_fingerprints": [
+    "evidence/OPS-03/fixture/config.json sha256 d148ad354e12c729479419b107fe994d5c4092826894393f3b4aa0309c450cfa",
+    "evidence/OPS-03/fixture/tiny.coimpkg sha256 d1ffbb9fe06996622d4ddf0b635128f86dddbef6093a09803350455a889caab0 (coimnet-model-package/v1, three neurons, two edges, written by checkpoint.NewModelPackage and checkpoint.SaveModelPackage)",
+    "evidence/OPS-03/fixture/dry-run.json sha256 95e5c5e27e61db3fb476c4577877364361429a751c1b168cdd5d91bdad6c04bc",
+    "evidence/OPS-03/fixture/refused.json sha256 ddc89115f431a280fa68dd21840b13dc12a25c2d234666dc94045acf6cc1ec57"
+  ],
+  "observed_result": "The new config package reads coimnet-config/v1 through internal/strictjson and refuses an unknown field naming it (\"graph_path\"), a duplicate key, a null required value at five different pointers, a document without schema_version, and a name no implementation answers to in every one of the eleven registry cases, each message naming both the field and the registry it consulted and listing that registry's declared names without proposing a replacement. The four layers resolve in the fixed order default, file, env, cli: with output.dir set in all four, seed set in the file and the environment, model.package set in the file only and time.unit set nowhere, the provenance table reports /output/dir cli, /seed env, /model/package file and /time/unit default, and the resolved values are from-cli, 22, model.coimpkg and model_step. Environment and command line values are parsed by the target field's type (COIMNET_TIME_STEP=0.25 to 0.25, COIMNET_RESET_NEURAL_AT_EPISODE_START=false to false, COIMNET_RESOURCES_MAX_MEMORY_MIB=512 to 512, --set learning.rules=gradient,hebbian_rate to the two rules) and are refused when the value does not fit the type, when the name addresses no field, and when the entry has no equals sign. A literal secret is refused with a message naming /teacher/secret and not repeating the refused text, and the three malformed reference forms are refused as well. With COIMNET_TEACHER_TOKEN=SENTINEL-6f1a2c-not-a-real-token in the environment, Resolved.Marshal writes {\"ref\": \"env:COIMNET_TEACHER_TOKEN\"} and the sentinel appears nowhere in the output; the expanded document reloads into an identical Config and identical Secrets, and every leaf of the reloaded document reports file. The command line dry run over the fixture package printed a coimnet-dry-run/v1 document with 50 provenance entries, six checks (configuration ok, task_generator ok, model ok, resources ok, teacher skipped, output skipped), a thirteen item estimate totalling 192 bytes and verdict ok, and exited 0. The same configuration with --set resources.max_memory_mib=0 printed the same 192 byte estimate, a failed resources check listing every item, verdict refused, and exited 2. A configuration whose model package is absent produced a failed model check naming the missing path and exited 2. Seven usage mistakes (no --config, --config with no value, a positional argument, a --set without an equals sign, an absent configuration file and an unknown flag) all exited 1, and run without --dry-run exited 1 with a message pointing at train and simulate. Zero side effects were checked three ways in the tests and once on the command line: the declared output directory does not exist afterwards, a recursive listing of the working directory is byte for byte the same before and after, and the configuration file's SHA-256 is unchanged. A counting fake teacher handed to the dry run recorded 0 calls while the configuration declared a teacher with a budget of three requests. Declaring hebbian_rate alongside gradient makes the plan count one fast change and one eligibility value per edge, so both items become 2*8 = 16 bytes on the two-edge fixture, which is how learning.rules reaches the estimate. The two command line reports were generated twice, in separate processes and after the ticket 25 agent had changed checkpoint/package.go in between, and all four fixture SHA-256 values were identical both times.",
+  "assumption_statement": "The dry run's resource plan makes declared choices that this stage fixes and the report states: this build computes in float64 on the CPU, so precision is f64; one node keeps one state value (StateDim 1) and one individual advances at a time (Individuals 1); the backward window is learning.options.truncation; a local rule in learning.rules enables a fast change and an eligibility record on every edge of the model; AdamW is counted only when the rules contain gradient and at least one trainable group is enabled; and no working-buffer allowance is estimated, so BufferFactor is 0 and the total is the sum of the accounted arrays and nothing else. The teacher kind http/v1 is a declared name with no client behind it. Nothing in this stage executes a task generator, opens a data file or resolves a secret reference.",
+  "test_log": [
+    "evidence/OPS-03/red-config.log (first failing state of the config package tests, before config/*.go existed)",
+    "evidence/OPS-03/red-dry-run.log (first failing state of the run --dry-run CLI tests, before internal/cli/config_run.go existed)",
+    "evidence/OPS-03/test.log (gofmt, go vet, go test ./..., go test -race on the three packages, and the verbose per-test listing)",
+    "evidence/OPS-03/cli-exit-status.log (the four process exit statuses, the sentinel count and the absent output directory)"
+  ],
+  "reports": [
+    "evidence/OPS-03/fixture/config.json",
+    "evidence/OPS-03/fixture/dry-run.json",
+    "evidence/OPS-03/fixture/refused.json",
+    "docs/config-schema.md"
+  ],
+  "limitations": [
+    "run without --dry-run is stage two. This stage refuses it with a message pointing at train and simulate; nothing here executes a configuration.",
+    "The teacher package is ticket 27. The zero-call proof uses a counting fake that satisfies config.TeacherCaller, not a real client, and the configuration's teacher kind http/v1 is a declared name with no implementation behind it.",
+    "The fixture is a three-neuron model package. Nothing here was run against a real graph store; the graph path of the model check is covered by a failure test only, and loading a whole-brain store inside a dry run has not been measured.",
+    "The estimate is arithmetic over declared arrays and is not a resident set size. It excludes Go allocator slack, decoded JSON and the runtime, in the same way connectome.StoreLimits does.",
+    "The command line evidence is one machine, macOS arm64, and one run of each command. Two other agents were editing learning/, dynamics/, checkpoint/ and simulate/ during the session, so go test ./... was run repeatedly until the tree built; the recorded log is a run in which every package compiled."
+  ]
+}

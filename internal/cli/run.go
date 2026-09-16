@@ -19,6 +19,9 @@ Commands:
   examples run delayed [flags]  Run the synthetic delayed-pulse learning protocol
   examples run lif-threshold [flags]
                                 Train the spiking fixture's base firing threshold
+  run --config FILE --dry-run   Expand a strict configuration, report where every
+                                value came from, estimate the memory one run needs
+                                and refuse instead of shrinking anything
   train delayed [flags]         Train the fixture and save an episode checkpoint
   resume [flags]                Continue training into a new checkpoint
   predict [flags]               Predict from observation-only JSON
@@ -88,6 +91,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 			_, err := fmt.Fprintln(stdout, "Usage: coimnet train delayed [flags]\nUse coimnet train delayed --help for options.")
 			return err
 		}
+	case "run":
+		return runConfigRun(ctx, args[1:], stdout, stderr)
 	case "resume":
 		return runTrain(ctx, args[1:], stdout, stderr, true)
 	case "predict":

@@ -1,0 +1,29 @@
+# process exit statuses of the run subcommand, taken from the built binary rather than from the in-process tests
+# the environment held COIMNET_TEACHER_TOKEN=SENTINEL-not-a-real-token-4f2a during every command below
+#  0:11  up 11 days,  5:50, 1 user, load averages: 3.28 3.19 2.63
+
+$ go build -o bin/coimnet ./cmd/coimnet
+
+$ coimnet run --config evidence/OPS-03/fixture/config.json --dry-run > evidence/OPS-03/fixture/dry-run.json; echo $?
+0
+
+$ coimnet run --config evidence/OPS-03/fixture/config.json --set resources.max_memory_mib=0 --dry-run > evidence/OPS-03/fixture/refused.json; echo $?
+2
+
+$ coimnet run --dry-run; echo $?
+1
+
+$ coimnet run --config evidence/OPS-03/fixture/config.json; echo $?
+1
+
+$ grep -c SENTINEL evidence/OPS-03/fixture/dry-run.json
+0
+
+$ test -e evidence/OPS-03/fixture/runs; echo $?  # 1 means the declared output directory was never created
+1
+
+$ shasum -a 256 evidence/OPS-03/fixture/*
+d148ad354e12c729479419b107fe994d5c4092826894393f3b4aa0309c450cfa  evidence/OPS-03/fixture/config.json
+95e5c5e27e61db3fb476c4577877364361429a751c1b168cdd5d91bdad6c04bc  evidence/OPS-03/fixture/dry-run.json
+ddc89115f431a280fa68dd21840b13dc12a25c2d234666dc94045acf6cc1ec57  evidence/OPS-03/fixture/refused.json
+d1ffbb9fe06996622d4ddf0b635128f86dddbef6093a09803350455a889caab0  evidence/OPS-03/fixture/tiny.coimpkg

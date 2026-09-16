@@ -1,0 +1,12 @@
+{
+  "schema_version": "coimnet-config/v1",
+  "model": {"kind": "continuous", "package": "evidence/OPS-03/fixture/tiny.coimpkg"},
+  "output": {"dir": "evidence/OPS-03/fixture/runs"},
+  "resources": {"max_memory_mib": 64, "max_temp_mib": 64, "max_runs": 1},
+  "teacher": {
+    "kind": "http/v1",
+    "endpoint": "https://teacher.invalid/answer",
+    "budget": {"max_requests": 3, "max_cost": 0.5},
+    "secret": {"ref": "env:COIMNET_TEACHER_TOKEN"}
+  }
+}

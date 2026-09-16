@@ -1,0 +1,248 @@
+{
+  "schema_version": "coimnet-dry-run/v1",
+  "config": {
+    "schema_version": "coimnet-config/v1",
+    "data": {
+      "version": "malecns-v1.0",
+      "filter": "annotated_neurons"
+    },
+    "model": {
+      "kind": "continuous",
+      "package": "evidence/OPS-03/fixture/tiny.coimpkg",
+      "graph": ""
+    },
+    "time": {
+      "unit": "model_step",
+      "step": 1
+    },
+    "sharing": {
+      "parameter_sharing": "per_edge"
+    },
+    "trainable": {
+      "trainable": {
+        "encoder": true,
+        "weights": true,
+        "bias": true,
+        "tau": true,
+        "readout": true
+      },
+      "masks": null
+    },
+    "signals": {
+      "encoding": "insyra-linear/v1",
+      "mapping": "identity/v1"
+    },
+    "task": {
+      "name": "delayed-correlation",
+      "version": "v1",
+      "loss": "mse/v1"
+    },
+    "learning": {
+      "rules": [
+        "gradient"
+      ],
+      "options": {
+        "learning_rate": 0.01,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-8,
+        "weight_decay": 0,
+        "clip_norm": 1,
+        "truncation": 0,
+        "loss_scale": 0,
+        "accumulate_steps": 0,
+        "ranges": null,
+        "schedule": null
+      }
+    },
+    "modulation": null,
+    "reset": {
+      "neural_at_episode_start": true,
+      "plastic_at_episode_start": true,
+      "chemical_at_episode_start": true
+    },
+    "teacher": {
+      "kind": "http/v1",
+      "endpoint": "https://teacher.invalid/answer",
+      "budget": {
+        "max_requests": 3,
+        "max_cost": 0.5
+      },
+      "secret": {
+        "ref": "env:COIMNET_TEACHER_TOKEN"
+      }
+    },
+    "seed": 0,
+    "device": {
+      "kind": "cpu"
+    },
+    "resources": {
+      "max_memory_mib": 0,
+      "max_temp_mib": 64,
+      "max_runs": 1
+    },
+    "splits": {
+      "train": 0.8,
+      "validation": 0.1,
+      "test": 0.1
+    },
+    "output": {
+      "dir": "evidence/OPS-03/fixture/runs"
+    }
+  },
+  "provenance": {
+    "/data/filter": "default",
+    "/data/version": "default",
+    "/device/kind": "default",
+    "/learning/options/accumulate_steps": "default",
+    "/learning/options/beta1": "default",
+    "/learning/options/beta2": "default",
+    "/learning/options/clip_norm": "default",
+    "/learning/options/epsilon": "default",
+    "/learning/options/learning_rate": "default",
+    "/learning/options/loss_scale": "default",
+    "/learning/options/ranges": "default",
+    "/learning/options/schedule": "default",
+    "/learning/options/truncation": "default",
+    "/learning/options/weight_decay": "default",
+    "/learning/rules/0": "default",
+    "/model/graph": "default",
+    "/model/kind": "file",
+    "/model/package": "file",
+    "/modulation": "default",
+    "/output/dir": "file",
+    "/reset/chemical_at_episode_start": "default",
+    "/reset/neural_at_episode_start": "default",
+    "/reset/plastic_at_episode_start": "default",
+    "/resources/max_memory_mib": "cli",
+    "/resources/max_runs": "file",
+    "/resources/max_temp_mib": "file",
+    "/schema_version": "file",
+    "/seed": "default",
+    "/sharing/parameter_sharing": "default",
+    "/signals/encoding": "default",
+    "/signals/mapping": "default",
+    "/splits/test": "default",
+    "/splits/train": "default",
+    "/splits/validation": "default",
+    "/task/loss": "default",
+    "/task/name": "default",
+    "/task/version": "default",
+    "/teacher/budget/max_cost": "file",
+    "/teacher/budget/max_requests": "file",
+    "/teacher/endpoint": "file",
+    "/teacher/kind": "file",
+    "/teacher/secret": "file",
+    "/time/step": "default",
+    "/time/unit": "default",
+    "/trainable/masks": "default",
+    "/trainable/trainable/bias": "default",
+    "/trainable/trainable/encoder": "default",
+    "/trainable/trainable/readout": "default",
+    "/trainable/trainable/tau": "default",
+    "/trainable/trainable/weights": "default"
+  },
+  "checks": [
+    {
+      "name": "configuration",
+      "status": "ok",
+      "detail": "evidence/OPS-03/fixture/config.json read as coimnet-config/v1; 50 leaves resolved over the four layers"
+    },
+    {
+      "name": "task_generator",
+      "status": "ok",
+      "detail": "delayed-correlation/v1 resolves to Five-step synthetic delayed pulse with three matched controls (experiment.RunDelayed)"
+    },
+    {
+      "name": "model",
+      "status": "ok",
+      "detail": "model.package evidence/OPS-03/fixture/tiny.coimpkg is a coimnet-model-package/v1 with 3 nodes and 2 edges, topology f75a605a1fcbaea023eb618377547dbff016670bd1b0aeafce56232d837e0d71, 3 encoder and 1 readout parameters"
+    },
+    {
+      "name": "resources",
+      "status": "failed",
+      "detail": "resources: the declared plan needs 192 bytes, which is above the limit of 0 bytes; nothing was reduced to make it fit. Accounted items:\n  graph_index: 48 bytes ((N+1+E)*8 = (3+1+2)*8 = 48)\n  base_parameters: 16 bytes (E*w = 2*8 = 16)\n  optimizer: 48 bytes (3*E*w = 3*2*8 = 48)\n  neural_state: 24 bytes (N*C*w*B = 3*1*8*1 = 24)\n  fast_changes: 0 bytes (PlasticEdges*w*B = 0*8*1 = 0)\n  eligibility: 0 bytes (EligibilityEdges*w*B = 0*8*1 = 0)\n  delays: 24 bytes (N*(MaxDelay+1)*w*B = 3*(0+1)*8*1 = 24)\n  backward_history: 0 bytes (2*E*w*T*B = 2*2*8*0*1 = 0)\n  encoder: 24 bytes (EncoderValues*w = 3*8 = 24)\n  readout: 8 bytes (ReadoutValues*w = 1*8 = 8)\n  modulation: 0 bytes ((Regions*Channels + Receptors)*w = (0*0 + 0)*8 = 0)\n  replay: 0 bytes (ReplayItems*ReplayItemBytes = 0*0 = 0)\n  buffers: 0 bytes (BufferFactor*subtotal = 0*192 = 0)"
+    },
+    {
+      "name": "teacher",
+      "status": "skipped",
+      "detail": "teacher http/v1 at https://teacher.invalid/answer is declared with a budget of 3 requests; a dry run never called it, and its credential stays a reference to COIMNET_TEACHER_TOKEN; no client is wired in this build (the teacher package is ticket 27)"
+    },
+    {
+      "name": "output",
+      "status": "skipped",
+      "detail": "a run would write into evidence/OPS-03/fixture/runs; a dry run creates nothing there"
+    }
+  ],
+  "estimate": {
+    "items": [
+      {
+        "name": "graph_index",
+        "formula": "(N+1+E)*8 = (3+1+2)*8 = 48",
+        "bytes": 48
+      },
+      {
+        "name": "base_parameters",
+        "formula": "E*w = 2*8 = 16",
+        "bytes": 16
+      },
+      {
+        "name": "optimizer",
+        "formula": "3*E*w = 3*2*8 = 48",
+        "bytes": 48
+      },
+      {
+        "name": "neural_state",
+        "formula": "N*C*w*B = 3*1*8*1 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "fast_changes",
+        "formula": "PlasticEdges*w*B = 0*8*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "eligibility",
+        "formula": "EligibilityEdges*w*B = 0*8*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "delays",
+        "formula": "N*(MaxDelay+1)*w*B = 3*(0+1)*8*1 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "backward_history",
+        "formula": "2*E*w*T*B = 2*2*8*0*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "encoder",
+        "formula": "EncoderValues*w = 3*8 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "readout",
+        "formula": "ReadoutValues*w = 1*8 = 8",
+        "bytes": 8
+      },
+      {
+        "name": "modulation",
+        "formula": "(Regions*Channels + Receptors)*w = (0*0 + 0)*8 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "replay",
+        "formula": "ReplayItems*ReplayItemBytes = 0*0 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "buffers",
+        "formula": "BufferFactor*subtotal = 0*192 = 0",
+        "bytes": 0
+      }
+    ],
+    "total_bytes": 192
+  },
+  "verdict": "refused"
+}

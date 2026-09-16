@@ -1,0 +1,41 @@
+{
+  "requirement": "OPS-06",
+  "profile": "fixture/male-full",
+  "reproduction_command": [
+    "go test -count=1 ./resources/",
+    "go test -count=1 -v -run TestMaleFullEstimateIsRecorded ./resources/",
+    "go test -race -count=1 ./config/ ./resources/ ./internal/cli/",
+    "go test -count=1 ./...",
+    "go vet ./...",
+    "gofmt -l ."
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime at the recorded run: 00:10 up 11 days, 5:48, 1 user, load averages 3.04 3.03 2.52 (shared machine; the ticket 25 agent was editing dynamics/, learning/ and checkpoint/ during this session, so go vet ./... was polled until the whole tree compiled before the recorded run)",
+    "macOS arm64, Insyra v0.3.2"
+  ],
+  "input_fingerprints": [
+    "the male-full plan is declared in resources/resources_test.go (maleFullPlan): Nodes 165122, Edges 25563197, StateDim 1, Individuals 1, HistorySteps 0, Precision f64, Optimizer adamw, MaxDelay 0, EncoderValues 16, ReadoutValues 1, everything else zero",
+    "the node and edge counts are the annotated MaleCNS v1.0 graph of evidence/NAT-01/verification.json, store sha256 a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+    "evidence/OPS-06/male-full-estimate.json is the resources.Report the test produced"
+  ],
+  "observed_result": "resources.Estimate pins the master specification's own 17.1 arithmetic. With E = 15,000,000 at float32 under AdamW, base_parameters is E*w = 15000000*4 = 60,000,000 bytes and optimizer is 3*E*w = 180,000,000 bytes, so parameters plus optimizer is 240,000,000 bytes, which is the specification's 16E. Adding T = 128 with B = 1 makes backward_history 2*E*w*T*B = 2*15000000*4*128*1 = 15,360,000,000 bytes. Both numbers are asserted exactly, together with the substituted formula strings. A plan that declares nothing totals 0 bytes and still lists all thirteen items. An empty precision, an unknown precision, an unknown optimizer, a negative count, edges without nodes, a negative delay, a negative or non-finite buffer factor, more plastic or eligibility edges than edges, and a negative replay item size are each refused. An edge count of MaxInt64/4 at float64 is refused with an error naming the overflow rather than wrapping, and so is a buffer factor whose product does not fit. Check refuses a report of 15,721,600,008 bytes against a limit of 1,048,576 bytes, lists every one of the thirteen items in the message, accepts a report exactly at its limit, and leaves the Plan and the Report equal by reflect.DeepEqual before and after; Estimate leaves its plan unchanged as well.\n\nThe male-full plan totals 1,026,490,952 bytes (about 0.96 GiB): graph_index 205,826,560, base_parameters 204,505,576, optimizer 613,516,728, neural_state 1,320,976, fast_changes 0, eligibility 0, delays 1,320,976, backward_history 0, encoder 128, readout 8, modulation 0, replay 0 and buffers 0. Alongside it, evidence/NAT-01/verification.json records a measured maximum resident set size of 4,378,574,848 bytes (about 4.38 GB) for the whole-brain LIF simulation run. These two numbers are placed side by side and are not claimed to match, and neither is derived from the other: the NAT-01 run is a native simulation with no optimizer, no encoder or readout and no training arrays, its resident set size includes the loaded graph store, Go allocator slack and runtime overhead that this accounting deliberately excludes, and this plan in turn counts AdamW state that the NAT-01 run never allocated.",
+  "assumption_statement": "The male-full plan's declared choices are: float64, because this build computes in float64 on the CPU; AdamW, so three optimizer values per edge parameter; one individual and no truncation window, so no backward history is counted; MaxDelay 0, matching the NAT-01 protocol's zero delays; StateDim 1, counting one state value per node; and a four-input, one-output peripheral selection, read as four input channels projected onto four selected neurons (EncoderValues = 4*4 = 16) and one readout neuron projected onto one output channel (ReadoutValues = 1*1 = 1). StateDim and the peripheral selection are not fixed by ticket 24 and were chosen here; together they contribute 1,321,112 bytes, about 0.13 percent of the total, so the total is dominated by the graph index, the parameters and the optimizer. BufferFactor is 0, which declares that no working-buffer allowance is estimated rather than that buffers cost nothing. Every item is arithmetic over declared arrays; Go allocator slack, decoded JSON objects and the runtime are outside the accounting, exactly as in connectome.StoreLimits.",
+  "test_log": [
+    "evidence/OPS-06/red-resources.log (first failing state of the resources package tests, before resources/resources.go existed)",
+    "evidence/OPS-06/test.log (gofmt, go vet, go test ./..., go test -race on the three packages, and the verbose per-test listing; the same log is kept in evidence/OPS-03/)"
+  ],
+  "reports": [
+    "evidence/OPS-06/male-full-estimate.json",
+    "evidence/NAT-01/verification.json",
+    "evidence/COR-07/verification.json"
+  ],
+  "limitations": [
+    "The male-full number is arithmetic. No training run on the whole graph was executed, and nothing here measures resident set size, wall clock or temporary space for it.",
+    "The 4.38 GB in the comparison is the NAT-01 simulation's measured maximum resident set size on macOS arm64, a different workload from the plan estimated here. The two are reported side by side only.",
+    "StateDim 1 and the four-input, one-output peripheral counts are choices made in this record, not values ticket 24 fixed. Changing them moves the total by about a tenth of a percent.",
+    "BufferFactor 0 means no working-buffer allowance is included. A real run will need scratch space that this total does not cover.",
+    "The buffers item is computed in float64 before conversion, so a very large buffer factor loses precision below one byte; the overflow guard refuses anything that does not fit a uint64.",
+    "run without --dry-run is stage two, and the teacher package is ticket 27; see evidence/OPS-03/verification.json for what the dry run does and does not do."
+  ]
+}

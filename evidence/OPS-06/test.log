@@ -1,0 +1,138 @@
+# ticket 24 stage one verification, run from /Users/timlai/Developer/coimnet
+# go version go1.26.5 darwin/arm64
+#  0:10  up 11 days,  5:48, 1 user, load averages: 3.04 3.03 2.52
+
+$ gofmt -l .
+(nothing listed above: every file is formatted)
+
+$ go vet ./...
+vet exit 0
+
+$ go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.460s
+ok  	github.com/TimLai666/coimnet/checkpoint	2.142s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	1.302s
+ok  	github.com/TimLai666/coimnet/connectome	2.593s
+ok  	github.com/TimLai666/coimnet/download	2.685s
+ok  	github.com/TimLai666/coimnet/dynamics	2.350s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	2.765s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	3.077s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	3.388s
+ok  	github.com/TimLai666/coimnet/experiment	3.467s
+ok  	github.com/TimLai666/coimnet/feather	2.228s
+ok  	github.com/TimLai666/coimnet/internal/cli	14.874s
+ok  	github.com/TimLai666/coimnet/internal/extsort	2.562s
+ok  	github.com/TimLai666/coimnet/internal/fileio	2.737s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	3.070s
+ok  	github.com/TimLai666/coimnet/internal/sparse	3.137s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	3.040s
+ok  	github.com/TimLai666/coimnet/learning	2.896s
+ok  	github.com/TimLai666/coimnet/modulation	2.821s
+ok  	github.com/TimLai666/coimnet/params	3.125s
+ok  	github.com/TimLai666/coimnet/plasticity	2.728s
+ok  	github.com/TimLai666/coimnet/replay	2.738s
+ok  	github.com/TimLai666/coimnet/resources	2.695s
+ok  	github.com/TimLai666/coimnet/signal	2.627s
+ok  	github.com/TimLai666/coimnet/simulate	3.340s
+test exit 0
+
+$ go test -race -count=1 ./config/ ./resources/ ./internal/cli/
+ok  	github.com/TimLai666/coimnet/config	1.848s
+ok  	github.com/TimLai666/coimnet/resources	1.385s
+ok  	github.com/TimLai666/coimnet/internal/cli	28.587s
+race exit 0
+
+$ go run ./cmd/coimnet run --help
+2026/09/17 00:11:12 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+Usage: coimnet run --config FILE [--set section.field=value]... --dry-run
+Reads one strictly validated coimnet-config/v1 document and expands it over four layers, in the fixed order default, file, environment (COIMNET_SECTION_FIELD), command line (--set). Unknown fields, duplicate keys, null required values and names no implementation answers to are all refused. A secret is only ever a reference of the form {"ref": "env:NAME"}; its value is never read or printed here.
+With --dry-run it resolves the task generator, loads the declared model package or graph store, builds the pre-launch memory estimate and checks it against resources.max_memory_mib, then prints one coimnet-dry-run/v1 JSON document holding the expanded configuration, the provenance of every leaf, every check and the estimate with its formulas. A dry run has no side effects: it writes no file, creates no output directory, changes no parameter and calls no teacher.
+Without --dry-run the command reports that executing a configuration is not implemented in this stage.
+Exit status: 0 when every check passes, 2 when the run is refused (a failed check, or an estimate above the declared limit), 1 for a usage or configuration error.
+Example: coimnet run --config runs/fixture.json --set resources.max_memory_mib=4096 --dry-run > dry-run.json
+Errors: missing or unreadable configuration, invalid or unknown configuration fields, an override that addresses no field, an unreadable model package or graph store, an estimate above the declared memory limit, cancellation or output failure.
+Options and their defaults:
+  -config string
+    	required path to a coimnet-config/v1 document (default none)
+  -dry-run
+    	expand and check the configuration without running anything (default false)
+  -set value
+    	override one field, written section.field=value; repeatable, highest precedence (default none)
+exit 0
+
+$ go test -count=1 -v ./config/ ./resources/
+=== RUN   TestLoadRejectsUnknownFieldWithItsPath
+--- PASS: TestLoadRejectsUnknownFieldWithItsPath (0.00s)
+=== RUN   TestLoadRejectsDuplicateKey
+--- PASS: TestLoadRejectsDuplicateKey (0.00s)
+=== RUN   TestLoadRejectsNullRequiredValue
+--- PASS: TestLoadRejectsNullRequiredValue (0.00s)
+=== RUN   TestLoadRequiresSchemaVersion
+--- PASS: TestLoadRequiresSchemaVersion (0.00s)
+=== RUN   TestLoadRejectsUnknownNamesAndNamesTheRegistry
+--- PASS: TestLoadRejectsUnknownNamesAndNamesTheRegistry (0.00s)
+=== RUN   TestModelRequiresExactlyOneSource
+--- PASS: TestModelRequiresExactlyOneSource (0.00s)
+=== RUN   TestProvenanceReportsTheWinningLayer
+--- PASS: TestProvenanceReportsTheWinningLayer (0.00s)
+=== RUN   TestProvenanceCoversEveryLeaf
+--- PASS: TestProvenanceCoversEveryLeaf (0.00s)
+=== RUN   TestEnvironmentAndCommandLineValuesAreParsedByTargetType
+--- PASS: TestEnvironmentAndCommandLineValuesAreParsedByTargetType (0.00s)
+=== RUN   TestEnvironmentAndCommandLineRejectBadNamesAndValues
+--- PASS: TestEnvironmentAndCommandLineRejectBadNamesAndValues (0.00s)
+=== RUN   TestSecretLiteralIsRejectedAndNamesTheField
+--- PASS: TestSecretLiteralIsRejectedAndNamesTheField (0.00s)
+=== RUN   TestMarshalCarriesReferencesAndNeverTheSecretValue
+--- PASS: TestMarshalCarriesReferencesAndNeverTheSecretValue (0.00s)
+=== RUN   TestExpandedDocumentRoundTrips
+--- PASS: TestExpandedDocumentRoundTrips (0.00s)
+=== RUN   TestDefaultsAreValidatedAsFarAsTheyCanBe
+--- PASS: TestDefaultsAreValidatedAsFarAsTheyCanBe (0.00s)
+=== RUN   TestTaskGeneratorRegistryResolvesWhatExistsToday
+--- PASS: TestTaskGeneratorRegistryResolvesWhatExistsToday (0.00s)
+=== RUN   TestSchemaDocumentListsEveryTopLevelKey
+--- PASS: TestSchemaDocumentListsEveryTopLevelKey (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/config	0.381s
+=== RUN   TestEstimatePinsSpecificationParameterAndOptimizerArithmetic
+--- PASS: TestEstimatePinsSpecificationParameterAndOptimizerArithmetic (0.00s)
+=== RUN   TestEstimatePinsSpecificationBackwardHistoryArithmetic
+--- PASS: TestEstimatePinsSpecificationBackwardHistoryArithmetic (0.00s)
+=== RUN   TestEstimateZeroPlanIsZero
+--- PASS: TestEstimateZeroPlanIsZero (0.00s)
+=== RUN   TestEstimateRejectsInvalidDeclarations
+--- PASS: TestEstimateRejectsInvalidDeclarations (0.00s)
+=== RUN   TestEstimateRejectsOverflowInsteadOfWrapping
+--- PASS: TestEstimateRejectsOverflowInsteadOfWrapping (0.00s)
+=== RUN   TestCheckRefusesOverLimitAndChangesNothing
+--- PASS: TestCheckRefusesOverLimitAndChangesNothing (0.00s)
+=== RUN   TestMaleFullEstimateIsRecorded
+--- PASS: TestMaleFullEstimateIsRecorded (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/resources	0.172s
+
+$ go test -count=1 -v -run 'TestRun(DryRun|Overrides|WithoutDryRun|RejectsUsage|HelpLists)' ./internal/cli/
+=== RUN   TestRunDryRunReportsAnEstimateAndPassesEveryCheck
+--- PASS: TestRunDryRunReportsAnEstimateAndPassesEveryCheck (0.02s)
+=== RUN   TestRunDryRunNeverCallsTheTeacher
+--- PASS: TestRunDryRunNeverCallsTheTeacher (0.01s)
+=== RUN   TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit
+--- PASS: TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit (0.01s)
+=== RUN   TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules
+--- PASS: TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules (0.01s)
+=== RUN   TestRunDryRunFailsTheCheckThatNamesAMissingModel
+--- PASS: TestRunDryRunFailsTheCheckThatNamesAMissingModel (0.00s)
+=== RUN   TestRunRejectsUsageErrorsWithStatusOne
+--- PASS: TestRunRejectsUsageErrorsWithStatusOne (0.01s)
+=== RUN   TestRunWithoutDryRunSaysWhichStageImplementsIt
+--- PASS: TestRunWithoutDryRunSaysWhichStageImplementsIt (0.01s)
+=== RUN   TestRunOverridesAreAppliedAndRecorded
+--- PASS: TestRunOverridesAreAppliedAndRecorded (0.01s)
+=== RUN   TestRunHelpListsEveryFlagWithDefaultsAndAnExample
+--- PASS: TestRunHelpListsEveryFlagWithDefaultsAndAnExample (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/cli	0.360s

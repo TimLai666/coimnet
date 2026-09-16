@@ -11,7 +11,8 @@ User Story：使用者可以寫一份嚴格驗證、全部展開、覆寫來源�
 Blocked by：16 模型包（`model inspect`）、17 最佳化器（組態的學習規則區塊）、20／21（組態的調節器區塊，
 可先以「未宣告」通過）、23（`evaluate` 子命令由該票接上）、22（`ablate` 子命令由該票接上）
 
-Status：draft（契約已於 2026-09-15 定案；分三階段派工，第一階段不依賴 20 以後的票）
+Status：第一階段已完成並驗證（2026-09-16 完成，2026-09-17 重跑驗證，見「第一階段證據」）；第二、三階段未開始。契約已於
+2026-09-15 定案，分三階段派工，第一階段不依賴 20 以後的票。
 
 對應需求：OPS-03（未知欄位拒絕，覆寫順序與來源可查，dry-run 不學習不呼叫教師）、OPS-06（計算包含邊
 狀態歷史與外圍模型；不足時拒絕，不自動縮減）、OPS-01（API 例子可執行，錯誤不 panic，取消後釋放資源）、
@@ -124,13 +125,54 @@ func NewWriter(w io.Writer) io.Writer
 
 ## 驗收
 
-- [ ] 第一階段：未知欄位拒絕、來源追蹤四層、金鑰只存參照、不存在的 generator 拒絕；資源預估兩個算術示例
+- [x] 第一階段：未知欄位拒絕、來源追蹤四層、金鑰只存參照、不存在的 generator 拒絕；資源預估兩個算術示例
   釘住、真實圖預估記錄、超限拒絕且 Plan 不變；`run --dry-run` 零副作用與教師呼叫次數 0；
   `go test`、race、vet；`evidence/OPS-03/`、`evidence/OPS-06/`。
 - [ ] 第二階段：SDK 範例可執行、非法輸入不 panic、五個取消釋放測試；每個 CLI 命令端到端與失敗測試、
   `--help` 完整；`evidence/OPS-01/`、`evidence/OPS-02/`。
 - [ ] 第三階段：遷移不覆寫原件、報告含前後指紋與資訊損失、一個真實遷移；遮罩、掃描腳本、無遙測與
   `net/http` 範圍測試、symlink 與超大檔拒絕；`evidence/STA-05/`、`evidence/STA-06/`；文件。
+
+## 第一階段證據（2026-09-16 完成，2026-09-17 重跑全部驗證）
+
+`config`、`resources` 與 `internal/cli/config_run.go` 完成，先寫失敗測試再實作，紅燈輸出留在
+`evidence/OPS-03/red-config.log`、`evidence/OPS-03/red-dry-run.log` 與 `evidence/OPS-06/red-resources.log`。
+
+- `evidence/OPS-03/`：`verification.json`、`test.log`、`cli-exit-status.log`，以及可重跑的
+  `fixture/`（三神經元模型包、組態、成功與被拒絕的兩份 `coimnet-dry-run/v1` 報告）。
+- `evidence/OPS-06/`：`verification.json`、`test.log`、`male-full-estimate.json`。
+- 文件：`docs/config-schema.md`，`config/config_test.go` 的 `TestSchemaDocumentListsEveryTopLevelKey`
+  會把 `Defaults()` 的每個頂層鍵與每個任務產生器名稱對照該文件。
+- 驗證：`gofmt -l .` 無輸出、`go vet ./...`、`go test -count=1 ./...`、
+  `go test -race -count=1 ./config/ ./resources/ ./internal/cli/` 全部通過，
+  `go run ./cmd/coimnet run --help` 列出三個旗標、預設值與範例。
+- 兩個釘住的算術示例：`E = 15,000,000`、f32、AdamW 的參數加最佳化器為 240,000,000 bytes（`16E`）；
+  加上 `T = 128`、`B = 1` 的反向歷史為 15,360,000,000 bytes。全圖預估（165,122 節點、25,563,197 邊、
+  f64、AdamW、`T = 0`）為 1,026,490,952 bytes，與 NAT-01 實測 4,378,574,848 bytes 最大 RSS 並列記錄，
+  不宣稱兩者吻合。
+
+### 與票面的差異
+
+1. **`learning.options` 不含 `trainable` 與 `masks`。** 票面同時列出 `trainable{trainable, masks}` 區塊與
+   「`learning.Options` 形狀」的 `options`，兩者會讓同一個開關在文件裡出現兩次，其中一份必然被忽略。
+   本階段改用 `config.LearningOptions`：欄位名稱與 `learning.Options` 相同，但拿掉 `trainable` 與
+   `masks`，那兩個欄位只在 `trainable` 區塊宣告。
+2. **`task` 分成 `name` 與 `version` 兩個欄位**，註冊表的鍵是 `name/version`，例如
+   `delayed-correlation/v1`。
+3. **秘密指到的 `COIMNET_` 變數不當成覆寫。** 環境覆寫的命名規則是 `COIMNET_` 加欄位路徑，而金鑰參照
+   也常指向 `COIMNET_` 變數，兩者會撞名。被 `secret` 指名的變數一律跳過；如果它同時對應到某個組態欄位，
+   載入直接回錯誤要求改名，避免同一個變數有兩種意思。
+4. **`cmd/coimnet/main.go` 改用 `cli.ExitCode(err)`**（原本固定 `os.Exit(1)`），否則票面要求的
+   「0／2／1」三種退出狀態無法真的出現在行程上。其他子命令的錯誤仍然是 1，行為不變。
+5. **`teacher.kind` 註冊表只有 `http/v1`，而且沒有任何客戶端實作它。** 這是為了讓組態能宣告教師並驗證
+   「呼叫次數為 0」。`run --dry-run` 對已宣告的教師一律回報 `skipped`。
+6. **`resources.Plan.BufferFactor` 在 dry-run 固定為 0**，組態沒有對應欄位。報告的檢查說明與證據都寫明
+   沒有估算暫存額度。
+7. **`Nodes == 0` 時 `graph_index` 為 0**，而不是 `(0+1+0)*8 = 8`，因為沒有節點就沒有那個索引陣列；
+   `Edges > 0` 而 `Nodes == 0` 的計畫直接拒絕。這是「零計畫總和為零」那條測試成立的前提。
+8. **`splits` 是三個相加為 1 的比例**，容許 1e-9 浮點誤差。票面只寫了 `{train, validation, test}`。
+9. **`resources.max_memory_mib` 允許 0**，表示沒有任何計畫可接受。fixture 的預估只有 192 bytes，
+   任何整數 MiB 都不會觸發拒絕，需要 0 才能驗證超限路徑。
 
 ## 依據
 
