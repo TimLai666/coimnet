@@ -62,8 +62,9 @@ func (m *Model) Effective(base []float64, signs []int8, s State) ([]float64, Cla
 - [x] 第一階段：兩種規則各一組 2–3 神經元手算時序（含閘門關閉、延遲閘門、衰退、上限、`w_min`）；
   關閉可塑性逐位等於未啟用；固定符號邊不跨零；快照往返；`go test`、race、vet；`evidence/LRN-04/`、
   `evidence/LRN-05/`。
-- [ ] 第二階段：runner 與 compare 的 `plasticity` 區塊、三格對照（前／後／關閉）在 fixture 與全圖
-  各跑一次；`evidence/NAT-06/`；文件。
+- [x] 第二階段：runner 與 compare 的 `plasticity` 區塊、三格對照（前／後／關閉）在 fixture 與全圖
+  各跑一次；`evidence/NAT-06/`；文件。（由 [ticket 19](19-plasticity-on-runner.md) 完成，2026-09-16：
+  fixture 手算與兩次全腦三格對照，NAT-06 passed。）
 
 ## 依據
 

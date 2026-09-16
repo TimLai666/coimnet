@@ -24,6 +24,8 @@ SIG-04 的輸入／輸出映射保存、重建、圖綁定與獨立替換通過 
 
 化學濃度、受體與效果（ticket 21 第一階段、MOD-02、MOD-03）與運行中學習與重播（ticket 23 第一階段、LRN-06、LRN-07）已在 fixture 驗證：濃度依 `lambda = exp(-dt/tau)` 衰退並收斂到 `tau*q`（幾何級數手算），區域傳輸不增加總量，負釋放率與非法傳輸都被拒絕；受體佔用率在對數域計算，`c = 1e300, n = 8` 仍為有限值，`unresponsive`／`unknown`／`hypothesized` 三種狀態分開報告且未知係數只在明示允許時才用並標為假設；效果映射在濃度為零時逐位等於未啟用，兩個核心的 `AdvanceModulated` 在 nil 與中性調節下逐位等於 `Advance`。第二階段把化學層接上持續個體：每一步固定走來源釋放 → 濃度 → 佔用率 → 效果陣列 → 調節後的核心一步 → 可塑性，連續與 LIF 各有四步手算表（LIF 的閾值效果抑制了原本會發生的放電），100 步後基礎參數逐位不變，中途快照帶濃度、資源與待處理回饋接續後逐位相同；MOD-04 標 passed，證據見 [MOD-04](evidence/MOD-04/verification.json)。運行中學習把作答、收回饋、更新三步分開，已輸出的答案 hash 在回饋與更新後不變，評估模式拒絕任何更新；重播存放區的先進先出與水塘淘汰、三種抽樣都有固定 seed 的手算序列，中途快照接續的抽樣序列與連續執行相同，測試分割永遠進不了重播。證據見 [MOD-02](evidence/MOD-02/verification.json)、[MOD-03](evidence/MOD-03/verification.json)、[LRN-06](evidence/LRN-06/verification.json)、[LRN-07](evidence/LRN-07/verification.json)。
 
+runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：protocol 可宣告 `plasticity` 區塊（規則、邊選擇、閘門通道與比例），runner 在開啟時強制每步一次核心呼叫、每步先由快速狀態算有效權重再更新參與紀錄，`simulate compare` 新增 `original`／`plastic`／`learned_then_frozen` 三格；fixture 三神經元手算逐位相同，NAT-01 的 `protocol_hash` 由測試釘住不變；全腦（165,122 節點、25,563,197 邊、300 步、全部邊啟用、`hebbian_rate`）各跑兩次三格（`decay_p` 0.5 與 0.999），每格約 600 秒、最大 RSS 約 6.6 GB，`original` 格與 NAT-02 的全腦執行逐位相同；`decay_p` 0.999 時 ALIN 集合的 `mean_rate_after` 由 0.246 升到 0.305（凍結後 0.319），下行神經元的 `activity_ratio_after` 由 56.5 降到 54.4（凍結後 6.3），這些是同一刺激下的差值與百分位，報告不做文字判斷；`decay_p` 0.5 時關閉閘門 250 步後快速變化衰退到 8e-75，`learned_then_frozen` 與 `original` 逐位相同，是規則時間常數造成的。證據見 [NAT-06](evidence/NAT-06/verification.json)。
+
 ## 階段目標
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
@@ -58,7 +60,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 15 | 強化：續傳、共用嚴格 JSON、邊順序守衛 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `.part` 截斷續傳、死 pid 鎖回收、`signal` 改用 `strictjson`、推導的邊順序守衛皆有回歸測試 |
 | 16 | 研究者可建立 LIF 個體、開啟慢速穩定並發布模型包 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 神經狀態聯集與舊檔升級、慢速穩定手算時序與收斂、模型包六種交叉拒絕、LIF 個體跨程序恢復逐項相等；COR-04、STA-01 passed；只有 fixture、只在 macOS |
 | 17 | 使用者可以限制可更新參數、符號與範圍，並使用完整最佳化器流程 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 遮罩、固定符號（1,000 步不翻轉、有限差分 4.91e-05）、範圍投影、推導符號；損失縮放逐位相同、累積手算、三種排程手算與恢復接續、裁切順序；COR-10、LRN-03 passed；只有 fixture、只在 macOS |
-| 18 | 研究者可以使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：兩種規則手算時序、閘門關／延遲閘門／衰退／上限／`w_min`、關閉逐位還原、快照往返，LRN-04、LRN-05 passed；第二階段（runner 對照，NAT-06）由 ticket 19 進行 |
+| 18 | 研究者可以使用近期參與紀錄、學習閘門與兩種局部更新規則 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 兩種規則手算時序、閘門關／延遲閘門／衰退／上限／`w_min`、關閉逐位還原、快照往返，LRN-04、LRN-05 passed；第二階段（runner 對照）由 ticket 19 完成 |
+| 19 | 研究者可以在原生模擬之上開啟可塑性，並報告原有輸出被增強、修改或破壞 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | protocol `plasticity` 區塊、runner 逐步有效權重、`simulate compare` 三格（original／plastic／learned_then_frozen）；fixture 手算逐位相同、NAT-01 `protocol_hash` 不變；全腦兩次各三格（`decay_p` 0.5 與 0.999，每格約 600 s、RSS 6.6 GB），報告只給差值與百分位；NAT-06 passed；只在 macOS、`stdp_pair` 只有 fixture |
 | 20 | 研究者可以把觀察、目標與事後回饋分開，並選擇調節訊號的來源 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `AvailableFeedback`、四種來源手算、獎懲映射四值分開、靜態 import 檢查腳本與 NaN 汙染測試；SIG-03、MOD-01、MOD-08 passed；控制器來源只保留名字（MOD-07） |
 | 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；個體每步順序在連續與 LIF 各有手算表、100 步 `Parameters` 逐位不變、中途快照接續逐位相同、`modulation` 不再依賴 `simulate`；MOD-02、MOD-03、MOD-04 passed；來源對所有區域一致、只有 fixture |
 | 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）待派工 |
