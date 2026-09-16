@@ -203,18 +203,16 @@ func (m *Continuous) AdvanceModulated(ctx context.Context, p Parameters, s State
 		step := s.Steps + uint64(t)
 		first := step - uint64(length-1)
 		drive := append([]float64(nil), input...)
-		for e, source := range m.config.Sources {
-			if e%4096 == 0 {
-				if err = ctx.Err(); err != nil {
-					return State{}, nil, err
-				}
+		if m.partition != nil {
+			if err = m.synapticDriveParallel(drive, p.Weights, &ringReader{ring: ring, sources: m.config.Sources, delays: m.config.Delays, head: head, capacity: capacity, step: step, first: first}); err != nil {
+				return State{}, nil, err
 			}
-			past := uint64(0)
-			if uint64(m.config.Delays[e]) < step {
-				past = step - uint64(m.config.Delays[e])
-			}
-			offset := int(past - first)
-			drive[m.config.Targets[e]] += p.Weights[e] * ring[(head+offset)%capacity][source]
+		} else {
+			r := ringReader{ring: ring, sources: m.config.Sources, delays: m.config.Delays, head: head, capacity: capacity, step: step, first: first}
+			r.accumulateSerial(drive, p.Weights, m.config.Targets)
+		}
+		if err = ctx.Err(); err != nil {
+			return State{}, nil, err
 		}
 		next, output := make([]float64, n), make([]float64, n)
 		for i := range drive {

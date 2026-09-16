@@ -35,7 +35,10 @@ type Parameters struct {
 }
 
 // Continuous is immutable and safe for concurrent independent trajectories.
-type Continuous struct{ config Config }
+type Continuous struct {
+	config    Config
+	partition *targetPartition
+}
 
 // Trace owns the parameter snapshot and neural history for one forward pass.
 // It contains no optimizer, mutable anatomy, or external side effects.
@@ -82,7 +85,21 @@ func NewContinuous(c Config) (*Continuous, error) {
 			return nil, fmt.Errorf("edge %d has invalid endpoint or delay", e)
 		}
 	}
-	return &Continuous{config: c}, nil
+	// The partition is built only for parallel runs. Workers 0/1 is the single
+	// threaded reference mode with partition == nil and the original eager
+	// loop; for Workers > 1 it groups edges by target so each target's inputs
+	// are summed in declared order. Building it here, after every validation,
+	// keeps a huge declared node count from allocating before an invalid
+	// configuration is rejected.
+	var partition *targetPartition
+	if c.Workers > 1 {
+		var err error
+		partition, err = newTargetPartition(c.Nodes, c.Workers, c.Sources, c.Targets)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &Continuous{config: c, partition: partition}, nil
 }
 
 // Config returns an independent topology/configuration copy.
@@ -96,6 +113,78 @@ func (m *Continuous) Config() Config {
 	c.Targets = append([]int(nil), c.Targets...)
 	c.Delays = append([]int(nil), c.Delays...)
 	return c
+}
+
+// reader returns the delayed input of edge e for one synaptic drive pass. It
+// is used only by the parallel path, where extra allocations are allowed; the
+// reference path uses the concrete accumulateSerial methods below so its
+// allocations stay within the original eager loop's per-step budget.
+type reader interface {
+	at(e int) float64
+}
+
+// forwardReader reads delayed outputs of a forward Trace.
+type forwardReader struct {
+	output  [][]float64
+	sources []int
+	delays  []int
+	t       int
+}
+
+func (r forwardReader) at(e int) float64 {
+	past := 0
+	if r.delays[e] < r.t {
+		past = r.t - r.delays[e]
+	} // avoid subtraction overflow
+	return r.output[past][r.sources[e]]
+}
+
+// ringReader reads delayed outputs from an Advance ring slot.
+type ringReader struct {
+	ring     [][]float64
+	sources  []int
+	delays   []int
+	head     int
+	capacity int
+	step     uint64
+	first    uint64
+}
+
+func (r ringReader) at(e int) float64 {
+	past := uint64(0)
+	if uint64(r.delays[e]) < r.step {
+		past = r.step - uint64(r.delays[e])
+	}
+	offset := int(past - r.first)
+	return r.ring[(r.head+offset)%r.capacity][r.sources[e]]
+}
+
+// accumulateSerial adds weights[e]*r.at(e) to drive[targets[e]] in declared
+// edge order, bit-identical to the original eager single threaded loop.
+func (r forwardReader) accumulateSerial(drive, weights []float64, targets []int) {
+	for e := range weights {
+		drive[targets[e]] += weights[e] * r.at(e)
+	}
+}
+
+// accumulateSerial adds weights[e]*r.at(e) to drive[targets[e]] in declared
+// edge order, bit-identical to the original eager single threaded loop.
+func (r ringReader) accumulateSerial(drive, weights []float64, targets []int) {
+	for e := range weights {
+		drive[targets[e]] += weights[e] * r.at(e)
+	}
+}
+
+// synapticDriveParallel accumulates weights[e]*r.at(e) into drive[target] on
+// the owning worker. Each target's addition order stays the declared edge
+// order, so results are bit-identical to the single threaded pass.
+func (m *Continuous) synapticDriveParallel(drive, weights []float64, r reader) error {
+	return m.partition.Run(func(target int, edges []int) error {
+		for _, e := range edges {
+			drive[target] += weights[e] * r.at(e)
+		}
+		return nil
+	})
 }
 
 // Forward evolves a nonempty sequence without changing its arguments. The
@@ -147,8 +236,17 @@ func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float6
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if err := vector(in, n, fmt.Sprintf("input[%d]", t)); err != nil {
-			return nil, err
+		// Validate inline without building an input[%d] name string on the
+		// success path: the reference forward must keep the eager loop's
+		// per-step allocation budget, and per-step formatting strings escape
+		// to the heap under the race detector. Error text is unchanged.
+		if len(in) != n {
+			return nil, fmt.Errorf("input[%d] length %d, want %d", t, len(in), n)
+		}
+		for i, x := range in {
+			if !finite(x) {
+				return nil, fmt.Errorf("input[%d][%d] is non-finite", t, i)
+			}
 		}
 	}
 	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha}
@@ -162,17 +260,16 @@ func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float6
 			return nil, err
 		}
 		drive := append([]float64(nil), in...)
-		for e, s := range m.config.Sources {
-			if e%4096 == 0 {
-				if err := ctx.Err(); err != nil {
-					return nil, err
-				}
+		if m.partition != nil {
+			if err := m.synapticDriveParallel(drive, p.Weights, &forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t}); err != nil {
+				return nil, err
 			}
-			past := 0
-			if m.config.Delays[e] < t {
-				past = t - m.config.Delays[e]
-			} // avoid subtraction overflow
-			drive[m.config.Targets[e]] += p.Weights[e] * tr.output[past][s]
+		} else {
+			r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t}
+			r.accumulateSerial(drive, p.Weights, m.config.Targets)
+		}
+		if err := ctx.Err(); err != nil {
+			return nil, err
 		}
 		vnext, ynext := make([]float64, n), make([]float64, n)
 		for i := range drive {
