@@ -8,6 +8,44 @@
 
 目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值，也可以開啟慢速穩定，讓每顆神經元依自己的活動估計調整閾值偏移。連續與 LIF 都能建立持續個體，把電位、延遲歷史、突觸跡、適應、不應期與慢速穩定狀態一起保存和接續。模型包、個體快照與訓練快照是三種分開版本的保存物，彼此不能互相當成完整恢復來源。官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。完整圖訓練、按類型混合、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
 
+## 能力狀態
+
+未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，真實全圖只有 NAT-01～06 那幾列使用 `male-full`，其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
+
+| 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |
+| --- | --- | --- | --- | --- |
+| 連續核心訓練：可訓練稀疏連續動態、真實連線計算、完整／截斷梯度、受限更新與完整最佳化器（COR-02、COR-07、COR-08、COR-10、LRN-01、LRN-03） | 已訓練（人工資料） | fixture | 核心能力 | [COR-02](evidence/COR-02/verification.json)・[COR-07](evidence/COR-07/verification.json)・[COR-08](evidence/COR-08/verification.json)・[COR-10](evidence/COR-10/verification.json)・[LRN-01](evidence/LRN-01/verification.json)・[LRN-03](evidence/LRN-03/verification.json) |
+| LIF 放電核心：替代梯度閾值訓練、慢速穩定與個體持續狀態（COR-03、COR-04、COR-09） | 已訓練（人工資料） | fixture | 核心能力 | [COR-03](evidence/COR-03/verification.json)・[COR-04](evidence/COR-04/verification.json)・[COR-09](evidence/COR-09/verification.json) |
+| 混合核心：連續／脈衝依神經元類型混合執行（COR-05） | 初始化模型（未訓練） | fixture | 核心能力 | [COR-05](evidence/COR-05/verification.json) |
+| 訊號、時間對齊與映射：具名訊號、因果／離線取樣、輸入輸出映射保存與替換（SIG-01、SIG-02、SIG-04、SIG-05、SIG-06） | 初始化模型（資料層） | fixture | 核心能力 | [SIG-01](evidence/SIG-01/verification.json)・[SIG-02](evidence/SIG-02/verification.json)・[SIG-04](evidence/SIG-04/verification.json)・[SIG-05](evidence/SIG-05/verification.json)・[SIG-06](evidence/SIG-06/verification.json) |
+| 個體與保存：解剖／參數／個體／訓練器狀態分離、三種保存物、安全快照與隔離個體（COR-01、STA-01、STA-02、STA-04） | 已訓練（人工資料） | fixture | 核心能力 | [COR-01](evidence/COR-01/verification.json)・[STA-01](evidence/STA-01/verification.json)・[STA-02](evidence/STA-02/verification.json)・[STA-04](evidence/STA-04/verification.json) |
+| 調節來源與化學：觀察／目標／回饋分離、四種調節來源、獎懲映射、時間衰退的濃度、選擇性受體與效果（SIG-03、MOD-01、MOD-02、MOD-03、MOD-04、MOD-08） | 初始化模型（未訓練） | fixture | 核心能力 | [SIG-03](evidence/SIG-03/verification.json)・[MOD-01](evidence/MOD-01/verification.json)・[MOD-02](evidence/MOD-02/verification.json)・[MOD-03](evidence/MOD-03/verification.json)・[MOD-04](evidence/MOD-04/verification.json)・[MOD-08](evidence/MOD-08/verification.json) |
+| 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
+| 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
+| 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |
+| 動態參數 adapter：由發布資料推導正負號、信心度與強度並回報未知計數（NAT-02） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-02](evidence/NAT-02/verification.json) |
+| 空模型對照與判讀：保留度數重連、正負號／權重置換、具名集合與事前門檻（NAT-03、NAT-04、NAT-05） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-03](evidence/NAT-03/verification.json)・[NAT-04](evidence/NAT-04/verification.json)・[NAT-05](evidence/NAT-05/verification.json) |
+| 原生模擬上的可塑性對照：original／plastic／learned_then_frozen 三格比較（NAT-06） | 初始化模型（未訓練，快速變化不寫回參數集） | male-full | 核心能力 | [NAT-06](evidence/NAT-06/verification.json) |
+| 官方資料工具：下載與校驗、Feather 逐批讀取、標準化接線圖建構、外部 ID 保真、聚合與未知欄位保留（DAT-01、DAT-02、DAT-03、DAT-04、DAT-05、DAT-08） | 不適用（資料管線） | 官方全量原件（非模型執行） | 工具輔助 | [DAT-01](evidence/DAT-01/verification.json)・[DAT-02](evidence/DAT-02/verification.json)・[DAT-03](evidence/DAT-03/verification.json)・[DAT-04](evidence/DAT-04/verification.json)・[DAT-05](evidence/DAT-05/verification.json)・[DAT-08](evidence/DAT-08/verification.json) |
+| 真實子圖範例：ALIN 子圖選取與人工脈衝短訓練（DAT-07） | 已訓練（人工脈衝短訓練） | real-subgraph | 工具輔助（範例） | [DAT-07](evidence/DAT-07/verification.json) |
+| 教師工具：離線 JSONL 答案、重播、HTTP 存取與封鎖教師（TCH-01、TCH-02） | 不適用（教師工具） | fixture | 工具輔助（教師） | [TCH-01](evidence/TCH-01/verification.json)・[TCH-02](evidence/TCH-02/verification.json) |
+| 環境與自動驗證：鎖定版本建置、Insyra 實際參與運算、自動防退步檢查（GOV-02、GOV-03、OPS-09） | 不適用（環境與測試） | 不適用 | 工具輔助 | [GOV-02](evidence/GOV-02/verification.json)・[GOV-03](evidence/GOV-03/verification.json)・[OPS-09](evidence/OPS-09/verification.json) |
+
+以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。
+
+## 科學界線
+
+下列界線逐條對應[主規格 3.2](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md#chapter-03)：
+
+- 接線圖不是已訓練好的全能模型：接線只決定哪些神經元相連，動態、參數與學習方法是明示的額外假設，未經訓練的圖只能稱為初始化模型。
+- 神經傳導物質預測不等於已量測的突觸作用正負：推導的正負號由「預測機率」依規則換出，不是量測值，未知的邊必須保持未知。
+- 未知受體不是沒有受體：查無受體表現資料時以 `unresponsive`／`unknown`／`hypothesized` 分開報告，採用未知係數必須明示為假設。
+- 數千萬個突觸接點不等於同樣數量的獨立參數：接點數、神經元配對數與參數量分開統計，接線規模不能自動當成可訓練參數量。
+- 獎勵、懲罰、損失函數、神經調節物質、內分泌荷爾蒙是不同概念：可以互相映射，但不能改名後宣稱生物合理。
+- 固定編碼器不等於能力歸因已完成：固定輸入輸出映射的貢獻必須以對照（例如空模型）確認才算歸因。
+- 專案名稱不構成新的學術分類或優於既有方法的證據：CoImNet 只是框架名稱，不是已驗證的生物或學術宣稱。
+- 全腦或 GPU 測試受硬體限制時標示受阻：缺少資料或硬體的項目標 `blocked_*`，不拿小型資料或人工圖的成功替代全圖或平台執行。
+
 ## 建置與範例
 
 ```sh
