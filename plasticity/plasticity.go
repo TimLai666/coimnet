@@ -477,12 +477,28 @@ func (m *Model) GateFor(occupancy float64) (float64, bool) {
 	return m.rule.GateScale * occupancy, true
 }
 
-// Effective returns the weights the core integrates, given the effective base
-// weights it would integrate without plasticity (already through the
-// log-magnitude parametrization of a fixed-sign edge) and the declared signs.
-// signs may be nil or empty, which means every edge is free. The returned
-// slice is owned by the caller and base is never modified.
+// Effective returns the weights the core integrates and is exactly
+// EffectiveWith with no slow layer, which is the behavior that existed before
+// consolidation was added: the slow layer is optional and the nil and the
+// missing-layer path must stay bit-identical to it.
 func (m *Model) Effective(base []float64, signs []int8, s State) ([]float64, ClampReport, error) {
+	return m.EffectiveWith(base, signs, s, nil)
+}
+
+// EffectiveWith returns the weights the core integrates, given the effective
+// base weights it would integrate without plasticity (already through the
+// log-magnitude parametrization of a fixed-sign edge), the declared signs and
+// the slow consolidation layer. signs may be nil or empty, which means every
+// edge is free. slow holds one value per enabled edge, in the order the model
+// was enabled with, and is nil while no consolidation layer is declared: the
+// fast change of a free edge is then added to base[e] as before. With a slow
+// layer, the effective magnitude of an enabled edge is (base + slow) + plastic
+// on a free edge and |base| + slow + plastic on a fixed-sign edge before the
+// w_min floor, so a run where the whole slow layer was folded into the base
+// weight produces bit-identical integration (slow joins base before the fast
+// change does). The returned slice is owned by the caller and base and slow are
+// never modified.
+func (m *Model) EffectiveWith(base []float64, signs []int8, s State, slow []float64) ([]float64, ClampReport, error) {
 	var report ClampReport
 	if m == nil {
 		return nil, report, fmt.Errorf("uninitialized plasticity model")
@@ -506,6 +522,16 @@ func (m *Model) Effective(base []float64, signs []int8, s State) ([]float64, Cla
 			return nil, report, fmt.Errorf("base weight %d is not finite", i)
 		}
 	}
+	if slow != nil {
+		if len(slow) != len(m.edges) {
+			return nil, report, fmt.Errorf("slow values have %d entries, the model declares %d enabled edges", len(slow), len(m.edges))
+		}
+		for i, v := range slow {
+			if !finite(v) {
+				return nil, report, fmt.Errorf("slow value %d is not finite", i)
+			}
+		}
+	}
 	out := append([]float64(nil), base...)
 	for k, e := range m.edges {
 		sign := int8(0)
@@ -514,8 +540,14 @@ func (m *Model) Effective(base []float64, signs []int8, s State) ([]float64, Cla
 		}
 		if sign == 0 {
 			out[e] = base[e] + s.Plastic[k]
+			if slow != nil {
+				out[e] = (base[e] + slow[k]) + s.Plastic[k]
+			}
 		} else {
 			magnitude := math.Abs(base[e]) + s.Plastic[k]
+			if slow != nil {
+				magnitude = (math.Abs(base[e]) + slow[k]) + s.Plastic[k]
+			}
 			if magnitude < m.rule.WMin {
 				magnitude, report.HeldAtWMin = m.rule.WMin, report.HeldAtWMin+1
 			}

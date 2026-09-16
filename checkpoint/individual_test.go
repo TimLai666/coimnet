@@ -829,6 +829,113 @@ func TestSaveLoadIndividualCarriesThePlasticPart(t *testing.T) {
 	}
 }
 
+// slowCheckpointConfig drives one hypothesized receptor on node 0 with a single
+// timeline pulse, so two gated rows leave an occupancy well above any small
+// threshold the consolidation gate can be declared with.
+func slowCheckpointConfig() modulation.ChemistryConfig {
+	return modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{2}},
+		Sources: []modulation.SourceSpec{{
+			Kind: modulation.SourceExternalTimeline, Channel: 0,
+			Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 1, Channel: 0, Rate: 1}}},
+		}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{
+			{Cells: []int{0}, Signal: "octopamine", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1,
+				Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "consol-fixture/v1"},
+		}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+	}
+}
+
+// newSlowCheckpointIndividual is the continuous fixture with local plasticity on
+// its edge, the chemical layer and a consolidation layer that has already taken
+// one of its two budget slots during one completed training episode, so the
+// saved document carries a non-empty slow layer and the episode clock its
+// per-episode write rule reads.
+func newSlowCheckpointIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	individual := newCheckpointIndividual(t, false)
+	rule := plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625}
+	if err := individual.EnablePlasticity(plasticity.Config{Rule: rule, Edges: []int{0}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := individual.EnableChemistry(slowCheckpointConfig()); err != nil {
+		t.Fatal(err)
+	}
+	if err := individual.EnableConsolidation(2); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := individual.AdvanceGated(context.Background(), [][]float64{{1}, {1}}, []float64{1, 1}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := individual.TrainEpisode(context.Background(), [][]float64{{1}, {0}}, []float64{.4}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := individual.Consolidate(context.Background(), learning.ConsolidationTrigger{
+		Receptor: 0, Threshold: .01, Rate: .5, Retain: .25,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	return individual
+}
+
+// TestSaveLoadIndividualCarriesConsolidationSlowAndEpisodes is the
+// optional-part contract of the consolidation layer and the episode clock:
+// absent while never enabled or never started, complete and bit-identical once
+// it was.
+func TestSaveLoadIndividualCarriesConsolidationSlowAndEpisodes(t *testing.T) {
+	plain := newPlasticCheckpointIndividual(t).Snapshot()
+	if bytes.Contains(savedIndividualPayload(t, plain), []byte(`"slow"`)) {
+		t.Fatal("a plastic individual that never enabled consolidation wrote a slow layer")
+	}
+	want := newSlowCheckpointIndividual(t).Snapshot()
+	if want.Plastic == nil || want.Plastic.Slow == nil {
+		t.Fatal("the fixture did not enable consolidation")
+	}
+	if want.Plastic.Slow.Values[0] == 0 {
+		t.Fatal("the fixture produced an empty write, the payload presence check would be vacuous")
+	}
+	if want.Optimizer.Episodes != 1 {
+		t.Fatalf("episodes = %d, want 1", want.Optimizer.Episodes)
+	}
+	payload := savedIndividualPayload(t, want)
+	if !bytes.Contains(payload, []byte(`"slow":{"values":[`)) {
+		t.Fatalf("saved payload does not carry the slow layer: %s", payload)
+	}
+	if !bytes.Contains(payload, []byte(`"episodes":1`)) {
+		t.Fatalf("saved payload does not carry the episode clock: %s", payload)
+	}
+	if bytes.Contains(payload, []byte(`null`)) {
+		t.Fatalf("saved payload carries a null: %s", payload)
+	}
+	path := filepath.Join(t.TempDir(), "slow-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round trip changed the consolidation part:\n got %+v\nwant %+v", got.Plastic.Slow, want.Plastic.Slow)
+	}
+	got.Plastic.Slow.Values[0] = 77
+	again, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatal("LoadIndividual returned a slow layer aliased with a later caller mutation")
+	}
+	restored, err := learning.RestoreIndividual(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), again) {
+		t.Fatal("loaded consolidation part changed during restore")
+	}
+}
+
 // TestLoadIndividualRejectsMalformedPlasticParts keeps a hand-edited plastic
 // block from becoming a silently different mechanism. Every case replaces the
 // whole "plastic" value, so the rejected shapes are written out in full.

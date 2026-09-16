@@ -68,6 +68,11 @@ type OptimizerSnapshot struct {
 	// every step never opens one, so the key is absent and every snapshot
 	// written before this field existed stays byte-identical.
 	Accumulator *GradientAccumulator `json:"accumulator,omitempty"`
+	// Episodes counts the completed TrainEpisode calls since the last
+	// ResetOptimizer, the clock every consolidation write's "one write per
+	// episode" rule reads. A snapshot written before this counter existed
+	// decodes as zero, which is exactly the state of a fresh optimizer.
+	Episodes uint64 `json:"episodes,omitempty"`
 }
 
 // PlasticPart is the local fast-change mechanism of one individual: the rule
@@ -78,6 +83,11 @@ type OptimizerSnapshot struct {
 type PlasticPart struct {
 	Config plasticity.Config `json:"config"`
 	State  plasticity.State  `json:"state"`
+	// Slow is the consolidation layer of this individual, absent while the
+	// layer was never enabled, exactly like the rest of the plastic part. A
+	// snapshot written before the layer existed decodes with Slow nil, which is
+	// the "never enabled" state, not a zero-filled one.
+	Slow *SlowState `json:"slow,omitempty"`
 }
 
 // IndividualSnapshot owns four separately serializable parts at one completed
@@ -129,6 +139,9 @@ type Individual struct {
 	// is suppressed expression, not a state change: clearing it restores the
 	// untouched readout bit for bit.
 	expression *ExpressionGain
+	// episodes counts the completed TrainEpisode calls since the last
+	// ResetOptimizer, the clock every consolidation write reads.
+	episodes uint64
 }
 
 // plasticRuntime is the enabled local mechanism of one individual: nil means
@@ -136,6 +149,8 @@ type Individual struct {
 type plasticRuntime struct {
 	model *plasticity.Model
 	state plasticity.State
+	// slow is the consolidation layer, nil while it was never enabled.
+	slow *SlowState
 }
 
 // NewIndividual creates an independent copy of a base model, a fresh optimizer
@@ -197,9 +212,14 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 		if err = runtime.model.ValidateState(s.Plastic.State); err != nil {
 			return nil, fmt.Errorf("individual plastic part: %w", err)
 		}
+		if err = validateSlowState(s.Plastic.Slow, runtime.model.Edges()); err != nil {
+			return nil, fmt.Errorf("individual plastic part: %w", err)
+		}
 		runtime.state = copyPlasticState(s.Plastic.State)
+		runtime.slow = copySlowState(s.Plastic.Slow)
 		restored.plastic = runtime
 	}
+	restored.episodes = s.Optimizer.Episodes
 	if s.Chemical != nil {
 		runtime, err := newChemicalRuntime(s.Chemical.Config, configNodes(tr.network.config))
 		if err != nil {
@@ -331,7 +351,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	s := i.trainer.Snapshot()
 	var plastic *PlasticPart
 	if i.plastic != nil {
-		plastic = &PlasticPart{Config: i.plastic.model.Config(), State: copyPlasticState(i.plastic.state)}
+		plastic = &PlasticPart{Config: i.plastic.model.Config(), State: copyPlasticState(i.plastic.state), Slow: copySlowState(i.plastic.slow)}
 	}
 	var chemical *ChemicalPart
 	if i.chemical != nil {
@@ -351,7 +371,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 			Expression:      copyExpression(i.expression),
 		}
 	}
-	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator}, plastic, chemical}
+	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates, s.Accumulator, i.episodes}, plastic, chemical}
 }
 
 // Advance consumes observations using persistent voltage and delayed output
@@ -579,8 +599,12 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 	spiking := configSpikingNodes(n.config)
 	neural := i.neural
 	var fast plasticity.State
+	var slow []float64
 	if i.plastic != nil {
 		fast = i.plastic.state
+		if i.plastic.slow != nil {
+			slow = i.plastic.slow.Values
+		}
 	}
 	var activity []float64
 	var base uint64
@@ -623,7 +647,7 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 		step := core
 		var held plasticity.ClampReport
 		if i.plastic != nil {
-			weights, effective, err := i.plastic.model.Effective(core.Core.Weights, n.config.EdgeSigns, fast)
+			weights, effective, err := i.plastic.model.EffectiveWith(core.Core.Weights, n.config.EdgeSigns, fast, slow)
 			if err != nil {
 				return stepwiseResult{}, err
 			}
@@ -712,7 +736,9 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 
 // TrainEpisode updates only this individual's parameters and optimizer using
 // an independent zero-state episode. Persistent inference state is retained.
-// This method does not propagate gradients across Advance calls.
+// This method does not propagate gradients across Advance calls. A completed
+// step advances the episode clock every consolidation write reads, so the
+// "one write per episode" rule sees each training episode once.
 func (i *Individual) TrainEpisode(ctx context.Context, input [][]float64, target []float64) (StepResult, error) {
 	if i == nil || i.trainer == nil {
 		return StepResult{}, fmt.Errorf("uninitialized individual")
@@ -721,7 +747,12 @@ func (i *Individual) TrainEpisode(ctx context.Context, input [][]float64, target
 		return StepResult{}, err
 	}
 	defer i.mu.Unlock()
-	return i.trainer.Step(ctx, input, target)
+	result, err := i.trainer.Step(ctx, input, target)
+	if err != nil {
+		return result, err
+	}
+	i.episodes++
+	return result, nil
 }
 
 // ResetNeural starts a new neural trajectory only. Parameters, optimizer and
@@ -798,6 +829,10 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	i.trainer.options = copyOptions(o)
 	i.trainer.optimizer = state
 	i.trainer.updates = 0
+	// The episode clock belongs to the trainer life this call ends, exactly like
+	// the moments: a fresh optimizer starts its every-write-once-observed episode
+	// count at zero.
+	i.episodes = 0
 	// The open accumulation window belongs to the optimizer this call replaces:
 	// keeping it would average gradients taken under the previous options into
 	// the first update of the new one.
