@@ -1,0 +1,40 @@
+2026-09-16T10:45:52Z
+18:45  up 11 days, 24 mins, 1 user, load averages: 5.25 4.54 3.34
+COMMAND: go test -count=1 -v -run AvailableFeedback ./signal/
+=== RUN   TestAvailableFeedbackKeepsArrivedFeedbackInInputOrder
+--- PASS: TestAvailableFeedbackKeepsArrivedFeedbackInInputOrder (0.00s)
+=== RUN   TestAvailableFeedbackReturnsNoFeedbackBeforeAnyArrives
+--- PASS: TestAvailableFeedbackReturnsNoFeedbackBeforeAnyArrives (0.00s)
+=== RUN   TestAvailableFeedbackRejectsAUnitMismatch
+--- PASS: TestAvailableFeedbackRejectsAUnitMismatch (0.00s)
+=== RUN   TestAvailableFeedbackDoesNotMutateItsInput
+--- PASS: TestAvailableFeedbackDoesNotMutateItsInput (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/signal	0.215s
+exit=0
+
+COMMAND: go test -count=1 -v -run ResolvedSetNodes ./simulate/
+=== RUN   TestResolvedSetNodesReturnsAnAscendingOwnedCopy
+--- PASS: TestResolvedSetNodesReturnsAnAscendingOwnedCopy (0.03s)
+=== RUN   TestResolvedSetNodesReturnsAnEmptySliceForADeclaredEmptySet
+--- PASS: TestResolvedSetNodesReturnsAnEmptySliceForADeclaredEmptySet (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/simulate	0.233s
+exit=0
+
+COMMAND: go test -count=1 -v -run TaintedTarget ./experiment/
+2026/09/16 18:45:54 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestATaintedTargetReachesTheLossAndNothingElse
+    target_taint_test.go:124: prediction on the tainted episode [-0.004081378225237131]; Step with the NaN target returned loss 0 and error tensor[0] cannot be represented as finite float32
+--- PASS: TestATaintedTargetReachesTheLossAndNothingElse (0.02s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	0.460s
+exit=0
+
+COMMAND: go test -race -count=1 -run "AvailableFeedback|ResolvedSetNodes|TaintedTarget" ./signal/ ./simulate/ ./experiment/
+ok  	github.com/TimLai666/coimnet/signal	2.837s
+ok  	github.com/TimLai666/coimnet/simulate	2.931s
+ok  	github.com/TimLai666/coimnet/experiment	3.646s
+exit=0

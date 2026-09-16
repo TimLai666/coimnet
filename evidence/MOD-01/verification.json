@@ -1,0 +1,32 @@
+{
+  "requirement": "MOD-01",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go test -count=1 -v -run 'ExternalTimeline|NeuralActivity|InternalResource|Replay|EverySource|Controller' ./modulation/",
+    "go test -race -count=1 -run 'ExternalTimeline|NeuralActivity|InternalResource|Replay|EverySource|Controller' ./modulation/",
+    "go test -count=1 -v -run ResolvedSetNodes ./simulate/",
+    "bash scripts/check-target-flow.sh",
+    "go vet ./...",
+    "gofmt -l ."
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64, GOOS=darwin GOARCH=arm64 CGO_ENABLED=1",
+    "macOS arm64, shared machine: uptime at the recorded run was '18:45 up 11 days, 24 mins, 1 user, load averages: 5.27 4.53 3.33' (2026-09-16T10:45Z). Timings in this record are single samples under that load. The same commands were first run on 2026-09-15 with the same result; the logs kept here are the later run, and the code under test did not change between them.",
+    "Two other agents were editing learning/, checkpoint/ and plasticity/ in the same working tree while these commands ran."
+  ],
+  "observed_result": "Four sources have a real execution path and each matches its hand-computed table. (1) ExternalTimeline{ChannelCount: 2} with the declared entries (0,0,0.5), (0,1,1.25), (2,1,2) and (3,0,0) released step 0 -> [0.5, 1.25], step 1 -> [0, 0], step 2 -> [0, 2], step 3 -> [0, 0] and step 9 -> [0, 0]: a step with no entry releases zero, and a step past the last entry is zero rather than an error. Releasing twice returns the same row and leaves the declared entries untouched. Eight invalid declarations are refused: no channel, a step that goes backwards, a channel at or above the count, a negative channel, a negative rate, +Inf, NaN, and the same step and channel declared twice. (2) NeuralActivity{Set: alpn, Gain: 0.5, Channel: 1} over the resolved set {1,2} of the three-neuron annotated fixture released activity [10, 0.25, 0.75] -> mean 0.5 -> [0, 0.25]; activity [10, -1, -3] -> mean -2, times 0.5 = -1 -> clamped to [0, 0]; activity [10, 0, 4] -> mean 2 -> [0, 1]. Node 0 is outside the set and its large value changed nothing, which is the point of requiring an explicit set. Seven refusals: no activity, activity shorter than the largest node index, non-finite activity, an unresolved (zero value) set, a set that resolved to no node, a non-finite gain and a negative channel. The set cannot be forged: simulate.ResolvedSet keeps its indices private and the new simulate.ResolvedSet.Nodes accessor returns an ascending owned copy, so the test resolves a real graph. (3) InternalResource{Resource: 'energy', Coefficient: 2, Threshold: 0.25} follows the declared rule Coefficient * max(amount - Threshold, 0): energy 1.25 -> [2], 0.75 -> [1], 0.25 -> [0], 0.1 -> [0], never a negative value. It refuses a missing resource map, a map without the named resource, a non-finite amount, an unnamed resource, a negative or non-finite coefficient, a non-finite threshold and a negative channel. (4) Replay{Trace: [[0,1.5],[2,0],[0.25,0.25]]} returned step 0 -> [0, 1.5], step 1 -> [2, 0], step 2 -> [0.25, 0.25] and refused step 3, the end of the recording. The returned row is a copy: overwriting all three handed-out rows left the stored trace unchanged. Replay has exactly one field, Trace [][]float64, and exactly two methods, Channels and Release (checked by reflection), so it holds no reader, path, clock or client and cannot fetch anything from outside the recording. An empty trace, an empty row, a ragged trace, a negative value and a non-finite value are refused. Every source re-checks feedback against its own step even though the caller filtered it: with feedback available only at step 3 offered at step 2, all four refuse, and so they do for feedback on another clock (milliseconds against the model-step clock) and for an invalid feedback value. Every release is finite, non-negative (negative zero included: the shared gate stores a positive zero) and exactly Channels() values wide, with and without an observation in the context. The trainable controller is reserved by name only: NewController returns nil and ErrControllerNotImplemented. The race detector reports nothing.",
+  "assumption_statement": "Fixture only: a three-neuron annotated graph and hand-declared contexts, with no biological claim about which neurons modulate what. The named set of a neural source is always the researcher's declaration; nothing here infers that an unknown neuron is modulatory. This ticket covers the first layer only, source -> non-negative release rate per channel; no concentration, diffusion, decay or receptor is modelled. A release step is counted on the model-step clock (modulation.ReleaseTimeUnit = signal.TimeUnitModelStep), so feedback offered to a source must carry that unit; other units are rejected rather than converted. NeuralActivity and InternalResource report Channels() as Channel+1, so a source that drives channel k returns a k+1 wide vector whose lower channels release zero.",
+  "test_log": [
+    "evidence/MOD-01/red-sources.log (first failing output of the modulation source tests, before the package had any type)",
+    "evidence/MOD-01/red-nodes.log (first failing output of the simulate.ResolvedSet.Nodes test, before the accessor existed)",
+    "evidence/MOD-01/test.log (the passing verbose run and the race run)",
+    "evidence/SIG-03/check-target-flow.log (modulation names no target and does not import learning)"
+  ],
+  "limitations": [
+    "controller source not implemented, MOD-07 pending. The body and any other source kind named in the main specification are also absent; this ticket implements external, neural, internal-resource and replay only.",
+    "concentration dynamics are ticket 21. A released rate is not yet consumed by anything, and the clearance boost the reward mapper produces has no equation to enter yet.",
+    "No source is wired into a runner: nothing in simulate or learning calls Release, so there is no end-to-end run in which modulation changes a simulation.",
+    "The activity a neural source averages is supplied by the caller. Nothing here verifies that the caller passes the activity of the same step, and the package cannot check it.",
+    "Fixture scale only: three neurons, two channels, at most three recorded steps. No whole-brain or real-data run."
+  ]
+}

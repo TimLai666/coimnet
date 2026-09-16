@@ -69,6 +69,17 @@ type ResolvedSet struct {
 	nodes []int
 }
 
+// Nodes returns the ascending node indices the set resolved to, as a copy the
+// caller owns. It is the read path for a consumer outside this package, such as
+// a modulation source that averages the activity of a named set: the set still
+// has to come from ResolveSets, so the caller reads a resolution instead of
+// declaring one. A set that resolved to no node returns an empty slice.
+func (s ResolvedSet) Nodes() []int {
+	owned := make([]int, len(s.nodes))
+	copy(owned, s.nodes)
+	return owned
+}
+
 // ResolveSets resolves every named set against the graph in declared order.
 func ResolveSets(ctx context.Context, g *connectome.Graph, sets []NamedSet) ([]ResolvedSet, error) {
 	if ctx == nil {

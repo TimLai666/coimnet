@@ -1,0 +1,37 @@
+{
+  "requirement": "SIG-03",
+  "profile": "fixture",
+  "reproduction_command": [
+    "bash scripts/check-target-flow.sh",
+    "go test -count=1 -v -run AvailableFeedback ./signal/",
+    "go test -count=1 -v -run ResolvedSetNodes ./simulate/",
+    "go test -count=1 -v -run TaintedTarget ./experiment/",
+    "go test -race -count=1 -run 'AvailableFeedback|ResolvedSetNodes|TaintedTarget' ./signal/ ./simulate/ ./experiment/",
+    "go vet ./...",
+    "gofmt -l ."
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64, GOOS=darwin GOARCH=arm64 CGO_ENABLED=1",
+    "macOS arm64, shared machine: uptime at the recorded run was '18:45 up 11 days, 24 mins, 1 user, load averages: 5.27 4.53 3.33' (2026-09-16T10:45Z). Timings in this record are single samples under that load. The same commands were first run on 2026-09-15 with the same result; the logs kept here are the later run, and the code under test did not change between them.",
+    "Two other agents were editing learning/, checkpoint/ and plasticity/ in the same working tree while these commands ran; see limitations."
+  ],
+  "observed_result": "The separation holds on both halves. (1) Compile time: scripts/check-target-flow.sh scanned every non-test Go file of dynamics (4 files), simulate (9), modulation (3), plasticity (1) and learning (8) for 'signal.Target' and 'NewTarget(' and found none, and then read 'go list -deps' for the four forward and modulation packages: dynamics depends on no other coimnet package at all, simulate and modulation depend on connectome, dynamics, feather, params, signal and three internal packages, plasticity depends on none, and not one of the four reaches github.com/TimLai666/coimnet/learning. The script exits 0 (evidence/SIG-03/check-target-flow.log). Its discriminating power was measured, not assumed: a temporary modulation/zz_violation_probe.go declaring 'var probeTarget signal.Target' and importing learning made it print both the offending line and the offending dependency and exit 1 (evidence/SIG-03/check-target-flow-violation.log); the probe file was deleted immediately afterwards and modulation is unchanged. (2) Runtime taint: experiment/target_taint_test.go builds the delayed-association trainer of experiment.NewDelayedTrainer(seed 7, rate 0.05) and two copies of episode DelayedEpisode(1001, 0), one clean and one whose single target value is NaN. learning.Trainer.Predict returns exactly the same prediction for both, [-0.004081378225237131], which is finite: the forward path takes only the input, so tainting the target cannot move it. Every implemented modulation source then ran at step 2 on the tainted episode with the observation built from that episode's five input steps, a finite activity vector, one feedback filtered through signal.AvailableFeedback and one declared resource: external_timeline released [0, 0.5], neural_activity averaged nodes 1 and 2 of the resolved 'alpn' set, internal_resource applied 2*max(1.25-0.25,0) and replay returned its recorded row; every value was finite, non-negative and exactly Channels() wide. Finally learning.Trainer.Step, the one boundary that takes a target, was called with the NaN target: it failed with 'tensor[0] cannot be represented as finite float32', left Parameters and the update counter byte-identical to the snapshot taken before it, and the very same step with the clean target then produced a finite loss and one update. The taint test's discriminating power was also measured: with modulation.checkedRelease temporarily replaced by 'rates[0] = math.NaN(); return rates, nil' the test failed with 'replay: channel 0 released NaN on a tainted episode' (evidence/SIG-03/red-taint-mutation.log); modulation/modulation.go was restored byte-identical afterwards. (3) signal.AvailableFeedback is the filter in front of a source: feedback available after now is dropped, available exactly at now is kept, the declared input order is preserved, a unit mismatch, a negative now and an invalid feedback are errors rather than silent drops, and the input slice is unchanged after the call. simulate.ResolvedSet.Nodes returns the ascending node indices as an owned copy: the fixture sets resolve to alpn {1,2}, left_alpn {2} and alin {0}, overwriting the returned slice changes neither a later call nor Count nor NodeHash, and a declared empty set and the zero value both return no node.",
+  "assumption_statement": "This is a fixture, not a biological or whole-brain claim. The taint run uses the three-neuron delayed-association trainer and the three-neuron annotated graph fixture, not the MaleCNS graph. NaN is used as a taint marker because no arithmetic can hide it; it proves that the target does not reach these boundaries in this build, not that no future code could pass a target by some other route, which is what the compile-time half is for. The compile-time half is a textual and import-graph check: it proves no package named the type and no package can import the one that owns it, not that some other value carrying the answer could never be passed in as an observation. The modulation package counts a release step on the model-step clock (modulation.ReleaseTimeUnit), so feedback offered to a source must be timestamped on that same clock; feedback on another clock is rejected, never converted.",
+  "test_log": [
+    "evidence/SIG-03/red-available.log (first failing output of the signal.AvailableFeedback tests, before the function existed)",
+    "evidence/SIG-03/red-taint.log (first run of experiment/target_taint_test.go; it could not build, because another agent's in-flight edits to learning/ did not compile at that moment)",
+    "evidence/SIG-03/red-taint-mutation.log (the taint test against a deliberately broken modulation.checkedRelease, reverted immediately)",
+    "evidence/SIG-03/check-target-flow-violation.log (the static check against a deliberately planted violation, reverted immediately)",
+    "evidence/SIG-03/check-target-flow.log (the passing static check)",
+    "evidence/SIG-03/test.log (the four passing test commands and the race run)",
+    "evidence/MOD-01/red-nodes.log (first failing output of the simulate.ResolvedSet.Nodes test, before the accessor existed)"
+  ],
+  "limitations": [
+    "The runtime taint test had no red state of its own: it asserts a property of code that already existed (the three separated types of ticket 03, the sources of this ticket), so its first run could only fail for an unrelated reason, which is what red-taint.log records. The two mutation logs are what stand in for a red state.",
+    "Fixture scale only: three neurons, one episode, five input steps. No whole-brain or real-data run is claimed here.",
+    "The static check reads the working tree it is run in. plasticity/ and learning/ were being edited by other agents while it ran, so their file counts and dependency lists in check-target-flow.log are a snapshot of 2026-09-16T10:45Z, not a stable fact about those packages.",
+    "controller source not implemented, MOD-07 pending.",
+    "concentration dynamics are ticket 21: this ticket stops at the release rate, so nothing here checks what a released rate does to a concentration.",
+    "The evaluate-mode rule that a teacher is not called at all is the teacher ticket's; here only Feedback.Source records where an outcome came from."
+  ]
+}

@@ -1,0 +1,13 @@
+2026-09-15T01:43:02Z
+MUTATION CHECK: modulation.checkedRelease temporarily replaced by "rates[0] = math.NaN(); return rates, nil", i.e. a source releases a non-finite rate and the shared non-negative/finite guard is removed. The taint test must notice.
+COMMAND: go test -count=1 -run TaintedTarget -v ./experiment/
+2026/09/15 09:43:03 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestATaintedTargetReachesTheLossAndNothingElse
+    target_taint_test.go:111: replay: channel 0 released NaN on a tainted episode
+--- FAIL: TestATaintedTargetReachesTheLossAndNothingElse (0.03s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment	0.470s
+FAIL
+exit=1
