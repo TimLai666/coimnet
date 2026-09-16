@@ -24,6 +24,14 @@ type Config struct {
 	// summing each target's inputs in declared edge order so the result is
 	// bit-identical to the single threaded pass.
 	Workers int `json:"workers,omitempty"`
+	// StateDimension sets the per-node state width: 0 or 1 keep the scalar
+	// model (the pre-existing layout); C > 1 declares vector nodes whose
+	// arrays are laid out by VectorLayout.
+	StateDimension int `json:"state_dimension,omitempty"`
+	// EdgeShape selects the per-edge weight layout, used only when
+	// StateDimension > 1: "" or "scalar" broadcast one weight per edge to
+	// all C components, "matrix" stores one C*C row-major matrix per edge.
+	EdgeShape string `json:"edge_shape,omitempty"`
 }
 
 // Parameters separates learnable quantities from immutable anatomy. Tau is
@@ -63,6 +71,22 @@ type Gradient struct {
 func NewContinuous(c Config) (*Continuous, error) {
 	if c.Workers < 0 || c.Workers > 1024 {
 		return nil, fmt.Errorf("workers must be in [0, 1024]")
+	}
+	if c.StateDimension < 0 || c.StateDimension > 64 {
+		return nil, fmt.Errorf("state dimension must be in [0, 64]")
+	}
+	switch c.EdgeShape {
+	case "", "scalar", "matrix":
+	default:
+		return nil, fmt.Errorf("unsupported edge shape %q", c.EdgeShape)
+	}
+	if c.StateDimension <= 1 && c.EdgeShape == "matrix" {
+		return nil, fmt.Errorf("edge shape matrix requires a vector state dimension")
+	}
+	if c.StateDimension > 1 {
+		// TODO(ticket 25 stage 2 ticket 2): wire vector-node forward/backward
+		// passes and then remove this guard, per ticket 25 root decision 6.
+		return nil, fmt.Errorf("vector nodes are declared but not wired yet")
 	}
 	if c.Nodes <= 0 || !finite(c.DT) || c.DT <= 0 {
 		return nil, fmt.Errorf("nodes and finite dt must be positive")
