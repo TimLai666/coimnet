@@ -100,12 +100,13 @@ func newChemicalRuntime(c modulation.ChemistryConfig, nodes int) (*chemicalRunti
 // chemicalRow is one row of the chemical layer, produced before the core step
 // of that same row and discarded after it.
 type chemicalRow struct {
-	state     modulation.ChemistryState
-	occupancy []modulation.OccupancyRecord
-	summary   modulation.OccupancySummary
-	clamped   modulation.ClampReport
-	release   []float64
-	modulated *dynamics.Modulation
+	state             modulation.ChemistryState
+	occupancy         []modulation.OccupancyRecord
+	receptorOccupancy []float64
+	summary           modulation.OccupancySummary
+	clamped           modulation.ClampReport
+	release           []float64
+	modulated         *dynamics.Modulation
 }
 
 // advanceOne runs the fixed order of one row: every source releases, the
@@ -165,6 +166,20 @@ func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint6
 	if row.occupancy, row.summary, err = receptors.Occupancies(row.state, r.config.Regions.NodeRegion); err != nil {
 		return chemicalRow{}, err
 	}
+	numReceptors := len(r.config.Receptors.Records)
+	row.receptorOccupancy = make([]float64, numReceptors)
+	counts := make([]int, numReceptors)
+	for _, rec := range row.occupancy {
+		if rec.Receptor >= 0 && rec.Receptor < numReceptors {
+			row.receptorOccupancy[rec.Receptor] += rec.Occupancy
+			counts[rec.Receptor]++
+		}
+	}
+	for i := range numReceptors {
+		if counts[i] > 0 {
+			row.receptorOccupancy[i] /= float64(counts[i])
+		}
+	}
 	gain, offset, threshold, clamped, err := modulation.ApplyEffects(r.config.Effects, row.occupancy, receptors.Mix, nodes)
 	if err != nil {
 		return chemicalRow{}, err
@@ -199,6 +214,11 @@ func (i *Individual) EnableChemistry(c modulation.ChemistryConfig) error {
 	if err != nil {
 		return err
 	}
+	if i.plastic != nil {
+		if err := checkReceptorRule(i.plastic.model.Config().Rule, runtime); err != nil {
+			return err
+		}
+	}
 	if i.chemical != nil {
 		runtime.resources = i.chemical.resources
 		runtime.pending = i.chemical.pending
@@ -211,13 +231,20 @@ func (i *Individual) EnableChemistry(c modulation.ChemistryConfig) error {
 // declared resources and the queued feedback, so the forward path returns bit
 // for bit to the one an individual that never enabled it produces. Base
 // parameters were never changed by it and are unaffected.
-func (i *Individual) DisableChemistry() {
+func (i *Individual) DisableChemistry() error {
 	if i == nil || i.trainer == nil {
-		return
+		return fmt.Errorf("uninitialized individual")
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	if i.plastic != nil {
+		rule := i.plastic.model.Config().Rule
+		if rule.GateReceptor != nil || rule.DecayEReceptor != nil {
+			return fmt.Errorf("rule %q still references a receptor; disable plasticity before chemistry", rule.Kind)
+		}
+	}
 	i.chemical = nil
+	return nil
 }
 
 // OfferFeedback queues one feedback for the sources of the chemical layer. It

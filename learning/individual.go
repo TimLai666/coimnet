@@ -105,9 +105,11 @@ type IndividualSnapshot struct {
 // per entry and per step, so a bound that holds the same edge on every row is
 // counted on every row.
 type PlasticReport struct {
-	Steps      int `json:"steps"`
-	Clamped    int `json:"clamped"`
-	HeldAtWMin int `json:"held_at_w_min"`
+	Steps              int  `json:"steps"`
+	Clamped            int  `json:"clamped"`
+	HeldAtWMin         int  `json:"held_at_w_min"`
+	GateFromReceptor   bool `json:"gate_from_receptor,omitempty"`
+	WindowFromReceptor bool `json:"window_from_receptor,omitempty"`
 }
 
 // Individual owns mutable neural state and an isolated episode trainer.
@@ -262,7 +264,37 @@ func (i *Individual) EnablePlasticity(c plasticity.Config) error {
 	if err != nil {
 		return err
 	}
+	if err := checkReceptorRule(c.Rule, i.chemical); err != nil {
+		return err
+	}
 	i.plastic = runtime
+	return nil
+}
+
+// checkReceptorRule refuses a rule that names a receptor the enabled chemistry
+// does not serve. A rule with no receptor references is always fine; one that
+// references a receptor without chemistry, or with fewer declared receptors than
+// the rule names, would read a missing gate or window at the first step.
+func checkReceptorRule(rule plasticity.Rule, chemical *chemicalRuntime) error {
+	var indices []int
+	if rule.GateReceptor != nil {
+		indices = append(indices, *rule.GateReceptor)
+	}
+	if rule.DecayEReceptor != nil {
+		indices = append(indices, *rule.DecayEReceptor)
+	}
+	if len(indices) == 0 {
+		return nil
+	}
+	if chemical == nil {
+		return fmt.Errorf("rule %q declares a receptor-driven gate or window but chemistry is not enabled", rule.Kind)
+	}
+	max := len(chemical.config.Receptors.Records)
+	for _, idx := range indices {
+		if idx < 0 || idx >= max {
+			return fmt.Errorf("rule %q receptor index %d is out of range (0..%d)", rule.Kind, idx, max-1)
+		}
+	}
 	return nil
 }
 
@@ -527,8 +559,10 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			return stepwiseResult{}, err
 		}
 		var mod *dynamics.Modulation
+		var chemical chemicalRow
 		if i.chemical != nil {
-			chemical, err := i.chemical.advanceOne(result.chemical, base+uint64(t), activity, nodes)
+			var err error
+			chemical, err = i.chemical.advanceOne(result.chemical, base+uint64(t), activity, nodes)
 			if err != nil {
 				return stepwiseResult{}, fmt.Errorf("individual chemistry: %w", err)
 			}
@@ -559,6 +593,7 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			return stepwiseResult{}, err
 		}
 		if i.plastic != nil {
+			rule := i.plastic.model.Config().Rule
 			// The pre signal is the value the edge carries after this step,
 			// which is the activated output on a continuous node and the
 			// synaptic trace on a LIF node. The post signal is the 0/1 event
@@ -587,7 +622,32 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			if gate != nil {
 				g = gate[t]
 			}
-			changed, stepReport, err := i.plastic.model.Step(fast, pre, post, eventsPre, eventsPost, g, sources, targets)
+			gateFromReceptor := false
+			if rule.GateReceptor != nil && i.chemical != nil {
+				avgOcc := chemical.receptorOccupancy[*rule.GateReceptor]
+				rg, ok := i.plastic.model.GateFor(avgOcc)
+				if ok {
+					if g != 0 {
+						return stepwiseResult{}, fmt.Errorf("gate is declared by receptor %d; an explicit gate cannot be combined", *rule.GateReceptor)
+					}
+					g = rg
+					gateFromReceptor = true
+				}
+			}
+			windowFromReceptor := false
+			var decayE *float64
+			if rule.DecayEReceptor != nil && i.chemical != nil {
+				avgOcc := chemical.receptorOccupancy[*rule.DecayEReceptor]
+				w, ok := i.plastic.model.WindowFor(avgOcc)
+				if ok {
+					decayE = &w
+					windowFromReceptor = true
+				}
+			}
+			changed, stepReport, err := i.plastic.model.StepWith(fast, plasticity.StepInput{
+				Pre: pre, Post: post, SpikesPre: eventsPre, SpikesPost: eventsPost,
+				Gate: g, DecayE: decayE,
+			}, sources, targets)
 			if err != nil {
 				return stepwiseResult{}, err
 			}
@@ -595,6 +655,8 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			result.plastic.Steps++
 			result.plastic.Clamped += stepReport.Clamped
 			result.plastic.HeldAtWMin += held.HeldAtWMin
+			result.plastic.GateFromReceptor = result.plastic.GateFromReceptor || gateFromReceptor
+			result.plastic.WindowFromReceptor = result.plastic.WindowFromReceptor || windowFromReceptor
 		}
 		neural = next
 		activity = values[0]
