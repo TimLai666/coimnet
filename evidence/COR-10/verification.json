@@ -1,0 +1,59 @@
+{
+  "requirement": "COR-10",
+  "profile": "fixture (two-node and four-node continuous cores, three-node LIF core, ticket 13 four-node derived parameter set)",
+  "reproduction_command": [
+    "go test -count=1 -v -run 'Mask|GroupFlag|OptionsWithout' ./learning/",
+    "go test -count=1 -v -run 'EffectiveWeights|EdgeSigns|SnapshotWithoutEdgeSigns|FixedSign|MinLogMagnitude|ChainRule|AllZeroEdgeSigns' ./learning/",
+    "go test -count=1 -v -run 'Range|Project' ./learning/",
+    "go test -count=1 -v -run 'SignsFromParameterSet|DerivedSetSource' ./learning/",
+    "go test -count=1 -v -run 'TestEpisodeCheckpoint' ./checkpoint/",
+    "go test -count=1 -v -run 'TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient|TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW' ./learning/",
+    "gofmt -l .",
+    "go vet ./...",
+    "go test -count=1 ./...",
+    "go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/..."
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Darwin 25.6.0)",
+    "stage one, 2026-09-15: uptime recorded in evidence/COR-10/verification-full.log, up 9 days, load average 2.04",
+    "stage two, 2026-09-15 red runs (load averages 2.18 2.10 2.05) and 2026-09-16 18:43-18:44 green and full runs (uptime 18:43 up 11 days, load averages 4.52 4.42 3.15), recorded in evidence/LRN-03/test.log, race.log and vet-gofmt.log",
+    "During the stage-two runs the working tree also held other agents' in-progress ticket 18 and ticket 20 work; the committed logs are from that shared tree after it compiled again."
+  ],
+  "input_fingerprints": [
+    "learning/constrained.go sha256 09df70971233b84cac57fc0193c136221be1667996d15147178b08926253d9e4",
+    "learning/trainer.go sha256 28301d0ca78862a0f79e03d24afe8ab943c3ef07328b3d7364e9a7ac882d8f61",
+    "learning/accumulate.go sha256 f8abd731509d5a812c8ef61562b89ee5a1c8aae52e5e56807d6b9836464252c2",
+    "learning/schedule.go sha256 8420839ade3999c83bf54bcf9ef2f5a293a72e194eac8853c05e46b5b38f1704",
+    "stage-one tests: learning/masks_test.go, learning/signs_test.go, learning/ranges_test.go, learning/signs_from_set_test.go, learning/derived_fixture_test.go, checkpoint/options_compat_test.go",
+    "stage-two tests: learning/accumulate_test.go, learning/loss_scale_test.go, learning/schedule_test.go, learning/clip_order_test.go"
+  ],
+  "observed_result": "Masks cover moments, step counts and weight decay. TestPerItemMasksFreezeOneEdgeAndOneNodeThroughWeightDecay runs 50 updates at weight_decay 0.1 with Masks{Edges:[false true], Nodes:[false true]}: weights[0], bias[0] and log_tau[0] keep their initial values bit for bit and their First, Second and Steps stay at 0, while the three unmasked parameters all move and reach Steps 50 (evidence/COR-10/green-masks.log). TestGroupFlagAndPerItemMaskBothHaveToAllowAnUpdate pins the AND of the group flag and the per-item entry in three cells, mask lengths are validated in both NewTrainer and RestoreTrainer, and a node mask over theta_raw is covered separately on the LIF core. A fixed sign never flips. TestFixedSignEdgesNeverFlipUnderALargeLearningRate runs 1,000 updates at learning_rate 1.0 and checks the sign of every effective weight at every step: edge 0 (+1) never falls below magnitude 0.07602767734034184 and edge 2 (-1) never below 0.47519607783859258, both strictly positive and never flipped, ending at raw values [-1.9782315349015838 -0.9886289490396335 0.4029712819746961 0.95797632963738]. The log-magnitude floor fired 17 times in 30 updates in TestMinLogMagnitudeProjectionKeepsTheMagnitudeRepresentable and the raw value never went below it (evidence/COR-10/green-signs.log). The chain rule d loss/d rho = d loss/d w * w was checked against central finite differences (eps 0.01) on a core mixing free and fixed edges: edge 0 (+1) -0.0169804527869481 against -0.01698069649127 (1.44e-05), edge 1 (0) -0.018380476235569 against -0.0183803676063465 (5.91e-06), edge 2 (-1) -0.00118676156045005 against -0.00118681987066049 (4.91e-05), edge 3 (0) -0.128878357933245 against -0.128878545411534 (1.45e-06); worst relative error 4.91e-05, below the ticket's 1e-4. An all-zero EdgeSigns declaration produces Parameters, Optimizer and Updates JSON identical to no declaration at all after 20 updates. Ranges. One update under the range fixture reports Projected map[weights:2 bias:2 log_tau:2] with every value clamped exactly to the declared bound, and an otherwise identical trainer without Ranges ends with a bit-identical AdamState and the same GradientNorm, so the projection never touches moments; masked parameters are not projected and their group key never appears (evidence/COR-10/green-ranges.log). Derived signs. learning/derived_fixture_test.go rebuilds the ticket 13 four-node fixture by actually running params.Derive; its six edges carry signs [1 -1 0 -1 0 0] and SignsFromParameterSet returns [1 -1 0 -1 0 0] under free, [1 -1 1 -1 1 1] under excitatory and [1 -1 -1 -1 -1 -1] under inhibitory, each with SignSummary PositiveEdges 1, NegativeEdges 2, UnknownEdges 3 and the policy name (evidence/COR-10/green-signs-from-set.log). Stage two keeps the same invariants under the new step order: a masked parameter is excluded from the loss-scale round trip, from the accumulator sum, from both gradient norms and from the AdamW loop, so an accumulated update freezes exactly what a single-step update freezes; clipping consumes the window average and AdamW consumes the clip, verified by hand computation in evidence/LRN-03/clip-order.log. Full suite after both stages: gofmt -l . silent, go vet ./... clean, go test -count=1 ./... exit 0 and go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/... exit 0 (evidence/LRN-03/test.log, race.log, vet-gofmt.log).",
+  "assumption_statement": "Fixture-scale software verification. The finite-difference comparison uses the continuous core, whose forward map is smooth; the LIF core's hard spike events are deliberately not finite-differenced (ticket 11 records that rule). The projection rules, including the log-magnitude floor and the range bounds, are declared engineering rules on parameters, not biology, and the ticket documents that they never change optimizer moments. Fixed signs are an input to the trainer: whether a given edge is excitatory or inhibitory comes from the ticket 13 derivation and its own assumptions, not from anything verified here.",
+  "test_log": [
+    "evidence/COR-10/red-masks.log",
+    "evidence/COR-10/green-masks.log",
+    "evidence/COR-10/red-signs.log",
+    "evidence/COR-10/green-signs.log",
+    "evidence/COR-10/red-ranges.log",
+    "evidence/COR-10/green-ranges.log",
+    "evidence/COR-10/red-signs-from-set.log",
+    "evidence/COR-10/green-signs-from-set.log",
+    "evidence/COR-10/red-checkpoint-compat.log",
+    "evidence/COR-10/green-checkpoint-compat.log",
+    "evidence/COR-10/verification-full.log",
+    "evidence/COR-10/verification-race.log",
+    "evidence/LRN-03/clip-order.log",
+    "evidence/LRN-03/green-accumulate.log",
+    "evidence/LRN-03/test.log",
+    "evidence/LRN-03/race.log",
+    "evidence/LRN-03/vet-gofmt.log"
+  ],
+  "limitations": [
+    "Fixture scale only: two to four neurons. No masked, fixed-sign or range-constrained run exists on a real subgraph or on the whole 25,563,197-edge graph.",
+    "The 1,000-step sign-flip run is one learning rate on one fixture; it shows that the parametrization makes a flip unrepresentable, not that any particular real training run is stable.",
+    "The chain-rule check is on the continuous core only. The LIF surrogate gradient is not finite-differenced, by the rule ticket 11 declares.",
+    "Ranges and the log-magnitude floor are verified as projections on parameters; no experiment shows what those bounds do to learning outcomes.",
+    "COR-10 says nothing about whether the derived signs are biologically correct; that is ticket 13's evidence and carries its own unknown counts.",
+    "One machine, one platform: macOS arm64, go1.26.5, with other work running on the same machine during the stage-two runs."
+  ]
+}

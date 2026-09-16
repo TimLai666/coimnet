@@ -400,5 +400,9 @@ func copyOptions(o Options) Options {
 		owned := *o.Ranges
 		o.Ranges = &owned
 	}
+	if o.Schedule != nil {
+		owned := *o.Schedule
+		o.Schedule = &owned
+	}
 	return o
 }

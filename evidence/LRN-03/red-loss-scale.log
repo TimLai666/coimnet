@@ -1,0 +1,22 @@
+2026/09/15 09:36:23 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestLossScaleLeavesTheUpdateUnchanged
+--- PASS: TestLossScaleLeavesTheUpdateUnchanged (0.00s)
+=== RUN   TestNonFiniteScaledGradientRejectsTheWholeStep
+    loss_scale_test.go:79: the unscaled episode did not produce a large gradient: {Loss:9.999999843067494e+17 GradientNorm:1.152681898513553e+09 UpdateNorm:0.14068361975869229 Updates:1 Projected:map[] LearningRate:0.1 Applied:false Accumulated:0}
+--- FAIL: TestNonFiniteScaledGradientRejectsTheWholeStep (0.00s)
+=== RUN   TestLossScaleValidation
+=== RUN   TestLossScaleValidation/not_a_num
+    loss_scale_test.go:130: accepted loss scale NaN
+=== RUN   TestLossScaleValidation/infinite
+    loss_scale_test.go:130: accepted loss scale +Inf
+=== RUN   TestLossScaleValidation/negative
+    loss_scale_test.go:130: accepted loss scale -1
+--- FAIL: TestLossScaleValidation (0.00s)
+    --- FAIL: TestLossScaleValidation/not_a_num (0.00s)
+    --- FAIL: TestLossScaleValidation/infinite (0.00s)
+    --- FAIL: TestLossScaleValidation/negative (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.505s
+FAIL

@@ -1,0 +1,57 @@
+{
+  "requirement": "LRN-03",
+  "profile": "fixture (two-node continuous core, three fixed episodes) plus the delayed-pulse checkpoint fixture",
+  "reproduction_command": [
+    "go test -count=1 -v -run 'TestLossScaleLeavesTheUpdateUnchanged|TestNonFiniteScaledGradientRejectsTheWholeStep|TestLossScaleValidation' ./learning/",
+    "go test -count=1 -v -run 'TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient|TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically|TestAccumulateStepsAndAccumulatorValidation' ./learning/",
+    "go test -count=1 -v -run 'TestLearningRateTablesForTheThreeKinds|TestStepReportsTheScheduledLearningRateAndUsesIt|TestScheduleResumesOnTheSameCurve|TestInvalidSchedulesAreRejected' ./learning/",
+    "go test -count=1 -v -run 'TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW' ./learning/",
+    "go test -count=1 -v -run 'TestEpisodeCheckpoint' ./checkpoint/",
+    "gofmt -l .",
+    "go vet ./...",
+    "go test -count=1 ./...",
+    "go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/..."
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Darwin 25.6.0)",
+    "red runs 2026-09-15 09:29-09:37 local: uptime 9:29 up 9 days, load averages 2.18 2.10 2.05",
+    "green runs and the four verification commands re-run on the final tree 2026-09-16 18:43-18:44 local: uptime 18:43 up 11 days, load averages 4.52 4.42 3.15",
+    "The working tree also held other agents' in-progress ticket 18 and ticket 20 work (plasticity, modulation, learning/individual.go, learning/core.go, checkpoint/individual*.go, signal/, simulate/, experiment/). While learning was mid-edit by that work the package did not compile; the green logs were first produced in an isolated copy of HEAD plus this ticket's files and then re-produced, with the same results, in the shared working tree once it compiled. Every log committed here is from the shared working tree."
+  ],
+  "input_fingerprints": [
+    "learning/trainer.go sha256 28301d0ca78862a0f79e03d24afe8ab943c3ef07328b3d7364e9a7ac882d8f61",
+    "learning/schedule.go sha256 8420839ade3999c83bf54bcf9ef2f5a293a72e194eac8853c05e46b5b38f1704",
+    "learning/accumulate.go sha256 f8abd731509d5a812c8ef61562b89ee5a1c8aae52e5e56807d6b9836464252c2",
+    "learning/accumulate_test.go sha256 3b44f9fda3bdd730fa405c758db631fd2107cf67ff3e2f9482feecd61f0db554",
+    "learning/schedule_test.go sha256 01382852e65c3f69a6072f1ecbf528b7bd699fb747388420af2a7d18ddcc036b",
+    "learning/loss_scale_test.go sha256 4cfd4c9b99e1a2f5da281c8ff81f6bc705fd1f18122a97b858a4649ad0a15e1b",
+    "learning/clip_order_test.go sha256 ce70102cb8af0625a20137183514389a3649557f1b83a4c82891f7d9e0af7cfe",
+    "checkpoint/options_compat_test.go sha256 ec8572e62fdff4858c392c19ae5ab69ecd5433ad47897cbd2982477304eaa0cb",
+    "fixture: learning.Config{Dynamics{Nodes 2, Sources [0 1], Targets [1 0], DT .5, tanh}, InputSize 1, OutputSize 1, ReadoutNodes [1]} with weights [.3 -.2], bias [.1 -.1], log_tau [.1 .2], encoder [.5 .1], readout [.8]; episodes ([[.7] [-.2] [.1]], .4), ([[.1] [.5] [-.3]], -.2), ([[-.4] [.2] [.6]], .9)"
+  ],
+  "observed_result": "Loss scaling. Six steps of the three fixture episodes at loss scale 1024, 1000, 65536, 1e6 and 1e-3 reach parameters and both Adam moments that are bit-identical to the unscaled run (measured maximum absolute difference 0 in every case; the ticket's 1e-12 is the declared bound, not an observed deviation). The overflow case uses one episode with target 1e9, whose gradient norm is 1.152681898513553e+09: at loss scale 1 the step applies normally, at loss scale 1e300 the product leaves the float64 range and the whole step is refused, with Snapshot() reflect.DeepEqual before and after. The same refusal one gradient into a three-gradient window leaves Accumulator.Sum and Accumulator.Count bit-identical. A negative, NaN or infinite loss scale is refused by NewTrainer. Accumulation. With AccumulateSteps 3 the first two steps report Applied false, Updates 0, UpdateNorm 0, LearningRate 0 and Accumulated 1 and 2; parameters, Adam moments and per-parameter step counts stay exactly at their initial values, and Accumulator.Sum equals g1 and g1+g2 within 1e-12. The third step reports Applied true, Updates 1, Accumulated 0 and drops the accumulator. The mean gradient is [-0.015501780644746763 0.00085021960331920128 -0.05405473625733398 -0.45369432804432802 0.0032237214411788783 -0.010068422137445212 0.001930061262100935 -0.1126475667891403 0.03708363945285479] and one hand-written AdamW step on it (step count 1, so the update is lr*d/(|d|+epsilon) with lr 0.1 and epsilon 0.1) gives [0.31342124819047262 -0.20084305181155127 0.13508800675043228 -0.018060506480751623 0.096876956772948858 0.20914742116033291 0.4981064847423784 0.15297383294342642 0.77294816536760513], which the trainer reaches within 1e-12; those numbers are written as constants in the test. Snapshotting at Count 1 of 3, restoring and finishing the window gives a TrainingSnapshot reflect.DeepEqual to the uninterrupted run, and the snapshot's accumulator is proved not to alias the trainer. Schedules (base rate 0.2, tolerance 1e-12). No schedule: 0.2 at 0, 7 and 1048576 updates. constant with warmup 4: 0, 0.05, 0.1, 0.15, 0.2, 0.2 at updates 0, 1, 2, 3, 4, 9. step halving every five updates: 0.2, 0.2, 0.1, 0.1, 0.05, 0.0125 at updates 0, 4, 5, 9, 10, 20. step behind a three-update warmup: 0, 0.06666666666666667, 0.13333333333333333, 0.2, 0.1, 0.05 at updates 0, 1, 2, 3, 5, 12. cosine with warmup 4, decay 8 and final factor 0.1: 0, 0.1, 0.2, 0.17363961030678929, 0.11, 0.02, 0.02 at updates 0, 2, 4, 6, 8, 12, 100. A six-step run under step(every 2, factor .5) reports 0.2, 0.2, 0.1, 0.1, 0.05, 0.05 and its first update equals the hand-computed AdamW step at 0.2. Restoring in the middle of a cosine decay reproduces the same six rates and the same final snapshot as the uninterrupted run. Thirteen invalid schedules are refused by NewTrainer and an unknown kind is also refused by RestoreTrainer. Clipping order. The three batch gradient norms are 0.49798667625178134, 0.18481102604035227 and 1.1049572432483197 and the mean gradient norm is 0.47242104858621886. At ClipNorm 1 the third batch alone would be clipped while the mean is not, and the applied update equals AdamW on the unclipped mean within 1e-12; clipping each batch before averaging would have landed 0.0020587961634574437 away, so the test can only pass in the declared order. At ClipNorm 0.2 the mean itself is scaled by 0.423351162270449 and the update equals AdamW on the clipped mean, [0.3061585311248784 -0.20035865052532303 0.11862253035545056 -0.034238130590445115 0.098653608872326312 0.20408821877930369 0.49918952863175292 0.13229036954243426 0.7864308703323335], proving the clip runs before AdamW. Checkpoints. An unused loss scale, window, schedule and accumulator are not written and load back as zero values; all four round trip through the envelope including a Count 1 accumulator; twelve malformed payloads (short sum, count equal to or above the window, negative count, an accumulator without a declared window, missing sum, missing count, a null sum element, a null count, an unknown or null schedule kind, a negative loss scale) are refused by Load, while a JSON null for the whole accumulator stays legal. Full suite: gofmt -l . silent, go vet ./... clean, go test -count=1 ./... exit 0, go test -race -count=1 ./learning/ ./checkpoint/ ./experiment/ ./examples/... exit 0.",
+  "assumption_statement": "This is software verification on a two-node fixture and the existing delayed-pulse checkpoint fixture; it says nothing about learning ability, biology or whole-graph behaviour. The gradients the hand computations use are not injected: they come from the real forward and backward pass, are re-read from the network on every run and are asserted against the constants in the test, so a change in the model cannot leave the expectations silently stale. The tests deliberately use epsilon 0.1 instead of the default 1e-8 because AdamW's first update is lr*d/(|d|+epsilon), which at the default epsilon is lr times the sign of d for every gradient this fixture produces and could therefore not tell one gradient from another. The ticket's alternative clipping construction, a mean above the clip norm with every individual gradient below it, cannot exist, because the norm of a mean never exceeds the largest norm it averages; only the opposite construction separates the two orders. Warmup is implemented literally as updates/WarmupUpdates, so the first update under a declared warmup uses a learning rate of 0.",
+  "test_log": [
+    "evidence/LRN-03/red-loss-scale.log",
+    "evidence/LRN-03/green-loss-scale.log",
+    "evidence/LRN-03/red-accumulate.log",
+    "evidence/LRN-03/green-accumulate.log",
+    "evidence/LRN-03/red-schedule.log",
+    "evidence/LRN-03/green-schedule.log",
+    "evidence/LRN-03/red-clip-order.log",
+    "evidence/LRN-03/clip-order.log",
+    "evidence/LRN-03/red-checkpoint-compat.log",
+    "evidence/LRN-03/green-checkpoint-compat.log",
+    "evidence/LRN-03/test.log",
+    "evidence/LRN-03/race.log",
+    "evidence/LRN-03/vet-gofmt.log"
+  ],
+  "limitations": [
+    "Fixture scale only: two neurons, two edges, nine parameters, three episodes. No accumulation, schedule or loss-scaling run exists on a real subgraph or on the whole graph, and nothing here measures the memory or time cost of an accumulator on 25,563,197 edges.",
+    "checkpoint.State still requires next_sample == updates, so a caller that consumes one episode per Step cannot save a checkpoint of a run with accumulate_steps > 1; the accumulating checkpoints in these tests are built with the cursor equal to the update count. learning.IndividualSnapshot has no accumulator field at all, so a persistent individual interrupted inside a window loses the partial sum. Both belong to ticket 18 or to root.",
+    "Individual.ResetOptimizer clears optimizer moments and the update count but not the trainer's accumulator, because learning/individual.go is another agent's file this round. Step defends itself by starting a new window when the accumulator no longer fits the declared one, which is a fallback, not the fix.",
+    "The loss-scale round trip was bit-identical for every scale tried on this fixture, so the 1e-12 tolerance in the ticket has not actually been exercised by a measured deviation.",
+    "The schedules are pure functions of the update count and were verified on the update count alone; no long training run was executed to show that a schedule improves learning.",
+    "One machine, one platform: macOS arm64, go1.26.5. The machine was shared with other work during the runs (load average up to 5.53), so the timings inside the logs are not a performance measurement."
+  ]
+}

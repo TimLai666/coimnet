@@ -32,6 +32,8 @@ printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
 ./bin/coimnet predict --checkpoint "$run_dir/second.json" --input "$run_dir/observations.json"
 ```
 
+訓練器可以限制更新範圍與更新方式：`learning.Options` 的 `Trainable` 群組旗標搭配 `Masks` 逐邊、逐節點指定哪些參數能動，被凍結的參數連動量、步數與權重衰減都不變；`Config.EdgeSigns` 讓有依據的邊固定興奮或抑制、只學幅度，符號永遠不會翻轉；`Ranges` 在每次更新後把數值投影回宣告的區間並回報被投影的數量。一步的順序是固定的：梯度先乘 `LossScale` 再除回（乘出非有限值就整步拒絕，不留半次狀態），累積滿 `AccumulateSteps` 次才平均，平均後才套 `ClipNorm`，再交給 AdamW 以 `Schedule`（`constant`／`step`／`cosine`，都可加線性暖身）算出的學習率更新。學習率只由已完成的更新次數決定，累積到一半的梯度也進快照，因此中途保存再恢復與一次跑完的結果逐位相同。
+
 快照保存這個獨立序列模式的完整參數、最佳化器、資料 seed 與下一筆樣本位置，沒有持續個體或化學狀態。檔案上限為 64 MiB，以校驗碼、版本與形狀檢查後恢復。目的路徑已存在時拒絕覆寫，檔案系統須支援 hardlink 與目錄同步。
 
 三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。

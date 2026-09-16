@@ -71,7 +71,7 @@ func LearningRateAt(o Options, updates uint64) float64
   自由與固定）；`EdgeSigns` 全零逐位等於改前；範圍投影計數正確且不動動量；舊快照可讀；
   `SignsFromParameterSet` 對 ticket 13 的 fixture 參數集給出 +1／−1／unknown 計數與政策結果；
   `go test`、race、vet 全數通過。
-- [ ] 第二階段：`LossScale` 縮放前後更新在 1e-12 內相同、溢位拒絕；累積 k 步等於一次大 batch 的
+- [x] 第二階段：`LossScale` 縮放前後更新在 1e-12 內相同、溢位拒絕；累積 k 步等於一次大 batch 的
   平均梯度（手算小例）、中途快照恢復逐位相同；三種排程的 LR 曲線手算、恢復後接續；裁切順序測試；
   `evidence/LRN-03/`、`evidence/COR-10/`；ticket、ENG、README。
 - [x] COR-07 證據紀錄與 requirements-status（root；`evidence/COR-07/verification.json` 由 opencode 依 root
@@ -160,6 +160,118 @@ func LearningRateAt(o Options, updates uint64) float64
 6. **`StepResult` 多了 `learning_rate` 欄位，`internal/cli` 的 `last_step` JSON 因此多一個鍵。**
    `internal/cli/train.go` 直接序列化 `learning.StepResult`。這是純新增欄位，沒有既有測試比對
    該 JSON 的位元組，但 `evidence/` 裡舊的 `train-*.json` 不再與新輸出逐位相同。
+
+## 第二階段證據
+
+`evidence/LRN-03/`（macOS arm64、go1.26.5。紅燈 2026-09-15，`uptime`：up 9 days,
+load averages 2.18 2.10 2.05；綠燈與四項驗證於 2026-09-16 在最終工作樹重跑，`uptime`：up 11 days,
+load averages 4.52 4.42 3.15。工作樹同時有 ticket 18／20 另外兩個 agent 的進行中改動）。
+一樣先寫失敗測試再實作：`learning/schedule.go` 與 `learning/accumulate.go` 先只放型別，
+`LearningRateAt` 直接回傳基礎學習率，`Step` 完全不看新欄位，五份 `red-*.log` 是行為紅燈
+而不是編譯錯誤；實作後同樣的 `-run` 過濾器產生對應的 `green-*.log`。
+
+- 損失縮放：`red-loss-scale.log` → `green-loss-scale.log`。
+  `TestLossScaleLeavesTheUpdateUnchanged` 用同一組三個 batch 跑兩輪共六步，
+  `loss_scale` 1024、1000、65536、1e6、1e-3 的參數與兩組動量與未縮放的對照
+  **逐位相同**（實測最大差 0，票面的 1e-12 是宣告上限而不是量到的偏差）。
+  `TestNonFiniteScaledGradientRejectsTheWholeStep` 用 target 1e9 的 episode 取得
+  梯度範數 1.152681898513553e+09：`loss_scale` 1 正常更新，`loss_scale` 1e300 讓乘積
+  離開 float64 範圍，整步被拒絕，`Snapshot()` 前後 `reflect.DeepEqual` 相同；
+  同一個拒絕發生在累積視窗中間時，`Accumulator` 的 `Sum` 與 `Count` 也逐位不變。
+  負值、NaN、Inf 的 `loss_scale` 在 `NewTrainer` 就被拒絕。
+- 梯度累積：`red-accumulate.log` → `green-accumulate.log`。
+  `TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient` 用兩節點連續 fixture 的
+  三個 batch（梯度在視窗內不動，因此三個梯度都取自同一組參數）：前兩步 `Applied` 為
+  false、`Updates` 與動量全部不動，`Accumulator.Count` 為 1、2 且 `Sum` 等於
+  `g1`、`g1+g2`（1e-12 內）；第三步 `Applied` 為 true、`Updates` 為 1、`Accumulator` 歸 nil。
+  平均梯度為 `[-0.015501780644746763 0.00085021960331920128 -0.05405473625733398
+  -0.45369432804432802 0.0032237214411788783 -0.010068422137445212 0.001930061262100935
+  -0.1126475667891403 0.03708363945285479]`，手算的一次 AdamW（step 1 兩個偏差修正相消，
+  更新量是 `lr * d / (|d| + eps)`，`lr=0.1`、`eps=0.1`）給出
+  `[0.31342124819047262 -0.20084305181155127 0.13508800675043228 -0.018060506480751623
+  0.096876956772948858 0.20914742116033291 0.4981064847423784 0.15297383294342642
+  0.77294816536760513]`，與實際參數在 1e-12 內相同；測試把這組數字直接寫成常數。
+  `TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically` 在 Count 1／3 時
+  取快照、`RestoreTrainer` 再跑完，最終 `TrainingSnapshot` 與未中斷的一次跑完
+  `reflect.DeepEqual` 相同，快照的累積器也證明不與訓練器共用記憶體。
+- 排程：`red-schedule.log` → `green-schedule.log`。手算的 LR 表（基礎 0.2，容差 1e-12）：
+
+  | 排程 | updates → 學習率 |
+  | --- | --- |
+  | 無排程 | 0、7、1048576 → 0.2 |
+  | `constant`，warmup 4 | 0 → 0；1 → 0.05；2 → 0.1；3 → 0.15；4 → 0.2；9 → 0.2 |
+  | `step`，每 5 步 ×0.5 | 0 → 0.2；4 → 0.2；5 → 0.1；9 → 0.1；10 → 0.05；20 → 0.0125 |
+  | `step`，warmup 3，每 5 步 ×0.5 | 0 → 0；1 → 0.0666…7；2 → 0.1333…3；3 → 0.2；5 → 0.1；12 → 0.05 |
+  | `cosine`，warmup 4，decay 8，final 0.1 | 0 → 0；2 → 0.1；4 → 0.2；6 → 0.17363961030678929；8 → 0.11；12 → 0.02；100 → 0.02 |
+
+  `TestStepReportsTheScheduledLearningRateAndUsesIt` 在 `step`（每 2 步 ×0.5）下連跑六步，
+  `StepResult.LearningRate` 依序為 0.2、0.2、0.1、0.1、0.05、0.05，第一步的參數等於用
+  0.2 手算的 AdamW 第一步。`TestScheduleResumesOnTheSameCurve` 在 cosine 曲線中途
+  `RestoreTrainer`，六步的 LR 序列與最終快照都與未中斷的一次跑完相同。
+  未知 kind、空 kind、`step` 缺 `step_every` 或 `step_factor`、負的 `step_factor`、
+  `cosine` 缺 `decay_updates`、`final_factor` 超出 [0,1] 或非有限，以及「該 kind 不讀的欄位
+  被寫了值」共 13 種情況都被 `NewTrainer` 拒絕，未知 kind 也被 `RestoreTrainer` 拒絕。
+- 裁切順序：`red-clip-order.log` → `clip-order.log`。三個 batch 的梯度範數為
+  0.49798667625178134、0.18481102604035227、1.1049572432483197，平均梯度範數
+  0.47242104858621886。`clip_norm` 1 時第三個 batch 單獨會被裁、平均不會：實際更新等於
+  「未裁切平均的一次 AdamW」（1e-12 內），而「先逐 batch 裁再平均」的結果與它差
+  0.0020587961634574437，所以順序錯了不可能通過。`clip_norm` 0.2 時平均本身被裁成
+  0.423351162270449 倍，更新等於「裁切後平均的一次 AdamW」
+  `[0.3061585311248784 -0.20035865052532303 0.11862253035545056 -0.034238130590445115
+  0.098653608872326312 0.20408821877930369 0.49918952863175292 0.13229036954243426
+  0.7864308703323335]`，證明裁切在 AdamW 之前。
+- 快照相容：`red-checkpoint-compat.log` → `green-checkpoint-compat.log`
+  （`checkpoint/options_compat_test.go` 新增三個測試，沒有動
+  `checkpoint/individual_test.go` 與 `checkpoint/package*.go`）。未使用時
+  `loss_scale`、`accumulate_steps`、`schedule`、`accumulator` 都不寫出，載入後四者皆為零值；
+  四個欄位（含 Count 1 的部分累積器）可完整往返；`sum` 長度不符、`count` 等於或超過視窗、
+  `count` 為負、沒有宣告視窗卻帶累積器、缺 `sum`、缺 `count`、`sum` 內有 null、`count` 為
+  null、未知或 null 的 `schedule.kind`、負的 `loss_scale` 共 12 種 payload 都在 `Load` 被拒絕，
+  整個 `accumulator` 為 JSON null 仍合法。
+- 全套驗證：`test.log`、`race.log`、`vet.log`、`gofmt.log`。
+
+偏離與待決策：
+
+1. **「平均範數超過 `ClipNorm` 但每個 batch 都低於」在數學上不可能。** 平均的範數不會大於
+   被平均者的最大範數，所以票面兩種構造只有「單個 batch 超過、平均不超過」這一種存在，
+   證據用的就是它，另外再加一組「平均本身被裁」釘住裁切在 AdamW 之前。
+2. **`Individual.ResetOptimizer` 不會清掉累積器。** 累積器放在 `Trainer` 上，而
+   `ResetOptimizer` 只換掉 `options` 與 `optimizer`（`learning/individual.go:303` 一帶），
+   因此在累積視窗中間重設最佳化器會留下上一個視窗的部分梯度。`learning/individual.go`
+   屬於 ticket 18 的範圍，本輪沒有改：`Step` 先做防禦，遇到與目前視窗不符的累積器就重新開一個
+   視窗，但正確的修法是在 `ResetOptimizer` 裡加一行清空。請 root 指派。
+3. **`checkpoint.State` 仍要求 `next_sample == updates`。** 累積 k 步時一次更新消耗 k 個樣本，
+   所以「每次更新一個樣本」的既有檢查（`checkpoint/checkpoint.go:81`）會擋下真的用
+   `accumulate_steps > 1` 跑出來的 checkpoint。本輪沒有改這個已驗證的契約，建議改成
+   `next_sample == updates * accumulate_steps + accumulator.count`，但那會在中途改動
+   `accumulate_steps` 時誤擋，需要 root 決定。`IndividualSnapshot` 同樣沒有累積器欄位，
+   持續個體在視窗中間存檔會遺失部分累積，這兩點都屬於 ticket 18／root 的範圍。
+4. **`StepResult` 又多了兩個欄位。** `applied` 與 `accumulated` 是純新增，
+   `internal/cli` 的 `last_step` JSON 因此再多兩個鍵；沒有既有測試比對該 JSON 的位元組。
+   累積視窗未滿的那一步 `applied` 為 false、`updates` 不變、`update_norm`、`learning_rate`
+   與 `projected` 都是無更新的值，`gradient_norm` 一律是「這一步自己的梯度範數」
+   （裁切前、平均前），視窗為 1 時與改前完全相同。
+5. **排程拒絕該 kind 不讀的欄位。** 票面只點名未知 kind、`step` 的 `step_every` 為 0、
+   `final_factor` 超出 [0,1] 與負值。實作另外拒絕 `cosine` 的 `decay_updates` 為 0、
+   `step` 的 `step_factor` 不為正，以及例如「`constant` 卻寫了 `step_factor`」，
+   理由與 `simulate` 不允許「第二個被忽略的旋鈕」相同。
+6. **暖身第一步的學習率是 0。** 「linear warmup from 0 to base over WarmupUpdates」按字面
+   實作，`LearningRateAt(o, 0)` 為 0，所以宣告暖身時第一次更新不動參數，但動量與步數照常
+   累積。若要第一步就有非零學習率，暖身要改成 `(updates+1)/WarmupUpdates`，這是契約問題。
+
+## Root 裁決（2026-09-16，第二階段偏離）
+
+1. 裁切構造：接受偏離 1，證據用「單個 batch 超過、平均不超過」與「平均本身被裁」兩組。
+2. `Individual.ResetOptimizer` 清空累積器：已指派給 ticket 18 第一階段的執行者（同一輪加一行與一個斷言）。
+3. `checkpoint.State` 的 `next_sample` 規則：改為 `next_sample == updates * accumulate_steps + accumulator.count`，
+   前提是同一次訓練的 `accumulate_steps` 固定不變（`resume` 在選項與快照不一致時拒絕，除非明示
+   `--allow-option-change`，見 ticket 24 第二階段）。在 CLI 尚未暴露 `accumulate_steps` 之前，CLI 不會寫出
+   這種 checkpoint，因此這條改動與 CLI 的旗標一起落在 ticket 24 第二階段。`IndividualSnapshot` 的累積器欄位
+   （`Optimizer.Accumulator`）併入 ticket 23 第一階段（該票本來就要動 `OptimizerSnapshot` 與運行中更新）；
+   在此之前，持續個體在視窗中間存檔會遺失部分累積，ENG 的個體段落要寫明這個限制。
+4. `StepResult` 新欄位、排程的嚴格驗證：接受。
+5. 暖身第一步學習率為 0：維持字面實作（`updates / WarmupUpdates`），文件已寫明；動量與步數照常累積是
+   宣告行為，不改。
 
 ## 依據
 

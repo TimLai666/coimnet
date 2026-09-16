@@ -1,0 +1,71 @@
+2026/09/15 09:36:36 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestLearningRateTablesForTheThreeKinds
+=== RUN   TestLearningRateTablesForTheThreeKinds/no_schedule_at_all
+=== RUN   TestLearningRateTablesForTheThreeKinds/constant_with_a_four-update_warmup
+    schedule_test.go:66: learning rate at 1 updates = 0.20000000000000001, want 0.050000000000000003
+=== RUN   TestLearningRateTablesForTheThreeKinds/step,_halved_every_five_updates
+    schedule_test.go:66: learning rate at 5 updates = 0.20000000000000001, want 0.10000000000000001
+=== RUN   TestLearningRateTablesForTheThreeKinds/step_behind_a_three-update_warmup
+    schedule_test.go:66: learning rate at 5 updates = 0.20000000000000001, want 0.10000000000000001
+=== RUN   TestLearningRateTablesForTheThreeKinds/cosine_from_a_four-update_warmup_over_eight_updates_down_to_a_tenth
+    schedule_test.go:66: learning rate at 6 updates = 0.20000000000000001, want 0.17363961030678929
+--- FAIL: TestLearningRateTablesForTheThreeKinds (0.00s)
+    --- PASS: TestLearningRateTablesForTheThreeKinds/no_schedule_at_all (0.00s)
+    --- FAIL: TestLearningRateTablesForTheThreeKinds/constant_with_a_four-update_warmup (0.00s)
+    --- FAIL: TestLearningRateTablesForTheThreeKinds/step,_halved_every_five_updates (0.00s)
+    --- FAIL: TestLearningRateTablesForTheThreeKinds/step_behind_a_three-update_warmup (0.00s)
+    --- FAIL: TestLearningRateTablesForTheThreeKinds/cosine_from_a_four-update_warmup_over_eight_updates_down_to_a_tenth (0.00s)
+=== RUN   TestStepReportsTheScheduledLearningRateAndUsesIt
+    schedule_test.go:90: step 2 reported learning rate 0.20000000000000001, want 0.10000000000000001
+--- FAIL: TestStepReportsTheScheduledLearningRateAndUsesIt (0.00s)
+=== RUN   TestScheduleResumesOnTheSameCurve
+    schedule_test.go:149: cosine rate sequence[0] = 0.2, want 0 (tolerance 1e-12)
+--- FAIL: TestScheduleResumesOnTheSameCurve (0.00s)
+=== RUN   TestInvalidSchedulesAreRejected
+=== RUN   TestInvalidSchedulesAreRejected/final_factor_above_one
+    schedule_test.go:174: NewTrainer accepted final factor above one
+=== RUN   TestInvalidSchedulesAreRejected/negative_final_factor
+    schedule_test.go:174: NewTrainer accepted negative final factor
+=== RUN   TestInvalidSchedulesAreRejected/step_with_a_final_factor
+    schedule_test.go:174: NewTrainer accepted step with a final factor
+=== RUN   TestInvalidSchedulesAreRejected/step_with_a_negative_factor
+    schedule_test.go:174: NewTrainer accepted step with a negative factor
+=== RUN   TestInvalidSchedulesAreRejected/constant_with_a_step_factor
+    schedule_test.go:174: NewTrainer accepted constant with a step factor
+=== RUN   TestInvalidSchedulesAreRejected/cosine_with_a_step_period
+    schedule_test.go:174: NewTrainer accepted cosine with a step period
+=== RUN   TestInvalidSchedulesAreRejected/constant_with_a_decay_window
+    schedule_test.go:174: NewTrainer accepted constant with a decay window
+=== RUN   TestInvalidSchedulesAreRejected/non-finite_final_factor
+    schedule_test.go:174: NewTrainer accepted non-finite final factor
+=== RUN   TestInvalidSchedulesAreRejected/unknown_kind
+    schedule_test.go:174: NewTrainer accepted unknown kind
+=== RUN   TestInvalidSchedulesAreRejected/empty_kind
+    schedule_test.go:174: NewTrainer accepted empty kind
+=== RUN   TestInvalidSchedulesAreRejected/step_without_a_period
+    schedule_test.go:174: NewTrainer accepted step without a period
+=== RUN   TestInvalidSchedulesAreRejected/step_without_a_factor
+    schedule_test.go:174: NewTrainer accepted step without a factor
+=== RUN   TestInvalidSchedulesAreRejected/cosine_without_a_decay
+    schedule_test.go:174: NewTrainer accepted cosine without a decay
+=== NAME  TestInvalidSchedulesAreRejected
+    schedule_test.go:189: RestoreTrainer accepted an unknown schedule kind
+--- FAIL: TestInvalidSchedulesAreRejected (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/final_factor_above_one (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/negative_final_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/step_with_a_final_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/step_with_a_negative_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/constant_with_a_step_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/cosine_with_a_step_period (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/constant_with_a_decay_window (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/non-finite_final_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/unknown_kind (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/empty_kind (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/step_without_a_period (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/step_without_a_factor (0.00s)
+    --- FAIL: TestInvalidSchedulesAreRejected/cosine_without_a_decay (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.259s
+FAIL
