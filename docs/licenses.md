@@ -1,0 +1,200 @@
+# 相依授權盤點
+
+產生時間（UTC）：2026-09-16 16:43
+go version：go version go1.26.5 darwin/arm64
+模組總數：182，未知（含未下載）：68
+
+| 模組 | 版本 | 直接／間接 | 授權 | 授權檔 |
+|---|---|---|---|---|
+| cloud.google.com/go | v0.123.0 | 間接 | Apache-2.0 | cloud.google.com/go@v0.123.0/LICENSE |
+| cloud.google.com/go/auth | v0.21.0 | 間接 | Apache-2.0 | cloud.google.com/go/auth@v0.21.0/LICENSE |
+| cloud.google.com/go/auth/oauth2adapt | v0.2.8 | 間接 | Apache-2.0 | cloud.google.com/go/auth/oauth2adapt@v0.2.8/LICENSE |
+| cloud.google.com/go/bigquery | v1.78.0 | 間接 | Apache-2.0 | cloud.google.com/go/bigquery@v1.78.0/LICENSE |
+| cloud.google.com/go/compute/metadata | v0.9.0 | 間接 | Apache-2.0 | cloud.google.com/go/compute/metadata@v0.9.0/LICENSE |
+| cloud.google.com/go/iam | v1.11.0 | 間接 | Apache-2.0 | cloud.google.com/go/iam@v1.11.0/LICENSE |
+| codeberg.org/go-fonts/liberation | v0.6.0 | 間接 | 未知 | codeberg.org/go-fonts/liberation@v0.6.0/LICENSE |
+| codeberg.org/go-latex/latex | v0.3.0 | 間接 | 未知 | codeberg.org/go-latex/latex@v0.3.0/LICENSE |
+| codeberg.org/go-pdf/fpdf | v0.12.0 | 間接 | MIT | codeberg.org/go-pdf/fpdf@v0.12.0/LICENSE |
+| filippo.io/edwards25519 | v1.2.0 | 間接 | 未知 | filippo.io/edwards25519@v1.2.0/LICENSE |
+| git.sr.ht/~sbinet/gg | v0.8.0 | 間接 | 未知 | git.sr.ht/~sbinet/gg@v0.8.0/LICENSE.md |
+| github.com/Danny-Dasilva/CycleTLS/cycletls | v1.0.30 | 間接 | 未知 | github.com/!danny-!dasilva/!cycle!t!l!s/cycletls@v1.0.30/LICENSE |
+| github.com/Danny-Dasilva/fhttp | v0.0.0-20260106165651-41258808b131 | 間接 | 未知 |  |
+| github.com/HazelnutParadise/Go-Utils | v0.8.2 | 間接 | MIT | github.com/!hazelnut!paradise/!go-!utils@v0.8.2/LICENSE |
+| github.com/HazelnutParadise/insyra | v0.3.2 | 直接 | MIT | github.com/!hazelnut!paradise/insyra@v0.3.2/LICENSE |
+| github.com/JohnCGriffin/overflow | v0.0.0-20211019200055-46fa312c352c | 間接 | 未知 |  |
+| github.com/Masterminds/semver/v3 | v3.5.0 | 間接 | 未知 | github.com/!masterminds/semver/v3@v3.5.0/LICENSE.txt |
+| github.com/Masterminds/squirrel | v1.5.4 | 間接 | MIT | github.com/!masterminds/squirrel@v1.5.4/LICENSE |
+| github.com/Microsoft/go-winio | v0.6.2 | 間接 | MIT | github.com/!microsoft/go-winio@v0.6.2/LICENSE |
+| github.com/TimLai666/go-decimal | v0.1.3 | 間接 | MIT | github.com/!tim!lai666/go-decimal@v0.1.3/LICENSE |
+| github.com/ajstarks/svgo | v0.0.0-20211024235047-1546f124cd8b | 間接 | 未知 | github.com/ajstarks/svgo@v0.0.0-20211024235047-1546f124cd8b/LICENSE |
+| github.com/alecthomas/participle/v2 | v2.1.0 | 間接 | 未知 | github.com/alecthomas/participle/v2@v2.1.0/COPYING |
+| github.com/andybalholm/brotli | v1.2.2 | 間接 | 未知 | github.com/andybalholm/brotli@v1.2.2/LICENSE |
+| github.com/apache/arrow/go/v15 | v15.0.2 | 間接 | Apache-2.0 | github.com/apache/arrow/go/v15@v15.0.2/LICENSE.txt |
+| github.com/apache/arrow/go/v17 | v17.0.0 | 直接 | Apache-2.0 | github.com/apache/arrow/go/v17@v17.0.0/LICENSE.txt |
+| github.com/apache/thrift | v0.24.0 | 間接 | Apache-2.0 | github.com/apache/thrift@v0.24.0/LICENSE |
+| github.com/apoplexi24/gpandas | v0.2.0 | 間接 | Apache-2.0 | github.com/apoplexi24/gpandas@v0.2.0/LICENSE |
+| github.com/cespare/xxhash/v2 | v2.3.0 | 間接 | MIT | github.com/cespare/xxhash/v2@v2.3.0/LICENSE.txt |
+| github.com/chromedp/cdproto | v0.0.0-20241208230723-d1c7de7e5dd2 | 間接 | MIT | github.com/chromedp/cdproto@v0.0.0-20241208230723-d1c7de7e5dd2/LICENSE |
+| github.com/chromedp/chromedp | v0.11.2 | 間接 | MIT | github.com/chromedp/chromedp@v0.11.2/LICENSE |
+| github.com/chromedp/sysutil | v1.1.0 | 間接 | MIT | github.com/chromedp/sysutil@v1.1.0/LICENSE |
+| github.com/clipperhouse/displaywidth | v0.11.0 | 間接 | MIT | github.com/clipperhouse/displaywidth@v0.11.0/LICENSE |
+| github.com/clipperhouse/uax29/v2 | v2.7.0 | 間接 | MIT | github.com/clipperhouse/uax29/v2@v2.7.0/LICENSE |
+| github.com/davecgh/go-spew | v1.1.2-0.20180830191138-d8f796af33cc | 間接 | ISC | github.com/davecgh/go-spew@v1.1.2-0.20180830191138-d8f796af33cc/LICENSE |
+| github.com/denisenkom/go-mssqldb | v0.12.3 | 間接 | 未知 | github.com/denisenkom/go-mssqldb@v0.12.3/LICENSE.txt |
+| github.com/docopt/docopt-go | v0.0.0-20180111231733-ee0de3bc6815 | 間接 | MIT | github.com/docopt/docopt-go@v0.0.0-20180111231733-ee0de3bc6815/LICENSE |
+| github.com/dustin/go-humanize | v1.0.1 | 間接 | 未知 | github.com/dustin/go-humanize@v1.0.1/LICENSE |
+| github.com/ergochat/readline | v0.1.3 | 間接 | MIT | github.com/ergochat/readline@v0.1.3/LICENSE |
+| github.com/fatih/color | v1.19.0 | 間接 | MIT | github.com/fatih/color@v1.19.0/LICENSE.md |
+| github.com/felixge/httpsnoop | v1.1.0 | 間接 | 未知 | github.com/felixge/httpsnoop@v1.1.0/LICENSE.txt |
+| github.com/gaukas/clienthellod | v0.4.2 | 間接 | Apache-2.0 | github.com/gaukas/clienthellod@v0.4.2/LICENSE |
+| github.com/gaukas/godicttls | v0.0.4 | 間接 | BSD-2-Clause | github.com/gaukas/godicttls@v0.0.4/LICENSE |
+| github.com/glebarez/go-sqlite | v1.22.0 | 間接 | 未知 | github.com/glebarez/go-sqlite@v1.22.0/LICENSE |
+| github.com/glebarez/sqlite | v1.11.0 | 間接 | MIT | github.com/glebarez/sqlite@v1.11.0/License |
+| github.com/go-echarts/go-echarts/v2 | v2.7.2 | 間接 | MIT | github.com/go-echarts/go-echarts/v2@v2.7.2/LICENSE |
+| github.com/go-echarts/snapshot-chromedp | v0.0.5 | 間接 | MIT | github.com/go-echarts/snapshot-chromedp@v0.0.5/LICENSE |
+| github.com/go-logr/logr | v1.4.3 | 間接 | Apache-2.0 | github.com/go-logr/logr@v1.4.3/LICENSE |
+| github.com/go-logr/stdr | v1.2.2 | 間接 | Apache-2.0 | github.com/go-logr/stdr@v1.2.2/LICENSE |
+| github.com/go-sql-driver/mysql | v1.10.0 | 間接 | MPL-2.0 | github.com/go-sql-driver/mysql@v1.10.0/LICENSE |
+| github.com/go-task/slim-sprig/v3 | v3.0.0 | 間接 | 未知 | github.com/go-task/slim-sprig/v3@v3.0.0/LICENSE.txt |
+| github.com/go-webgpu/goffi | v0.6.3 | 間接 | MIT | github.com/go-webgpu/goffi@v0.6.3/LICENSE |
+| github.com/go-webgpu/webgpu | v0.5.5 | 間接 | MIT | github.com/go-webgpu/webgpu@v0.5.5/LICENSE |
+| github.com/gobwas/httphead | v0.1.0 | 間接 | MIT | github.com/gobwas/httphead@v0.1.0/LICENSE |
+| github.com/gobwas/pool | v0.2.1 | 間接 | MIT | github.com/gobwas/pool@v0.2.1/LICENSE |
+| github.com/gobwas/ws | v1.4.0 | 間接 | MIT | github.com/gobwas/ws@v1.4.0/LICENSE |
+| github.com/goccy/go-json | v0.10.6 | 間接 | MIT | github.com/goccy/go-json@v0.10.6/LICENSE |
+| github.com/goccy/go-yaml | v1.11.0 | 間接 | MIT | github.com/goccy/go-yaml@v1.11.0/LICENSE |
+| github.com/gogpu/gpucontext | v0.24.0 | 間接 | MIT | github.com/gogpu/gpucontext@v0.24.0/LICENSE |
+| github.com/gogpu/gputypes | v0.5.1 | 間接 | MIT | github.com/gogpu/gputypes@v0.5.1/LICENSE |
+| github.com/gogpu/naga | v0.18.0 | 間接 | MIT | github.com/gogpu/naga@v0.18.0/LICENSE |
+| github.com/gogpu/wgpu | v0.30.35 | 間接 | MIT | github.com/gogpu/wgpu@v0.30.35/LICENSE |
+| github.com/golang-sql/civil | v0.0.0-20220223132316-b832511892a9 | 間接 | Apache-2.0 | github.com/golang-sql/civil@v0.0.0-20220223132316-b832511892a9/LICENSE |
+| github.com/golang-sql/sqlexp | v0.1.0 | 間接 | 未知 | github.com/golang-sql/sqlexp@v0.1.0/LICENSE |
+| github.com/golang/freetype | v0.0.0-20170609003504-e2365dfdc4a0 | 間接 | 未知 | github.com/golang/freetype@v0.0.0-20170609003504-e2365dfdc4a0/LICENSE |
+| github.com/golang/protobuf | v1.5.0 | 間接 | 未知 | github.com/golang/protobuf@v1.5.0/LICENSE |
+| github.com/golang/snappy | v1.0.0 | 間接 | 未知 | github.com/golang/snappy@v1.0.0/LICENSE |
+| github.com/google/flatbuffers | v25.12.19+incompatible | 間接 | Apache-2.0 | github.com/google/flatbuffers@v25.12.19+incompatible/LICENSE |
+| github.com/google/go-cmp | v0.7.0 | 間接 | 未知 | github.com/google/go-cmp@v0.7.0/LICENSE |
+| github.com/google/gopacket | v1.1.19 | 間接 | 未知 | github.com/google/gopacket@v1.1.19/LICENSE |
+| github.com/google/pprof | v0.0.0-20260709232956-b9395ee17fa0 | 間接 | Apache-2.0 | github.com/google/pprof@v0.0.0-20260709232956-b9395ee17fa0/LICENSE |
+| github.com/google/s2a-go | v0.1.9 | 間接 | Apache-2.0 | github.com/google/s2a-go@v0.1.9/LICENSE.md |
+| github.com/google/uuid | v1.6.0 | 間接 | 未知 | github.com/google/uuid@v1.6.0/LICENSE |
+| github.com/googleapis/enterprise-certificate-proxy | v0.3.18 | 間接 | Apache-2.0 | github.com/googleapis/enterprise-certificate-proxy@v0.3.18/LICENSE |
+| github.com/googleapis/gax-go/v2 | v2.23.0 | 間接 | 未知 | github.com/googleapis/gax-go/v2@v2.23.0/LICENSE |
+| github.com/gorilla/websocket | v1.5.3 | 間接 | 未知 | github.com/gorilla/websocket@v1.5.3/LICENSE |
+| github.com/hamba/avro/v2 | v2.22.1 | 間接 | MIT | github.com/hamba/avro/v2@v2.22.1/LICENCE |
+| github.com/hashicorp/golang-lru/v2 | v2.0.7 | 間接 | MPL-2.0 | github.com/hashicorp/golang-lru/v2@v2.0.7/LICENSE |
+| github.com/huandu/xstrings | v1.4.0 | 間接 | MIT | github.com/huandu/xstrings@v1.4.0/LICENSE |
+| github.com/inconshreveable/mousetrap | v1.1.0 | 間接 | Apache-2.0 | github.com/inconshreveable/mousetrap@v1.1.0/LICENSE |
+| github.com/jackc/pgpassfile | v1.0.0 | 間接 | MIT | github.com/jackc/pgpassfile@v1.0.0/LICENSE |
+| github.com/jackc/pgservicefile | v0.0.0-20240606120523-5a60cdf6a761 | 間接 | MIT | github.com/jackc/pgservicefile@v0.0.0-20240606120523-5a60cdf6a761/LICENSE |
+| github.com/jackc/pgx/v5 | v5.10.0 | 間接 | MIT | github.com/jackc/pgx/v5@v5.10.0/LICENSE |
+| github.com/jackc/puddle/v2 | v2.2.2 | 間接 | MIT | github.com/jackc/puddle/v2@v2.2.2/LICENSE |
+| github.com/jinzhu/inflection | v1.0.0 | 間接 | MIT | github.com/jinzhu/inflection@v1.0.0/LICENSE |
+| github.com/jinzhu/now | v1.1.5 | 間接 | MIT | github.com/jinzhu/now@v1.1.5/License |
+| github.com/josharian/intern | v1.0.0 | 間接 | MIT | github.com/josharian/intern@v1.0.0/license.md |
+| github.com/json-iterator/go | v1.1.12 | 間接 | MIT | github.com/json-iterator/go@v1.1.12/LICENSE |
+| github.com/klauspost/asmfmt | v1.3.2 | 間接 | MIT | github.com/klauspost/asmfmt@v1.3.2/LICENSE |
+| github.com/klauspost/compress | v1.19.0 | 間接 | 未知 | github.com/klauspost/compress@v1.19.0/LICENSE |
+| github.com/klauspost/cpuid/v2 | v2.4.0 | 間接 | MIT | github.com/klauspost/cpuid/v2@v2.4.0/LICENSE |
+| github.com/kr/text | v0.2.0 | 間接 | 未知 | github.com/kr/text@v0.2.0/License |
+| github.com/lann/builder | v0.0.0-20180802200727-47ae307949d0 | 間接 | MIT | github.com/lann/builder@v0.0.0-20180802200727-47ae307949d0/LICENSE |
+| github.com/lann/ps | v0.0.0-20150810152359-62de8c46ede0 | 間接 | 未知 | github.com/lann/ps@v0.0.0-20150810152359-62de8c46ede0/LICENSE |
+| github.com/mailru/easyjson | v0.7.7 | 間接 | 未知 | github.com/mailru/easyjson@v0.7.7/LICENSE |
+| github.com/mattn/go-colorable | v0.1.15 | 間接 | MIT | github.com/mattn/go-colorable@v0.1.15/LICENSE |
+| github.com/mattn/go-isatty | v0.0.22 | 間接 | MIT | github.com/mattn/go-isatty@v0.0.22/LICENSE |
+| github.com/mattn/go-runewidth | v0.0.24 | 間接 | MIT | github.com/mattn/go-runewidth@v0.0.24/LICENSE |
+| github.com/mattn/go-sqlite3 | v1.14.22 | 間接 | MIT | github.com/mattn/go-sqlite3@v1.14.22/LICENSE |
+| github.com/minio/asm2plan9s | v0.0.0-20200509001527-cdd76441f9d8 | 間接 | Apache-2.0 | github.com/minio/asm2plan9s@v0.0.0-20200509001527-cdd76441f9d8/LICENSE |
+| github.com/minio/c2goasm | v0.0.0-20190812172519-36a3d3bbc4f3 | 間接 | Apache-2.0 | github.com/minio/c2goasm@v0.0.0-20190812172519-36a3d3bbc4f3/LICENSE |
+| github.com/mitchellh/mapstructure | v1.5.0 | 間接 | MIT | github.com/mitchellh/mapstructure@v1.5.0/LICENSE |
+| github.com/modern-go/concurrent | v0.0.0-20180306012644-bacd9c7ef1dd | 間接 | Apache-2.0 | github.com/modern-go/concurrent@v0.0.0-20180306012644-bacd9c7ef1dd/LICENSE |
+| github.com/modern-go/reflect2 | v1.0.2 | 間接 | Apache-2.0 | github.com/modern-go/reflect2@v1.0.2/LICENSE |
+| github.com/ncruces/go-strftime | v1.0.0 | 間接 | MIT | github.com/ncruces/go-strftime@v1.0.0/LICENSE |
+| github.com/olekukonko/cat | v0.0.0-20250911104152-50322a0618f6 | 間接 | MIT | github.com/olekukonko/cat@v0.0.0-20250911104152-50322a0618f6/LICENSE |
+| github.com/olekukonko/errors | v1.3.0 | 間接 | MIT | github.com/olekukonko/errors@v1.3.0/LICENSE |
+| github.com/olekukonko/ll | v0.1.8 | 間接 | MIT | github.com/olekukonko/ll@v0.1.8/LICENSE |
+| github.com/olekukonko/tablewriter | v1.1.4 | 間接 | 未知 | github.com/olekukonko/tablewriter@v1.1.4/LICENSE.md |
+| github.com/onsi/ginkgo/v2 | v2.32.0 | 間接 | 未知 | github.com/onsi/ginkgo/v2@v2.32.0/LICENSE |
+| github.com/petermattis/goid | v0.0.0-20260701081913-4f67fd55d3b4 | 間接 | Apache-2.0 | github.com/petermattis/goid@v0.0.0-20260701081913-4f67fd55d3b4/LICENSE |
+| github.com/pierrec/lz4/v4 | v4.1.27 | 間接 | 未知 | github.com/pierrec/lz4/v4@v4.1.27/LICENSE |
+| github.com/pmezard/go-difflib | v1.0.1-0.20181226105442-5d4384ee4fb2 | 間接 | 未知 | github.com/pmezard/go-difflib@v1.0.1-0.20181226105442-5d4384ee4fb2/LICENSE |
+| github.com/quic-go/qpack | v0.6.0 | 間接 | 未知 | github.com/quic-go/qpack@v0.6.0/LICENSE.md |
+| github.com/quic-go/quic-go | v0.60.0 | 間接 | MIT | github.com/quic-go/quic-go@v0.60.0/LICENSE |
+| github.com/refraction-networking/uquic | v0.0.6 | 間接 | MIT | github.com/refraction-networking/uquic@v0.0.6/LICENSE |
+| github.com/refraction-networking/utls | v1.8.2 | 間接 | 未知 | github.com/refraction-networking/utls@v1.8.2/LICENSE |
+| github.com/remyoudompheng/bigfft | v0.0.0-20230129092748-24d4a6f8daec | 間接 | 未知 | github.com/remyoudompheng/bigfft@v0.0.0-20230129092748-24d4a6f8daec/LICENSE |
+| github.com/richardlehane/mscfb | v1.0.7 | 間接 | Apache-2.0 | github.com/richardlehane/mscfb@v1.0.7/LICENSE.txt |
+| github.com/richardlehane/msoleps | v1.0.6 | 間接 | Apache-2.0 | github.com/richardlehane/msoleps@v1.0.6/LICENSE.txt |
+| github.com/rogpeppe/go-internal | v1.9.0 | 間接 | 未知 | github.com/rogpeppe/go-internal@v1.9.0/LICENSE |
+| github.com/saintfish/chardet | v0.0.0-20230101081208-5e3ef4b5456d | 間接 | 未知 | github.com/saintfish/chardet@v0.0.0-20230101081208-5e3ef4b5456d/LICENSE |
+| github.com/spf13/cobra | v1.10.2 | 間接 | Apache-2.0 | github.com/spf13/cobra@v1.10.2/LICENSE.txt |
+| github.com/spf13/pflag | v1.0.10 | 間接 | 未知 | github.com/spf13/pflag@v1.0.10/LICENSE |
+| github.com/stretchr/objx | v0.5.2 | 間接 | MIT | github.com/stretchr/objx@v0.5.2/LICENSE |
+| github.com/stretchr/testify | v1.11.1 | 間接 | MIT | github.com/stretchr/testify@v1.11.1/LICENSE |
+| github.com/substrait-io/substrait-go | v0.4.2 | 間接 | Apache-2.0 | github.com/substrait-io/substrait-go@v0.4.2/LICENSE |
+| github.com/tidwall/gjson | v1.14.2 | 間接 | MIT | github.com/tidwall/gjson@v1.14.2/LICENSE |
+| github.com/tidwall/match | v1.1.1 | 間接 | MIT | github.com/tidwall/match@v1.1.1/LICENSE |
+| github.com/tidwall/pretty | v1.2.0 | 間接 | MIT | github.com/tidwall/pretty@v1.2.0/LICENSE |
+| github.com/tidwall/sjson | v1.2.5 | 間接 | MIT | github.com/tidwall/sjson@v1.2.5/LICENSE |
+| github.com/tiendc/go-deepcopy | v1.7.2 | 間接 | MIT | github.com/tiendc/go-deepcopy@v1.7.2/LICENSE |
+| github.com/wnjoon/go-yfinance | v1.5.1 | 間接 | Apache-2.0 | github.com/wnjoon/go-yfinance@v1.5.1/LICENSE |
+| github.com/xuri/efp | v0.0.1 | 間接 | BSD-2-Clause | github.com/xuri/efp@v0.0.1/LICENSE |
+| github.com/xuri/excelize/v2 | v2.11.0 | 間接 | BSD-2-Clause | github.com/xuri/excelize/v2@v2.11.0/LICENSE |
+| github.com/xuri/nfp | v0.0.2-0.20250530014748-2ddeb826f9a9 | 間接 | BSD-2-Clause | github.com/xuri/nfp@v0.0.2-0.20250530014748-2ddeb826f9a9/LICENSE |
+| github.com/yuin/goldmark | v1.4.13 | 間接 | MIT | github.com/yuin/goldmark@v1.4.13/LICENSE |
+| github.com/zeebo/assert | v1.3.0 | 間接 | 未知 | github.com/zeebo/assert@v1.3.0/LICENSE |
+| github.com/zeebo/xxh3 | v1.1.0 | 間接 | BSD-2-Clause | github.com/zeebo/xxh3@v1.1.0/LICENSE |
+| go.opentelemetry.io/auto/sdk | v1.2.1 | 間接 | Apache-2.0 | go.opentelemetry.io/auto/sdk@v1.2.1/LICENSE |
+| go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc | v0.69.0 | 間接 | Apache-2.0 | go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc@v0.69.0/LICENSE |
+| go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp | v0.69.0 | 間接 | Apache-2.0 | go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp@v0.69.0/LICENSE |
+| go.opentelemetry.io/otel | v1.44.0 | 間接 | Apache-2.0 | go.opentelemetry.io/otel@v1.44.0/LICENSE |
+| go.opentelemetry.io/otel/metric | v1.44.0 | 間接 | Apache-2.0 | go.opentelemetry.io/otel/metric@v1.44.0/LICENSE |
+| go.opentelemetry.io/otel/trace | v1.44.0 | 間接 | Apache-2.0 | go.opentelemetry.io/otel/trace@v1.44.0/LICENSE |
+| go.uber.org/mock | v0.6.0 | 間接 | Apache-2.0 | go.uber.org/mock@v0.6.0/LICENSE |
+| golang.org/x/crypto | v0.55.0 | 間接 | 未知 | golang.org/x/crypto@v0.55.0/LICENSE |
+| golang.org/x/exp | v0.0.0-20260709172345-9ea1abe57597 | 間接 | 未知 | golang.org/x/exp@v0.0.0-20260709172345-9ea1abe57597/LICENSE |
+| golang.org/x/image | v0.45.0 | 間接 | 未知 | golang.org/x/image@v0.45.0/LICENSE |
+| golang.org/x/mod | v0.38.0 | 間接 | 未知 | golang.org/x/mod@v0.38.0/LICENSE |
+| golang.org/x/net | v0.57.0 | 間接 | 未知 | golang.org/x/net@v0.57.0/LICENSE |
+| golang.org/x/oauth2 | v0.36.0 | 間接 | 未知 | golang.org/x/oauth2@v0.36.0/LICENSE |
+| golang.org/x/sync | v0.22.0 | 間接 | 未知 | golang.org/x/sync@v0.22.0/LICENSE |
+| golang.org/x/sys | v0.47.0 | 直接 | 未知 | golang.org/x/sys@v0.47.0/LICENSE |
+| golang.org/x/telemetry | v0.0.0-20260710170516-c325552849a7 | 間接 | 未知 | golang.org/x/telemetry@v0.0.0-20260710170516-c325552849a7/LICENSE |
+| golang.org/x/term | v0.45.0 | 間接 | 未知 | golang.org/x/term@v0.45.0/LICENSE |
+| golang.org/x/text | v0.41.0 | 間接 | 未知 | golang.org/x/text@v0.41.0/LICENSE |
+| golang.org/x/time | v0.15.0 | 間接 | 未知 | golang.org/x/time@v0.15.0/LICENSE |
+| golang.org/x/tools | v0.48.0 | 間接 | 未知 | golang.org/x/tools@v0.48.0/LICENSE |
+| golang.org/x/tools/go/expect | v0.1.1-deprecated | 間接 | 未知 | golang.org/x/tools/go/expect@v0.1.1-deprecated/LICENSE |
+| golang.org/x/tools/go/packages/packagestest | v0.1.1-deprecated | 間接 | 未知 | golang.org/x/tools/go/packages/packagestest@v0.1.1-deprecated/LICENSE |
+| golang.org/x/xerrors | v0.0.0-20240903120638-7835f813f4da | 間接 | 未知 | golang.org/x/xerrors@v0.0.0-20240903120638-7835f813f4da/LICENSE |
+| gonum.org/v1/gonum | v0.17.0 | 間接 | 未知 | gonum.org/v1/gonum@v0.17.0/LICENSE |
+| gonum.org/v1/plot | v0.17.0 | 間接 | 未知 | gonum.org/v1/plot@v0.17.0/LICENSE |
+| google.golang.org/api | v0.288.0 | 間接 | 未知 | google.golang.org/api@v0.288.0/LICENSE |
+| google.golang.org/genproto | v0.0.0-20260706201446-f0a921348800 | 間接 | Apache-2.0 | google.golang.org/genproto@v0.0.0-20260706201446-f0a921348800/LICENSE |
+| google.golang.org/genproto/googleapis/api | v0.0.0-20260706201446-f0a921348800 | 間接 | Apache-2.0 | google.golang.org/genproto/googleapis/api@v0.0.0-20260706201446-f0a921348800/LICENSE |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260706201446-f0a921348800 | 間接 | Apache-2.0 | google.golang.org/genproto/googleapis/rpc@v0.0.0-20260706201446-f0a921348800/LICENSE |
+| google.golang.org/grpc | v1.83.1 | 間接 | Apache-2.0 | google.golang.org/grpc@v1.83.1/LICENSE |
+| google.golang.org/protobuf | v1.36.11 | 間接 | 未知 | google.golang.org/protobuf@v1.36.11/LICENSE |
+| gopkg.in/yaml.v3 | v3.0.1 | 間接 | MIT | gopkg.in/yaml.v3@v3.0.1/LICENSE |
+| gorm.io/driver/mysql | v1.6.0 | 間接 | MIT | gorm.io/driver/mysql@v1.6.0/License |
+| gorm.io/driver/postgres | v1.6.0 | 間接 | MIT | gorm.io/driver/postgres@v1.6.0/License |
+| gorm.io/driver/sqlite | v1.6.0 | 間接 | MIT | gorm.io/driver/sqlite@v1.6.0/License |
+| gorm.io/gorm | v1.31.2 | 間接 | MIT | gorm.io/gorm@v1.31.2/LICENSE |
+| h12.io/socks | v1.0.3 | 間接 | 未知 | h12.io/socks@v1.0.3/LICENSE |
+| modernc.org/gc/v3 | v3.0.0-20240107210532-573471604cb6 | 間接 | 未知 | modernc.org/gc/v3@v3.0.0-20240107210532-573471604cb6/LICENSE |
+| modernc.org/libc | v1.74.1 | 間接 | 未知 | modernc.org/libc@v1.74.1/LICENSE |
+| modernc.org/mathutil | v1.7.1 | 間接 | 未知 | modernc.org/mathutil@v1.7.1/LICENSE |
+| modernc.org/memory | v1.11.0 | 間接 | 未知 | modernc.org/memory@v1.11.0/LICENSE |
+| modernc.org/sqlite | v1.53.0 | 間接 | 未知 | modernc.org/sqlite@v1.53.0/LICENSE |
+| modernc.org/strutil | v1.2.0 | 間接 | 未知 | modernc.org/strutil@v1.2.0/LICENSE |
+| modernc.org/token | v1.1.0 | 間接 | 未知 | modernc.org/token@v1.1.0/LICENSE |
+
+## 資料與素材
+
+- MaleCNS 發布資料：見 docs/malecns-source-audit.md
+- FlyWire：尚未匯入；取得時記錄條款與日期
+- 字型與媒體素材：無
+
+## 移植或改寫的程式碼
+
+無（若有須列出處與原授權）
