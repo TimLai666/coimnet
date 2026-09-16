@@ -1,0 +1,29 @@
+{
+  "requirement": "OPS-04：使用者可以在目標平台使用 CPU 參考路徑；各平台編譯與實際執行分開標記；至少有參考環境的完整測試",
+  "profile": "fixture",
+  "reproduction_command": [
+    "bash scripts/platform-matrix.sh",
+    "go test -count=1 -run 'xxx' -bench 'Workers' -benchmem ./dynamics/ > evidence/OPS-04/workers-bench.log 2>&1",
+    "go test -count=1 -v -run 'Workers' ./dynamics/",
+    "go test -count=1 -run 'AllocsAreConstant|Workers' ./dynamics/"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime:  5:03  up 11 days, 10:42, 1 user, load averages: 1.60 1.61 1.48",
+    "host: darwin/arm64, Apple M3"
+  ],
+  "observed_result": "platform-matrix.json 逐平台結果：linux/amd64（compiled=true, vetted=true, executed=false）；linux/arm64（compiled=true, vetted=true, executed=false）；darwin/arm64（compiled=true, vetted=true, executed=true）；windows/amd64（compiled=true, vetted=true, executed=false）。host（darwin/arm64）測試結果：unit=true（9.677s）、race=true（3.653s）、vet=true（0.225s）、mod_verify=true（2.527s）。Workers 位元相同保證測試包含連續核心 TestContinuousWorkersAreBitIdentical 與 TestContinuousWorkersGradientBitIdentical，以及 LIF 放電核心 TestLIFWorkersAreBitIdentical 與 TestLIFWorkersGradientBitIdentical。workers-bench.log 基準測試數據：BenchmarkContinuousForwardWorkers1-8 為 49098 ns/op、59216 B/op、107 allocs/op；BenchmarkContinuousForwardWorkers4-8 為 144828 ns/op、81246 B/op、491 allocs/op；BenchmarkLIFForwardWorkers1-8 為 72545 ns/op、204877 B/op、443 allocs/op；BenchmarkLIFForwardWorkers4-8 為 180663 ns/op、224364 B/op、795 allocs/op。 每步配置量不隨步數增加由 TestContinuousForwardAllocsAreConstant 與 TestLIFForwardAllocsAreConstant 證明（go test -run 'AllocsAreConstant' ./dynamics/）；基準數字只是量測，不是常數證明。",
+  "assumption_statement": "executed 只在本機 darwin/arm64 為 true；linux 與 windows 只交叉編譯與 vet，沒有實際執行紀錄；早期 Ubuntu 的完整測試紀錄見 evidence/cpu-reference-20260914/",
+  "test_log": [
+    "evidence/OPS-04/platform-matrix.log",
+    "evidence/OPS-04/workers-bench.log"
+  ],
+  "reports": [
+    "evidence/OPS-04/platform-matrix.json"
+  ],
+  "limitations": [
+    "其他平台未實際執行：linux/amd64、linux/arm64、windows/amd64 僅完成交叉編譯與 vet，未在目標平台環境實際執行測試。",
+    "並行模式只在 fixture 量過：Workers 分區與位元相同保證目前僅在 fixture 拓撲驗證，尚未在真實全圖（male-full）上實測並行表現。",
+    "熱路徑配置以 allocs/op 記錄而非 profile：熱路徑記憶體配置量以 go test -benchmem 的 allocs/op 記錄固定常數，未進行深入的 CPU/記憶體 profile。"
+  ]
+}

@@ -13,7 +13,7 @@ Blocked by：24（組態、`benchmark`、`report`、`doctor`）、21／18（全�
 OPS-05 的裝置後端：**受阻於使用者決定後端技術與提供裝置存取**；DAT-06 的真實資料：**受阻於使用者
 取得 FlyWire 授權資料**
 
-Status：draft（契約已於 2026-09-15 定案；分五階段派工；第五階段在使用者決定前標 blocked）
+Status：第一階段已驗證（2026-09-17）；第二～五階段待派工／受阻
 
 對應需求：OPS-04（各平台編譯與實際執行分開標記；至少有參考環境的完整測試）、OPS-05（與 CPU 比對、裝置
 更新／恢復測試及實際量測；未測不標通過）、OPS-07（真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體
@@ -143,7 +143,7 @@ package connectome // MappingEvidence 與跨資料集拒絕
 
 ## 驗收
 
-- [ ] 第一階段：`Workers` 逐位相同、`allocs/op` 常數、平台矩陣 JSON（compiled／executed 分開）、無 Python
+- [x] 第一階段：`Workers` 逐位相同、`allocs/op` 常數、平台矩陣 JSON（compiled／executed 分開）、無 Python
   依賴測試、治理測試（id 集合、狀態值、證據存在、決策日期）、README 四欄能力表與界線、模型包
   `Scale`／`Trained`／`initialized-` 規則、授權盤點、發布清單 blocked_permission、INDEX 與連結檢查；
   `go test`、race、vet；`evidence/OPS-04/`、`evidence/GOV-01/`、`GOV-04/`、`GOV-05/`、`GOV-06/`。
@@ -154,6 +154,27 @@ package connectome // MappingEvidence 與跨資料集拒絕
 - [ ] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
   全步驟與 `run.json`、`report` 的 22.3 清單；`evidence/OPS-08/`、`evidence/OPS-10/`。
 - [ ] 第五階段：`backend` 能力偵測與明示回退（可做）；裝置實作 blocked，等使用者決定技術與存取。
+
+## 第一階段證據（2026-09-17）
+
+- **治理測試（GOV-01）**：`governance_test.go` 四項治理測試（`TestGovernanceRequirementIDsMatchHandoff`、`TestGovernanceStatusValuesAreDeclared`、`TestGovernancePassedRequirementsHaveEvidence`、`TestGovernanceTicketsHaveDatedRootDecisions`）全數 PASS。決策紀錄維持在 `delivery-status.md` 第 101 行「## 決策紀錄」段落。確認本專案從未執行建立遠端、發布或刪除原件之操作。
+  - 證據路徑：[`evidence/GOV-01/verification.json`](../../evidence/GOV-01/verification.json)、[`evidence/GOV-01/test.log`](../../evidence/GOV-01/test.log)
+  - Limitations：governance_test.go 驗證靜態結構與宣告，不重新執行全部測試；未執行操作以本地 git log 與 release-checklist 狀態為證。
+- **平台矩陣腳本（OPS-04）**：`scripts/platform-matrix.sh` 完成 `linux/amd64`、`linux/arm64`、`darwin/arm64`、`windows/amd64` 之交叉編譯與 `go vet`（compiled=4/4），本機 `darwin/arm64` 完整通過 unit（9.677s）、race（3.653s）、vet（0.225s）、mod_verify（2.527s）。輸出 `evidence/OPS-04/platform-matrix.json` 分開標記 compiled 與 executed。
+  - 證據路徑：[`evidence/OPS-04/verification.json`](../../evidence/OPS-04/verification.json)、[`evidence/OPS-04/platform-matrix.json`](../../evidence/OPS-04/platform-matrix.json)、[`evidence/OPS-04/platform-matrix.log`](../../evidence/OPS-04/platform-matrix.log)
+  - Limitations：非 host 平台僅交叉編譯與 vet，無實際執行紀錄；早期 Ubuntu 完整測試紀錄見 `evidence/cpu-reference-20260914/`。
+- **Workers 欄位與分區、連續與 LIF 核心並行（OPS-04）**：`dynamics.Config.Workers int`（0/1 為單執行緒參考；>1 為按 target 節點分區之 worker pool，固定為邊之宣告加總順序）。連續核心（`TestContinuousWorkersAreBitIdentical`、`TestContinuousWorkersGradientBitIdentical`）與 LIF 放電核心（`TestLIFWorkersAreBitIdentical`、`TestLIFWorkersGradientBitIdentical`）均通過 Workers ∈ {0, 1, 2, 7} 前向與梯度之位元完全相同測試。基準測試（`BenchmarkContinuousForwardWorkers1` 107 allocs/op vs `Workers4` 491 allocs/op；`BenchmarkLIFForwardWorkers1` 443 allocs/op vs `Workers4` 795 allocs/op）記錄每步配置量；每步配置量不隨步數增加由 `TestContinuousForwardAllocsAreConstant` 與 `TestLIFForwardAllocsAreConstant` 證明，基準只記錄數值。
+  - 證據路徑：[`evidence/OPS-04/workers-bench.log`](../../evidence/OPS-04/workers-bench.log)
+  - Limitations：Workers 並行目前僅在 fixture 上驗證；熱路徑配置以 allocs/op 記錄而非 profile。
+- **能力表與科學界線、模型卡範本（GOV-04）**：`README.md` 能力狀態表包含四欄（模型狀態、資料規模、角色、證據）共 16 列宣告；科學界線 8 條逐條對應主規格 3.2；模型卡與實驗卡範本（`docs/model-card-template.md`、`docs/experiment-card-template.md`）確立 `initialized-`、`fixture-`、`real-subgraph-`、`male-full-` 命名規範。
+  - 證據路徑：[`evidence/GOV-04/verification.json`](../../evidence/GOV-04/verification.json)
+  - Limitations：能力表由人工維護，沒有自動同步測試。
+- **授權盤點與發布清單（GOV-05）**：`docs/licenses.md` 盤點 182 個相依模組授權（68 個未知含未下載）與資料/素材段三列說明；`docs/release-checklist.md` 狀態明示為 `blocked_permission`（等待使用者選定開源授權與發布授權）。
+  - 證據路徑：[`evidence/GOV-05/verification.json`](../../evidence/GOV-05/verification.json)
+  - Limitations：授權判定是固定文字規則、未知項需人工核對、發布授權等使用者。
+- **單一主文件與索引（GOV-06）**：`docs/INDEX.md` 作為單一入口整合 9 大段落，39 個 Markdown 相對連結全數通過存在性檢查；檔案格式表格列出 52 個 schema 版本字串（Go 全庫掃描為 54 個唯一字串）。
+  - 證據路徑：[`evidence/GOV-06/verification.json`](../../evidence/GOV-06/verification.json)
+  - Limitations：連結檢查是一次性指令，沒有進 verify.sh。
 
 ## 依據
 

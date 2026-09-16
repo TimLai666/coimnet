@@ -1,0 +1,28 @@
+{
+  "requirement": "使用者可以閱讀準確的能力與研究限制",
+  "profile": "documentation",
+  "reproduction_command": [
+    "grep -n '^| ' README.md | head -n 20",
+    "sed -n '17,32p' README.md | grep -c '^|'",
+    "sed -n '/^## 科學界線/,/^## 建置與範例/p' README.md | grep -c '^- '",
+    "grep -A 6 '命名規則' docs/model-card-template.md docs/experiment-card-template.md"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime:  5:00  up 11 days, 10:39, 1 user, load averages: 1.14 1.33 1.35",
+    "host: darwin/arm64"
+  ],
+  "observed_result": "README.md 能力表標頭為「| 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |」，包含模型狀態、資料規模、角色、證據等四個主要標記欄位，經 grep 計數共 16 列。科學界線段落逐條對應主規格 3.2，經 grep 計數共 8 條界線（接線圖不是已訓練好的全能模型、神經傳導物質預測不等於已量測的突觸作用正負、未知受體不是沒有受體、數千萬個突觸接點不等於同樣數量的獨立參數、獎勵/懲罰/損失函數/神經調節物質/內分泌荷爾蒙是不同概念、固定編碼器不等於能力歸因已完成、專案名稱不構成新的學術分類或優於既有方法的證據、全腦或 GPU 測試受硬體限制時標示受阻）。兩個範本檔 docs/model-card-template.md 與 docs/experiment-card-template.md 明文規定命名規則：未訓練以 initialized- 開頭、人工圖以 fixture- 開頭、真實子圖以 real-subgraph- 開頭、完整真實圖以 male-full- 開頭，且一次只能使用一個前綴，不得同時宣稱人工與真實來源。",
+  "assumption_statement": "能力表、科學界線與模型卡範本之規則以 README.md 及範本文件為依據，清楚界定已驗證能力與生物學/工程限制之邊界。",
+  "test_log": [
+    "evidence/GOV-01/test.log"
+  ],
+  "reports": [
+    "README.md",
+    "docs/model-card-template.md",
+    "docs/experiment-card-template.md"
+  ],
+  "limitations": [
+    "能力表由人工維護，沒有自動同步測試。"
+  ]
+}

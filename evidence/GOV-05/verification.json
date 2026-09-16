@@ -1,0 +1,26 @@
+{
+  "requirement": "維護者可以依法整理程式、資料、模型及參考來源",
+  "profile": "license-audit",
+  "reproduction_command": [
+    "head -n 6 docs/licenses.md",
+    "sed -n '/^## 資料與素材/,/^## 移植/p' docs/licenses.md",
+    "head -n 5 docs/release-checklist.md"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime:  5:00  up 11 days, 10:39, 1 user, load averages: 1.14 1.33 1.35",
+    "host: darwin/arm64"
+  ],
+  "observed_result": "docs/licenses.md 記錄經腳本盤點之相依模組授權資訊：模組總數 182，未知（含未下載）68（產生時間 2026-09-16 16:43，go version go1.26.5 darwin/arm64）。其「## 資料與素材」段落記錄三列：- MaleCNS 發布資料：見 docs/malecns-source-audit.md、- FlyWire：尚未匯入；取得時記錄條款與日期、- 字型與媒體素材：無。docs/release-checklist.md 第 3 行明示狀態為 blocked_permission（等使用者選定程式授權與發布授權）。",
+  "assumption_statement": "相依模組授權清單由腳本盤點產生；未知的授權不預設寬鬆假設；在使用者選定正式授權與發布授權前，不建立 LICENSE 檔案、不設遠端、不公開發布。",
+  "test_log": [
+    "evidence/GOV-01/test.log"
+  ],
+  "reports": [
+    "docs/licenses.md",
+    "docs/release-checklist.md"
+  ],
+  "limitations": [
+    "授權判定是固定文字規則、未知項需人工核對、發布授權等使用者。"
+  ]
+}

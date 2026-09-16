@@ -1,0 +1,27 @@
+{
+  "requirement": "維護者可以核對完整需求及決策，並在既有工作目錄中安全接手",
+  "profile": "governance",
+  "reproduction_command": [
+    "go test -count=1 -v -run 'TestGovernance' . > evidence/GOV-01/test.log 2>&1"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime:  5:00  up 11 days, 10:39, 1 user, load averages: 1.14 1.33 1.35",
+    "host: darwin/arm64, Insyra v0.3.2"
+  ],
+  "observed_result": "四個治理測試全部通過：(1) TestGovernanceRequirementIDsMatchHandoff 檢查 id 集合相等，確認 docs/handoff/requirements.json 與 docs/requirements-addendum.json 的 ID 聯集與 docs/requirements-status.json 完全一致；(2) TestGovernanceStatusValuesAreDeclared 檢查狀態值七選一，所有需求之狀態均符合 specified、implemented_unverified、passed、failed、blocked_hardware、blocked_data、blocked_permission 七者之一；(3) TestGovernancePassedRequirementsHaveEvidence 檢查 passed 必有證據且 JSON 包含 requirement、reproduction_command、environment、observed_result、test_log 五個必要鍵，且證據檔案均實際存在；(4) TestGovernanceTicketsHaveDatedRootDecisions 檢查 Root 決策有日期，ticket 文件中「## Root 決策」段落均帶有合規日期。決策紀錄位於 delivery-status.md 第 101 行「## 決策紀錄」段落。本專案從未執行的操作（未建立遠端、未發布、未刪原件：以 git log 與 docs/release-checklist.md 為據）。",
+  "assumption_statement": "治理測試以工作目錄中之靜態檔案結構與狀態宣告為檢查對象；未執行之操作以本地 git log 與 docs/release-checklist.md 狀態為證。",
+  "test_log": [
+    "evidence/GOV-01/test.log"
+  ],
+  "reports": [
+    "docs/requirements-status.json",
+    "docs/handoff/requirements.json",
+    "docs/requirements-addendum.json",
+    "delivery-status.md"
+  ],
+  "limitations": [
+    "governance_test.go 驗證靜態結構與宣告，不自動重新執行所有 passed 需求的測試流程。",
+    "未執行的操作（未建立遠端、未發布、未刪原件）以本地 git log 與 release-checklist 狀態為證，依賴後續維護者自律遵守規範。"
+  ]
+}

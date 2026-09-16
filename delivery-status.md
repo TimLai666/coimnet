@@ -36,6 +36,8 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 受體驅動的學習閘門與時間窗、記憶表現與穩定化（ticket 22 第一階段、MOD-05、MOD-06）已在 fixture 驗證：可塑性規則可指名受體，每步由該受體的平均佔用率算閘門（`GateScale × occ`）與參與紀錄的衰退（`clamp(base + span × occ, min, max)`），閘門關時快速變化只衰退不新增，明確閘門序列與受體閘門不得並用；讀出增益只乘在讀出路徑，核心、可塑、化學狀態與參數都逐位不變，清除後輸出與孿生個體逐位相同，文件明寫這是表現受抑制而不是遺忘；穩定化把快速變化按比例寫進較慢的 `slow` 層，只在受體佔用率達門檻、本 episode 未寫入且預算未用完時執行，同 episode 第二次拒絕且狀態逐位不變，報告分開列基礎、慢速、快速三層的 L2，梯度更新不動 `slow`。證據見 [MOD-05](evidence/MOD-05/verification.json)、[MOD-06](evidence/MOD-06/verification.json)。
 
+平台矩陣與治理（ticket 30 第一階段、OPS-04、GOV-01、GOV-04、GOV-05、GOV-06）已驗證：`scripts/platform-matrix.sh` 對 linux/amd64、linux/arm64、darwin/arm64、windows/amd64 交叉編譯並 vet，只有本機 darwin/arm64 真正執行過 unit、race、vet 與 mod verify，JSON 裡 compiled 與 executed 分開標記；`dynamics.Config.Workers` 的並行分區在連續與 LIF 核心都與單執行緒逐位相同（前向與梯度），每步配置量不隨步數增加；治理測試檢查需求 id 集合、狀態值、passed 必有證據、Root 決策有日期；README 能力表四欄與科學界線、授權盤點（182 個模組、68 個未知）與 `blocked_permission` 的發布清單、`docs/INDEX.md` 的 39 個相對連結都經指令核對。證據見 [OPS-04](evidence/OPS-04/verification.json)、[GOV-01](evidence/GOV-01/verification.json)、[GOV-04](evidence/GOV-04/verification.json)、[GOV-05](evidence/GOV-05/verification.json)、[GOV-06](evidence/GOV-06/verification.json)。
+
 ## 階段目標
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
@@ -79,6 +81,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 24 | 使用者可以用嚴格展開的組態、啟動前的資源預估、完整 CLI 與 SDK，並安全遷移格式與保護敏感資料 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`coimnet-config/v1` 嚴格解碼、四層來源追蹤、金鑰只存參照、名稱註冊表拒絕未實作；資源預估兩個規格算術釘住、超限拒絕不縮減、全圖預估 0.96 GiB 與 NAT-01 實測 RSS 並列；`run --config --dry-run` 零副作用、退出碼 0／2／1；OPS-03、OPS-06 passed；第二、三階段待派工 |
 | 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 | 27 | 使用者可以用離線與 HTTP 教師蒸餾學生，並在完全移除教師的情況下評估它 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一階段驗證通過：統一教師契約、JSONL 紀錄檔與測試輸入分離、離線／重播教師零網路（換掉 transport 仍通過）、HTTP 教師的逾時／重試／4xx／限速／預算／去重／允許清單／金鑰只在 header 全在本機 httptest 驗證、封鎖教師計數；TCH-01、TCH-02 passed；真實遠端未驗證；第二階段（蒸餾）與第三階段（移除教師評估、工具安全）待派工 |
+| 30 | 使用者可以在目標平台使用 CPU 參考路徑、在真實資料上做全圖前向／反向與訓練、核對治理文件與授權，並匯入 FlyWire | 主 agent 指揮 / opencode big-pickle 小票實作、agy Gemini Flash 證據整理 | in_progress | 第一階段驗證通過：平台矩陣把 compiled 與 executed 分開標記（darwin/arm64 實際執行 unit／race／vet／mod verify，linux 與 windows 只交叉編譯與 vet）、`Workers` 並行在連續與 LIF 核心逐位相同且每步配置量不隨步數增加、治理測試四項、README 能力表與科學界線、授權盤點與 `blocked_permission` 發布清單、INDEX 連結檢查；OPS-04、GOV-01、GOV-04、GOV-05、GOV-06 passed；第二～四階段待派工，第五階段裝置後端（OPS-05）與 FlyWire（DAT-06）受阻於使用者 |
 
 ## 目前阻礙
 

@@ -1,0 +1,25 @@
+{
+  "requirement": "接手 agent 可以從單一主文件完成實作與驗收",
+  "profile": "index-audit",
+  "reproduction_command": [
+    "grep -rhoE '\"coimnet-[a-z-]+/v[0-9]+\"' --include='*.go' . | sort -u | wc -l",
+    "grep -c '^| `coimnet-' docs/INDEX.md",
+    "python3 -c \"import re, os; text=open('docs/INDEX.md').read(); links=re.findall(r'\\[([^\\]]+)\\]\\(([^)]+)\\)', text); missing=[(t,u) for t,u in links if not u.startswith('http') and not os.path.exists(os.path.normpath(os.path.join('docs', u.split('#')[0])))]; print(f'checked {len(links)} links, missing {len(missing)}')\""
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime:  5:00  up 11 days, 10:39, 1 user, load averages: 1.14 1.33 1.35",
+    "host: darwin/arm64"
+  ],
+  "observed_result": "docs/INDEX.md 作為專案單一入口文件，涵蓋 9 個大段落：專案概覽、交接文件（docs/handoff/）、API、例子、檔案格式、來源與授權、風險與限制、需求證據、票與決策。經連結檢查指令驗證，INDEX.md 中引用的 39 個 Markdown 相對連結目標均存在（checked 39 links, missing 0）。檔案格式表格內列出 52 個 schema 版本字串；Go 原始碼全庫 grep 掃描出 54 個唯一 schema 版本字串（相較 INDEX.md 多了近期新增之 coimnet-continual-matrix/v1 與 coimnet-vector-state/v1）。",
+  "assumption_statement": "docs/INDEX.md 為專案文件的單一入口；副本與主文不一致時以主文 docs/handoff/CoImNet_Implementation_Plan.zh-TW.md 為準。",
+  "test_log": [
+    "evidence/GOV-01/test.log"
+  ],
+  "reports": [
+    "docs/INDEX.md"
+  ],
+  "limitations": [
+    "連結檢查是一次性指令，沒有進 verify.sh。"
+  ]
+}

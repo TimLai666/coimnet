@@ -1,0 +1,74 @@
+platform-matrix (OPS-04, ticket 30 stage 1)
+repository: /Users/timlai/Developer/coimnet
+go: go version go1.26.5 darwin/arm64
+host: darwin/arm64
+uptime:  5:03  up 11 days, 10:42, 1 user, load averages: 1.60 1.61 1.48
+
+== env GOOS=linux GOARCH=amd64 go build ./...
+   at 2026-09-16T21:03:26Z
+
+== env GOOS=linux GOARCH=amd64 go vet ./...
+   at 2026-09-16T21:03:27Z
+
+== env GOOS=linux GOARCH=arm64 go build ./...
+   at 2026-09-16T21:03:27Z
+
+== env GOOS=linux GOARCH=arm64 go vet ./...
+   at 2026-09-16T21:03:28Z
+
+== env GOOS=darwin GOARCH=arm64 go build ./...
+   at 2026-09-16T21:03:28Z
+
+== env GOOS=darwin GOARCH=arm64 go vet ./...
+   at 2026-09-16T21:03:29Z
+
+== env GOOS=windows GOARCH=amd64 go build ./...
+   at 2026-09-16T21:03:29Z
+
+== env GOOS=windows GOARCH=amd64 go vet ./...
+   at 2026-09-16T21:03:30Z
+
+== go test -count=1 ./...
+   at 2026-09-16T21:03:31Z
+ok  	github.com/TimLai666/coimnet	0.274s
+ok  	github.com/TimLai666/coimnet/checkpoint	2.274s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	0.713s
+ok  	github.com/TimLai666/coimnet/connectome	1.981s
+ok  	github.com/TimLai666/coimnet/download	1.822s
+ok  	github.com/TimLai666/coimnet/dynamics	1.028s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.298s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.295s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.910s
+ok  	github.com/TimLai666/coimnet/experiment	2.064s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.903s
+ok  	github.com/TimLai666/coimnet/feather	0.811s
+ok  	github.com/TimLai666/coimnet/internal/cli	7.166s
+ok  	github.com/TimLai666/coimnet/internal/extsort	0.913s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.620s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.696s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.768s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.847s
+ok  	github.com/TimLai666/coimnet/learning	1.108s
+ok  	github.com/TimLai666/coimnet/modulation	0.748s
+ok  	github.com/TimLai666/coimnet/params	1.418s
+ok  	github.com/TimLai666/coimnet/plasticity	0.951s
+ok  	github.com/TimLai666/coimnet/replay	1.072s
+ok  	github.com/TimLai666/coimnet/resources	1.172s
+ok  	github.com/TimLai666/coimnet/signal	1.082s
+ok  	github.com/TimLai666/coimnet/simulate	1.829s
+ok  	github.com/TimLai666/coimnet/teacher	0.863s
+
+== go test -race -count=1 ./dynamics/ ./learning/ ./simulate/
+   at 2026-09-16T21:03:40Z
+ok  	github.com/TimLai666/coimnet/dynamics	1.577s
+ok  	github.com/TimLai666/coimnet/learning	2.375s
+ok  	github.com/TimLai666/coimnet/simulate	2.641s
+
+== go vet ./...
+   at 2026-09-16T21:03:44Z
+
+== go mod verify
+   at 2026-09-16T21:03:44Z
+all modules verified
+RESULT: compiled=4/4 executed=darwin/arm64
