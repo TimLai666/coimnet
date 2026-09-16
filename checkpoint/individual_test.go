@@ -18,6 +18,7 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 const (
@@ -736,5 +737,142 @@ func TestLIFIndividualCheckpointHelperProcess(t *testing.T) {
 	}
 	if err := os.WriteFile(args[separator+3], data, 0600); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// newPlasticCheckpointIndividual is the spiking fixture with local plasticity
+// enabled on two of its three edges and a few gated steps behind it, so the
+// saved document carries a fast state that is not all zeros.
+func newPlasticCheckpointIndividual(t *testing.T) *learning.Individual {
+	t.Helper()
+	individual := newCheckpointLIFIndividual(t)
+	rule := plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625}
+	if err := individual.EnablePlasticity(plasticity.Config{Rule: rule, Edges: []int{0, 2}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := individual.AdvanceGated(context.Background(), [][]float64{{1}, {0}, {1}, {0}}, []float64{1, 1, 1, 1}); err != nil {
+		t.Fatal(err)
+	}
+	return individual
+}
+
+// savedIndividualPayload returns the payload SaveIndividual actually writes,
+// which is the normalized document a loader has to accept.
+func savedIndividualPayload(t *testing.T, s learning.IndividualSnapshot) []byte {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "payload.json")
+	if err := SaveIndividual(context.Background(), path, s); err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var raw testEnvelope
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatal(err)
+	}
+	return raw.Payload
+}
+
+// TestSaveLoadIndividualCarriesThePlasticPart is the optional-part contract:
+// absent while the mechanism was never enabled, complete and bit-identical
+// once it was.
+func TestSaveLoadIndividualCarriesThePlasticPart(t *testing.T) {
+	plain := newCheckpointLIFIndividual(t).Snapshot()
+	if bytes.Contains(savedIndividualPayload(t, plain), []byte(`"plastic"`)) {
+		t.Fatal("an individual that never enabled plasticity wrote a plastic part")
+	}
+	want := newPlasticCheckpointIndividual(t).Snapshot()
+	if want.Plastic == nil {
+		t.Fatal("the fixture did not enable plasticity")
+	}
+	payload := savedIndividualPayload(t, want)
+	if !bytes.Contains(payload, []byte(`"plastic":{"config":{"rule":{"kind":"hebbian_rate"`)) {
+		t.Fatalf("saved payload does not carry the declared rule: %s", payload)
+	}
+	if bytes.Contains(payload, []byte(`"pre_trace"`)) {
+		t.Fatal("a rate rule wrote the pair traces")
+	}
+	path := filepath.Join(t.TempDir(), "plastic-individual.json")
+	if err := SaveIndividual(context.Background(), path, want); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("round trip changed the plastic part:\n got %+v\nwant %+v", got.Plastic, want.Plastic)
+	}
+	got.Plastic.State.Plastic[0] = 77
+	again, err := LoadIndividual(context.Background(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(again, want) {
+		t.Fatal("LoadIndividual returned a plastic part aliased with a later caller mutation")
+	}
+	restored, err := learning.RestoreIndividual(again)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(restored.Snapshot(), again) {
+		t.Fatal("loaded plastic part changed during restore")
+	}
+	// A document that carries a plastic part is still an individual snapshot
+	// and nothing else: the model package loader must keep refusing it.
+	if _, err := LoadModelPackage(context.Background(), path); err == nil {
+		t.Fatal("the model package loader accepted an individual checkpoint")
+	}
+}
+
+// TestLoadIndividualRejectsMalformedPlasticParts keeps a hand-edited plastic
+// block from becoming a silently different mechanism. Every case replaces the
+// whole "plastic" value, so the rejected shapes are written out in full.
+func TestLoadIndividualRejectsMalformedPlasticParts(t *testing.T) {
+	want := newPlasticCheckpointIndividual(t).Snapshot()
+	payload := savedIndividualPayload(t, want)
+	const (
+		rule  = `{"kind":"hebbian_rate","decay_e":0.5,"decay_p":0.5,"plastic_max":8,"w_min":0.0625}`
+		state = `{"eligibility":[0.5,0.25],"plastic":[0.5,0.25]}`
+	)
+	for name, part := range map[string]string{
+		"null part":            `null`,
+		"missing config":       `{"state":` + state + `}`,
+		"missing state":        `{"config":{"rule":` + rule + `,"edges":[0,2]}}`,
+		"missing edges":        `{"config":{"rule":` + rule + `},"state":` + state + `}`,
+		"missing decay_e":      `{"config":{"rule":{"kind":"hebbian_rate","decay_p":0.5,"plastic_max":8,"w_min":0.0625},"edges":[0,2]},"state":` + state + `}`,
+		"missing decay_p":      `{"config":{"rule":{"kind":"hebbian_rate","decay_e":0.5,"plastic_max":8,"w_min":0.0625},"edges":[0,2]},"state":` + state + `}`,
+		"missing w_min":        `{"config":{"rule":{"kind":"hebbian_rate","decay_e":0.5,"decay_p":0.5,"plastic_max":8},"edges":[0,2]},"state":` + state + `}`,
+		"missing kind":         `{"config":{"rule":{"decay_e":0.5,"decay_p":0.5,"plastic_max":8,"w_min":0.0625},"edges":[0,2]},"state":` + state + `}`,
+		"unknown kind":         `{"config":{"rule":{"kind":"oja","decay_e":0.5,"decay_p":0.5,"plastic_max":8,"w_min":0.0625},"edges":[0,2]},"state":` + state + `}`,
+		"null decay_e":         `{"config":{"rule":{"kind":"hebbian_rate","decay_e":null,"decay_p":0.5,"plastic_max":8,"w_min":0.0625},"edges":[0,2]},"state":` + state + `}`,
+		"missing eligibility":  `{"config":{"rule":` + rule + `,"edges":[0,2]},"state":{"plastic":[0.5,0.25]}}`,
+		"null eligibility":     `{"config":{"rule":` + rule + `,"edges":[0,2]},"state":{"eligibility":null,"plastic":[0.5,0.25]}}`,
+		"null inside plastic":  `{"config":{"rule":` + rule + `,"edges":[0,2]},"state":{"eligibility":[0.5,0.25],"plastic":[null,0.25]}}`,
+		"wrong state length":   `{"config":{"rule":` + rule + `,"edges":[0,2]},"state":{"eligibility":[0.5,0.25,0],"plastic":[0.5,0.25,0]}}`,
+		"pair trace on a rate": `{"config":{"rule":` + rule + `,"edges":[0,2]},"state":{"eligibility":[0.5,0.25],"plastic":[0.5,0.25],"pre_trace":[0,0]}}`,
+		"edge out of range":    `{"config":{"rule":` + rule + `,"edges":[0,9]},"state":` + state + `}`,
+		"descending edges":     `{"config":{"rule":` + rule + `,"edges":[2,0]},"state":` + state + `}`,
+		"empty edges":          `{"config":{"rule":` + rule + `,"edges":[]},"state":{"eligibility":[],"plastic":[]}}`,
+		"unknown rule field":   `{"config":{"rule":{"kind":"hebbian_rate","decay_e":0.5,"decay_p":0.5,"plastic_max":8,"w_min":0.0625,"decay_w":0.5},"edges":[0,2]},"state":` + state + `}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			var object map[string]json.RawMessage
+			if err := json.Unmarshal(payload, &object); err != nil {
+				t.Fatal(err)
+			}
+			object["plastic"] = json.RawMessage(part)
+			changed, err := json.Marshal(object)
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(t.TempDir(), "bad.json")
+			writeRaw(t, path, envelopeJSON(IndividualSchemaVersion, changed, checksumHex(changed)))
+			if _, err := LoadIndividual(context.Background(), path); err == nil {
+				t.Fatal("accepted a malformed plastic part")
+			}
+		})
 	}
 }

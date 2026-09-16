@@ -14,6 +14,7 @@ import (
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 // IndividualSchemaVersion identifies the envelope used for a persistent
@@ -186,7 +187,29 @@ func requireIndividualFields(data []byte) error {
 	if _, err = requiredObject(optimizer["state"], "$.payload.optimizer.state", "first", "second", "steps"); err != nil {
 		return err
 	}
+	if err = requireIndividualPlastic(payloadObject); err != nil {
+		return err
+	}
 	return requireIndividualNeural(config, payloadObject["neural"])
+}
+
+// requireIndividualPlastic checks the optional local plasticity part. Absent or
+// null is the declared "this mechanism was never enabled", so it is legal and
+// nothing else is required; present means the whole declaration is required,
+// because a decay that is omitted rather than written would otherwise decode as
+// a perfectly valid zero and silently become a different rule.
+func requireIndividualPlastic(payload map[string]json.RawMessage) error {
+	if !presentAndNotNull(payload, "plastic") {
+		return nil
+	}
+	part, err := requiredObject(payload["plastic"], "$.payload.plastic", "config", "state")
+	if err != nil {
+		return err
+	}
+	if err = checkRequiredFields(part["config"], reflect.TypeOf(plasticity.Config{}), "$.payload.plastic.config"); err != nil {
+		return err
+	}
+	return checkRequiredFields(part["state"], reflect.TypeOf(plasticity.State{}), "$.payload.plastic.state")
 }
 
 // requireIndividualNeural checks the neural union of a checkpoint: which core it
@@ -321,6 +344,16 @@ func normalizeIndividualSnapshot(s learning.IndividualSnapshot) learning.Individ
 	s.Optimizer.State.First = nonNilFloats(s.Optimizer.State.First)
 	s.Optimizer.State.Second = nonNilFloats(s.Optimizer.State.Second)
 	s.Optimizer.State.Steps = nonNilUint64(s.Optimizer.State.Steps)
+	if s.Plastic != nil {
+		// PreTrace and PostTrace stay as they are: omitempty means an absent key
+		// is the documented "this rule does not own that trace", not a
+		// zero-length array.
+		part := *s.Plastic
+		part.Config.Edges = nonNilInts(part.Config.Edges)
+		part.State.Eligibility = nonNilFloats(part.State.Eligibility)
+		part.State.Plastic = nonNilFloats(part.State.Plastic)
+		s.Plastic = &part
+	}
 	return s
 }
 

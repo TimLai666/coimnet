@@ -32,8 +32,11 @@ type coreModel interface {
 	validateState(s NeuralState) error
 	// advance continues a persistent state and returns the values the readout
 	// observes after each step: activated outputs for the continuous core and
-	// the synaptic trace x for the LIF core, matching forward.
-	advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error)
+	// the synaptic trace x for the LIF core, matching forward. The third result
+	// is the 0/1 event of every neuron after each step, which only a spiking
+	// core produces; the continuous core returns nil there. Local plasticity
+	// reads both, so they leave the core together rather than staying inside it.
+	advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error)
 }
 
 // coreTrace is one forward history. Only the core that produced it interprets
@@ -105,18 +108,20 @@ func (c continuousCore) validateState(s NeuralState) error {
 	return c.model.ValidateState(*s.Continuous)
 }
 
-func (c continuousCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error) {
+func (c continuousCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error) {
 	if err := c.validateState(s); err != nil {
-		return NeuralState{}, nil, err
+		return NeuralState{}, nil, nil, err
 	}
 	if len(p.ThetaRaw) != 0 {
-		return NeuralState{}, nil, fmt.Errorf("theta_raw requires a LIF core")
+		return NeuralState{}, nil, nil, fmt.Errorf("theta_raw requires a LIF core")
 	}
 	next, outputs, err := c.model.Advance(ctx, p.Core, *s.Continuous, inputs)
 	if err != nil {
-		return NeuralState{}, nil, err
+		return NeuralState{}, nil, nil, err
 	}
-	return NeuralState{Core: NeuralCoreContinuous, Continuous: &next}, outputs, nil
+	// A continuous core emits no events; local plasticity reads its output y
+	// at both ends of an edge instead.
+	return NeuralState{Core: NeuralCoreContinuous, Continuous: &next}, outputs, nil, nil
 }
 
 type lifCore struct {
@@ -189,22 +194,23 @@ func (l lifCore) validateState(s NeuralState) error {
 	return l.model.ValidateState(*s.LIF)
 }
 
-func (l lifCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, error) {
+func (l lifCore) advance(ctx context.Context, p Parameters, s NeuralState, inputs [][]float64) (NeuralState, [][]float64, [][]float64, error) {
 	if err := l.validateState(s); err != nil {
-		return NeuralState{}, nil, err
+		return NeuralState{}, nil, nil, err
 	}
 	if len(p.ThetaRaw) != l.nodeCount {
-		return NeuralState{}, nil, fmt.Errorf("theta_raw has %d values, want %d", len(p.ThetaRaw), l.nodeCount)
+		return NeuralState{}, nil, nil, fmt.Errorf("theta_raw has %d values, want %d", len(p.ThetaRaw), l.nodeCount)
 	}
 	// The persistent readout observes the same decaying synaptic trace as the
-	// episode path; the 0/1 events stay inside the core.
-	next, outputs, _, err := l.model.Advance(ctx, dynamics.LIFParameters{
+	// episode path. The 0/1 events come back alongside it because local
+	// plasticity uses them as the post signal.
+	next, outputs, spikes, err := l.model.Advance(ctx, dynamics.LIFParameters{
 		Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
 	}, *s.LIF, inputs)
 	if err != nil {
-		return NeuralState{}, nil, err
+		return NeuralState{}, nil, nil, err
 	}
-	return NeuralState{Core: NeuralCoreLIF, LIF: &next}, outputs, nil
+	return NeuralState{Core: NeuralCoreLIF, LIF: &next}, outputs, spikes, nil
 }
 
 // newCore selects exactly one core and replaces c's connectivity with the
@@ -260,6 +266,15 @@ func configEdges(c Config) int {
 		return len(c.LIF.Sources)
 	}
 	return len(c.Dynamics.Sources)
+}
+
+// configEdgeEnds reads the endpoint arrays of whichever core a configuration
+// declares, in the canonical edge order every per-edge array follows.
+func configEdgeEnds(c Config) (sources, targets []int) {
+	if c.LIF != nil {
+		return c.LIF.Sources, c.LIF.Targets
+	}
+	return c.Dynamics.Sources, c.Dynamics.Targets
 }
 
 func copyLIF(c *dynamics.LIFConfig) *dynamics.LIFConfig {

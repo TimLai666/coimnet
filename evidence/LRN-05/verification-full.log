@@ -1,0 +1,36 @@
+$ uptime
+18:46  up 11 days, 25 mins, 1 user, load averages: 4.39 4.44 3.37
+$ go version
+go version go1.26.5 darwin/arm64
+
+$ gofmt -l .
+(no output above means every file is formatted)
+
+$ go vet ./...
+vet exit 0
+
+$ go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	0.210s
+ok  	github.com/TimLai666/coimnet/checkpoint	1.921s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/connectome	1.726s
+ok  	github.com/TimLai666/coimnet/download	1.649s
+ok  	github.com/TimLai666/coimnet/dynamics	0.896s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.209s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.235s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.726s
+ok  	github.com/TimLai666/coimnet/experiment	2.309s
+ok  	github.com/TimLai666/coimnet/feather	0.992s
+ok  	github.com/TimLai666/coimnet/internal/cli	15.222s
+ok  	github.com/TimLai666/coimnet/internal/extsort	1.309s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.797s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.912s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.948s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	1.091s
+ok  	github.com/TimLai666/coimnet/learning	1.359s
+ok  	github.com/TimLai666/coimnet/modulation	0.791s
+ok  	github.com/TimLai666/coimnet/params	1.486s
+ok  	github.com/TimLai666/coimnet/plasticity	0.957s
+ok  	github.com/TimLai666/coimnet/signal	1.114s
+ok  	github.com/TimLai666/coimnet/simulate	2.190s
+test exit 0

@@ -9,6 +9,7 @@ import (
 
 	"github.com/HazelnutParadise/insyra/nn"
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 const (
@@ -49,6 +50,16 @@ type OptimizerSnapshot struct {
 	Updates uint64    `json:"updates"`
 }
 
+// PlasticPart is the local fast-change mechanism of one individual: the rule
+// and edge selection it was enabled with, and the per-edge fast state that has
+// accumulated since. It is absent, not zero filled, while the mechanism was
+// never enabled, so a document written before it existed stays readable and a
+// reader can tell "off" from "on with nothing learned yet".
+type PlasticPart struct {
+	Config plasticity.Config `json:"config"`
+	State  plasticity.State  `json:"state"`
+}
+
 // IndividualSnapshot owns four separately serializable parts at one completed
 // operation boundary. ConfigHash is SHA-256 of canonical Config JSON, including
 // input and readout selections. It identifies the computational topology, not
@@ -62,6 +73,18 @@ type IndividualSnapshot struct {
 	Parameters    Parameters        `json:"parameters"`
 	Neural        NeuralState       `json:"neural"`
 	Optimizer     OptimizerSnapshot `json:"optimizer"`
+	Plastic       *PlasticPart      `json:"plastic,omitempty"`
+}
+
+// PlasticReport counts what one gated advance did to the fast state: how many
+// core steps ran under the mechanism, how many entries the plastic_max bound
+// held, and how many fixed-sign edges the w_min floor held. The two counts are
+// per entry and per step, so a bound that holds the same edge on every row is
+// counted on every row.
+type PlasticReport struct {
+	Steps      int `json:"steps"`
+	Clamped    int `json:"clamped"`
+	HeldAtWMin int `json:"held_at_w_min"`
 }
 
 // Individual owns mutable neural state and an isolated episode trainer.
@@ -75,6 +98,14 @@ type Individual struct {
 	neural     NeuralState
 	profile    string
 	configHash string
+	plastic    *plasticRuntime
+}
+
+// plasticRuntime is the enabled local mechanism of one individual: nil means
+// the mechanism is off and the forward path is the one that existed before it.
+type plasticRuntime struct {
+	model *plasticity.Model
+	state plasticity.State
 }
 
 // NewIndividual creates an independent copy of a base model, a fresh optimizer
@@ -124,7 +155,66 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 	if err = core.validateState(s.Neural); err != nil {
 		return nil, fmt.Errorf("individual neural state: %w", err)
 	}
-	return &Individual{trainer: tr, neural: copyNeural(s.Neural), profile: s.Profile, configHash: hash}, nil
+	restored := &Individual{trainer: tr, neural: copyNeural(s.Neural), profile: s.Profile, configHash: hash}
+	if s.Plastic != nil {
+		runtime, err := newPlasticRuntime(tr.network.config, s.Plastic.Config)
+		if err != nil {
+			return nil, fmt.Errorf("individual plastic part: %w", err)
+		}
+		if err = runtime.model.ValidateState(s.Plastic.State); err != nil {
+			return nil, fmt.Errorf("individual plastic part: %w", err)
+		}
+		runtime.state = copyPlasticState(s.Plastic.State)
+		restored.plastic = runtime
+	}
+	return restored, nil
+}
+
+// newPlasticRuntime validates one declaration against the configured core. A
+// pair rule is refused on a core that emits no events, so the refusal happens
+// where the core is known rather than at the first step.
+func newPlasticRuntime(c Config, pc plasticity.Config) (*plasticRuntime, error) {
+	model, err := plasticity.New(pc, configEdges(c))
+	if err != nil {
+		return nil, err
+	}
+	if pc.Rule.Kind == plasticity.RuleSTDPPair && c.LIF == nil {
+		return nil, fmt.Errorf("rule %q needs the 0/1 events of a spiking core", plasticity.RuleSTDPPair)
+	}
+	return &plasticRuntime{model: model, state: model.NewState()}, nil
+}
+
+// EnablePlasticity turns the local fast-change mechanism on for this
+// individual. The edge selection is validated against this individual's own
+// topology, and a second call replaces the declaration and restarts the fast
+// state, because eligibility and fast changes accumulated under a different
+// rule or a different edge set do not describe the new one. The mechanism lives
+// on the persistent individual only: an independent training episode has no
+// access to it, so there is no way to enable it on a non-persistent path.
+func (i *Individual) EnablePlasticity(c plasticity.Config) error {
+	if i == nil || i.trainer == nil {
+		return fmt.Errorf("uninitialized individual")
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	runtime, err := newPlasticRuntime(i.trainer.network.config, c)
+	if err != nil {
+		return err
+	}
+	i.plastic = runtime
+	return nil
+}
+
+// DisablePlasticity turns the mechanism off and drops the fast state, so the
+// forward path returns bit for bit to the one an individual that never enabled
+// it produces. Base parameters were never changed by it and are unaffected.
+func (i *Individual) DisablePlasticity() {
+	if i == nil || i.trainer == nil {
+		return
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	i.plastic = nil
 }
 
 // Snapshot returns an independent copy of all four parts at a completed
@@ -136,60 +226,106 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	s := i.trainer.Snapshot()
-	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates}}
+	var plastic *PlasticPart
+	if i.plastic != nil {
+		plastic = &PlasticPart{Config: i.plastic.model.Config(), State: copyPlasticState(i.plastic.state)}
+	}
+	return IndividualSnapshot{IndividualVersion, i.profile, i.configHash, s.Config, s.Parameters, copyNeural(i.neural), OptimizerSnapshot{s.Options, s.Optimizer, s.Updates}, plastic}
 }
 
 // Advance consumes observations using persistent voltage and delayed output
-// history, returning each step's readout. It changes only neural state. Insyra
+// history, returning each step's readout. It changes only neural state and,
+// when local plasticity is enabled, that individual's fast state. Insyra
 // encodes observations and decodes selected core outputs with float32 tensors.
 // A failed or canceled call commits no steps. Inputs must be nonempty.
+//
+// With plasticity enabled this is AdvanceGated with a gate of zero on every
+// row: the eligibility and the pair traces keep tracking activity, and the
+// fast changes only decay. With plasticity disabled it is the path that
+// existed before the mechanism and is bit-identical to it.
 func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float64, error) {
+	out, _, err := i.advanceRows(ctx, input, nil)
+	return out, err
+}
+
+// AdvanceGated is Advance with an explicit learning gate: gate carries one
+// value per input row, supplied by the caller, so it can be a constant, a
+// window or a pulse that arrives several steps after the activity it rewards.
+// Each row runs in the one declared order: the core integrates the effective
+// weights of the current fast state, the eligibility and the pair traces take
+// that step's pre and post signals, the gate turns the eligibility into a
+// bounded fast change, and the next row integrates the new effective weights.
+// Fast changes never reach Parameters; a gradient step changes only those.
+//
+// With plasticity disabled the call is the unchanged fast path and reports
+// nothing, but an open gate is then an error rather than a silent no-op.
+func (i *Individual) AdvanceGated(ctx context.Context, input [][]float64, gate []float64) ([][]float64, PlasticReport, error) {
+	if gate == nil {
+		return nil, PlasticReport{}, fmt.Errorf("AdvanceGated needs one gate value per input row")
+	}
+	return i.advanceRows(ctx, input, gate)
+}
+
+func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []float64) ([][]float64, PlasticReport, error) {
 	if i == nil || i.trainer == nil {
-		return nil, fmt.Errorf("uninitialized individual")
+		return nil, PlasticReport{}, fmt.Errorf("uninitialized individual")
 	}
 	if err := i.mu.LockContext(ctx); err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	defer i.mu.Unlock()
 	n, p := i.trainer.network, i.trainer.parameters
 	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input sequence")
+		return nil, PlasticReport{}, fmt.Errorf("empty input sequence")
+	}
+	if gate != nil {
+		if len(gate) != len(input) {
+			return nil, PlasticReport{}, fmt.Errorf("gate has %d values, the input has %d rows", len(gate), len(input))
+		}
+		for t, g := range gate {
+			if !finite(g) {
+				return nil, PlasticReport{}, fmt.Errorf("gate[%d] is not finite", t)
+			}
+			if g != 0 && i.plastic == nil {
+				return nil, PlasticReport{}, fmt.Errorf("gate[%d] is %g but local plasticity is not enabled", t, g)
+			}
+		}
 	}
 	count, err := size(len(input), n.config.InputSize)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	nodes := configNodes(n.config)
 	for _, width := range []int{n.config.InputSize, nodes, inputWidth(n.config), len(n.config.ReadoutNodes), n.config.OutputSize} {
 		cells, err := size(len(input), width)
 		if err != nil {
-			return nil, err
+			return nil, PlasticReport{}, err
 		}
 		if cells > dynamics.MaxStateValues {
-			return nil, fmt.Errorf("individual call exceeds %d values per matrix", dynamics.MaxStateValues)
+			return nil, PlasticReport{}, fmt.Errorf("individual call exceeds %d values per matrix", dynamics.MaxStateValues)
 		}
 	}
 	flat := make([]float64, 0, count)
 	for t, row := range input {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, PlasticReport{}, err
 		}
 		if len(row) != n.config.InputSize {
-			return nil, fmt.Errorf("input[%d] width %d, want %d", t, len(row), n.config.InputSize)
+			return nil, PlasticReport{}, fmt.Errorf("input[%d] width %d, want %d", t, len(row), n.config.InputSize)
 		}
 		flat = append(flat, row...)
 	}
 	x, err := tensor([]int{len(input), n.config.InputSize}, flat)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	enc, err := tensor([]int{n.config.InputSize, inputWidth(n.config)}, p.Encoder)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	z, err := nn.MatMul(x, enc)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	encoded := rows(doubles(z.Data()), inputWidth(n.config))
 	coreInputs := encoded
@@ -204,11 +340,20 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	}
 	core, err := n.coreParameters(p)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
-	state, outputs, err := n.core.advance(ctx, core, i.neural, coreInputs)
-	if err != nil {
-		return nil, err
+	var (
+		state   NeuralState
+		outputs [][]float64
+		fast    plasticity.State
+		report  PlasticReport
+	)
+	if i.plastic == nil {
+		if state, outputs, _, err = n.core.advance(ctx, core, i.neural, coreInputs); err != nil {
+			return nil, PlasticReport{}, err
+		}
+	} else if state, outputs, fast, report, err = i.advancePlastic(ctx, core, coreInputs, gate); err != nil {
+		return nil, PlasticReport{}, err
 	}
 	selected := make([]float64, 0, len(input)*len(n.config.ReadoutNodes))
 	for _, row := range outputs {
@@ -218,27 +363,80 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	}
 	h, err := tensor([]int{len(input), len(n.config.ReadoutNodes)}, selected)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	r, err := tensor([]int{len(n.config.ReadoutNodes), n.config.OutputSize}, p.Readout)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	result, err := nn.MatMul(h, r)
 	if err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	values := doubles(result.Data())
 	for _, v := range values {
 		if !finite(v) {
-			return nil, fmt.Errorf("non-finite individual readout")
+			return nil, PlasticReport{}, fmt.Errorf("non-finite individual readout")
 		}
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, PlasticReport{}, err
 	}
 	i.neural = state
-	return rows(values, n.config.OutputSize), nil
+	if i.plastic != nil {
+		i.plastic.state = fast
+	}
+	return rows(values, n.config.OutputSize), report, nil
+}
+
+// advancePlastic runs the enabled mechanism one core step at a time, because
+// the weights the next step integrates depend on the fast change this step
+// produced. Nothing is committed here: the caller owns the candidate neural
+// and fast states until the whole call has succeeded.
+func (i *Individual) advancePlastic(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64) (NeuralState, [][]float64, plasticity.State, PlasticReport, error) {
+	var report PlasticReport
+	n := i.trainer.network
+	sources, targets := configEdgeEnds(n.config)
+	neural, fast := i.neural, i.plastic.state
+	outputs := make([][]float64, 0, len(coreInputs))
+	for t, row := range coreInputs {
+		if err := ctx.Err(); err != nil {
+			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+		}
+		weights, held, err := i.plastic.model.Effective(core.Core.Weights, n.config.EdgeSigns, fast)
+		if err != nil {
+			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+		}
+		step := core
+		step.Core.Weights = weights
+		next, values, spikes, err := n.core.advance(ctx, step, neural, [][]float64{row})
+		if err != nil {
+			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+		}
+		// The pre signal is the value the edge carries after this step, which
+		// is the activated output on the continuous core and the synaptic
+		// trace on the spiking one. The post signal is the 0/1 event where the
+		// core produces one, and the same output where it does not.
+		pre, post := values[0], values[0]
+		var eventsPre, eventsPost []float64
+		if spikes != nil {
+			post, eventsPre, eventsPost = spikes[0], spikes[0], spikes[0]
+		}
+		g := 0.0
+		if gate != nil {
+			g = gate[t]
+		}
+		changed, stepReport, err := i.plastic.model.Step(fast, pre, post, eventsPre, eventsPost, g, sources, targets)
+		if err != nil {
+			return NeuralState{}, nil, plasticity.State{}, PlasticReport{}, err
+		}
+		neural, fast = next, changed
+		outputs = append(outputs, values[0])
+		report.Steps++
+		report.Clamped += stepReport.Clamped
+		report.HeldAtWMin += held.HeldAtWMin
+	}
+	return neural, outputs, fast, report, nil
 }
 
 // TrainEpisode updates only this individual's parameters and optimizer using
@@ -298,8 +496,9 @@ func (i *Individual) ResetParameters(ctx context.Context, p Parameters) error {
 	return nil
 }
 
-// ResetOptimizer replaces optimizer options and clears its moments/counts only.
-// It does not reset parameters, persistent neural state or anatomy.
+// ResetOptimizer replaces optimizer options and clears its moments, step counts
+// and any open gradient-accumulation window. It does not reset parameters,
+// persistent neural state or anatomy.
 func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	if i == nil || i.trainer == nil {
 		return fmt.Errorf("uninitialized individual")
@@ -328,6 +527,10 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	i.trainer.options = copyOptions(o)
 	i.trainer.optimizer = state
 	i.trainer.updates = 0
+	// The open accumulation window belongs to the optimizer this call replaces:
+	// keeping it would average gradients taken under the previous options into
+	// the first update of the new one.
+	i.trainer.accumulator = nil
 	return nil
 }
 
@@ -359,6 +562,22 @@ func copyNeural(s NeuralState) NeuralState {
 		state.Rate = append([]float64(nil), state.Rate...)
 		state.Homeostasis = append([]float64(nil), state.Homeostasis...)
 		owned.LIF = &state
+	}
+	return owned
+}
+
+// copyPlasticState deep copies the fast state, keeping an absent pair trace
+// absent rather than turning it into an empty array.
+func copyPlasticState(s plasticity.State) plasticity.State {
+	owned := plasticity.State{
+		Eligibility: append([]float64(nil), s.Eligibility...),
+		Plastic:     append([]float64(nil), s.Plastic...),
+	}
+	if s.PreTrace != nil {
+		owned.PreTrace = append([]float64(nil), s.PreTrace...)
+	}
+	if s.PostTrace != nil {
+		owned.PostTrace = append([]float64(nil), s.PostTrace...)
 	}
 	return owned
 }

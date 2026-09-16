@@ -1,0 +1,131 @@
+# green state: gate, eligibility, bounds, sign safety, individual integration and snapshot (LRN-05)
+
+$ go test -count=1 -v -run 'Gate|Delayed|Decay|PlasticMax|Effective' ./plasticity/
+=== RUN   TestGateZeroLetsPlasticOnlyDecay
+--- PASS: TestGateZeroLetsPlasticOnlyDecay (0.00s)
+=== RUN   TestDelayedGateUsesResidualEligibility
+=== RUN   TestDelayedGateUsesResidualEligibility/decay_e_0.5
+=== RUN   TestDelayedGateUsesResidualEligibility/decay_e_0.25
+--- PASS: TestDelayedGateUsesResidualEligibility (0.00s)
+    --- PASS: TestDelayedGateUsesResidualEligibility/decay_e_0.5 (0.00s)
+    --- PASS: TestDelayedGateUsesResidualEligibility/decay_e_0.25 (0.00s)
+=== RUN   TestEligibilityAndPlasticDecayToZero
+--- PASS: TestEligibilityAndPlasticDecayToZero (0.00s)
+=== RUN   TestPlasticMaxClampsAndCounts
+=== RUN   TestPlasticMaxClampsAndCounts/upper_bound
+=== RUN   TestPlasticMaxClampsAndCounts/lower_bound
+--- PASS: TestPlasticMaxClampsAndCounts (0.00s)
+    --- PASS: TestPlasticMaxClampsAndCounts/upper_bound (0.00s)
+    --- PASS: TestPlasticMaxClampsAndCounts/lower_bound (0.00s)
+=== RUN   TestEffectiveHoldsFixedSignEdgesAtWMin
+--- PASS: TestEffectiveHoldsFixedSignEdgesAtWMin (0.00s)
+=== RUN   TestEffectiveRejectsMalformedArguments
+=== RUN   TestEffectiveRejectsMalformedArguments/short_base
+=== RUN   TestEffectiveRejectsMalformedArguments/wrong_sign_length
+=== RUN   TestEffectiveRejectsMalformedArguments/invalid_sign
+=== RUN   TestEffectiveRejectsMalformedArguments/non-finite_base
+=== RUN   TestEffectiveRejectsMalformedArguments/foreign_state
+--- PASS: TestEffectiveRejectsMalformedArguments (0.00s)
+    --- PASS: TestEffectiveRejectsMalformedArguments/short_base (0.00s)
+    --- PASS: TestEffectiveRejectsMalformedArguments/wrong_sign_length (0.00s)
+    --- PASS: TestEffectiveRejectsMalformedArguments/invalid_sign (0.00s)
+    --- PASS: TestEffectiveRejectsMalformedArguments/non-finite_base (0.00s)
+    --- PASS: TestEffectiveRejectsMalformedArguments/foreign_state (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/plasticity	0.143s
+
+$ go test -count=1 -v -run 'Plastic|Gated|Gate|FixedSignEdgeStays|STDPPairRuns|EnablePlasticity' ./learning/
+2026/09/16 18:47:20 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged/lif
+=== RUN   TestAdvanceWithoutPlasticityIsUnchanged/continuous
+--- PASS: TestAdvanceWithoutPlasticityIsUnchanged (0.00s)
+    --- PASS: TestAdvanceWithoutPlasticityIsUnchanged/lif (0.00s)
+    --- PASS: TestAdvanceWithoutPlasticityIsUnchanged/continuous (0.00s)
+=== RUN   TestGatedAdvanceFollowsTheHandComputedOrder
+--- PASS: TestGatedAdvanceFollowsTheHandComputedOrder (0.00s)
+=== RUN   TestPlainAdvanceKeepsTheGateClosed
+--- PASS: TestPlainAdvanceKeepsTheGateClosed (0.00s)
+=== RUN   TestDelayedGatePulseChangesLaterRows
+--- PASS: TestDelayedGatePulseChangesLaterRows (0.00s)
+=== RUN   TestFixedSignEdgeStaysOnItsSignAndCountsTheHold
+--- PASS: TestFixedSignEdgeStaysOnItsSignAndCountsTheHold (0.00s)
+=== RUN   TestEnablePlasticityValidatesAndReplaces
+--- PASS: TestEnablePlasticityValidatesAndReplaces (0.00s)
+=== RUN   TestSTDPPairRunsOnTheSpikingIndividual
+--- PASS: TestSTDPPairRunsOnTheSpikingIndividual (0.00s)
+=== RUN   TestPlasticSnapshotRoundTrip
+--- PASS: TestPlasticSnapshotRoundTrip (0.00s)
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/pair_traces_on_a_rate_rule
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/plastic_past_the_bound
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/non-finite_eligibility
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/unknown_rule
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/edge_out_of_range
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/no_edges
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/short_state
+=== RUN   TestRestoreIndividualRejectsMalformedPlasticParts/extra_state
+--- PASS: TestRestoreIndividualRejectsMalformedPlasticParts (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/pair_traces_on_a_rate_rule (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/plastic_past_the_bound (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/non-finite_eligibility (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/unknown_rule (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/edge_out_of_range (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/no_edges (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/short_state (0.00s)
+    --- PASS: TestRestoreIndividualRejectsMalformedPlasticParts/extra_state (0.00s)
+=== RUN   TestAdvanceGatedRejectsMismatchedGates
+--- PASS: TestAdvanceGatedRejectsMismatchedGates (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	0.284s
+
+$ go test -count=1 -v -run 'Plastic' ./checkpoint/
+2026/09/16 18:47:21 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestSaveLoadIndividualCarriesThePlasticPart
+--- PASS: TestSaveLoadIndividualCarriesThePlasticPart (0.03s)
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/unknown_kind
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_state
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_p
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_w_min
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_eligibility
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/pair_trace_on_a_rate
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/unknown_rule_field
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/null_part
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_edges
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_kind
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/null_decay_e
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/null_inside_plastic
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/descending_edges
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/empty_edges
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_config
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_e
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/null_eligibility
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/wrong_state_length
+=== RUN   TestLoadIndividualRejectsMalformedPlasticParts/edge_out_of_range
+--- PASS: TestLoadIndividualRejectsMalformedPlasticParts (0.03s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/unknown_kind (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_state (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_p (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_w_min (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_eligibility (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/pair_trace_on_a_rate (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/unknown_rule_field (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/null_part (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_edges (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_kind (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/null_decay_e (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/null_inside_plastic (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/descending_edges (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/empty_edges (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_config (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_e (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/null_eligibility (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/wrong_state_length (0.00s)
+    --- PASS: TestLoadIndividualRejectsMalformedPlasticParts/edge_out_of_range (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	0.289s

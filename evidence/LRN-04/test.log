@@ -1,0 +1,72 @@
+# green state: plasticity rules (LRN-04)
+$ go test -count=1 -v -run 'Hebbian|STDP|TestNewRejects|TestStepRejects' ./plasticity/
+=== RUN   TestHebbianRateCorrelatedActivityStrengthens
+--- PASS: TestHebbianRateCorrelatedActivityStrengthens (0.00s)
+=== RUN   TestHebbianRateAnticorrelatedActivityWeakens
+--- PASS: TestHebbianRateAnticorrelatedActivityWeakens (0.00s)
+=== RUN   TestSTDPPairPreBeforePostStrengthens
+--- PASS: TestSTDPPairPreBeforePostStrengthens (0.00s)
+=== RUN   TestSTDPPairPostBeforePreWeakens
+--- PASS: TestSTDPPairPostBeforePreWeakens (0.00s)
+=== RUN   TestSTDPPairCoincidentSpikePinsTheReadOrder
+--- PASS: TestSTDPPairCoincidentSpikePinsTheReadOrder (0.00s)
+=== RUN   TestNewRejectsMalformedConfigurations
+=== RUN   TestNewRejectsMalformedConfigurations/zero_w_min
+=== RUN   TestNewRejectsMalformedConfigurations/non-finite_plastic
+=== RUN   TestNewRejectsMalformedConfigurations/pair_rule_a_minus
+=== RUN   TestNewRejectsMalformedConfigurations/no_edges
+=== RUN   TestNewRejectsMalformedConfigurations/negative_edge
+=== RUN   TestNewRejectsMalformedConfigurations/edge_out_of_range
+=== RUN   TestNewRejectsMalformedConfigurations/descending_edges
+=== RUN   TestNewRejectsMalformedConfigurations/decay_e_at_one
+=== RUN   TestNewRejectsMalformedConfigurations/negative_decay_p
+=== RUN   TestNewRejectsMalformedConfigurations/zero_plastic_max
+=== RUN   TestNewRejectsMalformedConfigurations/unknown_kind
+=== RUN   TestNewRejectsMalformedConfigurations/rate_rule_with_a_plus
+=== RUN   TestNewRejectsMalformedConfigurations/pair_rule_decay_pre
+=== RUN   TestNewRejectsMalformedConfigurations/repeated_edge
+=== RUN   TestNewRejectsMalformedConfigurations/empty_kind
+=== RUN   TestNewRejectsMalformedConfigurations/empty_edge_list
+--- PASS: TestNewRejectsMalformedConfigurations (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/zero_w_min (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/non-finite_plastic (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/pair_rule_a_minus (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/no_edges (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/negative_edge (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/edge_out_of_range (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/descending_edges (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/decay_e_at_one (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/negative_decay_p (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/zero_plastic_max (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/unknown_kind (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/rate_rule_with_a_plus (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/pair_rule_decay_pre (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/repeated_edge (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/empty_kind (0.00s)
+    --- PASS: TestNewRejectsMalformedConfigurations/empty_edge_list (0.00s)
+=== RUN   TestStepRejectsMalformedArguments
+=== RUN   TestStepRejectsMalformedArguments/pair_rule_without_events
+=== RUN   TestStepRejectsMalformedArguments/mismatched_activity
+=== RUN   TestStepRejectsMalformedArguments/topology_length
+=== RUN   TestStepRejectsMalformedArguments/node_index_out_of_range
+=== RUN   TestStepRejectsMalformedArguments/state_from_another_rule
+=== RUN   TestStepRejectsMalformedArguments/pair_rule_half_events
+=== RUN   TestStepRejectsMalformedArguments/event_that_is_not_zero_or_one
+=== RUN   TestStepRejectsMalformedArguments/short_activity
+=== RUN   TestStepRejectsMalformedArguments/non-finite_activity
+=== RUN   TestStepRejectsMalformedArguments/non-finite_gate
+=== RUN   TestStepRejectsMalformedArguments/short_state
+--- PASS: TestStepRejectsMalformedArguments (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/pair_rule_without_events (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/mismatched_activity (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/topology_length (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/node_index_out_of_range (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/state_from_another_rule (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/pair_rule_half_events (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/event_that_is_not_zero_or_one (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/short_activity (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/non-finite_activity (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/non-finite_gate (0.00s)
+    --- PASS: TestStepRejectsMalformedArguments/short_state (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/plasticity	0.167s

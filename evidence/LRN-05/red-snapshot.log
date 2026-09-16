@@ -1,0 +1,16 @@
+# red state: individual checkpoint carrying the optional plastic part (LRN-05)
+# The other malformed shapes are already refused by the strict decoder, the
+# null scanner or learning.RestoreIndividual; a decay that is omitted rather
+# than written is the one encoding/json would silently turn into a valid 0.
+$ go test -count=1 -run 'Plastic' ./checkpoint/
+2026/09/15 09:44:08 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestLoadIndividualRejectsMalformedPlasticParts (0.03s)
+    --- FAIL: TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_e (0.00s)
+        individual_test.go:874: accepted a malformed plastic part
+    --- FAIL: TestLoadIndividualRejectsMalformedPlasticParts/missing_decay_p (0.00s)
+        individual_test.go:874: accepted a malformed plastic part
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	0.496s
+FAIL

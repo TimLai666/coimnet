@@ -381,3 +381,45 @@ func TestContinuousIndividualDeclaresItsCore(t *testing.T) {
 		t.Fatal("a continuous snapshot was restored under the LIF profile")
 	}
 }
+
+// TestResetOptimizerClosesTheAccumulationWindow pins the part of the optimizer
+// an open accumulation window belongs to. Gradients taken under the previous
+// options must not be averaged into the first update of the new ones, so
+// ResetOptimizer drops the window along with the moments and the step count.
+func TestResetOptimizerClosesTheAccumulationWindow(t *testing.T) {
+	n, p := network(t)
+	c := n.Config()
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	a, err := learning.NewIndividual(c, p, o, make([]float64, c.Dynamics.Nodes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	x, target := [][]float64{{.7}, {0}, {0}}, []float64{.4}
+	first, err := a.TrainEpisode(context.Background(), x, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Applied || first.Accumulated != 1 {
+		t.Fatalf("first step applied %v with %d accumulated, want a partly filled window", first.Applied, first.Accumulated)
+	}
+	if err = a.ResetOptimizer(context.Background(), o); err != nil {
+		t.Fatal(err)
+	}
+	s := a.Snapshot()
+	if s.Optimizer.Updates != 0 {
+		t.Fatalf("updates = %d after a reset", s.Optimizer.Updates)
+	}
+	for i, v := range s.Optimizer.State.First {
+		if v != 0 || s.Optimizer.State.Second[i] != 0 || s.Optimizer.State.Steps[i] != 0 {
+			t.Fatalf("optimizer entry %d survived the reset: %v %v %d", i, v, s.Optimizer.State.Second[i], s.Optimizer.State.Steps[i])
+		}
+	}
+	again, err := a.TrainEpisode(context.Background(), x, target)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again.Applied || again.Accumulated != 1 {
+		t.Fatalf("the step after a reset applied %v with %d accumulated; the previous window was still open", again.Applied, again.Accumulated)
+	}
+}
