@@ -41,6 +41,9 @@ Commands:
   simulate compare [flags]       Run one protocol on the original wiring and on
                                  seeded null models and report the declared
                                  metrics and thresholds
+  checkpoint migrate [flags]     Migrate a snapshot into a new file under a
+                                 target schema, never touch the source, and
+                                 print the migration report as JSON
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit
@@ -104,6 +107,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runData(ctx, args[1:], stdout, stderr)
 	case "simulate":
 		return runSimulateCommand(ctx, args[1:], stdout, stderr)
+	case "checkpoint":
+		return runCheckpoint(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 		fs.SetOutput(stderr)
