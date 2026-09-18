@@ -98,6 +98,10 @@ type RunReport struct {
 	// report of a run without local fast changes encodes exactly as it did
 	// before the field existed.
 	Plasticity *PlasticityReport `json:"plasticity,omitempty"`
+	// Interventions is present only when the protocol declared the plan, so a
+	// report of a run that never clamped state encodes exactly as it did before
+	// the field existed.
+	Interventions *InterventionReport `json:"interventions,omitempty"`
 }
 
 // Stability flag names. They report an observation and never change a run.

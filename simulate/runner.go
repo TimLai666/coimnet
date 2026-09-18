@@ -82,6 +82,11 @@ type Runner struct {
 	plasticFrozen  bool
 	plasticSources []int
 	plasticTargets []int
+	// interventions is nil on a run without the block. When present it forces
+	// the chunk size to one, exactly like plasticity, and the per-step hook
+	// applies the declared overrides to the output, the event and the
+	// continuation state.
+	interventions *interventionConfig
 }
 
 // trackedSet is one resolved node set the run measures alongside the probes.
@@ -236,6 +241,9 @@ func BuildVariant(ctx context.Context, g *connectome.Graph, v Variant, protocol 
 		return nil, err
 	}
 	if err := runner.enablePlasticity(ctx, g, v, protocol); err != nil {
+		return nil, err
+	}
+	if err := runner.enableInterventions(protocol); err != nil {
 		return nil, err
 	}
 	return runner, nil
@@ -680,6 +688,11 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 		if err != nil {
 			return empty, fmt.Errorf("simulate: advance steps %d..%d: %w", start, end, err)
 		}
+		if r.interventions != nil {
+			if err := r.applyInterventions(outputs, spikes, next, start); err != nil {
+				return empty, fmt.Errorf("simulate: interventions at step %d: %w", start, err)
+			}
+		}
 		if r.plastic != nil && !r.plasticFrozen {
 			updated, stepReport, err := r.plasticStep(fast, outputs[0], spikeRow(spikes, 0), stimulus[start])
 			if err != nil {
@@ -735,6 +748,9 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 			return empty, err
 		}
 		report.Plasticity = plastic
+	}
+	if r.interventions != nil {
+		report.Interventions = r.interventionReport(steps)
 	}
 	r.state = state
 	r.plasticState = fast
@@ -932,6 +948,9 @@ func (r *Runner) assumptions() []string {
 	)
 	if r.plastic != nil {
 		lines = append(lines, r.plasticAssumption())
+	}
+	if r.interventions != nil {
+		lines = append(lines, "Interventions were applied as declared; ordinary runs never clamp state.")
 	}
 	if !r.core.spiking() {
 		lines = append(lines, "The continuous core emits no events, so population_rate_per_step is empty, rate_quantiles are zero and silent_fraction counts neurons whose output never left the value held before the run.")

@@ -180,6 +180,11 @@ type Protocol struct {
 	// pointer with omitempty so a protocol that does not declare it encodes
 	// exactly as it did before the field existed and keeps its recorded hash.
 	Plasticity *Plasticity `json:"plasticity,omitempty"`
+	// Interventions is absent from a run that never clamps state. It is a
+	// pointer with omitempty for the same reason, so an ordinary protocol keeps
+	// its recorded hash bit for bit. A nonnil plan must be authorized and must
+	// carry a reason: an experiment says so (see validateInterventions).
+	Interventions *InterventionPlan `json:"interventions,omitempty"`
 }
 
 // DecodeProtocol reads exactly one strict JSON protocol and validates
@@ -283,7 +288,10 @@ func (p Protocol) Validate() error {
 	if err != nil {
 		return err
 	}
-	return p.validatePlasticity(len(stimulus[0]))
+	if err := p.validatePlasticity(len(stimulus[0])); err != nil {
+		return err
+	}
+	return p.validateInterventions()
 }
 
 // validateParameterSource checks the declared source and exactly the blocks it
