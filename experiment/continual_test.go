@@ -55,6 +55,8 @@ func TestContinualProtocolValidateRejects(t *testing.T) {
 		{name: "duplicate task name", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[1].Name = "A" }, want: []string{"duplicate"}},
 		{name: "unknown generator", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[0].Generator = "memorize/v1" }, want: []string{"generator"}},
 		{name: "unknown param key", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[0].Params["noise"] = 1 }, want: []string{"param"}},
+		{name: "missing delay", mutate: func(p *experiment.ContinualProtocol) { delete(p.Tasks[0].Params, "delay") }, want: []string{"param"}},
+		{name: "missing channel", mutate: func(p *experiment.ContinualProtocol) { delete(p.Tasks[0].Params, "channel") }, want: []string{"param"}},
 		{name: "delay too large", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[0].Params["delay"] = 9 }, want: []string{"param"}},
 		{name: "delay too small", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[0].Params["delay"] = 0 }, want: []string{"param"}},
 		{name: "delay not integer", mutate: func(p *experiment.ContinualProtocol) { p.Tasks[0].Params["delay"] = 2.5 }, want: []string{"param"}},

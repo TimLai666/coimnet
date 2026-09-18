@@ -93,6 +93,12 @@ func (p ContinualProtocol) Validate() error {
 		if ts.Generator != GeneratorDelayedCorrelation {
 			return fmt.Errorf("task %q: unsupported generator %q", ts.Name, ts.Generator)
 		}
+		if _, ok := ts.Params["delay"]; !ok {
+			return fmt.Errorf("task %q: param delay is required", ts.Name)
+		}
+		if _, ok := ts.Params["channel"]; !ok {
+			return fmt.Errorf("task %q: param channel is required", ts.Name)
+		}
 		for key, v := range ts.Params {
 			switch key {
 			case "delay":
