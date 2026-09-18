@@ -11,8 +11,7 @@ User Story：使用者可以寫一份嚴格驗證、全部展開、覆寫來源�
 Blocked by：16 模型包（`model inspect`）、17 最佳化器（組態的學習規則區塊）、20／21（組態的調節器區塊，
 可先以「未宣告」通過）、23（`evaluate` 子命令由該票接上）、22（`ablate` 子命令由該票接上）
 
-Status：第一階段已完成並驗證（2026-09-16 完成，2026-09-17 重跑驗證，見「第一階段證據」）；第二、三階段未開始。契約已於
-2026-09-15 定案，分三階段派工，第一階段不依賴 20 以後的票。
+Status：第一與第三階段已驗證（2026-09-19）；第二階段 SDK／CLI 待派工
 
 對應需求：OPS-03（未知欄位拒絕，覆寫順序與來源可查，dry-run 不學習不呼叫教師）、OPS-06（計算包含邊
 狀態歷史與外圍模型；不足時拒絕，不自動縮減）、OPS-01（API 例子可執行，錯誤不 panic，取消後釋放資源）、
@@ -130,7 +129,7 @@ func NewWriter(w io.Writer) io.Writer
   `go test`、race、vet；`evidence/OPS-03/`、`evidence/OPS-06/`。
 - [ ] 第二階段：SDK 範例可執行、非法輸入不 panic、五個取消釋放測試；每個 CLI 命令端到端與失敗測試、
   `--help` 完整；`evidence/OPS-01/`、`evidence/OPS-02/`。
-- [ ] 第三階段：遷移不覆寫原件、報告含前後指紋與資訊損失、一個真實遷移；遮罩、掃描腳本、無遙測與
+- [x] 第三階段：遷移不覆寫原件、報告含前後指紋與資訊損失、一個真實遷移；遮罩、掃描腳本、無遙測與
   `net/http` 範圍測試、symlink 與超大檔拒絕；`evidence/STA-05/`、`evidence/STA-06/`；文件。
 
 ## 第一階段證據（2026-09-16 完成，2026-09-17 重跑全部驗證）
@@ -173,6 +172,24 @@ func NewWriter(w io.Writer) io.Writer
 8. **`splits` 是三個相加為 1 的比例**，容許 1e-9 浮點誤差。票面只寫了 `{train, validation, test}`。
 9. **`resources.max_memory_mib` 允許 0**，表示沒有任何計畫可接受。fixture 的預估只有 192 bytes，
    任何整數 MiB 都不會觸發拒絕，需要 0 才能驗證超限路徑。
+
+## 第三階段證據（2026-09-19）
+
+第三階段（STA-05、STA-06）切成五張小票完成，證據都在 `evidence/STA-05/` 與 `evidence/STA-06/`。
+
+1. **redact（`internal/redact/redact.go`、`redact_test.go`）**：`Line` 遮罩 `sk-…`、`Bearer …`、`token=`／`api_key=`／`apikey=` 與 JSON 的 token／api_key／secret／password 值，`raw_text`／`audio`／`image` 只留 `[len=N sha256=XXXXXXXX]`；`Writer` 跨 Write 邊界與 50 次隨機切分都不漏密，乾淨行逐位不變。五個測試全過。
+2. **migrate（`checkpoint/migrate.go`、`migrate_test.go`）**：同路徑／已存在的 `dst` 拒絕且源檔不動、同 schema 逐位複製（前後 SHA-256 相同）、pre-union 個體升級成聯集（`field_changes` 兩條：`neural` renamed、`neural.core` added，`no_information_loss: true`）、未知 schema 與壞 JSON 拒絕且不建立目標、context 取消不產出。五個測試全過。
+3. **scan-commit 與無遙測（`scripts/scan-commit.sh`、`.githooks/pre-commit`、`privacy_test.go`）**：四條規則（secret、> 5 MiB、`data/` 原件、`teacher_response`＋`answer`），exit 0 通過／1 違規／2 用法錯誤，唯讀不動 index；`TestOnlyNetworkPackagesImportHTTP` 用 `go list -deps` 證明只有 `download`、`teacher` 與 `internal/cli` import `net/http`；`TestNoTelemetry` 掃全部非測試 Go 檔找不到遙測字串；`TestScanCommitScriptFlagsSecrets` 三個案例（secret 違規 exit 1、乾淨 exit 0、6 MiB exit 1，都在暫時 git repo 驅動）。
+4. **CLI（`internal/cli/checkpoint.go`、`checkpoint_test.go`）**：`checkpoint migrate` 六個測試（寫檔並印報告、pre-union 升級、拒絕已存在目標、拒絕同路徑、缺 `--src` 要求、`--help` 完整），用法錯誤退出碼 1 且指名旗標，被拒絕的命令不建立 `--dst`。
+5. **證據**：`evidence/STA-05/`（`verification.json`、`test.log`、`migrate-report.json`、`sample-src.json`、`sample-dst.json`）與 `evidence/STA-06/`（`verification.json`、`test.log`，兩個 `test.log` 位元組相同）。CLI 在 fixture 上真正執行了 pre-union → 聯集的遷移：`sample-src.json` 的 SHA-256 與報告 `source_sha256` 相同（db923ea537933555…）、`sample-dst.json` 與 `target_sha256` 相同（20e2e417c647181e…）。
+
+驗證命令、環境（go 1.26.5 darwin/arm64，uptime load 1.56）、39 個頂層 `--- PASS`、零個 `--- FAIL` 與每個數字都寫在兩份 `verification.json`。文件：README 補鉤子安裝（`git config core.hooksPath .githooks`）與 `checkpoint migrate` 一行用法、`docs/individual-state.md` 補「遷移」一段。
+
+### 與 Root 決策的出入（第三階段）
+
+1. **`internal/cli` 的 `net/http`**：允許清單除了規格寫的 `download` 與（未來的）`teacher`，還必須留 `internal/cli`，因為 `data sources` 的 HEAD 檢查在 `internal/cli/data.go`，屬既有偏差；STA-06 證據照記，把檢查搬進 `download`、把允許清單收緊到只剩兩個套件是待辦。
+2. **沒有 registry、沒有其他偏離**：第三階段沒有引入規格以外的註冊機制、格式或假來源；`precision_mapping` 目前恆為空（報告為 `null`）、`redact.Writer` 只提供元件尚未接進全部 CLI 日誌，兩處都在證據的 limitations 明記。
+3. **`--target` 預設即為 `coimnet-individual-checkpoint/v1`**，CLI 不需要指定；這是契約的 CLI 呈現，不是格式變更。
 
 ## 依據
 

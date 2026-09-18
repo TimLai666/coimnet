@@ -80,6 +80,17 @@
 
 載入檢查 SHA-256、版本、profile、完整設定指紋、參數／最佳化器形狀及神經歷史。既有 `Save`／`Load` 與 CLI `train delayed`／`resume` 繼續使用獨立 episode 格式。新個體格式另拒絕缺失的必填欄位與 `null`。
 
+## 遷移
+
+`checkpoint.Migrate(ctx, src, dst, target)` 把快照文件的位元組讀出、以該 schema 的嚴格解碼器驗證後，重寫成目標 schema 並以原子發布寫到 `dst`。`dst` 不得等於 `src`、不得已存在（任何檔案都不會被覆寫），`src` 的位元組永遠不變，失敗時 `dst` 不會被建立。
+
+目前支援的組合：
+
+- **聯集出現前的連續個體檔 → `coimnet-individual-checkpoint/v1`**：`neural` 直接是連續狀態（沒有 `core` 成員）的舊格式經 `upgradeIndividualNeural` 升級成聯集形，報告兩條 `field_changes`：`neural` 被 `renamed` 成 `neural.continuous`，`neural.core` 被 `added`（`"core":"continuous"` 指名保留的那一半）。`LoadIndividual` 也讀這種舊形狀，但只有 `Migrate` 會把它寫成聯集。
+- **schema 已是目標的任何文件**：逐位複製，`source_sha256` 與 `target_sha256` 相同，沒有欄位變更，報告 `no_information_loss: true`。
+
+其他組合明確拒絕並指名 schema 配對（例如模型包轉成個體快照），未知 schema、壞 JSON、同路徑與已存在的 `dst` 都回錯誤。報告含兩邊路徑、兩邊完整檔的 SHA-256、schema 字串、`field_changes`、`precision_mapping`、`information_loss` 與 `no_information_loss`，所以不重讀兩份檔案也能稽核遷移做了什麼。CLI 對應 `checkpoint migrate`（見 README），證據在 `evidence/STA-05/`。
+
 ## 三種保存物
 
 | 保存物 | schema | 有什麼 | 沒有什麼 |

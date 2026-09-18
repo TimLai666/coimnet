@@ -1,0 +1,23 @@
+{
+  "source_path": "evidence/STA-05/sample-src.json",
+  "target_path": "evidence/STA-05/sample-dst.json",
+  "source_sha256": "db923ea537933555d68347109690b4822fdf1b1d4a366e2f009486e75a80e307",
+  "target_sha256": "20e2e417c647181e2331eb5376b5b0251471574a4a4675a41358b52d93a337fa",
+  "source_schema": "coimnet-individual-checkpoint/v1",
+  "target_schema": "coimnet-individual-checkpoint/v1",
+  "field_changes": [
+    {
+      "path": "neural",
+      "kind": "renamed",
+      "note": "the continuous dynamics state that sat directly on payload.neural is now the payload.neural.continuous half of the union"
+    },
+    {
+      "path": "neural.core",
+      "kind": "added",
+      "note": "the union adds the \"core\":\"continuous\" declaration so every persistent neural state names its half"
+    }
+  ],
+  "precision_mapping": null,
+  "information_loss": [],
+  "no_information_loss": true
+}

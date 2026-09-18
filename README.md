@@ -76,6 +76,8 @@ printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
 
 三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。
 
+個體快照可以遷移到新檔而不動原件：`./bin/coimnet checkpoint migrate --src old.json --dst migrated.json` 讀 `--src`、寫 `--dst`（已存在的路徑拒絕、同路徑拒絕），印出含前後 SHA-256、欄位變更清單與資訊損失的 JSON 報告；聯集出現以前的連續個體檔會升級成 `coimnet-individual-checkpoint/v1` 聯集形，同版本則逐位複製。
+
 取得官方原始資料：
 
 ```sh
@@ -236,6 +238,8 @@ go mod verify
 ```
 
 在 macOS 或 Linux 可用 `scripts/verify.sh NEW_OUTPUT_DIRECTORY` 一次執行上述檢查、三組學習對照，以及真正跨程序的 CLI 續訓比對，並執行 LIF 閾值範例及其預註冊門檻，保存環境報告、來源指紋與日誌。目錄須尚未存在。已下載三份官方原件時，`scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY` 會在計時下重跑真實接線圖建構並保存報告、環境與指紋。
+
+commit 前的敏感資料掃描可以選擇安裝，不會自動啟用：`git config core.hooksPath .githooks` 之後，每次 `git commit` 會先執行 `scripts/scan-commit.sh`，掃描暫存 diff 的金鑰樣式、超過 5 MiB 的檔、`data/` 原件目錄新增與 `teacher_response` 原文，違規就中止提交；`git config --unset core.hooksPath` 取消。
 
 ## 開發入口
 

@@ -1,0 +1,30 @@
+{
+  "requirement": "使用者可以限制原始內容、金鑰與重播資料的保存與外傳。",
+  "profile": "all",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && rm -f evidence/STA-05/sample-dst.json && go run ./cmd/coimnet checkpoint migrate --src evidence/STA-05/sample-src.json --dst evidence/STA-05/sample-dst.json > evidence/STA-05/migrate-report.json && go test -count=1 -race -v -run 'Migrate|Checkpoint|Redact|Line|Writer|ScanCommit|NoTelemetry|OnlyNetwork' ./checkpoint/ ./internal/redact/ ./internal/cli/ . > evidence/STA-05/test.log 2>&1; grep -c '^--- PASS' evidence/STA-05/test.log; cp evidence/STA-05/test.log evidence/STA-06/test.log"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime: 1:54 up 13 days, 7:32, 1 user, load averages: 1.56 1.95 2.19"
+  ],
+  "input_fingerprints": [
+    "scripts/scan-commit.sh SHA-256 3cf2c34726c8374800c0af66350ba3b507e076ef2ba28d71a8f0b8a853d3e05f (the script driven against temporary git repositories)",
+    "internal/redact/redact.go SHA-256 af9b52db5243288566d744aa5b4cf2c7464668c346b07242dd70930472ee58d4 (module under test)",
+    "privacy_test.go SHA-256 aa2e5e9478d1933397ade966fb9cf5bb340a535eb2f8f84323a4e982f97e8772 (allow-list, telemetry and scan tests)",
+    ".githooks/pre-commit SHA-256 2b8ddbcec7302dc6d890f73fc55f70e353b87992df50778439e57b61638c8ea9 (template, not auto-installed)"
+  ],
+  "observed_result": "internal/redact passes its five tests. TestLineMasksSecrets: \"sk-\" plus 8+ [A-Za-z0-9_-] becomes \"sk-[redacted]\" (sk-abcdefgh12345678; sk-short stays unmasked), \"Bearer <token>\" becomes \"Bearer [redacted]\" (Authorization: Bearer eyJhbGciOi.xx), token= / api_key= / apikey= (case-insensitive key) followed by a non-space, non-&, non-\" run becomes \"<key>=[redacted]\" (GET /x?token=abc123&y=1, API_KEY=Q1w2E3), JSON string members token/api_key/secret/password have their value replaced by \"[redacted]\" ({\"api_key\":\"abc\",...}, {\"password\":\"p\\\"q\"}). TestLineHashesRawPayloads: raw_text/audio/image string members keep only \"[len=N sha256=XXXXXXXX]\" with N the decoded byte length and XXXXXXXX the first 8 lowercase hex of the value's SHA-256 (\"hello\" -> [len=5 sha256=2cf24dba], \"\" -> [len=0 sha256=e3b0c442]). TestLineLeavesCleanLinesUntouched: clean lines (plain logs, {\"raw_text\": null}, {\"token_reference\": \"sk-abc\", ...}) come back byte-for-byte unchanged. TestWriterMasksAcrossWriteBoundaries: a secret split across Write calls is still masked on the forwarded line, a partial trailing line is held and only emitted at Flush, also masked. TestWriterNeverEmitsTheSecret: over 50 random-split iterations the writer never emits the secret and Flush always yields the fully masked line. The root package passes its three privacy tests. TestOnlyNetworkPackagesImportHTTP runs go list -deps over ./... and asserts that only download, teacher and internal/cli import net/http directly; internal/cli is allowed only for the HEAD check of the `data sources` audit (internal/cli/data.go imports net/http), a pre-existing deviation recorded here, same as the allow-list comment in privacy_test.go. TestNoTelemetry walks every non-test Go file and finds no analytics/telemetry/segment.io/sentry/mixpanel/posthog string at all. TestScanCommitScriptFlagsSecrets drives scripts/scan-commit.sh against throwaway git repositories: secret-in-added-line (staged sk-abcdefgh12345678) exits 1 and prints the file with rule=secret, clean-staged-diff exits 0 and prints PASS, oversized-file (a staged 6 MiB file) exits 1 and prints rule=size. scripts/scan-commit.sh implements four rules on the staged diff: (1) secret on added lines with sk-^/Bearer-style or api_key/apikey/token/secret/password key/value shapes, (2) size for added or modified staged files over 5 MiB, (3) data for added files under data/raw/, data/malecns/ or any other data/** file that is not .md or .json, (4) teacher_response appearing together with an \"answer\" field in an added line; exit status is 0 (prints 'PASS' and 'staged diff is clean'), 1 (one line per finding file:line: rule=..., 'commit blocked'), or 2 (usage error or not a git repository); the script is read-only and never writes a file, touches the working tree or modifies the index. .githooks/pre-commit just execs scripts/scan-commit.sh and is not installed automatically. Command output: 39 top-level '--- PASS' lines, no '--- FAIL'; packages ok github.com/TimLai666/coimnet/internal/redact 1.900s and github.com/TimLai666/coimnet (root) 2.882s, final line 'ok'.",
+  "assumption_statement": "遮罩規則是固定樣式清單；掃描腳本與 pre-commit 範本不自動安裝；預設無外傳由 import 清單證明。",
+  "test_log": [
+    "evidence/STA-06/test.log (byte-for-byte copy of evidence/STA-05/test.log)",
+    "evidence/STA-05/test.log",
+    ".githooks/pre-commit and scripts/scan-commit.sh are the installed template and scanner; privacy_test.go is the allow-list source"
+  ],
+  "limitations": [
+    "CLI 日誌尚未全面經過 redact.Writer：internal/redact 只提供元件（Line 與 Writer 各五個測試），本輪沒有把套件接進所有 CLI 命令的 log 輸出或 report。",
+    "樣式清單有限：reJSON 只抓雙引號 JSON 字串、sk- 樣式要求至少 8 個字元、Bearer 只遮單個非空白 token；遮罩未覆蓋的樣式會原樣通過。",
+    "internal/cli 的 net/http 偏差仍在：allow-list 為了 data sources 的 HEAD 檢查留了 internal/cli，尚未收緊到只剩 download 與 teacher（把 HEAD 檢查搬進 download 是待辦）。",
+    "TestScanCommitScriptFlagsSecrets 只覆蓋了四條規則中的 secret 與 size，以及乾淨路徑的 PASS 案例；data 與 teacher_response 兩條規則沒有對應的 CLI 子測試，scripts/scan-commit.sh 的規則本體仍是唯一證據。"
+  ]
+}
