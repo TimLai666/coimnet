@@ -45,10 +45,10 @@ func TestResetIsDeterministicAndConnected(t *testing.T) {
 
 func TestObservationHasNoCoordinates(t *testing.T) {
 	typ := reflect.TypeOf(Observation{})
-	if n := typ.NumField(); n != 6 {
-		t.Fatalf("Observation has %d fields, want 6", n)
+	if n := typ.NumField(); n != 7 {
+		t.Fatalf("Observation has %d fields, want 7", n)
 	}
-	want := []string{"View", "Heading", "Collided", "Elapsed", "Token", "RuleChanged"}
+	want := []string{"View", "Heading", "Collided", "Elapsed", "Token", "RuleChanged", "Cue"}
 	for _, name := range want {
 		if _, ok := typ.FieldByName(name); !ok {
 			t.Fatalf("Observation missing field %s", name)
@@ -68,8 +68,8 @@ func TestObservationHasNoCoordinates(t *testing.T) {
 		t.Fatalf("New: %v", err)
 	}
 	obs, _ := env.Reset(0)
-	if n := len(obs.Vector()); n != 38 {
-		t.Fatalf("Vector length = %d, want 38 (3*3*3 + 4 + 1 + 1 + 4 + 1)", n)
+	if n := len(obs.Vector()); n != 40 {
+		t.Fatalf("Vector length = %d, want 40 (3*3*3 + 4 + 1 + 1 + 4 + 1 + 2)", n)
 	}
 }
 

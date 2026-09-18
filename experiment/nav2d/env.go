@@ -21,10 +21,12 @@ const (
 	CellGoal = 2
 )
 
-// Config declares the map and episode rules. Width and Height must be odd and
-// >= 5; WallDensity in [0, 0.4]; ViewDepth in [1, 5]; TimeLimit >= 1;
-// StepPenalty >= 0; CollisionPenalty >= 0; GoalReward > 0. Zero values take
-// the defaults (9x9, 0.2, 3, 60, 0.01, 0.05, 1).
+// Config declares the map, episode rules and task. Width and Height must be odd
+// and >= 5; WallDensity in [0, 0.4]; ViewDepth in [1, 5]; TimeLimit >= 1;
+// StepPenalty >= 0; CollisionPenalty >= 0; GoalReward > 0; Task is one of
+// remember_goal, avoid_obstacles, adapt_after_change, language_goal ("" maps to
+// avoid_obstacles). Zero values take the defaults (9x9, 0.2, 3, 60, 0.01, 0.05,
+// 1).
 type Config struct {
 	Width            int     `json:"width"`
 	Height           int     `json:"height"`
@@ -34,6 +36,7 @@ type Config struct {
 	StepPenalty      float64 `json:"step_penalty"`
 	CollisionPenalty float64 `json:"collision_penalty"`
 	GoalReward       float64 `json:"goal_reward"`
+	Task             string  `json:"task"`
 }
 
 // withDefaults fills zero fields with their defaults.
@@ -91,16 +94,25 @@ func validate(c Config) error {
 	if c.GoalReward <= 0 {
 		return fmt.Errorf("nav2d: goal reward %v <= 0", c.GoalReward)
 	}
+	switch resolveTask(c.Task) {
+	case TaskRememberGoal, TaskAvoidObstacles, TaskAdaptAfterChange, TaskLanguageGoal:
+	default:
+		return fmt.Errorf("nav2d: task %q is not a known task identifier", c.Task)
+	}
 	return nil
 }
 
 // Observation is everything the agent may see. View is the cone in front of
 // the agent: for distance k = 1..ViewDepth the 2k-1 cells at lateral offsets
 // -(k-1)..(k-1), in that order, each as a one-hot of the three cell kinds
-// (ViewDepth^2 cells x 3 floats); cells outside the map read as walls.
-// Heading is a one-hot of {0, 90, 180, 270} degrees. There is no position, no
-// goal coordinate and no path field, and there never will be. Token and
-// RuleChanged are zero in this stage (tasks of the next ticket).
+// (ViewDepth^2 cells x 3 floats); cells outside the map read as walls. For
+// remember_goal and language_goal the goal cell reads as free. Heading is a
+// one-hot of {0, 90, 180, 270} degrees. Token is a one-hot naming the goal
+// corner for language_goal and all zeros otherwise. RuleChanged is 1 only on
+// the adapt_after_change step that redraws the walls. Cue is the sign of the
+// goal vector for remember_goal on its first observation and zeros otherwise.
+// There is no position, no goal coordinate and no path field, and there never
+// will be.
 type Observation struct {
 	View        []float64  `json:"view"`
 	Heading     [4]float64 `json:"heading"`
@@ -108,17 +120,19 @@ type Observation struct {
 	Elapsed     float64    `json:"elapsed"` // steps taken / TimeLimit, in [0, 1]
 	Token       [4]float64 `json:"token"`
 	RuleChanged float64    `json:"rule_changed"`
+	Cue         [2]float64 `json:"cue"`
 }
 
-// Vector returns View, Heading, Collided, Elapsed, Token and RuleChanged
+// Vector returns View, Heading, Collided, Elapsed, Token, RuleChanged and Cue
 // concatenated.
 func (o Observation) Vector() []float64 {
-	v := make([]float64, 0, len(o.View)+4+1+1+4+1)
+	v := make([]float64, 0, len(o.View)+4+1+1+4+1+2)
 	v = append(v, o.View...)
 	v = append(v, o.Heading[:]...)
 	v = append(v, o.Collided, o.Elapsed)
 	v = append(v, o.Token[:]...)
 	v = append(v, o.RuleChanged)
+	v = append(v, o.Cue[0], o.Cue[1])
 	return v
 }
 
@@ -146,6 +160,7 @@ type Env struct {
 	stepPenalty      float64
 	collisionPenalty float64
 	goalReward       float64
+	task             string // resolved task for the current episode
 
 	cells        [][]int // rows y, columns x
 	x, y         int
@@ -156,6 +171,13 @@ type Env struct {
 	collided     bool
 	done         bool
 	dist         [][]int // BFS distance to the goal, -1 when blocked
+
+	carrySeed   uint64     // episode seed, kept for adapt_after_change redraws
+	cue         [2]float64 // remember_goal direction shown on the first observation
+	cueSeen     bool       // remember_goal cue already emitted
+	token       [4]float64 // language_goal one-hot corner token
+	ruleChanged float64    // 1 during the step that redraws the map
+	mapChanged  bool       // adapt_after_change already redrawn this episode
 }
 
 // New validates the configuration and returns a ready-to-reset environment.
@@ -173,6 +195,7 @@ func New(c Config) (*Env, error) {
 		stepPenalty:      c.StepPenalty,
 		collisionPenalty: c.CollisionPenalty,
 		goalReward:       c.GoalReward,
+		task:             resolveTask(c.Task),
 	}, nil
 }
 
@@ -180,9 +203,19 @@ func New(c Config) (*Env, error) {
 // 0)) with every cell a wall with probability WallDensity, the start and the
 // goal are two distinct free cells chosen with the same RNG, and the draw
 // repeats (at most 100 times, then with the density halved on each further
-// try) until BFS connects start to goal. Heading starts at 0. Returns the
-// first observation and the info with ShortestPath from BFS.
+// try) until BFS connects start to goal. Heading starts at 0. For
+// language_goal the goal is a random free corner (its token records the
+// index) and the start is drawn separately; the draw also repeats until
+// connected. For remember_goal the goal direction is put into Cue, shown on
+// the first observation only. Returns the first observation and the info with
+// ShortestPath from BFS.
 func (e *Env) Reset(seed uint64) (Observation, Info) {
+	e.carrySeed = seed
+	e.cue = [2]float64{}
+	e.cueSeen = false
+	e.token = [4]float64{}
+	e.ruleChanged = 0
+	e.mapChanged = false
 	rng := rand.New(rand.NewPCG(seed, 0))
 	density := e.wallDensity
 	for attempt := 1; ; attempt++ {
@@ -198,6 +231,11 @@ func (e *Env) Reset(seed uint64) (Observation, Info) {
 				}
 			}
 		}
+		var g [2]int
+		goalIdx := -1
+		if e.task == TaskLanguageGoal {
+			g, goalIdx = pickLanguageGoal(rng, e.width, e.height, cells)
+		}
 		free := make([][2]int, 0, e.width*e.height)
 		for y := 0; y < e.height; y++ {
 			for x := 0; x < e.width; x++ {
@@ -210,11 +248,16 @@ func (e *Env) Reset(seed uint64) (Observation, Info) {
 			continue
 		}
 		s := free[rng.IntN(len(free))]
-		var g [2]int
-		for {
-			g = free[rng.IntN(len(free))]
-			if g != s {
-				break
+		if goalIdx < 0 {
+			for {
+				g = free[rng.IntN(len(free))]
+				if g != s {
+					break
+				}
+			}
+		} else {
+			for g == s {
+				s = free[rng.IntN(len(free))]
 			}
 		}
 		dist := bfsDist(cells, e.width, e.height, g[0], g[1])
@@ -231,6 +274,12 @@ func (e *Env) Reset(seed uint64) (Observation, Info) {
 		e.collided = false
 		e.done = false
 		e.dist = dist
+		if goalIdx >= 0 {
+			e.token[goalIdx] = 1
+		}
+		if e.task == TaskRememberGoal {
+			e.cue = [2]float64{signInt(e.goalX - e.x), signInt(e.goalY - e.y)}
+		}
 		return e.observation(), Info{
 			X: s[0], Y: s[1], Heading: 0,
 			GoalX: g[0], GoalY: g[1],
@@ -257,6 +306,7 @@ func (e *Env) Step(action int) (Observation, float64, bool, Info, error) {
 		return Observation{}, 0, false, Info{}, fmt.Errorf("nav2d: action %d out of [0, %d)", action, Actions)
 	}
 	e.collided = false
+	e.ruleChanged = 0
 	switch action {
 	case ActionForward:
 		fx, fy := forward(e.heading)
@@ -273,6 +323,11 @@ func (e *Env) Step(action int) (Observation, float64, bool, Info, error) {
 		e.heading = (e.heading + 270) % 360
 	}
 	e.steps++
+	if e.task == TaskAdaptAfterChange && e.steps == e.timeLimit/2 && !e.mapChanged {
+		e.redrawWalls(e.carrySeed)
+		e.ruleChanged = 1
+		e.mapChanged = true
+	}
 	reached := e.x == e.goalX && e.y == e.goalY
 	reward := -e.stepPenalty
 	if e.collided {
@@ -477,11 +532,14 @@ func right(heading int) (int, int) {
 // observation builds the current observation from the agent state. The view
 // cone is relative to the agent: for distance k the 2k-1 cells at lateral
 // offsets -(k-1)..(k-1), where a positive lateral offset is to the right of
-// the heading.
+// the heading. remember_goal and language_goal hide the goal cell in the view
+// (it reads as free), remember_goal emits its Cue on the first observation
+// only, and RuleChanged reflects the adapt_after_change redraw step.
 func (e *Env) observation() Observation {
 	view := make([]float64, e.viewDepth*e.viewDepth*3)
 	fx, fy := forward(e.heading)
 	rx, ry := right(e.heading)
+	hideGoal := e.task == TaskRememberGoal || e.task == TaskLanguageGoal
 	i := 0
 	for k := 1; k <= e.viewDepth; k++ {
 		for lat := -(k - 1); lat <= k-1; lat++ {
@@ -490,6 +548,9 @@ func (e *Env) observation() Observation {
 			callView := CellWall
 			if cx >= 0 && cy >= 0 && cx < e.width && cy < e.height {
 				callView = e.cells[cy][cx]
+				if hideGoal && callView == CellGoal {
+					callView = CellFree
+				}
 			}
 			view[i*3+callView] = 1
 			i++
@@ -497,11 +558,19 @@ func (e *Env) observation() Observation {
 	}
 	heading := [4]float64{}
 	heading[e.heading/90] = 1
+	var cue [2]float64
+	if e.task == TaskRememberGoal && !e.cueSeen {
+		cue = e.cue
+		e.cueSeen = true
+	}
 	return Observation{
-		View:     view,
-		Heading:  heading,
-		Collided: boolToFloat(e.collided),
-		Elapsed:  float64(e.steps) / float64(e.timeLimit),
+		View:        view,
+		Heading:     heading,
+		Collided:    boolToFloat(e.collided),
+		Elapsed:     float64(e.steps) / float64(e.timeLimit),
+		Token:       e.token,
+		RuleChanged: e.ruleChanged,
+		Cue:         cue,
 	}
 }
 
