@@ -26,7 +26,10 @@ import (
 //
 // The zero value is what a disabled individual reports.
 type ChemistryReport struct {
-	Steps          int                          `json:"steps"`
+	Steps int `json:"steps"`
+	// Frozen is true when the last advance ran with the state held by
+	// FreezeChemistry: nothing released and the concentration stayed put.
+	Frozen         bool                         `json:"frozen,omitempty"`
 	Concentration  [][]float64                  `json:"concentration,omitempty"`
 	Occupancy      []modulation.OccupancyRecord `json:"occupancy,omitempty"`
 	Assumed        int                          `json:"assumed"`
@@ -77,6 +80,11 @@ type chemicalRuntime struct {
 	// report describes the most recent successful advance. A refused advance
 	// commits nothing, so it leaves the previous report in place.
 	report ChemistryReport
+	// frozen holds the state constant: while it is set, advanceOne skips the
+	// sources and the kinetics step and runs occupancy and effects against the
+	// held concentration. It lives on the runtime only, so a snapshot never
+	// carries it and a restored individual is never frozen.
+	frozen bool
 }
 
 // newChemicalRuntime validates one declaration against a node count and builds
@@ -132,6 +140,15 @@ type chemicalRow struct {
 // the one it gets back until the whole advance has succeeded.
 func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint64, activity []float64, nodes int) (chemicalRow, error) {
 	var row chemicalRow
+	if r.frozen {
+		// A frozen row releases nothing, steps nothing and returns the state it
+		// was handed, bit for bit. Occupancy and effects still read the held
+		// concentration, so the core sees exactly the modulation of the frozen
+		// value. The pending feedback is untouched because no source reads it.
+		row.state = state
+		row.release = make([]float64, r.config.Chemistry.Channels)
+		return r.finishRow(&row, nodes)
+	}
 	if step > math.MaxInt64 {
 		return row, fmt.Errorf("step %d does not fit an int64 timestamp", step)
 	}
@@ -171,7 +188,14 @@ func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint6
 	if row.state, err = r.kinetics.Step(state, release, nil); err != nil {
 		return chemicalRow{}, err
 	}
+	return r.finishRow(&row, nodes)
+}
+
+// finishRow fills the occupancy, the per-receptor averages and the modulation
+// arrays of a row from its state: the tail the frozen and the live path share.
+func (r *chemicalRuntime) finishRow(row *chemicalRow, nodes int) (chemicalRow, error) {
 	receptors := r.config.Receptors
+	var err error
 	if row.occupancy, row.summary, err = receptors.Occupancies(row.state, r.config.Regions.NodeRegion); err != nil {
 		return chemicalRow{}, err
 	}
@@ -199,7 +223,7 @@ func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint6
 		Offset:    [][]float64{offset},
 		Threshold: [][]float64{threshold},
 	}
-	return row, nil
+	return *row, nil
 }
 
 // EnableChemistry turns the chemical layer on for this individual. The whole
@@ -240,6 +264,10 @@ func (i *Individual) EnableChemistry(c modulation.ChemistryConfig) error {
 // declared resources and the queued feedback, so the forward path returns bit
 // for bit to the one an individual that never enabled it produces. Base
 // parameters were never changed by it and are unaffected.
+//
+// The freeze flag lives on the runtime the layer keeps, so disabling the layer
+// clears it as well: a later EnableChemistry starts un-frozen whether or not
+// it was frozen before.
 func (i *Individual) DisableChemistry() error {
 	if i == nil || i.trainer == nil {
 		return fmt.Errorf("uninitialized individual")
@@ -256,6 +284,28 @@ func (i *Individual) DisableChemistry() error {
 		return fmt.Errorf("an expression gain still references a receptor; clear it before disabling chemistry")
 	}
 	i.chemical = nil
+	return nil
+}
+
+// FreezeChemistry holds the chemical state constant on every later row of
+// this individual: while frozen, advanceOne skips the source releases and the
+// kinetics step (the release row is all zeros, Concentration and Steps of the
+// state stay bit-identical, pending feedback stays pending) but still computes
+// occupancy and effects from the held state, so the modulation the core sees
+// is the one of the frozen concentration. The flag lives on the runtime only:
+// it is not part of the snapshot (a restored individual is never frozen) and
+// DisableChemistry clears it. Without an enabled chemistry it is an error
+// containing "chemistry".
+func (i *Individual) FreezeChemistry(frozen bool) error {
+	if i == nil || i.trainer == nil {
+		return fmt.Errorf("uninitialized individual")
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.chemical == nil {
+		return fmt.Errorf("chemistry is not enabled")
+	}
+	i.chemical.frozen = frozen
 	return nil
 }
 
@@ -317,6 +367,10 @@ func (i *Individual) SetResource(name string, value float64) error {
 // ChemistryReport returns what the most recent advance did to the chemical
 // layer, as an independent copy. A refused advance commits nothing and leaves
 // the previous report in place; a disabled individual returns the zero value.
+// Frozen reports the runtime flag: it reads it at call time, because the flag
+// is constant for the whole advance that runs under it and nothing leaks it
+// into the committed report. The flag is not in the snapshot, so a restored
+// individual always reports un-frozen.
 func (i *Individual) ChemistryReport() ChemistryReport {
 	if i == nil || i.trainer == nil {
 		return ChemistryReport{}
@@ -326,7 +380,9 @@ func (i *Individual) ChemistryReport() ChemistryReport {
 	if i.chemical == nil {
 		return ChemistryReport{}
 	}
-	return copyChemistryReport(i.chemical.report)
+	report := copyChemistryReport(i.chemical.report)
+	report.Frozen = i.chemical.frozen
+	return report
 }
 
 func copyChemistryReport(r ChemistryReport) ChemistryReport {
