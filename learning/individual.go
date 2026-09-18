@@ -142,6 +142,11 @@ type Individual struct {
 	// episodes counts the completed TrainEpisode calls since the last
 	// ResetOptimizer, the clock every consolidation write reads.
 	episodes uint64
+	// rowOverride is the per-row hook an Intervene call is running, nil while no
+	// call is active. It is set outside the individual lock and read inside the
+	// advance loop, so Intervene is not safe to call concurrently with other
+	// mutating methods on the same individual.
+	rowOverride rowOverride
 }
 
 // plasticRuntime is the enabled local mechanism of one individual: nil means
@@ -489,7 +494,7 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		stepwise stepwiseResult
 		report   PlasticReport
 	)
-	if i.plastic == nil && i.chemical == nil {
+	if i.plastic == nil && i.chemical == nil && i.rowOverride == nil {
 		if state, outputs, _, err = n.core.advance(ctx, core, i.neural, coreInputs); err != nil {
 			return nil, PlasticReport{}, err
 		}
@@ -656,6 +661,19 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 		next, values, spikes, err := n.core.advanceModulated(ctx, step, neural, [][]float64{row}, mod)
 		if err != nil {
 			return stepwiseResult{}, err
+		}
+		if i.rowOverride != nil {
+			// The row override lands between the core step and the plastic
+			// update, so a forced event and a forced trace are exactly what the
+			// plastic rule and the output row read. Row indexes the submitted
+			// input sequence of this call.
+			var events []float64
+			if spikes != nil {
+				events = spikes[0]
+			}
+			if err := i.rowOverride(uint64(t), next, values[0], events); err != nil {
+				return stepwiseResult{}, err
+			}
 		}
 		if i.plastic != nil {
 			rule := i.plastic.model.Config().Rule
