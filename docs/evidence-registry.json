@@ -1,0 +1,32 @@
+{
+  "schema_version": "coimnet-evidence-registry/v1",
+  "entries": [
+    {
+      "id": "S14",
+      "citation": "Ishimoto、Sakai、Kitamoto，2009。Ecdysone signaling regulates the formation of long-term courtship memory in adult Drosophila melanogaster。PNAS 原始實驗，DOI 10.1073/pnas.0810213106。來源：<https://pubmed.ncbi.nlm.nih.gov/19342482/>",
+      "original_claim": "成年果蠅的 20E 與長期求偶記憶相關，給藥時機影響記憶結局。",
+      "adopted_design": "ExternalTimeline 脈衝時機 + 受體驅動的 Consolidate 觸發，量測 slow 幅度與重測成績隨脈衝時機的曲線；協定名稱 ecdysone_inspired",
+      "not_claimed": "不是 20E 的定量模型、濃度越高不等於記憶越好、數值是工程數值",
+      "spec_sections": ["3.1", "11.7", "14.5"],
+      "protocols": ["ecdysone_inspired"]
+    },
+    {
+      "id": "S15",
+      "citation": "Krashes 等，2009。A neural circuit mechanism integrating motivational state with memory expression in Drosophila。Cell 原始實驗，DOI 10.1016/j.cell.2009.08.035。來源：<https://pubmed.ncbi.nlm.nih.gov/19837040/>",
+      "original_claim": "NPF／多巴胺迴路使內在狀態影響記憶表現，暫時不表現記憶不一定等同遺忘。",
+      "adopted_design": "SetExpressionGain 受體驅動的表現抑制與中性狀態下重評，三次評估間 Parameters、slow、plastic 逐位不變；協定名稱 npf_memory_expression_hypothesis",
+      "not_claimed": "不是 NPF／多巴胺迴路的定量模型；暫時不表現不等於遺忘",
+      "spec_sections": ["3.1", "11.7", "14.5"],
+      "protocols": ["npf_memory_expression_hypothesis"]
+    },
+    {
+      "id": "S20",
+      "citation": "Schulman 等，2017。Proximal Policy Optimization Algorithms。原始算法論文（查閱 arXiv）。來源：<https://arxiv.org/abs/1707.06347>",
+      "original_claim": "以行動回饋學習策略的強化學習演算法：用 GAE 估計優勢並以裁切代理目標更新。",
+      "adopted_design": "learning/rl 的 GAE、裁切代理目標、價值與熵項、burn-in、終止與時間上限分開、策略版本與初始狀態一致性檢查",
+      "not_claimed": "不宣稱與論文的實驗結果可比；只做小型 fixture 的可重現改善",
+      "spec_sections": ["3.1", "10.1", "10.5"],
+      "protocols": []
+    }
+  ]
+}
