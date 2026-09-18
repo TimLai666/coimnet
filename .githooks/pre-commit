@@ -1,0 +1,16 @@
+#!/bin/sh
+# CoImNet pre-commit hook template (STA-06).
+#
+# Install once, per clone; this file is not installed automatically:
+#
+#   git config core.hooksPath .githooks
+#
+# After that, every `git commit` runs scripts/scan-commit.sh against the staged
+# diff first. A violation aborts the commit; fix the reported file/line and
+# re-stage before committing again. Uninstall with:
+#
+#   git config --unset core.hooksPath
+#
+# Git executes hooks with the working directory at the top of the working
+# tree, so the scanner reads the repository it runs in.
+exec bash scripts/scan-commit.sh
