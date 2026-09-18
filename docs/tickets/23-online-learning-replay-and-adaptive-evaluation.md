@@ -10,7 +10,7 @@ User Story：使用者可以讓一個持續個體在運行中先作答、再收�
 Blocked by：18 局部可塑性、20 三分離與來源、21 化學狀態（重設政策要能重設它）、17 最佳化器（運行中
 梯度更新只動授權參數）
 
-Status：stage_one_done（第一階段已於 2026-09-16 實作並驗證，證據見「第一階段證據」；第二階段適應性評估未開始）
+Status：verified_scoped（兩階段皆已驗證，2026-09-17）
 
 對應需求：LRN-06（推論、回饋與更新分開；輸出不被後到教師回應回寫）、LRN-07（容量、取樣、刪除政策、
 狀態保留與不重播對照皆可查）、LRN-10（預先宣告可用回饋、適應／評分分割與狀態重設政策）。
@@ -95,7 +95,7 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 - [x] 第一階段：`Act → Receive → Update` 順序、偽造時間拒絕、輸出 hash 不變、`Evaluate` 模式拒絕更新、
   三種抽樣與兩種淘汰的手算（小容量、固定 seed）、測試資料拒絕、快照接續抽樣序列相同；
   `go test`、race、vet；`evidence/LRN-06/`、`evidence/LRN-07/`。
-- [ ] 第二階段：兩種模式、三種重設政策、污染檢查三項、打亂順序逐位相同、CLI `examples run evaluate`
+- [x] 第二階段：兩種模式、三種重設政策、污染檢查三項、打亂順序逐位相同、CLI `examples run evaluate`
   把模式寫進結果；`evidence/LRN-10/`；文件。
 
 ## 第一階段證據（2026-09-16）
@@ -164,6 +164,40 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 14. **尚未處理**：ticket 17 root 裁決 3 要求 ENG 的個體段落寫明「視窗中間存檔會遺失部分累積」這個限制。
     累積器補上後該限制已消失，但 `ENG.md` 本輪由 ticket 19 的執行者持有，這段文字需要由持有者更新；
     `docs/requirements-status.json` 與 `delivery-status.md` 同樣不在本輪範圍內。
+
+## 第二階段證據（2026-09-17）
+
+環境：macOS arm64、go1.26.5，全部為 fixture 規模，不用外部資料。
+驗證命令：
+- `go run ./cmd/coimnet examples run evaluate --mode fixed --reset neural,plastic,chemical --seed 1 --out evidence/LRN-10/evaluate-fixed.json`
+- `go run ./cmd/coimnet examples run evaluate --mode adaptive --reset neural,plastic,chemical --seed 1 --out evidence/LRN-10/evaluate-adaptive.json`
+- `go test -count=1 -race -v -run 'TestAdaptiveEvaluation|TestRunAdaptiveEvaluation|TestReplayRejection|TestShuffleInvariance|TestEvaluate' ./experiment/ ./internal/cli/ > evidence/LRN-10/test.log 2>&1`（14 項頂層測試與所有子測試全數通過）
+
+五張小票之實作、測試與證據路徑：
+
+1. **型別與驗證（`AdaptiveEvaluation.Validate`）**：
+   - 測試：`TestAdaptiveEvaluationValidate`（包含 7 條規則、17 個案例：合法 fixed/adaptive 宣告通過；非法模式、空 scoring 分割、fixed 帶 adaptation 分割、跨分割重複 ID、空 ID、非法 input 列、NaN/Inf、空 target、未宣告 allowed_feedback、scoring 帶 allowed_feedback、重複或空 feedback_available 等拒絕）。
+   - 證據路徑：`evidence/LRN-10/test.log`。
+2. **fixed 模式（`RunAdaptiveEvaluation`）**：
+   - 測試：`TestRunAdaptiveEvaluationFixedMode`（4 個子測試：basic_properties、deterministic、nil_individual、target_width_mismatch）、`TestRunAdaptiveEvaluationFixedModeUnchanged`。
+   - 證據路徑：`evidence/LRN-10/test.log`、`evidence/LRN-10/evaluate-fixed.json`。
+3. **adaptive 模式（`runAdaptiveEvaluation`）**：
+   - 測試：`TestRunAdaptiveEvaluationAdaptiveMode`（驗證基礎參數凍結、局部可塑狀態改變）、`TestRunAdaptiveEvaluationAdaptiveNeedsPlasticity`（驗證未開啟可塑性時拒絕）。
+   - 證據路徑：`evidence/LRN-10/test.log`、`evidence/LRN-10/evaluate-adaptive.json`。
+4. **污染檢查（`ContaminationChecks`）**：
+   - 測試：`TestReplayRejectionCountRefusesEveryScoringItem`（8 題評分分割資料送入 replay store 作為 test split 均遭拒絕）、`TestShuffleInvarianceHoldsWithFullReset`（全重設下順序打亂輸出逐位相同）、`TestShuffleInvarianceFailsWithoutNeuralReset`（未重設神經狀態時鑑別出 false）、`TestRunAdaptiveEvaluationFillsContaminationChecks`（full_reset 與 partial_reset）。
+   - 證據路徑：`evidence/LRN-10/test.log`。
+5. **CLI 與 fixture（`examples run evaluate`）**：
+   - 測試：`TestEvaluateFixedWritesReport`、`TestEvaluateAdaptiveWritesReport`、`TestEvaluateRejectsUnknownMode`、`TestEvaluateRefusesExistingOut`、`TestEvaluateHelp`。
+   - 證據路徑：`evidence/LRN-10/test.log`、`evidence/LRN-10/evaluate-fixed.json`、`evidence/LRN-10/evaluate-adaptive.json`。
+
+Limitations：
+- 只在 macOS arm64 fixture 跑過。
+- 梯度型適應被政策關閉。
+- 沒有真實任務資料。
+- 重播拒絕來自 replay 套件對 test 分割的固定規則。
+- 教師來源未接（ticket 27 第三階段）。
+- 全重設政策（`--reset neural,plastic,chemical`）下兩份報告的八題 MSE 逐位相同：適應分割學到的快速變化在每題前被清掉；可塑狀態確實改變由 `TestRunAdaptiveEvaluationAdaptiveMode` 證明，成績差異要用不重設 plastic 的政策才看得到，本紀錄沒有跑。
 
 ## 依據
 

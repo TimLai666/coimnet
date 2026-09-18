@@ -38,6 +38,8 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 平台矩陣與治理（ticket 30 第一階段、OPS-04、GOV-01、GOV-04、GOV-05、GOV-06）已驗證：`scripts/platform-matrix.sh` 對 linux/amd64、linux/arm64、darwin/arm64、windows/amd64 交叉編譯並 vet，只有本機 darwin/arm64 真正執行過 unit、race、vet 與 mod verify，JSON 裡 compiled 與 executed 分開標記；`dynamics.Config.Workers` 的並行分區在連續與 LIF 核心都與單執行緒逐位相同（前向與梯度），每步配置量不隨步數增加；治理測試檢查需求 id 集合、狀態值、passed 必有證據、Root 決策有日期；README 能力表四欄與科學界線、授權盤點（182 個模組、68 個未知）與 `blocked_permission` 的發布清單、`docs/INDEX.md` 的 39 個相對連結都經指令核對。證據見 [OPS-04](evidence/OPS-04/verification.json)、[GOV-01](evidence/GOV-01/verification.json)、[GOV-04](evidence/GOV-04/verification.json)、[GOV-05](evidence/GOV-05/verification.json)、[GOV-06](evidence/GOV-06/verification.json)。
 
+適應性評估（ticket 23 第二階段、LRN-10）已在 fixture 驗證：評估協定預先宣告可用回饋、適應與評分分割、題間重設政策；fixed 模式只推論，adaptive 模式在適應分割允許宣告的局部更新但基礎參數凍結；三項污染檢查（參數逐位不變、評分分割拒絕回饋、評分題目送進重播庫全部被拒）與打亂順序逐位相同都寫進報告，CLI `examples run evaluate` 把模式寫進結果檔。全重設政策下兩種模式的成績相同，差異要用不重設可塑狀態的政策才看得到，本次沒有跑。證據見 [LRN-10](evidence/LRN-10/verification.json)。
+
 ## 階段目標
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
@@ -77,7 +79,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 20 | 研究者可以把觀察、目標與事後回饋分開，並選擇調節訊號的來源 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | `AvailableFeedback`、四種來源手算、獎懲映射四值分開、靜態 import 檢查腳本與 NaN 汙染測試；SIG-03、MOD-01、MOD-08 passed；控制器來源只保留名字（MOD-07） |
 | 21 | 研究者可以運行有時間衰退的化學濃度、設定選擇性受體，並調節當下敏感度與有效閾值 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 濃度穩態／清除／中性／非負／傳輸手算、佔用率極端值無 NaN、三種受體狀態分離、效果中性逐位、`AdvanceModulated(nil)` 逐位等於 `Advance`；個體每步順序在連續與 LIF 各有手算表、100 步 `Parameters` 逐位不變、中途快照接續逐位相同、`modulation` 不再依賴 `simulate`；MOD-02、MOD-03、MOD-04 passed；來源對所有區域一致、只有 fixture |
 | 22 | 研究者可以讓化學狀態調節局部學習與記憶表現、施加具名干預、訓練小型控制器並和簡單替代模型對照 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一階段驗證通過：受體驅動的閘門與時間窗（閘門關只衰退、脈衝開閘、`decay_e` 隨佔用率變化、明確閘門與受體閘門不得並用）、讀出增益只動讀出且清除後逐位恢復（不是遺忘）、穩定化寫入 `slow` 有觸發／去重／預算、三層 L2 分開；MOD-05、MOD-06 passed；第二階段（干預，COR-11）小票進行中；第三階段（控制器與對照）待派工 |
-| 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）切成小票派給 opencode 進行中 |
+| 23 | 使用者可以在運行中依新經驗學習、使用受限容量的重播，並做適應性評估 | 主 agent 指揮 / Opus 5 實作 | verified_scoped | 第一階段驗證通過：`Act → Receive → Update` 順序、輸出 hash 不回寫、`Evaluate` 拒絕、重播 fifo／reservoir／三種抽樣手算與快照接續；LRN-06、LRN-07 passed；第二階段（適應性評估）切成小票派給 opencode 進行中；第二階段驗證通過：fixed／adaptive 兩種模式、三種重設政策、污染檢查三項（基礎參數不變、評分分割拒絕回饋、重播拒絕 8／8）、打亂順序逐位相同、CLI 把模式寫進結果；LRN-10 passed（全重設政策下兩種模式成績相同，差異未展示） |
 | 24 | 使用者可以用嚴格展開的組態、啟動前的資源預估、完整 CLI 與 SDK，並安全遷移格式與保護敏感資料 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`coimnet-config/v1` 嚴格解碼、四層來源追蹤、金鑰只存參照、名稱註冊表拒絕未實作；資源預估兩個規格算術釘住、超限拒絕不縮減、全圖預估 0.96 GiB 與 NAT-01 實測 RSS 並列；`run --config --dry-run` 零副作用、退出碼 0／2／1；OPS-03、OPS-06 passed；第二、三階段待派工 |
 | 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 | 27 | 使用者可以用離線與 HTTP 教師蒸餾學生，並在完全移除教師的情況下評估它 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一階段驗證通過：統一教師契約、JSONL 紀錄檔與測試輸入分離、離線／重播教師零網路（換掉 transport 仍通過）、HTTP 教師的逾時／重試／4xx／限速／預算／去重／允許清單／金鑰只在 header 全在本機 httptest 驗證、封鎖教師計數；TCH-01、TCH-02 passed；真實遠端未驗證；第二階段（蒸餾）與第三階段（移除教師評估、工具安全）待派工 |

@@ -1,0 +1,33 @@
+{
+  "requirement": "LRN-10：研究者可以進行不污染保留資料的適應性評估。驗收：預先宣告可用回饋、適應／評分分割與狀態重設政策。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "go run ./cmd/coimnet examples run evaluate --mode fixed --reset neural,plastic,chemical --seed 1 --out evidence/LRN-10/evaluate-fixed.json",
+    "go run ./cmd/coimnet examples run evaluate --mode adaptive --reset neural,plastic,chemical --seed 1 --out evidence/LRN-10/evaluate-adaptive.json",
+    "go test -count=1 -race -v -run 'TestAdaptiveEvaluation|TestRunAdaptiveEvaluation|TestReplayRejection|TestShuffleInvariance|TestEvaluate' ./experiment/ ./internal/cli/ > evidence/LRN-10/test.log 2>&1"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    " 5:05  up 11 days, 10:43, 1 user, load averages: 1.66 1.69 1.52"
+  ],
+  "input_fingerprints": [
+    "evidence/LRN-10/evaluate-fixed.json SHA-256: ccfca14c26945d3ede12a719cfcbe382b0cedab1d66b23620f42991395b9277f",
+    "evidence/LRN-10/evaluate-adaptive.json SHA-256: 67e5ced7c9ba09f09e4985c2f34b5415e275283deb41a6095c2bf30e49dbf408"
+  ],
+  "observed_result": "適應性評估協定、污染防護與 CLI 驗收完成：\n1. 宣告驗證（TestAdaptiveEvaluationValidate 涵蓋 7 條規則與 17 個測試案例）：(1) 模式僅限 fixed 或 adaptive；(2) scoring 分割不得為空；(3) fixed 模式下 adaptation 分割必須為空；(4) 題目 ID 不得為空且跨分割不得重複；(5) feedback_available 不得為空字串且不得重複；(6) item 輸入至少一列且同寬、不含 NaN/Inf，目標非空且無 NaN/Inf，adaptation 宣告之 allowed_feedback 必須在 feedback_available 內；(7) scoring 題目的 allowed_feedback 必須為空。\n2. fixed 模式參數不變：evaluate-fixed.json 的 contamination_checks.parameters_unchanged 為 true；TestRunAdaptiveEvaluationFixedMode 與 TestRunAdaptiveEvaluationFixedModeUnchanged 驗證參數不變且兩次執行成績逐位一致。\n3. adaptive 模式基礎參數不變但可塑狀態改變：TestRunAdaptiveEvaluationAdaptiveMode 驗證在未重設可塑性時，適應步驟後 ParametersUnchanged 為 true（reflect.DeepEqual 為 true），而 Plastic.State.Plastic 狀態改變；TestRunAdaptiveEvaluationAdaptiveNeedsPlasticity 驗證未開啟可塑性時拒絕執行。\n4. 評分分割拒絕回饋：evaluate-fixed.json 與 evaluate-adaptive.json 的 contamination_checks.scoring_feedback_rejected 均為 0，宣告驗證與 runner 保證評分分割不接受回饋。\n5. 重播拒絕：TestReplayRejectionCountRefusesEveryScoringItem 與兩份報告的 contamination_checks.replay_rejected 均為 8（等於 scoring 題數），確認評分資料作為 test split 經驗全部被 replay store 拒絕。\n6. 打亂順序不變：兩份報告的 contamination_checks.shuffle_invariant 均為 true；TestShuffleInvarianceHoldsWithFullReset 驗證在全重設（neural, plastic, chemical）下輸出逐位相同；TestShuffleInvarianceFailsWithoutNeuralReset 驗證當未重設神經狀態時 shuffle_invariant 為 false，證明該檢查具備鑑別力；TestRunAdaptiveEvaluationFillsContaminationChecks 驗證部分重設時 shuffle_invariant 欄位為 nil。\n7. CLI 結果輸出：CLI 將模式寫入 JSON 結果的 mode 欄位（evaluate-fixed.json 的 mode 為 \"fixed\"，evaluate-adaptive.json 的 mode 為 \"adaptive\"），TestEvaluateFixedWritesReport 與 TestEvaluateAdaptiveWritesReport 驗證 stdout 摘要與 JSON 內容。\n\n兩份報告中每題評分分割的 MSE 紀錄如下：\n- evaluate-fixed.json（mode: fixed，8 題）：\n  score-0: 0.1297838218338978\n  score-1: 0.010601573341998956\n  score-2: 0.1307168020243242\n  score-3: 0.005840721383351538\n  score-4: 0.0034513503914716075\n  score-5: 0.005158226134676597\n  score-6: 0.056915620155378516\n  score-7: 0.18098899588263828\n- evaluate-adaptive.json（mode: adaptive，8 題）：\n  score-0: 0.1297838218338978\n  score-1: 0.010601573341998956\n  score-2: 0.1307168020243242\n  score-3: 0.005840721383351538\n  score-4: 0.0034513503914716075\n  score-5: 0.005158226134676597\n  score-6: 0.056915620155378516\n  score-7: 0.18098899588263828\n兩份報告的八題 MSE 逐位相同：--reset neural,plastic,chemical 在每題前重設可塑狀態，適應分割學到的快速變化在評分前已被清掉，所以 adaptive 與 fixed 的成績在這個政策下必然相同；adaptive 模式確實改變可塑狀態由 TestRunAdaptiveEvaluationAdaptiveMode 證明，要看到成績差異需要 --reset neural 或 neural,chemical（不重設 plastic），本紀錄沒有跑。",
+  "assumption_statement": "fixture 為 2 節點連續核心加一條可塑邊的人工延遲任務，回饋種類只有 score；教師來源未接（ticket 27 第三階段）。",
+  "test_log": [
+    "evidence/LRN-10/test.log"
+  ],
+  "reports": [
+    "evidence/LRN-10/evaluate-fixed.json",
+    "evidence/LRN-10/evaluate-adaptive.json"
+  ],
+  "limitations": [
+    "只在 macOS arm64 fixture 跑過。",
+    "梯度型適應被政策關閉。",
+    "沒有真實任務資料。",
+    "重播拒絕來自 replay 套件對 test 分割的固定規則。",
+    "全重設政策下 adaptive 與 fixed 的評分成績相同，成績差異未在本紀錄展示。"
+  ]
+}
