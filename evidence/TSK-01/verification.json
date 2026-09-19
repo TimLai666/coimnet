@@ -1,0 +1,39 @@
+{
+  "requirement": "TSK-01 使用者可以訓練、推論與評估 OCR 文字序列。驗收：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./tasks/ocr/... > evidence/TSK-01/test.log 2>&1",
+    "cd /Users/timlai/Developer/coimnet && rm -f evidence/TSK-01/ocr-fixture.json && go run ./cmd/coimnet examples run ocr --out evidence/TSK-01/ocr-fixture.json"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 與 ocr-fixture.json 錄製當下原文）： 1:40  up 14 days,  7:19, 1 user, load averages: 2.34 3.07 3.42",
+    "同一台機器上另有工作進行中（load average 2.3～3.4），test.log 的每項耗時只能視為上限，不作為效能量測。",
+    "test.log 首行為 Insyra banner：2026/09/20 01:40:41 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（tasks/ocr 透過 learning／signal 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "無外部資料：全部影像由 tasks/ocr/glyphs 以程式生成的 8×8 偽字形繪出，不夾帶字型檔、不讀取掃描件。",
+    "fixture 組態指紋（evidence/TSK-01/ocr-fixture.json 的 config_hash，內容為 FixtureConfig 的 JSON sha256）：d97aae00641e1c52ea01c34c3f4c261e3f33e84723589de8fb8621fef8ae83d8",
+    "報告檔指紋：sha256(evidence/TSK-01/ocr-fixture.json) = 61259e11bf364734f5166ea15cdb4e1a27d76abc25e50a0d05363f02a251dd5e",
+    "固定組態：seeds {1,2,3}、alphabet {a,b,c}、train_samples 40、test_samples 15、min_len 1、max_len 3、epochs 3、hidden 24、learning_rate 0.05、train_family 1、test_family 2、background 0.1、noise 0.05",
+    "受測原始碼：tasks/ocr/{ctc/ctc.go, ctc/decode.go, glyphs/glyphs.go, glyphs/render.go, metrics.go, page.go, recognizer.go, fixture.go} 與 internal/cli/{ocr.go, run.go}"
+  ],
+  "observed_result": "tasks/ocr、tasks/ocr/ctc、tasks/ocr/glyphs 三個套件共 32 個測試在 race 偵測下全數 PASS（evidence/TSK-01/test.log，grep -c \"^--- PASS\" = 32、\"^--- FAIL\" = 0）。(1) CTC 路徑枚舉與有限差分：TestLossMatchesPathEnumeration 在 3 類別（2 字母 + blank）、T=4 的 fixture logits 上枚舉全部 C^T 條路徑求和，三個目標 [1,2]、[1,1]、[2] 的 -log(p) 與 ctc.Loss 的差都小於 1e-12；TestGradientMatchesFiniteDifference 對每個 (t,k) 以 h=1e-6 中央差分比對梯度，相對誤差門檻 1e-6 全數通過。邊界：TestRepeatedCharactersNeedABlank 證明 T=2 的目標 [1,1] 回 ErrNoValidPath（重複字需要中間 blank），T=3 才有有限損失；TestEmptyTargetIsAllBlanks、TestImpossibleTargetsAreRefusedUnlessZeroOnImpossible（不合法對齊預設拒絕，ZeroOnImpossible 必須顯式開啟且計數）、TestRejectsBadInputs 六個子案例（zero frames／single class／ragged rows／NaN／blank in target／label out of range）、TestDecodeCollapses 全部 PASS。(2) CER／WER 手算：TestCERHandCases 五個子案例逐欄比對——kitten→sitting 得 S=2 D=0 I=1、參考 6 字、rate 0.5；Unicode 案例 台灣→臺灣 得 S=1、參考 2 字（rune 層級，非 byte）、rate 0.5；identical rate 0；空假設 abc→\"\" 得 D=3、rate 1；空參考 \"\"→xy 得 I=2、reference_length 0、rate 0 且 defined=false（回報 undefined 而不是除以零）。TestWERHandCases 三個子案例（插入一詞 1/3、刪除一詞 0.5、前後與中間多餘空白不改變計數）與 TestEditReportRateIsConsistent 亦 PASS。(3) 字形族與未見組合：TestFamiliesDiffer 證明 family 1 與 family 2 在 \"台灣AZaz09\" 八個 rune 上至少 7 個字形不同（訓練／測試字形母本不跨洩漏）；TestGlyphIsDeterministicAndBounded、TestRenderGeometry（\"台灣\" 繪成 17×8，字框 {0,8} 與 {9,17}，中間第 8 欄為純背景）、TestRenderOptionsRanges、TestRenderNoiseIsDeterministicAndClamped、TestGenerateIsDeterministic、TestUnseenCombinations（seen=[\"ab\"]、candidates=[\"ab\",\"ba\"] 只留下 \"ba\"）全部 PASS。(4) 頁面切行：TestSegmentLinesFindsStackedLines 把 \"台灣\" 與 \"AB\" 兩張 17×8 影像以 3 列背景間隔堆疊，投影法切出 2 個 Block，ReadingOrder 為 0、1，Y 範圍分別是 0..8 與 11..19，每條有墨的欄都落在 Block 的 X 範圍內，且 Crop(page, block) 的像素與原行裁掉純背景邊欄後逐位相同；TestSegmentLinesIgnoresNoiseBelowThreshold（noise 0.3 之下仍只切出同樣兩行）、TestSegmentLinesEmpty、TestStackPadsAndGaps、TestCropRoundTrip 亦 PASS。(5) 辨識器單行流程 CER 前後：TestRecognizerTrainingLowersCER 的 t.Logf 記錄保留集 CER 由訓練前 1.2941（44 edits / 34 chars）降到訓練後 0.7353（25 edits / 34 chars），完全正確行比例由 0.0000 升到 0.1500（test.log recognizer_test.go:160、:163）；TestRecognizerColumnsShape、TestRecognizerImpossibleIsCountedNotFatal、TestRecognizerRejects、TestRecognizerIsDeterministic 亦 PASS。(6) fixture 三個 seed（evidence/TSK-01/ocr-fixture.json，seeds 1/2/3 的 failed 皆為 false、impossible 皆為 0，每個 seed 都在 15 筆保留行上評分）：seed 1 保留集 CER before 0.7200 → after 0.6400，未見組合 2 行 CER 0.8333；seed 2 before 1.2069（訓練前大量插入：I=32、參考 29 字，所以比率大於 1）→ after 0.6207，未見組合 5 行 CER 0.7143；seed 3 before 0.8461 → after 0.7308，未見組合 2 行 CER 0.6667。三個 seed 平均 0.9244 → 0.6638，與 CLI 摘要行 \"ocr: 3 seeds, held-out CER 0.9244 -> 0.6638, core disconnect true\" 一致。訓練後三個 seed 的插入數都是 0、刪除數為 10／14／11，表示此預算下解碼偏向輸出較短的字串，改善主要來自不再亂插字元。core_disconnect：output_changed=true、max_abs_delta=4.909948945045471（把核心權重全部設為 0 後同一張影像的 logits 必然改變，輸出沒有繞過核心），與 test.log 的 TestCoreDisconnectChangesOutput（fixture_test.go:115）數值相同。(7) 報告的 data_scope 五欄逐字為：data=\"synthetic 8x8 pseudo-glyphs rendered per (family, rune); no real fonts, no scanned documents\"、language=\"an alphabet of 3 runes with no natural-language statistics\"、resolution=\"8 rows by 9*len-1 columns, grayscale in [0,1]\"、sequence_length=\"1..3 glyphs per line\"、periphery=\"identity encoder, linear per-column readout, greedy CTC decoding\"。(8) CLI 入口（不在 test.log 內，另以 go test -count=1 -race -run 'TestExamples.*OCR|TestOCR' ./internal/cli/ 驗證，三個測試全數 PASS）：TestExamplesRunOCRWritesReport 檢查 --out 寫出的 JSON 為 schema_version \"coimnet-ocr-fixture/v1\"、3 個 seed 均未 failed 且保留集樣本數非 0、core_disconnect.output_changed=true、data_scope.language 含 \"3 runes\"，並以正規式比對摘要行格式；TestExamplesRunOCRRejects 檢查既有 --out、多餘位置參數、--out 上層目錄不存在三種情況都回 exit code 1，且 --help 回 0 並印出 \"Usage: coimnet examples run ocr\"；TestExamplesListIncludesOCR 檢查 examples list 有 name=ocr、profile=fixture 的登錄。go run ./cmd/coimnet examples list | grep -c '\"ocr\"' = 1；gofmt -l internal/cli 無輸出、go vet ./internal/cli/ 無輸出；internal/cli 全套測試在 race 下 ok（27.656s）。",
+  "assumption_statement": "報告自帶的兩句假設（OCRReport.assumptions 原文）：\"Scores prove that the pipeline trains and decodes on fixtures; they are not an OCR capability claim.\"、\"Train and test glyph families differ, so shapes never leak; the alphabet is shared.\"",
+  "test_log": [
+    "evidence/TSK-01/test.log"
+  ],
+  "reports": [
+    "evidence/TSK-01/ocr-fixture.json"
+  ],
+  "limitations": [
+    "程式生成的偽字形不是真字型也不是掃描件：所有影像由 glyphs.Family 以 seed 產生的 8×8 點陣圖繪出，不含任何字型檔、排版引擎或真實文件影像。",
+    "只驗到單行、單欄、水平文字：SegmentLines 是規則式投影法，對多欄、傾斜、旋轉或混排版面沒有任何證據，套件註解也明寫不宣稱任意版面。",
+    "fixture 字母表只有 3 個字元（a、b、c），每行 1..3 個字形：Unicode 與重複字的正確性由 tasks/ocr 的手算測試（台灣／臺灣、CTC 重複字需 blank）涵蓋，但 fixture 的 CER 數字本身沒有中文、大小寫或長行的證據。",
+    "真實授權資料 blocked_data：TSK-11 要求的真實資料匯入、訓練、推論、評估四項尚未執行，需要使用者提供有授權欄位的 OCR 資料集；在此之前本證據只能支持 fixture 範圍。",
+    "頁面區塊送進辨識器的流程只到切行為止：SegmentLines／Crop 產出 Block{Bounds, ReadingOrder}，Block.Text 由呼叫端填入，本票沒有把整頁區塊批次餵進辨識器再回填文字的端到端測試。",
+    "fixture 訓練預算很小（3 個 epoch、40 行）：訓練後保留集 CER 仍在 0.62～0.73，只證明流程會學習與下降，不是辨識品質的宣稱；未見組合的樣本數只有 2～5 行，該欄數字的統計意義極低。",
+    "只跑過一次，單一平台：macOS arm64（darwin/arm64、go1.26.5），沒有跨平台或重複執行的變異數證據；固定 seed 的重現性由 TestRunOCRFixtureIsDeterministic 與 TestRecognizerIsDeterministic 在同一平台上證明。"
+  ]
+}

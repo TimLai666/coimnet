@@ -1,0 +1,114 @@
+2026/09/20 01:40:41 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestRunOCRFixtureReportsScopeAndScores
+    fixture_test.go:57: seed 1: held-out CER before 0.7200, after 0.6400; exact lines before 0.0667, after 0.2667
+    fixture_test.go:59: seed 1: unseen samples 2, unseen CER 0.8333 (defined true); impossible targets 0
+    fixture_test.go:57: seed 2: held-out CER before 1.2069, after 0.6207; exact lines before 0.4000, after 0.2667
+    fixture_test.go:59: seed 2: unseen samples 5, unseen CER 0.7143 (defined true); impossible targets 0
+--- PASS: TestRunOCRFixtureReportsScopeAndScores (0.94s)
+=== RUN   TestCoreDisconnectChangesOutput
+    fixture_test.go:115: core disconnect: output changed true, max absolute delta 4.909948945045471
+--- PASS: TestCoreDisconnectChangesOutput (0.91s)
+=== RUN   TestRunOCRFixtureValidateRejects
+--- PASS: TestRunOCRFixtureValidateRejects (0.00s)
+=== RUN   TestRunOCRFixtureIsDeterministic
+--- PASS: TestRunOCRFixtureIsDeterministic (1.88s)
+=== RUN   TestRunOCRFixtureHonoursCancellation
+--- PASS: TestRunOCRFixtureHonoursCancellation (0.00s)
+=== RUN   TestCERHandCases
+=== RUN   TestCERHandCases/kitten_vs_sitting
+=== RUN   TestCERHandCases/traditional_vs_simplified_pair
+=== RUN   TestCERHandCases/identical
+=== RUN   TestCERHandCases/empty_hypothesis
+=== RUN   TestCERHandCases/empty_reference
+--- PASS: TestCERHandCases (0.00s)
+    --- PASS: TestCERHandCases/kitten_vs_sitting (0.00s)
+    --- PASS: TestCERHandCases/traditional_vs_simplified_pair (0.00s)
+    --- PASS: TestCERHandCases/identical (0.00s)
+    --- PASS: TestCERHandCases/empty_hypothesis (0.00s)
+    --- PASS: TestCERHandCases/empty_reference (0.00s)
+=== RUN   TestWERHandCases
+=== RUN   TestWERHandCases/one_inserted_word
+=== RUN   TestWERHandCases/one_deleted_word
+=== RUN   TestWERHandCases/leading_trailing_extra_whitespace
+--- PASS: TestWERHandCases (0.00s)
+    --- PASS: TestWERHandCases/one_inserted_word (0.00s)
+    --- PASS: TestWERHandCases/one_deleted_word (0.00s)
+    --- PASS: TestWERHandCases/leading_trailing_extra_whitespace (0.00s)
+=== RUN   TestEditReportRateIsConsistent
+--- PASS: TestEditReportRateIsConsistent (0.00s)
+=== RUN   TestSegmentLinesFindsStackedLines
+--- PASS: TestSegmentLinesFindsStackedLines (0.00s)
+=== RUN   TestSegmentLinesIgnoresNoiseBelowThreshold
+--- PASS: TestSegmentLinesIgnoresNoiseBelowThreshold (0.00s)
+=== RUN   TestSegmentLinesEmpty
+--- PASS: TestSegmentLinesEmpty (0.00s)
+=== RUN   TestStackPadsAndGaps
+--- PASS: TestStackPadsAndGaps (0.00s)
+=== RUN   TestCropRoundTrip
+--- PASS: TestCropRoundTrip (0.00s)
+=== RUN   TestRecognizerColumnsShape
+--- PASS: TestRecognizerColumnsShape (0.00s)
+=== RUN   TestRecognizerTrainingLowersCER
+    recognizer_test.go:160: held-out CER before 1.2941 (44 edits / 34 chars), after 0.7353 (25 edits / 34 chars)
+    recognizer_test.go:163: exact lines before 0.0000, after 0.1500
+--- PASS: TestRecognizerTrainingLowersCER (0.76s)
+=== RUN   TestRecognizerImpossibleIsCountedNotFatal
+--- PASS: TestRecognizerImpossibleIsCountedNotFatal (0.00s)
+=== RUN   TestRecognizerRejects
+--- PASS: TestRecognizerRejects (0.00s)
+=== RUN   TestRecognizerIsDeterministic
+--- PASS: TestRecognizerIsDeterministic (0.09s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/ocr	6.062s
+=== RUN   TestLossMatchesPathEnumeration
+=== RUN   TestLossMatchesPathEnumeration/hi_two_distinct
+=== RUN   TestLossMatchesPathEnumeration/repeated_needs_blank
+=== RUN   TestLossMatchesPathEnumeration/single_label
+--- PASS: TestLossMatchesPathEnumeration (0.00s)
+    --- PASS: TestLossMatchesPathEnumeration/hi_two_distinct (0.00s)
+    --- PASS: TestLossMatchesPathEnumeration/repeated_needs_blank (0.00s)
+    --- PASS: TestLossMatchesPathEnumeration/single_label (0.00s)
+=== RUN   TestGradientMatchesFiniteDifference
+--- PASS: TestGradientMatchesFiniteDifference (0.00s)
+=== RUN   TestRepeatedCharactersNeedABlank
+--- PASS: TestRepeatedCharactersNeedABlank (0.00s)
+=== RUN   TestEmptyTargetIsAllBlanks
+--- PASS: TestEmptyTargetIsAllBlanks (0.00s)
+=== RUN   TestImpossibleTargetsAreRefusedUnlessZeroOnImpossible
+--- PASS: TestImpossibleTargetsAreRefusedUnlessZeroOnImpossible (0.00s)
+=== RUN   TestRejectsBadInputs
+=== RUN   TestRejectsBadInputs/zero_frames
+=== RUN   TestRejectsBadInputs/single_class
+=== RUN   TestRejectsBadInputs/ragged_rows
+=== RUN   TestRejectsBadInputs/nan
+=== RUN   TestRejectsBadInputs/blank_in_target
+=== RUN   TestRejectsBadInputs/label_out_of_range
+--- PASS: TestRejectsBadInputs (0.00s)
+    --- PASS: TestRejectsBadInputs/zero_frames (0.00s)
+    --- PASS: TestRejectsBadInputs/single_class (0.00s)
+    --- PASS: TestRejectsBadInputs/ragged_rows (0.00s)
+    --- PASS: TestRejectsBadInputs/nan (0.00s)
+    --- PASS: TestRejectsBadInputs/blank_in_target (0.00s)
+    --- PASS: TestRejectsBadInputs/label_out_of_range (0.00s)
+=== RUN   TestDecodeCollapses
+--- PASS: TestDecodeCollapses (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	1.628s
+=== RUN   TestGlyphIsDeterministicAndBounded
+--- PASS: TestGlyphIsDeterministicAndBounded (0.00s)
+=== RUN   TestFamiliesDiffer
+--- PASS: TestFamiliesDiffer (0.00s)
+=== RUN   TestRenderGeometry
+--- PASS: TestRenderGeometry (0.00s)
+=== RUN   TestRenderOptionsRanges
+--- PASS: TestRenderOptionsRanges (0.00s)
+=== RUN   TestRenderNoiseIsDeterministicAndClamped
+--- PASS: TestRenderNoiseIsDeterministicAndClamped (0.00s)
+=== RUN   TestGenerateIsDeterministic
+--- PASS: TestGenerateIsDeterministic (0.00s)
+=== RUN   TestUnseenCombinations
+--- PASS: TestUnseenCombinations (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	1.756s

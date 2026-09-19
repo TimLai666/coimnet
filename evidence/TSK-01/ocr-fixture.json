@@ -1,0 +1,167 @@
+{
+  "schema_version": "coimnet-ocr-fixture/v1",
+  "config": {
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "alphabet": [
+      97,
+      98,
+      99
+    ],
+    "train_samples": 40,
+    "test_samples": 15,
+    "min_len": 1,
+    "max_len": 3,
+    "epochs": 3,
+    "hidden": 24,
+    "learning_rate": 0.05,
+    "train_family": 1,
+    "test_family": 2,
+    "background": 0.1,
+    "noise": 0.05
+  },
+  "config_hash": "d97aae00641e1c52ea01c34c3f4c261e3f33e84723589de8fb8621fef8ae83d8",
+  "data_scope": {
+    "data": "synthetic 8x8 pseudo-glyphs rendered per (family, rune); no real fonts, no scanned documents",
+    "language": "an alphabet of 3 runes with no natural-language statistics",
+    "resolution": "8 rows by 9*len-1 columns, grayscale in [0,1]",
+    "sequence_length": "1..3 glyphs per line",
+    "periphery": "identity encoder, linear per-column readout, greedy CTC decoding"
+  },
+  "seeds": [
+    {
+      "seed": 1,
+      "before": {
+        "cer": {
+          "substitutions": 9,
+          "deletions": 4,
+          "insertions": 5,
+          "reference_length": 25,
+          "rate": 0.72,
+          "defined": true
+        },
+        "exact_lines": 0.06666666666666667,
+        "samples": 15
+      },
+      "after": {
+        "cer": {
+          "substitutions": 6,
+          "deletions": 10,
+          "insertions": 0,
+          "reference_length": 25,
+          "rate": 0.64,
+          "defined": true
+        },
+        "exact_lines": 0.26666666666666666,
+        "samples": 15
+      },
+      "unseen_after": {
+        "cer": {
+          "substitutions": 1,
+          "deletions": 4,
+          "insertions": 0,
+          "reference_length": 6,
+          "rate": 0.8333333333333334,
+          "defined": true
+        },
+        "exact_lines": 0,
+        "samples": 2
+      },
+      "impossible": 0,
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "before": {
+        "cer": {
+          "substitutions": 2,
+          "deletions": 1,
+          "insertions": 32,
+          "reference_length": 29,
+          "rate": 1.206896551724138,
+          "defined": true
+        },
+        "exact_lines": 0.4,
+        "samples": 15
+      },
+      "after": {
+        "cer": {
+          "substitutions": 4,
+          "deletions": 14,
+          "insertions": 0,
+          "reference_length": 29,
+          "rate": 0.6206896551724138,
+          "defined": true
+        },
+        "exact_lines": 0.26666666666666666,
+        "samples": 15
+      },
+      "unseen_after": {
+        "cer": {
+          "substitutions": 1,
+          "deletions": 9,
+          "insertions": 0,
+          "reference_length": 14,
+          "rate": 0.7142857142857143,
+          "defined": true
+        },
+        "exact_lines": 0,
+        "samples": 5
+      },
+      "impossible": 0,
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "before": {
+        "cer": {
+          "substitutions": 10,
+          "deletions": 3,
+          "insertions": 9,
+          "reference_length": 26,
+          "rate": 0.8461538461538461,
+          "defined": true
+        },
+        "exact_lines": 0,
+        "samples": 15
+      },
+      "after": {
+        "cer": {
+          "substitutions": 8,
+          "deletions": 11,
+          "insertions": 0,
+          "reference_length": 26,
+          "rate": 0.7307692307692307,
+          "defined": true
+        },
+        "exact_lines": 0.26666666666666666,
+        "samples": 15
+      },
+      "unseen_after": {
+        "cer": {
+          "substitutions": 0,
+          "deletions": 4,
+          "insertions": 0,
+          "reference_length": 6,
+          "rate": 0.6666666666666666,
+          "defined": true
+        },
+        "exact_lines": 0,
+        "samples": 2
+      },
+      "impossible": 0,
+      "failed": false
+    }
+  ],
+  "core_disconnect": {
+    "output_changed": true,
+    "max_abs_delta": 4.909948945045471
+  },
+  "assumptions": [
+    "Scores prove that the pipeline trains and decodes on fixtures; they are not an OCR capability claim.",
+    "Train and test glyph families differ, so shapes never leak; the alphabet is shared."
+  ]
+}

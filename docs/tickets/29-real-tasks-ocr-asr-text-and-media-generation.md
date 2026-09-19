@@ -10,8 +10,7 @@ UTF-8 串流解碼，影音生成分成核心生成、固定還原器與外部�
 Blocked by：26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）、
 TSK-11 的真實資料：**受阻於使用者提供有授權的資料**（每類任務各一份，含授權欄位）
 
-Status：第一階段進行中（2026-09-19：CTC、CER／WER、字形 fixture 已提交；切行、每步讀出、辨識器、fixture 流程與 CLI 排隊中）；契約已於 2026-09-15 定案；分六階段派工；每階段先 fixture 再真實資料，真實資料階段在使用者
-提供資料前標為 blocked）
+Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段 WAV／log-mel、第三階段 tokenizer 已落地，其餘待派
 
 對應需求：TSK-01（OCR：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過）、TSK-02（語音：
 整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代）、TSK-03（文字生成：因果前綴、
@@ -99,14 +98,47 @@ Status：第一階段進行中（2026-09-19：CTC、CER／WER、字形 fixture �
 
 ## 驗收
 
-- [ ] 第一階段：CTC 枚舉對照與四個邊界、CER 定義、單行與頁面流程、字形不洩漏；`go test`、race、vet；
-  `evidence/TSK-01/`（fixture）。
+- [x]（fixture；真實資料 blocked_data）第一階段：CTC 枚舉對照與四個邊界、CER 定義、單行與頁面流程、
+  字形不洩漏；`go test`、race、vet；`evidence/TSK-01/`（fixture）。
 - [ ] 第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
 - [ ] 第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
 - [ ] 第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
 - [ ] 第五階段：時間線、封裝器缺席與失敗、同步誤差；`evidence/TSK-06/`。
 - [ ] 第六階段：三條流程角色可查、工具結果不計入；`evidence/TSK-07/`。
 - [ ] TSK-11（blocked）：使用者提供每類任務的授權資料後，各任務的匯入、訓練、推論、評估各跑一次並記錄。
+
+## 第一階段證據（2026-09-20）
+
+第一階段拆成七張小票，全部落地，`tasks/ocr`、`tasks/ocr/ctc`、`tasks/ocr/glyphs` 三個套件共 32 個測試在
+`-race` 下全數通過（0 FAIL）：
+
+| 小票 | 內容 | 程式 |
+|---|---|---|
+| 29A-01 | log-space CTC 損失、梯度與貪婪解碼，極小字母表枚舉對照 | `tasks/ocr/ctc/` |
+| 29A-02 | CER／WER：rune 與詞層級、固定回溯順序、空參考回報 `undefined` | `tasks/ocr/metrics.go` |
+| 29A-03 | 程式生成的偽字形 fixture：字形族、背景、雜訊、未見組合 | `tasks/ocr/glyphs/` |
+| 29A-04 | `Page`／`Block` 契約與規則式投影切行 | `tasks/ocr/page.go` |
+| 29A-05 | 逐欄讀出的單行辨識器，經每步讀出以 CTC 訓練 | `tasks/ocr/recognizer.go` |
+| 29A-06 | fixture 流程：字形族分離、未見組合、`data_scope`、核心斷開檢查 | `tasks/ocr/fixture.go` |
+| 29A-07 | CLI `examples run ocr` 與 TSK-01 證據 | `internal/cli/ocr.go` |
+
+證據路徑：
+
+- `evidence/TSK-01/verification.json`：需求、重現指令、環境、輸入指紋、逐項觀察結果、假設與限制。
+- `evidence/TSK-01/test.log`：`go test -count=1 -race -v ./tasks/ocr/...` 的完整輸出（32 PASS、0 FAIL）。
+- `evidence/TSK-01/ocr-fixture.json`：`coimnet examples run ocr` 的報告，`config_hash`
+  `d97aae00641e1c52ea01c34c3f4c261e3f33e84723589de8fb8621fef8ae83d8`；三個 seed 的保留集 CER 由平均
+  0.9244 降到 0.6638，核心斷開檢查 `output_changed` 為 true、`max_abs_delta` 4.9099。
+
+限制（完整清單在 `verification.json` 的 `limitations`）：
+
+- 偽字形不是真字型也不是掃描件；只驗到單行、單欄、水平文字，投影切行不宣稱任意版面。
+- fixture 字母表只有 3 個字元、每行 1..3 個字形；Unicode 與重複字的正確性由手算測試涵蓋，不是 fixture
+  數字的宣稱。未見組合每個 seed 只有 2～5 行，統計意義極低。
+- 頁面區塊送進辨識器的流程只到切行為止：`Block.Text` 由呼叫端填入，還沒有整頁批次辨識再回填的端到端測試。
+- 真實授權資料 **blocked_data**（TSK-11）：需要使用者提供含授權欄位的 OCR 資料集，在此之前真實資料上的
+  匯入、訓練、推論、評估四項不能宣稱完成。
+- 一次執行、單一平台（macOS arm64、go1.26.5）。
 
 ## 依據
 
