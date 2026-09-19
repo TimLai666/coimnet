@@ -6,7 +6,7 @@ User Story：使用者可以中斷並接續參考訓練
 
 Blocked by：04
 
-Status：partial（COR-01／STA-02／STA-04 fixture 通過，STA-01／STA-03 待完成）
+Status：partial（COR-01／STA-02／STA-03／STA-04 fixture 通過，STA-01 待完成）
 
 ## 交付
 
@@ -87,3 +87,37 @@ func Load(ctx context.Context, path string) (State, error)
 - Red：實作前 `go test -run TestEpisodeLoad ./checkpoint/` 有 21 個子案例失敗（被接受或只被下游形狀檢查以不相關訊息擋下），見 [episode-required-red.log](../../evidence/STA-02/episode-required-red.log)。
 - Green：`checkpoint/episode_required_test.go` 的 26 個缺失／null 案例全部以路徑訊息拒絕，合法零值、零邊 null 陣列與省略／null 的可選陣列仍可讀回；`go test`、`go test -race`、`go vet ./checkpoint/` 通過。
 - 重現探針修正後的輸出見 [episode-presence-after-fix.log](../../evidence/STA-02/episode-presence-after-fix.log)：四個缺失／null 案例都 `accepted=false`，零邊案例仍 `load_accepted=true`。原始重現見 [episode-presence.log](../../evidence/STA-02/episode-presence.log)。
+
+## STA-03 證據（2026-09-19）
+
+原需求：「使用者可以從中斷處精確接續參考訓練。」驗收：「同環境與連續執行對照，包含隨機、資料、快速權重、化學與最佳化器。」
+
+fixture 是 `checkpoint/individual_full_resume_test.go` 的三節點連續鏈：edge 1 掛
+`hebbian_rate` 可塑性規則並以受體 0 開閘，一區域一通道化學（Tau 2、外部時間線在
+row 1 釋放 1、node 2 一個 hypothesized 受體），最佳化器走 AdamW 更新式
+（`learning/trainer.go:407`，本 fixture `WeightDecay` 為 0，實際比對的是 Adam 動量與
+各參數步數）。同樣八個 `experiment.DelayedEpisode(11, e)` 跑兩次：一次連續跑完，一次在
+第四個之後 `SaveIndividual`，再由真正的新程序 `LoadIndividual`／`RestoreIndividual`、
+讀取呼叫端的 sidecar 游標，接著跑完後四個。
+
+- 連續與接續的最終 `IndividualSnapshot` 以 `reflect.DeepEqual` 整份相同，Parameters、
+  Neural、Optimizer（`Updates` 為 8）、Plastic 與 Chemical 必須同時吻合；另外明確檢查
+  快速權重狀態不全為零，避免拿一堆零互相比較。
+- e=4..7 的輸出以 `math.Float64bits` 逐位比較，不是容差比較。
+- 反例：sidecar 游標寫成 3 會重放一個 episode，結果快照必須與連續執行不同，證明資料游標
+  是接續的一部分。`IndividualSnapshot` 本身不含 episode 計數（`learning/individual.go:97`）。
+- 「隨機」一項：本 profile 沒有獨立亂數產生器，`DelayedEpisode` 是 (seed, index) 的純函數，
+  核心、可塑性與化學皆為確定性運算。日後若加入真正的隨機來源，其產生器狀態要另外保存與驗證。
+- 指標欄位回歸：`TestLoadIndividualAcceptsScalarPointerRuleFields` 與
+  `TestCheckRequiredFieldsScalarPointerKinds` 釘住 2026-09-19 修掉的必填欄位走訪 bug
+  （`GateReceptor`／`DecayEReceptor` 這兩個 `*int` 之前存得進去、讀不回來，正好擋住這條需求
+  需要的接續路徑）；字串 `"0"` 仍被拒且錯誤帶 `gate_receptor` 路徑。
+- 既有的 `TestIndividualCheckpointSubprocessResume`、`TestLIFIndividualCheckpointSubprocessResume`
+  與 `TestSubprocessResumeMatchesUninterruptedTraining` 維持通過。
+
+指令輸出：9 個頂層 `--- PASS`、0 個 `--- FAIL`，`ok github.com/TimLai666/coimnet/checkpoint 6.872s`
+（`-count=1 -race`，go1.26.5 darwin/arm64）。完整輸出與限制見
+[驗證記錄](../../evidence/STA-03/verification.json) 與 [test.log](../../evidence/STA-03/test.log)。
+
+尚未驗證：LIF 與 `DecayEReceptor` 路徑沒有跑接續、`AdvanceGated` 沒有跑接續、沒有真實資料、
+單次 macOS arm64 執行。

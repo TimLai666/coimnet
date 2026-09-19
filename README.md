@@ -19,6 +19,7 @@
 | 混合核心：連續／脈衝依神經元類型混合執行（COR-05） | 初始化模型（未訓練） | fixture | 核心能力 | [COR-05](evidence/COR-05/verification.json) |
 | 訊號、時間對齊與映射：具名訊號、因果／離線取樣、輸入輸出映射保存與替換（SIG-01、SIG-02、SIG-04、SIG-05、SIG-06） | 初始化模型（資料層） | fixture | 核心能力 | [SIG-01](evidence/SIG-01/verification.json)・[SIG-02](evidence/SIG-02/verification.json)・[SIG-04](evidence/SIG-04/verification.json)・[SIG-05](evidence/SIG-05/verification.json)・[SIG-06](evidence/SIG-06/verification.json) |
 | 個體與保存：解剖／參數／個體／訓練器狀態分離、三種保存物、安全快照與隔離個體（COR-01、STA-01、STA-02、STA-04） | 已訓練（人工資料） | fixture | 核心能力 | [COR-01](evidence/COR-01/verification.json)・[STA-01](evidence/STA-01/verification.json)・[STA-02](evidence/STA-02/verification.json)・[STA-04](evidence/STA-04/verification.json) |
+| 精確中斷接續：連續執行對照下同時恢復參數、最佳化器、快速權重、化學與資料游標（STA-03） | 已訓練（人工資料） | fixture | 核心能力 | [STA-03](evidence/STA-03/verification.json) |
 | 調節來源與化學：觀察／目標／回饋分離、四種調節來源、獎懲映射、時間衰退的濃度、選擇性受體與效果（SIG-03、MOD-01、MOD-02、MOD-03、MOD-04、MOD-08） | 初始化模型（未訓練） | fixture | 核心能力 | [SIG-03](evidence/SIG-03/verification.json)・[MOD-01](evidence/MOD-01/verification.json)・[MOD-02](evidence/MOD-02/verification.json)・[MOD-03](evidence/MOD-03/verification.json)・[MOD-04](evidence/MOD-04/verification.json)・[MOD-08](evidence/MOD-08/verification.json) |
 | 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
 | 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
