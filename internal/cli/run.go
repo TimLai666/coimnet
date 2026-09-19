@@ -47,6 +47,8 @@ Commands:
   checkpoint migrate [flags]     Migrate a snapshot into a new file under a
                                  target schema, never touch the source, and
                                  print the migration report as JSON
+  benchmark [flags]              Time import, forward and backward on a
+                                 synthetic topology and write the report JSON
   model inspect [flags]          Inspect one model package or individual
                                  snapshot: topology, parameters, modes,
                                  evidence, mapping and a memory estimate
@@ -118,6 +120,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runSimulateCommand(ctx, args[1:], stdout, stderr)
 	case "checkpoint":
 		return runCheckpoint(ctx, args[1:], stdout, stderr)
+	case "benchmark":
+		return runBenchmark(ctx, args[1:], stdout, stderr)
 	case "model":
 		return runModel(ctx, args[1:], stdout, stderr)
 	case "doctor":
