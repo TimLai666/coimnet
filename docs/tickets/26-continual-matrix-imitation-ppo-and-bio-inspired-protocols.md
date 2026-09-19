@@ -10,7 +10,7 @@ User Story：研究者可以用固定 seed 跑「先學 A、再學 B、重測 A�
 
 Blocked by：22（記憶表現、穩定化、干預）、23（運行中學習、重播、評估）、21（化學狀態）、17（最佳化器）
 
-Status：draft（契約已於 2026-09-15 定案；分三階段派工，待 22／23 完成後開始）
+Status：第一階段已驗證（2026-09-19）；第二、三階段待派工
 
 對應需求：LRN-08（產生完整階段矩陣，所有 seed 與失敗執行均保留）、LRN-09（至少一套完整算法可在環境改善；
 遞迴狀態、策略版本及回饋時間一致）、MOD-09（至少時機與記憶表現兩種協定；人工數值不標為定量生物重現）。
@@ -99,11 +99,29 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
 
 ## 驗收
 
-- [ ] 第一階段：矩陣與遺忘手算（3 階段 × 2 任務）、失敗執行保留、固定調節狀態評估與狀態切換對照、
+- [x] 第一階段：矩陣與遺忘手算（3 階段 × 2 任務）、失敗執行保留、固定調節狀態評估與狀態切換對照、
   `independent` 對照分開、事前比較方法；`go test`、race、vet；`evidence/LRN-08/`。
 - [ ] 第二階段：`LossGradientFrom` 逐位等於 `LossGradient`；環境評估不洩漏目標；模仿一致率；PPO 機率比值
   三項、版本／狀態一致性拒絕、3 seed 改善且同 seed 逐位重現；`evidence/LRN-09/`。
 - [ ] 第三階段：登錄三條、兩種協定各 3 seed、表現恢復且三層參數不變、定量命名拒絕；`evidence/MOD-09/`；文件。
+
+## 第一階段證據（2026-09-19）
+
+以「先學 A、再學 B、規則改變 A」的 fixture 協定完成 LRN-08 的第一階段，證據在 `evidence/LRN-08/`（`test.log`、`continual-matrix.json`、`verification.json`）。`go test -count=1 -race -v -run 'Continual|PairedBootstrap|Comparison|Forgetting|AggregateCells|FreezeChemistry|StateSwitch|Independent' ./experiment/ ./internal/cli/ ./learning/` 共 30 個頂層測試全 PASS（experiment 16、internal/cli 3、learning 5，另有 34 個 validate 子測）`grep -c "^--- PASS"` 回 24；CLI 以 `--chemistry` 產出 continual-matrix.json：3 seeds、3 階段 × 2 任務、0 個失敗 run、protocol_hash `4bdb08cda13eabdfd2831785e31d2cd55d61b9336e743ca5b6f6c148a69792cd`。九張小票對照：
+
+1. **凍結化學**：`learning/chemistry_freeze_test.go` 的 `TestFreezeChemistryHoldsConcentration`、`TestFreezeChemistryTwiceFromSameSnapshotIsBitIdentical`、`TestFreezeChemistryIsNotInTheSnapshot`、`TestFreezeChemistryNeedsChemistry`。凍結後濃度逐位保持、無釋放，同一快照凍結兩次輸出與報告逐位相同，凍結旗標只存在 runtime 不在快照。
+2. **協定型別**：`experiment/continual.go` 的 `ContinualProtocol`／`Stage`／`TaskSpec`／`Evaluation`／`PreRegistered` 與 `Validate`，`TestContinualProtocolValidateAcceptsTheFixture`／`TestContinualProtocolValidateRejects`（34 個子測全過）。
+3. **純函式**：`experiment/continual_math.go` 的 `ContinualEpisode`（協定版 delayed-correlation/v1：`delay+2` 列、channel 上帶脈衝、目標 `gain*a`、flip 取負）、`Forgetting`、`AggregateCells`，`TestForgettingHandTable`／`TestAggregateCellsSkipsFailedSeeds`／`TestContinualEpisode*`。
+4. **fixture 與評估**：`experiment/continual_fixture.go` 的 `ContinualFixture`／`ContinualFixtureWithChemistry` 與 `continual_eval.go` 的 `evaluateTask`／`scoreTwin`：評估在快照孿生上做，`FreezeChemistry` 後重設神經狀態取 `-MSE`，結束檢查 Parameters 與 Plastic 逐位不變。
+5. **矩陣執行**：`experiment/continual_run.go` 的 `RunContinualMatrix`，`TestContinualMatrixUntrainedCellsMatchDirectScores`（未訓練格子逐位等於直接計算、rule_change 只變 A 欄）、`TestContinualMatrixTrainsAndKeepsEveryRecord`、`TestContinualMatrixKeepsFailedRuns`、`TestContinualMatrixIsDeterministic`、`TestContinualMatrixRejects`。
+6. **對照**：`experiment/continual_controls.go` 的 `runIndependent`／`evaluateSwitched` 與 `ControlStateSwitch`／`BaselineIndependent`。
+7. **比較**：`experiment/continual_comparison.go` 的 `pairedBootstrap`／`compareToIndependent`，`TestPairedBootstrapConstantDifferences`（常數差 `{1,1,1}` 的 mean/lower/upper 全等 1）、`TestPairedBootstrapBoundsContainTheMean`、`TestComparisonAbsentWithoutDeclaration`、`TestComparisonUsesOnlyPairsWhereBothSucceeded`。
+8. **CLI**：`internal/cli/continual.go`，`TestContinualMatrixWritesAReport`／`TestContinualMatrixWithChemistry`／`TestContinualMatrixRejects`。
+9. **證據**：`evidence/LRN-08/test.log`、`evidence/LRN-08/continual-matrix.json`、`evidence/LRN-08/verification.json`。
+
+手算常數：遺忘 `F_j(i) = max_{k ≤ i, 未失敗} R[k][j] − R[i][j]`（越大越好；失敗格 F=0）。矩陣 JSON 每 seed 只有 (2,A) 非零，例如 seed 7 `0.12465654281343898 = max(-0.06845514226710238, -0.035994941232014147, -0.16065148404545312) − (-0.16065148404545312)`；forgetting_cells 的 (2,A) mean `0.12043799274790447`。B 欄第 1/2 列三個 seed 全部逐位相同，證明 rule_change 只改 A。手算表測試 `TestForgettingHandTable` 定案 `F = [[0,0],[0,1],[0.3,0]]`。
+
+與 [Root 決策](#root-決策2026-09-15)的出入（實作依定案的契約摘要調整）：`TaskSpec` 沒有 Episodes 欄位，評估期數統一放 `Evaluation.Episodes`（所有任務共用）；`RunRecord` 在 Seed／Stage／Status／Error 之外多了 `Task`（omitempty）與 `Control`（omitempty，命名 state_switch 與 independent 的記錄）；`independent` 對照的訓練方式是在 fresh 個體上只依協定順序重放會碰到該任務的那些 stage（同 `trainSeed`、同 budget、依序套 rule_change），再以該任務的 `evalSeed` 評分，而不是以整套協定重跑。
 
 ## 依據
 

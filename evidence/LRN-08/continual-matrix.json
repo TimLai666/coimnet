@@ -1,0 +1,654 @@
+{
+  "schema_version": "coimnet-continual-matrix/v1",
+  "profile": "fixture",
+  "protocol": {
+    "tasks": [
+      {
+        "name": "A",
+        "generator": "delayed-correlation/v1",
+        "params": {
+          "channel": 0,
+          "delay": 2
+        }
+      },
+      {
+        "name": "B",
+        "generator": "delayed-correlation/v1",
+        "params": {
+          "channel": 1,
+          "delay": 3
+        }
+      }
+    ],
+    "stages": [
+      {
+        "kind": "train_task",
+        "task": "A",
+        "budget": 20
+      },
+      {
+        "kind": "train_task",
+        "task": "B",
+        "budget": 20
+      },
+      {
+        "kind": "rule_change",
+        "task": "A",
+        "budget": 0
+      }
+    ],
+    "seeds": [
+      7,
+      42,
+      123
+    ],
+    "evaluation": {
+      "episodes": 16,
+      "fixed_chemistry": true,
+      "state_switch": {
+        "concentration": [
+          [
+            2
+          ]
+        ]
+      },
+      "metric": "neg_mse"
+    },
+    "comparison": {
+      "method": "paired_bootstrap",
+      "interval": 0.9,
+      "baseline": "independent",
+      "resamples": 1000
+    }
+  },
+  "protocol_hash": "4bdb08cda13eabdfd2831785e31d2cd55d61b9336e743ca5b6f6c148a69792cd",
+  "width": 2,
+  "seeds": [
+    {
+      "seed": 7,
+      "scores": [
+        [
+          -0.06845514226710238,
+          -0.05294938387115549
+        ],
+        [
+          -0.035994941232014147,
+          -0.015794762614188444
+        ],
+        [
+          -0.16065148404545312,
+          -0.015794762614188444
+        ]
+      ],
+      "failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ],
+      "forgetting": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.12465654281343898,
+          0
+        ]
+      ],
+      "switched": [
+        [
+          -0.07567390368670132,
+          -0.06120187258300014
+        ],
+        [
+          -0.053794899704635434,
+          -0.03412200077754226
+        ],
+        [
+          -0.12858882509462508,
+          -0.03412200077754226
+        ]
+      ],
+      "switched_failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "seed": 42,
+      "scores": [
+        [
+          -0.07034820326445475,
+          -0.056321923180588505
+        ],
+        [
+          -0.03821154992928101,
+          -0.018744964393010287
+        ],
+        [
+          -0.15135813217461172,
+          -0.018744964393010287
+        ]
+      ],
+      "failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ],
+      "forgetting": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.11314658224533071,
+          0
+        ]
+      ],
+      "switched": [
+        [
+          -0.076199913921794,
+          -0.06308751880193827
+        ],
+        [
+          -0.05484468608751949,
+          -0.036449433031361334
+        ],
+        [
+          -0.12273263589997878,
+          -0.036449433031361334
+        ]
+      ],
+      "switched_failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ]
+    },
+    {
+      "seed": 123,
+      "scores": [
+        [
+          -0.06657531199008546,
+          -0.06754730706027472
+        ],
+        [
+          -0.03351338437880805,
+          -0.018947408852165337
+        ],
+        [
+          -0.15702423756375178,
+          -0.018947408852165337
+        ]
+      ],
+      "failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ],
+      "forgetting": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          0
+        ],
+        [
+          0.12351085318494373,
+          0
+        ]
+      ],
+      "switched": [
+        [
+          -0.07326607898379993,
+          -0.07743978386652041
+        ],
+        [
+          -0.05094135496160941,
+          -0.041991318045953366
+        ],
+        [
+          -0.1250478664122149,
+          -0.041991318045953366
+        ]
+      ],
+      "switched_failed": [
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ],
+        [
+          false,
+          false
+        ]
+      ]
+    }
+  ],
+  "cells": [
+    [
+      {
+        "mean": -0.0684595525072142,
+        "std": 0.0015402795698003155,
+        "min": -0.07034820326445475,
+        "max": -0.06657531199008546,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": -0.05893953803733957,
+        "std": 0.006240393738249168,
+        "min": -0.06754730706027472,
+        "max": -0.05294938387115549,
+        "succeeded": 3,
+        "total": 3
+      }
+    ],
+    [
+      {
+        "mean": -0.0359066251800344,
+        "std": 0.0019190344236430807,
+        "min": -0.03821154992928101,
+        "max": -0.03351338437880805,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": -0.01782904528645469,
+        "std": 0.0014408274087649934,
+        "min": -0.018947408852165337,
+        "max": -0.015794762614188444,
+        "succeeded": 3,
+        "total": 3
+      }
+    ],
+    [
+      {
+        "mean": -0.15634461792793888,
+        "std": 0.0038243090343969073,
+        "min": -0.16065148404545312,
+        "max": -0.15135813217461172,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": -0.01782904528645469,
+        "std": 0.0014408274087649934,
+        "min": -0.018947408852165337,
+        "max": -0.015794762614188444,
+        "succeeded": 3,
+        "total": 3
+      }
+    ]
+  ],
+  "forgetting_cells": [
+    [
+      {
+        "mean": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0,
+        "succeeded": 3,
+        "total": 3
+      }
+    ],
+    [
+      {
+        "mean": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0,
+        "succeeded": 3,
+        "total": 3
+      }
+    ],
+    [
+      {
+        "mean": 0.12043799274790447,
+        "std": 0.005176977980700879,
+        "min": 0.11314658224533071,
+        "max": 0.12465654281343898,
+        "succeeded": 3,
+        "total": 3
+      },
+      {
+        "mean": 0,
+        "std": 0,
+        "min": 0,
+        "max": 0,
+        "succeeded": 3,
+        "total": 3
+      }
+    ]
+  ],
+  "runs": [
+    {
+      "seed": 7,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 0,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 1,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 7,
+      "stage": 2,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 0,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 1,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 42,
+      "stage": 2,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 0,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 0,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 1,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 1,
+      "task": "B",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 2,
+      "task": "A",
+      "status": "ok"
+    },
+    {
+      "seed": 123,
+      "stage": 2,
+      "task": "B",
+      "status": "ok"
+    }
+  ],
+  "assumptions": [
+    "Evaluation episodes come from a seed derived from the run seed and the task index; training never sees them.",
+    "Every evaluation runs on a twin restored from the individual's snapshot, so evaluating never advances or trains the individual.",
+    "Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell.",
+    "A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule.",
+    "independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting.",
+    "Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim."
+  ],
+  "independent": [
+    {
+      "task": "A",
+      "seeds": [
+        {
+          "seed": 7,
+          "score": -0.10816725499447333,
+          "failed": false
+        },
+        {
+          "seed": 42,
+          "score": -0.10194451500714588,
+          "failed": false
+        },
+        {
+          "seed": 123,
+          "score": -0.10323258034951349,
+          "failed": false
+        }
+      ],
+      "stat": {
+        "mean": -0.10444811678371091,
+        "std": 0.002681886134124889,
+        "min": -0.10816725499447333,
+        "max": -0.10194451500714588,
+        "succeeded": 3,
+        "total": 3
+      }
+    },
+    {
+      "task": "B",
+      "seeds": [
+        {
+          "seed": 7,
+          "score": -0.053949438687366236,
+          "failed": false
+        },
+        {
+          "seed": 42,
+          "score": -0.05503169043421305,
+          "failed": false
+        },
+        {
+          "seed": 123,
+          "score": -0.06673833746691998,
+          "failed": false
+        }
+      ],
+      "stat": {
+        "mean": -0.05857315552949976,
+        "std": 0.0057905362022452,
+        "min": -0.06673833746691998,
+        "max": -0.053949438687366236,
+        "succeeded": 3,
+        "total": 3
+      }
+    }
+  ],
+  "comparison": {
+    "method": "paired_bootstrap",
+    "baseline": "independent",
+    "interval": 0.9,
+    "resamples": 1000,
+    "seed": 7,
+    "tasks": [
+      {
+        "task": "A",
+        "pairs": 3,
+        "mean_difference": -0.051896501144227974,
+        "lower": -0.053355847826485454,
+        "upper": -0.050437154461970495,
+        "insufficient": false
+      },
+      {
+        "task": "B",
+        "pairs": 3,
+        "mean_difference": 0.04074411024304506,
+        "lower": 0.0369093760518611,
+        "upper": 0.04457884443422903,
+        "insufficient": false
+      }
+    ]
+  }
+}
