@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/rand/v2"
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/plasticity"
@@ -22,12 +23,14 @@ type InterventionLog struct {
 // Start and End repeat the declared row window; AppliedRows is the overlap of
 // that window with the rows of the submitted input, so a window that ends
 // before the call's sequence does silently nothing instead of being truncated
-// without a record. The three deltas are the whole-call magnitudes, repeated on
-// every entry so a record of one item never hides the movement the run caused.
+// without a record. The deltas are the whole-call magnitudes, repeated on every
+// entry so a record of one item never hides the movement the run caused.
 //
 //	ActivityDelta        L2 of the readout series against an in-silico twin
 //	PlasticDelta         L2 of the eligibility/plastic/traces of the fast state
 //	BaseParameterDelta   L2 of the flat learnable parameters (always zero)
+//	ConcentrationDelta   L2 of the per-row concentration trajectory: zero while
+//	                     the chemistry is disabled or the trajectories agree
 type InterventionLogEntry struct {
 	Kind        string `json:"kind"`
 	Targets     []int  `json:"targets,omitempty"`
@@ -39,6 +42,7 @@ type InterventionLogEntry struct {
 	ActivityDelta      float64 `json:"activity_delta"`
 	PlasticDelta       float64 `json:"plastic_delta"`
 	BaseParameterDelta float64 `json:"base_parameter_delta"`
+	ConcentrationDelta float64 `json:"concentration_delta,omitempty"`
 }
 
 // rowOverride is the per-row hook the stepwise advance runs after each core
@@ -50,11 +54,13 @@ type rowOverride func(row uint64, next NeuralState, values, spikes []float64) er
 
 // Intervene runs one authorized plan over the submitted input sequence and
 // returns the readout plus a record of what each item applied and moved. The
-// only implemented kinds are the node interventions clamp_voltage, force_spike
-// and silence; every other declared kind is refused before any state moves. The
-// run is compared against an in-silico twin restored from the same starting
-// snapshot and advanced without the plan, and the three deltas of every entry
-// report that difference.
+// node kinds clamp_voltage, force_spike and silence act on the per-row output;
+// the channel kinds block_channel, fix_concentration and remove_channel and
+// the swap_regions land on the row of the chemical layer when it is enabled;
+// and shuffle_delays permutes the edge delays for the whole call. The run is
+// compared against an in-silico twin restored from the same starting snapshot
+// and advanced without the plan, and the deltas of every entry report that
+// difference.
 //
 // The rows of a plan index the submitted sequence of this call, so a fresh
 // individual and a continuing one both read "clamp rows 10..20" as rows 10..20
@@ -77,19 +83,77 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 		return nil, empty, fmt.Errorf("empty input sequence")
 	}
 	snap := i.Snapshot()
+	// A shuffle interchange the whole call must hold under the permuted delays,
+	// so the window check and the network swap sit before anything advances and
+	// the snapshot is taken before the swap, keeping the twin on the original
+	// delays.
+	shuffled, permuted, err := shufflePlanConfig(plan, c, len(input))
+	if err != nil {
+		return nil, empty, err
+	}
+	callOK := false
+	if permuted {
+		// The permuted core owns a different configuration fingerprint, so the
+		// pre-run state cannot be carried into it as it is: the state is
+		// re-labelled with the permuted hash, the history and the step count
+		// staying exactly where they were, and the call runs under the swapped
+		// network. Once the call committed, the delays return and the run state
+		// is re-labelled back to the original hash, so the next ordinary call
+		// continues from the same voltage, history and step count it inherited.
+		// A failed call restores the initial state untouched.
+		held := i.trainer.network
+		heldState := copyNeural(i.neural)
+		permutedNetwork, err := NewNetwork(shuffled)
+		if err != nil {
+			return nil, empty, err
+		}
+		fresh, err := permutedNetwork.core.newState(stateVoltage(heldState))
+		if err != nil {
+			return nil, empty, err
+		}
+		i.trainer.network = permutedNetwork
+		i.neural = rehashState(heldState, stateHash(fresh))
+		defer func() {
+			i.trainer.network = held
+			if callOK {
+				i.neural = rehashState(i.neural, stateHash(heldState))
+			} else {
+				i.neural = heldState
+			}
+		}()
+	}
 	applied := make([]uint64, len(plan.Items))
-	runtime := &rowOverrideRuntime{items: plan.Items, config: c, activation: continuousActivation(c.Dynamics.Activation), applied: applied}
+	runtime := &rowOverrideRuntime{items: plan.Items, config: c, activation: continuousActivation(c.Dynamics.Activation), applied: applied, base: neuralSteps(snap.Neural)}
 	i.rowOverride = runtime.apply
 	defer func() { i.rowOverride = nil }()
+	var runConc [][]float64
+	if i.chemical != nil {
+		runtime.record = &runConc
+		i.chemical.override = runtime.applyChemical
+		defer func() { i.chemical.override = nil }()
+	}
 	out, _, err := i.advanceRows(ctx, input, nil)
 	if err != nil {
 		return nil, empty, err
+	}
+	if permuted {
+		callOK = true
 	}
 	twin, err := RestoreIndividual(snap)
 	if err != nil {
 		return nil, empty, err
 	}
-	twinOut, err := twin.Advance(ctx, input)
+	var twinOut [][]float64
+	var twinConc [][]float64
+	if i.chemical != nil && twin.chemical != nil {
+		// The twin records its own concentration trajectory under a hook that
+		// applies nothing, so the two trajectories share one shape.
+		twin.chemical.override = recordConcentration(&twinConc)
+		twinOut, _, err = twin.advanceRows(ctx, input, nil)
+		twin.chemical.override = nil
+	} else {
+		twinOut, err = twin.Advance(ctx, input)
+	}
 	if err != nil {
 		return nil, empty, err
 	}
@@ -97,6 +161,15 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 	if i.plastic != nil {
 		plasticA = flattenPlastic(i.plastic.state)
 		plasticB = flattenPlastic(twin.plastic.state)
+	}
+	var concentrationDelta float64
+	if len(runConc) > 0 && len(twinConc) > 0 {
+		concentrationDelta = l2Diff(flatten(runConc), flatten(twinConc))
+	}
+	for k, item := range plan.Items {
+		if item.Kind == InterventionShuffleDelays {
+			applied[k] = uint64(len(input))
+		}
 	}
 	log := InterventionLog{Reason: plan.Reason, Entries: make([]InterventionLogEntry, 0, len(plan.Items))}
 	activityDelta := l2Diff(flatten(out), flatten(twinOut))
@@ -107,15 +180,17 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 			Kind: item.Kind, Targets: append([]int(nil), item.Targets...), Channel: item.Channel,
 			Start: item.Start, End: item.End, AppliedRows: applied[k],
 			ActivityDelta: activityDelta, PlasticDelta: plasticDelta, BaseParameterDelta: baseParameterDelta,
+			ConcentrationDelta: concentrationDelta,
 		})
 	}
 	return out, log, nil
 }
 
-// checkNodeInterventions rejects, before the run, the declared kinds the
-// learning path does not implement and the configurations it cannot answer for:
-// a mixed core whose per-node rules the row hook would have to scatter back
-// into, and a continuous silence on an activation that never reaches zero.
+// checkNodeInterventions rejects, before the run, the configurations the node
+// hooks cannot answer for: a mixed core whose per-node rules the row hook would
+// have to scatter back into, and a continuous silence on an activation that
+// never reaches zero. The channel and structure kinds go through their own
+// hooks and are checked here only for their declared bounds.
 func checkNodeInterventions(plan InterventionPlan, c Config) error {
 	if c.Mixed != nil {
 		for _, item := range plan.Items {
@@ -127,8 +202,6 @@ func checkNodeInterventions(plan InterventionPlan, c Config) error {
 	}
 	for _, item := range plan.Items {
 		switch item.Kind {
-		case InterventionBlockChannel, InterventionFixConcentration, InterventionRemoveChannel, InterventionSwapRegions, InterventionShuffleDelays:
-			return fmt.Errorf("learning: intervention kind %q is not implemented yet", item.Kind)
 		case InterventionSilence:
 			// The continuous half silences by writing the voltage whose
 			// activation is zero; tanh has one at 0, softplus has none.
@@ -141,17 +214,27 @@ func checkNodeInterventions(plan InterventionPlan, c Config) error {
 }
 
 // rowOverrideRuntime is the mutable state one Intervene call owns: the plan it
-// was built from, the activation of its continuous core and the per-item count
-// of applied rows its hook is filling in.
+// was built from, the activation of its continuous core, the per-item count of
+// applied rows its hooks are filling in, the model step of the first row of the
+// call and the concentration trajectory it records when the chemistry is on.
 type rowOverrideRuntime struct {
 	items      []Intervention
 	config     Config
 	activation func(float64) float64
 	applied    []uint64
+	base       uint64
+	record     *[][]float64
 }
 
 func (r *rowOverrideRuntime) apply(row uint64, next NeuralState, values, spikes []float64) error {
 	for k, item := range r.items {
+		// The chemistry and structure kinds act through their own hooks; only
+		// the node kinds land on the core step row.
+		switch item.Kind {
+		case InterventionClampVoltage, InterventionForceSpike, InterventionSilence:
+		default:
+			continue
+		}
 		if row < item.Start || row >= item.End {
 			continue
 		}
@@ -170,6 +253,248 @@ func (r *rowOverrideRuntime) apply(row uint64, next NeuralState, values, spikes 
 		r.applied[k]++
 	}
 	return nil
+}
+
+// applyChemical is the per-row chemistry hook of one Intervene call: it lands
+// the four chemistry kinds on the phase of the row they change and appends the
+// concentration of every row of the call to the recording, so the report can
+// state the L2 trajectory movement against the twin. Rows are indexed by the
+// model step, which includes this individual's own step count before the call.
+func (r *rowOverrideRuntime) applyChemical(row *chemicalRow, phase chemicalPhase, release [][]float64, step uint64) error {
+	rowNo := int64(step) - int64(r.base)
+	switch phase {
+	case chemicalPreKinetics:
+		for k, item := range r.items {
+			if rowNo < int64(item.Start) || rowNo >= int64(item.End) {
+				continue
+			}
+			switch item.Kind {
+			case InterventionRemoveChannel:
+				// The channel releases nothing on this row: the grid the
+				// kinetics integrates and the row's own release total both say
+				// zero, so the report never hides a removed release.
+				for region := range release {
+					release[region][item.Channel] = 0
+				}
+				row.release[item.Channel] = 0
+				r.applied[k]++
+			}
+		}
+	case chemicalPostKinetics:
+		for k, item := range r.items {
+			if rowNo < int64(item.Start) || rowNo >= int64(item.End) {
+				continue
+			}
+			switch item.Kind {
+			case InterventionFixConcentration:
+				// The fixed value replaces the whole channel on every region.
+				// The copy keeps the edit off the row's input state and the
+				// variables the caller owns.
+				row.state.Concentration = copyRows(row.state.Concentration)
+				for region := range row.state.Concentration {
+					row.state.Concentration[region][item.Channel] = item.Value
+				}
+				r.applied[k]++
+			case InterventionSwapRegions:
+				row.state.Concentration = copyRows(row.state.Concentration)
+				a, b := item.Regions[0], item.Regions[1]
+				row.state.Concentration[a], row.state.Concentration[b] = row.state.Concentration[b], row.state.Concentration[a]
+				r.applied[k]++
+			}
+		}
+		if r.record != nil {
+			// The recording reads the row's final values, so the fixed and the
+			// swapped rows report what the twin could not reach.
+			*r.record = append(*r.record, concentrationFlat(row.state.Concentration))
+		}
+	case chemicalPostOccupancy:
+		for k, item := range r.items {
+			if rowNo < int64(item.Start) || rowNo >= int64(item.End) {
+				continue
+			}
+			switch item.Kind {
+			case InterventionBlockChannel:
+				// A blocked channel reads occupancy zero on every cell of every
+				// region, so its contribution to the modulation is the neutral
+				// one while the record itself stays un-counted.
+				for rec := range row.occupancy {
+					if row.occupancy[rec].Channel == item.Channel {
+						row.occupancy[rec].Occupancy = 0
+					}
+				}
+				r.applied[k]++
+			}
+		}
+	}
+	return nil
+}
+
+// recordConcentration is the recording-only chemistry hook of an in-silico
+// twin, which applies nothing and appends the concentration of every row.
+func recordConcentration(mat *[][]float64) chemicalOverride {
+	return func(row *chemicalRow, phase chemicalPhase, _ [][]float64, _ uint64) error {
+		if phase != chemicalPostKinetics {
+			return nil
+		}
+		*mat = append(*mat, concentrationFlat(row.state.Concentration))
+		return nil
+	}
+}
+
+// concentrationFlat turns one row of the concentration matrix into the flat
+// series the section delta is the L2 of.
+func concentrationFlat(c [][]float64) []float64 {
+	count := 0
+	for _, region := range c {
+		count += len(region)
+	}
+	out := make([]float64, 0, count)
+	for _, region := range c {
+		out = append(out, region...)
+	}
+	return out
+}
+
+// shufflePlanConfig applies every shuffle_delays item of a plan to an
+// independent copy of the core configuration. A shuffle interchanges the whole
+// call: the delays it permutes must hold for every row, so a window smaller
+// than the submitted sequence is refused before anything moves. permuted
+// reports whether any item actually permuted a delay.
+func shufflePlanConfig(plan InterventionPlan, c Config, rows int) (Config, bool, error) {
+	var out Config
+	permuted := false
+	for _, item := range plan.Items {
+		if item.Kind != InterventionShuffleDelays {
+			continue
+		}
+		if item.Start != 0 || item.End != uint64(rows) {
+			return c, permuted, fmt.Errorf("learning: shuffle_delays needs the whole call, window [%d, %d) on %d rows", item.Start, item.End, rows)
+		}
+		if !permuted {
+			out = cloneConfig(c)
+			permuted = true
+		}
+		delays := append([]int(nil), configDelays(out)...)
+		positions := item.Targets
+		if len(positions) == 0 {
+			// A nil target list shuffles every edge whose delay is positive,
+			// the only values a permutation can actually move.
+			positions = make([]int, 0, len(delays))
+			for k, delay := range delays {
+				if delay > 0 {
+					positions = append(positions, k)
+				}
+			}
+			if len(positions) == 0 {
+				return c, permuted, fmt.Errorf("learning: shuffle_delays has no delayed edge to shuffle")
+			}
+		}
+		values := make([]int, len(positions))
+		for p, pos := range positions {
+			values[p] = delays[pos]
+		}
+		rand.New(rand.NewPCG(item.Seed, 0)).Shuffle(len(values), func(a, b int) { values[a], values[b] = values[b], values[a] })
+		for p, pos := range positions {
+			delays[pos] = values[p]
+		}
+		configSetDelays(&out, delays)
+	}
+	return out, permuted, nil
+}
+
+// cloneConfig deep copies the core configuration and its edge-delay list, so a
+// shuffle never mutates the individual's own configuration.
+func cloneConfig(c Config) Config {
+	out := c
+	delays := append([]int(nil), configDelays(c)...)
+	switch {
+	case c.Mixed != nil:
+		out.Mixed = copyMixed(c.Mixed)
+	case c.LIF != nil:
+		out.LIF = copyLIF(c.LIF)
+	default:
+		out.Dynamics = c.Dynamics
+	}
+	configSetDelays(&out, delays)
+	return out
+}
+
+// configDelays reads the edge-delay list of whichever core a configuration
+// declares, and configSetDelays writes one back.
+func configDelays(c Config) []int {
+	if c.Mixed != nil {
+		return c.Mixed.Delays
+	}
+	if c.LIF != nil {
+		return c.LIF.Delays
+	}
+	return c.Dynamics.Delays
+}
+
+func configSetDelays(c *Config, delays []int) {
+	if c.Mixed != nil {
+		c.Mixed.Delays = delays
+		return
+	}
+	if c.LIF != nil {
+		c.LIF.Delays = delays
+		return
+	}
+	c.Dynamics.Delays = delays
+}
+
+// stateVoltage extracts the full node-width voltage of a neural state, the
+// only input a fresh state of another configuration needs.
+func stateVoltage(s NeuralState) []float64 {
+	switch {
+	case s.Continuous != nil:
+		return s.Continuous.Voltage
+	case s.LIF != nil:
+		return s.LIF.Voltage
+	default:
+		nodes := len(s.Mixed.Index.ContinuousNodes) + len(s.Mixed.Index.LIFNodes)
+		full := make([]float64, nodes)
+		for k, node := range s.Mixed.Index.ContinuousNodes {
+			full[node] = s.Mixed.Continuous.Voltage[k]
+		}
+		for k, node := range s.Mixed.Index.LIFNodes {
+			full[node] = s.Mixed.LIF.Voltage[k]
+		}
+		return full
+	}
+}
+
+// stateHash is the configuration fingerprint a neural state claims to belong
+// to, the top-level hash of whichever half the state carries.
+func stateHash(s NeuralState) string {
+	switch {
+	case s.Continuous != nil:
+		return s.Continuous.ConfigHash
+	case s.LIF != nil:
+		return s.LIF.ConfigHash
+	default:
+		return s.Mixed.ConfigHash
+	}
+}
+
+// rehashState re-labels an owned copy of a state to another configuration's
+// fingerprint without recomputing its trajectory: a delay permutation changes
+// nothing a state carries but the fingerprint, because the voltage, the step
+// count and the history rows are values rather than configuration. The mixed
+// state repeats the shared hash on both halves, so all three are relabelled.
+func rehashState(s NeuralState, hash string) NeuralState {
+	owned := copyNeural(s)
+	switch {
+	case owned.Continuous != nil:
+		owned.Continuous.ConfigHash = hash
+	case owned.LIF != nil:
+		owned.LIF.ConfigHash = hash
+	default:
+		owned.Mixed.ConfigHash = hash
+		owned.Mixed.Continuous.ConfigHash = hash
+		owned.Mixed.LIF.ConfigHash = hash
+	}
+	return owned
 }
 
 // applyLIFIntervention lands one item on the spiking half. The persisted trace

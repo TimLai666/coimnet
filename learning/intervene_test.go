@@ -283,9 +283,9 @@ func TestInterveneForceSpikeOnLIF(t *testing.T) {
 }
 
 // TestInterveneUnauthorizedChangesNothing walks the refusal paths: a plan that
-// does not say it experiments, an unknown kind, and the declared channel and
-// region kinds the learning path does not implement yet. Every refusal leaves
-// the individual exactly as it was.
+// does not say it experiments, an unknown kind, the node interventions a mixed
+// core cannot answer for, and a shuffle window that is not the whole call.
+// Every refusal leaves the individual exactly as it was.
 func TestInterveneUnauthorizedChangesNothing(t *testing.T) {
 	clamp := nodeIntervention(learning.InterventionClampVoltage, []int{0}, 0, 0, 1)
 	cases := []struct {
@@ -323,47 +323,51 @@ func TestInterveneUnauthorizedChangesNothing(t *testing.T) {
 			false,
 		},
 		{
-			"block channel",
+			"mixed core node clamp",
 			func(t *testing.T) *learning.Individual {
-				a := newIndividual(t, chemContinuousConfig(), chemContinuousParameters())
-				enableChemistry(t, a, sensitivityDeclaration())
+				a, err := learning.NewIndividual(mixedNodeConfig(), mixedNodeParameters(), learning.DefaultOptions(), make([]float64, 3))
+				if err != nil {
+					t.Fatal(err)
+				}
 				return a
 			},
-			authorizedPlan(channelIntervention(learning.InterventionBlockChannel, 0, 0, 0, 1)),
-			"is not implemented yet",
+			authorizedPlan(nodeIntervention(learning.InterventionClampVoltage, []int{0}, 0, 0, 1)),
+			"not implemented yet",
 			false,
 		},
 		{
-			"fix concentration",
+			"mixed core node force spike",
 			func(t *testing.T) *learning.Individual {
-				a := newIndividual(t, chemContinuousConfig(), chemContinuousParameters())
-				enableChemistry(t, a, sensitivityDeclaration())
+				a, err := learning.NewIndividual(mixedNodeConfig(), mixedNodeParameters(), learning.DefaultOptions(), make([]float64, 3))
+				if err != nil {
+					t.Fatal(err)
+				}
 				return a
 			},
-			authorizedPlan(channelIntervention(learning.InterventionFixConcentration, 0, 1, 0, 1)),
-			"is not implemented yet",
+			authorizedPlan(nodeIntervention(learning.InterventionForceSpike, []int{1}, 0, 0, 1)),
+			"not implemented yet",
 			false,
 		},
 		{
-			"remove channel",
+			"mixed core node silence",
 			func(t *testing.T) *learning.Individual {
-				a := newIndividual(t, chemContinuousConfig(), chemContinuousParameters())
-				enableChemistry(t, a, sensitivityDeclaration())
+				a, err := learning.NewIndividual(mixedNodeConfig(), mixedNodeParameters(), learning.DefaultOptions(), make([]float64, 3))
+				if err != nil {
+					t.Fatal(err)
+				}
 				return a
 			},
-			authorizedPlan(channelIntervention(learning.InterventionRemoveChannel, 0, 0, 0, 1)),
-			"is not implemented yet",
+			authorizedPlan(nodeIntervention(learning.InterventionSilence, []int{0}, 0, 0, 1)),
+			"not implemented yet",
 			false,
 		},
 		{
-			"swap regions",
+			"shuffle without the whole call",
 			func(t *testing.T) *learning.Individual {
-				a := newIndividual(t, chemContinuousConfig(), chemContinuousParameters())
-				enableChemistry(t, a, sensitivityDeclaration())
-				return a
+				return newIndividual(t, continuousDelayConfig(), continuousDelayParameters())
 			},
-			authorizedPlan(swapIntervention(0, 1, 0, 1)),
-			"is not implemented yet",
+			authorizedPlan(learning.Intervention{Kind: learning.InterventionShuffleDelays, Seed: 7, Start: 0, End: 3}),
+			"shuffle_delays needs the whole call",
 			false,
 		},
 	}

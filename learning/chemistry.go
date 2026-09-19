@@ -68,6 +68,24 @@ type ChemicalPart struct {
 	Expression *ExpressionGain `json:"expression,omitempty"`
 }
 
+// chemicalPhase names one of the three points inside a row where a channel
+// intervention acts: before the kinetics step, right after it, or between the
+// occupancy records and the effects they become.
+type chemicalPhase int
+
+const (
+	chemicalPreKinetics chemicalPhase = iota
+	chemicalPostKinetics
+	chemicalPostOccupancy
+)
+
+// chemicalOverride is the per-row hook the stepwise chemical layer runs at
+// each phase of a row, so a channel intervention lands on exactly the row whose
+// chemistry it changes. release is the per-region grid at the pre-kinetics
+// point and nil elsewhere. It is owned by the advance loop: a nil hook is the
+// unchanged path.
+type chemicalOverride func(row *chemicalRow, phase chemicalPhase, release [][]float64, step uint64) error
+
 // chemicalRuntime is the enabled chemical layer of one individual: nil means
 // the layer is off and the forward path is the one that existed before it.
 type chemicalRuntime struct {
@@ -85,6 +103,9 @@ type chemicalRuntime struct {
 	// held concentration. It lives on the runtime only, so a snapshot never
 	// carries it and a restored individual is never frozen.
 	frozen bool
+	// override is the channel-intervention hook of an Intervene call. It lives
+	// on the runtime only and a snapshot never carries it.
+	override chemicalOverride
 }
 
 // newChemicalRuntime validates one declaration against a node count and builds
@@ -147,7 +168,7 @@ func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint6
 		// value. The pending feedback is untouched because no source reads it.
 		row.state = state
 		row.release = make([]float64, r.config.Chemistry.Channels)
-		return r.finishRow(&row, nodes)
+		return r.finishRow(&row, nodes, step)
 	}
 	if step > math.MaxInt64 {
 		return row, fmt.Errorf("step %d does not fit an int64 timestamp", step)
@@ -185,19 +206,41 @@ func (r *chemicalRuntime) advanceOne(state modulation.ChemistryState, step uint6
 		}
 		row.release[k] = rates[k]
 	}
+	if r.override != nil {
+		// A remove_channel zeroes the release the kinetics is about to
+		// integrate, and that same row's release total.
+		if err := r.override(&row, chemicalPreKinetics, release, step); err != nil {
+			return chemicalRow{}, err
+		}
+	}
 	if row.state, err = r.kinetics.Step(state, release, nil); err != nil {
 		return chemicalRow{}, err
 	}
-	return r.finishRow(&row, nodes)
+	if r.override != nil {
+		// A fix and a swap edit the concentration the occupancy of this row is
+		// computed from, and the recording hook reads the row's final values.
+		if err := r.override(&row, chemicalPostKinetics, nil, step); err != nil {
+			return chemicalRow{}, err
+		}
+	}
+	return r.finishRow(&row, nodes, step)
 }
 
 // finishRow fills the occupancy, the per-receptor averages and the modulation
 // arrays of a row from its state: the tail the frozen and the live path share.
-func (r *chemicalRuntime) finishRow(row *chemicalRow, nodes int) (chemicalRow, error) {
+func (r *chemicalRuntime) finishRow(row *chemicalRow, nodes int, step uint64) (chemicalRow, error) {
 	receptors := r.config.Receptors
 	var err error
 	if row.occupancy, row.summary, err = receptors.Occupancies(row.state, r.config.Regions.NodeRegion); err != nil {
 		return chemicalRow{}, err
+	}
+	if r.override != nil {
+		// A block_channel zeroes the occupancy records before they become the
+		// per-receptor averages, so the modulation of the row is the neutral
+		// one while the concentration is left alone.
+		if err := r.override(row, chemicalPostOccupancy, nil, step); err != nil {
+			return chemicalRow{}, err
+		}
 	}
 	numReceptors := len(r.config.Receptors.Records)
 	row.receptorOccupancy = make([]float64, numReceptors)
