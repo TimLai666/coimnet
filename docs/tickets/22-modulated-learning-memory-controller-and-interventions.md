@@ -9,7 +9,7 @@ User Story：研究者可以讓受體佔用率決定局部學習閘門與參與�
 
 Blocked by：18 局部可塑性（第一階段）、20 調節來源、21 化學濃度與效果（兩階段）、17 最佳化器
 
-Status：第一階段已驗證（2026-09-17）；第二階段（干預）、第三階段（控制器與對照）待派工
+Status：第一、二階段已驗證（2026-09-19）；第三階段（控制器與對照）待派工
 
 對應需求：MOD-05（閘門、衰退、延遲回饋與關閉效果分開驗證；受體來源）、MOD-06（不誤算為永久學習；
 重複寫入防護與恢復）、COR-11（干預開始、結束、對象與效果可追查；正常推論不能任意鉗制）、MOD-07
@@ -79,6 +79,19 @@ Status：第一階段已驗證（2026-09-17）；第二階段（干預）、第�
 8. 證據：`evidence/COR-11/`（fixture：八種干預各一組手算或不變量測試；`clamp_voltage` 期間電位
    等於 `Value`、結束後自由演化；`fix_concentration` 期間濃度不受釋放率影響）。
 
+## 第二階段證據（2026-09-19）
+
+驗證指令：`cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v -run 'TestIntervention|TestIntervene|TestClampVoltage|TestClampOnLIF|TestSilence|TestForceSpike|TestUnauthorizedPlan|TestUnsupportedKind' ./learning/ ./simulate/ > evidence/COR-11/test.log 2>&1`
+
+`evidence/COR-11/test.log` 記錄最後一次完整重跑的 `-race` 執行：25 個頂層測試全 PASS（learning 13、simulate 12）、55 個子案例全 PASS、0 FAIL、無 panic，兩套件都 `ok`（learning 1.387s、simulate 1.659s；go1.26.5 darwin/arm64，Insyra v0.3.2）。`evidence/COR-11/verification.json` 是完整驗收紀錄，`profile: fixture`。四張小票的證據：
+
+- **宣告與八條驗證規則**（`learning/intervention_test.go`）：`TestInterventionPlanValidate` 44 個子案例逐條走 rule 1（未授權／空白原因回 `ErrInterventionNotAuthorized`）、rule 2（空項目、未知 kind 拒絕、八種全部接受）、rule 3（空區間、NaN／無限 value 拒絕）、rule 4（節點目標升冪與範圍、`force_spike` 需要放電核心）、rule 5（通道範圍、`fix_concentration` 非負）、rule 6（`swap_regions` 兩個不同且界內區域）、rule 7（`shuffle_delays` 需要正延遲與界內邊）、rule 8（同類同目標時間重疊拒絕）。
+- **節點類干預**（`learning/intervene_test.go`）：`TestInterveneClampVoltageHoldsThenReleases` 用 tau = dt = 1（lambda = k = exp(−1)、alpha = 1 − k）證明鉗制期間電位等於 `Value`、結束後自由演化：out = [tanh(alpha)、tanh(0.25)、tanh(0.25)、tanh(k·0.25 + alpha)]，鉗制窗 [1,3) 的 `AppliedRows` 2、`ActivityDelta` 0.684772379365581，下一呼叫從釋放電位 k·0.25 + alpha 續跑（電位 0.8984985375725405）；日誌 JSON 往返保留。`TestInterveneSilenceZeroesOutput` 輸出與持久跡置零、下游零驅動（電位恰為 k·alpha = 0.23254415793482963）。`TestInterveneForceSpikeOnLIF` 只在 LIF 上強制事件（膜電位 = VReset −0.5、不應期 3、跡 +1），連續核心拒絕；`TestInterveneKeepsBaseParameters` 強制放電讓 eligibility 到 (k+1)·1 = 1.3678794411714423、`PlasticDelta` 同值、`BaseParameterDelta` 0 且快照參數逐位不變。`TestInterveneUnauthorizedChangesNothing` 七條拒絕路徑全部 `Snapshot` 逐位相同。
+- **通道與結構干預**（`learning/intervene_channels_test.go`）：`remove_channel` 濃度兩個區域恰為 0、佔用率 0、`ReleaseTotal` [0]、`ConcentrationDelta` 1.3644775709818022；`fix_concentration` 固定後自由行回到 2·exp(−0.5) = 1.2130613194252668、續跑 2·exp(−1) = 0.7357588823428847、`ConcentrationDelta` 3.4678116724044341；`block_channel` 佔用率歸零、輸出與電位和無化學執行逐位相同、濃度和 `ConcentrationDelta` 0；`swap_regions` 交換兩區域（同釋放率下值無效）；`shuffle_delays` seed 7 把 [1 2] 置換成 [2 1]，輸出等於獨立宣告 [0 2 1] 的核心、呼叫後延遲還原 [0 1 2]。
+- **原生 runner 干預**（`simulate/interventions_test.go`）：`TestInterventionsKeepProtocolHash` 證明無干預區塊的協定編碼與 hash（NAT-01 記錄值 `befa9f1d...`）不變、加區塊後 hash 改變；`TestClampVoltageHoldsThenReleases`（連續）讀 [tanh(alpha·2)、tanh(.25)、tanh(.25)、tanh(k·.25)]、`AppliedSteps` 2、報告帶 reason；`TestSilenceZeroesOutputAndDownstream` 下游收到 0（探針 [1, k, k², k³]）；`TestForceSpikeOnLIF` 事件、v_reset、跡、不應期齊全。另 `TestClampOnLIFHoldsTheMembraneVoltage`（鉗制覆寫事件重設）、`TestSilenceNeedsAZeroActivation`、`TestInterventionConflictsRejected`、`TestInterventionTargetsOutOfRangeRejected`、`TestInterventionTargetsMustBeStrictlyIncreasing`、`TestForceSpikeRejectedOnContinuous`、`TestUnauthorizedPlanRejected`、`TestUnsupportedKindRejected` 逐一釘住語意與拒絕。
+
+限制：fixture 規模（一至三顆神經元、單一通道、至多數列）；runner 沒有通道類干預（沒有化學層），五種通道／結構 kind 在 `simulate` 一律被拒；runner 的 `[Start, End)` 以每次 `Run` 呼叫的列數計而非全域步數（`AppliedSteps` 是該次重疊步數）；任務結果差（`TaskDelta`）未實作；節點類干預在 mixed core 被拒（未實作）；真實資料未跑；本 log 只含上述目標測試，完整 `go test ./...` 與 `go vet ./...` 不在本次指令範圍。
+
 ### 第三階段：小型可訓練控制器與對照流程（MOD-07、MOD-10）
 
 9. **控制器**：`modulation.Controller{Inputs ControllerInputs{SummaryWindow int; UseFeedback bool;
@@ -124,7 +137,7 @@ func RunAblation(ctx context.Context, c AblationConfig) (AblationReport, error)
 
 - [x] 第一階段：閘門關、時間窗可區分、關閉效果、記憶表現狀態切換（不是遺忘）、穩定化去重與預算、
   三層 L2 分開、快照接續；`go test`、race、vet；`evidence/MOD-05/`、`evidence/MOD-06/`。
-- [ ] 第二階段：八種干預各有測試、未授權不改狀態、期間與結束後行為、四種差值計算；
+- [x] 第二階段：八種干預各有測試、未授權不改狀態、期間與結束後行為、四種差值計算；
   `evidence/COR-11/`；`simulate run` 的 `interventions` 區塊與 `RunReport.interventions`。
 - [ ] 第三階段：控制器有限差分、容量報告、無題目旁路、容量匹配參數量相等、五組對照流程各 3 seed、
   CLI；`evidence/MOD-07/`、`evidence/MOD-10/`；文件。

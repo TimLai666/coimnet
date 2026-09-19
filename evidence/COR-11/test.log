@@ -1,0 +1,168 @@
+2026/09/19 09:12:56 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestInterveneRemoveChannelZeroesTheChannelForTheWindow
+--- PASS: TestInterveneRemoveChannelZeroesTheChannelForTheWindow (0.00s)
+=== RUN   TestInterveneFixConcentrationHoldsThroughTheWindowThenDecays
+--- PASS: TestInterveneFixConcentrationHoldsThroughTheWindowThenDecays (0.00s)
+=== RUN   TestInterveneBlockChannelNeutralizesTheWindow
+--- PASS: TestInterveneBlockChannelNeutralizesTheWindow (0.00s)
+=== RUN   TestInterveneSwapRegionsExchangesTheRegions
+--- PASS: TestInterveneSwapRegionsExchangesTheRegions (0.00s)
+=== RUN   TestInterveneShuffleDelaysPermutesEdgesForTheWholeCall
+    intervene_channels_test.go:290: seed 7 over the delayed edges permutes [1 2] to [2 1]; output [[0] [0] [0.3396334946155548] [0.5166389346122742] [0.7127322554588318]]
+--- PASS: TestInterveneShuffleDelaysPermutesEdgesForTheWholeCall (0.00s)
+=== RUN   TestInterveneChannelKindsKeepBaseParameters
+=== RUN   TestInterveneChannelKindsKeepBaseParameters/block_channel
+=== RUN   TestInterveneChannelKindsKeepBaseParameters/fix_concentration
+=== RUN   TestInterveneChannelKindsKeepBaseParameters/remove_channel
+=== RUN   TestInterveneChannelKindsKeepBaseParameters/swap_regions
+--- PASS: TestInterveneChannelKindsKeepBaseParameters (0.00s)
+    --- PASS: TestInterveneChannelKindsKeepBaseParameters/block_channel (0.00s)
+    --- PASS: TestInterveneChannelKindsKeepBaseParameters/fix_concentration (0.00s)
+    --- PASS: TestInterveneChannelKindsKeepBaseParameters/remove_channel (0.00s)
+    --- PASS: TestInterveneChannelKindsKeepBaseParameters/swap_regions (0.00s)
+=== RUN   TestInterveneClampVoltageHoldsThenReleases
+--- PASS: TestInterveneClampVoltageHoldsThenReleases (0.00s)
+=== RUN   TestInterveneSilenceZeroesOutput
+--- PASS: TestInterveneSilenceZeroesOutput (0.00s)
+=== RUN   TestInterveneKeepsBaseParameters
+--- PASS: TestInterveneKeepsBaseParameters (0.00s)
+=== RUN   TestInterveneForceSpikeOnLIF
+--- PASS: TestInterveneForceSpikeOnLIF (0.00s)
+=== RUN   TestInterveneUnauthorizedChangesNothing
+=== RUN   TestInterveneUnauthorizedChangesNothing/unauthorized
+=== RUN   TestInterveneUnauthorizedChangesNothing/blank_reason
+=== RUN   TestInterveneUnauthorizedChangesNothing/unknown_kind
+=== RUN   TestInterveneUnauthorizedChangesNothing/mixed_core_node_clamp
+=== RUN   TestInterveneUnauthorizedChangesNothing/mixed_core_node_force_spike
+=== RUN   TestInterveneUnauthorizedChangesNothing/mixed_core_node_silence
+=== RUN   TestInterveneUnauthorizedChangesNothing/shuffle_without_the_whole_call
+--- PASS: TestInterveneUnauthorizedChangesNothing (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/unauthorized (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/blank_reason (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/unknown_kind (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/mixed_core_node_clamp (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/mixed_core_node_force_spike (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/mixed_core_node_silence (0.00s)
+    --- PASS: TestInterveneUnauthorizedChangesNothing/shuffle_without_the_whole_call (0.00s)
+=== RUN   TestInterventionPlanValidate
+=== RUN   TestInterventionPlanValidate/rule1_not_authorized
+=== RUN   TestInterventionPlanValidate/rule1_blank_reason
+=== RUN   TestInterventionPlanValidate/rule1_ok_authorized_with_reason
+=== RUN   TestInterventionPlanValidate/rule2_empty_items
+=== RUN   TestInterventionPlanValidate/rule2_unknown_kind
+=== RUN   TestInterventionPlanValidate/rule2_ok_all_eight_kinds
+=== RUN   TestInterventionPlanValidate/rule3_start_equals_end
+=== RUN   TestInterventionPlanValidate/rule3_start_after_end
+=== RUN   TestInterventionPlanValidate/rule3_nan_value
+=== RUN   TestInterventionPlanValidate/rule3_infinite_value
+=== RUN   TestInterventionPlanValidate/rule3_ok_interval_and_finite_value
+=== RUN   TestInterventionPlanValidate/rule4_empty_targets
+=== RUN   TestInterventionPlanValidate/rule4_duplicate_targets
+=== RUN   TestInterventionPlanValidate/rule4_descending_targets
+=== RUN   TestInterventionPlanValidate/rule4_out_of_range_target
+=== RUN   TestInterventionPlanValidate/rule4_negative_target
+=== RUN   TestInterventionPlanValidate/rule4_force_spike_without_spiking_core
+=== RUN   TestInterventionPlanValidate/rule4_ok_a_node_target
+=== RUN   TestInterventionPlanValidate/rule4_ok_silence_in_range
+=== RUN   TestInterventionPlanValidate/rule4_ok_force_spike_on_spiking_core
+=== RUN   TestInterventionPlanValidate/rule5_no_chemistry
+=== RUN   TestInterventionPlanValidate/rule5_out_of_range_channel
+=== RUN   TestInterventionPlanValidate/rule5_negative_channel
+=== RUN   TestInterventionPlanValidate/rule5_negative_fixed_value
+=== RUN   TestInterventionPlanValidate/rule5_ok_block_channel
+=== RUN   TestInterventionPlanValidate/rule5_ok_fix_concentration_at_zero
+=== RUN   TestInterventionPlanValidate/rule5_ok_remove_channel
+=== RUN   TestInterventionPlanValidate/rule6_fewer_than_two_regions
+=== RUN   TestInterventionPlanValidate/rule6_same_region
+=== RUN   TestInterventionPlanValidate/rule6_out_of_range_region
+=== RUN   TestInterventionPlanValidate/rule6_ok_distinct_regions
+=== RUN   TestInterventionPlanValidate/rule7_nothing_to_shuffle
+=== RUN   TestInterventionPlanValidate/rule7_out_of_range_edge
+=== RUN   TestInterventionPlanValidate/rule7_duplicate_edges
+=== RUN   TestInterventionPlanValidate/rule7_ok_no_target_edges
+=== RUN   TestInterventionPlanValidate/rule7_ok_one_edge_target
+=== RUN   TestInterventionPlanValidate/rule8_overlapping_clamps_on_one_node
+=== RUN   TestInterventionPlanValidate/rule8_overlapping_silence_sharing_a_target
+=== RUN   TestInterventionPlanValidate/rule8_overlapping_channel_kinds_on_one_channel
+=== RUN   TestInterventionPlanValidate/rule8_overlapping_shuffles_over_all_edges
+=== RUN   TestInterventionPlanValidate/rule8_overlapping_swaps_sharing_a_region
+=== RUN   TestInterventionPlanValidate/rule8_ok_overlapping_clamps_on_different_nodes
+=== RUN   TestInterventionPlanValidate/rule8_ok_separable_intervals_on_one_node
+=== RUN   TestInterventionPlanValidate/rule8_ok_different_kinds_may_overlap
+--- PASS: TestInterventionPlanValidate (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule1_not_authorized (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule1_blank_reason (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule1_ok_authorized_with_reason (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule2_empty_items (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule2_unknown_kind (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule2_ok_all_eight_kinds (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule3_start_equals_end (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule3_start_after_end (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule3_nan_value (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule3_infinite_value (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule3_ok_interval_and_finite_value (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_empty_targets (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_duplicate_targets (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_descending_targets (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_out_of_range_target (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_negative_target (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_force_spike_without_spiking_core (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_ok_a_node_target (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_ok_silence_in_range (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule4_ok_force_spike_on_spiking_core (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_no_chemistry (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_out_of_range_channel (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_negative_channel (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_negative_fixed_value (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_ok_block_channel (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_ok_fix_concentration_at_zero (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule5_ok_remove_channel (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule6_fewer_than_two_regions (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule6_same_region (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule6_out_of_range_region (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule6_ok_distinct_regions (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule7_nothing_to_shuffle (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule7_out_of_range_edge (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule7_duplicate_edges (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule7_ok_no_target_edges (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule7_ok_one_edge_target (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_overlapping_clamps_on_one_node (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_overlapping_silence_sharing_a_target (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_overlapping_channel_kinds_on_one_channel (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_overlapping_shuffles_over_all_edges (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_overlapping_swaps_sharing_a_region (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_ok_overlapping_clamps_on_different_nodes (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_ok_separable_intervals_on_one_node (0.00s)
+    --- PASS: TestInterventionPlanValidate/rule8_ok_different_kinds_may_overlap (0.00s)
+=== RUN   TestInterventionShapeFromIndividual
+--- PASS: TestInterventionShapeFromIndividual (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	1.387s
+=== RUN   TestInterventionsKeepProtocolHash
+--- PASS: TestInterventionsKeepProtocolHash (0.00s)
+=== RUN   TestClampVoltageHoldsThenReleases
+--- PASS: TestClampVoltageHoldsThenReleases (0.02s)
+=== RUN   TestSilenceZeroesOutputAndDownstream
+--- PASS: TestSilenceZeroesOutputAndDownstream (0.01s)
+=== RUN   TestForceSpikeOnLIF
+--- PASS: TestForceSpikeOnLIF (0.01s)
+=== RUN   TestClampOnLIFHoldsTheMembraneVoltage
+--- PASS: TestClampOnLIFHoldsTheMembraneVoltage (0.01s)
+=== RUN   TestForceSpikeRejectedOnContinuous
+--- PASS: TestForceSpikeRejectedOnContinuous (0.01s)
+=== RUN   TestUnauthorizedPlanRejected
+--- PASS: TestUnauthorizedPlanRejected (0.00s)
+=== RUN   TestUnsupportedKindRejected
+--- PASS: TestUnsupportedKindRejected (0.00s)
+=== RUN   TestInterventionTargetsOutOfRangeRejected
+--- PASS: TestInterventionTargetsOutOfRangeRejected (0.02s)
+=== RUN   TestInterventionConflictsRejected
+--- PASS: TestInterventionConflictsRejected (0.02s)
+=== RUN   TestInterventionTargetsMustBeStrictlyIncreasing
+--- PASS: TestInterventionTargetsMustBeStrictlyIncreasing (0.00s)
+=== RUN   TestSilenceNeedsAZeroActivation
+--- PASS: TestSilenceNeedsAZeroActivation (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/simulate	1.659s
