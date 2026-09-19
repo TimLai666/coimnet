@@ -30,6 +30,17 @@ type StepReport struct {
 // loss, grad := d.Loss(teacher, logits, label); upstream is len(input) rows of
 // zeros except the last row = grad; then student.StepFrom(ctx, input, upstream).
 func StepDistribution(ctx context.Context, student Student, d DistributionDistiller, input [][]float64, teacher TeacherDistribution, label int) (StepReport, error) {
+	return stepWithTarget(ctx, student, d, input, teacher, label, func(report DistributionReport) int {
+		if t := argmax(teacher.Probabilities); t >= 0 {
+			return alignedTeacherArgmax(t, teacher, report)
+		}
+		return -1
+	})
+}
+
+// stepWithTarget runs one distillation step whose Ratio is agreement between
+// the pre-step logits and target(report).
+func stepWithTarget(ctx context.Context, student Student, d DistributionDistiller, input [][]float64, teacher TeacherDistribution, label int, target func(report DistributionReport) int) (StepReport, error) {
 	var zero StepReport
 	if ctx == nil {
 		return zero, errors.New("distill: nil context")
@@ -48,6 +59,7 @@ func StepDistribution(ctx context.Context, student Student, d DistributionDistil
 	if len(input) == 0 {
 		return zero, errors.New("distill: empty input sequence")
 	}
+	ratio := ratioFromStudent(logits, target(report))
 	upstream := make([][]float64, len(input))
 	for i := range upstream {
 		upstream[i] = make([]float64, len(grad))
@@ -56,7 +68,7 @@ func StepDistribution(ctx context.Context, student Student, d DistributionDistil
 	if _, err := student.StepFrom(ctx, input, upstream); err != nil {
 		return zero, err
 	}
-	return StepReport{Loss: loss, Report: report, Partial: report.Partial, Ratio: argmaxAgreement(logits, teacher, report)}, nil
+	return StepReport{Loss: loss, Report: report, Partial: report.Partial, Ratio: ratio}, nil
 }
 
 // StepLabel is the label-only case: Mix 0 through the same path (a distiller
@@ -82,18 +94,9 @@ func StepLabel(ctx context.Context, student Student, input [][]float64, label in
 	for i := range p {
 		p[i] = 1 / float64(classes)
 	}
-	rep, err := StepDistribution(ctx, student, DistributionDistiller{Temperature: 1, Scale: 1, Mix: 0, Alignment: alignment}, input, TeacherDistribution{Probabilities: p}, label)
-	if err != nil {
-		return zero, err
-	}
-	// The label-only case has no teacher distribution: evaluate agreement from
-	// the pre-step logits against the label itself.
-	if len(input) > 0 {
-		if logits, perr := student.Predict(ctx, input); perr == nil {
-			rep.Ratio = ratioFromStudent(logits, label)
-		}
-	}
-	return rep, nil
+	return stepWithTarget(ctx, student, DistributionDistiller{Temperature: 1, Scale: 1, Mix: 0, Alignment: alignment}, input, TeacherDistribution{Probabilities: p}, label, func(DistributionReport) int {
+		return label
+	})
 }
 
 // Agreement is the fraction of examples whose student argmax equals the
@@ -127,16 +130,6 @@ func Agreement(ctx context.Context, student Student, inputs [][][]float64, teach
 // labelVocabHash is the student-class vocabulary the label-only path declares,
 // shared by the step and the student side of its identical alignment.
 const labelVocabHash = "coimnet-distill-label/v1"
-
-// argmaxAgreement is 1 when the student's argmax equals the teacher
-// distribution's argmax mapped to a student class.
-func argmaxAgreement(logits []float64, teacher TeacherDistribution, report DistributionReport) float64 {
-	t := argmax(teacher.Probabilities)
-	if t < 0 {
-		return 0
-	}
-	return ratioFromStudent(logits, alignedTeacherArgmax(t, teacher, report))
-}
 
 // alignedTeacherArgmax maps teacher class t through the report's alignment.
 func alignedTeacherArgmax(t int, teacher TeacherDistribution, report DistributionReport) int {

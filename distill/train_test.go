@@ -75,21 +75,25 @@ func (s *trackingStudent) StepFrom(ctx context.Context, input, upstream [][]floa
 	return r, err
 }
 
-// recordingStudent hands out canned logits and photographs the upstream it
-// receives on StepFrom.
+// recordingStudent hands out canned logits, photographs the upstream it
+// receives on StepFrom and counts Predict/StepFrom calls.
 type recordingStudent struct {
 	logits     []float64
 	upstream   [][]float64
 	stepResult learning.StepResult
 	stepped    bool
+	predicts   int
+	steps      int
 }
 
 func (s *recordingStudent) Predict(context.Context, [][]float64) ([]float64, error) {
+	s.predicts++
 	return s.logits, nil
 }
 
 func (s *recordingStudent) StepFrom(_ context.Context, _ [][]float64, upstream [][]float64) (learning.StepResult, error) {
 	s.stepped = true
+	s.steps++
 	s.upstream = upstream
 	return s.stepResult, nil
 }
@@ -227,6 +231,44 @@ func TestStepRejectsBadShapes(t *testing.T) {
 	}
 	if s.stepped {
 		t.Fatalf("StepFrom ran on a rejected shape")
+	}
+}
+
+func TestStepLabelRatioIsPreStepAgreement(t *testing.T) {
+	for _, label := range []int{1, 0} {
+		want := 0.0
+		if label == 1 {
+			want = 1
+		}
+		s := &recordingStudent{logits: []float64{0.2, 0.9}}
+		rep, err := distill.StepLabel(context.Background(), s, [][]float64{{1}, {0}, {0}}, label, 2)
+		if err != nil {
+			t.Fatalf("StepLabel(label=%d) = %v, want nil", label, err)
+		}
+		if rep.Ratio != want {
+			t.Fatalf("StepLabel(label=%d) Ratio = %g, want %g", label, rep.Ratio, want)
+		}
+		if s.predicts != 1 {
+			t.Fatalf("StepLabel(label=%d) called Predict %d times, want 1", label, s.predicts)
+		}
+		if s.steps != 1 {
+			t.Fatalf("StepLabel(label=%d) called StepFrom %d times, want 1", label, s.steps)
+		}
+	}
+}
+
+func TestStepDistributionCallsPredictOnce(t *testing.T) {
+	s := &recordingStudent{logits: []float64{0.2, 0.9}}
+	d := distill.DistributionDistiller{Temperature: 1, Scale: 1, Mix: 0.7, Alignment: fixtureAlignment()}
+	teacher := distill.TeacherDistribution{Probabilities: []float64{0.9, 0.1}}
+	if _, err := distill.StepDistribution(context.Background(), s, d, [][]float64{{1}, {0}}, teacher, 0); err != nil {
+		t.Fatalf("StepDistribution = %v, want nil", err)
+	}
+	if s.predicts != 1 {
+		t.Fatalf("StepDistribution called Predict %d times, want 1", s.predicts)
+	}
+	if s.steps != 1 {
+		t.Fatalf("StepDistribution called StepFrom %d times, want 1", s.steps)
 	}
 }
 
