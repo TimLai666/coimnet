@@ -152,6 +152,37 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	return &Recognizer{trainer: tr, config: c, index: index}, nil
 }
 
+// NewRecognizerWith builds the same model as NewRecognizer but starts from
+// the given parameters instead of the seeded initialization, so a caller can
+// replay a trained model or run an intervened copy of one. The parameter
+// shapes must match the model the configuration describes; the optimizer state
+// starts empty and the update count at zero, and the recognizer owns its own
+// copy of the parameters.
+func NewRecognizerWith(c RecognizerConfig, p learning.Parameters) (*Recognizer, error) {
+	r, err := NewRecognizer(c)
+	if err != nil {
+		return nil, err
+	}
+	s := r.trainer.Snapshot()
+	s.Parameters = p
+	tr, err := learning.RestoreTrainer(s)
+	if err != nil {
+		return nil, err
+	}
+	r.trainer = tr
+	return r, nil
+}
+
+// Parameters returns an independent deep copy of the recognizer's current
+// parameters, so a caller can read or change them without touching the
+// trainer.
+func (r *Recognizer) Parameters() learning.Parameters {
+	if r == nil {
+		return learning.Parameters{}
+	}
+	return r.trainer.Snapshot().Parameters
+}
+
 // uniform draws n values uniformly from [-0.3, 0.3] with the given source.
 func uniform(src *rand.PCG, n int) []float64 {
 	rng := rand.New(src)
@@ -188,6 +219,16 @@ func (r *Recognizer) Columns(img glyphs.Image) ([][]float64, error) {
 		out[x] = col
 	}
 	return out, nil
+}
+
+// logits reads one image column by column and returns the readout of every
+// column: one row per column, len(Alphabet)+1 classes per row.
+func (r *Recognizer) logits(ctx context.Context, img glyphs.Image) ([][]float64, error) {
+	columns, err := r.Columns(img)
+	if err != nil {
+		return nil, err
+	}
+	return r.trainer.PredictAll(ctx, columns)
 }
 
 // labels turns text into CTC class indices, where rune Alphabet[k-1] is class

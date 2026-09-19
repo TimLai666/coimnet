@@ -6,7 +6,8 @@ import (
 )
 
 // Render draws text left to right: glyph i occupies columns [9i, 9i+8) with one blank column between glyphs, height 8,
-// width 9*len(runes)-1. Empty text or an option outside its range is an error.
+// width 9*len(runes)-1. The blank column carries Options.Background in every row, without noise, so the gap is the
+// declared background rather than an unwritten zero. Empty text or an option outside its range is an error.
 func Render(text string, f Family, o Options) (Image, []Box, error) {
 	if text == "" {
 		return Image{}, nil, errors.New("glyphs: empty text")
@@ -21,6 +22,13 @@ func Render(text string, f Family, o Options) (Image, []Box, error) {
 	width := 9*len(runes) - 1
 	img := Image{Width: width, Height: 8, Pixels: make([]float64, width*8)}
 	boxes := make([]Box, 0, len(runes))
+	// The blank column after every glyph but the last is background, drawn
+	// before the glyphs so it never consumes the noise generator.
+	for i := 0; i < len(runes)-1; i++ {
+		for y := 0; y < 8; y++ {
+			img.Pixels[y*width+9*i+8] = o.Background
+		}
+	}
 	rng := rand.New(rand.NewPCG(o.Seed, 0))
 	for i, r := range runes {
 		x0 := 9 * i

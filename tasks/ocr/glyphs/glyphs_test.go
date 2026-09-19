@@ -47,7 +47,9 @@ func TestFamiliesDiffer(t *testing.T) {
 }
 
 func TestRenderGeometry(t *testing.T) {
-	var o glyphs.Options
+	// A visible background, so the blank column between glyphs is checked
+	// against a value the zero fill cannot produce by accident.
+	o := glyphs.Options{Background: 0.25}
 	img, boxes, err := glyphs.Render("台灣", glyphs.Family{Seed: 5}, o)
 	if err != nil {
 		t.Fatal(err)

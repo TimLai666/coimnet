@@ -106,13 +106,10 @@ func TestRecognizerColumnsShape(t *testing.T) {
 		}
 	}
 	// Column 8 is the blank column Render leaves between the two glyphs: it
-	// carries no ink and one constant value in every row. Render only writes
-	// the glyph boxes, so that constant is the zero fill, not
-	// Options.Background; asserting Background here would be asserting a
-	// change to glyphs that this ticket does not own.
+	// carries no ink, so every row holds Options.Background.
 	for y := 0; y < recognizerHeight; y++ {
-		if cols[8][y] != 0 {
-			t.Fatalf("gap column row %d = %g, want the constant 0 Render leaves between glyphs", y, cols[8][y])
+		if want := renderOptions().Background; cols[8][y] != want {
+			t.Fatalf("gap column row %d = %g, want the background %g", y, cols[8][y], want)
 		}
 	}
 }
