@@ -51,8 +51,12 @@ const (
 // NamedSet is a neuron set the user names. The framework attaches no meaning
 // to the name: it is the intersection of the declared selectors and nothing
 // else. An empty intersection is an error unless every selector allows it.
+// Namespace is the dataset the set was written for. It is optional, and a set
+// that declares one is refused against a graph of another dataset instead of
+// resolving selectors across two ID spaces that have no mapping between them.
 type NamedSet struct {
 	Name      string     `json:"name"`
+	Namespace string     `json:"namespace,omitempty"`
 	Selectors []Selector `json:"selectors"`
 }
 
@@ -101,6 +105,9 @@ func ResolveSets(ctx context.Context, g *connectome.Graph, sets []NamedSet) ([]R
 			return nil, fmt.Errorf("simulate: duplicate named set %q", set.Name)
 		}
 		seen[set.Name] = struct{}{}
+		if set.Namespace != "" && set.Namespace != g.Namespace() {
+			return nil, fmt.Errorf("simulate: named set %q declares namespace %q, the graph is %q", set.Name, set.Namespace, g.Namespace())
+		}
 		if len(set.Selectors) == 0 {
 			return nil, fmt.Errorf("simulate: named set %q declares no selector", set.Name)
 		}
