@@ -51,3 +51,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - 本機已有 `LICENSE`，沿用原件。引用的資料、程式與模型各自核對授權。
 - 修改、提交或推送其他儲存庫、對外發布、付費、外傳非公開資料及破壞性操作，依使用者明確授權處理。
 - 使用英文 Conventional Commits。使用者已於 2026-09-13 授權在完成可驗證階段後主動提交並推送本專案，不必逐次確認。提交前檢查改動範圍與驗證證據，推送後核對遠端提交；不使用 force push，也不把尚未完成的分工成果納入。
+
+## Follow-ups
+
+- `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
+- `tasks/ocr`：`Stack` 沒檢查每行 `Pixels` 長度是否等於 `Width*Height`，長度不符會 panic 而非回錯；補檢查與測試。
