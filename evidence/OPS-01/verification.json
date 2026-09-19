@@ -1,0 +1,32 @@
+{
+  "requirement": "使用者可以以 SDK 執行核心工作並取消長任務。驗收：API 例子可執行，錯誤不 panic，取消後釋放資源。（主規格需求表 OPS-01）",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v -run 'Example|TestNoPanic|TestCancelReleases' . > evidence/OPS-01/test.log 2>&1; grep -c '^--- PASS' evidence/OPS-01/test.log",
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v -run 'TestPublicAPINeverPanics' . >> evidence/OPS-01/test.log 2>&1; grep -c '^--- PASS' evidence/OPS-01/test.log; grep -c '^    --- PASS' evidence/OPS-01/test.log",
+    "說明：票面指定的 -run 群組寫成 'TestNoPanic'，但實際的非法輸入測試叫 TestPublicAPINeverPanics，該樣式一個測試都沒匹配到。test.log 的第一段是第一條指令逐字的輸出，第二段是補跑 TestPublicAPINeverPanics 後附加的輸出；兩條指令依序執行可以逐位重現整份 test.log。"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64",
+    "uptime: 12:53 up 13 days, 18:32, 1 user, load averages: 3.75 3.18 3.12（共用機器，測試期間負載在 3.1–4.2 之間）"
+  ],
+  "input_fingerprints": [
+    "example_sdk_test.go SHA-256 1e578bc864db7c8f4b6f9e3c54486f9acad940de2038a168d09ce2a4e2319f43（八個 Example，全部以 // Output: 驗證）",
+    "nopanic_test.go SHA-256 f6546302fb497b5d0646f13598d41b42c558eac7dfa4a4b7aa577cb10221ddf5（TestPublicAPINeverPanics 的 88 個表格案例）",
+    "cancel_release_test.go SHA-256 fc6168fbbbe6a88fc46eb1880569bb10248e926201c891c8bbcaafc494fa0327（TestCancelReleases 的五個子測試）",
+    "雜湊以 shasum -a 256 計算"
+  ],
+  "observed_result": "Eight executable SDK examples, the 88-case no-panic table and the five cancellation tests all pass under -race: evidence/OPS-01/test.log holds 10 top-level '--- PASS' lines, 93 subtest '--- PASS' lines and zero '--- FAIL' lines (packages ok: github.com/TimLai666/coimnet 5.335s for the first command and 1.353s for the appended one).\n\n(1) The eight Example functions each pin their own '// Output:' block, so 'go test' compares real output rather than asserting a string, and each one names the 16.1 capability it stands for: Example_newContinuousCore = build a core (dynamics.NewContinuous plus two rolled steps, prints '2 2' and 0.374347); Example_newIndividual = build an independent individual, feed observations step by step and take the output (three rows advanced, last readout 0.065252); Example_trainEpisode = train and return the after-the-fact result (five episodes of the same fixture, pre-update loss first=0.189006 final=0.048553); Example_enablePlasticity = declare a local learning rule (plasticity.RuleHebbianRate on edge 0, one gated advance, report.Steps=2 and a non-nil plastic snapshot); Example_enableChemistry = declare modulation (modulation.ChemistryConfig with one external-timeline source, one hypothesized receptor and a region assignment; two advance rows tick the chemical clock to 2); Example_intervene = intervene (an authorized clamp-voltage plan applies to 2 rows with BaseParameterDelta 0, so base parameters stay untouched); Example_snapshotRestore = save and restore (learning.RestoreIndividual of the snapshot advances the same rows to reflect.DeepEqual-identical readouts); Example_observeLocalState = observe local state (the snapshot names core 'continuous', 2 voltages and 8 total parameters).\n\n(2) TestPublicAPINeverPanics runs 88 table cases across dynamics, learning, checkpoint, simulate, modulation, plasticity, signal, connectome, distill and multimodal (zero-value configs, zero or negative node counts, mismatched source/target lengths, out-of-range indices, NaN dt and NaN parameters, unknown activation and surrogate names, empty and wrong-width inputs, nil or wrong-length initial states, unauthorized intervention plans, nonexistent, empty and malformed files). Every case both recovers from a panic and requires a non-nil error: all 88 subtests pass, so zero panics and zero silently accepted invalid inputs.\n\n(3) TestCancelReleases covers the five declared entry points; each logs its own before/after numbers and reached the baseline on attempt 0. simulate_Run: before goroutines=3 HeapInuse=16,179,200, after goroutines=3 (want 3) HeapInuse=7,585,792 (limit 17,797,120). learning_Trainer_Step: before goroutines=3 HeapInuse=7,979,008, after goroutines=3 (want 3) HeapInuse=7,585,792 (limit 8,776,908). learning_Individual_Advance: before goroutines=3 HeapInuse=10,330,112, after goroutines=3 (want 3) HeapInuse=7,577,600 (limit 11,363,123). download_Fetch: before goroutines=4 HeapInuse=7,585,792, after goroutines=4 (want 4) HeapInuse=7,585,792 (limit 8,344,371). connectome_Build: before goroutines=3 HeapInuse=7,593,984, after goroutines=3 (want 3) HeapInuse=7,602,176 (limit 8,353,382). Every case returns after cancellation with the goroutine count exactly back at its baseline and HeapInuse inside the 1.1x limit after two GCs.",
+  "assumption_statement": "範例與測試都在 fixture 規模；不公開裸指標由回傳副本的既有測試支撐。",
+  "test_log": [
+    "evidence/OPS-01/test.log（第一段為票面驗證指令的輸出，第二段為補跑 TestPublicAPINeverPanics 的輸出）"
+  ],
+  "limitations": [
+    "票面驗證指令的 -run 樣式 'TestNoPanic' 在根套件裡沒有匹配到任何測試：`go test -list . .` 列出的測試是 TestOnlyNetworkPackagesImportHTTP、TestNoTelemetry、TestScanCommitScriptFlagsSecrets、TestCancelReleases、TestGovernance*（四個）、TestPublicAPINeverPanics、TestZeroValueGettersAreSafe 與八個 Example_*。'Example|TestNoPanic|TestCancelReleases' 實際只跑到 TestCancelReleases 與八個 Example（9 個頂層 PASS）；非法輸入不 panic 的證據是第二條指令補跑 TestPublicAPINeverPanics 得到的，不在原指令的輸出裡。",
+    "16.1 列的能力中，「載入資料」與「評估」沒有對應的 Example：資料載入只在 connectome／download 的既有測試裡驗證，評估留在 CLI 的 `examples run evaluate` 與 experiment 套件，SDK 層沒有可執行範例。",
+    "「註冊自訂編碼／動態／學習／調節／任務」只以既有介面的宣告式設定示範，沒有註冊 API：Example_enablePlasticity 與 Example_enableChemistry 傳的是 plasticity.Config 與 modulation.ChemistryConfig，票面 Root 決策 5 寫的 experiment.RegisterGenerator 在這個 build 不存在（`grep -rn 'func RegisterGenerator'` 無結果），任務產生器是 config/registry.go 裡的私有 map generators，外部套件無法新增自訂項目。",
+    "「不公開裸指標」沒有在本次證據裡直接驗證：這裡沒有跑專門的別名測試，該性質由 checkpoint 與 learning 既有的 alias-isolation 測試（例如 TestSaveLoadIndividualRoundTripAndAliasIsolation）支撐，不在 evidence/OPS-01/test.log 內。",
+    "取消釋放的 HeapInuse 比較以一個刻意保留的 4 MiB pad 當底線（cancel_release_test.go 的 baselinePadBytes），比的是 1.1 倍上限，不是逐位元組的洩漏證明；goroutine 數是 ±0。",
+    "只在 macOS arm64（go1.26.5 darwin/arm64）上跑過一次，沒有跨平台或重複執行；共用機器，量到的 HeapInuse 與耗時會隨負載變動。"
+  ]
+}

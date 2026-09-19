@@ -1,0 +1,68 @@
+{
+  "schema_version": "coimnet-benchmark/v1",
+  "go_version": "go1.26.5",
+  "goos": "darwin",
+  "goarch": "arm64",
+  "num_cpu": 8,
+  "uptime": "12:55  up 13 days, 18:33, 1 user, load averages: 4.18 3.44 3.22\n",
+  "config": {
+    "nodes": 64,
+    "edges": 256,
+    "steps": 200,
+    "repeat": 3
+  },
+  "stages": [
+    {
+      "name": "import",
+      "median_ms": 0.00225,
+      "min_ms": 0.000584,
+      "max_ms": 0.806583,
+      "repeat": 3,
+      "rss_mib_after": 12.5
+    },
+    {
+      "name": "forward",
+      "median_ms": 0.221958,
+      "min_ms": 0.186875,
+      "max_ms": 0.223166,
+      "repeat": 3,
+      "rss_mib_after": 12.5
+    },
+    {
+      "name": "backward",
+      "median_ms": 1.631167,
+      "min_ms": 1.061792,
+      "max_ms": 3.686041,
+      "repeat": 3,
+      "rss_mib_after": 17.9
+    },
+    {
+      "name": "local_plasticity",
+      "median_ms": 5.404,
+      "min_ms": 5.043041,
+      "max_ms": 5.551959,
+      "repeat": 3,
+      "rss_mib_after": 18
+    },
+    {
+      "name": "modulation",
+      "median_ms": 5.299416,
+      "min_ms": 5.271,
+      "max_ms": 5.342625,
+      "repeat": 3,
+      "rss_mib_after": 18
+    },
+    {
+      "name": "snapshot",
+      "median_ms": 14.001083,
+      "min_ms": 10.613459,
+      "max_ms": 15.561625,
+      "repeat": 3,
+      "rss_mib_after": 18.5
+    }
+  ],
+  "assumptions": [
+    "synthetic topology, not the MaleCNS graph",
+    "wall-clock medians on a shared machine; see uptime"
+  ]
+}

@@ -1,0 +1,226 @@
+2026/09/19 12:55:02 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestCancelReleases
+=== RUN   TestCancelReleases/simulate_Run
+    cancel_release_test.go:127: before TestCancelReleases/simulate_Run: goroutines=3 HeapInuse=16179200
+    cancel_release_test.go:135: after TestCancelReleases/simulate_Run attempt 0: goroutines=3 (want 3) HeapInuse=7585792 (limit 17797120)
+=== RUN   TestCancelReleases/learning_Trainer_Step
+    cancel_release_test.go:145: before TestCancelReleases/learning_Trainer_Step: goroutines=3 HeapInuse=7979008
+    cancel_release_test.go:153: after TestCancelReleases/learning_Trainer_Step attempt 0: goroutines=3 (want 3) HeapInuse=7585792 (limit 8776908)
+=== RUN   TestCancelReleases/learning_Individual_Advance
+    cancel_release_test.go:163: before TestCancelReleases/learning_Individual_Advance: goroutines=3 HeapInuse=10330112
+    cancel_release_test.go:171: after TestCancelReleases/learning_Individual_Advance attempt 0: goroutines=3 (want 3) HeapInuse=7577600 (limit 11363123)
+=== RUN   TestCancelReleases/download_Fetch
+    cancel_release_test.go:180: before TestCancelReleases/download_Fetch: goroutines=4 HeapInuse=7585792
+    cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 0: goroutines=4 (want 4) HeapInuse=7585792 (limit 8344371)
+=== RUN   TestCancelReleases/connectome_Build
+    cancel_release_test.go:193: before TestCancelReleases/connectome_Build: goroutines=3 HeapInuse=7593984
+    cancel_release_test.go:201: after TestCancelReleases/connectome_Build attempt 0: goroutines=3 (want 3) HeapInuse=7602176 (limit 8353382)
+--- PASS: TestCancelReleases (3.77s)
+    --- PASS: TestCancelReleases/simulate_Run (2.41s)
+    --- PASS: TestCancelReleases/learning_Trainer_Step (0.41s)
+    --- PASS: TestCancelReleases/learning_Individual_Advance (0.19s)
+    --- PASS: TestCancelReleases/download_Fetch (0.06s)
+    --- PASS: TestCancelReleases/connectome_Build (0.70s)
+=== RUN   Example_newContinuousCore
+--- PASS: Example_newContinuousCore (0.00s)
+=== RUN   Example_newIndividual
+--- PASS: Example_newIndividual (0.00s)
+=== RUN   Example_trainEpisode
+--- PASS: Example_trainEpisode (0.00s)
+=== RUN   Example_enablePlasticity
+--- PASS: Example_enablePlasticity (0.00s)
+=== RUN   Example_enableChemistry
+--- PASS: Example_enableChemistry (0.00s)
+=== RUN   Example_intervene
+--- PASS: Example_intervene (0.00s)
+=== RUN   Example_snapshotRestore
+--- PASS: Example_snapshotRestore (0.00s)
+=== RUN   Example_observeLocalState
+--- PASS: Example_observeLocalState (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet	5.335s
+2026/09/19 12:55:23 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestPublicAPINeverPanics
+=== RUN   TestPublicAPINeverPanics/dynamics/NewContinuous:zero-value_config
+=== RUN   TestPublicAPINeverPanics/dynamics/NewContinuous:Unknown_activation
+=== RUN   TestPublicAPINeverPanics/dynamics/NewContinuous:SourceTarget_length_mismatch
+=== RUN   TestPublicAPINeverPanics/dynamics/NewContinuous:out-of-range_index
+=== RUN   TestPublicAPINeverPanics/dynamics/NewContinuous:NaN_dt
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:zero-value_config
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:zero_nodes
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:negative_nodes
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:SourceTarget_length_mismatch
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:out-of-range_index
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:NaN_dt
+=== RUN   TestPublicAPINeverPanics/dynamics/NewLIF:unknown_surrogate
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:zero-value_config
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:negative_nodes
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:SourceTarget_length_mismatch
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:out-of-range_index
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:NaN_dt
+=== RUN   TestPublicAPINeverPanics/dynamics/NewMixed:unknown_activation
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:zero-value_config
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:zero_nodes
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:negative_nodes
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:SourceTarget_length_mismatch
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:out-of-range_index
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:NaN_dt
+=== RUN   TestPublicAPINeverPanics/dynamics/NewVectorContinuous:unknown_activation
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Forward:nil_parameters
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Forward:wrong-length_initial
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Forward:empty_inputs
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Forward:NaN_input
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Backward:nil_trace
+=== RUN   TestPublicAPINeverPanics/dynamics/Continuous.Backward:wrong_upstream_shape
+=== RUN   TestPublicAPINeverPanics/learning/NewNetwork:no_core_config
+=== RUN   TestPublicAPINeverPanics/learning/NewTrainer:wrong_parameter_shape
+=== RUN   TestPublicAPINeverPanics/learning/NewTrainer:NaN_parameter
+=== RUN   TestPublicAPINeverPanics/learning/NewTrainer:negative_learning_rate
+=== RUN   TestPublicAPINeverPanics/learning/NewIndividual:wrong_parameter_shape
+=== RUN   TestPublicAPINeverPanics/learning/NewIndividual:NaN_parameter
+=== RUN   TestPublicAPINeverPanics/learning/NewIndividual:negative_learning_rate
+=== RUN   TestPublicAPINeverPanics/learning/NewIndividual:nil_initial_state
+=== RUN   TestPublicAPINeverPanics/learning/NewIndividual:wrong-length_initial_state
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Step:empty_input
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Step:wrong_input_width
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Step:NaN_input
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Predict:empty_input
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Predict:wrong_input_width
+=== RUN   TestPublicAPINeverPanics/learning/Trainer.Predict:NaN_input
+=== RUN   TestPublicAPINeverPanics/learning/Individual.Advance:empty_input
+=== RUN   TestPublicAPINeverPanics/learning/Individual.AdvanceGated:empty_input
+=== RUN   TestPublicAPINeverPanics/learning/Individual.TrainEpisode:empty_input
+=== RUN   TestPublicAPINeverPanics/learning/Individual.ResetNeural:nil_initial
+=== RUN   TestPublicAPINeverPanics/learning/Individual.ResetNeural:wrong_length_initial
+=== RUN   TestPublicAPINeverPanics/learning/Individual.Intervene:unauthorized_plan
+=== RUN   TestPublicAPINeverPanics/learning/Individual.EnablePlasticity:bad_rule
+=== RUN   TestPublicAPINeverPanics/learning/Individual.EnableChemistry:bad_config
+=== RUN   TestPublicAPINeverPanics/learning/Individual.FreezeChemistry:not_enabled
+=== RUN   TestPublicAPINeverPanics/learning/RestoreIndividual:empty_snapshot
+=== RUN   TestPublicAPINeverPanics/learning/RestoreIndividual:bad_schema
+=== RUN   TestPublicAPINeverPanics/checkpoint/Load:nonexistent_path
+=== RUN   TestPublicAPINeverPanics/checkpoint/LoadIndividual:nonexistent_path
+=== RUN   TestPublicAPINeverPanics/checkpoint/LoadIndividual:empty_file
+=== RUN   TestPublicAPINeverPanics/checkpoint/LoadIndividual:bad_JSON
+=== RUN   TestPublicAPINeverPanics/checkpoint/LoadModelPackage:nonexistent_path
+=== RUN   TestPublicAPINeverPanics/checkpoint/LoadModelPackage:empty_file
+=== RUN   TestPublicAPINeverPanics/checkpoint/Migrate:same_source_and_target
+=== RUN   TestPublicAPINeverPanics/checkpoint/SaveIndividual:empty_snapshot
+=== RUN   TestPublicAPINeverPanics/simulate/Protocol.Validate:empty_protocol
+=== RUN   TestPublicAPINeverPanics/simulate/Protocol.Validate:negative_pulse_steps
+=== RUN   TestPublicAPINeverPanics/simulate/Protocol.Validate:NaN_threshold
+=== RUN   TestPublicAPINeverPanics/simulate/DecodeProtocol:bad_JSON
+=== RUN   TestPublicAPINeverPanics/modulation/SourceSpec.Build:unknown_kind
+=== RUN   TestPublicAPINeverPanics/modulation/SourceSpec.Build:two_bodies
+=== RUN   TestPublicAPINeverPanics/modulation/ChemistryConfig.Validate:zero_regions
+=== RUN   TestPublicAPINeverPanics/modulation/Receptors.Validate:bad_record
+=== RUN   TestPublicAPINeverPanics/plasticity/New:unknown_rule_kind
+=== RUN   TestPublicAPINeverPanics/plasticity/New:negative_decay
+=== RUN   TestPublicAPINeverPanics/plasticity/New:edge_out_of_range
+=== RUN   TestPublicAPINeverPanics/experiment/ContinualProtocol.Validate:empty
+=== RUN   TestPublicAPINeverPanics/experiment/RunContinualMatrix:nil_build
+=== RUN   TestPublicAPINeverPanics/experiment/AblationConfig.Validate:empty
+=== RUN   TestPublicAPINeverPanics/nav2d.New:even_width
+=== RUN   TestPublicAPINeverPanics/gridnav.New:even_length
+=== RUN   TestPublicAPINeverPanics/teacher/OfflineJSONL.Ask:nonexistent_store_path
+=== RUN   TestPublicAPINeverPanics/teacher/HTTP.Validate:empty_endpoint
+=== RUN   TestPublicAPINeverPanics/teacher/OpenRecordStore:bad_path
+=== RUN   TestPublicAPINeverPanics/distill/Split.Validate:empty_train
+=== RUN   TestPublicAPINeverPanics/distill/DistributionDistiller.Loss:empty_student
+=== RUN   TestPublicAPINeverPanics/multimodal/Sample.Validate:empty_sample
+=== RUN   TestPublicAPINeverPanics/multimodal/Vector:missing_modality
+--- PASS: TestPublicAPINeverPanics (0.01s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewContinuous:zero-value_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewContinuous:Unknown_activation (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewContinuous:SourceTarget_length_mismatch (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewContinuous:out-of-range_index (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewContinuous:NaN_dt (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:zero-value_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:zero_nodes (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:negative_nodes (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:SourceTarget_length_mismatch (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:out-of-range_index (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:NaN_dt (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewLIF:unknown_surrogate (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:zero-value_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:negative_nodes (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:SourceTarget_length_mismatch (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:out-of-range_index (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:NaN_dt (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewMixed:unknown_activation (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:zero-value_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:zero_nodes (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:negative_nodes (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:SourceTarget_length_mismatch (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:out-of-range_index (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:NaN_dt (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/NewVectorContinuous:unknown_activation (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Forward:nil_parameters (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Forward:wrong-length_initial (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Forward:empty_inputs (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Forward:NaN_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Backward:nil_trace (0.00s)
+    --- PASS: TestPublicAPINeverPanics/dynamics/Continuous.Backward:wrong_upstream_shape (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewNetwork:no_core_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewTrainer:wrong_parameter_shape (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewTrainer:NaN_parameter (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewTrainer:negative_learning_rate (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewIndividual:wrong_parameter_shape (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewIndividual:NaN_parameter (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewIndividual:negative_learning_rate (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewIndividual:nil_initial_state (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/NewIndividual:wrong-length_initial_state (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Step:empty_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Step:wrong_input_width (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Step:NaN_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Predict:empty_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Predict:wrong_input_width (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Trainer.Predict:NaN_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.Advance:empty_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.AdvanceGated:empty_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.TrainEpisode:empty_input (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.ResetNeural:nil_initial (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.ResetNeural:wrong_length_initial (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.Intervene:unauthorized_plan (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.EnablePlasticity:bad_rule (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.EnableChemistry:bad_config (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/Individual.FreezeChemistry:not_enabled (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/RestoreIndividual:empty_snapshot (0.00s)
+    --- PASS: TestPublicAPINeverPanics/learning/RestoreIndividual:bad_schema (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/Load:nonexistent_path (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/LoadIndividual:nonexistent_path (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/LoadIndividual:empty_file (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/LoadIndividual:bad_JSON (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/LoadModelPackage:nonexistent_path (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/LoadModelPackage:empty_file (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/Migrate:same_source_and_target (0.00s)
+    --- PASS: TestPublicAPINeverPanics/checkpoint/SaveIndividual:empty_snapshot (0.00s)
+    --- PASS: TestPublicAPINeverPanics/simulate/Protocol.Validate:empty_protocol (0.00s)
+    --- PASS: TestPublicAPINeverPanics/simulate/Protocol.Validate:negative_pulse_steps (0.00s)
+    --- PASS: TestPublicAPINeverPanics/simulate/Protocol.Validate:NaN_threshold (0.00s)
+    --- PASS: TestPublicAPINeverPanics/simulate/DecodeProtocol:bad_JSON (0.00s)
+    --- PASS: TestPublicAPINeverPanics/modulation/SourceSpec.Build:unknown_kind (0.00s)
+    --- PASS: TestPublicAPINeverPanics/modulation/SourceSpec.Build:two_bodies (0.00s)
+    --- PASS: TestPublicAPINeverPanics/modulation/ChemistryConfig.Validate:zero_regions (0.00s)
+    --- PASS: TestPublicAPINeverPanics/modulation/Receptors.Validate:bad_record (0.00s)
+    --- PASS: TestPublicAPINeverPanics/plasticity/New:unknown_rule_kind (0.00s)
+    --- PASS: TestPublicAPINeverPanics/plasticity/New:negative_decay (0.00s)
+    --- PASS: TestPublicAPINeverPanics/plasticity/New:edge_out_of_range (0.00s)
+    --- PASS: TestPublicAPINeverPanics/experiment/ContinualProtocol.Validate:empty (0.00s)
+    --- PASS: TestPublicAPINeverPanics/experiment/RunContinualMatrix:nil_build (0.00s)
+    --- PASS: TestPublicAPINeverPanics/experiment/AblationConfig.Validate:empty (0.00s)
+    --- PASS: TestPublicAPINeverPanics/nav2d.New:even_width (0.00s)
+    --- PASS: TestPublicAPINeverPanics/gridnav.New:even_length (0.00s)
+    --- PASS: TestPublicAPINeverPanics/teacher/OfflineJSONL.Ask:nonexistent_store_path (0.00s)
+    --- PASS: TestPublicAPINeverPanics/teacher/HTTP.Validate:empty_endpoint (0.00s)
+    --- PASS: TestPublicAPINeverPanics/teacher/OpenRecordStore:bad_path (0.00s)
+    --- PASS: TestPublicAPINeverPanics/distill/Split.Validate:empty_train (0.00s)
+    --- PASS: TestPublicAPINeverPanics/distill/DistributionDistiller.Loss:empty_student (0.00s)
+    --- PASS: TestPublicAPINeverPanics/multimodal/Sample.Validate:empty_sample (0.00s)
+    --- PASS: TestPublicAPINeverPanics/multimodal/Vector:missing_modality (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet	1.353s

@@ -32,6 +32,7 @@
 | 官方資料工具：下載與校驗、Feather 逐批讀取、標準化接線圖建構、外部 ID 保真、聚合與未知欄位保留（DAT-01、DAT-02、DAT-03、DAT-04、DAT-05、DAT-08） | 不適用（資料管線） | 官方全量原件（非模型執行） | 工具輔助 | [DAT-01](evidence/DAT-01/verification.json)・[DAT-02](evidence/DAT-02/verification.json)・[DAT-03](evidence/DAT-03/verification.json)・[DAT-04](evidence/DAT-04/verification.json)・[DAT-05](evidence/DAT-05/verification.json)・[DAT-08](evidence/DAT-08/verification.json) |
 | 真實子圖範例：ALIN 子圖選取與人工脈衝短訓練（DAT-07） | 已訓練（人工脈衝短訓練） | real-subgraph | 工具輔助（範例） | [DAT-07](evidence/DAT-07/verification.json) |
 | 教師工具：離線 JSONL 答案、重播、HTTP 存取與封鎖教師（TCH-01、TCH-02） | 不適用（教師工具） | fixture | 工具輔助（教師） | [TCH-01](evidence/TCH-01/verification.json)・[TCH-02](evidence/TCH-02/verification.json) |
+| SDK 與 CLI 介面：八個可執行 SDK 範例、88 個非法輸入不 panic 的案例、五個取消釋放測試，以及 doctor／model inspect／model validate／run --dry-run／benchmark／export／report／examples／checkpoint migrate 的端到端與失敗測試（OPS-01、OPS-02） | 不適用（介面層） | fixture | 工具輔助 | [OPS-01](evidence/OPS-01/verification.json)・[OPS-02](evidence/OPS-02/verification.json) |
 | 環境與自動驗證：鎖定版本建置、Insyra 實際參與運算、自動防退步檢查（GOV-02、GOV-03、OPS-09） | 不適用（環境與測試） | 不適用 | 工具輔助 | [GOV-02](evidence/GOV-02/verification.json)・[GOV-03](evidence/GOV-03/verification.json)・[OPS-09](evidence/OPS-09/verification.json) |
 
 以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。

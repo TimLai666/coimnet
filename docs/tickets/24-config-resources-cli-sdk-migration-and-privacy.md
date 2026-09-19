@@ -11,7 +11,7 @@ User Story：使用者可以寫一份嚴格驗證、全部展開、覆寫來源�
 Blocked by：16 模型包（`model inspect`）、17 最佳化器（組態的學習規則區塊）、20／21（組態的調節器區塊，
 可先以「未宣告」通過）、23（`evaluate` 子命令由該票接上）、22（`ablate` 子命令由該票接上）
 
-Status：第一與第三階段已驗證（2026-09-19）；第二階段 SDK／CLI 待派工
+Status：三個階段皆已驗證（2026-09-19）
 
 對應需求：OPS-03（未知欄位拒絕，覆寫順序與來源可查，dry-run 不學習不呼叫教師）、OPS-06（計算包含邊
 狀態歷史與外圍模型；不足時拒絕，不自動縮減）、OPS-01（API 例子可執行，錯誤不 panic，取消後釋放資源）、
@@ -127,7 +127,7 @@ func NewWriter(w io.Writer) io.Writer
 - [x] 第一階段：未知欄位拒絕、來源追蹤四層、金鑰只存參照、不存在的 generator 拒絕；資源預估兩個算術示例
   釘住、真實圖預估記錄、超限拒絕且 Plan 不變；`run --dry-run` 零副作用與教師呼叫次數 0；
   `go test`、race、vet；`evidence/OPS-03/`、`evidence/OPS-06/`。
-- [ ] 第二階段：SDK 範例可執行、非法輸入不 panic、五個取消釋放測試；每個 CLI 命令端到端與失敗測試、
+- [x] 第二階段：SDK 範例可執行、非法輸入不 panic、五個取消釋放測試；每個 CLI 命令端到端與失敗測試、
   `--help` 完整；`evidence/OPS-01/`、`evidence/OPS-02/`。
 - [x] 第三階段：遷移不覆寫原件、報告含前後指紋與資訊損失、一個真實遷移；遮罩、掃描腳本、無遙測與
   `net/http` 範圍測試、symlink 與超大檔拒絕；`evidence/STA-05/`、`evidence/STA-06/`；文件。
@@ -172,6 +172,59 @@ func NewWriter(w io.Writer) io.Writer
 8. **`splits` 是三個相加為 1 的比例**，容許 1e-9 浮點誤差。票面只寫了 `{train, validation, test}`。
 9. **`resources.max_memory_mib` 允許 0**，表示沒有任何計畫可接受。fixture 的預估只有 192 bytes，
    任何整數 MiB 都不會觸發拒絕，需要 0 才能驗證超限路徑。
+
+## 第二階段證據（2026-09-19）
+
+第二階段（OPS-01、OPS-02）切成七張小票完成，證據在 `evidence/OPS-01/` 與 `evidence/OPS-02/`。
+
+1. **24B-01 SDK 範例（`example_sdk_test.go`）**：八個以 `// Output:` 釘住的 `Example`，各自對應主規格 16.1
+   的一項能力：`Example_newContinuousCore`（建立核心）、`Example_newIndividual`（建立個體、逐步觀察、
+   取得輸出）、`Example_trainEpisode`（訓練與事後結果，五回合損失 0.189006 → 0.048553）、
+   `Example_enablePlasticity`（局部學習規則）、`Example_enableChemistry`（調節）、`Example_intervene`
+   （干預，基礎參數變動 0）、`Example_snapshotRestore`（保存與恢復）、`Example_observeLocalState`
+   （觀察局部狀態）。八個全過。
+2. **24B-02 非法輸入不 panic（`nopanic_test.go`）**：`TestPublicAPINeverPanics` 的 88 個表格案例涵蓋
+   dynamics、learning、checkpoint、simulate、modulation、plasticity、signal、connectome、distill 與
+   multimodal 的公開建構子與方法（零值、負長度、NaN、空序列、錯形狀、壞檔案），每個案例同時要求不
+   panic 且回非 nil 的 error。88 個全過，零 panic。
+3. **24B-03 取消釋放（`cancel_release_test.go`）**：`TestCancelReleases` 的五個入口（`simulate.Run`、
+   `Trainer.Step`、`Individual.Advance`、`download.Fetch`、`connectome.Build`）取消後都在第 0 次重試就
+   回到基線：goroutine 數 ±0（3/3、3/3、3/3、4/4、3/3），`HeapInuse` 都落在基線 1.1 倍的上限內。五個全過。
+4. **24B-04 `model inspect` 與 `model validate`（`internal/cli/model.go`、`model_test.go`）**：五個測試
+   （個體快照與模型包各一個 inspect 端到端、validate 的接受與拒絕、`--help`、用法錯誤），報告含拓撲、
+   參數統計、模式、證據清單、映射與記憶體預估。
+5. **24B-05 `benchmark` 六階段（`internal/cli/benchmark.go`、`benchmark_test.go`）**：三個測試（寫出報告、
+   快照階段不留暫存檔、拒絕壞參數）。fixture 實跑（64 節點、256 邊、200 步、重複 3 次）的中位數：
+   import 0.00225 ms、forward 0.221958 ms、backward 1.631167 ms、local_plasticity 5.404 ms、
+   modulation 5.299416 ms、snapshot 14.001083 ms，報告附 `uptime` 與「合成拓撲，非 MaleCNS」的假設。
+6. **24B-06 `export` 與 `report`（`internal/cli/export.go`、`report.go`、`export_report_test.go`）**：五個
+   測試。`export` 把模型包轉 Markdown、把報告轉逐層排序的 JSON，不支援的格式（`yaml`）與缺
+   `schema_version` 的文件都以狀態 1 拒絕並列出支援清單，且不建立輸出檔。`report` 由需求狀態文件與證據
+   紀錄組出 `coimnet-report/v1` 的 JSON 與 Markdown。
+7. **24B-07 證據**：`evidence/OPS-01/`（`verification.json`、`test.log`）與 `evidence/OPS-02/`
+   （`verification.json`、`test.log`、`benchmark-fixture.json`）。OPS-01 的 `test.log` 有 10 個頂層
+   `--- PASS`、93 個子測試 `--- PASS`、零個 `--- FAIL`；OPS-02 的 `test.log` 有 46 個頂層 `--- PASS`、
+   零個 `--- FAIL`。環境：go1.26.5 darwin/arm64、共用機器 load average 3.1–4.2。
+
+### 與 Root 決策的出入（第二階段）
+
+1. **驗證指令的 `-run` 樣式有三個沒匹配到測試**：`TestNoPanic` 沒有對應的測試（實際名稱是
+   `TestPublicAPINeverPanics`，另以一條指令補跑並附加到同一份 `test.log`）；`TestExamples` 與
+   `TestResume` 在三個套件裡都沒有對應名稱。`data`、`simulate`、`evaluate`、`train/resume/predict`
+   四群的測試存在但沒有被這次的 `-run` 選到，兩份 `verification.json` 的 limitations 逐條記明。
+2. **`ablate` 沒有實作**，`evaluate` 也沒有頂層命令（只有 `examples run evaluate`）。兩者實跑都回
+   `unknown command` 並以狀態 1 結束；這與票面「先掛骨架並在未實作時明確拒絕」的做法不同，目前是整個
+   命令不存在。
+3. **`run` 只實作 `--dry-run`**：不帶 `--dry-run` 時回報本階段未實作，所以 16.2 的「依完整設定執行
+   訓練／推論／評估」與「SIGINT 後返回非零並寫出部分報告」沒有實作也沒有驗證。
+4. **`resume` 沒有吃組態，也沒有 `--allow-option-change`**，Root 決策 6 的「拒絕新預設改變原實驗」尚未實作。
+5. **`experiment.RegisterGenerator` 不存在**：任務產生器是 `config/registry.go` 裡的私有 map，外部無法
+   註冊自訂項目；範例的自訂學習與調節都以既有的宣告式設定（`plasticity.Config`、
+   `modulation.ChemistryConfig`）示範。16.1 的「載入資料」與「評估」沒有對應的 `Example`。
+6. **`schema_version` 有兩處例外**：`examples list` 輸出沒有外層信封的 JSON 陣列；`model inspect` 與
+   `model validate` 報告的是被檢查檔案的 schema，不是報告自己的 schema 版本。
+7. **`--help` 四段**：23 個 `--help` 都有 Usage、Example 與 Errors；`doctor` 與 `data sources` 沒有選項段，
+   因為它們沒有旗標。`export` 沒有 `--help` 測試，本次以手動實跑確認。
 
 ## 第三階段證據（2026-09-19）
 
