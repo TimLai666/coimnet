@@ -94,7 +94,11 @@ type TrainingSnapshot struct {
 // GradientNorm is always the norm of the gradient this step computed, before
 // clipping and before any accumulation average.
 type StepResult struct {
-	Loss         float64        `json:"loss"`
+	Loss float64 `json:"loss"`
+	// LossKnown reports whether Loss is a computed value. Step sets it true;
+	// StepFrom leaves it false and Loss at zero, because the caller-supplied
+	// upstream gradient never reveals the objective value.
+	LossKnown    bool           `json:"loss_known"`
 	GradientNorm float64        `json:"gradient_norm"`
 	UpdateNorm   float64        `json:"update_norm"`
 	Updates      uint64         `json:"updates"`
@@ -255,6 +259,44 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if err != nil {
 		return zero, err
 	}
+	return tr.stepWithGradient(ctx, input, loss, true, g)
+}
+
+// StepFrom is Step with a caller-supplied upstream gradient: the same mask,
+// loss-scale, accumulation, clipping, schedule, AdamW and projection path,
+// with StepResult.Loss reported as NaN-free zero and documented as
+// "not computed" (Loss = 0, LossKnown = false).
+func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (StepResult, error) {
+	var zero StepResult
+	if tr == nil || ctx == nil {
+		return zero, fmt.Errorf("nil trainer or context")
+	}
+	if tr.network == nil {
+		return zero, fmt.Errorf("nil trainer")
+	}
+	if err := ctx.Err(); err != nil {
+		return zero, err
+	}
+	if err := tr.mu.LockContext(ctx); err != nil {
+		return zero, err
+	}
+	defer tr.mu.Unlock()
+	if tr.updates == math.MaxUint64 {
+		return zero, fmt.Errorf("update counter overflow")
+	}
+	g, err := tr.network.LossGradientFrom(ctx, tr.parameters, input, upstream)
+	if err != nil {
+		return zero, err
+	}
+	return tr.stepWithGradient(ctx, input, 0, false, g)
+}
+
+// stepWithGradient is the mask, loss-scale, accumulation, clipping, scheduled
+// AdamW and projection path shared by Step and StepFrom. Step reports the loss
+// it computed with LossKnown true; StepFrom reports zero with LossKnown false.
+func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss float64, known bool, g Gradient) (StepResult, error) {
+	var zero StepResult
+	var err error
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
 	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes())
@@ -310,7 +352,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 				return zero, err
 			}
 			tr.accumulator = accumulator
-			return StepResult{Loss: loss, GradientNorm: norm, Updates: tr.updates, Accumulated: accumulator.Count}, nil
+			return StepResult{Loss: loss, LossKnown: known, GradientNorm: norm, Updates: tr.updates, Accumulated: accumulator.Count}, nil
 		}
 		mean = make([]float64, len(grad))
 		for i := range mean {
@@ -397,7 +439,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	tr.optimizer = state
 	tr.updates++
 	tr.accumulator = nil
-	return StepResult{Loss: loss, GradientNorm: norm, UpdateNorm: updateNorm, Updates: tr.updates, Projected: projected, LearningRate: rate, Applied: true}, nil
+	return StepResult{Loss: loss, LossKnown: known, GradientNorm: norm, UpdateNorm: updateNorm, Updates: tr.updates, Projected: projected, LearningRate: rate, Applied: true}, nil
 }
 
 type cancellableMutex struct {

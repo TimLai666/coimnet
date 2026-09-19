@@ -213,16 +213,92 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	if err != nil {
 		return 0, empty, err
 	}
-	if err = e.readoutTape.Backward(loss); err != nil {
+	// Seed the shared reverse pass with the MSE VJP dL/dy from Insyra's own
+	// tape, so the refactored path carries the same bits Backward(loss) used to
+	// seed the readout with. Only the last row matters: the readout predicts
+	// the final step alone.
+	up := make([][]float64, len(input))
+	for i := range up {
+		up[i] = make([]float64, n.config.OutputSize)
+	}
+	mse := nn.NewTape()
+	param, err := mse.Param(e.prediction)
+	if err != nil {
 		return 0, empty, err
+	}
+	upLoss, err := mse.MSELoss(param.Value(), targetTensor)
+	if err != nil {
+		return 0, empty, err
+	}
+	if err = mse.Backward(upLoss); err != nil {
+		return 0, empty, err
+	}
+	up[len(up)-1] = doubles(param.Grad().Data())
+	g, err := n.lossGradientReverse(ctx, input, e, up, window)
+	if err != nil {
+		return 0, empty, err
+	}
+	l := float64(loss.Data()[0])
+	if !finite(l) {
+		return 0, empty, fmt.Errorf("non-finite loss")
+	}
+	return l, g, nil
+}
+
+// LossGradientFrom runs one forward pass and the reverse pass with a
+// caller-supplied upstream gradient dL/dy of the same shape as the readout
+// output ([]step][output]). It returns the same Gradient shape as
+// LossGradient. The loss value itself is unknown here, so it is not returned.
+func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64) (Gradient, error) {
+	var empty Gradient
+	if n == nil {
+		return empty, fmt.Errorf("nil network")
+	}
+	e, err := n.forward(ctx, p, input)
+	if err != nil {
+		return empty, err
+	}
+	return n.lossGradientReverse(ctx, input, e, upstream, 0)
+}
+
+// lossGradientReverse is the shared reverse pass both gradient entry points
+// drive: seed the readout VJP with the last upstream row, backpropagate through
+// the readout, the recurrent core and the encoder. The readout reads only the
+// final step, so upstream rows before the last are shape-checked, validated as
+// finite and otherwise unused.
+func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e *execution, upstream [][]float64, window int) (Gradient, error) {
+	var empty Gradient
+	if len(upstream) != len(input) {
+		return empty, fmt.Errorf("upstream has %d rows, want %d", len(upstream), len(input))
+	}
+	for i, row := range upstream {
+		if len(row) != n.config.OutputSize {
+			return empty, fmt.Errorf("upstream[%d] width %d, want %d", i, len(row), n.config.OutputSize)
+		}
+		for j, v := range row {
+			if !finite(v) {
+				return empty, fmt.Errorf("upstream[%d][%d] is not finite", i, j)
+			}
+		}
+	}
+	seed, err := tensor([]int{n.config.OutputSize}, upstream[len(upstream)-1])
+	if err != nil {
+		return empty, err
+	}
+	dot, err := e.readoutTape.MatMul(e.prediction, seed)
+	if err != nil {
+		return empty, err
+	}
+	if err = e.readoutTape.Backward(dot); err != nil {
+		return empty, err
 	}
 	dh, err := e.readoutTape.Grad(e.h)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	dr, err := e.readoutTape.Grad(e.readout)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	nodes := configNodes(n.config)
 	up := make([][]float64, len(input))
@@ -235,7 +311,7 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	}
 	cg, err := n.core.backward(ctx, e.trace, up, window)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	// A fixed-sign edge stores rho, not w. The core differentiated with respect
 	// to w = sign * exp(rho), so the chain rule gives
@@ -243,7 +319,7 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	// its weight directly and needs no conversion.
 	if n.fixed {
 		if len(cg.core.Weights) != len(n.config.EdgeSigns) || len(e.weights) != len(n.config.EdgeSigns) {
-			return 0, empty, fmt.Errorf("weight gradient has %d values, the core declares %d signs", len(cg.core.Weights), len(n.config.EdgeSigns))
+			return empty, fmt.Errorf("weight gradient has %d values, the core declares %d signs", len(cg.core.Weights), len(n.config.EdgeSigns))
 		}
 		for i, sign := range n.config.EdgeSigns {
 			if sign != 0 {
@@ -264,52 +340,48 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 			flat = append(flat, row[id])
 		}
 	}
-	seed, err := tensor([]int{len(flat)}, flat)
+	seed, err = tensor([]int{len(flat)}, flat)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	encodedFlat, err := e.encoderTape.Reshape(e.encoded, []int{len(flat)})
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	seedLoss, err := e.encoderTape.MatMul(encodedFlat, seed)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	if err = e.encoderTape.Backward(seedLoss); err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	de, err := e.encoderTape.Grad(e.encoder)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	dx, err := e.encoderTape.Grad(e.x)
 	if err != nil {
-		return 0, empty, err
+		return empty, err
 	}
 	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: doubles(de.Data()), Readout: doubles(dr.Data()), Inputs: rows(doubles(dx.Data()), n.config.InputSize)}
-	l := float64(loss.Data()[0])
-	if !finite(l) {
-		return 0, empty, fmt.Errorf("non-finite loss")
-	}
 	for _, v := range [][]float64{g.Encoder, g.Readout} {
 		for _, x := range v {
 			if !finite(x) {
-				return 0, empty, fmt.Errorf("non-finite boundary gradient")
+				return empty, fmt.Errorf("non-finite boundary gradient")
 			}
 		}
 	}
 	for _, row := range g.Inputs {
 		for _, x := range row {
 			if !finite(x) {
-				return 0, empty, fmt.Errorf("non-finite input gradient")
+				return empty, fmt.Errorf("non-finite input gradient")
 			}
 		}
 	}
 	if err := ctx.Err(); err != nil {
-		return 0, empty, err
+		return empty, err
 	}
-	return l, g, nil
+	return g, nil
 }
 
 func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) (*execution, error) {
