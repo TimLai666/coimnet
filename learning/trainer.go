@@ -214,6 +214,20 @@ func (tr *Trainer) Predict(ctx context.Context, input [][]float64) ([]float64, e
 	return tr.network.Predict(ctx, tr.parameters, input)
 }
 
+// PredictAll runs a frozen, independent episode and returns the readout of
+// every step. It requires Config.ReadoutEveryStep; a last-step model is
+// refused. Trainer state is unchanged.
+func (tr *Trainer) PredictAll(ctx context.Context, input [][]float64) ([][]float64, error) {
+	if tr == nil || tr.network == nil {
+		return nil, fmt.Errorf("nil trainer")
+	}
+	if err := tr.mu.LockContext(ctx); err != nil {
+		return nil, err
+	}
+	defer tr.mu.Unlock()
+	return tr.network.PredictAll(ctx, tr.parameters, input)
+}
+
 // Spikes runs a frozen, independent episode and returns the 0/1 event of every
 // neuron after each step. Only a LIF core produces events; a continuous network
 // returns an error. Trainer state is unchanged.
@@ -284,7 +298,7 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	g, err := tr.network.LossGradientFrom(ctx, tr.parameters, input, upstream)
+	g, err := tr.network.LossGradientFrom(ctx, tr.parameters, input, upstream, tr.options.Truncation)
 	if err != nil {
 		return zero, err
 	}

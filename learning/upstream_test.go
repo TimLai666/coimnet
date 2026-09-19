@@ -35,7 +35,7 @@ func TestLossGradientFromMatchesLossGradient(t *testing.T) {
 		t.Fatal(err)
 	}
 	upstream := mseUpstream(pred, target, len(input), 1)
-	from, err := n.LossGradientFrom(context.Background(), p, input, upstream)
+	from, err := n.LossGradientFrom(context.Background(), p, input, upstream, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,7 +66,7 @@ func TestLossGradientFromRejectsBadUpstream(t *testing.T) {
 		"nan":          {good[0], good[1], {math.NaN()}},
 		"infinite":     {good[0], good[1], {math.Inf(1)}},
 	} {
-		if _, err := n.LossGradientFrom(context.Background(), p, input, upstream); err == nil {
+		if _, err := n.LossGradientFrom(context.Background(), p, input, upstream, 0); err == nil {
 			t.Fatalf("accepted %s upstream", name)
 		}
 	}

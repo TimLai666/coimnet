@@ -42,6 +42,13 @@ type Config struct {
 	// MinLogMagnitude is the floor a fixed-sign edge's log magnitude is
 	// projected to after each update. Zero selects the declared default -20.
 	MinLogMagnitude float64 `json:"min_log_magnitude,omitempty"`
+	// ReadoutEveryStep reads the readout neurons after every step instead of
+	// after the last one, so the prediction is [step,output] and sequence
+	// objectives such as CTC, ASR alignment and text generation can score each
+	// step. It is opt-in, and while it is off the model keeps its exact
+	// canonical JSON, its recorded fingerprint and its bit-for-bit last-step
+	// behaviour.
+	ReadoutEveryStep bool `json:"readout_every_step,omitempty"`
 }
 
 // Parameters uses a row-major encoder [input,input-node] (or [input,node]
@@ -172,12 +179,36 @@ type execution struct {
 
 // Predict starts an independent episode at zero voltage and returns only the
 // last-step readout. Episode lifecycle and float32 boundaries are explicit.
+// A model with ReadoutEveryStep reads out every step, and Predict still
+// returns the last row alone; PredictAll returns the whole sequence.
 func (n *Network) Predict(ctx context.Context, p Parameters, input [][]float64) ([]float64, error) {
 	e, err := n.forward(ctx, p, input)
 	if err != nil {
 		return nil, err
 	}
-	return doubles(e.prediction.Data()), nil
+	out := doubles(e.prediction.Data())
+	if n.config.ReadoutEveryStep {
+		return out[len(out)-n.config.OutputSize:], nil
+	}
+	return out, nil
+}
+
+// PredictAll starts an independent episode at zero voltage and returns the
+// readout of every step, one row of OutputSize values per input step. It
+// requires ReadoutEveryStep: a last-step model has no per-step readout to
+// report and is refused rather than answered with a repeated or invented row.
+func (n *Network) PredictAll(ctx context.Context, p Parameters, input [][]float64) ([][]float64, error) {
+	if n == nil {
+		return nil, fmt.Errorf("nil network")
+	}
+	if !n.config.ReadoutEveryStep {
+		return nil, fmt.Errorf("readout_every_step is off")
+	}
+	e, err := n.forward(ctx, p, input)
+	if err != nil {
+		return nil, err
+	}
+	return rows(doubles(e.prediction.Data()), n.config.OutputSize), nil
 }
 
 // spikeEvents runs one independent frozen episode and returns the 0/1 events of
@@ -209,20 +240,32 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	if err != nil {
 		return 0, empty, err
 	}
-	loss, err := e.readoutTape.MSELoss(e.prediction, targetTensor)
+	// The mean squared error is taken against the last step in both readout
+	// modes: target is one row, so a per-step model scores its final row and
+	// leaves the earlier rows out of the loss, exactly as the last-step model
+	// does. A caller that wants every step to carry a loss supplies its own
+	// upstream through LossGradientFrom.
+	last := e.prediction
+	if n.config.ReadoutEveryStep {
+		all := doubles(e.prediction.Data())
+		if last, err = tensor([]int{n.config.OutputSize}, all[len(all)-n.config.OutputSize:]); err != nil {
+			return 0, empty, err
+		}
+	}
+	loss, err := e.readoutTape.MSELoss(last, targetTensor)
 	if err != nil {
 		return 0, empty, err
 	}
 	// Seed the shared reverse pass with the MSE VJP dL/dy from Insyra's own
 	// tape, so the refactored path carries the same bits Backward(loss) used to
-	// seed the readout with. Only the last row matters: the readout predicts
-	// the final step alone.
+	// seed the readout with. Only the last row matters: the loss reads the
+	// final step alone.
 	up := make([][]float64, len(input))
 	for i := range up {
 		up[i] = make([]float64, n.config.OutputSize)
 	}
 	mse := nn.NewTape()
-	param, err := mse.Param(e.prediction)
+	param, err := mse.Param(last)
 	if err != nil {
 		return 0, empty, err
 	}
@@ -249,23 +292,29 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 // caller-supplied upstream gradient dL/dy of the same shape as the readout
 // output ([]step][output]). It returns the same Gradient shape as
 // LossGradient. The loss value itself is unknown here, so it is not returned.
-func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64) (Gradient, error) {
+// window truncates the recurrent reverse pass exactly as LossGradient's does;
+// zero keeps the full history.
+func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window int) (Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return empty, fmt.Errorf("nil network")
+	}
+	if window < 0 {
+		return empty, fmt.Errorf("negative truncation window")
 	}
 	e, err := n.forward(ctx, p, input)
 	if err != nil {
 		return empty, err
 	}
-	return n.lossGradientReverse(ctx, input, e, upstream, 0)
+	return n.lossGradientReverse(ctx, input, e, upstream, window)
 }
 
 // lossGradientReverse is the shared reverse pass both gradient entry points
-// drive: seed the readout VJP with the last upstream row, backpropagate through
-// the readout, the recurrent core and the encoder. The readout reads only the
-// final step, so upstream rows before the last are shape-checked, validated as
-// finite and otherwise unused.
+// drive: seed the readout VJP with the upstream gradient, backpropagate through
+// the readout, the recurrent core and the encoder. A last-step readout reads
+// only the final step, so upstream rows before the last are shape-checked,
+// validated as finite and otherwise unused; a ReadoutEveryStep readout carries
+// every row into both the readout and the core.
 func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e *execution, upstream [][]float64, window int) (Gradient, error) {
 	var empty Gradient
 	if len(upstream) != len(input) {
@@ -281,11 +330,28 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			}
 		}
 	}
-	seed, err := tensor([]int{n.config.OutputSize}, upstream[len(upstream)-1])
+	// The readout VJP is seeded with <prediction, upstream>, whose gradient
+	// with respect to the prediction is the upstream itself. A last-step model
+	// pairs the [output] prediction with the last row; a per-step model flattens
+	// the [step,output] prediction and the whole upstream to [step*output], so
+	// every row seeds its own step.
+	predictionSeed, seedValues := e.prediction, upstream[len(upstream)-1]
+	if n.config.ReadoutEveryStep {
+		flatUpstream := make([]float64, 0, len(upstream)*n.config.OutputSize)
+		for _, row := range upstream {
+			flatUpstream = append(flatUpstream, row...)
+		}
+		seedValues = flatUpstream
+		var err error
+		if predictionSeed, err = e.readoutTape.Reshape(e.prediction, []int{len(flatUpstream)}); err != nil {
+			return empty, err
+		}
+	}
+	seed, err := tensor([]int{len(seedValues)}, seedValues)
 	if err != nil {
 		return empty, err
 	}
-	dot, err := e.readoutTape.MatMul(e.prediction, seed)
+	dot, err := e.readoutTape.MatMul(predictionSeed, seed)
 	if err != nil {
 		return empty, err
 	}
@@ -306,8 +372,17 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 		up[i] = make([]float64, nodes)
 	}
 	hGradient := dh.Data()
-	for j, id := range n.config.ReadoutNodes {
-		up[len(up)-1][id] = float64(hGradient[j])
+	if n.config.ReadoutEveryStep {
+		// dh is [step,readout] row-major, one row per step of the episode.
+		for t := range up {
+			for j, id := range n.config.ReadoutNodes {
+				up[t][id] = float64(hGradient[t*len(n.config.ReadoutNodes)+j])
+			}
+		}
+	} else {
+		for j, id := range n.config.ReadoutNodes {
+			up[len(up)-1][id] = float64(hGradient[j])
+		}
 	}
 	cg, err := n.core.backward(ctx, e.trace, up, window)
 	if err != nil {
@@ -451,15 +526,35 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	selected := make([]float64, len(n.config.ReadoutNodes))
-	for i, id := range n.config.ReadoutNodes {
-		selected[i] = y[len(y)-1][id]
+	readoutCount := len(n.config.ReadoutNodes)
+	var selected []float64
+	var shape []int
+	if n.config.ReadoutEveryStep {
+		// The reverse pass indexes the [step,readout] gradient by input step, so
+		// a core that returned a different number of rows is refused here rather
+		// than read out of range later.
+		if len(y) != len(input) {
+			return nil, fmt.Errorf("core produced %d readout steps, want %d", len(y), len(input))
+		}
+		selected = make([]float64, 0, len(y)*readoutCount)
+		for _, row := range y {
+			for _, id := range n.config.ReadoutNodes {
+				selected = append(selected, row[id])
+			}
+		}
+		shape = []int{len(y), readoutCount}
+	} else {
+		selected = make([]float64, readoutCount)
+		for i, id := range n.config.ReadoutNodes {
+			selected[i] = y[len(y)-1][id]
+		}
+		shape = []int{readoutCount}
 	}
-	h, err := tensor([]int{len(selected)}, selected)
+	h, err := tensor(shape, selected)
 	if err != nil {
 		return nil, err
 	}
-	r, err := tensor([]int{len(selected), n.config.OutputSize}, p.Readout)
+	r, err := tensor([]int{readoutCount, n.config.OutputSize}, p.Readout)
 	if err != nil {
 		return nil, err
 	}
