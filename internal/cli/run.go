@@ -56,6 +56,11 @@ Commands:
   model validate [flags]         Recompute and verify one model package or
                                  individual snapshot and report valid,
                                  schema and checksum
+  export [flags]                 Export one model package or JSON report to a
+                                 new file as sorted JSON or as Markdown
+  report [flags]                 Summarise the requirements status document
+                                 and its evidence records into a JSON and a
+                                 Markdown completion report
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit
@@ -125,6 +130,10 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runBenchmark(ctx, args[1:], stdout, stderr)
 	case "model":
 		return runModel(ctx, args[1:], stdout, stderr)
+	case "export":
+		return runExport(ctx, args[1:], stdout, stderr)
+	case "report":
+		return runReport(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 		fs.SetOutput(stderr)
