@@ -18,7 +18,10 @@ import (
 // a struct (the LIF core of a spiking snapshot) is legal when absent or null,
 // because a nil pointer is the declared "this core is not configured" value
 // rather than a silently zeroed one; when present it is walked like a nested
-// struct. Unknown keys and type mismatches are left to the strict decoder.
+// struct. A pointer to a scalar (the receptor indices of a plasticity rule) is
+// optional for the same reason, and a present one is checked for its JSON token
+// kind only. Unknown keys and remaining type mismatches are left to the strict
+// decoder.
 func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 	if target.Kind() != reflect.Struct {
 		return fmt.Errorf("required-field check needs a struct, got %s", target.Kind())
@@ -62,6 +65,21 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 				return err
 			}
 		case reflect.Pointer:
+			element := field.Type.Elem()
+			// A pointer to a scalar is optional by declaration: absent or null
+			// is the nil pointer the field is allowed to hold, not a silently
+			// zeroed value. A present one still has to be the JSON token kind
+			// that scalar decodes from, so a quoted number is reported here
+			// with its path rather than as a decoder type error.
+			if name, scalar := jsonScalarName(element.Kind()); scalar {
+				if !present || isJSONNull(raw) {
+					continue
+				}
+				if !isJSONScalarToken(raw, name) {
+					return fmt.Errorf("%s is not a JSON %s", fieldPath, name)
+				}
+				continue
+			}
 			if !present {
 				if omitEmpty {
 					continue
@@ -71,10 +89,10 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 			if isJSONNull(raw) {
 				continue
 			}
-			if field.Type.Elem().Kind() != reflect.Struct {
-				return fmt.Errorf("%s has unsupported pointer element kind %s", fieldPath, field.Type.Elem().Kind())
+			if element.Kind() != reflect.Struct {
+				return fmt.Errorf("%s has unsupported pointer element kind %s", fieldPath, element.Kind())
 			}
-			if err := checkRequiredFields(raw, field.Type.Elem(), fieldPath); err != nil {
+			if err := checkRequiredFields(raw, element, fieldPath); err != nil {
 				return err
 			}
 		case reflect.Slice:
@@ -123,6 +141,40 @@ func checkArrayElements(data []byte, element reflect.Type, path string) error {
 		}
 	}
 	return nil
+}
+
+// jsonScalarName names the JSON token kind a Go scalar kind decodes from, and
+// reports false for every kind that is not a scalar.
+func jsonScalarName(kind reflect.Kind) (string, bool) {
+	switch kind {
+	case reflect.Bool:
+		return "boolean", true
+	case reflect.String:
+		return "string", true
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		return "number", true
+	}
+	return "", false
+}
+
+// isJSONScalarToken reports whether data is a JSON token of the named kind.
+// Whether the value also fits the Go type is left to the strict decoder, like
+// every other value this walk lets through.
+func isJSONScalarToken(data []byte, name string) bool {
+	value := bytes.TrimSpace(data)
+	if len(value) == 0 {
+		return false
+	}
+	switch name {
+	case "boolean":
+		return bytes.Equal(value, []byte("true")) || bytes.Equal(value, []byte("false"))
+	case "string":
+		return value[0] == '"'
+	default:
+		return value[0] == '-' || (value[0] >= '0' && value[0] <= '9')
+	}
 }
 
 func jsonFieldName(field reflect.StructField) (name string, omitEmpty, skip bool) {
