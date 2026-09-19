@@ -59,3 +59,4 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `scripts/clean-env-verify.sh`：步驟 `real_subgraph` 照票面寫成 `data validate --manifest`，但 `data validate` 只有 `--store`／`--params`；有官方資料時要改成先 `data import --manifest … --out-store …` 再 `data validate --store …`，並在 OPS-10 證據階段實跑。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
+- `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑，動之前先把這個 fixture 的曲線記進 LRN-09 證據。
