@@ -52,6 +52,7 @@ type ContinualReport struct {
 	Runs            []RunRecord         `json:"runs"`
 	Assumptions     []string            `json:"assumptions"`
 	Independent     []IndependentResult `json:"independent"`
+	Comparison      *ComparisonResult   `json:"comparison,omitempty"`
 }
 
 // runSeedMatrix runs one seed: builds the individual, replays every stage and
@@ -160,12 +161,12 @@ func runSeedMatrix(ctx context.Context, p ContinualProtocol, seed uint64, width 
 }
 
 // RunContinualMatrix runs the protocol on one individual per seed built by
-// build (nil build, nil ctx or an invalid protocol are errors; a protocol
-// with a Comparison is refused with "arrives with a later ticket" until that
-// comparison lands). After every matrix cell a declared state switch re-scores
-// the cell under the switched chemistry and, after every seed, the independent
-// control is built and kept apart from the matrix. A context error aborts the
-// whole run with that error; every other failure becomes a RunRecord.
+// build (nil build, nil ctx or an invalid protocol are errors). After every
+// matrix cell a declared state switch re-scores the cell under the switched
+// chemistry and, after every seed, the independent control is built and kept
+// apart from the matrix; a declared Comparison is attached to the report once
+// every cell is aggregated. A context error aborts the whole run with that
+// error; every other failure becomes a RunRecord.
 func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(seed uint64) (*learning.Individual, error)) (ContinualReport, error) {
 	var report ContinualReport
 	if ctx == nil {
@@ -180,9 +181,6 @@ func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(see
 	if err := p.Validate(); err != nil {
 		return report, err
 	}
-	if p.Comparison != nil {
-		return report, fmt.Errorf("comparison arrives with a later ticket")
-	}
 	report = ContinualReport{
 		SchemaVersion: ContinualSchemaVersion,
 		Profile:       "fixture",
@@ -196,6 +194,11 @@ func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(see
 		"Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell.",
 		"A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule.",
 		"independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting.",
+	}
+	if p.Comparison != nil {
+		report.Assumptions = append(report.Assumptions, "Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim.")
+	} else {
+		report.Assumptions = append(report.Assumptions, "No comparison was declared, so this report makes no claim of superiority.")
 	}
 	perSeedScores := make([][][]float64, 0, len(p.Seeds))
 	perSeedFailed := make([][][]bool, 0, len(p.Seeds))
@@ -228,5 +231,12 @@ func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(see
 		return report, err
 	}
 	report.ForgettingCells = forgettingCells
+	if p.Comparison != nil {
+		comparison, err := compareToIndependent(report, *p.Comparison)
+		if err != nil {
+			return report, err
+		}
+		report.Comparison = comparison
+	}
 	return report, nil
 }

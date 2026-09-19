@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"math"
 	"reflect"
-	"strings"
 	"testing"
 
 	"github.com/TimLai666/coimnet/dynamics"
@@ -265,8 +264,11 @@ func TestContinualMatrixRejects(t *testing.T) {
 	}
 	withComparison := good
 	withComparison.Comparison = &PreRegistered{Method: ComparisonPairedBootstrap, Interval: 0.95, Baseline: BaselineIndependent, Resamples: 1000}
-	if _, err := RunContinualMatrix(ctx, withComparison, ContinualFixture); err == nil || !strings.Contains(err.Error(), "later ticket") {
-		t.Errorf("comparison: got %v, want a later-ticket refusal", err)
+	compared, err := RunContinualMatrix(ctx, withComparison, ContinualFixture)
+	if err != nil {
+		t.Errorf("comparison: %v, want a run that attaches the pre-registered comparison", err)
+	} else if compared.Comparison == nil || len(compared.Comparison.Tasks) != len(withComparison.Tasks) {
+		t.Errorf("comparison: got %+v, want one task comparison per task", compared.Comparison)
 	}
 	canceled, cancel := context.WithCancel(ctx)
 	cancel()
