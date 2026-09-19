@@ -115,7 +115,11 @@ type IndividualSnapshot struct {
 // per entry and per step, so a bound that holds the same edge on every row is
 // counted on every row.
 type PlasticReport struct {
-	Steps              int  `json:"steps"`
+	Steps int `json:"steps"`
+	// Frozen is true when the rows of this advance ran with the fast state
+	// held by FreezePlasticity: the effective weights were still built from it
+	// but no rule update ran, so Steps, Clamped and HeldAtWMin count nothing.
+	Frozen             bool `json:"frozen,omitempty"`
 	Clamped            int  `json:"clamped"`
 	HeldAtWMin         int  `json:"held_at_w_min"`
 	GateFromReceptor   bool `json:"gate_from_receptor,omitempty"`
@@ -156,6 +160,12 @@ type plasticRuntime struct {
 	state plasticity.State
 	// slow is the consolidation layer, nil while it was never enabled.
 	slow *SlowState
+	// frozen holds the fast state constant: while it is set, the advance loop
+	// still builds the effective weights out of the base parameters, this fast
+	// state and the slow layer, but skips the rule update. It lives on the
+	// runtime only, so a snapshot never carries it, DisablePlasticity drops it
+	// with the runtime and EnablePlasticity builds a fresh un-frozen one.
+	frozen bool
 }
 
 // NewIndividual creates an independent copy of a base model, a fresh optimizer
@@ -343,6 +353,33 @@ func (i *Individual) DisablePlasticity() {
 	i.mu.Lock()
 	defer i.mu.Unlock()
 	i.plastic = nil
+}
+
+// FreezePlasticity holds the fast state constant on every later row of this
+// individual: while frozen, each row still builds the effective weights from
+// the base parameters, the held fast change and the slow layer, so the core
+// integrates exactly the weights the individual carries, but the rule update is
+// skipped. The whole fast state (eligibility, pair traces and fast change)
+// passes through bit for bit and Steps, Clamped and HeldAtWMin count nothing,
+// while the gate and the receptor-driven fields are read and reported as usual.
+// This is the evaluation posture of the layer: an evaluation reads what
+// training left behind without being a training step itself.
+//
+// The flag lives on the runtime only: it is not part of the snapshot (a
+// restored individual is never frozen), DisablePlasticity drops it with the
+// mechanism and EnablePlasticity starts a fresh un-frozen one. Without an
+// enabled mechanism it is an error containing "plasticity".
+func (i *Individual) FreezePlasticity(frozen bool) error {
+	if i == nil || i.trainer == nil {
+		return fmt.Errorf("uninitialized individual")
+	}
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.plastic == nil {
+		return fmt.Errorf("plasticity is not enabled")
+	}
+	i.plastic.frozen = frozen
+	return nil
 }
 
 // Snapshot returns an independent copy of all four parts at a completed
@@ -593,7 +630,9 @@ type stepwiseResult struct {
 //
 // With chemistry disabled no modulation is built and the core step is the
 // unmodulated one, bit for bit. With plasticity disabled the plastic report
-// stays at its zero value.
+// stays at its zero value, and with the fast state frozen the row runs this
+// same order without its last step: the effective weights are still built from
+// the held state, the local update is not.
 func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64) (stepwiseResult, error) {
 	var result stepwiseResult
 	n := i.trainer.network
@@ -727,19 +766,27 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 					windowFromReceptor = true
 				}
 			}
-			changed, stepReport, err := i.plastic.model.StepWith(fast, plasticity.StepInput{
-				Pre: pre, Post: post, SpikesPre: eventsPre, SpikesPost: eventsPost,
-				Gate: g, DecayE: decayE,
-			}, sources, targets)
-			if err != nil {
-				return stepwiseResult{}, err
-			}
-			fast = changed
-			result.plastic.Steps++
-			result.plastic.Clamped += stepReport.Clamped
-			result.plastic.HeldAtWMin += held.HeldAtWMin
 			result.plastic.GateFromReceptor = result.plastic.GateFromReceptor || gateFromReceptor
 			result.plastic.WindowFromReceptor = result.plastic.WindowFromReceptor || windowFromReceptor
+			if i.plastic.frozen {
+				// A frozen row ends here: the core step above already read the
+				// effective weights of the held fast change, and skipping the
+				// rule leaves the whole fast state bit-identical, so no step and
+				// no bound is counted for it.
+				result.plastic.Frozen = true
+			} else {
+				changed, stepReport, err := i.plastic.model.StepWith(fast, plasticity.StepInput{
+					Pre: pre, Post: post, SpikesPre: eventsPre, SpikesPost: eventsPost,
+					Gate: g, DecayE: decayE,
+				}, sources, targets)
+				if err != nil {
+					return stepwiseResult{}, err
+				}
+				fast = changed
+				result.plastic.Steps++
+				result.plastic.Clamped += stepReport.Clamped
+				result.plastic.HeldAtWMin += held.HeldAtWMin
+			}
 		}
 		neural = next
 		activity = values[0]

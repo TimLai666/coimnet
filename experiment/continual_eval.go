@@ -53,9 +53,12 @@ func evaluateTask(ctx context.Context, ind *learning.Individual, spec TaskSpec, 
 
 // scoreTwin is the inner loop of evaluateTask on an already restored twin
 // (reset, Advance, −MSE, mean; then the "evaluation changed the individual"
-// check against reference, the snapshot the twin was restored from). The
-// state-switch control of the next ticket restores its own twin from a
-// modified snapshot and calls this.
+// check against reference, the snapshot the twin was restored from). A twin
+// with a plastic part is frozen first (learning.Individual.FreezePlasticity),
+// so the fast and slow layers reach the effective weights of the evaluation
+// without the evaluation changing them; a twin without one takes the unchanged
+// path. The state-switch control of the next ticket restores its own twin from
+// a modified snapshot and calls this.
 func scoreTwin(ctx context.Context, twin *learning.Individual, reference learning.IndividualSnapshot, spec TaskSpec, width int, flipped bool, episodes int, seed uint64) (float64, error) {
 	if ctx == nil {
 		return 0, fmt.Errorf("evaluation needs a context")
@@ -68,6 +71,15 @@ func scoreTwin(ctx context.Context, twin *learning.Individual, reference learnin
 	}
 	if episodes <= 0 {
 		return 0, fmt.Errorf("evaluation needs at least one episode, got %d", episodes)
+	}
+	if reference.Plastic != nil {
+		// An evaluation is never a training step, so the twin's fast state is
+		// held: it still carries the trained fast and slow layers into the
+		// effective weights of every row, but its eligibility cannot accumulate
+		// across the evaluation episodes, which is what the check below refuses.
+		if err := twin.FreezePlasticity(true); err != nil {
+			return 0, err
+		}
 	}
 	var score float64
 	for e := 0; e < episodes; e++ {

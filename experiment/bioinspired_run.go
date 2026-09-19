@@ -139,14 +139,6 @@ func runEcdysoneInspired(ctx context.Context, c BioInspiredConfig) (BioInspiredR
 			if slow := ind.Snapshot().Plastic.Slow; slow != nil {
 				magnitude = euclidean(slow.Values)
 			}
-			// evaluateTask scores a twin restored from the individual's snapshot and
-			// refuses any drift of the parameters, plastic or slow layers during the
-			// evaluation. A local fast state would keep moving under its own
-			// eligibility dynamics on the twin, so the retest measures the trained
-			// base parameters only: the slow-layer magnitude was captured above from
-			// the pre-drop snapshot, and this drop makes the fixed evaluateTask
-			// invariant hold.
-			ind.DisablePlasticity()
 			score, err := evaluateTask(ctx, ind, spec, 2, false, 8, evalSeed(seed, 0), true)
 			if err != nil {
 				if cerr := ctx.Err(); cerr != nil {

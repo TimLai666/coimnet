@@ -54,6 +54,20 @@ func TestEcdysoneInspiredCurveHasOnePointPerPulseStep(t *testing.T) {
 				anySlow = true
 			}
 		}
+		// The retest scores a twin whose fast and slow layers are frozen, not
+		// dropped, so the three pulse timings of one seed must not all land on
+		// the same score: a curve that is flat in the timing measures nothing
+		// about the timing.
+		sameScore := true
+		for _, point := range seed.Curve[1:] {
+			if point.RetestScore != seed.Curve[0].RetestScore {
+				sameScore = false
+				break
+			}
+		}
+		if len(seed.Curve) > 1 && sameScore {
+			t.Errorf("seed %d scored %g at every pulse timing, want the retest to follow the pulse", seed.Seed, seed.Curve[0].RetestScore)
+		}
 	}
 	if !anySlow {
 		t.Error("no point of the report has SlowMagnitude > 0, want at least one consolidation write")
