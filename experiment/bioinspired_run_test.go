@@ -130,20 +130,3 @@ func TestEcdysoneInspiredHonoursCancellation(t *testing.T) {
 		t.Fatalf("error = %v, want context.Canceled", err)
 	}
 }
-
-// TestNPFStillArrivesWithTheNextTicket pins the npf branch to its refusal until
-// its own ticket implements it.
-func TestNPFStillArrivesWithTheNextTicket(t *testing.T) {
-	npf := BioInspiredConfig{
-		Protocol:   ProtocolNPFMemoryExpression,
-		Seeds:      []uint64{11, 22, 33},
-		Episodes:   6,
-		Suppressed: 0.5,
-		Tolerance:  1e-3,
-		Registry:   []string{"S15"},
-	}
-	_, err := RunBioInspired(context.Background(), npf)
-	if err == nil || !strings.Contains(err.Error(), "arrives with the next ticket") {
-		t.Fatalf("RunBioInspired(npf) error = %v, want error containing %q", err, "arrives with the next ticket")
-	}
-}

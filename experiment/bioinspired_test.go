@@ -236,7 +236,11 @@ func TestQuantitativeNamingIsRefusedWithoutFourItems(t *testing.T) {
 	}
 }
 
-func TestRunBioInspiredNotImplementedYet(t *testing.T) {
+// TestRunBioInspiredRunsBothProtocols proves the dispatch reaches a real
+// execution on both allowed names: neither branch answers "next ticket" any
+// more, so the ecdysone config is refused by the protocol's own pulse-grid
+// check and the npf config produces one expression record per seed.
+func TestRunBioInspiredRunsBothProtocols(t *testing.T) {
 	ecdysoboard := BioInspiredConfig{
 		Protocol:   ProtocolEcdysoneInspired,
 		Seeds:      []uint64{1, 2, 3},
@@ -263,9 +267,20 @@ func TestRunBioInspiredNotImplementedYet(t *testing.T) {
 		Tolerance:  1e-3,
 		Registry:   []string{"S15"},
 	}
-	_, err = RunBioInspired(context.Background(), npf)
-	if err == nil || !strings.Contains(err.Error(), "next ticket") {
-		t.Fatalf("RunBioInspired(npf) error = %v, want error containing %q", err, "next ticket")
+	report, err := RunBioInspired(context.Background(), npf)
+	if err != nil {
+		t.Fatalf("RunBioInspired(npf): %v", err)
+	}
+	if len(report.Seeds) != len(npf.Seeds) {
+		t.Fatalf("npf report has %d seeds, want %d", len(report.Seeds), len(npf.Seeds))
+	}
+	for _, seed := range report.Seeds {
+		if seed.Failed {
+			t.Fatalf("npf seed %d failed: %s", seed.Seed, seed.Error)
+		}
+		if seed.Expression == nil {
+			t.Fatalf("npf seed %d has no expression result", seed.Seed)
+		}
 	}
 }
 

@@ -218,9 +218,9 @@ type ExpressionResult struct {
 }
 
 // RunBioInspired dispatches on Protocol; ecdysone_inspired runs the timing
-// protocol and npf_memory_expression_hypothesis returns the error "arrives
-// with the next ticket" after Validate. A quantitative name with complete
-// evidence passes Validate but is not implemented either.
+// protocol and npf_memory_expression_hypothesis the state protocol, both after
+// Validate. A quantitative name with complete evidence passes Validate but is
+// not implemented.
 func RunBioInspired(ctx context.Context, c BioInspiredConfig) (BioInspiredReport, error) {
 	if err := c.Validate(); err != nil {
 		return BioInspiredReport{}, err
@@ -229,7 +229,7 @@ func RunBioInspired(ctx context.Context, c BioInspiredConfig) (BioInspiredReport
 	case ProtocolEcdysoneInspired:
 		return runEcdysoneInspired(ctx, c)
 	case ProtocolNPFMemoryExpression:
-		return BioInspiredReport{}, fmt.Errorf("experiment: %s: execution arrives with the next ticket", c.Protocol)
+		return runNPFMemoryExpression(ctx, c)
 	default:
 		return BioInspiredReport{}, errors.New("experiment: quantitative protocols are not implemented")
 	}
