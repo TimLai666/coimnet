@@ -272,7 +272,6 @@ func learnInput(rows int) [][]float64 {
 	return input
 }
 
-
 // writeFeather writes one single-batch Feather V2 file, the same format the
 // official MaleCNS sources use.
 func writeFeather(t *testing.T, path string, schema *arrow.Schema, fill func(*array.RecordBuilder)) {
