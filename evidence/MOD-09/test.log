@@ -1,0 +1,85 @@
+2026/09/20 01:31:18 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestNPFSuppressionLowersScoreAndRecovers
+    bioinspired_npf_test.go:51: seed 1: before=-0.062355363585436537 suppressed=-0.06565613733775605 after=-0.062355363585436537 recovered=true
+    bioinspired_npf_test.go:51: seed 2: before=-0.08630233458884023 suppressed=-0.09029425705668197 after=-0.08630233458884023 recovered=true
+    bioinspired_npf_test.go:51: seed 3: before=-0.057882453427303186 suppressed=-0.060853987034420166 after=-0.057882453427303186 recovered=true
+--- PASS: TestNPFSuppressionLowersScoreAndRecovers (0.03s)
+=== RUN   TestNPFIsDeterministic
+--- PASS: TestNPFIsDeterministic (0.05s)
+=== RUN   TestNPFHonoursCancellation
+--- PASS: TestNPFHonoursCancellation (0.00s)
+=== RUN   TestNPFReportRoundTrips
+--- PASS: TestNPFReportRoundTrips (0.02s)
+=== RUN   TestEcdysoneInspiredCurveHasOnePointPerPulseStep
+    bioinspired_run_test.go:43: seed 1 point 0: pulse_step=0 slow_magnitude=0.00029968768656378226 retest_score=-0.06583987639830989
+    bioinspired_run_test.go:43: seed 1 point 1: pulse_step=1 slow_magnitude=0.000410345722329368 retest_score=-0.06583978736547016
+    bioinspired_run_test.go:43: seed 1 point 2: pulse_step=3 slow_magnitude=0.0005279158451362891 retest_score=-0.06583969236041876
+    bioinspired_run_test.go:43: seed 2 point 0: pulse_step=0 slow_magnitude=0.0002218320276589831 retest_score=-0.09072595064631975
+    bioinspired_run_test.go:43: seed 2 point 1: pulse_step=1 slow_magnitude=0.0003037579688905269 retest_score=-0.09072587452803466
+    bioinspired_run_test.go:43: seed 2 point 2: pulse_step=3 slow_magnitude=0.0007662567254308275 retest_score=-0.0907254441278949
+    bioinspired_run_test.go:43: seed 3 point 0: pulse_step=0 slow_magnitude=0.00017507433279512777 retest_score=-0.061012617277405486
+    bioinspired_run_test.go:43: seed 3 point 1: pulse_step=1 slow_magnitude=0.00023969513711926045 retest_score=-0.061012570244728614
+    bioinspired_run_test.go:43: seed 3 point 2: pulse_step=3 slow_magnitude=0.0009457480937260429 retest_score=-0.0610120574382381
+--- PASS: TestEcdysoneInspiredCurveHasOnePointPerPulseStep (0.03s)
+=== RUN   TestEcdysoneInspiredIsDeterministic
+--- PASS: TestEcdysoneInspiredIsDeterministic (0.06s)
+=== RUN   TestEcdysoneInspiredRejectsPulseOutsideEpisode
+--- PASS: TestEcdysoneInspiredRejectsPulseOutsideEpisode (0.00s)
+=== RUN   TestEcdysoneInspiredHonoursCancellation
+--- PASS: TestEcdysoneInspiredHonoursCancellation (0.00s)
+=== RUN   TestBioInspiredValidateAcceptsBothProtocols
+--- PASS: TestBioInspiredValidateAcceptsBothProtocols (0.00s)
+=== RUN   TestBioInspiredValidateRejects
+=== RUN   TestBioInspiredValidateRejects/unknown_protocol
+=== RUN   TestBioInspiredValidateRejects/seeds_fewer_than_3
+=== RUN   TestBioInspiredValidateRejects/seeds_duplicate
+=== RUN   TestBioInspiredValidateRejects/episodes_out_of_range
+=== RUN   TestBioInspiredValidateRejects/ecdysone_pulse_steps_empty
+=== RUN   TestBioInspiredValidateRejects/ecdysone_pulse_steps_negative
+=== RUN   TestBioInspiredValidateRejects/ecdysone_pulse_steps_duplicate
+=== RUN   TestBioInspiredValidateRejects/npf_pulse_steps_must_be_empty
+=== RUN   TestBioInspiredValidateRejects/npf_suppressed_out_of_range
+=== RUN   TestBioInspiredValidateRejects/ecdysone_suppressed_must_be_0
+=== RUN   TestBioInspiredValidateRejects/npf_tolerance_must_be_positive
+=== RUN   TestBioInspiredValidateRejects/ecdysone_tolerance_must_be_0
+=== RUN   TestBioInspiredValidateRejects/ecdysone_registry_missing_S14
+=== RUN   TestBioInspiredValidateRejects/npf_registry_missing_S15
+--- PASS: TestBioInspiredValidateRejects (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/unknown_protocol (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/seeds_fewer_than_3 (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/seeds_duplicate (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/episodes_out_of_range (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_pulse_steps_empty (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_pulse_steps_negative (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_pulse_steps_duplicate (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/npf_pulse_steps_must_be_empty (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/npf_suppressed_out_of_range (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_suppressed_must_be_0 (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/npf_tolerance_must_be_positive (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_tolerance_must_be_0 (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/ecdysone_registry_missing_S14 (0.00s)
+    --- PASS: TestBioInspiredValidateRejects/npf_registry_missing_S15 (0.00s)
+=== RUN   TestQuantitativeNamingIsRefusedWithoutFourItems
+--- PASS: TestQuantitativeNamingIsRefusedWithoutFourItems (0.00s)
+=== RUN   TestRunBioInspiredRunsBothProtocols
+--- PASS: TestRunBioInspiredRunsBothProtocols (0.02s)
+=== RUN   TestBioInspiredReportJSONShape
+--- PASS: TestBioInspiredReportJSONShape (0.00s)
+=== RUN   TestScoreTwinFreezesPlasticTwins
+    plastic_eval_test.go:39: retest score of the frozen plastic twin = -0.0671534109423963
+--- PASS: TestScoreTwinFreezesPlasticTwins (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	1.709s
+2026/09/20 01:31:18 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestFreezePlasticityHoldsFastState
+--- PASS: TestFreezePlasticityHoldsFastState (0.00s)
+=== RUN   TestFreezePlasticityIsNotInTheSnapshot
+--- PASS: TestFreezePlasticityIsNotInTheSnapshot (0.00s)
+=== RUN   TestFreezePlasticityNeedsPlasticity
+--- PASS: TestFreezePlasticityNeedsPlasticity (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	1.536s

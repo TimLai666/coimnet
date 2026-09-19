@@ -10,7 +10,7 @@ User Story：研究者可以用固定 seed 跑「先學 A、再學 B、重測 A�
 
 Blocked by：22（記憶表現、穩定化、干預）、23（運行中學習、重播、評估）、21（化學狀態）、17（最佳化器）
 
-Status：第一階段已驗證（2026-09-19）；第二、三階段待派工
+Status：第一階段已驗證（2026-09-19）、第三階段已驗證（2026-09-20）；第二階段待派工
 
 對應需求：LRN-08（產生完整階段矩陣，所有 seed 與失敗執行均保留）、LRN-09（至少一套完整算法可在環境改善；
 遞迴狀態、策略版本及回饋時間一致）、MOD-09（至少時機與記憶表現兩種協定；人工數值不標為定量生物重現）。
@@ -103,7 +103,7 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
   `independent` 對照分開、事前比較方法；`go test`、race、vet；`evidence/LRN-08/`。
 - [ ] 第二階段：`LossGradientFrom` 逐位等於 `LossGradient`；環境評估不洩漏目標；模仿一致率；PPO 機率比值
   三項、版本／狀態一致性拒絕、3 seed 改善且同 seed 逐位重現；`evidence/LRN-09/`。
-- [ ] 第三階段：登錄三條、兩種協定各 3 seed、表現恢復且三層參數不變、定量命名拒絕；`evidence/MOD-09/`；文件。
+- [x] 第三階段：登錄三條、兩種協定各 3 seed、表現恢復且三層參數不變、定量命名拒絕；`evidence/MOD-09/`；文件。
 
 ## 第一階段證據（2026-09-19）
 
@@ -122,6 +122,19 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
 手算常數：遺忘 `F_j(i) = max_{k ≤ i, 未失敗} R[k][j] − R[i][j]`（越大越好；失敗格 F=0）。矩陣 JSON 每 seed 只有 (2,A) 非零，例如 seed 7 `0.12465654281343898 = max(-0.06845514226710238, -0.035994941232014147, -0.16065148404545312) − (-0.16065148404545312)`；forgetting_cells 的 (2,A) mean `0.12043799274790447`。B 欄第 1/2 列三個 seed 全部逐位相同，證明 rule_change 只改 A。手算表測試 `TestForgettingHandTable` 定案 `F = [[0,0],[0,1],[0.3,0]]`。
 
 與 [Root 決策](#root-決策2026-09-15)的出入（實作依定案的契約摘要調整）：`TaskSpec` 沒有 Episodes 欄位，評估期數統一放 `Evaluation.Episodes`（所有任務共用）；`RunRecord` 在 Seed／Stage／Status／Error 之外多了 `Task`（omitempty）與 `Control`（omitempty，命名 state_switch 與 independent 的記錄）；`independent` 對照的訓練方式是在 fresh 個體上只依協定順序重放會碰到該任務的那些 stage（同 `trainSeed`、同 budget、依序套 rule_change），再以該任務的 `evalSeed` 評分，而不是以整套協定重跑。
+
+## 第三階段證據（2026-09-20）
+
+兩種有來源的干預協定都在 fixture 上跑完 3 個 seed，證據在 `evidence/MOD-09/`（`test.log`、`bio-inspired-ecdysone.json`、`bio-inspired-npf.json`、`verification.json`）。`go test -count=1 -race -v -run 'TestBioInspired|TestEcdysone|TestNPF|TestRunBioInspired|TestQuantitative|TestFreezePlasticity|TestScoreTwinFreezes' ./experiment/ ./learning/` 共 17 個頂層測試全 PASS（experiment 14、learning 3），`grep -c "^--- PASS"` 回 17、`^--- FAIL` 回 0；`TestBioInspiredValidateRejects` 另含 14 個全過的子測。驗收四項對照：
+
+1. **登錄三條**：`docs/biological-evidence-registry.md` 的 `[S14]`（第 8 行）、`[S15]`（第 26 行）、`[S20]`（第 44 行），每條都有「原文主張」「本專案採用的設計」「明示不宣稱的事項」「對應主規格章節」四段；「明示不宣稱的事項」分別在第 20、38、56 行。程式端由 `experiment/bioinspired.go` 的 `Validate` 落實：`ecdysone_inspired` 必須宣告 `S14`、`npf_memory_expression_hypothesis` 必須宣告 `S15`，少了就拒絕（子測 `ecdysone_registry_missing_S14`、`npf_registry_missing_S15`）。
+2. **兩種協定各 3 seed**：`ecdysone_inspired`（seeds 1/2/3、6 episodes、pulse_steps 0/1/3）的 `TestEcdysoneInspiredCurveHasOnePointPerPulseStep` 通過，三個 seed 的 `slow_magnitude` 都隨脈衝後移單調遞增——seed 1 `0.00029968768656378226 → 0.000410345722329368 → 0.0005279158451362891`、seed 2 `0.0002218320276589831 → 0.0003037579688905269 → 0.0007662567254308275`、seed 3 `0.00017507433279512777 → 0.00023969513711926045 → 0.0009457480937260429`；`retest_score` 三點兩兩不同（測試明文拒絕「三個時機同分」的平曲線），末減首依序 `1.8403789113496938e-07`、`5.0651842484206178e-07`、`5.5983916738555628e-07`，三個 seed 同向但量級只有 1e-7，只能當方向與可分辨的證據，不是效應量宣稱。曲線全數存在 `evidence/MOD-09/bio-inspired-ecdysone.json`。
+3. **表現恢復且三層參數不變**：`npf_memory_expression_hypothesis`（seeds 1/2/3、12 episodes、suppressed 0.4、tolerance 1e-9）的 `TestNPFSuppressionLowersScoreAndRecovers` 通過。seed 1 before `-0.062355363585436537`、suppressed `-0.06565613733775605`、after `-0.062355363585436537`（抑制期間下降 `0.0033007737523195121`）；seed 2 `-0.08630233458884023` ／ `-0.09029425705668197` ／ `-0.08630233458884023`（下降 `0.0039919224678417325`）；seed 3 `-0.057882453427303186` ／ `-0.060853987034420166` ／ `-0.057882453427303186`（下降 `0.0029715336071169801`）。三個 seed 的 after 都逐位等於 before，`|after − before| = 0` 遠低於宣告容差 1e-9；`ParametersUnchanged`／`SlowUnchanged`／`PlasticUnchanged` 三個旗標全為 true（`experiment/bioinspired_npf.go` 以 `reflect.DeepEqual` 比對第一次評分前與三次評分後的 `Parameters`、`Plastic.Slow`、`Plastic.State`）。分數變、三層逐位不變，就是「表現不是遺忘」。三次評估存在 `evidence/MOD-09/bio-inspired-npf.json`。
+4. **定量命名拒絕**：`TestQuantitativeNamingIsRefusedWithoutFourItems` 通過——協定名稱帶 `ecdysone` 而缺 `QuantitativeEvidence` 時回 `ErrQuantitativeNaming`；補齊 `Method`／`Data`／`Fit`／`HeldOutIntervention` 四項後 `Validate` 過，但 `RunBioInspired` 仍以「quantitative protocols are not implemented」拒絕執行，填滿欄位不會換來數字。`TestBioInspiredValidateRejects` 的 14 個子案例涵蓋未知名稱、seed 少於 3、重複 seed、episodes 越界、兩種協定各自不該出現的欄位（`ecdysone` 的 `suppressed`／`tolerance` 必須為 0、`npf` 的 `pulse_steps` 必須為空）與登錄缺項。
+
+其餘不變量：`TestEcdysoneInspiredIsDeterministic`、`TestNPFIsDeterministic`（同 config 兩次執行 `Seeds` 逐位相同）、`TestEcdysoneInspiredHonoursCancellation`、`TestNPFHonoursCancellation`（已取消的 context 回 `context.Canceled`，不記成失敗 seed）、`TestEcdysoneInspiredRejectsPulseOutsideEpisode`（`pulse_step` 4 超出一個 episode 的 4 列，開跑前就拒絕）、`TestNPFReportRoundTrips` 與 `TestBioInspiredReportJSONShape`（報告 JSON 往返逐位相同）。評估側由 `TestScoreTwinFreezesPlasticTwins`（評分用凍結孿生，評分後個體快照逐位不變）與 `learning` 的 `TestFreezePlasticityHoldsFastState`／`TestFreezePlasticityIsNotInTheSnapshot`／`TestFreezePlasticityNeedsPlasticity` 守住，所以 npf 的三次評分之間唯一的差別是受體驅動的讀出增益。
+
+與 [Root 決策](#第三階段有來源的生物啟發協定mod-09)的出入：決策 10 寫「干預清單沿用 22 的八種，量測活動、快速權重、基礎參數與任務結果四種變化」，實作沒有用到那八種 kind 的任何一種——時機協定用 `ExternalTimeline` 脈衝、狀態協定用 `SetExpressionGain`，量測落實成 `slow_magnitude`、`retest_score` 與三個逐位不變旗標，沒有產生 `ActivityDelta`／`PlasticDelta`／`BaseParameterDelta` 數值。決策 11 寫「README 範例表」，實際補的是 README 的「能力狀態」表（README 沒有範例表）。本階段沒有 CLI 子指令，`evidence/MOD-09/` 的兩份曲線／評估 JSON 是從 `test.log` 的 `t.Logf` 輸出逐字整理的，不是 CLI 產物，整理過程沒有新增程式檔。其餘限制（fixture 三神經元、脈衝時機只在一個 episode 的 4 列內、重測分數差 1e-7 量級、`Suppressed` 由 `Validate` 限制在 (0,1) 且只測 0.4、真實資料未跑、單次 macOS arm64 執行）見 `evidence/MOD-09/verification.json` 的 `limitations`。
 
 ## 依據
 
