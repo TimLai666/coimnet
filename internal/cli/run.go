@@ -47,6 +47,12 @@ Commands:
   checkpoint migrate [flags]     Migrate a snapshot into a new file under a
                                  target schema, never touch the source, and
                                  print the migration report as JSON
+  model inspect [flags]          Inspect one model package or individual
+                                 snapshot: topology, parameters, modes,
+                                 evidence, mapping and a memory estimate
+  model validate [flags]         Recompute and verify one model package or
+                                 individual snapshot and report valid,
+                                 schema and checksum
 
 Use COMMAND --help for options and examples. Unsupported commands and invalid
 arguments return a nonzero exit status. Data transfers require an explicit
@@ -112,6 +118,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runSimulateCommand(ctx, args[1:], stdout, stderr)
 	case "checkpoint":
 		return runCheckpoint(ctx, args[1:], stdout, stderr)
+	case "model":
+		return runModel(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
 		fs.SetOutput(stderr)
