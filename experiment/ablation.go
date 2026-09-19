@@ -14,8 +14,8 @@ import (
 const (
 	// AblationSchemaVersion identifies the MOD-10 comparison document.
 	AblationSchemaVersion = "coimnet-ablation/v1"
-	// The five MOD-10 control groups. The last two are implemented in the
-	// next ticket and RunAblation refuses them.
+	// The five MOD-10 control groups. The last two are the trainable
+	// controller and the capacity-matched control of ablation_controllers.go.
 	GroupNoModulation        = "no_modulation"
 	GroupDirectReward        = "direct_reward"
 	GroupFixedDecay          = "fixed_decay"
@@ -36,6 +36,11 @@ type AblationConfig struct {
 	EvalEpisodes int      `json:"eval_episodes"`
 	Groups       []string `json:"groups"`
 	LearningRate float64  `json:"learning_rate"`
+	// ControllerHidden and ControllerRate belong to the two controller groups
+	// alone. Both are allowed to be zero here because RunAblation normalizes
+	// them to the defaults 4 and 0.05, exactly like LearningRate.
+	ControllerHidden int     `json:"controller_hidden"`
+	ControllerRate   float64 `json:"controller_rate"`
 }
 
 // Validate checks the protocol without running anything. LearningRate is
@@ -132,13 +137,14 @@ func RunAblation(ctx context.Context, c AblationConfig) (AblationReport, error) 
 	if err := c.Validate(); err != nil {
 		return report, err
 	}
-	for _, group := range c.Groups {
-		if group == GroupTrainableController || group == GroupCapacityMatched {
-			return report, fmt.Errorf("ablation group %q is not implemented yet; it arrives with the controller in the next ticket", group)
-		}
-	}
 	if c.LearningRate == 0 {
 		c.LearningRate = 0.02
+	}
+	if c.ControllerHidden == 0 {
+		c.ControllerHidden = 4
+	}
+	if c.ControllerRate == 0 {
+		c.ControllerRate = 0.05
 	}
 	c.Seeds = append([]uint64(nil), c.Seeds...)
 	c.Groups = append([]string(nil), c.Groups...)
@@ -159,7 +165,17 @@ func RunAblation(ctx context.Context, c AblationConfig) (AblationReport, error) 
 	for gi, group := range c.Groups {
 		summary := GroupSummary{Group: group, Total: len(c.Seeds)}
 		for _, seed := range c.Seeds {
-			run, preds, err := runAblationSeed(ctx, seed, group, c)
+			var run GroupRun
+			var preds []float64
+			var err error
+			switch group {
+			case GroupTrainableController:
+				run, preds, err = runTrainableController(ctx, c, seed, training, holdout)
+			case GroupCapacityMatched:
+				run, preds, err = runCapacityMatched(ctx, c, seed, training, holdout)
+			default:
+				run, preds, err = runAblationSeed(ctx, seed, group, c)
+			}
 			if err != nil {
 				return report, err
 			}
@@ -400,5 +416,7 @@ func ablationAssumptions() []string {
 		"Every group trains on the same training split, is scored on the same held-out split with the same seeds, budget and metric; the report records the numbers and makes no verbal judgement.",
 		"direct_reward feeds the previous episode's reward (max(0, 1 - MSE) of its last output) straight in as the local learning gate, bypassing any concentration or receptor: it is the control for merely renaming a reward as a hormone.",
 		"fixed_decay releases one unit into its single channel at the first step of every training episode from a fixed external timeline, so the concentration is set by the declaration and never by learning; the hypothesized receptor's occupancy is the learning gate.",
+		"trainable_controller only sees an activity summary and already-arrived feedback, never a target; its release enters the chemistry through an internal resource.",
+		"capacity_matched has the controller's parameter count and adds its output to the readout without any chemistry; its base parameters keep training against the unchanged loss, so the offset never enters their gradient.",
 	}
 }

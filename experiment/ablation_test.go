@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"math"
-	"strings"
 	"testing"
 
 	"github.com/TimLai666/coimnet/dynamics"
@@ -67,26 +66,18 @@ func TestAblationValidate(t *testing.T) {
 			t.Fatal("Validate accepted a duplicate group")
 		}
 	})
-	t.Run("trainable controller refused by RunAblation", func(t *testing.T) {
+	t.Run("trainable controller runs", func(t *testing.T) {
 		c := ablationTestConfig(6, 8)
 		c.Groups = []string{GroupNoModulation, GroupTrainableController}
-		_, err := RunAblation(context.Background(), c)
-		if err == nil {
-			t.Fatal("RunAblation accepted trainable_controller")
-		}
-		if !strings.Contains(err.Error(), "next ticket") {
-			t.Fatalf("trainable_controller refusal does not mention the next ticket: %v", err)
+		if _, err := RunAblation(context.Background(), c); err != nil {
+			t.Fatalf("RunAblation refused trainable_controller: %v", err)
 		}
 	})
-	t.Run("capacity matched refused by RunAblation", func(t *testing.T) {
+	t.Run("capacity matched runs", func(t *testing.T) {
 		c := ablationTestConfig(6, 8)
 		c.Groups = []string{GroupNoModulation, GroupCapacityMatched}
-		_, err := RunAblation(context.Background(), c)
-		if err == nil {
-			t.Fatal("RunAblation accepted capacity_matched")
-		}
-		if !strings.Contains(err.Error(), "next ticket") {
-			t.Fatalf("capacity_matched refusal does not mention the next ticket: %v", err)
+		if _, err := RunAblation(context.Background(), c); err != nil {
+			t.Fatalf("RunAblation refused capacity_matched: %v", err)
 		}
 	})
 }
