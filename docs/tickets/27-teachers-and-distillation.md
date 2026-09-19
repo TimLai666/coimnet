@@ -10,7 +10,7 @@ User Story：使用者可以在沒有網路與金鑰的情況下用離線 JSONL 
 Blocked by：23（運行中學習：`Update` 的教師回應路徑、`Evaluate` 模式）、24 第一階段（組態的 `teacher`
 區塊、金鑰參照、`--dry-run` 不呼叫教師）、26 第二階段（`LossGradientFrom`、softmax 交叉熵）
 
-Status：第一階段已驗證（2026-09-17，四張 opencode 小票：契約型別、紀錄檔與離線教師、HTTP 教師、重播與封鎖教師；TCH-01、TCH-02 標 passed）；第二、三階段待派工
+Status：第一、二階段已驗證（2026-09-19）；第三階段（移除教師評估、工具安全）待派工
 
 對應需求：TCH-01（沒有網路及金鑰也能訓練與重播，保留教師與輸入版本）、TCH-02（有逾時、有限重試、限速、
 預算、去重及測試伺服器驗證）、TCH-03（學生使用自己的編碼；訓練與保留資料分開）、TCH-04（詞表、溫度、
@@ -101,7 +101,7 @@ func RunStudentEvaluation(ctx context.Context, c StudentEvaluationConfig) (Stude
 - [x] 第一階段：零網路零金鑰的訓練與重播、紀錄與測試輸入分離、回應當資料三項、HTTP 教師七項
   （逾時、重試、4xx、限速、預算、去重、允許清單）在假伺服器驗證；`go test`、race、vet；
   `evidence/TCH-01/`、`evidence/TCH-02/`。
-- [ ] 第二階段：學生編碼獨立（教師 token id 拒絕）、保留集不送教師、去重、對齊拒絕、log-sum-exp 穩定、
+- [x] 第二階段：學生編碼獨立（教師 token id 拒絕）、保留集不送教師、去重、對齊拒絕、log-sum-exp 穩定、
   top-k 標 partial、參數保存；`evidence/TCH-03/`、`evidence/TCH-04/`。
 - [ ] 第三階段：`student` 模式教師呼叫數 0 且網路拒絕、`teacher_assisted` 分開、獨立集與錯標籤穩健性、
   工具允許清單與參數驗證、外部回應不改設定不外傳；`evidence/TCH-05/`、`evidence/TCH-06/`；文件。
@@ -139,6 +139,20 @@ func RunStudentEvaluation(ctx context.Context, c StudentEvaluationConfig) (Stude
 具體服務 adapter 依官方文件另做；`MaxCost` 用盡路徑未直接測（只在 `MaxRequests` 與零預算上驗證）；
 3xx 不重試為對程式碼分支的保守解讀而非測試證明；限速證明的是緊接的第二次呼叫被拒而非計時間隔；
 蒸餾與學生評估是第二／三階段。
+
+## 第二階段證據（2026-09-19）
+
+`distill` 套件已完成並以 `go test -count=1 -race -v ./distill/` 驗證：21 個具名測試全部 PASS、0 FAIL（`grep -c "^--- PASS"` = 21，輸出結尾 `ok  github.com/TimLai666/coimnet/distill 1.482s`），兩份 `verification.json` 通過 JSON 校驗。
+
+四張小票實作與測試涵蓋：
+- 26B-01 梯度入口（`distill/train.go`、`distill/train_test.go`）：`TestUpstreamOnlyOnTheLastRow` 證明 `StepDistribution` 構造的 `upstream` 只有最後一列帶有損失梯度（`d.Loss` 的 grad），其餘前面列全為 0；`TestStepDistributionCallsPredictOnce` 證明單步訓練恰呼叫 1 次 `Predict` 與 1 次 `StepFrom`；`TestStepLabelRatioIsPreStepAgreement` 證明 `StepLabel` 的 `Ratio` 精確反映 step 前學生 argmax 與目標的一致率（label=1 為 1，label=0 為 0）。
+- 27B-01 資料層（`distill/distill.go`、`distill/collect.go`、`distill/encoders.go`、`distill/distill_test.go`）：`TestTextEncoderUsesTheStudentTokenizer` 證明文字走學生 tokenizer，收到教師 token id 陣列 `[1, 2, 3]` 立即回 `ErrTokenIDsRejected` 拒絕；`TestLabelEncoderIndexes` 與 `TestActionEncoderIndexes` 證明字串標籤與行動序列依學生索引編碼；`TestCollectNeverAsksHoldout` 證明保留集 input hash 從不送交教師（asked 集合與 holdout 交集為空）；`TestCollectDropsTextThatRepeatsHoldout` 證明教師生成的文字若與保留集 hash 重複則被去除（`Deduplicated=1`）；`TestCollectSkipsNoAnswer` 證明 `ErrNoAnswer` 自動略過；`TestSplitValidate` 檢查重複、重疊與非 hex hash；`TestCollectRejectsDistributionKind` 拒絕非標籤/文字的分布收集。
+- 27B-02 分布損失（`distill/distribution.go`、`distill/distribution_test.go`）：`TestAlignmentRules` 驗證 `identical`（hash 與類別數須相等）與 `declared_map`（全覆蓋且在合法範圍內），不相容時回 `ErrIncompatibleAlignment`；`TestDeclaredMapRoutesClasses` 證明映射與相同分布等價；`TestLossHandComputation` 驗證手算數值（T=1, Scale=1, Mix=1, p=[0.75, 0.25], logits=[0,0] 時 KL = 0.75*ln 1.5 + 0.25*ln 0.5 ≈ 0.13081203594113694，grad = [-0.25, 0.25]，誤差均在 1e-12 內）；`TestLossFiniteDifferences` 在 5 類隨機分布下數值差分與解析梯度之 worst relative error 為 2.81e-09（< 1e-6）；`TestLargeLogitsStayFinite` 證明 logits 為 1e3 量級時 log-sum-exp 保持有限值（無 NaN/Inf）；`TestPartialTopKIsNotRenormalized` 證明 top-k 損失以原始機率計算（0.5*ln 2 + 0.3*ln 1.2 ≈ 0.4012699973181594，誤差 <= 1e-12），不等於重新正規化值（0.625*ln 2.5 + 0.375*ln 1.5 ≈ 0.724803），且和超過 1 被拒；`DistributionReport` 完整保存溫度、縮放、混合比、top-k、partial 標記與對齊規則。
+- 27B-03／03b 訓練接線（`distill/train.go`、`distill/train_test.go`）：`TestStepLabelMatchesMixZeroDistiller` 證明 `StepLabel` 與 `Mix=0` 的 `StepDistribution` 之 `StepResult` 逐位相同，且兩者執行後的 trainer 快照完全一致；`TestStepDistributionLowersLossAndRaisesAgreement` 以 3 神經元延遲鏈 fixture 學生進行 40 步分布蒸餾，損失前 5 步平均 head mean 1.25766 下降至後 5 步平均 tail mean 1.18845，held-out 保留集 32 筆一致率由 0.000 提升至 1.000（32 of 32）；`TestPartialTeacherIsReported` 證明 top-k 教師回報 `Partial=true`；`TestStepRejectsBadShapes` 拒絕類別數不匹配與空輸入。
+
+證據路徑：`evidence/TCH-03/`（`verification.json`、`test.log`）、`evidence/TCH-04/`（`verification.json`、`test.log`（同一份輸出））。
+
+限制：受測學生為三神經元延遲 fixture，非真實果蠅接線；教師為離線 oracle 分布與查表，非真實訓練過的大模型；真實 HTTP 教師與下游真實任務未跑；可訓練的對齊轉換器未做（票面明列為可選）；參數保存無 distill 專用格式，依賴 learning/checkpoint 既有快照機制；一次執行 macOS arm64。
 
 ## 依據
 

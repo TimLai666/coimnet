@@ -1,0 +1,30 @@
+{
+  "requirement": "TCH-03 研究者可以以教師答案或行動序列蒸餾。驗收：學生使用自己的編碼；訓練與保留資料分開。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./distill/ > evidence/TCH-03/test.log 2>&1"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 錄製當下原文）： 9:57  up 13 days, 15:36, 1 user, load averages: 1.77 2.06 2.32",
+    "test.log 首行為 Insyra banner：2026/09/19 09:59:42 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（distill 透過 signal 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "無外部資料：所有蒸餾測試使用本機 fixture 學生與假教師；輸入序列由 experiment.DelayedEpisode(1001/1003, seed) 產生（3 神經元延遲鏈，固定輸入與讀出矩陣，二元分類）",
+    "受測原始碼：distill/distill.go, collect.go, encoders.go, train.go, distill_test.go, train_test.go 等"
+  ],
+  "observed_result": "distill 套件全部 21 個測試在 race 偵測下全數 PASS（evidence/TCH-03/test.log，grep -c \"^--- PASS\" = 21、0 FAIL）。(1) 學生自己的編碼：TestTextEncoderUsesTheStudentTokenizer 證明文字答案走學生 tokenizer（VocabHash \"student-v1\"，\"a b a\" 得 Target{Classes: [0, 1, 0]}），若收到教師 token id 陣列 [1, 2, 3] 則直接被拒回傳 ErrTokenIDsRejected；TestLabelEncoderIndexes 證明字串標籤 \"cat\" 依 Classes 索引得 Target{Classes: [1]}，未知標籤 \"bird\" 回傳錯誤；TestActionEncoderIndexes 證明字串陣列 [\"left\",\"stay\"] 得 Target{Classes: [0, 2]}，未知行動回傳錯誤。(2) 訓練與保留分開：TestCollectNeverAsksHoldout 證明 train 輸入（hashC, hashA, hashB）與 holdout（hashD, hashE）分開，教師收到的 asked 集合與 holdout 交集為空（rep.Asked=3, Answered=3, NoAnswer=0, Deduplicated=0, Holdout=2，RequestID 為 distill-<hash>，Fields 傳遞 task=cls）；TestCollectDropsTextThatRepeatsHoldout 證明教師文字之 sha256Hex 與 holdout 重複時被剔除（rep.Deduplicated=1, Answered=3，最終只保留 2 個 Example）；TestCollectSkipsNoAnswer 證明教師回傳 teacher.ErrNoAnswer 時略過（rep.NoAnswer=1, Asked=4, Answered=3，回傳 3 個 Example）；TestSplitValidate 證明 Split 重複 hash、train 與 holdout 重疊（overlap）、非 64 位小寫 hex 與空 train 均被拒絕；TestCollectRejectsDistributionKind 證明 LabelDistiller 收到 KindDistribution 回傳 ErrUnsupportedKind 且教師被呼叫 0 次。(3) 走 26 的梯度入口：TestUpstreamOnlyOnTheLastRow 證明 StepDistribution 構造的 upstream 除最後一列等於 d.Loss 的 grad 之外，前面所有列全為 0；TestStepDistributionCallsPredictOnce 證明只呼叫一次 Predict 與一次 StepFrom；TestStepLabelRatioIsPreStepAgreement 證明 StepLabel 的 Ratio 欄位等於 step 前 student logits argmax 與標籤的一致性（label=1 時 Ratio=1，label=0 時 Ratio=0，Predict 與 StepFrom 各呼叫 1 次）。(4) 標籤蒸餾等價：TestStepLabelMatchesMixZeroDistiller 證明 StepLabel 與 Mix=0 的 StepDistribution 產生逐位相同的 StepResult（reflect.DeepEqual），且執行後 trainer 快照完全一致。(5) 學到東西：TestStepDistributionLowersLossAndRaisesAgreement 在 40 步訓練中，損失前 5 步平均 head mean 1.25766（數值 [1.2443278201327375 1.2275560409815913 1.2713433869124455 1.2742203992895846 1.2708577918361914]），後 5 步平均 tail mean 1.18845（數值 [1.1994126656123727 1.1948524933421498 1.2088697623209166 1.168380367994029 1.1707153474716372]），head > tail 損失顯著下降；32 筆 held-out 保留樣本一致率由訓練前的 0.000（0 of 32）提升至訓練後的 1.000（32 of 32）。",
+  "assumption_statement": "fixture 教師是離線 oracle 分布，不是訓練過的模型；學生是三神經元延遲正負號 fixture；蒸餾走 Trainer.StepFrom，參數與最佳化器狀態由 learning 的既有快照機制保存。",
+  "test_log": [
+    "evidence/TCH-03/test.log"
+  ],
+  "reports": [],
+  "limitations": [
+    "fixture 規模：受測學生為三神經元延遲玩具分類任務（DelayedEpisode），非真實果蠅神經接線全圖。",
+    "教師為 oracle：測試所用教師為硬編碼的分布或字串查表，非真實訓練過之大模型。",
+    "真實 HTTP 教師與真實任務未跑：本套件僅使用本機 fakeTeacher 與離線資料，真實遠端教師與具體下游任務尚未執行。",
+    "「參數保存」沒有 distill 專屬測試而是依賴 learning／checkpoint 既有測試（TestStepLabelMatchesMixZeroDistiller 用 trainer 快照比對確認狀態一致）。",
+    "一次執行 macOS arm64（darwin/arm64，go1.26.5）。"
+  ]
+}

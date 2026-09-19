@@ -1,0 +1,31 @@
+{
+  "requirement": "TCH-04 研究者可以在合法對齊下做分布蒸餾。驗收：詞表、溫度、縮放與 top-k 限制驗證；不相容時拒絕。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./distill/ > evidence/TCH-04/test.log 2>&1（與 TCH-03 同一份輸出）"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 錄製當下原文）： 9:57  up 13 days, 15:36, 1 user, load averages: 1.77 2.06 2.32",
+    "test.log 首行為 Insyra banner：2026/09/19 09:59:42 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（distill 透過 signal 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "受測原始碼：distill/distribution.go, distribution_test.go, train.go, train_test.go 等",
+    "無外部資料：分布蒸餾計算皆為解析公式、數值梯度有限差分與 fixture 測試"
+  ],
+  "observed_result": "distill 套件全部 21 個測試在 race 偵測下全數 PASS（evidence/TCH-04/test.log，grep -c \"^--- PASS\" = 21、0 FAIL）。(1) 對齊規則：TestAlignmentRules 證明 identical 規則要求 TeacherVocabHash 等於 StudentVocabHash 且教師類別數等於學生類別數（3==3 通過；hash 不同或 3 vs 4 類別不符回傳 ErrIncompatibleAlignment）；declared_map 規則要求映射完整覆蓋教師類別（長度等於教師類別數）且目標學生類別在合法範圍 [0, studentClasses) 內，缺少類別或目標越界均回傳 ErrIncompatibleAlignment；未知規則回傳 ErrIncompatibleAlignment。TestDeclaredMapRoutesClasses 證明 declared_map {1, 0} 搭配教師分布 {1, 0} 與學生 logits [0.2, -0.7] 計算出的損失與梯度，與 identical 搭配教師分布 {0, 1} 完全相等（誤差 <= 1e-12）。(2) 損失手算：TestLossHandComputation 驗證常數 Temperature=1, Scale=1, Mix=1, Alignment identical 下，教師分布 p=[0.75, 0.25] 與學生 logits [0, 0]（q=[0.5, 0.5]，label=-1），KL 手算理論值 0.75*ln(1.5) + 0.25*ln(0.5) = 0.75*0.40546510810816438197801311546434913657 + 0.25*(-0.69314718055994530941723212145817656808) ≈ 0.13081203594113694，實測 loss 與期望值相差 <= 1e-12；解析梯度 grad=[0.5-0.75, 0.5-0.25]=[-0.25, 0.25]，相差 <= 1e-12；完整分布下 report.Partial 為 false。(3) 梯度有限差分：TestLossFiniteDifferences 以 5 類別、Temperature=2, Scale=1.5, Mix=0.7, label=3, eps=1e-6 檢驗，數值中心差分與解析梯度之 worst relative finite-difference error 為 2.81e-09（遠低於 1e-6 門檻，test.log 第 25 行）。(4) log-sum-exp 穩定：TestLargeLogitsStayFinite 證明在極端 logits [1000, -1000, 0] 下，T=2, Scale=1.5, Mix=0.5，loss 與 grad 保持 finite，無 NaN 或 Inf。(5) top-k 只標 partial 不重新正規化：TestPartialTopKIsNotRenormalized 證明教師 top-k 給 Classes [0, 2]、Probabilities [0.5, 0.3] 時，損失按給定機率計算 0.5*ln(2) + 0.3*ln(1.2) = 0.5*0.69314718055994530941723212145817656808 + 0.3*0.1823215567939546262117180251545146331972 ≈ 0.4012699973181594（誤差 <= 1e-12），且明確不等於重新正規化後的值 0.625*ln(2.5) + 0.375*ln(1.5) ≈ 0.724803（差值 > 1e-6）；機率和超過 1（0.6+0.5=1.1）被拒；report.Partial 為 true。TestPartialTeacherIsReported 證明 top-k 教師在 StepDistribution 下 StepReport.Partial 與 Report.Partial 均精確為 true。(6) 報告保存與形狀防護：DistributionReport 完整記錄 Temperature, Scale, Mix, TopK, Partial, Alignment 等欄位，且各測試均驗證與輸入一致；TestStepRejectsBadShapes 證明教師 3 類別與學生 2 類別在 identical 對齊下呼叫 StepDistribution 被拒、空輸入被拒，且被拒時 StepFrom 完全不執行。",
+  "assumption_statement": "fixture 教師是離線 oracle 分布，不是訓練過的模型；學生是三神經元延遲正負號 fixture；蒸餾走 Trainer.StepFrom，參數與最佳化器狀態由 learning 的既有快照機制保存；可訓練的對齊轉換器未做（票面明列為可選）。",
+  "test_log": [
+    "evidence/TCH-04/test.log（與 TCH-03 相同，cp 副本）"
+  ],
+  "reports": [],
+  "limitations": [
+    "fixture 規模：受測學生為三神經元延遲玩具分類任務，非真實果蠅神經接線全圖。",
+    "教師為 oracle：測試所用教師為硬編碼的分佈，非訓練過的大模型。",
+    "真實 HTTP 教師與真實任務未跑：本套件僅驗證解析損失、梯度與本機 fixture，未連接真實 HTTP 教師。",
+    "可訓練的對齊轉換器未做（票面明列為可選）：目前僅支援 identical 與 declared_map 兩種靜態規則。",
+    "「參數保存」沒有 distill 專屬測試而是依賴 learning／checkpoint 既有測試（TestStepLabelMatchesMixZeroDistiller 用 trainer 快照比對）。",
+    "一次執行 macOS arm64（darwin/arm64，go1.26.5）。"
+  ]
+}
