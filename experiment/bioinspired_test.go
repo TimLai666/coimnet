@@ -244,9 +244,15 @@ func TestRunBioInspiredNotImplementedYet(t *testing.T) {
 		PulseSteps: []int{0, 100, 250},
 		Registry:   []string{"S14"},
 	}
+	// ecdysone_inspired is implemented now: the declaration is no longer
+	// refused as "not implemented", and the out-of-episode pulse grid of this
+	// config is refused by the protocol's own validation instead.
 	_, err := RunBioInspired(context.Background(), ecdysoboard)
-	if err == nil || !strings.Contains(err.Error(), "next ticket") {
-		t.Fatalf("RunBioInspired(ecdysone_inspired) error = %v, want error containing %q", err, "next ticket")
+	if err == nil || strings.Contains(err.Error(), "next ticket") {
+		t.Fatalf("RunBioInspired(ecdysone_inspired) error = %v, want the protocol to execute (without %q)", err, "next ticket")
+	}
+	if !strings.Contains(err.Error(), "outside the episode") {
+		t.Fatalf("RunBioInspired(ecdysone_inspired) error = %v, want a pulse-outside-episode refusal", err)
 	}
 
 	npf := BioInspiredConfig{

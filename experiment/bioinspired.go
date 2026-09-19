@@ -217,15 +217,18 @@ type ExpressionResult struct {
 	PlasticUnchanged    bool    `json:"plastic_unchanged"`
 }
 
-// RunBioInspired dispatches on Protocol; in this ticket both branches return
-// the error "arrives with the next ticket" after Validate. A quantitative
-// name with complete evidence passes Validate but is not implemented either.
+// RunBioInspired dispatches on Protocol; ecdysone_inspired runs the timing
+// protocol and npf_memory_expression_hypothesis returns the error "arrives
+// with the next ticket" after Validate. A quantitative name with complete
+// evidence passes Validate but is not implemented either.
 func RunBioInspired(ctx context.Context, c BioInspiredConfig) (BioInspiredReport, error) {
 	if err := c.Validate(); err != nil {
 		return BioInspiredReport{}, err
 	}
 	switch c.Protocol {
-	case ProtocolEcdysoneInspired, ProtocolNPFMemoryExpression:
+	case ProtocolEcdysoneInspired:
+		return runEcdysoneInspired(ctx, c)
+	case ProtocolNPFMemoryExpression:
 		return BioInspiredReport{}, fmt.Errorf("experiment: %s: execution arrives with the next ticket", c.Protocol)
 	default:
 		return BioInspiredReport{}, errors.New("experiment: quantitative protocols are not implemented")
