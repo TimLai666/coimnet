@@ -1,0 +1,30 @@
+{
+  "requirement": "DAT-06 研究者可以匯入獨立 FlyWire 實驗資料。驗收：版本、ID 空間與映射獨立；禁止與 MaleCNS 無證據拼接。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./connectome/flywire/ -run 'TestConvert|TestManifest' > evidence/DAT-06/test.log 2>&1",
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./connectome/ ./simulate/ -run 'TestMerge|TestCompare|TestMappingEvidence|TestNamedSetNamespace|TestNamedSetWithoutNamespace' >> evidence/DAT-06/test.log 2>&1"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（test.log 錄製前數十秒記錄的原文）：13:09  up 13 days, 18:48, 1 user, load averages: 2.20 3.01 3.19",
+    "test.log 第 13 行為 Insyra banner：2026/09/19 13:10:25 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（simulate 依賴 insyra，測試程序啟動時印出，非測試斷言）",
+    "本次為單次執行，未重跑第二次比對耗時穩定度。"
+  ],
+  "observed_result": "三個套件在 race 偵測下全數 PASS（evidence/DAT-06/test.log，grep -c \"^--- PASS\" = 23、grep -c \"^--- FAIL\" = 0；ok connectome/flywire 1.271s、ok connectome 1.949s、ok simulate 1.559s）。23 個 PASS 中對應 DAT-06 的是 14 個（flywire 5 個、connectome 7 個、simulate 2 個），其餘 9 個是 simulate 內名稱以 TestCompare 開頭、被 -run 正規式一併選到的空模型／學習變體對照測試（TestCompareLearningVariantsRunTheThreeCells、TestCompareOriginalCellIsTheReportWithoutTheBlock、TestCompareLearningVariantValidation、TestCompareRunsTheOriginalAndEveryNullModelSeed、TestCompareSummaryQuantilesAndPercentile、TestCompareIsDeterministicApartFromWallTime、TestCompareProtocolValidation、TestCompareRefusesAMismatchedParameterSource、TestCompareRunsBothCoresOnTheSameGraph），與 DAT-06 無關，只是同一次執行的附帶通過紀錄。(1) CSV／gzip → Feather 與 manifest、命名空間與大 ID 精確往返：TestConvertFixtureRoundTripsThroughBuild 以 3 列 connections、3 列 classification、3 列 neurons 的純文字 CSV fixture 執行 flywire.Convert，得 Rows{Connections: 3, Classification: 3, Neurons: 3}、manifest.json 寫在 outDir、Manifest.Namespace = \"flywire-783\"、Files 為 3 筆（weights.feather、annotations.feather、nt.feather）；再把該 manifest 交給 connectome.Build（EdgeView = EdgeViewRows）得 Graph.NodeCount() = 3、Graph.EdgeCount() = 3（rows 模式保留每一列來源列，因此同一對 (pre, post) 分屬 AL 與 PB 兩個 neuropil 的 2 列各自成邊，加上第三對的 1 列），且 Graph.NeuronIDs() 每個 id.Namespace 皆為 \"flywire-783\"、id.ExternalID 字串集合精確包含 \"9007199254740993\"（2^53+1）、\"9223372036854775807\"（2^63−1）與 \"720575940621039145\"，沒有截斷或改寫。(2) 溢位拒絕：TestConvertRefusesOverflow 用 root_id = \"9223372036854775808\"（2^63）的 classification 列，Convert 回錯且錯誤字串含 \"overflows\"，並確認 outDir 下沒有 manifest.json（os.IsNotExist），亦即失敗不留半套輸出。(3) 缺欄位拒絕：TestConvertRefusesMissingColumn 給沒有 syn_count 的 connections 表，Convert 回錯且錯誤字串同時含 \"syn_count\" 與 \"connections\"（欄位名與表名都指明）。(4) gzip：TestConvertReadsGzip 把同樣三張表寫成 .gz 後轉換，得到與純文字 fixture 相同的 Rows{3, 3, 3} 與 Namespace \"flywire-783\"。(5) manifest 欄位：TestManifestIdentity 確認 Manifest.Dataset = \"flywire\"、Manifest.Namespace = \"flywire-783\"、Selection.Field = \"included\"（adapter 加的常數欄，值固定 \"released\"）、DuplicateSemantics = additive_partitions、TransformHistory 恰為 1 步且 Step = \"flywire-csv-to-feather\"；並確認 Version = \"783/1\"（含 '/'）被 Convert 拒絕，因此命名空間 \"flywire-<version>\" 不會產生含 '/' 的字串。(6) 無證據拼接拒絕（connectome 7 個）：TestMappingEvidenceValidateNamesTheMissingField 證明 MappingEvidence 四個欄位（source、method、coverage、version）任一為空時 Validate 回錯且錯誤字串指名該欄位；TestMergeRequiresEvidenceAcrossNamespaces 證明跨命名空間的 Merge 在 evidence = nil 或 coverage 空白時回 ErrMappingEvidenceRequired、不回傳圖、錯誤字串同時含兩個命名空間，且錯誤帶出 \"coverage\" 這個驗證原因；TestMergeRefusesEvenWithCompleteEvidence 證明即使四欄齊全，Merge 仍回 ErrNoFormalMapping（不再是 ErrMappingEvidenceRequired）且不回傳圖——本 build 不提供任何映射；TestMergeWithinNamespaceIsUndefined 證明同一命名空間的 Merge 一律回「merge within one namespace is not defined; rebuild from one manifest」，且不會誤報成跨資料集錯誤；TestCompareWithinNamespaceCountsSharedIDs 證明同一命名空間的 Compare 回 GraphComparison{NodesA: 3, NodesB: 4, EdgesA: 2, EdgesB: 3, SharedIDs: 2}（共用 id 20、30），有無 evidence 結果相同，自己比自己 SharedIDs = 3；TestCompareAcrossNamespacesRequiresEvidence 證明跨命名空間的 Compare 在無證據或缺 version 時回 ErrMappingEvidenceRequired、在完整證據下回 ErrNoFormalMapping，兩種情況都回傳空的 GraphComparison{}（被拒絕的比較不報任何計數）；TestMergeAndCompareRejectNilArgumentsAndCancellation 證明 nil context、nil graph（nil a／nil b／兩者皆 nil）與已取消 context 都被拒絕，取消時錯誤 errors.Is context.Canceled。(7) 具名集合命名空間（simulate 2 個）：TestNamedSetNamespaceMismatchIsRefused 證明 NamedSet 宣告 Namespace = \"flywire-v783\" 而圖是 fixture 命名空間時，ResolveSets 回錯且錯誤字串含 \"declares namespace\" 與兩個命名空間；宣告與圖相同的命名空間、或完全不宣告，解析結果相同（Count = 2 且 NodeHash 相同）。TestNamedSetWithoutNamespaceKeepsTheProtocolEncoding 證明未宣告 namespace 的 compare protocol 其 JSON 不含 \"namespace\" 字樣、Hash 與加欄位前一致；宣告之後 Hash 改變且 JSON 帶出 \"namespace\"，亦即新欄位對舊協定向後相容。",
+  "assumption_statement": "欄位名依 Codex 公開下載頁整理、尚未對照實際下載檔（見 docs/flywire-source-audit.md）；adapter 加的 included 常數欄代表釋出表即選取集；本 build 不提供任何跨資料集映射；命名空間格式為 flywire-<version>，因 manifest 禁止 '/'。",
+  "test_log": [
+    "evidence/DAT-06/test.log"
+  ],
+  "reports": [],
+  "limitations": [
+    "真實 FlyWire 檔案未取得：blocked_data。下載需要帳號、條款同意與使用者提供本機檔案路徑與授權欄位；本紀錄的所有數字都來自 fixture，不構成真實釋出資料的匯入證據。",
+    "fixture 規模只有 3 顆神經元、3 列 connections、3 列 classification、3 列 neurons；真實釋出是十萬量級神經元與千萬量級連線，欄位變異、空值分布與資料量壓力都未驗證。",
+    "批次切分只驗到 3 列：Feather 寫出的批次大小為 250000 列（connectome/flywire/feather.go 的 featherBatchRows），fixture 全部落在第一批，跨批寫出與逐批讀回的路徑沒有被本次測試涵蓋。",
+    "`data import --dataset flywire` CLI 尚未接上：internal/cli 沒有任何 flywire 參照，data import 只有 --manifest 與 --out-store 兩個旗標（internal/cli/import.go、internal/cli/data.go 的用法說明），目前只能以 Go API flywire.Convert 產生 manifest 後再交給 data import；票面第 8 點的 CLI 形式未實作。",
+    "欄位稽核未對照真實檔：docs/flywire-source-audit.md 的欄位名與型別整理自 Codex 公開下載頁，未逐欄對照實際下載檔；blocked_data 解除後須重新稽核。",
+    "一次執行 macOS arm64（darwin/arm64，go1.26.5），未在其他平台重跑。",
+    "本紀錄只涵蓋 adapter 轉換與拼接拒絕；FlyWire 圖上的模擬、參數推導或與 MaleCNS 的任何比較都未執行，也不在本票宣稱範圍。"
+  ]
+}

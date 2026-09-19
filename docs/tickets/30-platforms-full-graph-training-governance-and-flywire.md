@@ -13,7 +13,9 @@ Blocked by：24（組態、`benchmark`、`report`、`doctor`）、21／18（全�
 OPS-05 的裝置後端：**受阻於使用者決定後端技術與提供裝置存取**；DAT-06 的真實資料：**受阻於使用者
 取得 FlyWire 授權資料**
 
-Status：第一階段已驗證（2026-09-17）；第二～五階段待派工／受阻
+Status：第一階段已驗證（2026-09-17）；第二階段 fixture 部分已驗證（2026-09-19），真實資料 blocked_data；
+第四階段乾淨環境腳本已落地（`scripts/clean-env-verify.sh`），效能報告與 OPS-10 證據待派；第三、五階段
+待派工／受阻
 
 對應需求：OPS-04（各平台編譯與實際執行分開標記；至少有參考環境的完整測試）、OPS-05（與 CPU 比對、裝置
 更新／恢復測試及實際量測；未測不標通過）、OPS-07（真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體
@@ -147,8 +149,8 @@ package connectome // MappingEvidence 與跨資料集拒絕
   依賴測試、治理測試（id 集合、狀態值、證據存在、決策日期）、README 四欄能力表與界線、模型包
   `Scale`／`Trained`／`initialized-` 規則、授權盤點、發布清單 blocked_permission、INDEX 與連結檢查；
   `go test`、race、vet；`evidence/OPS-04/`、`evidence/GOV-01/`、`GOV-04/`、`GOV-05/`、`GOV-06/`。
-- [ ] 第二階段：FlyWire fixture 匯入、大 ID 往返與溢位、manifest 欄位、無證據拼接拒絕；`evidence/DAT-06/`
-  （真實資料 blocked_data）。
+- [x]（fixture；真實資料 blocked_data）第二階段：FlyWire fixture 匯入、大 ID 往返與溢位、manifest 欄位、
+  無證據拼接拒絕；`evidence/DAT-06/`（真實資料 blocked_data）。
 - [ ] 第三階段：全圖預估與檢查、一次全參數反向、可塑性與調節啟用、三種保存物與新程序恢復逐項相等、
   峰值 RSS 與耗時；`evidence/OPS-07/`（或 blocked_hardware 與精確指令）。
 - [ ] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
@@ -175,6 +177,45 @@ package connectome // MappingEvidence 與跨資料集拒絕
 - **單一主文件與索引（GOV-06）**：`docs/INDEX.md` 作為單一入口整合 9 大段落，39 個 Markdown 相對連結全數通過存在性檢查；檔案格式表格列出 52 個 schema 版本字串（Go 全庫掃描為 54 個唯一字串）。
   - 證據路徑：[`evidence/GOV-06/verification.json`](../../evidence/GOV-06/verification.json)
   - Limitations：連結檢查是一次性指令，沒有進 verify.sh。
+
+## 第二階段證據（2026-09-19）
+
+本階段拆成兩張小票派工，證據合併記在 `evidence/DAT-06/`。**本階段的所有數字都來自 fixture，真實 FlyWire
+釋出檔案仍是 `blocked_data`。**
+
+- **30B-01 FlyWire adapter（Root 決策 8）**：`connectome/flywire` 把一份公開釋出的三張 CSV 表（可為
+  gzip）轉成 `weights.feather`、`annotations.feather`、`nt.feather` 與 `manifest.json`，命名空間為
+  `flywire-<version>`。fixture（3 顆神經元、connections／classification／neurons 各 3 列）通過
+  `flywire.Convert` 後再由 `connectome.Build`（`EdgeViewRows`）讀回得 `NodeCount = 3`、`EdgeCount = 3`
+  （同一對 (pre, post) 分屬 AL／PB 兩個 neuropil 的 2 列各自成邊），外部 root id `9007199254740993`
+  （2^53+1）、`9223372036854775807`（2^63−1）與 `720575940621039145` 以字串精確往返；`9223372036854775808`
+  （2^63）回「overflows」錯誤且不留下 `manifest.json`；缺 `syn_count` 的 connections 表錯誤同時指名欄位與
+  表名；manifest 的 `Dataset = flywire`、`Selection.Field = included`、`DuplicateSemantics =
+  additive_partitions`、`TransformHistory` 恰一步 `flywire-csv-to-feather`，版本含 `/` 被拒。測試 5 個：
+  `TestConvertFixtureRoundTripsThroughBuild`、`TestConvertRefusesOverflow`、`TestConvertRefusesMissingColumn`、
+  `TestConvertReadsGzip`、`TestManifestIdentity`。欄位稽核見
+  [`docs/flywire-source-audit.md`](../flywire-source-audit.md)。
+- **30B-02 禁止無證據拼接（Root 決策 9）**：`connectome.MappingEvidence` 四個欄位缺一即回錯並指名欄位；
+  跨命名空間的 `Merge`／`Compare` 無證據回 `ErrMappingEvidenceRequired`，證據齊全仍回 `ErrNoFormalMapping`
+  （本 build 不提供任何映射），被拒的 `Compare` 不回報任何計數；同一命名空間的 `Merge` 回「rebuild from one
+  manifest」，`Compare` 回 `NodesA/B = 3/4`、`EdgesA/B = 2/3`、`SharedIDs = 2`。`simulate` 的具名集合宣告
+  了別的資料集命名空間時，`ResolveSets` 以「declares namespace」錯誤拒絕；不宣告時 compare protocol 的
+  JSON 與 hash 與加欄位前相同。測試 9 個：`TestMappingEvidenceValidateNamesTheMissingField`、
+  `TestMergeRequiresEvidenceAcrossNamespaces`、`TestMergeRefusesEvenWithCompleteEvidence`、
+  `TestMergeWithinNamespaceIsUndefined`、`TestCompareWithinNamespaceCountsSharedIDs`、
+  `TestCompareAcrossNamespacesRequiresEvidence`、`TestMergeAndCompareRejectNilArgumentsAndCancellation`、
+  `TestNamedSetNamespaceMismatchIsRefused`、`TestNamedSetWithoutNamespaceKeepsTheProtocolEncoding`。
+- **證據路徑**：[`evidence/DAT-06/verification.json`](../../evidence/DAT-06/verification.json)、
+  [`evidence/DAT-06/test.log`](../../evidence/DAT-06/test.log)。一次 race 執行，log 內
+  `grep -c "^--- PASS"` = 23、`grep -c "^--- FAIL"` = 0；其中 14 個是上述兩票的測試，另外 9 個是
+  `simulate` 內名稱以 `TestCompare` 開頭、被 `-run` 正規式一併選到的空模型／學習變體對照測試，與 DAT-06
+  無關。環境：go1.26.5 darwin/arm64。
+- **限制**：真實 FlyWire 檔案未取得（`blocked_data`）；fixture 只有 3 顆神經元，Feather 的 250000 列批次
+  切分沒有被跨批驗證；`data import --dataset flywire` 的 CLI 形式尚未接上（`internal/cli` 無任何 flywire
+  參照，`data import` 只有 `--manifest` 與 `--out-store`），目前只能以 Go API `flywire.Convert` 產生
+  manifest 後再交給 `data import`；欄位稽核整理自 Codex 公開下載頁，未逐欄對照實際下載檔；單一平台單次執行。
+- **解除條件**：使用者完成 FlyWire 帳號與條款同意、提供本機下載檔路徑與授權欄位後，才能用真實釋出檔重跑
+  匯入、重新逐欄稽核，並補上真實資料的統計與逐批讀取證據。
 
 ## 依據
 
