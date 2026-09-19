@@ -161,8 +161,10 @@ func TestContinualMatrixKeepsFailedRuns(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RunContinualMatrix: %v", err)
 	}
-	if len(report.Runs) != 27 {
-		t.Fatalf("runs: got %d want 27", len(report.Runs))
+	// 3 seeds x 3 stages + 3 seeds x 3 stages x 2 tasks matrix records, plus
+	// the two independent-control records of the seed whose build is broken.
+	if len(report.Runs) != 29 {
+		t.Fatalf("runs: got %d want 29", len(report.Runs))
 	}
 	failed := 0
 	for _, r := range report.Runs {
@@ -244,8 +246,22 @@ func TestContinualMatrixRejects(t *testing.T) {
 	}
 	withSwitch := good
 	withSwitch.Evaluation.StateSwitch = &StateSwitch{Concentration: [][]float64{{0.5}}}
-	if _, err := RunContinualMatrix(ctx, withSwitch, ContinualFixture); err == nil || !strings.Contains(err.Error(), "later ticket") {
-		t.Errorf("state switch: got %v, want a later-ticket refusal", err)
+	switched, err := RunContinualMatrix(ctx, withSwitch, ContinualFixture)
+	if err != nil {
+		t.Errorf("state switch: %v, want a run whose switched cells are recorded", err)
+	} else {
+		for _, sm := range switched.Seeds {
+			if len(sm.Switched) != len(withSwitch.Stages) || len(sm.SwitchedFailed) != len(withSwitch.Stages) {
+				t.Errorf("state switch: seed %d has no switched matrix", sm.Seed)
+			}
+			for i := range sm.SwitchedFailed {
+				for j := range sm.SwitchedFailed[i] {
+					if !sm.SwitchedFailed[i][j] {
+						t.Errorf("state switch: seed %d cell %d,%d succeeded without a chemistry", sm.Seed, i, j)
+					}
+				}
+			}
+		}
 	}
 	withComparison := good
 	withComparison.Comparison = &PreRegistered{Method: ComparisonPairedBootstrap, Interval: 0.95, Baseline: BaselineIndependent, Resamples: 1000}
