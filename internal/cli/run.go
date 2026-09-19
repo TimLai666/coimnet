@@ -22,6 +22,9 @@ Commands:
   examples run evaluate [flags]
                                 Score the delayed-correlation fixture under a
                                 fixed or adaptive protocol and write the report
+  examples run continual-matrix [flags]
+                                Run the fixed two-task continual matrix with a
+                                rule-change stage and a paired comparison report
   run --config FILE --dry-run   Expand a strict configuration, report where every
                                 value came from, estimate the memory one run needs
                                 and refuse instead of shrinking anything
@@ -131,7 +134,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
@@ -139,6 +142,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 				{"name": "delayed", "profile": "fixture", "description": "Five-step delayed pulse, three synthetic neurons, trainable core weights and fixed periphery"},
 				{"name": "lif-threshold", "profile": "fixture", "description": "Five-step delayed pulse, three leaky integrate-and-fire neurons, trainable base firing threshold against frozen and fully trainable controls"},
 				{"name": "evaluate", "profile": "fixture", "description": "Two-node delayed-correlation core with local plasticity, eight adaptation and eight scoring items under a fixed or adaptive protocol"},
+				{"name": "continual-matrix", "profile": "fixture", "description": "Two-task delayed-core continual matrix with train stages, a rule change and a preregistered paired bootstrap comparison"},
 			})
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "delayed" {
@@ -149,6 +153,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "evaluate" {
 			return runEvaluate(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "continual-matrix" {
+			return runContinualMatrix(ctx, args[3:], stdout, stderr)
 		}
 	}
 	return fmt.Errorf("unknown command; use coimnet --help")
