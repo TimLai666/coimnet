@@ -17,7 +17,7 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
 		t.Fatalf("benchmark: %v %s", err, stderr.String())
 	}
-	if want := "benchmark: 3 stages, nodes 8, edges 16, steps 10, repeat 1"; !strings.Contains(stdout.String(), want) {
+	if want := "benchmark: 6 stages, nodes 8, edges 16, steps 10, repeat 1"; !strings.Contains(stdout.String(), want) {
 		t.Fatalf("stdout summary missing %q:\n%s", want, stdout.String())
 	}
 	raw, err := os.ReadFile(out)
@@ -65,7 +65,7 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	if report.Config.Nodes != 8 || report.Config.Edges != 16 || report.Config.Steps != 10 || report.Config.Repeat != 1 {
 		t.Errorf("config = %+v", report.Config)
 	}
-	wantStages := []string{"import", "forward", "backward"}
+	wantStages := []string{"import", "forward", "backward", "local_plasticity", "modulation", "snapshot"}
 	if len(report.Stages) != len(wantStages) {
 		t.Fatalf("stages = %+v", report.Stages)
 	}
@@ -92,6 +92,30 @@ func TestBenchmarkWritesReport(t *testing.T) {
 		if report.Assumptions[i] != want {
 			t.Errorf("assumption %d = %q, want %q", i, report.Assumptions[i], want)
 		}
+	}
+}
+
+// TestBenchmarkSnapshotStageLeavesNoTempFile pins the snapshot stage's cleanup:
+// the stage writes <out>.snapshot.tmp.json once per repetition and must remove
+// it every time, so after the run the output directory holds the report alone.
+func TestBenchmarkSnapshotStageLeavesNoTempFile(t *testing.T) {
+	dir := t.TempDir()
+	out := filepath.Join(dir, "b.json")
+	var stdout, stderr bytes.Buffer
+	args := []string{"benchmark", "--nodes", "8", "--edges", "16", "--steps", "10", "--repeat", "2", "--out", out}
+	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
+		t.Fatalf("benchmark: %v %s", err, stderr.String())
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("read output directory: %v", err)
+	}
+	names := make([]string, 0, len(entries))
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	if len(names) != 1 || names[0] != "b.json" {
+		t.Fatalf("output directory = %q, want only the report file", names)
 	}
 }
 

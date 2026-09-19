@@ -14,8 +14,11 @@ import (
 	"sort"
 	"time"
 
+	"github.com/TimLai666/coimnet/checkpoint"
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 // The fixed draft of the report this command publishes. The schema version and
@@ -56,9 +59,10 @@ type benchmarkReport struct {
 	Assumptions   []string        `json:"assumptions"`
 }
 
-// runBenchmark measures import, forward and backward on a synthetic continuous
-// topology and writes one benchmark report to a new --out file. The report goes
-// only to the file; stdout carries a one-line summary.
+// runBenchmark measures import, forward, backward, local plasticity, modulation
+// and snapshot on a synthetic continuous topology and writes one benchmark
+// report to a new --out file. The report goes only to the file; stdout carries a
+// one-line summary.
 func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	var out string
 	nodes, edges, steps, repeat := 64, 256, 200, 3
@@ -72,7 +76,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	usageOutput := &outputCapture{writer: stdout}
 	fs.Usage = func() {
 		fmt.Fprintln(usageOutput, "Usage: coimnet benchmark --out FILE [--nodes 64] [--edges 256] [--steps 200] [--repeat 3]")
-		fmt.Fprintln(usageOutput, "Builds one synthetic continuous topology (seed 1, self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1, tanh) and times three stages on it: import builds the dynamics model from the config, forward runs the model over --steps rows of 0.1 input and backward takes one learning step on a trainer whose encoder reaches node 0 and whose readout reads node nodes-1, both Insyra-driven. Each stage runs --repeat times and reports the median, min and max wall-clock milliseconds plus the RSS after it, from runtime.ReadMemStats.Sys.")
+		fmt.Fprintln(usageOutput, "Builds one synthetic continuous topology (seed 1, self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1, tanh) and times six stages on it: import builds the dynamics model from the config, forward runs the model over --steps rows of 0.1 input, backward takes one learning step on a trainer whose encoder reaches node 0 and whose readout reads node nodes-1, both Insyra-driven, local_plasticity walks a persistent individual of that same declaration over --steps rows of 0.1 input with hebbian_rate plasticity on the first 64 edges and the learning gate held open, modulation walks a persistent individual whose single chemical channel receives one unit every five steps and whose hypothesized receptor sits on node nodes-1, and snapshot takes that individual's snapshot, saves it to <--out>.snapshot.tmp.json, reads it back and removes the file. Each stage runs --repeat times and reports the median, min and max wall-clock milliseconds plus the RSS after it, from runtime.ReadMemStats.Sys.")
 		fmt.Fprintln(usageOutput, "Writes the coimnet-benchmark/v1 report to --out, which must not already exist, and prints one benchmark summary line to stdout.")
 		fmt.Fprintln(usageOutput, "Example: coimnet benchmark --out benchmark.json")
 		fmt.Fprintln(usageOutput, "Errors: a missing or existing --out, non-positive --nodes, --edges, --steps or --repeat, cancellation, a failing stage or an output failure. Usage errors exit with status 1 and name the flag.")
@@ -120,7 +124,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	}
 	target := []float64{0.5}
 
-	stages := make([]stageResult, 0, 3)
+	stages := make([]stageResult, 0, 6)
 	importResult, err := benchmarkStage("import", repeat, func() error {
 		if err := ctx.Err(); err != nil {
 			return err
@@ -176,6 +180,115 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return err
 	}
 	stages = append(stages, backwardResult)
+
+	// The persistent individual of the last three stages repeats the backward
+	// stage's declaration, so every stage of the report walks the same synthetic
+	// topology through the same encoder and readout.
+	individualConfig := learning.Config{
+		Dynamics:     cfg,
+		InputSize:    1,
+		OutputSize:   1,
+		ReadoutNodes: []int{nodes - 1},
+		InputNodes:   []int{0},
+	}
+	individualParameters := learning.Parameters{
+		Core:     params,
+		ThetaRaw: nil,
+		Encoder:  []float64{0.1},
+		Readout:  []float64{0.1},
+	}
+	plasticEdges := make([]int, min(edges, 64))
+	for i := range plasticEdges {
+		plasticEdges[i] = i
+	}
+	openGate := make([]float64, steps)
+	for i := range openGate {
+		openGate[i] = 1
+	}
+	// A walk leaves persistent voltage and fast state behind, so each repetition
+	// needs its own individual. Building them all before the stage keeps
+	// construction out of the timed function, the same split the import and
+	// forward stages use, so the stage times AdvanceGated alone.
+	plasticIndividuals := make([]*learning.Individual, 0, repeat)
+	for range repeat {
+		individual, err := learning.NewIndividual(individualConfig, individualParameters, learning.DefaultOptions(), make([]float64, nodes))
+		if err != nil {
+			return err
+		}
+		if err := individual.EnablePlasticity(plasticity.Config{
+			Rule:  plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: 0.5, DecayP: 0.5, PlasticMax: 1, WMin: 0.01},
+			Edges: plasticEdges,
+		}); err != nil {
+			return err
+		}
+		plasticIndividuals = append(plasticIndividuals, individual)
+	}
+	plasticRepetition := 0
+	plasticResult, err := benchmarkStage("local_plasticity", repeat, func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		individual := plasticIndividuals[plasticRepetition]
+		plasticRepetition++
+		_, _, err := individual.AdvanceGated(ctx, stepInput, openGate)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	stages = append(stages, plasticResult)
+
+	// The modulation stage is the same walk under a declared chemistry instead
+	// of local plasticity, so the difference between the two rows is the
+	// mechanism and not the topology or the input.
+	chemicalIndividuals := make([]*learning.Individual, 0, repeat)
+	for range repeat {
+		individual, err := learning.NewIndividual(individualConfig, individualParameters, learning.DefaultOptions(), make([]float64, nodes))
+		if err != nil {
+			return err
+		}
+		if err := individual.EnableChemistry(benchmarkChemistry(nodes, steps)); err != nil {
+			return err
+		}
+		chemicalIndividuals = append(chemicalIndividuals, individual)
+	}
+	chemicalRepetition := 0
+	modulationResult, err := benchmarkStage("modulation", repeat, func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		individual := chemicalIndividuals[chemicalRepetition]
+		chemicalRepetition++
+		_, err := individual.Advance(ctx, stepInput)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	stages = append(stages, modulationResult)
+
+	// The snapshot stage round-trips the individual the modulation stage walked,
+	// so it measures a state that carries chemistry rather than a fresh one. The
+	// temporary file sits next to --out and every repetition removes it, failed
+	// or not, so the run leaves only the report behind. The removal runs inside
+	// the timed function because the next repetition needs the path free.
+	snapshotPath := out + ".snapshot.tmp.json"
+	snapshotSubject := chemicalIndividuals[len(chemicalIndividuals)-1]
+	snapshotResult, err := benchmarkStage("snapshot", repeat, func() error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		defer os.Remove(snapshotPath)
+		if err := checkpoint.SaveIndividual(ctx, snapshotPath, snapshotSubject.Snapshot()); err != nil {
+			return err
+		}
+		_, err := checkpoint.LoadIndividual(ctx, snapshotPath)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	stages = append(stages, snapshotResult)
 
 	report := benchmarkReport{
 		SchemaVersion: benchmarkSchemaVersion,
@@ -264,6 +377,33 @@ func syntheticParameters(cfg dynamics.Config) dynamics.Parameters {
 		logTau[i] = math.Ln2
 	}
 	return dynamics.Parameters{Weights: weights, Bias: bias, LogTau: logTau}
+}
+
+// benchmarkChemistry declares the modulation stage's chemistry on the synthetic
+// topology: one region holding every node, one channel cleared with a fixed time
+// constant, an external timeline releasing one unit every five steps, and a
+// hypothesized receptor on the readout node driving one sensitivity effect. It
+// is a declared engineering stimulus, not measured biology, exactly like the
+// uniform parameter set above.
+func benchmarkChemistry(nodes, steps int) modulation.ChemistryConfig {
+	entries := make([]modulation.TimelineEntry, steps)
+	for e := range entries {
+		entries[e] = modulation.TimelineEntry{Step: uint64(5 * e), Channel: 0, Rate: 1}
+	}
+	return modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{2}},
+		Sources: []modulation.SourceSpec{{
+			Kind: modulation.SourceExternalTimeline, Channel: 0,
+			Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: entries},
+		}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{{
+			Cells: []int{nodes - 1}, Signal: "octopamine", Channel: 0,
+			Status: modulation.StatusHypothesized, Kd: 0.5, N: 1,
+			Evidence: "coimnet benchmark modulation stage", MeasurementKind: "declared", MappingVersion: benchmarkSchemaVersion,
+		}}},
+		Effects: []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 1}},
+		Regions: modulation.RegionAssignment{NodeRegion: make([]int, nodes)},
+	}
 }
 
 func medianMS(durations []time.Duration) float64 {

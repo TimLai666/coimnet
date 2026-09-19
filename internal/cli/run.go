@@ -47,7 +47,8 @@ Commands:
   checkpoint migrate [flags]     Migrate a snapshot into a new file under a
                                  target schema, never touch the source, and
                                  print the migration report as JSON
-  benchmark [flags]              Time import, forward and backward on a
+  benchmark [flags]              Time import, forward, backward, local
+                                 plasticity, modulation and snapshot on a
                                  synthetic topology and write the report JSON
   model inspect [flags]          Inspect one model package or individual
                                  snapshot: topology, parameters, modes,
