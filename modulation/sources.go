@@ -10,6 +10,7 @@ var (
 	_ Source = NeuralActivity{}
 	_ Source = InternalResource{}
 	_ Source = Replay{}
+	_ Source = (*Controller)(nil)
 )
 
 // TimelineEntry is one declared release: Rate on Channel at Step.

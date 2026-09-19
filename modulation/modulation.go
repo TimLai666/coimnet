@@ -11,7 +11,6 @@
 package modulation
 
 import (
-	"errors"
 	"fmt"
 	"math"
 
@@ -46,19 +45,6 @@ type Source interface {
 	Channels() int
 	Release(step uint64, c SourceContext) ([]float64, error)
 }
-
-// ErrControllerNotImplemented is returned by NewController. The trainable
-// controller source is reserved by name here so that the four implemented
-// sources are not mistaken for the whole list; it is MOD-07 and is a separate
-// ticket.
-var ErrControllerNotImplemented = errors.New("modulation: the trainable controller source is not implemented (MOD-07)")
-
-// Controller is the reserved name of the trainable controller source. It has no
-// behaviour: NewController always fails with ErrControllerNotImplemented.
-type Controller struct{}
-
-// NewController always returns ErrControllerNotImplemented.
-func NewController() (*Controller, error) { return nil, ErrControllerNotImplemented }
 
 // checkFeedback rejects feedback that has not arrived at this step. The caller
 // is expected to have filtered it already, which is exactly why a source does

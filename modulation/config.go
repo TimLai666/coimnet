@@ -5,9 +5,9 @@ import (
 	"strings"
 )
 
-// The four source kinds a SourceSpec may declare. The trainable controller of
-// MOD-07 is deliberately absent: NewController still refuses it, so a
-// declaration cannot reach a source that does not exist.
+// The source kinds a SourceSpec may declare. The trainable controller of
+// MOD-07 is the fifth and is declared in controller.go, next to the source it
+// names.
 const (
 	SourceExternalTimeline = "external_timeline"
 	SourceNeuralActivity   = "neural_activity"
@@ -19,18 +19,19 @@ const (
 // present and exactly one body must be, so a document cannot describe two
 // sources at once or none at all.
 //
-// Channel is the chemistry channel this source feeds. The four kinds all index
+// Channel is the chemistry channel this source feeds. The kinds all index
 // their release vector by channel and declare a zero on every channel below the
 // one they release on, so a spec's source must declare exactly Channel+1
 // channels: a narrower one could not reach the channel, and a wider one would
 // carry rates this layer never reads.
 type SourceSpec struct {
-	Kind     string            `json:"kind"`
-	Channel  int               `json:"channel"`
-	Timeline *ExternalTimeline `json:"timeline,omitempty"`
-	Neural   *NeuralActivity   `json:"neural,omitempty"`
-	Resource *InternalResource `json:"resource,omitempty"`
-	Replay   *Replay           `json:"replay,omitempty"`
+	Kind       string            `json:"kind"`
+	Channel    int               `json:"channel"`
+	Timeline   *ExternalTimeline `json:"timeline,omitempty"`
+	Neural     *NeuralActivity   `json:"neural,omitempty"`
+	Resource   *InternalResource `json:"resource,omitempty"`
+	Replay     *Replay           `json:"replay,omitempty"`
+	Controller *Controller       `json:"controller,omitempty"`
 }
 
 // Build validates the declaration and returns the source it names. The result
@@ -41,7 +42,7 @@ func (s SourceSpec) Build() (Source, error) {
 		return nil, fmt.Errorf("modulation: source spec declares channel %d", s.Channel)
 	}
 	bodies := 0
-	for _, present := range []bool{s.Timeline != nil, s.Neural != nil, s.Resource != nil, s.Replay != nil} {
+	for _, present := range []bool{s.Timeline != nil, s.Neural != nil, s.Resource != nil, s.Replay != nil, s.Controller != nil} {
 		if present {
 			bodies++
 		}
@@ -104,6 +105,21 @@ func (s SourceSpec) Build() (Source, error) {
 			return nil, err
 		}
 		built = replay
+	case SourceController:
+		if s.Controller == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no controller body", s.Kind)
+		}
+		// The controller keeps an activity window across steps, so the build
+		// hands back a pointer to a freshly declared body rather than a value:
+		// two sources built from one spec must not share that window.
+		controller := s.Controller.declaration()
+		if err := controller.Validate(); err != nil {
+			return nil, err
+		}
+		if controller.Channel != s.Channel {
+			return nil, fmt.Errorf("modulation: source spec feeds channel %d but its controller body releases on channel %d", s.Channel, controller.Channel)
+		}
+		built = controller
 	default:
 		return nil, fmt.Errorf("modulation: unsupported source kind %q", s.Kind)
 	}
@@ -134,6 +150,9 @@ func (s SourceSpec) clone() SourceSpec {
 			trace[i] = append([]float64(nil), row...)
 		}
 		owned.Replay = &Replay{Trace: trace}
+	}
+	if s.Controller != nil {
+		owned.Controller = s.Controller.declaration()
 	}
 	return owned
 }

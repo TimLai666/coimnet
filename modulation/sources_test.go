@@ -1,7 +1,6 @@
 package modulation
 
 import (
-	"errors"
 	"math"
 	"reflect"
 	"testing"
@@ -353,16 +352,6 @@ func TestEverySourceReleasesNonNegativeFiniteChannelWideRates(t *testing.T) {
 				}
 			}
 		}
-	}
-}
-
-func TestControllerSourceIsReservedButNotImplemented(t *testing.T) {
-	controller, err := NewController()
-	if !errors.Is(err, ErrControllerNotImplemented) {
-		t.Fatalf("NewController() error = %v, want ErrControllerNotImplemented", err)
-	}
-	if controller != nil {
-		t.Fatalf("NewController() returned %v, want nil", controller)
 	}
 }
 
