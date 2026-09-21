@@ -100,7 +100,7 @@ func TestStepReportsTheScheduledLearningRateAndUsesIt(t *testing.T) {
 	if _, err := constant.Step(context.Background(), inputs[0], targets[0]); err != nil {
 		t.Fatal(err)
 	}
-	first := adamWFirstUpdate(accumulationParameters, accumulationGradient1, .2, o.Epsilon)
+	first := adamWFirstUpdate(accumulationParameters, batchGradients(t)[0], .2, o.Epsilon)
 	requireSlicesClose(t, "first scheduled update", flatTestParameters(constant.Snapshot().Parameters), first, 1e-12)
 }
 

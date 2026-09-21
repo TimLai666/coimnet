@@ -1,0 +1,57 @@
+2026/09/22 00:11:50 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestSynthesizeIsDeterministicAndBounded
+--- PASS: TestSynthesizeIsDeterministicAndBounded (0.00s)
+=== RUN   TestFeaturesShape
+--- PASS: TestFeaturesShape (0.00s)
+=== RUN   TestRecognizerTrainingLowersCER
+    recognizer_test.go:141: held-out CER 0.7778 -> 0.0000 (WER 0.8667 -> 0.0000, exact 0.1333 -> 1.0000 over 15 utterances)
+--- PASS: TestRecognizerTrainingLowersCER (0.33s)
+=== RUN   TestRecognizerIsReproducible
+--- PASS: TestRecognizerIsReproducible (0.64s)
+=== RUN   TestRecognizerRejects
+--- PASS: TestRecognizerRejects (0.00s)
+=== RUN   TestStreamMatchesWholeFile
+    stream_test.go:177: 15 held-out utterances agree in 700-sample chunks; 7040 samples decode to "aaa" whole, in 1-sample chunks and in one chunk, with "a" after the first 3520 samples
+--- PASS: TestStreamMatchesWholeFile (0.49s)
+=== RUN   TestStreamUsesOnlyArrivedAudio
+--- PASS: TestStreamUsesOnlyArrivedAudio (0.00s)
+=== RUN   TestStreamResumesFromSnapshot
+--- PASS: TestStreamResumesFromSnapshot (0.01s)
+=== RUN   TestStreamTailAndFlush
+--- PASS: TestStreamTailAndFlush (0.00s)
+=== RUN   TestStreamRejectsNonFinite
+--- PASS: TestStreamRejectsNonFinite (0.00s)
+=== RUN   TestStreamFlushesAnInitialShortTail
+--- PASS: TestStreamFlushesAnInitialShortTail (0.00s)
+=== RUN   TestStreamCanceledFeedDoesNotConsumeAnInsufficientFrame
+--- PASS: TestStreamCanceledFeedDoesNotConsumeAnInsufficientFrame (0.00s)
+=== RUN   TestStreamCanceledFlushPreservesItsTail
+--- PASS: TestStreamCanceledFlushPreservesItsTail (0.00s)
+=== RUN   TestStreamRollsBackAChunkWhenAWindowFails
+--- PASS: TestStreamRollsBackAChunkWhenAWindowFails (0.00s)
+=== RUN   TestStreamRollsBackWhenCanceledMidChunk
+--- PASS: TestStreamRollsBackWhenCanceledMidChunk (0.00s)
+=== RUN   TestRestoreStreamRequiresRecognizerSemantics
+=== RUN   TestRestoreStreamRequiresRecognizerSemantics/sample_rate
+=== RUN   TestRestoreStreamRequiresRecognizerSemantics/front_end
+=== RUN   TestRestoreStreamRequiresRecognizerSemantics/alphabet
+--- PASS: TestRestoreStreamRequiresRecognizerSemantics (0.00s)
+    --- PASS: TestRestoreStreamRequiresRecognizerSemantics/sample_rate (0.00s)
+    --- PASS: TestRestoreStreamRequiresRecognizerSemantics/front_end (0.00s)
+    --- PASS: TestRestoreStreamRequiresRecognizerSemantics/alphabet (0.00s)
+=== RUN   TestStreamSnapshotOwnsItsAlphabet
+--- PASS: TestStreamSnapshotOwnsItsAlphabet (0.00s)
+=== RUN   TestRestoreStreamRejectsInvalidStateEncoding
+--- PASS: TestRestoreStreamRejectsInvalidStateEncoding (0.00s)
+=== RUN   TestRestoreStreamValidatesCTCFrameMinimum
+--- PASS: TestRestoreStreamValidatesCTCFrameMinimum (0.00s)
+=== RUN   TestNewStreamRejectsInvalidAlphabetRune
+--- PASS: TestNewStreamRejectsInvalidAlphabetRune (0.00s)
+=== RUN   TestStreamSnapshotUsesCurrentFrontEndVersion
+--- PASS: TestStreamSnapshotUsesCurrentFrontEndVersion (0.00s)
+=== RUN   TestTranscribeStreamingAcceptsLargestChunk
+--- PASS: TestTranscribeStreamingAcceptsLargestChunk (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/asr	1.746s

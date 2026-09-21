@@ -1,0 +1,63 @@
+ok  	github.com/TimLai666/coimnet	15.454s
+ok  	github.com/TimLai666/coimnet/backend	1.036s
+ok  	github.com/TimLai666/coimnet/checkpoint	21.886s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	1.233s
+ok  	github.com/TimLai666/coimnet/connectome	12.311s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	1.225s
+ok  	github.com/TimLai666/coimnet/distill	1.107s
+ok  	github.com/TimLai666/coimnet/download	5.997s
+--- FAIL: TestMixedMembraneContraction (0.00s)
+    mixed_test.go:1089: no node of the fixture separates the two roundings, so this test proved nothing
+--- FAIL: TestContinuousAdvanceModulatedScalesAndOffsetsOneNode (0.00s)
+    modulation_test.go:221: output[0][1] = 0.7389583695421297 (bits 0x3fe7a58c05c93ee9), want 0.7389583695421298 (bits 0x3fe7a58c05c93eea)
+FAIL
+FAIL	github.com/TimLai666/coimnet/dynamics	1.698s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	2.181s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.212s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	2.695s
+ok  	github.com/TimLai666/coimnet/experiment	34.766s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	1.030s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	1.038s
+ok  	github.com/TimLai666/coimnet/feather	1.250s
+ok  	github.com/TimLai666/coimnet/internal/cli	68.070s
+ok  	github.com/TimLai666/coimnet/internal/extsort	4.148s
+ok  	github.com/TimLai666/coimnet/internal/fileio	1.078s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	1.034s
+ok  	github.com/TimLai666/coimnet/internal/redact	1.093s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.030s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	1.042s
+2026/09/22 00:12:53 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient (0.00s)
+    accumulate_test.go:145: gradient of batch 1[6] = -0.017595324665308, want -0.017595326527953148 (tolerance 1e-12)
+--- FAIL: TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically (0.01s)
+    accumulate_test.go:263: resuming mid-window diverged:
+        {SchemaVersion:coimnet-episode-training/v1 Config:{Dynamics:{Nodes:2 Sources:[0 1] Targets:[1 0] Delays:[0 0] DT:0.5 Activation:tanh Workers:0 StateDimension:0 EdgeShape:} LIF:<nil> Mixed:<nil> LIFIndex:[] InputSize:1 OutputSize:1 ReadoutNodes:[1] InputNodes:[] EdgeSigns:[] MinLogMagnitude:0 ReadoutEveryStep:false} Parameters:{Core:{Weights:[0.3134212481904726 -0.20084305181155127] Bias:[0.13508800675043228 -0.018060506480751637] LogTau:[0.09687695677294886 0.2091474211603329]} ThetaRaw:[] Encoder:[0.49810648414478703 0.1529738329777528] Readout:[0.7729481653676051]} Options:{LearningRate:0.1 Beta1:0.9 Beta2:0.999 Epsilon:0.1 WeightDecay:0 ClipNorm:1 Truncation:0 Trainable:{Encoder:true Weights:true Bias:true Tau:true Theta:false Readout:true} Masks:<nil> Ranges:<nil> LossScale:0 AccumulateSteps:3 Schedule:<nil>} Optimizer:{First:[-0.0015501780644746753 8.502196033192009e-05 -0.005405473625733395 -0.04536943280443278 0.0003223721441178877 -0.0010068422137445212 0.0001930061882982651 -0.01126475669443607 0.003708363945285478] Second:[2.403052031578454e-07 7.228733738682602e-10 2.921914511849937e-06 0.00020583854329959443 1.0392379930316428e-08 1.0137312433779694e-07 3.7251388721425413e-09 1.2689474338484244e-05 1.3751963150693295e-06] Steps:[1 1 1 1 1 1 1 1 1]} Updates:1 Accumulator:<nil>}
+        {SchemaVersion:coimnet-episode-training/v1 Config:{Dynamics:{Nodes:2 Sources:[0 1] Targets:[1 0] Delays:[0 0] DT:0.5 Activation:tanh Workers:0 StateDimension:0 EdgeShape:} LIF:<nil> Mixed:<nil> LIFIndex:[] InputSize:1 OutputSize:1 ReadoutNodes:[1] InputNodes:[] EdgeSigns:[] MinLogMagnitude:0 ReadoutEveryStep:false} Parameters:{Core:{Weights:[0.3134212481904726 -0.20084305181155127] Bias:[0.13508800675043228 -0.018060506480751637] LogTau:[0.09687695677294886 0.2091474211603329]} ThetaRaw:[] Encoder:[0.49810648414478703 0.1529738329777528] Readout:[0.7729481653676051]} Options:{LearningRate:0.1 Beta1:0.9 Beta2:0.999 Epsilon:0.1 WeightDecay:0 ClipNorm:1 Truncation:0 Trainable:{Encoder:true Weights:true Bias:true Tau:true Theta:false Readout:true} Masks:<nil> Ranges:<nil> LossScale:0 AccumulateSteps:3 Schedule:<nil>} Optimizer:{First:[-0.001550178064474676 8.502196033192009e-05 -0.005405473625733395 -0.04536943280443278 0.0003223721441178877 -0.0010068422137445212 0.0001930061882982651 -0.01126475669443607 0.003708363945285478] Second:[2.403052031578455e-07 7.228733738682602e-10 2.921914511849937e-06 0.00020583854329959443 1.0392379930316428e-08 1.0137312433779694e-07 3.7251388721425413e-09 1.2689474338484244e-05 1.3751963150693295e-06] Steps:[1 1 1 1 1 1 1 1 1]} Updates:1 Accumulator:<nil>}
+--- FAIL: TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW (0.00s)
+    clip_order_test.go:54: batch 1 gradient norm = 0.49798667618596848, want 0.49798667625178134
+--- FAIL: TestStepReportsTheScheduledLearningRateAndUsesIt (0.00s)
+    schedule_test.go:104: first scheduled update[6] = 0.529925211253741, want 0.5299252139476319 (tolerance 1e-12)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	2.238s
+ok  	github.com/TimLai666/coimnet/learning/rl	1.651s
+ok  	github.com/TimLai666/coimnet/modulation	1.735s
+ok  	github.com/TimLai666/coimnet/multimodal	1.041s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	1.078s
+ok  	github.com/TimLai666/coimnet/params	6.400s
+ok  	github.com/TimLai666/coimnet/plasticity	1.032s
+ok  	github.com/TimLai666/coimnet/replay	1.028s
+ok  	github.com/TimLai666/coimnet/resources	1.032s
+ok  	github.com/TimLai666/coimnet/signal	2.350s
+ok  	github.com/TimLai666/coimnet/simulate	14.320s
+ok  	github.com/TimLai666/coimnet/tasks/asr	68.780s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	1.388s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	25.974s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	1.042s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	1.053s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	1.049s
+ok  	github.com/TimLai666/coimnet/teacher	1.467s
+ok  	github.com/TimLai666/coimnet/teacher/tool	1.040s
+FAIL

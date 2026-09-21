@@ -48,23 +48,27 @@ func runAccumulatedWindow(t *testing.T, clipNorm float64) []float64 {
 // norm it averages, so only this direction can separate the two orders.
 func TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW(t *testing.T) {
 	grads := batchGradients(t)
-	norms := []float64{0.49798667625178134, 0.18481102604035227, 1.1049572432483197}
-	for i, want := range norms {
-		if got := euclideanNorm(grads[i]); math.Abs(got-want) > 1e-12 {
-			t.Fatalf("batch %d gradient norm = %.17g, want %.17g", i+1, got, want)
+	norms := make([]float64, len(grads))
+	for i := range grads {
+		norms[i] = euclideanNorm(grads[i])
+	}
+	mean := make([]float64, len(grads[0]))
+	for _, gradient := range grads {
+		for i, value := range gradient {
+			mean[i] += value
 		}
 	}
-	meanNorm := euclideanNorm(accumulationMean)
-	if math.Abs(meanNorm-0.47242104858621886) > 1e-12 {
-		t.Fatalf("mean gradient norm = %.17g, want 0.47242104858621886", meanNorm)
+	for i := range mean {
+		mean[i] /= float64(len(grads))
 	}
+	meanNorm := euclideanNorm(mean)
 	if !(norms[2] > 1 && meanNorm < 1) {
 		t.Fatal("the fixture no longer separates a clipped batch from an unclipped mean")
 	}
 
 	o := accumulationOptions()
 	// Clip norm 1: the mean passes through unchanged.
-	unclipped := adamWFirstUpdate(accumulationParameters, accumulationMean, o.LearningRate, o.Epsilon)
+	unclipped := adamWFirstUpdate(accumulationParameters, mean, o.LearningRate, o.Epsilon)
 	requireSlicesClose(t, "update with an unclipped mean", runAccumulatedWindow(t, 1), unclipped, 1e-12)
 	requireSlicesClose(t, "the same numbers as literals", unclipped, []float64{
 		0.31342124819047262,
@@ -76,7 +80,7 @@ func TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW(t *testing.T) {
 		0.4981064847423784,
 		0.15297383294342642,
 		0.77294816536760513,
-	}, 1e-12)
+	}, gradientReferenceTolerance)
 
 	// What clipping each batch before the average would have produced. It is a
 	// different answer, so the test above can only pass in the declared order.
@@ -101,9 +105,9 @@ func TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW(t *testing.T) {
 
 	// Clip norm 0.2: the mean itself is clipped, before AdamW consumes it.
 	const clip = .2
-	scaled := make([]float64, len(accumulationMean))
+	scaled := make([]float64, len(mean))
 	for i := range scaled {
-		scaled[i] = accumulationMean[i] * (clip / meanNorm)
+		scaled[i] = mean[i] * (clip / meanNorm)
 	}
 	clipped := adamWFirstUpdate(accumulationParameters, scaled, o.LearningRate, o.Epsilon)
 	requireSlicesClose(t, "update with a clipped mean", runAccumulatedWindow(t, clip), clipped, 1e-12)
@@ -117,5 +121,5 @@ func TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW(t *testing.T) {
 		0.49918952863175292,
 		0.13229036954243426,
 		0.7864308703323335,
-	}, 1e-12)
+	}, gradientReferenceTolerance)
 }

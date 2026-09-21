@@ -1,0 +1,114 @@
+COMMAND: go version
+go version go1.26.5 linux/amd64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+linux
+amd64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-09-21T16:06:08Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+go: downloading github.com/apache/arrow/go/v17 v17.0.0
+go: downloading golang.org/x/sys v0.47.0
+go: downloading github.com/HazelnutParadise/insyra v0.3.2
+go: downloading golang.org/x/exp v0.0.0-20260709172345-9ea1abe57597
+go: downloading golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da
+go: downloading github.com/google/flatbuffers v25.12.19+incompatible
+go: downloading github.com/klauspost/compress v1.19.0
+go: downloading github.com/pierrec/lz4/v4 v4.1.27
+go: downloading github.com/goccy/go-json v0.10.6
+go: downloading github.com/zeebo/xxh3 v1.1.0
+go: downloading github.com/klauspost/cpuid/v2 v2.4.0
+go: downloading google.golang.org/protobuf v1.36.11
+go: downloading github.com/cespare/xxhash/v2 v2.3.0
+go: downloading github.com/HazelnutParadise/Go-Utils v0.8.2
+go: downloading github.com/Masterminds/squirrel v1.5.4
+go: downloading github.com/mattn/go-runewidth v0.0.24
+go: downloading github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d
+go: downloading github.com/xuri/excelize/v2 v2.11.0
+go: downloading golang.org/x/term v0.45.0
+go: downloading golang.org/x/text v0.41.0
+go: downloading gorm.io/gorm v1.31.2
+go: downloading github.com/gogpu/gputypes v0.5.1
+go: downloading github.com/gogpu/wgpu v0.30.35
+go: downloading github.com/petermattis/goid v0.0.0-20260701081913-4f67fd55d3b4
+go: downloading github.com/lann/builder v0.0.0-20180802200727-47ae307949d0
+go: downloading github.com/clipperhouse/uax29/v2 v2.7.0
+go: downloading github.com/richardlehane/mscfb v1.0.7
+go: downloading github.com/tiendc/go-deepcopy v1.7.2
+go: downloading github.com/xuri/efp v0.0.1
+go: downloading github.com/xuri/nfp v0.0.2-0.20250530014748-2ddeb826f9a9
+go: downloading golang.org/x/crypto v0.55.0
+go: downloading golang.org/x/net v0.57.0
+go: downloading github.com/jinzhu/now v1.1.5
+go: downloading github.com/gogpu/gpucontext v0.24.0
+go: downloading github.com/gogpu/naga v0.18.0
+go: downloading github.com/lann/ps v0.0.0-20150810152359-62de8c46ede0
+go: downloading github.com/richardlehane/msoleps v1.0.6
+go: downloading github.com/jinzhu/inflection v1.0.0
+go: downloading github.com/go-webgpu/goffi v0.6.3
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	10.072s
+ok  	github.com/TimLai666/coimnet/backend	0.003s
+ok  	github.com/TimLai666/coimnet/checkpoint	12.906s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	0.056s
+ok  	github.com/TimLai666/coimnet/connectome	9.790s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	0.379s
+ok  	github.com/TimLai666/coimnet/distill	0.024s
+ok  	github.com/TimLai666/coimnet/download	6.275s
+--- FAIL: TestMixedMembraneContraction (0.00s)
+    mixed_test.go:1089: no node of the fixture separates the two roundings, so this test proved nothing
+--- FAIL: TestContinuousAdvanceModulatedScalesAndOffsetsOneNode (0.00s)
+    modulation_test.go:221: output[0][1] = 0.7389583695421297 (bits 0x3fe7a58c05c93ee9), want 0.7389583695421298 (bits 0x3fe7a58c05c93eea)
+FAIL
+FAIL	github.com/TimLai666/coimnet/dynamics	0.283s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	0.565s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	0.082s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	2.071s
+ok  	github.com/TimLai666/coimnet/experiment	10.653s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.011s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	0.043s
+ok  	github.com/TimLai666/coimnet/feather	0.092s
+ok  	github.com/TimLai666/coimnet/internal/cli	42.994s
+ok  	github.com/TimLai666/coimnet/internal/extsort	2.911s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.007s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.005s
+ok  	github.com/TimLai666/coimnet/internal/redact	0.004s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.005s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.005s
+2026/09/22 00:08:15 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+--- FAIL: TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient (0.00s)
+    accumulate_test.go:145: gradient of batch 1[6] = -0.017595324665308, want -0.017595326527953148 (tolerance 1e-12)
+--- FAIL: TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically (0.00s)
+    accumulate_test.go:263: resuming mid-window diverged:
+        {SchemaVersion:coimnet-episode-training/v1 Config:{Dynamics:{Nodes:2 Sources:[0 1] Targets:[1 0] Delays:[0 0] DT:0.5 Activation:tanh Workers:0 StateDimension:0 EdgeShape:} LIF:<nil> Mixed:<nil> LIFIndex:[] InputSize:1 OutputSize:1 ReadoutNodes:[1] InputNodes:[] EdgeSigns:[] MinLogMagnitude:0 ReadoutEveryStep:false} Parameters:{Core:{Weights:[0.3134212481904726 -0.20084305181155127] Bias:[0.13508800675043228 -0.018060506480751637] LogTau:[0.09687695677294886 0.2091474211603329]} ThetaRaw:[] Encoder:[0.49810648414478703 0.1529738329777528] Readout:[0.7729481653676051]} Options:{LearningRate:0.1 Beta1:0.9 Beta2:0.999 Epsilon:0.1 WeightDecay:0 ClipNorm:1 Truncation:0 Trainable:{Encoder:true Weights:true Bias:true Tau:true Theta:false Readout:true} Masks:<nil> Ranges:<nil> LossScale:0 AccumulateSteps:3 Schedule:<nil>} Optimizer:{First:[-0.0015501780644746753 8.502196033192009e-05 -0.005405473625733395 -0.04536943280443278 0.0003223721441178877 -0.0010068422137445212 0.0001930061882982651 -0.01126475669443607 0.003708363945285478] Second:[2.403052031578454e-07 7.228733738682602e-10 2.921914511849937e-06 0.00020583854329959443 1.0392379930316428e-08 1.0137312433779694e-07 3.7251388721425413e-09 1.2689474338484244e-05 1.3751963150693295e-06] Steps:[1 1 1 1 1 1 1 1 1]} Updates:1 Accumulator:<nil>}
+        {SchemaVersion:coimnet-episode-training/v1 Config:{Dynamics:{Nodes:2 Sources:[0 1] Targets:[1 0] Delays:[0 0] DT:0.5 Activation:tanh Workers:0 StateDimension:0 EdgeShape:} LIF:<nil> Mixed:<nil> LIFIndex:[] InputSize:1 OutputSize:1 ReadoutNodes:[1] InputNodes:[] EdgeSigns:[] MinLogMagnitude:0 ReadoutEveryStep:false} Parameters:{Core:{Weights:[0.3134212481904726 -0.20084305181155127] Bias:[0.13508800675043228 -0.018060506480751637] LogTau:[0.09687695677294886 0.2091474211603329]} ThetaRaw:[] Encoder:[0.49810648414478703 0.1529738329777528] Readout:[0.7729481653676051]} Options:{LearningRate:0.1 Beta1:0.9 Beta2:0.999 Epsilon:0.1 WeightDecay:0 ClipNorm:1 Truncation:0 Trainable:{Encoder:true Weights:true Bias:true Tau:true Theta:false Readout:true} Masks:<nil> Ranges:<nil> LossScale:0 AccumulateSteps:3 Schedule:<nil>} Optimizer:{First:[-0.001550178064474676 8.502196033192009e-05 -0.005405473625733395 -0.04536943280443278 0.0003223721441178877 -0.0010068422137445212 0.0001930061882982651 -0.01126475669443607 0.003708363945285478] Second:[2.403052031578455e-07 7.228733738682602e-10 2.921914511849937e-06 0.00020583854329959443 1.0392379930316428e-08 1.0137312433779694e-07 3.7251388721425413e-09 1.2689474338484244e-05 1.3751963150693295e-06] Steps:[1 1 1 1 1 1 1 1 1]} Updates:1 Accumulator:<nil>}
+--- FAIL: TestClippingRunsAfterTheAccumulationAverageAndBeforeAdamW (0.00s)
+    clip_order_test.go:54: batch 1 gradient norm = 0.49798667618596848, want 0.49798667625178134
+--- FAIL: TestStepReportsTheScheduledLearningRateAndUsesIt (0.00s)
+    schedule_test.go:104: first scheduled update[6] = 0.529925211253741, want 0.5299252139476319 (tolerance 1e-12)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	2.219s
+ok  	github.com/TimLai666/coimnet/learning/rl	0.240s
+ok  	github.com/TimLai666/coimnet/modulation	0.623s
+ok  	github.com/TimLai666/coimnet/multimodal	0.012s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	0.016s
+ok  	github.com/TimLai666/coimnet/params	5.541s
+ok  	github.com/TimLai666/coimnet/plasticity	0.016s
+ok  	github.com/TimLai666/coimnet/replay	0.022s
+ok  	github.com/TimLai666/coimnet/resources	0.012s
+ok  	github.com/TimLai666/coimnet/signal	0.194s
+ok  	github.com/TimLai666/coimnet/simulate	11.957s
+ok  	github.com/TimLai666/coimnet/tasks/asr	10.385s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	0.152s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	2.578s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	0.004s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	0.004s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	0.013s
+ok  	github.com/TimLai666/coimnet/teacher	0.237s
+ok  	github.com/TimLai666/coimnet/teacher/tool	0.006s
+FAIL

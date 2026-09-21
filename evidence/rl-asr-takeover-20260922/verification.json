@@ -1,0 +1,113 @@
+{
+  "requirements": [
+    "LRN-09",
+    "TSK-02"
+  ],
+  "profile": "synthetic fixture; CPU reference",
+  "scope_status": "verified_scoped",
+  "requirement_status": "LRN-09 and TSK-02 remain specified; this evidence covers only the update and streaming APIs",
+  "base_commit": "9b91a1fcadefa162e7d28c24f48628a2c43b3de3",
+  "reproduction_command": [
+    "go test -count=1 -v ./learning/rl",
+    "go test -count=1 -v ./tasks/asr",
+    "bash scripts/verify.sh NEW_OUTPUT_DIRECTORY",
+    "bash scripts/check-target-flow.sh",
+    "go mod verify"
+  ],
+  "environment": [
+    "go1.26.5 darwin/arm64 CGO_ENABLED=1",
+    "go1.26.5 linux/amd64 CGO_ENABLED=1 on Ubuntu 1"
+  ],
+  "observed_result": {
+    "macos_targeted": {
+      "ppo_top_level_pass": 20,
+      "asr_top_level_pass": 22,
+      "failed": 0
+    },
+    "ppo_ratio_before_update_max_error": 0,
+    "ppo_positive_advantage_ratios_above_one": 24,
+    "ppo_positive_advantage_transitions": 24,
+    "asr_aligned_utterances_matching_whole_file": 15,
+    "initial_ubuntu_full_suite_failures": 6,
+    "final_full_suite": {
+      "macos": {
+        "unit_packages_passed": 42,
+        "race_packages_passed": 42,
+        "gofmt": "passed",
+        "build": "passed",
+        "vet": "passed",
+        "module_verification": "passed",
+        "cli_doctor_sources_examples": "passed",
+        "resumed_80_plus_40_equals_continuous_120": "passed",
+        "failures": 0
+      },
+      "ubuntu": {
+        "unit_packages_passed": 42,
+        "race_packages_passed": 42,
+        "gofmt": "passed",
+        "build": "passed",
+        "vet": "passed",
+        "module_verification": "passed",
+        "cli_doctor_sources_examples": "passed",
+        "resumed_80_plus_40_equals_continuous_120": "passed",
+        "failures": 0
+      }
+    },
+    "ubuntu_targeted": {
+      "ppo_and_asr_top_level_pass": 42,
+      "failed": 0
+    },
+    "portability_fixes": {
+      "changed": "Five test files only; production dynamics and trainer unchanged.",
+      "float32_gradient_max_difference": 1.862645149e-09,
+      "historical_literal_tolerance": 1e-08,
+      "independent_optimizer_arithmetic_tolerance": 1e-12,
+      "resume_assertion": "exact snapshot equality; alias test restores saved original value",
+      "dynamics": "Explicit math.FMA witness; exact hand-computed voltage and native math.Tanh output reference."
+    }
+  },
+  "test_log": [
+    "macos/asr.log",
+    "macos/governance.log",
+    "macos/modules.log",
+    "macos/ppo.log",
+    "macos/target-flow.log",
+    "macos/validation.log",
+    "regressions/asr-ctc-frames-red.log",
+    "regressions/asr-short-tail-semantics-red.log",
+    "regressions/dynamics-macos-diagnostic.log",
+    "regressions/dynamics-ubuntu-diagnostic.log",
+    "regressions/learning-macos-diagnostic.log",
+    "regressions/learning-ubuntu-diagnostic.log",
+    "regressions/ppo-initial-state-red.log",
+    "regressions/ubuntu-initial-failures.log",
+    "regressions/ubuntu-initial-race.log",
+    "ubuntu/target-flow.log",
+    "ubuntu/targeted.log",
+    "ubuntu/validation.log"
+  ],
+  "limitations": [
+    "PPO accepts fresh zero-voltage rollouts, MiniBatch=1 and no plasticity/chemistry. BurnIn masks direct loss, not later gradients through the prefix.",
+    "PPO tests use greedy synthetic collection and declared zero timeout bootstrap; no sampled learner, 3-seed 200-update acceptance or gridnav CLI is claimed.",
+    "ASR fixtures are synthetic a/b/c tone sequences, not natural speech. No natural-speech dataset import, speaker/session split, latency report or full-brain training is claimed.",
+    "StreamState is an SDK structure with JSON roundtrip coverage, not a strict bounded file loader.",
+    "No Windows, CUDA, Metal or Apple Neural Engine execution is covered by this run.",
+    "Initial short-tail/semantic restore and PPO state failures have red logs. The transaction rollback tests were added alongside their fix without a separately retained pre-fix red log."
+  ],
+  "source": {
+    "manifest": "macos/source.sha256",
+    "manifest_sha256": "434eaf59a3d013554ec8cb3deb98bf1a88d65b40fc1d41e8da27862f2dc2091f",
+    "source_files": 432,
+    "input_manifest": "input.sha256",
+    "input_manifest_sha256": "a4b14a6fedf2fea2a776af013f9762028c01f05d78c18a40a9cfe66248a0975b",
+    "source_and_testdata_files": 433,
+    "transferred_archive_sha256": "b82f813d096552200e144aa77f75d8eaf334368955e279591b95d5f3e9105127",
+    "same_source_on_both_platforms": true,
+    "note": "Archive froze executable sources and fixtures. Documentation and evidence were finalized after verification; executable input hashes remained unchanged."
+  },
+  "review": {
+    "root": "Read complete production and test diffs, reviewed worker claims against logs and reran targeted plus full suites.",
+    "adversarial": "PPO collector trust and serialized ownership documented; invalid CTC frame/text states now rejected and regression tested.",
+    "delegation": "Spark xhigh call rejected with Unknown model gpt-5.3-codex-spark; Luna max implementation and review; OpenCode opencode/big-pickle --agent build drafted PPO README, corrected by root."
+  }
+}

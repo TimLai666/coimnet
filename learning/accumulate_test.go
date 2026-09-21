@@ -14,7 +14,8 @@ import (
 // are ordinary episodes, so their gradients come from the real forward and
 // backward pass rather than from injected numbers; parameters do not move
 // during an accumulation window, so all three gradients are taken at the same
-// initial parameters and the hand computations below are exact.
+// initial parameters. The hand computations below use the gradients returned
+// by that pass, while the literals are a cross-platform reference only.
 func accumulationBatches() ([][][]float64, [][]float64) {
 	return [][][]float64{
 			{{.7}, {-.2}, {.1}},
@@ -65,6 +66,11 @@ var (
 		0.03708363945285479,
 	}
 )
+
+// The network path includes float32 tensor operations. Keep the literal
+// reference checks tight enough to catch a changed fixture while allowing the
+// last few float32 ulps to differ between CPU architectures.
+const gradientReferenceTolerance = 1e-8
 
 // accumulationParameters is the fixture's initial flat parameter vector, in the
 // same order.
@@ -142,15 +148,15 @@ func batchGradients(t *testing.T) [][]float64 {
 // exactly what a single AdamW step on the mean of the three gradients produces.
 func TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient(t *testing.T) {
 	grads := batchGradients(t)
-	requireSlicesClose(t, "gradient of batch 1", grads[0], accumulationGradient1, 1e-12)
+	requireSlicesClose(t, "gradient of batch 1", grads[0], accumulationGradient1, gradientReferenceTolerance)
 	sum12 := make([]float64, len(grads[0]))
 	mean := make([]float64, len(grads[0]))
 	for i := range sum12 {
 		sum12[i] = grads[0][i] + grads[1][i]
 		mean[i] = (grads[0][i] + grads[1][i] + grads[2][i]) / 3
 	}
-	requireSlicesClose(t, "sum of batches 1 and 2", sum12, accumulationSum12, 1e-12)
-	requireSlicesClose(t, "mean gradient", mean, accumulationMean, 1e-12)
+	requireSlicesClose(t, "sum of batches 1 and 2", sum12, accumulationSum12, gradientReferenceTolerance)
+	requireSlicesClose(t, "mean gradient", mean, accumulationMean, gradientReferenceTolerance)
 
 	o := accumulationOptions()
 	o.AccumulateSteps = 3
@@ -159,7 +165,7 @@ func TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient(t *testing.T) {
 		t.Fatal(err)
 	}
 	inputs, targets := accumulationBatches()
-	partial := [][]float64{accumulationGradient1, accumulationSum12}
+	partial := [][]float64{grads[0], sum12}
 	for i := range inputs {
 		result, err := tr.Step(context.Background(), inputs[i], targets[i])
 		if err != nil {
@@ -205,10 +211,10 @@ func TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient(t *testing.T) {
 	}
 	// One AdamW step on the mean gradient, written out. The mean norm is below
 	// the clip norm of 1, so no clipping takes part in this expectation.
-	if n := euclideanNorm(accumulationMean); n > o.ClipNorm {
+	if n := euclideanNorm(mean); n > o.ClipNorm {
 		t.Fatalf("the mean gradient norm %g is above the clip norm", n)
 	}
-	want := adamWFirstUpdate(accumulationParameters, accumulationMean, o.LearningRate, o.Epsilon)
+	want := adamWFirstUpdate(accumulationParameters, mean, o.LearningRate, o.Epsilon)
 	requireSlicesClose(t, "parameters after one accumulated update", flatTestParameters(tr.Snapshot().Parameters), want, 1e-12)
 	requireSlicesClose(t, "the same numbers as literals", want, []float64{
 		0.31342124819047262,
@@ -220,7 +226,7 @@ func TestAccumulatedWindowAppliesOneAdamWStepOnTheMeanGradient(t *testing.T) {
 		0.4981064847423784,
 		0.15297383294342642,
 		0.77294816536760513,
-	}, 1e-12)
+	}, gradientReferenceTolerance)
 }
 
 // TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically stops one
@@ -246,11 +252,12 @@ func TestAccumulationSnapshotInTheMiddleOfAWindowResumesBitIdentically(t *testin
 					t.Fatalf("the interrupted snapshot holds %+v", middle.Accumulator)
 				}
 				// The snapshot must own its accumulator.
+				original := middle.Accumulator.Sum[0]
 				middle.Accumulator.Sum[0] = 42
 				if tr.Snapshot().Accumulator.Sum[0] == 42 {
 					t.Fatal("the snapshot aliases the trainer's accumulator")
 				}
-				middle.Accumulator.Sum[0] = accumulationGradient1[0]
+				middle.Accumulator.Sum[0] = original
 				if tr, err = learning.RestoreTrainer(middle); err != nil {
 					t.Fatal(err)
 				}

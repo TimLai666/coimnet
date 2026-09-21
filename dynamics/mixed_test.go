@@ -1019,14 +1019,16 @@ func assertVectorMatchesLIFReference(t *testing.T, name string, got, want []floa
 // Both reference cores and this package write the same expression,
 // lambda*v + alpha*drive. Go is allowed to evaluate it with a fused multiply-add,
 // which rounds once instead of twice, and the compiler decides that per basic
-// block, so the same source line can round differently in different functions
-// and in different builds. The two roundings are adjacent float64 values.
+// block, so the same source line can round differently in different functions,
+// architectures, and builds. The two roundings are adjacent float64 values.
 //
 // Measured here: Continuous.Forward rounds like the helper in every build, and
 // LIF.Forward rounds like the helper in an ordinary build and like the
-// explicitly twice-rounded form under -race. The all-LIF bit identity test
-// relaxes to eight adjacent values in exactly the build where this test records
-// the second case, and nowhere else.
+// explicitly twice-rounded form under -race. The helper itself can also use the
+// explicitly twice-rounded form on an architecture without a fused instruction.
+// math.FMA supplies a portable single-rounding witness so the fixture cannot
+// become vacuous when that happens; the actual helper and LIF result are still
+// checked against their two permitted compiler roundings below.
 func TestMixedMembraneContraction(t *testing.T) {
 	lc, _ := mixedLIFTwin(false, nil)
 	cc, _ := mixedContinuousTwin("tanh")
@@ -1064,6 +1066,14 @@ func TestMixedMembraneContraction(t *testing.T) {
 		// The explicit conversions round each product before the sum, which is
 		// the value a build without the fused multiply-add produces.
 		twice := float64(lambda*initial[i]) + float64(alpha*drive)
+		// math.FMA explicitly computes one legal single-rounding contraction of
+		// the same expression. It is the portable witness; membrane above remains
+		// the reference for the compiler's actual contraction choice.
+		fma := math.FMA(alpha, drive, lambda*initial[i])
+		if !withinAdjacentValues(fma, twice, 1) {
+			t.Fatalf("the explicit fused and twice-rounded values of node %d are not adjacent: %#x and %#x",
+				i, math.Float64bits(fma), math.Float64bits(twice))
+		}
 		if !withinAdjacentValues(fused, twice, 1) {
 			t.Fatalf("the two roundings of node %d are not adjacent: %#x and %#x",
 				i, math.Float64bits(fused), math.Float64bits(twice))
@@ -1074,12 +1084,14 @@ func TestMixedMembraneContraction(t *testing.T) {
 			t.Fatalf("lif membrane[%d] = %#x is neither rounding of lambda*v + alpha*drive (%#x, %#x)",
 				i, math.Float64bits(got), math.Float64bits(fused), math.Float64bits(twice))
 		}
+		if math.Float64bits(fma) != math.Float64bits(twice) {
+			discriminating++
+		}
 		if math.Float64bits(fused) == math.Float64bits(twice) {
 			// The two roundings coincide on these operands, which says nothing
 			// about which one the build chose.
 			continue
 		}
-		discriminating++
 		if matches != lifReferenceContractsLikeMixed {
 			t.Fatalf("lif membrane[%d] matches the helper = %v, but this build declares %v; update the build tagged constant",
 				i, matches, lifReferenceContractsLikeMixed)

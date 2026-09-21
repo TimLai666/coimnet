@@ -10,7 +10,7 @@ User Story：研究者可以用固定 seed 跑「先學 A、再學 B、重測 A�
 
 Blocked by：22（記憶表現、穩定化、干預）、23（運行中學習、重播、評估）、21（化學狀態）、17（最佳化器）
 
-Status：第一階段已驗證（2026-09-19）、第三階段已驗證（2026-09-20）；第二階段待派工
+Status：第一階段已驗證（2026-09-19）、第三階段已驗證（2026-09-20）；第二階段模仿已實作，PPO 更新入口於 2026-09-22 完成局部驗證，完整學習驗收待完成
 
 對應需求：LRN-08（產生完整階段矩陣，所有 seed 與失敗執行均保留）、LRN-09（至少一套完整算法可在環境改善；
 遞迴狀態、策略版本及回饋時間一致）、MOD-09（至少時機與記憶表現兩種協定；人工數值不標為定量生物重現）。
@@ -48,7 +48,7 @@ Status：第一階段已驗證（2026-09-19）、第三階段已驗證（2026-09
    `Observation` 型別沒有這些欄位，測試證明）。
 6. **模仿**：`experiment.RunImitation`：以專家動作為標籤做監督（softmax 交叉熵，梯度經 `LossGradientFrom`），
    3 seed，報告專家一致率與環境回報。
-7. **遞迴 PPO**：`learning/rl` 新套件：`Rollout{PolicyVersion uint64; InitialNeural NeuralState;
+7. **遞迴 PPO**：`learning/rl` 新套件：`Rollout{PolicyVersion string; InitialNeural NeuralState;
    InitialPlastic, InitialChemical（快照，可為 nil）; Steps []Transition{Obs, Action, LogProb, Value,
    Reward, Done}}`；收集時保存策略版本、行動機率、初始遞迴狀態（主規格 10.5）；更新：GAE（`gamma`,
    `lambda`）、裁切代理目標 `min(r·A, clip(r, 1−ε, 1+ε)·A)`、價值損失、熵；`burn_in` 步只前向不計損失；
@@ -87,9 +87,10 @@ func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, ups
 func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (StepResult, error)
 
 package rl   // learning/rl
-type Rollout struct { PolicyVersion uint64; InitialNeural learning.NeuralState; Steps []Transition }
+type Rollout struct { PolicyVersion string; InitialNeural learning.NeuralState; InitialPlastic *learning.PlasticPart; InitialChemical *learning.ChemicalPart; Steps []Transition }
 type PPOConfig struct { Gamma, Lambda, ClipEpsilon, ValueCoef, EntropyCoef float64; BurnIn, TimeLimit int; Epochs, MiniBatch int }
-func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, c PPOConfig) (PPOReport, error)
+func PolicyVersion(ind *learning.Individual) string
+func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, actions int, c PPOConfig) (*learning.Individual, PPOReport, error)
 
 package experiment
 func RunContinualMatrix(ctx context.Context, p ContinualProtocol) (ContinualReport, error)
@@ -135,6 +136,16 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
 其餘不變量：`TestEcdysoneInspiredIsDeterministic`、`TestNPFIsDeterministic`（同 config 兩次執行 `Seeds` 逐位相同）、`TestEcdysoneInspiredHonoursCancellation`、`TestNPFHonoursCancellation`（已取消的 context 回 `context.Canceled`，不記成失敗 seed）、`TestEcdysoneInspiredRejectsPulseOutsideEpisode`（`pulse_step` 4 超出一個 episode 的 4 列，開跑前就拒絕）、`TestNPFReportRoundTrips` 與 `TestBioInspiredReportJSONShape`（報告 JSON 往返逐位相同）。評估側由 `TestScoreTwinFreezesPlasticTwins`（評分用凍結孿生，評分後個體快照逐位不變）與 `learning` 的 `TestFreezePlasticityHoldsFastState`／`TestFreezePlasticityIsNotInTheSnapshot`／`TestFreezePlasticityNeedsPlasticity` 守住，所以 npf 的三次評分之間唯一的差別是受體驅動的讀出增益。
 
 與 [Root 決策](#第三階段有來源的生物啟發協定mod-09)的出入：決策 10 寫「干預清單沿用 22 的八種，量測活動、快速權重、基礎參數與任務結果四種變化」，實作沒有用到那八種 kind 的任何一種——時機協定用 `ExternalTimeline` 脈衝、狀態協定用 `SetExpressionGain`，量測落實成 `slow_magnitude`、`retest_score` 與三個逐位不變旗標，沒有產生 `ActivityDelta`／`PlasticDelta`／`BaseParameterDelta` 數值。決策 11 寫「README 範例表」，實際補的是 README 的「能力狀態」表（README 沒有範例表）。本階段沒有 CLI 子指令，`evidence/MOD-09/` 的兩份曲線／評估 JSON 是從 `test.log` 的 `t.Logf` 輸出逐字整理的，不是 CLI 產物，整理過程沒有新增程式檔。其餘限制（fixture 三神經元、脈衝時機只在一個 episode 的 4 列內、重測分數差 1e-7 量級、`Suppressed` 由 `Validate` 限制在 (0,1) 且只測 0.4、真實資料未跑、單次 macOS arm64 執行）見 `evidence/MOD-09/verification.json` 的 `limitations`。
+
+## 第二階段更新入口（2026-09-22，局部驗證）
+
+`learning/rl.Update` 已接上既有梯度與最佳化器流程。版本摘要識別完整設定與六組參數，所有 rollout 驗證完才建立更新，成功回傳新個體，失敗保留原個體。每份 rollout 必須由新建或重設至零電位的個體開始收集，`MiniBatch` 限 1，可塑性與化學機制目前明確拒絕。
+
+直接重跑 `go test -count=1 -v ./learning/rl` 的 20 個頂層測試通過。20 個 transition 在更新前的機率比偏差最大為 0，更新後 24 個正優勢 transition 的機率比全部大於 1。同 seed 的報告與個體快照逐位相同。測試使用人工走廊、貪婪動作與明示為 0 的 timeout bootstrap，只驗證更新入口，不能當成完整策略學習成績。
+
+`BurnIn` 現階段只遮掉前綴的直接損失，後續損失仍能經核心回傳梯度到前綴。任意初始狀態與切斷前綴梯度需要相符的反向路徑。3 seed 各 200 次更新、取樣探索、正確的 timeout bootstrap、隨機策略對照與 `examples run gridnav --method imitation|ppo` 尚未完成，`LRN-09` 維持 `specified`。
+
+日誌與輸入指紋見 [本輪證據](../../evidence/rl-asr-takeover-20260922/verification.json)，使用方式見 [PPO SDK](../../learning/rl/README.md)。
 
 ## 依據
 

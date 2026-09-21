@@ -209,6 +209,8 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 
 ## Go SDK
 
+新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)。兩者目前是局部框架能力，完整 LRN-09／TSK-02 驗收狀態見需求追蹤。
+
 - `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
 - `dynamics.NewLIF` 用同一套拓撲、延遲與時鐘建立 LIF 放電核心。神經元達到閾值就產生一次事件並把電位重設，對外輸出是會衰減的突觸跡，不應期內保持重設值並忽略當步輸入。`Backward` 依宣告的 `fast_sigmoid` 替代梯度回推，重設分支不傳梯度。
 - `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。`LIFConfig.Homeostasis` 是可選的慢速穩定區塊，開啟後每顆神經元多一個活動估計與一個只會抬高或回落到零的閾值偏移，放電判定用的是 `theta_base + 適應 + 偏移`；不宣告這個區塊的設定，編碼與既有指紋完全不變。
@@ -228,7 +230,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 
 `signal.NewSignal` 接受呼叫者已解碼的數值來源，連續、活動、脈衝與調節的具名訊號可用 `go test ./signal -run ExampleNewSignal -count=1 -v` 查看保存與讀回範例。訊號 JSON 的數值欄位拒絕 `null`，例如 `values:[null]` 不會被當成零。`quality.score` 與整個 `valid_range` 可用 `null` 表示未知，省略原本可省略的數值欄位則維持既有預設。從 JSON 建立訊號請使用 `DecodeSignal`，不要先以一般 JSON 解碼器讀入 `SignalSpec`，以免在驗證前就遺失缺值資訊。
 
-`Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，只讀取最後一步輸出。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
+`Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，`Predict` 回傳最後一步輸出。設定 `ReadoutEveryStep` 後可用 `PredictAll` 取得每步輸出，並以 `StepFrom` 傳入每步的輸出梯度。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
 
 訊號套件的嚴格 JSON 會在解碼前拒絕非法 UTF-8 與未配對的 Unicode surrogate，避免來源名稱或外部 ID 被改寫。
 

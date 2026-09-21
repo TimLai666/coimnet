@@ -2,6 +2,12 @@
 
 ## 目前階段
 
+2026-09-22 接手完成一個可驗證階段：ticket 26 的 PPO 更新入口與 ticket 29 的語音串流已完成狀態一致性、取消與恢復的回歸驗證。同一份 432 檔程式與腳本來源在 Mac／Ubuntu 通過 build、一般測試、race、vet、依賴與 CLI 續訓比對，見 [本輪證據](evidence/rl-asr-takeover-20260922/verification.json)。原始需求目前 63／85 標為 passed，NAT 增補為 6／6；這是既有證據的累計，本輪不重算為全部重新驗收。LRN-09 與 TSK-02 尚未通過完整需求驗收。
+
+## 既有階段證據
+
+以下保留各階段當時的驗證範圍與計數，現況以上方摘要及 `docs/requirements-status.json` 為準。
+
 LIF 個體、慢速穩定與模型包（ticket 16、COR-04、STA-01）已在 fixture 驗證：`learning.NewIndividual` 對連續與 LIF 核心走同一條路徑，神經狀態改為指名核心的聯集，舊的連續個體檔仍可讀；LIF 可選的慢速穩定用每顆神經元的活動估計調整閾值偏移，手算時序與收斂數字記在 ticket；`coimnet-model-package/v1` 是第三種保存物，只有拓撲指紋、設定、參數、單位與證據清單，六種交叉載入都會被拒絕並指名讀到的是哪一種，LIF 個體跨程序恢復後續跑與不中斷逐項相等。COR-04、STA-01 標 passed，證據見 [COR-04](evidence/COR-04/verification.json)、[STA-01](evidence/STA-01/verification.json)。
 
 受限更新與完整最佳化器流程（ticket 17、COR-10、LRN-03）已在 fixture 驗證：逐邊／逐節點遮罩讓凍結項在含 weight decay 的 50 步後逐位不變、動量與步數為零；固定符號邊改用對數幅度參數化，`learning_rate=1.0` 跑 1,000 步符號不翻轉、幅度 > 0，鏈鎖梯度與中央差分最差相對誤差 4.91e-05；範圍投影計數正確且不動動量；推導參數集的符號依 free／excitatory／inhibitory 政策帶入並回報計數。全零符號與舊快照逐位等於改前。第二階段：損失縮放前後參數逐位相同、溢位整步拒絕；累積三步等於平均梯度的一次 AdamW（手算）、視窗中途快照接續逐位相同；三種排程的學習率表手算、恢復後接續；裁切在平均之後、AdamW 之前。COR-10、LRN-03 標 passed，證據見 [COR-10](evidence/COR-10/verification.json)、[LRN-03](evidence/LRN-03/verification.json)。
@@ -86,13 +92,15 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 | 27 | 使用者可以用離線與 HTTP 教師蒸餾學生，並在完全移除教師的情況下評估它 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段驗證通過：統一教師契約、離線／重播／HTTP／封鎖教師（TCH-01、TCH-02 passed）；蒸餾：學生自編碼（教師 token id 拒絕）、保留集從不送教師與去重、合法對齊（identical／declared_map）的分布蒸餾與 log-sum-exp 穩定、top-k 只標 partial、接上 `StepFrom` 的訓練（held-out 一致率 0→1）；`evidence/TCH-03/`、`evidence/TCH-04/` race 全綠（TCH-03、TCH-04 passed，2026-09-19）；第三階段：學生獨立評估（student 模式）票已寫好待派，teacher_assisted 與工具安全證據待派 |
 | 30 | 使用者可以在目標平台使用 CPU 參考路徑、在真實資料上做全圖前向／反向與訓練、核對治理文件與授權，並匯入 FlyWire | 主 agent 指揮 / opencode big-pickle 小票實作、agy Gemini Flash 證據整理 | in_progress | 第一階段驗證通過：平台矩陣把 compiled 與 executed 分開標記（darwin/arm64 實際執行 unit／race／vet／mod verify，linux 與 windows 只交叉編譯與 vet）、`Workers` 並行在連續與 LIF 核心逐位相同且每步配置量不隨步數增加、治理測試四項、README 能力表與科學界線、授權盤點與 `blocked_permission` 發布清單、INDEX 連結檢查；OPS-04、GOV-01、GOV-04、GOV-05、GOV-06 passed；第二～四階段待派工，第五階段裝置後端（OPS-05）與 FlyWire（DAT-06）受阻於使用者；第二階段進行中（2026-09-19）：FlyWire adapter（CSV／gzip → Feather 與 manifest，命名空間 `flywire-<version>`，root id 到 2^63−1 精確往返、溢位拒絕，`docs/flywire-source-audit.md` 標 blocked_data）已提交，拼接禁止（`MappingEvidence`）票已寫好；第五階段 `backend` 能力宣告、明示回退與更新 ledger 已提交（OPS-05 可做部分）；第四階段乾淨環境腳本待 `report` 命令；第二階段 fixture 部分驗證通過（2026-09-19）：FlyWire adapter、`MappingEvidence` 拼接禁止與 named set 命名空間檢查，`evidence/DAT-06/`（DAT-06 passed，profile fixture；真實 FlyWire 檔案 blocked_data）；第四階段 `scripts/clean-env-verify.sh` 已落地（14 步 passed、3 步 blocked_data），效能報告與 OPS-10 證據待派 |
-| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一階段驗證通過（2026-09-19）：協定型別與 Validate、ContinualEpisode／Forgetting／AggregateCells 手算、快照孿生評估與化學凍結、RunContinualMatrix（3 seed × 3 階段 × 2 任務，失敗執行保留）、independent 與狀態切換對照、事前 paired bootstrap 比較、CLI `examples run continual-matrix`；`evidence/LRN-08/` 30 個頂層測試 race 全綠（LRN-08 passed）；第二階段進行中：`LossGradientFrom`／`StepFrom` 已落地，模仿與 PPO 更新待派工；第三階段：登錄與協定型別已落地，兩種協定執行派工中；第三階段驗證通過（2026-09-20）：登錄三條、`ecdysone_inspired` 時機曲線（slow 幅度隨脈衝後移遞增、凍結可塑性後重測隨時機變化）、`npf_memory_expression_hypothesis`（抑制期間下降、切回後恢復、三層參數逐位不變）、定量命名拒絕；`evidence/MOD-09/`（MOD-09 passed）；第二階段模仿與 PPO 待派 |
+| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max | in_progress | 第一階段 LRN-08 與第三階段 MOD-09 已有證據；第二階段 PPO 更新入口的零初始狀態、安全拒絕、版本識別與候選個體更新通過 Mac／Ubuntu 局部驗證；任意狀態梯度、3 seed 各 200 次更新與 CLI 仍待驗收 |
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
-| 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一階段 fixture 部分驗證通過（2026-09-20）：`tasks/ocr` 的 CTC（路徑枚舉與有限差分對照）、CER／WER、字形族 fixture、頁面切行、每步讀出的單行辨識器、兩族分割＋未見組合＋`data_scope`＋核心斷開檢查的 fixture 流程與 CLI `examples run ocr`；`evidence/TSK-01/`（TSK-01 passed，profile fixture；真實資料 TSK-11 blocked_data）；第二階段 WAV／log-mel 資料層與第三階段 tokenizer 已提交，串流辨識、文字生成訓練與影音階段待派 |
+| 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；整檔 CTC 與因果串流的短尾、取消還原及語義設定恢復通過 Mac／Ubuntu 局部驗證；資料匯入、分割、延遲、TSK-11 真實授權資料與後續生成階段保留 |
 
 ## 目前阻礙
 
-2026-09-13 使用者要求接回 Claude 的進度，分工優先 Spark `xhigh`；本次重新呼叫仍回報用量限制，改用 Luna `max`。Insyra 自訂 tape 梯度接合與最佳化器序列化缺少公開 API，已提 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前使用有完整數值測試的兩段 tape 接合，以及 CoImNet 自有可保存 AdamW。
+2026-09-22 跨平台整合已通過。Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
+
+2026-09-21 的 Spark 呼叫回 `Unknown model gpt-5.3-codex-spark`，本輪修正與審查改用 Luna `max`。使用者另授權善用 OpenCode，PPO 使用文件交給 `opencode/big-pickle` 免費模型。Insyra 自訂 tape 梯度接合與最佳化器序列化缺少公開 API，已提 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前使用有完整數值測試的兩段 tape 接合，以及 CoImNet 自有可保存 AdamW。
 
 嚴格 JSON 的深度與路徑配置缺口已修正，並將 Unicode 重複鍵檢查同步至訊號、快照、下載 metadata 與 manifest。圖檔補上配置前記憶體檢查、計數溢位、未初始化圖、未知 converter 與同次讀取 hash 回條；回歸測試及兩平台 v7 全套驗證通過。
 
@@ -102,11 +110,11 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-研究方向的 12→13→14 序列已完成；2026-09-15 使用者決定把整個規格做完，路線見「階段目標」，ticket 15、16 與 17 第一階段已驗證，17 第二階段與 18 第一階段進行中。原先列出的候選（保留作紀錄）：(a) NAT-06 在 runner 之上開啟可塑性並做學習前後對照矩陣；(b) LIF 個體持續狀態（`learning.Individual` 的 LIF 變體與新 schema）與慢速穩定（COR-04）；(c) SIG-03 控制器資料流；(d) Ubuntu 上重跑 v26 以後的真實資料證據；(e) `signal/json.go` 的 JSON 深度防護與 `download` 續傳缺口。
+優先接續 [ticket 26 第二階段](docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md)：把已驗證的 PPO 更新入口接上取樣策略與正確的時間上限 bootstrap，完成 3 seed 各 200 次更新、隨機策略對照與同 seed 重現，並提供 `examples run gridnav --method imitation|ppo`。任意非零初始神經狀態需要先有相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。
 
-LIF 個體持續狀態已由 ticket 16 完成（`dynamics.LIFState` 保存電位、突觸跡歷史、適應值、不應期計數與慢速穩定狀態，`coimnet-individual-checkpoint/v1` 以聯集指名核心，舊 episode 快照與模型包都不會被解讀成持續個體）。按類型混合（COR-05），混合要明示細胞分群依據，同一筆訊號不得重複計入。慢速穩定（homeostasis）補齊後 COR-04 才能標為通過。舊 episode 讀取器缺口已修（[ticket 05](docs/tickets/05-resume.md#已修正缺口舊-episode-必填欄位)）。SIG-03、可塑性、調節、全腦／GPU 仍依原始待辦。
+[ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 接續語音串流的資料匯入、說話者／場次分割與延遲報告。既有測試使用程式產生的三種音調，不能當成自然語音能力證據。真實授權資料與全圖／GPU 訓練維持原驗收條件。
 
-圖儲存階段來源與日誌見 [macOS v7](evidence/cpu-reference-20260913/macos-v7/validation.log)、[Ubuntu v7](evidence/cpu-reference-20260913/ubuntu-v7/validation.log) 與 [來源比對](evidence/cpu-reference-20260913/verification-v7.json)。歷史驗證見 [macOS v6](evidence/cpu-reference-20260913/macos-v6/validation.log)（含 connectome、extsort，83 份來源指紋）、[macOS v5](evidence/cpu-reference-20260913/macos-v5/validation.log) 及 [Ubuntu v5](evidence/cpu-reference-20260913/ubuntu-v5/validation.log)。真實圖建構的命令、環境、指紋、報告與交叉核對見 [graph-v1](evidence/malecns-source-20260913/graph-v1/verification.json)。85 項完整需求目前有 23 項附上通過證據，其餘保留。LIF 階段的來源、日誌與環境見 [macOS v26](evidence/cpu-reference-20260914/macos-v26/validation.log) 與 [ticket 11](docs/tickets/11-lif-core.md#第三階段證據)。最新全套日誌見 [Mac v25](evidence/cpu-reference-20260914/macos-v25/validation.log)、[Ubuntu v25](evidence/cpu-reference-20260914/ubuntu-v25/validation.log) 及 [來源比對](evidence/cpu-reference-20260914/verification-v25.json)。
+歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
 

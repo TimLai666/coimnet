@@ -33,6 +33,8 @@
 - `dynamics`：連續、LIF 與混合核心
 - `feather`：Feather V2 逐批讀取
 - `learning`：核心、外圍模型、訓練器與持續個體
+- [`learning/rl`](../learning/rl/README.md)：PPO 更新入口、適用狀態與限制
+- [`tasks/asr`](../tasks/asr/README.md)：音訊轉文字、因果串流與恢復
 - `modulation`：調節來源、化學、受體與效果
 - `params`：動態參數推導與參數集
 - `plasticity`：局部學習規則

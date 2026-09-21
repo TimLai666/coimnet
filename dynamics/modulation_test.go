@@ -196,6 +196,10 @@ func TestLIFAdvanceModulatedNilAndNeutralMatchAdvance(t *testing.T) {
 //
 //	node 0: gain 2, offset 0   -> drive 2*1 + 0 = 2,   v = 1.2642411176571153
 //	node 1: gain 1, offset 0.5 -> drive 1*1 + 0.5 = 1.5, v = 0.9481808382428365
+//
+// The output reference applies this package's math.Tanh to those exact
+// voltages. Go's transcendental implementation can differ by one ULP across
+// supported CPUs, while the voltage arithmetic remains exact.
 func TestContinuousAdvanceModulatedScalesAndOffsetsOneNode(t *testing.T) {
 	c := Config{Nodes: 2, DT: 1, Activation: "tanh"}
 	p := Parameters{Bias: []float64{0, 0}, LogTau: []float64{0, 0}}
@@ -217,8 +221,10 @@ func TestContinuousAdvanceModulatedScalesAndOffsetsOneNode(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertVectorIdentical(t, "voltage", got.Voltage, []float64{1.2642411176571153, 0.9481808382428365})
-	assertVectorIdentical(t, "output", gotOut[0], []float64{0.8522291308053213, 0.7389583695421298})
+	wantVoltage := []float64{1.2642411176571153, 0.9481808382428365}
+	assertVectorIdentical(t, "voltage", got.Voltage, wantVoltage)
+	wantOutput := []float64{math.Tanh(wantVoltage[0]), math.Tanh(wantVoltage[1])}
+	assertVectorIdentical(t, "output", gotOut[0], wantOutput)
 	if got.Voltage[0] != 2*plain.Voltage[0] {
 		t.Fatalf("a gain of 2 gave %v, want twice the unmodulated %v", got.Voltage[0], plain.Voltage[0])
 	}
