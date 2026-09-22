@@ -1,0 +1,316 @@
+{
+  "schema_version": "coimnet-lif-threshold-example/v1",
+  "profile": "fixture",
+  "generator": "delayed-pulse-splitmix64-v1",
+  "protocol": {
+    "seeds": [
+      7,
+      42,
+      123
+    ],
+    "updates": 300,
+    "train_seed": 1001,
+    "holdout_seed": 1003,
+    "holdout_count": 128,
+    "learning_rate": 0.02,
+    "counters_disjoint": true
+  },
+  "core": {
+    "nodes": 3,
+    "sources": [
+      0,
+      1,
+      1
+    ],
+    "targets": [
+      1,
+      1,
+      2
+    ],
+    "delays": [
+      0,
+      1,
+      0
+    ],
+    "dt": 1,
+    "tau_syn": 1,
+    "theta_min": 0.05,
+    "theta_max": 1,
+    "v_reset": -0.5,
+    "refractory_steps": 1,
+    "adaptation": {
+      "enabled": false,
+      "tau_adapt": 0,
+      "beta": 0
+    },
+    "surrogate": {
+      "kind": "fast_sigmoid",
+      "scale": 2
+    }
+  },
+  "gates": {
+    "min_theta_base_change": 0.001,
+    "description": "for every seed: theta-only holdout MSE \u003c frozen holdout MSE; at least one neuron's theta_base moves by more than 1e-3 under theta-only training; the theta-only holdout spike rate is strictly inside (0,1)"
+  },
+  "runs": [
+    {
+      "seed": 7,
+      "conditions": [
+        {
+          "name": "all",
+          "trainable": {
+            "encoder": true,
+            "weights": true,
+            "bias": true,
+            "tau": true,
+            "theta": true,
+            "readout": true
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05347795077331361,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.24833137794411558,
+            0.22880119823489653,
+            0.2735260016693022
+          ],
+          "max_theta_base_change": 0.11028322574829053,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.159375
+        },
+        {
+          "name": "theta_only",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "theta": true,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05219354169022589,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.5511779402138219,
+            0.6517354947894691,
+            0.659591063644284
+          ],
+          "max_theta_base_change": 0.49634828772327233,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.090625
+        },
+        {
+          "name": "frozen",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.23235398236273086,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "max_theta_base_change": 0,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.19791666666666666
+        }
+      ],
+      "theta_beats_frozen": true,
+      "theta_base_moved": true,
+      "spike_rate_inside_open_unit_interval": true,
+      "passed": true
+    },
+    {
+      "seed": 42,
+      "conditions": [
+        {
+          "name": "all",
+          "trainable": {
+            "encoder": true,
+            "weights": true,
+            "bias": true,
+            "tau": true,
+            "theta": true,
+            "readout": true
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05414210336473489,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.2522832916799338,
+            0.22700275788983398,
+            0.27003493505840787
+          ],
+          "max_theta_base_change": 0.1067921591373962,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.16145833333333334
+        },
+        {
+          "name": "theta_only",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "theta": true,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05219354169022589,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.5487485347753063,
+            0.6499140583500118,
+            0.659591063644284
+          ],
+          "max_theta_base_change": 0.49634828772327233,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.090625
+        },
+        {
+          "name": "frozen",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.23235398236273086,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "max_theta_base_change": 0,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.19791666666666666
+        }
+      ],
+      "theta_beats_frozen": true,
+      "theta_base_moved": true,
+      "spike_rate_inside_open_unit_interval": true,
+      "passed": true
+    },
+    {
+      "seed": 123,
+      "conditions": [
+        {
+          "name": "all",
+          "trainable": {
+            "encoder": true,
+            "weights": true,
+            "bias": true,
+            "tau": true,
+            "theta": true,
+            "readout": true
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05396430562196657,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.22664375426348965,
+            0.21945506780291935,
+            0.25931704647756754
+          ],
+          "max_theta_base_change": 0.09607427055655587,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.16041666666666668
+        },
+        {
+          "name": "theta_only",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "theta": true,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.05219354169022589,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.5508441896902997,
+            0.6514851886893938,
+            0.659591063644284
+          ],
+          "max_theta_base_change": 0.49634828772327233,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.090625
+        },
+        {
+          "name": "frozen",
+          "trainable": {
+            "encoder": false,
+            "weights": false,
+            "bias": false,
+            "tau": false,
+            "readout": false
+          },
+          "holdout_mse_before": 0.23235398236273086,
+          "holdout_mse_after": 0.23235398236273086,
+          "theta_base_before": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "theta_base_after": [
+            0.16324277592101166,
+            0.16324277592101166,
+            0.16324277592101166
+          ],
+          "max_theta_base_change": 0,
+          "spike_rate_before": 0.19791666666666666,
+          "spike_rate_after": 0.19791666666666666
+        }
+      ],
+      "theta_beats_frozen": true,
+      "theta_base_moved": true,
+      "spike_rate_inside_open_unit_interval": true,
+      "passed": true
+    }
+  ],
+  "passed": true
+}

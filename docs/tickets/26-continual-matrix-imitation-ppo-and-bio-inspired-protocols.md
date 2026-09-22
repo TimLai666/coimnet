@@ -10,7 +10,7 @@ User Story：研究者可以用固定 seed 跑「先學 A、再學 B、重測 A�
 
 Blocked by：22（記憶表現、穩定化、干預）、23（運行中學習、重播、評估）、21（化學狀態）、17（最佳化器）
 
-Status：第一階段已驗證（2026-09-19）、第三階段已驗證（2026-09-20）；第二階段模仿已實作，PPO 更新入口於 2026-09-22 完成局部驗證，完整學習驗收待完成
+Status：三個階段已完成 fixture 範圍驗證；第一階段 2026-09-19、第三階段 2026-09-20、第二階段 2026-09-22。PPO 的任意非零初始狀態、前綴梯度切斷與機制擴充仍不支援。
 
 對應需求：LRN-08（產生完整階段矩陣，所有 seed 與失敗執行均保留）、LRN-09（至少一套完整算法可在環境改善；
 遞迴狀態、策略版本及回饋時間一致）、MOD-09（至少時機與記憶表現兩種協定；人工數值不標為定量生物重現）。
@@ -102,7 +102,7 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
 
 - [x] 第一階段：矩陣與遺忘手算（3 階段 × 2 任務）、失敗執行保留、固定調節狀態評估與狀態切換對照、
   `independent` 對照分開、事前比較方法；`go test`、race、vet；`evidence/LRN-08/`。
-- [ ] 第二階段：`LossGradientFrom` 逐位等於 `LossGradient`；環境評估不洩漏目標；模仿一致率；PPO 機率比值
+- [x] 第二階段：`LossGradientFrom` 逐位等於 `LossGradient`；環境評估不洩漏目標；模仿一致率；PPO 機率比值
   三項、版本／狀態一致性拒絕、3 seed 改善且同 seed 逐位重現；`evidence/LRN-09/`。
 - [x] 第三階段：登錄三條、兩種協定各 3 seed、表現恢復且三層參數不變、定量命名拒絕；`evidence/MOD-09/`；文件。
 
@@ -137,15 +137,38 @@ func RunBioInspired(ctx context.Context, protocol string, c BioInspiredConfig) (
 
 與 [Root 決策](#第三階段有來源的生物啟發協定mod-09)的出入：決策 10 寫「干預清單沿用 22 的八種，量測活動、快速權重、基礎參數與任務結果四種變化」，實作沒有用到那八種 kind 的任何一種——時機協定用 `ExternalTimeline` 脈衝、狀態協定用 `SetExpressionGain`，量測落實成 `slow_magnitude`、`retest_score` 與三個逐位不變旗標，沒有產生 `ActivityDelta`／`PlasticDelta`／`BaseParameterDelta` 數值。決策 11 寫「README 範例表」，實際補的是 README 的「能力狀態」表（README 沒有範例表）。本階段沒有 CLI 子指令，`evidence/MOD-09/` 的兩份曲線／評估 JSON 是從 `test.log` 的 `t.Logf` 輸出逐字整理的，不是 CLI 產物，整理過程沒有新增程式檔。其餘限制（fixture 三神經元、脈衝時機只在一個 episode 的 4 列內、重測分數差 1e-7 量級、`Suppressed` 由 `Validate` 限制在 (0,1) 且只測 0.4、真實資料未跑、單次 macOS arm64 執行）見 `evidence/MOD-09/verification.json` 的 `limitations`。
 
-## 第二階段更新入口（2026-09-22，局部驗證）
+## 第二階段更新入口（2026-09-22，先前局部驗證）
 
 `learning/rl.Update` 已接上既有梯度與最佳化器流程。版本摘要識別完整設定與六組參數，所有 rollout 驗證完才建立更新，成功回傳新個體，失敗保留原個體。每份 rollout 必須由新建或重設至零電位的個體開始收集，`MiniBatch` 限 1，可塑性與化學機制目前明確拒絕。
 
 直接重跑 `go test -count=1 -v ./learning/rl` 的 20 個頂層測試通過。20 個 transition 在更新前的機率比偏差最大為 0，更新後 24 個正優勢 transition 的機率比全部大於 1。同 seed 的報告與個體快照逐位相同。測試使用人工走廊、貪婪動作與明示為 0 的 timeout bootstrap，只驗證更新入口，不能當成完整策略學習成績。
 
-`BurnIn` 現階段只遮掉前綴的直接損失，後續損失仍能經核心回傳梯度到前綴。任意初始狀態與切斷前綴梯度需要相符的反向路徑。3 seed 各 200 次更新、取樣探索、正確的 timeout bootstrap、隨機策略對照與 `examples run gridnav --method imitation|ppo` 尚未完成，`LRN-09` 維持 `specified`。
+`BurnIn` 現階段只遮掉前綴的直接損失，後續損失仍能經核心回傳梯度到前綴。任意初始狀態與切斷前綴梯度需要相符的反向路徑。這次局部驗證當時尚未包含環境學習與 CLI，`LRN-09` 當時維持 `specified`；後續完成範圍見下方第二階段證據。
 
 日誌與輸入指紋見 [本輪證據](../../evidence/rl-asr-takeover-20260922/verification.json)，使用方式見 [PPO SDK](../../learning/rl/README.md)。
+
+## 環境學習整合契約（2026-09-22）
+
+本輪交付使用者可執行的 `examples run gridnav --method imitation|ppo` 人工範例。沿用 `experiment/gridnav`、既有模仿流程與 `rl.Update`，不改動核心梯度或擴張可塑性支援。
+
+- 收集：每個 episode 在模型副本上重設為零狀態，以 softmax 機率取樣，保存實際 `LogProb`、`Value` 與版本。環境終止用零後續價值，時間上限則用相同遞迴狀態再處理最後的下一筆 observation，取得 `BootstrapValue`。收集不修改傳入個體，不讀 `Expert` 或隱藏目標。
+- 訓練：`RunPPO(ctx, PPOExperimentConfig)` 依 seed 產生個體，每輪收集一個完整 episode 再呼叫更新器。設定包含 Corridor、Seeds、Updates、Hidden、LearningRate、EvalEpisodes、PPO。預設固定 seeds 1／2／3、200 次更新，評估與訓練的動作 RNG 分流，評估不更新參數。
+- 範例模型：四個觀察節點加遞迴 hidden 節點，讀出涵蓋這些核心節點，輸出三個動作 logits 與一個價值。固定 identity encoder，訓練核心權重、bias 與讀出。這是明示的人工拓撲，與既有模仿範例的兩跳讀出結構不同，不宣稱兩方法的公平優劣比較。
+- 報告：保留每個 seed 的失敗原因、實際最佳化器更新次數、每輪訓練回報與損失、更新前後保留集回報、隨機基線、最終參數版本。跨 seed 報告更新前後平均、標準差與成功數，失敗 seed 不消失；同設定同 seed 的報告須逐位相同。Passed 須沒有失敗 seed，且平均回報同時高於隨機基線與未訓練策略。
+- 驗收：預設 3 seed 各 200 次更新，平均回報高於隨機基線，並報告相對未訓練策略的變化。collector 以獨立前向重播驗證取樣機率、初始狀態與 timeout 值；CLI 驗證 help、錯誤參數、輸出失敗及完整 JSON。取消中止並回傳錯誤，不偽裝成功。非法／非有限設定在執行前拒絕。
+- 邊界：`MiniBatch=1`、完整零狀態 episode，`BurnIn=0` 為範例預設。其他 BurnIn 需小於最短可能 episode。任意非零初始狀態與切斷前綴梯度仍依既有後續工作處理。此輪不引入新訓練器、外部資料或模型產物。
+
+分工責任：collector 與其測試、runner／模型與其測試、CLI 與其測試三組檔案互不重疊。主 agent 負責契約、審查、兩平台驗證、證據及提交。
+
+## 第二階段證據（2026-09-22）
+
+`examples run gridnav --method ppo` 使用固定 seeds 1／2／3，各完成 200 次最佳化器更新。訓練前平均回報 0.318167、訓練後 0.605167、隨機基線 0.357333，seed 間母體標準差 0.220535。三個 seed 都高於自己的訓練前成績，但 seed 1 的 0.37725 仍低於其隨機基線 0.39775，沒有宣稱每個 seed 都贏過隨機。
+
+模仿流程保持原拓撲。50／200／500 episodes 的曲線先保存再整合，500 episodes 時三組一致率由約 0.216／0.218／0.216 升至 0.778／0.826／0.551。CLI 的模仿模式只以執行成功判定退出碼，不把 200 episodes 的執行成功當成學習門檻通過。
+
+Mac 與 Ubuntu 用相同 439 檔來源通過 build、一般測試、race、vet、依賴及 CLI 續訓比較。兩平台各自重跑 PPO CLI，完整報告逐位相同，包含最終參數、神經與最佳化器快照摘要；跨平台的快照摘要不同，不宣稱跨 CPU 逐位相同。有限極端獎勵造成統計溢位的缺陷已修正，相關回歸與獨立複審均通過。
+
+完整設定、逐 seed 結果、命令、來源指紋、資源量測及日誌見 [LRN-09](../../evidence/LRN-09/verification.json)。本需求以人工環境中可重現的模仿與行動回饋學習標為 `passed`；任意初始狀態、切斷前綴梯度、可塑性／化學 PPO 與真實全圖訓練保留為未支援範圍。
 
 ## 依據
 

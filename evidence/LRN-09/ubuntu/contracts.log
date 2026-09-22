@@ -1,0 +1,266 @@
+2026/09/22 19:47:37 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestImitationImprovesAgreement
+    imitation_test.go:48: random policy baseline return = 0.2105000000000019
+    imitation_test.go:51: seed 1: agreement 0.21621621621621623 -> 0.7777777777777778, mean return 0.9459999999999995, updates 500
+    imitation_test.go:51: seed 2: agreement 0.21818181818181817 -> 0.8260869565217391, mean return 0.9539999999999995, updates 500
+    imitation_test.go:51: seed 3: agreement 0.21621621621621623 -> 0.5510204081632653, mean return 0.5020000000000018, updates 500
+--- PASS: TestImitationImprovesAgreement (0.90s)
+=== RUN   TestImitationIsDeterministic
+--- PASS: TestImitationIsDeterministic (1.67s)
+=== RUN   TestImitationValidateRejects
+=== RUN   TestImitationValidateRejects/no_seeds
+=== RUN   TestImitationValidateRejects/zero_episodes
+=== RUN   TestImitationValidateRejects/hidden_below_four
+=== RUN   TestImitationValidateRejects/zero_learning_rate
+=== RUN   TestImitationValidateRejects/zero_eval_episodes
+--- PASS: TestImitationValidateRejects (0.00s)
+    --- PASS: TestImitationValidateRejects/no_seeds (0.00s)
+    --- PASS: TestImitationValidateRejects/zero_episodes (0.00s)
+    --- PASS: TestImitationValidateRejects/hidden_below_four (0.00s)
+    --- PASS: TestImitationValidateRejects/zero_learning_rate (0.00s)
+    --- PASS: TestImitationValidateRejects/zero_eval_episodes (0.00s)
+=== RUN   TestImitationHonoursCancellation
+--- PASS: TestImitationHonoursCancellation (0.00s)
+=== RUN   TestImitationEvaluatorNeverReadsTheExpert
+    imitation_test.go:188: last-step logits [-0.006939509883522987 1.6188714653253555e-05 -0.01603015512228012], argmax 1, evaluator action 1
+--- PASS: TestImitationEvaluatorNeverReadsTheExpert (0.00s)
+=== RUN   TestPPOCollectRecordsReplayAndTimeoutBootstrap
+--- PASS: TestPPOCollectRecordsReplayAndTimeoutBootstrap (0.00s)
+=== RUN   TestPPOCollectDistinguishesTrueTerminationFromTimeout
+--- PASS: TestPPOCollectDistinguishesTrueTerminationFromTimeout (0.00s)
+=== RUN   TestPPOCollectSamplesPolicyAndRNGChangesAction
+--- PASS: TestPPOCollectSamplesPolicyAndRNGChangesAction (0.01s)
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_context
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_individual
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_rng
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nonfinite_step_penalty
+=== RUN   TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nonfinite_goal_reward
+--- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism (0.00s)
+    --- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_context (0.00s)
+    --- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_individual (0.00s)
+    --- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nil_rng (0.00s)
+    --- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nonfinite_step_penalty (0.00s)
+    --- PASS: TestPPOCollectRejectsInvalidInputAndUnsupportedMechanism/nonfinite_goal_reward (0.00s)
+=== RUN   TestPPOCollectResetsOnlyTheEpisodeCopy
+--- PASS: TestPPOCollectResetsOnlyTheEpisodeCopy (0.00s)
+=== RUN   TestPPODefaultConfig
+--- PASS: TestPPODefaultConfig (0.00s)
+=== RUN   TestPPOExperimentRNGStreamsAreSeparated
+--- PASS: TestPPOExperimentRNGStreamsAreSeparated (0.05s)
+=== RUN   TestPPOExperimentRejectsInvalid
+=== RUN   TestPPOExperimentRejectsInvalid/no_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/duplicate_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/too_many_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/updates_below_one
+=== RUN   TestPPOExperimentRejectsInvalid/updates_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/hidden_below_four
+=== RUN   TestPPOExperimentRejectsInvalid/hidden_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/eval_episodes_below_one
+=== RUN   TestPPOExperimentRejectsInvalid/eval_episodes_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/nonfinite_learning_rate
+=== RUN   TestPPOExperimentRejectsInvalid/corridor_length_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/time_limit_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/PPO_time_limit_mismatch
+=== RUN   TestPPOExperimentRejectsInvalid/PPO_minibatch
+=== RUN   TestPPOExperimentRejectsInvalid/burn_in_reaches_minimum_episode
+=== RUN   TestPPOExperimentRejectsInvalid/nonfinite_PPO_coefficient
+--- PASS: TestPPOExperimentRejectsInvalid (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/no_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/duplicate_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/too_many_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/updates_below_one (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/updates_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/hidden_below_four (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/hidden_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/eval_episodes_below_one (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/eval_episodes_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/nonfinite_learning_rate (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/corridor_length_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/time_limit_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/PPO_time_limit_mismatch (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/PPO_minibatch (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/burn_in_reaches_minimum_episode (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/nonfinite_PPO_coefficient (0.00s)
+=== RUN   TestPPOExperimentModelLayout
+--- PASS: TestPPOExperimentModelLayout (0.00s)
+=== RUN   TestPPOExperimentCollector
+--- PASS: TestPPOExperimentCollector (0.00s)
+=== RUN   TestPPORunDefault
+    ppo_test.go:180: baseline=0.35733333333333545 before=0.31816666666666676 mean=0.6051666666666666 std=0.22053517608057188 successful=3 passed=true
+    ppo_test.go:185: seed=1 before=0.26199999999999996 after=0.3772500000000001 random=0.39775000000000155 updates=200 terminal=102 timeout=98 snapshot=4defb6b899122847da01a7c639f068aec6aca13c993b35f0c2c7ef24c7701684
+    ppo_test.go:185: seed=2 before=0.40375000000000016 after=0.9034999999999999 random=0.24675000000000252 updates=200 terminal=143 timeout=57 snapshot=303ba4f55106b2dfe25ebf82fb83d3e028a0610c68a162011941725f7ad4f125
+    ppo_test.go:185: seed=3 before=0.28875000000000023 after=0.5347500000000001 random=0.42750000000000243 updates=200 terminal=99 timeout=101 snapshot=308efe2e395e862f18980cef9ed385453e0833fc9908dd7645e8b089ec4b11ee
+--- PASS: TestPPORunDefault (1.59s)
+=== RUN   TestPPORunDefaultReportDeterministic
+--- PASS: TestPPORunDefaultReportDeterministic (3.18s)
+=== RUN   TestPPORunDeterministic
+--- PASS: TestPPORunDeterministic (0.10s)
+=== RUN   TestPPOExperimentJSONRoundTripAndFailedSeed
+--- PASS: TestPPOExperimentJSONRoundTripAndFailedSeed (0.00s)
+=== RUN   TestPPORunRetainsActualFailedSeeds
+    ppo_test.go:260: failed seed=1 error="ppo update 1: rl: rollout 0 update: candidate update rejected: non-finite state at step 1 neuron 4" updates=0
+    ppo_test.go:260: failed seed=2 error="ppo update 1: rl: rollout 0 update: candidate update rejected: non-finite state at step 1 neuron 4" updates=0
+--- PASS: TestPPORunRetainsActualFailedSeeds (0.01s)
+=== RUN   TestPPOExperimentFinalizeExcludesFailedSeedFromAggregate
+--- PASS: TestPPOExperimentFinalizeExcludesFailedSeedFromAggregate (0.00s)
+=== RUN   TestPPOExperimentExtremeReturnsHaveFiniteJSON
+--- PASS: TestPPOExperimentExtremeReturnsHaveFiniteJSON (0.01s)
+=== RUN   TestPPOExperimentExtremeStatisticsMatchScaledHandCheck
+--- PASS: TestPPOExperimentExtremeStatisticsMatchScaledHandCheck (0.00s)
+=== RUN   TestPPORunHonoursCancellation
+--- PASS: TestPPORunHonoursCancellation (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	7.557s
+=== RUN   TestObservationHidesEvaluatorState
+--- PASS: TestObservationHidesEvaluatorState (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.005s
+2026/09/22 19:47:37 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestUpdateEveryCountsAvailableFeedback
+--- PASS: TestUpdateEveryCountsAvailableFeedback (0.00s)
+=== RUN   TestLossGradientFromMatchesLossGradient
+--- PASS: TestLossGradientFromMatchesLossGradient (0.00s)
+=== RUN   TestLossGradientFromRejectsBadUpstream
+--- PASS: TestLossGradientFromRejectsBadUpstream (0.01s)
+=== RUN   TestStepFromMatchesStep
+--- PASS: TestStepFromMatchesStep (0.00s)
+=== RUN   TestStepFromRespectsMasksAndAccumulation
+--- PASS: TestStepFromRespectsMasksAndAccumulation (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning	0.086s
+2026/09/22 19:47:37 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestAdvantagesHandTableTerminal
+    advantage_test.go:32: gamma=0.9 lambda=0.8 advantages=[0.2672 -0.74 -2] targets=[1.2671999999999999 1.26 1] wantAdv=[0.2672 -0.74 -2] wantTgt=[1.2672 1.26 1]
+--- PASS: TestAdvantagesHandTableTerminal (0.00s)
+=== RUN   TestAdvantagesTimeoutBootstraps
+    advantage_test.go:67: advantages=[2.1334400000000002 1.852 1.5999999999999996] targets=[3.1334400000000002 3.8520000000000003 4.6] wantAdv=[2.13344 1.852 1.6] wantTgt=[3.13344 3.852 4.6]
+--- PASS: TestAdvantagesTimeoutBootstraps (0.00s)
+=== RUN   TestAdvantagesRejects
+    advantage_test.go:90: must-end error: rl: rollout must end: last transition is neither done nor timeout
+    advantage_test.go:102: done+timeout error: rl: step 0 is both done and timeout
+    advantage_test.go:108: NaN error: rl: step 0 has a non-finite field
+    advantage_test.go:114: empty error: rl: rollout must end: empty rollout
+    advantage_test.go:120: gamma=0 error: rl: gamma must be in (0, 1], got 0
+    advantage_test.go:125: lambda=1.5 error: rl: lambda must be in (0, 1], got 1.5
+--- PASS: TestAdvantagesRejects (0.00s)
+=== RUN   TestAdvantagesMultipleEpisodesInOneRollout
+    advantage_test.go:150: full advantages=[-0.28 -1.5 0.13344000000000023 1.852 1.5999999999999996] targets=[0.72 0.5 3.1334400000000002 3.8520000000000003 4.6]
+    advantage_test.go:151: sub  advantages=[0.13344000000000023 1.852 1.5999999999999996] targets=[3.1334400000000002 3.8520000000000003 4.6]
+--- PASS: TestAdvantagesMultipleEpisodesInOneRollout (0.00s)
+=== RUN   TestRatioIsOneUnderTheSamePolicy
+    objective_test.go:34: ratio=1 clipped=false
+--- PASS: TestRatioIsOneUnderTheSamePolicy (0.00s)
+=== RUN   TestRatioMovesWithTheAdvantage
+    objective_test.go:78: A=+1 ratio=1.04995837495788 want=1.04995837495788
+    objective_test.go:94: A=-1 ratio=0.95004162504212 want=0.95004162504212
+--- PASS: TestRatioMovesWithTheAdvantage (0.00s)
+=== RUN   TestClippedRegionHasZeroPolicyGradient
+    objective_test.go:126: A=+1 r=1.5: clipped=true ratio=1.4999999999999998
+    objective_test.go:138: A=-1 r=0.5: clipped=true ratio=0.5
+    objective_test.go:150: A=+1 r=0.5: clipped=false ratio=0.5 grad=[0.1535979428592492 0.09316186161292378 -0.24675980447217294]
+--- PASS: TestClippedRegionHasZeroPolicyGradient (0.00s)
+=== RUN   TestLossFiniteDifferences
+    objective_test.go:179: logits=[-0.9927059732541325 -0.7975975646485098 0.04514578633436361 0.48013046937670434] oldLogProb=-1.2028768074614957
+    objective_test.go:184: loss=-0.3922042260789983 policy=-0.7 value=0.32000000000000006 entropy=-0.01220422607899839 ratio=1
+    objective_test.go:222: logits[0]: analytic=0.0733812679468765 finite-diff=0.0733812678399559 rel=1.46e-09
+    objective_test.go:222: logits[1]: analytic=0.0894430047875786 finite-diff=0.0894430048081762 rel=2.3e-10
+    objective_test.go:222: logits[2]: analytic=-0.489717019362051 finite-diff=-0.489717019214186 rel=3.02e-10
+    objective_test.go:222: logits[3]: analytic=0.326892746627595 finite-diff=0.326892746760343 rel=4.06e-10
+    objective_test.go:227: worst logits relative error 1.46e-09
+    objective_test.go:241: value: analytic=-0.8 finite-diff=-0.799999999995249 rel=5.94e-12
+    objective_test.go:255: entropy-only loss=-0.7610211303949919 policy=-0.7 entropy=-0.061021130394991956
+    objective_test.go:270: entropy-only logits[0]: analytic=0.069039622422508 finite-diff=0.0690396222968737 rel=1.82e-09
+    objective_test.go:270: entropy-only logits[1]: analytic=0.0851750837613938 finite-diff=0.0851750837638221 rel=2.85e-11
+    objective_test.go:270: entropy-only logits[2]: analytic=-0.48950623886858 finite-diff=-0.489506238710025 rel=3.24e-10
+    objective_test.go:270: entropy-only logits[3]: analytic=0.335291532684678 finite-diff=0.335291532760351 rel=2.26e-10
+    objective_test.go:275: entropy-only worst logits relative error 1.82e-09
+--- PASS: TestLossFiniteDifferences (0.00s)
+=== RUN   TestPPOConfigValidate
+    objective_test.go:306: gamma must be in (0,1]: rl: gamma must be in (0, 1], got 0
+    objective_test.go:306: lambda must be in (0,1]: rl: lambda must be in (0, 1], got 1.5
+    objective_test.go:306: clip epsilon must be in (0,1): rl: clip epsilon must be in (0, 1), got 1
+    objective_test.go:306: clip epsilon zero: rl: clip epsilon must be in (0, 1), got 0
+    objective_test.go:306: value_coef negative: rl: value_coef must be finite and >= 0, got -0.1
+    objective_test.go:306: value_coef NaN: rl: value_coef must be finite and >= 0, got NaN
+    objective_test.go:306: entropy_coef negative: rl: entropy_coef must be finite and >= 0, got -0.1
+    objective_test.go:306: entropy_coef +Inf: rl: entropy_coef must be finite and >= 0, got +Inf
+    objective_test.go:306: burn_in negative: rl: burn_in must be >= 0, got -1
+    objective_test.go:306: time_limit zero: rl: time_limit must be >= 1, got 0
+    objective_test.go:306: epochs zero: rl: epochs must be >= 1, got 0
+    objective_test.go:306: mini_batch zero: rl: mini_batch must be >= 1, got 0
+--- PASS: TestPPOConfigValidate (0.00s)
+=== RUN   TestUpdateRefusesStaleRollouts
+=== RUN   TestUpdateRefusesStaleRollouts/version_differs_by_one_character
+    update_test.go:234: refused: rl: rollout 0: rl: rollout was collected under a different policy version or initial state (version_checks=0)
+=== RUN   TestUpdateRefusesStaleRollouts/plastic_part_present_but_plasticity_is_off
+=== RUN   TestUpdateRefusesStaleRollouts/parameters_moved_after_collection
+--- PASS: TestUpdateRefusesStaleRollouts (0.02s)
+    --- PASS: TestUpdateRefusesStaleRollouts/version_differs_by_one_character (0.01s)
+    --- PASS: TestUpdateRefusesStaleRollouts/plastic_part_present_but_plasticity_is_off (0.00s)
+    --- PASS: TestUpdateRefusesStaleRollouts/parameters_moved_after_collection (0.00s)
+=== RUN   TestUpdateRatioIsOneBeforeAnyStep
+    update_test.go:297: max transition ratio deviation = 0 across 20 transitions
+    update_test.go:302: mean_ratio=1 clipped_fraction=0 transitions=20
+--- PASS: TestUpdateRatioIsOneBeforeAnyStep (0.01s)
+=== RUN   TestUpdateMovesRatioWithAdvantage
+    update_test.go:328: collected 8 rollouts, 75 steps, 5 ended at the goal and 3 timed out
+    update_test.go:363: positive-advantage transitions: 24, of which r>1 after the update: 24 (mean_ratio last epoch 1.020191)
+--- PASS: TestUpdateMovesRatioWithAdvantage (0.05s)
+=== RUN   TestUpdateRejectsFullBurnIn
+    update_test.go:385: burn_in=20 transitions=20 version=efb7f5d54e8b error=rl: rollout 0 burn_in=20 must be smaller than rollout length 20
+--- PASS: TestUpdateRejectsFullBurnIn (0.00s)
+=== RUN   TestUpdateIsDeterministic
+    update_test.go:411: report: {Rollouts:2 Transitions:40 Epochs:3 MeanLoss:0.053393486720949776 MeanPolicy:0.06281358608283898 MeanValue:0.0015286503680343813 MeanEntropy:-0.010948749729923551 MeanRatio:0.9549734008512308 ClippedFraction:0.02631578947368421 VersionChecks:2 PolicyVersionBefore:8b3e9a4c8d1df6511c575f31a88467d8c8b1087a8c7e82b91817f62fa6222530 PolicyVersionAfter:0529ad593b1bcda84e82392e58ccb99f29193deb8940031711b65f8b222a1a67}
+--- PASS: TestUpdateIsDeterministic (0.02s)
+=== RUN   TestUpdateRejectsNonFreshInitialNeuralState
+--- PASS: TestUpdateRejectsNonFreshInitialNeuralState (0.00s)
+=== RUN   TestPolicyVersionBindsConfigAndCoreBias
+--- PASS: TestPolicyVersionBindsConfigAndCoreBias (0.00s)
+=== RUN   TestUpdateRejectsUnsupportedMechanisms
+--- PASS: TestUpdateRejectsUnsupportedMechanisms (0.00s)
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/mini_batch
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/rollout_exceeds_time_limit
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/timeout_before_declared_limit
+--- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch (0.01s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/mini_batch (0.01s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/rollout_exceeds_time_limit (0.00s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/timeout_before_declared_limit (0.00s)
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/full_burn_in
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/invalid_burn_in_action
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/non-finite_burn_in_log_prob
+--- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction (0.01s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/full_burn_in (0.00s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/invalid_burn_in_action (0.00s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/non-finite_burn_in_log_prob (0.00s)
+=== RUN   TestUpdateValidatesAllRolloutsBeforeCandidateUpdate
+--- PASS: TestUpdateValidatesAllRolloutsBeforeCandidateUpdate (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning/rl	0.152s
+2026/09/22 19:47:38 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestGridnavHelp
+--- PASS: TestGridnavHelp (0.00s)
+=== RUN   TestGridnavListAndTopOverview
+--- PASS: TestGridnavListAndTopOverview (0.00s)
+=== RUN   TestGridnavRejects
+--- PASS: TestGridnavRejects (0.00s)
+=== RUN   TestGridnavHonoursCancellation
+--- PASS: TestGridnavHonoursCancellation (0.00s)
+=== RUN   TestGridnavImitationLowBudgetWritesJSON
+--- PASS: TestGridnavImitationLowBudgetWritesJSON (0.34s)
+=== RUN   TestGridnavPPOLowBudgetWritesFullJSONEvenWhenGateFails
+--- PASS: TestGridnavPPOLowBudgetWritesFullJSONEvenWhenGateFails (0.36s)
+=== RUN   TestGridnavWriterErrorsPropagate
+--- PASS: TestGridnavWriterErrorsPropagate (1.11s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/cli	1.838s

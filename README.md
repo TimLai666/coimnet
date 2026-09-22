@@ -24,6 +24,7 @@
 | 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
 | 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
 | 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |
+| 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json) |
 | 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
 | 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |
 | OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；真實授權資料 blocked_data，需使用者提供含授權欄位的資料集，目前只驗到 fixture） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json) |
@@ -61,11 +62,14 @@ go build -o bin/coimnet ./cmd/coimnet
 ./bin/coimnet doctor
 ./bin/coimnet examples run delayed
 ./bin/coimnet examples run lif-threshold
+./bin/coimnet examples run gridnav --method ppo
 ```
 
 `delayed` 是三個人工神經元的五步延遲訊號任務，使用三組固定 seed。每組都執行訓練、凍結核心及打亂答案對照。輸入映射與讀出保持固定，只有核心連線權重可更新。JSON 輸出包含每組結果、設定及指紋，門檻未通過會傳回非零退出碼。
 
 `lif-threshold` 把同一份延遲資料換成三顆 LIF 放電神經元，只比較基礎閾值可不可訓練。三組固定 seed 各跑全部可訓練、只訓練閾值與全部凍結三個對照，報告列出每組的保留資料 MSE、逐顆 `theta_base` 與放電率。更新預算用 `--updates` 調整，預設 300，範圍 1 到 100000。事前寫死的門檻沒過時仍輸出完整報告，並傳回非零退出碼。這是人工資料上的數值可學習性檢查，不是果蠅放電行為成績，詳見[範例說明](examples/lifthreshold/README.md)。
+
+`gridnav` 示範在人工走廊進行 PPO 或專家模仿，輸出三個 seed 的訓練與評估報告。PPO 預設每個 seed 更新 200 次，平均回報須同時超過訓練前與隨機基線。使用 `--method imitation --updates 500` 可執行既有模仿一致率改善協定，詳見[走廊範例](experiment/gridnav/README.md)。
 
 保存與接續單組人工範例訓練：
 

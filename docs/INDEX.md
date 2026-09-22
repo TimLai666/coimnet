@@ -49,6 +49,7 @@
 
 ## 例子
 
+- [experiment/gridnav/README.md](../experiment/gridnav/README.md)：人工走廊的模仿與 PPO 範例、取樣與評估契約。
 - [examples/lifthreshold/README.md](../examples/lifthreshold/README.md)：三顆 LIF 神經元的閾值可訓練性檢查。
 - [examples/multichannel/README.md](../examples/multichannel/README.md)：多通道 adapter 完整流程。
 - [examples/realsubgraph/README.md](../examples/realsubgraph/README.md)：ALIN 真實子圖選取與短訓練。
@@ -98,6 +99,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-parameter-set/v1` | `params` |
 | `coimnet-parameter-validate/v1` | `internal/cli` |
 | `coimnet-prediction/v1` | `internal/cli` |
+| `coimnet-ppo-experiment/v1` | `experiment` |
 | `coimnet-real-subgraph-example/v1` | `examples/realsubgraph` |
 | `coimnet-replay/v0` | `checkpoint`（歷史版本） |
 | `coimnet-replay/v1` | `replay` |

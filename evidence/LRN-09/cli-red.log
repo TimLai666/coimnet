@@ -1,0 +1,57 @@
+2026/09/22 19:24:42 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestGridnavHelp
+    gridnav_test.go:46: help: unknown command; use coimnet --help
+--- FAIL: TestGridnavHelp (0.00s)
+=== RUN   TestGridnavListAndTopOverview
+    gridnav_test.go:82: examples list has no gridnav entry:
+        [
+          {
+            "description": "Five-step delayed pulse, three synthetic neurons, trainable core weights and fixed periphery",
+            "name": "delayed",
+            "profile": "fixture"
+          },
+          {
+            "description": "Five-step delayed pulse, three leaky integrate-and-fire neurons, trainable base firing threshold against frozen and fully trainable controls",
+            "name": "lif-threshold",
+            "profile": "fixture"
+          },
+          {
+            "description": "Two-node delayed-correlation core with local plasticity, eight adaptation and eight scoring items under a fixed or adaptive protocol",
+            "name": "evaluate",
+            "profile": "fixture"
+          },
+          {
+            "description": "Two-task delayed-core continual matrix with train stages, a rule change and a preregistered paired bootstrap comparison",
+            "name": "continual-matrix",
+            "profile": "fixture"
+          },
+          {
+            "description": "Synthetic glyph line recognition: CTC-trained column reader with family split, unseen combinations and a core-disconnect check",
+            "name": "ocr",
+            "profile": "fixture"
+          }
+        ]
+--- FAIL: TestGridnavListAndTopOverview (0.00s)
+=== RUN   TestGridnavRejects
+--- PASS: TestGridnavRejects (0.00s)
+=== RUN   TestGridnavHonoursCancellation
+--- PASS: TestGridnavHonoursCancellation (0.00s)
+=== RUN   TestGridnavImitationLowBudgetWritesJSON
+    gridnav_test.go:136: imitation low budget: unknown command; use coimnet --help; stderr=
+--- FAIL: TestGridnavImitationLowBudgetWritesJSON (0.00s)
+=== RUN   TestGridnavPPOLowBudgetWritesFullJSONEvenWhenGateFails
+    gridnav_test.go:169: failing run did not print a complete report: unexpected end of JSON input
+--- FAIL: TestGridnavPPOLowBudgetWritesFullJSONEvenWhenGateFails (0.00s)
+=== RUN   TestGridnavWriterErrorsPropagate
+    gridnav_test.go:194: Run([examples run gridnav --help]) error = unknown command; use coimnet --help, want output write error
+    gridnav_test.go:194: Run([examples run gridnav --method imitation --updates 1]) error = unknown command; use coimnet --help, want output write error
+    gridnav_test.go:194: Run([examples run gridnav --method ppo --updates 1]) error = unknown command; use coimnet --help, want output write error
+    gridnav_test.go:199: Run([examples run gridnav --help]) error = unknown command; use coimnet --help, want io.ErrShortWrite
+    gridnav_test.go:199: Run([examples run gridnav --method imitation --updates 1]) error = unknown command; use coimnet --help, want io.ErrShortWrite
+    gridnav_test.go:199: Run([examples run gridnav --method ppo --updates 1]) error = unknown command; use coimnet --help, want io.ErrShortWrite
+--- FAIL: TestGridnavWriterErrorsPropagate (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/internal/cli	0.528s
+FAIL

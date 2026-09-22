@@ -86,4 +86,6 @@ type Transition struct {
 
 ## 目前狀態
 
-任意初始狀態、切斷暖機前綴梯度、3 個 seed 各 200 次更新的改善證據，以及 `examples run gridnav` CLI，列在 [ticket 26](../../docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md)，`LRN-09` 尚未完成驗收。
+`coimnet examples run gridnav --method ppo` 提供 3 個 seed 各 200 次更新的完整人工範例，包含取樣收集、下一筆觀察的 timeout bootstrap、訓練前與隨機基線對照，以及同平台重現檢查。用法見 [走廊範例](../../experiment/gridnav/README.md)，實際驗證見 [LRN-09](../../evidence/LRN-09/verification.json)。
+
+任意非零初始狀態、切斷暖機前綴梯度，以及可塑性／化學機制的 PPO 梯度仍未支援，依 [ticket 26](../../docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md) 保留後續工作。人工走廊的成功不代表完整果蠅圖已完成回饋學習。

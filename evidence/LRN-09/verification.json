@@ -1,0 +1,296 @@
+{
+  "requirement": "LRN-09",
+  "status": "passed",
+  "profile": "fixture",
+  "date": "2026-09-22",
+  "scope": "Expert imitation and sampled recurrent PPO in the synthetic one-dimensional corridor; zero-state full episodes only.",
+  "reproduction_command": [
+    "out=$(mktemp -d); bash scripts/verify.sh \"$out/verify\"",
+    "\"$out/verify/coimnet\" examples run gridnav --method ppo > \"$out/ppo-1.json\"; \"$out/verify/coimnet\" examples run gridnav --method ppo > \"$out/ppo-2.json\"; cmp \"$out/ppo-1.json\" \"$out/ppo-2.json\"",
+    "\"$out/verify/coimnet\" examples run gridnav --method imitation --updates 500 > \"$out/imitation-500.json\"",
+    "go test -count=1 -v ./experiment ./experiment/gridnav ./learning ./learning/rl ./internal/cli -run 'TestPPO|TestGridnav|TestImitation|TestObservationHidesEvaluatorState|TestLossGradientFrom|TestStepFrom|TestRatio|TestClippedRegion|TestUpdate|TestAdvantages|TestLossFiniteDifferences|TestPolicyVersion'",
+    "cp evidence/LRN-09/imitation-baseline.go.txt \"$out/baseline.go\"; go run \"$out/baseline.go\" > \"$out/imitation-baseline.jsonl\"",
+    "macOS: /usr/bin/time -l \"$out/verify/coimnet\" examples run gridnav --method ppo; Ubuntu: /usr/bin/time -v \"$out/verify/coimnet\" examples run gridnav --method ppo"
+  ],
+  "environment": {
+    "macos": "Apple M3, darwin/arm64, CPU, Go 1.26.5",
+    "ubuntu": "Ubuntu 1, linux/amd64, CPU, Go 1.26.5",
+    "dependency": "Insyra v0.3.2",
+    "details": [
+      "macos/doctor.json",
+      "ubuntu/doctor.json"
+    ]
+  },
+  "input_fingerprints": {
+    "validation_archive_sha256": "c7d452a25711c6a3fa50fdb3a49ff6c6f61b58c3b6ee2c373bc8fedd207c4bb9",
+    "source_file_count": 439,
+    "source_manifest_sha256": "c4cc19f55f215838c94363992df54d3932ddffc189d2f196fe5983cbece6ac53",
+    "source_manifests": [
+      "macos/source.sha256",
+      "ubuntu/source.sha256"
+    ],
+    "ppo_config_hash": "6f5698b4d0dee3d75fac9deab4b019978e46dd1b5af5035dde1e4949c14cd243",
+    "base_commit": "3cdea9fbf874ce79360c723f11be69cca8eb9049",
+    "note": "Archive includes docs/evidence as of code freeze; source manifests cover Go, shell scripts and module lockfiles. Later documentation/status edits are checked separately."
+  },
+  "observed_result": {
+    "platforms": {
+      "macos": {
+        "doctor": "macos/doctor.json",
+        "runtime": {
+          "go_version": "go1.26.5",
+          "goos": "darwin",
+          "goarch": "arm64"
+        },
+        "unit_packages_passed": 42,
+        "race_packages_passed": 42,
+        "targeted_top_level_tests_passed": 57,
+        "ppo_repeat_byte_identical": true,
+        "resume_byte_identical": true,
+        "ppo_resource_samples": [
+          {
+            "run": 1,
+            "wall_seconds": 0.33,
+            "peak_rss_bytes": 26296320,
+            "log": "macos/ppo-1.time.log"
+          },
+          {
+            "run": 2,
+            "wall_seconds": 0.33,
+            "peak_rss_bytes": 26427392,
+            "log": "macos/ppo-2.time.log"
+          }
+        ],
+        "ppo_result": {
+          "mean_return_before": 0.31816666666666676,
+          "mean_return": 0.6051666666666666,
+          "std_return": 0.22053517608057188,
+          "random_policy_mean_return": 0.35733333333333545,
+          "successful_seeds": 3,
+          "passed": true
+        },
+        "per_seed": [
+          {
+            "seed": 1,
+            "return_before": 0.26199999999999996,
+            "mean_return": 0.3772500000000001,
+            "random_return": 0.39775000000000155,
+            "updates": 200,
+            "terminal_episodes": 102,
+            "timeout_episodes": 98,
+            "final_snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926"
+          },
+          {
+            "seed": 2,
+            "return_before": 0.40375000000000016,
+            "mean_return": 0.9034999999999999,
+            "random_return": 0.24675000000000252,
+            "updates": 200,
+            "terminal_episodes": 143,
+            "timeout_episodes": 57,
+            "final_snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413"
+          },
+          {
+            "seed": 3,
+            "return_before": 0.28875000000000023,
+            "mean_return": 0.5347500000000001,
+            "random_return": 0.42750000000000243,
+            "updates": 200,
+            "terminal_episodes": 99,
+            "timeout_episodes": 101,
+            "final_snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6"
+          }
+        ]
+      },
+      "ubuntu": {
+        "doctor": "ubuntu/doctor.json",
+        "runtime": {
+          "go_version": "go1.26.5",
+          "goos": "linux",
+          "goarch": "amd64"
+        },
+        "unit_packages_passed": 42,
+        "race_packages_passed": 42,
+        "targeted_top_level_tests_passed": 57,
+        "ppo_repeat_byte_identical": true,
+        "resume_byte_identical": true,
+        "ppo_resource_samples": [
+          {
+            "run": 1,
+            "wall_seconds": 1.52,
+            "peak_rss_bytes": 28905472,
+            "log": "ubuntu/ppo-1.time.log"
+          },
+          {
+            "run": 2,
+            "wall_seconds": 1.56,
+            "peak_rss_bytes": 28807168,
+            "log": "ubuntu/ppo-2.time.log"
+          }
+        ],
+        "ppo_result": {
+          "mean_return_before": 0.31816666666666676,
+          "mean_return": 0.6051666666666666,
+          "std_return": 0.22053517608057188,
+          "random_policy_mean_return": 0.35733333333333545,
+          "successful_seeds": 3,
+          "passed": true
+        },
+        "per_seed": [
+          {
+            "seed": 1,
+            "return_before": 0.26199999999999996,
+            "mean_return": 0.3772500000000001,
+            "random_return": 0.39775000000000155,
+            "updates": 200,
+            "terminal_episodes": 102,
+            "timeout_episodes": 98,
+            "final_snapshot_hash": "4defb6b899122847da01a7c639f068aec6aca13c993b35f0c2c7ef24c7701684"
+          },
+          {
+            "seed": 2,
+            "return_before": 0.40375000000000016,
+            "mean_return": 0.9034999999999999,
+            "random_return": 0.24675000000000252,
+            "updates": 200,
+            "terminal_episodes": 143,
+            "timeout_episodes": 57,
+            "final_snapshot_hash": "303ba4f55106b2dfe25ebf82fb83d3e028a0610c68a162011941725f7ad4f125"
+          },
+          {
+            "seed": 3,
+            "return_before": 0.28875000000000023,
+            "mean_return": 0.5347500000000001,
+            "random_return": 0.42750000000000243,
+            "updates": 200,
+            "terminal_episodes": 99,
+            "timeout_episodes": 101,
+            "final_snapshot_hash": "308efe2e395e862f18980cef9ed385453e0833fc9908dd7645e8b089ec4b11ee"
+          }
+        ]
+      }
+    },
+    "source_manifests_identical": true,
+    "cross_platform_reports_identical": false,
+    "original_requirements_passed_after_this_stage": 64,
+    "original_requirements_total": 85,
+    "NAT_passed": 6,
+    "NAT_total": 6,
+    "all_three_seeds_improved_over_untrained": true,
+    "all_three_seeds_beat_random": false,
+    "random_baseline_exception": "Seed 1 final return 0.37725 is below its random baseline 0.39775; the preregistered aggregate gate passes.",
+    "imitation_curve": "imitation-baseline.jsonl: budgets 50, 200, 500; at 200 one seed agreement worsens, at 500 all improve. No imitation topology change.",
+    "statistical_overflow_regression": "Large finite rewards and near-MaxFloat64 aggregates remain finite and JSON-serializable after scaled population statistics fix."
+  },
+  "test_log": [
+    "macos/validation.log",
+    "ubuntu/validation.log",
+    "contracts-macos.log",
+    "ubuntu/contracts.log",
+    "aggregate-red.log",
+    "aggregate-green.log",
+    "cli-red.log",
+    "cli-worker-green.log",
+    "collector-isolated-baseline.log",
+    "collector-isolated-green.log",
+    "runner-red.log",
+    "governance-before-status-fix.log",
+    "governance-final.log"
+  ],
+  "review": "review.md",
+  "limitations": [
+    "Synthetic corridor has only two goal-side cases; separate evaluation seeds do not establish generalization to a new task distribution.",
+    "Three-seed aggregate evidence is not a significance claim; seed 1 remains below random.",
+    "PPO and imitation use different synthetic model layouts and budgets; no algorithm superiority claim.",
+    "PPO supports complete zero-state episodes, MiniBatch=1, no plasticity or chemistry. BurnIn masks direct losses but does not detach prefix gradients.",
+    "Snapshot hashes include optimizer state but this report is not a resumable model artifact. CPU architectures produce different snapshot hashes; only within-platform exact repeat is asserted.",
+    "No real connectome training, GPU backend execution, Windows execution or biological mechanism acceptance is claimed.",
+    "Resource timings use two processes per host with warm system state, no cache flushing or isolation; not a full-brain estimate.",
+    "Collector initial red was polluted by concurrent runner compile failures; isolated missing-implementation baseline was reproduced afterwards, see review.md."
+  ],
+  "artifact_sha256": {
+    "aggregate-green.log": "7e28a36497d2d3ff4b294ab6dd38ddd4e4267d21c18bb15849b01f33cc4536f2",
+    "aggregate-red.log": "46dd86bd9e1eed6db8ccfc4f2d48eedefb3393e1cb96d62cf371e481f5288883",
+    "cli-red.log": "f621566c9174954d91935fe07502fcdb873415e9d5702d6904ffcf5fcc92260d",
+    "cli-worker-green.log": "2466e9d9701ea7dc4ed117256c1fcd601a536aead1717c2c6be1c3cc9e0a7f24",
+    "collector-isolated-baseline.log": "b4b24697befcbaa4b5b23629a2900bc8ca1374958db4a9ae9b205c1740ff363b",
+    "collector-isolated-green.log": "b2db677ddb1c3fbfbf5b6a8cf78a77722622d2e5aa58cc7e4e2bb65f567da533",
+    "contracts-macos.log": "53b2a067c1e99ea6d2a9f6d20bf601afae94254ed0bc21252242d483e142f7eb",
+    "imitation-baseline.go.txt": "c92fef0cbcf3dbc5793c528238dfd7d55d4675859b3ac9b33d2120fc5d6b476e",
+    "imitation-baseline.jsonl": "bad86e4617a6f5fcfd3871a4823236bf6d5cf3f3e6d8327c7e5848bd3e183bc2",
+    "macos/binary.sha256": "5ee67d312f065cd80b6d3de23a6be44b9a5426e39caa88f653a387a4fda33718",
+    "macos/continuous.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "macos/delayed.json": "f68e9c6ea1ceac78af75a8260d825fbd316f6765e7c173e0a3cde070365529ff",
+    "macos/doctor.json": "508177a40e5b3bb1b6a70cb470e6e3444c2045b1b2a8c794d8eae223e6dabbe8",
+    "macos/imitation-500.json": "393343a7f84226755999608e02d26a485ed8725dc7ec877ce8f03b7d808a5b28",
+    "macos/imitation-500.stderr.log": "7da949904a8efd3e087aeb1b603626bf21a8886bb9fb76dce414be72acc23a87",
+    "macos/lif-threshold.json": "128242b85f59671f387dee9c8e302a4f71611dac1f7c9a0d9cbea88ece7c93c6",
+    "macos/ppo-1.json": "d672a0eaf5dd301101da05aef0fd2a1cccdd8550aab7a2a1c2e724b9078cac3c",
+    "macos/ppo-1.time.log": "b1d7b3081b1079281dcb9adacd03c4c0e1023df42b2a3c8e681515762645a963",
+    "macos/ppo-2.json": "d672a0eaf5dd301101da05aef0fd2a1cccdd8550aab7a2a1c2e724b9078cac3c",
+    "macos/ppo-2.time.log": "335061821d3b31721d1e3cbbcda1475a087863f1b865c0315f14efca1cd47c64",
+    "macos/resumed.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "macos/source.sha256": "c4cc19f55f215838c94363992df54d3932ddffc189d2f196fe5983cbece6ac53",
+    "macos/train-continuous.json": "b4f2d046c5d3e5ce1091008fc44d6f0c255e45185cdb30f3f265ad01795967a4",
+    "macos/train-first.json": "d5db333e1f63b7e7476e6128b0978ca4582a323e8f9903d04cfafe22404e8573",
+    "macos/train-resumed.json": "adae73cc0bb2b46b34a5d8e8e2d945378e129dc94fe7ab77c18f7ff22f6d479a",
+    "macos/validation.log": "7cec955d861a0c59db41d0b0b46a7e2835fe5f0c784a83059b4af6f52f7770a7",
+    "review.md": "1a46f0b67f48b437925915fab9b6e10b3a9cea941261bb2d5903b50dda032749",
+    "runner-red.log": "fafb3bc4016a60ece28273b9f30ed4353e62f86fd0e8767364ee97a9dde08391",
+    "ubuntu/binary.sha256": "eb0046704286d0632ff4c6c4adcf3ac0b228f1545b08045413db08c522ad2265",
+    "ubuntu/continuous.json": "bc8248fc0c4c99f2b7d9f9026bb1101df98fd758277a6d5faa27c671f4a68a2d",
+    "ubuntu/contracts.log": "2edc941a6ec6bd80fad8baca7262097d4b4758ca076f3fea66082e7cf4420f83",
+    "ubuntu/delayed.json": "8cde3b2a4f7b6bce1dc723502783e53c1d1bb489b6561d989e560b06112bab57",
+    "ubuntu/doctor.json": "243602a8837977e359fe5ee34210cdf0484a34b8da60080cc955c0c4cdba820a",
+    "ubuntu/imitation-500.json": "393343a7f84226755999608e02d26a485ed8725dc7ec877ce8f03b7d808a5b28",
+    "ubuntu/imitation-500.stderr.log": "683981fd9df0257a9aab96dae4ddcdae3a19e4c37bb0d58602d38f36828d0680",
+    "ubuntu/lif-threshold.json": "aed4e2379218879fef10af5845c582a9740fa2c76e91430fccf1b50714968e2d",
+    "ubuntu/ppo-1.json": "e06236969c71d3cc0d32f96ea635de14f6707f7b6cfae8b8b8b25d47242b534c",
+    "ubuntu/ppo-1.time.log": "28b7982d496c7fd7748c7d4df22e4b671897f4ab699a4938b0c1c92e4ae3ffe9",
+    "ubuntu/ppo-2.json": "e06236969c71d3cc0d32f96ea635de14f6707f7b6cfae8b8b8b25d47242b534c",
+    "ubuntu/ppo-2.time.log": "b43bbda1f981b24d9390b7891412439aaf9565db436e446e22356f55d268606e",
+    "ubuntu/resumed.json": "bc8248fc0c4c99f2b7d9f9026bb1101df98fd758277a6d5faa27c671f4a68a2d",
+    "ubuntu/source.sha256": "c4cc19f55f215838c94363992df54d3932ddffc189d2f196fe5983cbece6ac53",
+    "ubuntu/train-continuous.json": "d35049031da0db9d6ca122c289a718f286fe9cd946423e7fb2f5e672d8ef37a4",
+    "ubuntu/train-first.json": "58d95a8e8e6f15fc0fe2e1690019d3a7f7f7180dd119b0366e79da05257caf80",
+    "ubuntu/train-resumed.json": "661236722cfa1323a113f482df0d5880bc0c38e921812bef546a54b563398ad6",
+    "ubuntu/validation.log": "fd305eba206f2622761b80d11bf9e19a833da02634034c29476c32bf8095d734",
+    "governance-before-status-fix.log": "4501169084646392e66cf37f290567f083c77a7a76a616bfcc91e817283ae0e1",
+    "governance-final.log": "4b6d7f3fc8455bce6a2d154b347cad79278372a0565695fcd9f067586b19ef96"
+  },
+  "prior_partial_evidence": "../rl-asr-takeover-20260922/verification.json",
+  "post_validation_checks": {
+    "governance_tests_passed": 4,
+    "governance_log": "governance-final.log",
+    "governance_first_attempt": "governance-before-status-fix.log",
+    "status_fix": "LRN-09 passed evidence now references its completed requirement-specific report; the historical partial report remains linked separately.",
+    "local_documentation_links_checked": 242,
+    "handoff_checksums_passed": 7
+  },
+  "documentation_sha256": {
+    "AGENTS.md": "7cf514aec6dbfb7badc38998767b07c09d4c5a3ac64f6ee62bc4bdb1461c8d4c",
+    "ENG.md": "ea9c5250b128822497a8fc2797444d2f37d8f13f170bcb086dd2b33bdc8083f4",
+    "README.md": "adcba33301dbd6e6d223af0540c1a4ed7613866c78cfc3380fc47a8ae9e410b4",
+    "delivery-status.md": "5ba04a44a85cfda65fce75eb93e5df5d29f8583cb93dba671d5ffb8e362cfb64",
+    "docs/INDEX.md": "7f1ea3548b4c45e21cf31a5ba51974624f7a7603fe263920d293c0e695a4a399",
+    "docs/requirements-status.json": "175773e6fc1352e14435d3c45847c02937ff595b7409a7491f573e4810bd0d5f",
+    "docs/resources.md": "c724c9820eddf3be7d118e78108a57b499fae9934ed222680183cadbb712c846",
+    "docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md": "45b720637ce9d8daf35113d5ba2e06dfe28548301849624338b4febfd88d335d",
+    "experiment/gridnav/README.md": "3fc09af777ad641d697c6d4342914dbe1871f7beba06749b9c1563a500c75744",
+    "learning/rl/README.md": "65bfc2e92a5c225d32abe5d29839f7739c3e0d8312033f0f5fd39dd868162d0b"
+  },
+  "log_normalization": {
+    "cli-red.log": {
+      "original_sha256": "99bd27b5e253a202f10625e0fd45296b9f735fc0e4b439f985356a4c0eb0ac5f",
+      "normalization": "Trim trailing whitespace and terminal blank lines only; test messages and numerical content unchanged."
+    },
+    "macos/imitation-500.stderr.log": {
+      "original_sha256": "e1b478749cd24884135243a6123e1d1714b6fd48acbfe19b239cdf382f96285e",
+      "normalization": "Trim trailing whitespace and terminal blank lines only; test messages and numerical content unchanged."
+    },
+    "ubuntu/imitation-500.stderr.log": {
+      "original_sha256": "b00af42474efcce6a09a8aab4df753273148a18442e2dd6f24e1c62a31870216",
+      "normalization": "Trim trailing whitespace and terminal blank lines only; test messages and numerical content unchanged."
+    }
+  }
+}

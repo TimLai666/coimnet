@@ -1,0 +1,71 @@
+2026/09/22 19:41:02 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestPPODefaultConfig
+--- PASS: TestPPODefaultConfig (0.00s)
+=== RUN   TestPPOExperimentRNGStreamsAreSeparated
+--- PASS: TestPPOExperimentRNGStreamsAreSeparated (0.02s)
+=== RUN   TestPPOExperimentRejectsInvalid
+=== RUN   TestPPOExperimentRejectsInvalid/no_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/duplicate_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/too_many_seeds
+=== RUN   TestPPOExperimentRejectsInvalid/updates_below_one
+=== RUN   TestPPOExperimentRejectsInvalid/updates_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/hidden_below_four
+=== RUN   TestPPOExperimentRejectsInvalid/hidden_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/eval_episodes_below_one
+=== RUN   TestPPOExperimentRejectsInvalid/eval_episodes_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/nonfinite_learning_rate
+=== RUN   TestPPOExperimentRejectsInvalid/corridor_length_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/time_limit_above_limit
+=== RUN   TestPPOExperimentRejectsInvalid/PPO_time_limit_mismatch
+=== RUN   TestPPOExperimentRejectsInvalid/PPO_minibatch
+=== RUN   TestPPOExperimentRejectsInvalid/burn_in_reaches_minimum_episode
+=== RUN   TestPPOExperimentRejectsInvalid/nonfinite_PPO_coefficient
+--- PASS: TestPPOExperimentRejectsInvalid (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/no_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/duplicate_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/too_many_seeds (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/updates_below_one (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/updates_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/hidden_below_four (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/hidden_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/eval_episodes_below_one (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/eval_episodes_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/nonfinite_learning_rate (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/corridor_length_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/time_limit_above_limit (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/PPO_time_limit_mismatch (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/PPO_minibatch (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/burn_in_reaches_minimum_episode (0.00s)
+    --- PASS: TestPPOExperimentRejectsInvalid/nonfinite_PPO_coefficient (0.00s)
+=== RUN   TestPPOExperimentModelLayout
+--- PASS: TestPPOExperimentModelLayout (0.00s)
+=== RUN   TestPPOExperimentCollector
+--- PASS: TestPPOExperimentCollector (0.00s)
+=== RUN   TestPPORunDefault
+    ppo_test.go:180: baseline=0.35733333333333545 before=0.31816666666666676 mean=0.6051666666666666 std=0.22053517608057188 successful=3 passed=true
+    ppo_test.go:185: seed=1 before=0.26199999999999996 after=0.3772500000000001 random=0.39775000000000155 updates=200 terminal=102 timeout=98 snapshot=8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926
+    ppo_test.go:185: seed=2 before=0.40375000000000016 after=0.9034999999999999 random=0.24675000000000252 updates=200 terminal=143 timeout=57 snapshot=81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413
+    ppo_test.go:185: seed=3 before=0.28875000000000023 after=0.5347500000000001 random=0.42750000000000243 updates=200 terminal=99 timeout=101 snapshot=ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6
+--- PASS: TestPPORunDefault (0.38s)
+=== RUN   TestPPORunDefaultReportDeterministic
+--- PASS: TestPPORunDefaultReportDeterministic (1.04s)
+=== RUN   TestPPORunDeterministic
+--- PASS: TestPPORunDeterministic (0.04s)
+=== RUN   TestPPOExperimentJSONRoundTripAndFailedSeed
+--- PASS: TestPPOExperimentJSONRoundTripAndFailedSeed (0.00s)
+=== RUN   TestPPORunRetainsActualFailedSeeds
+    ppo_test.go:260: failed seed=1 error="ppo update 1: rl: rollout 0 update: candidate update rejected: non-finite state at step 1 neuron 4" updates=0
+    ppo_test.go:260: failed seed=2 error="ppo update 1: rl: rollout 0 update: candidate update rejected: non-finite state at step 1 neuron 4" updates=0
+--- PASS: TestPPORunRetainsActualFailedSeeds (0.00s)
+=== RUN   TestPPOExperimentFinalizeExcludesFailedSeedFromAggregate
+--- PASS: TestPPOExperimentFinalizeExcludesFailedSeedFromAggregate (0.00s)
+=== RUN   TestPPOExperimentExtremeReturnsHaveFiniteJSON
+--- PASS: TestPPOExperimentExtremeReturnsHaveFiniteJSON (0.00s)
+=== RUN   TestPPOExperimentExtremeStatisticsMatchScaledHandCheck
+--- PASS: TestPPOExperimentExtremeStatisticsMatchScaledHandCheck (0.00s)
+=== RUN   TestPPORunHonoursCancellation
+--- PASS: TestPPORunHonoursCancellation (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	1.977s

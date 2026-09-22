@@ -2,7 +2,9 @@
 
 ## 目前階段
 
-2026-09-22 接手完成一個可驗證階段：ticket 26 的 PPO 更新入口與 ticket 29 的語音串流已完成狀態一致性、取消與恢復的回歸驗證。同一份 432 檔程式與腳本來源在 Mac／Ubuntu 通過 build、一般測試、race、vet、依賴與 CLI 續訓比對，見 [本輪證據](evidence/rl-asr-takeover-20260922/verification.json)。原始需求目前 63／85 標為 passed，NAT 增補為 6／6；這是既有證據的累計，本輪不重算為全部重新驗收。LRN-09 與 TSK-02 尚未通過完整需求驗收。
+2026-09-22 完成 ticket 26 的人工環境學習驗收：取樣式 PPO、正確的時間上限後續價值與 `examples run gridnav --method imitation|ppo` 已整合。三個 seed 各 200 次更新，平均回報 0.318167 → 0.605167，高於隨機基線 0.357333；三組都比訓練前進步，但 seed 1 仍低於自己的隨機基線。模仿的 50／200／500 episodes 原始曲線已保存，500 episodes 時三組一致率皆提高。LRN-09 標為 fixture 範圍 `passed`，原始需求累計 64／85，NAT 增補 6／6。
+
+同一份 439 檔來源在 Mac／Ubuntu 通過完整 build、一般測試、race、vet、依賴與 CLI 續訓比較，兩台各有 57 個相關頂層契約測試通過。每台兩次 PPO CLI 報告逐位相同；跨平台快照摘要不同。審查發現的極端有限獎勵統計溢位已修正。詳見 [LRN-09 證據](evidence/LRN-09/verification.json)、[範例用法](experiment/gridnav/README.md) 與 [資源量測](docs/resources.md)。此輪沒有增加真實全圖、GPU 或自然語音能力證據，TSK-02 仍未完成驗收。
 
 ## 既有階段證據
 
@@ -92,15 +94,15 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 | 27 | 使用者可以用離線與 HTTP 教師蒸餾學生，並在完全移除教師的情況下評估它 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段驗證通過：統一教師契約、離線／重播／HTTP／封鎖教師（TCH-01、TCH-02 passed）；蒸餾：學生自編碼（教師 token id 拒絕）、保留集從不送教師與去重、合法對齊（identical／declared_map）的分布蒸餾與 log-sum-exp 穩定、top-k 只標 partial、接上 `StepFrom` 的訓練（held-out 一致率 0→1）；`evidence/TCH-03/`、`evidence/TCH-04/` race 全綠（TCH-03、TCH-04 passed，2026-09-19）；第三階段：學生獨立評估（student 模式）票已寫好待派，teacher_assisted 與工具安全證據待派 |
 | 30 | 使用者可以在目標平台使用 CPU 參考路徑、在真實資料上做全圖前向／反向與訓練、核對治理文件與授權，並匯入 FlyWire | 主 agent 指揮 / opencode big-pickle 小票實作、agy Gemini Flash 證據整理 | in_progress | 第一階段驗證通過：平台矩陣把 compiled 與 executed 分開標記（darwin/arm64 實際執行 unit／race／vet／mod verify，linux 與 windows 只交叉編譯與 vet）、`Workers` 並行在連續與 LIF 核心逐位相同且每步配置量不隨步數增加、治理測試四項、README 能力表與科學界線、授權盤點與 `blocked_permission` 發布清單、INDEX 連結檢查；OPS-04、GOV-01、GOV-04、GOV-05、GOV-06 passed；第二～四階段待派工，第五階段裝置後端（OPS-05）與 FlyWire（DAT-06）受阻於使用者；第二階段進行中（2026-09-19）：FlyWire adapter（CSV／gzip → Feather 與 manifest，命名空間 `flywire-<version>`，root id 到 2^63−1 精確往返、溢位拒絕，`docs/flywire-source-audit.md` 標 blocked_data）已提交，拼接禁止（`MappingEvidence`）票已寫好；第五階段 `backend` 能力宣告、明示回退與更新 ledger 已提交（OPS-05 可做部分）；第四階段乾淨環境腳本待 `report` 命令；第二階段 fixture 部分驗證通過（2026-09-19）：FlyWire adapter、`MappingEvidence` 拼接禁止與 named set 命名空間檢查，`evidence/DAT-06/`（DAT-06 passed，profile fixture；真實 FlyWire 檔案 blocked_data）；第四階段 `scripts/clean-env-verify.sh` 已落地（14 步 passed、3 步 blocked_data），效能報告與 OPS-10 證據待派 |
-| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max | in_progress | 第一階段 LRN-08 與第三階段 MOD-09 已有證據；第二階段 PPO 更新入口的零初始狀態、安全拒絕、版本識別與候選個體更新通過 Mac／Ubuntu 局部驗證；任意狀態梯度、3 seed 各 200 次更新與 CLI 仍待驗收 |
+| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max / OpenCode big-pickle | verified_scoped | 三階段 fixture 驗證完成：LRN-08、MOD-09 與 LRN-09；第二階段含取樣 collector、3 seed 各 200 次更新、訓練前／隨機對照、同平台逐位重現與 CLI，Mac／Ubuntu 同源通過。任意非零初始狀態、前綴梯度切斷、可塑性／化學 PPO 不支援 |
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
 | 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；整檔 CTC 與因果串流的短尾、取消還原及語義設定恢復通過 Mac／Ubuntu 局部驗證；資料匯入、分割、延遲、TSK-11 真實授權資料與後續生成階段保留 |
 
 ## 目前阻礙
 
-2026-09-22 跨平台整合已通過。Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
+前一階段的 rl-asr-takeover 跨平台整合已通過（2026-09-22）。該階段 Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
 
-2026-09-21 的 Spark 呼叫回 `Unknown model gpt-5.3-codex-spark`，本輪修正與審查改用 Luna `max`。使用者另授權善用 OpenCode，PPO 使用文件交給 `opencode/big-pickle` 免費模型。Insyra 自訂 tape 梯度接合與最佳化器序列化缺少公開 API，已提 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前使用有完整數值測試的兩段 tape 接合，以及 CoImNet 自有可保存 AdamW。
+2026-09-22 重試 Spark 仍回 `Unknown model gpt-5.3-codex-spark`，collector、runner 與審查使用 Luna `max`，CLI 使用 OpenCode `opencode/big-pickle` 免費模型。Insyra 自訂 tape 梯度接合與最佳化器序列化缺少公開 API，已提 [#375](https://github.com/HazelnutParadise/insyra/issues/375)、[#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前使用有完整數值測試的兩段 tape 接合，以及 CoImNet 自有可保存 AdamW。
 
 嚴格 JSON 的深度與路徑配置缺口已修正，並將 Unicode 重複鍵檢查同步至訊號、快照、下載 metadata 與 manifest。圖檔補上配置前記憶體檢查、計數溢位、未初始化圖、未知 converter 與同次讀取 hash 回條；回歸測試及兩平台 v7 全套驗證通過。
 
@@ -110,9 +112,9 @@ Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，G
 
 ## 下一個可驗證成果與 ticket
 
-優先接續 [ticket 26 第二階段](docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md)：把已驗證的 PPO 更新入口接上取樣策略與正確的時間上限 bootstrap，完成 3 seed 各 200 次更新、隨機策略對照與同 seed 重現，並提供 `examples run gridnav --method imitation|ppo`。任意非零初始神經狀態需要先有相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。
+ticket 26 的固定走廊學習階段已交付。任意非零初始神經狀態仍需要相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。
 
-[ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 接續語音串流的資料匯入、說話者／場次分割與延遲報告。既有測試使用程式產生的三種音調，不能當成自然語音能力證據。真實授權資料與全圖／GPU 訓練維持原驗收條件。
+下一階段依 [ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 接續語音串流的資料匯入、說話者／場次分割與延遲報告。既有測試使用程式產生的三種音調，不能當成自然語音能力證據。真實授權資料與全圖／GPU 訓練維持原驗收條件。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
