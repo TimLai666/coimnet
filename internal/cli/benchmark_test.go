@@ -3,6 +3,7 @@ package cli
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"os"
 	"path/filepath"
@@ -13,11 +14,11 @@ import (
 func TestBenchmarkWritesReport(t *testing.T) {
 	out := filepath.Join(t.TempDir(), "b.json")
 	var stdout, stderr bytes.Buffer
-	args := []string{"benchmark", "--nodes", "8", "--edges", "16", "--steps", "10", "--repeat", "1", "--out", out}
+	args := []string{"benchmark", "--nodes", "8", "--edges", "16", "--steps", "10", "--repeat", "2", "--out", out}
 	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
 		t.Fatalf("benchmark: %v %s", err, stderr.String())
 	}
-	if want := "benchmark: 6 stages, nodes 8, edges 16, steps 10, repeat 1"; !strings.Contains(stdout.String(), want) {
+	if want := "benchmark: 6 stages, nodes 8, edges 16, steps 10, repeat 2, forward reproducible true"; !strings.Contains(stdout.String(), want) {
 		t.Fatalf("stdout summary missing %q:\n%s", want, stdout.String())
 	}
 	raw, err := os.ReadFile(out)
@@ -38,20 +39,34 @@ func TestBenchmarkWritesReport(t *testing.T) {
 			Repeat int `json:"repeat"`
 		} `json:"config"`
 		Stages []struct {
-			Name     string  `json:"name"`
-			MedianMS float64 `json:"median_ms"`
-			MinMS    float64 `json:"min_ms"`
-			MaxMS    float64 `json:"max_ms"`
-			Repeat   int     `json:"repeat"`
-			RSSAfter float64 `json:"rss_mib_after"`
+			Name           string          `json:"name"`
+			InitMS         float64         `json:"init_ms"`
+			TransferMS     float64         `json:"transfer_ms"`
+			WarmupMS       float64         `json:"warmup_ms"`
+			SteadyMedianMS float64         `json:"steady_median_ms"`
+			SteadyMinMS    float64         `json:"steady_min_ms"`
+			SteadyMaxMS    float64         `json:"steady_max_ms"`
+			SteadyRepeat   int             `json:"steady_repeat"`
+			RSSAfter       float64         `json:"rss_mib_after"`
+			Activity       json.RawMessage `json:"activity"`
 		} `json:"stages"`
+		Reproducibility struct {
+			ForwardDigestFirst  string  `json:"forward_digest_first"`
+			ForwardDigestSecond string  `json:"forward_digest_second"`
+			Identical           bool    `json:"identical"`
+			SteadyRatio         float64 `json:"steady_ratio"`
+		} `json:"reproducibility"`
+		Energy struct {
+			Measured bool   `json:"measured"`
+			Note     string `json:"note"`
+		} `json:"energy"`
 		Assumptions []string `json:"assumptions"`
 	}
 	if err := json.Unmarshal(raw, &report); err != nil {
 		t.Fatalf("report is not parseable JSON: %v\n%s", err, raw)
 	}
-	if report.SchemaVersion != benchmarkSchemaVersion {
-		t.Errorf("schema_version = %q, want %q", report.SchemaVersion, benchmarkSchemaVersion)
+	if report.SchemaVersion != "coimnet-benchmark/v2" {
+		t.Errorf("schema_version = %q, want coimnet-benchmark/v2", report.SchemaVersion)
 	}
 	if report.GoVersion == "" {
 		t.Error("go_version is empty")
@@ -62,7 +77,7 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	if report.Uptime == "" {
 		t.Error("uptime is empty")
 	}
-	if report.Config.Nodes != 8 || report.Config.Edges != 16 || report.Config.Steps != 10 || report.Config.Repeat != 1 {
+	if report.Config.Nodes != 8 || report.Config.Edges != 16 || report.Config.Steps != 10 || report.Config.Repeat != 2 {
 		t.Errorf("config = %+v", report.Config)
 	}
 	wantStages := []string{"import", "forward", "backward", "local_plasticity", "modulation", "snapshot"}
@@ -74,25 +89,97 @@ func TestBenchmarkWritesReport(t *testing.T) {
 		if got.Name != want {
 			t.Errorf("stage %d name = %q, want %q", i, got.Name, want)
 		}
-		if got.MedianMS < 0 || got.MinMS < 0 || got.MaxMS < 0 {
-			t.Errorf("stage %q negative timing: %+v", want, got)
+		if got.InitMS < 0 || got.TransferMS != 0 || got.WarmupMS < 0 || got.SteadyMedianMS < 0 || got.SteadyMinMS < 0 || got.SteadyMaxMS < 0 {
+			t.Errorf("stage %q timings = %+v", want, got)
 		}
-		if got.Repeat != 1 {
-			t.Errorf("stage %q repeat = %d, want 1", got.Name, got.Repeat)
+		if got.SteadyRepeat != report.Config.Repeat-1 {
+			t.Errorf("stage %q steady_repeat = %d, want %d", got.Name, got.SteadyRepeat, report.Config.Repeat-1)
 		}
 		if got.RSSAfter < 0 {
 			t.Errorf("stage %q rss_mib_after = %f", got.Name, got.RSSAfter)
 		}
 	}
-	wantAssumptions := []string{"synthetic topology, not the MaleCNS graph", "wall-clock medians on a shared machine; see uptime"}
-	if len(report.Assumptions) != len(wantAssumptions) {
-		t.Fatalf("assumptions = %q", report.Assumptions)
-	}
-	for i, want := range wantAssumptions {
-		if report.Assumptions[i] != want {
-			t.Errorf("assumption %d = %q, want %q", i, report.Assumptions[i], want)
+	if len(report.Stages) > 1 {
+		if len(report.Stages[1].Activity) == 0 || string(report.Stages[1].Activity) == "null" {
+			t.Fatal("forward activity is missing")
+		}
+		var activity struct {
+			Rows            int      `json:"rows"`
+			Nodes           int      `json:"nodes"`
+			NonzeroFraction float64  `json:"nonzero_fraction"`
+			MeanAbsOutput   float64  `json:"mean_abs_output"`
+			SpikesPerStep   *float64 `json:"spikes_per_step"`
+			MeanRate        *float64 `json:"mean_rate"`
+			Digest          string   `json:"digest"`
+		}
+		if err := json.Unmarshal(report.Stages[1].Activity, &activity); err != nil {
+			t.Fatalf("forward activity JSON: %v", err)
+		}
+		if activity.Rows != 10 || activity.Nodes != 8 || activity.NonzeroFraction < 0 || activity.NonzeroFraction > 1 || activity.MeanAbsOutput < 0 {
+			t.Errorf("forward activity = %+v", activity)
+		}
+		if activity.SpikesPerStep != nil || activity.MeanRate != nil {
+			t.Errorf("continuous-core spike metrics = %v, %v, want null", activity.SpikesPerStep, activity.MeanRate)
+		}
+		if decoded, err := hex.DecodeString(activity.Digest); err != nil || len(decoded) != 32 {
+			t.Errorf("forward activity digest = %q, want 64 hexadecimal characters", activity.Digest)
 		}
 	}
+	first, errFirst := hex.DecodeString(report.Reproducibility.ForwardDigestFirst)
+	second, errSecond := hex.DecodeString(report.Reproducibility.ForwardDigestSecond)
+	if errFirst != nil || errSecond != nil || len(first) != 32 || len(second) != 32 {
+		t.Errorf("reproducibility digests = %q %q, want 64 hexadecimal characters", report.Reproducibility.ForwardDigestFirst, report.Reproducibility.ForwardDigestSecond)
+	}
+	if !report.Reproducibility.Identical || report.Reproducibility.ForwardDigestFirst != report.Reproducibility.ForwardDigestSecond {
+		t.Errorf("reproducibility = %+v", report.Reproducibility)
+	}
+	if report.Reproducibility.SteadyRatio < 0 {
+		t.Errorf("steady_ratio = %f", report.Reproducibility.SteadyRatio)
+	}
+	if report.Energy.Measured || report.Energy.Note != "no power measurement" {
+		t.Errorf("energy = %+v", report.Energy)
+	}
+	if !contains(report.Assumptions, "continuous core: spike counts and firing rates do not apply") {
+		t.Errorf("assumptions missing continuous-core activity statement: %q", report.Assumptions)
+	}
+	var values any
+	if err := json.Unmarshal(raw, &values); err != nil {
+		t.Fatal(err)
+	}
+	if key := energyMeasurementKey(values); key != "" {
+		t.Errorf("report contains energy measurement key %q", key)
+	}
+}
+
+func energyMeasurementKey(value any) string {
+	switch value := value.(type) {
+	case map[string]any:
+		for key, child := range value {
+			lower := strings.ToLower(key)
+			if strings.Contains(lower, "joule") || strings.Contains(lower, "watt") {
+				return key
+			}
+			if found := energyMeasurementKey(child); found != "" {
+				return found
+			}
+		}
+	case []any:
+		for _, child := range value {
+			if found := energyMeasurementKey(child); found != "" {
+				return found
+			}
+		}
+	}
+	return ""
+}
+
+func contains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
+	}
+	return false
 }
 
 // TestBenchmarkSnapshotStageLeavesNoTempFile pins the snapshot stage's cleanup:
@@ -130,6 +217,7 @@ func TestBenchmarkRejects(t *testing.T) {
 		{"benchmark"},
 		{"benchmark", "--out", existing},
 		{"benchmark", "--out", out, "--repeat", "0"},
+		{"benchmark", "--out", out, "--repeat", "1"},
 		{"benchmark", "--out", out, "--nodes", "0"},
 	} {
 		var stdout, stderr bytes.Buffer
@@ -139,6 +227,9 @@ func TestBenchmarkRejects(t *testing.T) {
 		}
 		if code := ExitCode(err); code != exitUsage {
 			t.Fatalf("%v: exit code = %d, want %d: %v", args, code, exitUsage, err)
+		}
+		if strings.Contains(strings.Join(args, " "), "--repeat 1") && !strings.Contains(err.Error(), "warmup and steady") {
+			t.Errorf("--repeat 1 error does not explain warmup and steady requirements: %v", err)
 		}
 	}
 

@@ -2,6 +2,9 @@ package cli
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
@@ -22,11 +25,11 @@ import (
 )
 
 // The fixed draft of the report this command publishes. The schema version and
-// the assumption list are part of OPS-02's output contract; they pin what stage
+// the assumption list are part of OPS-08's output contract; they pin what stage
 // this benchmark actually measured so a reader does not mistake it for a run on
 // the MaleCNS graph.
 const (
-	benchmarkSchemaVersion = "coimnet-benchmark/v1"
+	benchmarkSchemaVersion = "coimnet-benchmark/v2"
 	benchmarkSeed1         = 1
 	benchmarkSeed2         = 0
 )
@@ -39,24 +42,52 @@ type benchmarkConfig struct {
 }
 
 type stageResult struct {
-	Name     string  `json:"name"`
-	MedianMS float64 `json:"median_ms"`
-	MinMS    float64 `json:"min_ms"`
-	MaxMS    float64 `json:"max_ms"`
-	Repeat   int     `json:"repeat"`
-	RSSMiB   float64 `json:"rss_mib_after"`
+	Name           string             `json:"name"`
+	InitMS         float64            `json:"init_ms"`
+	TransferMS     float64            `json:"transfer_ms"`
+	WarmupMS       float64            `json:"warmup_ms"`
+	SteadyMedianMS float64            `json:"steady_median_ms"`
+	SteadyMinMS    float64            `json:"steady_min_ms"`
+	SteadyMaxMS    float64            `json:"steady_max_ms"`
+	SteadyRepeat   int                `json:"steady_repeat"`
+	RSSMiB         float64            `json:"rss_mib_after"`
+	Activity       *benchmarkActivity `json:"activity,omitempty"`
+}
+
+type benchmarkActivity struct {
+	Rows            int      `json:"rows"`
+	Nodes           int      `json:"nodes"`
+	NonzeroFraction float64  `json:"nonzero_fraction"`
+	MeanAbsOutput   float64  `json:"mean_abs_output"`
+	SpikesPerStep   *float64 `json:"spikes_per_step"`
+	MeanRate        *float64 `json:"mean_rate"`
+	Digest          string   `json:"digest"`
+}
+
+type benchmarkReproducibility struct {
+	ForwardDigestFirst  string  `json:"forward_digest_first"`
+	ForwardDigestSecond string  `json:"forward_digest_second"`
+	Identical           bool    `json:"identical"`
+	SteadyRatio         float64 `json:"steady_ratio"`
+}
+
+type benchmarkEnergy struct {
+	Measured bool   `json:"measured"`
+	Note     string `json:"note"`
 }
 
 type benchmarkReport struct {
-	SchemaVersion string          `json:"schema_version"`
-	GoVersion     string          `json:"go_version"`
-	GOOS          string          `json:"goos"`
-	GOARCH        string          `json:"goarch"`
-	NumCPU        int             `json:"num_cpu"`
-	Uptime        string          `json:"uptime"`
-	Config        benchmarkConfig `json:"config"`
-	Stages        []stageResult   `json:"stages"`
-	Assumptions   []string        `json:"assumptions"`
+	SchemaVersion   string                   `json:"schema_version"`
+	GoVersion       string                   `json:"go_version"`
+	GOOS            string                   `json:"goos"`
+	GOARCH          string                   `json:"goarch"`
+	NumCPU          int                      `json:"num_cpu"`
+	Uptime          string                   `json:"uptime"`
+	Config          benchmarkConfig          `json:"config"`
+	Stages          []stageResult            `json:"stages"`
+	Assumptions     []string                 `json:"assumptions"`
+	Reproducibility benchmarkReproducibility `json:"reproducibility"`
+	Energy          benchmarkEnergy          `json:"energy"`
 }
 
 // runBenchmark measures import, forward, backward, local plasticity, modulation
@@ -72,14 +103,14 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	fs.IntVar(&nodes, "nodes", 64, "synthetic node count")
 	fs.IntVar(&edges, "edges", 256, "synthetic edge count")
 	fs.IntVar(&steps, "steps", 200, "rows per stage")
-	fs.IntVar(&repeat, "repeat", 3, "runs per stage; the median is reported")
+	fs.IntVar(&repeat, "repeat", 3, "runs per stage including warmup; at least 2")
 	usageOutput := &outputCapture{writer: stdout}
 	fs.Usage = func() {
 		fmt.Fprintln(usageOutput, "Usage: coimnet benchmark --out FILE [--nodes 64] [--edges 256] [--steps 200] [--repeat 3]")
-		fmt.Fprintln(usageOutput, "Builds one synthetic continuous topology (seed 1, self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1, tanh) and times six stages on it: import builds the dynamics model from the config, forward runs the model over --steps rows of 0.1 input, backward takes one learning step on a trainer whose encoder reaches node 0 and whose readout reads node nodes-1, both Insyra-driven, local_plasticity walks a persistent individual of that same declaration over --steps rows of 0.1 input with hebbian_rate plasticity on the first 64 edges and the learning gate held open, modulation walks a persistent individual whose single chemical channel receives one unit every five steps and whose hypothesized receptor sits on node nodes-1, and snapshot takes that individual's snapshot, saves it to <--out>.snapshot.tmp.json, reads it back and removes the file. Each stage runs --repeat times and reports the median, min and max wall-clock milliseconds plus the RSS after it, from runtime.ReadMemStats.Sys.")
-		fmt.Fprintln(usageOutput, "Writes the coimnet-benchmark/v1 report to --out, which must not already exist, and prints one benchmark summary line to stdout.")
+		fmt.Fprintln(usageOutput, "Builds one synthetic continuous topology (seed 1, self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1, tanh) and times six stages on it: import builds the dynamics model from the config, forward runs the model over --steps rows of 0.1 input, backward takes one learning step on a trainer whose encoder reaches node 0 and whose readout reads node nodes-1, both Insyra-driven, local_plasticity walks a persistent individual of that same declaration over --steps rows of 0.1 input with hebbian_rate plasticity on the first 64 edges and the learning gate held open, modulation walks a persistent individual whose single chemical channel receives one unit every five steps and whose hypothesized receptor sits on node nodes-1, and snapshot takes that individual's snapshot, saves it to <--out>.snapshot.tmp.json, reads it back and removes the file. Each stage separates setup initialization from work; the first work run is warmup and later runs report steady-state median, min and max milliseconds. CPU transfer time is 0 ms. RSS uses runtime.ReadMemStats.Sys.")
+		fmt.Fprintln(usageOutput, "Writes the coimnet-benchmark/v2 report to --out, which must not already exist, and prints one benchmark summary line to stdout. Forward activity and same-seed reproducibility are reported; energy is not measured.")
 		fmt.Fprintln(usageOutput, "Example: coimnet benchmark --out benchmark.json")
-		fmt.Fprintln(usageOutput, "Errors: a missing or existing --out, non-positive --nodes, --edges, --steps or --repeat, cancellation, a failing stage or an output failure. Usage errors exit with status 1 and name the flag.")
+		fmt.Fprintln(usageOutput, "Errors: a missing or existing --out, non-positive --nodes, --edges or --steps, --repeat below 2 (one warmup and one steady run are required), cancellation, a failing stage or an output failure. Usage errors exit with status 1 and name the flag.")
 		fmt.Fprintln(usageOutput, "Options and their defaults:")
 		fs.SetOutput(usageOutput)
 		fs.PrintDefaults()
@@ -96,8 +127,11 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if out == "" {
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--out is required; use benchmark --help")}
 	}
-	if nodes <= 0 || edges <= 0 || steps <= 0 || repeat <= 0 {
-		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--nodes, --edges, --steps and --repeat must be positive")}
+	if nodes <= 0 || edges <= 0 || steps <= 0 {
+		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--nodes, --edges and --steps must be positive")}
+	}
+	if repeat < 2 {
+		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--repeat must be at least 2 so warmup and steady each run at least once")}
 	}
 	// Refuse an existing --out before running anything, so the measurements are
 	// not wasted on a conflict that was knowable up front; the exclusive create
@@ -108,95 +142,71 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("stat benchmark output: %w", err)}
 	}
 
-	cfg := syntheticTopology(nodes, edges)
-	params := syntheticParameters(cfg)
-	initial := make([]float64, nodes)
-	forwardInput := make([][]float64, steps)
-	for i := range forwardInput {
-		forwardInput[i] = make([]float64, nodes)
-		for j := range forwardInput[i] {
-			forwardInput[i][j] = 0.1
-		}
-	}
-	stepInput := make([][]float64, steps)
-	for i := range stepInput {
-		stepInput[i] = []float64{0.1}
-	}
-	target := []float64{0.5}
-
 	stages := make([]stageResult, 0, 6)
-	importResult, err := benchmarkStage("import", repeat, func() error {
-		if err := ctx.Err(); err != nil {
+	importResult, err := benchmarkStage("import", repeat, func() (func() error, error) {
+		cfg := syntheticTopology(nodes, edges)
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			_, err := dynamics.NewContinuous(cfg)
 			return err
-		}
-		_, err := dynamics.NewContinuous(cfg)
-		return err
+		}, nil
 	})
 	if err != nil {
 		return err
 	}
 	stages = append(stages, importResult)
-	// Building the model is what the import stage measures, so the forward
-	// stage times Forward alone. Forward leaves the model unchanged, so one
-	// model serves every repetition and each repetition does the same work.
-	model, err := dynamics.NewContinuous(cfg)
-	if err != nil {
-		return err
-	}
-	forwardResult, err := benchmarkStage("forward", repeat, func() error {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		_, err := model.Forward(ctx, params, initial, forwardInput)
-		return err
-	})
+	cfg := syntheticTopology(nodes, edges)
+	params := syntheticParameters(cfg)
+	forwardResult, firstActivity, err := benchmarkForward(ctx, cfg, params, nodes, steps, repeat)
 	if err != nil {
 		return err
 	}
 	stages = append(stages, forwardResult)
-	backwardResult, err := benchmarkStage("backward", repeat, func() error {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		tr, err := learning.NewTrainer(learning.Config{
-			Dynamics:     cfg,
-			InputSize:    1,
-			OutputSize:   1,
-			ReadoutNodes: []int{nodes - 1},
-			InputNodes:   []int{0},
-		}, learning.Parameters{
-			Core:     params,
-			ThetaRaw: nil,
-			Encoder:  []float64{0.1},
-			Readout:  []float64{0.1},
-		}, learning.DefaultOptions())
-		if err != nil {
-			return err
-		}
-		_, err = tr.Step(ctx, stepInput, target)
-		return err
-	})
+	forwardSecond, secondActivity, err := benchmarkForward(ctx, cfg, params, nodes, steps, repeat)
 	if err != nil {
 		return err
 	}
-	stages = append(stages, backwardResult)
+	identical := firstActivity.Digest == secondActivity.Digest
+	reproducibility := benchmarkReproducibility{
+		ForwardDigestFirst:  firstActivity.Digest,
+		ForwardDigestSecond: secondActivity.Digest,
+		Identical:           identical,
+	}
+	if forwardResult.SteadyMedianMS > 0 {
+		reproducibility.SteadyRatio = forwardSecond.SteadyMedianMS / forwardResult.SteadyMedianMS
+	}
 
-	// The persistent individual of the last three stages repeats the backward
-	// stage's declaration, so every stage of the report walks the same synthetic
-	// topology through the same encoder and readout.
-	individualConfig := learning.Config{
+	stepInput := benchmarkStepInput(steps)
+	target := []float64{0.5}
+	trainerConfig := learning.Config{
 		Dynamics:     cfg,
 		InputSize:    1,
 		OutputSize:   1,
 		ReadoutNodes: []int{nodes - 1},
 		InputNodes:   []int{0},
 	}
-	individualParameters := learning.Parameters{
-		Core:     params,
-		ThetaRaw: nil,
-		Encoder:  []float64{0.1},
-		Readout:  []float64{0.1},
+	trainerParameters := learning.Parameters{Core: params, Encoder: []float64{0.1}, Readout: []float64{0.1}}
+	backwardResult, err := benchmarkStage("backward", repeat, func() (func() error, error) {
+		tr, err := learning.NewTrainer(trainerConfig, trainerParameters, learning.DefaultOptions())
+		if err != nil {
+			return nil, err
+		}
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			_, err := tr.Step(ctx, stepInput, target)
+			return err
+		}, nil
+	})
+	if err != nil {
+		return err
 	}
+	stages = append(stages, backwardResult)
+
+	// Each measured repetition gets a fresh individual during setup.
 	plasticEdges := make([]int, min(edges, 64))
 	for i := range plasticEdges {
 		plasticEdges[i] = i
@@ -205,33 +215,24 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	for i := range openGate {
 		openGate[i] = 1
 	}
-	// A walk leaves persistent voltage and fast state behind, so each repetition
-	// needs its own individual. Building them all before the stage keeps
-	// construction out of the timed function, the same split the import and
-	// forward stages use, so the stage times AdvanceGated alone.
-	plasticIndividuals := make([]*learning.Individual, 0, repeat)
-	for range repeat {
-		individual, err := learning.NewIndividual(individualConfig, individualParameters, learning.DefaultOptions(), make([]float64, nodes))
+	plasticResult, err := benchmarkStage("local_plasticity", repeat, func() (func() error, error) {
+		individual, err := newBenchmarkIndividual(cfg, params, nodes)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := individual.EnablePlasticity(plasticity.Config{
 			Rule:  plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: 0.5, DecayP: 0.5, PlasticMax: 1, WMin: 0.01},
 			Edges: plasticEdges,
 		}); err != nil {
-			return err
+			return nil, err
 		}
-		plasticIndividuals = append(plasticIndividuals, individual)
-	}
-	plasticRepetition := 0
-	plasticResult, err := benchmarkStage("local_plasticity", repeat, func() error {
-		if err := ctx.Err(); err != nil {
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			_, _, err := individual.AdvanceGated(ctx, stepInput, openGate)
 			return err
-		}
-		individual := plasticIndividuals[plasticRepetition]
-		plasticRepetition++
-		_, _, err := individual.AdvanceGated(ctx, stepInput, openGate)
-		return err
+		}, nil
 	})
 	if err != nil {
 		return err
@@ -241,49 +242,52 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	// The modulation stage is the same walk under a declared chemistry instead
 	// of local plasticity, so the difference between the two rows is the
 	// mechanism and not the topology or the input.
-	chemicalIndividuals := make([]*learning.Individual, 0, repeat)
-	for range repeat {
-		individual, err := learning.NewIndividual(individualConfig, individualParameters, learning.DefaultOptions(), make([]float64, nodes))
+	modulationResult, err := benchmarkStage("modulation", repeat, func() (func() error, error) {
+		individual, err := newBenchmarkIndividual(cfg, params, nodes)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if err := individual.EnableChemistry(benchmarkChemistry(nodes, steps)); err != nil {
-			return err
+			return nil, err
 		}
-		chemicalIndividuals = append(chemicalIndividuals, individual)
-	}
-	chemicalRepetition := 0
-	modulationResult, err := benchmarkStage("modulation", repeat, func() error {
-		if err := ctx.Err(); err != nil {
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			_, err := individual.Advance(ctx, stepInput)
 			return err
-		}
-		individual := chemicalIndividuals[chemicalRepetition]
-		chemicalRepetition++
-		_, err := individual.Advance(ctx, stepInput)
-		return err
+		}, nil
 	})
 	if err != nil {
 		return err
 	}
 	stages = append(stages, modulationResult)
 
-	// The snapshot stage round-trips the individual the modulation stage walked,
-	// so it measures a state that carries chemistry rather than a fresh one. The
-	// temporary file sits next to --out and every repetition removes it, failed
-	// or not, so the run leaves only the report behind. The removal runs inside
-	// the timed function because the next repetition needs the path free.
+	// Each snapshot repetition prepares an individual with the modulation walk
+	// during setup; only the snapshot round trip and temp-file cleanup are timed.
 	snapshotPath := out + ".snapshot.tmp.json"
-	snapshotSubject := chemicalIndividuals[len(chemicalIndividuals)-1]
-	snapshotResult, err := benchmarkStage("snapshot", repeat, func() error {
-		if err := ctx.Err(); err != nil {
-			return err
+	snapshotResult, err := benchmarkStage("snapshot", repeat, func() (func() error, error) {
+		individual, err := newBenchmarkIndividual(cfg, params, nodes)
+		if err != nil {
+			return nil, err
 		}
-		defer os.Remove(snapshotPath)
-		if err := checkpoint.SaveIndividual(ctx, snapshotPath, snapshotSubject.Snapshot()); err != nil {
-			return err
+		if err := individual.EnableChemistry(benchmarkChemistry(nodes, steps)); err != nil {
+			return nil, err
 		}
-		_, err := checkpoint.LoadIndividual(ctx, snapshotPath)
-		return err
+		if _, err := individual.Advance(ctx, stepInput); err != nil {
+			return nil, err
+		}
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			defer os.Remove(snapshotPath)
+			if err := checkpoint.SaveIndividual(ctx, snapshotPath, individual.Snapshot()); err != nil {
+				return err
+			}
+			_, err := checkpoint.LoadIndividual(ctx, snapshotPath)
+			return err
+		}, nil
 	})
 	if err != nil {
 		return err
@@ -302,35 +306,47 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		Assumptions: []string{
 			"synthetic topology, not the MaleCNS graph",
 			"wall-clock medians on a shared machine; see uptime",
+			"continuous core: spike counts and firing rates do not apply",
 		},
+		Reproducibility: reproducibility,
+		Energy:          benchmarkEnergy{Measured: false, Note: "no power measurement"},
 	}
 	if err := writeNewJSON(out, report); err != nil {
 		return fmt.Errorf("benchmark --out %s: %w", out, err)
 	}
-	_, err = fmt.Fprintf(stdout, "benchmark: %d stages, nodes %d, edges %d, steps %d, repeat %d\n", len(stages), nodes, edges, steps, repeat)
+	_, err = fmt.Fprintf(stdout, "benchmark: %d stages, nodes %d, edges %d, steps %d, repeat %d, forward reproducible %t\n", len(stages), nodes, edges, steps, repeat, identical)
 	return err
 }
 
-// benchmarkStage times fn repeat times and summarizes the wall-clock durations
-// with the median, min and max in milliseconds, then records the RSS after the
-// stage as runtime.ReadMemStats.Sys rounded to 0.1 MiB. One shared timing path
-// keeps later stages of the OPS-02 report comparable.
-func benchmarkStage(name string, repeat int, fn func() error) (stageResult, error) {
-	if repeat <= 0 {
-		return stageResult{}, fmt.Errorf("repeat must be positive")
+// benchmarkStage measures setup separately, treats the first work run as warmup,
+// summarizes later work runs as steady state, and records RSS after the stage.
+func benchmarkStage(name string, repeat int, setup func() (func() error, error)) (stageResult, error) {
+	if repeat < 2 {
+		return stageResult{}, fmt.Errorf("repeat must be at least 2 so warmup and steady each run at least once")
 	}
-	durations := make([]time.Duration, 0, repeat)
+	initDurations := make([]time.Duration, 0, repeat)
+	workDurations := make([]time.Duration, 0, repeat)
 	for i := 0; i < repeat; i++ {
+		initStart := time.Now()
+		work, err := setup()
+		initDurations = append(initDurations, time.Since(initStart))
+		if err != nil {
+			return stageResult{}, fmt.Errorf("benchmark stage %q setup repetition %d: %w", name, i+1, err)
+		}
+		if work == nil {
+			return stageResult{}, fmt.Errorf("benchmark stage %q setup repetition %d returned no work", name, i+1)
+		}
 		start := time.Now()
-		if err := fn(); err != nil {
+		if err := work(); err != nil {
 			return stageResult{}, fmt.Errorf("benchmark stage %q repetition %d: %w", name, i+1, err)
 		}
-		durations = append(durations, time.Since(start))
+		workDurations = append(workDurations, time.Since(start))
 	}
 	var m runtime.MemStats
 	runtime.ReadMemStats(&m)
-	min, max := durations[0], durations[0]
-	for _, d := range durations {
+	steady := workDurations[1:]
+	min, max := steady[0], steady[0]
+	for _, d := range steady {
 		if d < min {
 			min = d
 		}
@@ -339,13 +355,92 @@ func benchmarkStage(name string, repeat int, fn func() error) (stageResult, erro
 		}
 	}
 	return stageResult{
-		Name:     name,
-		MedianMS: medianMS(durations),
-		MinMS:    ms(min),
-		MaxMS:    ms(max),
-		Repeat:   repeat,
-		RSSMiB:   math.Round(float64(m.Sys)/1048576*10) / 10,
+		Name:           name,
+		InitMS:         medianMS(initDurations),
+		TransferMS:     0,
+		WarmupMS:       ms(workDurations[0]),
+		SteadyMedianMS: medianMS(steady),
+		SteadyMinMS:    ms(min),
+		SteadyMaxMS:    ms(max),
+		SteadyRepeat:   repeat - 1,
+		RSSMiB:         math.Round(float64(m.Sys)/1048576*10) / 10,
 	}, nil
+}
+
+func benchmarkForward(ctx context.Context, cfg dynamics.Config, params dynamics.Parameters, nodes, steps, repeat int) (stageResult, benchmarkActivity, error) {
+	var output [][]float64
+	result, err := benchmarkStage("forward", repeat, func() (func() error, error) {
+		model, err := dynamics.NewContinuous(cfg)
+		if err != nil {
+			return nil, err
+		}
+		initial := make([]float64, nodes)
+		input := make([][]float64, steps)
+		for i := range input {
+			input[i] = make([]float64, nodes)
+			for j := range input[i] {
+				input[i][j] = 0.1
+			}
+		}
+		return func() error {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			trace, err := model.Forward(ctx, params, initial, input)
+			if err != nil {
+				return err
+			}
+			output = trace.Outputs()
+			return nil
+		}, nil
+	})
+	if err != nil {
+		return stageResult{}, benchmarkActivity{}, err
+	}
+	activity := summarizeBenchmarkActivity(output, steps, nodes)
+	result.Activity = &activity
+	return result, activity, nil
+}
+
+func summarizeBenchmarkActivity(output [][]float64, rows, nodes int) benchmarkActivity {
+	hash := sha256.New()
+	var total, nonzero int
+	var sumAbs float64
+	var bits [8]byte
+	for _, row := range output {
+		for _, value := range row {
+			binary.LittleEndian.PutUint64(bits[:], math.Float64bits(value))
+			_, _ = hash.Write(bits[:])
+			total++
+			if math.Abs(value) > 1e-12 {
+				nonzero++
+			}
+			sumAbs += math.Abs(value)
+		}
+	}
+	return benchmarkActivity{
+		Rows: rows, Nodes: nodes,
+		NonzeroFraction: float64(nonzero) / float64(total),
+		MeanAbsOutput:   sumAbs / float64(total),
+		Digest:          hex.EncodeToString(hash.Sum(nil)),
+	}
+}
+
+func benchmarkStepInput(steps int) [][]float64 {
+	input := make([][]float64, steps)
+	for i := range input {
+		input[i] = []float64{0.1}
+	}
+	return input
+}
+
+func newBenchmarkIndividual(cfg dynamics.Config, params dynamics.Parameters, nodes int) (*learning.Individual, error) {
+	return learning.NewIndividual(learning.Config{
+		Dynamics: cfg, InputSize: 1, OutputSize: 1,
+		ReadoutNodes: []int{nodes - 1}, InputNodes: []int{0},
+	}, learning.Parameters{
+		Core: params, Encoder: []float64{0.1}, Readout: []float64{0.1},
+	}, learning.DefaultOptions(), make([]float64, nodes))
 }
 
 // syntheticTopology draws edge endpoints from rand.NewPCG(benchmarkSeed1,
