@@ -1,0 +1,1981 @@
+{
+  "schema_version": "coimnet-nav2d-suite/v1",
+  "tasks": [
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "remember_goal",
+      "config": {
+        "env": {
+          "width": 0,
+          "height": 0,
+          "wall_density": 0,
+          "view_depth": 0,
+          "time_limit": 0,
+          "step_penalty": 0,
+          "collision_penalty": 0,
+          "goal_reward": 0,
+          "task": "remember_goal"
+        },
+        "seeds": [
+          1,
+          2,
+          3
+        ],
+        "episodes": 60,
+        "hidden": 16,
+        "recurrent": 4,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "policies": [
+          "recurrent",
+          "feedforward",
+          "rewired",
+          "random"
+        ]
+      },
+      "config_hash": "fa0aa97a42d5f5ac26532e060ddc2c4824d6afdc20b15dfdb5c0f917420f84f9",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.55,
+            "mean_collisions": 48.55,
+            "mean_return": -2.8730000000000286,
+            "expert_agreement": 0.01833180568285976
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 47.35,
+            "mean_collisions": 10.85,
+            "mean_return": -0.7659999999999939,
+            "expert_agreement": 0.3273495248152059
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 55.45,
+            "mean_collisions": 13.85,
+            "mean_return": -1.1470000000000167,
+            "expert_agreement": 0.3624887285843102
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 26.05,
+            "mean_return": -1.9024999999999956,
+            "expert_agreement": 0.07916666666666666
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.65,
+            "mean_collisions": 0.3,
+            "mean_return": -0.4614999999999906,
+            "expert_agreement": 0.2561756633119854
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.95,
+            "mean_collisions": 3,
+            "mean_return": -0.5994999999999907,
+            "expert_agreement": 0.26933575978161967
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 4.5,
+            "mean_return": -0.7454999999999913,
+            "expert_agreement": 0.05959684487291849
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 48.35,
+            "mean_collisions": 0.9,
+            "mean_return": -0.2784999999999914,
+            "expert_agreement": 0.3764219234746639
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 48.45,
+            "mean_collisions": 1.5,
+            "mean_return": -0.2594999999999947,
+            "expert_agreement": 0.36119711042311664
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 1,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1661,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 3,
+            "mean_return": -0.7499999999999916,
+            "expert_agreement": 0.38083333333333336
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.3,
+            "mean_collisions": 0.25,
+            "mean_return": -0.45549999999999075,
+            "expert_agreement": 0.3572744014732965
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.45,
+            "mean_collisions": 0.1,
+            "mean_return": -0.3894999999999912,
+            "expert_agreement": 0.37418147801683815
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 2,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1489,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 4.65,
+            "mean_return": -0.8324999999999962,
+            "expert_agreement": 0.1525
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 51.95,
+            "mean_collisions": 11.25,
+            "mean_return": -0.8319999999999956,
+            "expert_agreement": 0.27718960538979787
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.35,
+            "mean_collisions": 15.45,
+            "mean_return": -1.2360000000000209,
+            "expert_agreement": 0.2670807453416149
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 3,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1531,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.15,
+            "mean_collisions": 54.35,
+            "mean_return": -3.2390000000000443,
+            "expert_agreement": 0.012248468941382326
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.43583333333333335
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.38916666666666666
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.1,
+            "mean_collisions": 54.4,
+            "mean_return": -3.241000000000048,
+            "expert_agreement": 0.01138353765323993
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.35,
+            "mean_collisions": 1.2,
+            "mean_return": -0.4434999999999906,
+            "expert_agreement": 0.44892221180880976
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.65,
+            "mean_collisions": 1.1,
+            "mean_return": -0.5014999999999924,
+            "expert_agreement": 0.464775846294602
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 279,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 2,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 12.7,
+            "mean_return": -1.2350000000000143,
+            "expert_agreement": 0.10333333333333333
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.1,
+            "mean_collisions": 9.2,
+            "mean_return": -0.8409999999999986,
+            "expert_agreement": 0.307909604519774
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 51.75,
+            "mean_collisions": 16.05,
+            "mean_return": -1.1200000000000165,
+            "expert_agreement": 0.2531400966183575
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 318,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 6,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 5.65,
+            "mean_return": -0.8029999999999926,
+            "expert_agreement": 0.06836108676599474
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 48.55,
+            "mean_collisions": 7.1,
+            "mean_return": -0.5404999999999945,
+            "expert_agreement": 0.305870236869207
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52.75,
+            "mean_collisions": 10.25,
+            "mean_return": -0.8899999999999976,
+            "expert_agreement": 0.2947867298578199
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 289,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 1,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 1,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.6,
+            "mean_collisions": 6.05,
+            "mean_return": -0.8284999999999927,
+            "expert_agreement": 0.23697916666666666
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 58.25,
+            "mean_collisions": 5.3,
+            "mean_return": -0.7474999999999912,
+            "expert_agreement": 0.24377682403433476
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.7,
+            "mean_collisions": 7.65,
+            "mean_return": -0.8494999999999953,
+            "expert_agreement": 0.25220458553791886
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 2,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.9,
+            "mean_collisions": 4.45,
+            "mean_return": -0.7614999999999902,
+            "expert_agreement": 0.27164685908319186
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 53.4,
+            "mean_collisions": 3.85,
+            "mean_return": -0.5264999999999909,
+            "expert_agreement": 0.26685393258426965
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 57,
+            "mean_collisions": 6.6,
+            "mean_return": -0.7999999999999912,
+            "expert_agreement": 0.24298245614035088
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 3,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.75,
+            "mean_collisions": 4.6,
+            "mean_return": -0.6174999999999915,
+            "expert_agreement": 0.2651162790697674
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 54.4,
+            "mean_collisions": 4.25,
+            "mean_return": -0.5564999999999907,
+            "expert_agreement": 0.26286764705882354
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 55,
+            "mean_collisions": 6.1,
+            "mean_return": -0.7049999999999914,
+            "expert_agreement": 0.24454545454545454
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "avoid_obstacles",
+      "config": {
+        "env": {
+          "width": 0,
+          "height": 0,
+          "wall_density": 0,
+          "view_depth": 0,
+          "time_limit": 0,
+          "step_penalty": 0,
+          "collision_penalty": 0,
+          "goal_reward": 0,
+          "task": "avoid_obstacles"
+        },
+        "seeds": [
+          1,
+          2,
+          3
+        ],
+        "episodes": 60,
+        "hidden": 16,
+        "recurrent": 4,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "policies": [
+          "recurrent",
+          "feedforward",
+          "rewired",
+          "random"
+        ]
+      },
+      "config_hash": "d7030193978bc54f1f0c61e9e01f90bc1cc3b80180e58f69d921efb3fea628ec",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 57.05,
+            "mean_return": -3.452500000000055,
+            "expert_agreement": 0.010833333333333334
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 45.95,
+            "mean_collisions": 1.1,
+            "mean_return": -0.21449999999999597,
+            "expert_agreement": 0.4167573449401523
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 49.6,
+            "mean_collisions": 2.9,
+            "mean_return": -0.3909999999999911,
+            "expert_agreement": 0.43850806451612906
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 31.9,
+            "mean_return": -2.195000000000001,
+            "expert_agreement": 0.0525
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 55.45,
+            "mean_collisions": 4.8,
+            "mean_return": -0.694499999999991,
+            "expert_agreement": 0.3219116321009919
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 51.1,
+            "mean_collisions": 4.8,
+            "mean_return": -0.5009999999999931,
+            "expert_agreement": 0.34833659491193736
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 5.65,
+            "mean_return": -0.8029999999999925,
+            "expert_agreement": 0.09202453987730061
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.1,
+            "mean_collisions": 7.15,
+            "mean_return": -0.7384999999999935,
+            "expert_agreement": 0.2909604519774011
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 54.85,
+            "mean_collisions": 6.3,
+            "mean_return": -0.7134999999999923,
+            "expert_agreement": 0.31358249772105745
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 1,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1714,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 3,
+            "mean_return": -0.7499999999999916,
+            "expert_agreement": 0.38083333333333336
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 49.35,
+            "mean_collisions": 0,
+            "mean_return": -0.24349999999999256,
+            "expert_agreement": 0.5045592705167173
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.2,
+            "mean_collisions": 0.4,
+            "mean_return": -0.4819999999999912,
+            "expert_agreement": 0.45907473309608543
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 2,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1595,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 4.65,
+            "mean_return": -0.8324999999999962,
+            "expert_agreement": 0.15333333333333332
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 14.4,
+            "mean_return": -1.3200000000000076,
+            "expert_agreement": 0.2758333333333333
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.4,
+            "mean_collisions": 23.9,
+            "mean_return": -1.7189999999999952,
+            "expert_agreement": 0.23693379790940766
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 3,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1586,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 54.8,
+            "mean_return": -3.340000000000044,
+            "expert_agreement": 0.013333333333333334
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52,
+            "mean_collisions": 0,
+            "mean_return": -0.3699999999999922,
+            "expert_agreement": 0.23076923076923078
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.1,
+            "mean_collisions": 0.05,
+            "mean_return": -0.52349999999999,
+            "expert_agreement": 0.2714535901926445
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56.7,
+            "mean_return": -3.4350000000000556,
+            "expert_agreement": 0.011666666666666667
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.45,
+            "timeout_rate": 0.55,
+            "mean_steps": 39.15,
+            "mean_collisions": 0.65,
+            "mean_return": 0.02600000000000082,
+            "expert_agreement": 0.45338441890166026
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.6,
+            "mean_collisions": 1.35,
+            "mean_return": -0.4534999999999923,
+            "expert_agreement": 0.44776119402985076
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 279,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 2,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 16.6,
+            "mean_return": -1.4300000000000297,
+            "expert_agreement": 0.060833333333333336
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.3,
+            "mean_collisions": 29.45,
+            "mean_return": -1.9355000000000064,
+            "expert_agreement": 0.15186500888099466
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 47.75,
+            "mean_collisions": 17.55,
+            "mean_return": -1.0550000000000168,
+            "expert_agreement": 0.2534031413612565
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 318,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 6,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 6.3,
+            "mean_return": -0.8354999999999958,
+            "expert_agreement": 0.07537248028045573
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52.7,
+            "mean_collisions": 4.2,
+            "mean_return": -0.5869999999999923,
+            "expert_agreement": 0.36527514231499053
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52.8,
+            "mean_collisions": 4.65,
+            "mean_return": -0.6104999999999912,
+            "expert_agreement": 0.3380681818181818
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 289,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 1,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 1,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.6,
+            "mean_collisions": 6.05,
+            "mean_return": -0.8284999999999927,
+            "expert_agreement": 0.23697916666666666
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 58.25,
+            "mean_collisions": 5.3,
+            "mean_return": -0.7474999999999912,
+            "expert_agreement": 0.24377682403433476
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.7,
+            "mean_collisions": 7.65,
+            "mean_return": -0.8494999999999953,
+            "expert_agreement": 0.25220458553791886
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 2,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.9,
+            "mean_collisions": 4.45,
+            "mean_return": -0.7614999999999902,
+            "expert_agreement": 0.27164685908319186
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 53.4,
+            "mean_collisions": 3.85,
+            "mean_return": -0.5264999999999909,
+            "expert_agreement": 0.26685393258426965
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 57,
+            "mean_collisions": 6.6,
+            "mean_return": -0.7999999999999912,
+            "expert_agreement": 0.24298245614035088
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 3,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.75,
+            "mean_collisions": 4.6,
+            "mean_return": -0.6174999999999915,
+            "expert_agreement": 0.2651162790697674
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 54.4,
+            "mean_collisions": 4.25,
+            "mean_return": -0.5564999999999907,
+            "expert_agreement": 0.26286764705882354
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 55,
+            "mean_collisions": 6.1,
+            "mean_return": -0.7049999999999914,
+            "expert_agreement": 0.24454545454545454
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "adapt_after_change",
+      "config": {
+        "env": {
+          "width": 0,
+          "height": 0,
+          "wall_density": 0,
+          "view_depth": 0,
+          "time_limit": 0,
+          "step_penalty": 0,
+          "collision_penalty": 0,
+          "goal_reward": 0,
+          "task": "adapt_after_change"
+        },
+        "seeds": [
+          1,
+          2,
+          3
+        ],
+        "episodes": 60,
+        "hidden": 16,
+        "recurrent": 4,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "policies": [
+          "recurrent",
+          "feedforward",
+          "rewired",
+          "random"
+        ]
+      },
+      "config_hash": "025f557e78fc6d64c63d7be98058fba11c5a1b204f4dfd0f549594e21b3ce655",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 54.6,
+            "mean_return": -3.330000000000055,
+            "expert_agreement": 0.014166666666666666
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 47.85,
+            "mean_collisions": 0.8,
+            "mean_return": -0.21849999999999384,
+            "expert_agreement": 0.3448275862068966
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 50.05,
+            "mean_collisions": 1.95,
+            "mean_return": -0.29799999999999216,
+            "expert_agreement": 0.37162837162837165
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 32.5,
+            "mean_return": -2.2250000000000045,
+            "expert_agreement": 0.050833333333333335
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 46.2,
+            "mean_collisions": 0.3,
+            "mean_return": -0.17699999999999427,
+            "expert_agreement": 0.2878787878787879
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.35,
+            "mean_collisions": 1.15,
+            "mean_return": -0.4409999999999913,
+            "expert_agreement": 0.27647610121836924
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 7.65,
+            "mean_return": -0.9029999999999963,
+            "expert_agreement": 0.08939526730937773
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 49.3,
+            "mean_collisions": 0.65,
+            "mean_return": -0.22549999999999576,
+            "expert_agreement": 0.4178498985801217
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 50.9,
+            "mean_collisions": 0.15,
+            "mean_return": -0.26649999999999263,
+            "expert_agreement": 0.4194499017681729
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 1,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1526,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 1.5,
+            "mean_return": -0.6749999999999905,
+            "expert_agreement": 0.42333333333333334
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.6,
+            "mean_collisions": 0,
+            "mean_return": -0.5359999999999897,
+            "expert_agreement": 0.4658703071672355
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.1,
+            "mean_collisions": 0,
+            "mean_return": -0.5209999999999908,
+            "expert_agreement": 0.47810858143607704
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 2,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1431,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 3.05,
+            "mean_return": -0.7524999999999901,
+            "expert_agreement": 0.185
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 52.6,
+            "mean_collisions": 0,
+            "mean_return": -0.32599999999999163,
+            "expert_agreement": 0.3450570342205323
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 48.1,
+            "mean_collisions": 0,
+            "mean_return": -0.23099999999999352,
+            "expert_agreement": 0.3981288981288981
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 3,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1569,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 53.35,
+            "mean_return": -3.26750000000004,
+            "expert_agreement": 0.018333333333333333
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 57.05,
+            "mean_collisions": 7.4,
+            "mean_return": -0.7404999999999913,
+            "expert_agreement": 0.32865907099035935
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 51.35,
+            "mean_collisions": 3.15,
+            "mean_return": -0.3709999999999954,
+            "expert_agreement": 0.30963972736124634
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 53.8,
+            "mean_return": -3.2900000000000515,
+            "expert_agreement": 0.014166666666666666
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.35,
+            "timeout_rate": 0.65,
+            "mean_steps": 44.75,
+            "mean_collisions": 1.3,
+            "mean_return": -0.16249999999999892,
+            "expert_agreement": 0.42681564245810055
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 50.3,
+            "mean_collisions": 0.15,
+            "mean_return": -0.21049999999999688,
+            "expert_agreement": 0.4234592445328032
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 279,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 2,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 16.7,
+            "mean_return": -1.4350000000000285,
+            "expert_agreement": 0.049166666666666664
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.4,
+            "timeout_rate": 0.6,
+            "mean_steps": 47.65,
+            "mean_collisions": 3.3,
+            "mean_return": -0.2414999999999944,
+            "expert_agreement": 0.2644281217208814
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 50.7,
+            "mean_collisions": 3,
+            "mean_return": -0.35699999999999105,
+            "expert_agreement": 0.2958579881656805
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 318,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 6,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 5.5,
+            "mean_return": -0.7954999999999928,
+            "expert_agreement": 0.09114811568799298
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 47.3,
+            "mean_collisions": 0.45,
+            "mean_return": -0.19549999999999618,
+            "expert_agreement": 0.3086680761099366
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52.35,
+            "mean_collisions": 0.2,
+            "mean_return": -0.3834999999999927,
+            "expert_agreement": 0.3027698185291309
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 289,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 1,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 1,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.6,
+            "mean_collisions": 6.4,
+            "mean_return": -0.8459999999999978,
+            "expert_agreement": 0.2378472222222222
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 4.3,
+            "mean_return": -0.8149999999999927,
+            "expert_agreement": 0.2683333333333333
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 5.6,
+            "mean_return": -0.8800000000000017,
+            "expert_agreement": 0.24666666666666667
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 2,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.9,
+            "mean_collisions": 4.9,
+            "mean_return": -0.7839999999999901,
+            "expert_agreement": 0.26485568760611206
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 56.2,
+            "mean_collisions": 4.55,
+            "mean_return": -0.6394999999999906,
+            "expert_agreement": 0.2669039145907473
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.4,
+            "mean_collisions": 6.4,
+            "mean_return": -0.7839999999999919,
+            "expert_agreement": 0.24911347517730498
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 3,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 53.75,
+            "mean_collisions": 4.45,
+            "mean_return": -0.6099999999999914,
+            "expert_agreement": 0.26139534883720933
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.05,
+            "mean_collisions": 5.8,
+            "mean_return": -0.8104999999999919,
+            "expert_agreement": 0.2427695004382121
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.2,
+            "mean_collisions": 5.55,
+            "mean_return": -0.7994999999999911,
+            "expert_agreement": 0.26573426573426573
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "language_goal",
+      "config": {
+        "env": {
+          "width": 0,
+          "height": 0,
+          "wall_density": 0,
+          "view_depth": 0,
+          "time_limit": 0,
+          "step_penalty": 0,
+          "collision_penalty": 0,
+          "goal_reward": 0,
+          "task": "language_goal"
+        },
+        "seeds": [
+          1,
+          2,
+          3
+        ],
+        "episodes": 60,
+        "hidden": 16,
+        "recurrent": 4,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "policies": [
+          "recurrent",
+          "feedforward",
+          "rewired",
+          "random"
+        ]
+      },
+      "config_hash": "8e7955488b910cceab99d085f0f50f0f195c226194f04c48da92757abb2f80e3",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 55.15,
+            "mean_return": -3.357500000000054,
+            "expert_agreement": 0.006666666666666667
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0.35,
+            "mean_return": -0.6174999999999894,
+            "expert_agreement": 0.3308333333333333
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0.75,
+            "mean_return": -0.6374999999999897,
+            "expert_agreement": 0.38916666666666666
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.1,
+            "mean_collisions": 20.85,
+            "mean_return": -1.5635000000000194,
+            "expert_agreement": 0.11208406304728546
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.4191666666666667
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.3725
+          },
+          "failed": false
+        },
+        {
+          "policy": "recurrent",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 17,
+            "mean_return": -1.4500000000000106,
+            "expert_agreement": 0.13833333333333334
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.45,
+            "timeout_rate": 0.55,
+            "mean_steps": 36.85,
+            "mean_collisions": 1.15,
+            "mean_return": 0.02400000000000204,
+            "expert_agreement": 0.4314789687924016
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.25,
+            "timeout_rate": 0.75,
+            "mean_steps": 49.6,
+            "mean_collisions": 2,
+            "mean_return": -0.3459999999999922,
+            "expert_agreement": 0.39919354838709675
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 1,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1751,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 5.4,
+            "mean_return": -0.8700000000000031,
+            "expert_agreement": 0.32083333333333336
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 8.45,
+            "mean_return": -1.0225000000000044,
+            "expert_agreement": 0.23083333333333333
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0.5,
+            "mean_return": -0.6249999999999898,
+            "expert_agreement": 0.305
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 2,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1613,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 22.45,
+            "mean_return": -1.7225000000000001,
+            "expert_agreement": 0.03916666666666667
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.39
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0,
+            "mean_return": -0.5999999999999894,
+            "expert_agreement": 0.32166666666666666
+          },
+          "failed": false
+        },
+        {
+          "policy": "feedforward",
+          "seed": 3,
+          "parameters": 2664,
+          "edges": 864,
+          "updates": 1653,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 54.25,
+            "mean_collisions": 45.1,
+            "mean_return": -2.647500000000014,
+            "expert_agreement": 0.07834101382488479
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 0.65,
+            "mean_return": -0.6324999999999898,
+            "expert_agreement": 0.3408333333333333
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 1.05,
+            "mean_return": -0.6524999999999899,
+            "expert_agreement": 0.28833333333333333
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 1,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 55.15,
+            "mean_return": -3.357500000000054,
+            "expert_agreement": 0.006666666666666667
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 5.25,
+            "mean_return": -0.8624999999999984,
+            "expert_agreement": 0.32083333333333336
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.15,
+            "mean_collisions": 0.8,
+            "mean_return": -0.5614999999999901,
+            "expert_agreement": 0.3342082239720035
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 279,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 2,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 2,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.1,
+            "mean_collisions": 13.1,
+            "mean_return": -1.1760000000000215,
+            "expert_agreement": 0.10683012259194395
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 49.45,
+            "mean_collisions": 6,
+            "mean_return": -0.5944999999999927,
+            "expert_agreement": 0.455005055611729
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.2,
+            "timeout_rate": 0.8,
+            "mean_steps": 49.8,
+            "mean_collisions": 5.5,
+            "mean_return": -0.5729999999999923,
+            "expert_agreement": 0.45582329317269077
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 318,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 6,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "rewired",
+          "seed": 3,
+          "parameters": 2728,
+          "edges": 928,
+          "updates": 60,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 20.4,
+            "mean_return": -1.6200000000000139,
+            "expert_agreement": 0.11916666666666667
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.3,
+            "timeout_rate": 0.7,
+            "mean_steps": 48.1,
+            "mean_collisions": 1.7,
+            "mean_return": -0.2659999999999939,
+            "expert_agreement": 0.4313929313929314
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 54.75,
+            "mean_collisions": 2.5,
+            "mean_return": -0.5724999999999907,
+            "expert_agreement": 0.41278538812785387
+          },
+          "rewire": {
+            "edges": 64,
+            "attempts": 640,
+            "accepted": 289,
+            "degrees_kept": true,
+            "duplicates": 0,
+            "self_loops_before": 1,
+            "self_loops_after": 0,
+            "direction_kept": true,
+            "readout_reachable": true
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 1,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 55.55,
+            "mean_collisions": 6.05,
+            "mean_return": -0.7579999999999909,
+            "expert_agreement": 0.23222322232223222
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 52.9,
+            "mean_collisions": 5.2,
+            "mean_return": -0.638999999999991,
+            "expert_agreement": 0.2589792060491493
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.3,
+            "mean_collisions": 5.8,
+            "mean_return": -0.8229999999999933,
+            "expert_agreement": 0.2367066895368782
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 2,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 58.3,
+            "mean_collisions": 5.2,
+            "mean_return": -0.7429999999999904,
+            "expert_agreement": 0.25728987993138935
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 56.7,
+            "mean_collisions": 5.95,
+            "mean_return": -0.764499999999991,
+            "expert_agreement": 0.24162257495590828
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 57.7,
+            "mean_collisions": 6.3,
+            "mean_return": -0.8419999999999941,
+            "expert_agreement": 0.22876949740034663
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 3,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 20,
+            "success_rate": 0.1,
+            "timeout_rate": 0.9,
+            "mean_steps": 58.9,
+            "mean_collisions": 4.35,
+            "mean_return": -0.7064999999999904,
+            "expert_agreement": 0.25891341256366723
+          },
+          "seen": {
+            "episodes": 20,
+            "success_rate": 0.15,
+            "timeout_rate": 0.85,
+            "mean_steps": 56.45,
+            "mean_collisions": 4.75,
+            "mean_return": -0.6519999999999913,
+            "expert_agreement": 0.26217891939769705
+          },
+          "unseen": {
+            "episodes": 20,
+            "success_rate": 0.05,
+            "timeout_rate": 0.95,
+            "mean_steps": 58.95,
+            "mean_collisions": 5.8,
+            "mean_return": -0.8294999999999932,
+            "expert_agreement": 0.26208651399491095
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    }
+  ]
+}

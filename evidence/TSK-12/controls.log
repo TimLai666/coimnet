@@ -1,0 +1,80 @@
+2026/09/23 23:32:42 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestAttributionEvidence
+    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set
+--- SKIP: TestAttributionEvidence (0.00s)
+=== RUN   TestAttributionGroupsParameterTable
+    attribution_models_test.go:132: group	nodes	edges	params	free	mod	addon		trainable
+    attribution_models_test.go:135: normal	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: frozen_core	60	928	2728	1680	0	0		[encoder readout]
+    attribution_models_test.go:135: core_only	60	928	2728	928	0	0		[weights]
+    attribution_models_test.go:135: generic_matched	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: rewired	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: ablated_retrained	4	0	184	176	0	0		[encoder readout]
+    attribution_models_test.go:135: capacity_matched_modulator	60	928	2752	2632	21	24		[weights encoder readout]
+--- PASS: TestAttributionGroupsParameterTable (0.01s)
+=== RUN   TestAttributionGenericMatchedShape
+--- PASS: TestAttributionGenericMatchedShape (0.00s)
+=== RUN   TestAttributionTrainableGroupsHold
+--- PASS: TestAttributionTrainableGroupsHold (0.23s)
+=== RUN   TestAttributionAddOnStartsSilent
+--- PASS: TestAttributionAddOnStartsSilent (0.00s)
+=== RUN   TestAttributionGroupsShareTheLearningRate
+--- PASS: TestAttributionGroupsShareTheLearningRate (0.01s)
+=== RUN   TestAttributionRejects
+--- PASS: TestAttributionRejects (0.00s)
+=== RUN   TestRunAttributionReportsEveryGroupAndSeed
+    attribution_test.go:84: normal seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: normal seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: normal seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: frozen_core seed 1: unseen success 0.000 agreement 0.456 updates 4
+    attribution_test.go:84: frozen_core seed 2: unseen success 0.333 agreement 0.130 updates 4
+    attribution_test.go:84: frozen_core seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: core_only seed 1: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: core_only seed 2: unseen success 0.000 agreement 0.150 updates 4
+    attribution_test.go:84: core_only seed 3: unseen success 0.000 agreement 0.161 updates 4
+    attribution_test.go:84: generic_matched seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: generic_matched seed 2: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: generic_matched seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: rewired seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: rewired seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: rewired seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: ablated_retrained seed 1: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: ablated_retrained seed 2: unseen success 0.000 agreement 0.344 updates 4
+    attribution_test.go:84: ablated_retrained seed 3: unseen success 0.000 agreement 0.189 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 1: unseen success 0.000 agreement 0.417 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:108: frozen_core unseen_success_rate: mean +0.1111 CI [0.0000, 0.3333] dropped 0 diffs [0 0.3333333333333333 0]
+    attribution_test.go:108: frozen_core unseen_expert_agreement: mean -0.1383 CI [-0.3704, -0.0148] dropped 0 diffs [-0.04444444444444445 -0.37037037037037035 0]
+    attribution_test.go:108: core_only unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: core_only unseen_expert_agreement: mean -0.2296 CI [-0.4778, -0.0241] dropped 0 diffs [-0.4777777777777778 -0.35 0.1388888888888889]
+    attribution_test.go:108: generic_matched unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: generic_matched unseen_expert_agreement: mean -0.1593 CI [-0.4778, 0.0000] dropped 0 diffs [0 -0.4777777777777778 0]
+    attribution_test.go:108: rewired unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: rewired unseen_expert_agreement: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: ablated_retrained unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: ablated_retrained unseen_expert_agreement: mean -0.1556 CI [-0.4778, 0.0593] dropped 0 diffs [-0.4777777777777778 -0.15555555555555556 0.16666666666666666]
+    attribution_test.go:108: capacity_matched_modulator unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: capacity_matched_modulator unseen_expert_agreement: mean -0.0278 CI [-0.0833, 0.0000] dropped 0 diffs [-0.08333333333333331 0 0]
+--- PASS: TestRunAttributionReportsEveryGroupAndSeed (130.75s)
+=== RUN   TestAttributionCoreOnlyChecks
+--- PASS: TestAttributionCoreOnlyChecks (0.04s)
+=== RUN   TestAttributionNeverEnlargesThePeriphery
+--- PASS: TestAttributionNeverEnlargesThePeriphery (132.59s)
+=== RUN   TestRunAttributionIsDeterministic
+--- PASS: TestRunAttributionIsDeterministic (265.48s)
+=== RUN   TestAttributionConfigValidate
+--- PASS: TestAttributionConfigValidate (0.00s)
+=== RUN   TestRunAttributionHonoursCancellation
+--- PASS: TestRunAttributionHonoursCancellation (0.00s)
+=== RUN   TestAttributionReadoutScaleUsesActionNodes
+--- PASS: TestAttributionReadoutScaleUsesActionNodes (0.06s)
+=== RUN   TestPairedBootstrapConstantDifferences
+--- PASS: TestPairedBootstrapConstantDifferences (0.00s)
+=== RUN   TestPairedBootstrapBoundsContainTheMean
+--- PASS: TestPairedBootstrapBoundsContainTheMean (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	530.734s
+experiment exit=0

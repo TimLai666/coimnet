@@ -1,0 +1,90 @@
+=== RUN   TestMissingModalityMustHaveNilValues
+--- PASS: TestMissingModalityMustHaveNilValues (0.00s)
+=== RUN   TestVectorDistinguishesMissingFromZero
+--- PASS: TestVectorDistinguishesMissingFromZero (0.00s)
+=== RUN   TestVectorHasNoIDs
+--- PASS: TestVectorHasNoIDs (0.00s)
+=== RUN   TestLayoutOrderIsFixed
+--- PASS: TestLayoutOrderIsFixed (0.00s)
+=== RUN   TestPairing
+--- PASS: TestPairing (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/multimodal	1.404s
+=== RUN   TestGenerateIsDeterministicAndValid
+--- PASS: TestGenerateIsDeterministicAndValid (0.01s)
+=== RUN   TestImageEncodesShapeAndColour
+--- PASS: TestImageEncodesShapeAndColour (0.00s)
+=== RUN   TestTextIsOneHotOfShapeAndColour
+--- PASS: TestTextIsOneHotOfShapeAndColour (0.00s)
+=== RUN   TestAudioDropRateProducesMissingNotZero
+--- PASS: TestAudioDropRateProducesMissingNotZero (0.01s)
+=== RUN   TestSplitUnseenCombinationsIsDisjointAndComplete
+--- PASS: TestSplitUnseenCombinationsIsDisjointAndComplete (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	1.779s
+2026/09/23 23:33:37 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestMultimodalEvidence
+    evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence
+--- SKIP: TestMultimodalEvidence (0.00s)
+=== RUN   TestOnlyModalityMarksOthersAbsent
+--- PASS: TestOnlyModalityMarksOthersAbsent (0.00s)
+=== RUN   TestInputHasNoIDs
+--- PASS: TestInputHasNoIDs (0.00s)
+=== RUN   TestMissingDiffersFromZero
+--- PASS: TestMissingDiffersFromZero (0.01s)
+=== RUN   TestHoldoutNeverTrains
+--- PASS: TestHoldoutNeverTrains (0.00s)
+=== RUN   TestConceptsTransferAcrossModalities
+    model_test.go:256: updates=2730
+        seen before:  {Inputs:453 ShapeAccuracy:map[audio:1 image:0.35185185185185186 text:0.35185185185185186] ColourAccuracy:map[audio:0.32558139534883723 image:0.3765432098765432 text:0.14814814814814814] ImageToText:0.10493827160493827 TextToImage:0.14814814814814814 AudioToImageShape:0.7054263565891473}
+        seen after:   {Inputs:453 ShapeAccuracy:map[audio:1 image:1 text:1] ColourAccuracy:map[audio:0.32558139534883723 image:1 text:1] ImageToText:1 TextToImage:1 AudioToImageShape:1}
+        holdout before: {Inputs:51 ShapeAccuracy:map[audio:1 image:0 text:0] ColourAccuracy:map[audio:0 image:0 text:1] ImageToText:1 TextToImage:1 AudioToImageShape:1}
+        holdout after:  {Inputs:51 ShapeAccuracy:map[audio:1 image:1 text:0] ColourAccuracy:map[audio:0 image:0 text:1] ImageToText:1 TextToImage:1 AudioToImageShape:1}
+--- PASS: TestConceptsTransferAcrossModalities (42.82s)
+=== RUN   TestTrainReturnsTheUpdateCount
+--- PASS: TestTrainReturnsTheUpdateCount (13.36s)
+=== RUN   TestScoringIsDeterministic
+--- PASS: TestScoringIsDeterministic (85.92s)
+=== RUN   TestRetrieveHandlesEmptySides
+--- PASS: TestRetrieveHandlesEmptySides (0.37s)
+=== RUN   TestConfigValidate
+=== RUN   TestConfigValidate/empty_holdout
+=== RUN   TestConfigValidate/duplicate_holdout
+=== RUN   TestConfigValidate/train_seed_equals_eval_seed
+=== RUN   TestConfigValidate/empty_seeds
+=== RUN   TestConfigValidate/zero_epochs
+=== RUN   TestConfigValidate/hidden_one
+=== RUN   TestConfigValidate/zero_settle
+=== RUN   TestConfigValidate/zero_learning_rate
+=== RUN   TestConfigValidate/valid_fixture
+--- PASS: TestConfigValidate (0.00s)
+    --- PASS: TestConfigValidate/empty_holdout (0.00s)
+    --- PASS: TestConfigValidate/duplicate_holdout (0.00s)
+    --- PASS: TestConfigValidate/train_seed_equals_eval_seed (0.00s)
+    --- PASS: TestConfigValidate/empty_seeds (0.00s)
+    --- PASS: TestConfigValidate/zero_epochs (0.00s)
+    --- PASS: TestConfigValidate/hidden_one (0.00s)
+    --- PASS: TestConfigValidate/zero_settle (0.00s)
+    --- PASS: TestConfigValidate/zero_learning_rate (0.00s)
+    --- PASS: TestConfigValidate/valid_fixture (0.00s)
+=== RUN   TestDefaultConfig
+--- PASS: TestDefaultConfig (0.00s)
+=== RUN   TestRunHonoursCancellation
+--- PASS: TestRunHonoursCancellation (0.00s)
+=== RUN   TestRunUnseenRetrievalUsesTheWholeGallery
+    run_test.go:131: queries image_to_text=18 (holdout images 18), text_to_image=18 (holdout texts 18), audio_to_image_shape=15 (holdout audios 15)
+    run_test.go:133: UnseenRetrievalBefore image_to_text=0.0000 text_to_image=0.0000 audio_to_image_shape=0.0000
+--- PASS: TestRunUnseenRetrievalUsesTheWholeGallery (45.76s)
+=== RUN   TestRunReportsSeenAndUnseenSeparately
+    run_test.go:165: seed 1 seen: i2t=1.0000 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:1] colour=map[audio:0.32558139534883723 image:1 text:1] | seen_before i2t=0.1049 | unseen: i2t=1.0000 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:0] colour=map[audio:0 image:0 text:1]
+    run_test.go:165: seed 2 seen: i2t=1.0000 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:1] colour=map[audio:0.3875968992248062 image:1 text:1] | seen_before i2t=0.1481 | unseen: i2t=1.0000 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:0] colour=map[audio:0 image:0 text:1]
+    run_test.go:165: seed 3 seen: i2t=0.7160 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:1] colour=map[audio:0.3875968992248062 image:0.7160493827160493 text:1] | seen_before i2t=0.1481 | unseen: i2t=1.0000 t2i=1.0000 a2i=1.0000 shape=map[audio:1 image:1 text:0] colour=map[audio:0 image:0 text:1]
+    run_test.go:225: samples: train=160 (holdout 20 of 180), seen=162, unseen=18 (of 180)
+--- PASS: TestRunReportsSeenAndUnseenSeparately (138.92s)
+=== RUN   TestRunIsDeterministic
+--- PASS: TestRunIsDeterministic (241.21s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment/multimodaleval	569.862s
+exit=0

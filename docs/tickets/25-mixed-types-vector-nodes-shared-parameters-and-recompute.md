@@ -99,7 +99,7 @@ type Recompute struct { SegmentSteps int }   // Options.Recompute *Recompute
   `go test`、race、vet；`evidence/COR-05/`。
 - [x] 第二階段：`C = 3` 手算與稠密參考、退化逐位等價、共享梯度相加手算、與遮罩／符號的相容規則、
   容量報告進模型包；`evidence/COR-06/`。
-- [ ] 第三階段：三種分段與完整歷史 1e-12 一致、零副作用三項（可塑性／來源／教師計數）、隨機重放、
+- [x] 第三階段：三種分段與完整歷史 1e-12 一致、零副作用三項（可塑性／來源／教師計數）、隨機重放、
   交易序號不變、RSS 對比；`evidence/LRN-02/`；文件。
 
 ## 第一階段證據（2026-09-16）
@@ -205,6 +205,36 @@ Go 允許用融合乘加（只捨入一次），編譯器逐基本區塊決定�
 
 未完成／已知限制：向量核心的持續個體狀態（`NewIndividual`）仍明確拒絕；容量數字是計數，不是實測記憶體；
 全部是 fixture。
+
+## 第三階段證據（2026-09-23）
+
+`learning.Options.Recompute{SegmentSteps}` 讓 `Step`／`StepFrom` 不保存核心 trace：前向逐段推進（`observe`），反向從檢查點逐段重算
+（`backwardRecompute`），encoder／讀出磁帶、固定號誌、遮罩、累積、裁剪、AdamW 與投影都不變，所以結果與完整歷史**逐位相同**，比票面的
+1e-12 更嚴：連續、LIF、固定號誌三個 fixture × 段長 1、4、7 × 截斷 0、3，連續三次 `Step` 加三次 `StepFrom` 後，每個 `StepResult`
+欄位、參數、Adam 動量、逐項步數與更新次數都相同。`T = 256`、`S = 16` 時連續核心只留 81 列（61 列檢查點加最多 20 列段落，上限 84），
+完整歷史是 257 列；LIF 是 46 加 19 列。
+
+沒有副作用：開著可塑性的線上學習者，重算與不重算都是 2 次梯度步、3 次可塑步、3 次獎勵閘門呼叫，動作紀錄與個體快照位元組相同；
+兩次化學推進之間夾一次 `TrainEpisode`，推進輸出、`StepResult`、化學報告與快照都相同；更新計數（交易序號）每個套用步只加一。
+訓練路徑沒有亂數：`dynamics`、`learning`、`plasticity`、`modulation`、`distill`、`simulate` 裡的 `math/rand` 只出現在
+`learning/intervene.go` 的 seed 洗牌介入與 `simulate/nullmodel.go`，所以沒有要存進檢查點或重放的產生器狀態。
+`StepResult.GradientHorizonSteps` 寫出這一步的梯度最遠追溯幾步（截斷 3 為 3；截斷 0 或 50 為整段 23 步）。混合與向量核心在
+`NewTrainer`、`RestoreTrainer` 與 `Individual.ResetOptimizer` 寫入任何東西之前就拒絕重算。
+
+RSS（`scripts/recompute-evidence.sh`，每個模式各自一個行程，`/usr/bin/time -l`，`T = 256`、`S = 16`）：連續核心 50,000 節點、
+400,000 條邊從 1,169,195,008 B 降到 771,145,728 B（省 34.0%）；LIF 20,000 節點、160,000 條邊從 825,606,144 B 降到
+628,047,872 B（省 23.9%）；兩種模式訓練出的參數雜湊相同。完整命令與輸出見 [LRN-02 證據](../../evidence/LRN-02/verification.json)。
+
+與票面的差異：
+
+1. 檢查點只存核心狀態列，沒有 `RecomputeCheckpoint` 的 `Plastic`、`Chemical`、`RNG`、`Transaction` 欄位。訓練回合從零狀態開始，
+   不碰可塑性、化學狀態與亂數，這些欄位在重算路徑上沒有東西可存；測試改成直接證明它們前後不變。
+2. 沒有 `pureReplay` 旗標。重算只重跑核心的純函式前向，到不了可塑性、化學釋放、教師或環境的呼叫點，所以用計數測試證明呼叫
+   次數相同，不另加一個拒絕旗標。
+3. 票面的 `O(T/S + S)` 只對核心歷史成立。網路層仍保留整段的核心輸入、核心輸出、上游梯度與輸入梯度（各 `T × N`），所以實測
+   省下 24–34%，不是數量級；正式測試也看不出 `Step` 有沒有真的在重算（結果逐位相同），只有 RSS 對比看得出來。
+
+文件：`ENG.md` 的資源段落寫明 `Truncation`、`GradientHorizonSteps`、`Recompute` 的用途、支援的核心與省下的記憶體範圍。
 
 ## 依據
 

@@ -63,3 +63,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。
 - `dynamics/recompute.go`：連續核心分段重算的 `driveRow` 對每條邊、每一步都呼叫一次 `activate`（第一趟前向、段落重算、反向各一次），計算量跟邊數成正比而不是節點數；在兩千五百萬條邊的全圖上會比 `Forward` 慢很多。可在每段重算時先把該段各列的 activate(voltage) 存成輸出列（只多 S 列），數值不變。LIF 版讀的是 syn 列，沒有這個問題。
 - `checkpoint/package.go`：`ModelPackage.Capacity` 載入時照抄不重算，被改過的容量數字也會被接受。可在載入驗證時對非 nil 的 Capacity 以 `learning.NewNetwork(...).Capacity(...)` 重算比對，不符就拒絕；舊檔（nil）不受影響。
+- `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
+- `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。
+- `learning/recompute.go`：重算模式的 `observe` 走 `NewState`／`Advance`，所以多了完整歷史路徑沒有的上限：節點數 ×（最大延遲 + 1）不得超過 `dynamics.MaxStateValues`（2^20）。全圖延遲一律為 0 不受影響；2^19 節點、延遲 2 的圖只有開重算時會在 `Step` 報錯。要放寬就讓 `observe` 直接走分段前向，不經串流狀態。
+- `experiment/nav2d_suite.go`：報告的 `config.env` 記的是呼叫端給的零值（寬高、牆密度、視野、時限、獎懲都是 0），實際採用的預設值（9×9、0.2、3、60、0.01、0.05、+1）只在 `nav2d.New` 內部補上；報告應改記補完後的有效設定，雜湊也跟著換。
+- `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。

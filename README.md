@@ -15,8 +15,10 @@
 | 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |
 | --- | --- | --- | --- | --- |
 | 連續核心訓練：可訓練稀疏連續動態、真實連線計算、完整／截斷梯度、受限更新與完整最佳化器（COR-02、COR-07、COR-08、COR-10、LRN-01、LRN-03） | 已訓練（人工資料） | fixture | 核心能力 | [COR-02](evidence/COR-02/verification.json)・[COR-07](evidence/COR-07/verification.json)・[COR-08](evidence/COR-08/verification.json)・[COR-10](evidence/COR-10/verification.json)・[LRN-01](evidence/LRN-01/verification.json)・[LRN-03](evidence/LRN-03/verification.json) |
+| 反向歷史重算：訓練步不保存核心歷史、反向逐段重算，梯度與完整歷史逐位相同，不重複學習、隨機事件或教師呼叫（LRN-02） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-02](evidence/LRN-02/verification.json) |
 | LIF 放電核心：替代梯度閾值訓練、慢速穩定與個體持續狀態（COR-03、COR-04、COR-09） | 已訓練（人工資料） | fixture | 核心能力 | [COR-03](evidence/COR-03/verification.json)・[COR-04](evidence/COR-04/verification.json)・[COR-09](evidence/COR-09/verification.json) |
 | 混合核心：連續／脈衝依神經元類型混合執行（COR-05） | 初始化模型（未訓練） | fixture | 核心能力 | [COR-05](evidence/COR-05/verification.json) |
+| 向量節點與共享參數：純量或多維節點、共享或逐項參數、分開回報容量（COR-06） | 已訓練（人工資料） | fixture | 核心能力 | [COR-06](evidence/COR-06/verification.json) |
 | 訊號、時間對齊與映射：具名訊號、因果／離線取樣、輸入輸出映射保存與替換（SIG-01、SIG-02、SIG-04、SIG-05、SIG-06） | 初始化模型（資料層） | fixture | 核心能力 | [SIG-01](evidence/SIG-01/verification.json)・[SIG-02](evidence/SIG-02/verification.json)・[SIG-04](evidence/SIG-04/verification.json)・[SIG-05](evidence/SIG-05/verification.json)・[SIG-06](evidence/SIG-06/verification.json) |
 | 個體與保存：解剖／參數／個體／訓練器狀態分離、三種保存物、安全快照與隔離個體（COR-01、STA-01、STA-02、STA-04） | 已訓練（人工資料） | fixture | 核心能力 | [COR-01](evidence/COR-01/verification.json)・[STA-01](evidence/STA-01/verification.json)・[STA-02](evidence/STA-02/verification.json)・[STA-04](evidence/STA-04/verification.json) |
 | 精確中斷接續：連續執行對照下同時恢復參數、最佳化器、快速權重、化學與資料游標（STA-03） | 已訓練（人工資料） | fixture | 核心能力 | [STA-03](evidence/STA-03/verification.json) |
@@ -25,6 +27,9 @@
 | 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
 | 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |
 | 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json) |
+| 二維導航與位置記憶：有限視野、隱藏狀態、碰撞與轉向、目標記憶、新地圖評估，前饋／重連／隨機對照（TSK-08） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-08](evidence/TSK-08/verification.json) |
+| 多模態配對資料：配對／缺失／非同步樣本、ID 不進模型、缺失與零值分離、未見組合分割與評估（TSK-10；留出組合的影像↔文字檢索為 0，不宣稱跨模態概念） | 已訓練（合成資料） | fixture | 核心能力 | [TSK-10](evidence/TSK-10/verification.json) |
+| 核心、外圍與接線的歸因對照：凍結核心、只訓練核心、一般網路、重連、移除後重訓、容量匹配調節器共七組，事前配對 bootstrap 與排查清單（TSK-12；本次 normal 基準沒學會，不支持依賴或接線較優的結論） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-12](evidence/TSK-12/verification.json) |
 | 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
 | 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |
 | 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |

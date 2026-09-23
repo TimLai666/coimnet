@@ -1,0 +1,103 @@
+=== RUN   TestResetIsDeterministicAndConnected
+--- PASS: TestResetIsDeterministicAndConnected (0.00s)
+=== RUN   TestObservationHasNoCoordinates
+--- PASS: TestObservationHasNoCoordinates (0.00s)
+=== RUN   TestViewConeHandMap
+--- PASS: TestViewConeHandMap (0.00s)
+=== RUN   TestCollisionAndRewards
+--- PASS: TestCollisionAndRewards (0.00s)
+=== RUN   TestTerminationAndTimeoutAreSeparate
+--- PASS: TestTerminationAndTimeoutAreSeparate (0.00s)
+=== RUN   TestExpertReachesGoalWithinBudget
+--- PASS: TestExpertReachesGoalWithinBudget (0.00s)
+=== RUN   TestRememberGoalCueOnlyAtStepZero
+--- PASS: TestRememberGoalCueOnlyAtStepZero (0.00s)
+=== RUN   TestAvoidObstaclesShowsGoalWhenInCone
+--- PASS: TestAvoidObstaclesShowsGoalWhenInCone (0.00s)
+=== RUN   TestAdaptAfterChangeRegeneratesAndFlags
+--- PASS: TestAdaptAfterChangeRegeneratesAndFlags (0.00s)
+=== RUN   TestLanguageGoalTokenNamesTheCorner
+--- PASS: TestLanguageGoalTokenNamesTheCorner (0.00s)
+=== RUN   TestObservationDoesNotLeakTheGoal
+--- PASS: TestObservationDoesNotLeakTheGoal (0.00s)
+=== RUN   TestVectorLengthWithCue
+--- PASS: TestVectorLengthWithCue (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	1.382s
+nav2d exit=0
+2026/09/23 23:18:10 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestNav2DSuiteEvidence
+    nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set
+--- SKIP: TestNav2DSuiteEvidence (0.00s)
+=== RUN   TestNav2DEdgesShape
+--- PASS: TestNav2DEdgesShape (0.00s)
+=== RUN   TestNav2DMapSetsAreDisjoint
+--- PASS: TestNav2DMapSetsAreDisjoint (0.00s)
+=== RUN   TestNav2DRandomMetricsAreConsistent
+    nav2d_policy_test.go:160: random: success 0.3 timeout 0.7 mean steps 48 collisions 5.7 return -0.46499999999999275 agreement 0.24791666666666667
+--- PASS: TestNav2DRandomMetricsAreConsistent (0.00s)
+=== RUN   TestNav2DActReadsOnlyTheObservationPrefix
+--- PASS: TestNav2DActReadsOnlyTheObservationPrefix (0.01s)
+=== RUN   TestNav2DImitationRaisesSeenAgreement
+    nav2d_policy_test.go:237: recurrent: before agreement 0.018333333333333333 success 0, after agreement 0.5142276422764228 success 0.3
+    nav2d_policy_test.go:239: recurrent: action distribution (forward left right stay) before [584 16 0 0] after [306 182 4 0]
+    nav2d_policy_test.go:277: recurrent: demonstration replay agreement 0.7528089887640449 (67/89)
+    nav2d_policy_test.go:295: feedforward: 425 demonstration steps, 425 training updates
+--- PASS: TestNav2DImitationRaisesSeenAgreement (47.42s)
+=== RUN   TestNav2DDAggerActsWithPolicyAndLabelsWithExpert
+--- PASS: TestNav2DDAggerActsWithPolicyAndLabelsWithExpert (0.00s)
+=== RUN   TestNav2DTrainScheduleIsDeterministicAndCounted
+--- PASS: TestNav2DTrainScheduleIsDeterministicAndCounted (6.55s)
+=== RUN   TestNav2DRewireKeepsDegreesAndDirection
+    nav2d_suite_test.go:92: rewire: edges=64 attempts=640 accepted=279 self_loops 2->0
+--- PASS: TestNav2DRewireKeepsDegreesAndDirection (0.00s)
+=== RUN   TestNav2DDegreesMatchDetectsABrokenBlock
+--- PASS: TestNav2DDegreesMatchDetectsABrokenBlock (0.00s)
+=== RUN   TestNav2DInputWidthMatchesObservation
+--- PASS: TestNav2DInputWidthMatchesObservation (0.00s)
+=== RUN   TestNav2DRewiredMatchesRecurrentBudget
+    nav2d_suite_test.go:186: budget: params=2728 edges=928 rewire accepted=279
+--- PASS: TestNav2DRewiredMatchesRecurrentBudget (0.00s)
+=== RUN   TestRunNav2DReportsEveryPolicyAndSeed
+--- PASS: TestRunNav2DReportsEveryPolicyAndSeed (40.34s)
+=== RUN   TestRunNav2DSuiteCoversFourTasks
+    nav2d_suite_test.go:299: remember_goal recurrent: unseen success_rate=0 expert_agreement=0.46111111111111114
+    nav2d_suite_test.go:299: remember_goal random: unseen success_rate=0 expert_agreement=0.20555555555555555
+    nav2d_suite_test.go:299: avoid_obstacles recurrent: unseen success_rate=0 expert_agreement=0.4166666666666667
+    nav2d_suite_test.go:299: avoid_obstacles random: unseen success_rate=0 expert_agreement=0.20555555555555555
+    nav2d_suite_test.go:299: adapt_after_change recurrent: unseen success_rate=0 expert_agreement=0.5111111111111111
+    nav2d_suite_test.go:299: adapt_after_change random: unseen success_rate=0 expert_agreement=0.16666666666666666
+    nav2d_suite_test.go:299: language_goal recurrent: unseen success_rate=0 expert_agreement=0.5
+    nav2d_suite_test.go:299: language_goal random: unseen success_rate=0 expert_agreement=0.17777777777777778
+--- PASS: TestRunNav2DSuiteCoversFourTasks (39.60s)
+=== RUN   TestNav2DFourTasksFourPoliciesTable
+    nav2d_suite_test.go:327: remember_goal	recurrent	unseen success_rate=0	expert_agreement=0.46111111111111114
+    nav2d_suite_test.go:327: remember_goal	feedforward	unseen success_rate=0	expert_agreement=0.18888888888888888
+    nav2d_suite_test.go:327: remember_goal	rewired	unseen success_rate=0	expert_agreement=0.4777777777777778
+    nav2d_suite_test.go:327: remember_goal	random	unseen success_rate=0	expert_agreement=0.20555555555555555
+    nav2d_suite_test.go:327: avoid_obstacles	recurrent	unseen success_rate=0	expert_agreement=0.4166666666666667
+    nav2d_suite_test.go:327: avoid_obstacles	feedforward	unseen success_rate=0	expert_agreement=0.05555555555555555
+    nav2d_suite_test.go:327: avoid_obstacles	rewired	unseen success_rate=0	expert_agreement=0.4111111111111111
+    nav2d_suite_test.go:327: avoid_obstacles	random	unseen success_rate=0	expert_agreement=0.20555555555555555
+    nav2d_suite_test.go:327: adapt_after_change	recurrent	unseen success_rate=0	expert_agreement=0.5111111111111111
+    nav2d_suite_test.go:327: adapt_after_change	feedforward	unseen success_rate=0	expert_agreement=0.2
+    nav2d_suite_test.go:327: adapt_after_change	rewired	unseen success_rate=0	expert_agreement=0.5
+    nav2d_suite_test.go:327: adapt_after_change	random	unseen success_rate=0	expert_agreement=0.16666666666666666
+    nav2d_suite_test.go:327: language_goal	recurrent	unseen success_rate=0	expert_agreement=0.5
+    nav2d_suite_test.go:327: language_goal	feedforward	unseen success_rate=0.3333333333333333	expert_agreement=0.1958041958041958
+    nav2d_suite_test.go:327: language_goal	rewired	unseen success_rate=0	expert_agreement=0.39444444444444443
+    nav2d_suite_test.go:327: language_goal	random	unseen success_rate=0	expert_agreement=0.17777777777777778
+--- PASS: TestNav2DFourTasksFourPoliciesTable (79.23s)
+=== RUN   TestRunNav2DIsDeterministic
+--- PASS: TestRunNav2DIsDeterministic (31.09s)
+=== RUN   TestNav2DConfigValidate
+--- PASS: TestNav2DConfigValidate (0.00s)
+=== RUN   TestRunNav2DHonoursCancellation
+--- PASS: TestRunNav2DHonoursCancellation (0.00s)
+=== RUN   TestDefaultNav2DConfig
+--- PASS: TestDefaultNav2DConfig (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	245.849s
+experiment exit=0

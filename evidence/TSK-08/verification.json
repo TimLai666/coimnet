@@ -1,0 +1,140 @@
+{
+  "requirement": "TSK-08「研究者可以在二維空間環境訓練導航及位置記憶。驗收：有限觀察、隱藏狀態、碰撞、轉向、目標記憶與新地圖測試完整。」",
+  "profile": "fixture",
+  "date": "2026-09-23",
+  "scope": "Ticket 28 stage one: the experiment/nav2d grid environment, its four tasks, the imitation-trained recurrent policy and its three controls (feedforward, degree-preserving rewired, random), evaluated before training, after training on the training maps and on unseen maps, three seeds each. The CLI entry `examples run nav2d` of ticket 28 item 4 is not part of this record.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-08",
+    "COIMNET_TSK08_EVIDENCE=$PWD/evidence/TSK-08 /usr/bin/time -l go test -count=1 -timeout 0 -v -run '^TestNav2DSuiteEvidence$' ./experiment/ > evidence/TSK-08/test.log 2>&1",
+    "go vet ./experiment/ ./experiment/nav2d/ > evidence/TSK-08/vet.log 2>&1",
+    "go test -count=1 -race -v ./experiment/nav2d/ > evidence/TSK-08/controls.log 2>&1",
+    "go test -count=1 -race -v -run '^(TestNav2D|TestRunNav2D|TestDefaultNav2DConfig)' ./experiment/ >> evidence/TSK-08/controls.log 2>&1",
+    "shasum -a 256 evidence/TSK-08/nav2d-suite.json evidence/TSK-08/summary.txt"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, 8 cores, 16 GB).",
+    "Recorded suite run: commit 82d26eb2caff1a0cfc3b2a215555cd8175a90cff, started 2026-09-23T15:11:02Z at 1-minute load 2.79 and ended 15:12:05Z at load 6.23 (run-env.txt). The experiment, experiment/nav2d, learning and dynamics packages are byte-identical between that commit and c8433c3 (git diff --stat 82d26eb c8433c3 lists only experiment/fullgraph).",
+    "Race and vet controls: started 15:18:05Z at load 7.19, ended 15:22:15Z at load 18.58 (controls-env.txt); other go test processes were running on the machine, so no timing in these logs is a result.",
+    "Rerun: the same test at commit c8433c3a0868d00471455fe7db7f75cc3c401784 under load 14.50 wrote a nav2d-suite.json and summary.txt whose SHA-256 equal the recorded ones (rerun.sha256)."
+  ],
+  "input_fingerprints": [
+    "No external input: maps, expert labels and model parameters are generated from the declared seeds. DefaultNav2DConfig: seeds 1, 2, 3; 60 training episodes; hidden 16; recurrent block in-degree 4; learning rate 0.05; 20 evaluation episodes per split; policies recurrent, feedforward, rewired, random.",
+    "Environment defaults applied by nav2d.New when the config field is zero (experiment/nav2d/env.go:43-69): 9x9 grid, wall density 0.2, view depth 3, time limit 60, step penalty 0.01, collision penalty 0.05, goal reward 1. The report's config.env records the zero fields as given, not these effective values (see limitations).",
+    "nav2d-suite.json sha256 3d9acdfb50c24de87608628a2e5cd57aa6ff84cfb90c00a6b5fb5b37f20b222e; summary.txt sha256 9bba053bcbd685c3fcfa39bb35e777e693aa748e88e570d6bcf17b2f3a465c61."
+  ],
+  "observed_result": {
+    "environment_tests": "experiment/nav2d: 12 tests pass under -race — connected seeded maps (TestResetIsDeterministicAndConnected), a view cone checked on a hand-drawn map (TestViewConeHandMap), collisions that leave the agent in place and cost 0.05 (TestCollisionAndRewards), goal termination reported separately from the time limit (TestTerminationAndTimeoutAreSeparate), an observation type without coordinates or shortest-path fields (TestObservationHasNoCoordinates) whose model outputs stay finite when the evaluator info is filled with NaN markers (TestObservationDoesNotLeakTheGoal), the BFS expert reaching the goal within the budget, and one test per task: the remember_goal cue only at step 0, avoid_obstacles showing the goal only inside the cone, adapt_after_change regenerating the map and raising the rule-change flag, language_goal tokens naming the four corners.",
+    "policy_and_suite_tests": "experiment: 18 nav2d tests pass under -race, among them disjoint seen and unseen map sets, DAgger rollouts acted by the policy and labelled by the expert, the rewired block keeping every in/out degree and edge direction (and a broken block being detected), the rewired policy keeping the recurrent policy's parameter count and update budget, a deterministic RunNav2D, and the four-task, four-policy table. TestNav2DSuiteEvidence is skipped in controls.log because the evidence variable is unset there; it is the run recorded in test.log. controls.log: 30 PASS, 1 SKIP, 0 FAIL; vet.log: no findings.",
+    "runs": "4 tasks x 4 policies x 3 seeds = 48 runs, none failed. Updates per run: 60 for recurrent and rewired (one per training episode), 0 for random, and a mean of 1508.7 to 1672.3 for feedforward, which takes one update per observation.",
+    "unseen_maps_mean_of_three_seeds": {
+      "remember_goal": {
+        "recurrent": {
+          "success": 0.167,
+          "expert_agreement": 0.331,
+          "collisions": 6.12
+        },
+        "feedforward": {
+          "success": 0.083,
+          "expert_agreement": 0.343,
+          "collisions": 5.18
+        },
+        "rewired": {
+          "success": 0.15,
+          "expert_agreement": 0.338,
+          "collisions": 9.13
+        },
+        "random": {
+          "success": 0.117,
+          "expert_agreement": 0.247,
+          "collisions": 6.78
+        }
+      },
+      "avoid_obstacles": {
+        "recurrent": {
+          "success": 0.217,
+          "expert_agreement": 0.367,
+          "collisions": 4.67
+        },
+        "feedforward": {
+          "success": 0.067,
+          "expert_agreement": 0.322,
+          "collisions": 8.12
+        },
+        "rewired": {
+          "success": 0.2,
+          "expert_agreement": 0.346,
+          "collisions": 7.85
+        },
+        "random": {
+          "success": 0.117,
+          "expert_agreement": 0.247,
+          "collisions": 6.78
+        }
+      },
+      "adapt_after_change": {
+        "recurrent": {
+          "success": 0.233,
+          "expert_agreement": 0.356,
+          "collisions": 1.08
+        },
+        "feedforward": {
+          "success": 0.2,
+          "expert_agreement": 0.395,
+          "collisions": 1.05
+        },
+        "rewired": {
+          "success": 0.25,
+          "expert_agreement": 0.341,
+          "collisions": 1.12
+        },
+        "random": {
+          "success": 0.05,
+          "expert_agreement": 0.254,
+          "collisions": 5.85
+        }
+      },
+      "language_goal": {
+        "recurrent": {
+          "success": 0.083,
+          "expert_agreement": 0.387,
+          "collisions": 0.92
+        },
+        "feedforward": {
+          "success": 0.0,
+          "expert_agreement": 0.305,
+          "collisions": 0.52
+        },
+        "rewired": {
+          "success": 0.117,
+          "expert_agreement": 0.401,
+          "collisions": 2.93
+        },
+        "random": {
+          "success": 0.05,
+          "expert_agreement": 0.243,
+          "collisions": 5.97
+        }
+      }
+    },
+    "reading": "Before training the learned policies collide 19 to 32 times per episode and agree with the expert on 0.05 to 0.21 of steps; after training their expert agreement on unseen maps is 0.305 to 0.401 against 0.24 to 0.25 for the random policy, and the recurrent policy's unseen collisions fall to 0.9 to 6.1. Success stays low (0.00 to 0.25 on unseen maps). With 3 seeds x 20 episodes a difference of 0.05 in success is one episode per seed, and no comparison between policies was pre-registered for this ticket, so no policy is claimed to be better than another.",
+    "rewire_checks": "All 12 rewired runs report degrees_kept true, duplicates 0, self_loops_after 0, direction_kept true and readout_reachable true; 279, 318 and 289 of 640 swap attempts were accepted for seeds 1, 2 and 3 (the hidden wiring depends only on the seed, so every task repeats the same three reports).",
+    "reproducibility": "A second run at c8433c3 under different machine load produced byte-identical nav2d-suite.json and summary.txt."
+  },
+  "assumption_statement": "The expert is a breadth-first search over the whole map and only labels training steps; at evaluation it only scores. Seen maps are each seed's training maps and unseen maps are even seeds that training never draws. The core is a random sparse recurrent block, not the fly connectome.",
+  "test_log": [
+    "evidence/TSK-08/test.log",
+    "evidence/TSK-08/controls.log",
+    "evidence/TSK-08/vet.log"
+  ],
+  "limitations": [
+    "Fixture scale only: 9x9 maps, 16 hidden nodes, 60 training episodes, 20 evaluation episodes per split. Success rates are low and are not evidence of navigation competence.",
+    "The feedforward control takes one optimizer update per observation, 25 to 28 times as many updates (mean 1508.7 to 1672.3 against 60) as the recurrent policy from the same demonstrations, and has 2664 parameters against 2728; it is not budget-matched in optimizer steps. The rewired control is (same parameter count, 60 updates).",
+    "The report's config.env stores the zero fields the caller passed; the effective defaults are only visible in experiment/nav2d/env.go. Recorded as a follow-up in AGENTS.md.",
+    "The CLI entry `examples run nav2d` (ticket 28 item 4) is not built yet; it edits internal/cli/run.go, which is on hold while parallel work on that file is coordinated.",
+    "One machine (macOS arm64); no Linux run for this fixture."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-08/nav2d-suite.json": "3d9acdfb50c24de87608628a2e5cd57aa6ff84cfb90c00a6b5fb5b37f20b222e",
+    "evidence/TSK-08/summary.txt": "9bba053bcbd685c3fcfa39bb35e777e693aa748e88e570d6bcf17b2f3a465c61"
+  }
+}

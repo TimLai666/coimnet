@@ -1,0 +1,48 @@
+{
+  "requirement": "TSK-10「研究者可以建立配對、缺失與非同步多模態資料。驗收：實體 ID 不直接成答案；缺失與零值分離；配對與未見組合可評估。」",
+  "profile": "fixture",
+  "date": "2026-09-23",
+  "scope": "Ticket 28 stage two: the multimodal data contract (package multimodal), the synthetic generator and unseen-combination split (multimodal/synthetic), and the seen and unseen evaluation of a model trained on image, text and audio (experiment/multimodaleval), three model seeds. The CLI entry `examples run multimodal` is not part of this record.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-10",
+    "COIMNET_TSK10_EVIDENCE=$PWD/evidence/TSK-10 /usr/bin/time -l go test -count=1 -timeout 0 -v -run '^TestMultimodalEvidence$' ./experiment/multimodaleval/ > evidence/TSK-10/test.log 2>&1",
+    "go vet ./multimodal/... ./experiment/multimodaleval/ > evidence/TSK-10/vet.log 2>&1",
+    "go test -count=1 -timeout 0 -race -v ./multimodal/... ./experiment/multimodaleval/ > evidence/TSK-10/controls.log 2>&1",
+    "shasum -a 256 evidence/TSK-10/multimodal.json evidence/TSK-10/summary.txt"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, 8 cores, 16 GB).",
+    "Recorded run: commit 0064453f83d78c04d0210f8392a3fc24915c75c7, 2026-09-23T15:33:11Z at 1-minute load 8.69 to 15:33:23Z at 8.06 (run-env.txt).",
+    "Race controls at the same commit: 15:33:34Z at load 7.63 to 15:43:06Z at load 5.57 (controls-env.txt); other go test processes were running, so no timing is a result.",
+    "Rerun right after the recorded run at the same commit wrote a multimodal.json and summary.txt with the recorded SHA-256 (rerun.sha256)."
+  ],
+  "input_fingerprints": [
+    "No external input: the synthetic generator draws 180 samples (8x8 geometric images, token text naming shape and colour, short audio whose frequency follows the shape) with audio missing at rate 0.2. DefaultConfig: held-out combination (shape 2, colour 1), training data seed 1, evaluation data seed 2, model seeds 1, 2, 3, 6 epochs, hidden 16, settle 3, learning rate 0.05. 160 training samples, 162 seen and 18 unseen evaluation samples.",
+    "multimodal.json sha256 6ff4411766aec15eb77f885cbd5bcf7d0e9336e106de621cda0272675d4db10b; summary.txt sha256 6063d80ecfb5608ad30eb6af92abd43287f5bd586847e5ad8816e0dbf8051c2f."
+  ],
+  "observed_result": {
+    "data_contract_tests": "controls.log: 24 PASS, 1 SKIP (TestMultimodalEvidence, which is the run in test.log), 0 FAIL under -race across multimodal, multimodal/synthetic and experiment/multimodaleval. IDs never reach the model: the adapter has no path for EntityID or EventID (TestVectorHasNoIDs, TestInputHasNoIDs). Missing is not zero: an absent modality must carry nil values, the model input has a presence channel, and a missing audio input differs from an all-zero one (TestMissingModalityMustHaveNilValues, TestVectorDistinguishesMissingFromZero, TestMissingDiffersFromZero, TestAudioDropRateProducesMissingNotZero). Synchronous pairing by event and asynchronous pairing by entity are both supported (TestPairing). The unseen-combination split is disjoint and complete and the held-out combination never trains (TestSplitUnseenCombinationsIsDisjointAndComplete, TestHoldoutNeverTrains). Seen and unseen results are reported separately and unseen retrieval searches the whole evaluation gallery (TestRunReportsSeenAndUnseenSeparately, TestRunUnseenRetrievalUsesTheWholeGallery). vet.log: no findings.",
+    "runs": "3 seeds, none failed, 2730 updates each.",
+    "seen": "Image-to-text retrieval on seen combinations rose from 0.105, 0.148, 0.148 before training to 1.000, 1.000, 0.716 after; text-to-image and audio-to-image-shape reached 1.000 on every seed. Image and text shape and colour accuracy on seen combinations are 1.000 except image colour 0.716 on seed 3; audio colour stays at 0.33 to 0.39, near the 1/3 chance, because the audio carries only the shape.",
+    "unseen": "On the held-out (shape 2, colour 1) samples, searched against the whole evaluation gallery, image-to-text and text-to-image retrieval are 0 on all three seeds after training, as before it; audio-to-image-shape retrieval is 1 on all three seeds (seed 2 was already 1 before training). On those samples the image head names the shape correctly but not the colour and the text head names the colour correctly but not the shape, on every seed. Chance levels in the report: label 1/9, shape 1/3, colour 1/3.",
+    "reading": "Pairing and the unseen combination are evaluated as the requirement asks, and the fixture learns the seen pairings, but it does not generalize to the held-out combination: no image or text query of that combination retrieves its partner. This record does not claim concept formation across modalities.",
+    "reproducibility": "A rerun at the same commit produced byte-identical multimodal.json and summary.txt."
+  },
+  "assumption_statement": "Concept formation is judged only by cross-modal retrieval and unseen-combination generalization, never by a visualization. Entity and event IDs never enter the model; the evaluator reads labels only to score. A missing modality is marked absent with nil values and a presence channel of 0, never replaced by zeros.",
+  "test_log": [
+    "evidence/TSK-10/test.log",
+    "evidence/TSK-10/controls.log",
+    "evidence/TSK-10/vet.log"
+  ],
+  "limitations": [
+    "The model does not generalize to the held-out combination (image-text retrieval 0 on all seeds); the evidence covers that pairing and unseen combinations can be built and evaluated, not that they are solved.",
+    "Synthetic fixture only: one held-out combination, 18 unseen samples, three seeds.",
+    "Retrieval inside the held-out subset alone is trivially 1 with one held-out label; the report's unseen_retrieval field, which searches the whole gallery, is the one to read.",
+    "The CLI entry `examples run multimodal` is not built yet.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-10/multimodal.json": "6ff4411766aec15eb77f885cbd5bcf7d0e9336e106de621cda0272675d4db10b",
+    "evidence/TSK-10/summary.txt": "6063d80ecfb5608ad30eb6af92abd43287f5bd586847e5ad8816e0dbf8051c2f"
+  }
+}

@@ -1,0 +1,138 @@
+2026/09/23 23:22:17 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestAttributionEvidence
+    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set
+--- SKIP: TestAttributionEvidence (0.00s)
+=== RUN   TestAttributionGroupsParameterTable
+    attribution_models_test.go:132: group	nodes	edges	params	free	mod	addon		trainable
+    attribution_models_test.go:135: normal	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: frozen_core	60	928	2728	1680	0	0		[encoder readout]
+    attribution_models_test.go:135: core_only	60	928	2728	928	0	0		[weights]
+    attribution_models_test.go:135: generic_matched	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: rewired	60	928	2728	2608	0	0		[weights encoder readout]
+    attribution_models_test.go:135: ablated_retrained	4	0	184	176	0	0		[encoder readout]
+    attribution_models_test.go:135: capacity_matched_modulator	60	928	2752	2632	21	24		[weights encoder readout]
+--- PASS: TestAttributionGroupsParameterTable (0.01s)
+=== RUN   TestAttributionGenericMatchedShape
+--- PASS: TestAttributionGenericMatchedShape (0.01s)
+=== RUN   TestAttributionTrainableGroupsHold
+--- PASS: TestAttributionTrainableGroupsHold (0.25s)
+=== RUN   TestAttributionAddOnStartsSilent
+--- PASS: TestAttributionAddOnStartsSilent (0.00s)
+=== RUN   TestAttributionGroupsShareTheLearningRate
+--- PASS: TestAttributionGroupsShareTheLearningRate (0.01s)
+=== RUN   TestAttributionRejects
+--- PASS: TestAttributionRejects (0.00s)
+=== RUN   TestRunAttributionReportsEveryGroupAndSeed
+    attribution_test.go:84: normal seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: normal seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: normal seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: frozen_core seed 1: unseen success 0.000 agreement 0.456 updates 4
+    attribution_test.go:84: frozen_core seed 2: unseen success 0.333 agreement 0.130 updates 4
+    attribution_test.go:84: frozen_core seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: core_only seed 1: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: core_only seed 2: unseen success 0.000 agreement 0.150 updates 4
+    attribution_test.go:84: core_only seed 3: unseen success 0.000 agreement 0.161 updates 4
+    attribution_test.go:84: generic_matched seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: generic_matched seed 2: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: generic_matched seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: rewired seed 1: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: rewired seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: rewired seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: ablated_retrained seed 1: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:84: ablated_retrained seed 2: unseen success 0.000 agreement 0.344 updates 4
+    attribution_test.go:84: ablated_retrained seed 3: unseen success 0.000 agreement 0.189 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 1: unseen success 0.000 agreement 0.417 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 2: unseen success 0.000 agreement 0.500 updates 4
+    attribution_test.go:84: capacity_matched_modulator seed 3: unseen success 0.000 agreement 0.022 updates 4
+    attribution_test.go:108: frozen_core unseen_success_rate: mean +0.1111 CI [0.0000, 0.3333] dropped 0 diffs [0 0.3333333333333333 0]
+    attribution_test.go:108: frozen_core unseen_expert_agreement: mean -0.1383 CI [-0.3704, -0.0148] dropped 0 diffs [-0.04444444444444445 -0.37037037037037035 0]
+    attribution_test.go:108: core_only unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: core_only unseen_expert_agreement: mean -0.2296 CI [-0.4778, -0.0241] dropped 0 diffs [-0.4777777777777778 -0.35 0.1388888888888889]
+    attribution_test.go:108: generic_matched unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: generic_matched unseen_expert_agreement: mean -0.1593 CI [-0.4778, 0.0000] dropped 0 diffs [0 -0.4777777777777778 0]
+    attribution_test.go:108: rewired unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: rewired unseen_expert_agreement: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: ablated_retrained unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: ablated_retrained unseen_expert_agreement: mean -0.1556 CI [-0.4778, 0.0593] dropped 0 diffs [-0.4777777777777778 -0.15555555555555556 0.16666666666666666]
+    attribution_test.go:108: capacity_matched_modulator unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]
+    attribution_test.go:108: capacity_matched_modulator unseen_expert_agreement: mean -0.0278 CI [-0.0833, 0.0000] dropped 0 diffs [-0.08333333333333331 0 0]
+--- PASS: TestRunAttributionReportsEveryGroupAndSeed (153.53s)
+=== RUN   TestAttributionCoreOnlyChecks
+--- PASS: TestAttributionCoreOnlyChecks (0.06s)
+=== RUN   TestAttributionNeverEnlargesThePeriphery
+--- PASS: TestAttributionNeverEnlargesThePeriphery (150.59s)
+=== RUN   TestRunAttributionIsDeterministic
+panic: test timed out after 10m0s
+	running tests:
+		TestRunAttributionIsDeterministic (4m56s)
+
+goroutine 229353 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive, 4 minutes]:
+testing.(*T).Run(0xc000450008, {0x1010629f3, 0x21}, 0x1018ce018)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc000450008)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc000450008, 0xc000041ab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x10105bc7d, 0x1c}, {0x10106adae, 0x27}, 0xc00043c018, {0x101a14fc0, 0x7f, 0x7f}, {0xc0004068c0?, 0xc0003e2420?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc0003e6960)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:300 +0x104
+
+goroutine 115751 [sync.WaitGroup.Wait]:
+sync.runtime_SemacquireWaitGroup(0xc0007f0d88?, 0x20?)
+	/usr/local/go/src/runtime/sema.go:114 +0x38
+sync.(*WaitGroup).Wait(0xc000248180)
+	/usr/local/go/src/sync/waitgroup.go:206 +0xb8
+github.com/HazelnutParadise/insyra/nn.parallelFor(0x9c, 0x8, 0xc0003e20c0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:65 +0x244
+github.com/HazelnutParadise/insyra/nn.matMul2DWithWorkers(0xc0001a43c0, 0xc0001a4500, 0x0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:1106 +0x4e4
+github.com/HazelnutParadise/insyra/nn.matMul2D(0xc0001a43c0, 0xc0001a4500)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:1092 +0x5d4
+github.com/HazelnutParadise/insyra/nn.MatMul(0xc0001a43c0, 0xc0001a4500)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:967 +0x250
+github.com/HazelnutParadise/insyra/nn.(*Tape).MatMul(0xc0000e4370, 0xc0001a43c0, 0xc0001a4500)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/autodiff.go:89 +0x44
+github.com/TimLai666/coimnet/learning.(*Network).forwardSegment(0xc0001c4280, {0x1018d9a98, 0x101a52fe0}, {{{0xc000783300, 0x210, 0x260}, {0xc0001444e0, 0x34, 0x34}, {0xc000144680, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:561 +0x7e0
+github.com/TimLai666/coimnet/learning.(*Network).forward(...)
+	/Users/timlai/Developer/coimnet/learning/network.go:508
+github.com/TimLai666/coimnet/learning.(*Network).PredictAll(0xc0001c4280, {0x1018d9a98, 0x101a52fe0}, {{{0xc000783300, 0x210, 0x260}, {0xc0001444e0, 0x34, 0x34}, {0xc000144680, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:226 +0xac
+github.com/TimLai666/coimnet/learning.(*Trainer).PredictAll(0xc0000e0300, {0x1018d9a98, 0x101a52fe0}, {0xc000279008, 0x9c, 0x9c})
+	/Users/timlai/Developer/coimnet/learning/trainer.go:259 +0x230
+github.com/TimLai666/coimnet/experiment.(*nav2dPolicy).act(0xc0001fe440, {0x1018d9a98, 0x101a52fe0}, {0xc00032ce08, 0x34, 0x0?})
+	/Users/timlai/Developer/coimnet/experiment/nav2d_policy.go:422 +0x77c
+github.com/TimLai666/coimnet/experiment.nav2dDAggerEpisode({0x1018d9a98, 0x101a52fe0}, 0xc0001fe440, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/nav2d_policy.go:249 +0x93c
+github.com/TimLai666/coimnet/experiment.trainNav2D({0x1018d9a98, 0x101a52fe0}, 0xc0001fe440, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/nav2d_policy.go:291 +0x39c
+github.com/TimLai666/coimnet/experiment.attributionRunOne({0x1018d9a98, 0x101a52fe0}, {{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/attribution.go:431 +0x89c
+github.com/TimLai666/coimnet/experiment.RunAttribution({_, _}, {{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...})
+	/Users/timlai/Developer/coimnet/experiment/attribution.go:546 +0x8ac
+github.com/TimLai666/coimnet/experiment.TestRunAttributionIsDeterministic(0xc000450488)
+	/Users/timlai/Developer/coimnet/experiment/attribution_test.go:215 +0x430
+testing.tRunner(0xc000450488, 0x1018ce018)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+
+goroutine 229458 [runnable]:
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0x0, 0x14)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:62 +0x84
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 115751
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.2/nn/kernels.go:59 +0xfc
+FAIL	github.com/TimLai666/coimnet/experiment	600.416s
+FAIL
+experiment exit=1

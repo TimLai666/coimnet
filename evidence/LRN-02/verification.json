@@ -1,0 +1,69 @@
+{
+  "requirement": "LRN-02「使用者可以以重算降低反向歷史記憶體。驗收：與完整歷史參考一致，無重複學習、重複隨機事件或教師呼叫。」",
+  "profile": "fixture",
+  "date": "2026-09-23",
+  "scope": "Ticket 25 stage three: segment recompute of the continuous and LIF core histories (dynamics), its wiring into learning.Trainer through Options.Recompute, the side-effect checks on the online learner and the chemistry layer, StepResult.GradientHorizonSteps, and the maximum-RSS comparison at T = 256, S = 16.",
+  "reproduction_command": [
+    "go test -list '^(TestLIFRecompute|TestLIFSegment|TestRecompute)' ./dynamics/ ./learning/ > evidence/LRN-02/list.txt 2>&1",
+    "go test -count=1 -race -v -run '^(TestLIFRecompute|TestLIFSegment|TestRecompute)' ./dynamics/ ./learning/ > evidence/LRN-02/test.log 2>&1",
+    "bash scripts/recompute-evidence.sh --scale full"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, 8 cores, 16 GB), commit 75708acb3c5fddc2d99b2b46ce117714d92fe384.",
+    "Tests: started 2026-09-23T15:31:10Z at 1-minute load 11.09, ended 15:31:17Z at load 10.92 (test-env.txt); other go test processes were running, so no timing in test.log is a result.",
+    "RSS comparison: generated 2026-09-23T15:30:34Z at load 12.96 (rss.json uptime). Each of the four runs is its own process under /usr/bin/time -l, which reports that process's maximum resident set size in bytes; machine load changes timing, not the arithmetic being measured, but other processes' memory pressure was not controlled."
+  ],
+  "input_fingerprints": [
+    "No external input. dynamics and learning fixtures are declared in the test files with fixed PCG seeds (learning/recompute_test.go: a 5-node, 8-edge graph with one delay-2 edge, continuous and LIF variants plus a fixed-sign copy, 23 input rows).",
+    "RSS helper (learning/recompute_rss_test.go): 8 in-edges per node drawn from PCG(1, 0) with delays in {0, 1, 2}, weights uniform [-0.05, 0.05) from PCG(1, 1), 64 input and 64 readout nodes, 256 rows of 1 + sin(t/7), one StepFrom with only the last upstream row nonzero; 50,000 continuous nodes (400,000 edges) and 20,000 LIF nodes (160,000 edges)."
+  ],
+  "observed_result": {
+    "tests": "list.txt names the 21 top-level tests the pattern selects in dynamics and learning; test.log shows 20 PASS, 1 SKIP (TestRecomputeRSSHelper, which only runs under the script) and 0 FAIL under -race, with 53 subtests passing.",
+    "same_as_full_history": "The recomputed reverse pass is bit-identical to the full history, not only within 1e-12: dynamics TestRecomputeMatchesFullHistoryBitForBit and TestLIFRecomputeMatchesFullHistoryBitForBit (plus the LIF smooth surrogate mode), and learning TestRecomputeTrainerMatchesFullHistory, where a recompute trainer and a full-history trainer take three Step and three StepFrom calls on the continuous, LIF and fixed-sign fixtures for segments 1, 4 and 7 and truncation 0 and 3 (18 subtests), with every StepResult field, the final parameters, the Adam moments, the per-entry step counts and the update count equal bit for bit. Predict, PredictAll and Spikes of a recompute trainer equal the full-history trainer's (TestRecomputePredictUnchanged).",
+    "core_history_kept": "At T = 256 and S = 16 the continuous core keeps 61 checkpoint rows and at most 20 segment rows, 81 rows within the 84-row bound, against 257 rows of full history (TestRecomputeKeepsLessHistory); the LIF core keeps 46 checkpoint rows and at most 19 segment rows against 257 (TestLIFRecomputeKeepsLessHistory).",
+    "no_repeated_learning_or_calls": "An online learner on a recompute individual, with plasticity on, makes the same 2 gradient steps, 3 plastic steps and 3 reward-gate calls (counted after the one validation call NewOnlineLearner makes) as the full-history learner, returns the same action log and ends with byte-identical individual snapshots (TestRecomputeOnlineLearnerMakesNoExtraCalls). A TrainEpisode between two chemical advances leaves both advances, the StepResult, the ChemistryReport and the snapshot identical (TestRecomputeChemistryUnchanged). The update counter, the transaction count of a step, advances once per applied step in both modes (6 after six steps).",
+    "random_events": "The training path draws no random numbers: Trainer.Step, Individual.TrainEpisode and OnlineLearner.Update never reach math/rand, whose only non-test users in dynamics, learning, plasticity, modulation, distill and simulate are the seeded shuffle intervention in learning/intervene.go and simulate/nullmodel.go. There is therefore no generator state to checkpoint and no random event a recomputed segment could repeat.",
+    "teacher_calls": "Recompute runs inside the core reverse pass of Step and StepFrom, after the upstream gradient is fixed; distill.StepDistribution calls the student's Predict once and StepFrom once per step (TestStepDistributionCallsPredictOnce), so a recomputed segment cannot trigger another teacher or feedback request.",
+    "gradient_horizon": "StepResult.GradientHorizonSteps reports how far back a step's gradient reached: 3 with Truncation 3 and 23 (the episode) with Truncation 0 or 50, on applied and accumulate-only steps, with and without recompute (TestRecomputeGradientHorizon).",
+    "unsupported_cores": "NewTrainer, RestoreTrainer and Individual.ResetOptimizer refuse Recompute on mixed and vector cores before writing anything, and a segment below 1 is refused (TestRecomputeOptionsValidation, TestRecomputeResetOptimizerRefusesUnsupportedCore).",
+    "rss": {
+      "continuous": {
+        "nodes": 50000,
+        "edges": 400000,
+        "full_max_rss_bytes": 1169195008,
+        "recompute_max_rss_bytes": 771145728,
+        "saving_bytes": 398049280,
+        "saving_fraction": 0.34,
+        "same_parameters": true
+      },
+      "lif": {
+        "nodes": 20000,
+        "edges": 160000,
+        "full_max_rss_bytes": 825606144,
+        "recompute_max_rss_bytes": 628047872,
+        "saving_bytes": 197558272,
+        "saving_fraction": 0.239,
+        "same_parameters": true
+      }
+    }
+  },
+  "assumption_statement": "A training episode starts from zero state and touches neither plasticity nor chemistry (Individual.TrainEpisode runs Trainer.Step on an independent episode; plastic and chemical updates happen only in Advance and AdvanceGated), so a recompute checkpoint needs only the core state rows. The ticket's checkpoint fields for plastic, chemical, generator and transaction state have nothing to hold on this path, and the tests above check that those states come out unchanged.",
+  "test_log": [
+    "evidence/LRN-02/test.log",
+    "evidence/LRN-02/list.txt"
+  ],
+  "limitations": [
+    "Peak memory still grows with T x N: the network layer keeps the full-width core inputs (learning/network.go:570), the core outputs, the upstream rows (learning/network.go:404) and the input gradient for the whole episode. The measured saving (34.0% continuous, 23.9% LIF) is therefore smaller than the core-history reduction from 257 to 81 rows, and the O(T/S + S) bound of ticket 25 holds for the core history only.",
+    "Because recompute is bit-identical, the permanent tests cannot tell whether Step recomputes; only the RSS comparison shows it.",
+    "Recompute goes through the streaming state, so it also refuses graphs where nodes x (max delay + 1) exceeds dynamics.MaxStateValues (2^20); the full-history path has no such cap. The whole graph has delay 0 and is not affected (AGENTS.md follow-up).",
+    "The continuous core's segment replay activates every edge on every step, so recompute costs time in proportion to edges rather than nodes (AGENTS.md follow-up).",
+    "Only the continuous and LIF cores support recompute; mixed and vector cores are refused.",
+    "ENG.md still says recompute is tracked; it is not updated here because that file is being edited in parallel work.",
+    "One machine (macOS arm64); the Linux branch of scripts/recompute-evidence.sh was checked only against a synthetic time output."
+  ],
+  "artifact_sha256": {
+    "evidence/LRN-02/rss.json": "ed8f0401c3d44061498b2d39e8b3f846f7ac772df3e1bda528757246d94cc697",
+    "evidence/LRN-02/test.log": "784ea4a2564e6ce7883d417cfd665ee9feb2e04c26eb16760a25137bc45c4fca",
+    "evidence/LRN-02/list.txt": "80432e85a67527bbd66fdafffda96c33a4a536021ab43f4503f7cd820d919ebb"
+  }
+}

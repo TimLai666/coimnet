@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-09-23 晚間補齊五項需求的 fixture 驗收，需求追蹤檔現為 79／91 通過（原始 73／85、NAT 增補 6／6）。COR-06：向量節點、共享參數與容量報告，對展開後的稠密參考，前向與反向誤差都小於 1e-16。LRN-02：`Options.Recompute` 讓訓練步不保存核心歷史、反向逐段重算，結果與完整歷史逐位相同，線上學習與化學層的呼叫次數與快照都不變；`T = 256`、`S = 16` 時最大 RSS 連續核心 1,169 MB → 771 MB、LIF 826 MB → 628 MB，網路層仍保留整段的輸入與輸出，所以不是數量級的節省。TSK-08：二維導航四個任務 × 四種策略 × 3 seed 全部完成，訓練後未見地圖的專家一致率 0.305–0.401、隨機策略 0.243–0.254，成功率仍低，不宣稱策略優劣。TSK-10：缺失與零值分離、ID 不進模型、同步與非同步配對、未見組合分割都有測試；已見配對學會了，留出組合的影像↔文字檢索三個 seed 都是 0，不宣稱形成跨模態概念。TSK-12：七組對照各 3 seed 都能執行並回報，但同時學核心與 encoder 的 normal 基準自己沒學好（未見地圖成功率 0），各組相對它的正差不代表依賴核心或接線較優。五份報告在不同負載下重跑都位元組相同。證據見 [COR-06](evidence/COR-06/verification.json)、[LRN-02](evidence/LRN-02/verification.json)、[TSK-08](evidence/TSK-08/verification.json)、[TSK-10](evidence/TSK-10/verification.json)、[TSK-12](evidence/TSK-12/verification.json)。`examples run nav2d`／`multimodal`／`attribution` 三個 CLI 入口、TSK-09 的共用核心排程與報告、OPS-07 的全圖短訓練（現行 checkpoint 單檔 64 MiB 上限裝不下全圖快照）仍在進行。
+
 2026-09-23 補上 ticket 29 串流檔案保存：`Stream.Save`／`Recognizer.LoadStream` 把神經個體、待處理音訊、CTC 與前處理身分存成單一 64 MiB 上限檔，沿用 checkpoint 的排他發布和嚴格驗證。新程序接續人工音調後，最終狀態摘要與不中斷路徑相同；錯誤 schema、checksum、缺失或 `null` 欄位與超量陣列會拒絕。Mac 完整 Go build/test/race/vet/依賴檢查與 Linux／Windows 交叉編譯通過，[證據](evidence/TSK-02/stream-file-verification.json)只涵蓋人工資料；真實授權語音、跨平台執行及超過 64 MiB 的個體檔仍待驗證。`TSK-02` 暫維持 `specified`。
 
 2026-09-23 完成 ticket 29 第二階段的資料與範例增量：授權 manifest 的 PCM16 WAV 匯入、帶來源指紋與配置前容量檢查的前處理、說話者／場次連通群分割、整檔與串流 CER／WER 及離線耗時報告、`examples run asr`。人工 WAV 端到端測試與完整 Go build/test/race/vet/依賴檢查在 Mac 通過；ASR 專用 race 日誌 72 PASS、0 FAIL。CLI 保留集整檔 CER 13/19 → 12/19，WER 9/10 不變；兩次量測最高 RSS 約 27.8／27.5 MiB。[TSK-02 證據](evidence/TSK-02/verification.json)只支持小型人工音調，`TSK-02` 維持 `specified`；目前總數以需求追蹤檔為準。Ubuntu 1 該次 SSH 認證被拒，真實授權語音尚未驗收；當時未包含檔案保存驗證，後續證據見上段。

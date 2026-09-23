@@ -1,0 +1,24 @@
+group                        parameters free_parameters    updates   before_success     before_agree     seen_success       seen_agree   unseen_success     unseen_agree  activity_before   activity_after
+normal                             2728            2608       60.0           0.0167           0.0518           0.0667           0.0983           0.0000           0.0906           0.2521           0.9346
+frozen_core                        2728            1680       60.0           0.0167           0.0518           0.1833           0.3849           0.1500           0.3840           0.2521           0.5678
+core_only                          2728             928       60.0           0.0500           0.1240           0.0500           0.0715           0.0667           0.0970           0.2521           0.7838
+generic_matched                    2728            2608       60.0           0.0500           0.1283           0.1167           0.2251           0.0500           0.1739           0.2152           0.9187
+rewired                            2728            2608       60.0           0.0167           0.0493           0.0500           0.2621           0.0000           0.2586           0.2480           0.9316
+ablated_retrained                   184             176       60.0           0.0000           0.1656           0.2000           0.4485           0.1667           0.4444           0.2925           0.8891
+capacity_matched_modulator         2752            2632       60.0           0.0167           0.0518           0.1667           0.3625           0.1167           0.4045           0.2521           0.9217
+
+Group Comparisons:
+group: frozen_core                  metric: unseen_success_rate      mean:  +0.1500 [ +0.0500,  +0.3000] dropped: 0
+group: frozen_core                  metric: unseen_expert_agreement  mean:  +0.2935 [ +0.0346,  +0.4518] dropped: 0
+group: core_only                    metric: unseen_success_rate      mean:  +0.0667 [ +0.0000,  +0.1500] dropped: 0
+group: core_only                    metric: unseen_expert_agreement  mean:  +0.0064 [ -0.2375,  +0.2097] dropped: 0
+group: generic_matched              metric: unseen_success_rate      mean:  +0.0500 [ +0.0000,  +0.1000] dropped: 0
+group: generic_matched              metric: unseen_expert_agreement  mean:  +0.0833 [ +0.0333,  +0.1816] dropped: 0
+group: rewired                      metric: unseen_success_rate      mean:  +0.0000 [ +0.0000,  +0.0000] dropped: 0
+group: rewired                      metric: unseen_expert_agreement  mean:  +0.1681 [ +0.0000,  +0.2542] dropped: 0
+group: ablated_retrained            metric: unseen_success_rate      mean:  +0.1667 [ +0.1000,  +0.2000] dropped: 0
+group: ablated_retrained            metric: unseen_expert_agreement  mean:  +0.3538 [ +0.1436,  +0.4791] dropped: 0
+group: capacity_matched_modulator   metric: unseen_success_rate      mean:  +0.1167 [ +0.0500,  +0.1500] dropped: 0
+group: capacity_matched_modulator   metric: unseen_expert_agreement  mean:  +0.3139 [ +0.1458,  +0.3994] dropped: 0
+
+Conclusion: A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.

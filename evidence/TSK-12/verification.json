@@ -1,0 +1,126 @@
+{
+  "requirement": "TSK-12「研究者可以比較核心、外圍與接線本身的貢獻。驗收：凍結、移除後重訓、重新接線、一般網路與預算匹配對照可執行。」",
+  "profile": "fixture",
+  "date": "2026-09-23",
+  "scope": "Ticket 28 stage four: the seven attribution groups (normal, frozen_core, core_only, generic_matched, rewired, ablated_retrained, capacity_matched_modulator) on the navigation fixture of stage one, three seeds each, with the pre-registered paired bootstrap against normal. The CLI entry `examples run attribution` of ticket 28 item 13 is not part of this record.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-12",
+    "COIMNET_TSK12_EVIDENCE=$PWD/evidence/TSK-12 /usr/bin/time -l go test -count=1 -timeout 0 -v -run '^TestAttributionEvidence$' ./experiment/ > evidence/TSK-12/test.log 2>&1",
+    "go vet ./experiment/ > evidence/TSK-12/vet.log 2>&1",
+    "go test -count=1 -timeout 0 -race -v -run '^(TestAttribution|TestRunAttribution|TestPairedBootstrap)' ./experiment/ > evidence/TSK-12/controls.log 2>&1",
+    "shasum -a 256 evidence/TSK-12/attribution.json evidence/TSK-12/summary.txt"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, 8 cores, 16 GB).",
+    "Recorded run: commit 82d26eb2caff1a0cfc3b2a215555cd8175a90cff, 2026-09-23T15:13:09Z at 1-minute load 4.80 to 15:13:50Z at 4.83 (run-env.txt). The experiment, learning and dynamics packages are byte-identical between 82d26eb and c8433c3.",
+    "Race controls: commit c8433c3a0868d00471455fe7db7f75cc3c401784, 15:32:38Z at load 10.06 to 15:41:32Z at load 9.62 (controls-env.txt). A first attempt without -timeout stopped at go test's default 10-minute limit while TestRunAttributionIsDeterministic was running under a load of 18 (controls-timeout.log); it is kept as recorded and is not a test failure.",
+    "Rerun: the same evidence test at c8433c3 under load 14.50 wrote an attribution.json and summary.txt with the recorded SHA-256 (rerun.sha256)."
+  ],
+  "input_fingerprints": [
+    "No external input. DefaultAttributionConfig: task avoid_obstacles (nav2d defaults 9x9, wall density 0.2, view depth 3, time limit 60), seeds 1, 2, 3, 60 episodes, hidden 16, recurrent in-degree 4, learning rate 0.05, 20 evaluation episodes per split, all seven groups, comparison paired_bootstrap against normal with interval 0.95 and 1000 resamples.",
+    "attribution.json sha256 29a25540ac5fb0023a93189bd983e29fef6815b74e3bd254503bac6348f1d9b3; summary.txt sha256 4ec4f74437213849116f4546b85c66a0a154f4cfe0ed7d75581af83b7886d8b4."
+  ],
+  "observed_result": {
+    "tests": "controls.log: 15 PASS, 1 SKIP (TestAttributionEvidence, which is the run in test.log), 0 FAIL under -race, including the parameter table, generic_matched shape, trainable groups, the add-on starting silent, one learning rate for every group, rejects, every group and seed reported, the core_only checks, TestAttributionNeverEnlargesThePeriphery, determinism, config validation, cancellation, the action-node readout scale and two paired-bootstrap tests. vet.log: no findings.",
+    "runs": "7 groups x 3 seeds = 21 runs, none failed, 60 updates each.",
+    "parameters": {
+      "normal": [
+        2728,
+        2608
+      ],
+      "frozen_core": [
+        2728,
+        1680
+      ],
+      "core_only": [
+        2728,
+        928
+      ],
+      "generic_matched": [
+        2728,
+        2608
+      ],
+      "rewired": [
+        2728,
+        2608
+      ],
+      "ablated_retrained": [
+        184,
+        176
+      ],
+      "capacity_matched_modulator": [
+        2752,
+        2632
+      ],
+      "note": "[parameters, free parameters]; the modulator add-on is 24 parameters against the MOD-10 controller's 21."
+    },
+    "unseen_mean_of_three_seeds": {
+      "normal": {
+        "success": 0.0,
+        "expert_agreement": 0.0906,
+        "activity_before": 0.2521,
+        "activity_after": 0.9346
+      },
+      "frozen_core": {
+        "success": 0.15,
+        "expert_agreement": 0.384,
+        "activity_before": 0.2521,
+        "activity_after": 0.5678
+      },
+      "core_only": {
+        "success": 0.0667,
+        "expert_agreement": 0.097,
+        "activity_before": 0.2521,
+        "activity_after": 0.7838
+      },
+      "generic_matched": {
+        "success": 0.05,
+        "expert_agreement": 0.1739,
+        "activity_before": 0.2152,
+        "activity_after": 0.9187
+      },
+      "rewired": {
+        "success": 0.0,
+        "expert_agreement": 0.2586,
+        "activity_before": 0.248,
+        "activity_after": 0.9316
+      },
+      "ablated_retrained": {
+        "success": 0.1667,
+        "expert_agreement": 0.4444,
+        "activity_before": 0.2925,
+        "activity_after": 0.8891
+      },
+      "capacity_matched_modulator": {
+        "success": 0.1167,
+        "expert_agreement": 0.4045,
+        "activity_before": 0.2521,
+        "activity_after": 0.9217
+      }
+    },
+    "comparisons_against_normal": "Paired by seed, 1000 resamples, 95%: frozen_core success +0.150 [+0.050, +0.300], agreement +0.294 [+0.035, +0.452]; core_only +0.067 [0, +0.150], +0.006 [-0.238, +0.210]; generic_matched +0.050 [0, +0.100], +0.083 [+0.033, +0.182]; rewired 0 [0, 0], +0.168 [0, +0.254]; ablated_retrained +0.167 [+0.100, +0.200], +0.354 [+0.144, +0.479]; capacity_matched_modulator +0.117 [+0.050, +0.150], +0.314 [+0.146, +0.399]. Every per-seed difference is at least 0 except core_only's agreement on seed 2 (-0.238).",
+    "reading": "The positive differences mostly reflect a weak baseline: normal trains the core weights and the encoder together, its activity rises from 0.25 to 0.93, its unseen success is 0 on all three seeds and its agreement 0.091, the lowest of the seven groups. The TSK-08 recurrent policy on the same task, seeds and schedule, which is the same model with the encoder frozen, reached unseen agreement 0.367 (evidence/TSK-08). So this run shows no drop after freezing or removing the core and supports no claim of dependence on the core or of any wiring being better. The report carries only the fixed conclusion sentence of master plan 14.4.",
+    "rewire_checks": "The three rewired runs report degrees_kept true, duplicates 0, self_loops_after 0, direction_kept true and readout_reachable true, with 279, 318 and 289 of 640 swaps accepted; the fixture's edges carry no sign, as the assumptions state.",
+    "core_only_checks": "On seeds 1 and 2 core_only's seen agreement did not rise (0.053 to 0.044 and 0.210 to 0.013), so the report attaches the five checks: every readout node reachable from the inputs, a core weight displacement of 10.65 and 10.76, mean |input| 0.251 and mean |action readout| 0.717 and 0.911 with neither saturated nor vanishing, state reset bit-identical, and a policy that receives only the observation prefix. Seed 3 learned (0.110 to 0.157) and carries no checks. No code path enlarges the periphery.",
+    "conclusion": "A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.",
+    "reproducibility": "A second run at c8433c3 under a different machine load produced byte-identical attribution.json and summary.txt."
+  },
+  "assumption_statement": "The core is the navigation policy's random sparse recurrent block, not the fly connectome; the matrix shows that every control runs under one schedule and reports its parameters and budget, not which wiring is better. ablated_retrained and capacity_matched_modulator report their parameter counts rather than matching them.",
+  "test_log": [
+    "evidence/TSK-12/test.log",
+    "evidence/TSK-12/controls.log",
+    "evidence/TSK-12/vet.log"
+  ],
+  "limitations": [
+    "The normal baseline did not learn under the pre-registered learning rate 0.05 once the encoder trains with the core, so the comparisons say little about the core's contribution. Choosing a rate or per-group rates would need a new pre-registration on other seeds before rerunning seeds 1 to 3 (AGENTS.md follow-up).",
+    "Three seeds give wide intervals; a success difference of 0.05 is one evaluation episode per seed.",
+    "Fixture scale only (9x9 maps, 16 hidden nodes, 60 episodes); not the fly connectome.",
+    "The report's config.env stores zero fields that nav2d.New replaces with defaults (AGENTS.md follow-up).",
+    "The CLI entry `examples run attribution` is not built yet.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-12/attribution.json": "29a25540ac5fb0023a93189bd983e29fef6815b74e3bd254503bac6348f1d9b3",
+    "evidence/TSK-12/summary.txt": "4ec4f74437213849116f4546b85c66a0a154f4cfe0ed7d75581af83b7886d8b4"
+  }
+}
