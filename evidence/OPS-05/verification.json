@@ -1,0 +1,26 @@
+{
+  "requirement": "OPS-05「研究者可以使用可驗證的裝置稀疏前向與反向。驗收：與 CPU 比對、裝置更新／恢復測試及實際量測；未測不標通過。」",
+  "profile": "blocked_permission",
+  "date": "2026-09-24",
+  "scope": "Status record: the backend capability layer that needs no GPU is implemented and tested; the device implementation waits for the user's choice of technology and access to a GPU machine (ticket 30 items 15 and 16).",
+  "reproduction_command": [
+    "go test -count=1 -race -v ./backend/ > evidence/OPS-05/backend-tests.log 2>&1"
+  ],
+  "environment": [
+    "macOS on Apple M3 (no discrete GPU), go1.26.5 darwin/arm64, commit 41a8559."
+  ],
+  "observed_result": {
+    "status": "blocked_permission: the GPU technology and the target machine have not been chosen, and no remote execution access to a GPU machine is available.",
+    "ready": "backend declares Capabilities (continuous and spiking forward, sparse backward, variable weights, teacher loss, device state save, determinism); the CPU backend declares all of them; Missing and Check refuse an unsupported combination before running; Select falls back to the CPU only when allowed and reports it in FallbackReport; the update Ledger never re-applies half an update after a device failure. backend-tests.log: 5 tests PASS under -race.",
+    "missing": "No device backend exists. The candidate technologies (CUDA through cgo, Vulkan compute, WebGPU through wgpu-native, OpenCL) and their integration with Go and Insyra have not been decided. The known GPU machine (Ubuntu 1 with an RTX 4070, 12 GB) refused SSH authentication in the TSK-02 probe (Permission denied (publickey,password)), so there is also no hardware to run on (blocked_hardware in the clean-environment run).",
+    "unblock_condition": "The user picks the technology and grants remote execution on a GPU machine. Acceptance then needs sparse forward and backward matching the CPU within 1e-6 or a declared error, device state save and restore, transfer, compile, warmup and steady timings, and a device memory check before running, without presenting generic matrix acceleration as an accelerated fly core."
+  },
+  "assumption_statement": "Nothing in this record claims device acceleration; every result in the repository ran on the CPU.",
+  "test_log": [
+    "evidence/OPS-05/backend-tests.log"
+  ],
+  "limitations": [
+    "Blocked on the user's decision about the GPU technology and on access to a GPU machine.",
+    "The transfer column of every benchmark stays 0 until a device backend exists."
+  ]
+}

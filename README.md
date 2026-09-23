@@ -56,6 +56,8 @@
 
 以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。
 
+目前有兩項受阻，要等使用者提供資料或做決定：TSK-11 需要每類任務的有授權真實資料（語音與文字已有授權 manifest 讀取器，OCR 與影音匯入器要等資料格式確定後再做，[紀錄](evidence/TSK-11/verification.json)）；OPS-05 需要選定 GPU 後端技術並提供可遠端執行的 GPU 機器（能力偵測與明示的 CPU 回退已完成，[紀錄](evidence/OPS-05/verification.json)）。
+
 ## 科學界線
 
 下列界線逐條對應[主規格 3.2](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md#chapter-03)：

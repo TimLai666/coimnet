@@ -154,7 +154,7 @@ package connectome // MappingEvidence 與跨資料集拒絕
   峰值 RSS 與耗時；`evidence/OPS-07/`（或 blocked_hardware 與精確指令）。
 - [ ] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
   全步驟與 `run.json`、`report` 的 22.3 清單；`evidence/OPS-08/`、`evidence/OPS-10/`。
-- [ ] 第五階段：`backend` 能力偵測與明示回退（可做）；裝置實作 blocked，等使用者決定技術與存取。
+- [ ] 第五階段：`backend` 能力偵測與明示回退（已完成，5 個測試在 race 下通過，`evidence/OPS-05/`）；裝置實作 blocked，等使用者決定技術與存取。
 
 ## 第一階段證據（2026-09-17）
 
