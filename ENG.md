@@ -79,6 +79,8 @@
 
 `tasks/asr.Stream` 沿用辨識器的 log-mel 前處理與持續個體，快照需要同時識別取樣率、前處理版本與字母表，僅比對核心形狀不足以安全恢復。每次 `Feed`／`Flush` 成功才提交狀態，取消或數值錯誤保留呼叫前的完整狀態。已分析過的重疊樣本不能重複補窗，尚未分析過的短音訊則在 `Flush` 補零成一窗。驗收歸 ticket 29。
 
+`Stream.Save`／`Recognizer.LoadStream` 使用 `coimnet-asr-stream/v1` 的單檔 envelope，包含完整 `coimnet-individual-checkpoint/v1` 文件與待處理音訊、CTC 狀態、前處理身分；兩層各自核對 schema 與 SHA-256，外層檢查必填欄位、null 與未知欄位，內層沿用 checkpoint 個體的原始 JSON、數值與神經狀態驗證。待處理樣本先按視窗長度限量掃描，不可能的輸出字數先與神經步數比較，之後才配置 rune 陣列。64 MiB 上限與排他發布沿用 checkpoint，認證或簽章不在此格式內。檔案恢復仍要經 `RestoreStream` 比對辨識器語意，跨程序人工音訊接續與不中斷結果相同；此契約不表示已能保存超過上限的全圖個體。驗收歸 ticket 29。
+
 ASR 資料清單只指定使用者提供的 PCM16 WAV、文字稿、取樣率、聲道、說話者、場次與授權來源。`ReadDataset` 以 `os.Root` 固定清單的資料夾根目錄，清單與錄音都透過該根目錄開檔，拒絕指向外部的連結；核對音檔與宣告一致，按混音、線性重取樣、峰值正規化的順序產生樣本，並保存原檔指紋與處理報告。讀取單筆 WAV 時，來源 SHA-256 與解碼必須使用同一份位元組；在配置處理緩衝前檢查來源大小及輸出長度。預設每檔原始資料 64 MiB、每檔處理緩衝估算 512 MiB、全批處理緩衝估算總額 2 GiB，可用 `ReadDatasetWithLimits` 明確調整；這是資料配置估算，不是 RSS 上限或串流語料讀取器。`SplitBySpeakerSession` 以共享說話者或場次形成的連通群分割，只有一群時拒絕分割；不同大小的群組在最多 2,000,000 個計數容量及 10,000,000 個工作單位內找全域最接近的可行分割，超過上限回錯，不交付偏差未知的近似結果。`MeasureStreaming` 與 `EvaluateStreaming` 的耗時只量本機離線逐塊計算，文字、CER／WER 與耗時分開記錄，不把未量到的影格數寫成 0。契約與尚待驗收項見 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md)。
 
 ### PPO 更新（2026-09-21）

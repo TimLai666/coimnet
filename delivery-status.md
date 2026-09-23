@@ -2,7 +2,9 @@
 
 ## 目前階段
 
-2026-09-23 完成 ticket 29 第二階段的資料與範例增量：授權 manifest 的 PCM16 WAV 匯入、帶來源指紋與配置前容量檢查的前處理、說話者／場次連通群分割、整檔與串流 CER／WER 及離線耗時報告、`examples run asr`。人工 WAV 端到端測試與完整 Go build/test/race/vet/依賴檢查在 Mac 通過；ASR 專用 race 日誌 72 PASS、0 FAIL。CLI 保留集整檔 CER 13/19 → 12/19，WER 9/10 不變；兩次量測最高 RSS 約 27.8／27.5 MiB。[TSK-02 證據](evidence/TSK-02/verification.json)只支持小型人工音調，`TSK-02` 維持 `specified`，原始需求仍為 64／85、NAT 6／6。Ubuntu 1 本輪 SSH 認證被拒，真實授權語音與嚴格串流檔案保存尚未驗收。
+2026-09-23 補上 ticket 29 串流檔案保存：`Stream.Save`／`Recognizer.LoadStream` 把神經個體、待處理音訊、CTC 與前處理身分存成單一 64 MiB 上限檔，沿用 checkpoint 的排他發布和嚴格驗證。新程序接續人工音調後，最終狀態摘要與不中斷路徑相同；錯誤 schema、checksum、缺失或 `null` 欄位與超量陣列會拒絕。Mac 完整 Go build/test/race/vet/依賴檢查與 Linux／Windows 交叉編譯通過，[證據](evidence/TSK-02/stream-file-verification.json)只涵蓋人工資料；真實授權語音、跨平台執行及超過 64 MiB 的個體檔仍待驗證。`TSK-02` 暫維持 `specified`。
+
+2026-09-23 完成 ticket 29 第二階段的資料與範例增量：授權 manifest 的 PCM16 WAV 匯入、帶來源指紋與配置前容量檢查的前處理、說話者／場次連通群分割、整檔與串流 CER／WER 及離線耗時報告、`examples run asr`。人工 WAV 端到端測試與完整 Go build/test/race/vet/依賴檢查在 Mac 通過；ASR 專用 race 日誌 72 PASS、0 FAIL。CLI 保留集整檔 CER 13/19 → 12/19，WER 9/10 不變；兩次量測最高 RSS 約 27.8／27.5 MiB。[TSK-02 證據](evidence/TSK-02/verification.json)只支持小型人工音調，`TSK-02` 維持 `specified`，原始需求仍為 64／85、NAT 6／6。Ubuntu 1 該次 SSH 認證被拒，真實授權語音尚未驗收；當時未包含檔案保存驗證，後續證據見上段。
 
 2026-09-22 完成 ticket 26 的人工環境學習驗收：取樣式 PPO、正確的時間上限後續價值與 `examples run gridnav --method imitation|ppo` 已整合。三個 seed 各 200 次更新，平均回報 0.318167 → 0.605167，高於隨機基線 0.357333；三組都比訓練前進步，但 seed 1 仍低於自己的隨機基線。模仿的 50／200／500 episodes 原始曲線已保存，500 episodes 時三組一致率皆提高。LRN-09 標為 fixture 範圍 `passed`，原始需求累計 64／85，NAT 增補 6／6。
 

@@ -1,0 +1,62 @@
+2026/09/23 21:49:02 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestIndividualBytesRoundTrip
+=== RUN   TestIndividualBytesRoundTrip/continuous
+=== RUN   TestIndividualBytesRoundTrip/lif
+--- PASS: TestIndividualBytesRoundTrip (0.01s)
+    --- PASS: TestIndividualBytesRoundTrip/continuous (0.01s)
+    --- PASS: TestIndividualBytesRoundTrip/lif (0.00s)
+=== RUN   TestDecodeIndividualBytesRejectsMalformedJSON
+=== RUN   TestDecodeIndividualBytesRejectsMalformedJSON/missing_numeric
+=== RUN   TestDecodeIndividualBytesRejectsMalformedJSON/null_numeric
+=== RUN   TestDecodeIndividualBytesRejectsMalformedJSON/corrupt_checksum
+--- PASS: TestDecodeIndividualBytesRejectsMalformedJSON (0.01s)
+    --- PASS: TestDecodeIndividualBytesRejectsMalformedJSON/missing_numeric (0.01s)
+    --- PASS: TestDecodeIndividualBytesRejectsMalformedJSON/null_numeric (0.00s)
+    --- PASS: TestDecodeIndividualBytesRejectsMalformedJSON/corrupt_checksum (0.00s)
+=== RUN   TestSaveLoadPayloadCanonicalizesBeforeChecksum
+--- PASS: TestSaveLoadPayloadCanonicalizesBeforeChecksum (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	1.663s
+2026/09/23 21:49:02 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestStreamFileResumesExactlyAndDoesNotOverwrite
+--- PASS: TestStreamFileResumesExactlyAndDoesNotOverwrite (0.70s)
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_sample_rate
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_sample_rate
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_pending_element
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_flushed_flag
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_alphabet_element
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/unknown_field
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/pending_count_checked_before_decode
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_front_end_field
+=== RUN   TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_front_end_field
+--- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum (0.39s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_sample_rate (0.04s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_sample_rate (0.03s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_pending_element (0.03s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_flushed_flag (0.03s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_alphabet_element (0.04s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/unknown_field (0.06s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/pending_count_checked_before_decode (0.03s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_front_end_field (0.03s)
+    --- PASS: TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_front_end_field (0.03s)
+=== RUN   TestStreamFileRejectsCanceledAndOversizeRead
+--- PASS: TestStreamFileRejectsCanceledAndOversizeRead (0.00s)
+=== RUN   TestStreamFileRejectsWrongSchemaAndChecksum
+=== RUN   TestStreamFileRejectsWrongSchemaAndChecksum/schema_version
+=== RUN   TestStreamFileRejectsWrongSchemaAndChecksum/checksum
+--- PASS: TestStreamFileRejectsWrongSchemaAndChecksum (0.11s)
+    --- PASS: TestStreamFileRejectsWrongSchemaAndChecksum/schema_version (0.02s)
+    --- PASS: TestStreamFileRejectsWrongSchemaAndChecksum/checksum (0.02s)
+=== RUN   TestStreamFileAcrossProcess
+--- PASS: TestStreamFileAcrossProcess (1.38s)
+=== RUN   TestStreamFileChild
+--- PASS: TestStreamFileChild (0.00s)
+=== RUN   TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion
+--- PASS: TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion (0.01s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/asr	4.406s

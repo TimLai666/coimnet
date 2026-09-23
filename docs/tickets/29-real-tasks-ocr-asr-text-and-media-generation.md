@@ -10,7 +10,7 @@ UTF-8 串流解碼，影音生成分成核心生成、固定還原器與外部�
 Blocked by：26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）、
 TSK-11 的真實資料：**受阻於使用者提供有授權的資料**（每類任務各一份，含授權欄位）
 
-Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時及 CLI fixture，完整保存介面與真實語音驗收仍待完成；第三階段 tokenizer 已落地，其餘待派
+Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時、CLI fixture 與嚴格串流檔案保存；真實授權語音驗收仍待完成；第三階段 tokenizer 已落地，其餘待派
 
 對應需求：TSK-01（OCR：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過）、TSK-02（語音：
 整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代）、TSK-03（文字生成：因果前綴、
@@ -157,6 +157,12 @@ Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 
 `MeasureStreaming`／`EvaluateStreaming` 回報每筆串流的文字、CER／WER、音訊長度、逐塊本機耗時與第一次有文字輸出時收到的樣本數。`examples run asr` 只在記憶體產生人工音調，不下載或保存模型。保留集 10 筆、19 字元，整檔 CER 從 13/19 降至 12/19，WER 前後都是 9/10；串流評估 CER 為 12/19。這只證明小型 fixture 的框架流程，沒有自然語音能力結論。
 
 [TSK-02 驗證紀錄](../../evidence/TSK-02/verification.json) 保存兩次 CLI 報告、原始量測、來源指紋，以及完整測試／race／vet／build／相依性檢查結果。Mac CPU 路徑通過；Ubuntu 1 本次 SSH 認證失敗，沒有跨平台結論。`TSK-02` 仍為 `specified`：`StreamState` 缺專用嚴格檔案載入器、容量限制與原子落盤；真實授權語音上的匯入、訓練、推論、評估歸 TSK-11，仍為 blocked_data。
+
+## 第二階段串流檔案保存（2026-09-23，局部驗證）
+
+`Stream.Save`／`Recognizer.LoadStream` 把完整串流存成單一 `coimnet-asr-stream/v1` 檔案；其中的個體快照沿用 `coimnet-individual-checkpoint/v1` 嚴格解碼。檔案上限 64 MiB；已存在目的地不覆寫，取消於發布前不留檔。載入拒絕錯誤 schema／checksum、缺失或 `null` 的數值與必填欄位、未知欄位及不符辨識器設定的狀態；待處理樣本與不可能的已輸出文字都在大型切片配置前檢查。人工音調測試在新程序載入中途檔後，最終狀態與不中斷路徑的 JSON SHA-256 相同。詳細命令與日誌見 [串流保存驗證](../../evidence/TSK-02/stream-file-verification.json)。
+
+上一節的驗證紀錄保留當時的範圍；這項保存能力已補上。`TSK-02` 暫維持 `specified`，因為尚無真實授權語音的任務驗收、跨平台檔案續跑，以及超過 64 MiB 個體的保存方案。真實資料匯入、訓練、推論與評估也屬 TSK-11，維持 blocked_data。
 
 ## 依據
 
