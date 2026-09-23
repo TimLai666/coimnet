@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -461,15 +462,21 @@ func diffParameters(before, after learning.Parameters) map[string]int {
 	return counts
 }
 
-// sha256File is the production twin of the test helper of the same purpose,
-// kept separate so saveArtifacts does not depend on a test file.
+// sha256File streams the file through SHA-256, so hashing the store, the
+// parameter set or a whole-graph snapshot never holds the file in memory. It
+// is the production twin of the test helper of the same purpose, kept
+// separate so saveArtifacts does not depend on a test file.
 func sha256File(path string) (string, error) {
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
-	sum := sha256.Sum256(data)
-	return hex.EncodeToString(sum[:]), nil
+	defer file.Close()
+	hash := sha256.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 // neuralDigest is the SHA-256 of one neural state's canonical JSON.

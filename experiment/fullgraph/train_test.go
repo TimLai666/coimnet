@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"testing"
 
@@ -330,4 +331,36 @@ func TestShortTrainingRejects(t *testing.T) {
 			t.Fatal("saveArtifacts accepted an existing individual.json")
 		}
 	})
+}
+
+// TestSha256FileStreamsLikeTheWholeFile hashes a 3 MiB file, many times the
+// copy buffer, and requires the streamed digest to equal the digest of the
+// whole content. The heap may grow by far less than the file while it is
+// hashed, so the store, parameter and snapshot files Run hashes are never
+// held in memory whole.
+func TestSha256FileStreamsLikeTheWholeFile(t *testing.T) {
+	content := make([]byte, 3<<20)
+	for i := range content {
+		content[i] = byte(i*7 + i>>11)
+	}
+	path := filepath.Join(t.TempDir(), "content.bin")
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(content)
+	want := hex.EncodeToString(sum[:])
+
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	got, err := sha256File(path)
+	runtime.ReadMemStats(&after)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != want {
+		t.Errorf("sha256File = %s, want %s", got, want)
+	}
+	if grew := after.TotalAlloc - before.TotalAlloc; grew >= 1<<20 {
+		t.Errorf("hashing a %d-byte file allocated %d bytes, want under 1 MiB (streamed, never read whole)", len(content), grew)
+	}
 }
