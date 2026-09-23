@@ -7,8 +7,10 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os/exec"
 	"runtime"
 	"runtime/debug"
+	"strings"
 
 	"github.com/HazelnutParadise/insyra/nn"
 )
@@ -28,7 +30,22 @@ type DoctorReport struct {
 	CPU           CPUReport        `json:"cpu"`
 	GPU           GPUReport        `json:"gpu"`
 	Insyra        InsyraReport     `json:"insyra"`
+	MediaTools    MediaToolsReport `json:"media_tools"`
 	Core          CoreCapabilities `json:"core"`
+}
+
+// MediaToolsReport records optional media-related executables separately from implemented core capabilities.
+type MediaToolsReport struct {
+	VideoPackager ToolReport `json:"video_packager"`
+}
+
+// ToolReport records whether an optional executable is available and reports its version probe when possible.
+type ToolReport struct {
+	Tool    string `json:"tool"`
+	Status  string `json:"status"`
+	Path    string `json:"path,omitempty"`
+	Version string `json:"version,omitempty"`
+	Reason  string `json:"reason,omitempty"`
 }
 
 // RuntimeReport identifies the runtime selected for this process.
@@ -134,9 +151,13 @@ func Doctor(ctx context.Context) (DoctorReport, error) {
 			GOOS:      runtime.GOOS,
 			GOARCH:    runtime.GOARCH,
 		},
-		BuildInfo: buildInfoReport(),
-		CPU:       cpuReport(),
-		Core:      coreCapabilities(),
+		BuildInfo:  buildInfoReport(),
+		CPU:        cpuReport(),
+		MediaTools: MediaToolsReport{VideoPackager: probeTool(ctx, "ffmpeg", exec.LookPath, runVersionCommand)},
+		Core:       coreCapabilities(),
+	}
+	if err := ctx.Err(); err != nil {
+		return report, err
 	}
 
 	gpu, err := probeGPU(ctx)
@@ -154,6 +175,28 @@ func Doctor(ctx context.Context) (DoctorReport, error) {
 		return report, err
 	}
 	return report, nil
+}
+
+func probeTool(ctx context.Context, tool string, lookPath func(string) (string, error), runVersion func(context.Context, string) ([]byte, error)) ToolReport {
+	report := ToolReport{Tool: tool, Status: "absent"}
+	path, err := lookPath(tool)
+	if err != nil {
+		return report
+	}
+	report.Path = path
+	output, err := runVersion(ctx, path)
+	if err != nil {
+		report.Status = "probe_failed"
+		report.Reason = err.Error()
+		return report
+	}
+	report.Status = "available"
+	report.Version = strings.TrimSuffix(strings.SplitN(strings.TrimSpace(string(output)), "\n", 2)[0], "\r")
+	return report
+}
+
+func runVersionCommand(ctx context.Context, path string) ([]byte, error) {
+	return exec.CommandContext(ctx, path, "-version").CombinedOutput()
 }
 
 func buildInfoReport() BuildInfoReport {

@@ -3,10 +3,13 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"math"
+	"os"
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"testing"
 )
 
@@ -74,6 +77,41 @@ func TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities(t *testin
 	}
 	if _, ok := document["gpu"]; !ok {
 		t.Fatal("JSON gpu field is missing")
+	}
+	mediaTools, ok := document["media_tools"].(map[string]any)
+	if !ok {
+		t.Fatal("JSON media_tools object is missing")
+	}
+	if _, ok := mediaTools["video_packager"].(map[string]any); !ok {
+		t.Fatal("JSON media_tools.video_packager object is missing")
+	}
+}
+
+func TestDoctorMediaToolProbeReportsAvailabilityAndFailures(t *testing.T) {
+	runVersion := func(context.Context, string) ([]byte, error) {
+		return []byte("ffmpeg version 7.1\nbuild details\n"), nil
+	}
+	lookPath := func(name string) (string, error) {
+		return "/usr/bin/" + name, nil
+	}
+	available := probeTool(context.Background(), "ffmpeg", lookPath, runVersion)
+	if available.Tool != "ffmpeg" || available.Status != "available" || available.Path != "/usr/bin/ffmpeg" || available.Version != "ffmpeg version 7.1" {
+		t.Fatalf("available probe = %+v", available)
+	}
+
+	absent := probeTool(context.Background(), "ffmpeg", func(string) (string, error) {
+		return "", os.ErrNotExist
+	}, runVersion)
+	if absent.Tool != "ffmpeg" || absent.Status != "absent" {
+		t.Fatalf("absent probe = %+v", absent)
+	}
+
+	probeFailure := errors.New("version command failed")
+	failed := probeTool(context.Background(), "ffmpeg", lookPath, func(context.Context, string) ([]byte, error) {
+		return nil, probeFailure
+	})
+	if failed.Tool != "ffmpeg" || failed.Status != "probe_failed" || !strings.Contains(failed.Reason, probeFailure.Error()) {
+		t.Fatalf("failed probe = %+v", failed)
 	}
 }
 
