@@ -58,6 +58,33 @@ func TestConfigValidate(t *testing.T) {
 	})
 }
 
+func TestDefaultConfig(t *testing.T) {
+	want := Config{
+		Data:         synthetic.Config{Samples: 180, AudioDropRate: 0.2},
+		Holdout:      []synthetic.Label{{Shape: 2, Colour: 1}},
+		TrainSeed:    1,
+		EvalSeed:     2,
+		Seeds:        []uint64{1, 2, 3},
+		Epochs:       6,
+		Hidden:       16,
+		Settle:       3,
+		LearningRate: 0.05,
+	}
+	a := DefaultConfig()
+	if !reflect.DeepEqual(a, want) {
+		t.Fatalf("DefaultConfig() = %+v, want %+v", a, want)
+	}
+	if err := a.Validate(); err != nil {
+		t.Fatalf("DefaultConfig().Validate() = %v, want nil", err)
+	}
+	b := DefaultConfig()
+	a.Holdout[0].Shape++
+	a.Seeds[0]++
+	if !reflect.DeepEqual(b, want) {
+		t.Fatalf("editing one DefaultConfig() result changed another: %+v, want %+v", b, want)
+	}
+}
+
 func TestRunHonoursCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()

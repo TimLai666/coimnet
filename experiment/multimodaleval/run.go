@@ -27,6 +27,24 @@ type Config struct {
 	LearningRate float64           `json:"learning_rate"` // > 0
 }
 
+// DefaultConfig is the fixture protocol the CLI and the evidence use:
+// Data {Samples 180, AudioDropRate 0.2}, Holdout {{Shape 2, Colour 1}},
+// TrainSeed 1, EvalSeed 2, Seeds {1, 2, 3}, Epochs 6, Hidden 16, Settle 3,
+// LearningRate 0.05. Every call returns new Holdout and Seeds slices.
+func DefaultConfig() Config {
+	return Config{
+		Data:         synthetic.Config{Samples: 180, AudioDropRate: 0.2},
+		Holdout:      []synthetic.Label{{Shape: 2, Colour: 1}},
+		TrainSeed:    1,
+		EvalSeed:     2,
+		Seeds:        []uint64{1, 2, 3},
+		Epochs:       6,
+		Hidden:       16,
+		Settle:       3,
+		LearningRate: 0.05,
+	}
+}
+
 // Validate checks the contract ranges: at least one distinct in-range
 // holdout combination, training and evaluation data seeds that differ, at
 // least one distinct model seed, epochs 1..1000, hidden 2..256, settle 1..16
