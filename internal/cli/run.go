@@ -30,6 +30,9 @@ Commands:
                                 split and a core-disconnect check
   examples run gridnav [flags]  Run the synthetic one-dimensional corridor:
                                 expert imitation or recurrent PPO training
+  examples run ablate [flags]   Run the MOD-10 modulation ablation: every control
+                                group scored per seed, one report per group plus
+                                a summary under DIR/ablation
   run --config FILE --dry-run   Expand a strict configuration, report where every
                                 value came from, estimate the memory one run needs
                                 and refuse instead of shrinking anything
@@ -161,7 +164,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run gridnav [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run gridnav [flags] | run ablate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
@@ -172,6 +175,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 				{"name": "continual-matrix", "profile": "fixture", "description": "Two-task delayed-core continual matrix with train stages, a rule change and a preregistered paired bootstrap comparison"},
 				{"name": "ocr", "profile": "fixture", "description": "Synthetic glyph line recognition: CTC-trained column reader with family split, unseen combinations and a core-disconnect check"},
 				{"name": "gridnav", "profile": "fixture", "description": "Synthetic one-dimensional corridor with expert imitation and recurrent PPO action-feedback learning"},
+				{"name": "ablate", "profile": "fixture", "description": "MOD-10 modulation ablation: five control groups scored per seed on one delayed-pulse split, written as one report per group plus a summary"},
 			})
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "delayed" {
@@ -191,6 +195,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "gridnav" {
 			return runGridnav(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "ablate" {
+			return runAblate(ctx, args[3:], stdout, stderr)
 		}
 	}
 	return fmt.Errorf("unknown command; use coimnet --help")
