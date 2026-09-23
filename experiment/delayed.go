@@ -8,15 +8,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/delayedfixture"
 	"github.com/TimLai666/coimnet/learning"
 )
 
 // Episode keeps observations separate from the trainer's target.
-type Episode struct {
-	Input  [][]float64 `json:"input"`
-	Target []float64   `json:"target"`
-}
+type Episode = delayedfixture.Episode
 
 // DelayedConfig is the complete preregistered synthetic task protocol.
 type DelayedConfig struct {
@@ -68,24 +65,14 @@ type DelayedReport struct {
 // stream exists: seed plus sample index determines all five input steps.
 // The pulse occurs only at step zero; the target is 0.4 times that pulse.
 func DelayedEpisode(seed, index uint64) Episode {
-	v := mix(seed + index*0x9e3779b97f4a7c15)
-	a := .4 + .6*float64(v>>11)/float64(uint64(1)<<53)
-	if v&1 == 0 {
-		a = -a
-	}
-	return Episode{[][]float64{{a}, {0}, {0}, {0}, {0}}, []float64{.4 * a}}
+	return delayedfixture.DelayedEpisode(seed, index)
 }
 
 // NewDelayedTrainer fixes a three-neuron chain with one memory self-connection.
 // Only core weights train. The fixed encoder injects into neuron 0; the fixed
 // one-dimensional readout observes neuron 2 only, with no raw-input bypass.
 func NewDelayedTrainer(seed uint64, rate float64, freeze bool) (*learning.Trainer, error) {
-	c := learning.Config{Dynamics: dynamics.Config{Nodes: 3, Sources: []int{0, 1, 1}, Targets: []int{1, 1, 2}, DT: 1, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
-	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.15 + float64(mix(seed)%100)/1000, .2, .2}, Bias: []float64{0, 0, 0}, LogTau: []float64{math.Log(2), math.Log(2), math.Log(2)}}, Encoder: []float64{1, 0, 0}, Readout: []float64{1}}
-	o := learning.DefaultOptions()
-	o.LearningRate = rate
-	o.Trainable = learning.Trainable{Weights: !freeze}
-	return learning.NewTrainer(c, p, o)
+	return delayedfixture.NewDelayedTrainer(seed, rate, freeze)
 }
 
 // RunDelayed runs matched budgets for learned, frozen and shuffled-feedback
@@ -217,10 +204,7 @@ func shuffledTrainingIndices(seed uint64, count int) []int {
 	return indices
 }
 func mix(x uint64) uint64 {
-	x += 0x9e3779b97f4a7c15
-	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9
-	x = (x ^ (x >> 27)) * 0x94d049bb133111eb
-	return x ^ (x >> 31)
+	return delayedfixture.Mix(x)
 }
 func hash(v any) string { b, _ := json.Marshal(v); return fmt.Sprintf("%x", sha256.Sum256(b)) }
 func distance(a, b []float64) float64 {

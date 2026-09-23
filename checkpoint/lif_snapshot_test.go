@@ -9,13 +9,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/internal/delayedfixture"
 	"github.com/TimLai666/coimnet/learning"
 )
 
 func newLIFTrainer(t *testing.T, seed uint64) *learning.Trainer {
 	t.Helper()
-	trainer, err := experiment.NewDelayedLIFTrainer(seed, .02, learning.Trainable{Theta: true})
+	trainer, err := delayedfixture.NewDelayedLIFTrainer(seed, .02, learning.Trainable{Theta: true})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -6,7 +6,39 @@ import (
 	"testing"
 
 	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/internal/delayedfixture"
+	"github.com/TimLai666/coimnet/learning"
 )
+
+func TestDelayedFixtureWrappers(t *testing.T) {
+	for _, pair := range [][2]uint64{{1001, 0}, {1003, 7}} {
+		if got, want := experiment.DelayedEpisode(pair[0], pair[1]), delayedfixture.DelayedEpisode(pair[0], pair[1]); !reflect.DeepEqual(got, want) {
+			t.Fatalf("episode wrapper mismatch for seed=%d index=%d: got %+v, want %+v", pair[0], pair[1], got, want)
+		}
+	}
+	continuous, err := experiment.NewDelayedTrainer(1, .1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	continuousFixture, err := delayedfixture.NewDelayedTrainer(1, .1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(continuous.Snapshot().Parameters, continuousFixture.Snapshot().Parameters) {
+		t.Fatal("continuous trainer wrapper mismatch")
+	}
+	lif, err := experiment.NewDelayedLIFTrainer(1, .1, learning.Trainable{Weights: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifFixture, err := delayedfixture.NewDelayedLIFTrainer(1, .1, learning.Trainable{Weights: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(lif.Snapshot().Parameters, lifFixture.Snapshot().Parameters) {
+		t.Fatal("LIF trainer wrapper mismatch")
+	}
+}
 
 func TestDelayedBenchmarkLearnsWithFixedPeriphery(t *testing.T) {
 	config := experiment.DefaultDelayedConfig()

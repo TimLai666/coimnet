@@ -12,7 +12,7 @@ import (
 
 	"github.com/TimLai666/coimnet/checkpoint"
 	"github.com/TimLai666/coimnet/dynamics"
-	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/internal/delayedfixture"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
@@ -223,7 +223,7 @@ func plasticChemicalDeclaration() modulation.ChemistryConfig {
 func runPlasticChemicalEpisodes(ctx context.Context, individual *learning.Individual, from, to int) ([][]float64, error) {
 	outputs := make([][]float64, 0, to-from)
 	for e := from; e < to; e++ {
-		ep := experiment.DelayedEpisode(plasticChemicalSeed, uint64(e))
+		ep := delayedfixture.DelayedEpisode(plasticChemicalSeed, uint64(e))
 		out, err := individual.Advance(ctx, ep.Input)
 		if err != nil {
 			return nil, err

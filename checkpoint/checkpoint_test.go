@@ -17,7 +17,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/internal/delayedfixture"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -378,7 +378,7 @@ func TestCheckpointHelperProcess(t *testing.T) {
 
 func newDelayedTrainer(t *testing.T, seed uint64) *learning.Trainer {
 	t.Helper()
-	trainer, err := experiment.NewDelayedTrainer(seed, .02, false)
+	trainer, err := delayedfixture.NewDelayedTrainer(seed, .02, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,7 +398,7 @@ func testState(t *testing.T) State {
 func train(t *testing.T, trainer *learning.Trainer, seed, start, end uint64) {
 	t.Helper()
 	for i := start; i < end; i++ {
-		ep := experiment.DelayedEpisode(seed, i)
+		ep := delayedfixture.DelayedEpisode(seed, i)
 		if _, err := trainer.Step(context.Background(), ep.Input, ep.Target); err != nil {
 			t.Fatalf("step %d: %v", i, err)
 		}
@@ -409,7 +409,7 @@ func predictions(t *testing.T, trainer *learning.Trainer, seed uint64, count int
 	t.Helper()
 	out := make([][]float64, count)
 	for i := range out {
-		ep := experiment.DelayedEpisode(seed, uint64(i))
+		ep := delayedfixture.DelayedEpisode(seed, uint64(i))
 		prediction, err := trainer.Predict(context.Background(), ep.Input)
 		if err != nil {
 			t.Fatal(err)
