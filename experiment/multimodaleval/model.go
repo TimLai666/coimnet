@@ -258,15 +258,37 @@ type Scores struct {
 	AudioToImageShape float64            `json:"audio_to_image_shape"`
 }
 
-// concept pairs one input's label with its retrieval vector.
-type concept struct {
-	label synthetic.Label
-	vec   []float64
+// prediction is one scored input: its label, modality and concept vector
+// (the concatenated softmax of the two heads).
+type prediction struct {
+	Label    synthetic.Label
+	Modality string
+	Vec      []float64
 }
 
-// score scores the examples with Predict only (no step).
+// predict runs Predict on every example (no step) and returns one prediction
+// per example in order.
+func predict(ctx context.Context, tr *learning.Trainer, examples []example) ([]prediction, error) {
+	out := make([]prediction, len(examples))
+	for i, ex := range examples {
+		logits, err := tr.Predict(ctx, ex.Input)
+		if err != nil {
+			return nil, err
+		}
+		out[i] = prediction{Label: ex.Label, Modality: ex.Modality, Vec: conceptVector(logits)}
+	}
+	return out, nil
+}
+
+// score scores the examples with Predict only (no step): per-modality argmax
+// accuracy (softmax preserves the argmax of the logits, so the concept vector
+// decides both) and the three retrieval scores via retrieve, so a missing
+// side scores 0 instead of NaN.
 func score(ctx context.Context, tr *learning.Trainer, examples []example) (Scores, error) {
-	var images, texts, audios []concept
+	preds, err := predict(ctx, tr, examples)
+	if err != nil {
+		return Scores{}, err
+	}
 	counts := map[string]int{}
 	shapeHits := map[string]int{}
 	colourHits := map[string]int{}
@@ -274,60 +296,35 @@ func score(ctx context.Context, tr *learning.Trainer, examples []example) (Score
 		ShapeAccuracy:  map[string]float64{},
 		ColourAccuracy: map[string]float64{},
 	}
-	for _, ex := range examples {
-		logits, err := tr.Predict(ctx, ex.Input)
-		if err != nil {
-			return Scores{}, err
-		}
+	var images, texts, audios []prediction
+	for _, p := range preds {
 		out.Inputs++
-		counts[ex.Modality]++
-		if argmax(logits[:synthetic.Shapes]) == ex.Label.Shape {
-			shapeHits[ex.Modality]++
+		counts[p.Modality]++
+		if argmax(p.Vec[:synthetic.Shapes]) == p.Label.Shape {
+			shapeHits[p.Modality]++
 		}
-		if argmax(logits[synthetic.Shapes:]) == ex.Label.Colour {
-			colourHits[ex.Modality]++
+		if argmax(p.Vec[synthetic.Shapes:]) == p.Label.Colour {
+			colourHits[p.Modality]++
 		}
-		c := concept{label: ex.Label, vec: conceptVector(logits)}
-		switch ex.Modality {
+		switch p.Modality {
 		case "image":
-			images = append(images, c)
+			images = append(images, p)
 		case "text":
-			texts = append(texts, c)
+			texts = append(texts, p)
 		case "audio":
-			audios = append(audios, c)
+			audios = append(audios, p)
 		}
 	}
 	for m, n := range counts {
 		out.ShapeAccuracy[m] = float64(shapeHits[m]) / float64(n)
 		out.ColourAccuracy[m] = float64(colourHits[m]) / float64(n)
 	}
-	if len(texts) > 0 {
-		var hit int
-		for _, im := range images {
-			if texts[mostSimilar(im.vec, texts)].label == im.label {
-				hit++
-			}
-		}
-		out.ImageToText = float64(hit) / float64(len(images))
-	}
-	if len(images) > 0 {
-		var hit int
-		for _, tx := range texts {
-			if images[mostSimilar(tx.vec, images)].label == tx.label {
-				hit++
-			}
-		}
-		out.TextToImage = float64(hit) / float64(len(texts))
-	}
-	if len(images) > 0 {
-		var hit int
-		for _, au := range audios {
-			if images[mostSimilar(au.vec, images)].label.Shape == au.label.Shape {
-				hit++
-			}
-		}
-		out.AudioToImageShape = float64(hit) / float64(len(audios))
-	}
+	hits, n := retrieve(images, texts, sameLabel)
+	out.ImageToText = ratio(hits, n)
+	hits, n = retrieve(texts, images, sameLabel)
+	out.TextToImage = ratio(hits, n)
+	hits, n = retrieve(audios, images, sameShape)
+	out.AudioToImageShape = ratio(hits, n)
 	return out, nil
 }
 
@@ -367,17 +364,52 @@ func argmax(v []float64) int {
 	return best
 }
 
-// mostSimilar returns the lowest index of the candidate whose concept vector
-// has the greatest cosine similarity with query; ties keep the lowest index.
-func mostSimilar(query []float64, candidates []concept) int {
+// mostSimilar returns the lowest index of the gallery entry whose concept
+// vector has the greatest cosine similarity with query; ties keep the lowest
+// index.
+func mostSimilar(query []float64, gallery []prediction) int {
 	best, bestSim := 0, -1.0
-	for i, c := range candidates {
-		if sim := cosine(query, c.vec); sim > bestSim {
+	for i, c := range gallery {
+		if sim := cosine(query, c.Vec); sim > bestSim {
 			bestSim = sim
 			best = i
 		}
 	}
 	return best
+}
+
+// retrieve counts, for every query, whether its most similar gallery entry
+// (cosine, ties → lowest index) matches under match; it returns hits and the
+// number of queries. An empty query list or an empty gallery returns (0, 0).
+func retrieve(queries, gallery []prediction, match func(query, found synthetic.Label) bool) (hits, n int) {
+	if len(queries) == 0 || len(gallery) == 0 {
+		return 0, 0
+	}
+	for _, q := range queries {
+		if match(q.Label, gallery[mostSimilar(q.Vec, gallery)].Label) {
+			hits++
+		}
+	}
+	return hits, len(queries)
+}
+
+// ratio is hits over n, or 0 when there are no queries.
+func ratio(hits, n int) float64 {
+	if n == 0 {
+		return 0
+	}
+	return float64(hits) / float64(n)
+}
+
+// sameLabel reports whether the query and the found entry share the full
+// (shape, colour) label.
+func sameLabel(query, found synthetic.Label) bool {
+	return query == found
+}
+
+// sameShape reports whether the query and the found entry share the shape.
+func sameShape(query, found synthetic.Label) bool {
+	return query.Shape == found.Shape
 }
 
 // cosine is the cosine similarity between two equal-length vectors; a zero

@@ -363,3 +363,55 @@ func TestScoringIsDeterministic(t *testing.T) {
 func finiteUnit(v float64) bool {
 	return !math.IsNaN(v) && !math.IsInf(v, 0) && v >= 0 && v <= 1
 }
+
+func TestRetrieveHandlesEmptySides(t *testing.T) {
+	match := func(query, found synthetic.Label) bool { return query == found }
+	queries := []prediction{{Label: synthetic.Label{Shape: 0, Colour: 1}, Modality: "image", Vec: []float64{1, 0}}}
+	gallery := []prediction{{Label: synthetic.Label{Shape: 0, Colour: 1}, Modality: "text", Vec: []float64{1, 0}}}
+	if hits, n := retrieve(nil, gallery, match); hits != 0 || n != 0 {
+		t.Errorf("retrieve with empty queries = (%d, %d), want (0, 0)", hits, n)
+	}
+	if hits, n := retrieve(queries, nil, match); hits != 0 || n != 0 {
+		t.Errorf("retrieve with empty gallery = (%d, %d), want (0, 0)", hits, n)
+	}
+
+	samples, labels, err := synthetic.Generate(1, fixtureConfig)
+	if err != nil {
+		t.Fatalf("Generate: %v", err)
+	}
+	layout := synthetic.DefaultLayout(fixtureConfig)
+	trainIdx, _, err := synthetic.SplitUnseenCombinations(labels, holdout)
+	if err != nil {
+		t.Fatalf("SplitUnseenCombinations: %v", err)
+	}
+	examples, err := buildExamples(samples, labels, trainIdx, layout, fixtureSettle)
+	if err != nil {
+		t.Fatalf("buildExamples: %v", err)
+	}
+	imageOnly := make([]example, 0, len(examples))
+	for _, ex := range examples {
+		if ex.Modality == "image" {
+			imageOnly = append(imageOnly, ex)
+		}
+	}
+	if len(imageOnly) == 0 {
+		t.Fatal("fixture produced no image examples")
+	}
+	tr, err := newTrainer(fixtureSeed, layout, fixtureHidden, fixtureRate)
+	if err != nil {
+		t.Fatalf("newTrainer: %v", err)
+	}
+	s, err := score(context.Background(), tr, imageOnly)
+	if err != nil {
+		t.Fatalf("score: %v", err)
+	}
+	for name, v := range map[string]float64{
+		"image_to_text":        s.ImageToText,
+		"text_to_image":        s.TextToImage,
+		"audio_to_image_shape": s.AudioToImageShape,
+	} {
+		if math.IsNaN(v) || math.IsInf(v, 0) || v != 0 {
+			t.Errorf("%s = %v, want 0 (not NaN) when only image inputs are scored", name, v)
+		}
+	}
+}
