@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -38,6 +39,7 @@ func TestBenchmarkWritesReport(t *testing.T) {
 			Edges          int    `json:"edges"`
 			Steps          int    `json:"steps"`
 			Repeat         int    `json:"repeat"`
+			RowsPerCall    int    `json:"rows_per_call"`
 			SnapshotFormat string `json:"snapshot_format"`
 		} `json:"config"`
 		Stages []struct {
@@ -81,6 +83,9 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	}
 	if report.Config.Nodes != 8 || report.Config.Edges != 16 || report.Config.Steps != 10 || report.Config.Repeat != 2 {
 		t.Errorf("config = %+v", report.Config)
+	}
+	if report.Config.RowsPerCall != 10 {
+		t.Errorf("config.rows_per_call = %d, want 10", report.Config.RowsPerCall)
 	}
 	if report.Config.Source != "synthetic" || report.Config.SnapshotFormat != "json" {
 		t.Errorf("synthetic config source/snapshot_format = %q/%q", report.Config.Source, report.Config.SnapshotFormat)
@@ -185,6 +190,7 @@ func TestBenchmarkStoreMode(t *testing.T) {
 			InputSet       string            `json:"input_set"`
 			ReadoutSet     string            `json:"readout_set"`
 			MaxMemoryMiB   int               `json:"max_memory_mib"`
+			RowsPerCall    int               `json:"rows_per_call"`
 			SnapshotFormat string            `json:"snapshot_format"`
 		} `json:"config"`
 		Assumptions []string `json:"assumptions"`
@@ -204,6 +210,9 @@ func TestBenchmarkStoreMode(t *testing.T) {
 	}
 	if report.Config.InputSet != "in" || report.Config.ReadoutSet != "out" || report.Config.MaxMemoryMiB != 64 || report.Config.SnapshotFormat != "bundle" {
 		t.Errorf("store config sets/memory/snapshot = %q/%q/%d/%q", report.Config.InputSet, report.Config.ReadoutSet, report.Config.MaxMemoryMiB, report.Config.SnapshotFormat)
+	}
+	if report.Config.RowsPerCall != 4 {
+		t.Errorf("store config rows_per_call = %d, want 4", report.Config.RowsPerCall)
 	}
 	wantAssumption := "MaleCNS graph from --store with derived parameters from --params; the backward encoder reaches node 0 and the readout reads the last node, not the protocol's named sets"
 	if len(report.Assumptions) != 3 || report.Assumptions[0] != wantAssumption {
@@ -309,6 +318,88 @@ func contains(values []string, want string) bool {
 		}
 	}
 	return false
+}
+
+func TestBenchmarkRowsPerCall(t *testing.T) {
+	for _, tc := range []struct {
+		nodes int
+		steps int
+		want  int
+	}{
+		{nodes: 64, steps: 200, want: 200},
+		{nodes: 165122, steps: 8, want: 6},
+		{nodes: 2000000, steps: 8, want: 1},
+		{nodes: 1048576, steps: 3, want: 1},
+	} {
+		t.Run(fmt.Sprintf("nodes_%d_steps_%d", tc.nodes, tc.steps), func(t *testing.T) {
+			if got := benchmarkRowsPerCall(tc.nodes, tc.steps); got != tc.want {
+				t.Errorf("benchmarkRowsPerCall(%d, %d) = %d, want %d", tc.nodes, tc.steps, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestBenchmarkDefaultRowsPerCall(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "default.json")
+	var stdout, stderr bytes.Buffer
+	if err := Run(context.Background(), []string{"benchmark", "--out", out}, &stdout, &stderr); err != nil {
+		t.Fatalf("benchmark: %v; stderr=%s", err, stderr.String())
+	}
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("report file: %v", err)
+	}
+	var report struct {
+		Config struct {
+			Steps       int `json:"steps"`
+			RowsPerCall int `json:"rows_per_call"`
+		} `json:"config"`
+	}
+	if err := json.Unmarshal(raw, &report); err != nil {
+		t.Fatalf("report JSON: %v", err)
+	}
+	if report.Config.Steps != 200 || report.Config.RowsPerCall != report.Config.Steps {
+		t.Errorf("default steps/rows_per_call = %d/%d, want 200/200", report.Config.Steps, report.Config.RowsPerCall)
+	}
+}
+
+func TestBenchmarkSplitsIndividualCalls(t *testing.T) {
+	out := filepath.Join(t.TempDir(), "large.json")
+	var stdout, stderr bytes.Buffer
+	args := []string{"benchmark", "--nodes", "70000", "--edges", "70000", "--steps", "16", "--repeat", "2", "--out", out}
+	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
+		t.Fatalf("benchmark: %v; stderr=%s", err, stderr.String())
+	}
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("report file: %v", err)
+	}
+	var report struct {
+		Config struct {
+			RowsPerCall int `json:"rows_per_call"`
+		} `json:"config"`
+		Stages []struct {
+			Name string `json:"name"`
+		} `json:"stages"`
+	}
+	if err := json.Unmarshal(raw, &report); err != nil {
+		t.Fatalf("report JSON: %v", err)
+	}
+	if report.Config.RowsPerCall != 14 {
+		t.Errorf("config.rows_per_call = %d, want 14", report.Config.RowsPerCall)
+	}
+	wantStages := []string{"import", "forward", "backward", "local_plasticity", "modulation", "snapshot"}
+	if len(report.Stages) != len(wantStages) {
+		t.Fatalf("stages = %v, want %v", report.Stages, wantStages)
+	}
+	for i, want := range wantStages {
+		if report.Stages[i].Name != want {
+			t.Errorf("stage %d name = %q, want %q", i, report.Stages[i].Name, want)
+		}
+	}
+	if _, err := os.Stat(out + ".snapshot.tmp.json"); !os.IsNotExist(err) {
+		t.Errorf("snapshot temporary file remains or stat failed unexpectedly: %v", err)
+	}
 }
 
 // TestBenchmarkSnapshotStageLeavesNoTempFile pins the snapshot stage's cleanup:

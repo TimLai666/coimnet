@@ -41,6 +41,7 @@ type benchmarkConfig struct {
 	Nodes          int               `json:"nodes"`
 	Edges          int               `json:"edges"`
 	Steps          int               `json:"steps"`
+	RowsPerCall    int               `json:"rows_per_call"`
 	Repeat         int               `json:"repeat"`
 	Files          map[string]string `json:"files,omitempty"`
 	InputSet       string            `json:"input_set,omitempty"`
@@ -127,6 +128,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	fs.Usage = func() {
 		fmt.Fprintln(usageOutput, "Usage: coimnet benchmark --out FILE [--nodes 64] [--edges 256] [--steps 200] [--repeat 3] [--store FILE --params FILE --protocol FILE]")
 		fmt.Fprintln(usageOutput, "Builds and times six continuous-core stages on either a synthetic topology or a graph loaded from --store. Store mode requires --store, --params and --protocol together, resolves --input-set and --readout-set, checks the memory estimate before measuring, and snapshots to a temporary bundle. The backward encoder still reaches node 0 and the readout reads the last node; it does not use the protocol's named sets.")
+		fmt.Fprintln(usageOutput, "Individual calls are split into chunks of at most 1,048,576 values (rows_per_call rows), as the full-graph training does.")
 		fmt.Fprintln(usageOutput, "Synthetic mode uses seed 1 with self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1 and tanh. Forward runs --steps rows of 0.1 input. Backward takes one Insyra-driven learning step; local_plasticity uses hebbian_rate on the first 64 edges with its gate open; modulation uses one chemical channel and a hypothesized receptor on the last node. Snapshot round-trips through JSON (synthetic) or a bundle (store). Each stage separates setup from work, with the first run as warmup and later runs summarized by steady median, min and max milliseconds. CPU transfer time is 0 ms. RSS uses runtime.ReadMemStats.Sys.")
 		fmt.Fprintln(usageOutput, "Writes the coimnet-benchmark/v2 report to --out, which must not already exist, and prints one benchmark summary line to stdout. Forward activity and same-seed reproducibility are reported; energy is not measured.")
 		fmt.Fprintln(usageOutput, "Example: coimnet benchmark --out benchmark.json")
@@ -255,6 +257,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	}
 
 	stepInput := benchmarkStepInput(steps)
+	rowsPerCall := benchmarkRowsPerCall(nodes, steps)
 	target := []float64{0.5}
 	trainerConfig := learning.Config{
 		Dynamics:     cfg,
@@ -306,8 +309,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			_, _, err := individual.AdvanceGated(ctx, stepInput, openGate)
-			return err
+			return benchmarkAdvance(individual, ctx, stepInput, openGate, rowsPerCall)
 		}, nil
 	})
 	if err != nil {
@@ -330,8 +332,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			_, err := individual.Advance(ctx, stepInput)
-			return err
+			return benchmarkAdvance(individual, ctx, stepInput, nil, rowsPerCall)
 		}, nil
 	})
 	if err != nil {
@@ -350,7 +351,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		if err := individual.EnableChemistry(benchmarkChemistry(nodes, steps)); err != nil {
 			return nil, err
 		}
-		if _, err := individual.Advance(ctx, stepInput); err != nil {
+		if err := benchmarkAdvance(individual, ctx, stepInput, nil, rowsPerCall); err != nil {
 			return nil, err
 		}
 		return func() error {
@@ -373,7 +374,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	}
 	stages = append(stages, snapshotResult)
 
-	config := benchmarkConfig{Source: source, Nodes: nodes, Edges: edges, Steps: steps, Repeat: repeat, SnapshotFormat: snapshotFormat}
+	config := benchmarkConfig{Source: source, Nodes: nodes, Edges: edges, Steps: steps, RowsPerCall: rowsPerCall, Repeat: repeat, SnapshotFormat: snapshotFormat}
 	if storeMode {
 		config.Files = loaded.Files
 		config.InputSet = inputSet
@@ -410,6 +411,43 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	}
 	_, err = fmt.Fprintf(stdout, "benchmark: %d stages, nodes %d, edges %d, steps %d, repeat %d, forward reproducible %t, source %s\n", len(stages), nodes, edges, steps, repeat, identical, source)
 	return err
+}
+
+func benchmarkRowsPerCall(nodes, steps int) int {
+	if steps < 1 {
+		return 1
+	}
+	rows := 1
+	if nodes > 0 {
+		rows = max(1, dynamics.MaxStateValues/nodes)
+	}
+	return min(steps, rows)
+}
+
+func benchmarkAdvance(individual *learning.Individual, ctx context.Context, input [][]float64, gate []float64, rowsPerCall int) error {
+	if rowsPerCall < 1 {
+		return fmt.Errorf("rows per call must be positive, got %d", rowsPerCall)
+	}
+	for start := 0; start < len(input); {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		end := min(start+rowsPerCall, len(input))
+		if gate == nil {
+			if _, err := individual.Advance(ctx, input[start:end]); err != nil {
+				return err
+			}
+		} else {
+			if len(gate) != len(input) {
+				return fmt.Errorf("gate has %d values, the input has %d rows", len(gate), len(input))
+			}
+			if _, _, err := individual.AdvanceGated(ctx, input[start:end], gate[start:end]); err != nil {
+				return err
+			}
+		}
+		start = end
+	}
+	return nil
 }
 
 func saveLoadBenchmarkBundle(ctx context.Context, path string, snapshot learning.IndividualSnapshot) (result error) {
