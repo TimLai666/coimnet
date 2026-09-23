@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
@@ -174,6 +175,27 @@ func TestSharingRejects(t *testing.T) {
 		if _, err := learning.NewTrainer(c, p, learning.DefaultOptions()); err == nil {
 			t.Fatalf("%s: NewTrainer accepted the sharing declaration", tc.name)
 		}
+	}
+}
+
+// TestSharingRejectsOversizedGroups protects Validate against a declared
+// Groups far larger than the shareable core values (weights + bias + log_tau),
+// which could otherwise allocate a huge used slice when the declaration comes
+// from an external model package or snapshot. The rejection must be immediate:
+// the whole test has to finish well under a second.
+func TestSharingRejectsOversizedGroups(t *testing.T) {
+	c := sharingConfig()
+	c.Sharing = &learning.ParameterSharing{Groups: 1 << 40}
+	start := time.Now()
+	_, err := learning.NewTrainer(c, sharingParameters(.3, .2), learning.DefaultOptions())
+	if err == nil {
+		t.Fatal("NewTrainer accepted a group count larger than the shareable values")
+	}
+	if !strings.Contains(err.Error(), "exceed") {
+		t.Fatalf("oversized-group error %q does not mention exceed", err)
+	}
+	if d := time.Since(start); d >= time.Second {
+		t.Fatalf("oversized-group rejection took %v, want under a second", d)
 	}
 }
 

@@ -24,6 +24,9 @@ func (s ParameterSharing) Validate(weights, bias, logTau int) error {
 	if s.Groups < 0 {
 		return fmt.Errorf("share groups is %d, cannot be negative", s.Groups)
 	}
+	if shareable := weights + bias + logTau; s.Groups > shareable {
+		return fmt.Errorf("share groups %d exceed the %d shareable values", s.Groups, shareable)
+	}
 	if len(s.Weights) != 0 && len(s.Weights) != weights {
 		return fmt.Errorf("share weights has %d entries, the core has %d weight values", len(s.Weights), weights)
 	}
