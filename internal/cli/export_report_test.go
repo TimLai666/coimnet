@@ -283,3 +283,47 @@ func TestReportRejects(t *testing.T) {
 		t.Fatalf("report --help does not print its usage:\n%s", help)
 	}
 }
+
+func TestReportCountsEveryBlockedKind(t *testing.T) {
+	dir := t.TempDir()
+	status := exportReportWrite(t, filepath.Join(dir, "docs", "requirements-status.json"), `{
+  "schema_version": "coimnet-requirements-status/v1",
+  "requirements": [
+    {"id": "REQ-A", "status": "passed", "evidence": ["../evidence/REQ-A/verification.json"]},
+    {"id": "REQ-B", "status": "specified", "evidence": []},
+    {"id": "REQ-C", "status": "blocked_data", "evidence": []},
+    {"id": "REQ-D", "status": "blocked_hardware", "evidence": []},
+    {"id": "REQ-E", "status": "blocked_permission", "evidence": []}
+  ]
+}`)
+	exportReportWrite(t, filepath.Join(dir, "evidence", "REQ-A", "verification.json"), `{"observed_result":"passed"}`)
+	outJSON := filepath.Join(dir, "report.json")
+	outMD := filepath.Join(dir, "report.md")
+	if _, err := exportReportRun(t, "report", "--status", status, "--evidence-dir", filepath.Join(dir, "evidence"), "--out-json", outJSON, "--out-md", outMD); err != nil {
+		t.Fatalf("report: %v", err)
+	}
+	var document reportDocumentJSON
+	if err := json.Unmarshal([]byte(exportReportRead(t, outJSON)), &document); err != nil {
+		t.Fatalf("published report is not valid JSON: %v", err)
+	}
+	completion := document.Completion
+	if completion.Passed != 1 || completion.Blocked != 3 || completion.Specified != 1 || completion.Total != 5 {
+		t.Fatalf("completion = %+v", completion)
+	}
+	for _, status := range []string{"blocked_data", "blocked_hardware", "blocked_permission"} {
+		if completion.ByStatus[status] != 1 {
+			t.Errorf("by_status[%q] = %d, want 1", status, completion.ByStatus[status])
+		}
+	}
+	markdown := exportReportRead(t, outMD)
+	if !strings.Contains(markdown, "| blocked | 3 (blocked_data 1, blocked_hardware 1, blocked_permission 1) |") {
+		t.Fatalf("markdown is missing the blocked breakdown:\n%s", markdown)
+	}
+	for _, line := range strings.Split(markdown, "\n") {
+		for _, status := range []string{"blocked_data", "blocked_hardware", "blocked_permission"} {
+			if strings.HasPrefix(line, "| "+status+" |") {
+				t.Errorf("markdown has a separate row for %q: %s", status, line)
+			}
+		}
+	}
+}

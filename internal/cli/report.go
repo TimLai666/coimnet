@@ -116,9 +116,9 @@ type reportDocument struct {
 	Sources       []json.RawMessage   `json:"sources"`
 }
 
-// reportCompletion counts the statuses. The three named counters are the ones
-// the tracking document uses; by_status carries every status actually seen, so
-// a new one is reported instead of silently dropped.
+// reportCompletion counts the statuses. Blocked includes the literal blocked
+// status and every status with the blocked_ prefix; by_status carries every
+// status actually seen, so a new one is reported instead of silently dropped.
 type reportCompletion struct {
 	Passed    int            `json:"passed"`
 	Blocked   int            `json:"blocked"`
@@ -218,10 +218,11 @@ func buildReport(ctx context.Context, status, evidenceDir, settings string) (rep
 		switch requirement.Status {
 		case "passed":
 			document.Completion.Passed++
-		case "blocked":
-			document.Completion.Blocked++
 		case "specified":
 			document.Completion.Specified++
+		}
+		if requirement.Status == "blocked" || strings.HasPrefix(requirement.Status, "blocked_") {
+			document.Completion.Blocked++
 		}
 		scored := false
 		for _, declared := range evidence {
@@ -372,7 +373,16 @@ func reportMarkdown(status string, document reportDocument) string {
 	fmt.Fprintf(&b, "Generated at %s from %s. `evidence_present` reports only that the named record files exist.\n\n", document.GeneratedAt, status)
 	b.WriteString("## Completion\n\n| Status | Count |\n| --- | --- |\n")
 	fmt.Fprintf(&b, "| passed | %d |\n", document.Completion.Passed)
-	fmt.Fprintf(&b, "| blocked | %d |\n", document.Completion.Blocked)
+	blockedKinds := reportBlockedStatuses(document.Completion.ByStatus)
+	if len(blockedKinds) == 0 {
+		fmt.Fprintf(&b, "| blocked | %d |\n", document.Completion.Blocked)
+	} else {
+		parts := make([]string, 0, len(blockedKinds))
+		for _, name := range blockedKinds {
+			parts = append(parts, fmt.Sprintf("%s %d", name, document.Completion.ByStatus[name]))
+		}
+		fmt.Fprintf(&b, "| blocked | %d (%s) |\n", document.Completion.Blocked, strings.Join(parts, ", "))
+	}
 	fmt.Fprintf(&b, "| specified | %d |\n", document.Completion.Specified)
 	for _, name := range reportOtherStatuses(document.Completion.ByStatus) {
 		fmt.Fprintf(&b, "| %s | %d |\n", exportCell(name), document.Completion.ByStatus[name])
@@ -409,12 +419,26 @@ func reportMarkdown(status string, document reportDocument) string {
 	return b.String()
 }
 
-// reportOtherStatuses names every status the tracking document used beyond the
-// three the report counts by name, so a status this build does not know still
-// appears in the table.
+func reportBlockedStatuses(byStatus map[string]int) []string {
+	blocked := make([]string, 0, len(byStatus))
+	for name := range byStatus {
+		if strings.HasPrefix(name, "blocked_") {
+			blocked = append(blocked, name)
+		}
+	}
+	sort.Strings(blocked)
+	return blocked
+}
+
+// reportOtherStatuses names statuses beyond the named counters and blocked_*
+// kinds, which are summarized in the blocked row. A status this build does not
+// know still appears in the table.
 func reportOtherStatuses(byStatus map[string]int) []string {
 	others := make([]string, 0, len(byStatus))
 	for name := range byStatus {
+		if strings.HasPrefix(name, "blocked_") {
+			continue
+		}
 		switch name {
 		case "passed", "blocked", "specified":
 			continue
