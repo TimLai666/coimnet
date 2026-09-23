@@ -880,6 +880,11 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	if err := validateTrainable(o.Trainable, i.trainer.network.core.theta()); err != nil {
 		return err
 	}
+	if o.Recompute != nil {
+		if err := recomputeSupported(i.trainer.network.core); err != nil {
+			return err
+		}
+	}
 	if err := validateMasks(o.Masks, i.trainer.network.core.nodes(), i.trainer.network.core.edges()); err != nil {
 		return err
 	}
