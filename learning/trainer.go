@@ -162,6 +162,11 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if len(p.Core.Weights) != n.core.weightCount() || len(p.Core.Bias) != n.core.biasCount() || len(p.Core.LogTau) != nodeCount || len(p.ThetaRaw) != theta || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*stateDim*c.OutputSize {
 		return nil, fmt.Errorf("parameter shape mismatch")
 	}
+	if c.Sharing != nil {
+		if err := validateSharingParameters(c.Sharing, p, c, n.core); err != nil {
+			return nil, err
+		}
+	}
 	if _, err = n.Predict(context.Background(), p, [][]float64{make([]float64, c.InputSize)}); err != nil {
 		return nil, fmt.Errorf("invalid model: %w", err)
 	}
@@ -322,6 +327,16 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
 	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes(), tr.network.core)
+	// A sharing declaration reduces each group's gradient to its members' sum
+	// before loss scaling, accumulation, the norm and AdamW (root decision 7 of
+	// ticket 25; main spec 9.2 sums, it does not average), and freezes a whole
+	// group whenever its per-item mask froze any one member.
+	var plan *sharePlan
+	if tr.network.config.Sharing != nil {
+		plan = newSharePlan(tr.network.config.Sharing, len(tr.parameters.Core.Weights), len(tr.parameters.Core.Bias), len(tr.parameters.Core.LogTau))
+		reduceSharedGradients(grad, plan)
+		mask, _ = sharedMaskFreeze(mask, plan)
+	}
 	state := copyAdam(tr.optimizer)
 	// Loss scaling multiplies and divides back here, before the gradient
 	// reaches the accumulator or the clip: a product that leaves the
@@ -339,10 +354,16 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 		}
 	}
 	var norm float64
-	for i, v := range grad {
-		if mask[i] {
-			norm = math.Hypot(norm, v)
+	if plan == nil {
+		for i, v := range grad {
+			if mask[i] {
+				norm = math.Hypot(norm, v)
+			}
 		}
+	} else {
+		// The reduced vector counts each group once, so shared members cannot
+		// inflate the norm by repeating themselves.
+		norm = reducedNorm(grad, mask, plan)
 	}
 	if !finite(norm) {
 		return zero, fmt.Errorf("non-finite gradient norm")
@@ -388,10 +409,14 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	clipNorm := norm
 	if window > 1 {
 		clipNorm = 0
-		for i, v := range mean {
-			if mask[i] {
-				clipNorm = math.Hypot(clipNorm, v)
+		if plan == nil {
+			for i, v := range mean {
+				if mask[i] {
+					clipNorm = math.Hypot(clipNorm, v)
+				}
 			}
+		} else {
+			clipNorm = reducedNorm(mean, mask, plan)
 		}
 		if !finite(clipNorm) {
 			return zero, fmt.Errorf("non-finite accumulated gradient norm")

@@ -30,11 +30,16 @@ type Config struct {
 	// JSON and therefore its recorded fingerprint. Network.Config fills it in,
 	// and a declared value that contradicts the rule assignment is refused
 	// rather than replaced.
-	LIFIndex     []int `json:"lif_index,omitempty"`
-	InputSize    int   `json:"input_size"`
-	OutputSize   int   `json:"output_size"`
-	ReadoutNodes []int `json:"readout_nodes"`
-	InputNodes   []int `json:"input_nodes,omitempty"`
+	LIFIndex []int `json:"lif_index,omitempty"`
+	// Sharing ties stored parameters into groups whose members train as one
+	// shared value. The core keeps the expanded per-item values; Sharing only
+	// routes the training gradient. nil leaves every stored entry individual
+	// and every code path bit-identical to a model without the field.
+	Sharing      *ParameterSharing `json:"sharing,omitempty"`
+	InputSize    int               `json:"input_size"`
+	OutputSize   int               `json:"output_size"`
+	ReadoutNodes []int             `json:"readout_nodes"`
+	InputNodes   []int             `json:"input_nodes,omitempty"`
 	// EdgeSigns fixes the sign of individual edges. +1 or -1 switches that
 	// edge to the log-magnitude parametrization, 0 leaves it free, and a nil
 	// or empty array leaves every edge free. Its length is the edge count.
@@ -90,6 +95,11 @@ func NewNetwork(c Config) (*Network, error) {
 		return nil, err
 	}
 	nodes := core.nodes()
+	if c.Sharing != nil {
+		if err := c.Sharing.Validate(core.weightCount(), core.biasCount(), nodes); err != nil {
+			return nil, err
+		}
+	}
 	if c.InputNodes == nil {
 		if _, err := size(c.InputSize, nodes); err != nil {
 			return nil, err
@@ -126,6 +136,7 @@ func NewNetwork(c Config) (*Network, error) {
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	c.LIFIndex = append([]int(nil), c.LIFIndex...)
+	c.Sharing = copySharing(c.Sharing)
 	return &Network{c, core, hasFixedSigns(c.EdgeSigns)}, nil
 }
 
@@ -149,6 +160,7 @@ func (n *Network) Config() Config {
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	c.LIFIndex = append([]int(nil), c.LIFIndex...)
+	c.Sharing = copySharing(c.Sharing)
 	return c
 }
 
