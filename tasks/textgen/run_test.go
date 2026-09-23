@@ -115,6 +115,32 @@ func TestRunTextgenLowersPerplexity(t *testing.T) {
 	}
 }
 
+func TestRunTextgenDefaultLearnsEverySeed(t *testing.T) {
+	config := DefaultRunConfig()
+	report, err := RunTextgen(context.Background(), config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(report.Runs) != len(config.Seeds) {
+		t.Errorf("got %d seed results, want %d", len(report.Runs), len(config.Seeds))
+	}
+	for _, seed := range report.Runs {
+		t.Logf("seed=%d accuracy=%g validity=%g perplexity_after=%.4f", seed.Seed, seed.TaskAfter.Accuracy, seed.TaskAfter.Validity, seed.HoldoutAfter.Perplexity)
+		if seed.Failed {
+			t.Errorf("seed %d failed: %s", seed.Seed, seed.Error)
+		}
+		if seed.TaskAfter.Accuracy != 1 {
+			t.Errorf("seed %d accuracy = %g, want 1", seed.Seed, seed.TaskAfter.Accuracy)
+		}
+		if seed.TaskAfter.Validity != 1 {
+			t.Errorf("seed %d validity = %g, want 1", seed.Seed, seed.TaskAfter.Validity)
+		}
+		if !(seed.HoldoutAfter.Perplexity < seed.HoldoutBefore.Perplexity) {
+			t.Errorf("seed %d perplexity did not decrease: before=%g after=%g", seed.Seed, seed.HoldoutBefore.Perplexity, seed.HoldoutAfter.Perplexity)
+		}
+	}
+}
+
 func TestRunTextgenIsDeterministic(t *testing.T) {
 	config := smallRunConfig()
 	config.Seeds = []uint64{1, 2}
