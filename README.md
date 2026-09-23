@@ -38,6 +38,8 @@
 | 語音轉文字：授權 manifest 的 WAV 匯入、說話者／場次分割、整檔與因果串流 CTC 輸出、快照與跨程序接續、CER／WER 可重現（TSK-02；同分布保留集 CER 0.78 → 0，跨說話者／場次的 CLI fixture 只從 13/19 降到 12/19、WER 維持 0.9；真實授權語音 blocked_data） | 已訓練（人工音調） | fixture | 核心能力 | [TSK-02](evidence/TSK-02/review-20260924/verification.json) |
 | 文字生成：位元組 tokenizer 與詞表雜湊、已知前綴預測與遮罩、EOS／最大長度、溫度／top-k／top-p 可重現採樣、串流 UTF-8 緩衝、來源層級保留語料、教師去重與封鎖教師的學生模式評估（TSK-03；三字合成文法，不宣稱中文對話、推理或知識；真實授權語料 blocked_data） | 已訓練（合成文法） | fixture | 核心能力 | [TSK-03](evidence/TSK-03/verification.json) |
 | 文字條件影像與音訊生成：核心產生表示、固定 clamp 解碼器不讀提示、PNG／WAV 精確輸出、保留條件與凍結核心容量對照、核心斷開檢查（TSK-04、TSK-05；凍結核心和完整核心一樣好、留出條件全部生成錯，不宣稱核心學習的必要性或組合泛化；真實授權影音 blocked_data） | 已訓練（人工影像與音調） | fixture | 核心能力 | [TSK-04](evidence/TSK-04/verification.json)・[TSK-05](evidence/TSK-05/verification.json) |
+| 文字條件影片與同步音訊：核心逐格產生影格與音訊區塊、原生 PNG／WAV／時間線輸出、獨立判讀與同步誤差、凍結核心對照、選用 ffmpeg 封裝器（缺席或失敗照實記錄，`doctor` 顯示版本）（TSK-06；預設 80 輪同步偏弱，已見片段只有 0 到 3 個對齊；加長訓練後的比較不穩定，不宣稱核心學習的必要性） | 已訓練（人工動點與嗶聲） | fixture | 核心能力 | [TSK-06](evidence/TSK-06/verification.json) |
+| 三條生成流程與角色：核心直接生成、固定還原器（凍結自編碼器以雜湊標名）、外部工具（結構化請求、白名單工具、呼叫預算），每張輸出標明產生者，工具像素不計入核心能力（TSK-07；外部工具是本機替身，未呼叫第三方模型） | 已訓練（人工影像） | fixture | 核心能力 | [TSK-07](evidence/TSK-07/verification.json) |
 | 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |
 | 動態參數 adapter：由發布資料推導正負號、信心度與強度並回報未知計數（NAT-02） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-02](evidence/NAT-02/verification.json) |
 | 空模型對照與判讀：保留度數重連、正負號／權重置換、具名集合與事前門檻（NAT-03、NAT-04、NAT-05） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-03](evidence/NAT-03/verification.json)・[NAT-04](evidence/NAT-04/verification.json)・[NAT-05](evidence/NAT-05/verification.json) |

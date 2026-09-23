@@ -1,0 +1,69 @@
+{
+  "requirement": "TSK-07「使用者可以比較固定還原器及外部影音工具模式。驗收：模型與角色可查，工具結果不計為核心自身生成能力。」",
+  "profile": "fixture",
+  "date": "2026-09-24",
+  "scope": "Ticket 29 stage six: the nine-image fixture produced three ways from the same prompts and core configuration, core_generated (the core's own pixels through a fixed clamp), fixed_decoder (the core learns latents that a frozen, hashed autoencoder decodes) and external_tool (the core emits a structured request that an allow-listed local stand-in tool renders under a call budget), with each output's producer named and tool results kept out of core capability.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-07",
+    "COIMNET_TSK07_EVIDENCE=$PWD/evidence/TSK-07 go test -count=1 -timeout 0 -v -run '^TestRolesEvidence$' ./tasks/media/ > evidence/TSK-07/test.log 2>&1",
+    "(cd evidence/TSK-07 && shasum -a 256 roles.json summary.txt) > evidence/TSK-07/rerun.sha256",
+    "race controls, vet and test list: the shared tasks/media run in evidence/TSK-06 (see its reproduction_command)"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Apple M3, 8 cores, 16 GiB), commit fa572fee86fe2ebb99fbda97221ab9c9a5cf7938; every run, rerun and control ran from a detached worktree pinned at that commit. ffmpeg 8.1.2 at /opt/homebrew/bin/ffmpeg.",
+    "Recorded run 2026-09-23T18:52:00Z to 2026-09-23T18:52:13Z (run-env.txt). No timing is a result.",
+    "A rerun at the same commit wrote roles.json and summary.txt with the recorded SHA-256 (rerun.sha256; rerun.sha256.check says identical)."
+  ],
+  "input_fingerprints": [
+    "No external input and no network: the tool is a local stand-in that renders the requested fixture image.",
+    "DefaultRolesConfig: DefaultGeneratorConfig(image); holdout ['blue diagonal']; 60 epochs; seeds [1, 2, 3]; max_tool_calls 9; config_hash 752e1dba3553f64ab914768b6573a3bac50e148df49241db110e9d502728505e.",
+    "Fixed decoder hash e7c1e2b04e19aba6d9f42caeccbba06fd524cd69c8eb141f6ff4bb22221ca0d9 (DefaultFixedDecoder: latent 8, 3,000 epochs, rate 0.5, seed 1).",
+    "roles.json sha256 082e31621edc58e30eda9b22bbf01dbd6bd29f6b1cbba3beb29786ced26fe69d; summary.txt sha256 b48559476e3e9efdc0925a4b838ad0492b5bb93558c0f76ff886bebae4b7b2fe."
+  ],
+  "observed_result": {
+    "tests": "controls.log (shared by TSK-06 and TSK-07): 53 top-level PASS in tasks/media and 13 in internal/cli (examples run video, examples list and doctor) under -race, 0 FAIL; the SKIPs are TestRolesEvidence, TestVideoEvidence, the runs recorded in each test.log. list.txt names 55 tests in tasks/media. vet.log: vet exit=0. Controls 2026-09-23T18:52:29Z to 2026-09-23T19:03:43Z. The TSK-07 claims rest on TestRunRolesReport (modes, roles, measures, decoder hash and parameter count, tool name and calls, updates), TestRunRolesToolResultIsNotCoreCapability (with an injected renderer that always returns red square, external_tool's core capability and every other mode are unchanged while the tool result changes), TestRunRolesBudgetShortfall, TestRunRolesNeverTrainsHeldOut, TestRunRolesIsDeterministic, TestFixedDecoderTrainsAndLocks (the decoder hash does not change while the latent core trains), TestLatentGeneratorLearnsThroughTheFixedDecoder, TestRequestHeadLearnsSeenRequests and TestExternalToolRefusesOutsideTheSchema (a request with an extra prompt field, a missing field or a wrong type is refused before the tool runs).",
+    "roles_and_models": "Every score names who produced its pixels (core, fixed_decoder or external_tool). Capacity per mode: core_generated encoder 96, core 5280, readout 12288; fixed_decoder readout 512 plus a frozen decoder of 3272 parameters named by its hash; external_tool readout 384 (colour and shape logits) with the tool outside the model.",
+    "per_seed": {
+      "1": {
+        "core_generated": "judged_pixels: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "fixed_decoder": "judged_pixels_through_fixed_decoder: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "external_tool": "correct_requests: seen 3 -> 8 of 8, held-out 0 -> 1 of 1; tool pixels (not core capability) seen 8 of 8, held-out 1 of 1; tool calls 9, refused 0, budget refused 0",
+        "decoder_alone": "9 of 9, reconstruction MSE 2.75e-05",
+        "latent_mean_abs_error": 0.1556
+      },
+      "2": {
+        "core_generated": "judged_pixels: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "fixed_decoder": "judged_pixels_through_fixed_decoder: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "external_tool": "correct_requests: seen 1 -> 8 of 8, held-out 0 -> 1 of 1; tool pixels (not core capability) seen 8 of 8, held-out 1 of 1; tool calls 9, refused 0, budget refused 0",
+        "decoder_alone": "9 of 9, reconstruction MSE 2.75e-05",
+        "latent_mean_abs_error": 0.1761
+      },
+      "3": {
+        "core_generated": "judged_pixels: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "fixed_decoder": "judged_pixels_through_fixed_decoder: seen 1 -> 8 of 8, held-out 0 -> 0 of 1",
+        "external_tool": "correct_requests: seen 0 -> 8 of 8, held-out 0 -> 0 of 1; tool pixels (not core capability) seen 8 of 8, held-out 0 of 1; tool calls 9, refused 0, budget refused 0",
+        "decoder_alone": "9 of 9, reconstruction MSE 2.75e-05",
+        "latent_mean_abs_error": 0.1375
+      }
+    },
+    "reading": "All three modes learn the eight seen prompts. Only the external-tool mode gets the held-out blue diagonal right (seeds 1 and 2), because its request has separate colour and shape slots; the pixels for it come from the tool and are reported as tool_result, and the core is credited only with the correct request. The fixed decoder reproduces all nine targets by itself (decoder_alone), so in that mode the pixel quality is largely the decoder's; the report names it by hash and parameter count.",
+    "reproducibility": "The rerun at the same commit produced byte-identical roles.json and summary.txt."
+  },
+  "assumption_statement": "The fixture has nine images of three colours and three shapes; it proves the three modes and their bookkeeping, not open-ended image generation. In fixed_decoder mode the judged pixels depend on the core's latent and on the frozen decoder named by decoder_hash; decoder_alone shows what that decoder reproduces by itself. In external_tool mode the core's capability is only its structured request; the tool's pixels are reported as tool_result and never counted as core capability. The external tool here is a local stand-in that renders the requested fixture image; no network or third-party model is called. The fixed decoder is an image autoencoder; time alignment does not apply to single images and is not measured here.",
+  "test_log": [
+    "evidence/TSK-07/test.log",
+    "evidence/TSK-06/controls.log",
+    "evidence/TSK-06/vet.log"
+  ],
+  "limitations": [
+    "Nine 8x8 fixture images; the three modes are compared on bookkeeping and on this fixture only.",
+    "The external tool is a local stand-in that renders exactly the requested fixture image; no third-party model, network call, authorisation flow or real data policy is exercised beyond the allow-list, schema and call budget.",
+    "The held-out success of the external-tool mode comes from the factorised request format, not from generation by the core.",
+    "Time alignment is not measured: the fixed decoder is an image autoencoder.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-07/roles.json": "082e31621edc58e30eda9b22bbf01dbd6bd29f6b1cbba3beb29786ced26fe69d",
+    "evidence/TSK-07/summary.txt": "b48559476e3e9efdc0925a4b838ad0492b5bb93558c0f76ff886bebae4b7b2fe"
+  }
+}

@@ -1,0 +1,75 @@
+{
+  "requirement": "TSK-06「使用者可以由核心產生文字條件影片與同步音訊。驗收：影格序列、音訊與時間線完整；時間變化、同步及依賴失敗可驗證。」",
+  "profile": "fixture",
+  "date": "2026-09-24",
+  "scope": "Ticket 29 stage five: six text-conditioned clips (a dot moving right, left or down, with a low or high beep when it reaches the edge) generated frame by frame by the core with their audio blocks, written natively as PNG frames, a WAV and a timeline, judged by an independent classifier and a sync measure, with a frozen-core control, a core-disconnect check and an optional ffmpeg packager whose absence and failure are recorded.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-06",
+    "COIMNET_TSK06_EVIDENCE=$PWD/evidence/TSK-06 go test -count=1 -timeout 0 -v -run '^TestVideoEvidence$' ./tasks/media/ > evidence/TSK-06/test.log 2>&1",
+    "(cd evidence/TSK-06 && { echo video.json; echo summary.txt; find clips -type f ! -name clip.mkv; } | sort | xargs shasum -a 256) > evidence/TSK-06/rerun.sha256",
+    "go vet ./... > evidence/TSK-06/vet.log 2>&1",
+    "go test -list '.*' ./tasks/media/ > evidence/TSK-06/list.txt 2>&1",
+    "go test -count=1 -timeout 0 -race -v ./tasks/media/ > evidence/TSK-06/controls.log 2>&1",
+    "go test -count=1 -timeout 0 -race -v -run 'TestExamplesRunVideo|TestExamplesRunRoles|TestExamplesList|TestDoctor' ./internal/cli/ >> evidence/TSK-06/controls.log 2>&1",
+    "coimnet examples run video --out-dir DIR (the same DefaultVideoRunConfig through the CLI; --packager none skips packaging)",
+    "coimnet examples run video --epochs 160 --packager none --out-dir DIR and --epochs 320 (the observations in observed_result.longer_training)"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Apple M3, 8 cores, 16 GiB), commit fa572fee86fe2ebb99fbda97221ab9c9a5cf7938; every run, rerun and control ran from a detached worktree pinned at that commit. ffmpeg 8.1.2 at /opt/homebrew/bin/ffmpeg.",
+    "Recorded run 2026-09-23T18:50:12Z to 2026-09-23T18:51:11Z at 1-minute load above 11 (other test runs were active; run-env.txt). No timing is a result.",
+    "A rerun at the same commit wrote video.json, summary.txt and every clip frame, WAV and timeline with the recorded SHA-256 (rerun.sha256; rerun.sha256.check says identical). clip.mkv differs between runs because ffmpeg writes run-specific container metadata, so it and packaging.json (which holds absolute output paths) are left out of the comparison."
+  ],
+  "input_fingerprints": [
+    "No external input: the six conditions are rendered by the fixture code and judged by an independent classifier.",
+    "DefaultVideoRunConfig: embed 16, hidden 96, settle 2, learning rate 0.01; holdout ['down high']; 80 epochs over the five seen prompts (400 updates); seeds [1, 2, 3]; config_hash b53e83895ab37c74548cb08d6332a60c1f0e04a73c322326eb44c25a23a45dfe.",
+    "video.json sha256 e4f41af5e36574adaad2f8ee03e9d38613296bbc330f3a4fe3928ddcfc2f4d6a; summary.txt sha256 7bd9936c7cd4ad1fc746183becbc87824512db35d2cb7905d5cc01a4296a4b77; packaging.json sha256 dc7552f90cdaaa2ab6e1a1179a5110aa08076c24cd71573034c83c42d35f9279; clip file hashes in rerun.sha256."
+  ],
+  "observed_result": {
+    "tests": "controls.log (shared by TSK-06 and TSK-07): 53 top-level PASS in tasks/media and 13 in internal/cli (examples run video, examples list and doctor) under -race, 0 FAIL; the SKIPs are TestRolesEvidence, TestVideoEvidence, the runs recorded in each test.log. list.txt names 55 tests in tasks/media. vet.log: vet exit=0. Controls 2026-09-23T18:52:29Z to 2026-09-23T19:03:43Z. The TSK-06 claims rest on TestVideoWriteNative (exactly eight frames, one WAV and one timeline; contiguous audio ranges ending at sample 2,048; every file matches its timeline hash), TestVideoRenderAndClassifyAgree (the judge classifies every rendered condition correctly), TestVideoSyncErrorDetectsShift (a beep moved two frames early gives sync error 2 and a silent clip gives -1), TestVideoGeneratorLayout, TestVideoRunNeverTrainsHeldOut, TestVideoRunIsDeterministic, TestWriteVideoSamples, TestPackageVideoToolAbsent, TestPackageVideoToolFails (a failing packager is recorded as tool_failed with its stderr, no partial clip is left and the native files still match the timeline), TestPackageVideoPackages, TestPackageVideoRequiresNativeOutput and TestDoctorMediaToolProbeReportsAvailabilityAndFailures.",
+    "native_output": "clips/ holds the seed-1 trained core's own six clips: frame_00..07.png (8x8 RGB), audio.wav (8 kHz mono 16-bit, 2,048 samples) and timeline.json (frame rate 31.25, per-frame time and audio block, SHA-256 of every file).",
+    "packaging": "ffmpeg 8.1.2 packaged all six clips (packaged) with the recorded argument array; ffprobe of down_low/clip.mkv shows 8x8 PNG video at 125/4 fps and 8 kHz PCM audio, 0.256 s long. The absent-tool check (coimnet-missing-packager) is recorded as tool_absent, and doctor reports the packager as available with its version.",
+    "per_seed": {
+      "1": {
+        "core": "seen correct 1 -> 4 of 5, held-out 0 of 1, seen in sync 0 of 5, mean MSE 0.0297 -> 0.0068, event frames after [7, 5, 4, 7, 7, 7]",
+        "frozen_core": "seen correct 1 -> 3 of 5, held-out 0 of 1, seen in sync 0 of 5, mean MSE 0.0297 -> 0.0180, event frames after [5, 4, 5, 2, 4, 4]",
+        "core_disconnect": "changed True, max |delta| 0.8407"
+      },
+      "2": {
+        "core": "seen correct 0 -> 3 of 5, held-out 0 of 1, seen in sync 1 of 5, mean MSE 0.0300 -> 0.0065, event frames after [7, 7, 7, 7, 7, 7]",
+        "frozen_core": "seen correct 0 -> 4 of 5, held-out 0 of 1, seen in sync 0 of 5, mean MSE 0.0300 -> 0.0176, event frames after [5, 2, 5, 2, 6, 4]",
+        "core_disconnect": "changed True, max |delta| 0.7613"
+      },
+      "3": {
+        "core": "seen correct 0 -> 3 of 5, held-out 0 of 1, seen in sync 3 of 5, mean MSE 0.0297 -> 0.0064, event frames after [7, 7, 7, 7, 7, 7]",
+        "frozen_core": "seen correct 0 -> 2 of 5, held-out 0 of 1, seen in sync 0 of 5, mean MSE 0.0297 -> 0.0173, event frames after [2, 1, 5, 2, 6, 4]",
+        "core_disconnect": "changed True, max |delta| 0.9402"
+      }
+    },
+    "held_out": "down high is never generated correctly by either group at the default 80 epochs (at 320 epochs the core gets it in two of three seeds).",
+    "reading": "Frames, audio and timeline are complete for every clip, and temporal change, sync and packager failure are each measured and tested. At the default 80 epochs the model is weak: the core gets 3 or 4 of 5 seen clips right and 0 to 3 of them in sync; most sync errors are -1 because the dot's path is not sharp enough for the judge to find the edge arrival, while the core places the beep on the target frame 7 in 16 of 18 clips against 0 of 18 for the frozen-core control and reaches a lower MSE. Longer training changes the picture (post-hoc observations, not the recorded default): at 160 epochs the frozen-core control is ahead, and at 320 epochs the core gets 4 or 5 of 5 seen clips in sync against 0 to 3 for the control, with the held-out clip right in two seeds.",
+    "longer_training": {
+      "160": "seed 1: core seen 4/5 held-out 1/1 in sync 3/5, frozen core seen 5/5 in sync 4/5; seed 2: core seen 4/5 held-out 1/1 in sync 3/5, frozen core seen 5/5 in sync 4/5; seed 3: core seen 3/5 held-out 0/1 in sync 1/5, frozen core seen 4/5 in sync 3/5",
+      "320": "seed 1: core seen 5/5 held-out 1/1 in sync 5/5, frozen core seen 4/5 in sync 2/5; seed 2: core seen 4/5 held-out 1/1 in sync 4/5, frozen core seen 4/5 in sync 0/5; seed 3: core seen 5/5 held-out 0/1 in sync 5/5, frozen core seen 4/5 in sync 3/5"
+    },
+    "reproducibility": "The rerun at the same commit produced byte-identical video.json, summary.txt and native clip files; packaged containers differ only by ffmpeg's run-specific metadata."
+  },
+  "assumption_statement": "The fixture is a single dot and one beep; it proves the frame, audio and timeline pipeline and its synchronisation measure, not open-ended video generation. The decoder is a fixed clamp; the prompt reaches the frames and the audio only through the core. Pixel or sample MSE says nothing about perceptual quality. The frozen-core control trains only the encoder and readout.",
+  "test_log": [
+    "evidence/TSK-06/test.log",
+    "evidence/TSK-06/controls.log",
+    "evidence/TSK-06/vet.log"
+  ],
+  "limitations": [
+    "One dot and one beep on 8x8 frames; no claim about natural video, resolution or perceptual quality.",
+    "The held-out condition is never generated correctly at the default budget.",
+    "At the default budget sync is weak (0 to 3 of 5 seen clips in sync). The core-versus-frozen comparison changes with the training budget (the control is ahead at 160 epochs, the core at 320), so no stable conclusion about the core's own contribution is drawn; the longer runs are post-hoc observations, not a chosen default.",
+    "Packaged containers are not byte-reproducible because ffmpeg stamps run-specific metadata; the native files are.",
+    "Real authorised video data is TSK-11 and remains blocked_data.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-06/video.json": "e4f41af5e36574adaad2f8ee03e9d38613296bbc330f3a4fe3928ddcfc2f4d6a",
+    "evidence/TSK-06/summary.txt": "7bd9936c7cd4ad1fc746183becbc87824512db35d2cb7905d5cc01a4296a4b77",
+    "evidence/TSK-06/packaging.json": "dc7552f90cdaaa2ab6e1a1179a5110aa08076c24cd71573034c83c42d35f9279"
+  }
+}

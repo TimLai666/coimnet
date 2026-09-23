@@ -1,0 +1,894 @@
+{
+  "schema_version": "coimnet-video/v1",
+  "config": {
+    "video": {
+      "embed": 16,
+      "hidden": 96,
+      "settle": 2,
+      "learning_rate": 0.01,
+      "seed": 1
+    },
+    "holdout": [
+      "down high"
+    ],
+    "epochs": 80,
+    "seeds": [
+      1,
+      2,
+      3
+    ]
+  },
+  "config_hash": "b53e83895ab37c74548cb08d6332a60c1f0e04a73c322326eb44c25a23a45dfe",
+  "runs": [
+    {
+      "seed": 1,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.029708170838970163,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.02978639062641921,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029655388855105092,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029751745552456448,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 1,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.02968407251128605,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.02979842897375067,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 1,
+            "sync_error": -1
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.006894802246076266,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.0067379110463541775,
+            "judged": "right high",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 5,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.006690913024664567,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.006237052776913255,
+            "judged": "left high",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 7,
+            "sync_error": 7
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.005664153649753404,
+            "judged": "down low",
+            "correct": true,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.00827777353906187,
+            "judged": "left high",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 7,
+            "sync_error": 0
+          }
+        ],
+        "seen_correct": 4,
+        "held_out_correct": 0,
+        "seen_in_sync": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.029708170838970163,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.02978639062641921,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029655388855105092,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029751745552456448,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 1,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.02968407251128605,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 3,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.02979842897375067,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 1,
+            "sync_error": -1
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.015695742007482597,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 5,
+            "sync_error": 1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.01987286950312537,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.01539350071082625,
+            "judged": "left low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 5,
+            "sync_error": 1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.020036976061786525,
+            "judged": "left high",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 2,
+            "sync_error": 4
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.015533464481617555,
+            "judged": "down high",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.02126446631750425,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          }
+        ],
+        "seen_correct": 3,
+        "held_out_correct": 0,
+        "seen_in_sync": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 0.8407423496246338
+      },
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.02995552337934833,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.029942105754025398,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029942673864267758,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029940765209497257,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.030026067212112595,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.030018043079063705,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.006289515818879417,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 3,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.00592102957166869,
+            "judged": "left high",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 7,
+            "sync_error": 7
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.0059227735842935884,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 3,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.005555710996635565,
+            "judged": "left high",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 7,
+            "sync_error": 7
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.006336869161649248,
+            "judged": "down low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 7,
+            "sync_error": 0
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.008971082264450096,
+            "judged": "left high",
+            "correct": false,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": 0
+          }
+        ],
+        "seen_correct": 3,
+        "held_out_correct": 0,
+        "seen_in_sync": 1
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.02995552337934833,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.029942105754025398,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029942673864267758,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029940765209497257,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.030026067212112595,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.030018043079063705,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 0,
+            "event_frame": 0,
+            "sync_error": -1
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.01490725266395617,
+            "judged": "right low",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 5,
+            "sync_error": 1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.01991383755395133,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 2,
+            "sync_error": 4
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.014893094261275035,
+            "judged": "left low",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 5,
+            "sync_error": 1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.019894183976202583,
+            "judged": "left high",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 2,
+            "sync_error": 4
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.014864120064486805,
+            "judged": "down low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 6,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.02092389784972225,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          }
+        ],
+        "seen_correct": 4,
+        "held_out_correct": 0,
+        "seen_in_sync": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 0.7613365650177002
+      },
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.029756845891788637,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.02970334184502829,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029750699908801758,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029689119568428162,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 2
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.02972771589747198,
+            "judged": "down high",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 0,
+            "sync_error": 3
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.029673575846782606,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.006944811894022645,
+            "judged": "left low",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.005698492098779318,
+            "judged": "left high",
+            "correct": false,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": 0
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.007215898338228358,
+            "judged": "left low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 7,
+            "sync_error": -1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.005397896299961387,
+            "judged": "left high",
+            "correct": true,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": 0
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.005574283813237609,
+            "judged": "down low",
+            "correct": true,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": 0
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.007746989200888074,
+            "judged": "left high",
+            "correct": false,
+            "path_matches": 6,
+            "event_frame": 7,
+            "sync_error": 0
+          }
+        ],
+        "seen_correct": 3,
+        "held_out_correct": 0,
+        "seen_in_sync": 3
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 10976,
+          "readout_parameters": 43008,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 400,
+        "before": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.029756845891788637,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.02970334184502829,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.029750699908801758,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.029689119568428162,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 2
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.02972771589747198,
+            "judged": "down high",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 0,
+            "sync_error": 3
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.029673575846782606,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 1,
+            "event_frame": 7,
+            "sync_error": 3
+          }
+        ],
+        "after": [
+          {
+            "prompt": "right low",
+            "seen": true,
+            "mse": 0.015011909212089036,
+            "judged": "right high",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 2,
+            "sync_error": -1
+          },
+          {
+            "prompt": "right high",
+            "seen": true,
+            "mse": 0.019150367717545778,
+            "judged": "right low",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 1,
+            "sync_error": 5
+          },
+          {
+            "prompt": "left low",
+            "seen": true,
+            "mse": 0.0148311375491288,
+            "judged": "left low",
+            "correct": true,
+            "path_matches": 5,
+            "event_frame": 5,
+            "sync_error": 1
+          },
+          {
+            "prompt": "left high",
+            "seen": true,
+            "mse": 0.019480638463982358,
+            "judged": "left low",
+            "correct": false,
+            "path_matches": 5,
+            "event_frame": 2,
+            "sync_error": 4
+          },
+          {
+            "prompt": "down low",
+            "seen": true,
+            "mse": 0.014555327655798627,
+            "judged": "down low",
+            "correct": true,
+            "path_matches": 4,
+            "event_frame": 6,
+            "sync_error": -1
+          },
+          {
+            "prompt": "down high",
+            "seen": false,
+            "mse": 0.02049478252682074,
+            "judged": "down low",
+            "correct": false,
+            "path_matches": 4,
+            "event_frame": 4,
+            "sync_error": -1
+          }
+        ],
+        "seen_correct": 2,
+        "held_out_correct": 0,
+        "seen_in_sync": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 0.9401698708534241
+      },
+      "failed": false
+    }
+  ],
+  "assumptions": [
+    "The fixture is a single dot and one beep; it proves the frame, audio and timeline pipeline and its synchronisation measure, not open-ended video generation.",
+    "The decoder is a fixed clamp; the prompt reaches the frames and the audio only through the core.",
+    "Pixel or sample MSE says nothing about perceptual quality.",
+    "The frozen-core control trains only the encoder and readout."
+  ]
+}

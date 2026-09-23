@@ -1,0 +1,1122 @@
+{
+  "schema_version": "coimnet-roles/v1",
+  "config": {
+    "generator": {
+      "modality": "image",
+      "embed": 16,
+      "hidden": 64,
+      "settle": 3,
+      "learning_rate": 0.01,
+      "seed": 1
+    },
+    "holdout": [
+      "blue diagonal"
+    ],
+    "epochs": 60,
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "max_tool_calls": 9
+  },
+  "config_hash": "752e1dba3553f64ab914768b6573a3bac50e148df49241db110e9d502728505e",
+  "runs": [
+    {
+      "seed": 1,
+      "core_generated": {
+        "mode": "core_generated",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "core_before": {
+          "measure": "judged_pixels",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "core"
+          }
+        ]
+      },
+      "fixed_decoder": {
+        "mode": "fixed_decoder",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 512,
+          "decoder_parameters": 3272,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "decoder_hash": "e7c1e2b04e19aba6d9f42caeccbba06fd524cd69c8eb141f6ff4bb22221ca0d9",
+        "core_before": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "fixed_decoder"
+          }
+        ]
+      },
+      "external_tool": {
+        "mode": "external_tool",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "tool": "media.render_image",
+        "core_before": {
+          "measure": "correct_requests",
+          "seen_correct": 3,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "correct_requests",
+          "seen_correct": 8,
+          "held_out_correct": 1
+        },
+        "tool_result": {
+          "measure": "judged_tool_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 1
+        },
+        "tool_counts": {
+          "calls": 9,
+          "refused": 0,
+          "budget_refused": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "square"
+            },
+            "judged": "red square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "cross"
+            },
+            "judged": "red cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "diagonal"
+            },
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "square"
+            },
+            "judged": "green square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "cross"
+            },
+            "judged": "green cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "diagonal"
+            },
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "square"
+            },
+            "judged": "blue square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "cross"
+            },
+            "judged": "blue cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "request": {
+              "colour": "blue",
+              "shape": "diagonal"
+            },
+            "judged": "blue diagonal",
+            "correct": true,
+            "role": "external_tool"
+          }
+        ]
+      },
+      "decoder_alone": {
+        "reconstruction_mse": 0.000027522598379578717,
+        "correct": 9
+      },
+      "latent_stats": {
+        "core_mean": [
+          0.21273354358143276,
+          -0.4176827867825826,
+          -0.04911042915450203,
+          0.10598791390657426,
+          -0.3615986584789223,
+          -0.022997038231955612,
+          0.11155722869767082,
+          -0.08776143524381845
+        ],
+        "core_std": [
+          0.8093655146441181,
+          1.085663748810385,
+          0.7778349255693036,
+          0.8586803395013315,
+          0.7636868981687707,
+          0.7742726961155063,
+          0.8752937657439985,
+          1.026615198610845
+        ],
+        "target_mean": [
+          0.25956007287047567,
+          -0.26305446257708237,
+          -0.05538555959219277,
+          -0.004498397746857147,
+          -0.15137182937775862,
+          0.06283300138084343,
+          0.24944925493334563,
+          0.009874736816180854
+        ],
+        "target_std": [
+          0.828274150094268,
+          0.8336463148888233,
+          0.8006893733192785,
+          0.8826666923958506,
+          0.8321084287704082,
+          0.8328549627816044,
+          0.8596180638036471,
+          0.8472210674864407
+        ],
+        "mean_abs_error": 0.1555541727690722
+      },
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "core_generated": {
+        "mode": "core_generated",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "core_before": {
+          "measure": "judged_pixels",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "core"
+          }
+        ]
+      },
+      "fixed_decoder": {
+        "mode": "fixed_decoder",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 512,
+          "decoder_parameters": 3272,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "decoder_hash": "e7c1e2b04e19aba6d9f42caeccbba06fd524cd69c8eb141f6ff4bb22221ca0d9",
+        "core_before": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "fixed_decoder"
+          }
+        ]
+      },
+      "external_tool": {
+        "mode": "external_tool",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "tool": "media.render_image",
+        "core_before": {
+          "measure": "correct_requests",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "correct_requests",
+          "seen_correct": 8,
+          "held_out_correct": 1
+        },
+        "tool_result": {
+          "measure": "judged_tool_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 1
+        },
+        "tool_counts": {
+          "calls": 9,
+          "refused": 0,
+          "budget_refused": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "square"
+            },
+            "judged": "red square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "cross"
+            },
+            "judged": "red cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "diagonal"
+            },
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "square"
+            },
+            "judged": "green square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "cross"
+            },
+            "judged": "green cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "diagonal"
+            },
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "square"
+            },
+            "judged": "blue square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "cross"
+            },
+            "judged": "blue cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "request": {
+              "colour": "blue",
+              "shape": "diagonal"
+            },
+            "judged": "blue diagonal",
+            "correct": true,
+            "role": "external_tool"
+          }
+        ]
+      },
+      "decoder_alone": {
+        "reconstruction_mse": 0.000027522598379578717,
+        "correct": 9
+      },
+      "latent_stats": {
+        "core_mean": [
+          0.2676425278186798,
+          -0.35572897725635105,
+          -0.03630112732450167,
+          0.15355495363473892,
+          -0.31386594474315643,
+          -0.044576071616676136,
+          0.04124916262096826,
+          -0.09247064921591017
+        ],
+        "core_std": [
+          0.8223876314424877,
+          0.9741126270197586,
+          0.9228987508807781,
+          0.9076607945282423,
+          0.7888625825880288,
+          0.7620081185453025,
+          0.8637594218857425,
+          0.9149750874986604
+        ],
+        "target_mean": [
+          0.25956007287047567,
+          -0.26305446257708237,
+          -0.05538555959219277,
+          -0.004498397746857147,
+          -0.15137182937775862,
+          0.06283300138084343,
+          0.24944925493334563,
+          0.009874736816180854
+        ],
+        "target_std": [
+          0.828274150094268,
+          0.8336463148888233,
+          0.8006893733192785,
+          0.8826666923958506,
+          0.8321084287704082,
+          0.8328549627816044,
+          0.8596180638036471,
+          0.8472210674864407
+        ],
+        "mean_abs_error": 0.1760685741647044
+      },
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "core_generated": {
+        "mode": "core_generated",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "core_before": {
+          "measure": "judged_pixels",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "core"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "core"
+          }
+        ]
+      },
+      "fixed_decoder": {
+        "mode": "fixed_decoder",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 512,
+          "decoder_parameters": 3272,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "decoder_hash": "e7c1e2b04e19aba6d9f42caeccbba06fd524cd69c8eb141f6ff4bb22221ca0d9",
+        "core_before": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 1,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "judged_pixels_through_fixed_decoder",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "judged": "red square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "judged": "red cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "judged": "green square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "judged": "green cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "judged": "blue square",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "judged": "blue cross",
+            "correct": true,
+            "role": "fixed_decoder"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "judged": "blue cross",
+            "correct": false,
+            "role": "fixed_decoder"
+          }
+        ]
+      },
+      "external_tool": {
+        "mode": "external_tool",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "tool": "media.render_image",
+        "core_before": {
+          "measure": "correct_requests",
+          "seen_correct": 0,
+          "held_out_correct": 0
+        },
+        "core_capability": {
+          "measure": "correct_requests",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "tool_result": {
+          "measure": "judged_tool_pixels",
+          "seen_correct": 8,
+          "held_out_correct": 0
+        },
+        "tool_counts": {
+          "calls": 9,
+          "refused": 0,
+          "budget_refused": 0
+        },
+        "scores": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "square"
+            },
+            "judged": "red square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "cross"
+            },
+            "judged": "red cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "request": {
+              "colour": "red",
+              "shape": "diagonal"
+            },
+            "judged": "red diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "square"
+            },
+            "judged": "green square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "cross"
+            },
+            "judged": "green cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "request": {
+              "colour": "green",
+              "shape": "diagonal"
+            },
+            "judged": "green diagonal",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "square"
+            },
+            "judged": "blue square",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "request": {
+              "colour": "blue",
+              "shape": "cross"
+            },
+            "judged": "blue cross",
+            "correct": true,
+            "role": "external_tool"
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "request": {
+              "colour": "blue",
+              "shape": "cross"
+            },
+            "judged": "blue cross",
+            "correct": false,
+            "role": "external_tool"
+          }
+        ]
+      },
+      "decoder_alone": {
+        "reconstruction_mse": 0.000027522598379578717,
+        "correct": 9
+      },
+      "latent_stats": {
+        "core_mean": [
+          0.26468734939893085,
+          -0.39097753498289317,
+          -0.035830532924996474,
+          0.14902522332138485,
+          -0.34897382557392126,
+          -0.08816314737002055,
+          0.10469806525442338,
+          -0.06886355082194008
+        ],
+        "core_std": [
+          0.8202749729236419,
+          0.9505741743489093,
+          0.817856697845038,
+          0.8595767718898357,
+          0.7683346413040046,
+          0.7498363493133903,
+          0.8667548721631588,
+          0.9323362063576955
+        ],
+        "target_mean": [
+          0.25956007287047567,
+          -0.26305446257708237,
+          -0.05538555959219277,
+          -0.004498397746857147,
+          -0.15137182937775862,
+          0.06283300138084343,
+          0.24944925493334563,
+          0.009874736816180854
+        ],
+        "target_std": [
+          0.828274150094268,
+          0.8336463148888233,
+          0.8006893733192785,
+          0.8826666923958506,
+          0.8321084287704082,
+          0.8328549627816044,
+          0.8596180638036471,
+          0.8472210674864407
+        ],
+        "mean_abs_error": 0.13745991830372092
+      },
+      "failed": false
+    }
+  ],
+  "assumptions": [
+    "The fixture has nine images of three colours and three shapes; it proves the three modes and their bookkeeping, not open-ended image generation.",
+    "In fixed_decoder mode the judged pixels depend on the core's latent and on the frozen decoder named by decoder_hash; decoder_alone shows what that decoder reproduces by itself.",
+    "In external_tool mode the core's capability is only its structured request; the tool's pixels are reported as tool_result and never counted as core capability.",
+    "The external tool here is a local stand-in that renders the requested fixture image; no network or third-party model is called.",
+    "The fixed decoder is an image autoencoder; time alignment does not apply to single images and is not measured here."
+  ]
+}
