@@ -221,3 +221,23 @@ func TestCheckCoreDisconnect(t *testing.T) {
 func closeEnough(a, b float64) bool {
 	return math.Abs(a-b) <= 1e-12*math.Max(1, math.Max(math.Abs(a), math.Abs(b)))
 }
+
+func TestValidGeneration(t *testing.T) {
+	tests := []struct {
+		name string
+		gen  Generation
+		want bool
+	}{
+		{name: "valid UTF-8", gen: Generation{Text: "米。"}, want: true},
+		{name: "invalid UTF-8 byte", gen: Generation{Text: "米\xff。"}, want: false},
+		{name: "incomplete UTF-8 bytes", gen: Generation{Text: "米", IncompleteUTF8Bytes: 2}, want: false},
+		{name: "empty text", gen: Generation{}, want: true},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := validGeneration(test.gen); got != test.want {
+				t.Errorf("validGeneration(%+v) = %t, want %t", test.gen, got, test.want)
+			}
+		})
+	}
+}

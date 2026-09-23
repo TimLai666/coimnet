@@ -138,7 +138,7 @@ func EvaluateHoldout(ctx context.Context, m *Model, docs []Document, maxTokens i
 // TaskResult scores grammar completion: for every sentence of every test document (split on "。"), the prompt is [bos] +
 // the bytes of subject + verb; Generate runs greedily (Temperature 0, MaxTokens 12, StopAtEOS true, Seed 0) and the
 // completion is correct when the decoded text starts with one of the three objects followed by "。". Valid counts the
-// generations with IncompleteUTF8Bytes 0.
+// generations whose decoded text is complete, valid UTF-8 (validGeneration).
 type TaskResult struct {
 	Prompts  int      `json:"prompts"`
 	Correct  int      `json:"correct"`
@@ -146,6 +146,12 @@ type TaskResult struct {
 	Valid    int      `json:"valid"`
 	Validity float64  `json:"validity"`
 	Samples  []string `json:"samples"`
+}
+
+// validGeneration reports whether g decoded to complete, valid UTF-8: the stream decoder kept no bytes back
+// (IncompleteUTF8Bytes is 0) and the text holds no byte that cannot start or continue a UTF-8 sequence.
+func validGeneration(g Generation) bool {
+	return g.IncompleteUTF8Bytes == 0 && utf8.ValidString(g.Text)
 }
 
 // EvaluateTask scores greedy completions for subject-verb grammar prompts in test documents.
@@ -206,7 +212,7 @@ func EvaluateTask(ctx context.Context, m *Model, docs []Document) (TaskResult, e
 				return TaskResult{}, fmt.Errorf("generate document %q sentence %d: %w", doc.ID, sentenceIndex, err)
 			}
 			result.Prompts++
-			if generation.IncompleteUTF8Bytes == 0 {
+			if validGeneration(generation) {
 				result.Valid++
 			}
 			if len(result.Samples) < 3 {
