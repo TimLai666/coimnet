@@ -35,6 +35,8 @@
 | 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |
 | 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |
 | OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；真實授權資料 blocked_data，需使用者提供含授權欄位的資料集，目前只驗到 fixture） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json) |
+| 語音轉文字：授權 manifest 的 WAV 匯入、說話者／場次分割、整檔與因果串流 CTC 輸出、快照與跨程序接續、CER／WER 可重現（TSK-02；同分布保留集 CER 0.78 → 0，跨說話者／場次的 CLI fixture 只從 13/19 降到 12/19、WER 維持 0.9；真實授權語音 blocked_data） | 已訓練（人工音調） | fixture | 核心能力 | [TSK-02](evidence/TSK-02/review-20260924/verification.json) |
+| 文字生成：位元組 tokenizer 與詞表雜湊、已知前綴預測與遮罩、EOS／最大長度、溫度／top-k／top-p 可重現採樣、串流 UTF-8 緩衝、來源層級保留語料、教師去重與封鎖教師的學生模式評估（TSK-03；三字合成文法，不宣稱中文對話、推理或知識；真實授權語料 blocked_data） | 已訓練（合成文法） | fixture | 核心能力 | [TSK-03](evidence/TSK-03/verification.json) |
 | 文字條件影像與音訊生成：核心產生表示、固定 clamp 解碼器不讀提示、PNG／WAV 精確輸出、保留條件與凍結核心容量對照、核心斷開檢查（TSK-04、TSK-05；凍結核心和完整核心一樣好、留出條件全部生成錯，不宣稱核心學習的必要性或組合泛化；真實授權影音 blocked_data） | 已訓練（人工影像與音調） | fixture | 核心能力 | [TSK-04](evidence/TSK-04/verification.json)・[TSK-05](evidence/TSK-05/verification.json) |
 | 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |
 | 動態參數 adapter：由發布資料推導正負號、信心度與強度並回報未知計數（NAT-02） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-02](evidence/NAT-02/verification.json) |
@@ -231,7 +233,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 
 ## Go SDK
 
-新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)。兩者目前是局部框架能力，完整 LRN-09／TSK-02 驗收狀態見需求追蹤。
+新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)；兩者都已通過 fixture 驗收，範圍與限制見上表的 LRN-09 與 TSK-02 列。
 
 - `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
 - `dynamics.NewLIF` 用同一套拓撲、延遲與時鐘建立 LIF 放電核心。神經元達到閾值就產生一次事件並把電位重設，對外輸出是會衰減的突觸跡，不應期內保持重設值並忽略當步輸入。`Backward` 依宣告的 `fast_sigmoid` 替代梯度回推，重設分支不傳梯度。

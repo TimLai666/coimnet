@@ -68,3 +68,5 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `learning/recompute.go`：重算模式的 `observe` 走 `NewState`／`Advance`，所以多了完整歷史路徑沒有的上限：節點數 ×（最大延遲 + 1）不得超過 `dynamics.MaxStateValues`（2^20）。全圖延遲一律為 0 不受影響；2^19 節點、延遲 2 的圖只有開重算時會在 `Step` 報錯。要放寬就讓 `observe` 直接走分段前向，不經串流狀態。
 - `experiment/nav2d_suite.go`：報告的 `config.env` 記的是呼叫端給的零值（寬高、牆密度、視野、時限、獎懲都是 0），實際採用的預設值（9×9、0.2、3、60、0.01、0.05、+1）只在 `nav2d.New` 內部補上；報告應改記補完後的有效設定，雜湊也跟著換。
 - `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。
+- `tasks/media`：核心拓樸（輸入→隱藏與隱藏→隱藏的邊、初始化串流 0／1／2、log tau = log 2）的建構寫了四份：`generator.go` 的 `NewGenerator`、`video.go` 的 `NewVideoGenerator`、`fixed_decoder.go` 的 `NewLatentGenerator`、`external_tool.go` 的 `NewRequestHead`，只差輸入與輸出寬度。抽成一個共用的建構函式，之後改初始化或拓樸才不會漏改；行為不變，四個生成器的決定性測試可當回歸。
+- `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。

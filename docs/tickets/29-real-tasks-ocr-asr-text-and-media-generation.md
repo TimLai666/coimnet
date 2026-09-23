@@ -10,7 +10,7 @@ UTF-8 串流解碼，影音生成分成核心生成、固定還原器與外部�
 Blocked by：26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）、
 TSK-11 的真實資料：**受阻於使用者提供有授權的資料**（每類任務各一份，含授權欄位）
 
-Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時、CLI fixture 與嚴格串流檔案保存；真實授權語音驗收仍待完成；第四階段 fixture 已驗證（2026-09-24）；第三、五、六階段程式已落地，證據進行中
+Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時、CLI fixture 與嚴格串流檔案保存；第二、三、四階段 fixture 已驗證（2026-09-24），真實授權資料屬 TSK-11；第五、六階段程式已落地，證據進行中
 
 對應需求：TSK-01（OCR：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過）、TSK-02（語音：
 整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代）、TSK-03（文字生成：因果前綴、
@@ -100,8 +100,8 @@ Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 
 
 - [x]（fixture；真實資料 blocked_data）第一階段：CTC 枚舉對照與四個邊界、CER 定義、單行與頁面流程、
   字形不洩漏；`go test`、race、vet；`evidence/TSK-01/`（fixture）。
-- [ ] 第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
-- [ ] 第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
+- [x]（fixture；真實資料 blocked_data）第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
+- [x]（fixture；真實資料 blocked_data）第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
 - [x]（fixture；真實資料 blocked_data）第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
 - [ ] 第五階段：時間線、封裝器缺席與失敗、同步誤差；`evidence/TSK-06/`。
 - [ ] 第六階段：三條流程角色可查、工具結果不計入；`evidence/TSK-07/`。
@@ -163,6 +163,30 @@ Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 
 `Stream.Save`／`Recognizer.LoadStream` 把完整串流存成單一 `coimnet-asr-stream/v1` 檔案；其中的個體快照沿用 `coimnet-individual-checkpoint/v1` 嚴格解碼。檔案上限 64 MiB；已存在目的地不覆寫，取消於發布前不留檔。載入拒絕錯誤 schema／checksum、缺失或 `null` 的數值與必填欄位、未知欄位及不符辨識器設定的狀態；待處理樣本與不可能的已輸出文字都在大型切片配置前檢查。人工音調測試在新程序載入中途檔後，最終狀態與不中斷路徑的 JSON SHA-256 相同。詳細命令與日誌見 [串流保存驗證](../../evidence/TSK-02/stream-file-verification.json)。
 
 上一節的驗證紀錄保留當時的範圍；這項保存能力已補上。`TSK-02` 暫維持 `specified`，因為尚無真實授權語音的任務驗收、跨平台檔案續跑，以及超過 64 MiB 個體的保存方案。真實資料匯入、訓練、推論與評估也屬 TSK-11，維持 blocked_data。
+
+## 第二階段驗收複核（2026-09-24）
+
+先前的紀錄因為缺真實授權語音、跨平台執行與嚴格串流檔，把 TSK-02 留在 specified。串流檔已在
+`stream-file-verification.json` 驗證；真實語音屬 TSK-11、平台執行屬 OPS-04，都不在 TSK-02 的驗收文字裡，
+和 TSK-01 一樣以 fixture 驗收、真實資料留給 TSK-11。複核在 79ca979 重跑：`tasks/asr` 全套 79 個頂層測試
+與 CLI 的 4 個測試在 `-race` 下通過，兩次 `examples run asr` 的報告除耗時欄位外完全相同。驗收逐項對照在
+`evidence/TSK-02/review-20260924/verification.json`。
+
+結果照實寫：同分布保留集 CER 0.78 → 0（辨識器學得會）；CLI fixture 的測試組是訓練沒見過的說話者／場次，
+CER 只從 13/19 降到 12/19、WER 維持 0.9，跨組泛化很弱。
+
+## 第三階段證據（2026-09-24）
+
+第三階段拆成七張小票（tokenizer、模型、生成、語料與教師去重、評估、RunTextgen、CLI 與證據輔助），另有兩個
+修正：生成有效率原本只看結尾有沒有殘缺位元組，未訓練的亂碼也算有效，改成要求完整合法的 UTF-8
+（b771f0b）；預設輪數原本只依 seed 1 挑成 10，seed 2、3 在 10 輪時還沒學會，改成三個 seed 都學會的 20 輪並加回歸測試（79ca979）。
+
+證據 `evidence/TSK-03/`：三個 seed 的保留語料困惑度都從約 260 降到 1.37、1.43、1.53，24 個任務提示全部補成
+「受詞 + 。」的合法文字，教師呼叫 0 次；同一 commit 重跑逐位元組相同。驗收各項（因果前綴、遮罩梯度、EOS 與
+最大長度、採樣重現、UTF-8 緩衝、詞表雜湊、來源切分、教師去重與學生模式）對應的測試列在 `verification.json`。
+
+限制：三字合成文法，任務只檢查「任一受詞 + 。」，永遠答「米」也算對；不宣稱中文對話、推理或知識。真實授權
+語料屬 TSK-11，仍是 **blocked_data**。
 
 ## 第四階段證據（2026-09-24）
 

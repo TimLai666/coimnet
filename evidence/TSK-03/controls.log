@@ -1,0 +1,264 @@
+2026/09/24 02:32:21 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestReadCorpus
+=== RUN   TestReadCorpus/invalid_manifests
+=== RUN   TestReadCorpus/invalid_manifests/missing_license_field
+=== RUN   TestReadCorpus/invalid_manifests/both_text_and_path
+=== RUN   TestReadCorpus/invalid_manifests/neither_text_nor_path
+=== RUN   TestReadCorpus/invalid_manifests/parent_path
+=== RUN   TestReadCorpus/invalid_manifests/absolute_path
+=== RUN   TestReadCorpus/invalid_manifests/drive_path
+=== RUN   TestReadCorpus/invalid_manifests/duplicate_id
+=== RUN   TestReadCorpus/invalid_manifests/unknown_field
+=== RUN   TestReadCorpus/invalid_manifests/non-snake-case_field
+=== RUN   TestReadCorpus/invalid_manifests/invalid_scope_kind
+=== RUN   TestReadCorpus/invalid_manifests/wrong_schema
+=== RUN   TestReadCorpus/invalid_manifests/duplicate_JSON_key
+=== RUN   TestReadCorpus/invalid_manifests/oversized_manifest
+=== RUN   TestReadCorpus/invalid_manifests/invalid_UTF-8_document
+=== RUN   TestReadCorpus/invalid_manifests/oversized_document
+--- PASS: TestReadCorpus (0.15s)
+    --- PASS: TestReadCorpus/invalid_manifests (0.15s)
+        --- PASS: TestReadCorpus/invalid_manifests/missing_license_field (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/both_text_and_path (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/neither_text_nor_path (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/parent_path (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/absolute_path (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/drive_path (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/duplicate_id (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/unknown_field (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/non-snake-case_field (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/invalid_scope_kind (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/wrong_schema (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/duplicate_JSON_key (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/oversized_manifest (0.07s)
+        --- PASS: TestReadCorpus/invalid_manifests/invalid_UTF-8_document (0.00s)
+        --- PASS: TestReadCorpus/invalid_manifests/oversized_document (0.07s)
+=== RUN   TestSplitBySource
+=== RUN   TestSplitBySource/one_source
+=== RUN   TestSplitBySource/zero_fraction
+=== RUN   TestSplitBySource/unit_fraction
+--- PASS: TestSplitBySource (0.00s)
+    --- PASS: TestSplitBySource/one_source (0.00s)
+    --- PASS: TestSplitBySource/zero_fraction (0.00s)
+    --- PASS: TestSplitBySource/unit_fraction (0.00s)
+=== RUN   TestDedupTeacher
+--- PASS: TestDedupTeacher (0.00s)
+=== RUN   TestFixtureCorpus
+    corpus_test.go:223: first document text: 狗吃肉。貓吃水。鳥吃米。
+--- PASS: TestFixtureCorpus (0.00s)
+=== RUN   TestExamples
+--- PASS: TestExamples (0.00s)
+=== RUN   TestEvaluateHoldout
+--- PASS: TestEvaluateHoldout (0.07s)
+=== RUN   TestEvaluateTaskAndTraining
+    eval_test.go:168: before perplexity=260.173081 task_accuracy=0.000000 validity=0.000000
+    eval_test.go:169: after perplexity=16.731160 task_accuracy=0.000000 validity=0.000000
+--- PASS: TestEvaluateTaskAndTraining (19.67s)
+=== RUN   TestCheckCoreDisconnect
+--- PASS: TestCheckCoreDisconnect (0.25s)
+=== RUN   TestValidGeneration
+=== RUN   TestValidGeneration/valid_UTF-8
+=== RUN   TestValidGeneration/invalid_UTF-8_byte
+=== RUN   TestValidGeneration/incomplete_UTF-8_bytes
+=== RUN   TestValidGeneration/empty_text
+--- PASS: TestValidGeneration (0.00s)
+    --- PASS: TestValidGeneration/valid_UTF-8 (0.00s)
+    --- PASS: TestValidGeneration/invalid_UTF-8_byte (0.00s)
+    --- PASS: TestValidGeneration/incomplete_UTF-8_bytes (0.00s)
+    --- PASS: TestValidGeneration/empty_text (0.00s)
+=== RUN   TestTextgenEvidence
+    evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set
+--- SKIP: TestTextgenEvidence (0.00s)
+=== RUN   TestSampleNext
+=== RUN   TestSampleNext/greedy_and_ties
+=== RUN   TestSampleNext/top_k_one
+=== RUN   TestSampleNext/tiny_top_p
+=== RUN   TestSampleNext/filters_exclude_removed_ids
+=== RUN   TestSampleNext/reproducible_rng
+=== RUN   TestSampleNext/rejects_non-finite_logits
+--- PASS: TestSampleNext (0.02s)
+    --- PASS: TestSampleNext/greedy_and_ties (0.00s)
+    --- PASS: TestSampleNext/top_k_one (0.00s)
+    --- PASS: TestSampleNext/tiny_top_p (0.00s)
+    --- PASS: TestSampleNext/filters_exclude_removed_ids (0.02s)
+    --- PASS: TestSampleNext/reproducible_rng (0.00s)
+    --- PASS: TestSampleNext/rejects_non-finite_logits (0.00s)
+=== RUN   TestGenerateWithScriptedLogits
+=== RUN   TestGenerateWithScriptedLogits/emits_complete_utf8_and_stops_at_eos
+=== RUN   TestGenerateWithScriptedLogits/counts_buffered_utf8_at_token_limit
+=== RUN   TestGenerateWithScriptedLogits/continues_after_eos_when_disabled
+--- PASS: TestGenerateWithScriptedLogits (0.00s)
+    --- PASS: TestGenerateWithScriptedLogits/emits_complete_utf8_and_stops_at_eos (0.00s)
+    --- PASS: TestGenerateWithScriptedLogits/counts_buffered_utf8_at_token_limit (0.00s)
+    --- PASS: TestGenerateWithScriptedLogits/continues_after_eos_when_disabled (0.00s)
+=== RUN   TestGenerateIsReproducible
+--- PASS: TestGenerateIsReproducible (0.14s)
+=== RUN   TestGenerateConfigValidate
+=== RUN   TestGenerateConfigValidate/max_tokens_low
+=== RUN   TestGenerateConfigValidate/max_tokens_high
+=== RUN   TestGenerateConfigValidate/temperature_negative
+=== RUN   TestGenerateConfigValidate/temperature_nan
+=== RUN   TestGenerateConfigValidate/temperature_infinite
+=== RUN   TestGenerateConfigValidate/top_k_negative
+=== RUN   TestGenerateConfigValidate/top_p_zero
+=== RUN   TestGenerateConfigValidate/top_p_high
+=== RUN   TestGenerateConfigValidate/top_p_nan
+=== RUN   TestGenerateConfigValidate/top_p_infinite
+--- PASS: TestGenerateConfigValidate (0.00s)
+    --- PASS: TestGenerateConfigValidate/max_tokens_low (0.00s)
+    --- PASS: TestGenerateConfigValidate/max_tokens_high (0.00s)
+    --- PASS: TestGenerateConfigValidate/temperature_negative (0.00s)
+    --- PASS: TestGenerateConfigValidate/temperature_nan (0.00s)
+    --- PASS: TestGenerateConfigValidate/temperature_infinite (0.00s)
+    --- PASS: TestGenerateConfigValidate/top_k_negative (0.00s)
+    --- PASS: TestGenerateConfigValidate/top_p_zero (0.00s)
+    --- PASS: TestGenerateConfigValidate/top_p_high (0.00s)
+    --- PASS: TestGenerateConfigValidate/top_p_nan (0.00s)
+    --- PASS: TestGenerateConfigValidate/top_p_infinite (0.00s)
+=== RUN   TestGenerateRejectsBadPrompt
+--- PASS: TestGenerateRejectsBadPrompt (0.00s)
+=== RUN   TestModelConfigValidate
+=== RUN   TestModelConfigValidate/embed_too_small
+=== RUN   TestModelConfigValidate/embed_too_large
+=== RUN   TestModelConfigValidate/hidden_too_small
+=== RUN   TestModelConfigValidate/hidden_too_large
+=== RUN   TestModelConfigValidate/settle_too_small
+=== RUN   TestModelConfigValidate/settle_too_large
+=== RUN   TestModelConfigValidate/learning_rate_zero
+=== RUN   TestModelConfigValidate/learning_rate_negative
+=== RUN   TestModelConfigValidate/learning_rate_nan
+=== RUN   TestModelConfigValidate/learning_rate_infinite
+--- PASS: TestModelConfigValidate (0.00s)
+    --- PASS: TestModelConfigValidate/embed_too_small (0.00s)
+    --- PASS: TestModelConfigValidate/embed_too_large (0.00s)
+    --- PASS: TestModelConfigValidate/hidden_too_small (0.00s)
+    --- PASS: TestModelConfigValidate/hidden_too_large (0.00s)
+    --- PASS: TestModelConfigValidate/settle_too_small (0.00s)
+    --- PASS: TestModelConfigValidate/settle_too_large (0.00s)
+    --- PASS: TestModelConfigValidate/learning_rate_zero (0.00s)
+    --- PASS: TestModelConfigValidate/learning_rate_negative (0.00s)
+    --- PASS: TestModelConfigValidate/learning_rate_nan (0.00s)
+    --- PASS: TestModelConfigValidate/learning_rate_infinite (0.00s)
+=== RUN   TestDefaultModelConfig
+--- PASS: TestDefaultModelConfig (0.00s)
+=== RUN   TestModelLayout
+--- PASS: TestModelLayout (0.00s)
+=== RUN   TestModelLogitsArePredictionsOfTheNextToken
+--- PASS: TestModelLogitsArePredictionsOfTheNextToken (0.01s)
+=== RUN   TestModelMaskedPositionsHaveNoGradient
+=== RUN   TestModelMaskedPositionsHaveNoGradient/unscored_prefix
+=== RUN   TestModelMaskedPositionsHaveNoGradient/unscored_tail_padding
+--- PASS: TestModelMaskedPositionsHaveNoGradient (0.04s)
+    --- PASS: TestModelMaskedPositionsHaveNoGradient/unscored_prefix (0.00s)
+    --- PASS: TestModelMaskedPositionsHaveNoGradient/unscored_tail_padding (0.00s)
+=== RUN   TestModelStepLowersNLL
+    model_test.go:302: training NLL: before=5.553017343266204 after=0.42435834147574913
+--- PASS: TestModelStepLowersNLL (61.53s)
+=== RUN   TestModelRejectsBadInput
+=== RUN   TestModelRejectsBadInput/length_mismatch
+=== RUN   TestModelRejectsBadInput/scored_first_position
+=== RUN   TestModelRejectsBadInput/no_scored_positions
+=== RUN   TestModelRejectsBadInput/out_of_range_ID
+=== RUN   TestModelRejectsBadInput/negative_ID
+--- PASS: TestModelRejectsBadInput (0.00s)
+    --- PASS: TestModelRejectsBadInput/length_mismatch (0.00s)
+    --- PASS: TestModelRejectsBadInput/scored_first_position (0.00s)
+    --- PASS: TestModelRejectsBadInput/no_scored_positions (0.00s)
+    --- PASS: TestModelRejectsBadInput/out_of_range_ID (0.00s)
+    --- PASS: TestModelRejectsBadInput/negative_ID (0.00s)
+=== RUN   TestRunTextgenReport
+    run_test.go:55: seed=1 perplexity_before=259.761281647 perplexity_after=28.3367049265 task_accuracy_before=0 task_accuracy_after=0 teacher_calls=0
+--- PASS: TestRunTextgenReport (9.70s)
+=== RUN   TestRunTextgenLowersPerplexity
+    run_test.go:112: epochs=20 perplexity_before=259.931786011 perplexity_after=1.37366418024 task_accuracy_after=1
+--- PASS: TestRunTextgenLowersPerplexity (263.79s)
+=== RUN   TestRunTextgenDefaultLearnsEverySeed
+    run_test.go:128: seed=1 accuracy=1 validity=1 perplexity_after=1.3737
+    run_test.go:128: seed=2 accuracy=1 validity=1 perplexity_after=1.4344
+    run_test.go:128: seed=3 accuracy=1 validity=1 perplexity_after=1.5323
+--- PASS: TestRunTextgenDefaultLearnsEverySeed (804.70s)
+=== RUN   TestRunTextgenIsDeterministic
+    run_test.go:155: seed=1 perplexity_before=259.761281647 perplexity_after=28.3367049265 task_accuracy_before=0 task_accuracy_after=0 teacher_calls=0
+    run_test.go:155: seed=2 perplexity_before=259.794725321 perplexity_after=26.2065046726 task_accuracy_before=0 task_accuracy_after=0 teacher_calls=0
+--- PASS: TestRunTextgenIsDeterministic (37.73s)
+=== RUN   TestRunTextgenReadsAManifest
+--- PASS: TestRunTextgenReadsAManifest (2.66s)
+=== RUN   TestRunConfigValidate
+=== RUN   TestRunConfigValidate/model
+=== RUN   TestRunConfigValidate/documents
+=== RUN   TestRunConfigValidate/sources
+=== RUN   TestRunConfigValidate/test_fraction
+=== RUN   TestRunConfigValidate/teacher_texts
+=== RUN   TestRunConfigValidate/max_tokens
+=== RUN   TestRunConfigValidate/epochs
+=== RUN   TestRunConfigValidate/seeds_empty
+=== RUN   TestRunConfigValidate/seeds_duplicate
+--- PASS: TestRunConfigValidate (0.00s)
+    --- PASS: TestRunConfigValidate/model (0.00s)
+    --- PASS: TestRunConfigValidate/documents (0.00s)
+    --- PASS: TestRunConfigValidate/sources (0.00s)
+    --- PASS: TestRunConfigValidate/test_fraction (0.00s)
+    --- PASS: TestRunConfigValidate/teacher_texts (0.00s)
+    --- PASS: TestRunConfigValidate/max_tokens (0.00s)
+    --- PASS: TestRunConfigValidate/epochs (0.00s)
+    --- PASS: TestRunConfigValidate/seeds_empty (0.00s)
+    --- PASS: TestRunConfigValidate/seeds_duplicate (0.00s)
+=== RUN   TestDefaultRunConfig
+--- PASS: TestDefaultRunConfig (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/textgen	1201.958s
+=== RUN   TestEncodeDecodeRoundTrip
+--- PASS: TestEncodeDecodeRoundTrip (0.00s)
+=== RUN   TestSpecialsAreExplicit
+--- PASS: TestSpecialsAreExplicit (0.00s)
+=== RUN   TestHashIsStableAndSensitive
+--- PASS: TestHashIsStableAndSensitive (0.00s)
+=== RUN   TestNewRejects
+=== RUN   TestNewRejects/wrong_format
+=== RUN   TestNewRejects/empty_format
+=== RUN   TestNewRejects/duplicate_name
+=== RUN   TestNewRejects/unknown_role
+=== RUN   TestNewRejects/empty_role
+=== RUN   TestNewRejects/empty_name
+--- PASS: TestNewRejects (0.00s)
+    --- PASS: TestNewRejects/wrong_format (0.00s)
+    --- PASS: TestNewRejects/empty_format (0.00s)
+    --- PASS: TestNewRejects/duplicate_name (0.00s)
+    --- PASS: TestNewRejects/unknown_role (0.00s)
+    --- PASS: TestNewRejects/empty_role (0.00s)
+    --- PASS: TestNewRejects/empty_name (0.00s)
+=== RUN   TestStreamDecoderBuffersIncompleteUTF8
+--- PASS: TestStreamDecoderBuffersIncompleteUTF8 (0.00s)
+=== RUN   TestStreamDecoderFlushRefusesIncomplete
+--- PASS: TestStreamDecoderFlushRefusesIncomplete (0.00s)
+=== RUN   TestLoadConfigRejectsUnknownFields
+--- PASS: TestLoadConfigRejectsUnknownFields (0.00s)
+=== RUN   TestSaveConfigRefusesExisting
+--- PASS: TestSaveConfigRefusesExisting (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	1.807s
+exit=0
+2026/09/24 02:52:25 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestExamplesRunTextgenWritesReport
+--- PASS: TestExamplesRunTextgenWritesReport (33.39s)
+=== RUN   TestExamplesRunTextgenReadsACorpus
+--- PASS: TestExamplesRunTextgenReadsACorpus (9.80s)
+=== RUN   TestExamplesRunTextgenRejects
+=== RUN   TestExamplesRunTextgenRejects/empty_seeds
+=== RUN   TestExamplesRunTextgenRejects/zero_epochs
+=== RUN   TestExamplesRunTextgenRejects/existing_output
+=== RUN   TestExamplesRunTextgenRejects/missing_corpus
+--- PASS: TestExamplesRunTextgenRejects (0.00s)
+    --- PASS: TestExamplesRunTextgenRejects/empty_seeds (0.00s)
+    --- PASS: TestExamplesRunTextgenRejects/zero_epochs (0.00s)
+    --- PASS: TestExamplesRunTextgenRejects/existing_output (0.00s)
+    --- PASS: TestExamplesRunTextgenRejects/missing_corpus (0.00s)
+=== RUN   TestExamplesListIncludesTextgen
+--- PASS: TestExamplesListIncludesTextgen (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/cli	44.927s
+exit=0

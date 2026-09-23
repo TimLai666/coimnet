@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-09-24 TSK-02、TSK-03 通過 fixture 驗收，需求追蹤檔現為 84／91（原始 78／85、NAT 增補 6／6）。TSK-02 先前因缺真實語音而維持 specified，但真實資料屬 TSK-11，和 TSK-01 同樣以 fixture 驗收；複核重跑 ASR 全套與兩次範例，報告除耗時外完全相同，同分布保留集 CER 0.78 → 0，跨說話者的範例只降一個字、WER 維持 0.9，[複核紀錄](evidence/TSK-02/review-20260924/verification.json)。TSK-03 修掉兩個問題後重跑：生成有效率改成要求完整合法的 UTF-8，預設輪數改成三個 seed 都學會的 20 輪；三個 seed 的保留語料困惑度從約 260 降到 1.37 到 1.53，任務提示全部補對，教師呼叫 0 次，[證據](evidence/TSK-03/verification.json)。兩項都只證明流程，不宣稱自然語音或中文語言能力。
+
 2026-09-24 TSK-04、TSK-05 通過 fixture 驗收，需求追蹤檔現為 82／91（原始 76／85、NAT 增補 6／6）：文字經編碼器與核心產生表示，固定 clamp 解碼器的輸入型別只有表示、讀不到提示；影像輸出 8×8 PNG、音訊輸出 8 kHz WAV，長度與取樣率精確；`examples run media` 會寫出報告和已訓練核心生成的九個樣本。三個 seed 裡，影像的已見條件全對、音訊對 6 到 7 個，但只訓練編碼器與讀出層的凍結核心對照一樣好，留出條件也全部生成錯，所以只能說流程可用，不能說核心學習是必要的，也沒有組合泛化。[影像證據](evidence/TSK-04/verification.json)、[音訊證據](evidence/TSK-05/verification.json)；真實授權影音屬 TSK-11，仍受阻於資料。
 
 2026-09-24 TSK-09 通過 fixture 驗收，需求追蹤檔現為 80／91（原始 74／85、NAT 增補 6／6）：走廊與延遲關聯兩個任務共用一顆核心，三種排程都只建一個 trainer，每份結果的模型包指紋與核心參數指紋相同，每個任務在自己的個體上評估並記錄血統雜湊鏈，更新份額與宣告比例並列、超過容差會標旗，[證據](evidence/TSK-09/verification.json)。`examples run nav2d`、`multimodal`、`attribution` 三個 CLI 入口已補上；`benchmark` 報告升到 v2（每階段分開初始化、傳輸、暖機、穩態，附活動量、同 seed 重現與「未量測能耗」聲明），OPS-08 的固定與全圖兩份報告尚未產生。OPS-07 的全圖快照改走目錄型格式（manifest 加 gob payload、逐檔 SHA-256、manifest 最後寫入當完成標記），單檔 JSON 格式不變，接上全圖流程後才會實跑。

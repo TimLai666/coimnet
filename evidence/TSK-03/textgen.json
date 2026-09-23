@@ -1,0 +1,207 @@
+{
+  "schema_version": "coimnet-textgen/v1",
+  "config": {
+    "model": {
+      "embed": 16,
+      "hidden": 32,
+      "settle": 3,
+      "learning_rate": 0.01,
+      "seed": 1
+    },
+    "corpus": "",
+    "corpus_seed": 1,
+    "documents": 24,
+    "sources": 6,
+    "test_fraction": 0.25,
+    "split_seed": 1,
+    "teacher_texts": 8,
+    "max_tokens": 64,
+    "epochs": 20,
+    "seeds": [
+      1,
+      2,
+      3
+    ]
+  },
+  "config_hash": "7e96ef3ea8dfc61f2a392eabd7642a3119890210fbe1002d1e3270ca12d8af3e",
+  "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94",
+  "data_scope": {
+    "kind": "fixture",
+    "language": "zh-Hant (synthetic grammar)",
+    "note": "3 subjects x 2 verbs x 3 objects; proves the pipeline runs, not language ability"
+  },
+  "split": {
+    "train_documents": 16,
+    "test_documents": 8,
+    "train_sources": [
+      "fixture-source-0",
+      "fixture-source-2",
+      "fixture-source-3",
+      "fixture-source-4"
+    ],
+    "test_sources": [
+      "fixture-source-1",
+      "fixture-source-5"
+    ]
+  },
+  "teacher": {
+    "offered": 9,
+    "removed": 1,
+    "kept": 8,
+    "sources": [
+      "offline-teacher"
+    ]
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "updates": 480,
+      "holdout_before": {
+        "sum_nats": 1645.8840935890616,
+        "tokens": 296,
+        "mean_nats_per_token": 5.560419235098181,
+        "perplexity": 259.9317860114174,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "holdout_after": {
+        "sum_nats": 93.9745990710863,
+        "tokens": 296,
+        "mean_nats_per_token": 0.3174817536185348,
+        "perplexity": 1.3736641802360445,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "task_before": {
+        "prompts": 24,
+        "correct": 0,
+        "accuracy": 0,
+        "valid": 0,
+        "validity": 0,
+        "samples": [
+          "\ufffdk\ufffd|\ufffd\ufffdWW\ufffd\ufffd\u000b",
+          "\ufffdk\ufffd|\ufffd\ufffdWW\ufffd\ufffd\u000b",
+          "\ufffdk\ufffd|\ufffd\ufffdWW\ufffd\ufffd\u000b"
+        ]
+      },
+      "task_after": {
+        "prompts": 24,
+        "correct": 24,
+        "accuracy": 1,
+        "valid": 24,
+        "validity": 1,
+        "samples": [
+          "米。貓看",
+          "米。貓看",
+          "米。貓看"
+        ]
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 12.464473724365234
+      },
+      "teacher_calls": 0,
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "updates": 480,
+      "holdout_before": {
+        "sum_nats": 1645.6373123254953,
+        "tokens": 296,
+        "mean_nats_per_token": 5.559585514613159,
+        "perplexity": 259.7151658695837,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "holdout_after": {
+        "sum_nats": 106.78611375794816,
+        "tokens": 296,
+        "mean_nats_per_token": 0.36076389783090596,
+        "perplexity": 1.4344247501000538,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "task_before": {
+        "prompts": 24,
+        "correct": 0,
+        "accuracy": 0,
+        "valid": 0,
+        "validity": 0,
+        "samples": [
+          "\ufffd\u0018#\ufffd檪\ufffd\ufffd\u0016\ufffd",
+          "\ufffd\u0018#\ufffd檪\ufffd\ufffd\u0016\ufffd",
+          "\ufffd\u0018#\ufffd檪\ufffd\ufffd\u0016\ufffd"
+        ]
+      },
+      "task_after": {
+        "prompts": 24,
+        "correct": 24,
+        "accuracy": 1,
+        "valid": 24,
+        "validity": 1,
+        "samples": [
+          "水。貓看",
+          "水。貓看",
+          "水。貓看"
+        ]
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 13.862139701843262
+      },
+      "teacher_calls": 0,
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "updates": 480,
+      "holdout_before": {
+        "sum_nats": 1645.3391155397308,
+        "tokens": 296,
+        "mean_nats_per_token": 5.558578093039631,
+        "perplexity": 259.4536549564992,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "holdout_after": {
+        "sum_nats": 126.32737521670194,
+        "tokens": 296,
+        "mean_nats_per_token": 0.42678167302939846,
+        "perplexity": 1.5323180788369632,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "task_before": {
+        "prompts": 24,
+        "correct": 0,
+        "accuracy": 0,
+        "valid": 0,
+        "validity": 0,
+        "samples": [
+          "7\ufffd\ufffd9\ufffd\u0010\ufffd\u0002Փ\ufffdl",
+          "7\ufffd\ufffd9\ufffd\u0010\ufffd\u0002Փ\ufffdl",
+          "7\ufffd\ufffd9\ufffd\u0010\ufffd\u0002Փ\ufffdl"
+        ]
+      },
+      "task_after": {
+        "prompts": 24,
+        "correct": 24,
+        "accuracy": 1,
+        "valid": 24,
+        "validity": 1,
+        "samples": [
+          "米。貓看",
+          "米。貓看",
+          "米。貓看"
+        ]
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 11.891459465026855
+      },
+      "teacher_calls": 0,
+      "failed": false
+    }
+  ],
+  "assumptions": [
+    "The fixture corpus is a three-word synthetic grammar; this proves the text pipeline runs, not Chinese dialogue, reasoning or knowledge.",
+    "Perplexities are comparable only between runs with the same vocab_hash.",
+    "Evaluation runs in student mode: the teacher is blocked and every attempted call is counted.",
+    "Teacher texts keep their source and anything overlapping a test document is removed before training."
+  ]
+}
