@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-09-24 OPS-10 通過，需求追蹤檔現為 89／91 通過、2 項受阻（原始 83／85、NAT 增補 6／6）：乾淨環境腳本以 git archive 匯出已提交版本、連結官方資料，37 步中 35 步通過、沒有失敗，涵蓋建置、完整測試、doctor、所有 fixture 範例、真實子圖匯入與訓練、全圖檢查、短訓練、恢復與效能報告，最後產生完成報告；TSK-11 與 GPU 後端明示受阻。第一次實跑抓到 ablate 輸出目錄與完成報告受阻統計兩個缺陷，修正後重跑，[證據](evidence/OPS-10/verification.json)。除了等使用者的 TSK-11（授權資料）與 OPS-05（GPU 後端決定），規格裡的其他需求都已驗證。
+
 2026-09-24 需求追蹤檔依 ticket 29 與 30 的決策，把 TSK-11 標為 `blocked_data`、OPS-05 標為 `blocked_permission`，不再留在 specified。TSK-11 缺每類任務的授權真實資料：語音與文字已有授權 manifest 讀取器，OCR 與影音的匯入器要等資料格式確定後再做，[紀錄](evidence/TSK-11/verification.json)。OPS-05 缺 GPU 後端技術的決定與可遠端執行的 GPU 機器：能力偵測、執行前拒絕不支援的組合、明示的 CPU 回退與不重跑半次更新的帳本都已完成，[紀錄](evidence/OPS-05/verification.json)。
 
 2026-09-24 OPS-08 通過，需求追蹤檔現為 88／91（原始 82／85、NAT 增補 6／6）：`coimnet benchmark` 的六個階段都分開記初始化、傳輸、暖機與穩態，能耗固定記為未量測；預設 fixture 分開跑兩次，前向活動量逐位元組相同，真實全圖版在 store 模式下跑完（180 秒、峰值足跡 8.06 GiB）。第一次全圖嘗試抓到個體單次呼叫超過 2^20 個值的缺陷，改成分段呼叫後重跑，[證據](evidence/OPS-08/verification.json)。

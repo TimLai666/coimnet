@@ -1,0 +1,62 @@
+COMMAND: go run ./cmd/coimnet train delayed --steps 80 --checkpoint /Users/timlai/Developer/coimnet/runs/OPS-10/work/first.json && go run ./cmd/coimnet resume --checkpoint /Users/timlai/Developer/coimnet/runs/OPS-10/work/first.json --steps 40 --out /Users/timlai/Developer/coimnet/runs/OPS-10/work/resumed.json && go run ./cmd/coimnet train delayed --steps 120 --checkpoint /Users/timlai/Developer/coimnet/runs/OPS-10/work/continuous.json && cmp /Users/timlai/Developer/coimnet/runs/OPS-10/work/resumed.json /Users/timlai/Developer/coimnet/runs/OPS-10/work/continuous.json
+2026/09/24 03:44:58 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+{
+  "schema_version": "coimnet-train-result/v1",
+  "profile": "fixture",
+  "checkpoint": "/Users/timlai/Developer/coimnet/runs/OPS-10/work/first.json",
+  "next_sample": 80,
+  "last_step": {
+    "loss": 0.0005519514670595527,
+    "loss_known": true,
+    "gradient_norm": 0.00916279098660397,
+    "update_norm": 0.00932877650510223,
+    "updates": 80,
+    "learning_rate": 0.02,
+    "applied": true,
+    "accumulated": 0,
+    "gradient_horizon_steps": 5
+  }
+}
+2026/09/24 03:44:58 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+{
+  "schema_version": "coimnet-train-result/v1",
+  "profile": "fixture",
+  "checkpoint": "/Users/timlai/Developer/coimnet/runs/OPS-10/work/resumed.json",
+  "next_sample": 120,
+  "last_step": {
+    "loss": 0.0002226925571449101,
+    "loss_known": true,
+    "gradient_norm": 0.010074331425947599,
+    "update_norm": 0.00014530592359829578,
+    "updates": 120,
+    "learning_rate": 0.02,
+    "applied": true,
+    "accumulated": 0,
+    "gradient_horizon_steps": 5
+  }
+}
+2026/09/24 03:44:58 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+{
+  "schema_version": "coimnet-train-result/v1",
+  "profile": "fixture",
+  "checkpoint": "/Users/timlai/Developer/coimnet/runs/OPS-10/work/continuous.json",
+  "next_sample": 120,
+  "last_step": {
+    "loss": 0.0002226925571449101,
+    "loss_known": true,
+    "gradient_norm": 0.010074331425947599,
+    "update_norm": 0.00014530592359829578,
+    "updates": 120,
+    "learning_rate": 0.02,
+    "applied": true,
+    "accumulated": 0,
+    "gradient_horizon_steps": 5
+  }
+}
+EXIT: 0

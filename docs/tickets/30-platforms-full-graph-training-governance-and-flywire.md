@@ -14,7 +14,7 @@ OPS-05 的裝置後端：**受阻於使用者決定後端技術與提供裝置�
 取得 FlyWire 授權資料**
 
 Status：第一階段已驗證（2026-09-17）；第二階段 fixture 部分已驗證（2026-09-19），真實資料 blocked_data；第三階段已驗證（2026-09-24）；
-第四階段效能報告已驗證（2026-09-24），乾淨環境重跑進行中；第五階段裝置實作受阻於使用者決定後端
+第四階段已驗證（2026-09-24）；第五階段裝置實作受阻於使用者決定後端
 
 對應需求：OPS-04（各平台編譯與實際執行分開標記；至少有參考環境的完整測試）、OPS-05（與 CPU 比對、裝置
 更新／恢復測試及實際量測；未測不標通過）、OPS-07（真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體
@@ -152,7 +152,7 @@ package connectome // MappingEvidence 與跨資料集拒絕
   無證據拼接拒絕；`evidence/DAT-06/`（真實資料 blocked_data）。
 - [x] 第三階段：全圖預估與檢查、一次全參數反向、可塑性與調節啟用、三種保存物與新程序恢復逐項相等、
   峰值 RSS 與耗時；`evidence/OPS-07/`（或 blocked_hardware 與精確指令）。
-- [ ] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
+- [x] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
   全步驟與 `run.json`、`report` 的 22.3 清單；`evidence/OPS-08/`、`evidence/OPS-10/`。
 - [ ] 第五階段：`backend` 能力偵測與明示回退（已完成，5 個測試在 race 下通過，`evidence/OPS-05/`）；裝置實作 blocked，等使用者決定技術與存取。
 
@@ -239,6 +239,14 @@ ALIN 輸入與 descending neuron 讀出，16 列、8 列梯度窗、一次 AdamW
 fixture 兩個程序的前向活動量逐位元組相同，耗時則隨負載不同；全圖前向在同一次執行內兩次相同，整個程序 180 秒、
 峰值足跡 8.06 GiB。第一次全圖嘗試撞到個體單次呼叫 2^20 個值的上限，改成和全圖訓練一樣每次最多 6 列後重跑
 （4030b0d）。證據 `evidence/OPS-08/`。
+
+## 第四階段乾淨環境重跑證據（2026-09-24）
+
+`scripts/clean-env-verify.sh` 補齊到目前所有已宣稱能力（90c77e8），在 392a3ec 帶官方資料實跑：37 步中 35 步通過，
+沒有失敗；TSK-11 的真實任務資料記為 `blocked_data`、GPU 後端記為 `blocked_hardware`。每步在 `run.json` 記命令、設定雜湊、
+狀態與 log，最後以匯出版本的需求追蹤檔產生完成報告。第一次實跑（保留在 `attempt1-bcc0053/`）抓到兩個缺陷：ablate 需要輸出
+目錄已存在而腳本先刪掉了（41a8559），以及 `coimnet report` 只把字面上的 `blocked` 算進受阻（392a3ec）；修正後重跑。
+證據 `evidence/OPS-10/`。這是乾淨的原始碼匯出，不是全新機器：Go 工具鏈、模組快取、官方資料與 ffmpeg 都來自同一台 Mac。
 
 ## 依據
 

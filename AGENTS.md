@@ -57,7 +57,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/gridnav/env.go`：`New` 對 `StepPenalty`／`GoalReward` 只比較範圍，會接受 NaN／Inf，之後 `Step` 可能產生非有限 reward。PPO 範例入口另做有限值驗證，底層環境的公開建構器仍待補檢查與測試（P2）。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr`：`Stack` 沒檢查每行 `Pixels` 長度是否等於 `Width*Height`，長度不符會 panic 而非回錯；補檢查與測試。
-- `scripts/clean-env-verify.sh`：步驟 `real_subgraph` 照票面寫成 `data validate --manifest`，但 `data validate` 只有 `--store`／`--params`；有官方資料時要改成先 `data import --manifest … --out-store …` 再 `data validate --store …`，並在 OPS-10 證據階段實跑。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。

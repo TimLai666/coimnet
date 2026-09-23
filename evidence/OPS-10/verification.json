@@ -1,0 +1,48 @@
+{
+  "requirement": "OPS-10「接手者可以從乾淨環境重跑全部已宣稱能力。驗收：命令、設定、來源、硬體與證據齊全；缺少項目明示受阻。」",
+  "profile": "clean export + official MaleCNS data",
+  "date": "2026-09-24",
+  "scope": "scripts/clean-env-verify.sh exports the committed tree with git archive into a scratch workdir, links the official MaleCNS directory into it, and runs every claimed capability in order: module download and verification, build, vet, the full test suite, doctor, the fixture experiments, every fixture example, the fixture benchmark, the multitask suite, the small recompute RSS check, the real-subgraph import and training, the full-graph validation, short training, resume and store-mode benchmark, the two always-blocked items, and the completion report. Every step writes its command, a configuration hash, its status and its log to run.json.",
+  "reproduction_command": [
+    "bash scripts/clean-env-verify.sh --list-steps",
+    "GOMEMLIMIT=8GiB /usr/bin/time -l bash scripts/clean-env-verify.sh --workdir runs/OPS-10/work --data data/malecns-v1.0 --out evidence/OPS-10/run.json > evidence/OPS-10/run.stdout 2> evidence/OPS-10/run.time.log",
+    "cp runs/OPS-10/work/report.json evidence/OPS-10/completion-report.json; cp runs/OPS-10/work/report.md evidence/OPS-10/completion-report.md"
+  ],
+  "environment": [
+    "Committed tree 392a3ec5e2314ff711080db59869fdd3f492254b exported with git archive; the run started from a detached worktree pinned at that commit.",
+    "doctor (logs/doctor.log): go1.26.5 darwin/arm64, 8 logical CPUs, 16 GiB memory, GPU probe available via system_profiler, video packager available.",
+    "GOMEMLIMIT=8GiB for the whole run (see evidence/OPS-07); wall time 604 s, largest child resident set 7.41 GiB; run-env.txt holds the start and end uptime and memory_pressure."
+  ],
+  "input_fingerprints": [
+    "Sources: the git archive of the commit above; go mod download and go mod verify both passed (logs/go_mod_verify.log).",
+    "Official data linked read-only as data/malecns-v1.0: store sha256 a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd, params sha256 c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77, protocol sha256 5b64b24855168254992a6b0f335003a529d6d6af19bb77bef61b1b93cbf26a12 (from the full-graph report in the workdir).",
+    "run.json sha256 aad8435c45658968bfe1af0a5749f8e17a4ff4a06a6ea57c2388e9e71b32c5be; completion-report.json sha256 9646b5fa13aee25b2d50ef584205312741aa63a5e8c3cd8a901a4f374be73f47."
+  ],
+  "observed_result": {
+    "steps": "37 steps: blocked_data 1, blocked_hardware 1, passed 35; no step failed.",
+    "commands_and_settings": "Every step in run.json names its exact command and a configuration hash (SHA-256 of the commit and the command); every log starts with that command and ends with its exit code.",
+    "tests": "go test ./... in the clean export: 48 packages ok, 1 without test files, 0 failed (logs/go_test.log).",
+    "real_data": "real_subgraph_import and real_subgraph_train passed on the ALIN subgraph; full_graph_validate passed; full_graph_short_training ran all 165,122 nodes and 25,563,197 edges (continuation digest 943c0d572ffdc5ba75da6e47bf27aa31f8072489695d1f45dac782fa995ee8f8, the same as the OPS-07 evidence run at d970013); full_graph_resume reported matches true; benchmark_full_graph wrote 6 stages with forward reproducibility true.",
+    "blocked": {
+      "real_task_classes": "blocked_data: TSK-11 requires user-provided authorized data for each task class",
+      "device_backend": "blocked_hardware: ticket 30 item 16: GPU backend technology and target machine have not been selected"
+    },
+    "completion_report": "coimnet report in the clean export: passed 88, blocked 2 (blocked_data 1, blocked_permission 1), specified 1 (OPS-10 itself, whose evidence is this run), total 91.",
+    "earlier_attempt": "The first run at bcc0053 (kept under attempt1-bcc0053/) failed only example_ablate: examples run ablate needs its --out-dir to exist and the script had removed it (fixed in 41a8559). The same review found that coimnet report counted only the literal status blocked, not blocked_data or blocked_permission (fixed in 392a3ec)."
+  },
+  "assumption_statement": "A clean export rules out stray files in the working tree; it is not a fresh machine. The Go toolchain, its module cache, the official data files and ffmpeg come from this Mac.",
+  "test_log": [
+    "evidence/OPS-10/logs/go_test.log",
+    "evidence/OPS-10/run.json"
+  ],
+  "limitations": [
+    "One macOS arm64 machine; Linux and Windows reruns are OPS-04's platform matrix, not repeated here.",
+    "TSK-11 (authorised task data) and the GPU backend are recorded as blocked, not run.",
+    "GOMEMLIMIT=8GiB was set for every step so the full-graph steps fit a 16 GiB machine."
+  ],
+  "artifact_sha256": {
+    "evidence/OPS-10/run.json": "aad8435c45658968bfe1af0a5749f8e17a4ff4a06a6ea57c2388e9e71b32c5be",
+    "evidence/OPS-10/completion-report.json": "9646b5fa13aee25b2d50ef584205312741aa63a5e8c3cd8a901a4f374be73f47",
+    "evidence/OPS-10/completion-report.md": "4eeadeb8bd353dbd954b22afffb8c983ea620a478035448f63db0ec2d4400929"
+  }
+}

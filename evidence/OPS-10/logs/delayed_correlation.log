@@ -1,0 +1,65 @@
+COMMAND: go run ./cmd/coimnet examples run delayed
+2026/09/24 04:01:31 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+{
+  "schema_version": "coimnet-delayed-report/v2",
+  "profile": "fixture",
+  "generator": "delayed-pulse-splitmix64-v1",
+  "shuffle_method": "training-label-fisher-yates-splitmix64-modulo-v1",
+  "shuffle_seed": 15111065706836455146,
+  "config": {
+    "seeds": [
+      7,
+      42,
+      123
+    ],
+    "updates": 600,
+    "train_seed": 1001,
+    "test_seed": 1003,
+    "test_count": 128,
+    "learning_rate": 0.02,
+    "max_mse": 0.005,
+    "max_loss_ratio": 0.1
+  },
+  "topology_hash": "090991804e546f147e04a8347f7a7d71871f7c5c2153aa13fe499d38f9c4f30a",
+  "runs": [
+    {
+      "seed": 7,
+      "before_mse": 0.07611493983645476,
+      "after_mse": 0.00024789430993450994,
+      "frozen_mse": 0.07611493983645476,
+      "shuffled_mse": 0.07877008941453884,
+      "core_update_norm": 2.0543204975441007,
+      "periphery_update_norm": 0,
+      "parameter_hash": "2011d591ce665411c9c0ff5fc01869ec716c09b7cbe831056fcf44871ea796f3",
+      "passed": true
+    },
+    {
+      "seed": 42,
+      "before_mse": 0.07693868991963666,
+      "after_mse": 0.00024017371301012964,
+      "frozen_mse": 0.07693868991963666,
+      "shuffled_mse": 0.07877016181146522,
+      "core_update_norm": 2.1057516409841295,
+      "periphery_update_norm": 0,
+      "parameter_hash": "fe91aafd15fc876bd8bcc0b4e1318dc176fba3bfa7c694f475e88a278a8154ef",
+      "passed": true
+    },
+    {
+      "seed": 123,
+      "before_mse": 0.07624817967604995,
+      "after_mse": 0.0002466492945658671,
+      "frozen_mse": 0.07624817967604995,
+      "shuffled_mse": 0.07876352219814949,
+      "core_update_norm": 2.062552941658705,
+      "periphery_update_norm": 0,
+      "parameter_hash": "359a8dfde5ec1e0a93d07ff29049a39cfe16f76704b032bfafae49ac1f721b6f",
+      "passed": true
+    }
+  ],
+  "mean_after_mse": 0.0002449057725035022,
+  "stddev_after_mse": 0.0000033844552593342006,
+  "passed": true
+}
+EXIT: 0
