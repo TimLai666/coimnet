@@ -1,0 +1,102 @@
+COR-06 Test List and Regex Matching Verification
+
+1. Target Test Names Specified for COR-06:
+
+dynamics:
+- TestVectorLayoutCounts
+- TestApplyEdge*
+  - TestApplyEdgeScalarBroadcast
+  - TestApplyEdgeMatrixHandComputed
+  - TestApplyEdgeScalarIsBitIdenticalToEagerLoop
+- TestConfigVectorFieldsValidation
+- TestVectorContinuous*
+  - TestVectorContinuousC1MatchesContinuousBitForBit
+  - TestVectorContinuousHandComputedC2
+  - TestVectorContinuousScalarBroadcastC3
+  - TestVectorContinuousRejectsShapes
+- TestVectorStateRoundTrip
+- TestVectorBackward*
+  - TestVectorBackwardC1MatchesContinuousBitForBit
+  - TestVectorBackwardWindowMatchesScalarSemantics
+  - TestVectorBackwardFiniteDifferences
+  - TestVectorBackwardRejectsShapes
+- TestVectorDenseReference
+- TestVectorZeroEdgesAndIsolatedNodes
+Subtotal: 16 tests
+
+learning:
+- TestVectorCore*
+  - TestVectorCoreRefusesEdgeSigns
+  - TestVectorCoreReadoutEveryStepFiniteDifference
+  - TestVectorCoreC1MatchesContinuousTrainer
+  - TestVectorCoreC2GradientMatchesFiniteDifference
+  - TestVectorCoreC2Trains
+  - TestVectorCoreRejectsPersistentStateForNow
+- TestCapacity*
+  - TestCapacityScalarCore
+  - TestCapacityVectorMatrixC3
+  - TestCapacityCountsMasks
+- TestShar*
+  - TestSharedGradientIsTheSumOfMembers
+  - TestSharingNilIsBitIdentical
+  - TestSharingRejects
+  - TestSharingRejectsOversizedGroups
+  - TestSharingMaskFreezesTheWholeGroup
+  - TestSharedMembersStayEqualOverSteps
+Subtotal: 15 tests
+
+checkpoint:
+- TestModelPackageCarriesCapacity
+Subtotal: 1 test
+
+Total Expected Tests: 32 tests
+
+2. Regex Pattern:
+TestVector|TestApplyEdge|TestConfigVectorFieldsValidation|TestCapacity|TestShar|TestModelPackageCarriesCapacity
+
+3. `go test -list '<Regex>' ./dynamics/ ./learning/ ./checkpoint/` Output:
+
+dynamics:
+TestVectorBackwardC1MatchesContinuousBitForBit
+TestVectorBackwardWindowMatchesScalarSemantics
+TestVectorBackwardFiniteDifferences
+TestVectorBackwardRejectsShapes
+TestVectorContinuousC1MatchesContinuousBitForBit
+TestVectorContinuousHandComputedC2
+TestVectorContinuousScalarBroadcastC3
+TestVectorContinuousRejectsShapes
+TestVectorStateRoundTrip
+TestVectorDenseReference
+TestVectorZeroEdgesAndIsolatedNodes
+TestVectorLayoutCounts
+TestApplyEdgeScalarBroadcast
+TestApplyEdgeMatrixHandComputed
+TestApplyEdgeScalarIsBitIdenticalToEagerLoop
+TestConfigVectorFieldsValidation
+
+learning:
+TestCapacityScalarCore
+TestCapacityVectorMatrixC3
+TestCapacityCountsMasks
+TestVectorCoreRefusesEdgeSigns
+TestSharedGradientIsTheSumOfMembers
+TestSharingNilIsBitIdentical
+TestSharingRejects
+TestSharingRejectsOversizedGroups
+TestSharingMaskFreezesTheWholeGroup
+TestSharedMembersStayEqualOverSteps
+TestVectorCoreReadoutEveryStepFiniteDifference
+TestVectorCoreC1MatchesContinuousTrainer
+TestVectorCoreC2GradientMatchesFiniteDifference
+TestVectorCoreC2Trains
+TestVectorCoreRejectsPersistentStateForNow
+
+checkpoint:
+TestModelPackageCarriesCapacity
+
+4. Comparison Result:
+Expected Count: 32
+Selected Count: 32
+Missing: 0
+Extra: 0
+Status: 100% exact match (every specified COR-06 test is selected, no extraneous tests selected).
