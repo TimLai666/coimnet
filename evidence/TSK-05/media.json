@@ -1,0 +1,1050 @@
+{
+  "schema_version": "coimnet-media/v1",
+  "config": {
+    "modality": "audio",
+    "generator": {
+      "modality": "audio",
+      "embed": 16,
+      "hidden": 64,
+      "settle": 3,
+      "learning_rate": 0.01,
+      "seed": 1
+    },
+    "holdout": [
+      "high pulse"
+    ],
+    "epochs": 60,
+    "blocks": 3,
+    "seeds": [
+      1,
+      2,
+      3
+    ]
+  },
+  "config_hash": "f857da8115da7890a6c2ad858390c8e7335a03cf928be9e015f973fb8cdc127d",
+  "runs": [
+    {
+      "seed": 1,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.3194096579335988,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9915926854469219
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10680369956325422,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9965161726008027
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16039437418641844,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9910399678264669
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.3199422434895825,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9914740131876514
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.10668982669857406,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9959428747597618
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.15999896656419316,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9951124580054271
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.3206380473719177,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9938018603900916
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10754824634358659,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9926251236144198
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.16060430472388051,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9918014475933248
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.036557859595827975,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9946207474827079
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.013350201418337659,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9627761927750028
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.02092506245961719,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9384515578877547
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.030310801629638173,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.99214306869179
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.015587669380457856,
+            "classified": "mid fade",
+            "correct": true,
+            "confidence": 0.9606915696924628
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.019713286689386465,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9437576380969979
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.01938288963892924,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9939937262011403
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.018903956996741383,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9692662895975414
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.12998057816815214,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9885618666065298
+          }
+        ],
+        "seen_correct": 7,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.3194096579335988,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9915926854469219
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10680369956325422,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9965161726008027
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16039437418641844,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9910399678264669
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.3199422434895825,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9914740131876514
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.10668982669857406,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9959428747597618
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.15999896656419316,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9951124580054271
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.3206380473719177,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9938018603900916
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10754824634358659,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9926251236144198
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.16060430472388051,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9918014475933248
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.028801149925605188,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.992217406421431
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.016158475688444036,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9591884084917786
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.021288078900677375,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9375988367350149
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.0274717016706964,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.9929362685080805
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.016507950923545466,
+            "classified": "mid fade",
+            "correct": true,
+            "confidence": 0.960915290995334
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.02026224445105575,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9402098260987621
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.016834903125887694,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9947409829325872
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.01759522220040127,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.969917283411315
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.12951345005277382,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9904128326712909
+          }
+        ],
+        "seen_correct": 7,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.3324315547943115
+      },
+      "temporal": {
+        "blocks": 3,
+        "prompts": 9,
+        "consistent": 6
+      },
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.3203081906751289,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9946678543164046
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10683580426330838,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9965196975426627
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16078931101133437,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9963812928664592
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.319801416788989,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9881392055456525
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.10698813571799257,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9906822141161352
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.16052898985363068,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9926185032976567
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.3196983033017244,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9989670834682062
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10683003744789701,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9966623188747956
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.16011672927666626,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9984231124824218
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.03603214908091586,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9911445305391519
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.016520338579613564,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9605891518080174
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.02120054808138468,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9462605521800199
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.029764365711559503,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.9914740806278465
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.017762216293582173,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9614229482706445
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.022629621777041666,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9308378822911962
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.019731118877855513,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9948860484741094
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.015291816385655556,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9689351600280481
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.12301298363986954,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9881290255299564
+          }
+        ],
+        "seen_correct": 6,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.3203081906751289,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9946678543164046
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10683580426330838,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9965196975426627
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16078931101133437,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9963812928664592
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.319801416788989,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9881392055456525
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.10698813571799257,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9906822141161352
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.16052898985363068,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9926185032976567
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.3196983033017244,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9989670834682062
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10683003744789701,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9966623188747956
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.16011672927666626,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9984231124824218
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.02847145298785365,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9915628130567051
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.01616071001672652,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9602004163768473
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.02138729429978303,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9372499199881766
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.026619339680771053,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.9923966977362754
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.01601485751741038,
+            "classified": "mid fade",
+            "correct": true,
+            "confidence": 0.9602941849694949
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.020833031876122753,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9388574454972631
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.016224365804743263,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9951743545137953
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.01751475570829109,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9700025619776389
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.1268328961450697,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9891783094287342
+          }
+        ],
+        "seen_correct": 7,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.2833391427993774
+      },
+      "temporal": {
+        "blocks": 3,
+        "prompts": 9,
+        "consistent": 2
+      },
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.31979791027353693,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9795954283898742
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10673646163891724,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9928048756636699
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16007621539421643,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9953360442437073
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.32047611810875637,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9941627215056967
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.1067992013292732,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9935052014219083
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.16019955090104007,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9869015023148148
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.32113631169402557,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9934905674665508
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10704746344150726,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9950118401656648
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.15967416799445744,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9875860037154051
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.030244108327236157,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9932239430970864
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.01318077098908769,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9626581425776852
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.019582430724311768,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9443750067123899
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.023926565279776,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.993007654646904
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.01528171401705654,
+            "classified": "mid fade",
+            "correct": true,
+            "confidence": 0.9657866979540325
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.021636858584089837,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9450106673399855
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.013303254365611162,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9956412367451806
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.014683077789670238,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9684750738805851
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.12510922600453717,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.989459038747655
+          }
+        ],
+        "seen_correct": 7,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 16384,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.31979791027353693,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9795954283898742
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.10673646163891724,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9928048756636699
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.16007621539421643,
+            "classified": "low steady",
+            "correct": false,
+            "confidence": 0.9953360442437073
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.32047611810875637,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9941627215056967
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.1067992013292732,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9935052014219083
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.16019955090104007,
+            "classified": "mid steady",
+            "correct": false,
+            "confidence": 0.9869015023148148
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.32113631169402557,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9934905674665508
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.10704746344150726,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9950118401656648
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.15967416799445744,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9875860037154051
+          }
+        ],
+        "after": [
+          {
+            "prompt": "low steady",
+            "seen": true,
+            "mse": 0.02853226288966546,
+            "classified": "low steady",
+            "correct": true,
+            "confidence": 0.9919119610684181
+          },
+          {
+            "prompt": "low fade",
+            "seen": true,
+            "mse": 0.015979120256110542,
+            "classified": "low fade",
+            "correct": true,
+            "confidence": 0.9589512589798322
+          },
+          {
+            "prompt": "low pulse",
+            "seen": true,
+            "mse": 0.02171484803449222,
+            "classified": "low pulse",
+            "correct": true,
+            "confidence": 0.9358017509302801
+          },
+          {
+            "prompt": "mid steady",
+            "seen": true,
+            "mse": 0.027098767139431403,
+            "classified": "mid steady",
+            "correct": true,
+            "confidence": 0.9923279893428882
+          },
+          {
+            "prompt": "mid fade",
+            "seen": true,
+            "mse": 0.01577091854858243,
+            "classified": "mid fade",
+            "correct": true,
+            "confidence": 0.9610509332379658
+          },
+          {
+            "prompt": "mid pulse",
+            "seen": true,
+            "mse": 0.020563666699404317,
+            "classified": "mid pulse",
+            "correct": true,
+            "confidence": 0.9398144642040991
+          },
+          {
+            "prompt": "high steady",
+            "seen": true,
+            "mse": 0.015229423278865097,
+            "classified": "high steady",
+            "correct": true,
+            "confidence": 0.9951525059114814
+          },
+          {
+            "prompt": "high fade",
+            "seen": true,
+            "mse": 0.01691435916521662,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9699332618792522
+          },
+          {
+            "prompt": "high pulse",
+            "seen": false,
+            "mse": 0.12896581903258508,
+            "classified": "high steady",
+            "correct": false,
+            "confidence": 0.9905442525727388
+          }
+        ],
+        "seen_correct": 7,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.3013781309127808
+      },
+      "temporal": {
+        "blocks": 3,
+        "prompts": 9,
+        "consistent": 5
+      },
+      "failed": false
+    }
+  ],
+  "assumptions": [
+    "Pixel or sample MSE says nothing about perceptual quality.",
+    "This proves generation on a finite fixture of nine conditions, not open-ended image or audio generation.",
+    "The decoder is a fixed clamp with no parameters; the prompt reaches the output only through the core.",
+    "The frozen-core control trains only the encoder and readout, showing what the periphery alone can do with the same budget."
+  ]
+}

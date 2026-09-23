@@ -1,0 +1,68 @@
+{
+  "requirement": "TSK-04「使用者可以由核心產生文字條件影像。驗收：核心生成表示或像素，解碼器無提示旁路，有保留條件與容量對照。」",
+  "profile": "fixture",
+  "date": "2026-09-24",
+  "scope": "Ticket 29 stage four, image half: RunMedia on the nine-condition image fixture (red/green/blue x square/cross/diagonal, 8x8x3 pixels) with a held-out condition, a frozen-core capacity control, a core-disconnect check and the trained core's samples.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-04",
+    "COIMNET_TSK04_EVIDENCE=$PWD/evidence/TSK-04 go test -count=1 -timeout 0 -v -run '^TestMediaEvidence/image$' ./tasks/media/ > evidence/TSK-04/test.log 2>&1",
+    "(cd evidence/TSK-04 && find media.json summary.txt samples -type f | sort | xargs shasum -a 256) > evidence/TSK-04/rerun.sha256",
+    "go vet ./... > evidence/TSK-04/vet.log 2>&1",
+    "go test -list '.*' ./tasks/media/ ./internal/cli/ > evidence/TSK-04/list.txt 2>&1",
+    "go test -count=1 -timeout 0 -race -v ./tasks/media/ > evidence/TSK-04/controls.log 2>&1",
+    "go test -count=1 -timeout 0 -race -v -run 'TestExamplesRunMedia|TestExamplesList' ./internal/cli/ >> evidence/TSK-04/controls.log 2>&1",
+    "coimnet examples run media --modality image --out-dir DIR (the same DefaultRunConfig through the CLI; writes DIR/report.json and DIR/samples/)"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Apple M3, 8 cores, 16 GiB), commit 304e12f0d658d9d1482dcc26a8fe33868e06dbba.",
+    "Recorded run 2026-09-23T18:16:33Z to 18:16:40Z at 1-minute load 4.54 to 4.42; the rerun followed immediately (run-env.txt). Race controls 18:17:06Z to 18:22:37Z (controls-env.txt). No timing is a result.",
+    "A rerun at the same commit wrote media.json, summary.txt and all nine PNG samples with the recorded SHA-256 (rerun.sha256; rerun.sha256.check says identical)."
+  ],
+  "input_fingerprints": [
+    "No external input: the nine conditions are rendered by the fixture code and judged by an independent classifier.",
+    "DefaultRunConfig(image): generator embed 16, hidden 64, settle 3, learning rate 0.01; holdout [\"blue diagonal\"]; 60 epochs over the eight seen conditions (480 updates); seeds 1, 2, 3; config_hash b5f63b9ff30d1db9... (media.json).",
+    "media.json sha256 fb7933ab73b21bfe17045e18cd7facfc8028ce62a33c56a64e33b0349b709eaa; summary.txt sha256 54bd3731bff616e3e89d970b49004d9129466f7eb677f9c67630d395e6feb598; the nine samples/*.png hashes are in rerun.sha256."
+  ],
+  "observed_result": {
+    "tests": "controls.log (shared by TSK-04 and TSK-05): 37 top-level PASS in tasks/media and 9 in internal/cli under -race, 0 FAIL; the only SKIPs are TestMediaEvidence/image and /audio, the runs recorded in each test.log. vet.log: no findings. The tasks/media race run compiled at 304e12f (18:17:06Z); the main checkout was fast-forwarded to cd8ae3d at 18:18:49Z while it ran, so the internal/cli part (started about 18:22Z) compiled at cd8ae3d, whose only differences are the new tasks/media/external_tool.go with its test and the textgen validity fix; neither changes RunMedia or examples run media. The claims rest on TestDecoderHasNoPromptInput (the decoder input type holds only the representation and Decode is a pure clamp of it, so no prompt text can reach the decoder), TestClassifierIsIndependent (the judge, written apart from the generator, classifies noisy renderings of all nine conditions correctly and gives blank input zero confidence), TestPNGRoundTrip, TestGeneratorLayoutAndCapacity, TestRunMediaNeverTrainsHeldOut (per-prompt step counts), TestRunMediaIsDeterministic and TestExamplesRunMediaImage.",
+    "per_seed": {
+      "1": {
+        "core": "seen correct 1 -> 8 of 8, held-out 0 -> 0 of 1, seen MSE 0.10490 -> 0.01697",
+        "frozen_core": "seen 1 -> 8 of 8, held-out 0 of 1, seen MSE 0.10490 -> 0.01703",
+        "core_disconnect": "changed, max |delta| 1.0197"
+      },
+      "2": {
+        "core": "seen 1 -> 8 of 8, held-out 0 of 1, seen MSE 0.10446 -> 0.01766",
+        "frozen_core": "seen 1 -> 8 of 8, held-out 0 of 1, seen MSE 0.10446 -> 0.01712",
+        "core_disconnect": "changed, max |delta| 1.0331"
+      },
+      "3": {
+        "core": "seen 1 -> 8 of 8, held-out 0 of 1, seen MSE 0.10465 -> 0.01305",
+        "frozen_core": "seen 1 -> 8 of 8, held-out 0 of 1, seen MSE 0.10465 -> 0.01712",
+        "core_disconnect": "changed, max |delta| 1.0047"
+      }
+    },
+    "held_out": "blue diagonal is judged blue cross by both groups in every seed: the colour word carries over to the unseen pairing, the unseen shape pairing does not.",
+    "capacity_split": "encoder 96, core 5,280 (weights, bias, log tau), readout 12,288, decoder 0 parameters; the core group trains encoder, core and readout, the frozen-core group only encoder and readout (core_trains false).",
+    "samples": "samples/ holds the seed-1 trained core's own output for all nine prompts as 8x8 RGB PNG files (WriteSamples retrains the core exactly as RunMedia does), not the rendered targets.",
+    "reading": "The core path generates the images and reaches all eight seen conditions in every seed; the prompt reaches the pixels only through the core, and zeroing every core weight changes the output. The frozen-core control does exactly as well, so on this fixture the capability comes from the trainable encoder and readout and training the recurrent weights adds nothing measurable. The held-out condition is not generated correctly.",
+    "reproducibility": "The rerun at the same commit produced byte-identical media.json, summary.txt and PNG samples."
+  },
+  "assumption_statement": "Pixel or sample MSE says nothing about perceptual quality. This proves generation on a finite fixture of nine conditions, not open-ended image or audio generation. The decoder is a fixed clamp with no parameters; the prompt reaches the output only through the core. The frozen-core control trains only the encoder and readout, showing what the periphery alone can do with the same budget. (The four assumptions RunMedia writes into media.json.)",
+  "test_log": [
+    "evidence/TSK-04/test.log",
+    "evidence/TSK-04/controls.log",
+    "evidence/TSK-04/vet.log"
+  ],
+  "limitations": [
+    "Nine 8x8x3 fixture images; no claim about natural images, resolution or perceptual quality.",
+    "The held-out condition is generated wrongly in every seed (blue cross instead of blue diagonal); no compositional generalisation is shown.",
+    "The frozen-core control matches the trained core, so the recurrent core's learning is not shown to matter on this fixture.",
+    "Real authorised image data is TSK-11 and remains blocked_data.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-04/media.json": "fb7933ab73b21bfe17045e18cd7facfc8028ce62a33c56a64e33b0349b709eaa",
+    "evidence/TSK-04/summary.txt": "54bd3731bff616e3e89d970b49004d9129466f7eb677f9c67630d395e6feb598"
+  }
+}

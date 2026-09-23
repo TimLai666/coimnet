@@ -10,7 +10,7 @@ UTF-8 串流解碼，影音生成分成核心生成、固定還原器與外部�
 Blocked by：26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）、
 TSK-11 的真實資料：**受阻於使用者提供有授權的資料**（每類任務各一份，含授權欄位）
 
-Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時、CLI fixture 與嚴格串流檔案保存；真實授權語音驗收仍待完成；第三階段 tokenizer 已落地，其餘待派
+Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 2026-09-23 補上資料匯入、說話者／場次分割、離線串流耗時、CLI fixture 與嚴格串流檔案保存；真實授權語音驗收仍待完成；第四階段 fixture 已驗證（2026-09-24）；第三、五、六階段程式已落地，證據進行中
 
 對應需求：TSK-01（OCR：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過）、TSK-02（語音：
 整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代）、TSK-03（文字生成：因果前綴、
@@ -102,7 +102,7 @@ Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 
   字形不洩漏；`go test`、race、vet；`evidence/TSK-01/`（fixture）。
 - [ ] 第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
 - [ ] 第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
-- [ ] 第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
+- [x]（fixture；真實資料 blocked_data）第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
 - [ ] 第五階段：時間線、封裝器缺席與失敗、同步誤差；`evidence/TSK-06/`。
 - [ ] 第六階段：三條流程角色可查、工具結果不計入；`evidence/TSK-07/`。
 - [ ] TSK-11（blocked）：使用者提供每類任務的授權資料後，各任務的匯入、訓練、推論、評估各跑一次並記錄。
@@ -163,6 +163,27 @@ Status：第一階段 fixture 部分已驗證（2026-09-20）；第二階段於 
 `Stream.Save`／`Recognizer.LoadStream` 把完整串流存成單一 `coimnet-asr-stream/v1` 檔案；其中的個體快照沿用 `coimnet-individual-checkpoint/v1` 嚴格解碼。檔案上限 64 MiB；已存在目的地不覆寫，取消於發布前不留檔。載入拒絕錯誤 schema／checksum、缺失或 `null` 的數值與必填欄位、未知欄位及不符辨識器設定的狀態；待處理樣本與不可能的已輸出文字都在大型切片配置前檢查。人工音調測試在新程序載入中途檔後，最終狀態與不中斷路徑的 JSON SHA-256 相同。詳細命令與日誌見 [串流保存驗證](../../evidence/TSK-02/stream-file-verification.json)。
 
 上一節的驗證紀錄保留當時的範圍；這項保存能力已補上。`TSK-02` 暫維持 `specified`，因為尚無真實授權語音的任務驗收、跨平台檔案續跑，以及超過 64 MiB 個體的保存方案。真實資料匯入、訓練、推論與評估也屬 TSK-11，維持 blocked_data。
+
+## 第四階段證據（2026-09-24）
+
+第四階段拆成四張小票，全部落地；`tasks/media` 當時的 37 個頂層測試（含第五、六階段已落地的部分）與 `internal/cli` 的 9 個媒體與清單測試在 `-race` 下全數通過（0 FAIL）：
+
+| 小票 | 內容 | 程式 |
+|---|---|---|
+| 29D-01 | 九種影像（3 色 × 3 形狀，8×8×3）與九種音調（3 音高 × 3 包絡，每塊 256 樣本、8 kHz）fixture、獨立分類器、精確 PNG／WAV 輸出 | `tasks/media/fixture.go`、`output.go` |
+| 29D-02 | 核心生成器：提示詞經編碼器與核心產生表示，固定 clamp 解碼器不讀提示（型別只有 `Representation`），`CapacitySplit` | `tasks/media/generator.go` |
+| 29D-03 | `RunMedia`：留出條件、凍結核心容量對照、核心斷開、音訊三塊時間一致性 | `tasks/media/run.go` |
+| 29D-04 | `examples run media`、`WriteSamples`（已訓練核心的輸出，不是目標圖）、TSK-04／TSK-05 證據輔助 | `internal/cli/media.go`、`tasks/media/samples.go` |
+
+證據路徑：`evidence/TSK-04/`（影像）與 `evidence/TSK-05/`（音訊），各含 `verification.json`、`media.json`、`summary.txt`、九個樣本與重跑雜湊；兩者共用 `evidence/TSK-04/controls.log`。同一 commit 重跑，報告、摘要與樣本逐位元組相同。
+
+結果（三個 seed，各 60 輪、480 次更新）：
+
+- 影像：已見條件 8/8 全對，留出的 blue diagonal 三個 seed 都被判成 blue cross（顏色對、形狀錯）。凍結核心也是 8/8，和完整核心一樣。
+- 音訊：已見條件 7、6、7 個對（凍結核心 7、7、7），留出的 high pulse 都被判成 high steady。三塊時間一致性 6、2、5 個（共 9 個）。WAV 為 8 kHz、單聲道、16 位元，三塊剛好 768 個樣本。
+- 兩種模態把核心權重全設為 0 都會改變輸出（最大絕對差約 1.0 與 1.3），提示只經核心到達輸出。
+
+判讀與限制：這個 fixture 證明核心生成、解碼器無提示旁路、保留條件與容量對照的流程可用；凍結核心和完整核心一樣好，表示這裡的能力來自可訓練的編碼器與讀出層，**不支持**「核心學習是必要的」這個結論；留出條件全錯，不宣稱組合泛化；像素或樣本 MSE 不代表感知品質。真實授權影音資料屬 TSK-11，仍是 **blocked_data**。
 
 ## 依據
 

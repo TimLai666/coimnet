@@ -1,0 +1,1035 @@
+{
+  "schema_version": "coimnet-media/v1",
+  "config": {
+    "modality": "image",
+    "generator": {
+      "modality": "image",
+      "embed": 16,
+      "hidden": 64,
+      "settle": 3,
+      "learning_rate": 0.01,
+      "seed": 1
+    },
+    "holdout": [
+      "blue diagonal"
+    ],
+    "epochs": 60,
+    "blocks": 1,
+    "seeds": [
+      1,
+      2,
+      3
+    ]
+  },
+  "config_hash": "b5f63b9ff30d1db9b407e2cb6a6fe458c180518030e0a28ee75f23043816da5f",
+  "runs": [
+    {
+      "seed": 1,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.08251506765296872,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6359870909439077
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14501004210571972,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.6456181997321931
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07771995247685294,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.594715503971621
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08282908702643524,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.4615206663531006
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.1454455187598136,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.37069226719588094
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07773027131263771,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5842604428145587
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08307978208431334,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5636923735282798
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.1448568214291653,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.5228869496388406
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.0777486337344181,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5482324790931061
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.012443139286329816,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9399430599805527
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.025476767412620244,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9570076956704082
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.017633629446460304,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.9194118419036498
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.011242985666228467,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9448506767624123
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.0260555689616457,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9575569597331458
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.015184363241175714,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.936460641639273
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.012535727348390589,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.9306696022695308
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.015153842335027387,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.9693389279427186
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.11512219663523272,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.8642405817035186
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.08251506765296872,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6359870909439077
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14501004210571972,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.6456181997321931
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07771995247685294,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.594715503971621
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08282908702643524,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.4615206663531006
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.1454455187598136,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.37069226719588094
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07773027131263771,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5842604428145587
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08307978208431334,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5636923735282798
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.1448568214291653,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.5228869496388406
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.0777486337344181,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5482324790931061
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.012657548264374523,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9367633999429875
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.02668213915821175,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9526338685468048
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.01700542339526941,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.9225847400413393
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.011501259392708246,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9428917204209104
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.025515942811133424,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9558555473789504
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.015356166797940577,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.9359201968736389
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.012338990516654881,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.9318066921951099
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.015220486850347496,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.970533876914662
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.12442948337915904,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.8654913441476798
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.0196694135665894
+      },
+      "failed": false
+    },
+    {
+      "seed": 2,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.08238421854836941,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5410384567662132
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14384599572115542,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.5539678281191562
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07752271981293692,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.52395953465284
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08293373190118825,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.573244938560432
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.14504453543370022,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.574020191493199
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07725264088648019,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.5688595448180803
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08271318136984898,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5603285666717117
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.14400834289807152,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5430553730950118
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.07736486167701653,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.5566320804658178
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.012697078664091099,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9414527399217582
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.027608928795854953,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9521022308368783
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.018013288893700706,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.9180901397736204
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.0116314289827211,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9448378253770874
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.027169649509455957,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9563594855479789
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.015582335909271043,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.9331341661357212
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.013119313386191935,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.9274950146782635
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.015488939981633741,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.969030442891851
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.12244016326896494,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.8703128941749511
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.08238421854836941,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5410384567662132
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14384599572115542,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.5539678281191562
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07752271981293692,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.52395953465284
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08293373190118825,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.573244938560432
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.14504453543370022,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.574020191493199
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07725264088648019,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.5688595448180803
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08271318136984898,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5603285666717117
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.14400834289807152,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.5430553730950118
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.07736486167701653,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.5566320804658178
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.012805345497207764,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9356717862968857
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.026550978318513885,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9532226509596733
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.01582629329831167,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.9317475189823802
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.011770015725253382,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9417050329286826
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.026265547685609052,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9542546107530118
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.01688265972939959,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.9231644396975078
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.011732813924605442,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.9352787747834674
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.015152425282818342,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.9709984266538023
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.12221301310247001,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.869116563631669
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.033111333847046
+      },
+      "failed": false
+    },
+    {
+      "seed": 3,
+      "core": {
+        "name": "core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": true,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.0825783632750235,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5135008662202225
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14391053683327348,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.6200823432585355
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07763022345907933,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6505412731666098
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08301014110251055,
+            "classified": "green diagonal",
+            "correct": false,
+            "confidence": 0.4029738883333201
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.14501809643868574,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.4526368947073706
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07792586712667708,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.4590422681705782
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08270858958128731,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5382820181586739
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.14440994400954169,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.6572070219161731
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.07766658544894846,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6964404718514233
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.013778641933628663,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9246518125539922
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.01805285075891855,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9704065349738977
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.004184280018314821,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.9883234209077317
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.010892653369117761,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9399984996055398
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.01866135114736848,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9635696933302231
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.0011035989246015957,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.9982011512257604
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.015524416966052546,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.92146680796912
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.02219303507525297,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.9664903282404611
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.11662538997828659,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.822132972411097
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "frozen_core": {
+        "name": "frozen_core",
+        "capacity": {
+          "encoder_parameters": 96,
+          "core_parameters": 5280,
+          "readout_parameters": 12288,
+          "decoder_parameters": 0,
+          "encoder_trains": true,
+          "core_trains": false,
+          "readout_trains": true
+        },
+        "updates": 480,
+        "before": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.0825783632750235,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5135008662202225
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.14391053683327348,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.6200823432585355
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.07763022345907933,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6505412731666098
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.08301014110251055,
+            "classified": "green diagonal",
+            "correct": false,
+            "confidence": 0.4029738883333201
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.14501809643868574,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.4526368947073706
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.07792586712667708,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.4590422681705782
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.08270858958128731,
+            "classified": "green cross",
+            "correct": false,
+            "confidence": 0.5382820181586739
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.14440994400954169,
+            "classified": "red cross",
+            "correct": false,
+            "confidence": 0.6572070219161731
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.07766658544894846,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.6964404718514233
+          }
+        ],
+        "after": [
+          {
+            "prompt": "red square",
+            "seen": true,
+            "mse": 0.01319271777990706,
+            "classified": "red square",
+            "correct": true,
+            "confidence": 0.9337619325851267
+          },
+          {
+            "prompt": "red cross",
+            "seen": true,
+            "mse": 0.02652045108931346,
+            "classified": "red cross",
+            "correct": true,
+            "confidence": 0.9522543279396335
+          },
+          {
+            "prompt": "red diagonal",
+            "seen": true,
+            "mse": 0.01607506265945522,
+            "classified": "red diagonal",
+            "correct": true,
+            "confidence": 0.92861990114939
+          },
+          {
+            "prompt": "green square",
+            "seen": true,
+            "mse": 0.011422268761609846,
+            "classified": "green square",
+            "correct": true,
+            "confidence": 0.9446140588009749
+          },
+          {
+            "prompt": "green cross",
+            "seen": true,
+            "mse": 0.025986392330587634,
+            "classified": "green cross",
+            "correct": true,
+            "confidence": 0.9549986830208039
+          },
+          {
+            "prompt": "green diagonal",
+            "seen": true,
+            "mse": 0.016381661117283855,
+            "classified": "green diagonal",
+            "correct": true,
+            "confidence": 0.9264718716214065
+          },
+          {
+            "prompt": "blue square",
+            "seen": true,
+            "mse": 0.011960755642607,
+            "classified": "blue square",
+            "correct": true,
+            "confidence": 0.9340224001797675
+          },
+          {
+            "prompt": "blue cross",
+            "seen": true,
+            "mse": 0.015444628909176914,
+            "classified": "blue cross",
+            "correct": true,
+            "confidence": 0.9705596036691632
+          },
+          {
+            "prompt": "blue diagonal",
+            "seen": false,
+            "mse": 0.12337537410982652,
+            "classified": "blue cross",
+            "correct": false,
+            "confidence": 0.8605817837532544
+          }
+        ],
+        "seen_correct": 8,
+        "held_out_correct": 0
+      },
+      "core_disconnect": {
+        "output_changed": true,
+        "max_abs_delta": 1.0047482252120972
+      },
+      "failed": false
+    }
+  ],
+  "assumptions": [
+    "Pixel or sample MSE says nothing about perceptual quality.",
+    "This proves generation on a finite fixture of nine conditions, not open-ended image or audio generation.",
+    "The decoder is a fixed clamp with no parameters; the prompt reaches the output only through the core.",
+    "The frozen-core control trains only the encoder and readout, showing what the periphery alone can do with the same budget."
+  ]
+}

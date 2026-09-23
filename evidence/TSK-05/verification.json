@@ -1,0 +1,69 @@
+{
+  "requirement": "TSK-05「使用者可以由核心產生文字條件音訊。驗收：音訊區塊可還原、取樣率與長度正確，有保留條件測試。」",
+  "profile": "fixture",
+  "date": "2026-09-24",
+  "scope": "Ticket 29 stage four, audio half: RunMedia on the nine-condition audio fixture (low/mid/high pitch x steady/fade/pulse pattern, 256-sample blocks at 8 kHz) with a held-out condition, a frozen-core control, a core-disconnect check, the three-block temporal check and the trained core's WAV samples.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-05",
+    "COIMNET_TSK05_EVIDENCE=$PWD/evidence/TSK-05 go test -count=1 -timeout 0 -v -run '^TestMediaEvidence/audio$' ./tasks/media/ > evidence/TSK-05/test.log 2>&1",
+    "(cd evidence/TSK-05 && find media.json summary.txt samples -type f | sort | xargs shasum -a 256) > evidence/TSK-05/rerun.sha256",
+    "race controls, vet and test list: the shared tasks/media run in evidence/TSK-04 (see its reproduction_command)",
+    "coimnet examples run media --modality audio --out-dir DIR (the same DefaultRunConfig through the CLI; writes DIR/report.json and DIR/samples/)"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, Apple M3, 8 cores, 16 GiB), commit 304e12f0d658d9d1482dcc26a8fe33868e06dbba.",
+    "Recorded run 2026-09-23T18:16:47Z to 18:16:56Z at 1-minute load 4.71 to 4.70; the rerun followed immediately (run-env.txt). Race controls are the shared run in evidence/TSK-04 (18:17:06Z to 18:22:37Z). No timing is a result.",
+    "A rerun at the same commit wrote media.json, summary.txt and all nine WAV samples with the recorded SHA-256 (rerun.sha256; rerun.sha256.check says identical)."
+  ],
+  "input_fingerprints": [
+    "No external input: the nine conditions are rendered by the fixture code and judged by an independent classifier.",
+    "DefaultRunConfig(audio): generator embed 16, hidden 64, settle 3, learning rate 0.01; holdout [\"high pulse\"]; 60 epochs over the eight seen conditions (480 updates); 3 blocks of 256 samples; seeds 1, 2, 3; config_hash f857da8115da7890... (media.json).",
+    "media.json sha256 1f668563f4416a3562cd93846d021ab5e624f4c279e2417803087bd17e9a4a45; summary.txt sha256 4f8bf98d88a0c2ade9b8775a66a09a267e714a9a3edf54552b3162840274d31a; the nine samples/*.wav hashes are in rerun.sha256."
+  ],
+  "observed_result": {
+    "tests": "controls.log (shared by TSK-04 and TSK-05): 37 top-level PASS in tasks/media and 9 in internal/cli under -race, 0 FAIL; the only SKIPs are TestMediaEvidence/image and /audio, the runs recorded in each test.log. vet.log: no findings. The tasks/media race run compiled at 304e12f (18:17:06Z); the main checkout was fast-forwarded to cd8ae3d at 18:18:49Z while it ran, so the internal/cli part (started about 18:22Z) compiled at cd8ae3d, whose only differences are the new tasks/media/external_tool.go with its test and the textgen validity fix; neither changes RunMedia or examples run media. The claims rest on TestWAVExactLength (the written WAV has exactly the requested sample count and rate, 0-sample error), TestDecoderHasNoPromptInput (the decoder input holds only the representation), TestClassifierIsIndependent (noisy renderings are still judged correctly), TestRunMediaNeverTrainsHeldOut, TestRunMediaIsDeterministic and TestExamplesRunMediaAudio.",
+    "per_seed": {
+      "1": {
+        "core": "seen correct 0 -> 7 of 8, held-out 0 of 1, seen MSE 0.20018 -> 0.02184",
+        "frozen_core": "seen 0 -> 7 of 8, held-out 0 of 1, seen MSE 0.20018 -> 0.02061",
+        "core_disconnect": "changed, max |delta| 1.3324",
+        "temporal": "6 of 9 prompts keep their judged condition over 3 blocks"
+      },
+      "2": {
+        "core": "seen 1 -> 6 of 8, held-out 0 of 1, seen MSE 0.20022 -> 0.02237",
+        "frozen_core": "seen 1 -> 7 of 8, held-out 0 of 1, seen MSE 0.20022 -> 0.02040",
+        "core_disconnect": "changed, max |delta| 1.2833",
+        "temporal": "2 of 9"
+      },
+      "3": {
+        "core": "seen 1 -> 7 of 8, held-out 0 of 1, seen MSE 0.20028 -> 0.01898",
+        "frozen_core": "seen 1 -> 7 of 8, held-out 0 of 1, seen MSE 0.20028 -> 0.02023",
+        "core_disconnect": "changed, max |delta| 1.3014",
+        "temporal": "5 of 9"
+      }
+    },
+    "audio_blocks": "Each block is 256 samples decoded by the fixed clamp to [-1, 1]; the samples are mono 16-bit PCM at 8,000 Hz with exactly 3 x 256 = 768 frames (checked on samples/high_pulse.wav).",
+    "held_out": "high pulse is judged high steady by both groups in every seed: the pitch carries over, the unseen pattern pairing does not.",
+    "capacity_split": "encoder 96, core 5,280, readout 16,384, decoder 0 parameters; the frozen-core group does not train the core.",
+    "reading": "The core generates restorable audio blocks at the right rate and length and learns six or seven of eight seen conditions; the frozen-core control does as well or slightly better, so the core's learning is not shown to matter here. Repeating the prompt's last word keeps the judged condition over all three blocks for only 2 to 6 of 9 prompts. The held-out condition is not generated correctly.",
+    "reproducibility": "The rerun at the same commit produced byte-identical media.json, summary.txt and WAV samples."
+  },
+  "assumption_statement": "Pixel or sample MSE says nothing about perceptual quality. This proves generation on a finite fixture of nine conditions, not open-ended image or audio generation. The decoder is a fixed clamp with no parameters; the prompt reaches the output only through the core. The frozen-core control trains only the encoder and readout, showing what the periphery alone can do with the same budget. (The four assumptions RunMedia writes into media.json.)",
+  "test_log": [
+    "evidence/TSK-05/test.log",
+    "evidence/TSK-04/controls.log",
+    "evidence/TSK-04/vet.log"
+  ],
+  "limitations": [
+    "Nine synthetic tones of three pitches and three envelopes; no claim about speech, music or perceptual quality.",
+    "The held-out condition is generated wrongly in every seed (high steady instead of high pulse).",
+    "The frozen-core control matches or beats the trained core; the core's learning is not shown to matter on this fixture.",
+    "Temporal consistency over three blocks is partial (2 to 6 of 9 prompts).",
+    "Real authorised audio data is TSK-11 and remains blocked_data.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-05/media.json": "1f668563f4416a3562cd93846d021ab5e624f4c279e2417803087bd17e9a4a45",
+    "evidence/TSK-05/summary.txt": "4f8bf98d88a0c2ade9b8775a66a09a267e714a9a3edf54552b3162840274d31a"
+  }
+}

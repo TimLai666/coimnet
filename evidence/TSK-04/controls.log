@@ -1,0 +1,221 @@
+2026/09/24 02:17:08 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestWriteSamples
+=== RUN   TestWriteSamples/image
+=== RUN   TestWriteSamples/audio
+--- PASS: TestWriteSamples (1.28s)
+    --- PASS: TestWriteSamples/image (0.55s)
+    --- PASS: TestWriteSamples/audio (0.73s)
+=== RUN   TestMediaEvidence
+=== RUN   TestMediaEvidence/image
+    evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set
+=== RUN   TestMediaEvidence/audio
+    evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set
+--- PASS: TestMediaEvidence (0.00s)
+    --- SKIP: TestMediaEvidence/image (0.00s)
+    --- SKIP: TestMediaEvidence/audio (0.00s)
+=== RUN   TestFixedDecoderTrainsAndLocks
+    fixed_decoder_test.go:19: decoder reconstruction MSE: 0.00002752
+--- PASS: TestFixedDecoderTrainsAndLocks (5.70s)
+=== RUN   TestFixedDecoderRejects
+=== RUN   TestFixedDecoderRejects/latent
+=== RUN   TestFixedDecoderRejects/epochs
+=== RUN   TestFixedDecoderRejects/rate
+--- PASS: TestFixedDecoderRejects (1.89s)
+    --- PASS: TestFixedDecoderRejects/latent (0.00s)
+    --- PASS: TestFixedDecoderRejects/epochs (0.00s)
+    --- PASS: TestFixedDecoderRejects/rate (0.00s)
+=== RUN   TestLatentGeneratorLearnsThroughTheFixedDecoder
+    fixed_decoder_test.go:146: seen correct: before=1/8 after=8/8; held-out "blue diagonal" is diagnostic only
+    fixed_decoder_test.go:159: held-out "blue diagonal" prediction="blue cross", correct=false; not included in training
+    fixed_decoder_test.go:167: latent mean absolute error: before=0.83004254 after=0.12503794
+--- PASS: TestLatentGeneratorLearnsThroughTheFixedDecoder (6.56s)
+=== RUN   TestLatentGeneratorIsDeterministic
+--- PASS: TestLatentGeneratorIsDeterministic (4.07s)
+=== RUN   TestConditionsAndPrompts
+--- PASS: TestConditionsAndPrompts (0.00s)
+=== RUN   TestRenderAndClassifyAgree
+--- PASS: TestRenderAndClassifyAgree (0.00s)
+=== RUN   TestClassifierIsIndependent
+--- PASS: TestClassifierIsIndependent (0.00s)
+=== RUN   TestRenderFixtureValues
+--- PASS: TestRenderFixtureValues (0.00s)
+=== RUN   TestGeneratorConfigValidate
+=== RUN   TestGeneratorConfigValidate/valid_image
+=== RUN   TestGeneratorConfigValidate/valid_audio
+=== RUN   TestGeneratorConfigValidate/unknown_modality
+=== RUN   TestGeneratorConfigValidate/small_embed
+=== RUN   TestGeneratorConfigValidate/large_embed
+=== RUN   TestGeneratorConfigValidate/small_hidden
+=== RUN   TestGeneratorConfigValidate/large_hidden
+=== RUN   TestGeneratorConfigValidate/zero_settle
+=== RUN   TestGeneratorConfigValidate/large_settle
+=== RUN   TestGeneratorConfigValidate/zero_learning_rate
+=== RUN   TestGeneratorConfigValidate/negative_learning_rate
+=== RUN   TestGeneratorConfigValidate/nan_learning_rate
+=== RUN   TestGeneratorConfigValidate/infinite_learning_rate
+--- PASS: TestGeneratorConfigValidate (0.00s)
+    --- PASS: TestGeneratorConfigValidate/valid_image (0.00s)
+    --- PASS: TestGeneratorConfigValidate/valid_audio (0.00s)
+    --- PASS: TestGeneratorConfigValidate/unknown_modality (0.00s)
+    --- PASS: TestGeneratorConfigValidate/small_embed (0.00s)
+    --- PASS: TestGeneratorConfigValidate/large_embed (0.00s)
+    --- PASS: TestGeneratorConfigValidate/small_hidden (0.00s)
+    --- PASS: TestGeneratorConfigValidate/large_hidden (0.00s)
+    --- PASS: TestGeneratorConfigValidate/zero_settle (0.00s)
+    --- PASS: TestGeneratorConfigValidate/large_settle (0.00s)
+    --- PASS: TestGeneratorConfigValidate/zero_learning_rate (0.00s)
+    --- PASS: TestGeneratorConfigValidate/negative_learning_rate (0.00s)
+    --- PASS: TestGeneratorConfigValidate/nan_learning_rate (0.00s)
+    --- PASS: TestGeneratorConfigValidate/infinite_learning_rate (0.00s)
+=== RUN   TestDefaultGeneratorConfig
+--- PASS: TestDefaultGeneratorConfig (0.00s)
+=== RUN   TestWords
+--- PASS: TestWords (0.00s)
+=== RUN   TestDecoderHasNoPromptInput
+--- PASS: TestDecoderHasNoPromptInput (0.00s)
+=== RUN   TestGeneratorLayoutAndCapacity
+--- PASS: TestGeneratorLayoutAndCapacity (0.01s)
+=== RUN   TestGeneratorLearnsSeenConditions
+=== RUN   TestGeneratorLearnsSeenConditions/image
+    generator_test.go:177: image seen conditions: average MSE 0.10489832 -> 0.01696575; classifications 1/8 -> 8/8
+=== RUN   TestGeneratorLearnsSeenConditions/audio
+    generator_test.go:177: audio seen conditions: average MSE 0.20017813 -> 0.02184147; classifications 0/8 -> 7/8
+--- PASS: TestGeneratorLearnsSeenConditions (37.81s)
+    --- PASS: TestGeneratorLearnsSeenConditions/image (18.47s)
+    --- PASS: TestGeneratorLearnsSeenConditions/audio (19.34s)
+=== RUN   TestGeneratorIsDeterministic
+--- PASS: TestGeneratorIsDeterministic (1.72s)
+=== RUN   TestGeneratorRejects
+--- PASS: TestGeneratorRejects (0.00s)
+=== RUN   TestPNGRoundTrip
+--- PASS: TestPNGRoundTrip (0.00s)
+=== RUN   TestWAVExactLength
+--- PASS: TestWAVExactLength (0.00s)
+=== RUN   TestRunMediaReportImage
+    run_test.go:20: core seen correct 1 -> 8; held-out correct 0
+    run_test.go:20: core updates=80 capacity encoder/core/readout trains=true/true/true
+    run_test.go:20: core holdout "blue diagonal" classified "blue square" correct=false confidence=0.879861
+    run_test.go:20: frozen_core seen correct 1 -> 8; held-out correct 0
+    run_test.go:20: frozen_core updates=80 capacity encoder/core/readout trains=true/false/true
+    run_test.go:20: frozen_core holdout "blue diagonal" classified "blue cross" correct=false confidence=0.907835
+    run_test.go:20: core disconnect changed=true max_abs_delta=1.03415728
+--- PASS: TestRunMediaReportImage (5.12s)
+=== RUN   TestRunMediaReportAudio
+    run_test.go:30: core seen correct 0 -> 3; held-out correct 0
+    run_test.go:30: core updates=80 capacity encoder/core/readout trains=true/true/true
+    run_test.go:30: core holdout "high pulse" classified "high steady" correct=false confidence=0.985688
+    run_test.go:30: frozen_core seen correct 0 -> 3; held-out correct 0
+    run_test.go:30: frozen_core updates=80 capacity encoder/core/readout trains=true/false/true
+    run_test.go:30: frozen_core holdout "high pulse" classified "high steady" correct=false confidence=0.984585
+    run_test.go:30: core disconnect changed=true max_abs_delta=0.945286036
+    run_test.go:30: audio temporal blocks=3 prompts=9 consistent=2
+--- PASS: TestRunMediaReportAudio (6.51s)
+=== RUN   TestRunMediaNeverTrainsHeldOut
+=== RUN   TestRunMediaNeverTrainsHeldOut/image
+=== RUN   TestRunMediaNeverTrainsHeldOut/audio
+--- PASS: TestRunMediaNeverTrainsHeldOut (23.10s)
+    --- PASS: TestRunMediaNeverTrainsHeldOut/image (10.17s)
+    --- PASS: TestRunMediaNeverTrainsHeldOut/audio (12.93s)
+=== RUN   TestRunMediaDefaultLearns
+    run_test.go:83: core seen correct 1 -> 8; held-out correct 0
+    run_test.go:84: frozen_core seen correct 1 -> 8; held-out correct 0
+--- PASS: TestRunMediaDefaultLearns (29.80s)
+=== RUN   TestRunMediaIsDeterministic
+--- PASS: TestRunMediaIsDeterministic (13.00s)
+=== RUN   TestRunConfigValidate
+=== RUN   TestRunConfigValidate/modality_mismatch
+=== RUN   TestRunConfigValidate/unknown_holdout_prompt
+=== RUN   TestRunConfigValidate/image_blocks
+=== RUN   TestRunConfigValidate/zero_epochs
+=== RUN   TestRunConfigValidate/duplicate_seeds
+--- PASS: TestRunConfigValidate (0.00s)
+    --- PASS: TestRunConfigValidate/modality_mismatch (0.00s)
+    --- PASS: TestRunConfigValidate/unknown_holdout_prompt (0.00s)
+    --- PASS: TestRunConfigValidate/image_blocks (0.00s)
+    --- PASS: TestRunConfigValidate/zero_epochs (0.00s)
+    --- PASS: TestRunConfigValidate/duplicate_seeds (0.00s)
+=== RUN   TestDefaultRunConfig
+--- PASS: TestDefaultRunConfig (0.00s)
+=== RUN   TestVideoConditionsAndPrompts
+--- PASS: TestVideoConditionsAndPrompts (0.00s)
+=== RUN   TestVideoRenderAndClassifyAgree
+--- PASS: TestVideoRenderAndClassifyAgree (0.00s)
+=== RUN   TestVideoSyncErrorDetectsShift
+--- PASS: TestVideoSyncErrorDetectsShift (0.00s)
+=== RUN   TestVideoWriteNative
+--- PASS: TestVideoWriteNative (0.01s)
+=== RUN   TestVideoGeneratorLayout
+--- PASS: TestVideoGeneratorLayout (0.01s)
+=== RUN   TestVideoGeneratorStepLowersMSE
+    video_test.go:60: five seen prompts average MSE 0.02972649 -> 0.02197365
+--- PASS: TestVideoGeneratorStepLowersMSE (27.35s)
+=== RUN   TestVideoRunReport
+    video_test.go:99: seed=1 core seen_correct=1/5 held_out="down high" judged="left low" correct=false path_matches=4 event_frame=5 sync_error=1 frozen seen_correct=3/5 held_out="down high" judged="down low" correct=false path_matches=3 event_frame=7 sync_error=-1 core_disconnect=true max_abs_delta=0.64920491
+--- PASS: TestVideoRunReport (28.38s)
+=== RUN   TestVideoRunNeverTrainsHeldOut
+--- PASS: TestVideoRunNeverTrainsHeldOut (33.52s)
+=== RUN   TestVideoRunIsDeterministic
+--- PASS: TestVideoRunIsDeterministic (76.46s)
+=== RUN   TestVideoRunConfigValidate
+=== RUN   TestVideoRunConfigValidate/invalid_embed
+=== RUN   TestVideoRunConfigValidate/invalid_hidden
+=== RUN   TestVideoRunConfigValidate/invalid_settle
+=== RUN   TestVideoRunConfigValidate/invalid_learning_rate
+=== RUN   TestVideoRunConfigValidate/empty_holdout
+=== RUN   TestVideoRunConfigValidate/invalid_holdout
+=== RUN   TestVideoRunConfigValidate/duplicate_holdout
+=== RUN   TestVideoRunConfigValidate/zero_epochs
+=== RUN   TestVideoRunConfigValidate/too_many_epochs
+=== RUN   TestVideoRunConfigValidate/empty_seeds
+=== RUN   TestVideoRunConfigValidate/duplicate_seeds
+--- PASS: TestVideoRunConfigValidate (0.00s)
+    --- PASS: TestVideoRunConfigValidate/invalid_embed (0.00s)
+    --- PASS: TestVideoRunConfigValidate/invalid_hidden (0.00s)
+    --- PASS: TestVideoRunConfigValidate/invalid_settle (0.00s)
+    --- PASS: TestVideoRunConfigValidate/invalid_learning_rate (0.00s)
+    --- PASS: TestVideoRunConfigValidate/empty_holdout (0.00s)
+    --- PASS: TestVideoRunConfigValidate/invalid_holdout (0.00s)
+    --- PASS: TestVideoRunConfigValidate/duplicate_holdout (0.00s)
+    --- PASS: TestVideoRunConfigValidate/zero_epochs (0.00s)
+    --- PASS: TestVideoRunConfigValidate/too_many_epochs (0.00s)
+    --- PASS: TestVideoRunConfigValidate/empty_seeds (0.00s)
+    --- PASS: TestVideoRunConfigValidate/duplicate_seeds (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/media	303.804s
+exit=0
+2026/09/24 02:22:22 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestExamplesListIncludesAttribution
+--- PASS: TestExamplesListIncludesAttribution (0.00s)
+=== RUN   TestExamplesListIncludesFullGraph
+--- PASS: TestExamplesListIncludesFullGraph (0.00s)
+=== RUN   TestExamplesRunMediaImage
+--- PASS: TestExamplesRunMediaImage (8.00s)
+=== RUN   TestExamplesRunMediaAudio
+--- PASS: TestExamplesRunMediaAudio (5.74s)
+=== RUN   TestExamplesRunMediaRejects
+=== RUN   TestExamplesRunMediaRejects/missing_modality
+=== RUN   TestExamplesRunMediaRejects/unknown_modality
+=== RUN   TestExamplesRunMediaRejects/missing_output_directory
+=== RUN   TestExamplesRunMediaRejects/existing_output_directory
+=== RUN   TestExamplesRunMediaRejects/zero_epochs
+--- PASS: TestExamplesRunMediaRejects (0.00s)
+    --- PASS: TestExamplesRunMediaRejects/missing_modality (0.00s)
+    --- PASS: TestExamplesRunMediaRejects/unknown_modality (0.00s)
+    --- PASS: TestExamplesRunMediaRejects/missing_output_directory (0.00s)
+    --- PASS: TestExamplesRunMediaRejects/existing_output_directory (0.00s)
+    --- PASS: TestExamplesRunMediaRejects/zero_epochs (0.00s)
+=== RUN   TestExamplesListIncludesMedia
+--- PASS: TestExamplesListIncludesMedia (0.00s)
+=== RUN   TestExamplesListIncludesNav2DAndMultimodal
+--- PASS: TestExamplesListIncludesNav2DAndMultimodal (0.00s)
+=== RUN   TestExamplesListIncludesOCR
+--- PASS: TestExamplesListIncludesOCR (0.00s)
+=== RUN   TestExamplesListIncludesTextgen
+--- PASS: TestExamplesListIncludesTextgen (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/cli	16.098s
+exit=0
