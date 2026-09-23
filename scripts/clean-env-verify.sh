@@ -316,6 +316,8 @@ run_step example_gridnav go run ./cmd/coimnet examples run gridnav
 run_step example_nav2d go run ./cmd/coimnet examples run nav2d --out "$workdir/nav2d.json"
 run_step example_multimodal go run ./cmd/coimnet examples run multimodal --out "$workdir/multimodal.json"
 run_step example_attribution go run ./cmd/coimnet examples run attribution --out "$workdir/attribution.json"
+# ablate writes to DIR/ablation, so DIR must exist before it runs.
+mkdir -p "$workdir/ablate"
 run_step example_ablate go run ./cmd/coimnet examples run ablate --out-dir "$workdir/ablate"
 run_step benchmark_fixture go run ./cmd/coimnet benchmark --out "$workdir/benchmark-fixture.json"
 run_step multitask_suite env COIMNET_TSK09_EVIDENCE="$workdir/tsk09" \
