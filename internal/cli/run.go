@@ -32,6 +32,8 @@ Commands:
                                 whole-file and chunked streaming evaluation
   examples run textgen [flags]  Train and evaluate the synthetic text-generation
                                 fixture in student mode with the teacher blocked
+  examples run media [flags]    Run text-conditioned synthetic image/audio
+                                generation with a trained core and fixed decoder
   examples run gridnav [flags]  Run the synthetic one-dimensional corridor:
                                 expert imitation or recurrent PPO training
   examples run nav2d [flags]    Run synthetic two-dimensional navigation tasks
@@ -178,7 +180,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run textgen [flags] | run gridnav [flags] | run nav2d [flags] | run multimodal [flags] | run attribution [flags] | run ablate [flags] | run full-graph-short-training [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run textgen [flags] | run media [flags] | run gridnav [flags] | run nav2d [flags] | run multimodal [flags] | run attribution [flags] | run ablate [flags] | run full-graph-short-training [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
@@ -190,6 +192,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 				{"name": "ocr", "profile": "fixture", "description": "Synthetic glyph line recognition: CTC-trained column reader with family split, unseen combinations and a core-disconnect check"},
 				{"name": "asr", "profile": "fixture", "description": "Synthetic speech-to-text with speaker/session split, whole-file CER/WER and 173-sample streaming measurements"},
 				{"name": "textgen", "profile": "fixture", "description": "Synthetic grammar text generation with source-level holdout perplexity, task accuracy and student-mode evaluation"},
+				{"name": "media", "profile": "fixture", "description": "Synthetic text-conditioned image and audio generation with a trained core, fixed decoder and held-out conditions"},
 				{"name": "gridnav", "profile": "fixture", "description": "Synthetic one-dimensional corridor with expert imitation and recurrent PPO action-feedback learning"},
 				{"name": "nav2d", "profile": "fixture", "description": "Synthetic two-dimensional navigation across four tasks with recurrent, feedforward, rewired and random policy comparisons"},
 				{"name": "multimodal", "profile": "fixture", "description": "Synthetic paired multimodal data with seen and unseen image-to-text retrieval evaluation"},
@@ -218,6 +221,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "textgen" {
 			return runTextgen(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "media" {
+			return runMedia(ctx, args[3:], stdout, stderr)
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "gridnav" {
 			return runGridnav(ctx, args[3:], stdout, stderr)
