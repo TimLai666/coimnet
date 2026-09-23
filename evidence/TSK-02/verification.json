@@ -1,0 +1,60 @@
+{
+  "requirement": "TSK-02 使用者可以訓練、推論與評估語音轉文字，含整檔與因果串流模式；本紀錄只驗證人工 fixture 與本機資料管線。",
+  "profile": "fixture_partial",
+  "reproduction_command": [
+    "go test -count=1 ./... > evidence/TSK-02/full-test.log 2>&1",
+    "go test -count=1 -race ./... > evidence/TSK-02/full-race.log 2>&1",
+    "go test -count=1 -race -v ./tasks/asr/... > evidence/TSK-02/asr-race.log 2>&1",
+    "go test -count=1 -race -v ./internal/fileio > evidence/TSK-02/fileio-race.log 2>&1",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "env GOOS=linux GOARCH=amd64 go build ./tasks/asr/... ./internal/fileio",
+    "env GOOS=windows GOARCH=amd64 go build ./tasks/asr/... ./internal/fileio",
+    "go build -o /tmp/coimnet-asr-stage2.9h0Ax7/coimnet ./cmd/coimnet",
+    "uptime > evidence/TSK-02/benchmark-uptime.log",
+    "/usr/bin/time -l /tmp/coimnet-asr-stage2.9h0Ax7/coimnet examples run asr --out evidence/TSK-02/asr-fixture-run1.json > evidence/TSK-02/run1.stdout 2> evidence/TSK-02/run1.time.log",
+    "/usr/bin/time -l /tmp/coimnet-asr-stage2.9h0Ax7/coimnet examples run asr --out evidence/TSK-02/asr-fixture-run2.json > evidence/TSK-02/run2.stdout 2> evidence/TSK-02/run2.time.log",
+    "ssh -o BatchMode=yes -o ConnectTimeout=5 ubuntu-1 'hostname; go version' > evidence/TSK-02/ubuntu-probe.log 2>&1"
+  ],
+  "environment": [
+    "Mac Apple M3，16 GiB 統一記憶體，Darwin arm64，go version go1.26.5 darwin/arm64，CPU 路徑。",
+    "量測前 uptime：21:17 up 18 days, 2:56, 1 user, load averages: 8.56 14.10 10.80；未隔離其他工作或清除快取，不能視為穩定效能基準。",
+    "Insyra 固定 v0.3.2；run1/run2.time.log 的程序啟動 banner 可核對。",
+    "Ubuntu 1 本階段的 SSH 探測 exit 255，Permission denied (publickey,password)；未執行跨平台測試。"
+  ],
+  "input_fingerprints": [
+    "無外部語音語料：CLI 以固定 seeds 1、2、3、4 在記憶體產生 40 筆 a/b/c 人工音調，沒有自然語音或已訓練模型檔。",
+    "報告 config 以 UTF-8 JSON、sort_keys=true、separators=(',',':') 做 SHA-256：b39cda14947b4f95a39ed9d0fa46414271a4d09ee34f1d388bbb99d57d2154cc。",
+    "相關 Go 原始碼逐檔 SHA-256 清單：evidence/TSK-02/source-files.sha256；該清單 SHA-256 為 00605db3a0fdf192181f5becc1012ade1c4c6d316e4a5769d1684c2db843ff94。",
+    "獨立建置 CLI 二進位 SHA-256：b9811b6fd984c864e932a4ebf0cc54cfb34b74189b965feb5503da94195c1ceb。",
+    "run1 報告 SHA-256：3f73143e9e87f22afb2ed8487493e0bd3e5236cfc5c960c69387d28fef6a2bfe；run2：232b558a7173b117bf0e4345bf82f739a2dfdbd0ef6ed1fa6b35049fe1505488。"
+  ],
+  "observed_result": "go test ./...、go test -race ./...、go build ./...、go vet ./...、go mod verify 均 exit 0；Linux 與 Windows 的 ASR／fileio 編譯也通過，但沒有在目標機器執行。ASR 專用 race 詳細日誌含 72 個頂層 PASS、0 FAIL，fileio 含 9 個頂層 PASS、0 FAIL。CLI 預設 stdout 通過單一 JSON 文件測試。資料清單測試涵蓋 PCM16 WAV 宣告核對、授權欄位、同一份位元組的 SHA-256／解碼、混音／線性重取樣／峰值正規化、拒絕重複鍵、null、超過 16 MiB 的清單、父目錄連結逃逸、錄音連結別名、損壞檔、每檔原始／處理緩衝及總額容量超限與極端重取樣輸出；不均群組 60/25/15 與 300 個 4 筆加 2 筆及 10,000 筆的反例都選到精確可行解，搜尋預算超限回錯。端到端人工 WAV 測試走過匯入、無 speaker/session 洩漏分割、訓練、整檔及串流評估。CLI 四組共 40 筆音調按群分成 30 訓練／10 測試，訓練 10 epoch；保留集整檔 CER 13/19=0.6842 降至 12/19=0.6316，WER 9/10=0.9 前後未變，串流 CER 12/19、WER 9/10。兩次報告排除 timing 與 *_ns 耗時欄位後所有欄位相同。10 筆測試音訊共 2.64 秒；兩次整程序牆鐘時間 0.80／0.30 秒，最高 RSS 29,097,984／28,868,608 bytes；報告內訓練 0.242／0.245 秒，逐塊串流離線計算 0.0286／0.0290 秒。",
+  "assumption_statement": "合成純音與三字母表只能證明訓練、文字解碼、資料管線和串流入口在小型 fixture 上運作；CER 的一個字元改善不代表自然語音泛化。耗時為本機離線觀察，不代表麥克風到文字的即時延遲或字詞對齊精度。",
+  "test_log": [
+    "evidence/TSK-02/full-test.log",
+    "evidence/TSK-02/full-race.log",
+    "evidence/TSK-02/asr-race.log",
+    "evidence/TSK-02/fileio-race.log"
+  ],
+  "reports": [
+    "evidence/TSK-02/asr-fixture-run1.json",
+    "evidence/TSK-02/asr-fixture-run2.json",
+    "evidence/TSK-02/run1.stdout",
+    "evidence/TSK-02/run2.stdout",
+    "evidence/TSK-02/run1.time.log",
+    "evidence/TSK-02/run2.time.log",
+    "evidence/TSK-02/source-files.sha256",
+    "evidence/TSK-02/ubuntu-probe.log",
+    "evidence/TSK-02/benchmark-uptime.log"
+  ],
+  "limitations": [
+    "沒有使用有授權的自然語音資料；TSK-11 所需的真實匯入、訓練、推論和評估尚未驗收。",
+    "ReadDataset 預設限制每檔 raw WAV 64 MiB、每檔處理緩衝估算 512 MiB、總額 2 GiB；可明確調整，但仍把全部處理後樣本留在記憶體，這些估算不保證程序 RSS 上限，也沒有串流語料讀取器。",
+    "StreamState 可在記憶體中 JSON 往返，但沒有獨立嚴格檔案載入器、容量限制及原子落盤 API；完整保存介面尚未完成。",
+    "來源 SHA-256 與 WAV 解碼使用同一次讀到的位元組；若其他程序在匯入前後修改原檔，來源路徑本身仍不能當成不可變資料承諾。",
+    "只在 Mac CPU 上量測，Ubuntu 1 SSH 認證失敗，Windows PC 與 GPU／Metal 後端未驗證。",
+    "人工 fixture 保留集僅 10 筆、19 字元；WER 前後均 0.9，未證明自然語音品質或完整果蠅圖訓練能力。"
+  ]
+}

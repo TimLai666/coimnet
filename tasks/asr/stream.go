@@ -352,10 +352,11 @@ func (r *Recognizer) RestoreStream(st StreamState) (*Stream, error) {
 	if !st.Flushed && steps > 0 && len(st.Pending) < window-hop {
 		return nil, fmt.Errorf("asr: stream snapshot has %d pending samples after %d frames, want at least %d", len(st.Pending), steps, window-hop)
 	}
-	runes := []rune(st.Emitted)
-	if uint64(len(runes)) > steps {
-		return nil, fmt.Errorf("asr: stream snapshot has %d emitted runes after %d frames", len(runes), steps)
+	runeCount := utf8.RuneCountInString(st.Emitted)
+	if uint64(runeCount) > steps {
+		return nil, fmt.Errorf("asr: stream snapshot has %d emitted runes after %d frames", runeCount, steps)
 	}
+	runes := []rune(st.Emitted)
 	for i, ru := range runes {
 		if _, ok := r.index[ru]; !ok {
 			return nil, fmt.Errorf("asr: stream snapshot emitted rune %q at position %d outside the alphabet", ru, i)

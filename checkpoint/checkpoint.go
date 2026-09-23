@@ -195,6 +195,92 @@ func marshalEnvelopeFor(schema string, payload []byte) ([]byte, error) {
 	return document, nil
 }
 
+// SavePayload publishes a versioned payload with the same bounded, checked,
+// no-overwrite file semantics as checkpoint.Save. Callers own validation of
+// their payload fields; this function validates the JSON syntax and envelope.
+func SavePayload(ctx context.Context, path, schema string, payload []byte) error {
+	if err := contextError(ctx); err != nil {
+		return err
+	}
+	if len(payload) > maxCheckpointBytes {
+		return fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
+	}
+	if err := validateJSONUnicode(payload); err != nil {
+		return fmt.Errorf("checkpoint payload: %w", err)
+	}
+	if err := checkUniqueJSON(payload); err != nil {
+		return fmt.Errorf("checkpoint payload: %w", err)
+	}
+	// json.Marshal compacts RawMessage and escapes HTML characters when it
+	// assembles the envelope. Hash those exact canonical bytes, not the caller's
+	// original pretty-printed payload, so a saved file can be read back.
+	canonical, err := json.Marshal(json.RawMessage(payload))
+	if err != nil {
+		return fmt.Errorf("checkpoint payload: %w", err)
+	}
+	document, err := marshalEnvelopeFor(schema, canonical)
+	if err != nil {
+		return err
+	}
+	if err := contextError(ctx); err != nil {
+		return err
+	}
+	return publishDocument(ctx, path, document)
+}
+
+// LoadPayload reads a versioned payload within the checkpoint byte limit,
+// verifies its checksum, and rejects malformed or ambiguous JSON. Callers
+// must additionally validate the fields and semantics of their own payload.
+func LoadPayload(ctx context.Context, path, schema string) ([]byte, error) {
+	if err := contextError(ctx); err != nil {
+		return nil, err
+	}
+	if path == "" {
+		return nil, fmt.Errorf("checkpoint path must not be empty")
+	}
+	if schema == "" {
+		return nil, fmt.Errorf("checkpoint schema must not be empty")
+	}
+	data, err := fileio.ReadRegular(ctx, path, maxCheckpointBytes)
+	if err != nil {
+		return nil, fmt.Errorf("read checkpoint: %w", err)
+	}
+	if err := contextError(ctx); err != nil {
+		return nil, err
+	}
+	if err := validateJSONUnicode(data); err != nil {
+		return nil, fmt.Errorf("decode checkpoint: %w", err)
+	}
+	if err := checkUniqueJSON(data); err != nil {
+		return nil, err
+	}
+	var raw envelope
+	if err := decodeStrict(data, &raw); err != nil {
+		return nil, fmt.Errorf("decode checkpoint envelope: %w", err)
+	}
+	if raw.SchemaVersion != schema {
+		return nil, fmt.Errorf("unsupported checkpoint schema %q, want %q", raw.SchemaVersion, schema)
+	}
+	if len(bytes.TrimSpace(raw.Payload)) == 0 || bytes.Equal(bytes.TrimSpace(raw.Payload), []byte("null")) {
+		return nil, fmt.Errorf("checkpoint payload must not be missing or null")
+	}
+	if len(raw.Checksum) != sha256.Size*2 {
+		return nil, fmt.Errorf("invalid checkpoint checksum encoding")
+	}
+	got, err := hex.DecodeString(raw.Checksum)
+	if err != nil {
+		return nil, fmt.Errorf("invalid checkpoint checksum encoding: %w", err)
+	}
+	want := sha256.Sum256(raw.Payload)
+	if !bytes.Equal(got, want[:]) {
+		return nil, fmt.Errorf("checkpoint payload checksum mismatch")
+	}
+	if err := contextError(ctx); err != nil {
+		return nil, err
+	}
+	return raw.Payload, nil
+}
+
 // publishDocument writes and publishes one already validated JSON document.
 // The temporary file is created next to the destination, synced, and linked
 // with exclusive-create semantics. Existing callers depend on cancellation

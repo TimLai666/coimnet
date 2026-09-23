@@ -2,6 +2,10 @@
 
 ## 目前階段
 
+2026-09-23 補上 ticket 29 串流檔案保存：`Stream.Save`／`Recognizer.LoadStream` 把神經個體、待處理音訊、CTC 與前處理身分存成單一 64 MiB 上限檔，沿用 checkpoint 的排他發布和嚴格驗證。新程序接續人工音調後，最終狀態摘要與不中斷路徑相同；錯誤 schema、checksum、缺失或 `null` 欄位與超量陣列會拒絕。Mac 完整 Go build/test/race/vet/依賴檢查與 Linux／Windows 交叉編譯通過，[證據](evidence/TSK-02/stream-file-verification.json)只涵蓋人工資料；真實授權語音、跨平台執行及超過 64 MiB 的個體檔仍待驗證。`TSK-02` 暫維持 `specified`。
+
+2026-09-23 完成 ticket 29 第二階段的資料與範例增量：授權 manifest 的 PCM16 WAV 匯入、帶來源指紋與配置前容量檢查的前處理、說話者／場次連通群分割、整檔與串流 CER／WER 及離線耗時報告、`examples run asr`。人工 WAV 端到端測試與完整 Go build/test/race/vet/依賴檢查在 Mac 通過；ASR 專用 race 日誌 72 PASS、0 FAIL。CLI 保留集整檔 CER 13/19 → 12/19，WER 9/10 不變；兩次量測最高 RSS 約 27.8／27.5 MiB。[TSK-02 證據](evidence/TSK-02/verification.json)只支持小型人工音調，`TSK-02` 維持 `specified`；目前總數以需求追蹤檔為準。Ubuntu 1 該次 SSH 認證被拒，真實授權語音尚未驗收；當時未包含檔案保存驗證，後續證據見上段。
+
 2026-09-22 完成 ticket 26 的人工環境學習驗收：取樣式 PPO、正確的時間上限後續價值與 `examples run gridnav --method imitation|ppo` 已整合。三個 seed 各 200 次更新，平均回報 0.318167 → 0.605167，高於隨機基線 0.357333；三組都比訓練前進步，但 seed 1 仍低於自己的隨機基線。模仿的 50／200／500 episodes 原始曲線已保存，500 episodes 時三組一致率皆提高。LRN-09 標為 fixture 範圍 `passed`，原始需求累計 64／85，NAT 增補 6／6。
 
 同一份 439 檔來源在 Mac／Ubuntu 通過完整 build、一般測試、race、vet、依賴與 CLI 續訓比較，兩台各有 57 個相關頂層契約測試通過。每台兩次 PPO CLI 報告逐位相同；跨平台快照摘要不同。審查發現的極端有限獎勵統計溢位已修正。詳見 [LRN-09 證據](evidence/LRN-09/verification.json)、[範例用法](experiment/gridnav/README.md) 與 [資源量測](docs/resources.md)。此輪沒有增加真實全圖、GPU 或自然語音能力證據，TSK-02 仍未完成驗收。
@@ -96,7 +100,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 30 | 使用者可以在目標平台使用 CPU 參考路徑、在真實資料上做全圖前向／反向與訓練、核對治理文件與授權，並匯入 FlyWire | 主 agent 指揮 / opencode big-pickle 小票實作、agy Gemini Flash 證據整理 | in_progress | 第一階段驗證通過：平台矩陣把 compiled 與 executed 分開標記（darwin/arm64 實際執行 unit／race／vet／mod verify，linux 與 windows 只交叉編譯與 vet）、`Workers` 並行在連續與 LIF 核心逐位相同且每步配置量不隨步數增加、治理測試四項、README 能力表與科學界線、授權盤點與 `blocked_permission` 發布清單、INDEX 連結檢查；OPS-04、GOV-01、GOV-04、GOV-05、GOV-06 passed；第二～四階段待派工，第五階段裝置後端（OPS-05）與 FlyWire（DAT-06）受阻於使用者；第二階段進行中（2026-09-19）：FlyWire adapter（CSV／gzip → Feather 與 manifest，命名空間 `flywire-<version>`，root id 到 2^63−1 精確往返、溢位拒絕，`docs/flywire-source-audit.md` 標 blocked_data）已提交，拼接禁止（`MappingEvidence`）票已寫好；第五階段 `backend` 能力宣告、明示回退與更新 ledger 已提交（OPS-05 可做部分）；第四階段乾淨環境腳本待 `report` 命令；第二階段 fixture 部分驗證通過（2026-09-19）：FlyWire adapter、`MappingEvidence` 拼接禁止與 named set 命名空間檢查，`evidence/DAT-06/`（DAT-06 passed，profile fixture；真實 FlyWire 檔案 blocked_data）；第四階段 `scripts/clean-env-verify.sh` 已落地（14 步 passed、3 步 blocked_data），效能報告與 OPS-10 證據待派 |
 | 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max / OpenCode big-pickle | verified_scoped | 三階段 fixture 驗證完成：LRN-08、MOD-09 與 LRN-09；第二階段含取樣 collector、3 seed 各 200 次更新、訓練前／隨機對照、同平台逐位重現與 CLI，Mac／Ubuntu 同源通過。任意非零初始狀態、前綴梯度切斷、可塑性／化學 PPO 不支援 |
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
-| 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；整檔 CTC 與因果串流的短尾、取消還原及語義設定恢復通過 Mac／Ubuntu 局部驗證；資料匯入、分割、延遲、TSK-11 真實授權資料與後續生成階段保留 |
+| 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；ASR 整檔 CTC、因果串流與恢復有前次 Mac／Ubuntu 局部證據，本輪資料匯入、群組分割、離線耗時、CLI 人工範例與 Mac 全套驗證見 TSK-02；嚴格串流檔案保存已驗證人工音調；TSK-11 真實授權資料、跨平台續跑與後續生成階段保留 |
 
 ## 目前阻礙
 
@@ -108,13 +112,13 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 `data download` 的續傳缺口（程序被砍後 meta 仍為 0、失效鎖不回收；2026-09-14 syn-partners 因此重抓）已於 [ticket 15](docs/tickets/15-hardening.md) 修正：每 64 MiB fsync 後寫回 `bytes`，`.part` 長於記錄者截斷後續傳，死 pid 的鎖回收並寫進回條。
 
-Mac 可執行本機測試。Ubuntu 1 已實際連線並確認 RTX 4070 12 GB，Go 工具放在 `/tmp/coimnet-validation.irVFk8MV`。PC 的 App 主機連線存在，但本輪沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
+Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 GB，但 2026-09-23 重試本階段 SSH 時收到 `Permission denied (publickey,password)`，因此本階段沒有 Ubuntu 執行證據。PC 的 App 主機連線存在，但沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
 
 ## 下一個可驗證成果與 ticket
 
 ticket 26 的固定走廊學習階段已交付。任意非零初始神經狀態仍需要相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。
 
-下一階段依 [ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 接續語音串流的資料匯入、說話者／場次分割與延遲報告。既有測試使用程式產生的三種音調，不能當成自然語音能力證據。真實授權資料與全圖／GPU 訓練維持原驗收條件。
+下一個可驗證成果是 [ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 使用授權自然語音 manifest 執行匯入、訓練、推論與評估，並驗證串流檔案跨平台續跑與超過 64 MiB 個體的保存方案。現有三種人工音調不能當成自然語音能力證據。真實全圖／GPU 訓練維持原驗收條件。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 

@@ -1,0 +1,42 @@
+{
+  "requirement": "TSK-02 串流辨識的嚴格檔案保存與跨程序接續；本紀錄限於人工音調 fixture。",
+  "profile": "fixture_partial",
+  "base_commit": "b1b735d3af141980fa3d4b1f4c73598202d129cd",
+  "reproduction_command": [
+    "go test -count=1 ./... > evidence/TSK-02/stream-file-full-test.log 2>&1",
+    "go test -count=1 -race ./... > evidence/TSK-02/stream-file-full-race.log 2>&1",
+    "go test -count=1 -race -v ./checkpoint ./tasks/asr -run 'TestSaveLoadPayloadCanonicalizesBeforeChecksum|TestIndividualBytesRoundTrip|TestDecodeIndividualBytesRejectsMalformedJSON|TestStreamFile|TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion' > evidence/TSK-02/stream-file-scoped-race.log 2>&1",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "env GOOS=linux GOARCH=amd64 go build ./checkpoint ./tasks/asr/...",
+    "env GOOS=windows GOARCH=amd64 go build ./checkpoint ./tasks/asr/...",
+    "shasum -a 256 checkpoint/checkpoint.go checkpoint/individual.go checkpoint/individual_bytes_test.go checkpoint/payload_test.go tasks/asr/stream.go tasks/asr/stream_validation_test.go tasks/asr/stream_file.go tasks/asr/stream_file_test.go > evidence/TSK-02/stream-file-source.sha256"
+  ],
+  "environment": [
+    "Mac Apple M3，Darwin arm64，go version go1.26.5 darwin/arm64，CPU 路徑；Insyra v0.3.2。",
+    "執行期間 uptime：21:37 up 18 days, 3:16, 1 user, load averages: 4.94 7.12 7.82；本輪沒有做效能量測。",
+    "Linux/amd64 與 Windows/amd64 僅交叉編譯，沒有在目標機器執行；Ubuntu 1 的 SSH 認證阻礙沿用本票前一份驗證紀錄。"
+  ],
+  "input_fingerprints": [
+    "無外部語音語料。跨程序測試以固定 seed 31 產生 abc 人工音調，從第一個完整視窗加 23 樣本處保存，再在新程序餵入餘段並 flush。",
+    "八個相關 Go 原始碼及測試的逐檔 SHA-256 見 evidence/TSK-02/stream-file-source.sha256；清單 SHA-256 為 afc9d01d12622205f38c06e6eee5da550278361583181d346874e670d0740678。",
+    "完整一般測試日誌 SHA-256 為 495a32c471960bf14ea9b24e924f2fc149592e37c69474a59788edc83d33a338；完整 race 日誌為 4aceb486b95951e6c847fe165a6c4c46bfee84da5f73b65abcaf80fd2923b9b5；限定範圍 race 日誌為 48dfaebe703dfd3fe79d6ead02112eeb9f85f3eb8240030150541d361d48987e。"
+  ],
+  "observed_result": "一般與 race 的 go test ./...、go build ./...、go vet ./...、go mod verify 均 exit 0；限定範圍 race 有 10 個頂層 PASS、0 FAIL。新程序載入中途串流檔後，以相同剩餘音訊接續，最終 StreamState 的 JSON SHA-256 與不中斷串流相同。測試另驗證已存在路徑不覆寫、取消前不留目的檔、64 MiB 以上檔案拒絕、schema/欄位/null/未知欄位/個體狀態與 checksum 驗證；反例覆蓋整理前後 JSON 位元組不同造成的 checksum 缺陷。pending 陣列在配置 float64 切片前依辨識器視窗長度有界掃描，不可能的已輸出文字在轉成 rune 陣列前先以步數檢查。",
+  "assumption_statement": "檔案 checksum 只檢查內容意外損壞，不驗證來源或防止有寫入權限者竄改；相同 Mac 的跨程序相等不代表跨平台浮點運算逐位相同。",
+  "test_log": [
+    "evidence/TSK-02/stream-file-full-test.log",
+    "evidence/TSK-02/stream-file-full-race.log",
+    "evidence/TSK-02/stream-file-scoped-race.log"
+  ],
+  "reports": [
+    "evidence/TSK-02/stream-file-source.sha256"
+  ],
+  "limitations": [
+    "只驗證小型人工音調的檔案續跑，沒有自然語音辨識品質結論，也沒有完整果蠅圖個體保存或訓練結果。",
+    "單檔限制 64 MiB；此限制不等於保存／讀取時的程序 RSS 上限，超過上限的個體快照需要另一種容量契約。",
+    "尚未在 Ubuntu 1 或 Windows PC 執行此檔案恢復測試；交叉編譯不算平台執行。",
+    "真實授權語音上的匯入、訓練、推論與評估仍屬 TSK-11 的 blocked_data。"
+  ]
+}

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"math"
 	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/TimLai666/coimnet/learning"
@@ -451,6 +453,28 @@ func TestStreamSnapshotUsesCurrentFrontEndVersion(t *testing.T) {
 	}
 	if got := s.Snapshot().FrontEndVersion; got != audio.FrontEndVersion {
 		t.Fatalf("snapshot front-end version = %q, want %q", got, audio.FrontEndVersion)
+	}
+}
+
+func TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion(t *testing.T) {
+	r, err := asr.NewRecognizer(recognizerConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := r.NewStream()
+	if err != nil {
+		t.Fatal(err)
+	}
+	state := s.Snapshot()
+	state.Emitted = strings.Repeat("a", 2<<20)
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	if _, err := r.RestoreStream(state); err == nil {
+		t.Fatal("RestoreStream accepted more text than neural steps")
+	}
+	runtime.ReadMemStats(&after)
+	if allocated := after.TotalAlloc - before.TotalAlloc; allocated > 4<<20 {
+		t.Fatalf("rejecting impossible text allocated %d bytes, want at most 4 MiB", allocated)
 	}
 }
 

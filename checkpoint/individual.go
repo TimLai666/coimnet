@@ -34,32 +34,40 @@ func SaveIndividual(ctx context.Context, path string, snapshot learning.Individu
 	if path == "" {
 		return fmt.Errorf("checkpoint path must not be empty")
 	}
-	individual, err := learning.RestoreIndividual(snapshot)
+	document, err := EncodeIndividual(snapshot)
 	if err != nil {
-		return fmt.Errorf("invalid individual snapshot: %w", err)
-	}
-	if err := contextError(ctx); err != nil {
 		return err
-	}
-	owned := normalizeIndividualSnapshot(individual.Snapshot())
-	payload, err := json.Marshal(owned)
-	if err != nil {
-		return fmt.Errorf("marshal individual checkpoint payload: %w", err)
-	}
-	// A new snapshot has no nullable fields. Check the marshaled representation
-	// as well as the incoming document so valid zero-length arrays are emitted as
-	// [] and never become an unreadable null value.
-	if err := checkUniqueJSONRejectNull(payload); err != nil {
-		return fmt.Errorf("marshal individual checkpoint payload: %w", err)
-	}
-	document, err := marshalEnvelopeFor(IndividualSchemaVersion, payload)
-	if err != nil {
-		return fmt.Errorf("marshal individual checkpoint envelope: %w", err)
 	}
 	if err := contextError(ctx); err != nil {
 		return err
 	}
 	return publishDocument(ctx, path, document)
+}
+
+// EncodeIndividual validates and encodes one complete individual snapshot as
+// the strict, checksummed individual checkpoint document used by SaveIndividual.
+// The returned bytes do not retain references to snapshot-owned mutable data.
+func EncodeIndividual(snapshot learning.IndividualSnapshot) ([]byte, error) {
+	individual, err := learning.RestoreIndividual(snapshot)
+	if err != nil {
+		return nil, fmt.Errorf("invalid individual snapshot: %w", err)
+	}
+	owned := normalizeIndividualSnapshot(individual.Snapshot())
+	payload, err := json.Marshal(owned)
+	if err != nil {
+		return nil, fmt.Errorf("marshal individual checkpoint payload: %w", err)
+	}
+	// A new snapshot has no nullable fields. Check the marshaled representation
+	// as well as the incoming document so valid zero-length arrays are emitted as
+	// [] and never become an unreadable null value.
+	if err := checkUniqueJSONRejectNull(payload); err != nil {
+		return nil, fmt.Errorf("marshal individual checkpoint payload: %w", err)
+	}
+	document, err := marshalEnvelopeFor(IndividualSchemaVersion, payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal individual checkpoint envelope: %w", err)
+	}
+	return document, nil
 }
 
 // LoadIndividual reads one complete individual snapshot of either core. It
@@ -82,7 +90,7 @@ func LoadIndividual(ctx context.Context, path string) (learning.IndividualSnapsh
 	if err := contextError(ctx); err != nil {
 		return learning.IndividualSnapshot{}, err
 	}
-	snapshot, err := decodeIndividualDocument(data)
+	snapshot, err := DecodeIndividual(data)
 	if err != nil {
 		return learning.IndividualSnapshot{}, err
 	}
@@ -92,8 +100,19 @@ func LoadIndividual(ctx context.Context, path string) (learning.IndividualSnapsh
 	return snapshot, nil
 }
 
+// DecodeIndividual strictly validates and decodes one individual checkpoint
+// document, including its envelope schema, checksum, size limit, required
+// fields and semantic snapshot invariants. It is the byte-level counterpart of
+// EncodeIndividual and the decoder used by LoadIndividual.
+func DecodeIndividual(data []byte) (learning.IndividualSnapshot, error) {
+	return decodeIndividualDocument(data)
+}
+
 func decodeIndividualDocument(data []byte) (learning.IndividualSnapshot, error) {
 	var empty learning.IndividualSnapshot
+	if len(data) > maxCheckpointBytes {
+		return empty, fmt.Errorf("individual checkpoint exceeds %d byte limit", maxCheckpointBytes)
+	}
 	if err := validateJSONUnicode(data); err != nil {
 		return empty, fmt.Errorf("decode individual checkpoint: %w", err)
 	}

@@ -13,6 +13,24 @@ import (
 // exactly -1 and 32767 becomes just under 1.
 const fullScale = 32768.0
 
+// WAVInfo describes the decoded shape of a supported PCM16 WAV without
+// allocating sample buffers.
+type WAVInfo struct {
+	SampleRate int
+	Channels   int
+	Frames     int
+}
+
+type wavPayload struct {
+	formatTag  int
+	channels   int
+	sampleRate int
+	bits       int
+	data       []byte
+	haveFmt    bool
+	haveData   bool
+}
+
 // ReadWAV decodes a RIFF/WAVE file with PCM 16-bit little-endian samples
 // (format tag 1). Any other format tag, bit depth, missing fmt/data chunk,
 // truncated data (data chunk shorter than declared) or a zero sample rate is
@@ -23,37 +41,96 @@ func ReadWAV(path string) (Signal, error) {
 	if err != nil {
 		return Signal{}, err
 	}
+	return decodeWAV(raw, path)
+}
+
+// DecodeWAV decodes one already-read RIFF/WAVE byte slice. The caller can use
+// this when the same bytes also need to be hashed or otherwise audited, so the
+// file does not need to be opened a second time.
+func DecodeWAV(raw []byte) (Signal, error) {
+	return decodeWAV(raw, "input")
+}
+
+// InspectWAV validates a supported WAV and reports its sample shape without
+// allocating any decoded sample buffers.
+func InspectWAV(raw []byte) (WAVInfo, error) {
+	payload, err := parseWAV(raw, "input")
+	if err != nil {
+		return WAVInfo{}, err
+	}
+	frameBytes := payload.channels * 2
+	if len(payload.data)%frameBytes != 0 {
+		return WAVInfo{}, fmt.Errorf("audio: data chunk of %d bytes is truncated mid-frame; a frame is %d bytes", len(payload.data), frameBytes)
+	}
+	return WAVInfo{
+		SampleRate: payload.sampleRate,
+		Channels:   payload.channels,
+		Frames:     len(payload.data) / frameBytes,
+	}, nil
+}
+
+// ResampleOutputLength reports the output length for a positive input length
+// and sample-rate conversion without allocating the output buffer.
+func ResampleOutputLength(inputLength, from, to int) (int, error) {
+	if inputLength <= 0 || from <= 0 || to <= 0 {
+		return 0, fmt.Errorf("audio: resample input length and rates must be positive, got %d samples at %d Hz to %d Hz", inputLength, from, to)
+	}
+	return resampleOutputLength(inputLength, from, to)
+}
+
+func decodeWAV(raw []byte, source string) (Signal, error) {
+	payload, err := parseWAV(raw, source)
+	if err != nil {
+		return Signal{}, err
+	}
+	frameBytes := payload.channels * 2
+	if len(payload.data)%frameBytes != 0 {
+		return Signal{}, fmt.Errorf("audio: data chunk of %d bytes is truncated mid-frame; a frame is %d bytes", len(payload.data), frameBytes)
+	}
+	frames := len(payload.data) / frameBytes
+	samples := make([][]float64, payload.channels)
+	for ch := range samples {
+		samples[ch] = make([]float64, frames)
+	}
+	for f := 0; f < frames; f++ {
+		for ch := 0; ch < payload.channels; ch++ {
+			at := (f*payload.channels + ch) * 2
+			samples[ch][f] = float64(int16(binary.LittleEndian.Uint16(payload.data[at:at+2]))) / fullScale
+		}
+	}
+	return Signal{SampleRate: payload.sampleRate, Channels: payload.channels, Samples: samples}, nil
+}
+
+func parseWAV(raw []byte, source string) (wavPayload, error) {
+	if source == "" {
+		source = "input"
+	}
 	if len(raw) < 12 || string(raw[0:4]) != "RIFF" || string(raw[8:12]) != "WAVE" {
-		return Signal{}, fmt.Errorf("audio: %s is not a RIFF/WAVE file", path)
+		return wavPayload{}, fmt.Errorf("audio: %s is not a RIFF/WAVE file", source)
 	}
 
-	var (
-		haveFmt, haveData         bool
-		formatTag, channels, bits int
-		sampleRate                int
-		data                      []byte
-	)
+	var payload wavPayload
 	for off := 12; off+8 <= len(raw); {
 		id := string(raw[off : off+4])
 		size := int64(binary.LittleEndian.Uint32(raw[off+4 : off+8]))
 		end := int64(off+8) + size
 		if end > int64(len(raw)) {
-			return Signal{}, fmt.Errorf("audio: %s chunk truncated: declares %d bytes, file holds %d", id, size, int64(len(raw))-int64(off+8))
+			return wavPayload{}, fmt.Errorf("audio: %s chunk truncated: declares %d bytes, file holds %d", id, size, int64(len(raw))-int64(off+8))
 		}
-		payload := raw[off+8 : int(end)]
+		chunkPayload := raw[off+8 : int(end)]
 		switch id {
 		case "fmt ":
-			if len(payload) < 16 {
-				return Signal{}, fmt.Errorf("audio: fmt chunk is %d bytes, PCM needs at least 16", len(payload))
+			if len(chunkPayload) < 16 {
+				return wavPayload{}, fmt.Errorf("audio: fmt chunk is %d bytes, PCM needs at least 16", len(chunkPayload))
 			}
-			formatTag = int(binary.LittleEndian.Uint16(payload[0:2]))
-			channels = int(binary.LittleEndian.Uint16(payload[2:4]))
-			sampleRate = int(binary.LittleEndian.Uint32(payload[4:8]))
-			bits = int(binary.LittleEndian.Uint16(payload[14:16]))
-			haveFmt = true
+			payload.formatTag = int(binary.LittleEndian.Uint16(chunkPayload[0:2]))
+			payload.channels = int(binary.LittleEndian.Uint16(chunkPayload[2:4]))
+			payload.sampleRate = int(binary.LittleEndian.Uint32(chunkPayload[4:8]))
+			payload.bits = int(binary.LittleEndian.Uint16(chunkPayload[14:16]))
+			payload.haveFmt = true
 		case "data":
-			data = payload
-			haveData = true
+			payload.data = chunkPayload
+			payload.haveData = true
 		}
 		off = int(end)
 		if size%2 == 1 { // RIFF pads odd-sized chunks to an even boundary.
@@ -62,36 +139,20 @@ func ReadWAV(path string) (Signal, error) {
 	}
 
 	switch {
-	case !haveFmt:
-		return Signal{}, errors.New("audio: missing fmt chunk")
-	case formatTag != 1:
-		return Signal{}, fmt.Errorf("audio: format tag %d is not PCM (1); compressed audio needs an explicit decoder", formatTag)
-	case bits != 16:
-		return Signal{}, fmt.Errorf("audio: bit depth %d is not the supported 16", bits)
-	case sampleRate <= 0:
-		return Signal{}, errors.New("audio: sample rate is zero")
-	case channels <= 0:
-		return Signal{}, errors.New("audio: channel count is zero")
-	case !haveData:
-		return Signal{}, errors.New("audio: missing data chunk")
+	case !payload.haveFmt:
+		return wavPayload{}, errors.New("audio: missing fmt chunk")
+	case payload.formatTag != 1:
+		return wavPayload{}, fmt.Errorf("audio: format tag %d is not PCM (1); compressed audio needs an explicit decoder", payload.formatTag)
+	case payload.bits != 16:
+		return wavPayload{}, fmt.Errorf("audio: bit depth %d is not the supported 16", payload.bits)
+	case payload.sampleRate <= 0:
+		return wavPayload{}, errors.New("audio: sample rate is zero")
+	case payload.channels <= 0:
+		return wavPayload{}, errors.New("audio: channel count is zero")
+	case !payload.haveData:
+		return wavPayload{}, errors.New("audio: missing data chunk")
 	}
-
-	frameBytes := channels * 2
-	if len(data)%frameBytes != 0 {
-		return Signal{}, fmt.Errorf("audio: data chunk of %d bytes is truncated mid-frame; a frame is %d bytes", len(data), frameBytes)
-	}
-	frames := len(data) / frameBytes
-	samples := make([][]float64, channels)
-	for ch := range samples {
-		samples[ch] = make([]float64, frames)
-	}
-	for f := 0; f < frames; f++ {
-		for ch := 0; ch < channels; ch++ {
-			at := (f*channels + ch) * 2
-			samples[ch][f] = float64(int16(binary.LittleEndian.Uint16(data[at:at+2]))) / fullScale
-		}
-	}
-	return Signal{SampleRate: sampleRate, Channels: channels, Samples: samples}, nil
+	return payload, nil
 }
 
 // WriteWAV writes s as PCM 16-bit (rounded, clipped to [-1, 1]) so fixtures
