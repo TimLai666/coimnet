@@ -10,7 +10,7 @@ User Story：使用者可以在沒有網路與金鑰的情況下用離線 JSONL 
 Blocked by：23（運行中學習：`Update` 的教師回應路徑、`Evaluate` 模式）、24 第一階段（組態的 `teacher`
 區塊、金鑰參照、`--dry-run` 不呼叫教師）、26 第二階段（`LossGradientFrom`、softmax 交叉熵）
 
-Status：第一、二階段已驗證（2026-09-19）；第三階段（移除教師評估、工具安全）待派工
+Status：第一、二階段已驗證（2026-09-19）；第三階段已驗證（2026-09-23）
 
 對應需求：TCH-01（沒有網路及金鑰也能訓練與重播，保留教師與輸入版本）、TCH-02（有逾時、有限重試、限速、
 預算、去重及測試伺服器驗證）、TCH-03（學生使用自己的編碼；訓練與保留資料分開）、TCH-04（詞表、溫度、
@@ -103,7 +103,7 @@ func RunStudentEvaluation(ctx context.Context, c StudentEvaluationConfig) (Stude
   `evidence/TCH-01/`、`evidence/TCH-02/`。
 - [x] 第二階段：學生編碼獨立（教師 token id 拒絕）、保留集不送教師、去重、對齊拒絕、log-sum-exp 穩定、
   top-k 標 partial、參數保存；`evidence/TCH-03/`、`evidence/TCH-04/`。
-- [ ] 第三階段：`student` 模式教師呼叫數 0 且網路拒絕、`teacher_assisted` 分開、獨立集與錯標籤穩健性、
+- [x] 第三階段：`student` 模式教師呼叫數 0 且網路拒絕、`teacher_assisted` 分開、獨立集與錯標籤穩健性、
   工具允許清單與參數驗證、外部回應不改設定不外傳；`evidence/TCH-05/`、`evidence/TCH-06/`；文件。
 
 ## 第一階段證據（2026-09-17）
@@ -153,6 +153,45 @@ func RunStudentEvaluation(ctx context.Context, c StudentEvaluationConfig) (Stude
 證據路徑：`evidence/TCH-03/`（`verification.json`、`test.log`）、`evidence/TCH-04/`（`verification.json`、`test.log`（同一份輸出））。
 
 限制：受測學生為三神經元延遲 fixture，非真實果蠅接線；教師為離線 oracle 分布與查表，非真實訓練過的大模型；真實 HTTP 教師與下游真實任務未跑；可訓練的對齊轉換器未做（票面明列為可選）；參數保存無 distill 專用格式，依賴 learning/checkpoint 既有快照機制；一次執行 macOS arm64。
+
+## 第三階段證據（2026-09-23）
+
+TCH-05：`go test -count=1 -race -v ./experiment/studenteval/` 全部 10 個具名測試 PASS、0 FAIL
+（`grep -c "^--- PASS"` = 10、`grep -c "^--- FAIL"` = 0，輸出結尾 `ok  github.com/TimLai666/coimnet/experiment/studenteval 2.029s`）。
+- 學生模式零教師零網路：`TestStudentEvaluationNeverCallsTheTeacher`（spy Ask 0、三 seed `TeacherCalls` 0、
+  `TeacherBlocked true`）、`TestStudentModeNeverReachesTheNetwork`（計數伺服器日誌
+  「server requests 0, TeacherCalls 0, TeacherBlocked true」）；`teacher.Blocked` 計數行為由
+  `evidence/TCH-06/test.log` 的 `TestBlockedRefusesAndCounts`（3 → 併行後 13）驗證。
+- `teacher_assisted` 分開：`Mode` 欄位、`TeacherBlocked false`、assisted 分數與 `fallbacks` 欄位只在該模式出現、
+  第三句 caveat 進 `Assumptions`；完美 oracle 每 seed `teacher_calls 64`、`fallbacks 0`，拒答時每 seed
+  `refused 32` 且 `Fallbacks` 32、assisted 分數落在 [學生分數, 1]；學生自己六項分數與 student 模式 run
+  逐位相同；`TestStudentModeJSONIsUnchanged` 斷言 student JSON 無 `assisted_`／`fallbacks`。
+- 保留集與獨立來源集各 32（`DelayedEpisode` 1003+seed／2003+seed，seeds 7/8/9）；20% 錯標籤
+  （`CorruptFraction` 0.2 × `Episodes` 40 = 前 8 個翻轉）的 corrupted 分數與 robustness_delta：
+  seed 7 = 0.375／0.625、seed 8 = 1.000／0.000、seed 9 = 0.562／0.438（test.log 原文）。
+- 一致率與任務分數同時報告（四欄並列，三 seed 平均 `held_out_agreement` 1.000）；
+  `TestStudentEvaluationIsDeterministic` 決定論；`TestStudentEvaluationUsesDistill` 證明訓練直接走
+  `distill.StepDistribution`（seed 7、40 步、兩 set 各 32 例 Predict 逐位相同）。
+
+TCH-06：驗證指令的 `-run` 樣式在 `./distill/ ./teacher/ ./teacher/tool/` 涵蓋 15 個具名測試，全數 PASS、0 FAIL
+（distill 4、teacher 5、teacher/tool 6，`grep -c "^--- PASS"` = 15）。
+- 工具允許清單與參數 schema（模型生成參數同檢查）：`TestInvokeRunsOnlyAllowedNames`、
+  `TestInvokeRejectsBadArguments`、`TestModelWrittenArgumentsGetTheSameCheck`、`TestRegisterRejects`、
+  `TestInvokeHonoursContext`。
+- 工具結果原樣回傳且不觸發其他工具：`TestResultsAreDataOnly`（never handler 0 次）。
+- 教師敵意答案（指令＋誘餌網址）：`TestUntrustedTeacherAnswersStayData`（請求 3 = 輸入數、誘餌 0、
+  設定快照前後 `bytes.Equal`、工具 Calls 0）、`TestUntrustedTeacherCannotRaiseItsBudget`（預算 2 擋下第 3 呼叫、
+  `Budget` 不變）、`TestUntrustedTeacherSendsOnlyAllowedFields`（伺服器端斷言頂層鍵與欄位）。
+- `AllowedFields` 外不外傳與金鑰只在 header：`TestHTTPSendsOnlyAllowedFields`、
+  `TestHTTPSecretIsBearerAndNeverInBody`；回應逐位當資料：`TestResponseAnswerIsOnlyData`；
+  保留集不送教師：`TestCollectNeverAsksHoldout`。
+
+證據路徑：`evidence/TCH-05/`（`verification.json`、`test.log`）、`evidence/TCH-06/`（`verification.json`、
+`test.log`）。文件：README 能力表新列、`docs/model-and-mechanisms.md` 模式表 `teacher_assisted` 列。
+
+限制：fixture 三神經元學生與 oracle 查表教師；「獨立來源集」只是不同 generator seed；真實教師與真實任務未跑；
+工具註冊表尚無訓練／評估呼叫端；套件在 `experiment/studenteval`（併入 `experiment` 會因 teacher→config→experiment
+形成 import cycle）；一次執行 macOS arm64。
 
 ## 依據
 

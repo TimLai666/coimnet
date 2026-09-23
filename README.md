@@ -37,6 +37,7 @@
 | FlyWire 獨立匯入：公開釋出 CSV／gzip 轉 Feather 與 manifest、`flywire-<version>` 獨立命名空間與大 root id 字串精確往返、無映射證據一律拒絕與 MaleCNS 拼接（DAT-06；真實 FlyWire 檔案 blocked_data，需帳號與條款同意，目前只驗到 fixture） | 不適用（資料管線） | fixture | 工具輔助 | [DAT-06](evidence/DAT-06/verification.json) |
 | 真實子圖範例：ALIN 子圖選取與人工脈衝短訓練（DAT-07） | 已訓練（人工脈衝短訓練） | real-subgraph | 工具輔助（範例） | [DAT-07](evidence/DAT-07/verification.json) |
 | 教師工具：離線 JSONL 答案、重播、HTTP 存取與封鎖教師（TCH-01、TCH-02） | 不適用（教師工具） | fixture | 工具輔助（教師） | [TCH-01](evidence/TCH-01/verification.json)・[TCH-02](evidence/TCH-02/verification.json) |
+| 學生獨立評估與外部回應安全：student 模式封鎖教師與網路、teacher_assisted 分開報告、20% 錯標籤穩健性、工具允許清單與參數 schema、回應只當資料不外傳未授權欄位（TCH-05、TCH-06）。這些教師與工具功能不把 CoImNet 擴大成任意電腦操作 agent：回應只當資料，不執行其中的指令 | 不適用（評估與工具） | fixture | 核心能力與工具輔助 | [TCH-05](evidence/TCH-05/verification.json)・[TCH-06](evidence/TCH-06/verification.json) |
 | SDK 與 CLI 介面：八個可執行 SDK 範例、88 個非法輸入不 panic 的案例、五個取消釋放測試，以及 doctor／model inspect／model validate／run --dry-run／benchmark／export／report／examples／checkpoint migrate 的端到端與失敗測試（OPS-01、OPS-02） | 不適用（介面層） | fixture | 工具輔助 | [OPS-01](evidence/OPS-01/verification.json)・[OPS-02](evidence/OPS-02/verification.json) |
 | 環境與自動驗證：鎖定版本建置、Insyra 實際參與運算、自動防退步檢查（GOV-02、GOV-03、OPS-09） | 不適用（環境與測試） | 不適用 | 工具輔助 | [GOV-02](evidence/GOV-02/verification.json)・[GOV-03](evidence/GOV-03/verification.json)・[OPS-09](evidence/OPS-09/verification.json) |
 

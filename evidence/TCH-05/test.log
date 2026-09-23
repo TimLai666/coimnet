@@ -1,0 +1,42 @@
+2026/09/23 20:02:33 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestTeacherAssistedCallsTheTeacherAndKeepsTheStudentScores
+    assisted_test.go:199: seed 7 student: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 0.375 robustness_delta 0.625
+    assisted_test.go:201: seed 7 assisted: held_out_task 1.000 independent_task 1.000 fallbacks 0 teacher_calls 64
+    assisted_test.go:199: seed 8 student: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 1.000 robustness_delta 0.000
+    assisted_test.go:201: seed 8 assisted: held_out_task 1.000 independent_task 1.000 fallbacks 0 teacher_calls 64
+    assisted_test.go:199: seed 9 student: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 0.562 robustness_delta 0.438
+    assisted_test.go:201: seed 9 assisted: held_out_task 1.000 independent_task 1.000 fallbacks 0 teacher_calls 64
+--- PASS: TestTeacherAssistedCallsTheTeacherAndKeepsTheStudentScores (0.16s)
+=== RUN   TestTeacherAssistedFallsBackWhenTheTeacherCannotAnswer
+    assisted_test.go:268: seed 7: refused 32 requests; student held_out_task 1.000 independent_task 1.000 | assisted held_out 1.000 independent 1.000
+    assisted_test.go:268: seed 8: refused 32 requests; student held_out_task 1.000 independent_task 1.000 | assisted held_out 1.000 independent 1.000
+    assisted_test.go:268: seed 9: refused 32 requests; student held_out_task 1.000 independent_task 1.000 | assisted held_out 1.000 independent 1.000
+--- PASS: TestTeacherAssistedFallsBackWhenTheTeacherCannotAnswer (0.08s)
+=== RUN   TestStudentModeNeverReachesTheNetwork
+    assisted_test.go:321: server requests 0, TeacherCalls 0, TeacherBlocked true
+--- PASS: TestStudentModeNeverReachesTheNetwork (0.08s)
+=== RUN   TestStudentModeJSONIsUnchanged
+--- PASS: TestStudentModeJSONIsUnchanged (0.08s)
+=== RUN   TestStudentEvaluationNeverCallsTheTeacher
+    studenteval_test.go:136: seed 7: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 0.375 robustness_delta 0.625
+    studenteval_test.go:136: seed 8: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 1.000 robustness_delta 0.000
+    studenteval_test.go:136: seed 9: held_out_agreement 1.000 held_out_task 1.000 independent_agreement 1.000 independent_task 1.000 corrupted_independent 0.562 robustness_delta 0.438
+--- PASS: TestStudentEvaluationNeverCallsTheTeacher (0.07s)
+=== RUN   TestStudentEvaluationScoresAreInRange
+    studenteval_test.go:173: seed 7: held_out_agreement 1.000, held_out_task 1.000, independent_agreement 1.000, independent_task 1.000, corrupted_independent_task 0.375, robustness_delta 0.625
+    studenteval_test.go:173: seed 8: held_out_agreement 1.000, held_out_task 1.000, independent_agreement 1.000, independent_task 1.000, corrupted_independent_task 1.000, robustness_delta 0.000
+    studenteval_test.go:173: seed 9: held_out_agreement 1.000, held_out_task 1.000, independent_agreement 1.000, independent_task 1.000, corrupted_independent_task 0.562, robustness_delta 0.438
+    studenteval_test.go:176: mean held_out_agreement across 3 seeds after 40 steps: 1.000
+--- PASS: TestStudentEvaluationScoresAreInRange (0.07s)
+=== RUN   TestStudentEvaluationUsesDistill
+--- PASS: TestStudentEvaluationUsesDistill (0.02s)
+=== RUN   TestStudentEvaluationIsDeterministic
+--- PASS: TestStudentEvaluationIsDeterministic (0.15s)
+=== RUN   TestStudentEvaluationValidateRejects
+--- PASS: TestStudentEvaluationValidateRejects (0.00s)
+=== RUN   TestStudentEvaluationHonoursCancellation
+--- PASS: TestStudentEvaluationHonoursCancellation (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment/studenteval	2.029s

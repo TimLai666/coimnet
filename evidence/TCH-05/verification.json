@@ -1,0 +1,30 @@
+{
+  "requirement": "TCH-05 研究者可以完全移除教師評估學生。驗收：學生評估封鎖教師與網路，結果與常駐教師模式分開。",
+  "profile": "fixture",
+  "reproduction_command": [
+    "cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v ./experiment/studenteval/ > evidence/TCH-05/test.log 2>&1; go test -count=1 -race -v -run 'TestUntrustedTeacher|TestResultsAreDataOnly|TestResponseAnswerIsOnlyData|TestInvoke|TestModelWrittenArgumentsGetTheSameCheck|TestRegisterRejects|TestHTTPSendsOnlyAllowedFields|TestHTTPSecretIsBearerAndNeverInBody|TestBlocked|TestCollectNeverAsksHoldout' ./distill/ ./teacher/ ./teacher/tool/ > evidence/TCH-06/test.log 2>&1; grep -c \"^--- PASS\" evidence/TCH-05/test.log evidence/TCH-06/test.log; grep -c \"^--- FAIL\" evidence/TCH-05/test.log evidence/TCH-06/test.log"
+  ],
+  "environment": [
+    "macOS arm64（darwin）",
+    "go version go1.26.5 darwin/arm64",
+    "uptime（錄製當下原文）：20:02  up 18 days,  1:41, 1 user, load averages: 3.54 4.41 4.20",
+    "test.log 首行 Insyra banner：2026/09/23 20:02:33 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!（studenteval 經 distill 依賴 insyra，測試程序啟動時印出，非測試斷言）"
+  ],
+  "input_fingerprints": [
+    "無外部資料：學生為三神經元延遲鏈 fixture（experiment.DelayedEpisode），訓練流 1001+seed、保留集 1003+seed、獨立來源集 2003+seed，seeds 7/8/9 各 40 個訓練 episode 與 32+32 筆評估；oracle 教師以同一 episode 流與 sha256(JSON(input)) hash 規則預先建表",
+    "受測原始碼：experiment/studenteval/studenteval.go、studenteval_test.go、assisted_test.go、teacher/blocked.go、distill/train.go 等"
+  ],
+  "observed_result": "experiment/studenteval 全部 10 個具名測試在 race 偵測下全數 PASS、0 FAIL（evidence/TCH-05/test.log：grep -c \"^--- PASS\" = 10、grep -c \"^--- FAIL\" = 0，輸出結尾 ok github.com/TimLai666/coimnet/experiment/studenteval 2.029s）。(1) student 模式教師呼叫 0：TestStudentEvaluationNeverCallsTheTeacher 斷言 spy 教師 Ask 0 次、TeacherBlocked true、三個 seed 的 TeacherCalls 全 0（TeacherCalls = teacher.Blocked 的計數 + 傳入教師自報計數，兩者皆 0）；teacher.Blocked 本身的計數行為由 evidence/TCH-06/test.log 的 TestBlockedRefusesAndCounts 驗證（3 次串行後 Calls 3，併行 10 次後 Calls 13，每次回 ErrTeacherBlocked）。(2) student 模式不碰網路：TestStudentModeNeverReachesTheNetwork 把真 teacher.HTTP 指向計數 httptest 伺服器，日誌原文「server requests 0, TeacherCalls 0, TeacherBlocked true」。(3) teacher_assisted 分開：TestStudentAssisted 相關測試斷言 Mode == \"teacher_assisted\"、TeacherBlocked false、Assumptions 3 句（第 3 句為 caveat 原文）、assisted 分數欄位（AssistedHeldOutTaskScore／AssistedIndependentTaskScore／Fallbacks）只在該模式出現；完美 oracle 下每 seed TeacherCalls 64（保留 32 + 獨立 32）、日誌「fallbacks 0 teacher_calls 64」；教師拒答奇數編號請求時 TestTeacherAssistedFallsBackWhenTheTeacherCannotAnswer 對每個 seed 斷言 Fallbacks 等於拒答數，日誌 seed 7/8/9 各「refused 32 requests」，assisted 分數落在 [學生分數, 1]；學生自己六項分數（held_out_agreement、held_out_task_score、independent_agreement、independent_task_score、corrupted_independent_task_score、robustness_delta）以 math.Float64bits 與同設定的 student 模式 run 逐位比對相同；TestStudentModeJSONIsUnchanged 斷言 student 模式 JSON 不含 assisted_ 與 fallbacks 欄位。(4) 保留集與獨立來源集：Config 的 HeldOut=32（DelayedEpisode(1003+seed)）與 Independent=32（DelayedEpisode(2003+seed)）分開評估，日誌分開印 held_out_* 與 independent_* 欄位。(5) 20% 錯標籤穩健性（CorruptFraction 0.2、Episodes 40，前 8 個 episode 標籤翻轉後重蒸餾）：日誌原文 corrupted_independent / robustness_delta 為 seed 7 = 0.375 / 0.625、seed 8 = 1.000 / 0.000、seed 9 = 0.562 / 0.438。(6) 同時報告一致率與真實任務分數：每 seed 四欄 agreement 與 task_score 同時輸出（日誌全為 1.000），TestStudentEvaluationScoresAreInRange 斷言各比率在 [0,1]、robustness_delta 有限且三 seed 平均 held_out_agreement >= 0.5，日誌「mean held_out_agreement across 3 seeds after 40 steps: 1.000」。(7) 決定論：TestStudentEvaluationIsDeterministic 兩次 run 的報告 reflect.DeepEqual 相等。(8) 學生訓練直接走 distill：TestStudentEvaluationUsesDistill 把套件 TrainStudent 與手動 distill.StepDistribution 迴圈（seed 7、40 步、兩個 set 各 32 例）的 Predict 逐位比對相等。另有 TestStudentEvaluationValidateRejects（11 種非法設定被拒）與 TestStudentEvaluationHonoursCancellation（取消 context 回 context.Canceled）PASS。",
+  "assumption_statement": "報告 assumptions 原文（student 模式兩句，teacher_assisted 另加第三句）：(1) \"Fixture teacher: an oracle distribution over the delayed-sign task, not a trained model.\" (2) \"Scores are on a three-neuron fixture; they show that the evaluation runs without a teacher, not a capability claim.\" (3)（僅 teacher_assisted）\"teacher_assisted scores include the teacher's answers; they are never reported as the student's own capability.\"",
+  "test_log": [
+    "evidence/TCH-05/test.log"
+  ],
+  "reports": [],
+  "limitations": [
+    "fixture 規模：學生為三神經元延遲鏈、教師為查表 oracle（pulseLabel 建表），非真實果蠅接線全圖，也非訓練過的模型。",
+    "「獨立來源集」只是另一組 generator seed（DelayedEpisode 2003+seed 對保留集 1003+seed），不是獨立採集或獨立來源的資料。",
+    "真實教師與真實任務未跑：全部為本機 fixture 與假教師，無真實遠端教師與具體下游任務成績。",
+    "套件放在 experiment/studenteval 而不是 experiment：studenteval 需匯入 teacher，teacher/http.go 匯入 config，config/registry.go 又匯入 experiment，若併入 experiment 套件會形成 import cycle。",
+    "一次執行 macOS arm64（darwin/arm64，go1.26.5），無跨平台或跨程序重跑。"
+  ]
+}
