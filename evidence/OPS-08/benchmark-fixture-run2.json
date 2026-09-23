@@ -1,0 +1,109 @@
+{
+  "schema_version": "coimnet-benchmark/v2",
+  "go_version": "go1.26.5",
+  "goos": "darwin",
+  "goarch": "arm64",
+  "num_cpu": 8,
+  "uptime": " 3:38  up 18 days,  9:16, 1 user, load averages: 2.14 1.93 3.53\n",
+  "config": {
+    "source": "synthetic",
+    "nodes": 64,
+    "edges": 256,
+    "steps": 200,
+    "rows_per_call": 200,
+    "repeat": 3,
+    "snapshot_format": "json"
+  },
+  "stages": [
+    {
+      "name": "import",
+      "init_ms": 0.002625,
+      "transfer_ms": 0,
+      "warmup_ms": 0.001334,
+      "steady_median_ms": 0.0011875,
+      "steady_min_ms": 0.000708,
+      "steady_max_ms": 0.001667,
+      "steady_repeat": 2,
+      "rss_mib_after": 12.5
+    },
+    {
+      "name": "forward",
+      "init_ms": 0.019417,
+      "transfer_ms": 0,
+      "warmup_ms": 0.321875,
+      "steady_median_ms": 0.313604,
+      "steady_min_ms": 0.256458,
+      "steady_max_ms": 0.37075,
+      "steady_repeat": 2,
+      "rss_mib_after": 16.8,
+      "activity": {
+        "rows": 200,
+        "nodes": 64,
+        "nonzero_fraction": 1,
+        "mean_abs_output": 0.09821972835492047,
+        "spikes_per_step": null,
+        "mean_rate": null,
+        "digest": "0a8dfef6966768dcb44e25406c6ac3760af3ab3f35ab1df7ccab67ce6d38494f"
+      }
+    },
+    {
+      "name": "backward",
+      "init_ms": 0.0255,
+      "transfer_ms": 0,
+      "warmup_ms": 1.010417,
+      "steady_median_ms": 1.028396,
+      "steady_min_ms": 0.94375,
+      "steady_max_ms": 1.113042,
+      "steady_repeat": 2,
+      "rss_mib_after": 17.4
+    },
+    {
+      "name": "local_plasticity",
+      "init_ms": 0.05225,
+      "transfer_ms": 0,
+      "warmup_ms": 5.260208,
+      "steady_median_ms": 5.223771,
+      "steady_min_ms": 5.157209,
+      "steady_max_ms": 5.290333,
+      "steady_repeat": 2,
+      "rss_mib_after": 18
+    },
+    {
+      "name": "modulation",
+      "init_ms": 0.062833,
+      "transfer_ms": 0,
+      "warmup_ms": 5.390875,
+      "steady_median_ms": 5.2605415,
+      "steady_min_ms": 5.247958,
+      "steady_max_ms": 5.273125,
+      "steady_repeat": 2,
+      "rss_mib_after": 18.2
+    },
+    {
+      "name": "snapshot",
+      "init_ms": 5.37225,
+      "transfer_ms": 0,
+      "warmup_ms": 10.153875,
+      "steady_median_ms": 10.784833500000001,
+      "steady_min_ms": 10.767542,
+      "steady_max_ms": 10.802125,
+      "steady_repeat": 2,
+      "rss_mib_after": 18.7
+    }
+  ],
+  "assumptions": [
+    "synthetic topology, not the MaleCNS graph",
+    "wall-clock medians on a shared machine; see uptime",
+    "continuous core: spike counts and firing rates do not apply"
+  ],
+  "reproducibility": {
+    "forward_digest_first": "0a8dfef6966768dcb44e25406c6ac3760af3ab3f35ab1df7ccab67ce6d38494f",
+    "forward_digest_second": "0a8dfef6966768dcb44e25406c6ac3760af3ab3f35ab1df7ccab67ce6d38494f",
+    "identical": true,
+    "steady_ratio": 0.6465159883164755
+  },
+  "energy": {
+    "measured": false,
+    "note": "no power measurement"
+  }
+}

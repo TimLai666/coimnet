@@ -1,0 +1,48 @@
+{
+  "requirement": "OPS-08「研究者可以重現效能與活動量報告。驗收：初始化、傳輸、暖機及穩態分開；無功率量測不宣稱能耗。」",
+  "profile": "fixture + male-full",
+  "date": "2026-09-24",
+  "scope": "coimnet benchmark (coimnet-benchmark/v2) times six stages (import, forward, backward, local plasticity, modulation, snapshot), each split into setup initialization, transfer (0 ms on the CPU, the field kept), a warmup run and steady runs, records forward activity and a same-seed reproducibility check, and always writes energy as not measured. It ran twice on the default synthetic fixture in separate processes and once on the whole MaleCNS graph in store mode.",
+  "reproduction_command": [
+    "go build -o coimnet ./cmd/coimnet",
+    "/usr/bin/time -l ./coimnet benchmark --out evidence/OPS-08/benchmark-fixture-run1.json (and again to benchmark-fixture-run2.json)",
+    "GOMEMLIMIT=8GiB /usr/bin/time -l ./coimnet benchmark --store data/malecns-v1.0/graph-v1.coimgraph --params data/malecns-v1.0/params-derive-v1.coimparams --protocol evidence/NAT-05/compare-fullgraph-derived-continuous.json --steps 8 --repeat 2 --out evidence/OPS-08/benchmark-full.json",
+    "go test -count=1 -race -v -run 'TestBenchmark' ./internal/cli/ > evidence/OPS-08/controls.log 2>&1"
+  ],
+  "environment": [
+    "macOS on Apple M3 (8 cores, 16 GiB), go1.26.5 darwin/arm64, commit 4030b0dcc6cd95b5b09279af0e882dcd364ede5e, binary sha256 6f4522074a120d48f6ee0ee2623142ccdc211ee7324e492f67f8ab22f973bf6b, built from a detached worktree pinned at that commit.",
+    "Each report carries its own uptime line: fixture runs at 1-minute load 2.14, full graph at 3.00; run-env.txt holds the uptime and memory_pressure before and after. The full-graph run used GOMEMLIMIT=8GiB (see evidence/OPS-07). Timings are observations on a shared machine, not guarantees."
+  ],
+  "input_fingerprints": [
+    "Fixture: the synthetic continuous topology of seed 1 with 64 nodes, 256 edges, 200 steps and 3 repeats (the defaults).",
+    "Full graph: store sha256 a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd, params sha256 c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77, protocol sha256 5b64b24855168254992a6b0f335003a529d6d6af19bb77bef61b1b93cbf26a12; 165,122 nodes, 25,563,197 edges, 8 steps, 2 repeats, 6 rows per individual call.",
+    "benchmark-fixture-run1.json sha256 a431c9fe7aec243f897904ab481f07590064daf8105b0e9ba0b32b65aac5359d; benchmark-fixture-run2.json sha256 5db44d452ed76e7bbae6ec5c551469745d915a10eb27d21aab94563c9c733b41; benchmark-full.json sha256 f01fbb4d91ed3402eb8c4188363e5f3c5c1ae020da4052d8bd1b71be0e3b52dd."
+  ],
+  "observed_result": {
+    "stage_separation": "Every stage of all three reports carries init_ms, transfer_ms (0), warmup_ms and steady median, min and max with the steady run count, plus rss_mib_after (Go runtime memory obtained from the OS).",
+    "fixture_run1": "import init 0.009 ms, warmup 0.002 ms, steady median 0.003 ms (min 0.002, max 0.004, 2 runs); forward init 0.040 ms, warmup 0.587 ms, steady median 0.767 ms (min 0.546, max 0.988, 2 runs); backward init 0.057 ms, warmup 2.005 ms, steady median 2.008 ms (min 2.003, max 2.014, 2 runs); local_plasticity init 0.074 ms, warmup 8.878 ms, steady median 7.392 ms (min 6.953, max 7.831, 2 runs); modulation init 0.061 ms, warmup 6.722 ms, steady median 6.072 ms (min 5.995, max 6.149, 2 runs); snapshot init 5.699 ms, warmup 14.3 ms, steady median 13.0 ms (min 11.4, max 14.6, 2 runs)",
+    "fixture_run2": "import init 0.003 ms, warmup 0.001 ms, steady median 0.001 ms (min 0.001, max 0.002, 2 runs); forward init 0.019 ms, warmup 0.322 ms, steady median 0.314 ms (min 0.256, max 0.371, 2 runs); backward init 0.025 ms, warmup 1.010 ms, steady median 1.028 ms (min 0.944, max 1.113, 2 runs); local_plasticity init 0.052 ms, warmup 5.260 ms, steady median 5.224 ms (min 5.157, max 5.290, 2 runs); modulation init 0.063 ms, warmup 5.391 ms, steady median 5.261 ms (min 5.248, max 5.273, 2 runs); snapshot init 5.372 ms, warmup 10.2 ms, steady median 10.8 ms (min 10.8, max 10.8, 2 runs)",
+    "fixture_reproducibility": "Within each run the two forward passes give the same digest; across the two processes the forward activity is identical too (digest 0a8dfef6966768dcb44e25406c6ac3760af3ab3f35ab1df7ccab67ce6d38494f, non-zero fraction 1, mean |output| 0.0982197). The steady timings differ between the runs (forward steady median 0.767 ms against 0.314 ms), which is why timings are reported with the load, not compared bit for bit.",
+    "full_graph": "import init 0.001 ms, warmup 6,398 ms, steady median 6,245 ms (min 6,245, max 6,245, 1 run); forward init 61.2 ms, warmup 501.9 ms, steady median 518.6 ms (min 518.6, max 518.6, 1 run); backward init 367.4 ms, warmup 2,427 ms, steady median 2,513 ms (min 2,513, max 2,513, 1 run); local_plasticity init 2,481 ms, warmup 18,045 ms, steady median 17,513 ms (min 17,513, max 17,513, 1 run); modulation init 2,778 ms, warmup 17,169 ms, steady median 17,288 ms (min 17,288, max 17,288, 1 run); snapshot init 19,921 ms, warmup 16,463 ms, steady median 16,460 ms (min 16,460, max 16,460, 1 run). Forward activity: 8 rows of 165,122 nodes, non-zero fraction 1, mean |output| 0.8547, digest 45450546020d725d943e5f6edf963fd0d289ed04755c113e84c2c41da1af06dc, identical across the two passes. Memory estimate checked first: 4,298,591,256 bytes. Whole process: 180 s, maximum RSS 7.09 GiB, peak footprint 8.06 GiB.",
+    "energy": "energy is {measured: false, note: \"no power measurement\"} in every report; no energy figure is claimed.",
+    "continuous_core": "Spike counts and firing rates are null because the benchmark runs the continuous core; the reports say so in their assumptions.",
+    "fix_found": "The first full-graph attempt failed in local_plasticity because an individual call may hold at most 2^20 values and 8 rows of 165,122 nodes exceed it; commit 4030b0d splits those calls into 6-row chunks as the full-graph training does and records rows_per_call.",
+    "tests": "controls.log: 8 benchmark tests PASS under -race, 0 FAIL, including the store mode, its refusals and the chunked individual calls."
+  },
+  "assumption_statement": "Wall-clock medians on one shared Mac describe this run, not the hardware's limits. The full-graph backward stage uses an encoder on node 0 and a readout on the last node rather than the protocol's named sets. No power was measured.",
+  "test_log": [
+    "evidence/OPS-08/controls.log",
+    "evidence/OPS-08/full.time.log"
+  ],
+  "limitations": [
+    "CPU only; the transfer column is always 0 until a device backend exists (OPS-05 is blocked).",
+    "Two repeats on the full graph give one steady run per stage, so min, median and max coincide.",
+    "rss_mib_after is the Go runtime's obtained memory, not the kernel's resident set; the /usr/bin/time log gives the process peak.",
+    "One machine; timings are not portable."
+  ],
+  "artifact_sha256": {
+    "evidence/OPS-08/benchmark-fixture-run1.json": "a431c9fe7aec243f897904ab481f07590064daf8105b0e9ba0b32b65aac5359d",
+    "evidence/OPS-08/benchmark-fixture-run2.json": "5db44d452ed76e7bbae6ec5c551469745d915a10eb27d21aab94563c9c733b41",
+    "evidence/OPS-08/benchmark-full.json": "f01fbb4d91ed3402eb8c4188363e5f3c5c1ae020da4052d8bd1b71be0e3b52dd"
+  }
+}
