@@ -33,10 +33,12 @@ func TestBenchmarkWritesReport(t *testing.T) {
 		NumCPU        int    `json:"num_cpu"`
 		Uptime        string `json:"uptime"`
 		Config        struct {
-			Nodes  int `json:"nodes"`
-			Edges  int `json:"edges"`
-			Steps  int `json:"steps"`
-			Repeat int `json:"repeat"`
+			Source         string `json:"source"`
+			Nodes          int    `json:"nodes"`
+			Edges          int    `json:"edges"`
+			Steps          int    `json:"steps"`
+			Repeat         int    `json:"repeat"`
+			SnapshotFormat string `json:"snapshot_format"`
 		} `json:"config"`
 		Stages []struct {
 			Name           string          `json:"name"`
@@ -79,6 +81,9 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	}
 	if report.Config.Nodes != 8 || report.Config.Edges != 16 || report.Config.Steps != 10 || report.Config.Repeat != 2 {
 		t.Errorf("config = %+v", report.Config)
+	}
+	if report.Config.Source != "synthetic" || report.Config.SnapshotFormat != "json" {
+		t.Errorf("synthetic config source/snapshot_format = %q/%q", report.Config.Source, report.Config.SnapshotFormat)
 	}
 	wantStages := []string{"import", "forward", "backward", "local_plasticity", "modulation", "snapshot"}
 	if len(report.Stages) != len(wantStages) {
@@ -148,6 +153,130 @@ func TestBenchmarkWritesReport(t *testing.T) {
 	}
 	if key := energyMeasurementKey(values); key != "" {
 		t.Errorf("report contains energy measurement key %q", key)
+	}
+}
+
+func TestBenchmarkStoreMode(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	store = addFullGraphFixtureClasses(t, dir)
+	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "benchmark-store-params.coimparams")
+	protocol := writeCompareProtocol(t, dir, "benchmark-store-compare.json", fullGraphCompareProtocol())
+	out := filepath.Join(t.TempDir(), "b.json")
+	args := []string{"benchmark", "--store", store, "--params", paramsPath, "--protocol", protocol,
+		"--input-set", "in", "--readout-set", "out", "--steps", "4", "--repeat", "2",
+		"--max-memory-mib", "64", "--out", out}
+	var stdout, stderr bytes.Buffer
+	if err := Run(context.Background(), args, &stdout, &stderr); err != nil {
+		t.Fatalf("benchmark store mode: %v; stderr=%s", err, stderr.String())
+	}
+	if !strings.HasSuffix(strings.TrimSpace(stdout.String()), ", source store") {
+		t.Fatalf("summary = %q, want suffix %q", stdout.String(), ", source store")
+	}
+	raw, err := os.ReadFile(out)
+	if err != nil {
+		t.Fatalf("report file: %v", err)
+	}
+	var report struct {
+		Config struct {
+			Source         string            `json:"source"`
+			Nodes          int               `json:"nodes"`
+			Edges          int               `json:"edges"`
+			Files          map[string]string `json:"files"`
+			InputSet       string            `json:"input_set"`
+			ReadoutSet     string            `json:"readout_set"`
+			MaxMemoryMiB   int               `json:"max_memory_mib"`
+			SnapshotFormat string            `json:"snapshot_format"`
+		} `json:"config"`
+		Assumptions []string `json:"assumptions"`
+		Stages      []struct {
+			Name string `json:"name"`
+		} `json:"stages"`
+		Memory json.RawMessage `json:"memory"`
+		Energy struct {
+			Measured bool `json:"measured"`
+		} `json:"energy"`
+	}
+	if err := json.Unmarshal(raw, &report); err != nil {
+		t.Fatalf("report JSON: %v\n%s", err, raw)
+	}
+	if report.Config.Source != "store" || report.Config.Nodes != 2 || report.Config.Edges != 2 {
+		t.Errorf("store config source/nodes/edges = %q/%d/%d", report.Config.Source, report.Config.Nodes, report.Config.Edges)
+	}
+	if report.Config.InputSet != "in" || report.Config.ReadoutSet != "out" || report.Config.MaxMemoryMiB != 64 || report.Config.SnapshotFormat != "bundle" {
+		t.Errorf("store config sets/memory/snapshot = %q/%q/%d/%q", report.Config.InputSet, report.Config.ReadoutSet, report.Config.MaxMemoryMiB, report.Config.SnapshotFormat)
+	}
+	wantAssumption := "MaleCNS graph from --store with derived parameters from --params; the backward encoder reaches node 0 and the readout reads the last node, not the protocol's named sets"
+	if len(report.Assumptions) != 3 || report.Assumptions[0] != wantAssumption {
+		t.Errorf("store assumptions = %q", report.Assumptions)
+	}
+	if len(report.Config.Files) != 3 {
+		t.Fatalf("files = %v, want three hashes", report.Config.Files)
+	}
+	for _, name := range []string{"store", "params", "protocol"} {
+		digest, ok := report.Config.Files[name]
+		if !ok || len(digest) != 64 {
+			t.Errorf("files[%q] = %q, want 64-character SHA-256", name, digest)
+		}
+	}
+	if len(report.Stages) != 6 {
+		t.Errorf("stages = %v, want six stages", report.Stages)
+	}
+	if len(report.Memory) == 0 || string(report.Memory) == "null" {
+		t.Error("memory report is missing")
+	}
+	if report.Energy.Measured {
+		t.Error("energy.measured = true, want false")
+	}
+	if _, err := os.Stat(out + ".snapshot.tmp.coimbundle"); !os.IsNotExist(err) {
+		t.Errorf("snapshot bundle still exists or stat failed unexpectedly: %v", err)
+	}
+}
+
+func TestBenchmarkStoreModeRejects(t *testing.T) {
+	dir, store, rules := deriveFixture(t)
+	store = addFullGraphFixtureClasses(t, dir)
+	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "benchmark-store-reject-params.coimparams")
+	protocol := writeCompareProtocol(t, dir, "benchmark-store-reject-compare.json", fullGraphCompareProtocol())
+	base := []string{"benchmark", "--store", store, "--params", paramsPath, "--protocol", protocol, "--input-set", "in", "--readout-set", "out", "--steps", "4", "--repeat", "2"}
+	partialOut := filepath.Join(t.TempDir(), "partial.json")
+	nodesOut := filepath.Join(t.TempDir(), "nodes.json")
+	loadMemoryOut := filepath.Join(t.TempDir(), "memory.json")
+	planMemoryOut := filepath.Join(t.TempDir(), "memory-plan.json")
+	cases := []struct {
+		name      string
+		args      []string
+		out       string
+		wantUsage bool
+		wantText  string
+	}{
+		{name: "partial store flags", args: []string{"benchmark", "--store", store, "--out", partialOut}, wantUsage: true},
+		{name: "nodes with store", args: append(append([]string(nil), base...), "--nodes", "8", "--out", nodesOut), wantUsage: true, wantText: "--nodes and --edges come from --store"},
+		{name: "load memory refusal", args: append(append([]string(nil), base...), "--max-memory-mib", "1", "--steps", "100000", "--out", loadMemoryOut), out: loadMemoryOut, wantText: "MiB"},
+		{name: "plan memory refusal", args: append(append([]string(nil), base...), "--max-memory-mib", "6", "--steps", "250000", "--out", planMemoryOut), out: planMemoryOut, wantText: "the plan estimates"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			err := Run(context.Background(), tc.args, &stdout, &stderr)
+			if err == nil {
+				t.Fatalf("accepted %v", tc.args)
+			}
+			_, usageErr := err.(*ExitError)
+			if usageErr != tc.wantUsage {
+				t.Errorf("usage error = %t, want %t: %v", usageErr, tc.wantUsage, err)
+			}
+			if tc.wantText != "" && !strings.Contains(err.Error(), tc.wantText) {
+				t.Errorf("error %q missing %q", err, tc.wantText)
+			}
+			if strings.Contains(tc.name, "memory refusal") && !strings.Contains(err.Error(), "MiB") {
+				t.Errorf("memory error %q does not name MiB", err)
+			}
+			if tc.out != "" {
+				if _, statErr := os.Stat(tc.out); !os.IsNotExist(statErr) {
+					t.Errorf("memory refusal wrote report or stat failed unexpectedly: %v", statErr)
+				}
+			}
+		})
 	}
 }
 

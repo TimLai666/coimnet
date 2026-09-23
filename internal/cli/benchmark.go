@@ -19,9 +19,11 @@ import (
 
 	"github.com/TimLai666/coimnet/checkpoint"
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/experiment/fullgraph"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/resources"
 )
 
 // The fixed draft of the report this command publishes. The schema version and
@@ -35,10 +37,16 @@ const (
 )
 
 type benchmarkConfig struct {
-	Nodes  int `json:"nodes"`
-	Edges  int `json:"edges"`
-	Steps  int `json:"steps"`
-	Repeat int `json:"repeat"`
+	Source         string            `json:"source"`
+	Nodes          int               `json:"nodes"`
+	Edges          int               `json:"edges"`
+	Steps          int               `json:"steps"`
+	Repeat         int               `json:"repeat"`
+	Files          map[string]string `json:"files,omitempty"`
+	InputSet       string            `json:"input_set,omitempty"`
+	ReadoutSet     string            `json:"readout_set,omitempty"`
+	MaxMemoryMiB   int               `json:"max_memory_mib,omitempty"`
+	SnapshotFormat string            `json:"snapshot_format"`
 }
 
 type stageResult struct {
@@ -88,6 +96,7 @@ type benchmarkReport struct {
 	Assumptions     []string                 `json:"assumptions"`
 	Reproducibility benchmarkReproducibility `json:"reproducibility"`
 	Energy          benchmarkEnergy          `json:"energy"`
+	Memory          *resources.Report        `json:"memory,omitempty"`
 }
 
 // runBenchmark measures import, forward, backward, local plasticity, modulation
@@ -96,7 +105,11 @@ type benchmarkReport struct {
 // one-line summary.
 func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	var out string
+	defaults := fullgraph.DefaultOptions()
 	nodes, edges, steps, repeat := 64, 256, 200, 3
+	var store, paramsPath, protocolPath string
+	inputSet, readoutSet := defaults.InputSet, defaults.ReadoutSet
+	maxMemoryMiB := defaults.MaxMemoryMiB
 	fs := flag.NewFlagSet("benchmark", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	fs.StringVar(&out, "out", "", "path of the new benchmark report JSON; an existing path is refused (required)")
@@ -104,13 +117,21 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	fs.IntVar(&edges, "edges", 256, "synthetic edge count")
 	fs.IntVar(&steps, "steps", 200, "rows per stage")
 	fs.IntVar(&repeat, "repeat", 3, "runs per stage including warmup; at least 2")
+	fs.StringVar(&store, "store", "", "path of the connectome graph store; use with --params and --protocol")
+	fs.StringVar(&paramsPath, "params", "", "path of the derived parameter set for --store")
+	fs.StringVar(&protocolPath, "protocol", "", "path of the compare protocol for --store")
+	fs.StringVar(&inputSet, "input-set", defaults.InputSet, "protocol input set name in store mode")
+	fs.StringVar(&readoutSet, "readout-set", defaults.ReadoutSet, "protocol readout set name in store mode")
+	fs.IntVar(&maxMemoryMiB, "max-memory-mib", defaults.MaxMemoryMiB, "store-mode memory estimate limit in MiB")
 	usageOutput := &outputCapture{writer: stdout}
 	fs.Usage = func() {
-		fmt.Fprintln(usageOutput, "Usage: coimnet benchmark --out FILE [--nodes 64] [--edges 256] [--steps 200] [--repeat 3]")
-		fmt.Fprintln(usageOutput, "Builds one synthetic continuous topology (seed 1, self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1, tanh) and times six stages on it: import builds the dynamics model from the config, forward runs the model over --steps rows of 0.1 input, backward takes one learning step on a trainer whose encoder reaches node 0 and whose readout reads node nodes-1, both Insyra-driven, local_plasticity walks a persistent individual of that same declaration over --steps rows of 0.1 input with hebbian_rate plasticity on the first 64 edges and the learning gate held open, modulation walks a persistent individual whose single chemical channel receives one unit every five steps and whose hypothesized receptor sits on node nodes-1, and snapshot takes that individual's snapshot, saves it to <--out>.snapshot.tmp.json, reads it back and removes the file. Each stage separates setup initialization from work; the first work run is warmup and later runs report steady-state median, min and max milliseconds. CPU transfer time is 0 ms. RSS uses runtime.ReadMemStats.Sys.")
+		fmt.Fprintln(usageOutput, "Usage: coimnet benchmark --out FILE [--nodes 64] [--edges 256] [--steps 200] [--repeat 3] [--store FILE --params FILE --protocol FILE]")
+		fmt.Fprintln(usageOutput, "Builds and times six continuous-core stages on either a synthetic topology or a graph loaded from --store. Store mode requires --store, --params and --protocol together, resolves --input-set and --readout-set, checks the memory estimate before measuring, and snapshots to a temporary bundle. The backward encoder still reaches node 0 and the readout reads the last node; it does not use the protocol's named sets.")
+		fmt.Fprintln(usageOutput, "Synthetic mode uses seed 1 with self loops allowed, weights in [-0.1, 0.1], bias 0, log tau log(2), dt 1 and tanh. Forward runs --steps rows of 0.1 input. Backward takes one Insyra-driven learning step; local_plasticity uses hebbian_rate on the first 64 edges with its gate open; modulation uses one chemical channel and a hypothesized receptor on the last node. Snapshot round-trips through JSON (synthetic) or a bundle (store). Each stage separates setup from work, with the first run as warmup and later runs summarized by steady median, min and max milliseconds. CPU transfer time is 0 ms. RSS uses runtime.ReadMemStats.Sys.")
 		fmt.Fprintln(usageOutput, "Writes the coimnet-benchmark/v2 report to --out, which must not already exist, and prints one benchmark summary line to stdout. Forward activity and same-seed reproducibility are reported; energy is not measured.")
 		fmt.Fprintln(usageOutput, "Example: coimnet benchmark --out benchmark.json")
-		fmt.Fprintln(usageOutput, "Errors: a missing or existing --out, non-positive --nodes, --edges or --steps, --repeat below 2 (one warmup and one steady run are required), cancellation, a failing stage or an output failure. Usage errors exit with status 1 and name the flag.")
+		fmt.Fprintln(usageOutput, "Example: coimnet benchmark --store data/malecns-v1.0/graph-v1.coimgraph --params data/malecns-v1.0/params-derive-v1.coimparams --protocol evidence/NAT-05/compare-fullgraph-derived-continuous.json --steps 8 --repeat 2 --out benchmark-full.json")
+		fmt.Fprintln(usageOutput, "Errors: a missing or existing --out, non-positive --nodes, --edges or --steps, --repeat below 2, partial --store/--params/--protocol, --nodes or --edges with --store, a memory estimate above --max-memory-mib, cancellation, a failing stage or an output failure. Usage errors exit with status 1 and name the flag.")
 		fmt.Fprintln(usageOutput, "Options and their defaults:")
 		fs.SetOutput(usageOutput)
 		fs.PrintDefaults()
@@ -124,10 +145,25 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	if fs.NArg() != 0 {
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("benchmark takes no positional arguments; use benchmark --help")}
 	}
+	provided := make(map[string]bool)
+	fs.Visit(func(f *flag.Flag) { provided[f.Name] = true })
 	if out == "" {
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--out is required; use benchmark --help")}
 	}
-	if nodes <= 0 || edges <= 0 || steps <= 0 {
+	storeCount := 0
+	for _, name := range []string{"store", "params", "protocol"} {
+		if provided[name] {
+			storeCount++
+		}
+	}
+	if storeCount != 0 && storeCount != 3 {
+		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--store, --params and --protocol must be provided together")}
+	}
+	storeMode := storeCount == 3
+	if storeMode && (provided["nodes"] || provided["edges"]) {
+		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--nodes and --edges come from --store")}
+	}
+	if steps <= 0 || (!storeMode && (nodes <= 0 || edges <= 0)) {
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("--nodes, --edges and --steps must be positive")}
 	}
 	if repeat < 2 {
@@ -142,14 +178,56 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return &ExitError{Code: exitUsage, Err: fmt.Errorf("stat benchmark output: %w", err)}
 	}
 
+	source, snapshotFormat := "synthetic", "json"
+	var loaded fullgraph.LoadedModel
+	var memory *resources.Report
+	var cfg dynamics.Config
+	var params dynamics.Parameters
+	var err error
+	if storeMode {
+		source, snapshotFormat = "store", "bundle"
+		loaded, err = fullgraph.LoadModel(ctx, fullgraph.Options{
+			Store: store, Params: paramsPath, Protocol: protocolPath, InputSet: inputSet, ReadoutSet: readoutSet,
+			Truncation: defaults.Truncation, LearningRate: defaults.LearningRate, MaxMemoryMiB: maxMemoryMiB,
+		})
+		if err != nil {
+			return fmt.Errorf("benchmark: load model with --max-memory-mib %d MiB: %w", maxMemoryMiB, err)
+		}
+		memReport, err := fullgraph.CheckModelMemory(loaded, steps, min(loaded.Edges, 64), 1, 1, maxMemoryMiB)
+		if err != nil {
+			return err
+		}
+		memory = &memReport
+		cfg, params = loaded.Config.Dynamics, loaded.Parameters.Core
+		nodes, edges = cfg.Nodes, len(cfg.Sources)
+	} else {
+		cfg = syntheticTopology(nodes, edges)
+		params = syntheticParameters(cfg)
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
 	stages := make([]stageResult, 0, 6)
 	importResult, err := benchmarkStage("import", repeat, func() (func() error, error) {
-		cfg := syntheticTopology(nodes, edges)
+		if storeMode {
+			return func() error {
+				if err := ctx.Err(); err != nil {
+					return err
+				}
+				_, err := fullgraph.LoadModel(ctx, fullgraph.Options{
+					Store: store, Params: paramsPath, Protocol: protocolPath, InputSet: inputSet, ReadoutSet: readoutSet,
+					Truncation: defaults.Truncation, LearningRate: defaults.LearningRate, MaxMemoryMiB: maxMemoryMiB,
+				})
+				return err
+			}, nil
+		}
+		synthetic := syntheticTopology(nodes, edges)
 		return func() error {
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			_, err := dynamics.NewContinuous(cfg)
+			_, err := dynamics.NewContinuous(synthetic)
 			return err
 		}, nil
 	})
@@ -157,8 +235,6 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		return err
 	}
 	stages = append(stages, importResult)
-	cfg := syntheticTopology(nodes, edges)
-	params := syntheticParameters(cfg)
 	forwardResult, firstActivity, err := benchmarkForward(ctx, cfg, params, nodes, steps, repeat)
 	if err != nil {
 		return err
@@ -265,7 +341,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 
 	// Each snapshot repetition prepares an individual with the modulation walk
 	// during setup; only the snapshot round trip and temp-file cleanup are timed.
-	snapshotPath := out + ".snapshot.tmp.json"
+	snapshotPath := out + ".snapshot.tmp." + map[string]string{"json": "json", "bundle": "coimbundle"}[snapshotFormat]
 	snapshotResult, err := benchmarkStage("snapshot", repeat, func() (func() error, error) {
 		individual, err := newBenchmarkIndividual(cfg, params, nodes)
 		if err != nil {
@@ -281,12 +357,15 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 			if err := ctx.Err(); err != nil {
 				return err
 			}
-			defer os.Remove(snapshotPath)
-			if err := checkpoint.SaveIndividual(ctx, snapshotPath, individual.Snapshot()); err != nil {
+			if snapshotFormat == "json" {
+				defer os.Remove(snapshotPath)
+				if err := checkpoint.SaveIndividual(ctx, snapshotPath, individual.Snapshot()); err != nil {
+					return err
+				}
+				_, err := checkpoint.LoadIndividual(ctx, snapshotPath)
 				return err
 			}
-			_, err := checkpoint.LoadIndividual(ctx, snapshotPath)
-			return err
+			return saveLoadBenchmarkBundle(ctx, snapshotPath, individual.Snapshot())
 		}, nil
 	})
 	if err != nil {
@@ -294,6 +373,13 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 	}
 	stages = append(stages, snapshotResult)
 
+	config := benchmarkConfig{Source: source, Nodes: nodes, Edges: edges, Steps: steps, Repeat: repeat, SnapshotFormat: snapshotFormat}
+	if storeMode {
+		config.Files = loaded.Files
+		config.InputSet = inputSet
+		config.ReadoutSet = readoutSet
+		config.MaxMemoryMiB = maxMemoryMiB
+	}
 	report := benchmarkReport{
 		SchemaVersion: benchmarkSchemaVersion,
 		GoVersion:     runtime.Version(),
@@ -301,7 +387,7 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		GOARCH:        runtime.GOARCH,
 		NumCPU:        runtime.NumCPU(),
 		Uptime:        readUptime(),
-		Config:        benchmarkConfig{Nodes: nodes, Edges: edges, Steps: steps, Repeat: repeat},
+		Config:        config,
 		Stages:        stages,
 		Assumptions: []string{
 			"synthetic topology, not the MaleCNS graph",
@@ -310,11 +396,30 @@ func runBenchmark(ctx context.Context, args []string, stdout, stderr io.Writer) 
 		},
 		Reproducibility: reproducibility,
 		Energy:          benchmarkEnergy{Measured: false, Note: "no power measurement"},
+		Memory:          memory,
+	}
+	if storeMode {
+		report.Assumptions = []string{
+			"MaleCNS graph from --store with derived parameters from --params; the backward encoder reaches node 0 and the readout reads the last node, not the protocol's named sets",
+			report.Assumptions[1],
+			report.Assumptions[2],
+		}
 	}
 	if err := writeNewJSON(out, report); err != nil {
 		return fmt.Errorf("benchmark --out %s: %w", out, err)
 	}
-	_, err = fmt.Fprintf(stdout, "benchmark: %d stages, nodes %d, edges %d, steps %d, repeat %d, forward reproducible %t\n", len(stages), nodes, edges, steps, repeat, identical)
+	_, err = fmt.Fprintf(stdout, "benchmark: %d stages, nodes %d, edges %d, steps %d, repeat %d, forward reproducible %t, source %s\n", len(stages), nodes, edges, steps, repeat, identical, source)
+	return err
+}
+
+func saveLoadBenchmarkBundle(ctx context.Context, path string, snapshot learning.IndividualSnapshot) (result error) {
+	defer func() {
+		result = errors.Join(result, os.RemoveAll(path))
+	}()
+	if err := checkpoint.SaveIndividualBundle(ctx, path, snapshot); err != nil {
+		return err
+	}
+	_, err := checkpoint.LoadIndividualBundle(ctx, path)
 	return err
 }
 

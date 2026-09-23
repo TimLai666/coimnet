@@ -1,7 +1,6 @@
 package fullgraph
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
@@ -15,10 +14,7 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/TimLai666/coimnet/connectome"
-	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/TimLai666/coimnet/learning"
-	"github.com/TimLai666/coimnet/params"
 	"github.com/TimLai666/coimnet/resources"
 	"github.com/TimLai666/coimnet/simulate"
 )
@@ -210,106 +206,15 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		return Report{}, fmt.Errorf("fullgraph: stat out dir %q: %w", o.OutDir, err)
 	}
 
-	timings := make(map[string]float64)
-
-	// Phase 1: load
-	start := time.Now()
-	storeSHA, err := sha256File(o.Store)
+	loaded, err := LoadModel(ctx, o)
 	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: hash store: %w", err)
+		return Report{}, err
 	}
-	paramsSHA, err := sha256File(o.Params)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: hash params: %w", err)
-	}
-	protocolSHA, err := sha256File(o.Protocol)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: hash protocol: %w", err)
-	}
-
-	memBytes := int64(o.MaxMemoryMiB) << 20
-	storeLimits := connectome.StoreLimits{
-		MaxFileBytes:   64 << 30,
-		MaxFooterBytes: 16 << 20,
-		MaxMemoryBytes: memBytes,
-	}
-	graph, err := connectome.Load(ctx, o.Store, storeLimits)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: load store: %w", err)
-	}
-
-	loadLimits := params.LoadLimits{
-		MaxFileBytes:   64 << 30,
-		MaxFooterBytes: 16 << 20,
-		MaxMemoryBytes: memBytes,
-	}
-	paramSet, receipt, err := params.LoadWithReceipt(ctx, o.Params, loadLimits)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: load params: %w", err)
-	}
-	if err := paramSet.CheckGraph(graph); err != nil {
-		return Report{}, fmt.Errorf("fullgraph: check graph: %w", err)
-	}
-
-	protocolBytes, err := fileio.ReadRegular(ctx, o.Protocol, simulate.MaxCompareProtocolBytes)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: read protocol: %w", err)
-	}
-	cp, err := simulate.DecodeCompareProtocol(bytes.NewReader(protocolBytes))
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: decode compare protocol: %w", err)
-	}
-	if cp.Run.Core != simulate.CoreContinuous || cp.Run.Continuous == nil || cp.Run.Continuous.Activation != "tanh" {
-		return Report{}, fmt.Errorf("fullgraph: protocol run block must declare a continuous core with tanh activation")
-	}
-	timings["load"] = time.Since(start).Seconds() * 1000
-
-	// Phase 2: variant
-	start = time.Now()
-	var inNamedSet, outNamedSet *simulate.NamedSet
-	for i := range cp.Sets {
-		if cp.Sets[i].Name == o.InputSet {
-			inNamedSet = &cp.Sets[i]
-		}
-		if cp.Sets[i].Name == o.ReadoutSet {
-			outNamedSet = &cp.Sets[i]
-		}
-	}
-	if inNamedSet == nil {
-		return Report{}, fmt.Errorf("fullgraph: protocol does not declare input set %q", o.InputSet)
-	}
-	if outNamedSet == nil {
-		return Report{}, fmt.Errorf("fullgraph: protocol does not declare readout set %q", o.ReadoutSet)
-	}
-	resolvedSets, err := simulate.ResolveSets(ctx, graph, []simulate.NamedSet{*inNamedSet, *outNamedSet})
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: resolve sets: %w", err)
-	}
-	inputs := resolvedSets[0].Nodes()
-	readouts := resolvedSets[1].Nodes()
-
-	simLimits := simulate.Limits{MaxMemoryBytes: memBytes}
-	variant, err := simulate.OriginalVariant(ctx, graph, paramSet, receipt.SHA256, cp.Run, simLimits)
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: original variant: %w", err)
-	}
-	timings["variant"] = time.Since(start).Seconds() * 1000
-
-	// Phase 3: build
-	start = time.Now()
-	dt := cp.Run.Continuous.DT
-	c, p, learnOpts, modelRep, err := buildModel(variant, int(graph.NodeCount()), inputs, readouts, modelOptions{
-		DT:         dt,
-		Truncation: o.Truncation,
-		Rate:       o.LearningRate,
-	})
-	if err != nil {
-		return Report{}, fmt.Errorf("fullgraph: build model: %w", err)
-	}
-	timings["build"] = time.Since(start).Seconds() * 1000
+	timings := loaded.Timings
+	c, p, learnOpts := loaded.Config, loaded.Parameters, loaded.Options
 
 	// Phase 4: estimate
-	start = time.Now()
+	start := time.Now()
 	regions, channels := 0, 0
 	if o.Chemistry {
 		regions, channels = 1, 1
@@ -318,8 +223,7 @@ func Run(ctx context.Context, o Options) (Report, error) {
 	if o.PlasticEdges > 0 {
 		plasticEdges = o.PlasticEdges
 	}
-	plan := memoryPlan(c, p, o.Steps, plasticEdges, regions, channels)
-	memReport, err := checkMemory(plan, o.MaxMemoryMiB)
+	memReport, err := CheckModelMemory(loaded, o.Steps, plasticEdges, regions, channels, o.MaxMemoryMiB)
 	timings["estimate"] = time.Since(start).Seconds() * 1000
 	if err != nil {
 		return Report{Memory: memReport}, err
@@ -355,19 +259,14 @@ func Run(ctx context.Context, o Options) (Report, error) {
 		return Report{}, fmt.Errorf("fullgraph: neural digest: %w", err)
 	}
 
-	files := map[string]string{
-		"store":    storeSHA,
-		"params":   paramsSHA,
-		"protocol": protocolSHA,
-	}
 	report := Report{
 		SchemaVersion:      ReportSchemaVersion,
 		Options:            o,
-		Files:              files,
-		Nodes:              int(graph.NodeCount()),
-		Edges:              int(graph.EdgeCount()),
-		Sets:               resolvedSets,
-		Model:              modelRep,
+		Files:              loaded.Files,
+		Nodes:              loaded.Nodes,
+		Edges:              loaded.Edges,
+		Sets:               loaded.Sets,
+		Model:              loaded.model,
 		Memory:             memReport,
 		Run:                runRep,
 		Mechanisms:         mechanisms,
