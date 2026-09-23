@@ -32,6 +32,11 @@ Commands:
                                 whole-file and chunked streaming evaluation
   examples run gridnav [flags]  Run the synthetic one-dimensional corridor:
                                 expert imitation or recurrent PPO training
+  examples run nav2d [flags]    Run synthetic two-dimensional navigation tasks
+                                with recurrent, feedforward and control policies
+  examples run multimodal [flags]
+                                Run paired synthetic multimodal retrieval and
+                                unseen-combination evaluation
   examples run ablate [flags]   Run the MOD-10 modulation ablation: every control
                                 group scored per seed, one report per group plus
                                 a summary under DIR/ablation
@@ -166,7 +171,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run gridnav [flags] | run ablate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run gridnav [flags] | run nav2d [flags] | run multimodal [flags] | run ablate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
@@ -178,6 +183,8 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 				{"name": "ocr", "profile": "fixture", "description": "Synthetic glyph line recognition: CTC-trained column reader with family split, unseen combinations and a core-disconnect check"},
 				{"name": "asr", "profile": "fixture", "description": "Synthetic speech-to-text with speaker/session split, whole-file CER/WER and 173-sample streaming measurements"},
 				{"name": "gridnav", "profile": "fixture", "description": "Synthetic one-dimensional corridor with expert imitation and recurrent PPO action-feedback learning"},
+				{"name": "nav2d", "profile": "fixture", "description": "Synthetic two-dimensional navigation across four tasks with recurrent, feedforward, rewired and random policy comparisons"},
+				{"name": "multimodal", "profile": "fixture", "description": "Synthetic paired multimodal data with seen and unseen image-to-text retrieval evaluation"},
 				{"name": "ablate", "profile": "fixture", "description": "MOD-10 modulation ablation: five control groups scored per seed on one delayed-pulse split, written as one report per group plus a summary"},
 			})
 		}
@@ -201,6 +208,12 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "gridnav" {
 			return runGridnav(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "nav2d" {
+			return runNav2D(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "multimodal" {
+			return runMultimodal(ctx, args[3:], stdout, stderr)
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "ablate" {
 			return runAblate(ctx, args[3:], stdout, stderr)
