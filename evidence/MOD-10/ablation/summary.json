@@ -1,0 +1,206 @@
+{
+  "schema_version": "coimnet-ablation/v1",
+  "profile": "fixture",
+  "config": {
+    "seeds": [
+      7,
+      42,
+      123
+    ],
+    "episodes": 40,
+    "eval_episodes": 32,
+    "groups": [
+      "no_modulation",
+      "direct_reward",
+      "fixed_decay",
+      "trainable_controller",
+      "capacity_matched"
+    ],
+    "learning_rate": 0.02,
+    "controller_hidden": 4,
+    "controller_rate": 0.05
+  },
+  "config_hash": "d5e78257026bae2cd438fb932527d80d53a7d5ae56039e65c3103ae827729da0",
+  "data_hash": "ec22ae458cb82927ed082691fb46e88b32a1e33c4338163c93887f5752735f1c",
+  "train_seed": 1001,
+  "test_seed": 1003,
+  "groups": [
+    {
+      "group": "no_modulation",
+      "runs": [
+        {
+          "group": "no_modulation",
+          "seed": 7,
+          "score": -0.01902991593540164,
+          "parameters": 13,
+          "activity_delta": 0,
+          "failed": false
+        },
+        {
+          "group": "no_modulation",
+          "seed": 42,
+          "score": -0.021443491353368392,
+          "parameters": 13,
+          "activity_delta": 0,
+          "failed": false
+        },
+        {
+          "group": "no_modulation",
+          "seed": 123,
+          "score": -0.019404979567828037,
+          "parameters": 13,
+          "activity_delta": 0,
+          "failed": false
+        }
+      ],
+      "mean": -0.01995946228553269,
+      "std": 0.0010604794160278639,
+      "succeeded": 3,
+      "total": 3,
+      "parameters": 13
+    },
+    {
+      "group": "direct_reward",
+      "runs": [
+        {
+          "group": "direct_reward",
+          "seed": 7,
+          "score": -0.018934917691662743,
+          "parameters": 13,
+          "activity_delta": 0.010848354515115838,
+          "failed": false
+        },
+        {
+          "group": "direct_reward",
+          "seed": 42,
+          "score": -0.02134684797898491,
+          "parameters": 13,
+          "activity_delta": 0.010343137535129101,
+          "failed": false
+        },
+        {
+          "group": "direct_reward",
+          "seed": 123,
+          "score": -0.01930966960599805,
+          "parameters": 13,
+          "activity_delta": 0.01076889702980162,
+          "failed": false
+        }
+      ],
+      "mean": -0.0198638117588819,
+      "std": 0.0010597663490686862,
+      "succeeded": 3,
+      "total": 3,
+      "parameters": 13
+    },
+    {
+      "group": "fixed_decay",
+      "runs": [
+        {
+          "group": "fixed_decay",
+          "seed": 7,
+          "score": -0.0013201057736628575,
+          "parameters": 13,
+          "activity_delta": 0.5969729684364969,
+          "failed": false
+        },
+        {
+          "group": "fixed_decay",
+          "seed": 42,
+          "score": -0.002411486086003177,
+          "parameters": 13,
+          "activity_delta": 0.5655763043575454,
+          "failed": false
+        },
+        {
+          "group": "fixed_decay",
+          "seed": 123,
+          "score": -0.0014668273890371731,
+          "parameters": 13,
+          "activity_delta": 0.59200740233054,
+          "failed": false
+        }
+      ],
+      "mean": -0.0017328064162344026,
+      "std": 0.0004836227033012419,
+      "succeeded": 3,
+      "total": 3,
+      "parameters": 13
+    },
+    {
+      "group": "trainable_controller",
+      "runs": [
+        {
+          "group": "trainable_controller",
+          "seed": 7,
+          "score": -0.008755580242192562,
+          "parameters": 34,
+          "activity_delta": 1.2847811672216893,
+          "failed": false
+        },
+        {
+          "group": "trainable_controller",
+          "seed": 42,
+          "score": -0.0038809822355396185,
+          "parameters": 34,
+          "activity_delta": 1.150573023064715,
+          "failed": false
+        },
+        {
+          "group": "trainable_controller",
+          "seed": 123,
+          "score": -0.00744594045608033,
+          "parameters": 34,
+          "activity_delta": 1.2507204180107558,
+          "failed": false
+        }
+      ],
+      "mean": -0.0066941676446041695,
+      "std": 0.0020598217077653896,
+      "succeeded": 3,
+      "total": 3,
+      "parameters": 34
+    },
+    {
+      "group": "capacity_matched",
+      "runs": [
+        {
+          "group": "capacity_matched",
+          "seed": 7,
+          "score": -0.031313614548773024,
+          "parameters": 34,
+          "activity_delta": 0.5207467447653872,
+          "failed": false
+        },
+        {
+          "group": "capacity_matched",
+          "seed": 42,
+          "score": -0.04157497303840827,
+          "parameters": 34,
+          "activity_delta": 0.6882391030392546,
+          "failed": false
+        },
+        {
+          "group": "capacity_matched",
+          "seed": 123,
+          "score": -0.0400545075573798,
+          "parameters": 34,
+          "activity_delta": 0.703291450509292,
+          "failed": false
+        }
+      ],
+      "mean": -0.037647698381520364,
+      "std": 0.004521682380114229,
+      "succeeded": 3,
+      "total": 3,
+      "parameters": 34
+    }
+  ],
+  "assumptions": [
+    "Every group trains on the same training split, is scored on the same held-out split with the same seeds, budget and metric; the report records the numbers and makes no verbal judgement.",
+    "direct_reward feeds the previous episode's reward (max(0, 1 - MSE) of its last output) straight in as the local learning gate, bypassing any concentration or receptor: it is the control for merely renaming a reward as a hormone.",
+    "fixed_decay releases one unit into its single channel at the first step of every training episode from a fixed external timeline, so the concentration is set by the declaration and never by learning; the hypothesized receptor's occupancy is the learning gate.",
+    "trainable_controller only sees an activity summary and already-arrived feedback, never a target; its release enters the chemistry through an internal resource.",
+    "capacity_matched has the controller's parameter count and adds its output to the readout without any chemistry; its base parameters keep training against the unchanged loss, so the offset never enters their gradient."
+  ]
+}

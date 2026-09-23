@@ -26,6 +26,7 @@
 | 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |
 | 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json) |
 | 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
+| 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |
 | 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |
 | OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；真實授權資料 blocked_data，需使用者提供含授權欄位的資料集，目前只驗到 fixture） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json) |
 | 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |

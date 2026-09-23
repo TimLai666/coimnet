@@ -9,7 +9,7 @@ User Story：研究者可以讓受體佔用率決定局部學習閘門與參與�
 
 Blocked by：18 局部可塑性（第一階段）、20 調節來源、21 化學濃度與效果（兩階段）、17 最佳化器
 
-Status：第一、二階段已驗證（2026-09-19）；第三階段（控制器與對照）待派工
+Status：三階段皆已驗證（2026-09-23）
 
 對應需求：MOD-05（閘門、衰退、延遲回饋與關閉效果分開驗證；受體來源）、MOD-06（不誤算為永久學習；
 重複寫入防護與恢復）、COR-11（干預開始、結束、對象與效果可追查；正常推論不能任意鉗制）、MOD-07
@@ -113,6 +113,24 @@ Status：第一、二階段已驗證（2026-09-19）；第三階段（控制器�
     `ExternalTimeline` + 21 的濃度。報告不做文字判斷。
 12. 證據：`evidence/MOD-07/`、`evidence/MOD-10/`（fixture：小型延遲任務，五組各 3 seed）。
 
+## 第三階段證據（2026-09-23）
+
+驗證指令：`cd /Users/timlai/Developer/coimnet && go test -count=1 -race -v -run 'Controller|MemoryController|CapacityMatched|SourceSpecBuildsAController' ./modulation/ > evidence/MOD-07/test.log 2>&1; grep -c "^--- PASS" evidence/MOD-07/test.log; go test -count=1 -race -v -run 'Ablation|Ablate' ./experiment/ ./internal/cli/ > evidence/MOD-10/test.log 2>&1; grep -c "^--- PASS" evidence/MOD-10/test.log; rm -rf evidence/MOD-10/ablation; go run ./cmd/coimnet examples run ablate --out-dir evidence/MOD-10; scripts/check-target-flow.sh`
+
+MOD-07 的 12 個頂層測試全 PASS、MOD-10 的 13 個頂層測試全 PASS（experiment 10、CLI 3）、0 FAIL、無 panic，`-race` 下都 `ok`（modulation 1.474s、experiment 2.353s、internal/cli 2.022s；go1.26.5 darwin/arm64）。`examples run ablate` 實跑寫出六個檔（五組 JSON + summary.json，0 failed runs），`scripts/check-target-flow.sh` 全 PASS（dynamics 10、simulate 11、modulation 10、plasticity 1 個非測試檔無 `signal.Target`／`NewTarget(`；learning 18 檔；四個 forward／modulation 套件都不依賴 `learning`，最後一行 `RESULT: a target reaches no forward or modulation package`）。七張小票的證據：
+
+- **控制器來源**（`modulation/controller.go`、`controller_test.go`）：`TestControllerHandForward` 手算前向——Nodes 2、Hidden 1、視窗 2 行，首步視窗 {0,0}、{1,1} 讀 mean 0.5、population variance 0.25，channel 1 釋放 `softplus(tanh(0.5))`、channel 0 恰為 0（Channels = Channel+1 = 2）；下一步視窗滿 {1,1} 讀 mean 1、variance 0，釋放 `softplus(tanh(1))`；錯寬度的活動拒絕、nil 活動讀成宣告節點數的零。`TestControllerReadsFeedbackAndResources` 證明 InputWidth 4（均值、方差、回饋 0.5、energy 2）時釋放 `softplus(tanh(0.5+2))`，缺資源時 `softplus(tanh(0.5))`（讀 0 不是拒絕）、無回饋時 `softplus(tanh(2))`、未到達的回饋拒絕。`TestControllerValidateAndCounts` 釘住 Hidden 3、InputWidth 4 下參數量 19 = 3·4+3+3+1、每步乘加 15 = 3·4+3，十一種壞宣告全拒絕。`TestSourceSpecBuildsAController` 證明 Build 回 `*Controller`、spec 改動不影響已建來源（釋放仍 `softplus(tanh(0.5))`）、五種歧義 spec 拒絕。
+- **控制目標梯度**（`controller_objective.go`、`controller_objective_test.go`）：`TestControllerGradientMatchesFiniteDifferences` 用 eps=1e-6 的中央差分逐參數對 25 個參數（Nodes 3、Hidden 4、InputWidth 4）驗證，reward proxy 最差相對誤差 4.919340696604421e-09、activity target 6.235998255320076e-09；`TestControllerUpdateReducesLoss` 20 次 Update(0.05) 讓 loss 逐次單調不增、由 0.9084832839974664 降到 0.010770769812422113；`TestControllerGradientRejects` 無 release、reward proxy 但沒讀回饋、未知 objective、非有限 target、gradient 長度不符或 rate 不合法一律拒絕且參數逐位不變。
+- **記憶控制器**（`memory_controller.go`、`memory_controller_test.go`）：`TestCapacityMatchedHasEqualParameterCount` 證明與控制器同 InputWidth 4、ParameterCount 19、MultAddsPerStep 15，各持自己的參數與資源副本；`TestMemoryControllerHandForward` 手算線性位移 `2*tanh(1)+0.5`、同一輸入同一參數下控制器釋放 `softplus(2*tanh(1)+0.5)`（唯一差別是讀出走線、位移沒有 softplus）；`TestMemoryControllerGradientMatchesFiniteDifferences` 19 參數最差相對誤差 3.358017227354867e-09；`TestMemoryControllerValidateRejects` 短參數、0 hidden、`NewCapacityMatched(nil)`、未 Offset 即梯度全拒絕。
+- **對照前三組**（`ablation.go`、`ablation_test.go`）：`TestAblationSharesDataAcrossGroups` 證明共用同資料分割、TrainSeed 1001／TestSeed 1003、`DataHash` 等於共用 episode 的 hash；`TestAblationNoModulationMatchesDirectTraining` 逐行手算重放後與組內 seed 7 分數完全相同、activity delta 0；`TestAblationDirectRewardDiffersAfterReward` Episodes 1 時每 seed 都與 no_modulation 相同（首個閘門是尚未產生的 0）、6 時出現差異與正 delta；`TestAblationFixedDecayRuns` 三 seed 全成功、分數有限、delta 非負；`TestAblationValidate`（八個子案例）與 `TestAblationIsDeterministic` 釘驗證與重現。
+- **對照後兩組**（`ablation_controllers.go`、`ablation_controllers_test.go`）：`TestAblationControllerParametersMatch` 兩組同為個體 13 + 控制器 21（Hidden 4、InputWidth 3 = 均值、方差、回饋）= 34 參數；`TestAblationTrainableControllerChangesRelease` 六 episode 真的動控制器參數、seed 7 又不是 no_modulation 藏身；`TestAblationControllerContextHasNoTarget` 逐欄名檢查無 Target、episode 0 無回饋、之後只有前一 episode 分數；`TestAblationFiveGroupsDeterministic` 五組兩次執行 JSON 逐位相同、所有 seed 成功。
+- **CLI**（`internal/cli/ablate.go`、`ablate_test.go`）：`TestAblateWritesEveryGroup` 五組檔 + summary.json、schema `coimnet-ablation/v1`、每組三 run、固定順序；`TestAblateSubsetOfGroups` 子集只寫宣告的組；`TestAblateRejects` 缺 `--out-dir`、既有 ablation 目錄、`--groups` 缺 no_modulation、少於三 seed、越界預算與位置參數全拒絕並命名錯誤。
+- **證據**：`evidence/MOD-07/verification.json`、`test.log`；`evidence/MOD-10/verification.json`、`test.log`、`ablation/`（五組 JSON + summary.json）。CLI 實跑（seeds 7,42,123、episodes 40、eval 32、learning_rate 0.02、controller_hidden 4、controller_rate 0.05；config_hash `d5e78257…`）summary.json 五組表：no_modulation mean −0.01995946228553269、std 0.0010604794160278639、3/3、13；direct_reward mean −0.0198638117588819、std 0.0010597663490686862、3/3、13；fixed_decay mean −0.0017328064162344026、std 0.0004836227033012419、3/3、13；trainable_controller mean −0.0066941676446041695、std 0.0020598217077653896、3/3、34；capacity_matched mean −0.037647698381520364、std 0.004521682380114229、3/3、34；每 seed 的 activity_delta（與同 seed no_modulation 保留評估讀出的 L2 差）與分數見 `summary.json`，報告記錄數字不做文字判斷。
+
+與 Root 決策的出入：`ControllerInputs.Resources` 是宣告要讀的資源**名稱清單**（`[]string`，缺資源讀 0），不是決策寫的 `UseResources bool`；在對照流程裡控制器不會直接當 `Source` 實例掛在個體上，而是每次 episode 釋放後經 `SetResource` 寫出名為 `controller` 的資源、由 `ablationControllerChemistry` 的 `SourceInternalResource` 進化學層（與 fixed_decay 的 `ExternalTimeline` 只差釋放來源、其餘全等）；控制器與記憶控制器的活動視窗是跨呼叫的狀態、**不在任何快照**（本階段復原後視窗從零重來）。
+
+限制：fixture 任務（三顆神經元延遲脈衝、CLI 實跑 40 training／32 eval episode）與單機；控制器視窗以 episode 為單位而非模型步；capacity_matched 的位移只進該組指標、不進基礎參數的梯度；只有 reward_proxy 與 activity_target 兩種 proxy；視窗不在快照；真實資料未跑；本 log 只含上述目標測試，完整 `go test ./...` 與 `go vet ./...` 不在本次指令範圍。
+
 ## 契約摘要
 
 ```go
@@ -139,7 +157,7 @@ func RunAblation(ctx context.Context, c AblationConfig) (AblationReport, error)
   三層 L2 分開、快照接續；`go test`、race、vet；`evidence/MOD-05/`、`evidence/MOD-06/`。
 - [x] 第二階段：八種干預各有測試、未授權不改狀態、期間與結束後行為、四種差值計算；
   `evidence/COR-11/`；`simulate run` 的 `interventions` 區塊與 `RunReport.interventions`。
-- [ ] 第三階段：控制器有限差分、容量報告、無題目旁路、容量匹配參數量相等、五組對照流程各 3 seed、
+- [x] 第三階段：控制器有限差分、容量報告、無題目旁路、容量匹配參數量相等、五組對照流程各 3 seed、
   CLI；`evidence/MOD-07/`、`evidence/MOD-10/`；文件。
 
 ## 依據
