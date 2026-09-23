@@ -40,6 +40,8 @@ Commands:
   examples run attribution [flags]
                                 Run the seven-group synthetic navigation
                                 attribution matrix
+  examples run full-graph-short-training [flags]
+                                Train the full graph and verify snapshot digests
   examples run ablate [flags]   Run the MOD-10 modulation ablation: every control
                                 group scored per seed, one report per group plus
                                 a summary under DIR/ablation
@@ -174,7 +176,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return writeJSON(stdout, report)
 	case "examples":
 		if len(args) == 1 || (len(args) == 2 && (args[1] == "--help" || args[1] == "-h")) {
-			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run gridnav [flags] | run nav2d [flags] | run multimodal [flags] | run attribution [flags] | run ablate [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
+			_, err := fmt.Fprintln(stdout, "Usage: coimnet examples list | run delayed [flags] | run lif-threshold [flags] | run evaluate [flags] | run continual-matrix [flags] | run ocr [flags] | run asr [flags] | run gridnav [flags] | run nav2d [flags] | run multimodal [flags] | run attribution [flags] | run ablate [flags] | run full-graph-short-training [flags]\nRun 'coimnet examples run NAME --help' for each fixed fixture protocol.")
 			return err
 		}
 		if len(args) == 2 && args[1] == "list" {
@@ -190,6 +192,7 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 				{"name": "multimodal", "profile": "fixture", "description": "Synthetic paired multimodal data with seen and unseen image-to-text retrieval evaluation"},
 				{"name": "attribution", "profile": "fixture", "description": "Seven-group synthetic navigation attribution matrix with paired bootstrap comparisons against normal"},
 				{"name": "ablate", "profile": "fixture", "description": "MOD-10 modulation ablation: five control groups scored per seed on one delayed-pulse split, written as one report per group plus a summary"},
+				{"name": "full-graph-short-training", "profile": "full_graph", "description": "OPS-07 short training over every node and edge with model, individual and training snapshot bundles and digest resume verification"},
 			})
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "delayed" {
@@ -224,6 +227,9 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		}
 		if len(args) >= 3 && args[1] == "run" && args[2] == "attribution" {
 			return runAttribution(ctx, args[3:], stdout, stderr)
+		}
+		if len(args) >= 3 && args[1] == "run" && args[2] == "full-graph-short-training" {
+			return runFullGraph(ctx, args[3:], stdout, stderr)
 		}
 	}
 	return fmt.Errorf("unknown command; use coimnet --help")
