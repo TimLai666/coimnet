@@ -26,8 +26,10 @@ const SchemaVersion = "coimnet-student-evaluation/v1"
 // teacher.Blocked that any Ask would hit, and every call count must stay 0.
 const ModeStudent = "student"
 
-// ModeTeacherAssisted arrives with the next ticket: Validate accepts it, Run
-// rejects it so a report is never silently mislabeled as independent.
+// ModeTeacherAssisted keeps the teacher in the evaluation loop: every held-out
+// and independent input is asked once and the assisted prediction is reported
+// separately from the student's own scores, so a report is never taken for the
+// student's independent capability.
 const ModeTeacherAssisted = "teacher_assisted"
 
 // fixtureVocabHash names the fixture's two-class vocabulary; the distiller
@@ -95,16 +97,19 @@ func (c Config) Validate() error {
 // scores against the real pulse label, and what the mislabeled-robustness
 // group cost. A failed seed keeps its index and reason.
 type Seed struct {
-	Seed                      uint64  `json:"seed"`
-	TeacherCalls              int     `json:"teacher_calls"`                    // Blocked.Calls plus the passed teacher's own Calls counter; must be 0 in student mode
-	HeldOutAgreement          float64 `json:"held_out_agreement"`               // student argmax vs oracle teacher argmax on the held-out split
-	HeldOutTaskScore          float64 `json:"held_out_task_score"`              // student argmax vs pulse label on the held-out split
-	IndependentAgreement      float64 `json:"independent_agreement"`            // like HeldOutAgreement on the independent split
-	IndependentTaskScore      float64 `json:"independent_task_score"`           // like HeldOutTaskScore on the independent split
-	CorruptedIndependentScore float64 `json:"corrupted_independent_task_score"` // independent task score of the mislabel-distilled student
-	RobustnessDelta           float64 `json:"robustness_delta"`                 // IndependentTaskScore − CorruptedIndependentScore
-	Failed                    bool    `json:"failed"`
-	Error                     string  `json:"error,omitempty"`
+	Seed                         uint64   `json:"seed"`
+	TeacherCalls                 int      `json:"teacher_calls"`                             // Blocked.Calls plus the passed teacher's own Calls counter; must be 0 in student mode
+	HeldOutAgreement             float64  `json:"held_out_agreement"`                        // student argmax vs oracle teacher argmax on the held-out split
+	HeldOutTaskScore             float64  `json:"held_out_task_score"`                       // student argmax vs pulse label on the held-out split
+	IndependentAgreement         float64  `json:"independent_agreement"`                     // like HeldOutAgreement on the independent split
+	IndependentTaskScore         float64  `json:"independent_task_score"`                    // like HeldOutTaskScore on the independent split
+	CorruptedIndependentScore    float64  `json:"corrupted_independent_task_score"`          // independent task score of the mislabel-distilled student
+	RobustnessDelta              float64  `json:"robustness_delta"`                          // IndependentTaskScore − CorruptedIndependentScore
+	AssistedHeldOutTaskScore     *float64 `json:"assisted_held_out_task_score,omitempty"`    // held-out task score of the teacher-assisted prediction; absent in student mode
+	AssistedIndependentTaskScore *float64 `json:"assisted_independent_task_score,omitempty"` // like AssistedHeldOutTaskScore on the independent split
+	Fallbacks                    *int     `json:"fallbacks,omitempty"`                       // inputs where the teacher could not answer and the student's own argmax stood in; absent in student mode
+	Failed                       bool     `json:"failed"`
+	Error                        string   `json:"error,omitempty"`
 }
 
 // Report separates the shared protocol from the per-seed runs and states what
@@ -146,9 +151,12 @@ func TrainStudent(ctx context.Context, c Config, seed uint64) (*learning.Trainer
 // target is the fixture oracle distribution (no Ask), and the evaluation
 // period holds a teacher.Blocked that is never asked, so TeacherBlocked is
 // true and TeacherCalls — Blocked.Calls plus t's own Calls counter when t
-// keeps one — must come out 0. ModeTeacherAssisted is rejected here until the
-// next ticket implements it. A canceled context aborts the whole run; a
-// failed seed is recorded with its reason while the remaining seeds continue.
+// keeps one — must come out 0. In teacher_assisted mode training is identical
+// but every held-out and independent input is asked once: the assisted
+// prediction (the teacher's answer, falling back to the student's own argmax)
+// is reported separately and each seed's TeacherCalls counts the asks actually
+// made. A canceled context aborts the whole run; a failed seed is recorded
+// with its reason while the remaining seeds continue.
 func Run(ctx context.Context, c Config, t teacher.Teacher) (Report, error) {
 	var report Report
 	if ctx == nil {
@@ -160,20 +168,20 @@ func Run(ctx context.Context, c Config, t teacher.Teacher) (Report, error) {
 	if err := c.Validate(); err != nil {
 		return report, err
 	}
-	if c.Mode == ModeTeacherAssisted {
-		return report, errors.New("teacher_assisted arrives with the next ticket")
+	if c.Mode == ModeTeacherAssisted && t == nil {
+		return report, errors.New("studenteval: teacher_assisted requires a teacher")
 	}
 	report = Report{
 		SchemaVersion:  SchemaVersion,
 		Mode:           c.Mode,
 		Config:         c,
 		ConfigHash:     configHash(c),
-		TeacherBlocked: true,
-		Assumptions:    assumptions(),
+		TeacherBlocked: c.Mode == ModeStudent,
+		Assumptions:    assumptions(c.Mode),
 	}
 	blocked := &teacher.Blocked{ID: "coimnet-student-evaluation", Version: SchemaVersion}
 	for _, s := range c.Seeds {
-		seed, err := runSeed(ctx, s, c)
+		seed, err := runSeed(ctx, s, c, t)
 		if err != nil {
 			if ctx.Err() != nil {
 				return report, ctx.Err()
@@ -181,7 +189,9 @@ func Run(ctx context.Context, c Config, t teacher.Teacher) (Report, error) {
 			seed.Failed, seed.Error = true, err.Error()
 		}
 		seed.Seed = s
-		seed.TeacherCalls = blocked.Calls() + callsOf(t)
+		if c.Mode != ModeTeacherAssisted {
+			seed.TeacherCalls = blocked.Calls() + callsOf(t)
+		}
 		report.Seeds = append(report.Seeds, seed)
 	}
 	return report, nil
@@ -189,27 +199,51 @@ func Run(ctx context.Context, c Config, t teacher.Teacher) (Report, error) {
 
 // runSeed distills one fresh student, scores it on the held-out and
 // independent splits, then re-distills on the flipped-label prefix and reports
-// what the corruption cost on the independent split.
-func runSeed(ctx context.Context, seed uint64, c Config) (Seed, error) {
+// what the corruption cost on the independent split. In teacher_assisted mode
+// the student's own scores still come from the same Predict-only evaluation,
+// while a separate assisted evaluation asks the teacher once per input.
+func runSeed(ctx context.Context, seed uint64, c Config, t teacher.Teacher) (Seed, error) {
 	var out Seed
 	tr, err := trainStudent(ctx, c, seed, 0)
 	if err != nil {
 		return out, err
 	}
-	if out.HeldOutAgreement, out.HeldOutTaskScore, err = evaluateSet(ctx, tr, 1003+seed, c.HeldOut); err != nil {
+	var evalTeacher teacher.Teacher
+	if c.Mode == ModeTeacherAssisted {
+		evalTeacher = t
+	}
+	held, err := evaluateSet(ctx, tr, evalTeacher, seed, 1003+seed, c.HeldOut)
+	out.TeacherCalls += held.Asks
+	if err != nil {
 		return out, err
 	}
-	if out.IndependentAgreement, out.IndependentTaskScore, err = evaluateSet(ctx, tr, 2003+seed, c.Independent); err != nil {
+	indep, err := evaluateSet(ctx, tr, evalTeacher, seed, 2003+seed, c.Independent)
+	out.TeacherCalls += indep.Asks
+	if err != nil {
 		return out, err
+	}
+	out.HeldOutAgreement = held.Agreement
+	out.HeldOutTaskScore = held.TaskScore
+	out.IndependentAgreement = indep.Agreement
+	out.IndependentTaskScore = indep.TaskScore
+	if evalTeacher != nil {
+		assistedHeldOut := held.AssistedScore
+		assistedIndependent := indep.AssistedScore
+		fallbacks := held.Fallbacks + indep.Fallbacks
+		out.AssistedHeldOutTaskScore = &assistedHeldOut
+		out.AssistedIndependentTaskScore = &assistedIndependent
+		out.Fallbacks = &fallbacks
 	}
 	if corrupt := int(math.Round(c.CorruptFraction * float64(c.Episodes))); corrupt > 0 {
 		rtr, err := trainStudent(ctx, c, seed, corrupt)
 		if err != nil {
 			return out, err
 		}
-		if _, out.CorruptedIndependentScore, err = evaluateSet(ctx, rtr, 2003+seed, c.Independent); err != nil {
+		corr, err := evaluateSet(ctx, rtr, nil, seed, 2003+seed, c.Independent)
+		if err != nil {
 			return out, err
 		}
+		out.CorruptedIndependentScore = corr.TaskScore
 		out.RobustnessDelta = out.IndependentTaskScore - out.CorruptedIndependentScore
 	}
 	return out, nil
@@ -250,31 +284,110 @@ func trainStudent(ctx context.Context, c Config, seed uint64, corrupt int) (*lea
 	return tr, nil
 }
 
+// evalSetResult is one split's numbers: the student's own agreement and task
+// score always, plus the assisted task score, fallback and Ask counts when a
+// teacher was consulted.
+type evalSetResult struct {
+	Agreement     float64
+	TaskScore     float64
+	AssistedScore float64
+	Fallbacks     int
+	Asks          int
+}
+
 // evaluateSet scores student on DelayedEpisode(setSeed, ·) with Predict only:
 // agreement is distill.Agreement against the fixture oracle's argmax (which
 // equals the pulse label), task score the fraction of examples whose
-// argmax(Predict) equals the real pulse label.
-func evaluateSet(ctx context.Context, student distill.Student, setSeed uint64, count int) (agreement, taskScore float64, err error) {
+// argmax(Predict) equals the real pulse label. When t is non-nil
+// (teacher_assisted), every input is also asked once — RequestID
+// assist-<seed>-<set>-<i>, InputHash the sha256 hex of the input row's JSON —
+// and the assisted prediction (the teacher's "0"/"1" label, falling back to
+// the student's own argmax on any Ask error or unusable answer) is scored
+// against the pulse label.
+func evaluateSet(ctx context.Context, student distill.Student, t teacher.Teacher, seed, setSeed uint64, count int) (out evalSetResult, err error) {
 	inputs := make([][][]float64, count)
 	teacherArgmax := make([]int, count)
 	match := 0
+	assistedMatch := 0
 	for i := 0; i < count; i++ {
 		ep := experiment.DelayedEpisode(setSeed, uint64(i))
 		inputs[i] = ep.Input
 		teacherArgmax[i] = pulseLabel(ep)
 		logits, err := student.Predict(ctx, ep.Input)
 		if err != nil {
-			return 0, 0, err
+			return out, err
 		}
-		if argmax(logits) == teacherArgmax[i] {
+		pred := argmax(logits)
+		if pred == teacherArgmax[i] {
 			match++
 		}
+		if t != nil {
+			assisted := pred
+			hash, herr := inputHash(ep.Input)
+			if herr == nil {
+				out.Asks++
+				resp, aerr := t.Ask(ctx, teacher.Request{
+					RequestID:    fmt.Sprintf("assist-%d-%d-%d", seed, setSeed, i),
+					InputHash:    hash,
+					Kind:         teacher.KindLabel,
+					ModelVersion: "studenteval/v1",
+				})
+				if label, ok := teacherLabel(resp, aerr); ok {
+					assisted = label
+				} else {
+					out.Fallbacks++
+				}
+			} else {
+				out.Fallbacks++
+			}
+			if assisted == teacherArgmax[i] {
+				assistedMatch++
+			}
+		}
 	}
-	agreement, err = distill.Agreement(ctx, student, inputs, teacherArgmax)
+	out.Agreement, err = distill.Agreement(ctx, student, inputs, teacherArgmax)
 	if err != nil {
-		return 0, 0, err
+		return out, err
 	}
-	return agreement, float64(match) / float64(count), nil
+	out.TaskScore = float64(match) / float64(count)
+	if t != nil {
+		out.AssistedScore = float64(assistedMatch) / float64(count)
+	}
+	return out, nil
+}
+
+// inputHash is the sha256 hex of the input row's JSON encoding — the hash the
+// teacher keys its answers by.
+func inputHash(input [][]float64) (string, error) {
+	b, err := json.Marshal(input)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", sha256.Sum256(b)), nil
+}
+
+// teacherLabel extracts the class from a teacher response: the response must
+// pass Validate and its Answer must be the JSON string "0" or "1". Anything
+// else — an Ask error, an invalid response, or another answer shape — is not
+// a usable teacher label.
+func teacherLabel(resp teacher.Response, askErr error) (int, bool) {
+	if askErr != nil {
+		return 0, false
+	}
+	if err := resp.Validate(); err != nil {
+		return 0, false
+	}
+	var s string
+	if err := json.Unmarshal(resp.Answer, &s); err != nil {
+		return 0, false
+	}
+	switch s {
+	case "0":
+		return 0, true
+	case "1":
+		return 1, true
+	}
+	return 0, false
 }
 
 // newFixture is the three-neuron delayed chain with OutputSize 2 and a fixed
@@ -340,12 +453,18 @@ func configHash(c Config) string {
 	return fmt.Sprintf("%x", sha256.Sum256(b))
 }
 
-// assumptions is the fixed caveat block attached to every report.
-func assumptions() []string {
-	return []string{
+// assumptions is the fixed caveat block attached to every report; the
+// teacher_assisted mode appends its own so the assisted numbers are never read
+// as the student's independent capability.
+func assumptions(mode string) []string {
+	list := []string{
 		"Fixture teacher: an oracle distribution over the delayed-sign task, not a trained model.",
 		"Scores are on a three-neuron fixture; they show that the evaluation runs without a teacher, not a capability claim.",
 	}
+	if mode == ModeTeacherAssisted {
+		list = append(list, "teacher_assisted scores include the teacher's answers; they are never reported as the student's own capability.")
+	}
+	return list
 }
 
 // finite reports whether v is neither NaN nor ±Inf.

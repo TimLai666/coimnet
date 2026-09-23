@@ -10,7 +10,6 @@ import (
 	"errors"
 	"math"
 	"reflect"
-	"strings"
 	"sync"
 	"testing"
 
@@ -276,24 +275,6 @@ func TestStudentEvaluationValidateRejects(t *testing.T) {
 		if err := tc.cfg.Validate(); err == nil {
 			t.Errorf("%s: Validate = nil, want an error", tc.name)
 		}
-	}
-}
-
-// TestStudentEvaluationTeacherAssistedArrivesNext requires Validate to accept
-// teacher_assisted while Run refuses it with the deferred-ticket message, so a
-// report is never silently mislabeled as independent.
-func TestStudentEvaluationTeacherAssistedArrivesNext(t *testing.T) {
-	cfg := studentEvalTestConfig()
-	if err := cfg.Validate(); err != nil {
-		t.Fatalf("teacher_assisted config Validate = %v, want nil", err)
-	}
-	cfg.Mode = studenteval.ModeTeacherAssisted
-	_, err := studenteval.Run(context.Background(), cfg, &teacher.Blocked{ID: "test", Version: "v1"})
-	if err == nil {
-		t.Fatalf("Run(teacher_assisted) = nil, want an error")
-	}
-	if !strings.Contains(err.Error(), "teacher_assisted arrives with the next ticket") {
-		t.Fatalf("Run(teacher_assisted) = %q, want it to say teacher_assisted arrives with the next ticket", err)
 	}
 }
 
