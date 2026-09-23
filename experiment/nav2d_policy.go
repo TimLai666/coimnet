@@ -16,6 +16,7 @@ const (
 	Nav2DRecurrent   = "recurrent"   // recurrent block, acts on the whole observation prefix
 	Nav2DFeedforward = "feedforward" // no hidden to hidden edges, acts on the current observation only
 	Nav2DRandom      = "random"      // uniform random actions, no model
+	Nav2DRewired     = "rewired"     // recurrent policy whose hidden→hidden edges were degree-preservingly rewired
 )
 
 // Nav2DMetrics summarises one evaluation map set under one policy. Every
@@ -48,6 +49,9 @@ type nav2dPolicy struct {
 	rng     *rand.Rand
 	settle  int
 	edges   int
+	// rewire holds the degree-preserving rewire checklist when kind is
+	// Nav2DRewired, and is nil for every other kind.
+	rewire *RewireReport
 }
 
 // nav2dEdges lists the core edges in this fixed order: every input node to
@@ -120,14 +124,23 @@ func newNav2DPolicy(kind string, seed uint64, inputs, hidden, recurrent int, rat
 	if kind == Nav2DRandom {
 		return &nav2dPolicy{kind: kind, rng: rand.New(rand.NewPCG(seed, 0x1001))}, nil
 	}
-	if kind != Nav2DRecurrent && kind != Nav2DFeedforward {
+	if kind != Nav2DRecurrent && kind != Nav2DFeedforward && kind != Nav2DRewired {
 		return nil, fmt.Errorf("unknown nav2d policy kind %q", kind)
 	}
 	if inputs <= 0 || hidden <= 0 {
 		return nil, fmt.Errorf("nav2d policy needs positive inputs and hidden, got %d and %d", inputs, hidden)
 	}
-	withRecurrent := kind == Nav2DRecurrent
+	withRecurrent := kind == Nav2DRecurrent || kind == Nav2DRewired
 	sources, targets := nav2dEdges(seed, inputs, hidden, recurrent, withRecurrent)
+	var rewire *RewireReport
+	if kind == Nav2DRewired {
+		rewiredTargets, report, rewireErr := nav2dRewire(sources, targets, inputs, hidden, seed)
+		if rewireErr != nil {
+			return nil, fmt.Errorf("nav2d rewired policy: %w", rewireErr)
+		}
+		targets = rewiredTargets
+		rewire = &report
+	}
 	nodes := inputs + hidden + nav2d.Actions
 	readoutFirst := inputs + hidden
 	inputNodes := make([]int, inputs)
@@ -174,7 +187,7 @@ func newNav2DPolicy(kind string, seed uint64, inputs, hidden, recurrent int, rat
 	if err != nil {
 		return nil, err
 	}
-	return &nav2dPolicy{kind: kind, trainer: tr, settle: 3, edges: len(sources)}, nil
+	return &nav2dPolicy{kind: kind, trainer: tr, settle: 3, edges: len(sources), rewire: rewire}, nil
 }
 
 // nav2dTrainMap and nav2dUnseenMap are the map seeds: training maps are odd
@@ -307,7 +320,7 @@ func (p *nav2dPolicy) train(ctx context.Context, obs [][]float64, actions []int)
 	switch p.kind {
 	case Nav2DRandom:
 		return 0, nil
-	case Nav2DRecurrent:
+	case Nav2DRecurrent, Nav2DRewired:
 		in := nav2dRepeat(obs, p.settle)
 		logits, err := p.trainer.PredictAll(ctx, in)
 		if err != nil {
@@ -404,7 +417,7 @@ func (p *nav2dPolicy) act(ctx context.Context, prefix [][]float64) (int, error) 
 	switch p.kind {
 	case Nav2DRandom:
 		return p.rng.IntN(nav2d.Actions), nil
-	case Nav2DRecurrent:
+	case Nav2DRecurrent, Nav2DRewired:
 		in := nav2dRepeat(prefix, p.settle)
 		logits, err := p.trainer.PredictAll(ctx, in)
 		if err != nil {
