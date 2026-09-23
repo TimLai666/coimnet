@@ -404,5 +404,9 @@ func copyOptions(o Options) Options {
 		owned := *o.Schedule
 		o.Schedule = &owned
 	}
+	if o.Recompute != nil {
+		owned := *o.Recompute
+		o.Recompute = &owned
+	}
 	return o
 }

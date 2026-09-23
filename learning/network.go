@@ -187,6 +187,13 @@ type execution struct {
 	// reverse pass can apply the log-magnitude chain rule without recomputing
 	// them. It is nil when no edge carries a fixed sign.
 	weights []float64
+	// coreInputs, coreParams and segment are set only in recompute mode
+	// (segment > 0), where trace is nil: the inputs and the parameters the
+	// core integrated, after coreParameters, from which the reverse pass
+	// recomputes the history in segments of segment steps.
+	coreInputs [][]float64
+	coreParams Parameters
+	segment    int
 }
 
 // Predict starts an independent episode at zero voltage and returns only the
@@ -237,6 +244,12 @@ func (n *Network) spikeEvents(ctx context.Context, p Parameters, input [][]float
 // readout, the recurrent core and Insyra's input encoder. No update occurs.
 // The core uses float64; Insyra encoders/loss/readout use float32.
 func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window int) (float64, Gradient, error) {
+	return n.lossGradient(ctx, p, input, target, window, 0)
+}
+
+// lossGradient is LossGradient whose core reverse pass recomputes the forward
+// history in segments of segment steps; zero keeps the full history.
+func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window, segment int) (float64, Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return 0, empty, fmt.Errorf("nil network")
@@ -248,7 +261,7 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 	if err != nil {
 		return 0, empty, err
 	}
-	e, err := n.forward(ctx, p, input)
+	e, err := n.forwardSegment(ctx, p, input, segment)
 	if err != nil {
 		return 0, empty, err
 	}
@@ -307,6 +320,12 @@ func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]floa
 // window truncates the recurrent reverse pass exactly as LossGradient's does;
 // zero keeps the full history.
 func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window int) (Gradient, error) {
+	return n.lossGradientFrom(ctx, p, input, upstream, window, 0)
+}
+
+// lossGradientFrom is LossGradientFrom whose core reverse pass recomputes the
+// forward history in segments of segment steps; zero keeps the full history.
+func (n *Network) lossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window, segment int) (Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return empty, fmt.Errorf("nil network")
@@ -314,7 +333,7 @@ func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, ups
 	if window < 0 {
 		return empty, fmt.Errorf("negative truncation window")
 	}
-	e, err := n.forward(ctx, p, input)
+	e, err := n.forwardSegment(ctx, p, input, segment)
 	if err != nil {
 		return empty, err
 	}
@@ -405,7 +424,12 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			}
 		}
 	}
-	cg, err := n.core.backward(ctx, e.trace, up, window)
+	var cg coreGradient
+	if e.segment > 0 {
+		cg, err = backwardRecompute(ctx, n.core, e.coreParams, make([]float64, coreWidth), e.coreInputs, up, window, e.segment)
+	} else {
+		cg, err = n.core.backward(ctx, e.trace, up, window)
+	}
 	if err != nil {
 		return empty, err
 	}
@@ -481,6 +505,14 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 }
 
 func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) (*execution, error) {
+	return n.forwardSegment(ctx, p, input, 0)
+}
+
+// forwardSegment runs one episode through the encoder, the core and the
+// readout. Segment zero keeps the core's full trace for the reverse pass; a
+// positive segment keeps no trace and records what the reverse pass needs to
+// recompute the history in segments of that many steps.
+func (n *Network) forwardSegment(ctx context.Context, p Parameters, input [][]float64, segment int) (*execution, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -545,7 +577,13 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	tr, y, err := n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
+	var tr coreTrace
+	var y [][]float64
+	if segment > 0 {
+		y, err = observe(ctx, n.core, core, make([]float64, coreWidth), coreInputs, segment)
+	} else {
+		tr, y, err = n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -606,7 +644,11 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if n.fixed {
 		effective = core.Core.Weights
 	}
-	return &execution{et, rt, x, encoder, z, h, r, pred, tr, effective}, nil
+	e := &execution{encoderTape: et, readoutTape: rt, x: x, encoder: encoder, encoded: z, h: h, readout: r, prediction: pred, trace: tr, weights: effective}
+	if segment > 0 {
+		e.coreInputs, e.coreParams, e.segment = coreInputs, core, segment
+	}
+	return e, nil
 }
 
 func tensor(shape []int, values []float64) (*nn.Tensor, error) {

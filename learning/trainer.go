@@ -49,6 +49,12 @@ type Options struct {
 	// Schedule shapes the learning rate as a function of the update count.
 	// nil holds LearningRate constant.
 	Schedule *Schedule `json:"schedule,omitempty"`
+	// Recompute makes Step and StepFrom keep only segment checkpoints of the
+	// core's forward history and recompute each segment in the reverse pass;
+	// see Recompute. nil keeps the complete reverse history. The field is
+	// omitted when nil, so every existing configuration and snapshot keeps its
+	// exact JSON and its recorded hash.
+	Recompute *Recompute `json:"recompute,omitempty"`
 }
 
 // DefaultOptions returns every group of the continuous core trainable and a
@@ -112,6 +118,13 @@ type StepResult struct {
 	// Accumulated is how many gradients the accumulator holds after this step,
 	// which is zero on an applied step.
 	Accumulated int `json:"accumulated"`
+	// GradientHorizonSteps is the furthest number of steps back the gradient
+	// of any row's loss reached in this step: Options.Truncation when it is
+	// positive and below the number of input rows, the number of input rows
+	// otherwise. Earlier rows still shaped the prediction and the neural state
+	// but received no gradient, so the loss cannot be claimed to reach back
+	// indefinitely.
+	GradientHorizonSteps int `json:"gradient_horizon_steps,omitempty"`
 }
 
 // Trainer serializes updates. Context-aware operations can stop while waiting
@@ -144,6 +157,11 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	}
 	if err := validateTrainable(o.Trainable, n.core.theta()); err != nil {
 		return nil, err
+	}
+	if o.Recompute != nil {
+		if err := recomputeSupported(n.core); err != nil {
+			return nil, err
+		}
 	}
 	if err := validateMasks(o.Masks, n.core.nodes(), n.core.edges()); err != nil {
 		return nil, err
@@ -282,11 +300,16 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	loss, g, err := tr.network.LossGradient(ctx, tr.parameters, input, target, tr.options.Truncation)
+	loss, g, err := tr.network.lossGradient(ctx, tr.parameters, input, target, tr.options.Truncation, recomputeSegment(tr.options))
 	if err != nil {
 		return zero, err
 	}
-	return tr.stepWithGradient(ctx, input, loss, true, g)
+	result, err := tr.stepWithGradient(ctx, input, loss, true, g)
+	if err != nil {
+		return zero, err
+	}
+	result.GradientHorizonSteps = gradientHorizon(len(input), tr.options.Truncation)
+	return result, nil
 }
 
 // StepFrom is Step with a caller-supplied upstream gradient: the same mask,
@@ -311,11 +334,34 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	g, err := tr.network.LossGradientFrom(ctx, tr.parameters, input, upstream, tr.options.Truncation)
+	g, err := tr.network.lossGradientFrom(ctx, tr.parameters, input, upstream, tr.options.Truncation, recomputeSegment(tr.options))
 	if err != nil {
 		return zero, err
 	}
-	return tr.stepWithGradient(ctx, input, 0, false, g)
+	result, err := tr.stepWithGradient(ctx, input, 0, false, g)
+	if err != nil {
+		return zero, err
+	}
+	result.GradientHorizonSteps = gradientHorizon(len(input), tr.options.Truncation)
+	return result, nil
+}
+
+// recomputeSegment resolves Options.Recompute to the segment length the
+// network reverse pass takes: zero, the full history, when it is nil.
+func recomputeSegment(o Options) int {
+	if o.Recompute == nil {
+		return 0
+	}
+	return o.Recompute.SegmentSteps
+}
+
+// gradientHorizon is StepResult.GradientHorizonSteps for an episode of rows
+// input rows under the truncation window.
+func gradientHorizon(rows, truncation int) int {
+	if truncation > 0 && truncation < rows {
+		return truncation
+	}
+	return rows
 }
 
 // stepWithGradient is the mask, loss-scale, accumulation, clipping, scheduled
@@ -548,6 +594,9 @@ func validateOptions(o Options) error {
 	}
 	if o.AccumulateSteps < 0 {
 		return fmt.Errorf("accumulate steps %d cannot be negative", o.AccumulateSteps)
+	}
+	if o.Recompute != nil && o.Recompute.SegmentSteps < 1 {
+		return fmt.Errorf("recompute segment_steps %d must be at least 1", o.Recompute.SegmentSteps)
 	}
 	if err := validateSchedule(o.Schedule); err != nil {
 		return err
