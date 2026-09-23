@@ -112,11 +112,11 @@ func RunAttribution(ctx context.Context, a AttributionConfig) (AttributionReport
 
 ## 驗收
 
-- [ ] 第一階段：環境不變量測試（連通、碰撞、視野、時間上限與終止分離）、四任務各 3 seed、對照三組、
+- [x] 第一階段：環境不變量測試（連通、碰撞、視野、時間上限與終止分離）、四任務各 3 seed、對照三組、
   新地圖、觀察不含評估器狀態（型別 + 汙染）；`go test`、race、vet；`evidence/TSK-08/`。
-- [ ] 第二階段：缺失 ≠ 零、ID 不進模型、同步／非同步、未見組合分割與評估；`evidence/TSK-10/`。
+- [x] 第二階段：缺失 ≠ 零、ID 不進模型、同步／非同步、未見組合分割與評估；`evidence/TSK-10/`。
 - [ ] 第三階段：指紋一致、個體不共用、更新份額報告、三種排程；`evidence/TSK-09/`。
-- [ ] 第四階段：七組對照各 3 seed、重連檢查、排查清單、不自動加大外圍、README 界線；`evidence/TSK-12/`。
+- [x] 第四階段：七組對照各 3 seed、重連檢查、排查清單、不自動加大外圍、README 界線；`evidence/TSK-12/`。
 
 ## 第一階段證據（2026-09-23）
 
@@ -130,7 +130,7 @@ vet 沒有輸出。未見地圖上三個 seed 的平均：三種學習策略訓�
 [TSK-08 證據](../../evidence/TSK-08/verification.json)。
 
 已知限制：前饋對照每個觀察更新一次，更新次數是遞迴策略的 25–28 倍，參數 2664 對 2728，沒有對齊最佳化步數；報告的
-`config.env` 記的是呼叫端的零值，不是補完後的預設；第 4 點的 `examples run nav2d` 還沒做，做完再勾第一階段。
+`config.env` 記的是呼叫端的零值，不是補完後的預設。第 4 點的 CLI 是 `coimnet examples run nav2d`（預設取 `DefaultNav2DConfig`）。
 
 ## 第二階段證據（2026-09-23）
 
@@ -142,7 +142,7 @@ vet 沒有輸出。未見地圖上三個 seed 的平均：三種學習策略訓�
 說錯顏色，文字頭剛好相反。所以配對與未見組合都評估了，模型學會已見的配對，但沒有泛化到留出的組合，本票不宣稱形成跨模態
 的共同概念。同一 commit 重跑位元組相同。完整資料見 [TSK-10 證據](../../evidence/TSK-10/verification.json)。
 
-已知限制：只有一個留出組合、18 筆未見樣本；`examples run multimodal` 還沒做，做完再勾第二階段。
+已知限制：只有一個留出組合、18 筆未見樣本。CLI 是 `coimnet examples run multimodal`（預設取 `multimodaleval.DefaultConfig`）。
 
 ## 第四階段證據（2026-09-23）
 
@@ -162,7 +162,7 @@ capacity_matched_modulator 2752（2632，附加 24 對 MOD-10 控制器 21），
 完整資料見 [TSK-12 證據](../../evidence/TSK-12/verification.json)。
 
 已知限制：normal 在事前選定的學習率下沒學會，要改善得先在其他 seed 上重新事前選定學習率再重跑（見 AGENTS.md
-Follow-ups）；第 13 點的 `examples run attribution` 還沒做，做完再勾第四階段。
+Follow-ups）。第 13 點的 CLI 是 `coimnet examples run attribution`（預設取 `DefaultAttributionConfig`）。
 
 ## 依據
 
