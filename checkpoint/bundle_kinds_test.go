@@ -13,6 +13,7 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
 )
 
 func TestBundleModelPackageRoundTrip(t *testing.T) {
@@ -80,6 +81,39 @@ func TestBundleIndividualRoundTrip(t *testing.T) {
 			}
 		})
 	}
+	t.Run("receptor zero gates hebbian rate", func(t *testing.T) {
+		individual := newChemicalCheckpointIndividual(t)
+		rule := plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625}
+		receptor := 0
+		rule.GateReceptor = &receptor
+		rule.GateScale = 1
+		if err := individual.EnablePlasticity(plasticity.Config{Rule: rule, Edges: []int{0}}); err != nil {
+			t.Fatal(err)
+		}
+		before := mustNormalizedIndividual(t, individual.Snapshot())
+		dir := filepath.Join(t.TempDir(), "individual")
+		if err := SaveIndividualBundle(context.Background(), dir, before); err != nil {
+			t.Fatal(err)
+		}
+		after, err := LoadIndividualBundle(context.Background(), dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := learning.RestoreIndividual(after); err != nil {
+			t.Fatalf("RestoreIndividual rejected the restored receptor-gated rule: %v", err)
+		}
+		wantJSON, err := json.Marshal(before)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotJSON, err := json.Marshal(after)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(gotJSON, wantJSON) {
+			t.Fatal("receptor-zero individual JSON changed across bundle round trip")
+		}
+	})
 }
 
 func TestBundleTrainingRoundTrip(t *testing.T) {
@@ -143,24 +177,26 @@ func TestBundleReadManifestOnly(t *testing.T) {
 		}
 		return dir
 	}
-	t.Run("payload metadata", func(t *testing.T) {
+	t.Run("document and arrays metadata", func(t *testing.T) {
 		dir := makeBundle(t)
 		manifest, err := ReadBundleManifest(ctx, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		payload, err := os.ReadFile(filepath.Join(dir, bundlePayloadFile))
-		if err != nil {
-			t.Fatal(err)
-		}
-		sum := sha256.Sum256(payload)
-		if manifest.PayloadBytes != int64(len(payload)) || manifest.PayloadSHA256 != hex.EncodeToString(sum[:]) {
-			t.Fatalf("manifest metadata = (%d, %s), actual = (%d, %x)", manifest.PayloadBytes, manifest.PayloadSHA256, len(payload), sum)
+		for _, file := range []BundleFile{manifest.Document, manifest.Arrays} {
+			data, err := os.ReadFile(filepath.Join(dir, file.Name))
+			if err != nil {
+				t.Fatal(err)
+			}
+			sum := sha256.Sum256(data)
+			if file.Bytes != int64(len(data)) || file.SHA256 != hex.EncodeToString(sum[:]) {
+				t.Fatalf("manifest metadata = %#v, actual = (%d, %x)", file, len(data), sum)
+			}
 		}
 	})
-	t.Run("missing payload", func(t *testing.T) {
+	t.Run("missing arrays file", func(t *testing.T) {
 		dir := makeBundle(t)
-		if err := os.Remove(filepath.Join(dir, bundlePayloadFile)); err != nil {
+		if err := os.Remove(filepath.Join(dir, "arrays.bin")); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := ReadBundleManifest(ctx, dir); err != nil {
@@ -281,9 +317,9 @@ func TestBundleLargerThanSingleFileLimit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("payload_bytes=%d", manifest.PayloadBytes)
-	if manifest.PayloadBytes <= 64<<20 {
-		t.Fatalf("payload_bytes=%d, want > %d", manifest.PayloadBytes, 64<<20)
+	t.Logf("document_bytes=%d arrays_bytes=%d", manifest.Document.Bytes, manifest.Arrays.Bytes)
+	if manifest.Arrays.Bytes <= 64<<20 {
+		t.Fatalf("arrays_bytes=%d, want > %d", manifest.Arrays.Bytes, 64<<20)
 	}
 	got, err := LoadIndividualBundle(context.Background(), dir)
 	if err != nil {

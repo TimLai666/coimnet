@@ -204,14 +204,16 @@ func ReadBundleManifest(ctx context.Context, dir string) (BundleManifest, error)
 	if manifest.SchemaVersion != BundleSchemaVersion {
 		return empty, fmt.Errorf("unsupported bundle schema %q", manifest.SchemaVersion)
 	}
-	if manifest.PayloadFile != bundlePayloadFile {
-		return empty, fmt.Errorf("invalid bundle payload_file %q", manifest.PayloadFile)
+	if manifest.Document.Name != bundleDocumentFile || manifest.Arrays.Name != bundleArraysFile {
+		return empty, fmt.Errorf("invalid bundle file names %q and %q", manifest.Document.Name, manifest.Arrays.Name)
 	}
-	if !validBundleSHA256(manifest.PayloadSHA256) {
-		return empty, fmt.Errorf("invalid bundle payload SHA-256 %q", manifest.PayloadSHA256)
-	}
-	if manifest.PayloadBytes <= 0 {
-		return empty, fmt.Errorf("bundle payload size must be positive, got %d", manifest.PayloadBytes)
+	for _, file := range []BundleFile{manifest.Document, manifest.Arrays} {
+		if !validBundleSHA256(file.SHA256) {
+			return empty, fmt.Errorf("invalid bundle file SHA-256 %q", file.SHA256)
+		}
+		if file.Bytes < 0 || file.Name == bundleDocumentFile && file.Bytes == 0 {
+			return empty, fmt.Errorf("invalid bundle file size for %q: %d", file.Name, file.Bytes)
+		}
 	}
 	if manifest.DocumentSchema == "" {
 		return empty, fmt.Errorf("bundle document schema must not be empty")
