@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/TimLai666/coimnet/resources"
 )
 
 func TestDefaultOptions(t *testing.T) {
@@ -14,7 +16,7 @@ func TestDefaultOptions(t *testing.T) {
 	want := Options{
 		InputSet:     "alin",
 		ReadoutSet:   "descending_neuron",
-		Steps:        32,
+		Steps:        16,
 		Truncation:   8,
 		ContinueRows: 4,
 		PlasticEdges: 4096,
@@ -24,6 +26,40 @@ func TestDefaultOptions(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("DefaultOptions() = %+v, want %+v", got, want)
+	}
+}
+
+func TestDefaultOptionsFitTheDefaultBudget(t *testing.T) {
+	o := DefaultOptions()
+	plan := resources.Plan{
+		Nodes:              165_122,
+		Edges:              25_563_197,
+		StateDim:           1,
+		Individuals:        1,
+		HistorySteps:       o.Steps,
+		Precision:          resources.PrecisionF64,
+		Optimizer:          resources.OptimizerAdamW,
+		PlasticEdges:       4096,
+		ModulationRegions:  1,
+		ModulationChannels: 1,
+	}
+	within, err := resources.Estimate(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan.HistorySteps = 32
+	tooLarge, err := resources.Estimate(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	limitBytes := uint64(o.MaxMemoryMiB) << 20
+	t.Logf("%d-step estimate: %.1f MiB; 32-step estimate: %.1f MiB; default budget: %d MiB",
+		o.Steps, float64(within.TotalBytes)/(1<<20), float64(tooLarge.TotalBytes)/(1<<20), o.MaxMemoryMiB)
+	if within.TotalBytes > limitBytes {
+		t.Errorf("default %d-step estimate %d bytes exceeds %d MiB", o.Steps, within.TotalBytes, o.MaxMemoryMiB)
+	}
+	if tooLarge.TotalBytes <= limitBytes {
+		t.Errorf("32-step estimate %d bytes fits within %d MiB, want it to exceed budget", tooLarge.TotalBytes, o.MaxMemoryMiB)
 	}
 }
 

@@ -35,7 +35,7 @@ type Options struct {
 	Protocol     string  `json:"protocol"`
 	InputSet     string  `json:"input_set"`      // default "alin"
 	ReadoutSet   string  `json:"readout_set"`    // default "descending_neuron"
-	Steps        int     `json:"steps"`          // default 32, ≥ 2
+	Steps        int     `json:"steps"`          // default 16, ≥ 2
 	Truncation   int     `json:"truncation"`     // default 8, ≥ 0
 	ContinueRows int     `json:"continue_rows"`  // default 4, ≥ 1
 	PlasticEdges int     `json:"plastic_edges"`  // default 4096, ≥ 0
@@ -46,12 +46,15 @@ type Options struct {
 	OutDir       string  `json:"out_dir"`        // must not exist; Run creates it
 }
 
-// DefaultOptions returns the declared defaults for every option.
+// DefaultOptions returns the declared defaults for every option. The full
+// graph's backward history term 2*E*w*T puts 32 steps above the default 12,288
+// MiB estimate budget, while 16 steps fits. Steps are an explicit protocol
+// value, never silently reduced to fit memory.
 func DefaultOptions() Options {
 	return Options{
 		InputSet:     "alin",
 		ReadoutSet:   "descending_neuron",
-		Steps:        32,
+		Steps:        16,
 		Truncation:   8,
 		ContinueRows: 4,
 		PlasticEdges: 4096,
@@ -161,9 +164,10 @@ func continuationDigest(rows [][]float64) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-// Report is what Run found and did. ContinuationDigest is the sha256 hex of every Float64bits of the ContinueRows output rows
-// the in-process individual produced after the save, row by row; NeuralDigest is the sha256 hex of json.Marshal of the final
-// Snapshot().Neural. A resumed process that loads OutDir/individual.json must reproduce both (the next ticket adds Resume); keep the two digest computations in unexported helpers continuationDigest(rows [][]float64) string and neuralDigest reuse from train.go so Resume can call the same code.
+// Report is what Run found and did. ContinuationDigest is the SHA-256 of every
+// Float64bits in the ContinueRows output; NeuralDigest is the SHA-256 of the
+// final Snapshot().Neural JSON. Resume (resume.go) loads OutDir/individual.coimbundle
+// in a new process and recomputes both digests.
 type Report struct {
 	SchemaVersion      string                 `json:"schema_version"`
 	Options            Options                `json:"options"`

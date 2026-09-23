@@ -31,8 +31,9 @@ type runOptions struct {
 	MaxCells     int  `json:"max_cells"` // 0 uses dynamics.MaxStateValues
 }
 
-// artifact is one file shortTraining wrote and the path, size and SHA-256 of
-// its contents, so evidence can verify the three documents independently.
+// artifact records one bundle shortTraining wrote. Bytes is the combined size
+// of document.json and arrays.bin; SHA256 hashes manifest.json, which records
+// the checksums of both data files and every array in the bundle.
 type artifact struct {
 	Kind   string `json:"kind"`
 	Path   string `json:"path"`
@@ -167,12 +168,11 @@ func shortTraining(ctx context.Context, c learning.Config, p learning.Parameters
 	return ind, rep, nil
 }
 
-// saveArtifacts writes the three documents of one trained individual into dir:
-// model.coimpkg holds the untrained topology and parameters, individual.json
-// the trained persistent individual (neural, plastic and chemical state both
-// live in it), and training.json the serialized trainer. Every existing path
-// is refused, so a second run over the same directory fails instead of
-// overwriting evidence.
+// saveArtifacts writes the three bundles of one trained individual into dir:
+// model.coimbundle holds the untrained topology and parameters,
+// individual.coimbundle the trained persistent individual, and
+// training.coimbundle the trainer state. Every existing path is refused, so a
+// second run over the same directory fails instead of overwriting evidence.
 func saveArtifacts(dir string, ind *learning.Individual, c learning.Config, p learning.Parameters) ([]artifact, error) {
 	if ind == nil {
 		return nil, fmt.Errorf("fullgraph: save artifacts needs an individual")
@@ -190,42 +190,47 @@ func saveArtifacts(dir string, ind *learning.Individual, c learning.Config, p le
 	if err != nil {
 		return nil, err
 	}
-	if err := checkpoint.SaveModelPackage(ctx, path("model.coimpkg"), pkg); err != nil {
+	if err := checkpoint.SaveModelPackageBundle(ctx, path("model.coimbundle"), pkg); err != nil {
 		return nil, err
 	}
-	if err := checkpoint.SaveIndividual(ctx, path("individual.json"), ind.Snapshot()); err != nil {
+	if err := checkpoint.SaveIndividualBundle(ctx, path("individual.coimbundle"), ind.Snapshot()); err != nil {
 		return nil, err
 	}
 	training, err := trainingSnapshot(ind)
 	if err != nil {
 		return nil, err
 	}
-	if err := refuseExistingWrite(path("training.json"), training); err != nil {
+	if err := checkpoint.SaveTrainingBundle(ctx, path("training.coimbundle"), training); err != nil {
 		return nil, err
 	}
 	arts := make([]artifact, 0, 3)
-	for _, kind := range []string{"model.coimpkg", "individual.json", "training.json"} {
+	for _, kind := range []string{"model.coimbundle", "individual.coimbundle", "training.coimbundle"} {
 		p := path(kind)
-		info, err := os.Stat(p)
+		manifest, err := checkpoint.ReadBundleManifest(ctx, p)
 		if err != nil {
 			return nil, err
 		}
-		sum, err := sha256File(p)
+		manifestPath := filepath.Join(p, "manifest.json")
+		manifestSHA, err := sha256File(manifestPath)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("fullgraph: hash bundle manifest %q: %w", manifestPath, err)
 		}
-		arts = append(arts, artifact{Kind: kind, Path: p, Bytes: info.Size(), SHA256: sum})
+		arts = append(arts, artifact{
+			Kind:   kind,
+			Path:   p,
+			Bytes:  manifest.Document.Bytes + manifest.Arrays.Bytes,
+			SHA256: manifestSHA,
+		})
 	}
 	return arts, nil
 }
 
-// trainingSnapshot rebuilds the serializable trainer from the snapshot's
-// optimizer part and validates it with RestoreTrainer before it is written, so
-// training.json is guaranteed readable by an independent trainer.
-func trainingSnapshot(ind *learning.Individual) ([]byte, error) {
+// trainingSnapshot rebuilds the trainer from the snapshot's optimizer part
+// and validates it with RestoreTrainer before bundle encoding.
+func trainingSnapshot(ind *learning.Individual) (learning.TrainingSnapshot, error) {
 	s := ind.Snapshot()
 	ts := learning.TrainingSnapshot{
-		SchemaVersion: "coimnet-episode-training/v1",
+		SchemaVersion: checkpoint.TrainingSchemaVersion,
 		Config:        s.Config,
 		Parameters:    s.Parameters,
 		Options:       s.Optimizer.Options,
@@ -234,9 +239,9 @@ func trainingSnapshot(ind *learning.Individual) ([]byte, error) {
 		Accumulator:   s.Optimizer.Accumulator,
 	}
 	if _, err := learning.RestoreTrainer(ts); err != nil {
-		return nil, err
+		return learning.TrainingSnapshot{}, err
 	}
-	return json.Marshal(ts)
+	return ts, nil
 }
 
 // continueRows runs rows more rows of the stimulus on a trained individual,
@@ -264,7 +269,7 @@ func continueRows(ctx context.Context, ind *learning.Individual, rows, chunk int
 	return outputs, err
 }
 
-// resumeAndContinue loads dir/individual.json in a fresh process, restores the
+// resumeAndContinue loads dir/individual.coimbundle in a fresh process, restores the
 // individual with every persistent part (including the enabled plasticity and
 // chemistry) and continues rows more rows in chunk-sized pieces. The returned
 // snapshot is the state right after that continuation.
@@ -273,7 +278,7 @@ func resumeAndContinue(ctx context.Context, dir string, rows, chunk int) ([][]fl
 	if ctx == nil {
 		return nil, zero, fmt.Errorf("fullgraph: resume needs a context")
 	}
-	saved, err := checkpoint.LoadIndividual(ctx, filepath.Join(dir, "individual.json"))
+	saved, err := checkpoint.LoadIndividualBundle(ctx, filepath.Join(dir, "individual.coimbundle"))
 	if err != nil {
 		return nil, zero, err
 	}

@@ -10,10 +10,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"testing"
 
+	"github.com/TimLai666/coimnet/checkpoint"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -98,8 +100,8 @@ func TestShortTrainingUpdatesEveryGroupAndSaves(t *testing.T) {
 	if rep.ChemistrySteps <= 0 {
 		t.Errorf("chemistry steps = %d, want > 0", rep.ChemistrySteps)
 	}
-	if len(rep.Artifacts) < 2 {
-		t.Fatalf("saved %d artifacts, want at least 2", len(rep.Artifacts))
+	if len(rep.Artifacts) != 3 {
+		t.Fatalf("saved %d artifacts, want 3", len(rep.Artifacts))
 	}
 	for _, a := range rep.Artifacts {
 		if a.Path != filepath.Join(dir, a.Kind) {
@@ -110,22 +112,116 @@ func TestShortTrainingUpdatesEveryGroupAndSaves(t *testing.T) {
 			t.Errorf("artifact %s: %v", a.Path, err)
 			continue
 		}
-		if info.Size() != a.Bytes {
-			t.Errorf("artifact %s sizes: report %d, disk %d", a.Path, a.Bytes, info.Size())
-		}
-		digest, err := fileSHA256(a.Path)
-		if err != nil {
-			t.Errorf("artifact %s: %v", a.Path, err)
+		if !info.IsDir() {
+			t.Errorf("artifact %s is not a directory", a.Path)
 			continue
 		}
-		if digest != a.SHA256 {
-			t.Errorf("artifact %s hash %s, want %s", a.Path, digest, a.SHA256)
+		manifest, err := checkpoint.ReadBundleManifest(ctx, a.Path)
+		if err != nil {
+			t.Errorf("artifact %s manifest: %v", a.Path, err)
+			continue
+		}
+		manifestSHA, err := fileSHA256(filepath.Join(a.Path, "manifest.json"))
+		if err != nil {
+			t.Errorf("artifact %s manifest SHA-256: %v", a.Path, err)
+			continue
+		}
+		if wantBytes := manifest.Document.Bytes + manifest.Arrays.Bytes; a.Bytes != wantBytes || a.SHA256 != manifestSHA {
+			t.Errorf("artifact %s metadata = (%d, %s), want (%d, %s)", a.Path, a.Bytes, a.SHA256, wantBytes, manifestSHA)
 		}
 	}
-	for _, kind := range []string{"model.coimpkg", "individual.json", "training.json"} {
+	for _, kind := range []string{"model.coimbundle", "individual.coimbundle", "training.coimbundle"} {
 		if _, err := os.Stat(filepath.Join(dir, kind)); err != nil {
 			t.Errorf("missing artifact %s: %v", kind, err)
 		}
+	}
+}
+
+func TestSaveArtifactsWritesBundles(t *testing.T) {
+	ctx := context.Background()
+	c, p, o := buildFixtureConfig(t)
+	ind, _, err := shortTraining(ctx, c, p, o, runOptions{Steps: 8, ContinueRows: 4, PlasticEdges: 2, Chemistry: true}, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	artifacts, err := saveArtifacts(dir, ind, c, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantKinds := []string{"model.coimbundle", "individual.coimbundle", "training.coimbundle"}
+	if len(artifacts) != len(wantKinds) {
+		t.Fatalf("saved %d artifacts, want %d", len(artifacts), len(wantKinds))
+	}
+	for i, wantKind := range wantKinds {
+		a := artifacts[i]
+		if a.Kind != wantKind {
+			t.Errorf("artifact %d kind = %q, want %q", i, a.Kind, wantKind)
+		}
+		wantPath := filepath.Join(dir, wantKind)
+		if a.Path != wantPath {
+			t.Errorf("artifact path = %q, want %q", a.Path, wantPath)
+		}
+		info, err := os.Stat(a.Path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !info.IsDir() {
+			t.Errorf("artifact %s is not a directory", a.Path)
+		}
+		entries, err := os.ReadDir(a.Path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(entries) != 3 || entries[0].Name() != "arrays.bin" || entries[1].Name() != "document.json" || entries[2].Name() != "manifest.json" {
+			t.Errorf("bundle entries = %v, want [arrays.bin document.json manifest.json]", entries)
+		}
+		manifest, err := checkpoint.ReadBundleManifest(ctx, a.Path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		manifestPath := filepath.Join(a.Path, "manifest.json")
+		manifestSHA, err := fileSHA256(manifestPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if a.Bytes != manifest.Document.Bytes+manifest.Arrays.Bytes {
+			t.Errorf("artifact bytes = %d, document plus arrays = %d", a.Bytes, manifest.Document.Bytes+manifest.Arrays.Bytes)
+		}
+		if a.SHA256 != manifestSHA {
+			t.Errorf("artifact SHA-256 = %s, manifest SHA-256 = %s", a.SHA256, manifestSHA)
+		}
+	}
+
+	loadedPackage, err := checkpoint.LoadModelPackageBundle(ctx, filepath.Join(dir, wantKinds[0]))
+	if err != nil {
+		t.Fatalf("LoadModelPackageBundle: %v", err)
+	}
+	if loadedPackage.Config.Dynamics.Nodes != c.Dynamics.Nodes || len(loadedPackage.Config.Dynamics.Sources) != len(c.Dynamics.Sources) || len(loadedPackage.Parameters.Core.Weights) != len(p.Core.Weights) {
+		t.Error("loaded model package has a different model shape")
+	}
+	loadedTraining, err := checkpoint.LoadTrainingBundle(ctx, filepath.Join(dir, wantKinds[2]))
+	if err != nil {
+		t.Fatalf("LoadTrainingBundle: %v", err)
+	}
+	if want, err := trainingSnapshot(ind); err != nil {
+		t.Fatal(err)
+	} else if !reflect.DeepEqual(loadedTraining, want) {
+		t.Error("loaded training snapshot differs from its source snapshot")
+	}
+	loadedIndividual, err := checkpoint.LoadIndividualBundle(ctx, filepath.Join(dir, wantKinds[1]))
+	if err != nil {
+		t.Fatalf("LoadIndividualBundle: %v", err)
+	}
+	wantIndividual := ind.Snapshot()
+	if loadedIndividual.Plastic == nil || loadedIndividual.Plastic.Config.Rule.GateReceptor == nil {
+		t.Fatal("loaded individual lost its receptor-gated plasticity configuration")
+	}
+	if wantIndividual.Chemical != nil && loadedIndividual.Chemical != nil && len(wantIndividual.Chemical.Config.Effects) == 0 && len(loadedIndividual.Chemical.Config.Effects) == 0 {
+		wantIndividual.Chemical.Config.Effects = loadedIndividual.Chemical.Config.Effects
+	}
+	if !reflect.DeepEqual(loadedIndividual, wantIndividual) {
+		t.Error("loaded individual differs from its saved snapshot")
 	}
 }
 
@@ -172,7 +268,7 @@ func TestShortTrainingChunksMatchOneCall(t *testing.T) {
 }
 
 // TestShortTrainingResumesInANewProcess runs four more rows in the parent
-// process, then resumes from the saved individual.json in a fresh process and
+// process, then resumes from the saved individual.coimbundle in a fresh process and
 // requires the continued outputs to agree bit for bit and the snapshots to be
 // the same JSON. An exact resume has to hold with plasticity and chemistry
 // still enabled, whose states all live in the snapshot.
@@ -187,6 +283,10 @@ func TestShortTrainingResumesInANewProcess(t *testing.T) {
 	ind, _, err := shortTraining(ctx, c, p, o, run, dir)
 	if err != nil {
 		t.Fatal(err)
+	}
+	savedSnapshot := ind.Snapshot()
+	if savedSnapshot.Plastic == nil || savedSnapshot.Plastic.Config.Rule.GateReceptor == nil {
+		t.Fatal("saved individual does not have receptor-gated plasticity enabled")
 	}
 
 	const rows, chunk = 4, 2
@@ -234,7 +334,7 @@ func TestShortTrainingResumesInANewProcess(t *testing.T) {
 }
 
 // TestFullgraphResumeHelperProcess is the subprocess half of the resume test.
-// With the helper env var set it loads dir/individual.json, continues the
+// With the helper env var set it loads dir/individual.coimbundle, continues the
 // declared number of rows in the declared chunk size and writes the outputs
 // and the final snapshot as JSON; without it the test is a no-op.
 func TestFullgraphResumeHelperProcess(t *testing.T) {
@@ -323,12 +423,19 @@ func TestShortTrainingRejects(t *testing.T) {
 			t.Fatal(err)
 		}
 		dir := t.TempDir()
-		existing := filepath.Join(dir, "individual.json")
-		if err := os.WriteFile(existing, []byte("occupied"), 0o600); err != nil {
+		existing := filepath.Join(dir, "individual.coimbundle")
+		if err := os.Mkdir(existing, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		sentinel := filepath.Join(existing, "sentinel")
+		if err := os.WriteFile(sentinel, []byte("occupied"), 0o600); err != nil {
 			t.Fatal(err)
 		}
 		if _, err := saveArtifacts(dir, ind, c, p); err == nil {
-			t.Fatal("saveArtifacts accepted an existing individual.json")
+			t.Fatal("saveArtifacts accepted an existing individual.coimbundle")
+		}
+		if data, err := os.ReadFile(sentinel); err != nil || string(data) != "occupied" {
+			t.Fatalf("existing bundle content changed: data=%q err=%v", data, err)
 		}
 	})
 }

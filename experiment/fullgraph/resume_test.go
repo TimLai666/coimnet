@@ -14,7 +14,7 @@ import (
 // fixture graph: the three artifacts shortTraining saves, and a report.json
 // that holds only the fields Resume reads, filled in with the digests of the
 // in-process continuation. Resume has to reproduce both digests from
-// individual.json, stop matching once either digest in report.json differs by
+// individual.coimbundle, stop matching once either digest in report.json differs by
 // one character, and leave every file in the directory byte-identical.
 func TestResumeMatchesAndDetectsTampering(t *testing.T) {
 	ctx := context.Background()
