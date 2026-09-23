@@ -325,13 +325,12 @@ func chunkFor(r runOptions, nodes int) int {
 	return chunk
 }
 
-// buildInput makes a rows-by-inputSize stimulus whose first row is the unit
-// pulse and the rest are silence.
+// buildInput holds the first input at 1 on every row. The loss is taken on the last row and the gradient reaches back only Options.Truncation rows, so an input confined to the first row would give the encoder no gradient whenever the run is longer than the truncation window.
 func buildInput(rows, inputSize int) [][]float64 {
 	out := make([][]float64, rows)
 	for t := range out {
 		row := make([]float64, inputSize)
-		if t == 0 {
+		if inputSize > 0 {
 			row[0] = 1
 		}
 		out[t] = row

@@ -471,3 +471,21 @@ func TestSha256FileStreamsLikeTheWholeFile(t *testing.T) {
 		t.Errorf("hashing a %d-byte file allocated %d bytes, want under 1 MiB (streamed, never read whole)", len(content), grew)
 	}
 }
+
+func TestShortTrainingReachesTheEncoderThroughTheWindow(t *testing.T) {
+	c, p, o, _, err := buildModel(fixtureVariant(), 4, []int{0}, []int{2, 3}, modelOptions{DT: 0.1, Truncation: 2, Rate: 0.01})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, rep, err := shortTraining(context.Background(), c, p, o, runOptions{Steps: 8, ContinueRows: 4, PlasticEdges: 2, Chemistry: true}, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	groups := []string{"weights", "bias", "log_tau", "encoder", "readout"}
+	for _, group := range groups {
+		t.Logf("parameters_changed[%s] = %d", group, rep.ParametersChanged[group])
+		if rep.ParametersChanged[group] <= 0 {
+			t.Errorf("parameters_changed[%q] = %d, want > 0", group, rep.ParametersChanged[group])
+		}
+	}
+}
