@@ -270,6 +270,25 @@ func (c Nav2DConfig) Validate() error {
 	return nil
 }
 
+// DefaultNav2DConfig is the protocol the CLI and the TSK-08 evidence use: Env {Task avoid_obstacles}, Seeds {1, 2, 3}, Episodes 60, Hidden 16, Recurrent 4, LearningRate 0.05, EvalEpisodes 20, Policies {recurrent, feedforward, rewired, random}.
+func DefaultNav2DConfig() Nav2DConfig {
+	return Nav2DConfig{
+		Env:          nav2d.Config{Task: nav2d.TaskAvoidObstacles},
+		Seeds:        []uint64{1, 2, 3},
+		Episodes:     60,
+		Hidden:       16,
+		Recurrent:    4,
+		LearningRate: 0.05,
+		EvalEpisodes: 20,
+		Policies: []string{
+			Nav2DRecurrent,
+			Nav2DFeedforward,
+			Nav2DRewired,
+			Nav2DRandom,
+		},
+	}
+}
+
 // Nav2DRun is one policy on one seed: the budget it took, its metrics before
 // training, on the seen training maps and on the unseen maps, plus the
 // rewiring checklist when the policy is the rewired control. A failed run

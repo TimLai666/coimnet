@@ -136,7 +136,7 @@ type CoreOnlyChecks struct {
 	InputReachable  bool    `json:"input_reachable"`  // every readout node reachable from the input nodes over the core edges (BFS)
 	CoreUpdateNorm  float64 `json:"core_update_norm"` // L2 norm of (weights, bias) after - before training: did any gradient reach the core
 	MeanAbsInput    float64 `json:"mean_abs_input"`   // mean |value| of the probe observation rows
-	MeanAbsReadout  float64 `json:"mean_abs_readout"` // mean |tanh(v)| of the readout nodes over the probe (same probe and voltages as the activity)
+	MeanAbsReadout  float64 `json:"mean_abs_readout"` // mean |tanh(v)| of the action readout nodes (the last nav2d.Actions of ReadoutNodes) over the probe (same probe and voltages as the activity)
 	Saturated       bool    `json:"saturated"`        // MeanAbsReadout > 0.99
 	Vanishing       bool    `json:"vanishing"`        // MeanAbsReadout < 1e-6
 	StateReset      bool    `json:"state_reset"`      // two PredictAll calls on the probe are bit-identical
@@ -383,7 +383,11 @@ func coreOnlyChecks(ctx context.Context, p *nav2dPolicy, env nav2d.Config, befor
 	if inputCount > 0 {
 		checks.MeanAbsInput = inputSum / float64(inputCount)
 	}
-	if checks.MeanAbsReadout, err = attributionActivity(ctx, cfg, after, snap.Options, probe, cfg.ReadoutNodes); err != nil {
+	actionReadouts := cfg.ReadoutNodes
+	if len(actionReadouts) >= nav2d.Actions {
+		actionReadouts = actionReadouts[len(actionReadouts)-nav2d.Actions:]
+	}
+	if checks.MeanAbsReadout, err = attributionActivity(ctx, cfg, after, snap.Options, probe, actionReadouts); err != nil {
 		return checks, fmt.Errorf("core_only checks readout scale: %w", err)
 	}
 	checks.Saturated = checks.MeanAbsReadout > 0.99

@@ -3,6 +3,7 @@ package experiment
 import (
 	"context"
 	"errors"
+	"math"
 	"reflect"
 	"strings"
 	"testing"
@@ -275,5 +276,41 @@ func TestRunAttributionHonoursCancellation(t *testing.T) {
 	}
 	if len(report.Runs) != 0 {
 		t.Errorf("cancelled run produced %d runs, want none", len(report.Runs))
+	}
+}
+
+// TestAttributionReadoutScaleUsesActionNodes verifies that core_only's
+// coreOnlyChecks.MeanAbsReadout is computed using only the action readout
+// nodes (the last nav2d.Actions of ReadoutNodes) and equals attributionActivity
+// on those nodes bit for bit.
+func TestAttributionReadoutScaleUsesActionNodes(t *testing.T) {
+	ctx := context.Background()
+	env := nav2d.Config{Task: nav2d.TaskAvoidObstacles}
+	p, _, err := newAttributionPolicy(AttributionCoreOnly, 1, 40, 8, 2, 0.05)
+	if err != nil {
+		t.Fatalf("newAttributionPolicy(core_only): %v", err)
+	}
+	snap := p.trainer.Snapshot()
+	checks, err := coreOnlyChecks(ctx, p, env, snap.Parameters, snap.Parameters)
+	if err != nil {
+		t.Fatalf("coreOnlyChecks: %v", err)
+	}
+	probe, err := attributionProbe(env)
+	if err != nil {
+		t.Fatalf("attributionProbe: %v", err)
+	}
+	cfg := snap.Config
+	if len(cfg.ReadoutNodes) < nav2d.Actions {
+		t.Fatalf("ReadoutNodes has %d elements, want at least %d", len(cfg.ReadoutNodes), nav2d.Actions)
+	}
+	actionNodes := cfg.ReadoutNodes[len(cfg.ReadoutNodes)-nav2d.Actions:]
+	wantScale, err := attributionActivity(ctx, cfg, snap.Parameters, snap.Options, probe, actionNodes)
+	if err != nil {
+		t.Fatalf("attributionActivity: %v", err)
+	}
+	if math.Float64bits(checks.MeanAbsReadout) != math.Float64bits(wantScale) {
+		t.Fatalf("MeanAbsReadout %v (bits %x) != wantScale %v (bits %x)",
+			checks.MeanAbsReadout, math.Float64bits(checks.MeanAbsReadout),
+			wantScale, math.Float64bits(wantScale))
 	}
 }

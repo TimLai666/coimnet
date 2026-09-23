@@ -400,3 +400,48 @@ func TestRunNav2DHonoursCancellation(t *testing.T) {
 		t.Errorf("err %v, want context.Canceled", err)
 	}
 }
+
+// TestDefaultNav2DConfig verifies the default protocol: exact field values,
+// successful validation, and that returned slices are not shared across calls.
+func TestDefaultNav2DConfig(t *testing.T) {
+	c := DefaultNav2DConfig()
+	if c.Env.Task != nav2d.TaskAvoidObstacles {
+		t.Errorf("Env.Task = %q, want %q", c.Env.Task, nav2d.TaskAvoidObstacles)
+	}
+	wantSeeds := []uint64{1, 2, 3}
+	if !reflect.DeepEqual(c.Seeds, wantSeeds) {
+		t.Errorf("Seeds = %v, want %v", c.Seeds, wantSeeds)
+	}
+	if c.Episodes != 60 {
+		t.Errorf("Episodes = %d, want 60", c.Episodes)
+	}
+	if c.Hidden != 16 {
+		t.Errorf("Hidden = %d, want 16", c.Hidden)
+	}
+	if c.Recurrent != 4 {
+		t.Errorf("Recurrent = %d, want 4", c.Recurrent)
+	}
+	if c.LearningRate != 0.05 {
+		t.Errorf("LearningRate = %v, want 0.05", c.LearningRate)
+	}
+	if c.EvalEpisodes != 20 {
+		t.Errorf("EvalEpisodes = %d, want 20", c.EvalEpisodes)
+	}
+	wantPolicies := []string{Nav2DRecurrent, Nav2DFeedforward, Nav2DRewired, Nav2DRandom}
+	if !reflect.DeepEqual(c.Policies, wantPolicies) {
+		t.Errorf("Policies = %v, want %v", c.Policies, wantPolicies)
+	}
+	if err := c.Validate(); err != nil {
+		t.Fatalf("DefaultNav2DConfig().Validate() = %v, want nil", err)
+	}
+
+	c2 := DefaultNav2DConfig()
+	c.Seeds[0] = 999
+	if c2.Seeds[0] == 999 {
+		t.Error("DefaultNav2DConfig shared Seeds slice between calls")
+	}
+	c.Policies[0] = "mutated"
+	if c2.Policies[0] == "mutated" {
+		t.Error("DefaultNav2DConfig shared Policies slice between calls")
+	}
+}
