@@ -119,7 +119,7 @@ func TestConfigVectorFieldsValidation(t *testing.T) {
 		{"state 65", func(c *Config) { c.StateDimension = 65 }, "state dimension must be in [0, 64]"},
 		{"bad edge shape", func(c *Config) { c.EdgeShape = "foo" }, "unsupported edge shape"},
 		{"scalar with matrix", func(c *Config) { c.StateDimension = 1; c.EdgeShape = "matrix" }, "matrix requires a vector state dimension"},
-		{"vector not wired", func(c *Config) { c.StateDimension = 3; c.EdgeShape = "matrix" }, "vector nodes are declared but not wired yet"},
+		{"vector not wired", func(c *Config) { c.StateDimension = 3; c.EdgeShape = "matrix" }, "use NewVectorContinuous for a vector state"},
 		{"default scalar ok", func(c *Config) {}, ""},
 		{"explicit scalar ok", func(c *Config) { c.EdgeShape = "scalar" }, ""},
 		{"dim 1 ok", func(c *Config) { c.StateDimension = 1 }, ""},

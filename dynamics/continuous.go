@@ -84,9 +84,9 @@ func NewContinuous(c Config) (*Continuous, error) {
 		return nil, fmt.Errorf("edge shape matrix requires a vector state dimension")
 	}
 	if c.StateDimension > 1 {
-		// TODO(ticket 25 stage 2 ticket 2): wire vector-node forward/backward
-		// passes and then remove this guard, per ticket 25 root decision 6.
-		return nil, fmt.Errorf("vector nodes are declared but not wired yet")
+		// The scalar core never hosts vector nodes; NewVectorContinuous runs
+		// them, exactly as the message below says.
+		return nil, fmt.Errorf("use NewVectorContinuous for a vector state")
 	}
 	if c.Nodes <= 0 || !finite(c.DT) || c.DT <= 0 {
 		return nil, fmt.Errorf("nodes and finite dt must be positive")

@@ -150,8 +150,9 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if sizeErr != nil {
 		return nil, sizeErr
 	}
-	nodes, theta := n.core.nodes(), n.core.thetaCount()
-	if len(p.Core.Weights) != n.core.edges() || len(p.Core.Bias) != nodes || len(p.Core.LogTau) != nodes || len(p.ThetaRaw) != theta || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*c.OutputSize {
+	nodeCount, theta := n.core.nodes(), n.core.thetaCount()
+	stateDim := n.core.stateDim()
+	if len(p.Core.Weights) != n.core.weightCount() || len(p.Core.Bias) != n.core.biasCount() || len(p.Core.LogTau) != nodeCount || len(p.ThetaRaw) != theta || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*stateDim*c.OutputSize {
 		return nil, fmt.Errorf("parameter shape mismatch")
 	}
 	if _, err = n.Predict(context.Background(), p, [][]float64{make([]float64, c.InputSize)}); err != nil {

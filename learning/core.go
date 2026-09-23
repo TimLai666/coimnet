@@ -14,6 +14,16 @@ import (
 type coreModel interface {
 	nodes() int
 	edges() int
+	// weightCount is the number of stored weight values: edges on the scalar
+	// and spiking cores, and the layout's per-edge capacity on the vector core
+	// (E for scalar edges or E*C*C for matrix edges).
+	weightCount() int
+	// biasCount is the number of stored bias values: nodes on the scalar and
+	// spiking cores, and N*C node-major values on the vector core.
+	biasCount() int
+	// stateDim is the per-node component count: 1 on every core that existed
+	// before the vector core, and C on the vector core.
+	stateDim() int
 	// forward returns the owning core's trace and the per-step values the
 	// readout observes: activated outputs for the continuous core and the
 	// synaptic trace x for the LIF core.
@@ -68,8 +78,11 @@ type continuousCore struct {
 	nodeCount, edgeCount int
 }
 
-func (c continuousCore) nodes() int { return c.nodeCount }
-func (c continuousCore) edges() int { return c.edgeCount }
+func (c continuousCore) nodes() int       { return c.nodeCount }
+func (c continuousCore) edges() int       { return c.edgeCount }
+func (c continuousCore) weightCount() int { return c.edgeCount }
+func (c continuousCore) biasCount() int   { return c.nodeCount }
+func (c continuousCore) stateDim() int    { return 1 }
 
 func (c continuousCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != 0 {
@@ -150,8 +163,11 @@ type lifCore struct {
 	nodeCount, edgeCount int
 }
 
-func (l lifCore) nodes() int { return l.nodeCount }
-func (l lifCore) edges() int { return l.edgeCount }
+func (l lifCore) nodes() int       { return l.nodeCount }
+func (l lifCore) edges() int       { return l.edgeCount }
+func (l lifCore) weightCount() int { return l.edgeCount }
+func (l lifCore) biasCount() int   { return l.nodeCount }
+func (l lifCore) stateDim() int    { return 1 }
 
 func (l lifCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != l.nodeCount {
@@ -251,8 +267,11 @@ type mixedCore struct {
 	lifIndex []int
 }
 
-func (x mixedCore) nodes() int { return x.nodeCount }
-func (x mixedCore) edges() int { return x.edgeCount }
+func (x mixedCore) nodes() int       { return x.nodeCount }
+func (x mixedCore) edges() int       { return x.edgeCount }
+func (x mixedCore) weightCount() int { return x.edgeCount }
+func (x mixedCore) biasCount() int   { return x.nodeCount }
+func (x mixedCore) stateDim() int    { return 1 }
 
 func (x mixedCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != len(x.lifIndex) {
@@ -386,6 +405,18 @@ func newCore(c *Config) (coreModel, error) {
 		owned := model.Config()
 		c.LIF, c.Dynamics = &owned, dynamics.Config{}
 		return lifCore{model, owned.Nodes, len(owned.Sources)}, nil
+	}
+	// A state dimension above one declares vector nodes, which only the vector
+	// continuous core runs; it is still a Dynamics declaration, exactly as the
+	// scalar continuous core is. Root decision 6 of ticket 25 keeps C = 1 on
+	// the scalar path, so the two models stay bit-identical there.
+	if c.Dynamics.StateDimension > 1 {
+		vc, err := newVectorCore(c.Dynamics)
+		if err != nil {
+			return nil, err
+		}
+		c.Dynamics = vc.config
+		return vc, nil
 	}
 	model, err := dynamics.NewContinuous(c.Dynamics)
 	if err != nil {

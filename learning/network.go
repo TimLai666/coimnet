@@ -366,22 +366,31 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 	if err != nil {
 		return empty, err
 	}
-	nodes := configNodes(n.config)
+	stateDim := n.core.stateDim()
+	coreWidth := configNodes(n.config) * stateDim
 	up := make([][]float64, len(input))
 	for i := range up {
-		up[i] = make([]float64, nodes)
+		up[i] = make([]float64, coreWidth)
 	}
 	hGradient := dh.Data()
+	readout := len(n.config.ReadoutNodes)
 	if n.config.ReadoutEveryStep {
-		// dh is [step,readout] row-major, one row per step of the episode.
+		// dh is [step,readout] row-major, one row per step of the episode,
+		// with each readout node contributing stateDim values.
 		for t := range up {
 			for j, id := range n.config.ReadoutNodes {
-				up[t][id] = float64(hGradient[t*len(n.config.ReadoutNodes)+j])
+				rowBase := (t*readout + j) * stateDim
+				for k := 0; k < stateDim; k++ {
+					up[t][id*stateDim+k] = float64(hGradient[rowBase+k])
+				}
 			}
 		}
 	} else {
 		for j, id := range n.config.ReadoutNodes {
-			up[len(up)-1][id] = float64(hGradient[j])
+			base := j * stateDim
+			for k := 0; k < stateDim; k++ {
+				up[len(up)-1][id*stateDim+k] = float64(hGradient[base+k])
+			}
 		}
 	}
 	cg, err := n.core.backward(ctx, e.trace, up, window)
@@ -412,7 +421,7 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			continue
 		}
 		for _, id := range n.config.InputNodes {
-			flat = append(flat, row[id])
+			flat = append(flat, row[id*stateDim:(id+1)*stateDim]...)
 		}
 	}
 	seed, err = tensor([]int{len(flat)}, flat)
@@ -477,7 +486,9 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 		return nil, err
 	}
 	nodes := configNodes(n.config)
-	if _, err := size(len(input), nodes); err != nil {
+	stateDim := n.core.stateDim()
+	coreWidth := nodes * stateDim
+	if _, err := size(len(input), coreWidth); err != nil {
 		return nil, err
 	}
 	flat := make([]float64, 0, count)
@@ -512,9 +523,9 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(encodedRows))
 		for t, row := range encodedRows {
-			coreInputs[t] = make([]float64, nodes)
+			coreInputs[t] = make([]float64, coreWidth)
 			for i, id := range n.config.InputNodes {
-				coreInputs[t][id] = row[i]
+				copy(coreInputs[t][id*stateDim:(id+1)*stateDim], row[i*stateDim:(i+1)*stateDim])
 			}
 		}
 	}
@@ -522,11 +533,11 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	tr, y, err := n.core.forward(ctx, core, make([]float64, nodes), coreInputs)
+	tr, y, err := n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
 	if err != nil {
 		return nil, err
 	}
-	readoutCount := len(n.config.ReadoutNodes)
+	readoutCount := len(n.config.ReadoutNodes) * stateDim
 	var selected []float64
 	var shape []int
 	if n.config.ReadoutEveryStep {
@@ -539,14 +550,16 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 		selected = make([]float64, 0, len(y)*readoutCount)
 		for _, row := range y {
 			for _, id := range n.config.ReadoutNodes {
-				selected = append(selected, row[id])
+				selected = append(selected, row[id*stateDim:(id+1)*stateDim]...)
 			}
 		}
 		shape = []int{len(y), readoutCount}
 	} else {
 		selected = make([]float64, readoutCount)
-		for i, id := range n.config.ReadoutNodes {
-			selected[i] = y[len(y)-1][id]
+		k := 0
+		for _, id := range n.config.ReadoutNodes {
+			copy(selected[k:k+stateDim], y[len(y)-1][id*stateDim:(id+1)*stateDim])
+			k += stateDim
 		}
 		shape = []int{readoutCount}
 	}
@@ -627,10 +640,17 @@ func size(a, b int) (int, error) {
 }
 
 func inputWidth(c Config) int {
+	width := configNodes(c)
 	if c.InputNodes != nil {
-		return len(c.InputNodes)
+		width = len(c.InputNodes)
 	}
-	return configNodes(c)
+	// Vector nodes feed C components per node into the core, so a full core
+	// input row and therefore the encoder's width scale together. A declared
+	// scalar dimension leaves the pre-vector width untouched.
+	if c.Dynamics.StateDimension > 1 {
+		width *= c.Dynamics.StateDimension
+	}
+	return width
 }
 
 func finite(x float64) bool { return !math.IsNaN(x) && !math.IsInf(x, 0) }
