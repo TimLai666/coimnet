@@ -78,15 +78,23 @@ type ModelPackage struct {
 	Units              Units               `json:"units"`
 	EvidenceRegistry   []string            `json:"evidence_registry"`
 	CompatibleVersions CompatibleVersions  `json:"compatible_versions"`
+	// Capacity is the report of what this model can store and what one step
+	// costs. NewModelPackage fills it through learning.NewNetwork; it is
+	// optional on the wire, so a package written before this field existed
+	// loads with a nil Capacity and keeps its recorded fingerprint, and
+	// canonicalModelPackage copies a declared value without recomputing it.
+	Capacity *learning.CapacityReport `json:"capacity,omitempty"`
 }
 
 // NewModelPackage validates one model declaration and returns the package that
 // SaveModelPackage publishes. The configuration and parameters are validated
 // together through the trainer, so a package can never carry a model that
 // cannot be built. Evidence paths are the caller's own relative record paths;
-// they are stored verbatim and are never opened here.
+// they are stored verbatim and are never opened here. The capacity report is
+// computed from the validated copy through learning.NewNetwork and
+// Network.Capacity, the same public API a reader can recompute it with.
 func NewModelPackage(c learning.Config, p learning.Parameters, units Units, evidence []string) (ModelPackage, error) {
-	return canonicalModelPackage(ModelPackage{
+	pkg, err := canonicalModelPackage(ModelPackage{
 		SchemaVersion:      ModelPackageSchemaVersion,
 		Config:             c,
 		Parameters:         p,
@@ -95,6 +103,16 @@ func NewModelPackage(c learning.Config, p learning.Parameters, units Units, evid
 		CompatibleVersions: supportedCompatibleVersions(),
 		Topology:           TopologyFingerprint{Nodes: configNodes(c), Edges: configEdges(c), SHA256: declaredTopologyDigest(c)},
 	})
+	if err != nil {
+		return ModelPackage{}, err
+	}
+	network, err := learning.NewNetwork(pkg.Config)
+	if err != nil {
+		return ModelPackage{}, err
+	}
+	report := network.Capacity(pkg.Parameters)
+	pkg.Capacity = &report
+	return pkg, nil
 }
 
 // SaveModelPackage validates and publishes one model package. The caller's
@@ -227,6 +245,10 @@ func canonicalModelPackage(pkg ModelPackage) (ModelPackage, error) {
 		Units:              pkg.Units,
 		EvidenceRegistry:   evidence,
 		CompatibleVersions: CompatibleVersions{Individual: append([]string(nil), pkg.CompatibleVersions.Individual...), Training: append([]string(nil), pkg.CompatibleVersions.Training...)},
+		// Copied, never recomputed: a package built before this field existed
+		// loads with nil and keeps its fingerprint, and only NewModelPackage
+		// synthesises a report.
+		Capacity: ownedCapacity(pkg.Capacity),
 	}
 	fingerprint, err := topologyFingerprint(owned.Config)
 	if err != nil {
@@ -481,4 +503,12 @@ func individualKindError(schema string) error {
 		return fmt.Errorf("%q is an episode training checkpoint, which carries no persistent neural state, and is not an individual snapshot", schema)
 	}
 	return fmt.Errorf("unsupported individual checkpoint schema %q", schema)
+}
+
+func ownedCapacity(c *learning.CapacityReport) *learning.CapacityReport {
+	if c == nil {
+		return nil
+	}
+	cp := *c
+	return &cp
 }

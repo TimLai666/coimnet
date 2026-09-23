@@ -24,6 +24,11 @@ type coreModel interface {
 	// stateDim is the per-node component count: 1 on every core that existed
 	// before the vector core, and C on the vector core.
 	stateDim() int
+	// matrixEdges reports whether one stored weight value is a full C*C block
+	// of an edge rather than a single scalar. It is false on every scalar
+	// core and on the vector core's scalar-broadcast edge shape, so a layout
+	// that stores exactly one value per edge keeps the identity mapping.
+	matrixEdges() bool
 	// forward returns the owning core's trace and the per-step values the
 	// readout observes: activated outputs for the continuous core and the
 	// synaptic trace x for the LIF core.
@@ -78,11 +83,12 @@ type continuousCore struct {
 	nodeCount, edgeCount int
 }
 
-func (c continuousCore) nodes() int       { return c.nodeCount }
-func (c continuousCore) edges() int       { return c.edgeCount }
-func (c continuousCore) weightCount() int { return c.edgeCount }
-func (c continuousCore) biasCount() int   { return c.nodeCount }
-func (c continuousCore) stateDim() int    { return 1 }
+func (c continuousCore) nodes() int        { return c.nodeCount }
+func (c continuousCore) edges() int        { return c.edgeCount }
+func (c continuousCore) weightCount() int  { return c.edgeCount }
+func (c continuousCore) biasCount() int    { return c.nodeCount }
+func (c continuousCore) stateDim() int     { return 1 }
+func (c continuousCore) matrixEdges() bool { return false }
 
 func (c continuousCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != 0 {
@@ -163,11 +169,12 @@ type lifCore struct {
 	nodeCount, edgeCount int
 }
 
-func (l lifCore) nodes() int       { return l.nodeCount }
-func (l lifCore) edges() int       { return l.edgeCount }
-func (l lifCore) weightCount() int { return l.edgeCount }
-func (l lifCore) biasCount() int   { return l.nodeCount }
-func (l lifCore) stateDim() int    { return 1 }
+func (l lifCore) nodes() int        { return l.nodeCount }
+func (l lifCore) edges() int        { return l.edgeCount }
+func (l lifCore) weightCount() int  { return l.edgeCount }
+func (l lifCore) biasCount() int    { return l.nodeCount }
+func (l lifCore) stateDim() int     { return 1 }
+func (l lifCore) matrixEdges() bool { return false }
 
 func (l lifCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != l.nodeCount {
@@ -267,11 +274,12 @@ type mixedCore struct {
 	lifIndex []int
 }
 
-func (x mixedCore) nodes() int       { return x.nodeCount }
-func (x mixedCore) edges() int       { return x.edgeCount }
-func (x mixedCore) weightCount() int { return x.edgeCount }
-func (x mixedCore) biasCount() int   { return x.nodeCount }
-func (x mixedCore) stateDim() int    { return 1 }
+func (x mixedCore) nodes() int        { return x.nodeCount }
+func (x mixedCore) edges() int        { return x.edgeCount }
+func (x mixedCore) weightCount() int  { return x.edgeCount }
+func (x mixedCore) biasCount() int    { return x.nodeCount }
+func (x mixedCore) stateDim() int     { return 1 }
+func (x mixedCore) matrixEdges() bool { return false }
 
 func (x mixedCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != len(x.lifIndex) {

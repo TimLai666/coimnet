@@ -44,8 +44,9 @@ func (v vectorCore) edges() int { return v.edgeCount }
 func (v vectorCore) weightCount() int {
 	return v.layout.WeightValues()
 }
-func (v vectorCore) biasCount() int { return v.layout.NodeValues() }
-func (v vectorCore) stateDim() int  { return v.layout.C }
+func (v vectorCore) biasCount() int    { return v.layout.NodeValues() }
+func (v vectorCore) stateDim() int     { return v.layout.C }
+func (v vectorCore) matrixEdges() bool { return v.layout.Matrix }
 
 func (v vectorCore) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error) {
 	if len(p.ThetaRaw) != 0 {

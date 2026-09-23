@@ -135,6 +135,13 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Root decision 6 of ticket 25 defines a fixed sign per scalar edge only;
+	// a C*C matrix weight has no declared sign, so a nonzero declaration on a
+	// vector-state model is refused rather than silently ignored. An all-zero
+	// declaration is the same model as no declaration at all and stays legal.
+	if n.core.stateDim() > 1 && hasFixedSigns(c.EdgeSigns) {
+		return nil, fmt.Errorf("fixed edge signs are not defined for vector state edges")
+	}
 	if err := validateTrainable(o.Trainable, n.core.theta()); err != nil {
 		return nil, err
 	}
@@ -314,7 +321,7 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	var err error
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
-	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes())
+	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes(), tr.network.core)
 	state := copyAdam(tr.optimizer)
 	// Loss scaling multiplies and divides back here, before the gradient
 	// reaches the accumulator or the clip: a product that leaves the
@@ -571,10 +578,26 @@ func unflatten(v []float64, shape Parameters) Parameters {
 // core whose threshold group covers all of its nodes; a mixed core's group
 // covers only its LIF nodes and needs the map, or the node mask would land on
 // the wrong thresholds.
-func parameterMask(p Parameters, o Options, thetaNodes []int) []bool {
+//
+// The optional core supplies the vector layout of the weight and bias groups.
+// On a matrix-edge vector core the i-th weight value belongs to edge
+// i/(C*C) and the i-th bias value to node i/C, so the per-item halves are
+// indexed through those spans; a scalar-broadcast vector core stores one
+// weight per edge and maps weights by identity. Without a core every span is
+// one and a scalar model's mask is bit-identical to the mapping before the
+// vector core existed.
+func parameterMask(p Parameters, o Options, thetaNodes []int, core ...coreModel) []bool {
 	var edges, nodes []bool
 	if o.Masks != nil {
 		edges, nodes = o.Masks.Edges, o.Masks.Nodes
+	}
+	weightSpan, biasSpan := 1, 1
+	if len(core) != 0 && core[0] != nil {
+		dim := core[0].stateDim()
+		biasSpan = dim
+		if core[0].matrixEdges() {
+			weightSpan = dim * dim
+		}
 	}
 	theta := nodes
 	if len(thetaNodes) != 0 && len(nodes) != 0 {
@@ -589,15 +612,16 @@ func parameterMask(p Parameters, o Options, thetaNodes []int) []bool {
 		size    int
 		enabled bool
 		item    []bool
+		span    int
 	}{
-		{len(p.Core.Weights), m.Weights, edges}, {len(p.Core.Bias), m.Bias, nodes},
-		{len(p.Core.LogTau), m.Tau, nodes}, {len(p.ThetaRaw), m.Theta, theta},
-		{len(p.Encoder), m.Encoder, nil}, {len(p.Readout), m.Readout, nil},
+		{len(p.Core.Weights), m.Weights, edges, weightSpan}, {len(p.Core.Bias), m.Bias, nodes, biasSpan},
+		{len(p.Core.LogTau), m.Tau, nodes, 1}, {len(p.ThetaRaw), m.Theta, theta, 1},
+		{len(p.Encoder), m.Encoder, nil, 1}, {len(p.Readout), m.Readout, nil, 1},
 	} {
 		for i := range g.size {
 			enabled := g.enabled
-			if enabled && i < len(g.item) {
-				enabled = g.item[i]
+			if enabled && i < len(g.item)*g.span {
+				enabled = g.item[i/g.span]
 			}
 			out = append(out, enabled)
 		}
