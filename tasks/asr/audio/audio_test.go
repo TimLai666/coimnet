@@ -204,6 +204,25 @@ func TestReadWAVSkipsExtraChunks(t *testing.T) {
 	}
 }
 
+func TestDecodeWAVMatchesReadWAV(t *testing.T) {
+	raw := riff(
+		chunk("fmt ", fmtChunkPayload(1, 1, 16000, 16)),
+		chunk("data", pcmBytes([][]int16{{1000, -2000, 3000}})),
+	)
+	path := writeFixture(t, "decode.wav", raw)
+	fromBytes, err := audio.DecodeWAV(raw)
+	if err != nil {
+		t.Fatalf("DecodeWAV: %v", err)
+	}
+	fromPath, err := audio.ReadWAV(path)
+	if err != nil {
+		t.Fatalf("ReadWAV: %v", err)
+	}
+	if !reflect.DeepEqual(fromBytes, fromPath) {
+		t.Fatalf("DecodeWAV(raw) = %+v, ReadWAV(path) = %+v", fromBytes, fromPath)
+	}
+}
+
 func TestMixdown(t *testing.T) {
 	s := audio.Signal{
 		SampleRate: 16000,
@@ -285,6 +304,68 @@ func TestResampleLengthsAndConstant(t *testing.T) {
 	}
 }
 
+func resampleWithoutPanic(x []float64, from, to int) (out []float64, report audio.ResampleReport, err error, panicValue any) {
+	defer func() {
+		panicValue = recover()
+	}()
+	out, report, err = audio.Resample(x, from, to)
+	return out, report, err, nil
+}
+
+func TestResampleRejectsInvalidOutputLength(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	cases := []struct {
+		name     string
+		x        []float64
+		from, to int
+	}{
+		{"rounds to zero", []float64{1}, maxInt, 1},
+		{"overflows int", []float64{1, 2}, 1, maxInt},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, report, err, panicValue := resampleWithoutPanic(c.x, c.from, c.to)
+			if panicValue != nil {
+				t.Fatalf("Resample panicked: %v", panicValue)
+			}
+			if err == nil {
+				t.Fatal("Resample = nil error, want one")
+			}
+			if got != nil {
+				t.Fatalf("Resample output = %v, want nil on error", got)
+			}
+			if report != (audio.ResampleReport{}) {
+				t.Fatalf("Resample report = %+v, want zero report on error", report)
+			}
+		})
+	}
+}
+
+func TestResampleRejectsNonFiniteInput(t *testing.T) {
+	cases := []struct {
+		name   string
+		sample float64
+	}{
+		{"NaN", math.NaN()},
+		{"positive infinity", math.Inf(1)},
+		{"negative infinity", math.Inf(-1)},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, report, err := audio.Resample([]float64{0, c.sample, 1}, 16000, 8000)
+			if err == nil {
+				t.Fatal("Resample = nil error, want one")
+			}
+			if got != nil {
+				t.Fatalf("Resample output = %v, want nil on error", got)
+			}
+			if report != (audio.ResampleReport{}) {
+				t.Fatalf("Resample report = %+v, want zero report on error", report)
+			}
+		})
+	}
+}
+
 func TestNormalize(t *testing.T) {
 	t.Run("scales to the target peak", func(t *testing.T) {
 		x := []float64{0.25, -0.125, 0, 0.25}
@@ -323,6 +404,32 @@ func TestNormalize(t *testing.T) {
 		t.Run("rejects peak", func(t *testing.T) {
 			if _, _, err := audio.Normalize([]float64{0.5}, peak); err == nil {
 				t.Fatalf("Normalize(peak=%v) = nil error, want one", peak)
+			}
+		})
+	}
+}
+
+func TestNormalizeRejectsNonFiniteInputAndOutput(t *testing.T) {
+	cases := []struct {
+		name string
+		x    []float64
+	}{
+		{"NaN", []float64{0.5, math.NaN()}},
+		{"positive infinity", []float64{0.5, math.Inf(1)}},
+		{"negative infinity", []float64{0.5, math.Inf(-1)}},
+		{"finite input would overflow gain", []float64{math.SmallestNonzeroFloat64}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, report, err := audio.Normalize(c.x, 1)
+			if err == nil {
+				t.Fatal("Normalize = nil error, want one")
+			}
+			if got != nil {
+				t.Fatalf("Normalize output = %v, want nil on error", got)
+			}
+			if report != (audio.NormalizeReport{}) {
+				t.Fatalf("Normalize report = %+v, want zero report on error", report)
 			}
 		})
 	}

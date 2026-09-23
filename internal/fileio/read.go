@@ -1,9 +1,11 @@
 // Package fileio contains bounded readers for inputs that must be ordinary
-// files. A path that names a symlink is rejected; callers that need symlink
-// resolution must resolve and validate the destination before calling here.
-// Linux and Darwin also prevent a symlink from being followed between the
-// preflight and open operations. Other Unix targets retain the preflight and
-// post-open checks but do not promise atomic race protection.
+// files. ReadRegular rejects a path that names a symlink; callers that need
+// symlink resolution must resolve and validate the destination before calling
+// it. ReadRootRegular instead resolves names beneath an os.Root and permits
+// only symlinks that remain inside that root. Linux and Darwin also prevent a
+// symlink from being followed between ReadRegular's preflight and open
+// operations. Other Unix targets retain the preflight and post-open checks but
+// do not promise atomic race protection.
 package fileio
 
 import (
@@ -24,16 +26,7 @@ var errInvalidFile = errors.New("opened file is unavailable")
 // between filesystem operations and reads. Filesystem reads themselves are
 // not made interruptible by context.
 func ReadRegular(ctx context.Context, path string, maxBytes int64) (data []byte, retErr error) {
-	if ctx == nil {
-		return nil, fmt.Errorf("nil context")
-	}
-	if maxBytes < 0 {
-		return nil, fmt.Errorf("file byte limit must not be negative")
-	}
-	if path == "" {
-		return nil, fmt.Errorf("file path must not be empty")
-	}
-	if err := ctx.Err(); err != nil {
+	if err := validateReadRegularArgs(ctx, path, maxBytes); err != nil {
 		return nil, err
 	}
 
@@ -47,22 +40,69 @@ func ReadRegular(ctx context.Context, path string, maxBytes int64) (data []byte,
 			data = nil
 		}
 	}()
+	data, _, retErr = readOpenedRegular(ctx, file, path, maxBytes)
+	return data, retErr
+}
 
+// ReadRootRegular reads an ordinary file beneath root in bounded chunks and
+// returns the FileInfo from the same opened descriptor as the bytes. Root.Open
+// prevents a symlink in any path component from escaping root, including when
+// a parent directory is replaced after root was opened.
+func ReadRootRegular(ctx context.Context, root *os.Root, name string, maxBytes int64) (data []byte, info os.FileInfo, retErr error) {
+	if err := validateReadRegularArgs(ctx, name, maxBytes); err != nil {
+		return nil, nil, err
+	}
+	if root == nil {
+		return nil, nil, fmt.Errorf("root must not be nil")
+	}
+
+	file, err := root.Open(name)
+	if err != nil {
+		return nil, nil, fmt.Errorf("open rooted regular file %q: %w", name, err)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			retErr = errors.Join(retErr, fmt.Errorf("close rooted regular file %q: %w", name, closeErr))
+			data = nil
+			info = nil
+		}
+	}()
+	data, info, retErr = readOpenedRegular(ctx, file, name, maxBytes)
+	return data, info, retErr
+}
+
+func validateReadRegularArgs(ctx context.Context, path string, maxBytes int64) error {
+	if ctx == nil {
+		return fmt.Errorf("nil context")
+	}
+	if maxBytes < 0 {
+		return fmt.Errorf("file byte limit must not be negative")
+	}
+	if path == "" {
+		return fmt.Errorf("file path must not be empty")
+	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return err
+	}
+	return nil
+}
+
+func readOpenedRegular(ctx context.Context, file *os.File, path string, maxBytes int64) (data []byte, info os.FileInfo, retErr error) {
+	if err := ctx.Err(); err != nil {
+		return nil, nil, err
 	}
 	info, err := file.Stat()
 	if err != nil {
-		return nil, fmt.Errorf("stat regular file %q: %w", path, err)
+		return nil, nil, fmt.Errorf("stat regular file %q: %w", path, err)
 	}
 	if !info.Mode().IsRegular() {
-		return nil, fmt.Errorf("path %q is not a regular file", path)
+		return nil, nil, fmt.Errorf("path %q is not a regular file", path)
 	}
 	if info.Size() < 0 {
-		return nil, fmt.Errorf("regular file %q has a negative size", path)
+		return nil, nil, fmt.Errorf("regular file %q has a negative size", path)
 	}
 	if info.Size() > maxBytes {
-		return nil, fmt.Errorf("file %q exceeds %d byte limit", path, maxBytes)
+		return nil, nil, fmt.Errorf("file %q exceeds %d byte limit", path, maxBytes)
 	}
 
 	data = nil
@@ -70,16 +110,16 @@ func ReadRegular(ctx context.Context, path string, maxBytes int64) (data []byte,
 	zeroReads := 0
 	for {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		count, readErr := file.Read(chunk)
 		if count < 0 || count > len(chunk) {
-			return nil, fmt.Errorf("read regular file %q returned invalid count %d", path, count)
+			return nil, nil, fmt.Errorf("read regular file %q returned invalid count %d", path, count)
 		}
 		if count > 0 {
 			zeroReads = 0
 			if int64(len(data)) > maxBytes-int64(count) {
-				return nil, fmt.Errorf("file %q exceeds %d byte limit", path, maxBytes)
+				return nil, nil, fmt.Errorf("file %q exceeds %d byte limit", path, maxBytes)
 			}
 			need := len(data) + count
 			if cap(data) < need {
@@ -91,20 +131,20 @@ func ReadRegular(ctx context.Context, path string, maxBytes int64) (data []byte,
 		} else if readErr == nil {
 			zeroReads++
 			if zeroReads >= 100 {
-				return nil, io.ErrNoProgress
+				return nil, nil, io.ErrNoProgress
 			}
 		}
 		if readErr == io.EOF {
 			break
 		}
 		if readErr != nil {
-			return nil, fmt.Errorf("read regular file %q: %w", path, readErr)
+			return nil, nil, fmt.Errorf("read regular file %q: %w", path, readErr)
 		}
 	}
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return data, nil
+	return data, info, nil
 }
 
 func nextCapacity(current, need int, maxBytes int64) int {

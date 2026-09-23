@@ -82,3 +82,39 @@ func TestReadRegularRejectsSymlinkPath(t *testing.T) {
 		t.Fatalf("symlink error = %v, want regular-file error", err)
 	}
 }
+
+func TestReadRootRegularRejectsParentSymlinkEscapeAfterRootOpen(t *testing.T) {
+	rootDir := t.TempDir()
+	nested := filepath.Join(rootDir, "nested")
+	if err := os.Mkdir(nested, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(nested, "voice.wav"), []byte("inside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	outside := t.TempDir()
+	if err := os.WriteFile(filepath.Join(outside, "voice.wav"), []byte("outside"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := os.OpenRoot(rootDir)
+	if err != nil {
+		t.Skipf("rooted filesystem unavailable: %v", err)
+	}
+	t.Cleanup(func() { _ = root.Close() })
+	moved := filepath.Join(rootDir, "nested-original")
+	if err := os.Rename(nested, moved); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(outside, nested); err != nil {
+		t.Skipf("symlink unavailable: %v", err)
+	}
+
+	got, _, err := ReadRootRegular(context.Background(), root, filepath.Join("nested", "voice.wav"), 1024)
+	if err == nil {
+		t.Fatalf("ReadRootRegular accepted a parent symlink escape and read %q", got)
+	}
+	if got != nil {
+		t.Fatalf("ReadRootRegular returned bytes on a rejected parent symlink escape: %q", got)
+	}
+}

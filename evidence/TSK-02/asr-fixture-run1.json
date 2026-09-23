@@ -1,0 +1,295 @@
+{
+  "schema_version": "coimnet-asr-fixture/v1",
+  "config": {
+    "seeds": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "utterances_per_seed": 10,
+    "min_len": 1,
+    "max_len": 3,
+    "epochs": 10,
+    "test_fraction": 0.25,
+    "split_seed": 42,
+    "stream_chunk": 173,
+    "synth": {
+      "sample_rate": 16000,
+      "duration_ms": 120,
+      "gap_ms": 40,
+      "noise": 0.01,
+      "alphabet": [
+        97,
+        98,
+        99
+      ]
+    },
+    "recognizer": {
+      "sample_rate": 16000,
+      "front_end": {
+        "window": 256,
+        "hop": 128,
+        "mels": 12,
+        "f_min": 0,
+        "f_max": 8000,
+        "floor": 1e-10
+      },
+      "hidden": 24,
+      "alphabet": [
+        97,
+        98,
+        99
+      ],
+      "learning_rate": 0.02,
+      "seed": 5
+    }
+  },
+  "data_scope": {
+    "data": "synthetic pure tones generated in memory; no WAV files and no natural speech",
+    "language": "an alphabet of 3 runes (abc) with no natural-language statistics",
+    "resolution": "16000 Hz mono float64 waveform",
+    "sequence_length": "1..3 runes; 120 ms per tone plus 40 ms gaps",
+    "periphery": "log-mel front end, identity encoder, recurrent core readout and greedy CTC decoder"
+  },
+  "train_samples": 30,
+  "test_samples": 10,
+  "split_seed": 42,
+  "epochs": 10,
+  "before": {
+    "cer": {
+      "substitutions": 4,
+      "deletions": 9,
+      "insertions": 0,
+      "reference_length": 19,
+      "rate": 0.6842105263157895,
+      "defined": true
+    },
+    "wer": {
+      "substitutions": 9,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 10,
+      "rate": 0.9,
+      "defined": true
+    },
+    "exact_utterances": 0.1,
+    "samples": 10,
+    "front_end": {
+      "version": "coimnet-logmel/v1",
+      "sample_rate": 16000,
+      "config": {
+        "window": 256,
+        "hop": 128,
+        "mels": 12,
+        "f_min": 0,
+        "f_max": 8000,
+        "floor": 1e-10
+      },
+      "frames": 320
+    }
+  },
+  "after": {
+    "cer": {
+      "substitutions": 6,
+      "deletions": 5,
+      "insertions": 1,
+      "reference_length": 19,
+      "rate": 0.631578947368421,
+      "defined": true
+    },
+    "wer": {
+      "substitutions": 9,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 10,
+      "rate": 0.9,
+      "defined": true
+    },
+    "exact_utterances": 0.1,
+    "samples": 10,
+    "front_end": {
+      "version": "coimnet-logmel/v1",
+      "sample_rate": 16000,
+      "config": {
+        "window": 256,
+        "hop": 128,
+        "mels": 12,
+        "f_min": 0,
+        "f_max": 8000,
+        "floor": 1e-10
+      },
+      "frames": 320
+    }
+  },
+  "streaming": {
+    "cer": {
+      "substitutions": 6,
+      "deletions": 5,
+      "insertions": 1,
+      "reference_length": 19,
+      "rate": 0.631578947368421,
+      "defined": true
+    },
+    "wer": {
+      "substitutions": 9,
+      "deletions": 0,
+      "insertions": 0,
+      "reference_length": 10,
+      "rate": 0.9,
+      "defined": true
+    },
+    "exact_utterances": 0.1,
+    "samples": 10,
+    "audio_seconds": 2.6400000000000006,
+    "inference_duration_ns": 28595790,
+    "max_feed_duration_ns": 422750,
+    "measurements": [
+      {
+        "text": "ca",
+        "sample_rate": 16000,
+        "audio_sample_count": 7040,
+        "audio_seconds": 0.44,
+        "chunk_size": 173,
+        "chunk_count": 41,
+        "wall_clock_duration_ns": 5097500,
+        "max_feed_duration_ns": 240500,
+        "flush_duration_ns": 3417,
+        "first_output_samples": 346
+      },
+      {
+        "text": "c",
+        "sample_rate": 16000,
+        "audio_sample_count": 1920,
+        "audio_seconds": 0.12,
+        "chunk_size": 173,
+        "chunk_count": 12,
+        "wall_clock_duration_ns": 1293500,
+        "max_feed_duration_ns": 150917,
+        "flush_duration_ns": 32000,
+        "first_output_samples": 346
+      },
+      {
+        "text": "ca",
+        "sample_rate": 16000,
+        "audio_sample_count": 7040,
+        "audio_seconds": 0.44,
+        "chunk_size": 173,
+        "chunk_count": 41,
+        "wall_clock_duration_ns": 4699083,
+        "max_feed_duration_ns": 263958,
+        "flush_duration_ns": 3041,
+        "first_output_samples": 346
+      },
+      {
+        "text": "c",
+        "sample_rate": 16000,
+        "audio_sample_count": 4480,
+        "audio_seconds": 0.28,
+        "chunk_size": 173,
+        "chunk_count": 26,
+        "wall_clock_duration_ns": 2882333,
+        "max_feed_duration_ns": 210917,
+        "flush_duration_ns": 2209,
+        "first_output_samples": 346
+      },
+      {
+        "text": "ca",
+        "sample_rate": 16000,
+        "audio_sample_count": 4480,
+        "audio_seconds": 0.28,
+        "chunk_size": 173,
+        "chunk_count": 26,
+        "wall_clock_duration_ns": 3174166,
+        "max_feed_duration_ns": 422750,
+        "flush_duration_ns": 2709,
+        "first_output_samples": 346
+      },
+      {
+        "text": "ca",
+        "sample_rate": 16000,
+        "audio_sample_count": 1920,
+        "audio_seconds": 0.12,
+        "chunk_size": 173,
+        "chunk_count": 12,
+        "wall_clock_duration_ns": 1292584,
+        "max_feed_duration_ns": 167667,
+        "flush_duration_ns": 3750,
+        "first_output_samples": 346
+      },
+      {
+        "text": "ca",
+        "sample_rate": 16000,
+        "audio_sample_count": 4480,
+        "audio_seconds": 0.28,
+        "chunk_size": 173,
+        "chunk_count": 26,
+        "wall_clock_duration_ns": 3078833,
+        "max_feed_duration_ns": 233625,
+        "flush_duration_ns": 2375,
+        "first_output_samples": 346
+      },
+      {
+        "text": "c",
+        "sample_rate": 16000,
+        "audio_sample_count": 4480,
+        "audio_seconds": 0.28,
+        "chunk_size": 173,
+        "chunk_count": 26,
+        "wall_clock_duration_ns": 2854750,
+        "max_feed_duration_ns": 256416,
+        "flush_duration_ns": 2500,
+        "first_output_samples": 346
+      },
+      {
+        "text": "c",
+        "sample_rate": 16000,
+        "audio_sample_count": 4480,
+        "audio_seconds": 0.28,
+        "chunk_size": 173,
+        "chunk_count": 26,
+        "wall_clock_duration_ns": 2923708,
+        "max_feed_duration_ns": 238208,
+        "flush_duration_ns": 3000,
+        "first_output_samples": 346
+      },
+      {
+        "text": "c",
+        "sample_rate": 16000,
+        "audio_sample_count": 1920,
+        "audio_seconds": 0.12,
+        "chunk_size": 173,
+        "chunk_count": 12,
+        "wall_clock_duration_ns": 1299333,
+        "max_feed_duration_ns": 243042,
+        "flush_duration_ns": 2291,
+        "first_output_samples": 346
+      }
+    ],
+    "front_end_version": "coimnet-logmel/v1",
+    "front_end_config": {
+      "window": 256,
+      "hop": 128,
+      "mels": 12,
+      "f_min": 0,
+      "f_max": 8000,
+      "floor": 1e-10
+    },
+    "sample_rate": 16000
+  },
+  "timing": {
+    "generation_duration_ns": 3381542,
+    "split_duration_ns": 28500,
+    "eval_before_duration_ns": 6756333,
+    "training_duration_ns": 242424583,
+    "eval_after_duration_ns": 3471333,
+    "streaming_duration_ns": 28632917,
+    "total_duration_ns": 285163792
+  },
+  "limitations": [
+    "This fixture uses four groups of synthetic pure tones for the three-rune alphabet abc, not natural speech or user-provided WAV recordings.",
+    "The reported CER/WER and streaming timings are evidence that this offline fixture path runs; they are not a natural-language, speaker-independent, alignment-accuracy or production-latency claim.",
+    "Training and evaluation run on one local CPU process; timing values depend on the machine, Go runtime and current system load.",
+    "Real licensed-data import, training, inference and evaluation remain blocked until the user supplies the required licensed corpus and manifest."
+  ]
+}
