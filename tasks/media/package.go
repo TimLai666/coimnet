@@ -27,7 +27,15 @@ type PackageReport struct {
 	Error        string   `json:"error,omitempty"` // exit error plus the last 2 KiB of stderr when tool_failed
 }
 
-// PackageVideo optionally wraps a complete native video output using an external video tool.
+// PackageVideo looks up tool with exec.LookPath; an absent tool gives Status "tool_absent" and a nil error.
+// Otherwise it reads the version with `<tool> -version`, then runs the tool with the argument array
+// ["-n", "-framerate", "31.25", "-i",
+// <dir>/frame_%02d.png, "-i", <dir>/audio.wav, "-c:v", "png", "-c:a", "pcm_s16le", "-shortest", <dir>/clip.mkv] (no
+// shell; "-n" never overwrites, and an existing clip.mkv is an error before anything runs). A failing version probe or
+// a non-zero exit gives Status "tool_failed" with the exit error and the last 2 KiB of stderr, any partial clip.mkv
+// removed, and a nil error; success gives Status "packaged" with Output and its SHA-256. dir must hold a complete
+// WriteVideo output whose files match the timeline's SHA-256, or the call returns an error without running anything.
+// ctx cancellation is an error.
 func PackageVideo(ctx context.Context, dir, tool string) (PackageReport, error) {
 	report := PackageReport{Tool: tool}
 	if ctx == nil {

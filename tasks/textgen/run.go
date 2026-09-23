@@ -67,7 +67,10 @@ func (c RunConfig) Validate() error {
 	return nil
 }
 
-// DefaultRunConfig returns the standard fixture run settings. The default Epochs value is the smallest tested count at which every default seed completes every task prompt with valid, correct text after training. Measured on this configuration (epochs: task accuracy after for seeds 1/2/3; holdout perplexity after): 10: 1/0/0 (1.4518, 7.9634, 2.9655); 20: 1/1/1 (1.3737, 1.4344, 1.5323); 30: 1/1/1 (1.3623, 1.3777, 1.3990).
+// DefaultRunConfig returns the standard fixture run settings. The default Epochs value is the smallest tested count at
+// which every default seed completes every task prompt with valid, correct text after training. Measured on this
+// configuration (epochs: task accuracy after for seeds 1/2/3; holdout perplexity after): 10: 1/0/0 (1.4518, 7.9634,
+// 2.9655); 20: 1/1/1 (1.3737, 1.4344, 1.5323); 30: 1/1/1 (1.3623, 1.3777, 1.3990).
 func DefaultRunConfig() RunConfig {
 	return RunConfig{
 		Model:        DefaultModelConfig(),

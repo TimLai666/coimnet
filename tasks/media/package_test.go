@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -25,6 +26,9 @@ func TestPackageVideoToolAbsent(t *testing.T) {
 }
 
 func TestPackageVideoToolFails(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake packager is a POSIX shell script")
+	}
 	dir := writeNativeVideo(t)
 	tool := writePackager(t, "printf 'fake ffmpeg version 1\\n'\nexit 0", "printf 'packager failed on purpose\\n' >&2\nexit 3")
 	report, err := PackageVideo(t.Context(), dir, tool)
@@ -41,6 +45,9 @@ func TestPackageVideoToolFails(t *testing.T) {
 }
 
 func TestPackageVideoPackages(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the fake packager is a POSIX shell script")
+	}
 	dir := writeNativeVideo(t)
 	tool := writePackager(t, "printf 'fake ffmpeg version 1\\n'\nexit 0", "for arg do last=$arg; done\nprintf 'packaged video' > \"$last\"\nexit 0")
 	report, err := PackageVideo(t.Context(), dir, tool)
