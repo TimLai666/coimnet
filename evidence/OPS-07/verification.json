@@ -1,0 +1,49 @@
+{
+  "requirement": "OPS-07「研究者可以執行完整主要圖的短訓練與保存恢復。驗收：真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體有證據。」",
+  "profile": "male-full",
+  "date": "2026-09-24",
+  "scope": "One short training run over the whole MaleCNS v1.0 annotated graph with every node and edge: a continuous tanh core with derived-release signs and weights, the ALIN input set and the descending-neuron readout set, 16 rows with an 8-row gradient window and one AdamW update of every trainable group, Hebbian plasticity on 4,096 readout edges gated by one chemical channel, three directory bundles written atomically, and a new process that restores them and continues 4 rows. The same run was repeated with GOMEMLIMIT=8GiB to separate live memory from garbage-collector headroom.",
+  "reproduction_command": [
+    "go build -o coimnet ./cmd/coimnet",
+    "/usr/bin/time -l ./coimnet examples run full-graph-short-training --store data/malecns-v1.0/graph-v1.coimgraph --params data/malecns-v1.0/params-derive-v1.coimparams --protocol evidence/NAT-05/compare-fullgraph-derived-continuous.json --out-dir runs/OPS-07/run > evidence/OPS-07/run.stdout 2> evidence/OPS-07/run.time.log",
+    "/usr/bin/time -l ./coimnet examples run full-graph-short-training --resume runs/OPS-07/run > evidence/OPS-07/resume.stdout 2> evidence/OPS-07/resume.time.log",
+    "the same two commands with GOMEMLIMIT=8GiB, --out-dir runs/OPS-07/run-gomemlimit and outputs under evidence/OPS-07/gomemlimit/",
+    "go test -count=1 -race -v ./experiment/fullgraph/ > evidence/OPS-07/controls.log 2>&1",
+    "go test -count=1 -race -v -run 'TestExamplesRunFullGraph|TestBenchmarkStore' ./internal/cli/ >> evidence/OPS-07/controls.log 2>&1"
+  ],
+  "environment": [
+    "macOS on Apple M3 (8 cores, 16 GiB), go1.26.5 darwin/arm64, commit d97001372f38e5a5d1c09f4d98181ddef7e1fab2, binary sha256 698894cc83856178595cb44d2c0afbb85f2bbad0ecdc602e830e1910924576d8; the binary was built from a detached worktree pinned at that commit.",
+    "run-env.txt and gomemlimit/run-env.txt hold the start and end uptime, load and memory_pressure lines; other work (a Codex worker writing a shell script) was running, so wall-clock times are observations, not results."
+  ],
+  "input_fingerprints": [
+    "store sha256 a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd, params sha256 c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77, protocol sha256 5b64b24855168254992a6b0f335003a529d6d6af19bb77bef61b1b93cbf26a12 (the protocol is evidence/NAT-05/compare-fullgraph-derived-continuous.json).",
+    "Real data statistics of this store are in evidence/DAT-03/verification.json: 165,122 traced neurons, 25,563,197 edges with 0 duplicate pairs, 101 self-loops and 535 isolated nodes, built from the three official MaleCNS v1.0 files.",
+    "report.json sha256 9b01bea8fd2a5aa7f45794bfceae8fb950de7a3965af7069a28d3a5c8c9c35eb; gomemlimit/report.json sha256 8d4dee92e163c913c782af19d900d5c170309c41de6f8d4e06ff9f6394012b50."
+  ],
+  "observed_result": {
+    "graph_and_model": "165,122 nodes and 25,563,197 edges all participate: 13,636,628 excitatory, 9,172,513 inhibitory and 2,754,056 sign-free edges; 24 ALIN input nodes and 1,314 descending-neuron readout nodes; 25,894,779 parameters.",
+    "forward": "16 rows in 3 forward calls of up to 6 rows (the cell budget), forward digest 59081d23d93588e699691b0a2537012efeafb534f5fb4dc1cf4dafc591174a13.",
+    "backward": "one update over the whole graph: loss 0.0355889, gradient norm 12.1219, update norm 2.92865; values changed per group: bias 162,900, encoder 24, log_tau 162,768, readout 1,314, weights 25,384,403. Unchanged values had exactly zero gradient inside the 8-row window.",
+    "encoder_fix": "The first run (commit 6984d6f, kept under pre-fix-6984d6f/) changed bias 162,900, log_tau 162,768, readout 1,314, weights 25,384,844 and no encoder value (its bundles are now under runs/OPS-07/pre-fix-6984d6f-run; the out_dir in its report is the path before that rename): the loss sits on the last row, the gradient reaches back 8 rows and the input was only on row 0. Commit d970013 holds the input on every row; the encoder now changes, and a test with 8 steps and truncation 2 guards it.",
+    "plasticity_and_modulation": "4,096 plastic readout edges ran 16 gated steps with 4,096 non-zero fast changes (max |change| 0.01255); the chemical channel ran 16 steps (max concentration 0.0007176).",
+    "save_and_restore": "Three bundles were written: model.coimbundle 846,261,827 bytes, manifest sha256 dc540fcf0cd86edca0a19c7e189fb350ef31fef49713d0275fbb1d0d81fcedd2; individual.coimbundle 1,473,718,586 bytes, manifest sha256 40be14bbde4ec2eb4e3b4b52b40aa9bfca763fa86dc5d4951a518d6f6b1e72f0; training.coimbundle 1,467,740,673 bytes, manifest sha256 4e03ffcc994508128eda9493e61bdb4aab8f20e09e6fa784e5924219f311a3a6. A new process restored them and continued 4 rows: continuation digest 943c0d572ffdc5ba75da6e47bf27aa31f8072489695d1f45dac782fa995ee8f8 and neural digest 300e7a1d9c3b9825b564db8c3de1f5bfa25714586cb887f3bfebb11bb2bc2971 equal the uninterrupted run's (matches true).",
+    "memory": "The estimate checked before training is 7,570,712,728 bytes (7,220 MiB, rounded up as the CLI prints it) against the 12,288 MiB limit, dominated by the backward history (6,544,178,432 bytes) and the optimizer (613,516,728 bytes). Default Go GC: 85 s wall, maximum RSS 6.74 GiB, peak memory footprint 12.22 GiB; resume 25 s, RSS 7.05 GiB, footprint 10.00 GiB. GOMEMLIMIT=8GiB: 72 s, RSS 7.76 GiB, footprint 8.01 GiB; resume 24 s, RSS 6.86 GiB, footprint 8.01 GiB. Both settings end in the same digests. Held to 8 GiB, the footprint stays at the limit and the run still completes, so the live peak is within about 1.13 times the estimate; under the default collector the footprint reaches 1.73 times the estimate before collection, and the kernel compresses pages under that pressure.",
+    "tests": "controls.log: 24 top-level PASS and 0 FAIL under -race in experiment/fullgraph and the internal/cli full-graph and store-benchmark tests; SKIPs: TestFullGraphEvidence, TestFullGraphResumeEvidence (the env-gated real-data tests)."
+  },
+  "assumption_statement": "One update, with one ALIN input unit held at 1 and a small fixed target on one readout, shows that the whole graph can be run forward, differentiated, updated, saved and restored within this machine's memory; it is not a training result and says nothing about behaviour.",
+  "test_log": [
+    "evidence/OPS-07/controls.log",
+    "evidence/OPS-07/run.time.log",
+    "evidence/OPS-07/resume.time.log"
+  ],
+  "limitations": [
+    "A single update step; multi-step whole-brain training and task accuracy are separate research results, not claimed here.",
+    "The input drives one ALIN input unit and the target moves one readout; the gradient window is 8 of 16 rows.",
+    "Under the default Go collector the process footprint reaches about 1.7 times the estimate; set GOMEMLIMIT (see AGENTS.md follow-ups) on machines near 16 GiB.",
+    "CPU only on one Mac; no GPU backend (OPS-05 is blocked on the backend decision)."
+  ],
+  "artifact_sha256": {
+    "evidence/OPS-07/report.json": "9b01bea8fd2a5aa7f45794bfceae8fb950de7a3965af7069a28d3a5c8c9c35eb",
+    "evidence/OPS-07/gomemlimit/report.json": "8d4dee92e163c913c782af19d900d5c170309c41de6f8d4e06ff9f6394012b50"
+  }
+}

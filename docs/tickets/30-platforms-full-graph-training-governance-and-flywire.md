@@ -13,9 +13,8 @@ Blocked by：24（組態、`benchmark`、`report`、`doctor`）、21／18（全�
 OPS-05 的裝置後端：**受阻於使用者決定後端技術與提供裝置存取**；DAT-06 的真實資料：**受阻於使用者
 取得 FlyWire 授權資料**
 
-Status：第一階段已驗證（2026-09-17）；第二階段 fixture 部分已驗證（2026-09-19），真實資料 blocked_data；
-第四階段乾淨環境腳本已落地（`scripts/clean-env-verify.sh`），效能報告與 OPS-10 證據待派；第三、五階段
-待派工／受阻
+Status：第一階段已驗證（2026-09-17）；第二階段 fixture 部分已驗證（2026-09-19），真實資料 blocked_data；第三階段已驗證（2026-09-24）；
+第四階段效能報告與乾淨環境重跑進行中；第五階段裝置實作受阻於使用者決定後端
 
 對應需求：OPS-04（各平台編譯與實際執行分開標記；至少有參考環境的完整測試）、OPS-05（與 CPU 比對、裝置
 更新／恢復測試及實際量測；未測不標通過）、OPS-07（真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體
@@ -151,7 +150,7 @@ package connectome // MappingEvidence 與跨資料集拒絕
   `go test`、race、vet；`evidence/OPS-04/`、`evidence/GOV-01/`、`GOV-04/`、`GOV-05/`、`GOV-06/`。
 - [x]（fixture；真實資料 blocked_data）第二階段：FlyWire fixture 匯入、大 ID 往返與溢位、manifest 欄位、
   無證據拼接拒絕；`evidence/DAT-06/`（真實資料 blocked_data）。
-- [ ] 第三階段：全圖預估與檢查、一次全參數反向、可塑性與調節啟用、三種保存物與新程序恢復逐項相等、
+- [x] 第三階段：全圖預估與檢查、一次全參數反向、可塑性與調節啟用、三種保存物與新程序恢復逐項相等、
   峰值 RSS 與耗時；`evidence/OPS-07/`（或 blocked_hardware 與精確指令）。
 - [ ] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
   全步驟與 `run.json`、`report` 的 22.3 清單；`evidence/OPS-08/`、`evidence/OPS-10/`。
@@ -216,6 +215,22 @@ package connectome // MappingEvidence 與跨資料集拒絕
   manifest 後再交給 `data import`；欄位稽核整理自 Codex 公開下載頁，未逐欄對照實際下載檔；單一平台單次執行。
 - **解除條件**：使用者完成 FlyWire 帳號與條款同意、提供本機下載檔路徑與授權欄位後，才能用真實釋出檔重跑
   匯入、重新逐欄稽核，並補上真實資料的統計與逐批讀取證據。
+
+## 第三階段證據（2026-09-24）
+
+真實全圖（165,122 個神經元、25,563,197 條邊）在 Mac（M3、16 GiB）上跑完一次短訓練：連續 tanh 核心、derived 參數集、
+ALIN 輸入與 descending neuron 讀出，16 列、8 列梯度窗、一次 AdamW 更新，4,096 條讀出邊的 Hebbian 可塑性由一個
+化學通道閘控；三個 bundle 原子寫出，新程序讀回後續跑 4 列，接續與神經摘要都和不中斷的執行相等。訓練前的記憶體
+預估是 7,220 MiB（反向歷史占 6.5 GB），在 12,288 MiB 上限內。
+
+第一次執行抓到一個缺陷：損失只算最後一列、梯度往回 8 列，輸入卻只在第 0 列，所以 encoder 依構造收不到梯度
+（其他四組都有變）。修正為每列都給輸入並加回歸測試（d970013）後重跑，五組參數都有變動；修正前的輸出保留在
+`evidence/OPS-07/pre-fix-6984d6f/`。
+
+峰值記憶體分兩種設定量：預設 Go GC 時最大 RSS 6.74 GiB、峰值足跡 12.22 GiB（約預估的 1.7 倍）；同一個執行設
+`GOMEMLIMIT=8GiB` 時足跡停在 8.01 GiB、結果摘要相同。多出來的是 GC 的預留空間，建議在 16 GiB 等級的機器上設
+`GOMEMLIMIT`；讓 CLI 依預估值自動設定已記在 AGENTS.md 的後續事項。這次只證明整張圖能跑完一次更新並保存恢復，
+多步全腦訓練與任務準確度不在本票宣稱。
 
 ## 依據
 

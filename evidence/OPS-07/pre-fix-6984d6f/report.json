@@ -1,0 +1,201 @@
+{
+  "schema_version": "coimnet-full-graph-short-training/v1",
+  "options": {
+    "store": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/graph-v1.coimgraph",
+    "params": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/params-derive-v1.coimparams",
+    "protocol": "/Users/timlai/Developer/coimnet/evidence/NAT-05/compare-fullgraph-derived-continuous.json",
+    "input_set": "alin",
+    "readout_set": "descending_neuron",
+    "steps": 16,
+    "truncation": 8,
+    "continue_rows": 4,
+    "plastic_edges": 4096,
+    "chemistry": true,
+    "learning_rate": 0.001,
+    "max_memory_mib": 12288,
+    "max_cells": 0,
+    "out_dir": "/Users/timlai/Developer/coimnet/runs/OPS-07/run"
+  },
+  "files": {
+    "params": "c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77",
+    "protocol": "5b64b24855168254992a6b0f335003a529d6d6af19bb77bef61b1b93cbf26a12",
+    "store": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd"
+  },
+  "nodes": 165122,
+  "edges": 25563197,
+  "sets": [
+    {
+      "name": "alin",
+      "selectors": [
+        {
+          "field": "class",
+          "equals": "ALIN",
+          "count": 24,
+          "first_index": 350,
+          "last_index": 132605
+        }
+      ],
+      "count": 24,
+      "node_hash": "a507a3db1b1572b388b1ca8a32b1707c3d679ba59a41cab2aa3a70d5ce03c926"
+    },
+    {
+      "name": "descending_neuron",
+      "selectors": [
+        {
+          "field": "superclass",
+          "equals": "descending_neuron",
+          "count": 1314,
+          "first_index": 0,
+          "last_index": 163544
+        }
+      ],
+      "count": 1314,
+      "node_hash": "9a43073e6c0af3b6b74beddda0fe8f39963f488414beeb42535f63528103e191"
+    }
+  ],
+  "model": {
+    "nodes": 165122,
+    "edges": 25563197,
+    "positive_edges": 13636628,
+    "negative_edges": 9172513,
+    "free_edges": 2754056,
+    "zero_magnitude_freed": 0,
+    "input_nodes": 24,
+    "readout_nodes": 1314,
+    "parameters": 25894779
+  },
+  "memory": {
+    "items": [
+      {
+        "name": "graph_index",
+        "formula": "(N+1+E)*8 = (165122+1+25563197)*8 = 205826560",
+        "bytes": 205826560
+      },
+      {
+        "name": "base_parameters",
+        "formula": "E*w = 25563197*8 = 204505576",
+        "bytes": 204505576
+      },
+      {
+        "name": "optimizer",
+        "formula": "3*E*w = 3*25563197*8 = 613516728",
+        "bytes": 613516728
+      },
+      {
+        "name": "neural_state",
+        "formula": "N*C*w*B = 165122*1*8*1 = 1320976",
+        "bytes": 1320976
+      },
+      {
+        "name": "fast_changes",
+        "formula": "PlasticEdges*w*B = 4096*8*1 = 32768",
+        "bytes": 32768
+      },
+      {
+        "name": "eligibility",
+        "formula": "EligibilityEdges*w*B = 0*8*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "delays",
+        "formula": "N*(MaxDelay+1)*w*B = 165122*(0+1)*8*1 = 1320976",
+        "bytes": 1320976
+      },
+      {
+        "name": "backward_history",
+        "formula": "2*E*w*T*B = 2*25563197*8*16*1 = 6544178432",
+        "bytes": 6544178432
+      },
+      {
+        "name": "encoder",
+        "formula": "EncoderValues*w = 24*8 = 192",
+        "bytes": 192
+      },
+      {
+        "name": "readout",
+        "formula": "ReadoutValues*w = 1314*8 = 10512",
+        "bytes": 10512
+      },
+      {
+        "name": "modulation",
+        "formula": "(Regions*Channels + Receptors)*w = (1*1 + 0)*8 = 8",
+        "bytes": 8
+      },
+      {
+        "name": "replay",
+        "formula": "ReplayItems*ReplayItemBytes = 0*0 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "buffers",
+        "formula": "BufferFactor*subtotal = 0*7570712728 = 0",
+        "bytes": 0
+      }
+    ],
+    "total_bytes": 7570712728
+  },
+  "run": {
+    "rows": 16,
+    "chunk": 6,
+    "forward_calls": 3,
+    "forward_ms": 137828.856792,
+    "backward_ms": 14879.170667,
+    "save_ms": 22627.247083000002,
+    "loss": 0.0109425513073802,
+    "gradient_norm": 6.696983305703302,
+    "update_norm": 2.98012215245592,
+    "updates": 1,
+    "parameters_changed": {
+      "bias": 162900,
+      "log_tau": 162768,
+      "readout": 1314,
+      "weights": 25384844
+    },
+    "plastic_edges": 4096,
+    "plastic_steps": 16,
+    "chemistry_steps": 16,
+    "artifacts": [
+      {
+        "kind": "model.coimbundle",
+        "path": "/Users/timlai/Developer/coimnet/runs/OPS-07/run/model.coimbundle",
+        "bytes": 846261827,
+        "sha256": "dc540fcf0cd86edca0a19c7e189fb350ef31fef49713d0275fbb1d0d81fcedd2"
+      },
+      {
+        "kind": "individual.coimbundle",
+        "path": "/Users/timlai/Developer/coimnet/runs/OPS-07/run/individual.coimbundle",
+        "bytes": 1473719681,
+        "sha256": "7e3807dae0f61114545c3aa7ed881adc5dd4fbbc1bdb1c89833197c53c4edbae"
+      },
+      {
+        "kind": "training.coimbundle",
+        "path": "/Users/timlai/Developer/coimnet/runs/OPS-07/run/training.coimbundle",
+        "bytes": 1467740174,
+        "sha256": "845c9e6190949e255578d0d84b0cfbf113b3c89d07ac85b7d72afaff656c0668"
+      }
+    ],
+    "forward_digest": "fd671545aca586baf241efa5d27b2e7543d256aa937b3cd025c5a840a3c826e1"
+  },
+  "mechanisms": {
+    "plastic_edges": 4096,
+    "plastic_steps": 16,
+    "fast_nonzero": 4096,
+    "fast_max_abs": 0.013114337346548828,
+    "chemistry_steps": 16,
+    "concentration_max": 0.0007175951908133652
+  },
+  "continuation_digest": "9237d41a1c46a03fbf7bc66ce8368bd89ffbd828d0d7e45581d43e54fe670e09",
+  "neural_digest": "d44774672a87a8ed7fbb7bfcb2f0f057a51ad7401fd2be6c318a58652570d51d",
+  "timings_ms": {
+    "build": 869.0181249999999,
+    "continue": 11245.659125,
+    "estimate": 0.050959,
+    "load": 16600.677167,
+    "train": 188926.337416,
+    "variant": 3040.267625
+  },
+  "go_version": "go1.26.5",
+  "goos": "darwin",
+  "goarch": "arm64",
+  "num_cpu": 8
+}

@@ -1,0 +1,140 @@
+2026/09/24 03:24:23 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestFullGraphEvidence
+    evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set
+--- SKIP: TestFullGraphEvidence (0.00s)
+=== RUN   TestFullGraphResumeEvidence
+    evidence_test.go:88: COIMNET_OPS07_RESUME is not set
+--- SKIP: TestFullGraphResumeEvidence (0.00s)
+=== RUN   TestBuildModelConvertsSignsAndMagnitudes
+--- PASS: TestBuildModelConvertsSignsAndMagnitudes (0.00s)
+=== RUN   TestBuildModelKeepsEveryNodeAndEdge
+--- PASS: TestBuildModelKeepsEveryNodeAndEdge (0.00s)
+=== RUN   TestBuildModelRejects
+=== RUN   TestBuildModelRejects/no_nodes
+=== RUN   TestBuildModelRejects/targets_one_short
+=== RUN   TestBuildModelRejects/input_out_of_range
+=== RUN   TestBuildModelRejects/duplicate_readout
+=== RUN   TestBuildModelRejects/empty_readouts
+=== RUN   TestBuildModelRejects/NaN_weight
+=== RUN   TestBuildModelRejects/zero_dt
+--- PASS: TestBuildModelRejects (0.00s)
+    --- PASS: TestBuildModelRejects/no_nodes (0.00s)
+    --- PASS: TestBuildModelRejects/targets_one_short (0.00s)
+    --- PASS: TestBuildModelRejects/input_out_of_range (0.00s)
+    --- PASS: TestBuildModelRejects/duplicate_readout (0.00s)
+    --- PASS: TestBuildModelRejects/empty_readouts (0.00s)
+    --- PASS: TestBuildModelRejects/NaN_weight (0.00s)
+    --- PASS: TestBuildModelRejects/zero_dt (0.00s)
+=== RUN   TestMemoryPlanAndCheck
+--- PASS: TestMemoryPlanAndCheck (0.00s)
+=== RUN   TestResumeMatchesAndDetectsTampering
+=== RUN   TestResumeMatchesAndDetectsTampering/continuation_digest
+=== RUN   TestResumeMatchesAndDetectsTampering/neural_digest
+--- PASS: TestResumeMatchesAndDetectsTampering (0.09s)
+    --- PASS: TestResumeMatchesAndDetectsTampering/continuation_digest (0.00s)
+    --- PASS: TestResumeMatchesAndDetectsTampering/neural_digest (0.00s)
+=== RUN   TestDefaultOptions
+--- PASS: TestDefaultOptions (0.00s)
+=== RUN   TestDefaultOptionsFitTheDefaultBudget
+    run_test.go:56: 16-step estimate: 7220.0 MiB; 32-step estimate: 13461.0 MiB; default budget: 12288 MiB
+--- PASS: TestDefaultOptionsFitTheDefaultBudget (0.00s)
+=== RUN   TestOptionsValidate
+=== RUN   TestOptionsValidate/missing_store
+=== RUN   TestOptionsValidate/missing_params
+=== RUN   TestOptionsValidate/missing_protocol
+=== RUN   TestOptionsValidate/missing_out_dir
+=== RUN   TestOptionsValidate/steps_below_two
+=== RUN   TestOptionsValidate/truncation_negative
+=== RUN   TestOptionsValidate/continue_rows_zero
+=== RUN   TestOptionsValidate/plastic_edges_negative
+=== RUN   TestOptionsValidate/learning_rate_zero
+=== RUN   TestOptionsValidate/memory_limit_zero
+=== RUN   TestOptionsValidate/input_equals_readout
+--- PASS: TestOptionsValidate (0.00s)
+    --- PASS: TestOptionsValidate/missing_store (0.00s)
+    --- PASS: TestOptionsValidate/missing_params (0.00s)
+    --- PASS: TestOptionsValidate/missing_protocol (0.00s)
+    --- PASS: TestOptionsValidate/missing_out_dir (0.00s)
+    --- PASS: TestOptionsValidate/steps_below_two (0.00s)
+    --- PASS: TestOptionsValidate/truncation_negative (0.00s)
+    --- PASS: TestOptionsValidate/continue_rows_zero (0.00s)
+    --- PASS: TestOptionsValidate/plastic_edges_negative (0.00s)
+    --- PASS: TestOptionsValidate/learning_rate_zero (0.00s)
+    --- PASS: TestOptionsValidate/memory_limit_zero (0.00s)
+    --- PASS: TestOptionsValidate/input_equals_readout (0.00s)
+=== RUN   TestMechanismsShowPlasticityAndChemistryActed
+    run_test.go:112: on: plastic_edges=2 plastic_steps=8 fast_nonzero=1 fast_max_abs=2.2828205295711385e-05 chemistry_steps=8 concentration_max=0.03917936989109088
+    run_test.go:135: off: plastic_edges=0 plastic_steps=0 fast_nonzero=0 fast_max_abs=0 chemistry_steps=0 concentration_max=0
+--- PASS: TestMechanismsShowPlasticityAndChemistryActed (0.10s)
+=== RUN   TestRunRefusesExistingOutDirBeforeLoading
+--- PASS: TestRunRefusesExistingOutDirBeforeLoading (0.00s)
+=== RUN   TestContinuationDigest
+--- PASS: TestContinuationDigest (0.00s)
+=== RUN   TestRunHonoursContextCancellation
+--- PASS: TestRunHonoursContextCancellation (0.00s)
+=== RUN   TestShortTrainingUpdatesEveryGroupAndSaves
+--- PASS: TestShortTrainingUpdatesEveryGroupAndSaves (0.05s)
+=== RUN   TestSaveArtifactsWritesBundles
+--- PASS: TestSaveArtifactsWritesBundles (0.11s)
+=== RUN   TestShortTrainingChunksMatchOneCall
+--- PASS: TestShortTrainingChunksMatchOneCall (0.10s)
+=== RUN   TestShortTrainingResumesInANewProcess
+--- PASS: TestShortTrainingResumesInANewProcess (1.10s)
+=== RUN   TestFullgraphResumeHelperProcess
+--- PASS: TestFullgraphResumeHelperProcess (0.00s)
+=== RUN   TestShortTrainingRejects
+=== RUN   TestShortTrainingRejects/steps_below_two
+=== RUN   TestShortTrainingRejects/continue_rows_zero
+=== RUN   TestShortTrainingRejects/plastic_edges_negative
+=== RUN   TestShortTrainingRejects/existing_artifact_refused
+--- PASS: TestShortTrainingRejects (0.08s)
+    --- PASS: TestShortTrainingRejects/steps_below_two (0.00s)
+    --- PASS: TestShortTrainingRejects/continue_rows_zero (0.00s)
+    --- PASS: TestShortTrainingRejects/plastic_edges_negative (0.00s)
+    --- PASS: TestShortTrainingRejects/existing_artifact_refused (0.08s)
+=== RUN   TestSha256FileStreamsLikeTheWholeFile
+--- PASS: TestSha256FileStreamsLikeTheWholeFile (0.03s)
+=== RUN   TestShortTrainingReachesTheEncoderThroughTheWindow
+    train_test.go:486: parameters_changed[weights] = 4
+    train_test.go:486: parameters_changed[bias] = 4
+    train_test.go:486: parameters_changed[log_tau] = 3
+    train_test.go:486: parameters_changed[encoder] = 1
+    train_test.go:486: parameters_changed[readout] = 1
+--- PASS: TestShortTrainingReachesTheEncoderThroughTheWindow (0.05s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	3.249s
+exit=0
+2026/09/24 03:24:29 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestBenchmarkStoreMode
+--- PASS: TestBenchmarkStoreMode (0.98s)
+=== RUN   TestBenchmarkStoreModeRejects
+=== RUN   TestBenchmarkStoreModeRejects/partial_store_flags
+=== RUN   TestBenchmarkStoreModeRejects/nodes_with_store
+=== RUN   TestBenchmarkStoreModeRejects/load_memory_refusal
+=== RUN   TestBenchmarkStoreModeRejects/plan_memory_refusal
+--- PASS: TestBenchmarkStoreModeRejects (1.33s)
+    --- PASS: TestBenchmarkStoreModeRejects/partial_store_flags (0.00s)
+    --- PASS: TestBenchmarkStoreModeRejects/nodes_with_store (0.00s)
+    --- PASS: TestBenchmarkStoreModeRejects/load_memory_refusal (0.00s)
+    --- PASS: TestBenchmarkStoreModeRejects/plan_memory_refusal (0.01s)
+=== RUN   TestExamplesRunFullGraphEndToEnd
+    fullgraph_test.go:68: report summary: schema=coimnet-full-graph-short-training/v1 nodes=2 edges=2 updates=1 continuation=0cc15fa29c61
+    fullgraph_test.go:88: resume summary: matches=true
+--- PASS: TestExamplesRunFullGraphEndToEnd (1.27s)
+=== RUN   TestExamplesRunFullGraphRejects
+=== RUN   TestExamplesRunFullGraphRejects/missing_store
+=== RUN   TestExamplesRunFullGraphRejects/invalid_steps
+=== RUN   TestExamplesRunFullGraphRejects/resume_with_run_flags
+=== RUN   TestExamplesRunFullGraphRejects/existing_out_dir
+--- PASS: TestExamplesRunFullGraphRejects (1.18s)
+    --- PASS: TestExamplesRunFullGraphRejects/missing_store (0.00s)
+    --- PASS: TestExamplesRunFullGraphRejects/invalid_steps (0.00s)
+    --- PASS: TestExamplesRunFullGraphRejects/resume_with_run_flags (0.00s)
+    --- PASS: TestExamplesRunFullGraphRejects/existing_out_dir (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/internal/cli	6.401s
+exit=0
