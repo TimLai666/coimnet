@@ -115,7 +115,7 @@ func RunAttribution(ctx context.Context, a AttributionConfig) (AttributionReport
 - [x] 第一階段：環境不變量測試（連通、碰撞、視野、時間上限與終止分離）、四任務各 3 seed、對照三組、
   新地圖、觀察不含評估器狀態（型別 + 汙染）；`go test`、race、vet；`evidence/TSK-08/`。
 - [x] 第二階段：缺失 ≠ 零、ID 不進模型、同步／非同步、未見組合分割與評估；`evidence/TSK-10/`。
-- [ ] 第三階段：指紋一致、個體不共用、更新份額報告、三種排程；`evidence/TSK-09/`。
+- [x] 第三階段：指紋一致、個體不共用、更新份額報告、三種排程；`evidence/TSK-09/`。
 - [x] 第四階段：七組對照各 3 seed、重連檢查、排查清單、不自動加大外圍、README 界線；`evidence/TSK-12/`。
 
 ## 第一階段證據（2026-09-23）
@@ -143,6 +143,12 @@ vet 沒有輸出。未見地圖上三個 seed 的平均：三種學習策略訓�
 的共同概念。同一 commit 重跑位元組相同。完整資料見 [TSK-10 證據](../../evidence/TSK-10/verification.json)。
 
 已知限制：只有一個留出組合、18 筆未見樣本。CLI 是 `coimnet examples run multimodal`（預設取 `multimodaleval.DefaultConfig`）。
+
+## 第三階段證據（2026-09-24）
+
+走廊模仿與延遲關聯兩個任務共用一顆核心：輸入通道 0–3 給走廊觀察、通道 4 給延遲脈衝，輸出 0–2 是走廊動作、輸出 3 是延遲預測；每個任務的 adapter 是自己的 encoder 列與 readout 欄。`DefaultMultiTaskConfig`（seed 2、預算 400、容差 0.1）在 interleaved、same_experience、missing_modality 三種排程下都只建一個 trainer，每份結果的 `brain_topology_hash`（ticket 16 的模型包指紋）與 `base_parameter_hash` 都相同；三種排程的拓撲指紋一致，參數指紋因為訓練方式不同而不同。每個任務在自己的 `learning.Individual` 上評估（由同一份模型包建立、用 `Advance` 逐步行動），分數與 trainer 的 `PredictAll` 逐位相同；`state_lineage` 是「模型包、剛建立的個體、評估後的個體」三個雜湊，兩個任務前兩個相同、第三個不同，推進其中一個個體不會動到另一個。更新份額：interleaved 與 same_experience 都是宣告的 0.5／0.5；missing_modality 延遲任務拿到 400 個索引中的 300 個（0.429 對 0.5，在 0.1 容差內不標旗）；損失尺度、混合權重、取樣比例與更新頻率都寫進報告。兩個任務在三種排程下都有進步（走廊一致率 0.789 → 1.000，延遲 −MSE 從 −0.086 升到 −0.000004 至 −0.0136）；走廊 fixture 只有兩種回合形狀，所以這只說明共用核心能同時訓練兩個頭，不代表任務之間互相幫忙。race 對照 18 個通過，重跑位元組相同。完整資料見 [TSK-09 證據](../../evidence/TSK-09/verification.json)。
+
+已知限制：兩個任務共用一個 AdamW 狀態，閒置任務的 adapter 也會被動量推動；每種排程只跑一個 seed；本階段沒有 CLI，證據走環境變數控制的測試。
 
 ## 第四階段證據（2026-09-23）
 

@@ -1,0 +1,134 @@
+{
+  "requirement": "TSK-09「研究者可以讓多個模態與任務共用同一核心。驗收：模型與狀態指紋可查，不為各任務暗建獨立核心。」",
+  "profile": "fixture",
+  "date": "2026-09-24",
+  "scope": "Ticket 28 stage three: the corridor imitation task and the delayed pulse-association task sharing one core under the interleaved, same_experience and missing_modality schedules, with per-task adapters, realised against declared update shares, per-task evaluation individuals built from the core's model package, fingerprints and lineage.",
+  "reproduction_command": [
+    "mkdir -p evidence/TSK-09",
+    "COIMNET_TSK09_EVIDENCE=$PWD/evidence/TSK-09 /usr/bin/time -l go test -count=1 -timeout 0 -v -run '^TestMultiTaskEvidence$' ./experiment/ > evidence/TSK-09/test.log 2>&1",
+    "go vet ./experiment/ > evidence/TSK-09/vet.log 2>&1",
+    "go test -list '^(TestMultiTask|TestRunMultiTask|TestDefaultMultiTaskConfig)' ./experiment/ > evidence/TSK-09/list.txt 2>&1",
+    "go test -count=1 -timeout 0 -race -v -run '^(TestMultiTask|TestRunMultiTask|TestDefaultMultiTaskConfig)' ./experiment/ > evidence/TSK-09/controls.log 2>&1",
+    "shasum -a 256 evidence/TSK-09/multitask.json evidence/TSK-09/summary.txt"
+  ],
+  "environment": [
+    "go version go1.26.5 darwin/arm64 (macOS, 8 cores, 16 GB), commit ba39d57a5828e97049e6cbdacea1270b508163dc.",
+    "Recorded run 2026-09-23T16:33:23Z to 16:33:24Z at 1-minute load 2.21; race controls 16:33:25Z to 16:33:30Z at load 2.19 to 2.10 (run-env.txt, controls-env.txt). No timing is a result.",
+    "A rerun at the same commit right after the recorded run wrote a multitask.json and summary.txt with the recorded SHA-256 (rerun.sha256)."
+  ],
+  "input_fingerprints": [
+    "No external input. DefaultMultiTaskConfig: corridor and delayed bindings with loss scale 1, mix weight 1, sampling ratio 1, update every 1; Budget 400; Tolerance 0.1; MissingEvery 4 for missing_modality (0 otherwise); seed 2 (the untrained seed-1 core already agrees with the expert everywhere, leaving no room to improve); hidden 16; learning rate 0.05; 20 evaluation episodes; corridor length 7, time limit 20.",
+    "multitask.json sha256 e5f8da98e203dcf4b06e3fc5bf538ebc79e98cbf4e9c7ba999479a5918e83dd6; summary.txt sha256 c3bb0d00f2cb6934b29af5d546fe72b9e1e8dd168b83ec2e0726755ee250f8c9."
+  ],
+  "observed_result": {
+    "tests": "list.txt names 19 top-level tests; controls.log shows 18 PASS, 1 SKIP (TestMultiTaskEvidence, the run in test.log) and 0 FAIL under -race: the core layout, both tasks training one core, a step touching only its own adapter and the core, independent evaluation individuals, the three schedules' shares, idle indices from UpdateEvery, the same_experience flag, the missing_modality skips, determinism, config validation, individual scores equal to the trainer's bit for bit, lineage and independence, one brain per report, each schedule running, and the default config. vet.log: no findings.",
+    "schedules": {
+      "interleaved": {
+        "shares": {
+          "corridor": {
+            "updates": 200,
+            "share": 0.5,
+            "declared": 0.5,
+            "flagged": false
+          },
+          "delayed": {
+            "updates": 200,
+            "share": 0.5,
+            "declared": 0.5,
+            "flagged": false
+          }
+        },
+        "corridor_expert_agreement": [
+          0.789474,
+          1
+        ],
+        "delayed_negative_mse": [
+          -0.086056,
+          -4e-06
+        ],
+        "trainers_built": 1,
+        "same_brain": true,
+        "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+        "base_parameter_hash": "e65b4769ed025843d9ad767368bacdbb64a7909b8732f3d454bef891225d7f8c"
+      },
+      "same_experience": {
+        "shares": {
+          "corridor": {
+            "updates": 400,
+            "share": 0.5,
+            "declared": 0.5,
+            "flagged": false
+          },
+          "delayed": {
+            "updates": 400,
+            "share": 0.5,
+            "declared": 0.5,
+            "flagged": false
+          }
+        },
+        "corridor_expert_agreement": [
+          0.789474,
+          1
+        ],
+        "delayed_negative_mse": [
+          -0.086056,
+          -0.013552
+        ],
+        "trainers_built": 1,
+        "same_brain": true,
+        "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+        "base_parameter_hash": "c901aa5eeeddeb0267a56e4070e787916d4b1ba1828bf519d87a53ac73fb9ca9"
+      },
+      "missing_modality": {
+        "shares": {
+          "corridor": {
+            "updates": 400,
+            "share": 0.571429,
+            "declared": 0.5,
+            "flagged": false
+          },
+          "delayed": {
+            "updates": 300,
+            "share": 0.428571,
+            "declared": 0.5,
+            "flagged": false
+          }
+        },
+        "corridor_expert_agreement": [
+          0.789474,
+          1
+        ],
+        "delayed_negative_mse": [
+          -0.086056,
+          -0.000853
+        ],
+        "trainers_built": 1,
+        "same_brain": true,
+        "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+        "base_parameter_hash": "f7b7aeac16d57f8d81666b05bbcb2ef78b0837784abab8a667fe99c24eaf84d2"
+      }
+    },
+    "one_brain": "Every schedule builds exactly one trainer (trainers_built 1) and every result of a run carries the same brain_topology_hash and base_parameter_hash (same_brain true). The topology hash is the ticket-16 model-package fingerprint of the one core and is identical across the three schedules; the base parameter hash differs between schedules because each trained the core differently.",
+    "individuals_and_lineage": "Each task is scored on its own learning.Individual built from the core's model package, acting step by step through Advance; those scores equal the trainer's PredictAll scores bit for bit. Each result's state_lineage is [package hash, individual at creation, individual after its evaluation]: the two tasks share the first two links and differ in the third, and advancing one individual leaves the other's neural state unchanged.",
+    "shares": "interleaved and same_experience realise the declared 0.5/0.5 exactly; missing_modality gives the delayed task 300 of 400 indices (share 0.429 against 0.5, within the 0.1 tolerance, so not flagged). Loss scale, mix weight, sampling ratio and update frequency of every task are written into the report.",
+    "reading": "Both tasks improve under every schedule: corridor expert agreement 0.789 to 1.000, delayed -MSE from -0.086 to between -0.000004 and -0.0136. The corridor fixture has only two episode shapes, so reaching 1.000 is easy; this shows that the shared core trains both heads, not that the tasks help each other.",
+    "reproducibility": "A rerun at the same commit produced byte-identical multitask.json and summary.txt."
+  },
+  "assumption_statement": "Both tasks train one core; a task's adapter is its encoder rows and readout columns, and one AdamW state serves both, so momentum can move an idle task's adapter. Each task is scored on its own individual built from the shared model package. The corridor and delayed tasks are fixtures, not the fly connectome.",
+  "test_log": [
+    "evidence/TSK-09/test.log",
+    "evidence/TSK-09/controls.log",
+    "evidence/TSK-09/vet.log"
+  ],
+  "limitations": [
+    "Two small fixtures only (a length-7 corridor with two episode shapes and a five-row delayed pulse); no claim of transfer between tasks.",
+    "The shared AdamW momentum moves an idle task's adapter, so adapter versions change even for a task that did not step at a given index.",
+    "One seed per schedule; the report is deterministic, but no spread across seeds is measured.",
+    "No CLI entry is part of this stage; the evidence runs through the env-gated test.",
+    "One machine (macOS arm64)."
+  ],
+  "artifact_sha256": {
+    "evidence/TSK-09/multitask.json": "e5f8da98e203dcf4b06e3fc5bf538ebc79e98cbf4e9c7ba999479a5918e83dd6",
+    "evidence/TSK-09/summary.txt": "c3bb0d00f2cb6934b29af5d546fe72b9e1e8dd168b83ec2e0726755ee250f8c9"
+  }
+}

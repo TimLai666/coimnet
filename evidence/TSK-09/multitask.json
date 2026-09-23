@@ -1,0 +1,314 @@
+{
+  "schema_version": "coimnet-multitask-suite/v1",
+  "runs": [
+    {
+      "schema_version": "coimnet-multitask/v1",
+      "config": {
+        "schedule": {
+          "tasks": [
+            {
+              "name": "corridor",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            },
+            {
+              "name": "delayed",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            }
+          ],
+          "schedule": "interleaved",
+          "budget": 400,
+          "tolerance": 0.1,
+          "missing_every": 0
+        },
+        "seed": 2,
+        "hidden": 16,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "corridor": {
+          "length": 7,
+          "time_limit": 20,
+          "step_penalty": 0.01,
+          "goal_reward": 1
+        }
+      },
+      "config_hash": "1049215c06d9e25cdf260779ee1d68ccf1ac83fc73e993171b99864d4a8a4cc1",
+      "steps": 400,
+      "idle_updates": 0,
+      "shares": [
+        {
+          "task": "corridor",
+          "updates": 200,
+          "share": 0.5,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        },
+        {
+          "task": "delayed",
+          "updates": 200,
+          "share": 0.5,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        }
+      ],
+      "results": [
+        {
+          "task": "corridor",
+          "metric": "expert_agreement",
+          "before": 0.7894736842105263,
+          "after": 1,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "e65b4769ed025843d9ad767368bacdbb64a7909b8732f3d454bef891225d7f8c",
+          "adapter_version": "e8b43f694e8471c95c4c69151850785eeca523f6d88d7a75ea5beb4f5e5c5618",
+          "individual_id": "corridor-eval",
+          "state_lineage": [
+            "94989c8c7f790f8a2a857605b0e1cde2634f64d2f3449c0ceea3531e477962c1",
+            "051dd5271be06dfecd1308478979ef27371868c85d0a743c354fb03ea50d7769",
+            "60eb47eef81b784411e3f68ddf8accb33e0bf77984de88ce3f54e5f23740af67"
+          ]
+        },
+        {
+          "task": "delayed",
+          "metric": "negative_mse",
+          "before": -0.08605616082692423,
+          "after": -0.000004451634894763767,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "e65b4769ed025843d9ad767368bacdbb64a7909b8732f3d454bef891225d7f8c",
+          "adapter_version": "46cd670194ce414c3f23d0e0f69764cf120bbe203104c3bfdd04d924220bca98",
+          "individual_id": "delayed-eval",
+          "state_lineage": [
+            "94989c8c7f790f8a2a857605b0e1cde2634f64d2f3449c0ceea3531e477962c1",
+            "051dd5271be06dfecd1308478979ef27371868c85d0a743c354fb03ea50d7769",
+            "4b93bd4389b73533ab68868afeef50c56abbd1bc71cb0742ba556cdd5f4a43db"
+          ]
+        }
+      ],
+      "trainers_built": 1,
+      "same_brain": true,
+      "assumptions": [
+        "Both tasks train one core; a task's adapter is its encoder rows and readout columns, and one AdamW state serves both, so momentum can move an idle task's adapter.",
+        "Each task is scored on its own learning.Individual built from the shared model package; the individuals share the brain fingerprints and nothing else.",
+        "The corridor is the one-dimensional gridnav fixture and the delayed task the pulse-association fixture; these are fixtures, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-multitask/v1",
+      "config": {
+        "schedule": {
+          "tasks": [
+            {
+              "name": "corridor",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            },
+            {
+              "name": "delayed",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            }
+          ],
+          "schedule": "same_experience",
+          "budget": 400,
+          "tolerance": 0.1,
+          "missing_every": 0
+        },
+        "seed": 2,
+        "hidden": 16,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "corridor": {
+          "length": 7,
+          "time_limit": 20,
+          "step_penalty": 0.01,
+          "goal_reward": 1
+        }
+      },
+      "config_hash": "e81c09015ad91d9d9dc2ea181a18775f1495753b3246fcf2b3151527a6651bbb",
+      "steps": 400,
+      "idle_updates": 0,
+      "shares": [
+        {
+          "task": "corridor",
+          "updates": 400,
+          "share": 0.5,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        },
+        {
+          "task": "delayed",
+          "updates": 400,
+          "share": 0.5,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        }
+      ],
+      "results": [
+        {
+          "task": "corridor",
+          "metric": "expert_agreement",
+          "before": 0.7894736842105263,
+          "after": 1,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "c901aa5eeeddeb0267a56e4070e787916d4b1ba1828bf519d87a53ac73fb9ca9",
+          "adapter_version": "4a4dfb2aec668cdb1d87c84009d79699b9e273329ccd049bb2cc13eaf4181d30",
+          "individual_id": "corridor-eval",
+          "state_lineage": [
+            "e07ed7cb60d10a693c27d297306e1b037880f372f387ffbbf80531ceea3bb352",
+            "ac2f6f6d000cca0dddec7253950f0ad7397aaf0871eae18ddddbff9dd81f3166",
+            "f6f6d92606c2120ae42955632566562ee2be2deca05c7ce7974137753c40ac61"
+          ]
+        },
+        {
+          "task": "delayed",
+          "metric": "negative_mse",
+          "before": -0.08605616082692423,
+          "after": -0.013552485470509926,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "c901aa5eeeddeb0267a56e4070e787916d4b1ba1828bf519d87a53ac73fb9ca9",
+          "adapter_version": "60f878f2ab8e044885b18982a4cdaa7f1d3cda2f6bd5c4716b1aa3f2bcfb0d94",
+          "individual_id": "delayed-eval",
+          "state_lineage": [
+            "e07ed7cb60d10a693c27d297306e1b037880f372f387ffbbf80531ceea3bb352",
+            "ac2f6f6d000cca0dddec7253950f0ad7397aaf0871eae18ddddbff9dd81f3166",
+            "856f37093076bd3c09c4ad1a813966536877cefee8862a7b394fdcc278bde23c"
+          ]
+        }
+      ],
+      "trainers_built": 1,
+      "same_brain": true,
+      "assumptions": [
+        "Both tasks train one core; a task's adapter is its encoder rows and readout columns, and one AdamW state serves both, so momentum can move an idle task's adapter.",
+        "Each task is scored on its own learning.Individual built from the shared model package; the individuals share the brain fingerprints and nothing else.",
+        "The corridor is the one-dimensional gridnav fixture and the delayed task the pulse-association fixture; these are fixtures, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-multitask/v1",
+      "config": {
+        "schedule": {
+          "tasks": [
+            {
+              "name": "corridor",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            },
+            {
+              "name": "delayed",
+              "loss_scale": 1,
+              "mix_weight": 1,
+              "sampling_ratio": 1,
+              "update_every": 1
+            }
+          ],
+          "schedule": "missing_modality",
+          "budget": 400,
+          "tolerance": 0.1,
+          "missing_every": 4
+        },
+        "seed": 2,
+        "hidden": 16,
+        "learning_rate": 0.05,
+        "eval_episodes": 20,
+        "corridor": {
+          "length": 7,
+          "time_limit": 20,
+          "step_penalty": 0.01,
+          "goal_reward": 1
+        }
+      },
+      "config_hash": "8ad7183d69a2ebaf490125ec2b1bbb38aab1201fd38040463d2052c35f5d9888",
+      "steps": 400,
+      "idle_updates": 0,
+      "shares": [
+        {
+          "task": "corridor",
+          "updates": 400,
+          "share": 0.5714285714285714,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        },
+        {
+          "task": "delayed",
+          "updates": 300,
+          "share": 0.42857142857142855,
+          "declared": 0.5,
+          "flagged": false,
+          "loss_scale": 1,
+          "mix_weight": 1,
+          "sampling_ratio": 1,
+          "update_every": 1
+        }
+      ],
+      "results": [
+        {
+          "task": "corridor",
+          "metric": "expert_agreement",
+          "before": 0.7894736842105263,
+          "after": 1,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "f7b7aeac16d57f8d81666b05bbcb2ef78b0837784abab8a667fe99c24eaf84d2",
+          "adapter_version": "7f09ca1de62f7813c4ebe3f184afb085b6e3159bfe7841f77ea7b76f2e6486f7",
+          "individual_id": "corridor-eval",
+          "state_lineage": [
+            "0348bb5742a566558d911de22d1f96113361105f51bfeee637ab6f454c71812e",
+            "aad516ed9713da471c1c36dcf42a699d7e1ce6398b445e7987da4a5980e40c21",
+            "9180928d3af5899bce11af8538f6a719fd0c02c03a5786a5bfc97fbff2e73d29"
+          ]
+        },
+        {
+          "task": "delayed",
+          "metric": "negative_mse",
+          "before": -0.08605616082692423,
+          "after": -0.0008528173827108636,
+          "brain_topology_hash": "a0443fa6c74319feaf38680956221cf28ff269d5a4047d2c16a145da575d1ed0",
+          "base_parameter_hash": "f7b7aeac16d57f8d81666b05bbcb2ef78b0837784abab8a667fe99c24eaf84d2",
+          "adapter_version": "4947ca24a3aa9646b32558c9511de872d6cdb28fab923ef631d574089bdc278c",
+          "individual_id": "delayed-eval",
+          "state_lineage": [
+            "0348bb5742a566558d911de22d1f96113361105f51bfeee637ab6f454c71812e",
+            "aad516ed9713da471c1c36dcf42a699d7e1ce6398b445e7987da4a5980e40c21",
+            "5375b3899aaf0daf42f79bcbedb1fd84e1a3e85c2e56b368f1deecc41246c582"
+          ]
+        }
+      ],
+      "trainers_built": 1,
+      "same_brain": true,
+      "assumptions": [
+        "Both tasks train one core; a task's adapter is its encoder rows and readout columns, and one AdamW state serves both, so momentum can move an idle task's adapter.",
+        "Each task is scored on its own learning.Individual built from the shared model package; the individuals share the brain fingerprints and nothing else.",
+        "The corridor is the one-dimensional gridnav fixture and the delayed task the pulse-association fixture; these are fixtures, not the fly connectome."
+      ]
+    }
+  ]
+}

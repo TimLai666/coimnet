@@ -29,6 +29,7 @@
 | 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json) |
 | 二維導航與位置記憶：有限視野、隱藏狀態、碰撞與轉向、目標記憶、新地圖評估，前饋／重連／隨機對照（TSK-08） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-08](evidence/TSK-08/verification.json) |
 | 多模態配對資料：配對／缺失／非同步樣本、ID 不進模型、缺失與零值分離、未見組合分割與評估（TSK-10；留出組合的影像↔文字檢索為 0，不宣稱跨模態概念） | 已訓練（合成資料） | fixture | 核心能力 | [TSK-10](evidence/TSK-10/verification.json) |
+| 多任務共用核心：兩個任務各有 adapter、三種排程、更新份額對宣告比例、每個任務在自己的個體上評估並記錄模型包指紋與血統（TSK-09） | 已訓練（人工資料） | fixture | 核心能力 | [TSK-09](evidence/TSK-09/verification.json) |
 | 核心、外圍與接線的歸因對照：凍結核心、只訓練核心、一般網路、重連、移除後重訓、容量匹配調節器共七組，事前配對 bootstrap 與排查清單（TSK-12；本次 normal 基準沒學會，不支持依賴或接線較優的結論） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-12](evidence/TSK-12/verification.json) |
 | 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
 | 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |

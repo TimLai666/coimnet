@@ -1,0 +1,104 @@
+2026/09/24 00:33:27 [insyra - Info] Welcome to Insyra Huashan(v0.3.2)!!
+Official website: https://insyra.hazelnut-paradise.com
+
+=== RUN   TestMultiTaskCoreLayout
+--- PASS: TestMultiTaskCoreLayout (0.00s)
+=== RUN   TestMultiTaskCoreBothTasksTrainOneCore
+    multitask_core_test.go:205: corridor expert agreement 0.7894736842105263 -> 1; delayed -MSE -0.08605616082692423 -> -4.451634894763767e-06
+    multitask_core_test.go:206: topology eb9156fb9805df0dda903108c26f4bb81e234921776704af270a27c7b597c336; base parameters ec26347a1480d838bab9ec89acd7e251773da818edbc3812947f7b1fd250bdd7 -> e65b4769ed025843d9ad767368bacdbb64a7909b8732f3d454bef891225d7f8c
+    multitask_core_test.go:207: adapters after training: corridor e8b43f694e8471c95c4c69151850785eeca523f6d88d7a75ea5beb4f5e5c5618, delayed 46cd670194ce414c3f23d0e0f69764cf120bbe203104c3bfdd04d924220bca98
+--- PASS: TestMultiTaskCoreBothTasksTrainOneCore (0.59s)
+=== RUN   TestMultiTaskCoreStepsTouchOnlyTheirAdapter
+=== RUN   TestMultiTaskCoreStepsTouchOnlyTheirAdapter/corridor
+=== RUN   TestMultiTaskCoreStepsTouchOnlyTheirAdapter/delayed
+--- PASS: TestMultiTaskCoreStepsTouchOnlyTheirAdapter (0.00s)
+    --- PASS: TestMultiTaskCoreStepsTouchOnlyTheirAdapter/corridor (0.00s)
+    --- PASS: TestMultiTaskCoreStepsTouchOnlyTheirAdapter/delayed (0.00s)
+=== RUN   TestMultiTaskCoreEvaluationIndividualsAreIndependent
+--- PASS: TestMultiTaskCoreEvaluationIndividualsAreIndependent (0.01s)
+=== RUN   TestMultiTaskCoreRejectsBadInputs
+--- PASS: TestMultiTaskCoreRejectsBadInputs (0.00s)
+=== RUN   TestMultiTaskEvidence
+    multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set
+--- SKIP: TestMultiTaskEvidence (0.00s)
+=== RUN   TestMultiTaskScheduleInterleavedFollowsTheRatio
+    multitask_schedule_test.go:37: interleaved task updates: corridor=150 (0.75), delayed=50 (0.25)
+--- PASS: TestMultiTaskScheduleInterleavedFollowsTheRatio (0.29s)
+=== RUN   TestMultiTaskScheduleUpdateEveryCreatesIdleIndices
+    multitask_schedule_test.go:59: interleaved with UpdateEvery task updates: [{Task:corridor Updates:3 Share:0.75 Declared:0.5 Flagged:true LossScale:1 MixWeight:1 SamplingRatio:1 UpdateEvery:2} {Task:delayed Updates:1 Share:0.25 Declared:0.5 Flagged:true LossScale:1 MixWeight:1 SamplingRatio:1 UpdateEvery:4}]
+--- PASS: TestMultiTaskScheduleUpdateEveryCreatesIdleIndices (0.01s)
+=== RUN   TestMultiTaskScheduleSameExperienceFlagsTheDeclaredRatio
+    multitask_schedule_test.go:75: same_experience task updates: corridor=20 (0.50), delayed=20 (0.50)
+--- PASS: TestMultiTaskScheduleSameExperienceFlagsTheDeclaredRatio (0.03s)
+=== RUN   TestMultiTaskScheduleMissingModalitySkipsDelayedTerms
+    multitask_schedule_test.go:94: missing_modality task updates: corridor=20 (0.67), delayed=10 (0.33)
+--- PASS: TestMultiTaskScheduleMissingModalitySkipsDelayedTerms (0.03s)
+=== RUN   TestMultiTaskScheduleIsDeterministic
+--- PASS: TestMultiTaskScheduleIsDeterministic (0.04s)
+=== RUN   TestMultiTaskConfigValidate
+=== RUN   TestMultiTaskConfigValidate/only_one_task
+=== RUN   TestMultiTaskConfigValidate/duplicate_task
+=== RUN   TestMultiTaskConfigValidate/unknown_task
+=== RUN   TestMultiTaskConfigValidate/zero_loss_scale
+=== RUN   TestMultiTaskConfigValidate/negative_mix_weight
+=== RUN   TestMultiTaskConfigValidate/zero_sampling_ratio
+=== RUN   TestMultiTaskConfigValidate/zero_update_every
+=== RUN   TestMultiTaskConfigValidate/zero_budget
+=== RUN   TestMultiTaskConfigValidate/zero_tolerance
+=== RUN   TestMultiTaskConfigValidate/unit_tolerance
+=== RUN   TestMultiTaskConfigValidate/unknown_schedule
+=== RUN   TestMultiTaskConfigValidate/missing_every_too_small
+=== RUN   TestMultiTaskConfigValidate/missing_every_on_other_schedule
+--- PASS: TestMultiTaskConfigValidate (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/only_one_task (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/duplicate_task (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/unknown_task (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/zero_loss_scale (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/negative_mix_weight (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/zero_sampling_ratio (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/zero_update_every (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/zero_budget (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/zero_tolerance (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/unit_tolerance (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/unknown_schedule (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/missing_every_too_small (0.00s)
+    --- PASS: TestMultiTaskConfigValidate/missing_every_on_other_schedule (0.00s)
+=== RUN   TestMultiTaskIndividualScoresMatchTheTrainer
+--- PASS: TestMultiTaskIndividualScoresMatchTheTrainer (0.24s)
+=== RUN   TestMultiTaskLineageAndIndependence
+--- PASS: TestMultiTaskLineageAndIndependence (0.02s)
+=== RUN   TestRunMultiTaskReportsOneBrain
+--- PASS: TestRunMultiTaskReportsOneBrain (0.18s)
+=== RUN   TestRunMultiTaskEachSchedule
+=== RUN   TestRunMultiTaskEachSchedule/interleaved
+    multitask_test.go:197: schedule=interleaved task=corridor updates=20 share=0.500000 before=0.857143 after=1.000000
+    multitask_test.go:197: schedule=interleaved task=delayed updates=20 share=0.500000 before=-0.068869 after=-0.001885
+=== RUN   TestRunMultiTaskEachSchedule/same_experience
+    multitask_test.go:197: schedule=same_experience task=corridor updates=40 share=0.500000 before=0.857143 after=1.000000
+    multitask_test.go:197: schedule=same_experience task=delayed updates=40 share=0.500000 before=-0.068869 after=-0.000747
+=== RUN   TestRunMultiTaskEachSchedule/missing_modality
+    multitask_test.go:197: schedule=missing_modality task=corridor updates=40 share=0.571429 before=0.857143 after=1.000000
+    multitask_test.go:197: schedule=missing_modality task=delayed updates=30 share=0.428571 before=-0.068869 after=-0.131688
+--- PASS: TestRunMultiTaskEachSchedule (0.33s)
+    --- PASS: TestRunMultiTaskEachSchedule/interleaved (0.11s)
+    --- PASS: TestRunMultiTaskEachSchedule/same_experience (0.12s)
+    --- PASS: TestRunMultiTaskEachSchedule/missing_modality (0.11s)
+=== RUN   TestRunMultiTaskIsDeterministic
+--- PASS: TestRunMultiTaskIsDeterministic (0.23s)
+=== RUN   TestDefaultMultiTaskConfig
+--- PASS: TestDefaultMultiTaskConfig (0.00s)
+=== RUN   TestMultiTaskConfigRejects
+=== RUN   TestMultiTaskConfigRejects/hidden
+=== RUN   TestMultiTaskConfigRejects/learning_rate
+=== RUN   TestMultiTaskConfigRejects/eval_episodes
+=== RUN   TestMultiTaskConfigRejects/corridor
+=== RUN   TestMultiTaskConfigRejects/schedule
+--- PASS: TestMultiTaskConfigRejects (0.00s)
+    --- PASS: TestMultiTaskConfigRejects/hidden (0.00s)
+    --- PASS: TestMultiTaskConfigRejects/learning_rate (0.00s)
+    --- PASS: TestMultiTaskConfigRejects/eval_episodes (0.00s)
+    --- PASS: TestMultiTaskConfigRejects/corridor (0.00s)
+    --- PASS: TestMultiTaskConfigRejects/schedule (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/experiment	3.346s
+exit=0
