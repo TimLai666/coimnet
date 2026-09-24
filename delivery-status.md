@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-09-24 接手維護：`gridnav.New` 拒絕非有限獎懲設定；`ocr.Stack` 對不合法行尺寸、像素數與頁面大小溢位回錯，不再因這些輸入 panic。README 與資源文件已依 OPS-07／08 的真實全圖實測更新，明確區分一次更新和訓練達標。在 Mac 上，`gofmt`、`go build ./...`、`go test -timeout 30m ./...`、`go test -count=1 -race -timeout 30m ./...`、`go vet ./...`、`go mod verify` 均通過；需求仍為 89／91，TSK-11 與 OPS-05 的受阻條件未變。新發現的 OCR 非有限輸入缺口記於 [AGENTS.md](AGENTS.md#follow-ups)。
+
 2026-09-24 OPS-10 通過，需求追蹤檔現為 89／91 通過、2 項受阻（原始 83／85、NAT 增補 6／6）：乾淨環境腳本以 git archive 匯出已提交版本、連結官方資料，37 步中 35 步通過、沒有失敗，涵蓋建置、完整測試、doctor、所有 fixture 範例、真實子圖匯入與訓練、全圖檢查、短訓練、恢復與效能報告，最後產生完成報告；TSK-11 與 GPU 後端明示受阻。第一次實跑抓到 ablate 輸出目錄與完成報告受阻統計兩個缺陷，修正後重跑，[證據](evidence/OPS-10/verification.json)。除了等使用者的 TSK-11（授權資料）與 OPS-05（GPU 後端決定），規格裡的其他需求都已驗證。
 
 2026-09-24 需求追蹤檔依 ticket 29 與 30 的決策，把 TSK-11 標為 `blocked_data`、OPS-05 標為 `blocked_permission`，不再留在 specified。TSK-11 缺每類任務的授權真實資料：語音與文字已有授權 manifest 讀取器，OCR 與影音的匯入器要等資料格式確定後再做，[紀錄](evidence/TSK-11/verification.json)。OPS-05 缺 GPU 後端技術的決定與可遠端執行的 GPU 機器：能力偵測、執行前拒絕不支援的組合、明示的 CPU 回退與不重跑半次更新的帳本都已完成，[紀錄](evidence/OPS-05/verification.json)。
@@ -134,9 +136,9 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 26 的固定走廊學習階段已交付。任意非零初始神經狀態仍需要相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。
+下一個需求驗收是 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 的 TSK-11：取得五類任務各自有授權的真實資料，依固定來源與分割完成匯入、訓練、獨立推論與評估；目前人工 fixture 的結果不能代替。 [ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需確定 GPU 後端技術並取得可執行裝置，實測稀疏前向、反向、更新與恢復。兩項解除條件與受阻範圍見上方紀錄，需求累計仍是 89／91。
 
-下一個可驗證成果是 [ticket 29 第二階段](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 使用授權自然語音 manifest 執行匯入、訓練、推論與評估，並驗證串流檔案跨平台續跑與超過 64 MiB 個體的保存方案。現有三種人工音調不能當成自然語音能力證據。真實全圖／GPU 訓練維持原驗收條件。
+與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 

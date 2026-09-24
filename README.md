@@ -6,11 +6,17 @@
 
 目前的連續核心屬於稀疏的連續時間循環神經網路。接線圖決定哪些神經元相連，神經動態與學習方法則由框架提供。詳見[模型定位與可選機制](docs/model-and-mechanisms.md)，以及[記憶體與時間量測](docs/resources.md)。
 
-目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值，也可以開啟慢速穩定，讓每顆神經元依自己的活動估計調整閾值偏移。連續與 LIF 都能建立持續個體，把電位、延遲歷史、突觸跡、適應、不應期與慢速穩定狀態一起保存和接續。模型包、個體快照與訓練快照是三種分開版本的保存物，彼此不能互相當成完整恢復來源。官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。完整圖訓練、按類型混合、化學調節、五類任務與 GPU 核心尚未完成，完整需求以[開發進度](delivery-status.md)追蹤。
+目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值，也可以開啟慢速穩定，讓每顆神經元依自己的活動估計調整閾值偏移。連續與 LIF 都能建立持續個體，把電位、延遲歷史、突觸跡、適應、不應期與慢速穩定狀態一起保存和接續。模型包、個體快照與訓練快照是三種分開版本的保存物，彼此不能互相當成完整恢復來源。
+
+官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。
+
+CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。
+
+模型達標、GPU 後端與有授權的真實任務資料尚未驗證，按類型混合仍只在人工圖驗過，完整需求以[開發進度](delivery-status.md)追蹤。
 
 ## 能力狀態
 
-未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，真實全圖只有 NAT-01～06 那幾列使用 `male-full`，其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
+未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，`male-full` 只用於 NAT-01～06 與 OPS-07 那幾列，OPS-08 兼用 fixture＋male-full（效能量測），其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
 
 | 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |
 | --- | --- | --- | --- | --- |

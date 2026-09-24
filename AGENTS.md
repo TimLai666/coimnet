@@ -54,11 +54,10 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
-- `experiment/gridnav/env.go`：`New` 對 `StepPenalty`／`GoalReward` 只比較範圍，會接受 NaN／Inf，之後 `Step` 可能產生非有限 reward。PPO 範例入口另做有限值驗證，底層環境的公開建構器仍待補檢查與測試（P2）。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
-- `tasks/ocr`：`Stack` 沒檢查每行 `Pixels` 長度是否等於 `Width*Height`，長度不符會 panic 而非回錯；補檢查與測試。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
+- `tasks/ocr/page.go`：`Stack` 的 background=NaN 會成功並在行距列留下 NaN，`SegmentLines` 的 threshold=NaN 會成功回空區塊；兩個公開入口的範圍比較都沒擋 NaN。補有限值檢查與回歸測試（P2）。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。
 - `dynamics/recompute.go`：連續核心分段重算的 `driveRow` 對每條邊、每一步都呼叫一次 `activate`（第一趟前向、段落重算、反向各一次），計算量跟邊數成正比而不是節點數；在兩千五百萬條邊的全圖上會比 `Forward` 慢很多。可在每段重算時先把該段各列的 activate(voltage) 存成輸出列（只多 S 列），數值不變。LIF 版讀的是 syn 列，沒有這個問題。
 - `checkpoint/package.go`：`ModelPackage.Capacity` 載入時照抄不重算，被改過的容量數字也會被接受。可在載入驗證時對非 nil 的 Capacity 以 `learning.NewNetwork(...).Capacity(...)` 重算比對，不符就拒絕；舊檔（nil）不受影響。
@@ -69,4 +68,4 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。
 - `tasks/media`：核心拓樸（輸入→隱藏與隱藏→隱藏的邊、初始化串流 0／1／2、log tau = log 2）的建構寫了四份：`generator.go` 的 `NewGenerator`、`video.go` 的 `NewVideoGenerator`、`fixed_decoder.go` 的 `NewLatentGenerator`、`external_tool.go` 的 `NewRequestHead`，只差輸入與輸出寬度。抽成一個共用的建構函式，之後改初始化或拓樸才不會漏改；行為不變，四個生成器的決定性測試可當回歸。
 - `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。
-- `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但 Go 預設 GOGC=100 會讓 heap 長到接近兩倍才回收；2026-09-24 全圖實測峰值足跡 12.2 GiB、耗時 223 秒，同一個執行加 `GOMEMLIMIT=8GiB` 只到 8.0 GiB、80 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，文件與 OPS-10 腳本都建議設 `GOMEMLIMIT`。
+- `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但預設 GC 下程序峰值足跡會超出這個存活陣列估算；2026-09-24 已提交的 OPS-07 證據中，預設 GC 峰值足跡 12.22 GiB、85 秒，設 `GOMEMLIMIT=8GiB` 時 8.01 GiB、72 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，執行全圖命令時建議明示 `GOMEMLIMIT=8GiB`。OPS-10 腳本本身尚未設定。
