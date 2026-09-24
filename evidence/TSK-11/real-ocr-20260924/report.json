@@ -1,0 +1,158 @@
+{
+  "schema_version": "coimnet-realocr/v1",
+  "example": "realocr: official KMNIST single-character OCR example",
+  "data_scope": {
+    "data": "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per 28x28 sample",
+    "language": "Japanese hiragana label subset: 10 official KMNIST classes",
+    "resolution": "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
+    "sequence_length": "one Unicode character per sample; 28 image columns are read as the CTC time sequence",
+    "periphery": "identity row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+  },
+  "source": {
+    "dataset": "Kuzushiji-MNIST",
+    "repository_url": "https://github.com/rois-codh/kmnist",
+    "dataset_url": "https://codh.rois.ac.jp/kmnist/",
+    "license": {
+      "name": "CC BY-SA 4.0",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "KMNIST Dataset (created by CODH), adapted from Kuzushiji Dataset (created by NIJL and others), doi:10.20676/00000341"
+    },
+    "files": [
+      {
+        "name": "train-images-idx3-ubyte.gz",
+        "url": "https://codh.rois.ac.jp/kmnist/dataset/kmnist/train-images-idx3-ubyte.gz",
+        "sha256": "51467d22d8cc72929e2a028a0428f2086b092bb31cfb79c69cc0a90ce135fde4",
+        "bytes": 18165135
+      },
+      {
+        "name": "train-labels-idx1-ubyte.gz",
+        "url": "https://codh.rois.ac.jp/kmnist/dataset/kmnist/train-labels-idx1-ubyte.gz",
+        "sha256": "e38f9ebcd0f3ebcdec7fc8eabdcdaef93bb0df8ea12bee65224341c8183d8e17",
+        "bytes": 29497
+      },
+      {
+        "name": "t10k-images-idx3-ubyte.gz",
+        "url": "https://codh.rois.ac.jp/kmnist/dataset/kmnist/t10k-images-idx3-ubyte.gz",
+        "sha256": "edd7a857845ad6bb1d0ba43fe7e794d164fe2dce499a1694695a792adfac43c5",
+        "bytes": 3041136
+      },
+      {
+        "name": "t10k-labels-idx1-ubyte.gz",
+        "url": "https://codh.rois.ac.jp/kmnist/dataset/kmnist/t10k-labels-idx1-ubyte.gz",
+        "sha256": "20bb9a0ef54c7db3efc55a92eef5582c109615df22683c380526788f98e42a1c",
+        "bytes": 5120
+      },
+      {
+        "name": "kmnist_classmap.csv",
+        "url": "https://codh.rois.ac.jp/kmnist/dataset/kmnist/kmnist_classmap.csv",
+        "sha256": "88ba4be4bd52d986ae100b425d5c28437c81829c87800c5832a2253edc758374",
+        "bytes": 151
+      }
+    ],
+    "classmap_sha256": "88ba4be4bd52d986ae100b425d5c28437c81829c87800c5832a2253edc758374",
+    "metadata_sha256": "e5d19fcbf83240be5a73e6a4ef2b63e385a7e32ca802188aa0911fc05867b9c3",
+    "train_total": 60000,
+    "test_total": 10000,
+    "image_format": "IDX-3 unsigned-byte payload inside gzip",
+    "label_format": "IDX-1 unsigned-byte payload inside gzip",
+    "image_height": 28,
+    "image_width": 28,
+    "mapping": [
+      {
+        "index": 0,
+        "codepoint": "U+304A",
+        "char": "お"
+      },
+      {
+        "index": 1,
+        "codepoint": "U+304D",
+        "char": "き"
+      },
+      {
+        "index": 2,
+        "codepoint": "U+3059",
+        "char": "す"
+      },
+      {
+        "index": 3,
+        "codepoint": "U+3064",
+        "char": "つ"
+      },
+      {
+        "index": 4,
+        "codepoint": "U+306A",
+        "char": "な"
+      },
+      {
+        "index": 5,
+        "codepoint": "U+306F",
+        "char": "は"
+      },
+      {
+        "index": 6,
+        "codepoint": "U+307E",
+        "char": "ま"
+      },
+      {
+        "index": 7,
+        "codepoint": "U+3084",
+        "char": "や"
+      },
+      {
+        "index": 8,
+        "codepoint": "U+308C",
+        "char": "れ"
+      },
+      {
+        "index": 9,
+        "codepoint": "U+3092",
+        "char": "を"
+      }
+    ]
+  },
+  "program": {
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "source_sha256": "a79b4cda507a6e0a8a80bcc10e85428c0ba91b0116e7d8e65b14b37b1456d9ed",
+    "binary_sha256": "deb0f431930e3c1d9f114d5a32aa2e0f917346dd38057141d4e8b173db18ebdb",
+    "vcs_revision": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  },
+  "config": {
+    "seed": 20260924,
+    "train_count": 1000,
+    "test_count": 200,
+    "epochs": 1,
+    "hidden": 24,
+    "learning_rate": 0.002,
+    "max_compressed_bytes": 25165824,
+    "max_uncompressed_bytes": 67108864,
+    "selection": "balanced_round_robin_by_label_v1"
+  },
+  "config_hash": "1f4f007101f9aab66292d1ef099a434964112d7936c3ae66704f520ed6098e1a",
+  "before": {
+    "cer": 4.74,
+    "exact_lines": 0,
+    "samples": 200
+  },
+  "after": {
+    "cer": 0.9,
+    "exact_lines": 0.1,
+    "samples": 200
+  },
+  "train": {
+    "samples": 1000,
+    "epochs": 1,
+    "updates": 1000,
+    "impossible_alignments": 0,
+    "indices_sha256": "c091bac9a336326d37007c6ea1ab15344f719b505391ec1451b61ae471626689",
+    "test_indices_sha256": "9b4fb30a75bdb1625bf0e636831ec633c86a7a62e74882d6c6fc2e5bc51943d2"
+  },
+  "model_persisted": false,
+  "limitations": [
+    "This is a single-character handwritten/cursive image task, not natural page OCR.",
+    "It has no page layout, line segmentation, reading order, multi-character text, or manuscript context.",
+    "The report uses bounded balanced subsets rather than the full official train/test sets.",
+    "No trained model or checkpoint is saved by this example; only the deterministic report is emitted."
+  ]
+}

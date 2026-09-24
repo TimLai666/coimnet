@@ -26,6 +26,7 @@
 
 `go doc ./...` 可列出全部套件的公開 API。開放的套件路徑：
 
+- `backend/webgpu`：目前已實測的稀疏 GPU 運算原語；完整訓練仍見 OPS-05
 - `checkpoint`：模型包、個體快照、訓練快照與恢復
 - `config`：組態展開
 - `connectome`：標準化接線圖與圖儲存
@@ -35,6 +36,10 @@
 - `learning`：核心、外圍模型、訓練器與持續個體
 - [`learning/rl`](../learning/rl/README.md)：PPO 更新入口、適用狀態與限制
 - [`tasks/asr`](../tasks/asr/README.md)：音訊轉文字、因果串流與恢復
+- `tasks/media/realdata`：授權影音來源的嚴格匯入（範例用）
+- `tasks/nav2d/trajectory`：授權果蠅軌跡的逐批匯入、試次隔離與因果樣本（範例用）
+- `tasks/ocr`：單行 OCR 與頁面區塊處理
+- `tasks/textgen`：文字語料匯入與生成
 - `modulation`：調節來源、化學、受體與效果
 - `params`：動態參數推導與參數集
 - `plasticity`：局部學習規則
@@ -53,6 +58,11 @@
 - [examples/lifthreshold/README.md](../examples/lifthreshold/README.md)：三顆 LIF 神經元的閾值可訓練性檢查。
 - [examples/multichannel/README.md](../examples/multichannel/README.md)：多通道 adapter 完整流程。
 - [examples/realsubgraph/README.md](../examples/realsubgraph/README.md)：ALIN 真實子圖選取與短訓練。
+- [examples/realasr/README.md](../examples/realasr/README.md)：Mini LibriSpeech 真實語音小樣本驗證。
+- [examples/realtext/README.md](../examples/realtext/README.md)：Gutenberg 英文文字小樣本驗證。
+- [examples/realocr/README.md](../examples/realocr/README.md)：KMNIST 單字元小樣本驗證。
+- [examples/realmedia/README.md](../examples/realmedia/README.md)：Blender 開源影片的影像、音訊與影片小樣本流程驗證。
+- [examples/realnav/README.md](../examples/realnav/README.md)：果蠅軌跡的下一步位移預測範例，非閉環導航。
 
 用 `coimnet examples list` 列出所有內建例子，`coimnet examples run <name>` 執行。命令本身的權限與用法用 `coimnet examples run <name> --help` 查。
 
@@ -63,6 +73,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | Schema 版本 | 套件 |
 | --- | --- |
 | `coimnet-adaptive-evaluation/v1` | `experiment` |
+| `coimnet-asr-dataset/v1` | `tasks/asr` |
 | `coimnet-config/v1` | `config` |
 | `coimnet-connectome-builder/v1` | `connectome` |
 | `coimnet-connectome-builder/v999` | `connectome`（測試用版本） |
@@ -101,6 +112,11 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-prediction/v1` | `internal/cli` |
 | `coimnet-ppo-experiment/v1` | `experiment` |
 | `coimnet-real-subgraph-example/v1` | `examples/realsubgraph` |
+| `coimnet-nav2d-causal-next-displacement/v1` | `tasks/nav2d/trajectory` |
+| `coimnet-nav2d-trajectory/v1` | `tasks/nav2d/trajectory` |
+| `coimnet-realmedia-example/v1` | `examples/realmedia` |
+| `coimnet-realmedia/v1` | `tasks/media/realdata` |
+| `coimnet-realnav-example/v1` | `examples/realnav` |
 | `coimnet-replay/v0` | `checkpoint`（歷史版本） |
 | `coimnet-replay/v1` | `replay` |
 | `coimnet-sign-rule/v1` | `params` |
@@ -114,6 +130,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-simulate-state/v1` | `simulate` |
 | `coimnet-simulate-state/v2` | `simulate` |
 | `coimnet-teacher-records/v1` | `teacher` |
+| `coimnet-textgen-corpus/v1` | `tasks/textgen` |
 | `coimnet-train-result/v1` | `internal/cli` |
 
 格式變更的相容規則見 [ENG](../ENG.md) 與對應 [tickets](tickets/)。欄位層級的格式說明見 [config-schema.md](config-schema.md)、[個體狀態](individual-state.md)、[訊號映射](signal-projections.md)、[訊號取樣](signal-resampling.md)。
@@ -124,6 +141,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 - 發布內容盤點：[docs/malecns-release-catalog.md](malecns-release-catalog.md)。
 - 依賴與資料來源授權盤點：[docs/licenses.md](licenses.md)。
 - 研究來源清單：[docs/handoff/sources.json](handoff/sources.json)。
+- 真實任務範例資料與授權：[docs/real-data-sources.md](real-data-sources.md)。
 - 儲存庫授權：[LICENSE](../LICENSE)。接線資料、研究程式與外部模型依各自授權使用；發布授權未確認前不公開發布（見 [release-checklist.md](release-checklist.md)）。
 - 模型定位與可選生物機制：[docs/model-and-mechanisms.md](model-and-mechanisms.md)。
 

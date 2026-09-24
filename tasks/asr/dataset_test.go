@@ -103,6 +103,14 @@ func TestReadDatasetValidStereoDifferentRatesAndReports(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ReadDataset: %v", err)
 	}
+	manifestRaw, err := os.ReadFile(manifestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantManifestHash := sha256.Sum256(manifestRaw)
+	if got.ManifestSHA256 != hex.EncodeToString(wantManifestHash[:]) {
+		t.Fatalf("manifest SHA-256 = %q, want %x", got.ManifestSHA256, wantManifestHash)
+	}
 	if got.License.Holder != "Example holder" || got.License.Terms != "CC BY 4.0" || got.License.Source != "https://example.test/audio" {
 		t.Fatalf("License = %+v, want the manifest license", got.License)
 	}

@@ -1,0 +1,77 @@
+{
+  "schema_version": "coimnet-device-evidence/v1",
+  "requirement": "OPS-05: verifiable device sparse forward/backward, update/restore and measurement",
+  "profile": "partial_metal_sparse_forward_backward_no_training",
+  "date": "2026-09-25",
+  "scope": "Hardware Apple M3 Metal float32 sparse drive and local derivative, plus a scalar zero-delay dynamics adapter that uses those GPU primitives at every recurrent step. This does not meet the full OPS-05 device training contract.",
+  "reproduction_command": [
+    "go test -count=1 -v ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/gpu-test.log 2>&1",
+    "go test -count=20 ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/stress-20.log 2>&1",
+    "go test -count=100 ./backend/webgpu -run '^TestSparseBackwardCrossesWorkgroupBoundaries$' > evidence/OPS-05/sparse-backward-20260925/stress-100.log 2>&1",
+    "go test -race -count=1 ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/race.log 2>&1",
+    "go test -v -count=1 ./dynamics -run '^TestGPU' > evidence/OPS-05/sparse-backward-20260925/adapter-test.log 2>&1",
+    "go test -race -v -count=1 ./dynamics -run '^TestGPU' > evidence/OPS-05/sparse-backward-20260925/adapter-race.log 2>&1",
+    "go test -count=20 ./dynamics -run '^TestGPU' > evidence/OPS-05/sparse-backward-20260925/adapter-stress-20.log 2>&1",
+    "go vet ./backend/webgpu ./dynamics"
+  ],
+  "environment": {
+    "machine": "Mac15,12 Apple M3, 16 GiB unified memory",
+    "os_arch": "Darwin 25.6.0 arm64",
+    "go_version": "go1.26.5 darwin/arm64",
+    "adapter": "Apple M3",
+    "backend": "Metal",
+    "library_reported_device_type": "DiscreteGPU (library classification, not hardware specification)",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8",
+    "insyra_version": "v0.3.2"
+  },
+  "input_fingerprints": {
+    "source_file_sha256": {
+      "backend/webgpu/doc.go": "113c36ff13c3c3d191c5a14abf9afeaf3285271e592340e26c710c0c21ca4d4d",
+      "backend/webgpu/sparse_backward.go": "dd96a3359c57fbe0649f54e676134bc78ce2b210000766d70d614dcc85073cbc",
+      "backend/webgpu/sparse_backward_test.go": "a96d729af1bb7c24e2734602bfb61747f16e2d57e5a2d737573bd9a5b75f7ca9",
+      "dynamics/gpu_adapter.go": "a6c3e66e69b203f51a1df94d6f59ca65e48ba7144c740fe54e87a9daf638e261",
+      "dynamics/gpu_adapter_test.go": "531d122cb4c7fb29ce2822db90b162326d590abba244dcc62705864e5d926c32"
+    },
+    "log_sha256": {
+      "adapter-race.log": "6eecb803b2359f39cf71352897134df3468c94cd9136c3bdbe004bf62bf9a730",
+      "adapter-stress-20.log": "da4e7222cc83ab50291449b89a1b83c57e7a2690ffc7f8b416b7fa4f62d0d06b",
+      "adapter-test.log": "be432f6e76f93c7c1237c889d3afc4483eb851c7286c5530b9ff6a6c53a80a39",
+      "gpu-test.log": "3133a126157e972cae89b374b8a1330b8175f415998d81d4d6ea611297dcde8f",
+      "race.log": "dcb7faf552efeecd42a23c716833a1968666de829f1195a0378021c83159b3c6",
+      "stress-100.log": "44e28ff7f624cea2cd3fb4f70fe57a845fe5f89c7c76b20e12dedcc53902e0bf",
+      "stress-20.log": "535e0721a5b5b41bb0a0efa0caf811cac1d348ec6db4b336d157a3726ee55b49"
+    }
+  },
+  "observed_result": {
+    "gpu_tests": "PASS; no hardware tests skipped on this Mac",
+    "cpu_reference": "130 nodes, 910 edges; per-edge and source gradients all matched independent float32 CPU reference, max absolute difference 0 with test tolerance 1e-6",
+    "regression": "The prior source-row loop intermittently left weight-gradient slots unwritten; a separate GPU invocation per CSR edge slot plus sentinel-buffer test passed full package 20 repetitions and 130-node test 100 repetitions.",
+    "dynamics_adapter": "GPUContinuous scalar zero-delay forward/backward with four recurrent steps and truncated BPTT matched float64 CPU within declared 4e-5 absolute and relative tolerance; both test and race runs had no skips.",
+    "no_silent_cpu_fallback": "Forward-only adapter Backward returns ErrGPUContinuousBackwardUnavailable; construction with backward checks a fixed GPU result before exposing the adapter.",
+    "single_call_host_wall_clock": {
+      "initialization": "3.075958ms",
+      "compilation": "583.917us",
+      "topology_transfer": "104.5us",
+      "warmup": "2.138291ms",
+      "per_call_transfer": "34.791us",
+      "per_call_dispatch": "87.958us",
+      "per_call_readback": "322.542us"
+    }
+  },
+  "test_log": [
+    "evidence/OPS-05/sparse-backward-20260925/adapter-race.log",
+    "evidence/OPS-05/sparse-backward-20260925/adapter-stress-20.log",
+    "evidence/OPS-05/sparse-backward-20260925/adapter-test.log",
+    "evidence/OPS-05/sparse-backward-20260925/gpu-test.log",
+    "evidence/OPS-05/sparse-backward-20260925/race.log",
+    "evidence/OPS-05/sparse-backward-20260925/stress-100.log",
+    "evidence/OPS-05/sparse-backward-20260925/stress-20.log"
+  ],
+  "limitations": [
+    "This is a float32 GPU sparse primitive and a host-orchestrated float64 scalar zero-delay adapter, not an optimizer or device-resident training loop.",
+    "The host still computes activation, time constants and state update; weights, inputs and gradients transfer each step, and the CPU restores declared edge order from CSR.",
+    "Device-side parameter update, trainer integration, capacity checks for a full graph, state save/restore and Ubuntu RTX4070 or Windows execution remain unverified.",
+    "Phase times are single host observations around API calls, not GPU timestamp queries or a measured speedup.",
+    "The failed shader path was isolated to storage writes in a source-row loop; the underlying Metal/WGSL compiler layer causing the omission is not proven."
+  ]
+}

@@ -1,0 +1,43 @@
+=== RUN   TestReadGzipVerifiesSourceAndPreservesOnlyTrajectoryColumns
+--- PASS: TestReadGzipVerifiesSourceAndPreservesOnlyTrajectoryColumns (0.00s)
+=== RUN   TestReadRejectsInvalidSourceAndRows
+=== RUN   TestReadRejectsInvalidSourceAndRows/sha_mismatch
+=== RUN   TestReadRejectsInvalidSourceAndRows/license_missing
+=== RUN   TestReadRejectsInvalidSourceAndRows/non_finite
+=== RUN   TestReadRejectsInvalidSourceAndRows/duplicate_time
+=== RUN   TestReadRejectsInvalidSourceAndRows/malformed_float
+--- PASS: TestReadRejectsInvalidSourceAndRows (0.00s)
+    --- PASS: TestReadRejectsInvalidSourceAndRows/sha_mismatch (0.00s)
+    --- PASS: TestReadRejectsInvalidSourceAndRows/license_missing (0.00s)
+    --- PASS: TestReadRejectsInvalidSourceAndRows/non_finite (0.00s)
+    --- PASS: TestReadRejectsInvalidSourceAndRows/duplicate_time (0.00s)
+    --- PASS: TestReadRejectsInvalidSourceAndRows/malformed_float (0.00s)
+=== RUN   TestReadRejectsSizeAndDuplicateHeaderLimits
+--- PASS: TestReadRejectsSizeAndDuplicateHeaderLimits (0.00s)
+=== RUN   TestReadRejectsUnorderedOrInterleavedSourceRows
+=== RUN   TestReadRejectsUnorderedOrInterleavedSourceRows/time_out_of_order
+=== RUN   TestReadRejectsUnorderedOrInterleavedSourceRows/trial_interleaved
+--- PASS: TestReadRejectsUnorderedOrInterleavedSourceRows (0.00s)
+    --- PASS: TestReadRejectsUnorderedOrInterleavedSourceRows/time_out_of_order (0.00s)
+    --- PASS: TestReadRejectsUnorderedOrInterleavedSourceRows/trial_interleaved (0.00s)
+=== RUN   TestSplitByTrialIsDeterministicAndLeakFree
+--- PASS: TestSplitByTrialIsDeterministicAndLeakFree (0.00s)
+=== RUN   TestBuildSamplesUsesOnlyCausalHistoryAndHandCalculatedTarget
+--- PASS: TestBuildSamplesUsesOnlyCausalHistoryAndHandCalculatedTarget (0.00s)
+=== RUN   TestBuildSamplesSkipsGapsRelocationsAndCrossTrialWindows
+--- PASS: TestBuildSamplesSkipsGapsRelocationsAndCrossTrialWindows (0.00s)
+=== RUN   TestBuildSamplesSkipsExplicitRelocationSegment
+--- PASS: TestBuildSamplesSkipsExplicitRelocationSegment (0.00s)
+=== RUN   TestBuildSamplesRejectsInvalidConfigAndDataset
+--- PASS: TestBuildSamplesRejectsInvalidConfigAndDataset (0.00s)
+=== RUN   TestSampleInputHasNoForbiddenMetadataFields
+--- PASS: TestSampleInputHasNoForbiddenMetadataFields (0.00s)
+=== RUN   TestTrialIDsAreStableAndSortedForInspection
+--- PASS: TestTrialIDsAreStableAndSortedForInspection (0.00s)
+=== RUN   TestSplitByTrialKeepsAllSegmentsOfOneFlyTogether
+--- PASS: TestSplitByTrialKeepsAllSegmentsOfOneFlyTogether (0.00s)
+=== RUN   TestReadTitovaSourceWhenConfigured
+    trajectory_test.go:440: real source rows=231130 trials=39 samples=215498 stats={Trials:39 CandidateWindows:231128 Samples:215498 SkippedBoundary:387 SkippedLargeGap:14638 SkippedRelocation:605 SkippedManualRelocation:602 SkippedLargeStep:3}
+--- PASS: TestReadTitovaSourceWhenConfigured (0.64s)
+PASS
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	0.789s

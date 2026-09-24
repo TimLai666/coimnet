@@ -1,0 +1,153 @@
+{
+  "schema_version": "coimnet-real-text-example/v1",
+  "input": {
+    "manifest_path": "/Users/timlai/Developer/coimnet-data/TSK-11/gutenberg/manifest.json",
+    "manifest_sha256": "6943685a940b7b08d1c64af5d143d91c16bc50746a8ce38f2ada1dd7cf3cd45f"
+  },
+  "runtime": {
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "num_cpu": 8
+  },
+  "scope": {
+    "kind": "real",
+    "language": "en",
+    "note": "Three English Project Gutenberg Plain Text eBooks downloaded from official catalog links; files retain the official Gutenberg header, body, and footer verbatim. Corpus is for a small text-generation pipeline acceptance run, not a language-quality claim."
+  },
+  "documents": [
+    {
+      "id": "gutenberg-11-alice-adventures-in-wonderland",
+      "source": "project-gutenberg-ebook-11",
+      "raw_bytes": 174311,
+      "raw_sha256": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e",
+      "body_bytes": 154483,
+      "selected_bytes": 8192,
+      "selection_anchor": "Alice was beginning to get very tired",
+      "selection_offset_bytes": 661,
+      "body_start_marker": "*** START OF THE PROJECT GUTENBERG EBOOK ALICE'S ADVENTURES IN WONDERLAND ***",
+      "body_end_marker": "*** END OF THE PROJECT GUTENBERG EBOOK ALICE'S ADVENTURES IN WONDERLAND ***"
+    },
+    {
+      "id": "gutenberg-35-the-time-machine",
+      "source": "project-gutenberg-ebook-35",
+      "raw_bytes": 204384,
+      "raw_sha256": "2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc",
+      "body_bytes": 184665,
+      "selected_bytes": 8192,
+      "selection_anchor": "The Time Traveller (for so it will be convenient to speak of him)",
+      "selection_offset_bytes": 509,
+      "body_start_marker": "*** START OF THE PROJECT GUTENBERG EBOOK THE TIME MACHINE ***",
+      "body_end_marker": "*** END OF THE PROJECT GUTENBERG EBOOK THE TIME MACHINE ***"
+    },
+    {
+      "id": "gutenberg-1342-pride-and-prejudice",
+      "source": "project-gutenberg-ebook-1342",
+      "raw_bytes": 772386,
+      "raw_sha256": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75",
+      "body_bytes": 752487,
+      "selected_bytes": 8192,
+      "selection_anchor": "It is a truth universally acknowledged",
+      "selection_offset_bytes": 35389,
+      "body_start_marker": "*** START OF THE PROJECT GUTENBERG EBOOK PRIDE AND PREJUDICE ***",
+      "body_end_marker": "*** END OF THE PROJECT GUTENBERG EBOOK PRIDE AND PREJUDICE ***"
+    }
+  ],
+  "split": {
+    "train_documents": 2,
+    "test_documents": 1,
+    "test_fraction": 0.34,
+    "seed": 7,
+    "train_sources": [
+      "project-gutenberg-ebook-11",
+      "project-gutenberg-ebook-35"
+    ],
+    "test_sources": [
+      "project-gutenberg-ebook-1342"
+    ],
+    "train_ids": [
+      "gutenberg-11-alice-adventures-in-wonderland",
+      "gutenberg-35-the-time-machine"
+    ],
+    "test_ids": [
+      "gutenberg-1342-pride-and-prejudice"
+    ]
+  },
+  "training": {
+    "model_config": {
+      "embed": 16,
+      "hidden": 32,
+      "settle": 3,
+      "learning_rate": 0.01,
+      "seed": 7
+    },
+    "model_seed": 7,
+    "epochs": 3,
+    "max_tokens": 128,
+    "selected_bytes_per_train_document": 8192,
+    "training_documents": 2,
+    "examples_per_document": [
+      65,
+      65
+    ],
+    "updates": 390,
+    "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+  },
+  "metrics": {
+    "holdout_bytes": 8192,
+    "next_token_accuracy_bytes": 1024,
+    "before": {
+      "holdout": {
+        "sum_nats": 45208.55377995869,
+        "tokens": 8129,
+        "mean_nats_per_token": 5.561391780041665,
+        "perplexity": 260.18470432283067,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "next_token_accuracy": 0.0009765625,
+      "next_token_correct": 1,
+      "next_token_total": 1024
+    },
+    "after": {
+      "holdout": {
+        "sum_nats": 21554.009745819916,
+        "tokens": 8129,
+        "mean_nats_per_token": 2.6514958476835915,
+        "perplexity": 14.175226774453042,
+        "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+      },
+      "next_token_accuracy": 0.298828125,
+      "next_token_correct": 306,
+      "next_token_total": 1024
+    }
+  },
+  "independent_inference": {
+    "prompt": "It is a truth universally acknowledged",
+    "config": {
+      "max_tokens": 96,
+      "temperature": 0.8,
+      "top_k": 20,
+      "top_p": 0.95,
+      "seed": 19,
+      "stop_at_eos": true
+    },
+    "before": {
+      "text": "\ufffd\ufffd\n\ufffdS\ufffd\ufffd\ufffd\ufffd^\ufffd\u000f\ufffd9\ufffd\ufffd\n\ufffd\ufffdW\ufffdO\ufffdn\t\ufffd\ufffd$\ufffd߱\ufffdΝdӚ_\ufffdK\ufffd\ufffdt`\ufffd8\ufffdb\ufffd\ufffd2F\u0016\ufffd\u001c4\ufffde\ufffd\b랞\ufffd\ufffd\ufffdt\u0026*%u4\ufffd \ufffd\ufffd@S\u0017%\ufffd\ufffd=8\ufffd/\ufffd\u001c\ufffdd\ufffd\ufffd=",
+      "stop": "max_tokens",
+      "incomplete_utf8_bytes": 1,
+      "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+    },
+    "after": {
+      "text": " tave tor tas or ot sean ove ut ivit re te te tat wy icic te Tonn me al ean se a are at ocon. bo",
+      "stop": "max_tokens",
+      "incomplete_utf8_bytes": 0,
+      "vocab_hash": "db819cec655270713a80684929de48722bf5e6b594f2575420789350d2551d94"
+    }
+  },
+  "scope_limitations": [
+    "This run uses the supplied real corpus and a deterministic 8 KiB window from each document; it is a bounded acceptance run, not full-corpus training.",
+    "Perplexity and next-token accuracy are measured on the source-held-out window with the same byte vocabulary hash; they do not establish English fluency, knowledge, convergence, or generalisation.",
+    "The generated continuation is an observable sample, not a human or task-quality judgment.",
+    "The report does not infer GPU or accelerator training from any backend log; no accelerator claim is made."
+  ]
+}

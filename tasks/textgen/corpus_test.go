@@ -18,6 +18,9 @@ func TestReadCorpus(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if got, want := corpus.ManifestSHA256, "75212a011009217b438d68b7de9ab377140d27dd54b1ad78ab9647ce8a978ea7"; got != want {
+		t.Fatalf("parsed manifest SHA-256 = %q, want %q", got, want)
+	}
 	wantLicense := License{Holder: "Example holder", Terms: "Example terms", Source: "Example source"}
 	if corpus.Scope != (DataScope{Kind: "fixture", Language: "zh-Hant", Note: "tiny test corpus"}) {
 		t.Fatalf("scope = %#v", corpus.Scope)

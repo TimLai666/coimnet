@@ -1,6 +1,6 @@
 # 相依授權盤點
 
-產生時間（UTC）：2026-09-16 16:43
+產生時間（UTC）：2026-09-24 16:56
 go version：go version go1.26.5 darwin/arm64
 模組總數：182，未知（含未下載）：68
 
@@ -64,9 +64,9 @@ go version：go version go1.26.5 darwin/arm64
 | github.com/goccy/go-json | v0.10.6 | 間接 | MIT | github.com/goccy/go-json@v0.10.6/LICENSE |
 | github.com/goccy/go-yaml | v1.11.0 | 間接 | MIT | github.com/goccy/go-yaml@v1.11.0/LICENSE |
 | github.com/gogpu/gpucontext | v0.24.0 | 間接 | MIT | github.com/gogpu/gpucontext@v0.24.0/LICENSE |
-| github.com/gogpu/gputypes | v0.5.1 | 間接 | MIT | github.com/gogpu/gputypes@v0.5.1/LICENSE |
+| github.com/gogpu/gputypes | v0.5.1 | 直接 | MIT | github.com/gogpu/gputypes@v0.5.1/LICENSE |
 | github.com/gogpu/naga | v0.18.0 | 間接 | MIT | github.com/gogpu/naga@v0.18.0/LICENSE |
-| github.com/gogpu/wgpu | v0.30.35 | 間接 | MIT | github.com/gogpu/wgpu@v0.30.35/LICENSE |
+| github.com/gogpu/wgpu | v0.30.35 | 直接 | MIT | github.com/gogpu/wgpu@v0.30.35/LICENSE |
 | github.com/golang-sql/civil | v0.0.0-20220223132316-b832511892a9 | 間接 | Apache-2.0 | github.com/golang-sql/civil@v0.0.0-20220223132316-b832511892a9/LICENSE |
 | github.com/golang-sql/sqlexp | v0.1.0 | 間接 | 未知 | github.com/golang-sql/sqlexp@v0.1.0/LICENSE |
 | github.com/golang/freetype | v0.0.0-20170609003504-e2365dfdc4a0 | 間接 | 未知 | github.com/golang/freetype@v0.0.0-20170609003504-e2365dfdc4a0/LICENSE |
@@ -193,7 +193,7 @@ go version：go version go1.26.5 darwin/arm64
 
 - MaleCNS 發布資料：見 docs/malecns-source-audit.md
 - FlyWire：尚未匯入；取得時記錄條款與日期
-- 字型與媒體素材：無
+- 真實任務範例的外部資料與授權：見 docs/real-data-sources.md；原始檔不納入儲存庫
 
 ## 移植或改寫的程式碼
 

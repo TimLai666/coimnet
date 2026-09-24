@@ -401,10 +401,10 @@ else
 fi
 
 block_step real_task_classes \
-  "$(command_text go run ./cmd/coimnet examples run '<task>' --data DATA)" blocked_data \
-  "TSK-11 requires user-provided authorized data for each task class"
-block_step device_backend 'GPU backend execution' blocked_hardware \
-  "ticket 30 item 16: GPU backend technology and target machine have not been selected"
+  "see evidence/TSK-11/verification.json for the five licensed external-data example commands" blocked_data \
+  "the clean git archive omits external licensed task datasets; five classes have separate import/train/infer/evaluate evidence, while closed-loop real-data navigation remains unverified"
+block_step device_backend 'full sparse GPU training, update and restore on Ubuntu 1 RTX 4070' blocked_hardware \
+  "WebGPU Mac Metal sparse primitives and a small opt-in GPU trainer passed locally; device-resident optimizer, full-graph capacity and Ubuntu 1 execution remain unverified"
 
 rm -f "$workdir/report.json" "$workdir/report.md"
 run_step completion_report go run ./cmd/coimnet report \

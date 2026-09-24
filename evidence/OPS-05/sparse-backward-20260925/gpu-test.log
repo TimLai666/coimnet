@@ -1,0 +1,65 @@
+=== RUN   TestSparseBackwardGPUMatchesFloat32Reference
+    sparse_backward_test.go:67: adapter="Apple M3" backend="Metal" vendor="Apple" driver="Metal" device_type="DiscreteGPU" initialization=64.481042ms compilation=44.964375ms topology_transfer=368.958µs warmup=2.719333ms transfer=59.292µs dispatch=79.792µs readback=257.5µs cpu_reference_max_abs_diff=0
+--- PASS: TestSparseBackwardGPUMatchesFloat32Reference (0.07s)
+=== RUN   TestSparseBackwardSingleEdgeRepeatedInputs
+    sparse_backward_test.go:137: adapter="Apple M3" backend="Metal" repeated_inputs=12
+--- PASS: TestSparseBackwardSingleEdgeRepeatedInputs (0.01s)
+=== RUN   TestSparseBackwardZeroEdges
+--- PASS: TestSparseBackwardZeroEdges (0.00s)
+=== RUN   TestSparseBackwardCrossesWorkgroupBoundaries
+    sparse_backward_test.go:227: adapter="Apple M3" backend="Metal" device_type="DiscreteGPU" nodes=130 edges=910 initialization=3.075958ms compilation=583.917µs topology_transfer=104.5µs warmup=2.138291ms transfer=34.791µs dispatch=87.958µs readback=322.542µs max_abs_diff=0
+--- PASS: TestSparseBackwardCrossesWorkgroupBoundaries (0.01s)
+=== RUN   TestSparseBackwardRejectsInvalidInputs
+=== RUN   TestSparseBackwardRejectsInvalidInputs/upstream_shape
+=== RUN   TestSparseBackwardRejectsInvalidInputs/source_shape
+=== RUN   TestSparseBackwardRejectsInvalidInputs/weight_shape
+=== RUN   TestSparseBackwardRejectsInvalidInputs/non-finite_upstream
+=== RUN   TestSparseBackwardRejectsInvalidInputs/non-finite_source
+=== RUN   TestSparseBackwardRejectsInvalidInputs/non-finite_weight
+--- PASS: TestSparseBackwardRejectsInvalidInputs (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/upstream_shape (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/source_shape (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/weight_shape (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/non-finite_upstream (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/non-finite_source (0.00s)
+    --- PASS: TestSparseBackwardRejectsInvalidInputs/non-finite_weight (0.00s)
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/zero_nodes
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/negative_nodes
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/different_edge_shapes
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/negative_source
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/source_out_of_range
+=== RUN   TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/target_out_of_range
+--- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/zero_nodes (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/negative_nodes (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/different_edge_shapes (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/negative_source (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/source_out_of_range (0.00s)
+    --- PASS: TestNewSparseDriveRejectsInvalidTopologyBeforeDeviceOpen/target_out_of_range (0.00s)
+=== RUN   TestNewSparseDriveRejectsCanceledContext
+--- PASS: TestNewSparseDriveRejectsCanceledContext (0.00s)
+=== RUN   TestSparseDriveGPUMatchesFloat32Reference
+    sparse_drive_test.go:99: adapter="Apple M3" backend="Metal" vendor="Apple" driver="Metal" device_type="DiscreteGPU" initialization=2.621333ms compilation=156.125µs topology_transfer=90.75µs warmup=2.139208ms transfer=30.875µs dispatch=30.291µs readback=227.084µs cpu_reference_max_abs_diff=0
+--- PASS: TestSparseDriveGPUMatchesFloat32Reference (0.00s)
+=== RUN   TestSparseDriveCrossesWorkgroupBoundaries
+    sparse_drive_test.go:182: adapter="Apple M3" backend="Metal" nodes=130 edges=910
+--- PASS: TestSparseDriveCrossesWorkgroupBoundaries (0.00s)
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/input_shape
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/source_shape
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/weights_shape
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/non-finite_input
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/non-finite_output
+=== RUN   TestSparseDriveRejectsInvalidExecuteInputs/non-finite_weight
+--- PASS: TestSparseDriveRejectsInvalidExecuteInputs (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/input_shape (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/source_shape (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/weights_shape (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/non-finite_input (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/non-finite_output (0.00s)
+    --- PASS: TestSparseDriveRejectsInvalidExecuteInputs/non-finite_weight (0.00s)
+=== RUN   TestSparseDriveExecuteHonorsCancellation
+--- PASS: TestSparseDriveExecuteHonorsCancellation (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/backend/webgpu	0.330s

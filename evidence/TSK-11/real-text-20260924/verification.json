@@ -1,0 +1,72 @@
+{
+  "schema_version": "coimnet-real-task-evidence/v1",
+  "requirement": "TSK-11",
+  "profile": "partial_real_text",
+  "date": "2026-09-24",
+  "scope": "Three official Project Gutenberg English texts; source-held-out, fixed 8 KiB windows using the repository's textgen training APIs. This is an example, not a pretrained model.",
+  "source": {
+    "catalog_urls": [
+      "https://www.gutenberg.org/ebooks/11",
+      "https://www.gutenberg.org/ebooks/1342",
+      "https://www.gutenberg.org/ebooks/35"
+    ],
+    "license_page": "https://www.gutenberg.org/policy/license.html",
+    "rights_scope": "The three catalog pages say public domain in the USA; no other jurisdiction is asserted. Original headers, footers and license notices remain in the external files.",
+    "external_manifest": "/Users/timlai/Developer/coimnet-data/TSK-11/gutenberg/manifest.json",
+    "manifest_sha256": "6943685a940b7b08d1c64af5d143d91c16bc50746a8ce38f2ada1dd7cf3cd45f",
+    "raw_sha256": {
+      "alice-adventures-in-wonderland.txt": "01b38ea4c710a84bc18d0bd41271a5a1a92b94e97b2812f4dece97d4a694725e",
+      "pride-and-prejudice.txt": "3f6bb9d6f78e0293b56acd4714dd68cb7d6d1d293402031ce9d5a216bcaf9d75",
+      "the-time-machine.txt": "2892e919000e17c83e1dac51b30f4675db50536b644d7579fe8a89bb399a9bdc"
+    }
+  },
+  "environment": {
+    "model": "Mac15,12",
+    "os_arch": "Darwin 25.6.0 arm64",
+    "memory_bytes": 17179869184,
+    "go_version": "go1.26.5 darwin/arm64",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  },
+  "source_file_sha256": {
+    "examples/realtext/main.go": "757d3b6dfa84a647a6e5e2fbc2c418d2a4a0c889bb9c7ac5e35cbb4e08c9943b",
+    "examples/realtext/main_test.go": "33dfedcfe17bb9b2281090212b7239d616494fa0284113f2e3a7c08aa49854a7",
+    "tasks/textgen/corpus.go": "deaf6b96fca9da065ec4f6405ce04bc2e717e489d172da41655230dbaf03d12c"
+  },
+  "commands": [
+    "go test -count=1 ./examples/realtext ./tasks/textgen",
+    "go build -o /tmp/coimnet-realtext-reviewed ./examples/realtext",
+    "/usr/bin/time -l /tmp/coimnet-realtext-reviewed --manifest /Users/timlai/Developer/coimnet-data/TSK-11/gutenberg/manifest.json > evidence/TSK-11/real-text-20260924/report.json 2> evidence/TSK-11/real-text-20260924/run.log",
+    "/tmp/coimnet-realtext-reviewed --manifest /Users/timlai/Developer/coimnet-data/TSK-11/gutenberg/manifest.json > /tmp/coimnet-realtext-reviewed-repeat.json",
+    "cmp evidence/TSK-11/real-text-20260924/report.json /tmp/coimnet-realtext-reviewed-repeat.json"
+  ],
+  "report": {
+    "path": "evidence/TSK-11/real-text-20260924/report.json",
+    "sha256": "bee4ddaeb22318e3ccae0292b291231f9336155fd4a9b271d86d5b89c19d1bf2",
+    "repeat_byte_identical": true
+  },
+  "observed_result": {
+    "train_sources": 2,
+    "held_out_sources": 1,
+    "selected_bytes_per_document": 8192,
+    "updates": 390,
+    "holdout_tokens": 8129,
+    "before_perplexity": 260.18470432283067,
+    "after_perplexity": 14.175226774453042,
+    "before_next_token_correct": 1,
+    "after_next_token_correct": 306,
+    "accuracy_denominator_bytes": 1024,
+    "run_wall_seconds": 8.13,
+    "max_resident_set_bytes": 79134720,
+    "peak_memory_footprint_bytes": 108757880
+  },
+  "run_log": {
+    "path": "evidence/TSK-11/real-text-20260924/run.log",
+    "sha256": "671735696aee88b8821341f0e02b2ae9423eae1a2487a72e029eaeca014bf802"
+  },
+  "limitations": [
+    "The generated sample remains visibly fragmented; the metrics do not establish fluency, knowledge or broad generalization.",
+    "This bounds each book to one 8 KiB window and is not full-corpus training.",
+    "The existing RunTextgen task metric expects the synthetic Chinese grammar and rejects the English corpus; this example uses public textgen APIs and source-held-out metrics.",
+    "Insyra logged a Metal session, but this report makes no GPU acceleration claim for the textgen model or CoImNet sparse core."
+  ]
+}

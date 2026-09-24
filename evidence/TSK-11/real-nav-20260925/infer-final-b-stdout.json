@@ -1,0 +1,135 @@
+{
+  "schema_version": "coimnet-realnav-example/v1",
+  "mode": "infer",
+  "source": {
+    "id": "titova-2023-displacement-trajectories",
+    "url": "https://github.com/strawlab/titova_et_al_displacement_supplemental/raw/0eb07940a9ffdedd97ada81f75e9d5f7bface579/all_ds_t01_d2_cm_no2.csv.gz",
+    "doi": "10.5061/dryad.vdncjsz0b",
+    "pinned_commit": "0eb07940a9ffdedd97ada81f75e9d5f7bface579",
+    "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+    "author_git_blob_sha1": "b87c2ca52eb3030a02b8e14b6510b358fba92c69",
+    "author_readme_blob_sha1": "9dabe23037de5279a21ebed66464275d173966c4",
+    "dryad_byte_equivalence": "unverified",
+    "license": {
+      "holder": "Titova et al.",
+      "terms": "CC0 1.0",
+      "source": "https://datadryad.org/help/guides/reuse"
+    },
+    "rows": 231130,
+    "trials": 39
+  },
+  "split": {
+    "seed": 20260925,
+    "test_fraction": 0.3333333333333333,
+    "train_trial_ids": [],
+    "test_trial_ids": [
+      "flytrax20181123_162408.csv\u001f3",
+      "flytrax20181204_170930.csv\u001f6",
+      "flytrax20181205_184643.csv\u001f8",
+      "flytrax20181207_180201.csv\u001f10",
+      "flytrax20181211_170828.csv\u001f11",
+      "flytrax20190109_165747.csv\u001f20",
+      "flytrax20190110_152909.csv\u001f21",
+      "flytrax20190110_182810.csv\u001f25",
+      "flytrax20190111_164022.csv\u001f26",
+      "flytrax20190111_192056.csv\u001f29",
+      "flytrax20190116_192744.csv\u001f34",
+      "flytrax20190118_164239.csv\u001f35",
+      "flytrax20190119_174549.csv\u001f39"
+    ],
+    "train_trial_counts": {},
+    "test_trial_counts": {
+      "non-rewarded": 5,
+      "rewarded": 8
+    },
+    "train_sample_counts": {},
+    "test_sample_counts": {
+      "non-rewarded": 7339,
+      "rewarded": 32033
+    }
+  },
+  "filtering": {
+    "rule_version": "coimnet-nav2d-causal-next-displacement/v1",
+    "segment": "after_relocation",
+    "max_delta_t_seconds": 0.5,
+    "max_step_distance_cm": 5,
+    "input_features": [
+      "current_x_cm",
+      "current_y_cm",
+      "previous_dx_cm",
+      "previous_dy_cm",
+      "previous_dt_seconds"
+    ],
+    "target": [
+      "next_dx_cm",
+      "next_dy_cm"
+    ],
+    "forbidden_features": [
+      "reward",
+      "fictive_reward",
+      "condition",
+      "segment",
+      "future_pose",
+      "future_target"
+    ]
+  },
+  "training": {
+    "epochs": 0,
+    "updates": 490,
+    "optimizer": "learning.Trainer StepFrom with AdamW",
+    "learning_rate": 0.01,
+    "initial_snapshot_sha256": null,
+    "final_snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+    "snapshot_path": "/Users/timlai/Developer/coimnet-data/TSK-11/realnav-final-2epoch-b-20260925/model.json",
+    "mean_target_displacement_cm_per_sample": 0.18129128117309748
+  },
+  "metrics": {
+    "before": null,
+    "after": {
+      "test": {
+        "samples": 39372,
+        "mse": 0.010159277627940486,
+        "angle_error_radians": 0.27990991982395647,
+        "angle_samples": 39372,
+        "direction_match_rate": 0.9843797622676014
+      }
+    },
+    "baseline": {
+      "zero_output": {
+        "samples": 39372,
+        "mse": 0.020021061374854404,
+        "angle_error_radians": 0,
+        "angle_samples": 0,
+        "direction_match_rate": 0
+      },
+      "persistent_direction": {
+        "samples": 39372,
+        "mse": 0.009512843882362504,
+        "angle_error_radians": 0.2553558974324951,
+        "angle_samples": 39372,
+        "direction_match_rate": 0.9851417250838159
+      },
+      "last_displacement": {
+        "samples": 39372,
+        "mse": 0.010132957576183209,
+        "angle_error_radians": 0.25535589743292897,
+        "angle_samples": 39372,
+        "direction_match_rate": 0.9851417250838159
+      }
+    }
+  },
+  "runtime": {
+    "elapsed_milliseconds": 736,
+    "max_rss_bytes": 335544320,
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64"
+  },
+  "limitations": [
+    "This is a teacher-forced next-displacement behaviour-prediction example for an observer position, not a fruit-fly connectome or a closed-loop navigation policy.",
+    "The model receives current pose and prior displacement/time only. Reward, fictive target, condition, segment, and future pose fields are excluded from the model input.",
+    "The trajectory adapter exposes no reward or fictive-zone coordinates, so this report makes no predicted-distance, distance-change, or return-success claim.",
+    "The local author-repository copy matches the pinned Git blob and its README blob. Byte-equivalence to the Dryad ZIP was not verified because direct Dryad retrieval returned 403/401.",
+    "The Dryad source is one experiment with 39 trials; held-out trial metrics are evidence of this run's pipeline and not a general behavioural or biological result."
+  ]
+}

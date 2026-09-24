@@ -1,0 +1,74 @@
+{
+  "schema_version": "coimnet-real-task-evidence/v1",
+  "requirement": "TSK-11",
+  "profile": "partial_real_asr",
+  "date": "2026-09-24",
+  "source": {
+    "official_url": "https://www.openslr.org/31/",
+    "archive_url": "https://openslr.trmal.net/resources/31/dev-clean-2.tar.gz",
+    "license": "CC BY 4.0",
+    "archive_md5": "6d7ab67ac6a1d2c993d050e16d61080d",
+    "archive_sha256": "176ec501490eced2d6c1f89f4f0ddc7dfe799e649e5322f8ba49fe3ff50c8012",
+    "conversion": "Selected six FLAC utterances from three speakers, converted with ffmpeg to mono 16 kHz PCM16 WAV; raw archive and converted files remain outside Git.",
+    "external_manifest": "/Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/manifest-short.json",
+    "manifest_sha256": "e490248562363eb84aa73aef237b26dfe40ff3a262929d674d6923c83d3375fd"
+  },
+  "environment": {
+    "os": "macOS",
+    "arch": "arm64",
+    "cpu_gpu": "Apple M3; this ASR example used the CPU path",
+    "go_version": "go1.26.5",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  },
+  "source_file_sha256": {
+    "tasks/asr/dataset.go": "9e991952dec85386bb1c0ba887536f6ac090549e6c68388c2680fb88bc0593c7",
+    "tasks/asr/dataset_test.go": "ef2d931510311fae4a3c76ea1b3515fe68efda85cf41e81a45aab81656280662",
+    "examples/realasr/main.go": "4b7f49d4dedc56568d1bacd8cff378ec32c378d3ae9d977b7452145dd640d18b",
+    "examples/realasr/main_test.go": "99b1e638ec7231701c22c8d5e0385103b99610a8710470497683570f69190590",
+    "examples/realasr/README.md": "ad5093d076497091a431674679658f6260f6dbf90aaf79f2dd53a94998887c33"
+  },
+  "reproduction_command": [
+    "go build -o /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/realasr-reviewed ./examples/realasr",
+    "/usr/bin/time -l /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/realasr-reviewed --manifest /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/manifest-short.json > /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/final-run-1.json 2> /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/final-run-1.time.log",
+    "go test -count=1 -race ./tasks/asr ./examples/realasr > evidence/TSK-11/real-asr-20260924/race.log 2>&1",
+    "go build -o /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/realasr-repeat-evidence ./examples/realasr",
+    "Run realasr-repeat-evidence --manifest /Users/timlai/Developer/coimnet-data/TSK-11/openslr31/sample/manifest-short.json twice, saving stdout to evidence/TSK-11/real-asr-20260924/repeat-a.json and repeat-b.json. Compare both SHA-256 values with report.json."
+  ],
+  "report": {
+    "path": "evidence/TSK-11/real-asr-20260924/report.json",
+    "sha256": "96d5418d062ea907f3871446032a72a96fdbd6b70a22d50d8844a91eb7f0b192",
+    "repeat_byte_identical": true,
+    "repeat_check_date": "2026-09-25",
+    "repeat_a_path": "evidence/TSK-11/real-asr-20260924/repeat-a.json",
+    "repeat_b_path": "evidence/TSK-11/real-asr-20260924/repeat-b.json",
+    "repeat_a_sha256": "96d5418d062ea907f3871446032a72a96fdbd6b70a22d50d8844a91eb7f0b192",
+    "repeat_b_sha256": "96d5418d062ea907f3871446032a72a96fdbd6b70a22d50d8844a91eb7f0b192"
+  },
+  "run_log": {
+    "path": "evidence/TSK-11/real-asr-20260924/run.log",
+    "sha256": "cf94ef3bc84fc1d629dab63c3336abf7bf9409422c4c99226e26e8c987c21d6e"
+  },
+  "observed_result": {
+    "imported": 6,
+    "train": 4,
+    "held_out": 2,
+    "impossible_ctc": 0,
+    "before_cer": 0.9433962264150944,
+    "after_cer": 0.9811320754716981,
+    "before_wer": 1,
+    "after_wer": 1,
+    "wall_seconds": 1.1,
+    "peak_rss_bytes": 31621120
+  },
+  "validation": {
+    "race_log": "evidence/TSK-11/real-asr-20260924/race.log",
+    "race_log_sha256": "7759441d6cf7df9d46a243a26caf082ad6bc11646e009c489abdbbe5775eae27",
+    "result": "tasks/asr and examples/realasr passed under -race"
+  },
+  "limitations": [
+    "One pass over four training recordings did not improve held-out CER; WER stayed 1.0.",
+    "This is an import/train/infer/evaluate workflow check, not an ASR quality claim.",
+    "The TSK-11 requirement also covers OCR, real text, image/audio generation, and synchronized video/audio; it is not passed by this speech-only evidence.",
+    "No Ubuntu GPU execution or full-brain model claim."
+  ]
+}

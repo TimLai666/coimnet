@@ -65,13 +65,15 @@ type UtteranceMetadata struct {
 	Normalize          audio.NormalizeReport `json:"normalize"`
 }
 
-// Dataset is an imported ASR corpus. Utterances contain mono, resampled and
-// peak-normalised samples; Metadata preserves the source facts needed to
+// Dataset is an imported ASR corpus. ManifestSHA256 identifies the same
+// manifest bytes that were parsed; Utterances contain mono, resampled and
+// peak-normalised samples, and Metadata preserves the source facts needed to
 // audit each corresponding utterance.
 type Dataset struct {
-	License    License             `json:"license"`
-	Utterances []Utterance         `json:"utterances"`
-	Metadata   []UtteranceMetadata `json:"metadata"`
+	ManifestSHA256 string              `json:"manifest_sha256"`
+	License        License             `json:"license"`
+	Utterances     []Utterance         `json:"utterances"`
+	Metadata       []UtteranceMetadata `json:"metadata"`
 }
 
 type datasetManifest struct {
@@ -181,11 +183,13 @@ func ReadDatasetWithLimits(manifestPath string, targetRate int, peak float64, li
 	if len(manifest.Recordings) == 0 {
 		return Dataset{}, errors.New("asr: manifest recordings must not be empty")
 	}
+	manifestHash := sha256.Sum256(raw)
 
 	dataset = Dataset{
-		License:    license,
-		Utterances: make([]Utterance, 0, len(manifest.Recordings)),
-		Metadata:   make([]UtteranceMetadata, 0, len(manifest.Recordings)),
+		ManifestSHA256: hex.EncodeToString(manifestHash[:]),
+		License:        license,
+		Utterances:     make([]Utterance, 0, len(manifest.Recordings)),
+		Metadata:       make([]UtteranceMetadata, 0, len(manifest.Recordings)),
 	}
 	seen := make(map[string]int, len(manifest.Recordings))
 	var totalProcessedBytes int64

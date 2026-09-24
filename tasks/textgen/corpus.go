@@ -3,6 +3,8 @@ package textgen
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -45,10 +47,11 @@ type DataScope struct {
 	Note     string `json:"note"`
 }
 
-// Corpus is the documents plus their scope.
+// Corpus is the documents plus their scope and the digest of the manifest bytes parsed by ReadCorpus.
 type Corpus struct {
-	Scope     DataScope  `json:"scope"`
-	Documents []Document `json:"documents"`
+	Scope          DataScope  `json:"scope"`
+	Documents      []Document `json:"documents"`
+	ManifestSHA256 string     `json:"manifest_sha256,omitempty"`
 }
 
 // corpusManifest is the strict JSON representation read from disk.
@@ -147,7 +150,11 @@ func ReadCorpus(ctx context.Context, manifestPath string) (corpus Corpus, retErr
 		return Corpus{}, errors.New("textgen: documents is required")
 	}
 
-	corpus = Corpus{Scope: *manifest.Scope, Documents: make([]Document, 0, len(*manifest.Documents))}
+	manifestSum := sha256.Sum256(raw)
+	corpus = Corpus{
+		Scope: *manifest.Scope, Documents: make([]Document, 0, len(*manifest.Documents)),
+		ManifestSHA256: hex.EncodeToString(manifestSum[:]),
+	}
 	seenIDs := make(map[string]struct{}, len(*manifest.Documents))
 	for i, rawDocument := range *manifest.Documents {
 		if err := ctx.Err(); err != nil {

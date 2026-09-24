@@ -148,7 +148,7 @@ done < <(go list -m -json all)
   echo
   echo '- MaleCNS 發布資料：見 docs/malecns-source-audit.md'
   echo '- FlyWire：尚未匯入；取得時記錄條款與日期'
-  echo '- 字型與媒體素材：無'
+  echo '- 真實任務範例的外部資料與授權：見 docs/real-data-sources.md；原始檔不納入儲存庫'
   echo
   echo '## 移植或改寫的程式碼'
   echo

@@ -190,6 +190,19 @@ func TestScanCommitScriptFlagsSecrets(t *testing.T) {
 		}
 	})
 
+	t.Run("clean-hyphenated-word", func(t *testing.T) {
+		dir := newTempRepo(t)
+		path := filepath.Join(dir, "evidence.json")
+		if err := os.WriteFile(path, []byte(`{"schema_version":"coimnet-real-task-evidence/v1"}`+"\n"), 0o644); err != nil {
+			t.Fatalf("write file: %v", err)
+		}
+		runGit(t, dir, "add", "evidence.json")
+		res := runScan(t, script, dir)
+		if res.code != 0 {
+			t.Fatalf("exit code = %d, want 0\noutput:\n%s", res.code, res.output)
+		}
+	})
+
 	t.Run("clean-staged-diff", func(t *testing.T) {
 		dir := newTempRepo(t)
 		path := filepath.Join(dir, "clean.txt")

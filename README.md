@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。
 
-模型達標、GPU 後端與有授權的真實任務資料尚未驗證，按類型混合仍只在人工圖驗過，完整需求以[開發進度](delivery-status.md)追蹤。
+模型達標與完整 GPU 稀疏訓練仍未驗證；Mac Metal 已通過稀疏原語與可選 episode 訓練器的小圖硬體對照。公開授權資料已用於語音、文字、單字元 OCR、文字條件影音與果蠅軌跡的小型範例。軌跡範例只預測下一步位移，保留集表現比簡單的方向延續基準差，尚無閉環導航或回巢成功率；TSK-11 與 OPS-05 都未整體通過。按類型混合仍只在人工圖驗過，完整需求以[開發進度](delivery-status.md)追蹤。
 
 ## 能力狀態
 
@@ -40,10 +40,10 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 | 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
 | 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |
 | 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |
-| OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；真實授權資料 blocked_data，需使用者提供含授權欄位的資料集，目前只驗到 fixture） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json) |
-| 語音轉文字：授權 manifest 的 WAV 匯入、說話者／場次分割、整檔與因果串流 CTC 輸出、快照與跨程序接續、CER／WER 可重現（TSK-02；同分布保留集 CER 0.78 → 0，跨說話者／場次的 CLI fixture 只從 13/19 降到 12/19、WER 維持 0.9；真實授權語音 blocked_data） | 已訓練（人工音調） | fixture | 核心能力 | [TSK-02](evidence/TSK-02/review-20260924/verification.json) |
-| 文字生成：位元組 tokenizer 與詞表雜湊、已知前綴預測與遮罩、EOS／最大長度、溫度／top-k／top-p 可重現採樣、串流 UTF-8 緩衝、來源層級保留語料、教師去重與封鎖教師的學生模式評估（TSK-03；三字合成文法，不宣稱中文對話、推理或知識；真實授權語料 blocked_data） | 已訓練（合成文法） | fixture | 核心能力 | [TSK-03](evidence/TSK-03/verification.json) |
-| 文字條件影像與音訊生成：核心產生表示、固定 clamp 解碼器不讀提示、PNG／WAV 精確輸出、保留條件與凍結核心容量對照、核心斷開檢查（TSK-04、TSK-05；凍結核心和完整核心一樣好、留出條件全部生成錯，不宣稱核心學習的必要性或組合泛化；真實授權影音 blocked_data） | 已訓練（人工影像與音調） | fixture | 核心能力 | [TSK-04](evidence/TSK-04/verification.json)・[TSK-05](evidence/TSK-05/verification.json) |
+| OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；本列只驗證 fixture，真實單字元範例另見 TSK-11） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json) |
+| 語音轉文字：授權 manifest 的 WAV 匯入、說話者／場次分割、整檔與因果串流 CTC 輸出、快照與跨程序接續、CER／WER 可重現（TSK-02；同分布保留集 CER 0.78 → 0，跨說話者／場次的 CLI fixture 只從 13/19 降到 12/19、WER 維持 0.9；本列只驗證 fixture） | 已訓練（人工音調） | fixture | 核心能力 | [TSK-02](evidence/TSK-02/review-20260924/verification.json) |
+| 文字生成：位元組 tokenizer 與詞表雜湊、已知前綴預測與遮罩、EOS／最大長度、溫度／top-k／top-p 可重現採樣、串流 UTF-8 緩衝、來源層級保留語料、教師去重與封鎖教師的學生模式評估（TSK-03；三字合成文法，不宣稱中文對話、推理或知識；本列只驗證 fixture） | 已訓練（合成文法） | fixture | 核心能力 | [TSK-03](evidence/TSK-03/verification.json) |
+| 文字條件影像與音訊生成：核心產生表示、固定 clamp 解碼器不讀提示、PNG／WAV 精確輸出、保留條件與凍結核心容量對照、核心斷開檢查（TSK-04、TSK-05；凍結核心和完整核心一樣好、留出條件全部生成錯，不宣稱核心學習的必要性或組合泛化；本列只驗證 fixture） | 已訓練（人工影像與音調） | fixture | 核心能力 | [TSK-04](evidence/TSK-04/verification.json)・[TSK-05](evidence/TSK-05/verification.json) |
 | 文字條件影片與同步音訊：核心逐格產生影格與音訊區塊、原生 PNG／WAV／時間線輸出、獨立判讀與同步誤差、凍結核心對照、選用 ffmpeg 封裝器（缺席或失敗照實記錄，`doctor` 顯示版本）（TSK-06；預設 80 輪同步偏弱，已見片段只有 0 到 3 個對齊；加長訓練後的比較不穩定，不宣稱核心學習的必要性） | 已訓練（人工動點與嗶聲） | fixture | 核心能力 | [TSK-06](evidence/TSK-06/verification.json) |
 | 三條生成流程與角色：核心直接生成、固定還原器（凍結自編碼器以雜湊標名）、外部工具（結構化請求、白名單工具、呼叫預算），每張輸出標明產生者，工具像素不計入核心能力（TSK-07；外部工具是本機替身，未呼叫第三方模型） | 已訓練（人工影像） | fixture | 核心能力 | [TSK-07](evidence/TSK-07/verification.json) |
 | 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |
@@ -52,7 +52,7 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 | 原生模擬上的可塑性對照：original／plastic／learned_then_frozen 三格比較（NAT-06） | 初始化模型（未訓練，快速變化不寫回參數集） | male-full | 核心能力 | [NAT-06](evidence/NAT-06/verification.json) |
 | 全圖短訓練與保存恢復：165,122 個神經元與 25,563,197 條邊全部參與的一次反向更新（五組可訓練參數都有變動）、可塑性與化學調節、三種 bundle、新程序恢復後續跑摘要相等、訓練前記憶體預估與實測峰值（OPS-07；只證明整張圖能跑完一次更新並保存恢復，不是訓練結果；預設 GC 下峰值足跡約 12 GiB，設 `GOMEMLIMIT=8GiB` 可壓在 8 GiB） | 一次更新（非訓練結果） | male-full | 核心能力 | [OPS-07](evidence/OPS-07/verification.json) |
 | 效能與活動量報告：六個階段各分初始化、傳輸、暖機與穩態，前向活動量與同 seed 重現檢查，能耗固定記為未量測；fixture 與真實全圖各一份（OPS-08；耗時只是這台共用 Mac 的觀察，不代表硬體上限） | 不適用（效能量測） | fixture＋male-full | 工具輔助 | [OPS-08](evidence/OPS-08/verification.json) |
-| 乾淨環境重跑：`scripts/clean-env-verify.sh --data` 以 git archive 匯出已提交版本，依序跑建置、完整測試、doctor、所有 fixture 範例、真實子圖與全圖流程和完成報告，每步記命令、設定雜湊、狀態與 log（OPS-10；37 步中 35 步通過，TSK-11 與 GPU 後端明示受阻；同一台 Mac，不是全新機器） | 不適用（驗證流程） | fixture＋real-subgraph＋male-full | 工具輔助 | [OPS-10](evidence/OPS-10/verification.json) |
+| 乾淨環境重跑：`scripts/clean-env-verify.sh --data` 以 git archive 匯出已提交版本，依序跑建置、完整測試、doctor、所有 fixture 範例、真實子圖與全圖流程和完成報告，每步記命令、設定雜湊、狀態與 log（OPS-10；該次 37 步中 35 步通過，TSK-11 與 GPU 後端當時明示受阻；同一台 Mac，不是全新機器） | 不適用（驗證流程） | fixture＋real-subgraph＋male-full | 工具輔助 | [OPS-10](evidence/OPS-10/verification.json) |
 | 官方資料工具：下載與校驗、Feather 逐批讀取、標準化接線圖建構、外部 ID 保真、聚合與未知欄位保留（DAT-01、DAT-02、DAT-03、DAT-04、DAT-05、DAT-08） | 不適用（資料管線） | 官方全量原件（非模型執行） | 工具輔助 | [DAT-01](evidence/DAT-01/verification.json)・[DAT-02](evidence/DAT-02/verification.json)・[DAT-03](evidence/DAT-03/verification.json)・[DAT-04](evidence/DAT-04/verification.json)・[DAT-05](evidence/DAT-05/verification.json)・[DAT-08](evidence/DAT-08/verification.json) |
 | FlyWire 獨立匯入：公開釋出 CSV／gzip 轉 Feather 與 manifest、`flywire-<version>` 獨立命名空間與大 root id 字串精確往返、無映射證據一律拒絕與 MaleCNS 拼接（DAT-06；真實 FlyWire 檔案 blocked_data，需帳號與條款同意，目前只驗到 fixture） | 不適用（資料管線） | fixture | 工具輔助 | [DAT-06](evidence/DAT-06/verification.json) |
 | 真實子圖範例：ALIN 子圖選取與人工脈衝短訓練（DAT-07） | 已訓練（人工脈衝短訓練） | real-subgraph | 工具輔助（範例） | [DAT-07](evidence/DAT-07/verification.json) |
@@ -63,7 +63,7 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 
 以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。
 
-目前有兩項受阻，要等使用者提供資料或做決定：TSK-11 需要每類任務的有授權真實資料（語音與文字已有授權 manifest 讀取器，OCR 與影音匯入器要等資料格式確定後再做，[紀錄](evidence/TSK-11/verification.json)）；OPS-05 需要選定 GPU 後端技術並提供可遠端執行的 GPU 機器（能力偵測與明示的 CPU 回退已完成，[紀錄](evidence/OPS-05/verification.json)）。
+TSK-11 已有語音、文字、單字元 OCR、文字條件影音與果蠅軌跡的真實資料匯入、訓練、獨立推論及評估證據；軌跡目前只有觀測式單步預測，沒有閉環導航或回巢驗收，所以整項維持未通過。影音畫面接近全黑、獨立來源的綜合誤差略升，語音與軌跡的保留集也未改善，不能推成可用模型品質。資料與授權見[真實範例來源](docs/real-data-sources.md)及 [TSK-11 紀錄](evidence/TSK-11/verification.json)。OPS-05 仍未整體通過；Mac Metal 已實測 WebGPU 稀疏前向、局部反向、純量零延遲核心與可選 GPU 訓練器的小圖更新及新程序恢復；完整裝置常駐更新、全圖容量與 Ubuntu 執行仍待驗證，詳見 [OPS-05 紀錄](evidence/OPS-05/verification.json)。
 
 ## 科學界線
 
@@ -76,7 +76,7 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 - 獎勵、懲罰、損失函數、神經調節物質、內分泌荷爾蒙是不同概念：可以互相映射，但不能改名後宣稱生物合理。
 - 固定編碼器不等於能力歸因已完成：固定輸入輸出映射的貢獻必須以對照（例如空模型）確認才算歸因。
 - 專案名稱不構成新的學術分類或優於既有方法的證據：CoImNet 只是框架名稱，不是已驗證的生物或學術宣稱。
-- 全腦或 GPU 測試受硬體限制時標示受阻：缺少資料或硬體的項目標 `blocked_*`，不拿小型資料或人工圖的成功替代全圖或平台執行。
+- 全腦或 GPU 測試受硬體限制時標示受阻：缺少資料或硬體的項目標 `blocked_*`，局部已實作但未完整驗收的項目標 `specified`；不拿小型資料或人工圖的成功替代全圖或平台執行。
 
 ## 建置與範例
 
@@ -253,6 +253,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 - `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。`LIFConfig.Homeostasis` 是可選的慢速穩定區塊，開啟後每顆神經元多一個活動估計與一個只會抬高或回落到零的閾值偏移，放電判定用的是 `theta_base + 適應 + 偏移`；不宣告這個區塊的設定，編碼與既有指紋完全不變。
 - `learning.NewNetwork` 將 Insyra 編碼器及讀出接到核心，`LossGradient` 回傳整條路徑的梯度。
 - `learning.NewTrainer` 使用可保存的 AdamW 狀態。凍結參數群組時，權重、動量、步數與衰減一起凍結。
+- `learning.NewGPUTrainer` 是可選的 WebGPU 訓練入口，只支援純量、零延遲連續核心的獨立序列；`Step`／`StepFrom` 的稀疏前向與反向經 GPU 執行，`RestoreGPUTrainer` 可由既有 episode 快照續訓，使用完呼叫 `Close`。不支援的設定會回錯，不在裝置失敗後靜默改跑 CPU；實測範圍與未加速部分見 [OPS-05](evidence/OPS-05/verification.json)。
 - `signal` 提供具版本訊號、時鐘驗證與事件排序、觀察／答案／回饋分離及無損外部 ID 映射。`NewStreamingResampler` 支援連續值的因果取樣，`ResampleOffline` 另支援離線線性插值。`NewPulseAligner` 將脈衝對齊至當下或下一個神經步號，逐筆保留事件。`NewIntervalResampler` 依起訖時間取樣固定值區間，詳見[時間對齊與限制](docs/signal-resampling.md)。
 - `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。

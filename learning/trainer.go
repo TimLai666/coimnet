@@ -233,6 +233,21 @@ func (tr *Trainer) Snapshot() TrainingSnapshot {
 	return TrainingSnapshot{"coimnet-episode-training/v1", tr.network.Config(), copyParameters(tr.parameters), copyOptions(tr.options), copyAdam(tr.optimizer), tr.updates, copyAccumulator(tr.accumulator)}
 }
 
+// Close releases resources owned by the trainer. It is a no-op for CPU
+// trainers and safe to call more than once. GPU execution after Close returns
+// the adapter's closed error.
+func (tr *Trainer) Close() error {
+	if tr == nil || tr.network == nil {
+		return nil
+	}
+	tr.mu.Lock()
+	defer tr.mu.Unlock()
+	if core, ok := tr.network.core.(gpuContinuousCore); ok && core.gpu != nil {
+		return core.gpu.Close()
+	}
+	return nil
+}
+
 // Predict runs a frozen, independent episode without changing trainer state.
 func (tr *Trainer) Predict(ctx context.Context, input [][]float64) ([]float64, error) {
 	if tr == nil || tr.network == nil {

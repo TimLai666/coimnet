@@ -5,6 +5,8 @@ go 1.25.12
 require (
 	github.com/HazelnutParadise/insyra v0.3.2
 	github.com/apache/arrow/go/v17 v17.0.0
+	github.com/gogpu/gputypes v0.5.1
+	github.com/gogpu/wgpu v0.30.35
 	golang.org/x/sys v0.47.0
 )
 
@@ -17,9 +19,7 @@ require (
 	github.com/go-webgpu/webgpu v0.5.5 // indirect
 	github.com/goccy/go-json v0.10.6 // indirect
 	github.com/gogpu/gpucontext v0.24.0 // indirect
-	github.com/gogpu/gputypes v0.5.1 // indirect
 	github.com/gogpu/naga v0.18.0 // indirect
-	github.com/gogpu/wgpu v0.30.35 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

@@ -1,0 +1,112 @@
+{
+  "schema_version": "coimnet-real-task-evidence/v1",
+  "requirement": "TSK-11",
+  "profile": "real_media_workflow_quality_limited",
+  "date": "2026-09-25",
+  "scope": "One real-data example for text-conditioned image, audio and synchronized video generation. The repository contains the reusable importer and example, while the licensed source films and trained model remain outside Git.",
+  "source": {
+    "films": [
+      {
+        "id": "elephants-dream-teaser",
+        "official_origin": "https://orange.blender.org/blog/elephants-dream-teaser/",
+        "license_source": "https://orange.blender.org/press/",
+        "rights_scope": "Elephants Dream film, CC BY 2.5; only its embedded film audio is used",
+        "external_file": "/Users/timlai/Developer/coimnet-data/TSK-11/blender-open-movies/elephantsdream_teaser.mp4",
+        "sha256": "5fe4e42a4c6893f40c90d841ac3e638d7b68d31b04d4a91f22b2bb5071d8c2d6"
+      },
+      {
+        "id": "big-buck-bunny",
+        "official_origin": "https://download.blender.org/demo/movies/BBB/",
+        "license_source": "https://peach.blender.org/about/",
+        "rights_scope": "Big Buck Bunny film, CC BY 3.0; only its embedded film audio is used",
+        "external_file": "/Users/timlai/Developer/coimnet-data/TSK-11/blender-open-movies/bbb_sunflower_1080p_30fps_normal.mp4",
+        "sha256": "ae51005850b0ff757fe60c3dd7a12d754d3cd2397d87d939b55235e457f97658"
+      }
+    ],
+    "manifest": "examples/realmedia/manifest.json",
+    "manifest_sha256": "688d340db225f92dc4a7bbee25b2547c3cabe9ff24dfcbdb5474638a58475bbb"
+  },
+  "environment": {
+    "machine": "Mac15,12 Apple M3, 16 GiB unified memory",
+    "os_arch": "Darwin 25.6.0 arm64",
+    "go_version": "go1.26.5 darwin/arm64",
+    "insyra_version": "v0.3.2",
+    "ffmpeg_version": "8.1.2",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  },
+  "source_file_sha256": {
+    "examples/realmedia/main.go": "580582679cb398118ccb8010be6421478e2a0ae3e45b6f0a5cd853f6b86b0e76",
+    "examples/realmedia/trainer.go": "b96185fc1a54cbec4b45c649ea75d599b5f9449cfc245c8ffc501758358cb507",
+    "examples/realmedia/fit_test.go": "014c2bbbe70aef4628a00db3ff4255fad04d9dc2aea596484f8c36da1d7e2991",
+    "tasks/media/realdata/manifest.go": "f8a41e4355ee8f0a70282152ce5c6ea9c44b17b28cfeb4ea5be4d21bb0fa9c9f",
+    "tasks/media/realdata/manifest_test.go": "8757c73b49c282c099e0ecf1feab2fda1d07cd2d8454a8fb1a5cc54ef64314d5",
+    "tasks/media/realdata/import.go": "975887ba6939ecd0212ae490b791f074238f83d8d378d7b9430f9b6e57861c08"
+  },
+  "reproduction_command": [
+    "go build -o /private/tmp/coimnet-realmedia-root-20260925-guarded ./examples/realmedia",
+    "go test -count=1 -race -timeout 30m -v ./tasks/media/realdata ./examples/realmedia > evidence/TSK-11/real-media-20260925/test-final.log 2>&1",
+    "/usr/bin/time -l /private/tmp/coimnet-realmedia-root-20260925-guarded --data-root /Users/timlai/Developer/coimnet-data/TSK-11/blender-open-movies --out-dir /Users/timlai/Developer/coimnet-runs/TSK-11/real-media-20260925-root-4 > evidence/TSK-11/real-media-20260925/run-final.log 2>&1",
+    "/private/tmp/coimnet-realmedia-root-20260925-guarded --data-root /Users/timlai/Developer/coimnet-data/TSK-11/blender-open-movies --out-dir /Users/timlai/Developer/coimnet-runs/TSK-11/real-media-20260925-root-5",
+    "ffprobe -v error -show_entries format=duration:stream=index,codec_type,codec_name,sample_rate,channels,r_frame_rate,duration -of json /Users/timlai/Developer/coimnet-runs/TSK-11/real-media-20260925-root-4/big-buck-bunny-rabbit-leaves-hollow/predicted.mp4 > evidence/TSK-11/real-media-20260925/ffprobe-final.json"
+  ],
+  "input_fingerprints": {
+    "manifest_sha256": "688d340db225f92dc4a7bbee25b2547c3cabe9ff24dfcbdb5474638a58475bbb",
+    "elephants_dream_mp4_sha256": "5fe4e42a4c6893f40c90d841ac3e638d7b68d31b04d4a91f22b2bb5071d8c2d6",
+    "big_buck_bunny_mp4_sha256": "ae51005850b0ff757fe60c3dd7a12d754d3cd2397d87d939b55235e457f97658"
+  },
+  "observed_result": {
+    "imported_clips": 4,
+    "train_clips": 2,
+    "same_source_validation_clips": 1,
+    "source_held_out_test_clips": 1,
+    "train_test_source_disjoint": true,
+    "same_sha256_different_source_ids_rejected": true,
+    "epochs": 60,
+    "training_updates": 120,
+    "core_weight_max_abs_change": 1.0589073537543667,
+    "frozen_post_training_network_inference": true,
+    "test_before": {
+      "image_mse": 0.13171076129192757,
+      "audio_mse": 0.00039956499307159044,
+      "balanced_mse": 0.06605516314249958,
+      "temporal_delta_mse": 0.0019214406636393936
+    },
+    "test_after": {
+      "image_mse": 0.1215302372268125,
+      "audio_mse": 0.011545969122746611,
+      "balanced_mse": 0.06653810317477955,
+      "temporal_delta_mse": 0.0019809547294963046
+    },
+    "generated_output": "Eight 8x8 PNG frames, one 16,000-sample mono 8 kHz WAV, a timeline and a 2-second 4 fps MP4 with a 2-second 8 kHz mono audio stream were generated outside Git.",
+    "source_and_generated_visual_check": "The selected source frame shows a white rabbit and green grass; the generated frame is almost black and does not depict the annotation.",
+    "repeat_normalized_report_and_artifact_hashes_equal": true,
+    "run_wall_seconds": 2.15,
+    "max_resident_set_bytes": 117506048,
+    "peak_memory_footprint_bytes": 32817800
+  },
+  "report": {
+    "path": "evidence/TSK-11/real-media-20260925/report-final.json",
+    "sha256": "ea498c2fee005c1794ead942a595449b5481dc275b741f568764d75ed90b76c0"
+  },
+  "repeat_report": {
+    "path": "evidence/TSK-11/real-media-20260925/report-repeat.json",
+    "sha256": "089e6558bb44968b3b05afade4681a6158609b169480f8bd7bcf810835daf9e7",
+    "comparison_log": "evidence/TSK-11/real-media-20260925/repeat-check.log"
+  },
+  "test_log": [
+    "evidence/TSK-11/real-media-20260925/test-final.log",
+    "evidence/TSK-11/real-media-20260925/run-final.log",
+    "evidence/TSK-11/real-media-20260925/ffprobe-final.json",
+    "evidence/TSK-11/real-media-20260925/artifact-check-final.log",
+    "evidence/TSK-11/real-media-20260925/repeat-check.log"
+  ],
+  "superseded_trial": "The same directory retains the first report.json and logs from before temporal_delta_mse and source-hash duplicate rejection were added. The final evidence is report-final.json, report-repeat.json and the *-final logs; earlier external runs remain outside Git.",
+  "limitations": [
+    "The real-data import, training, independent inference and evaluation path is verified; generated content quality and source generalization are not. Held-out balanced MSE worsened slightly.",
+    "Only two train clips from one film and one test clip from a second film were used. The 8x8, 4 fps, 8 kHz example is not a general text-to-video model.",
+    "Text prompts are human visual annotations encoded with hashed n-grams; no language model or audio event captioner is used. MSE does not measure perceptual or semantic quality.",
+    "The media training is an example using public learning APIs and real decoded targets; the existing tasks/media.VideoGenerator synthetic target contract is unchanged.",
+    "Exact duplicate media bytes under different source IDs are rejected. Different encodings or mirrors of one film cannot be identified from SHA-256 alone; source identity remains an explicit manifest responsibility.",
+    "This Mac measurement cannot be extrapolated to full MaleCNS training, an RTX 4070, or production media generation."
+  ]
+}

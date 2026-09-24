@@ -10,11 +10,11 @@ User Story：使用者可以在各平台分別看到「編譯通過」與「實�
 研究者可以把 FlyWire 資料匯成獨立命名空間的圖，不與 MaleCNS 無證據拼接。
 
 Blocked by：24（組態、`benchmark`、`report`、`doctor`）、21／18（全圖上的調節與可塑性）、16（模型包）、
-OPS-05 的裝置後端：**受阻於使用者決定後端技術與提供裝置存取**；DAT-06 的真實資料：**受阻於使用者
+OPS-05 的裝置後端：**WebGPU 已選定並在 Mac 驗證稀疏前向／反向、零延遲連續核心與可選 episode 訓練器，裝置參數更新和完整圖訓練仍未完成**；DAT-06 的真實資料：**受阻於使用者
 取得 FlyWire 授權資料**
 
 Status：第一階段已驗證（2026-09-17）；第二階段 fixture 部分已驗證（2026-09-19），真實資料 blocked_data；第三階段已驗證（2026-09-24）；
-第四階段已驗證（2026-09-24）；第五階段裝置實作受阻於使用者決定後端
+第四階段已驗證（2026-09-24）；第五階段在 Mac 驗證 WebGPU 稀疏加總、局部反向、零延遲純量核心與可選 episode 訓練器的 CPU 對照及新程序 JSON 快照續訓；裝置更新、常駐狀態、全圖與其他平台待驗證
 
 對應需求：OPS-04（各平台編譯與實際執行分開標記；至少有參考環境的完整測試）、OPS-05（與 CPU 比對、裝置
 更新／恢復測試及實際量測；未測不標通過）、OPS-07（真實資料統計、全圖前向／反向、可塑性／調節及峰值記憶體
@@ -118,16 +118,18 @@ GOV-04（初始化、人工圖、真實圖、工具輔助與核心能力清楚�
     測試、資料與模型指紋、硬體、數值結果、五類任務、持續學習矩陣、對照、生物機制證據等級、授權、限制），
     每個 `passed` 有證據路徑、每個受阻有原因、範圍與解除條件。證據 `evidence/OPS-10/`。
 
-### 第五階段：裝置後端（OPS-05，blocked）
+### 第五階段：裝置後端（OPS-05，部分實作）
 
 15. **能力偵測先做**：`backend` 套件：`Capabilities{ContinuousForward, SpikingForward, SparseBackward,
     VariableWeights, TeacherLoss, DeviceStateSave, Deterministic bool}`；`CPU` 後端全宣告 true；組態要求
     未支援的組合在執行前就回具體錯誤；CPU 回退必須明示（`FallbackReport`），且永遠不會在裝置失敗後重跑
     半次學習更新（更新交易序號測試）。這部分不需要 GPU，屬本票第一階段可做。
-16. **裝置實作需要使用者決定**：後端技術（CUDA via cgo、Vulkan compute、WebGPU／wgpu-native、OpenCL）、
-    目標機器（Ubuntu 1 的 RTX 4070 12 GB 已確認存在，但需要可用的遠端執行工具）、與 Go／Insyra 生態的
-    整合方式。決定前狀態 `blocked_hardware`（CI 無 GPU）+ `blocked_permission`（未決定技術與存取）；
-    決定後的驗收：稀疏前向／反向與 CPU 對照（1e-6 內或宣告誤差）、裝置狀態保存與恢復、傳輸／編譯／
+16. **2026-09-24 裝置決策**：選 WebGPU 作為 Mac Metal、Linux Vulkan 與 Windows 的共同裝置入口；
+    CPU float64 保持參考語義。`backend/webgpu` 的 float32 稀疏加總與局部反向在 Mac Apple M3 Metal
+    實機與 CPU 參考對照通過；`dynamics.GPUContinuous` 已用它們執行純量零延遲核心的逐步前向／反向，
+    不靜默退回 CPU。可選 `learning.NewGPUTrainer`／`RestoreGPUTrainer` 已接入獨立 episode 的 `Step`／`StepFrom`，在小圖和 CPU 更新／最佳化器對照，JSON 快照在新程序讀回後續訓結果相同；編碼器與讀出走既有 Insyra 路徑，其裝置執行未量測，AdamW 與神經狀態仍在 CPU，裝置本身沒有更新或保存常駐狀態。Ubuntu 1 的 RTX 4070
+    過去已確認存在，但本階段沒有可用的遠端指令入口，不能算作該機驗證。完整驗收仍需：稀疏前向／反向與
+    CPU 對照（1e-6 內或宣告誤差）、裝置參數更新、狀態保存與恢復、傳輸／編譯／
     暖機／穩態量測、裝置記憶體執行前檢查，不把一般矩陣加速當成果蠅核心已加速。
 
 ## 契約摘要
@@ -154,7 +156,8 @@ package connectome // MappingEvidence 與跨資料集拒絕
   峰值 RSS 與耗時；`evidence/OPS-07/`（或 blocked_hardware 與精確指令）。
 - [x] 第四階段：`benchmark` 四段分開與 `energy.measured = false`、同 seed 重跑；`clean-env-verify.sh`
   全步驟與 `run.json`、`report` 的 22.3 清單；`evidence/OPS-08/`、`evidence/OPS-10/`。
-- [ ] 第五階段：`backend` 能力偵測與明示回退（已完成，5 個測試在 race 下通過，`evidence/OPS-05/`）；裝置實作 blocked，等使用者決定技術與存取。
+- [ ] 第五階段：`backend` 能力偵測與明示回退已完成；Mac Metal 上的稀疏加總、局部反向、零延遲純量核心與可選 episode 訓練器通過 CPU 對照、race 及重複回歸，JSON 快照在新程序續訓相同
+  （[前向證據](../../evidence/OPS-05/sparse-drive-20260924/verification.json)、[反向與 adapter 證據](../../evidence/OPS-05/sparse-backward-20260925/verification.json)、[訓練器證據](../../evidence/OPS-05/gpu-trainer-20260925/verification.json)）。裝置參數更新、常駐狀態保存、全圖與 Ubuntu 裝置執行仍未完成。
 
 ## 第一階段證據（2026-09-17）
 

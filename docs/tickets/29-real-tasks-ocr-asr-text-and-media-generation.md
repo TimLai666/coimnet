@@ -7,10 +7,10 @@ User Story：使用者可以在 fixture 上跑通五類任務的完整流程（�
 範例；OCR 有 CTC 與頁面區塊契約，語音轉文字有整檔與串流兩種模式，文字生成有可重現的 tokenizer 與正確的
 UTF-8 串流解碼，影音生成分成核心生成、固定還原器與外部工具三條流程且角色可查。
 
-Blocked by：26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）、
-TSK-11 的真實資料：**受阻於使用者提供有授權的資料**（每類任務各一份，含授權欄位）
+前置的 26 第二階段（`LossGradientFrom`）、27（教師與移除教師評估）、24（組態、CLI `run`／`report`）已完成。
+2026-09-24 使用者授權自行取得公開授權資料；2026-09-25 五類小型真實資料流程已驗證。原始主規格 13.6 的空間導航也是第五類任務，但軌跡範例只有下一步位移預測，TSK-11 整項仍待閉環導航驗收。
 
-Status：第一到第六階段 fixture 已驗證（2026-09-20 至 2026-09-24，各階段證據見下方）；真實授權資料（TSK-11）受阻於使用者提供每類任務的授權資料
+Status：第一到第六階段 fixture 已驗證（2026-09-20 至 2026-09-24，各階段證據見下方）；TSK-11 的授權真實語音、英文文字、KMNIST 單字元 OCR、文字條件影音及果蠅軌跡小型範例皆完成匯入、訓練、獨立推論及評估。軌跡只做觀測式單步預測，沒有閉環導航；影音、語音與軌跡保留集品質未達可用，五類流程通過不代表整項或模型品質通過。
 
 對應需求：TSK-01（OCR：單行流程完整，頁面區塊契約可用；CER、重複字與 Unicode 測試通過）、TSK-02（語音：
 整檔與串流文字輸出完整，分塊恢復與 CER/WER 可重現，不以聲音分類替代）、TSK-03（文字生成：因果前綴、
@@ -32,6 +32,20 @@ Status：第一到第六階段 fixture 已驗證（2026-09-20 至 2026-09-24，�
 2. **TSK-11 的處理**：每個任務的真實資料 adapter 都寫成可測（以 fixture 檔跑通），但「真實授權資料上的
    匯入、訓練、推論與評估」四項證據需要使用者提供資料；在此之前 `docs/requirements-status.json` 的
    TSK-11 維持 `specified`，ticket 標 blocked 並列出需要的資料格式清單。
+
+2026-09-24 更新：使用者改為授權專案自行從官方來源取得公開授權資料集，原決策中的「等待使用者提供」不再適用。
+原始資料與模型保持在 Git 外，repo 只放可重現的範例、來源指紋與小型報告。OpenSLR SLR31 Mini LibriSpeech
+的六筆語音已經 `ReadDataset` 匯入、按 speaker/session 分割、訓練、獨立推論與 CER/WER 評估；兩次報告一致，
+但保留集 CER 變差、WER 沒改善，不能宣稱自然語音辨識能力。[局部證據](../../evidence/TSK-11/real-asr-20260924/verification.json)。
+另以 Project Gutenberg 三本英文書做來源隔離的小型訓練，保留來源困惑度 260.18 → 14.18，但生成文字仍不流暢；
+以官方 KMNIST 的 1,000／200 筆做單字元 OCR，CER 4.74 → 0.90，但不能當頁面 OCR。
+[文字證據](../../evidence/TSK-11/real-text-20260924/verification.json)、[OCR 證據](../../evidence/TSK-11/real-ocr-20260924/verification.json)。
+2026-09-25 另以兩部 Blender 授權影片的四段 2 秒片段完成文字條件影像、音訊與同步影片的四步流程。
+來源依影片隔離，匯入時拒絕同檔雜湊冒充不同來源；影像／音訊與逐格變化的測試指標各自列出。
+獨立來源測試的綜合誤差由 0.06606 升至 0.06654，畫面接近全黑，不能宣稱可用生成品質。
+[影音證據](../../evidence/TSK-11/real-media-20260925/verification.json)、[總驗收](../../evidence/TSK-11/verification.json)。
+
+2026-09-25 再匯入 Titova 等人的果蠅軌跡，以試次隔離訓練及保留集，做下一步位移預測並在另一程序載入模型評估。兩次固定設定產生同一模型指紋；保留集 MSE 由 0.009513 升到 0.010153，方向延續基準為 0.009513。這只能證明可重現的資料與訓練流程，不支持導航能力，更沒有閉環回巢測試。[軌跡證據](../../evidence/TSK-11/real-nav-20260925/verification.json)。
 
 ### 第一階段：OCR（TSK-01）
 
@@ -98,14 +112,14 @@ Status：第一到第六階段 fixture 已驗證（2026-09-20 至 2026-09-24，�
 
 ## 驗收
 
-- [x]（fixture；真實資料 blocked_data）第一階段：CTC 枚舉對照與四個邊界、CER 定義、單行與頁面流程、
+- [x]（fixture）第一階段：CTC 枚舉對照與四個邊界、CER 定義、單行與頁面流程、
   字形不洩漏；`go test`、race、vet；`evidence/TSK-01/`（fixture）。
-- [x]（fixture；真實資料 blocked_data）第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
-- [x]（fixture；真實資料 blocked_data）第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
-- [x]（fixture；真實資料 blocked_data）第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
-- [x]（fixture；真實資料 blocked_data）第五階段：時間線、封裝器缺席與失敗、同步誤差；`evidence/TSK-06/`。
+- [x]（fixture）第二階段：整檔與串流輸出、未來資料汙染測試、三個恢復測試、CER/WER 重現；`evidence/TSK-02/`。
+- [x]（fixture）第三階段：tokenizer 重現、遮罩梯度、採樣重現、UTF-8 邊界、NLL/perplexity、教師移除；`evidence/TSK-03/`。
+- [x]（fixture）第四階段：解碼器無提示旁路、PNG/WAV 精確、保留條件、容量分工；`evidence/TSK-04/`、`evidence/TSK-05/`。
+- [x]（fixture）第五階段：時間線、封裝器缺席與失敗、同步誤差；`evidence/TSK-06/`。
 - [x]（fixture）第六階段：三條流程角色可查、工具結果不計入；`evidence/TSK-07/`。
-- [ ] TSK-11（blocked）：使用者提供每類任務的授權資料後，各任務的匯入、訓練、推論、評估各跑一次並記錄。
+- [ ] TSK-11（部分真實資料流程）：語音、文字、單字元 OCR、文字條件影像／音訊／影片與果蠅軌跡各完成四步；軌跡僅是觀測式下一步位移預測，仍須閉環導航與回巢驗收。各類誤差與品質限制見總證據。
 
 ## 第一階段證據（2026-09-20）
 

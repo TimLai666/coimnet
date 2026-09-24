@@ -1,0 +1,29 @@
+{
+  "requirement": "TSK-11「使用者可以將有授權的真實任務資料帶入框架。驗收：每類任務皆有實際匯入、訓練、推論與評估，不只介面或人工例子。」",
+  "profile": "blocked_data",
+  "date": "2026-09-24",
+  "scope": "Status record for a requirement that cannot pass without data the user has to provide: it lists what is ready, what is missing, and the condition that unblocks it.",
+  "reproduction_command": [
+    "go test -count=1 -race -v -run 'TestImportedDatasetPipeline|TestReadDataset|TestReadCorpus|TestRunTextgenReadsAManifest|TestExamplesRunTextgenReadsACorpus' ./tasks/asr/ ./tasks/textgen/ ./internal/cli/ > evidence/TSK-11/licensed-readers.log 2>&1",
+    "once authorised text data exists: coimnet examples run textgen --corpus MANIFEST --out FILE",
+    "once authorised speech data exists: the tasks/asr ReadDataset manifest path (a CLI flag for it is still to be added)"
+  ],
+  "environment": [
+    "macOS on Apple M3, go1.26.5 darwin/arm64, commit 41a8559; the tests use in-memory and temporary fixtures only."
+  ],
+  "observed_result": {
+    "status": "blocked_data: no authorised real dataset has been provided for any of the five task classes (OCR, speech-to-text, text generation, text-conditioned image/audio, video with audio).",
+    "ready": "Licensed manifest readers exist for speech (tasks/asr ReadDataset: PCM16 WAV plus transcript, holder/terms/source required, SHA-256 of the same bytes that are decoded, speaker/session split, capacity limits, path and symlink escapes refused) and for text (tasks/textgen ReadCorpus and examples run textgen --corpus: every document needs holder, terms and source). licensed-readers.log shows their 17 tests passing under -race.",
+    "missing": "OCR and the media tasks have no real-data importer yet: their input format (image type and resolution, transcript alignment, prompt text and target media) depends on the data the user will provide, so building one now would guess at it. The current media generators use a fixed nine-word fixture vocabulary and would need a general prompt encoder for real prompts.",
+    "unblock_condition": "The user provides, for each task class, authorised data with its licence terms and format. Then: add the OCR and media importers for those formats, add a CLI path for the speech manifest, and run import, training, inference and evaluation once per class with the same evidence procedure as TSK-01 to TSK-07."
+  },
+  "assumption_statement": "Fixture results for TSK-01 to TSK-07 prove the pipelines, not performance on real data; none of them is counted towards TSK-11.",
+  "test_log": [
+    "evidence/TSK-11/licensed-readers.log"
+  ],
+  "limitations": [
+    "Blocked on user-provided authorised data for every task class.",
+    "OCR and media importers are not implemented; they wait for the data format.",
+    "Speech has a library reader but no CLI flag for a real manifest yet."
+  ]
+}

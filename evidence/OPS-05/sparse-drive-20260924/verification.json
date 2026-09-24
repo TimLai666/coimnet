@@ -1,0 +1,50 @@
+{
+  "requirement": "OPS-05: verifiable device sparse forward and backward, CPU comparison, device update/restore, and measurement",
+  "profile": "partial_gpu_sparse_drive",
+  "date": "2026-09-24",
+  "scope": "One float32 sparse synaptic-drive operation on a hardware WebGPU adapter; this is not a complete neural Forward, Backward, training update, or OPS-05 acceptance.",
+  "reproduction_command": [
+    "go test -count=1 -v ./backend/webgpu > evidence/OPS-05/sparse-drive-20260924/gpu-test.log 2>&1",
+    "go test -count=1 -race ./backend/webgpu > evidence/OPS-05/sparse-drive-20260924/race.log 2>&1"
+  ],
+  "environment": [
+    "Mac15,12, Apple M3, 16 GiB unified memory, darwin/arm64, Go 1.26.5",
+    "github.com/gogpu/wgpu v0.30.35 and github.com/gogpu/gputypes v0.5.1",
+    "Selected hardware adapter: Apple M3, Metal backend, vendor Apple, driver Metal"
+  ],
+  "input_fingerprints": {
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8",
+    "sparse_drive_go_sha256": "58e1dfdd8949e8edc322999832186ed331dbd9d0f662aed32eb74c32871618ae",
+    "sparse_drive_test_go_sha256": "ea5925dc42864d70b8a02733506ba425a892511c48fb9e752eaa3a190b55dbd8",
+    "doc_go_sha256": "f8d400e8292eb017f31c234ae2d6f03536d11b5e31ab001fa37eae13de80b2e8",
+    "gpu_test_log_sha256": "d3169fea9422c041f6ea4123f8b2d67e0324bddda027505dfa253ebc8220038f"
+  },
+  "observed_result": {
+    "hardware_test": "passed; no GPU test was skipped on this Mac",
+    "small_case": "3 nodes, 5 declared edges including duplicate, zero, and negative weights; maximum absolute GPU-versus-float32-CPU reference difference 0",
+    "workgroup_case": "130 nodes and 910 edges crossed two 64-invocation workgroup boundaries; all outputs matched the CPU reference within the test's declared float32 tolerance",
+    "repeated_execution": "same executor reused with new input, source output, and weights; CSR topology transfer measurement remained unchanged",
+    "validation": "invalid topology, input shapes, non-finite values, cancellation, zero-edge execution, and idempotent Close passed",
+    "example_wall_clock_phases": {
+      "initialization": "36.367834ms",
+      "compilation": "881us",
+      "topology_transfer": "498.708us",
+      "warmup": "7.751667ms",
+      "per_call_transfer": "156.375us",
+      "per_call_dispatch": "111.292us",
+      "per_call_readback": "541.459us"
+    },
+    "race_test": "passed"
+  },
+  "test_log": [
+    "evidence/OPS-05/sparse-drive-20260924/gpu-test.log",
+    "evidence/OPS-05/sparse-drive-20260924/race.log"
+  ],
+  "limitations": [
+    "The timings are host wall-clock observations around API phases, not GPU timestamp-query measurements or a CPU-versus-GPU speedup claim.",
+    "This kernel computes only input plus sparse weighted source output in float32. Existing CoImNet dynamics and learning continue to use the CPU float64 reference path.",
+    "Sparse backward, device parameter updates, device state save/restore, and Ubuntu RTX 4070 execution have not been verified.",
+    "The selected Mac adapter was reported by the library as device_type DiscreteGPU; this record relies on the verified adapter name and Metal backend rather than treating that classification as a hardware specification.",
+    "Insyra v0.3.2 exposes dense float32 DeviceMatMul acceleration but no public sparse recurrent device lifecycle; upstream feature request: https://github.com/HazelnutParadise/insyra/issues/379."
+  ]
+}

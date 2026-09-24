@@ -1,0 +1,58 @@
+{
+  "requirement": "OPS-05: verifiable device sparse forward and backward with CPU comparison, device update and restore tests, and measurement",
+  "status": "partial",
+  "date": "2026-09-25",
+  "scope": "Opt-in scalar zero-delay continuous episode trainer. Sparse forward drive and backward source/edge derivatives run on WebGPU; state transition, activation and AdamW run on CPU. Encoder and readout retain the existing Insyra path; their device execution was not measured.",
+  "reproduction_command": [
+    "go test -count=1 -v ./learning -run '^(TestGPU|TestNewGPU)' > evidence/OPS-05/gpu-trainer-20260925/trainer-test-final.log 2>&1",
+    "go test -count=20 ./learning -run '^(TestGPU|TestNewGPU)' > evidence/OPS-05/gpu-trainer-20260925/stress-20-final.log 2>&1",
+    "go test -race -count=1 -v ./learning -run '^(TestGPU|TestNewGPU)' > evidence/OPS-05/gpu-trainer-20260925/race-final.log 2>&1",
+    "go test -count=1 ./learning > evidence/OPS-05/gpu-trainer-20260925/learning-full-final.log 2>&1",
+    "go vet ./learning > evidence/OPS-05/gpu-trainer-20260925/vet-final.log 2>&1"
+  ],
+  "environment": {
+    "machine": "Mac15,12 Apple M3, 17179869184 bytes unified memory",
+    "os_arch": "Darwin 25.6.0 arm64",
+    "go_version": "go1.26.5 darwin/arm64",
+    "adapter": "Apple M3, Metal (forward and backward)",
+    "insyra": "v0.3.2",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  },
+  "input_fingerprints": {
+    "fixture": "learning/gpu_trainer_test.go gpuTrainerFixture: 4 nodes, 5 edges, 4 time steps, float64 CPU reference",
+    "learning_gpu_trainer_go_sha256": "43128c894fe88b1e56c4c9fddd56f8272a5f52710e46cc93a0cf71a5c21ed6c1",
+    "learning_gpu_trainer_test_go_sha256": "6072bd5267b2f44d1ef2a16420870a95f8275699ce4b1c40d2eaa09ea1f18485",
+    "learning_trainer_go_sha256": "4a16273eb35ca24bba9fcbbaee51ff3ecfa41c63433a73c2269ea6724838028b",
+    "dynamics_gpu_adapter_go_sha256": "a6c3e66e69b203f51a1df94d6f59ca65e48ba7144c740fe54e87a9daf638e261",
+    "webgpu_sparse_drive_go_sha256": "58e1dfdd8949e8edc322999832186ed331dbd9d0f662aed32eb74c32871618ae",
+    "webgpu_sparse_backward_go_sha256": "dd96a3359c57fbe0649f54e676134bc78ce2b210000766d70d614dcc85073cbc"
+  },
+  "observed_result": {
+    "status": "All targeted GPU tests, 20 repeated targeted runs, targeted race run, full learning tests and vet passed on Apple M3 Metal with no GPU skips.",
+    "cpu_comparison": "Predict, four Step updates, StepFrom, parameters and AdamW moments matched CPU within declared float32 path tolerances; core weights changed.",
+    "restore": "In-memory restore and a JSON snapshot written to disk then loaded in a fresh test process continued three updates to the same snapshot as uninterrupted GPU training.",
+    "device_identity": "Forward and backward adapters both reported Apple M3 / Metal.",
+    "unsupported_configs": "LIF, mixed, positive delay, vector state, matrix edge and recompute were rejected explicitly before GPU execution.",
+    "cpu_only_ci": "GPU-required tests skip only when the hardware adapter is unavailable; this CPU-only path was not executed on the Mac."
+  },
+  "test_log": [
+    "evidence/OPS-05/gpu-trainer-20260925/trainer-test-final.log",
+    "evidence/OPS-05/gpu-trainer-20260925/stress-20-final.log",
+    "evidence/OPS-05/gpu-trainer-20260925/race-final.log",
+    "evidence/OPS-05/gpu-trainer-20260925/learning-full-final.log",
+    "evidence/OPS-05/gpu-trainer-20260925/vet-final.log"
+  ],
+  "log_sha256": {
+    "trainer_test_final": "085900129069753dc51b07e4fcabe31fee140b3611022d02e229ac1c9085a760",
+    "stress_20_final": "b526684becd7dc4c8c2180efccab437fae6421ed5dbeaddf0a857890dec03ec0",
+    "race_final": "5da74f7d09781629f2cc7da6b495d087796478923b60b3caa55faffea168b76a",
+    "learning_full_final": "c284e44be81329081bc57175b7a37f2e998a5d8ff3fb663b7a624f711e1b8454",
+    "vet_final": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limitations": [
+    "The optimizer update is on CPU, not the device; device-resident state saving is not implemented.",
+    "Only scalar zero-delay continuous independent episodes are supported. Persistent neural-state operations, LIF, mixed, vector, matrix, delayed and recompute paths are not accelerated.",
+    "The GPU data transfer occurs at every time step and the 4-node fixture is not a speedup or device-memory benchmark.",
+    "Ubuntu 1 RTX 4070 and Windows hardware execution were not available to this task, so OPS-05 remains specified."
+  ]
+}

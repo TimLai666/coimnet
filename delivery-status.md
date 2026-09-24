@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-09-25 真實資料範例已涵蓋五類任務的匯入、訓練、獨立推論與評估：Mini LibriSpeech 語音、Gutenberg 文字、KMNIST 單字元 OCR、Blender 開源影音，以及 Titova 等人的果蠅軌跡。軌跡範例是觀測式下一步位移預測，非閉環導航；保留集 MSE 與角度誤差都比方向延續基準差。Mac Metal 的 WebGPU 稀疏前向、反向與小圖訓練器含新程序恢復已通過對照，但神經狀態與 AdamW 尚未留在 GPU，也沒有 Ubuntu 1 執行或全圖加速證據。Mac 上最終原始碼的完整一般測試、建置、vet、依賴校驗與 Linux／Windows amd64 交叉編譯通過；完整 race 全套通過，之後的軌跡輸出路徑修正另以專項 race 通過。因此 TSK-11、OPS-05 都維持 `specified`，需求仍為 89／91。[真實資料總證據](evidence/TSK-11/verification.json)、[GPU 總證據](evidence/OPS-05/verification.json)。
+
 2026-09-24 接手維護：`gridnav.New` 拒絕非有限獎懲設定；`ocr.Stack` 對不合法行尺寸、像素數與頁面大小溢位回錯，不再因這些輸入 panic。README 與資源文件已依 OPS-07／08 的真實全圖實測更新，明確區分一次更新和訓練達標。在 Mac 上，`gofmt`、`go build ./...`、`go test -timeout 30m ./...`、`go test -count=1 -race -timeout 30m ./...`、`go vet ./...`、`go mod verify` 均通過；需求仍為 89／91，TSK-11 與 OPS-05 的受阻條件未變。新發現的 OCR 非有限輸入缺口記於 [AGENTS.md](AGENTS.md#follow-ups)。
 
 2026-09-24 OPS-10 通過，需求追蹤檔現為 89／91 通過、2 項受阻（原始 83／85、NAT 增補 6／6）：乾淨環境腳本以 git archive 匯出已提交版本、連結官方資料，37 步中 35 步通過、沒有失敗，涵蓋建置、完整測試、doctor、所有 fixture 範例、真實子圖匯入與訓練、全圖檢查、短訓練、恢復與效能報告，最後產生完成報告；TSK-11 與 GPU 後端明示受阻。第一次實跑抓到 ablate 輸出目錄與完成報告受阻統計兩個缺陷，修正後重跑，[證據](evidence/OPS-10/verification.json)。除了等使用者的 TSK-11（授權資料）與 OPS-05（GPU 後端決定），規格裡的其他需求都已驗證。
@@ -136,7 +138,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-下一個需求驗收是 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 的 TSK-11：取得五類任務各自有授權的真實資料，依固定來源與分割完成匯入、訓練、獨立推論與評估；目前人工 fixture 的結果不能代替。 [ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需確定 GPU 後端技術並取得可執行裝置，實測稀疏前向、反向、更新與恢復。兩項解除條件與受阻範圍見上方紀錄，需求累計仍是 89／91。
+下一個需求驗收是 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 的 TSK-11：在真實軌跡上建立閉環導航與回巢評估，與單步預測及方向延續基準分開報告。 [ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需驗證裝置常駐更新與全圖容量／速度，並在 Ubuntu 1 RTX 4070 實際執行。需求累計仍是 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 

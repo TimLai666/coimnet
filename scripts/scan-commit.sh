@@ -53,7 +53,8 @@ fi
 
 max_bytes=$((5 * 1024 * 1024))
 
-pat_sk='sk-[A-Za-z0-9_-]{8,}'
+# A token starts at a boundary; words such as task-evidence are not keys.
+pat_sk='(^|[^A-Za-z0-9])sk-[A-Za-z0-9_-]{8,}'
 bearer_head='Bearer'
 pat_bearer="$bearer_head [^ ]+"
 quote="[\"']"
