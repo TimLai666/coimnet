@@ -69,7 +69,10 @@ func SegmentLines(img glyphs.Image, threshold float64) ([]Block, error) {
 
 // Stack composes line images vertically with gap background rows between them
 // and pads narrower lines on the right with background, giving a page image
-// for fixtures. Errors: no lines, gap < 0, background outside [0, 1].
+// for fixtures. Errors: no lines, a line with non-positive width or height, a
+// line whose Pixels length does not equal width*height (the product checked
+// without overflowing), gap < 0, background outside [0, 1], a total page height
+// or pixel count that would exceed the int width.
 func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, error) {
 	if len(lines) == 0 {
 		return glyphs.Image{}, errors.New("ocr: no lines")
@@ -80,15 +83,37 @@ func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, err
 	if background < 0 || background > 1 {
 		return glyphs.Image{}, errors.New("ocr: background outside [0, 1]")
 	}
+	maxWidth := int(^uint(0) >> 1)
+	for _, ln := range lines {
+		if ln.Width <= 0 || ln.Height <= 0 {
+			return glyphs.Image{}, errors.New("ocr: non-positive line dimensions")
+		}
+		if ln.Width > maxWidth/ln.Height {
+			return glyphs.Image{}, errors.New("ocr: line dimensions overflow")
+		}
+		if len(ln.Pixels) != ln.Width*ln.Height {
+			return glyphs.Image{}, errors.New("ocr: pixel count does not match width*height")
+		}
+	}
 	width := 0
 	height := 0
 	for _, ln := range lines {
 		if ln.Width > width {
 			width = ln.Width
 		}
+		if ln.Height > maxWidth-height {
+			return glyphs.Image{}, errors.New("ocr: page height overflows int")
+		}
 		height += ln.Height
 	}
-	height += gap * (len(lines) - 1)
+	count := len(lines) - 1
+	if count > 0 && gap > (maxWidth-height)/count {
+		return glyphs.Image{}, errors.New("ocr: page height overflows int")
+	}
+	height += gap * count
+	if width > maxWidth/height {
+		return glyphs.Image{}, errors.New("ocr: page pixel count overflows int")
+	}
 	img := glyphs.Image{Width: width, Height: height, Pixels: make([]float64, width*height)}
 	for i := range img.Pixels {
 		img.Pixels[i] = background

@@ -2,6 +2,7 @@ package gridnav
 
 import (
 	"fmt"
+	"math"
 	"math/rand/v2"
 )
 
@@ -58,6 +59,8 @@ type Env struct {
 }
 
 // New validates the configuration and returns a ready-to-reset environment.
+// StepPenalty must be a finite value >= 0 and GoalReward a finite value > 0;
+// NaN and the infinities are rejected.
 func New(c Config) (*Env, error) {
 	if c.Length < 3 {
 		return nil, fmt.Errorf("gridnav: length %d < 3", c.Length)
@@ -68,11 +71,11 @@ func New(c Config) (*Env, error) {
 	if c.TimeLimit < 1 {
 		return nil, fmt.Errorf("gridnav: time limit %d < 1", c.TimeLimit)
 	}
-	if c.StepPenalty < 0 {
-		return nil, fmt.Errorf("gridnav: step penalty %v < 0", c.StepPenalty)
+	if math.IsNaN(c.StepPenalty) || math.IsInf(c.StepPenalty, 0) || c.StepPenalty < 0 {
+		return nil, fmt.Errorf("gridnav: step penalty %v must be a finite value >= 0", c.StepPenalty)
 	}
-	if c.GoalReward <= 0 {
-		return nil, fmt.Errorf("gridnav: goal reward %v <= 0", c.GoalReward)
+	if math.IsNaN(c.GoalReward) || math.IsInf(c.GoalReward, 0) || c.GoalReward <= 0 {
+		return nil, fmt.Errorf("gridnav: goal reward %v must be a finite value > 0", c.GoalReward)
 	}
 	return &Env{
 		length:      c.Length,

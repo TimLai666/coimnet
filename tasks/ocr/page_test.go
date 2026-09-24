@@ -288,6 +288,77 @@ func TestStackPadsAndGaps(t *testing.T) {
 	}
 }
 
+// TestStackInvalidLines pins Stack's input validation from the public entry:
+// a line with non-positive width or height, a Pixels length that is short or
+// long of width*height, or a width*height product that overflows the int
+// width must return a non-nil error and a zero-value image instead of
+// panicking or allocating an output.
+func TestStackInvalidLines(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	// w is the largest width below maxInt whose 3*w wraps to exactly 2,
+	// so a naive (unchecked) width*height comparison would pass with two
+	// pixels while the true product overflows the int width.
+	w := int(^uint(0)/3) + 1
+	if w <= maxInt/3 {
+		t.Fatalf("overflow fixture width %d does not overflow 3*width on this platform", w)
+	}
+	cases := []struct {
+		name string
+		img  glyphs.Image
+	}{
+		{"missing pixels", glyphs.Image{Width: 3, Height: 3, Pixels: make([]float64, 8)}},
+		{"extra pixels", glyphs.Image{Width: 3, Height: 3, Pixels: make([]float64, 10)}},
+		{"zero width", glyphs.Image{Width: 0, Height: 3, Pixels: make([]float64, 9)}},
+		{"zero height", glyphs.Image{Width: 3, Height: 0, Pixels: make([]float64, 9)}},
+		{"negative width", glyphs.Image{Width: -1, Height: 3, Pixels: make([]float64, 9)}},
+		{"negative height", glyphs.Image{Width: 3, Height: -2, Pixels: make([]float64, 9)}},
+		{"width*height overflow", glyphs.Image{Width: w, Height: 3, Pixels: make([]float64, 2)}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			img, err := ocr.Stack([]glyphs.Image{c.img}, 0, testBackground)
+			if err == nil {
+				t.Fatalf("Stack(%+v): want error", c.img)
+			}
+			if img.Width != 0 || img.Height != 0 || len(img.Pixels) != 0 {
+				t.Fatalf("Stack(%+v) error returned %dx%d with %d pixels, want zero-value image", c.img, img.Width, img.Height, len(img.Pixels))
+			}
+		})
+	}
+}
+
+// TestStackRejectsPageSizeOverflow pins that a page whose total height or
+// output pixel count would overflow the int width is rejected from the public
+// Stack entry: a non-nil error with a zero-value image instead of a panic.
+// The fixtures use max-int sizes so any naive arithmetic wraps, but nothing is
+// large enough to need real allocation.
+func TestStackRejectsPageSizeOverflow(t *testing.T) {
+	maxInt := int(^uint(0) >> 1)
+	largeGap := maxInt / 2
+	unit := glyphs.Image{Width: 1, Height: 1, Pixels: []float64{0}}
+	twoWide := glyphs.Image{Width: 2, Height: 1, Pixels: []float64{0, 0}}
+	cases := []struct {
+		name string
+		imgs []glyphs.Image
+		gap  int
+	}{
+		{"two lines sum exceeds int with gap=MaxInt", []glyphs.Image{unit, unit}, maxInt},
+		{"three lines gap*(n-1) exceeds int with gap=MaxInt/2+1", []glyphs.Image{unit, unit, unit}, largeGap + 1},
+		{"two 2x1 lines width*height exceeds int with gap=MaxInt/2", []glyphs.Image{twoWide, twoWide}, largeGap},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			img, err := ocr.Stack(c.imgs, c.gap, testBackground)
+			if err == nil {
+				t.Fatalf("Stack(gap=%d): want error for overflowing page size", c.gap)
+			}
+			if img.Width != 0 || img.Height != 0 || len(img.Pixels) != 0 {
+				t.Fatalf("Stack(gap=%d) error returned %dx%d with %d pixels, want zero-value image", c.gap, img.Width, img.Height, len(img.Pixels))
+			}
+		})
+	}
+}
+
 // TestCropRoundTrip pins Crop: cropped pixels match the source region,
 // a whole-image crop returns the same pixels, and out-of-bounds or empty
 // rectangles error.

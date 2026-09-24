@@ -1,6 +1,7 @@
 package gridnav_test
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -197,6 +198,12 @@ func TestConfigValidation(t *testing.T) {
 		{"zero time limit", gridnav.Config{Length: 7, TimeLimit: 0, StepPenalty: 0.01, GoalReward: 1}},
 		{"negative step penalty", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: -0.01, GoalReward: 1}},
 		{"non-positive goal reward", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: 0.01, GoalReward: 0}},
+		{"NaN step penalty", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: math.NaN(), GoalReward: 1}},
+		{"+Inf step penalty", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: math.Inf(1), GoalReward: 1}},
+		{"-Inf step penalty", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: math.Inf(-1), GoalReward: 1}},
+		{"NaN goal reward", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: 0.01, GoalReward: math.NaN()}},
+		{"+Inf goal reward", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: 0.01, GoalReward: math.Inf(1)}},
+		{"-Inf goal reward", gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: 0.01, GoalReward: math.Inf(-1)}},
 	}
 	for _, tc := range cases {
 		if _, err := gridnav.New(tc.c); err == nil {
@@ -205,5 +212,9 @@ func TestConfigValidation(t *testing.T) {
 	}
 	if _, err := gridnav.New(valid); err != nil {
 		t.Fatalf("valid config rejected: %v", err)
+	}
+	zeroPenalty := gridnav.Config{Length: 7, TimeLimit: 20, StepPenalty: 0, GoalReward: 1}
+	if _, err := gridnav.New(zeroPenalty); err != nil {
+		t.Fatalf("zero step penalty rejected: %v", err)
 	}
 }
