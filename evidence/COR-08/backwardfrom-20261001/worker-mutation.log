@@ -1,0 +1,40 @@
+=== deliberate readout-gradient cut (LIF readout nodes 0,1) ===
+2026-10-01T14:45:40Z
+2b7d7bcb2c027156df4ae0c615f3e82a98a3bbe9b4f444c360bdb9550e08c27e  learning/network.go
+d658ed4fd15e93923446991880b41de2877f87e8ba22830ae8124adb6d4e4402  learning/upstream_baseline_test.go
+1b24dbed62149e9c4aadd6a6a42a193839727dbe222a3c41efb2b0b9131d8c74  learning/testdata/upstream-baseline.json
+   12452 learning/testdata/upstream-baseline.json
+=== RUN   TestUpstreamBaseline
+    upstream_baseline_test.go:162: baseline comparison exact=true (reference darwin/arm64 go1.26.5, current darwin/arm64 go1.26.5)
+=== RUN   TestUpstreamBaseline/continuous/readout-every-step=false/window=0
+    upstream_baseline_test.go:181: core.weights[0] = 0 (bits 0x0), want 0.0037287954690940414 (bits 0x3f6e8bd9d2fbc170)
+=== RUN   TestUpstreamBaseline/continuous/readout-every-step=false/window=5
+    upstream_baseline_test.go:181: core.weights[2] = 0 (bits 0x0), want 0.012894808925274902 (bits 0x3f8a6897f4fa50e6)
+=== RUN   TestUpstreamBaseline/continuous/readout-every-step=true/window=0
+    upstream_baseline_test.go:181: core.weights[0] = 0 (bits 0x0), want 0.00399381217195448 (bits 0x3f705bd0caa379f3)
+=== RUN   TestUpstreamBaseline/continuous/readout-every-step=true/window=5
+    upstream_baseline_test.go:181: core.weights[0] = 0 (bits 0x0), want 0.00026501670286043806 (bits 0x3f315e3e1259939f)
+=== RUN   TestUpstreamBaseline/lif/readout-every-step=false/window=0
+    upstream_baseline_test.go:181: core.weights[1] = 0 (bits 0x0), want 3.4160494421026307e-06 (bits 0x3ecca7e90a9442c3)
+=== RUN   TestUpstreamBaseline/lif/readout-every-step=false/window=5
+    upstream_baseline_test.go:181: core.bias[0] = 0 (bits 0x0), want -0.02004630913258573 (bits 0xbf948705088514b7)
+=== RUN   TestUpstreamBaseline/lif/readout-every-step=true/window=0
+    upstream_baseline_test.go:181: core.weights[1] = 0 (bits 0x0), want 3.4160494421026307e-06 (bits 0x3ecca7e90a9442c3)
+=== RUN   TestUpstreamBaseline/lif/readout-every-step=true/window=5
+    upstream_baseline_test.go:181: core.weights[5] = 0 (bits 0x0), want 0.0011089760834950052 (bits 0x3f522b6200ae9b97)
+=== RUN   TestUpstreamBaseline/vector-selected-input-nodes/signed-zero-negative-upstream
+    upstream_baseline_test.go:181: core.weights[0] = 0 (bits 0x0), want 0.020872987360367763 (bits 0x3f955fba78549555)
+--- FAIL: TestUpstreamBaseline (0.00s)
+    --- FAIL: TestUpstreamBaseline/continuous/readout-every-step=false/window=0 (0.00s)
+    --- FAIL: TestUpstreamBaseline/continuous/readout-every-step=false/window=5 (0.00s)
+    --- FAIL: TestUpstreamBaseline/continuous/readout-every-step=true/window=0 (0.00s)
+    --- FAIL: TestUpstreamBaseline/continuous/readout-every-step=true/window=5 (0.00s)
+    --- FAIL: TestUpstreamBaseline/lif/readout-every-step=false/window=0 (0.00s)
+    --- FAIL: TestUpstreamBaseline/lif/readout-every-step=false/window=5 (0.00s)
+    --- FAIL: TestUpstreamBaseline/lif/readout-every-step=true/window=0 (0.00s)
+    --- FAIL: TestUpstreamBaseline/lif/readout-every-step=true/window=5 (0.00s)
+    --- FAIL: TestUpstreamBaseline/vector-selected-input-nodes/signed-zero-negative-upstream (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.412s
+FAIL
+test_exit_code=1

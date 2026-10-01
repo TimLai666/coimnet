@@ -1,0 +1,85 @@
+--- FAIL: TestCancelReleases (3.75s)
+    --- FAIL: TestCancelReleases/download_Fetch (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 98 [running]:
+testing.tRunner.func1.2({0x1060f0fa0, 0xc0002120e0})
+	/usr/local/go/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x460
+panic({0x1060f0fa0?, 0xc0002120e0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x106318720, 0x10630eaa0})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x30
+github.com/TimLai666/coimnet_test.testCancelDownloadFetch(0xc0004fa6c8)
+	/Users/timlai/Developer/coimnet/cancel_release_test.go:175 +0x40
+testing.tRunner(0xc0004fa6c8, 0x10630ea98)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 31
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet	5.371s
+ok  	github.com/TimLai666/coimnet/backend	(cached)
+ok  	github.com/TimLai666/coimnet/backend/webgpu	1.341s
+ok  	github.com/TimLai666/coimnet/checkpoint	11.076s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	1.456s
+ok  	github.com/TimLai666/coimnet/connectome	2.309s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	1.413s
+--- FAIL: TestUntrustedTeacherAnswersStayData (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 67 [running]:
+testing.tRunner.func1.2({0x104418d00, 0xc0002c8110})
+	/usr/local/go/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x460
+panic({0x104418d00?, 0xc0002c8110?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x1045eb340, 0xc0002c80d0})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x30
+github.com/TimLai666/coimnet/distill_test.TestUntrustedTeacherAnswersStayData(0xc0000ef8c8)
+	/Users/timlai/Developer/coimnet/distill/untrusted_teacher_test.go:206 +0xb0
+testing.tRunner(0xc0000ef8c8, 0x1045e2cd8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/distill	0.858s
+--- FAIL: TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 8 [running]:
+testing.tRunner.func1.2({0x1015fa1c0, 0xc000034400})
+	/usr/local/go/src/testing/testing.go:1974 +0x2b8
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x460
+panic({0x1015fa1c0?, 0xc000034400?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0x13c
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x10168d6a0, 0xc0000343c0})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x30
+github.com/TimLai666/coimnet/download.TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys(0xc0000c4488)
+	/Users/timlai/Developer/coimnet/download/download_json_depth_test.go:14 +0x94
+testing.tRunner(0xc0000c4488, 0x101688ec0)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/download	0.312s
+ok  	github.com/TimLai666/coimnet/dynamics	1.811s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.663s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.457s
+ok  	github.com/TimLai666/coimnet/examples/realasr	1.446s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	4.293s
+ok  	github.com/TimLai666/coimnet/examples/realnav	2.542s
+ok  	github.com/TimLai666/coimnet/examples/realocr	1.404s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	1.709s

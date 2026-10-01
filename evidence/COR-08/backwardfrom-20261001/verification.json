@@ -1,0 +1,359 @@
+{
+  "schema_version": "coimnet-evidence/v1",
+  "date": "2026-10-01",
+  "status": "passed",
+  "requirement": "COR-08 full core and boundary gradients; GOV-03 actual Insyra public API use; LRN-02 recompute regression; OPS-09 complete verification checks.",
+  "requirements": [
+    "COR-08",
+    "GOV-03",
+    "LRN-02",
+    "OPS-09"
+  ],
+  "scope": "Replace two scalar-dot auxiliary reverse seeds in learning.Network with Tape.BackwardFrom. Preserve the float64 core, float32 boundary conversion, selected-input ordering, public APIs, optimizer and checkpoint schemas.",
+  "reproduction_command": [
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/build.log"
+    },
+    {
+      "command": "go test -count=1 -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/test.log"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/vet.log"
+    },
+    {
+      "command": "go mod verify",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/mod-verify.log"
+    },
+    {
+      "command": "go mod tidy -diff",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/mod-tidy.log"
+    },
+    {
+      "command": "gofmt -l <versioned and intended new Go files>",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/format.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/diff-check.log"
+    },
+    {
+      "command": "go test -count=1 -v ./backend/webgpu ./learning -run '^(TestSparse|TestGPU|TestNewGPU|TestUpstreamBaseline)'",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/gpu-targeted.log"
+    },
+    {
+      "command": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/linux-build.log"
+    },
+    {
+      "command": "CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/windows-build.log"
+    },
+    {
+      "command": "go test -count=1 ./learning -run '^TestUpstreamBaseline$' -v (58c97b6 archive with final test and reference copied in)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/root-baseline.log"
+    },
+    {
+      "command": "go test -p 4 -race -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/race.log"
+    },
+    {
+      "command": "go test -p 1 -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/test-final.log"
+    },
+    {
+      "command": "go test -p 1 -count=1 -v ./learning -run 'Test(UpstreamBaseline|LossGradientFrom|StepFrom|ReadoutEveryStep|VectorCoreReadoutEveryStep)' -timeout 10m",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/root-review-normal.log"
+    },
+    {
+      "command": "go test -p 1 -count=1 -race -v ./learning -run 'Test(UpstreamBaseline|LossGradientFrom|StepFrom|ReadoutEveryStep|VectorCoreReadoutEveryStep)' -timeout 10m",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/root-review-race.log"
+    },
+    {
+      "command": "go test -p 1 -count=1 -v ./learning -run '^TestUpstreamBaseline' (58c97b6 archive with final test/reference copied in)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/root-baseline-normal.log"
+    },
+    {
+      "command": "go test -p 1 -count=1 -race -v ./learning -run '^TestUpstreamBaseline' (58c97b6 archive with final test/reference copied in)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/root-baseline-race.log"
+    },
+    {
+      "command": "go vet ./... (after reference profile correction)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/vet-final.log"
+    },
+    {
+      "command": "gofmt -l <598 versioned and intended new Go files> (final profile files included)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/format-final.log"
+    },
+    {
+      "command": "go test -count=1 . (final documentation and evidence)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/final-governance.log"
+    },
+    {
+      "command": "go test -count=1 -race . (final documentation and evidence)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/final-governance-race.log"
+    },
+    {
+      "command": "git diff --check (final documentation and evidence)",
+      "exit_code": 0,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/diff-check-final-docs.log"
+    }
+  ],
+  "environment": {
+    "os": "macOS-27.0-arm64-arm-64bit",
+    "runtime": {
+      "go_version": "go1.26.5",
+      "goos": "darwin",
+      "goarch": "arm64"
+    },
+    "device": "Apple M3 / Metal",
+    "logical_cpus": 8,
+    "physical_memory_bytes": 17179869184,
+    "cgo_enabled": "1",
+    "insyra": {
+      "path": "github.com/HazelnutParadise/insyra",
+      "version": "v0.3.4",
+      "sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0=",
+      "replace": null
+    }
+  },
+  "input_fingerprints": {
+    "base_commit": "58c97b6a9f96bba0d07cf8acc0a9cdb8e00e3f9a",
+    "source_manifest": "evidence/COR-08/backwardfrom-20261001/source.sha256",
+    "baseline_network_sha256": "64faf8f285b7848e0a06ef1dd6d113733af75583229324377ce6737e22849806",
+    "new_network_sha256": "e337771b4c08fdc6eb7cc45a05264c63c8e17d5a4861a704e7cba3760e84a9b3",
+    "reference_path": "learning/testdata/upstream-baseline.json",
+    "reference_sha256": "ed36aba2f2898d71f9c6d1397abf9b08127fdeecf9a367b699a7afe09dff3eac",
+    "reference_case_names": [
+      "continuous/readout-every-step=false/window=0",
+      "continuous/readout-every-step=false/window=5",
+      "continuous/readout-every-step=true/window=0",
+      "continuous/readout-every-step=true/window=5",
+      "lif/readout-every-step=false/window=0",
+      "lif/readout-every-step=false/window=5",
+      "lif/readout-every-step=true/window=0",
+      "lif/readout-every-step=true/window=5",
+      "vector-selected-input-nodes/signed-zero-negative-upstream"
+    ],
+    "baseline_cli_sha256": "52debb4f83e048661d95e2ec4ddae5bd4a082e52a2e5a2249ac37895c551a6c2",
+    "new_cli_sha256": "e676f174ccab82683fedcdb28c71ebec99ab68f902863f7e05bd99fa519d9d09",
+    "snapshot_sha256": {
+      "before-80.json": "e3a180544810dce3f0b54be51eec1f2be3bc9ff3d36e3524cd555aaf4bef9a3a",
+      "before-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+      "after-resume-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+      "after-continuous-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+      "after-cpu-resume-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c"
+    },
+    "source_before_profile_fix": "evidence/COR-08/backwardfrom-20261001/source-pre-profile-fix.sha256",
+    "reference_license": {
+      "spdx_id": "MIT",
+      "license_path": "LICENSE",
+      "license_sha256": "b629828b39d332eecea2507af99addac6575de889d7f87d51640c15bc2de7e93",
+      "source": "Artificial gradients generated by the CoImNet reference implementation and project fixtures at the recorded base commit; no external research data."
+    },
+    "source_manifest_sha256": "1e839818f751aaf8a914165c5f35f501dc24ee15356253d7a8b0b17565754ebd"
+  },
+  "observed_result": {
+    "unit_packages_passed": 56,
+    "race": "Complete final race suite passed: 56 packages. The initial incorrect cross-profile reference failure, disk-full attempt, sandbox limitation and deliberately interrupted single-package run are preserved separately.",
+    "gradient_cases": 9,
+    "gradient_comparison": "All 9 gradient cases in each of the normal and race build profiles are bit-identical on Go 1.26.5 darwin/arm64 to the matching pre-refactor reference. Parent independently ran final tests against both the original bridge and current bridge.",
+    "reference_policy": "Separate pre-refactor normal and race references; exact bits on recorded Go/OS/architecture within each build profile. Other environments retain 1e-12-scaled numerical tolerance with NaN/Inf rejection.",
+    "lif": "All four LIF cases have nonzero readout gradients.",
+    "finite_difference": "Existing full-path and vector per-step finite-difference tests pass.",
+    "recompute": "Existing complete-history/recompute gradient and trainer equivalence tests pass.",
+    "continuation": "Pre-refactor 80 steps + post-refactor 40 steps, post-refactor 120 steps, and device-disabled continuation are byte-identical to pre-refactor 120 steps.",
+    "hardware": "Apple M3 Metal sparse forward/backward CPU max absolute difference 0; GPU trainer and new-process restore pass without GPU skips.",
+    "cross_compile": "Linux and Windows amd64 CGO-disabled builds pass.",
+    "requirement_counts": "89/91 unchanged; TSK-11 and OPS-05 remain specified.",
+    "race_packages_passed": 56,
+    "race_cached_packages": 21
+  },
+  "test_log": [
+    "evidence/COR-08/backwardfrom-20261001/baseline-build.json",
+    "evidence/COR-08/backwardfrom-20261001/baseline-cli.json",
+    "evidence/COR-08/backwardfrom-20261001/build.log",
+    "evidence/COR-08/backwardfrom-20261001/continuation-cli.json",
+    "evidence/COR-08/backwardfrom-20261001/diff-check-final-docs.log",
+    "evidence/COR-08/backwardfrom-20261001/diff-check-final.log",
+    "evidence/COR-08/backwardfrom-20261001/diff-check.log",
+    "evidence/COR-08/backwardfrom-20261001/disk-full-test.log",
+    "evidence/COR-08/backwardfrom-20261001/doctor.json",
+    "evidence/COR-08/backwardfrom-20261001/final-governance-race.log",
+    "evidence/COR-08/backwardfrom-20261001/final-governance.log",
+    "evidence/COR-08/backwardfrom-20261001/format-final.log",
+    "evidence/COR-08/backwardfrom-20261001/format.log",
+    "evidence/COR-08/backwardfrom-20261001/gpu-targeted.log",
+    "evidence/COR-08/backwardfrom-20261001/linux-build.log",
+    "evidence/COR-08/backwardfrom-20261001/mod-tidy.log",
+    "evidence/COR-08/backwardfrom-20261001/mod-verify.log",
+    "evidence/COR-08/backwardfrom-20261001/new-race-wrong-profile.log",
+    "evidence/COR-08/backwardfrom-20261001/original-race-wrong-profile.log",
+    "evidence/COR-08/backwardfrom-20261001/race-before-profile-fix.log",
+    "evidence/COR-08/backwardfrom-20261001/race-p1-partial.log",
+    "evidence/COR-08/backwardfrom-20261001/race.log",
+    "evidence/COR-08/backwardfrom-20261001/root-baseline-normal.log",
+    "evidence/COR-08/backwardfrom-20261001/root-baseline-race.log",
+    "evidence/COR-08/backwardfrom-20261001/root-baseline.log",
+    "evidence/COR-08/backwardfrom-20261001/root-review-normal.log",
+    "evidence/COR-08/backwardfrom-20261001/root-review-race.log",
+    "evidence/COR-08/backwardfrom-20261001/sandbox-blocked-race.log",
+    "evidence/COR-08/backwardfrom-20261001/test-final.log",
+    "evidence/COR-08/backwardfrom-20261001/test.log",
+    "evidence/COR-08/backwardfrom-20261001/vet-final.log",
+    "evidence/COR-08/backwardfrom-20261001/vet.log",
+    "evidence/COR-08/backwardfrom-20261001/windows-build.log",
+    "evidence/COR-08/backwardfrom-20261001/worker-after.log",
+    "evidence/COR-08/backwardfrom-20261001/worker-baseline.log",
+    "evidence/COR-08/backwardfrom-20261001/worker-mutation.log"
+  ],
+  "limitations": [
+    "No Linux/Vulkan or Windows execution in this change.",
+    "No full MaleCNS graph or large dense MatMul performance/bit-identity claim.",
+    "No new task-learning or biological-mechanism evidence."
+  ],
+  "log_sha256": {
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff-check-final-docs.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff-check-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "disk-full-test.log": "fa7339c8b4bd53b8ba28e55f5780e16783c08b31209f2c57b6a386b4f7ab4522",
+    "final-governance-race.log": "7bd5ad42543a86841b448bfe657cc25515cf4dbabb48a816720c8224fd6b40a9",
+    "final-governance.log": "b24a05ab9417bc850305307ccb04b8e7597d37ced0defa4b0f73fef14b512353",
+    "format-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gpu-targeted.log": "68a1af06d30295903a5a1ccd172ee8e7f61adb5f2be1814a69a51dbcade5e327",
+    "linux-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "new-race-wrong-profile.log": "af1a134c8be2fd68b14c1d695d54653d518e4820814310b72dde1bd479ee00c6",
+    "original-race-wrong-profile.log": "d3b29a431002e83999ce80574523a26ad2cfaf57b4144eb850fedd5b41d0d25f",
+    "race-before-profile-fix.log": "9392e3385ae3b6e44fe23bc555a548e590cd99d1609c519b64b7b97ca3eacde7",
+    "race-p1-partial.log": "a2a3a68e3de4fcdb7907f94016d577590d90944cbe50e0757707c0fdb6d8b88e",
+    "race.log": "6143338ad270da831c9adf54904262d15de532f9a2f2865b0ea16da8ebf38c86",
+    "root-baseline-normal.log": "e2c375f47309fea102e26183699d2dcae1f8837a9a42cf81a72cfe1f2c8a02e8",
+    "root-baseline-race.log": "28a71d0da26b31eb3b286c90d7ad3731581d02c3cafed169a9a5871492a91893",
+    "root-baseline.log": "5b5074e4f8dcbcf00948caed59156bf01c874ebf1fe336d220f216c530617f3e",
+    "root-review-normal.log": "1beaf6ba79eee5e27b7346989b09d2893d1da86fe4707d0c6ffcd94f0c1fca02",
+    "root-review-race.log": "aba175dec84c3e6c20e2e6ec4e9ed2e927f24b0ee6ab5449850df20deee77c0b",
+    "sandbox-blocked-race.log": "35425ba3255eb9ce9252e4375a4f77e9469e795902687bdb62a5c0a557c08fe2",
+    "test-final.log": "63a17294d0a99c48b3e39e36212101288cef530a860f8c3d3fbcf9dd2315642a",
+    "test.log": "4b266c1dcef719f7eafa244d90adb22a0b863af2b1e7484b9f55068a8223d6fb",
+    "vet-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "windows-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "worker-after.log": "4d0b8124eb07a6ef8e0f991f2071793bb12d1049f7bef70f39749991340ed644",
+    "worker-baseline.log": "29344a5dafee5c83d48381c14c455bccdb3d33fe015e143819248a082dcb8a9b",
+    "worker-mutation.log": "64ddccf64335f822d3e04bf0d9abd6689a5e3efb2b68e0062e253a75160a5afa"
+  },
+  "failure_sensitivity": {
+    "type": "deliberate fault injection, not a production bug reproduction",
+    "base_network_sha256": "64faf8f285b7848e0a06ef1dd6d113733af75583229324377ce6737e22849806",
+    "mutated_network_sha256": "2b7d7bcb2c027156df4ae0c615f3e82a98a3bbe9b4f444c360bdb9550e08c27e",
+    "patch": "Insert seedValues = make([]float64, len(seedValues)) immediately before the original readout tensor seed construction; this zeros every readout upstream seed.",
+    "command": "GOCACHE=/private/tmp/coimnet-backwardfrom-worker/gocache go test -count=1 ./learning -run '^TestUpstreamBaseline$' -v",
+    "exit_code": 1,
+    "cases_failed": 9,
+    "log": "evidence/COR-08/backwardfrom-20261001/worker-mutation.log"
+  },
+  "reference_profile_fix": {
+    "cause": "The test equated compiler profiles. Both the original and new bridge produce the same four LIF mismatches when compared with the normal golden under -race; normal and race references are now generated independently from the original bridge.",
+    "original_exit_code": 1,
+    "new_exit_code": 1,
+    "production_source_changed_for_fix": false,
+    "log": [
+      "evidence/COR-08/backwardfrom-20261001/original-race-wrong-profile.log",
+      "evidence/COR-08/backwardfrom-20261001/new-race-wrong-profile.log"
+    ],
+    "profiles": [
+      "normal",
+      "race"
+    ],
+    "cases_per_profile": 9
+  },
+  "failed_attempts": [
+    {
+      "command": "go test -count=1 -race -timeout 30m ./...",
+      "exit_code": 1,
+      "test_log": "evidence/COR-08/backwardfrom-20261001/race-before-profile-fix.log",
+      "expected_failure": false,
+      "failure_kind": "Incorrect cross-profile reference in the new test; original and modified implementations reproduced the same mismatch."
+    },
+    {
+      "command": "go test -count=1 -timeout 30m ./...",
+      "exit_code": 1,
+      "failure_kind": "Link/build failed: no space left on device.",
+      "test_log": "evidence/COR-08/backwardfrom-20261001/disk-full-test.log"
+    },
+    {
+      "command": "go test -p 1 -race -timeout 30m ./... (sandboxed)",
+      "exit_code": 143,
+      "failure_kind": "httptest local socket bind forbidden by sandbox; stopped owned parent and child before unsandboxed retry.",
+      "test_log": "evidence/COR-08/backwardfrom-20261001/sandbox-blocked-race.log"
+    }
+  ],
+  "resource_actions": {
+    "cache_cleanup_log": "evidence/COR-08/backwardfrom-20261001/cache-cleanup.json",
+    "scope": "Three owned, regenerable Go build caches under /private/tmp/coimnet-backwardfrom-worker only; no shared Go cache or source/data removed.",
+    "retry_policy": "After owned cache cleanup, normal suite passed with -p 1. The race suite first used -p 1, then restarted with -p 4 to limit simultaneous package processes while retaining every package and test.",
+    "additional_cleanup_log": "evidence/COR-08/backwardfrom-20261001/extra-cleanup.json",
+    "additional_cleanup_scope": "Two temporary Go build directories belonging to stopped task test processes and two generated compiler assembly logs; no source, dataset, snapshot, shared build cache, or active process artifacts removed."
+  },
+  "interrupted_attempts": [
+    {
+      "command": "go test -p 1 -race -timeout 30m ./...",
+      "exit_code": 143,
+      "reason": "Deliberately stopped after experiment passed to bound concurrency at four packages; no test failure observed in this run.",
+      "test_log": "evidence/COR-08/backwardfrom-20261001/race-p1-partial.log",
+      "process_record": "evidence/COR-08/backwardfrom-20261001/race-p1-stop.json"
+    }
+  ],
+  "adversarial_review": {
+    "scope": "CLEAN",
+    "confirmed_findings": [],
+    "agent": "backwardfrom_adversarial_review_luna",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "root_independent_targeted_checks": [
+      "evidence/COR-08/backwardfrom-20261001/root-review-normal.log",
+      "evidence/COR-08/backwardfrom-20261001/root-review-race.log"
+    ],
+    "full_race_exit_code": 0,
+    "report": "evidence/COR-08/backwardfrom-20261001/review.md",
+    "report_sha256": "209d42c8c5420547476553305163e4d1fe8952abb2ed6ba2e295ddf5ff741436"
+  },
+  "completed_at_utc": "2026-10-01T16:12:03.954094+00:00",
+  "completed_local_date": "2026-10-02",
+  "timezone": "Asia/Taipei",
+  "document_sha256": {
+    "ENG.md": "72e27286d5e0c5936a152d4a79686565c86d3423d3c44f6b3aa2dcfd7e6d5ca7",
+    "delivery-status.md": "9871dced41d05518e54668c6bf43673f60ee96c191be4ab57880e3d24634b1da",
+    "docs/INDEX.md": "e46e21f9446b798b7b41985fce6138b526673dbcda7a488f6ae9ba64a4bdba1b",
+    "docs/insyra-integration.md": "7f05874cda8726aecae60c5330d184eddb51a37d4b7b22dc5af39bab3599e626",
+    "docs/requirements-status.json": "9b1c1e22e1c21b10dd7bfb582f9ac789d44766a632b17249ccea5f4f258dbcb0",
+    "docs/tickets/31-direct-upstream-gradient.md": "1a59f0e08b76a4556159417c122cc64c215fb3dd6152b3d6259187c81e9f0576"
+  }
+}

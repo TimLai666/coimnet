@@ -361,32 +361,22 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			}
 		}
 	}
-	// The readout VJP is seeded with <prediction, upstream>, whose gradient
-	// with respect to the prediction is the upstream itself. A last-step model
-	// pairs the [output] prediction with the last row; a per-step model flattens
-	// the [step,output] prediction and the whole upstream to [step*output], so
-	// every row seeds its own step.
-	predictionSeed, seedValues := e.prediction, upstream[len(upstream)-1]
+	// The readout VJP is seeded directly with the caller's upstream. A
+	// last-step model uses only the final row; a per-step model carries every
+	// row in the prediction's [step,output] shape.
+	seedValues := upstream[len(upstream)-1]
 	if n.config.ReadoutEveryStep {
 		flatUpstream := make([]float64, 0, len(upstream)*n.config.OutputSize)
 		for _, row := range upstream {
 			flatUpstream = append(flatUpstream, row...)
 		}
 		seedValues = flatUpstream
-		var err error
-		if predictionSeed, err = e.readoutTape.Reshape(e.prediction, []int{len(flatUpstream)}); err != nil {
-			return empty, err
-		}
 	}
-	seed, err := tensor([]int{len(seedValues)}, seedValues)
+	seed, err := tensor(e.prediction.Shape(), seedValues)
 	if err != nil {
 		return empty, err
 	}
-	dot, err := e.readoutTape.MatMul(predictionSeed, seed)
-	if err != nil {
-		return empty, err
-	}
-	if err = e.readoutTape.Backward(dot); err != nil {
+	if err = e.readoutTape.BackwardFrom(e.prediction, seed); err != nil {
 		return empty, err
 	}
 	dh, err := e.readoutTape.Grad(e.h)
@@ -447,8 +437,8 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			}
 		}
 	}
-	// Seed the encoder VJP with <encoded, stop_gradient(core_input_gradient)>.
-	// This scalar is a reverse-pass device, not the optimization objective.
+	// Seed the encoder VJP directly with the core input gradient. This upstream
+	// is a reverse-pass device, not the optimization objective.
 	encoderWidth := inputWidth(n.config)
 	flat := make([]float64, 0, len(input)*encoderWidth)
 	for _, row := range cg.core.Inputs {
@@ -460,19 +450,11 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			flat = append(flat, row[id*stateDim:(id+1)*stateDim]...)
 		}
 	}
-	seed, err = tensor([]int{len(flat)}, flat)
+	seed, err = tensor(e.encoded.Shape(), flat)
 	if err != nil {
 		return empty, err
 	}
-	encodedFlat, err := e.encoderTape.Reshape(e.encoded, []int{len(flat)})
-	if err != nil {
-		return empty, err
-	}
-	seedLoss, err := e.encoderTape.MatMul(encodedFlat, seed)
-	if err != nil {
-		return empty, err
-	}
-	if err = e.encoderTape.Backward(seedLoss); err != nil {
+	if err = e.encoderTape.BackwardFrom(e.encoded, seed); err != nil {
 		return empty, err
 	}
 	de, err := e.encoderTape.Grad(e.encoder)

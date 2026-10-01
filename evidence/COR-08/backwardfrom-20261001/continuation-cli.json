@@ -1,0 +1,28 @@
+{
+  "commands": [
+    {
+      "command": "/private/tmp/coimnet-backwardfrom-new-cli resume --checkpoint /private/tmp/coimnet-backwardfrom-cli/before-80.json --steps 40 --out /private/tmp/coimnet-backwardfrom-cli/after-resume-120.json",
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "command": "/private/tmp/coimnet-backwardfrom-new-cli train delayed --steps 120 --checkpoint /private/tmp/coimnet-backwardfrom-cli/after-continuous-120.json",
+      "exit_code": 0,
+      "stderr": ""
+    },
+    {
+      "command": "INSYRA_ACCEL_DISABLE_WGPU=1 /private/tmp/coimnet-backwardfrom-new-cli resume --checkpoint /private/tmp/coimnet-backwardfrom-cli/before-80.json --steps 40 --out /private/tmp/coimnet-backwardfrom-cli/after-cpu-resume-120.json",
+      "exit_code": 0,
+      "stderr": ""
+    }
+  ],
+  "snapshot_sha256": {
+    "before-80.json": "e3a180544810dce3f0b54be51eec1f2be3bc9ff3d36e3524cd555aaf4bef9a3a",
+    "before-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "after-resume-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "after-continuous-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "after-cpu-resume-120.json": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c"
+  },
+  "new_cli_sha256": "e676f174ccab82683fedcdb28c71ebec99ab68f902863f7e05bd99fa519d9d09",
+  "byte_identical": true
+}

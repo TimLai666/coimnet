@@ -16,15 +16,11 @@ Doctor 的實際探測結果，不把計畫中的能力當成已完成。
 
 固定版本提供 `Tape.Custom`（`nn/autodiff.go:529`），可把外部運算的結果與反向規則登錄到 tape。`Tape.BackwardFrom`（`:598`）可以用指定的上游梯度開始反向。`Tensor.Data()` 回傳 copy，外部建立的結果必須透過公開接合 API 才會把梯度送回輸入。
 
-`nn.NewEdgeTopology`、`nn.EdgeSum` 與 `Tape.EdgeSum` 已提供 CPU 邊列表加總及梯度。它們將乘積精確加總後一次捨入為 float32。CoImNet 現有核心使用 float64 或依邊順序加總的 WebGPU 路徑，因此本輪只升級依賴，沒有替換核心數值契約。
+`nn.NewEdgeTopology`、`nn.EdgeSum` 與 `Tape.EdgeSum` 已提供 CPU 邊列表加總及梯度。它們將乘積精確加總後一次捨入為 float32。CoImNet 現有核心使用 float64 或依邊順序加總的 WebGPU 路徑，因此沒有用 `EdgeSum` 替換核心。
 
-目前採兩個 Tape 與明示 VJP bridge：encoder/readout 以 Insyra `float32` 執行，
-核心以 `float64` 手動 BPTT。readout loss 反向後取 core output gradient，核心
-反向再將得到的 encoder gradient 建成 detached 常數，將 encoder output
-`Reshape` 後與該常數以 `Tape.MatMul` 形成 scalar 內積，再對 encoder Tape
-`Backward`。core output 的 Insyra Tensor 是暫存 copy，避免 optimizer 把它當成
-真正核心參數更新。平滑完整路徑以 finite difference 驗證；硬 spike 仍必須依宣告
-的 surrogate gradient 驗證，不能拿硬事件有限差分當答案。
+目前採兩個 tape 與明示的外部梯度。編碼器與讀出以 Insyra `float32` 執行，核心以 `float64` 手動沿時間回推。讀出 tape 用 `BackwardFrom(prediction, upstream)` 接收最後一步或每步的梯度。核心反向後，依輸入節點與向量分量的原有順序建立編碼器種子，再用 `BackwardFrom(encoded, seed)` 傳回編碼器與觀察輸入。
+
+兩個種子都與輸出張量同形狀，沿用原有 float32 轉換及有限值檢查。核心輸出的 Insyra 張量是暫存副本，最佳化器不會更新它。平滑完整路徑以有限差分驗證，硬放電依宣告的替代梯度驗證。重構的數值參考與恢復驗收見 [ticket 31](tickets/31-direct-upstream-gradient.md)。
 
 ## Doctor 報告
 
@@ -58,7 +54,7 @@ Doctor 將 CPU continuous/sparse forward、backward 與目前訓練路徑標示�
 
 小型延遲範例在 v0.3.2 訓練 80 步、由 v0.3.4 接續 40 步後，快照與 v0.3.2 連跑 120 步逐位元組相同。停用 Insyra WebGPU 矩陣加速時也得到相同快照。這項結果不涵蓋所有模型或大型 dense MatMul。Linux／Windows amd64 交叉編譯通過，兩個平台的實際執行尚未驗證。
 
-Insyra `Tape.Tanh` 的 float32 捨入規則有變更，CoImNet 目前沒有呼叫它。新 API 與 CPU `EdgeSum` 的存在不表示現有核心已改用這些 API，裝置常駐狀態與裝置更新仍追蹤 [#379](https://github.com/HazelnutParadise/insyra/issues/379)。
+Insyra `Tape.Tanh` 的 float32 捨入規則有變更，CoImNet 目前沒有呼叫它。升級驗收完成後，梯度橋接依 ticket 31 採用 `BackwardFrom`，核心沒有改用 `Custom` 或 CPU `EdgeSum`。裝置常駐狀態與裝置更新仍追蹤 [#379](https://github.com/HazelnutParadise/insyra/issues/379)。
 
 ## 2026-09-13 歷史探測與限制
 
