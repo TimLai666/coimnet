@@ -1,0 +1,9 @@
+COMMAND: /private/tmp/coimnet-insyra032-cli train delayed --steps 80 --checkpoint /private/tmp/coimnet-insyra034-cross-version/old-first.json
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli resume --checkpoint /private/tmp/coimnet-insyra034-cross-version/old-first.json --steps 40 --out /private/tmp/coimnet-insyra034-cross-version/new-resumed.json
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra032-cli train delayed --steps 120 --checkpoint /private/tmp/coimnet-insyra034-cross-version/old-continuous.json
+EXIT: 0
+INSYRA_ACCEL_DISABLE_WGPU=1 COMMAND: /private/tmp/coimnet-insyra034-cli resume --checkpoint /private/tmp/coimnet-insyra034-cross-version/old-first.json --steps 40 --out /private/tmp/coimnet-insyra034-cross-version/cpu-disabled-resumed.json
+EXIT: 0
+RESULT: v0.3.2-to-v0.3.4 continuation and disabled-device continuation equal v0.3.2 uninterrupted snapshot: True

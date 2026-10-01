@@ -1,0 +1,29 @@
+{
+  "version": "v0.3.4",
+  "commit": "90f3935d02b52ce0fd51a86ed95f340cff9030a8",
+  "release": "https://github.com/HazelnutParadise/insyra/releases/tag/v0.3.4",
+  "available_not_adopted": [
+    "Tape.Custom",
+    "Tape.BackwardFrom",
+    "CPU nn.EdgeSum",
+    "Tape.EdgeSum"
+  ],
+  "still_missing": [
+    "public optimizer state serialization (#376)",
+    "sparse device execution and resident state save/restore (#379)"
+  ],
+  "compatibility": {
+    "wgpu": "v0.34.5",
+    "gputypes": "v0.8.0",
+    "adapter_change": "wgpu.Limits / BindGroupLayoutEntry move to gputypes; calculations unchanged",
+    "tanh": "Upstream float32 rounding changed, but CoImNet has no nn/Tape.Tanh call.",
+    "dense_device": "nn/device_matmul_wiring.go registers accel.DeviceMatMul; eligible large MatMul can use it. Small fixture continuation does not establish large device-path bit identity."
+  },
+  "sources": [
+    "nn/autodiff.go:529,598",
+    "nn/edge_sum.go:113",
+    "nn/device_matmul_wiring.go:6",
+    "nn/device_matmul.go:16",
+    "https://github.com/HazelnutParadise/insyra/issues/379#issuecomment-5863448099"
+  ]
+}

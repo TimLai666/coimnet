@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-10-01 Insyra 已升級至 v0.3.4，對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`。新版 WebGPU 型別改用 `gputypes`，核心、梯度橋接與保存格式沿用現有契約。Mac 完整建置、一般與 race 測試各 56 個套件、vet、模組校驗與 Apple M3 Metal 運算／訓練／新程序恢復通過。小型延遲範例由 v0.3.2 訓練 80 步後交給 v0.3.4 接續 40 步，快照與 v0.3.2 連跑 120 步逐位元組相同。Linux／Windows amd64 僅完成交叉編譯。`Tape.Custom`／`BackwardFrom` 與 CPU `EdgeSum` 已有公開 API，本輪尚未採用。GPU 常駐狀態與裝置更新尚待上游契約，需求累計維持 89／91。[升級相容性證據](evidence/insyra-v0.3.4-20261001/verification.json)。
+
 2026-09-25 真實資料範例已涵蓋五類任務的匯入、訓練、獨立推論與評估：Mini LibriSpeech 語音、Gutenberg 文字、KMNIST 單字元 OCR、Blender 開源影音，以及 Titova 等人的果蠅軌跡。軌跡範例是觀測式下一步位移預測，非閉環導航；保留集 MSE 與角度誤差都比方向延續基準差。Mac Metal 的 WebGPU 稀疏前向、反向與小圖訓練器含新程序恢復已通過對照，但神經狀態與 AdamW 尚未留在 GPU，也沒有 Ubuntu 1 執行或全圖加速證據。Mac 上最終原始碼的完整一般測試、建置、vet、依賴校驗與 Linux／Windows amd64 交叉編譯通過；完整 race 全套通過，之後的軌跡輸出路徑修正另以專項 race 通過。因此 TSK-11、OPS-05 都維持 `specified`，需求仍為 89／91。[真實資料總證據](evidence/TSK-11/verification.json)、[GPU 總證據](evidence/OPS-05/verification.json)。
 
 2026-09-24 接手維護：`gridnav.New` 拒絕非有限獎懲設定；`ocr.Stack` 對不合法行尺寸、像素數與頁面大小溢位回錯，不再因這些輸入 panic。README 與資源文件已依 OPS-07／08 的真實全圖實測更新，明確區分一次更新和訓練達標。在 Mac 上，`gofmt`、`go build ./...`、`go test -timeout 30m ./...`、`go test -count=1 -race -timeout 30m ./...`、`go vet ./...`、`go mod verify` 均通過；需求仍為 89／91，TSK-11 與 OPS-05 的受阻條件未變。新發現的 OCR 非有限輸入缺口記於 [AGENTS.md](AGENTS.md#follow-ups)。

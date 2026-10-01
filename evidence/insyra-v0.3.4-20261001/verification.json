@@ -1,0 +1,165 @@
+{
+  "schema_version": "coimnet-evidence/v1",
+  "date": "2026-10-01",
+  "requirements": [
+    "GOV-02",
+    "GOV-03",
+    "COR-08",
+    "OPS-09",
+    "OPS-05"
+  ],
+  "profile": "dependency-upgrade compatibility",
+  "scope": "Insyra v0.3.2 to v0.3.4 with minimal gputypes namespace adaptation; no numerical algorithm, bridge, optimizer, or checkpoint schema change.",
+  "reproduction_command": [
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/build.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go test -count=1 -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/test.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go test -count=1 -race -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/race.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/vet.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go mod verify; go mod tidy -diff; git diff --check; gofmt -l <all tracked Go files>",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/dependencies.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go test -count=1 -v ./backend/webgpu ./learning -run '^(TestSparse|TestGPU|TestNewGPU)'",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/gpu.log",
+      "expected_failure": false
+    },
+    {
+      "command": "CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/linux-build.log",
+      "expected_failure": false
+    },
+    {
+      "command": "CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build ./...",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/windows-build.log",
+      "expected_failure": false
+    },
+    {
+      "command": "go build ./backend/webgpu (v0.3.4 modules with HEAD pre-adapter source)",
+      "exit_code": 1,
+      "test_log": "evidence/insyra-v0.3.4-20261001/pre-adapter.log",
+      "expected_failure": true
+    },
+    {
+      "command": "CLI doctor, delayed and LIF examples; delayed train 80 + resume 40 versus train 120",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/cli-commands.log"
+    },
+    {
+      "command": "v0.3.2 CLI train 80; v0.3.4 resume 40 (normal and INSYRA_ACCEL_DISABLE_WGPU=1); v0.3.2 train 120",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/cross-version-commands.log"
+    },
+    {
+      "command": "go test -count=1 . (after final document/evidence changes)",
+      "exit_code": 0,
+      "test_log": "evidence/insyra-v0.3.4-20261001/final-governance.log"
+    }
+  ],
+  "environment": {
+    "os": "macOS-27.0-arm64-arm-64bit",
+    "go": "go version go1.26.5 darwin/arm64",
+    "cgo_enabled": "1",
+    "device": "Apple M3 / Metal",
+    "physical_memory_bytes": 17179869184,
+    "cpu_count": 8
+  },
+  "input_fingerprints": {
+    "base_commit": "f3f14c1f09c521106b068f8e95f1bfe48b20257d",
+    "source_manifest": "evidence/insyra-v0.3.4-20261001/source.sha256",
+    "insyra": {
+      "version": "v0.3.4",
+      "commit": "90f3935d02b52ce0fd51a86ed95f340cff9030a8",
+      "sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0="
+    },
+    "cross_version_snapshots": "evidence/insyra-v0.3.4-20261001/cross-version-fingerprints.json",
+    "cli_sha256": {
+      "v0.3.2": "4f21e5ab8b355bb38a04666571adbf5870d247ded6c6f13d9ea523739b04fbd0",
+      "v0.3.4": "5fa93e80843954fe654a2bf01fba12ede5fa5897af164a9e100fafb7209e3862"
+    }
+  },
+  "observed_result": {
+    "upgrade_acceptance": "passed on darwin/arm64",
+    "unit_packages_passed": 56,
+    "race_packages_passed": 56,
+    "webgpu": "Hardware Metal sparse forward and backward match float32 CPU reference with max absolute difference 0; trainer updates/moments and new-process restoration pass without GPU skips.",
+    "resume": "Small delayed fixture is byte-identical for same-version 80+40 vs 120 steps and v0.3.2-to-v0.3.4 continuation versus v0.3.2 uninterrupted training. Device-disabled continuation also matches.",
+    "doctor": "Embedded module is v0.3.4 with no replace. MatMul output 23, MSE loss 484, gradients 88 and 132.",
+    "cross_compile": "Linux and Windows amd64 CGO-disabled builds pass; no platform runtime claim.",
+    "requirements": "89/91 passed unchanged. OPS-05 and TSK-11 remain specified.",
+    "licenses": "Inventory regenerated: 187 modules, 69 unknown under existing heuristic, not a complete license audit."
+  },
+  "limitations": [
+    "No Ubuntu/Vulkan or Windows hardware execution in this upgrade.",
+    "No full MaleCNS graph or large dense MatMul performance/bit identity claim.",
+    "Custom, BackwardFrom and CPU EdgeSum are available upstream but are not adopted by this change.",
+    "Device-side optimizer updates and resident state save/restore remain incomplete for OPS-05.",
+    "Doctor GPU capability labels lag the optional WebGPU implementation; tracked in AGENTS.md Follow-ups."
+  ],
+  "test_log": [
+    "evidence/insyra-v0.3.4-20261001/build.log",
+    "evidence/insyra-v0.3.4-20261001/test.log",
+    "evidence/insyra-v0.3.4-20261001/race.log",
+    "evidence/insyra-v0.3.4-20261001/vet.log",
+    "evidence/insyra-v0.3.4-20261001/dependencies.log",
+    "evidence/insyra-v0.3.4-20261001/gpu.log",
+    "evidence/insyra-v0.3.4-20261001/linux-build.log",
+    "evidence/insyra-v0.3.4-20261001/windows-build.log",
+    "evidence/insyra-v0.3.4-20261001/pre-adapter.log",
+    "evidence/insyra-v0.3.4-20261001/cli-commands.log",
+    "evidence/insyra-v0.3.4-20261001/cross-version-commands.log",
+    "evidence/insyra-v0.3.4-20261001/cli-doctor.json",
+    "evidence/insyra-v0.3.4-20261001/upstream-api-audit.json",
+    "evidence/insyra-v0.3.4-20261001/final-governance.log"
+  ],
+  "log_sha256": {
+    "dependencies.log": "b92e853e307c76749981dbd9d30bc4f46b756b062a2c07d2eb1867ce23bebb12",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "test.log": "c25ebfdc35e5686c5c2099f3c7a0d6bf76353407fe09f706457115be943541ed",
+    "final-governance.log": "6f88c130a9ac57515f4da8045ae960292a27cf9ed849b4143b492b2bb2b25133",
+    "licenses.log": "698a0c7ee0fba74547b0dbf9d4f0b9435799ca20c402e8956c32d3e510dc5fb9",
+    "windows-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cli-commands.log": "1b9f062850cb17dfb8955e3c5f95646627939ae69f27bf9523cfda08c2f634e5",
+    "governance.log": "55ad2cbd4eafcfd5759023bd60d777f0eeff088db4d29133c68e20d59f156fb7",
+    "governance-pre-schema-fix.log": "5ad9593562c059a5b05fea78ddba2196ad8108f26ed6b5c6fb24cfc2e77d626f",
+    "race.log": "d85723add9c1dd4c72daa569935247e50fa121ee20072b27e737b7804d552df6",
+    "pre-adapter.log": "d7f299d47e8d92cdd209d9181b4d9b350d005face1094a8a8a9bf65e36d39522",
+    "linux-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cross-version-commands.log": "9bea0d8e5528a2a240f84d1325c371356b398aacf61c4c3309bbed9e63deeae0",
+    "gpu.log": "d91dff3b590f1049b8b2c4a68e7cf5e46e9925c688896ddd06b48a2c47a54a46",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "requirement": "GOV-02 locked Go/Insyra dependency; GOV-03 actual public API and connected gradients; COR-08 full-path gradient regression; OPS-09 complete verification checks; OPS-05 scoped hardware regression only, remaining specified.",
+  "document_schema_check": {
+    "initial_exit_code": 1,
+    "initial_log": "evidence/insyra-v0.3.4-20261001/governance-pre-schema-fix.log",
+    "cause": "Missing singular requirement field in upgrade evidence. Added field without changing tests.",
+    "final_exit_code": 0,
+    "final_log": "evidence/insyra-v0.3.4-20261001/final-governance.log"
+  }
+}

@@ -54,7 +54,7 @@ type SparseBackward struct {
 	adapter  *wgpu.Adapter
 	device   *wgpu.Device
 	info     DeviceInfo
-	limits   wgpu.Limits
+	limits   gputypes.Limits
 
 	nodes        int
 	edges        int
@@ -360,11 +360,11 @@ func (b *SparseBackward) compilePipeline() error {
 	defer shader.Release()
 	readOnlyStorage := &gputypes.BufferBindingLayout{Type: gputypes.BufferBindingTypeReadOnlyStorage}
 	storage := &gputypes.BufferBindingLayout{Type: gputypes.BufferBindingTypeStorage}
-	entries := make([]wgpu.BindGroupLayoutEntry, 6)
+	entries := make([]gputypes.BindGroupLayoutEntry, 6)
 	for i := 0; i < 5; i++ {
-		entries[i] = wgpu.BindGroupLayoutEntry{Binding: uint32(i), Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage}
+		entries[i] = gputypes.BindGroupLayoutEntry{Binding: uint32(i), Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage}
 	}
-	entries[5] = wgpu.BindGroupLayoutEntry{Binding: 5, Visibility: wgpu.ShaderStageCompute, Buffer: storage}
+	entries[5] = gputypes.BindGroupLayoutEntry{Binding: 5, Visibility: wgpu.ShaderStageCompute, Buffer: storage}
 	layout, err := b.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "coimnet-sparse-backward-bindings", Entries: entries})
 	if err != nil {
 		return fmt.Errorf("%w: create bind group layout: %v", ErrShaderCompile, err)
@@ -388,7 +388,7 @@ func (b *SparseBackward) compilePipeline() error {
 		return fmt.Errorf("%w: create weight-gradient WGSL module: %v", ErrShaderCompile, err)
 	}
 	defer weightShader.Release()
-	weightEntries := []wgpu.BindGroupLayoutEntry{
+	weightEntries := []gputypes.BindGroupLayoutEntry{
 		{Binding: 0, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 		{Binding: 1, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 		{Binding: 2, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
@@ -419,7 +419,7 @@ func (b *SparseBackward) compilePipeline() error {
 		return fmt.Errorf("%w: create first edge WGSL module: %v", ErrShaderCompile, err)
 	}
 	defer firstShader.Release()
-	firstEntries := []wgpu.BindGroupLayoutEntry{
+	firstEntries := []gputypes.BindGroupLayoutEntry{
 		{Binding: 0, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 		{Binding: 1, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 		{Binding: 2, Visibility: wgpu.ShaderStageCompute, Buffer: storage},

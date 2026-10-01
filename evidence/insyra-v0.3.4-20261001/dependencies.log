@@ -1,0 +1,9 @@
+COMMAND: go mod verify
+all modules verified
+EXIT: 0
+COMMAND: go mod tidy -diff
+EXIT: 0
+COMMAND: git diff --check
+EXIT: 0
+COMMAND: gofmt -l <all tracked Go files>
+RESULT: clean

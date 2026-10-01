@@ -24,6 +24,8 @@ Status：done（CPU 參考階段）
 - 整合後的完整建置、測試、race 與 vet 已在 macOS 通過，日誌見 [CPU 參考驗證](../../evidence/cpu-reference-20260913/macos/validation.log)。
 - Doctor probe 實際執行 `nn.NewTensor`、`Tape.Param`、`Tape.MatMul`、`Tape.MSELoss`、`Tape.Backward`、`Tape.Grad`，輸出 `[23]`、loss `[484]`、權重梯度 `[88 132]`。
 - JSON 根欄位為 `schema_version: coimnet-doctor/v1`。GPU 硬體探測與 CoImNet core backend 能力分開報告；Insyra 矩陣能力為 `status=available_in_dependency`、`execution=not_probed`，不宣稱為 sparse recurrent GPU。
-- Insyra 自訂 tape/VJP 與 optimizer state 序列化缺口追蹤於 [#375](https://github.com/HazelnutParadise/insyra/issues/375) 與 [#376](https://github.com/HazelnutParadise/insyra/issues/376)。目前 bridge 使用 `Reshape+MatMul` 內積，核心反向維持明示向量梯度。
+- Insyra v0.3.4 已提供 `Tape.Custom` 與 `Tape.BackwardFrom`，對應 [#375](https://github.com/HazelnutParadise/insyra/issues/375)。目前 bridge 保持 `Reshape+MatMul` 內積，核心反向維持明示向量梯度；最佳化器序列化仍追蹤 [#376](https://github.com/HazelnutParadise/insyra/issues/376)。
 
 `doctor` JSON 已由真實 CLI 執行並重新解析。Mac 記憶體使用 `unix.SysctlUint64`，另以系統 `sysctl -n hw.memsize` 比對，修正將二進位值當字串導致截斷的問題。GPU 後端與 Windows 實機驗收依完整需求另外追蹤。
+
+2026-10-01 依賴升級至 Insyra v0.3.4，完整建置、一般與 race 測試、vet、依賴校驗及 Mac Metal 專項測試通過。小型延遲範例的 v0.3.2→v0.3.4 接續與舊版連跑快照逐位元組相同。新版 API 查核與平台限制見[升級相容性證據](../../evidence/insyra-v0.3.4-20261001/verification.json)。

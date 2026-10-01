@@ -296,7 +296,7 @@ commit 前的敏感資料掃描可以選擇安裝，不會自動啟用：`git co
 - [需求定義](docs/handoff/requirements.json)與[實作狀態](docs/requirements-status.json)：85 項必要需求及各項驗證證據。
 - [交接包說明](docs/handoff/README.zh-TW.md)與[研究來源](docs/handoff/sources.json)。
 
-Go 最低版本為 `1.25.12`。指定依賴 Insyra `v0.3.2` 對應提交 `1f1cdb949c51a10be104965cf4cf30f8f0aaa648`，已在 `go.mod` 與 `go.sum` 固定版本與校驗值。上述核心與例子以 Go 獨立執行，不需要 Python。
+Go 最低版本為 `1.25.12`。指定依賴 Insyra `v0.3.4` 對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`，已在 `go.mod` 與 `go.sum` 固定版本與校驗值。上述核心與例子以 Go 獨立執行，不需要 Python。
 
 ## 框架目標
 

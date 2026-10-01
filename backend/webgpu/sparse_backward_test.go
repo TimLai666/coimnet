@@ -320,7 +320,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 	}
 	defer shader.Release()
 	storage := &gputypes.BufferBindingLayout{Type: gputypes.BufferBindingTypeStorage}
-	layout, err := device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "coimnet-sparse-backward-test-sentinel-layout", Entries: []wgpu.BindGroupLayoutEntry{
+	layout, err := device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{Label: "coimnet-sparse-backward-test-sentinel-layout", Entries: []gputypes.BindGroupLayoutEntry{
 		{Binding: 0, Visibility: wgpu.ShaderStageCompute, Buffer: storage},
 		{Binding: 1, Visibility: wgpu.ShaderStageCompute, Buffer: storage},
 	}})

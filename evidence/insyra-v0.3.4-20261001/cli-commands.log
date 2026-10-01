@@ -1,0 +1,13 @@
+COMMAND: /private/tmp/coimnet-insyra034-cli doctor
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli examples run delayed
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli examples run lif-threshold
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli train delayed --steps 80 --checkpoint /private/tmp/coimnet-insyra034-cli-evidence/first.json
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli resume --checkpoint /private/tmp/coimnet-insyra034-cli-evidence/first.json --steps 40 --out /private/tmp/coimnet-insyra034-cli-evidence/resumed.json
+EXIT: 0
+COMMAND: /private/tmp/coimnet-insyra034-cli train delayed --steps 120 --checkpoint /private/tmp/coimnet-insyra034-cli-evidence/continuous.json
+EXIT: 0
+RESULT: resumed and uninterrupted snapshots are byte-identical

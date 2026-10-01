@@ -26,7 +26,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## 實作與驗證
 
-- Go module 為 `github.com/TimLai666/coimnet`。Insyra 固定 `v0.3.2`，對應提交 `1f1cdb949c51a10be104965cf4cf30f8f0aaa648`。更新依賴時記錄理由與相容性測試，不使用浮動 `@latest`。
+- Go module 為 `github.com/TimLai666/coimnet`。Insyra 固定 `v0.3.4`，對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`。更新依賴時記錄理由與相容性測試，不使用浮動 `@latest`。
 - 沿用主規格的必要功能與外部契約，按功能需要建立套件，避免空介面與假輸出。
 - 數值核心先寫可失敗的測試，以手算值或獨立參考驗證。Insyra 必須實際參與運算，完整梯度不能在核心與外圍之間中斷。
 - 建立 Go 程式後，執行 `gofmt`、`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...` 與相依性檢查。依需求補真實資料、跨程序恢復、教師移除、全腦及裝置驗證。
@@ -54,6 +54,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
+- `internal/cli/doctor.go:257-283`：`coreCapabilities` 將 GPU 六項能力固定標成 `not_implemented`，沒有反映已完成的 WebGPU 純量零延遲連續核心與 episode trainer。改為回報支援設定與實際探測結果，保留裝置常駐狀態、裝置更新與完整圖尚未驗收的限制，並同步 `doctor_test.go` 及整合文件（P2）。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。

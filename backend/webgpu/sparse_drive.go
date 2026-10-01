@@ -90,7 +90,7 @@ type SparseDrive struct {
 	adapter  *wgpu.Adapter
 	device   *wgpu.Device
 	info     DeviceInfo
-	limits   wgpu.Limits
+	limits   gputypes.Limits
 
 	nodes int
 	edges int
@@ -389,7 +389,7 @@ func (d *SparseDrive) compilePipeline() error {
 	storage := &gputypes.BufferBindingLayout{Type: gputypes.BufferBindingTypeStorage}
 	layout, err := d.device.CreateBindGroupLayout(&wgpu.BindGroupLayoutDescriptor{
 		Label: "coimnet-sparse-drive-bindings",
-		Entries: []wgpu.BindGroupLayoutEntry{
+		Entries: []gputypes.BindGroupLayoutEntry{
 			{Binding: 0, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 			{Binding: 1, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
 			{Binding: 2, Visibility: wgpu.ShaderStageCompute, Buffer: readOnlyStorage},
