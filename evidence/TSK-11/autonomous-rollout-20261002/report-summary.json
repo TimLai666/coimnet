@@ -1,0 +1,947 @@
+{
+  "schema_version": "coimnet-realnav-rollout/v1",
+  "protocol": {
+    "schema_version": "coimnet-realnav-rollout/v1",
+    "decision_steps": 200,
+    "arena_center_cm": [
+      0,
+      0
+    ],
+    "arena_radius_cm": 30,
+    "goal_radius_cm": 2,
+    "max_action_length_cm": 5,
+    "max_delta_t_seconds": 0.5,
+    "max_step_distance_cm": 5,
+    "initial_pair_rule": "earliest adjacent same-trial after_relocation pair with 0<gap<=max_delta_t and distance<=max_step_distance",
+    "initial_previous_dt": "observed_pair_gap",
+    "fixed_previous_dt_seconds": 0.1,
+    "reset_every_rows": 256,
+    "input_features": [
+      "current_x_cm",
+      "current_y_cm",
+      "previous_dx_cm",
+      "previous_dy_cm",
+      "previous_dt_seconds"
+    ],
+    "strategies": [
+      "model",
+      "persistent_direction",
+      "zero_output",
+      "random_direction"
+    ],
+    "random_direction_seed": 20261002,
+    "random_stream_derivation": "PCG(seed xor first_u64(sha256(trial_id)), second_u64(sha256(trial_id))) per trial",
+    "target_role": "evaluation_only",
+    "success_rule": "initial position or any realized action segment intersects the closed disk centered at that trial's evaluation-only target",
+    "action_rule": "model residual plus causal direction baseline; controls use the same start, arena, and step limit",
+    "clipping_rule": "actions longer than 5 cm are scaled to exactly 5 cm and counted",
+    "collision_rule": "a candidate endpoint outside the 30 cm arena leaves position unchanged and realizes zero displacement"
+  },
+  "protocol_sha256": "0d258134cbfdb3170e02abc7820c7d878892aec94e3e36c6c16c45fcf31b9844",
+  "source_sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+  "snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+  "original_holdout_trial_ids": [
+    "flytrax20181123_162408.csv\u001f3",
+    "flytrax20181204_170930.csv\u001f6",
+    "flytrax20181205_184643.csv\u001f8",
+    "flytrax20181207_180201.csv\u001f10",
+    "flytrax20181211_170828.csv\u001f11",
+    "flytrax20190109_165747.csv\u001f20",
+    "flytrax20190110_152909.csv\u001f21",
+    "flytrax20190110_182810.csv\u001f25",
+    "flytrax20190111_164022.csv\u001f26",
+    "flytrax20190111_192056.csv\u001f29",
+    "flytrax20190116_192744.csv\u001f34",
+    "flytrax20190118_164239.csv\u001f35",
+    "flytrax20190119_174549.csv\u001f39"
+  ],
+  "split": {
+    "seed": 20260925,
+    "test_fraction": 0.3333333333333333,
+    "train_trial_ids": [
+      "flytrax20181123_114304.csv\u001f0",
+      "flytrax20181123_152457.csv\u001f1",
+      "flytrax20181127_162328.csv\u001f4",
+      "flytrax20181204_163734.csv\u001f5",
+      "flytrax20181205_182038.csv\u001f7",
+      "flytrax20181207_161754.csv\u001f9",
+      "flytrax20181211_183411.csv\u001f12",
+      "flytrax20181211_185727.csv\u001f13",
+      "flytrax20181211_192052.csv\u001f14",
+      "flytrax20181212_193040.csv\u001f15",
+      "flytrax20181214_174232.csv\u001f16",
+      "flytrax20181217_192137.csv\u001f17",
+      "flytrax20181218_164433.csv\u001f18",
+      "flytrax20181218_175537.csv\u001f19",
+      "flytrax20190110_162901.csv\u001f22",
+      "flytrax20190110_170616.csv\u001f23",
+      "flytrax20190110_173636.csv\u001f24",
+      "flytrax20190111_172208.csv\u001f27",
+      "flytrax20190111_190138.csv\u001f28",
+      "flytrax20190116_152245.csv\u001f30",
+      "flytrax20190116_160702.csv\u001f31",
+      "flytrax20190116_163246.csv\u001f32",
+      "flytrax20190116_180834.csv\u001f33",
+      "flytrax20190118_171511.csv\u001f36",
+      "flytrax20190118_181417.csv\u001f37",
+      "flytrax20190119_171903.csv\u001f38"
+    ],
+    "test_trial_ids": [
+      "flytrax20181123_162408.csv\u001f3",
+      "flytrax20181204_170930.csv\u001f6",
+      "flytrax20181205_184643.csv\u001f8",
+      "flytrax20181207_180201.csv\u001f10",
+      "flytrax20181211_170828.csv\u001f11",
+      "flytrax20190109_165747.csv\u001f20",
+      "flytrax20190110_152909.csv\u001f21",
+      "flytrax20190110_182810.csv\u001f25",
+      "flytrax20190111_164022.csv\u001f26",
+      "flytrax20190111_192056.csv\u001f29",
+      "flytrax20190116_192744.csv\u001f34",
+      "flytrax20190118_164239.csv\u001f35",
+      "flytrax20190119_174549.csv\u001f39"
+    ],
+    "train_trial_counts": {
+      "non-rewarded": 15,
+      "rewarded": 11
+    },
+    "test_trial_counts": {
+      "non-rewarded": 5,
+      "rewarded": 8
+    },
+    "train_sample_counts": {
+      "non-rewarded": 21072,
+      "rewarded": 39180
+    },
+    "test_sample_counts": {
+      "non-rewarded": 7339,
+      "rewarded": 32033
+    }
+  },
+  "trials": [
+    {
+      "trial_id": "flytrax20181123_162408.csv\u001f3",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": 2.097297297297295,
+        "y_cm": 8.827027027027025,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 40.779824396428545,
+          "final_distance_cm": 16.97142316833512,
+          "nearest_distance_cm": 2.445915510163522,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 27.737566019483985,
+          "final_distance_cm": 23.72292467402116,
+          "nearest_distance_cm": 3.785900090012389,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 4.2561552607135695,
+          "nearest_distance_cm": 3.249890415594092,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 5.74317474296232,
+          "nearest_distance_cm": 5.74317474296232,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20181204_170930.csv\u001f6",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": 7.0108108108108125,
+        "y_cm": 8,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 28.504083539747054,
+          "final_distance_cm": 20.832096432184827,
+          "nearest_distance_cm": 5.340269597160931,
+          "collisions": 58,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 29.913061393561172,
+          "final_distance_cm": 35.23600631862628,
+          "nearest_distance_cm": 5.340269597160931,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 5.725544885855622,
+          "nearest_distance_cm": 3.5322710919647253,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 5.340269597160931,
+          "nearest_distance_cm": 5.340269597160931,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20181205_184643.csv\u001f8",
+      "condition": "non-rewarded",
+      "target": {
+        "x_cm": 0.3729729729729717,
+        "y_cm": 7.318918918918919,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 37.57809891434948,
+          "final_distance_cm": 30.05340006229629,
+          "nearest_distance_cm": 5.176560236158874,
+          "collisions": 21,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 31.000809080599765,
+          "final_distance_cm": 35.31232373932537,
+          "nearest_distance_cm": 5.176560236158874,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 6.150999905299809,
+          "nearest_distance_cm": 4.04177907427089,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 5.176560236158874,
+          "nearest_distance_cm": 5.176560236158874,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20181207_180201.csv\u001f10",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": 1.054054054054054,
+        "y_cm": 6.567567567567568,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 41.19234109098103,
+          "final_distance_cm": 25.245417093938865,
+          "nearest_distance_cm": 4.319520841620147,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 28.64402242534948,
+          "final_distance_cm": 25.15935645917944,
+          "nearest_distance_cm": 3.2302642660456637,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 6.329684769111461,
+          "nearest_distance_cm": 3.8170373488672977,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 4.906332932934204,
+          "nearest_distance_cm": 4.906332932934204,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20181211_170828.csv\u001f11",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": -2.5297297297297274,
+        "y_cm": 6.427027027027027,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 33.86491563448131,
+          "final_distance_cm": 31.849202593325874,
+          "nearest_distance_cm": 5.798499339880491,
+          "collisions": 36,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 33.538887017023114,
+          "final_distance_cm": 35.481627469404295,
+          "nearest_distance_cm": 5.798499339880491,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 10.076314874731708,
+          "nearest_distance_cm": 5.798499339880491,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 5.798499339880491,
+          "nearest_distance_cm": 5.798499339880491,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190109_165747.csv\u001f20",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": -0.6000000000000012,
+        "y_cm": 7.740540540540542,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 34.32976384317928,
+          "final_distance_cm": 28.801222580506668,
+          "nearest_distance_cm": 4.365217088959858,
+          "collisions": 33,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 31.90726548646526,
+          "final_distance_cm": 36.0060063443102,
+          "nearest_distance_cm": 4.365217088959858,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 6.050784353846501,
+          "nearest_distance_cm": 3.8210703659963947,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 4.365217088959858,
+          "nearest_distance_cm": 4.365217088959858,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190110_152909.csv\u001f21",
+      "condition": "non-rewarded",
+      "target": {
+        "x_cm": -2.9783783783783795,
+        "y_cm": 8.816216216216217,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 40.93992648752182,
+          "final_distance_cm": 10.403093552974903,
+          "nearest_distance_cm": 10.403093552974903,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 21.93624502194482,
+          "final_distance_cm": 25.504527086740463,
+          "nearest_distance_cm": 12.646950581906424,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 12.441997663728511,
+          "nearest_distance_cm": 11.972994318099394,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 12.646950581906424,
+          "nearest_distance_cm": 12.646950581906424,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190110_182810.csv\u001f25",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": -2.1135135135135146,
+        "y_cm": 6.497297297297299,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 37.85591413006116,
+          "final_distance_cm": 31.21807611528924,
+          "nearest_distance_cm": 4.152505519526546,
+          "collisions": 20,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 32.269848048811454,
+          "final_distance_cm": 29.06863553972122,
+          "nearest_distance_cm": 3.240354700574779,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 6.437674424232515,
+          "nearest_distance_cm": 4.684059036530856,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 4.684059036530856,
+          "nearest_distance_cm": 4.684059036530856,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190111_164022.csv\u001f26",
+      "condition": "non-rewarded",
+      "target": {
+        "x_cm": 1.162162162162162,
+        "y_cm": 7.697297297297295,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 15.391548688098533,
+          "final_distance_cm": 32.84555084572185,
+          "nearest_distance_cm": 24.532919224369437,
+          "collisions": 130,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 11.058768151558935,
+          "final_distance_cm": 34.98422924226254,
+          "nearest_distance_cm": 24.532919224369437,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 24.182099828831,
+          "nearest_distance_cm": 23.56760576763563,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 24.532919224369437,
+          "nearest_distance_cm": 24.532919224369437,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190111_192056.csv\u001f29",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": -2.3297297297297312,
+        "y_cm": 5.756756756756758,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 33.769778445971994,
+          "final_distance_cm": 30.20637734947236,
+          "nearest_distance_cm": 6.124452945859583,
+          "collisions": 35,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 27.737566019483985,
+          "final_distance_cm": 31.32198219916448,
+          "nearest_distance_cm": 6.124452945859583,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 8.621330852633392,
+          "nearest_distance_cm": 5.765644531174075,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 6.124452945859583,
+          "nearest_distance_cm": 6.124452945859583,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190116_192744.csv\u001f34",
+      "condition": "rewarded",
+      "target": {
+        "x_cm": -0.3675675675675651,
+        "y_cm": 7.735135135135136,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 37.25354816699283,
+          "final_distance_cm": 29.544896397135556,
+          "nearest_distance_cm": 6.479532088192132,
+          "collisions": 15,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 31.72597420529216,
+          "final_distance_cm": 24.9423875808417,
+          "nearest_distance_cm": 2.968563862959845,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.258256234619545,
+          "final_distance_cm": 9.867914682670543,
+          "nearest_distance_cm": 6.835635179312797,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 7.567436770942803,
+          "nearest_distance_cm": 7.567436770942803,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190118_164239.csv\u001f35",
+      "condition": "non-rewarded",
+      "target": {
+        "x_cm": 1.0162162162162138,
+        "y_cm": 5.929729729729733,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 43.84143687949328,
+          "final_distance_cm": 29.73554134171303,
+          "nearest_distance_cm": 9.352944104500018,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 28.281439863003282,
+          "final_distance_cm": 29.3027656328621,
+          "nearest_distance_cm": 9.372311280662414,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 7.495577503270758,
+          "nearest_distance_cm": 7.495577503270758,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 9.386611842650536,
+          "nearest_distance_cm": 9.386611842650536,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    {
+      "trial_id": "flytrax20190119_174549.csv\u001f39",
+      "condition": "non-rewarded",
+      "target": {
+        "x_cm": 3.1297297297297284,
+        "y_cm": 4.772972972972972,
+        "evaluation_only": true
+      },
+      "strategies": {
+        "model": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 31.41540723915586,
+          "final_distance_cm": 25.996933043531563,
+          "nearest_distance_cm": 5.1286662197643995,
+          "collisions": 46,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 27.918857300657084,
+          "final_distance_cm": 27.510047508047702,
+          "nearest_distance_cm": 5.101464410855535,
+          "collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 36.25825623461955,
+          "final_distance_cm": 5.423083801770485,
+          "nearest_distance_cm": 3.751994196434894,
+          "collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "success": false,
+          "start_success": false,
+          "hit_step": -1,
+          "steps": 200,
+          "path_cm": 0,
+          "final_distance_cm": 5.177823524146822,
+          "nearest_distance_cm": 5.177823524146822,
+          "collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    }
+  ],
+  "excluded": [],
+  "aggregates": {
+    "non-rewarded": {
+      "model": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 197,
+        "mean_collisions": 39.4,
+        "clipped_actions": 0
+      },
+      "persistent_direction": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 5,
+        "mean_collisions": 1,
+        "clipped_actions": 0
+      },
+      "random_direction": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      },
+      "zero_output": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      }
+    },
+    "rewarded": {
+      "model": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 198,
+        "mean_collisions": 24.75,
+        "clipped_actions": 0
+      },
+      "persistent_direction": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 8,
+        "mean_collisions": 1,
+        "clipped_actions": 0
+      },
+      "random_direction": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      },
+      "zero_output": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      }
+    }
+  },
+  "limitations": [
+    "This is a frozen-model engineering rollout from two observed after_relocation rows, not a closed-loop animal dataset or connectome result.",
+    "The source is downsampled by time and distance, so decision steps and the fixed 0.1 second feature are not animal seconds or a reconstructed velocity.",
+    "The author's original preprint reports a 2.8 cm return-zone criterion, which is not reproduced here; this protocol uses a predeclared 2 cm engineering goal radius and does not claim an animal return result.",
+    "The engineering arena has no obstacles, vision, olfaction, thermal wall, or animal control dynamics; target coordinates are evaluation-only metadata."
+  ]
+}

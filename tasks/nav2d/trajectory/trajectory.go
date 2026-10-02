@@ -166,6 +166,10 @@ type Dataset struct {
 // increasing in t. Unknown columns are accepted as source data but ignored by
 // the model adapter.
 func Read(ctx context.Context, path string, source Source, limits Limits) (dataset Dataset, retErr error) {
+	return read(ctx, path, source, limits, nil)
+}
+
+func read(ctx context.Context, path string, source Source, limits Limits, collector *returnTargetCollector) (dataset Dataset, retErr error) {
 	if ctx == nil {
 		return Dataset{}, errors.New("trajectory: context must not be nil")
 	}
@@ -259,6 +263,12 @@ func Read(ctx context.Context, path string, source Source, limits Limits) (datas
 	if err != nil {
 		return Dataset{}, err
 	}
+	if collector != nil {
+		collector.indices, err = validateReturnTargetHeader(header)
+		if err != nil {
+			return Dataset{}, err
+		}
+	}
 	headerFields := len(header)
 
 	dataset = Dataset{Schema: SchemaVersion, Source: source, Rows: make([]Point, 0, minInt(limits.MaxRows, 4096))}
@@ -300,6 +310,11 @@ func Read(ctx context.Context, path string, source Source, limits Limits) (datas
 		point, err := parsePoint(record, indices, rowNumber)
 		if err != nil {
 			return Dataset{}, err
+		}
+		if collector != nil {
+			if err := collector.collect(point, record, rowNumber); err != nil {
+				return Dataset{}, err
+			}
 		}
 		if point.TrialID != activeTrial {
 			if activeTrial != "" {

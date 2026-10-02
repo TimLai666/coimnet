@@ -1,0 +1,128 @@
+{"name": "train-a", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "train", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 2.528677792}
+{"name": "rollout-a", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-a"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 0.8536926670000002}
+{"name": "train-b", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "train", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-b"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 1.5783328340000002}
+{"name": "rollout-b", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-b/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-b"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 0.800250417}
+{"name": "infer", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "infer", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/infer"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 1.0685719159999998}
+{"name": "old-snapshot", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/realnav-measured-20260925/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/old-snapshot"], "exit_code": 0, "expected_exit_code": 0, "elapsed_seconds": 0.8694471669999997}
+{"name": "reject-existing", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-a"], "exit_code": 1, "expected_exit_code": 1, "elapsed_seconds": 0.8648859999999994}
+{"name": "reject-repo", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--out", "/Users/timlai/Developer/coimnet/rollout-output-must-not-exist-20261002"], "exit_code": 1, "expected_exit_code": 1, "elapsed_seconds": 0.834596083000001}
+{"name": "reject-source", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/rollout-output-must-not-exist-20261002"], "exit_code": 1, "expected_exit_code": 1, "elapsed_seconds": 0.7925125839999989}
+{"name": "reject-steps", "command": ["/private/tmp/coimnet-realnav-root-20261002/realnav", "rollout", "--data", "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz", "--snapshot", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json", "--steps", "0", "--out", "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/invalid-steps"], "exit_code": 1, "expected_exit_code": 1, "elapsed_seconds": 0.0076455830000004}
+{
+  "training_file_sha256": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+  "snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+  "protocol_sha256": "0d258134cbfdb3170e02abc7820c7d878892aec94e3e36c6c16c45fcf31b9844",
+  "repeated_training_models_identical": true,
+  "repeated_rollout_except_runtime_identical": true,
+  "fresh_infer_matches_train_test_metrics": true,
+  "old_snapshot_load_succeeded": true,
+  "independent_source_initial_pairs_and_targets_match": true,
+  "zero_control_hand_calculation_match": true,
+  "exclusive_output_unchanged": true,
+  "repo_and_source_outputs_rejected_without_creation": true,
+  "evaluated_trials": 13,
+  "excluded_trials": 0,
+  "initial_hits": 0,
+  "aggregates": {
+    "non-rewarded": {
+      "model": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 197,
+        "mean_collisions": 39.4,
+        "clipped_actions": 0
+      },
+      "persistent_direction": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 5,
+        "mean_collisions": 1,
+        "clipped_actions": 0
+      },
+      "random_direction": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      },
+      "zero_output": {
+        "samples": 5,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1000,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      }
+    },
+    "rewarded": {
+      "model": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 198,
+        "mean_collisions": 24.75,
+        "clipped_actions": 0
+      },
+      "persistent_direction": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 8,
+        "mean_collisions": 1,
+        "clipped_actions": 0
+      },
+      "random_direction": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      },
+      "zero_output": {
+        "samples": 8,
+        "successes": 0,
+        "success_rate": 0,
+        "start_successes": 0,
+        "start_success_rate": 0,
+        "steps": 1600,
+        "mean_steps": 200,
+        "collisions": 0,
+        "mean_collisions": 0,
+        "clipped_actions": 0
+      }
+    }
+  }
+}

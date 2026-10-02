@@ -1,9 +1,9 @@
 {
   "schema_version": "coimnet-real-task-evidence/v1",
   "requirement": "TSK-11 使用者可以將有授權的真實任務資料帶入框架；每類任務實際匯入、訓練、推論與評估",
-  "profile": "partial_real_data_workflow_closed_loop_navigation_pending",
+  "profile": "partial_real_data_workflow_navigation_capability_pending",
   "date": "2026-09-25",
-  "scope": "Five small real-data examples cover speech-to-text, text generation, single-character OCR, text-conditioned image/audio/video, and fruit-fly trajectory one-step prediction. Navigation evidence is observer-pose, teacher-forced and not closed-loop; TSK-11 is not passed.",
+  "scope": "Five small real-data examples cover speech, text, OCR, media and observer-position trajectory prediction. The 2026-10-02 incremental child adds frozen autonomous engineering rollout; it demonstrates reproducible evaluation, with no learned-navigation result. Historical 2026-09-25 metrics and environment are retained separately from the new child. TSK-11 is not passed.",
   "reproduction_command": [
     "go test -race -count=1 -timeout 30m ./... > evidence/TSK-11/real-nav-20260925/go-test-race-full.log 2>&1",
     "See each child verification.json for data import, training, independent inference, evaluation and repeated-run commands. External raw data, snapshots and training reports remain outside Git.",
@@ -29,7 +29,7 @@
     "titova_trajectory_gzip_sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
   },
   "observed_result": {
-    "status": "partial: five main-spec task classes have small real-data workflow evidence, but trajectory work is only one-step prediction, not closed-loop navigation; model quality is limited",
+    "status": "partial: five task-class small real-data workflows plus frozen engineering rollout; no navigation capability established and model quality is limited",
     "speech": {
       "four_steps_verified": true,
       "train_utterances": 4,
@@ -83,6 +83,24 @@
       "test_angle_before_radians": 0.2553558974324959,
       "test_angle_after_radians": 0.2797228976942377,
       "fresh_process_inference_matched": true
+    },
+    "navigation_rollout_20261002": {
+      "software_verified": true,
+      "date": "2026-10-02",
+      "scope": "200 engineering decisions, predeclared 2cm fictive-zone radius; no animal-time or learned-navigation claim",
+      "evaluated_trials": 13,
+      "rewarded_trials": 8,
+      "non_rewarded_trials": 5,
+      "excluded": 0,
+      "initial_hits": 0,
+      "model_hits": 0,
+      "persistent_hits": 0,
+      "zero_hits": 0,
+      "random_hits": 0,
+      "repeated_training_models_identical": true,
+      "repeated_rollout_except_runtime_identical": true,
+      "snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+      "verification": "evidence/TSK-11/autonomous-rollout-20261002/verification.json"
     }
   },
   "child_evidence": {
@@ -110,6 +128,11 @@
       "verification": "evidence/TSK-11/real-nav-20260925/verification.json",
       "report": "evidence/TSK-11/real-nav-20260925/train-measured-stdout.json",
       "report_sha256": "eda3815e3a05c73ca3a2bb403e385e45c174f6c0bf6d5eac8a167f897fe4fcdb"
+    },
+    "navigation_rollout_20261002": {
+      "verification": "evidence/TSK-11/autonomous-rollout-20261002/verification.json",
+      "report": "evidence/TSK-11/autonomous-rollout-20261002/report-summary.json",
+      "report_sha256": "65951212a594c320bb87644bb7e3b83819681507483460be36360867f02cfc3e"
     }
   },
   "test_log": [
@@ -123,7 +146,7 @@
     "evidence/TSK-11/real-nav-20260925/go-test-final-source.log"
   ],
   "limitations": [
-    "Main specification section 13.6 includes spatial/navigation; the real trajectory example covers only observer-pose one-step prediction, not closed-loop navigation or return success.",
+    "Main specification section 13.6 includes spatial/navigation. The original trajectory child is teacher-forced one-step prediction; the 2026-10-02 child adds autonomous engineering evaluation, with 0/13 hits for model and controls and no learned-navigation evidence.",
     "Speech held-out CER worsened and WER stayed 1.0; no natural ASR quality claim.",
     "Text held-out perplexity improved but generated text remained fragmented.",
     "KMNIST covers one character per image, not natural page OCR.",

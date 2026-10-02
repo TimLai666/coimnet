@@ -7,11 +7,12 @@ core to predict the next `(dx, dy)` displacement, saves a training snapshot
 outside Git, and loads that snapshot in a separate `infer` process for a
 trial-held-out evaluation.
 
-The model is an observer-position proxy. It is not a fruit-fly connectome, a
-neural mechanism claim, or a closed-loop return-to-target/navigation result.
-Inference is teacher-forced on recorded observations: each row's current pose
-and already observed displacement history predict only the next recorded
-displacement.
+The model is an observer-position proxy. It is not a fruit-fly connectome or
+a neural mechanism claim. The `infer` command is teacher-forced on recorded
+observations: each row's current pose and already observed displacement history
+predict only the next recorded displacement. The separate `rollout` command
+feeds generated positions back into a frozen model in an engineering arena;
+it does not establish animal control, learned homing, or path integration.
 
 ## Data and causal contract
 
@@ -81,11 +82,73 @@ go run ./examples/realnav infer \
 
 The report includes held-out one-step displacement MSE and angular error,
 continuous-direction, zero-output, and previous-displacement baselines. The
-trajectory adapter does not expose reward or fictive-zone coordinates, so the
-example reports no predicted zone-distance change and no return-success rate.
+`train` and `infer` commands use the original `trajectory.Read` contract, which
+keeps fictive-zone coordinates out of the imported rows and model input. Their
+one-step reports include no predicted zone-distance change or return-success rate.
 The infer report leaves pre-training metrics and the initial snapshot
 fingerprint null because that process only receives the saved final snapshot.
 The one-step metrics are teacher-forced and are not closed-loop success.
+
+## Autonomous engineering rollout
+
+A separate process can load the same saved model and run its original held-out
+trials without using future recorded positions for subsequent actions:
+
+```sh
+go run ./examples/realnav rollout \
+  --data /Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --snapshot /tmp/coimnet-realnav-run-01/model.json \
+  --out /tmp/coimnet-realnav-rollout-01 \
+  --steps 200
+```
+
+`--steps` defaults to 200 and accepts 1–4096 model decisions. These are not
+animal seconds. The source was downsampled by both time and distance, and the
+model predicts displacement rather than speed or the next time interval. The
+initial previous-time feature comes from the earliest valid adjacent observed
+pair; subsequent decisions use a fixed 0.1 second feature. The model receives
+absolute observer coordinates and realised displacement, not animal sensory
+observations or the fictive-zone center.
+
+The circular engineering arena has a 30 cm radius. Actions longer than 5 cm
+are clipped and counted. An endpoint outside the arena is rejected, counts as
+a collision, and produces zero realised displacement for the next decision.
+The neural state persists within each trial and resets every 256 decisions,
+matching the existing training chunk rule. Parameters and optimizer state are
+frozen. Direction persistence, zero displacement, and a seeded random-direction
+control use the same initial observations, arena and decision limit, with
+independent trial state and random streams.
+
+`trajectory.ReadWithReturnTargets` extracts only the fixed
+`estimated_food_x_cm` and `estimated_food_y_cm` center from `after_relocation`
+rows, using the same verified source bytes as the position import. This metadata
+is returned separately and is used only for scoring. The predeclared engineering
+criterion is a 2 cm fictive-zone radius; initial inclusion, tangency and action
+segments crossing the closed disk count as hits, and evaluation stops at the
+first hit. The original experiment uses a different criterion and a 100 second
+observation window; this rollout does not reproduce the experiment.
+
+The independent `coimnet-realnav-rollout/v1` report records the effective
+protocol and its hash, source and training-snapshot hashes, saved trial split, each
+trial's target, strategy results and exclusions. It reports fictive-zone hit
+rates separately for rewarded and non-rewarded trials, with initial hits counted
+separately. `snapshot_sha256` identifies the complete neural training snapshot,
+including optimizer state; the verification evidence separately fingerprints
+the full saved model file, including preprocessing and split metadata. Source
+rows are still scanned to verify that saved split and its sample counts; these
+future observations never supply subsequent actions. A non-rewarded trial's
+zone hit is hypothetical, not a return to a
+previous reward. Poor model results are retained without changing the criterion.
+Raw trajectories, saved models and complete reports remain outside Git; compact
+verification evidence is linked from [ticket 32](../../docs/tickets/32-real-trajectory-autonomous-rollout.md).
+
+The 2026-10-02 fixed-data run evaluated all 13 held-out trials (8 rewarded,
+5 non-rewarded), with no exclusions or initial hits. The model and all three
+controls hit zero fictive zones within 200 decisions. Two training processes
+produced byte-identical saved models, and two rollout processes produced
+identical results after removing runtime measurements. This establishes a
+reproducible engineering evaluation, with no learned navigation result. See
+[verification](../../evidence/TSK-11/autonomous-rollout-20261002/verification.json).
 
 The test suite uses an in-memory synthetic trajectory and checks true gradient
 updates, trial and segment isolation, causal feature construction, and

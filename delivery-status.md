@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-10-02 [ticket 32](docs/tickets/32-real-trajectory-autonomous-rollout.md) 的自主行走工程評估已驗證，待提交推送。模型與三個控制組在全部 13 個保留試次皆命中 0 次，排除 0、起始命中 0；兩次訓練模型逐位元組相同，自主評估除執行量測外相同。Mac 完整一般與 race 測試各 56 個套件、建置、vet、相依性與格式檢查通過。目標中心只供計分，參數及最佳化器不變；結果不支持學會導航。需求維持 89／91，TSK-11 與 OPS-05 為 specified。[本輪證據](evidence/TSK-11/autonomous-rollout-20261002/verification.json)。
+
 2026-10-02 完成 [ticket 31](docs/tickets/31-direct-upstream-gradient.md)：讀出與編碼器改用 Insyra `BackwardFrom` 傳遞外部梯度。一般與 race 編譯模式各 9 組完整梯度，均與各自的原內積橋接參考逐位相同。修改前訓練 80 步後由修改版接續 40 步，快照與原版連跑 120 步逐位元組相同。Mac 完整建置、一般與 race 測試各 56 個套件、vet、依賴檢查及 Apple M3 Metal 專項驗證通過，Linux／Windows amd64 僅完成交叉編譯。核心精度、公開 API、最佳化器與保存格式未改，需求維持 89／91。[梯度橋接證據](evidence/COR-08/backwardfrom-20261001/verification.json)。
 
 2026-10-01 Insyra 已升級至 v0.3.4，對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`。新版 WebGPU 型別改用 `gputypes`，核心、梯度橋接與保存格式沿用現有契約。Mac 完整建置、一般與 race 測試各 56 個套件、vet、模組校驗與 Apple M3 Metal 運算／訓練／新程序恢復通過。小型延遲範例由 v0.3.2 訓練 80 步後交給 v0.3.4 接續 40 步，快照與 v0.3.2 連跑 120 步逐位元組相同。Linux／Windows amd64 僅完成交叉編譯。`Tape.Custom`／`BackwardFrom` 與 CPU `EdgeSum` 已有公開 API，本輪尚未採用。GPU 常駐狀態與裝置更新尚待上游契約，需求累計維持 89／91。[升級相容性證據](evidence/insyra-v0.3.4-20261001/verification.json)。
@@ -142,7 +144,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-下一個需求驗收是 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 的 TSK-11：在真實軌跡上建立閉環導航與回巢評估，與單步預測及方向延續基準分開報告。 [ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需驗證裝置常駐更新與全圖容量／速度，並在 Ubuntu 1 RTX 4070 實際執行。需求累計仍是 89／91。
+[ticket 32](docs/tickets/32-real-trajectory-autonomous-rollout.md) 已完成軟體驗證，待提交推送；後續回到 [ticket 29](docs/tickets/29-real-tasks-ocr-asr-text-and-media-generation.md) 的 TSK-11 導航能力缺口。現有模型只學下一步位移，沒有獎勵記憶與導航訓練目標；下一個可驗證成果須先確定有來源依據的觀察與導航訓練契約，再用獨立保留試次及控制組驗收，不能拿本輪 13 個試次選參數。 [ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需裝置常駐更新與全圖容量／速度及 Ubuntu RTX 4070 執行證據。需求累計仍是 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 

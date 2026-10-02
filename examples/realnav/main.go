@@ -129,17 +129,20 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runTrain(ctx, args[1:], stdout, stderr)
 	case "infer":
 		return runInfer(ctx, args[1:], stdout, stderr)
+	case "rollout":
+		return runRollout(ctx, args[1:], stdout, stderr)
 	default:
-		return fmt.Errorf("realnav: unknown mode %q; use train or infer", args[0])
+		return fmt.Errorf("realnav: unknown mode %q; use train, infer, or rollout", args[0])
 	}
 }
 
 func writeUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: go run ./examples/realnav train --data PATH --out DIR [--epochs N]")
 	fmt.Fprintln(w, "       go run ./examples/realnav infer --data PATH --snapshot PATH --out DIR")
+	fmt.Fprintln(w, "       go run ./examples/realnav rollout --data PATH --snapshot PATH --out DIR [--steps N]")
 	fmt.Fprintln(w, "Imports the verified Dryad trajectory, trains a causal next-displacement regressor, and evaluates a frozen snapshot on trial-held-out data.")
 	fmt.Fprintln(w, "Only after_relocation rows and bounded same-trial time windows are used. Reward/fictive distances, condition, segment, and future pose are evaluation metadata, never input features.")
-	fmt.Fprintln(w, "The report is an observer-position behaviour prediction; it is not a connectome model or closed-loop navigation result.")
+	fmt.Fprintln(w, "Train/infer report teacher-forced observer-position prediction. Rollout reports a closed-loop engineering extrapolation. Neither is an animal navigation or connectome result.")
 }
 
 func runTrain(ctx context.Context, args []string, stdout, stderr io.Writer) error {
@@ -309,7 +312,7 @@ func buildReport(mode string, dataset, trainDataset, testDataset trajectory.Data
 		Training:      trainingReport{Epochs: epochs, Updates: result.Updates, RecurrentChunkRows: trainingChunk, Optimizer: "learning.Trainer StepFrom with AdamW", LearningRate: result.After.Options.LearningRate, InitialSnapshotSHA: initialSnapshotSHA, FinalSnapshotSHA: finalSnapshotSHA, SnapshotPath: snapshotPath, MeanTargetDisplacementCM: result.MeanTargetDisplacement},
 		Metrics:       metricReport{Before: beforeReport, After: afterReport, Baseline: result.Baselines},
 		Runtime:       runtimeReport{ElapsedMilliseconds: time.Since(start).Milliseconds(), MaxRSSBytes: maxRSSBytes(), GoVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH},
-		Limitations:   []string{"This is a teacher-forced next-displacement behaviour-prediction example for an observer position, not a fruit-fly connectome or a closed-loop navigation policy.", "The model receives current pose and prior displacement/time only. Reward, fictive target, condition, segment, and future pose fields are excluded from the model input.", "The trajectory adapter exposes no reward or fictive-zone coordinates, so this report makes no predicted-distance, distance-change, or return-success claim.", "The local author-repository copy matches the pinned Git blob and its README blob. Byte-equivalence to the Dryad ZIP was not verified because direct Dryad retrieval returned 403/401.", "The Dryad source is one experiment with 39 trials; held-out trial metrics are evidence of this run's pipeline and not a general behavioural or biological result."},
+		Limitations:   []string{"This is a teacher-forced next-displacement behaviour-prediction example for an observer position, not a fruit-fly connectome or a closed-loop navigation policy.", "The model receives current pose and prior displacement/time only. Reward, fictive target, condition, segment, and future pose fields are excluded from the model input.", "The train/infer Read adapter intentionally does not expose reward-zone coordinates, so those reports make no predicted-distance, distance-change, or return-success claim.", "The local author-repository copy matches the pinned Git blob and its README blob. Byte-equivalence to the Dryad ZIP was not verified because direct Dryad retrieval returned 403/401.", "The Dryad source is one experiment with 39 trials; held-out trial metrics are evidence of this run's pipeline and not a general behavioural or biological result."},
 	}
 }
 
@@ -400,12 +403,25 @@ func prepareOutputDirectory(outPath, dataPath string) (string, error) {
 	if pathOverlaps(resolvedOutput, dataDirectory) || pathOverlaps(dataDirectory, resolvedOutput) {
 		return "", errors.New("realnav: output directory must be separate from the source data directory")
 	}
+	for ancestor := resolvedOutput; ; ancestor = filepath.Dir(ancestor) {
+		if _, err := os.Lstat(filepath.Join(ancestor, ".git")); err == nil {
+			return "", errors.New("realnav: output directory must be outside the repository")
+		} else if !errors.Is(err, os.ErrNotExist) {
+			return "", fmt.Errorf("realnav: inspect repository boundary: %w", err)
+		}
+		if filepath.Dir(ancestor) == ancestor {
+			break
+		}
+	}
 	if _, err := os.Stat(output); err == nil {
 		return "", fmt.Errorf("realnav: output directory %q already exists", output)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return "", err
 	}
-	if err := os.MkdirAll(output, 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(output), 0o700); err != nil {
+		return "", err
+	}
+	if err := os.Mkdir(output, 0o700); err != nil {
 		return "", err
 	}
 	return output, nil

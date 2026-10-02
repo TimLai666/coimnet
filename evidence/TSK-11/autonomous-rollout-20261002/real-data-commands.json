@@ -1,0 +1,160 @@
+[
+  {
+    "name": "train-a",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "train",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 2.528677792
+  },
+  {
+    "name": "rollout-a",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-a"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 0.8536926670000002
+  },
+  {
+    "name": "train-b",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "train",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-b"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 1.5783328340000002
+  },
+  {
+    "name": "rollout-b",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-b/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-b"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 0.800250417
+  },
+  {
+    "name": "infer",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "infer",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/infer"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 1.0685719159999998
+  },
+  {
+    "name": "old-snapshot",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/realnav-measured-20260925/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/old-snapshot"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "elapsed_seconds": 0.8694471669999997
+  },
+  {
+    "name": "reject-existing",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/rollout-a"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "elapsed_seconds": 0.8648859999999994
+  },
+  {
+    "name": "reject-repo",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet/rollout-output-must-not-exist-20261002"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "elapsed_seconds": 0.834596083000001
+  },
+  {
+    "name": "reject-source",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/rollout-output-must-not-exist-20261002"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "elapsed_seconds": 0.7925125839999989
+  },
+  {
+    "name": "reject-steps",
+    "command": [
+      "/private/tmp/coimnet-realnav-root-20261002/realnav",
+      "rollout",
+      "--data",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--snapshot",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json",
+      "--steps",
+      "0",
+      "--out",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/invalid-steps"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "elapsed_seconds": 0.0076455830000004
+  }
+]

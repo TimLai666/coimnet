@@ -1,0 +1,363 @@
+{
+  "schema_version": "coimnet-realnav-rollout-evidence/v1",
+  "requirement": "TSK-11 partial: ticket32 frozen real-trajectory autonomous engineering rollout",
+  "date": "2026-10-02",
+  "profile": "mac_cpu_engineering_rollout_software_verified_delivery_pending",
+  "scope": "Source-bound train/infer compatibility and frozen autonomous engineering evaluation, separate from learned navigation or animal homing. TSK-11 remains specified.",
+  "reproduction_command": [
+    "See real-data-commands.json for two separate train and rollout processes, fresh infer, old snapshot loading and CLI rejection cases.",
+    "go test -count=1 -v ./examples/realnav ./tasks/nav2d/trajectory",
+    "go test -race -count=1 -v ./examples/realnav ./tasks/nav2d/trajectory",
+    "go build ./...",
+    "go test -p 4 -timeout 30m ./...",
+    "go test -p 4 -race -timeout 30m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "See verify.py, real_runs.py and control_reference.py for the recorded local verification orchestration; use a fresh external output directory to repeat writes."
+  ],
+  "environment": {
+    "date": "2026-10-02",
+    "os": "macOS-27.0-arm64-arm-64bit",
+    "machine": "arm64",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "base_commit": "94cfb8751145d77da0e971bf27aa2b44515d0eb2",
+    "insyra_version": "github.com/HazelnutParadise/insyra v0.3.4",
+    "scope": "Mac CPU example evaluation; no new GPU, full-graph or remote execution",
+    "all_ds_t01_d2_cm_no2.csv.gz": {
+      "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "bytes": 31434637,
+      "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+    },
+    "README-source.md": {
+      "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/README-source.md",
+      "bytes": 15026,
+      "sha256": "afead993436228df47d09eaf8bfad578a5ab9d75710f4a013bd1cb7a2ae5af5f"
+    },
+    "hardware_model": "Mac15,12",
+    "cpu": "Apple M3",
+    "physical_memory_bytes": 17179869184,
+    "GOMEMLIMIT": "8GiB",
+    "hardware_command": [
+      "sysctl",
+      "-n",
+      "hw.model",
+      "hw.memsize",
+      "machdep.cpu.brand_string"
+    ]
+  },
+  "input_fingerprints": {
+    "source": {
+      "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "bytes": 31434637,
+      "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+    },
+    "source_readme": {
+      "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/README-source.md",
+      "bytes": 15026,
+      "sha256": "afead993436228df47d09eaf8bfad578a5ab9d75710f4a013bd1cb7a2ae5af5f"
+    },
+    "saved_model_file_sha256": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+    "training_snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+    "protocol_sha256": "0d258134cbfdb3170e02abc7820c7d878892aec94e3e36c6c16c45fcf31b9844",
+    "source_manifest": "source-after.json",
+    "binary_sha256": "a26d62b95948075746b1bac09e8aabb863a73b1877cb1fd16a50842651d4b626",
+    "external_files": {
+      "reject-repo-stderr.log": "3d5c8bb537566b63add6b0d103e69d33d4f7eeef8f9de2e607d35c202cc5b691",
+      "old-snapshot-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "rollout-a-stdout.json": "2077156235600dbb9db9fd7b8156e5b1d852305a27d571710f2ad7baec963dee",
+      "rollout-b-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "old-snapshot-stdout.json": "22555c900f380d59bad71fe47cd4a02945818c33b726a08fd26e6990b55a7cd4",
+      "reject-steps-stdout.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reject-repo-stdout.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "infer-stdout.json": "b77ee4344ef67201f1c9336ea9622b8722ef6ac590496991fa402561a3be4f63",
+      "train-b-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reject-existing-stderr.log": "2f257b85a49b39d6108569b7fc1405c2857a93bbbe3c70e39359516397259c22",
+      "rollout-b-stdout.json": "b4c9f75a1c6ebd85e33a793374c6724da6ca0a019edb71b34ea2ec002c2f5479",
+      "reject-source-stderr.log": "49ffa685587741af841d28bce1044600b2b20e6a7b32a544ac3b6623b211c5f5",
+      "commands.json": "c9c5c82d36dcd201de064da14bb5eba56c4957e2c6ae8ad14108e349f7cdabda",
+      "train-a-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "train-a-stdout.json": "640b1067a14bdc37a894283468d6d3af8e373623da81c2d0738489f2474e4abb",
+      "reject-steps-stderr.log": "73ffe18ddf93a110db5914804608f578f0377a5dae3d78ebe472cc4b7a15dcc6",
+      "reject-source-stdout.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "infer-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "train-b-stdout.json": "74306bb4466b1aa7aceeb60cca3069b6bda7a5d497be92c6c6f0466fcbc5e119",
+      "rollout-a-stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "reject-existing-stdout.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "train-a/model.json": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+      "train-a/report.json": "640b1067a14bdc37a894283468d6d3af8e373623da81c2d0738489f2474e4abb",
+      "rollout-b/report.json": "b4c9f75a1c6ebd85e33a793374c6724da6ca0a019edb71b34ea2ec002c2f5479",
+      "train-b/model.json": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+      "train-b/report.json": "74306bb4466b1aa7aceeb60cca3069b6bda7a5d497be92c6c6f0466fcbc5e119",
+      "infer/report.json": "b77ee4344ef67201f1c9336ea9622b8722ef6ac590496991fa402561a3be4f63",
+      "old-snapshot/report.json": "22555c900f380d59bad71fe47cd4a02945818c33b726a08fd26e6990b55a7cd4",
+      "rollout-a/report.json": "2077156235600dbb9db9fd7b8156e5b1d852305a27d571710f2ad7baec963dee"
+    }
+  },
+  "observed_result": {
+    "training_file_sha256": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+    "snapshot_sha256": "201889ea297efd82341dc1996f008dd399620a3b6fb47237a7055f88eab2034e",
+    "protocol_sha256": "0d258134cbfdb3170e02abc7820c7d878892aec94e3e36c6c16c45fcf31b9844",
+    "repeated_training_models_identical": true,
+    "repeated_rollout_except_runtime_identical": true,
+    "fresh_infer_matches_train_test_metrics": true,
+    "old_snapshot_load_succeeded": true,
+    "independent_source_initial_pairs_and_targets_match": true,
+    "zero_control_hand_calculation_match": true,
+    "exclusive_output_unchanged": true,
+    "repo_and_source_outputs_rejected_without_creation": true,
+    "evaluated_trials": 13,
+    "excluded_trials": 0,
+    "initial_hits": 0,
+    "aggregates": {
+      "non-rewarded": {
+        "model": {
+          "samples": 5,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1000,
+          "mean_steps": 200,
+          "collisions": 197,
+          "mean_collisions": 39.4,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "samples": 5,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1000,
+          "mean_steps": 200,
+          "collisions": 5,
+          "mean_collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "samples": 5,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1000,
+          "mean_steps": 200,
+          "collisions": 0,
+          "mean_collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "samples": 5,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1000,
+          "mean_steps": 200,
+          "collisions": 0,
+          "mean_collisions": 0,
+          "clipped_actions": 0
+        }
+      },
+      "rewarded": {
+        "model": {
+          "samples": 8,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1600,
+          "mean_steps": 200,
+          "collisions": 198,
+          "mean_collisions": 24.75,
+          "clipped_actions": 0
+        },
+        "persistent_direction": {
+          "samples": 8,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1600,
+          "mean_steps": 200,
+          "collisions": 8,
+          "mean_collisions": 1,
+          "clipped_actions": 0
+        },
+        "random_direction": {
+          "samples": 8,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1600,
+          "mean_steps": 200,
+          "collisions": 0,
+          "mean_collisions": 0,
+          "clipped_actions": 0
+        },
+        "zero_output": {
+          "samples": 8,
+          "successes": 0,
+          "success_rate": 0,
+          "start_successes": 0,
+          "start_success_rate": 0,
+          "steps": 1600,
+          "mean_steps": 200,
+          "collisions": 0,
+          "mean_collisions": 0,
+          "clipped_actions": 0
+        }
+      }
+    },
+    "one_step_metrics": {
+      "before": {
+        "train": {
+          "samples": 60252,
+          "mse": 0.01102197826122874,
+          "angle_error_radians": 0.2366732503627107,
+          "angle_samples": 60252,
+          "direction_match_rate": 0.9905563300803293
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.009512843882362473,
+          "angle_error_radians": 0.2553558974324959,
+          "angle_samples": 39372,
+          "direction_match_rate": 0.9851417250838159
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 60252,
+          "mse": 0.01132979614596155,
+          "angle_error_radians": 0.2582547670520415,
+          "angle_samples": 60252,
+          "direction_match_rate": 0.9902243908915886
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.010153092972745094,
+          "angle_error_radians": 0.2797228976942377,
+          "angle_samples": 39372,
+          "direction_match_rate": 0.9843543635070608
+        }
+      },
+      "baseline": {
+        "zero_output": {
+          "samples": 39372,
+          "mse": 0.020021061374854404,
+          "angle_error_radians": 0,
+          "angle_samples": 0,
+          "direction_match_rate": 0
+        },
+        "persistent_direction": {
+          "samples": 39372,
+          "mse": 0.009512843882362504,
+          "angle_error_radians": 0.2553558974324951,
+          "angle_samples": 39372,
+          "direction_match_rate": 0.9851417250838159
+        },
+        "last_displacement": {
+          "samples": 39372,
+          "mse": 0.010132957576183209,
+          "angle_error_radians": 0.25535589743292897,
+          "angle_samples": 39372,
+          "direction_match_rate": 0.9851417250838159
+        }
+      }
+    },
+    "software_status": "passed",
+    "task_learning_status": "no navigation capability demonstrated; all four strategies hit 0/13",
+    "biological_status": "not evaluated; observer proxy and engineering arena",
+    "training_updates": 490,
+    "training_epochs": 2,
+    "source_rows": 231130,
+    "source_trials": 39,
+    "train_trials": 26,
+    "test_trials": 13,
+    "normal_package_passes": 56,
+    "race_package_passes": 56,
+    "source_unchanged_during_full_verification": true,
+    "independent_persistent_control_all_13_trials_match": true,
+    "concurrent_output_exactly_one_success": true
+  },
+  "protocol": {
+    "schema_version": "coimnet-realnav-rollout/v1",
+    "decision_steps": 200,
+    "arena_center_cm": [
+      0,
+      0
+    ],
+    "arena_radius_cm": 30,
+    "goal_radius_cm": 2,
+    "max_action_length_cm": 5,
+    "max_delta_t_seconds": 0.5,
+    "max_step_distance_cm": 5,
+    "initial_pair_rule": "earliest adjacent same-trial after_relocation pair with 0<gap<=max_delta_t and distance<=max_step_distance",
+    "initial_previous_dt": "observed_pair_gap",
+    "fixed_previous_dt_seconds": 0.1,
+    "reset_every_rows": 256,
+    "input_features": [
+      "current_x_cm",
+      "current_y_cm",
+      "previous_dx_cm",
+      "previous_dy_cm",
+      "previous_dt_seconds"
+    ],
+    "strategies": [
+      "model",
+      "persistent_direction",
+      "zero_output",
+      "random_direction"
+    ],
+    "random_direction_seed": 20261002,
+    "random_stream_derivation": "PCG(seed xor first_u64(sha256(trial_id)), second_u64(sha256(trial_id))) per trial",
+    "target_role": "evaluation_only",
+    "success_rule": "initial position or any realized action segment intersects the closed disk centered at that trial's evaluation-only target",
+    "action_rule": "model residual plus causal direction baseline; controls use the same start, arena, and step limit",
+    "clipping_rule": "actions longer than 5 cm are scaled to exactly 5 cm and counted",
+    "collision_rule": "a candidate endpoint outside the 30 cm arena leaves position unchanged and realizes zero displacement"
+  },
+  "external_output_directory": "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002",
+  "test_log": [
+    "evidence/TSK-11/autonomous-rollout-20261002/worker-rollout-red.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/worker-metadata-red.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/root-regression-red.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/root-path-red.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/root-green.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/targeted.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/targeted-race.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/build.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/test.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/race.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/vet.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/mod-verify.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/mod-tidy.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/real-runs.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/first-race.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/governance.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/governance-race.log",
+    "evidence/TSK-11/autonomous-rollout-20261002/handoff-checksums.log"
+  ],
+  "review": "review.md",
+  "delivery_status": "pending commit/push",
+  "limitations": [
+    "Decision steps and the fixed 0.1-second previous-time feature do not represent animal seconds; source has time-and-distance downsampling.",
+    "Radius 2cm is a predeclared engineering criterion; it does not reproduce the 2.8cm primary-preprint criterion or 100-second experimental window.",
+    "No vision, olfaction, thermal wall, reliable heading, reward memory, animal dynamics or connectome attribution is evaluated.",
+    "No new Ubuntu/Windows execution, GPU or full-graph test; current verification is Mac CPU.",
+    "Dryad ZIP byte-equivalence remains unverified; fixed author Git blob and CC0 provenance retained.",
+    "Existing infer accepts overlapping train/test IDs in a tampered snapshot; recorded P2 follow-up. New rollout rejects overlap."
+  ],
+  "software_verification": {
+    "final_checks": "checks.json",
+    "executed_full_race_checks": "first-checks.json",
+    "executed_full_race_source_before": "first-source-before.json",
+    "executed_full_race_source_after": "first-source-after.json",
+    "final_changed_tests_rerun_without_cache": true,
+    "unchanged_package_cache_reuse": true,
+    "post_evidence_governance": "governance-summary.json"
+  }
+}

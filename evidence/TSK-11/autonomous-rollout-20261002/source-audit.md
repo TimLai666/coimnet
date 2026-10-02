@@ -1,0 +1,11 @@
+# Source and interpretation audit — 2026-10-02
+
+The pinned author README (`README-source.md`, SHA-256 `afead993436228df47d09eaf8bfad578a5ab9d75710f4a013bd1cb7a2ae5af5f`) defines a 60 cm diameter circular arena with center `(0,0)` (lines 59–69), time-and-distance downsampling (lines 97–100), `(fname, fly)` recording-trial identity and `tseg` (lines 105–117), and `estimated_food_x_cm`/`estimated_food_y_cm` as fictive reward-zone centers after displacement (lines 120–126). It does not provide reliable heading, sensory observations, control inputs, or animal dynamics. The `fly` column denotes trial ID, so trial-held-out does not establish animal-held-out.
+
+Titova et al.'s original preprint (2022-07-23, DOI [10.1101/2022.07.22.501185](https://doi.org/10.1101/2022.07.22.501185), [PDF](https://storage.prod.researchhub.com/uploads/papers/2023/10/28/2022.07.22.501185.full.pdf), p. 9, manuscript line 374) describes a 5.6 cm diameter reward zone. The engineering criterion was fixed at radius 2 cm before model results, independently of this 2.8 cm experimental radius.
+
+The final article's [PubMed figure 2 caption](https://pubmed.ncbi.nlm.nih.gov/37226998/) identifies the test period as the first 100 seconds after displacement. This rollout uses model decisions and does not report seconds or reproduce that observation window. The final full article at PMC was blocked by a browser challenge during the root check; the radius reference above is explicitly the primary preprint, not a claim of root access to final full text.
+
+The input gzip is SHA-256 `83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670`, 31,434,637 bytes. Its pinned author Git blob is checked by the existing source contract. Dryad ZIP byte-equivalence remains unverified; the existing CC0 source/license provenance is retained.
+
+This frozen observer-position model has no reward-memory representation or relocation-phase training. Fictive-zone hits, including those in non-rewarded trials, are engineering extrapolations, not evidence of animal control, learned homing, path integration, or connectome mechanisms. The 0.1 second subsequent feature does not convert predicted displacement to velocity. No new training architecture, large download or biology claim is introduced.

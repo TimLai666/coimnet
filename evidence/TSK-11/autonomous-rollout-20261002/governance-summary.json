@@ -1,0 +1,44 @@
+{
+  "checks": [
+    {
+      "name": "governance",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "."
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "governance-race",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-v",
+        "."
+      ],
+      "exit_code": 0
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "changed_markdown_local_links_verified": 79,
+  "requirements_passed": 89,
+  "requirements_total": 91,
+  "pending": [
+    "TSK-11",
+    "OPS-05"
+  ],
+  "final_go_source_manifest_matches": true
+}
