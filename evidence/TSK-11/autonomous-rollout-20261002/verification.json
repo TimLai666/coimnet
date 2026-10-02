@@ -2,7 +2,7 @@
   "schema_version": "coimnet-realnav-rollout-evidence/v1",
   "requirement": "TSK-11 partial: ticket32 frozen real-trajectory autonomous engineering rollout",
   "date": "2026-10-02",
-  "profile": "mac_cpu_engineering_rollout_software_verified_delivery_pending",
+  "profile": "mac_cpu_engineering_rollout_software_verified",
   "scope": "Source-bound train/infer compatibility and frozen autonomous engineering evaluation, separate from learned navigation or animal homing. TSK-11 remains specified.",
   "reproduction_command": [
     "See real-data-commands.json for two separate train and rollout processes, fresh infer, old snapshot loading and CLI rejection cases.",
@@ -342,7 +342,7 @@
     "evidence/TSK-11/autonomous-rollout-20261002/handoff-checksums.log"
   ],
   "review": "review.md",
-  "delivery_status": "pending commit/push",
+  "delivery_status": "feature committed, pushed and remote verified",
   "limitations": [
     "Decision steps and the fixed 0.1-second previous-time feature do not represent animal seconds; source has time-and-distance downsampling.",
     "Radius 2cm is a predeclared engineering criterion; it does not reproduce the 2.8cm primary-preprint criterion or 100-second experimental window.",
@@ -359,5 +359,18 @@
     "final_changed_tests_rerun_without_cache": true,
     "unchanged_package_cache_reuse": true,
     "post_evidence_governance": "governance-summary.json"
+  },
+  "delivery": {
+    "feature_commit": "bec35710cc2b4a12c1ff2d207006d0779fa888ee",
+    "remote": "origin",
+    "branch": "main",
+    "remote_head_verified": "bec35710cc2b4a12c1ff2d207006d0779fa888ee",
+    "push_exit_code": 0,
+    "verification_command": [
+      "git",
+      "ls-remote",
+      "origin",
+      "refs/heads/main"
+    ]
   }
 }

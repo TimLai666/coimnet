@@ -6,7 +6,7 @@ User Story：使用者可以載入既有真實軌跡訓練快照，讓模型產�
 
 Blocked by：ticket 29 的真實軌跡匯入、訓練與新程序推論已完成。
 
-Status：verified_pending_delivery（2026-10-02）。本票只驗收工程模擬，不自行把 TSK-11 整項標為 passed。
+Status：done（2026-10-02）。本票只驗收工程模擬，不自行把 TSK-11 整項標為 passed。
 
 ## Root 決策與資料流（2026-10-02）
 
@@ -46,7 +46,7 @@ Status：verified_pending_delivery（2026-10-02）。本票只驗收工程模擬
 - [x] 模型自主位置更新、持續神經狀態、重設與線段命中有獨立手算／既有 episode 對照。
 - [x] 未來軌跡與目標污染、碰撞後實現位移、取消、空資料、錯誤協定與試次隔離皆有回歸。
 - [x] 固定真實資料 train + 新程序 rollout 各重跑兩次，核心參數與最佳化器不變；全部試次／控制組結果保留。
-- [ ] Mac 完整 build／test／race／vet／相依性檢查及文件／指紋審查通過。更新 ENG、delivery-status、需求證據與範例文件，主 agent 親自審查後提交推送。
+- [x] Mac 完整 build／test／race／vet／相依性檢查及文件／指紋審查通過。更新 ENG、delivery-status、需求證據與範例文件，主 agent 親自審查後提交推送。
 
 ## 限制與減法審查
 
@@ -56,4 +56,4 @@ Status：verified_pending_delivery（2026-10-02）。本票只驗收工程模擬
 
 ## 本輪證據（2026-10-02）
 
-[驗證紀錄](../../evidence/TSK-11/autonomous-rollout-20261002/verification.json)：兩次真實資料訓練模型相同，自主評估除執行量測外相同；13 個保留試次、排除 0、起始命中 0，模型與三個控制組皆命中 0 次。Mac 完整一般與 race 測試各 56 個套件、建置、vet、格式與相依性檢查通過。參數、最佳化器與完整快照未變，原 v0.3.2 訓練快照可由新程序載入。完整資料、模型與報告放在 Git 外。交付待提交與推送後核對遠端。
+[驗證紀錄](../../evidence/TSK-11/autonomous-rollout-20261002/verification.json)：兩次真實資料訓練模型相同，自主評估除執行量測外相同；13 個保留試次、排除 0、起始命中 0，模型與三個控制組皆命中 0 次。Mac 完整一般與 race 測試各 56 個套件、建置、vet、格式與相依性檢查通過。參數、最佳化器與完整快照未變，原 v0.3.2 訓練快照可由新程序載入。完整資料、模型與報告放在 Git 外。實作提交 `bec35710cc2b4a12c1ff2d207006d0779fa888ee` 已推送，遠端 main 核對一致，見 [交付紀錄](../../evidence/TSK-11/autonomous-rollout-20261002/delivery.json)。

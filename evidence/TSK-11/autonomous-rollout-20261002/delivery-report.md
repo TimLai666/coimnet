@@ -75,6 +75,11 @@
 | [evidence/TSK-11/autonomous-rollout-20261002/diff-check.log](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/diff-check.log) | 治理檢查或檔案指紋 |
 | [evidence/TSK-11/autonomous-rollout-20261002/governance-summary.json](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/governance-summary.json) | 治理檢查或檔案指紋 |
 | [evidence/TSK-11/autonomous-rollout-20261002/file-manifest.json](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/file-manifest.json) | 治理檢查或檔案指紋 |
+| [evidence/TSK-11/autonomous-rollout-20261002/delivery.json](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/delivery.json) | 完成紀錄與最終治理驗證 |
+| [evidence/TSK-11/autonomous-rollout-20261002/feature-push.log](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/feature-push.log) | 完成紀錄與最終治理驗證 |
+| [evidence/TSK-11/autonomous-rollout-20261002/completion-governance.log](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/completion-governance.log) | 完成紀錄與最終治理驗證 |
+| [evidence/TSK-11/autonomous-rollout-20261002/completion-governance-race.log](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/completion-governance-race.log) | 完成紀錄與最終治理驗證 |
+| [evidence/TSK-11/autonomous-rollout-20261002/completion-checks.json](/Users/timlai/Developer/coimnet/evidence/TSK-11/autonomous-rollout-20261002/completion-checks.json) | 完成紀錄與最終治理驗證 |
 
 ## Actions
 
@@ -83,7 +88,7 @@
 | 真實資料訓練、評估與重跑 | Git 外 autonomous-rollout-20261002 目錄 | 保存完整模型、報告及指紋 |
 | 並行輸出驗證 | 暫存目錄 | 一個成功，另一個拒絕已存在目錄 |
 | 修正前測試輸出清理 | repo 內空白 forbidden-rollout-output | 檢查為空後移除，正式路徑保護回歸通過 |
-| 提交及推送 | 本專案 origin/main | 待交付，遠端核對後另記 delivery.json |
+| 提交及推送 | 本專案 origin/main | 實作 `bec3571` 已推送，遠端提交核對一致，見 delivery.json |
 
 ## Verified
 
