@@ -1,0 +1,56 @@
+{
+  "date": "2026-10-04",
+  "ticket": "38-ppo-training-feedback-diagnostic",
+  "status": "completed",
+  "acceptance_verified": 5,
+  "acceptance_total": 5,
+  "base_commit": "67c4c5bbed368507310c39b6b4619d2969cfb6af",
+  "implementation_commit": "e0d1c439a529c53f3525dc42df67bed912f5305b",
+  "remote": "https://github.com/TimLai666/coimnet.git",
+  "remote_main_verified": "e0d1c439a529c53f3525dc42df67bed912f5305b",
+  "verification": "verification.json",
+  "verification_sha256": "a6a749b082c110e689458328f984239f16cc0167fb79d5c2471ad135fd057032",
+  "research_result": {
+    "cue_dependent_navigation_learning_observed": false,
+    "unique_causal_mechanism_identified": false,
+    "biological_mechanism_evidence_added": false,
+    "requirements_passed": 89,
+    "requirements_total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified"
+  },
+  "publication_check": {
+    "repository": "TimLai666/coimnet",
+    "private": false,
+    "authenticated_user": "TimLai666",
+    "viewer_permission": "ADMIN",
+    "incremental_commit_count": 1,
+    "new_data": "Framework-generated synthetic corridor diagnostics, regression tests, documentation and verification logs. No raw connectome data, private data or model package."
+  },
+  "completion_record": "Completion documents are committed separately after the verified implementation push. The immutable verification records the pre-delivery 4/5 acceptance state; this record adds the verified implementation delivery to complete 5/5. This record identifies the implementation commit, not its own commit.",
+  "documentation_sha256": {
+    "delivery-status.md": "4154722bf1c2dc48aed73621f7e35ea08328c4522aa3079908563eac1450ce4e",
+    "docs/tickets/38-ppo-training-feedback-diagnostic.md": "68b2d79e65605f7797cafdc703186d7f934ecc81d808de74bd8d983dac2e79dd",
+    "experiment/gridnav/README.md": "2c9c838ca5cff1e05adad74721885f59f94db33c381966c9214dfebe4c9652a3"
+  },
+  "post_delivery_checks": {
+    "governance_tests_passed": 4,
+    "governance_race_tests_passed": 4,
+    "local_documentation_links_checked": 210,
+    "verification_artifact_hashes_checked": 46,
+    "source_fingerprints_checked": 641,
+    "logs_sha256": {
+      "completion-governance.log": "80379089237bf0ce9a974cae87865bc8c215aded631f272ca0bbd954cb946e85",
+      "completion-governance-race.log": "80379089237bf0ce9a974cae87865bc8c215aded631f272ca0bbd954cb946e85",
+      "completion-documents.log": "5c9c8bf548d1aacff9c0ae801c1ab6045e24573bb250352f28c63636726278d0",
+      "completion-governance-unsandboxed.log": "ded5f6e44955ab8a7acc227e8da1d7c835f10a6dc4b56e2a5110b017cdba53a7",
+      "completion-governance-race-unsandboxed.log": "148a659ac9fbb53b30b7144226682fc93077e017921389323abc35f0186d6d91"
+    },
+    "sandbox_initial_attempts": "Both governance commands failed to open the default Go build cache under the filesystem sandbox. No tests executed; both commands subsequently passed outside that restriction.",
+    "commands": [
+      "go test -count=1 -v -run ^TestGovernance .",
+      "go test -count=1 -race -v -run ^TestGovernance .",
+      "python3 /private/tmp/coimnet-training-feedback-20261004/check-docs.py"
+    ]
+  }
+}

@@ -3,7 +3,7 @@
 Epic：人工環境學習（LRN-09 補充）。
 User Story：研究者可以辨別目標側分布、成功回饋與策略單側偏向的關係。
 Blocked by：37，已完成。
-Status：verified_scoped，4／5 已驗證，待提交交付。
+Status：completed，5／5 工程驗收與交付完成。
 
 ## Root 決策 2026-10-04
 
@@ -27,7 +27,7 @@ Status：verified_scoped，4／5 已驗證，待提交交付。
 - [x] 手算回合重播及錯誤案例先失敗再通過。
 - [x] 600 訓練／198 探測保存，與既有 RunPPO／ticket 37 一致，提出有界限的診斷結論。
 - [x] 兩個新程序重現，獨立重算、完整 Go 驗證與審查通過。
-- [ ] 文件與需求證據同步，提交推送並核對遠端。
+- [x] 文件與需求證據同步，提交推送並核對遠端。
 
 ## 減法審查
 
@@ -40,3 +40,5 @@ Status：verified_scoped，4／5 已驗證，待提交交付。
 支持成功回饋與單側偏向相關，但沒有分離策略／價值梯度或探索的因果作用。方法、完整紀錄與限制見 [診斷](../../evidence/LRN-09/training-feedback-20261004/analysis.md)。
 
 Mac 一般與 race 各 57 套件、建置、vet、相依性、格式與交接原件校驗通過。全部 600 回合另做模型機率／價值／逾時後續價值重播，13 種 Python 竄改案例拒絕，唯讀審查無已確認缺陷。命令、環境、來源指紋及各階段日誌見 [驗證](../../evidence/LRN-09/training-feedback-20261004/verification.json)。
+
+實作 `e0d1c43` 已推送並核對遠端 main。驗證檔保存提交前 4／5 的狀態，最後一項交付由 [交付紀錄](../../evidence/LRN-09/training-feedback-20261004/delivery.json) 補足。需求維持 89／91，TSK-11 與 OPS-05 為 specified。
