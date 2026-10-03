@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+2026-10-03 [ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md) 的完整刺激歷史工程範例已完成 5／5 本機驗收，Git 交付待核對。固定 20 train／6 validation／原 13 test，九組模型各 200 更新。測試 MSE 下降，但所有模型控制、種子與訓練前後都命中 0／13，沒有導航學習證據。方向延續均為 0／13，隨機依序為 0／13、0／13、1／13。最終版推論與自主評估各兩次逐位元組相同，完整一般及 race 各 57 個套件通過，相關套件另做全新 race。TSK-11 與 OPS-05 維持 specified，需求為 89／91。[總證據](evidence/TSK-11/stimulus-memory-20261003/verification.json)。
+
 2026-10-03 [ticket 33](docs/tickets/33-real-trajectory-inference-isolation.md) 的推論分割修正已驗證並交付。修正提交 `467d53a` 已推送，遠端 main 核對一致。非法分割不建立輸出，合法真實快照的報告除 runtime 外與修正前相同。Mac 完整一般與 race 測試各 56 個套件、建置、vet、格式及相依性檢查通過，來源與原模型前後指紋一致。[本輪證據](evidence/TSK-11/inference-isolation-20261003/verification.json)。TSK-11 與 OPS-05 維持 specified，需求仍為 89／91。
 
 2026-10-02 [ticket 32](docs/tickets/32-real-trajectory-autonomous-rollout.md) 的自主行走工程評估已驗證並交付。實作提交 `bec3571` 已推送，遠端 main 核對一致。模型與三個控制組在全部 13 個保留試次皆命中 0 次，排除 0、起始命中 0；兩次訓練模型逐位元組相同，自主評估除執行量測外相同。Mac 完整一般與 race 測試各 56 個套件、建置、vet、相依性與格式檢查通過。目標中心只供計分，參數及最佳化器不變；結果不支持學會導航。需求維持 89／91，TSK-11 與 OPS-05 為 specified。[本輪證據](evidence/TSK-11/autonomous-rollout-20261002/verification.json)。
@@ -132,11 +134,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
 | 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；ASR 整檔 CTC、因果串流與恢復有前次 Mac／Ubuntu 局部證據，本輪資料匯入、群組分割、離線耗時、CLI 人工範例與 Mac 全套驗證見 TSK-02；嚴格串流檔案保存已驗證人工音調；TSK-11 真實授權資料、跨平台續跑與後續生成階段保留 |
 | 33 | 使用者可以拒絕污染保留集的真實軌跡推論快照 | Codex 主 agent / Luna max | done | 真實非法快照拒絕且無輸出，合法結果相同，Mac 完整驗證通過；修正提交 467d53a 已推送且遠端一致 |
-| 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent | proposed | 來源與方法草案已可審閱，待使用者決定工程代理或感覺／動作資料路線；未實作 |
+| 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent / Luna max | verified | 5／5 工程驗收通過，Git 交付待核對；模型各 0／13，沒有導航改善證據 |
 
 ## 目前阻礙
 
-[ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md) 待觀察與學習方法決策。目前來源沒有可靠感覺／動作記錄，且 LED 欄位包含未獎勵組的預定事件；新刺激記憶模型須先核准工程假設。草案已可審閱，尚未實作。
+[ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md) 的工程驗收已通過，模型自主行走仍為 0／13。刺激歷史對後段輸出的實際影響與下一個導航學習方法尚待驗證及定案。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
 前一階段的 rl-asr-takeover 跨平台整合已通過（2026-09-22）。該階段 Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
 
@@ -150,13 +152,15 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 33](docs/tickets/33-real-trajectory-inference-isolation.md) 已完成交付，後續為 [ticket 34 方法草案](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md)。來源查核確認 non-rewarded 試次也有預定 LED 時間，且沒有可靠感覺／控制記錄；不能把 LED 正值直接當 reward。待使用者決定採用「位置與已發生刺激的工程代理」或改找感覺／動作資料，再固定新模型契約與驗收。原 13 個 test 試次保留，選參數只能用原訓練組內的新 validation。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 另需裝置常駐更新與全圖容量／速度及 Ubuntu RTX 4070 執行證據。需求累計仍是 89／91。
+下一個可驗證成果應先固定刺激歷史反事實檢查：用同一份已凍結模型，只改搬移前的刺激紀錄，比對後段輸出與自主行走是否改變。這能區分「模型具有完整歷史梯度」與「實際利用刺激記憶」，方法及完成門檻須先固定，再做新的導航訓練。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求累計仍為 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-03：使用者核准位置與已發生刺激的工程代理。保留原模型，完整試次模仿學習及自主控制對照由 ticket 34 驗收，感覺與神經 reward 到達時間保持未知。
 
 2026-09-13：使用者授權開始規劃與實作，沿用既有 Go＋Insyra 及完整需求。先驗證梯度與可學習的小型流程，之後接真實資料，避免在未驗證核心上堆疊任務。
 

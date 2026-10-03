@@ -1,0 +1,74 @@
+ok  	github.com/TimLai666/coimnet	2.057s
+ok  	github.com/TimLai666/coimnet/backend	0.225s
+ok  	github.com/TimLai666/coimnet/backend/webgpu	0.339s
+ok  	github.com/TimLai666/coimnet/checkpoint	5.557s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	0.360s
+ok  	github.com/TimLai666/coimnet/connectome	1.056s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	0.303s
+ok  	github.com/TimLai666/coimnet/distill	0.369s
+ok  	github.com/TimLai666/coimnet/download	0.704s
+ok  	github.com/TimLai666/coimnet/dynamics	0.369s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	0.446s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	0.333s
+ok  	github.com/TimLai666/coimnet/examples/realasr	0.314s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	0.425s
+ok  	github.com/TimLai666/coimnet/examples/realnav	0.185s
+ok  	github.com/TimLai666/coimnet/examples/realnavmemory	0.160s
+ok  	github.com/TimLai666/coimnet/examples/realocr	0.322s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	0.535s
+ok  	github.com/TimLai666/coimnet/examples/realtext	1.788s
+ok  	github.com/TimLai666/coimnet/experiment	35.708s
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	1.041s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.231s
+ok  	github.com/TimLai666/coimnet/experiment/multimodaleval	33.233s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	0.225s
+ok  	github.com/TimLai666/coimnet/experiment/studenteval	0.670s
+ok  	github.com/TimLai666/coimnet/feather	0.297s
+--- FAIL: TestRunDryRunReportsAnEstimateAndPassesEveryCheck (0.01s)
+    config_run_test.go:155: dry run failed: config: environment variable COIMNET_TSK11_TRAJECTORY addresses no field of the configuration; declared fields include data.filter, data.version, device.kind, learning.options.accumulate_steps, learning.options.beta1, learning.options.beta2 (see docs/config-schema.md for all of them)
+--- FAIL: TestRunDryRunNeverCallsTheTeacher (0.01s)
+    config_run_test.go:223: dry run with a declared teacher failed: config: environment variable COIMNET_TSK11_TRAJECTORY addresses no field of the configuration; declared fields include data.filter, data.version, device.kind, learning.options.accumulate_steps, learning.options.beta1, learning.options.beta2 (see docs/config-schema.md for all of them)
+--- FAIL: TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit (0.01s)
+    config_run_test.go:263: exit code = 1, want 2
+--- FAIL: TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules (0.01s)
+    config_run_test.go:291: dry run with a local rule failed: config: environment variable COIMNET_TSK11_TRAJECTORY addresses no field of the configuration; declared fields include data.filter, data.version, device.kind, learning.options.accumulate_steps, learning.options.beta1, learning.options.beta2 (see docs/config-schema.md for all of them)
+--- FAIL: TestRunDryRunFailsTheCheckThatNamesAMissingModel (0.00s)
+    config_run_test.go:328: exit code = 1, want 2
+--- FAIL: TestRunWithoutDryRunSaysWhichStageImplementsIt (0.01s)
+    config_run_test.go:370: error "config: environment variable COIMNET_TSK11_TRAJECTORY addresses no field of the configuration; declared fields include data.filter, data.version, device.kind, learning.options.accumulate_steps, learning.options.beta1, learning.options.beta2 (see docs/config-schema.md for all of them)" does not point at train or simulate
+--- FAIL: TestRunOverridesAreAppliedAndRecorded (0.01s)
+    config_run_test.go:379: dry run with overrides failed: config: environment variable COIMNET_TSK11_TRAJECTORY addresses no field of the configuration; declared fields include data.filter, data.version, device.kind, learning.options.accumulate_steps, learning.options.beta1, learning.options.beta2 (see docs/config-schema.md for all of them)
+FAIL
+FAIL	github.com/TimLai666/coimnet/internal/cli	32.564s
+ok  	github.com/TimLai666/coimnet/internal/delayedfixture	0.311s
+ok  	github.com/TimLai666/coimnet/internal/extsort	0.444s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.236s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.231s
+ok  	github.com/TimLai666/coimnet/internal/redact	0.231s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.232s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.231s
+ok  	github.com/TimLai666/coimnet/learning	0.881s
+ok  	github.com/TimLai666/coimnet/learning/rl	0.340s
+ok  	github.com/TimLai666/coimnet/modulation	0.398s
+ok  	github.com/TimLai666/coimnet/multimodal	0.275s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	0.253s
+ok  	github.com/TimLai666/coimnet/params	1.052s
+ok  	github.com/TimLai666/coimnet/plasticity	0.239s
+ok  	github.com/TimLai666/coimnet/replay	0.249s
+ok  	github.com/TimLai666/coimnet/resources	0.246s
+ok  	github.com/TimLai666/coimnet/signal	0.270s
+ok  	github.com/TimLai666/coimnet/simulate	1.474s
+ok  	github.com/TimLai666/coimnet/tasks/asr	2.505s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	0.249s
+ok  	github.com/TimLai666/coimnet/tasks/media	20.618s
+ok  	github.com/TimLai666/coimnet/tasks/media/realdata	0.934s
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	0.884s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	0.729s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	0.228s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	0.223s
+ok  	github.com/TimLai666/coimnet/tasks/textgen	14.602s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	0.230s
+ok  	github.com/TimLai666/coimnet/teacher	0.555s
+ok  	github.com/TimLai666/coimnet/teacher/tool	0.223s
+FAIL

@@ -1,0 +1,87 @@
+CoImNet ticket 34 final adversarial review
+Date: 2026-10-03 Asia/Taipei
+Reviewer: /root/memory_adversarial_review_luna
+Mode: read-only; no repository source, stage, commit, push, or data/cache mutation
+
+## Scope
+
+Reviewed the frozen ticket-34 path:
+- docs/tickets/34-real-trajectory-stimulus-memory-proposal.md
+- examples/realnavmemory/{README.md,data.go,data_test.go,main.go,main_test.go,model.go,model_test.go,split.go,split_test.go,storage.go,storage_test.go,rollout.go,rollout_test.go}
+- tasks/nav2d/trajectory/{trajectory.go,return_targets.go,stimulus.go,stimulus_test.go}
+- unchanged consumers in learning/{trainer.go,individual.go,network.go} needed to trace optimizer, full-history, and rollout contracts
+- README.md, ENG.md, docs/INDEX.md, delivery-status.md and ticket evidence references
+
+Scope includes source-byte hashing, per-row stimulus alignment, delivered versus scheduled-only semantics, full trials and continuous state, future leakage, finite/empty/capacity/order/split checks, legacy API compatibility, target isolation, frozen model/optimizer contract, save/output failure behavior, and documentation alignment.
+
+Codebase-memory was tried first for project coimnet scoped to examples/realnavmemory and for the relevant function names. The current graph returned zero scoped nodes/results for this newly added untracked package, so source definitions were read directly as permitted.
+
+## Diff Inspector
+Scope: DRIFT
+Reviewed: current worktree at HEAD 67a44556d322777781244ac0465bcfaf154a2a46, frozen six-file CLI/storage/rollout set, producer/data/model/trajectory consumers, ticket and README contracts
+Adversarial review: RUN — multi-file data, model, persistence, and rollout path with cross-process and failure contracts
+
+### Findings
+
+- [P1] [CONFIRMED] examples/realnavmemory/storage.go:658-713 — `validateMemoryRun` checks `run.After.Updates == 200` but never checks the per-parameter optimizer step counters. `learning.RestoreTrainer` at learning/trainer.go:204-215 only requires each counter to be <= snapshot Updates and accepts zero counters with zero moments. Trigger: replace each valid bundle run's `after` snapshot with its `before` snapshot, set `after.updates` and `run.updates` to 200, and retain a finite ten-entry curve and matching initial capacity. Direct evidence: the forge at `/private/tmp/coimnet-memory-snapshot-forge-20261003/bundle.json` had `after.parameters == before.parameters`, optimizer `steps` unique `[0]`, and `after.updates == 200`; the frozen `infer` CLI accepted it and exited 0, producing nine results whose after metrics were byte-equal to before metrics (`all_after_metrics_equal_before True`, first test MSE 0.020021061374854435 both before and after). Under the fixed training options all 144 parameters are trainable and fitModel applies one update per train trial per epoch at examples/realnavmemory/model.go:245-279, so a genuine 200-update snapshot has 200 steps for every parameter. Impact: an untrained initial model can be published and consumed as a claimed after-200-update model. Action: validate every after optimizer step counter against the fixed update budget (and reject an open accumulator for this zero-accumulation contract) before accepting a bundle; add the forged-snapshot regression.
+
+- [P1] [CONFIRMED] examples/realnavmemory/rollout.go:124-181, 230-258, 391-420; examples/realnavmemory/main.go:326-348 — a non-cancellation error for one test trial aborts the whole report and there is no failure record. `memoryModelTrial` rejects a finite start outside the evaluator arena at rollout.go:281-289; `memoryBaselineTrial` rejects the same case at 412-420; their callers immediately return at 248-251 and 403-406; `buildMemoryRolloutReport` returns an empty report at 141-162; main creates the output directory only after report construction at main.go:330-348. The README explicitly promises that reports retain every test trial/control/seed including failures (README.md:63), and the ticket requires all failures to be listed (ticket:59). Triggered reproduction: a temp-package test imported the pinned history and targets, changed one test trial's finite rollout start to x=60 cm, then called buildMemoryRolloutReport; `/private/tmp/coimnet-current-row-repro-module-20261003/examples/realnavmemory/rollout_failure_repro_test.go` passed by observing the expected `starts outside arena` error. Impact: one trial failure discards all groups and leaves no per-trial failure evidence, preventing the required partial-failure audit and comparison. Action: catch non-cancellation trial errors, append a failure status/reason to that trial in each affected group, continue remaining trials/groups, and retain cancellation as an abort with cleanup.
+
+- [P2] [CONFIRMED] examples/realnavmemory/rollout.go:290-303, 324-359 — shuffled autonomous continuation drops a positive raw stimulus on the recorded current row when that row is the start of an incomplete block. `rawStimulusBlocks` first stores the raw prefix including `RolloutIndex` at 294-303; step 0 correctly consumes the recorded transformed current input at 324-326, but line 359 unconditionally writes zero back to the raw block after every step. The next block therefore sees zero instead of the recorded current-row value, while model.go:146-167 (`trialInputs`) preserves that raw row for the same causal extension. Triggered reproduction: with `RolloutIndex=16`, raw rows 0-15 zero and raw current row 16 equal to one, the temp regression `/private/tmp/coimnet-current-row-repro-module-20261003/examples/realnavmemory/current_row_repro_test.go` failed at rollout step 23 / absolute row 39 with `got 0, want 1`. Impact: generic/custom valid histories with a delivered current-row event get a different shuffled continuation than the training causal rule. The pinned study is unaffected: evidence/TSK-11/stimulus-memory-20261003/stimulus-history-probe.json reports all 39 after_relocation segments with delivered=0; the existing rollout regression also deliberately makes the current row zero at rollout_test.go:191-200. Action: only write raw zero for generated rows (`stepIndex > 0`) or otherwise preserve the recorded current-row raw stimulus, and add a positive current-boundary regression.
+
+No P0 confirmed findings.
+
+### Needs investigation
+
+- [NEEDS INVESTIGATION] examples/realnavmemory/storage.go:554-558 — the plan validates `BaseModelSHA256` as a well-formed digest and carries it into the bundle, but train has no base-model input with which to re-read and compare the raw bytes after prepare. Missing fact: whether the accepted ticket contract requires tamper detection of the plan's base-model provenance or only recording the raw-byte digest produced by prepare. Verify against the root acceptance decision; if tamper detection is required, bind the plan to a separately supplied base-model file or an authenticated plan digest.
+
+- [NEEDS INVESTIGATION] repository-wide final closure — this review did not independently run `go test ./...`, `go test -race ./...`, build, vet, or dependency verification. Root reported the real prepare/train/infer/rollout repeats and negative CLI checks complete, with the full race run still active at report time. Earlier root full-suite failure was the unrelated strict CLI config parser rejecting an exported `COIMNET_TSK11_TRAJECTORY`; rerun the required repository checks in the clean environment after the active race run completes. This is a verification gap, not a new code finding.
+
+### Scope differences
+
+The worktree is DRIFT because HEAD is unchanged while ticket files, documentation, evidence, trajectory files, and the new examples/realnavmemory package are modified or untracked. The final six-file CLI/storage/rollout scope was reviewed by exact content hash. No repository file was changed by this review.
+
+## Fingerprints
+
+HEAD: 67a44556d322777781244ac0465bcfaf154a2a46
+Go: go1.26.5 darwin/arm64
+
+Start of the final review pass (before the author's raw-versus-transformed continuation fix):
+- main.go cf16366ff6935f2ea47f924d4c376b5c20304aebb76129206a747389920e6c8a
+- main_test.go 2c57dc943da1d89d4101780f51e0bd49dac54c07312f324b3ff0f1486272633a
+- storage.go a3fc95e0e949cf4e8c3dd22c147a15a48264d4eab6fb8491b7d2fa9f66e90c82
+- storage_test.go 317b9911b80a3e269e32b1c1bd19eda483bc7f4890503d57dd73855b8cf210bd
+- rollout.go f24fff82ba45c835f7085ca4a0f761a39f9bee63a27c70d1ad10b2bcc0225607
+- rollout_test.go 655083d851f24e42057c6f36a5dc72274e26eae5417257f9b1d3d15d32a11ab1
+
+End/current final freeze:
+- main.go cf16366ff6935f2ea47f924d4c376b5c20304aebb76129206a747389920e6c8a
+- main_test.go 2c57dc943da1d89d4101780f51e0bd49dac54c07312f324b3ff0f1486272633a
+- storage.go a3fc95e0e949cf4c8e3dd22c147a15a48264d4eab6fb8491b7d2fa9f66e90c82
+- storage_test.go 317b9911b80a3e269e32b1c1bd19eda483bc7f4890503d57dd73855b8cf210bd
+- rollout.go 3ca139110ddb9443fadcbb8124e2e337c29d666ca2182a8918d617eb0fc8a1c9
+- rollout_test.go 12bbbfeb8d61f201cf350322d322baac8ecb9f2488175f06dab88fb3f62d4f6a
+
+Only rollout.go and rollout_test.go changed between those two freeze points, due to the author's raw-versus-transformed shuffled-continuation fix and regression. The five other hashes stayed unchanged. This reviewer did not edit any source.
+
+## Command log and evidence
+
+1. Read the repository instructions, ticket, ENG/README/INDEX, example README, and the frozen source/test files with line-numbered reads. Loaded `diff-inspector`, `human-writing`, and `investigate` skill instructions.
+2. Called codebase-memory architecture/search/trace for project `coimnet` and scope `examples/realnavmemory`; it returned zero scoped nodes and no matching new functions, so direct source reads were used.
+3. Verified `git rev-parse HEAD`, `git status --short`, `go version`, and the six final SHA-256 fingerprints. No source write was performed.
+4. Snapshot-integrity reproduction: copied the existing external train bundle to `/private/tmp/coimnet-memory-snapshot-forge-20261003/bundle.json`; Python replaced all nine `after` snapshots with their `before` snapshots and set after/run updates to 200. The first sandboxed `go run` could not write the shared Go cache; the same targeted command was rerun with the approved sandbox escalation and exited 0. The generated report had 9 results and all after metrics equal to before; the forged first run had after updates 200, optimizer steps `[0]`, and parameters equal to before.
+5. Current-row reproduction: copied the frozen package and required module directories into `/private/tmp/coimnet-current-row-repro-module-20261003`, added only temporary tests there, and ran one targeted test with shared cache. The expected regression failed at absolute row 39 (`got 0, want 1`), proving the source line 359 divergence. No repository file was touched.
+6. Partial-failure reproduction: in the same temporary package, imported the pinned source and bundle, changed one finite test rollout start to x=60 cm, and ran one targeted test. It passed by observing the expected `starts outside arena` report error, proving that one trial error aborts report construction.
+7. Root-provided final evidence was considered but not rerun here: real prepare/train/nine models/infer twice/rollout twice byte-identical; all 18 trained/untrained model groups 0/13, persistence three seeds 0/13, random 0/0/1; all 18 CLI negative checks including cancellation and concurrent output passed. Root's source probe reports 231,130 rows, 6,815 delivered, 349 scheduled-only, and all 39 after_relocation segments delivered=0.
+
+## Disposition
+
+Delivery gate: do not mark this ticket's persistence/rollout contract fully clean until the two P1 findings are fixed or explicitly accepted. The P2 current-row issue is localized and does not alter the pinned real-study result, but it should be fixed or covered before presenting the helper as a general causal evaluator.
+
+## Addendum: reassessment of the former rollout-failure finding
+
+Root review correctly narrowed the ticket boundary. The earlier x=60 reproduction mutated a history object after a successful exact-source import; it is not reachable through the public CLI because the trajectory reader verifies the fixed raw SHA and the accepted ticket contract requires invalid source/history/empty/order/capacity inputs to fail before output. `memoryRolloutTargets` also rejects missing, duplicate, non-finite, or out-of-arena targets at rollout.go:184-221. Root evidence confirms all 39 pinned trials have legal rollout starts and all 24 model/baseline groups over 13 trials retain 200 steps.
+
+There is therefore no confirmed public-CLI trigger for the former report-abort case. It is withdrawn as a P1 finding and should be treated as expected invalid-input rejection under ticket lines 55-58. The README sentence about retaining failures remains applicable to valid evaluator misses/collisions, which are represented as 200-step trial results; it does not override the ticket's invalid-input rejection boundary. The final confirmed set is now one P1 (optimizer-step integrity) and one P2 (current raw stimulus overwrite), with no P0.
+
+The base-model hash concern is also withdrawn from the review queue: root acceptance treats it as a raw digest recorded by prepare, with independent preregistration comparison rather than authenticated plan tamper detection.

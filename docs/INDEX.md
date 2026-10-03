@@ -37,7 +37,7 @@
 - [`learning/rl`](../learning/rl/README.md)：PPO 更新入口、適用狀態與限制
 - [`tasks/asr`](../tasks/asr/README.md)：音訊轉文字、因果串流與恢復
 - `tasks/media/realdata`：授權影音來源的嚴格匯入（範例用）
-- `tasks/nav2d/trajectory`：授權果蠅軌跡的逐批匯入、試次隔離、因果樣本與獨立目標計分資料（範例用）
+- `tasks/nav2d/trajectory`：授權果蠅軌跡的逐批匯入、試次隔離、因果樣本、逐列刺激紀錄與獨立目標計分資料（範例用）
 - `tasks/ocr`：單行 OCR 與頁面區塊處理
 - `tasks/textgen`：文字語料匯入與生成
 - `modulation`：調節來源、化學、受體與效果
@@ -63,6 +63,7 @@
 - [examples/realocr/README.md](../examples/realocr/README.md)：KMNIST 單字元小樣本驗證。
 - [examples/realmedia/README.md](../examples/realmedia/README.md)：Blender 開源影片的影像、音訊與影片小樣本流程驗證。
 - [examples/realnav/README.md](../examples/realnav/README.md)：果蠅軌跡的單步位移預測與自主行走工程評估範例。
+- [examples/realnavmemory/README.md](../examples/realnavmemory/README.md)：完整刺激歷史、遮罩模仿學習與相同預算控制組的工程範例。
 
 用 `coimnet examples list` 列出所有內建例子，`coimnet examples run <name>` 執行。命令本身的權限與用法用 `coimnet examples run <name> --help` 查。
 
@@ -117,6 +118,12 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-realmedia-example/v1` | `examples/realmedia` |
 | `coimnet-realmedia/v1` | `tasks/media/realdata` |
 | `coimnet-realnav-example/v1` | `examples/realnav` |
+| `coimnet-realnav-memory-bundle/v1` | `examples/realnavmemory` |
+| `coimnet-realnav-memory-bundle/v999` | `examples/realnavmemory`（測試用版本） |
+| `coimnet-realnav-memory-causal-features/v1` | `examples/realnavmemory` |
+| `coimnet-realnav-memory-inference/v1` | `examples/realnavmemory` |
+| `coimnet-realnav-memory-plan/v1` | `examples/realnavmemory` |
+| `coimnet-realnav-memory-rollout/v1` | `examples/realnavmemory` |
 | `coimnet-realnav-rollout/v1` | `examples/realnav` |
 | `coimnet-replay/v0` | `checkpoint`（歷史版本） |
 | `coimnet-replay/v1` | `replay` |

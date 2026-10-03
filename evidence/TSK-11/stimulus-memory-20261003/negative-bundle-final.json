@@ -1,0 +1,158 @@
+{
+  "scratch": "/private/tmp/coimnet-memory-bundle-negative-afp528qm",
+  "cases": [
+    {
+      "name": "unknown-schema",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/unknown-schema.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/unknown-schema-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: unsupported bundle schema \"coimnet-realnav-memory-bundle/v999\"\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.712354375
+    },
+    {
+      "name": "changed-initial-parameter",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/changed-initial-parameter.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/changed-initial-parameter-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered: before snapshot parameters do not match its declared seed initialization\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.712084542
+    },
+    {
+      "name": "wrong-mean-step",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-mean-step.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-mean-step-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered mean step length does not match train legal labels\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.720600583
+    },
+    {
+      "name": "wrong-capacity",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-capacity.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-capacity-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered: capacity does not match after snapshot\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.7096986249999997
+    },
+    {
+      "name": "missing-run",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/missing-run.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/missing-run-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: bundle must contain 9 runs, got 8\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.7314081250000002
+    },
+    {
+      "name": "wrong-update-count",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-update-count.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/wrong-update-count-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered: updates must be before 0 and after 200\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.7075428749999997
+    },
+    {
+      "name": "missing-snapshot-zero-option",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/missing-snapshot-zero-option.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/missing-snapshot-zero-option-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: decode /private/tmp/coimnet-memory-bundle-negative-afp528qm/missing-snapshot-zero-option.json: runs[0].after.options field \"weight_decay\" is missing\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.012941624999999846
+    },
+    {
+      "name": "forged-untrained-after",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/forged-untrained-after.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/forged-untrained-after-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered: after snapshot optimizer steps[0] = 0, want 200\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.6986703749999998
+    },
+    {
+      "name": "open-accumulator",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory-final",
+        "infer",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--model",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/open-accumulator.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-bundle-negative-afp528qm/open-accumulator-output"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: run 20261003/delivered: after snapshot is not restorable: gradient accumulator count 1 is outside [0, 1)\n",
+      "output_absent": true,
+      "elapsed_seconds": 0.6910451250000005
+    }
+  ]
+}

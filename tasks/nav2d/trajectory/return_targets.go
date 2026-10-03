@@ -22,7 +22,7 @@ type ReturnTarget struct {
 // metadata is returned separately and is never added to Dataset.
 func ReadWithReturnTargets(ctx context.Context, path string, source Source, limits Limits) (Dataset, []ReturnTarget, error) {
 	collector := &returnTargetCollector{targets: make([]ReturnTarget, 0)}
-	dataset, err := read(ctx, path, source, limits, collector)
+	dataset, err := read(ctx, path, source, limits, collector, nil)
 	if err != nil {
 		return Dataset{}, nil, err
 	}

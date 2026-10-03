@@ -1,0 +1,48 @@
+CoImNet ticket34 memory adversarial review closeout
+Date: 2026-10-03 (Asia/Taipei)
+Reviewer: /root/memory_adversarial_review_luna
+Mode: read-only review; no repository source edits, staging, commits, pushes, cache rebuilds, or broad/full-suite runs in this closeout.
+
+Scope
+------
+Final freeze review was limited to the four files changed for the two prior findings:
+- examples/realnavmemory/storage.go
+- examples/realnavmemory/storage_test.go
+- examples/realnavmemory/rollout.go
+- examples/realnavmemory/rollout_test.go
+The already-frozen main.go and main_test.go were fingerprinted for the six-file delivery set. CLI/storage/rollout final integration and the parent agent's full normal/race checks were not independently rerun here. Unrelated dirty-tree files were outside scope.
+
+Final six-file SHA-256 fingerprints
+------------------------------------
+examples/realnavmemory/main.go        cf16366ff6935f2ea47f924d4c376b5c20304aebb76129206a747389920e6c8a
+examples/realnavmemory/main_test.go    2c57dc943da1d89d4101780f51e0bd49dac54c07312f324b3ff0f1486272633a
+examples/realnavmemory/storage.go      03dff97f3102aa50e82a63f4d4654fb1ef6e2e7dd4f5480b0581d56875842d24
+examples/realnavmemory/storage_test.go  617cdba6602ac427ee6b301e58be150def02e49d9204835b65932eb05c57c7be
+examples/realnavmemory/rollout.go      b725d1611915b90490c2647380e43569f6e86f8f580485ee88886b9a75411b46
+examples/realnavmemory/rollout_test.go  1481a4eb43419ed8dcc7295544c251beb702eb8bae21f0e8ae9e5d893483f225
+
+Prior findings and final disposition
+------------------------------------
+1. P1 forged after optimizer state: CLOSED.
+   Trigger was a bundle whose after parameters were copied from before, whose run update count was 200, but whose per-parameter optimizer steps remained zero. The previous validator only checked the aggregate update count, so RestoreTrainer accepted the state and inference could publish a fabricated after result. The final validator at storage.go:692 rejects a non-nil after accumulator and at storage.go:695-699 requires every trainable optimizer step to equal the declared memory-run budget. The regression at storage_test.go:144 constructs the forged zero-step after snapshot and also checks the non-nil accumulator case. The final README contract at examples/realnavmemory/README.md:41 documents this validation. No remaining P1 was confirmed in this fix path.
+
+2. P2 current-row raw stimulus loss at a shuffled block boundary: CLOSED.
+   Previous rollout.go behavior zeroed rawStimulusBlocks[absoluteIndex%16] after every generated step, including step zero. If the current recorded source row at the rollout boundary contained a positive stimulus, the shuffled continuation lost that row and diverged from trialInputs' raw-prefix-plus-generated extension. The final code at rollout.go:359 only clears generated rows when stepIndex > 0, preserving the recorded current row. The regression at rollout_test.go:244 supplies a positive raw current row at the boundary and compares the shuffled trace with the causal expected input sequence. No remaining P2 was confirmed in this fix path.
+
+3. Earlier invalid-input partial-report concern: WITHDRAWN, not a remaining finding.
+   The ticket contract rejects invalid source/history/out-of-arena/non-finite inputs before publishing output. A prior reproduction mutated private history after verified import and therefore did not represent a legal public CLI start. README.md:63 now states that valid unsuccessful trials remain in reports, while invalid source or snapshot contracts, non-finite states, and cancellation stop without publishing a partial report. This review found no valid public-input omission to reclassify.
+
+4. Base digest authentication concern: not a finding.
+   The approved contract uses the source digest recorded by prepare; external pre-run comparison is a separate root acceptance check. No anti-tamper metadata requirement was inferred.
+
+Review evidence and command log
+--------------------------------
+- `shasum -a 256 examples/realnavmemory/{main.go,main_test.go,storage.go,storage_test.go,rollout.go,rollout_test.go}` matched all six fingerprints above.
+- `rg -n` located the two final guards at storage.go:692 and storage.go:695, the current-row condition at rollout.go:359, and regression tests at storage_test.go:144 and rollout_test.go:244.
+- Diff inspection against the previous frozen versions showed only the intended optimizer-state validation plus its regression, and the intended step-zero raw-row preservation plus its regression.
+- Parent/author reported normal, race, and vet checks passed for the frozen four-file fixes. I did not rerun those broad checks under the explicit closeout scope.
+- No source code was written by this review. The only output written by this review is this scratch report.
+
+Final disposition
+-----------------
+For the reviewed final fixes: P0=0, P1=0, P2=0 confirmed. The full ticket remains subject to the parent agent's separately tracked integration/full-repository verification and any out-of-scope files. This closeout does not claim those unreviewed portions complete.

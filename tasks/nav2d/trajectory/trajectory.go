@@ -1,8 +1,9 @@
 // Package trajectory imports real two-dimensional trajectories and turns them
-// into source-isolated, causal next-displacement samples. The importer only
-// consumes the metadata needed to identify a trial and the observed time and
-// position columns. Reward, fictive-target, condition and segment values are
-// never part of a sample input.
+// into source-isolated, causal next-displacement samples. Causal Samples
+// inputs exclude reward, fictive-target, condition, segment and future-target
+// fields. Optional stimulus-history and return-target APIs read their source
+// columns and return that metadata separately, without adding it to those
+// inputs.
 package trajectory
 
 import (
@@ -166,10 +167,10 @@ type Dataset struct {
 // increasing in t. Unknown columns are accepted as source data but ignored by
 // the model adapter.
 func Read(ctx context.Context, path string, source Source, limits Limits) (dataset Dataset, retErr error) {
-	return read(ctx, path, source, limits, nil)
+	return read(ctx, path, source, limits, nil, nil)
 }
 
-func read(ctx context.Context, path string, source Source, limits Limits, collector *returnTargetCollector) (dataset Dataset, retErr error) {
+func read(ctx context.Context, path string, source Source, limits Limits, collector *returnTargetCollector, stimulus *stimulusCollector) (dataset Dataset, retErr error) {
 	if ctx == nil {
 		return Dataset{}, errors.New("trajectory: context must not be nil")
 	}
@@ -269,6 +270,12 @@ func read(ctx context.Context, path string, source Source, limits Limits, collec
 			return Dataset{}, err
 		}
 	}
+	if stimulus != nil {
+		stimulus.ledIndex, err = validateStimulusHeader(header)
+		if err != nil {
+			return Dataset{}, err
+		}
+	}
 	headerFields := len(header)
 
 	dataset = Dataset{Schema: SchemaVersion, Source: source, Rows: make([]Point, 0, minInt(limits.MaxRows, 4096))}
@@ -313,6 +320,11 @@ func read(ctx context.Context, path string, source Source, limits Limits, collec
 		}
 		if collector != nil {
 			if err := collector.collect(point, record, rowNumber); err != nil {
+				return Dataset{}, err
+			}
+		}
+		if stimulus != nil {
+			if err := stimulus.collect(point, record, rowNumber); err != nil {
 				return Dataset{}, err
 			}
 		}

@@ -19,6 +19,10 @@
 
 ## 共用決策
 
+- Ticket 34 的最終本機證據見 [verification.json](evidence/TSK-11/stimulus-memory-20261003/verification.json)。九組模型採完整歷史遮罩更新，200 次更新同時核對各參數的 optimizer step。自主行走的 recorded current row 保留 raw stimulus，只有後續生成列寫零。完整一般及 race 通過，模仿誤差下降但模型均為 0／13 命中，沒有導航改善或生物機制證據。
+
+- 刺激記憶工程範例與既有軌跡 v1 分開。逐列刺激在同一次 CSV 讀取及來源指紋驗證中取得，已發生 LED 與預定事件分開，模型只接已送出刺激。完整試次從零開始保留神經狀態，後段遮罩損失透過既有 `StepFrom` 回傳完整歷史。核心與舊資料格式不變，固定切分、時鐘、搬移假設、模型及控制預算見 [ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md#實作契約與分工2026-10-03)。
+
 - 框架與任務分開：SDK 負責接線、動態、訊號、學習與狀態保存。特定任務程式與訓練結果由使用者專案持有，repo 內僅保留明示範例與必要驗證證據。新增任務範例放 `examples/`，既有 `experiment` 是人工範例套件。五類任務驗收依這個方式實現，不把個人模型作為框架本體。
 - 真實果蠅軌跡範例使用 `tasks/nav2d/trajectory` 的逐批匯入與 `(fname, fly)` 試次身分。先按整個試次分割，再從同試次、同區段且時間連續的已觀測列建下一步位移樣本；獎勵、條件、未來位置不進模型。`examples/realnav` 的快照綁定原檔指紋、試次分割與前處理契約，推論於新程序重建分割後評估。這是觀測式行為預測範例，不能作為閉環導航或生物接線機制的證據，驗收見 [TSK-11](evidence/TSK-11/verification.json)。
 - 真實軌跡的既有推論與自主評估共用整試次分割檢查：兩組互斥、組內不得重複、完整涵蓋過濾後來源且無未知試次。檢查在樣本建立與輸出發布之前完成，合法快照格式及計分不變，驗收見 [ticket 33](docs/tickets/33-real-trajectory-inference-isolation.md)。

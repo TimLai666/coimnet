@@ -1,0 +1,463 @@
+{
+  "schema_version": "coimnet-realnav-memory-preregistration/v1",
+  "recorded_at_utc": "2026-10-03T07:10:51.717314+00:00",
+  "source_sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+  "base_model_sha256": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38",
+  "contract_path": "docs/tickets/34-real-trajectory-stimulus-memory-proposal.md",
+  "contract_sha256": "e59e23c3b9f915e024191f8d8e92bf2eae22c455ab5033da2cd65cb2007d6b30",
+  "row_count": 231130,
+  "trial_count": 39,
+  "split": {
+    "train_trial_ids": [
+      "flytrax20181123_114304.csv\u001f0",
+      "flytrax20181123_152457.csv\u001f1",
+      "flytrax20181127_162328.csv\u001f4",
+      "flytrax20181205_182038.csv\u001f7",
+      "flytrax20181211_185727.csv\u001f13",
+      "flytrax20181212_193040.csv\u001f15",
+      "flytrax20181214_174232.csv\u001f16",
+      "flytrax20181217_192137.csv\u001f17",
+      "flytrax20181218_164433.csv\u001f18",
+      "flytrax20190110_162901.csv\u001f22",
+      "flytrax20190110_170616.csv\u001f23",
+      "flytrax20190110_173636.csv\u001f24",
+      "flytrax20190111_172208.csv\u001f27",
+      "flytrax20190111_190138.csv\u001f28",
+      "flytrax20190116_152245.csv\u001f30",
+      "flytrax20190116_160702.csv\u001f31",
+      "flytrax20190116_163246.csv\u001f32",
+      "flytrax20190116_180834.csv\u001f33",
+      "flytrax20190118_171511.csv\u001f36",
+      "flytrax20190119_171903.csv\u001f38"
+    ],
+    "validation_trial_ids": [
+      "flytrax20181204_163734.csv\u001f5",
+      "flytrax20181207_161754.csv\u001f9",
+      "flytrax20181211_183411.csv\u001f12",
+      "flytrax20181211_192052.csv\u001f14",
+      "flytrax20181218_175537.csv\u001f19",
+      "flytrax20190118_181417.csv\u001f37"
+    ],
+    "test_trial_ids": [
+      "flytrax20181123_162408.csv\u001f3",
+      "flytrax20181204_170930.csv\u001f6",
+      "flytrax20181205_184643.csv\u001f8",
+      "flytrax20181207_180201.csv\u001f10",
+      "flytrax20181211_170828.csv\u001f11",
+      "flytrax20190109_165747.csv\u001f20",
+      "flytrax20190110_152909.csv\u001f21",
+      "flytrax20190110_182810.csv\u001f25",
+      "flytrax20190111_164022.csv\u001f26",
+      "flytrax20190111_192056.csv\u001f29",
+      "flytrax20190116_192744.csv\u001f34",
+      "flytrax20190118_164239.csv\u001f35",
+      "flytrax20190119_174549.csv\u001f39"
+    ]
+  },
+  "strata_original_train_counts": {
+    "rewarded": 11,
+    "non-rewarded": 15
+  },
+  "validation_quotas": {
+    "rewarded": 3,
+    "non-rewarded": 3
+  },
+  "settings": {
+    "seeds": [
+      20261003,
+      20261004,
+      20261005
+    ],
+    "controls": [
+      "delivered",
+      "no_stimulus",
+      "shuffled_stimulus"
+    ],
+    "epochs": 10,
+    "updates_per_model": 200,
+    "nodes": 8,
+    "edges": 64,
+    "encoder": [
+      6,
+      8
+    ],
+    "readout": [
+      8,
+      2
+    ],
+    "tau_model_steps": [
+      2,
+      4,
+      8,
+      16,
+      64,
+      256,
+      1024,
+      4096
+    ],
+    "lr": 0.001,
+    "clip_norm": 1,
+    "truncation": 0,
+    "weight_decay": 0,
+    "arena_radius_cm": 30,
+    "hit_radius_cm": 2,
+    "decision_budget": 200,
+    "generated_dt_feature_seconds": 0.1,
+    "validation_use": "report only; no tuning",
+    "test_previously_evaluated": true
+  },
+  "train_mean_displacement_cm_per_sample": 0.1849887355786974,
+  "trial_audit": [
+    {
+      "trial_id": "flytrax20181123_114304.csv\u001f0",
+      "condition": "rewarded",
+      "rows": 7202,
+      "scored_rows": 3838,
+      "rollout_index": 3242,
+      "delivered_rows": 497,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181123_152457.csv\u001f1",
+      "condition": "rewarded",
+      "rows": 4778,
+      "scored_rows": 2402,
+      "rollout_index": 2278,
+      "delivered_rows": 304,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181127_162328.csv\u001f4",
+      "condition": "rewarded",
+      "rows": 9620,
+      "scored_rows": 2839,
+      "rollout_index": 6726,
+      "delivered_rows": 145,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181204_163734.csv\u001f5",
+      "condition": "rewarded",
+      "rows": 8716,
+      "scored_rows": 3457,
+      "rollout_index": 5149,
+      "delivered_rows": 262,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181205_182038.csv\u001f7",
+      "condition": "non-rewarded",
+      "rows": 5212,
+      "scored_rows": 2784,
+      "rollout_index": 2252,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 17
+    },
+    {
+      "trial_id": "flytrax20181207_161754.csv\u001f9",
+      "condition": "rewarded",
+      "rows": 6813,
+      "scored_rows": 3962,
+      "rollout_index": 2750,
+      "delivered_rows": 442,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181211_183411.csv\u001f12",
+      "condition": "rewarded",
+      "rows": 6447,
+      "scored_rows": 4025,
+      "rollout_index": 2308,
+      "delivered_rows": 503,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181211_185727.csv\u001f13",
+      "condition": "non-rewarded",
+      "rows": 3921,
+      "scored_rows": 688,
+      "rollout_index": 3143,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 34
+    },
+    {
+      "trial_id": "flytrax20181211_192052.csv\u001f14",
+      "condition": "non-rewarded",
+      "rows": 5358,
+      "scored_rows": 1496,
+      "rollout_index": 3680,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 16
+    },
+    {
+      "trial_id": "flytrax20181212_193040.csv\u001f15",
+      "condition": "non-rewarded",
+      "rows": 4490,
+      "scored_rows": 1361,
+      "rollout_index": 3049,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 25
+    },
+    {
+      "trial_id": "flytrax20181214_174232.csv\u001f16",
+      "condition": "rewarded",
+      "rows": 11584,
+      "scored_rows": 4276,
+      "rollout_index": 7226,
+      "delivered_rows": 324,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181217_192137.csv\u001f17",
+      "condition": "non-rewarded",
+      "rows": 3711,
+      "scored_rows": 1472,
+      "rollout_index": 2019,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 5
+    },
+    {
+      "trial_id": "flytrax20181218_164433.csv\u001f18",
+      "condition": "non-rewarded",
+      "rows": 5368,
+      "scored_rows": 935,
+      "rollout_index": 4287,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 8
+    },
+    {
+      "trial_id": "flytrax20181218_175537.csv\u001f19",
+      "condition": "non-rewarded",
+      "rows": 2110,
+      "scored_rows": 1027,
+      "rollout_index": 893,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 3
+    },
+    {
+      "trial_id": "flytrax20190110_162901.csv\u001f22",
+      "condition": "non-rewarded",
+      "rows": 4529,
+      "scored_rows": 1516,
+      "rollout_index": 2811,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 24
+    },
+    {
+      "trial_id": "flytrax20190110_170616.csv\u001f23",
+      "condition": "rewarded",
+      "rows": 7755,
+      "scored_rows": 4579,
+      "rollout_index": 3110,
+      "delivered_rows": 297,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190110_173636.csv\u001f24",
+      "condition": "non-rewarded",
+      "rows": 2456,
+      "scored_rows": 1322,
+      "rollout_index": 931,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 13
+    },
+    {
+      "trial_id": "flytrax20190111_172208.csv\u001f27",
+      "condition": "non-rewarded",
+      "rows": 5169,
+      "scored_rows": 2260,
+      "rollout_index": 2724,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 15
+    },
+    {
+      "trial_id": "flytrax20190111_190138.csv\u001f28",
+      "condition": "rewarded",
+      "rows": 6355,
+      "scored_rows": 3255,
+      "rollout_index": 3073,
+      "delivered_rows": 452,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190116_152245.csv\u001f30",
+      "condition": "rewarded",
+      "rows": 10271,
+      "scored_rows": 4096,
+      "rollout_index": 6106,
+      "delivered_rows": 311,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190116_160702.csv\u001f31",
+      "condition": "non-rewarded",
+      "rows": 3880,
+      "scored_rows": 1747,
+      "rollout_index": 1997,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 22
+    },
+    {
+      "trial_id": "flytrax20190116_163246.csv\u001f32",
+      "condition": "non-rewarded",
+      "rows": 2509,
+      "scored_rows": 401,
+      "rollout_index": 1898,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 5
+    },
+    {
+      "trial_id": "flytrax20190116_180834.csv\u001f33",
+      "condition": "rewarded",
+      "rows": 4906,
+      "scored_rows": 2451,
+      "rollout_index": 2207,
+      "delivered_rows": 149,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190118_171511.csv\u001f36",
+      "condition": "non-rewarded",
+      "rows": 2169,
+      "scored_rows": 758,
+      "rollout_index": 1243,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 3
+    },
+    {
+      "trial_id": "flytrax20190118_181417.csv\u001f37",
+      "condition": "non-rewarded",
+      "rows": 3595,
+      "scored_rows": 2124,
+      "rollout_index": 1374,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 22
+    },
+    {
+      "trial_id": "flytrax20190119_171903.csv\u001f38",
+      "condition": "non-rewarded",
+      "rows": 3671,
+      "scored_rows": 1181,
+      "rollout_index": 2302,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 23
+    },
+    {
+      "trial_id": "flytrax20181123_162408.csv\u001f3",
+      "condition": "rewarded",
+      "rows": 7235,
+      "scored_rows": 3509,
+      "rollout_index": 3576,
+      "delivered_rows": 183,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181204_170930.csv\u001f6",
+      "condition": "rewarded",
+      "rows": 10931,
+      "scored_rows": 5147,
+      "rollout_index": 5754,
+      "delivered_rows": 320,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181205_184643.csv\u001f8",
+      "condition": "non-rewarded",
+      "rows": 5072,
+      "scored_rows": 2696,
+      "rollout_index": 2102,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 82
+    },
+    {
+      "trial_id": "flytrax20181207_180201.csv\u001f10",
+      "condition": "rewarded",
+      "rows": 11846,
+      "scored_rows": 5177,
+      "rollout_index": 6634,
+      "delivered_rows": 443,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20181211_170828.csv\u001f11",
+      "condition": "rewarded",
+      "rows": 6612,
+      "scored_rows": 3468,
+      "rollout_index": 3023,
+      "delivered_rows": 348,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190109_165747.csv\u001f20",
+      "condition": "rewarded",
+      "rows": 7366,
+      "scored_rows": 3633,
+      "rollout_index": 3609,
+      "delivered_rows": 378,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190110_152909.csv\u001f21",
+      "condition": "non-rewarded",
+      "rows": 3195,
+      "scored_rows": 1267,
+      "rollout_index": 1684,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 14
+    },
+    {
+      "trial_id": "flytrax20190110_182810.csv\u001f25",
+      "condition": "rewarded",
+      "rows": 8750,
+      "scored_rows": 2706,
+      "rollout_index": 5923,
+      "delivered_rows": 449,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190111_164022.csv\u001f26",
+      "condition": "non-rewarded",
+      "rows": 3572,
+      "scored_rows": 1637,
+      "rollout_index": 1810,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 15
+    },
+    {
+      "trial_id": "flytrax20190111_192056.csv\u001f29",
+      "condition": "rewarded",
+      "rows": 7506,
+      "scored_rows": 3180,
+      "rollout_index": 4237,
+      "delivered_rows": 530,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190116_192744.csv\u001f34",
+      "condition": "rewarded",
+      "rows": 11577,
+      "scored_rows": 5213,
+      "rollout_index": 6329,
+      "delivered_rows": 478,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190118_164239.csv\u001f35",
+      "condition": "non-rewarded",
+      "rows": 2466,
+      "scored_rows": 251,
+      "rollout_index": 2098,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 0
+    },
+    {
+      "trial_id": "flytrax20190119_174549.csv\u001f39",
+      "condition": "non-rewarded",
+      "rows": 2407,
+      "scored_rows": 1488,
+      "rollout_index": 753,
+      "delivered_rows": 0,
+      "scheduled_only_rows": 3
+    }
+  ]
+}

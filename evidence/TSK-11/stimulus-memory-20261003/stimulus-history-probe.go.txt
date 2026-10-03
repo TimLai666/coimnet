@@ -1,0 +1,311 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"reflect"
+	"runtime"
+	"sort"
+
+	"github.com/TimLai666/coimnet/tasks/nav2d/trajectory"
+)
+
+const (
+	dataPath         = "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz"
+	v1ModelPath      = "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json"
+	expectedDataSHA  = "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+	expectedModelSHA = "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38"
+	probeCommand     = "GOCACHE=/private/tmp/coimnet-memory-data-20261003-unique/gocache-probe go run /private/tmp/coimnet-memory-data-20261003-unique/stimulus_history_probe.go > /private/tmp/coimnet-memory-data-20261003-unique/stimulus-history-probe.json 2> /private/tmp/coimnet-memory-data-20261003-unique/stimulus-history-probe.stderr"
+)
+
+type sourceReport struct {
+	ID           string             `json:"id"`
+	URL          string             `json:"url"`
+	DOI          string             `json:"doi"`
+	PinnedCommit string             `json:"pinned_commit"`
+	SHA256       string             `json:"sha256"`
+	License      trajectory.License `json:"license"`
+}
+
+type countReport struct {
+	Rows          int `json:"rows"`
+	Delivered     int `json:"delivered"`
+	ScheduledOnly int `json:"scheduled_only"`
+	LEDZero       int `json:"led_zero"`
+}
+
+type segmentReport struct {
+	Rows          int `json:"rows"`
+	Delivered     int `json:"delivered"`
+	ScheduledOnly int `json:"scheduled_only"`
+	LEDZero       int `json:"led_zero"`
+}
+
+type trialReport struct {
+	Condition     string                   `json:"condition"`
+	Rows          int                      `json:"rows"`
+	Delivered     int                      `json:"delivered"`
+	ScheduledOnly int                      `json:"scheduled_only"`
+	LEDZero       int                      `json:"led_zero"`
+	Segments      map[string]segmentReport `json:"segments"`
+}
+
+type hashReport struct {
+	DataPath            string `json:"data_path"`
+	DataSHA256Before    string `json:"data_sha256_before"`
+	DataSHA256After     string `json:"data_sha256_after"`
+	V1ModelPath         string `json:"v1_model_path"`
+	V1ModelSHA256Before string `json:"v1_model_sha256_before"`
+	V1ModelSHA256After  string `json:"v1_model_sha256_after"`
+	ExpectedDataSHA256  string `json:"expected_data_sha256"`
+	ExpectedModelSHA256 string `json:"expected_v1_model_sha256"`
+}
+
+type comparisonReport struct {
+	LegacyRows               int  `json:"legacy_rows"`
+	StimulusRows             int  `json:"stimulus_rows"`
+	RowsExact                bool `json:"rows_exact"`
+	DatasetSourceExact       bool `json:"dataset_source_exact"`
+	StimulusCountMatchesRows bool `json:"stimulus_count_matches_rows"`
+	StimulusTrialTimeAligned bool `json:"stimulus_trial_time_aligned"`
+	SourceBytesUnchanged     bool `json:"source_bytes_unchanged"`
+	V1ModelBytesUnchanged    bool `json:"v1_model_bytes_unchanged"`
+}
+
+type report struct {
+	SchemaVersion string                 `json:"schema_version"`
+	GeneratedBy   string                 `json:"generated_by"`
+	Command       string                 `json:"command"`
+	GoVersion     string                 `json:"go_version"`
+	Source        sourceReport           `json:"source"`
+	Hashes        hashReport             `json:"hashes"`
+	Comparison    comparisonReport       `json:"comparison"`
+	Counts        countReport            `json:"counts"`
+	TrialCount    int                    `json:"trial_count"`
+	ByTrial       map[string]trialReport `json:"by_trial"`
+}
+
+func fixedSource() trajectory.Source {
+	return trajectory.Source{
+		ID:           "titova-2023-displacement-trajectories",
+		URL:          "https://github.com/strawlab/titova_et_al_displacement_supplemental/raw/0eb07940a9ffdedd97ada81f75e9d5f7bface579/all_ds_t01_d2_cm_no2.csv.gz",
+		DOI:          "10.5061/dryad.vdncjsz0b",
+		PinnedCommit: "0eb07940a9ffdedd97ada81f75e9d5f7bface579",
+		SHA256:       expectedDataSHA,
+		License: trajectory.License{
+			Holder: "Titova et al.",
+			Terms:  "CC0 1.0",
+			Source: "https://datadryad.org/help/guides/reuse",
+		},
+	}
+}
+
+func fileSHA256(path string) (string, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return "", err
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:]), nil
+}
+
+func addCount(dst *countReport, record trajectory.StimulusRecord) {
+	dst.Rows++
+	if record.Delivered {
+		dst.Delivered++
+	}
+	if record.ScheduledOnly {
+		dst.ScheduledOnly++
+	}
+	if record.LED == 0 {
+		dst.LEDZero++
+	}
+}
+
+func addSegment(dst *segmentReport, record trajectory.StimulusRecord) {
+	dst.Rows++
+	if record.Delivered {
+		dst.Delivered++
+	}
+	if record.ScheduledOnly {
+		dst.ScheduledOnly++
+	}
+	if record.LED == 0 {
+		dst.LEDZero++
+	}
+}
+
+func auditRows(rows []trajectory.Point, records []trajectory.StimulusRecord) (countReport, map[string]trialReport, error) {
+	if len(rows) != len(records) {
+		return countReport{}, nil, fmt.Errorf("stimulus count %d differs from dataset rows %d", len(records), len(rows))
+	}
+	var total countReport
+	byTrial := make(map[string]trialReport)
+	for i, row := range rows {
+		record := records[i]
+		if record.TrialID != row.TrialID || record.T != row.T {
+			return countReport{}, nil, fmt.Errorf("stimulus alignment mismatch at row %d: point=(%q,%.17g) record=(%q,%.17g)", i, row.TrialID, row.T, record.TrialID, record.T)
+		}
+		if record.LED < 0 || math.IsNaN(record.LED) || math.IsInf(record.LED, 0) {
+			return countReport{}, nil, fmt.Errorf("invalid led value at row %d: %v", i, record.LED)
+		}
+		if record.Delivered && (row.Condition != "rewarded" || record.LED <= 0) {
+			return countReport{}, nil, fmt.Errorf("invalid delivered flag at row %d", i)
+		}
+		if record.ScheduledOnly && (row.Condition != "non-rewarded" || record.LED <= 0) {
+			return countReport{}, nil, fmt.Errorf("invalid scheduled-only flag at row %d", i)
+		}
+		if record.LED == 0 && (record.Delivered || record.ScheduledOnly) {
+			return countReport{}, nil, fmt.Errorf("zero led has stimulus flag at row %d", i)
+		}
+
+		addCount(&total, record)
+		trial, exists := byTrial[row.TrialID]
+		if !exists {
+			trial = trialReport{Condition: row.Condition, Segments: make(map[string]segmentReport)}
+		}
+		if trial.Condition != row.Condition {
+			return countReport{}, nil, fmt.Errorf("trial %q changes condition", row.TrialID)
+		}
+		trial.Rows++
+		if record.Delivered {
+			trial.Delivered++
+		}
+		if record.ScheduledOnly {
+			trial.ScheduledOnly++
+		}
+		if record.LED == 0 {
+			trial.LEDZero++
+		}
+		segment := trial.Segments[row.Segment]
+		addSegment(&segment, record)
+		trial.Segments[row.Segment] = segment
+		byTrial[row.TrialID] = trial
+	}
+	return total, byTrial, nil
+}
+
+func comparePoints(got, want []trajectory.Point) error {
+	if len(got) != len(want) {
+		return fmt.Errorf("legacy row count %d differs from stimulus row count %d", len(want), len(got))
+	}
+	for i := range got {
+		if !reflect.DeepEqual(got[i], want[i]) {
+			return fmt.Errorf("dataset row %d differs: stimulus=%#v legacy=%#v", i, got[i], want[i])
+		}
+	}
+	return nil
+}
+
+func sortedTrialIDs(byTrial map[string]trialReport) []string {
+	ids := make([]string, 0, len(byTrial))
+	for id := range byTrial {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return ids
+}
+
+func run() (report, error) {
+	source := fixedSource()
+	dataBefore, err := fileSHA256(dataPath)
+	if err != nil {
+		return report{}, fmt.Errorf("hash data before: %w", err)
+	}
+	modelBefore, err := fileSHA256(v1ModelPath)
+	if err != nil {
+		return report{}, fmt.Errorf("hash v1 model before: %w", err)
+	}
+
+	withStimulus, records, err := trajectory.ReadWithStimulusHistory(context.Background(), dataPath, source, trajectory.DefaultLimits())
+	if err != nil {
+		return report{}, fmt.Errorf("ReadWithStimulusHistory: %w", err)
+	}
+	legacy, err := trajectory.Read(context.Background(), dataPath, source, trajectory.DefaultLimits())
+	if err != nil {
+		return report{}, fmt.Errorf("Read: %w", err)
+	}
+	if err := comparePoints(withStimulus.Rows, legacy.Rows); err != nil {
+		return report{}, err
+	}
+	counts, byTrial, err := auditRows(withStimulus.Rows, records)
+	if err != nil {
+		return report{}, err
+	}
+
+	dataAfter, err := fileSHA256(dataPath)
+	if err != nil {
+		return report{}, fmt.Errorf("hash data after: %w", err)
+	}
+	modelAfter, err := fileSHA256(v1ModelPath)
+	if err != nil {
+		return report{}, fmt.Errorf("hash v1 model after: %w", err)
+	}
+	if dataBefore != expectedDataSHA || dataAfter != expectedDataSHA || dataBefore != dataAfter {
+		return report{}, fmt.Errorf("data hash mismatch or changed: before=%s after=%s expected=%s", dataBefore, dataAfter, expectedDataSHA)
+	}
+	if modelBefore != expectedModelSHA || modelAfter != expectedModelSHA || modelBefore != modelAfter {
+		return report{}, fmt.Errorf("v1 model hash mismatch or changed: before=%s after=%s expected=%s", modelBefore, modelAfter, expectedModelSHA)
+	}
+	if len(withStimulus.Rows) != 231130 || len(legacy.Rows) != 231130 {
+		return report{}, fmt.Errorf("unexpected rows: stimulus=%d legacy=%d", len(withStimulus.Rows), len(legacy.Rows))
+	}
+	if len(byTrial) != 39 {
+		return report{}, fmt.Errorf("unexpected trial count: %d", len(byTrial))
+	}
+	if counts.Delivered != 6815 || counts.ScheduledOnly != 349 {
+		return report{}, fmt.Errorf("unexpected stimulus counts: delivered=%d scheduled_only=%d", counts.Delivered, counts.ScheduledOnly)
+	}
+	if !reflect.DeepEqual(withStimulus.Source, source) || !reflect.DeepEqual(legacy.Source, source) {
+		return report{}, fmt.Errorf("returned source metadata differs from fixed source")
+	}
+
+	ids := sortedTrialIDs(byTrial)
+	orderedTrials := make(map[string]trialReport, len(ids))
+	for _, id := range ids {
+		orderedTrials[id] = byTrial[id]
+	}
+	return report{
+		SchemaVersion: "coimnet-realnavmemory-stimulus-history-probe/v1",
+		GeneratedBy:   "public trajectory.ReadWithStimulusHistory plus trajectory.Read",
+		Command:       probeCommand,
+		GoVersion:     runtime.Version(),
+		Source: sourceReport{
+			ID: source.ID, URL: source.URL, DOI: source.DOI,
+			PinnedCommit: source.PinnedCommit, SHA256: source.SHA256, License: source.License,
+		},
+		Hashes: hashReport{
+			DataPath: dataPath, DataSHA256Before: dataBefore, DataSHA256After: dataAfter,
+			V1ModelPath: v1ModelPath, V1ModelSHA256Before: modelBefore, V1ModelSHA256After: modelAfter,
+			ExpectedDataSHA256: expectedDataSHA, ExpectedModelSHA256: expectedModelSHA,
+		},
+		Comparison: comparisonReport{
+			LegacyRows: len(legacy.Rows), StimulusRows: len(withStimulus.Rows),
+			RowsExact: true, DatasetSourceExact: true,
+			StimulusCountMatchesRows: len(records) == len(withStimulus.Rows),
+			StimulusTrialTimeAligned: true,
+			SourceBytesUnchanged:     dataBefore == dataAfter,
+			V1ModelBytesUnchanged:    modelBefore == modelAfter,
+		},
+		Counts: counts, TrialCount: len(orderedTrials), ByTrial: orderedTrials,
+	}, nil
+}
+
+func main() {
+	result, err := run()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "probe failed: %v\n", err)
+		os.Exit(1)
+	}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(result); err != nil {
+		fmt.Fprintf(os.Stderr, "encode report: %v\n", err)
+		os.Exit(1)
+	}
+}

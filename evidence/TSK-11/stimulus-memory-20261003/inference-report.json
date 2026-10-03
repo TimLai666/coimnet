@@ -1,0 +1,359 @@
+{
+  "schema_version": "coimnet-realnav-memory-inference/v1",
+  "mode": "infer",
+  "source": {
+    "id": "titova-2023-displacement-trajectories",
+    "url": "https://github.com/strawlab/titova_et_al_displacement_supplemental/raw/0eb07940a9ffdedd97ada81f75e9d5f7bface579/all_ds_t01_d2_cm_no2.csv.gz",
+    "doi": "10.5061/dryad.vdncjsz0b",
+    "pinned_commit": "0eb07940a9ffdedd97ada81f75e9d5f7bface579",
+    "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+    "license": {
+      "holder": "Titova et al.",
+      "terms": "CC0 1.0",
+      "source": "https://datadryad.org/help/guides/reuse"
+    }
+  },
+  "source_sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+  "plan_fingerprint": "0c3e21764092223c444353cf40e9c5a3715035d60661aeda4e7d3996d58a7e4b",
+  "split": {
+    "train_trial_ids": [
+      "flytrax20181123_114304.csv\u001f0",
+      "flytrax20181123_152457.csv\u001f1",
+      "flytrax20181127_162328.csv\u001f4",
+      "flytrax20181205_182038.csv\u001f7",
+      "flytrax20181211_185727.csv\u001f13",
+      "flytrax20181212_193040.csv\u001f15",
+      "flytrax20181214_174232.csv\u001f16",
+      "flytrax20181217_192137.csv\u001f17",
+      "flytrax20181218_164433.csv\u001f18",
+      "flytrax20190110_162901.csv\u001f22",
+      "flytrax20190110_170616.csv\u001f23",
+      "flytrax20190110_173636.csv\u001f24",
+      "flytrax20190111_172208.csv\u001f27",
+      "flytrax20190111_190138.csv\u001f28",
+      "flytrax20190116_152245.csv\u001f30",
+      "flytrax20190116_160702.csv\u001f31",
+      "flytrax20190116_163246.csv\u001f32",
+      "flytrax20190116_180834.csv\u001f33",
+      "flytrax20190118_171511.csv\u001f36",
+      "flytrax20190119_171903.csv\u001f38"
+    ],
+    "validation_trial_ids": [
+      "flytrax20181204_163734.csv\u001f5",
+      "flytrax20181207_161754.csv\u001f9",
+      "flytrax20181211_183411.csv\u001f12",
+      "flytrax20181211_192052.csv\u001f14",
+      "flytrax20181218_175537.csv\u001f19",
+      "flytrax20190118_181417.csv\u001f37"
+    ],
+    "test_trial_ids": [
+      "flytrax20181123_162408.csv\u001f3",
+      "flytrax20181204_170930.csv\u001f6",
+      "flytrax20181205_184643.csv\u001f8",
+      "flytrax20181207_180201.csv\u001f10",
+      "flytrax20181211_170828.csv\u001f11",
+      "flytrax20190109_165747.csv\u001f20",
+      "flytrax20190110_152909.csv\u001f21",
+      "flytrax20190110_182810.csv\u001f25",
+      "flytrax20190111_164022.csv\u001f26",
+      "flytrax20190111_192056.csv\u001f29",
+      "flytrax20190116_192744.csv\u001f34",
+      "flytrax20190118_164239.csv\u001f35",
+      "flytrax20190119_174549.csv\u001f39"
+    ]
+  },
+  "results": [
+    {
+      "seed": 20261003,
+      "control": "delivered",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.021719422678172756
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.015815304727718783
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.016897307593982787
+        }
+      }
+    },
+    {
+      "seed": 20261003,
+      "control": "no_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.021719168501695602
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.015817712767222002
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.01689997471516148
+        }
+      }
+    },
+    {
+      "seed": 20261003,
+      "control": "shuffled_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02171937621545379
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.015815209676560114
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.01689742445893828
+        }
+      }
+    },
+    {
+      "seed": 20261004,
+      "control": "delivered",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.022121787677044476
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.016261863593185582
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.017504261704034494
+        }
+      }
+    },
+    {
+      "seed": 20261004,
+      "control": "no_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.022121524265220297
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.016258382782778708
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.01749875882409806
+        }
+      }
+    },
+    {
+      "seed": 20261004,
+      "control": "shuffled_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.022121908235220655
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.016262126652175406
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.017505979381416632
+        }
+      }
+    },
+    {
+      "seed": 20261005,
+      "control": "delivered",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.021974247659727084
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.01630952616894661
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.017180104588049718
+        }
+      }
+    },
+    {
+      "seed": 20261005,
+      "control": "no_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02197875211269852
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.01631753952424611
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.017186368953695248
+        }
+      }
+    },
+    {
+      "seed": 20261005,
+      "control": "shuffled_stimulus",
+      "before": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.02655395285229169
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.020411797587264625
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.020021061374854435
+        }
+      },
+      "after": {
+        "train": {
+          "samples": 44161,
+          "mse": 0.021974066721998826
+        },
+        "validation": {
+          "samples": 16091,
+          "mse": 0.016309334971398644
+        },
+        "test": {
+          "samples": 39372,
+          "mse": 0.017180160697007882
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "Metrics are teacher-forced engineering-model metrics; they do not establish a biological or connectome mechanism.",
+    "For each current observation, rows after that observation are not used to build its input; the next displacement is used only as a loss label."
+  ]
+}

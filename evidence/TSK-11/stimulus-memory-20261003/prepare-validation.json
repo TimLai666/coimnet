@@ -1,0 +1,72 @@
+{
+  "checked_utc": "2026-10-03T07:52:41.117482+00:00",
+  "split_equals_independent_preregistration": true,
+  "original_train_test_exact_match": true,
+  "source_and_base_sha_match": true,
+  "seeds_controls_epochs_match": true,
+  "plan_sha256": "6e93bbb7f5893b7f2bc2d79cdbb577859131d16e5f30c37754682c9c7db6c974",
+  "settings": {
+    "feature_rule": "coimnet-realnav-memory-causal-features/v1",
+    "input_features": [
+      "current_x_norm",
+      "current_y_norm",
+      "previous_dx_norm",
+      "previous_dy_norm",
+      "previous_dt_seconds",
+      "delivered_stimulus"
+    ],
+    "target_features": [
+      "next_dx_cm",
+      "next_dy_cm"
+    ],
+    "split_seed": "20261003",
+    "split_rule": "26 original train trials stratified by condition; largest remainder validation quota; within-stratum SHA-256(split_seed + ASCII unit separator + trial ID); original 13 test trials fixed",
+    "original_train_count": 26,
+    "original_test_count": 13,
+    "validation_count": 6,
+    "validation_use": "report_only_no_tuning",
+    "test_previously_evaluated": true,
+    "pose_scale_cm": 30,
+    "displacement_scale_cm": 2,
+    "decision_dt_seconds": 0.1,
+    "core_dt": 1,
+    "activation": "tanh",
+    "initial_edge_scale": 0.02,
+    "initial_encoder_scale": 0.2,
+    "tau_model_steps": [
+      2,
+      4,
+      8,
+      16,
+      64,
+      256,
+      1024,
+      4096
+    ],
+    "max_delta_t_seconds": 0.5,
+    "max_step_distance_cm": 5,
+    "stimulus_block_rows": 16,
+    "nodes": 8,
+    "edges": 64,
+    "encoder_shape": [
+      6,
+      8
+    ],
+    "readout_shape": [
+      8,
+      2
+    ],
+    "input_size": 6,
+    "output_size": 2,
+    "readout_every_step": true,
+    "epochs": 10,
+    "updates_per_run": 200,
+    "learning_rate": 0.001,
+    "clip_norm": 1,
+    "weight_decay": 0,
+    "truncation": 0,
+    "arena_radius_cm": 30,
+    "goal_radius_cm": 2,
+    "decision_steps": 200
+  }
+}

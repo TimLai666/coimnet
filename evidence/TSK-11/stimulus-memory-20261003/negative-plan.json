@@ -1,0 +1,172 @@
+{
+  "scratch": "/private/tmp/coimnet-memory-negative-awlpir_q",
+  "cases": [
+    {
+      "name": "overlap",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/overlap.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/overlap-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.977238875,
+      "error": "realnavmemory: split groups overlap on trial \"flytrax20181123_114304.csv\\x1f0\" between train and validation\n",
+      "output_absent": true
+    },
+    {
+      "name": "missing-coverage",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/missing-coverage.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/missing-coverage-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.650269208,
+      "error": "realnavmemory: plan split must contain 20 train, 6 validation and 13 test trials, got 19/6/13\n",
+      "output_absent": true
+    },
+    {
+      "name": "unknown-schema",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/unknown-schema.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/unknown-schema-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.769541625,
+      "error": "realnavmemory: unsupported plan schema \"coimnet-realnav-memory-plan/v999\"\n",
+      "output_absent": true
+    },
+    {
+      "name": "fake-seed",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/fake-seed.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/fake-seed-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.7573465830000004,
+      "error": "fixed seed contract mismatch\n",
+      "output_absent": true
+    },
+    {
+      "name": "missing-zero",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/missing-zero.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/missing-zero-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.01851879099999998,
+      "error": "realnavmemory: decode /private/tmp/coimnet-memory-negative-awlpir_q/missing-zero.json: config field \"truncation\" is missing\n",
+      "output_absent": true
+    },
+    {
+      "name": "null-zero",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/null-zero.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/null-zero-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 0.018723208000000824,
+      "error": "realnavmemory: decode /private/tmp/coimnet-memory-negative-awlpir_q/null-zero.json: config field \"weight_decay\" must not be null\n",
+      "output_absent": true
+    },
+    {
+      "name": "source-mismatch",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/source-mismatch.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/source-mismatch-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.7308902920000007,
+      "error": "realnavmemory: source SHA-256 does not match pinned source\n",
+      "output_absent": true
+    },
+    {
+      "name": "duplicate-base",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "prepare",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--base-model",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/duplicate-base.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/duplicate-output"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 1.5696972909999989,
+      "error": "realnavmemory: decode base model: duplicate JSON key \"schema_version\" at $\n",
+      "output_absent": true
+    },
+    {
+      "name": "existing-output-preserved",
+      "exit_code": 1,
+      "error": "realnavmemory: output directory \"/private/tmp/coimnet-memory-negative-awlpir_q/existing\" already exists\n",
+      "marker_preserved": true
+    },
+    {
+      "name": "concurrent-exclusive-output",
+      "exit_codes": [
+        0,
+        1
+      ],
+      "valid_complete_plan": true
+    },
+    {
+      "name": "cancelled-training-no-bundle",
+      "command": [
+        "/private/tmp/coimnet-memory-root-20261003-lhunwq8d/realnavmemory",
+        "train",
+        "--input",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+        "--plan",
+        "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/prepare/plan.json",
+        "--out-dir",
+        "/private/tmp/coimnet-memory-negative-awlpir_q/cancelled-training"
+      ],
+      "exit_code": 1,
+      "error": "realnavmemory: fit seed 20261003 control delivered: realnavmemory: training forward pass: context canceled\n",
+      "bundle_absent": true,
+      "output_removed": true
+    }
+  ]
+}
