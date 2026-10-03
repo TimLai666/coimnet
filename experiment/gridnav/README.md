@@ -31,3 +31,24 @@ PPO JSON 保留每個 seed 的訓練曲線、更新前後回報、隨機基線�
 `passed` 需要所有 seed 執行成功，且訓練後平均回報同時高於訓練前與隨機基線。標準差是三個 seed 平均回報的母體標準差。失敗 seed 保留在結果中，不參與平均，並使整體不通過。CLI 在門檻未過時仍輸出完整 JSON，再傳回非零退出碼。
 
 模仿模式輸出專家一致率與環境回報，沒有 `passed` 學習門檻；退出成功只代表所有 seed 執行成功。既有曲線使用 50、200、500 個 episode，200 個 episode 時有一個 seed 的一致率下降，500 個 episode 才是既有一致率改善測試的預算。完整量測與命令見 [LRN-09 證據](../../evidence/LRN-09/verification.json)，資源數字見 [記憶體與時間](../../docs/resources.md)。
+
+## 起始提示與抵達檢查
+
+此測試範例保持既有模型與三組 200 次 PPO 更新，補訓練前後 sampled／greedy 的原提示、清除提示、反轉提示，以及不讀模型的 random。每組使用環境種子 1000～1039，左右各 20 回合；共同 PCG 串流為 0x1004，每回合重新建立，與舊 CLI 連續評估串流分開。目標只供計分，參數、神經狀態及最佳化器不因評估改變。
+
+```sh
+audit_dir=$(mktemp -d)
+COIMNET_GOAL_CUE_EVIDENCE="$audit_dir" go test -count=1 -v -run '^TestPPOGoalCueEvidence$' ./experiment
+```
+
+輸出 report.json，不覆寫既有檔案。39 組條件、1,560 回合的完整行走紀錄保存在 [report.json.gz](../../evidence/LRN-09/goal-cue-audit-20261003/report.json.gz)，較小的[摘要](../../evidence/LRN-09/goal-cue-audit-20261003/summary.json)可直接閱讀。用 `python3 evidence/LRN-09/goal-cue-audit-20261003/verify_report.py` 獨立重算位置、獎勵、終止旗標、摘要與指紋。
+
+| seed | sampled 訓練前抵達 | 訓練後抵達 | 清除提示 | 反轉提示 | greedy 訓練後原提示／清除提示 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 20／40 | 20／40 | 20／40 | 20／40 | 20／40、20／40 |
+| 2 | 23／40 | 39／40 | 32／40 | 24／40 | 40／40、40／40 |
+| 3 | 16／40 | 27／40 | 21／40 | 16／40 | 40／40、40／40 |
+
+事前的描述性工程判準只有 seed 2 通過，整體 goal_cue_gate=false。seed 1 的左目標是 0／20，seed 3 為 8／20，未達每側 0.8。seed 2 未訓練時 greedy 已是 40／40，訓練後反轉提示也可 40／40。seed 3 的 greedy 則從 0／40 變成 40／40，但清除提示仍是 40／40。
+
+20 步足以先走到錯端再折返，走遍兩端最少只需 9 步。因此本輪支持有限的策略與抵達改善，沒有三組一致依提示導航的證據。環境只有兩種目標情境，不能把 40 回合當作 40 種獨立導航問題，這也不是果蠅接線或生物記憶的驗收。固定判準及限制見 [ticket 36](../../docs/tickets/36-synthetic-goal-cue-audit.md)。

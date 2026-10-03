@@ -1,0 +1,707 @@
+{
+  "schema_version": "coimnet-synthetic-goal-cue-audit/v1",
+  "config": {
+    "corridor": {
+      "length": 7,
+      "time_limit": 20,
+      "step_penalty": 0.01,
+      "goal_reward": 1
+    },
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "updates": 200,
+    "hidden": 8,
+    "eval_episodes": 40,
+    "learning_rate": 0.01,
+    "ppo": {
+      "gamma": 0.99,
+      "lambda": 0.95,
+      "clip_epsilon": 0.2,
+      "value_coef": 0.5,
+      "entropy_coef": 0.01,
+      "burn_in": 0,
+      "time_limit": 20,
+      "epochs": 1,
+      "mini_batch": 1
+    }
+  },
+  "config_hash": "6f5698b4d0dee3d75fac9deab4b019978e46dd1b5af5035dde1e4949c14cd243",
+  "eval_stream": 4100,
+  "gate_criteria": "each seed: sampled left/right >=0.8, success gain over before and random >=0.15, flipped-cue success drop >=0.2, greedy both goal sides succeed; 1e-12 comparison tolerance",
+  "goal_cue_gate_by_seed": {
+    "1": false,
+    "2": true,
+    "3": false
+  },
+  "goal_cue_gate": false,
+  "runs": [
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 11,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.35100000000000015,
+        "mean_steps": 14.9
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 18,
+        "left_episodes": 20,
+        "left_reached": 9,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.2962500000000001,
+        "mean_steps": 15.375
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 16,
+        "left_episodes": 20,
+        "left_reached": 7,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.24025000000000007,
+        "mean_steps": 15.975
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3749999999999999,
+        "mean_steps": 12.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3749999999999999,
+        "mean_steps": 12.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "e9943b7ddb16101dc68b51cf0828d097956089498051347d5af3d8596895ca60",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3349999999999999,
+        "mean_steps": 16.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3772500000000001,
+        "mean_steps": 12.275
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3760000000000001,
+        "mean_steps": 12.4
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3702500000000001,
+        "mean_steps": 12.975
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.38500000000000006,
+        "mean_steps": 11.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.38500000000000006,
+        "mean_steps": 11.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "8cfeb1a8d383f9597abfa94ba04b89468b4badc359864e41f67c8fab8e2a0926",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.38500000000000006,
+        "mean_steps": 11.5
+      }
+    },
+    {
+      "seed": 1,
+      "stage": "random",
+      "mode": "random",
+      "cue": "original",
+      "metrics": {
+        "episodes": 40,
+        "reached": 21,
+        "left_episodes": 20,
+        "left_reached": 12,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.3745000000000002,
+        "mean_steps": 15.05
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 23,
+        "left_episodes": 20,
+        "left_reached": 6,
+        "right_episodes": 20,
+        "right_reached": 17,
+        "mean_return": 0.4187500000000001,
+        "mean_steps": 15.625
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 23,
+        "left_episodes": 20,
+        "left_reached": 6,
+        "right_episodes": 20,
+        "right_reached": 17,
+        "mean_return": 0.4232500000000002,
+        "mean_steps": 15.175
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 23,
+        "left_episodes": 20,
+        "left_reached": 6,
+        "right_episodes": 20,
+        "right_reached": 17,
+        "mean_return": 0.42275000000000024,
+        "mean_steps": 15.225
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.9549999999999995,
+        "mean_steps": 4.5
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3749999999999999,
+        "mean_steps": 12.5
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "558bdce2ecd22cd8c629b3ae06a3f71a948cf607a5cdbc9d5533e63d9ebaa495",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3500000000000001,
+        "mean_steps": 15
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 39,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 19,
+        "mean_return": 0.9062499999999998,
+        "mean_steps": 6.875
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 32,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 12,
+        "mean_return": 0.6890000000000003,
+        "mean_steps": 11.1
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 24,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 4,
+        "mean_return": 0.4425000000000003,
+        "mean_steps": 15.75
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.9400000000000001,
+        "mean_steps": 6
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.9300000000000002,
+        "mean_steps": 7
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "81dd074a73c756a6dcb02bd55dcf295dc8d4d8cf680730244472df16a3b0d413",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.9200000000000002,
+        "mean_steps": 8
+      }
+    },
+    {
+      "seed": 2,
+      "stage": "random",
+      "mode": "random",
+      "cue": "original",
+      "metrics": {
+        "episodes": 40,
+        "reached": 21,
+        "left_episodes": 20,
+        "left_reached": 12,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.3745000000000002,
+        "mean_steps": 15.05
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 16,
+        "left_episodes": 20,
+        "left_reached": 8,
+        "right_episodes": 20,
+        "right_reached": 8,
+        "mean_return": 0.24150000000000013,
+        "mean_steps": 15.85
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 10,
+        "right_episodes": 20,
+        "right_reached": 10,
+        "mean_return": 0.3460000000000002,
+        "mean_steps": 15.4
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 22,
+        "left_episodes": 20,
+        "left_reached": 11,
+        "right_episodes": 20,
+        "right_reached": 11,
+        "mean_return": 0.3992500000000001,
+        "mean_steps": 15.075
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 0,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 0,
+        "mean_return": -0.20000000000000004,
+        "mean_steps": 20
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 0,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 0,
+        "mean_return": -0.20000000000000004,
+        "mean_steps": 20
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "before",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "72fa381ad40d9c906e843e79c7d153a590e10c0360774c3774153b01932e33d7",
+      "metrics": {
+        "episodes": 40,
+        "reached": 0,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 0,
+        "mean_return": -0.20000000000000004,
+        "mean_steps": 20
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "original",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 27,
+        "left_episodes": 20,
+        "left_reached": 8,
+        "right_episodes": 20,
+        "right_reached": 19,
+        "mean_return": 0.5455000000000001,
+        "mean_steps": 12.95
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "erased",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 21,
+        "left_episodes": 20,
+        "left_reached": 3,
+        "right_episodes": 20,
+        "right_reached": 18,
+        "mean_return": 0.3662500000000001,
+        "mean_steps": 15.875
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "sampled",
+      "cue": "flipped",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 16,
+        "left_episodes": 20,
+        "left_reached": 1,
+        "right_episodes": 20,
+        "right_reached": 15,
+        "mean_return": 0.22374999999999998,
+        "mean_steps": 17.625
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "original",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.97,
+        "mean_steps": 3
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "erased",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 40,
+        "left_episodes": 20,
+        "left_reached": 20,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.9349999999999997,
+        "mean_steps": 6.5
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "after",
+      "mode": "greedy",
+      "cue": "flipped",
+      "snapshot_hash": "ece72c0130a45dd964df2f4e6570b4e0d617f8c1718e2dbbb147966853aa53a6",
+      "metrics": {
+        "episodes": 40,
+        "reached": 20,
+        "left_episodes": 20,
+        "left_reached": 0,
+        "right_episodes": 20,
+        "right_reached": 20,
+        "mean_return": 0.3349999999999999,
+        "mean_steps": 16.5
+      }
+    },
+    {
+      "seed": 3,
+      "stage": "random",
+      "mode": "random",
+      "cue": "original",
+      "metrics": {
+        "episodes": 40,
+        "reached": 21,
+        "left_episodes": 20,
+        "left_reached": 12,
+        "right_episodes": 20,
+        "right_reached": 9,
+        "mean_return": 0.3745000000000002,
+        "mean_steps": 15.05
+      }
+    }
+  ],
+  "report_sha256": "2ece8be882112035a825d0bd1312dd09f498fec08723e98fe46d5a1f723644db",
+  "report_gzip_sha256": "bfe53dab37bb16ca90b1ea863c4457693dcbe69c9f85b58bc4500e5e424372dd",
+  "run_count": 39,
+  "episode_count": 1560,
+  "scope": "Synthetic two-goal corridor; two unique cue cases; no connectome, new task distribution, biological memory or realnav acceptance."
+}

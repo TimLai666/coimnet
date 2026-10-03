@@ -98,7 +98,7 @@ go build -o bin/coimnet ./cmd/coimnet
 
 `lif-threshold` 把同一份延遲資料換成三顆 LIF 放電神經元，只比較基礎閾值可不可訓練。三組固定 seed 各跑全部可訓練、只訓練閾值與全部凍結三個對照，報告列出每組的保留資料 MSE、逐顆 `theta_base` 與放電率。更新預算用 `--updates` 調整，預設 300，範圍 1 到 100000。事前寫死的門檻沒過時仍輸出完整報告，並傳回非零退出碼。這是人工資料上的數值可學習性檢查，不是果蠅放電行為成績，詳見[範例說明](examples/lifthreshold/README.md)。
 
-`gridnav` 示範在人工走廊進行 PPO 或專家模仿，輸出三個 seed 的訓練與評估報告。PPO 預設每個 seed 更新 200 次，平均回報須同時超過訓練前與隨機基線。使用 `--method imitation --updates 500` 可執行既有模仿一致率改善協定，詳見[走廊範例](experiment/gridnav/README.md)。
+`gridnav` 示範在人工走廊進行 PPO 或專家模仿，輸出三個 seed 的訓練與評估報告。PPO 預設每個 seed 更新 200 次，平均回報須同時超過訓練前與隨機基線。使用 `--method imitation --updates 500` 可執行既有模仿一致率改善協定，詳見[走廊範例](experiment/gridnav/README.md)。平均回報改善與依提示導航分開判讀，逐回合抵達與提示對照見[人工走廊檢查](experiment/gridnav/README.md#起始提示與抵達檢查)。
 
 `nav2d` 在 9×9 人工地圖上跑四個二維導航任務（記住只出現一次的目標、避開障礙、中途換地圖、依語言指定的角落），每個任務比較遞迴、前饋、重新接線與隨機四種策略，各 3 個 seed。報告分開列出訓練前、訓練用地圖與沒看過的地圖上的成功率、專家一致率與碰撞數；`--task` 可以只跑一個任務。
 

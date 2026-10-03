@@ -1,0 +1,470 @@
+COMMAND: go version
+go version go1.26.5 darwin/arm64
+COMMAND: go env GOOS GOARCH CGO_ENABLED
+darwin
+arm64
+1
+COMMAND: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-10-03T14:04:54Z
+COMMAND: go mod verify
+all modules verified
+COMMAND: go build ./...
+COMMAND: go test -count=1 ./...
+ok  	github.com/TimLai666/coimnet	9.089s
+ok  	github.com/TimLai666/coimnet/backend	0.872s
+ok  	github.com/TimLai666/coimnet/backend/webgpu	2.074s
+ok  	github.com/TimLai666/coimnet/checkpoint	26.713s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	1.068s
+ok  	github.com/TimLai666/coimnet/connectome	4.090s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	0.648s
+ok  	github.com/TimLai666/coimnet/distill	0.595s
+ok  	github.com/TimLai666/coimnet/download	1.904s
+ok  	github.com/TimLai666/coimnet/dynamics	1.093s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	1.134s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	0.852s
+ok  	github.com/TimLai666/coimnet/examples/realasr	0.846s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	1.511s
+ok  	github.com/TimLai666/coimnet/examples/realnav	0.796s
+ok  	github.com/TimLai666/coimnet/examples/realnavmemory	1.163s
+ok  	github.com/TimLai666/coimnet/examples/realocr	0.732s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	0.994s
+ok  	github.com/TimLai666/coimnet/examples/realtext	8.328s
+ok  	github.com/TimLai666/coimnet/experiment	135.073s
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	1.326s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.282s
+ok  	github.com/TimLai666/coimnet/experiment/multimodaleval	119.924s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	0.276s
+ok  	github.com/TimLai666/coimnet/experiment/studenteval	1.601s
+ok  	github.com/TimLai666/coimnet/feather	0.374s
+ok  	github.com/TimLai666/coimnet/internal/cli	98.444s
+ok  	github.com/TimLai666/coimnet/internal/delayedfixture	0.428s
+ok  	github.com/TimLai666/coimnet/internal/extsort	0.690s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.268s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.254s
+ok  	github.com/TimLai666/coimnet/internal/redact	0.251s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.265s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.268s
+ok  	github.com/TimLai666/coimnet/learning	1.657s
+ok  	github.com/TimLai666/coimnet/learning/rl	0.558s
+ok  	github.com/TimLai666/coimnet/modulation	0.547s
+ok  	github.com/TimLai666/coimnet/multimodal	0.267s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	0.260s
+ok  	github.com/TimLai666/coimnet/params	1.195s
+ok  	github.com/TimLai666/coimnet/plasticity	0.258s
+ok  	github.com/TimLai666/coimnet/replay	0.265s
+ok  	github.com/TimLai666/coimnet/resources	0.252s
+ok  	github.com/TimLai666/coimnet/signal	0.386s
+ok  	github.com/TimLai666/coimnet/simulate	3.580s
+ok  	github.com/TimLai666/coimnet/tasks/asr	9.471s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	0.324s
+ok  	github.com/TimLai666/coimnet/tasks/media	76.894s
+ok  	github.com/TimLai666/coimnet/tasks/media/realdata	3.223s
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	0.315s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	2.498s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	0.246s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	0.259s
+ok  	github.com/TimLai666/coimnet/tasks/textgen	94.159s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	0.280s
+ok  	github.com/TimLai666/coimnet/teacher	0.726s
+ok  	github.com/TimLai666/coimnet/teacher/tool	0.257s
+COMMAND: go test -race -count=1 ./...
+--- FAIL: TestCancelReleases (25.50s)
+    --- FAIL: TestCancelReleases/download_Fetch (1.31s)
+        cancel_release_test.go:180: before TestCancelReleases/download_Fetch: goroutines=4 HeapInuse=7774208
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 0: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 1: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 2: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 3: goroutines=7 (want 4) HeapInuse=7815168 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 4: goroutines=7 (want 4) HeapInuse=7815168 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 5: goroutines=7 (want 4) HeapInuse=7815168 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 6: goroutines=7 (want 4) HeapInuse=7823360 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 7: goroutines=7 (want 4) HeapInuse=7823360 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 8: goroutines=7 (want 4) HeapInuse=7823360 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 9: goroutines=7 (want 4) HeapInuse=7823360 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 10: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 11: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 12: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 13: goroutines=7 (want 4) HeapInuse=7806976 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 14: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 15: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 16: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 17: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 18: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: after TestCancelReleases/download_Fetch attempt 19: goroutines=7 (want 4) HeapInuse=7831552 (limit 8551628)
+        cancel_release_test.go:188: TestCancelReleases/download_Fetch: resources not released after cancellation
+FAIL
+FAIL	github.com/TimLai666/coimnet	36.151s
+ok  	github.com/TimLai666/coimnet/backend	1.406s
+ok  	github.com/TimLai666/coimnet/backend/webgpu	3.592s
+ok  	github.com/TimLai666/coimnet/checkpoint	23.472s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	2.440s
+ok  	github.com/TimLai666/coimnet/connectome	6.381s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	2.352s
+ok  	github.com/TimLai666/coimnet/distill	2.527s
+ok  	github.com/TimLai666/coimnet/download	3.461s
+ok  	github.com/TimLai666/coimnet/dynamics	4.909s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	3.498s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	1.945s
+ok  	github.com/TimLai666/coimnet/examples/realasr	1.769s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	14.610s
+ok  	github.com/TimLai666/coimnet/examples/realnav	6.007s
+ok  	github.com/TimLai666/coimnet/examples/realnavmemory	9.848s
+ok  	github.com/TimLai666/coimnet/examples/realocr	1.975s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	3.253s
+ok  	github.com/TimLai666/coimnet/examples/realtext	242.085s
+panic: test timed out after 10m0s
+	running tests:
+		TestAttributionNeverEnlargesThePeriphery (3m36s)
+
+goroutine 90925 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive, 3 minutes]:
+testing.(*T).Run(0xc000488008, {0x10158e3ed, 0x28}, 0x1021f8680)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc000488008)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc000488008, 0xc00004dab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x10157a783, 0x1c}, {0x10158c8f5, 0x27}, 0xc000484000, {0x10235d8a0, 0x99, 0x99}, {0xc0003f88c0?, 0xc0003d4420?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc0003d88c0)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:352 +0x104
+
+goroutine 57908 [runnable]:
+github.com/TimLai666/coimnet/dynamics.(*Continuous).activate(0xc0000ed170, 0x3fd95527c389c1d8)
+	/Users/timlai/Developer/coimnet/dynamics/continuous.go:422 +0x190
+github.com/TimLai666/coimnet/dynamics.(*Continuous).Forward(0xc0000ed170, {0x102208198, 0x10239a860}, {{0xc0006c0000, 0x210, 0x260}, {0xc0004c5380, 0x34, 0x34}, {0xc0004c5520, ...}}, ...)
+	/Users/timlai/Developer/coimnet/dynamics/continuous.go:302 +0x14e8
+github.com/TimLai666/coimnet/learning.continuousCore.forward({0xc0000ed170?, 0xc0001c6820?, 0xc0005cd448?}, {0x102208198, 0x10239a860}, {{{0xc0006c0000, 0x210, 0x260}, {0xc0004c5380, 0x34, ...}, ...}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/core.go:97 +0x164
+github.com/TimLai666/coimnet/learning.(*Network).forwardSegment(0xc000130280, {0x102208198, 0x10239a860}, {{{0xc0006c0000, 0x210, 0x260}, {0xc0004c5380, 0x34, 0x34}, {0xc0004c5520, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:567 +0xdfc
+github.com/TimLai666/coimnet/learning.(*Network).forward(...)
+	/Users/timlai/Developer/coimnet/learning/network.go:490
+github.com/TimLai666/coimnet/learning.(*Network).PredictAll(0xc000130280, {0x102208198, 0x10239a860}, {{{0xc0006c0000, 0x210, 0x260}, {0xc0004c5380, 0x34, 0x34}, {0xc0004c5520, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:226 +0xac
+github.com/TimLai666/coimnet/learning.(*Trainer).PredictAll(0xc0000e8480, {0x102208198, 0x10239a860}, {0xc000164a08, 0x33, 0x33})
+	/Users/timlai/Developer/coimnet/learning/trainer.go:274 +0x230
+github.com/TimLai666/coimnet/experiment.(*nav2dPolicy).act(0xc00053c3c0, {0x102208198, 0x10239a860}, {0xc0001ae388, 0x11, 0x0?})
+	/Users/timlai/Developer/coimnet/experiment/nav2d_policy.go:422 +0x77c
+github.com/TimLai666/coimnet/experiment.evaluateNav2D({0x102208198, 0x10239a860}, 0xc00053c3c0, {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/nav2d_policy.go:459 +0x754
+github.com/TimLai666/coimnet/experiment.attributionRunOne({0x102208198, 0x10239a860}, {{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/attribution.go:435 +0x9a8
+github.com/TimLai666/coimnet/experiment.RunAttribution({_, _}, {{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, ...}, ...})
+	/Users/timlai/Developer/coimnet/experiment/attribution.go:546 +0x8ac
+github.com/TimLai666/coimnet/experiment.TestAttributionNeverEnlargesThePeriphery(0xc000488488)
+	/Users/timlai/Developer/coimnet/experiment/attribution_test.go:184 +0x5fc
+testing.tRunner(0xc000488488, 0x1021f8680)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/experiment	600.752s
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	3.768s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	1.347s
+panic: test timed out after 10m0s
+	running tests:
+		TestRunUnseenRetrievalUsesTheWholeGallery (1m59s)
+
+goroutine 98 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive, 1 minutes]:
+testing.(*T).Run(0xc0001ba488, {0x102e109a3, 0x29}, 0x1036dfdd8)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc0001ba488)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc0001ba488, 0xc00003bab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x102e016ab, 0x1c}, {0x102e1b9f1, 0x36}, 0xc00019c048, {0x10380cac0, 0xf, 0xf}, {0xc0001b57c0?, 0xc00018d1c0?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc00048a460)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:74 +0x104
+
+goroutine 49 [runnable]:
+github.com/HazelnutParadise/insyra/nn.(*Tape).MatMul(0xc000507220, 0xc000272280, 0xc0002723c0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:94 +0x58
+github.com/TimLai666/coimnet/learning.(*Network).forwardSegment(0xc000000140, {0x1036ec6b8, 0x103861560}, {{{0xc000c36a80, 0x948, 0x950}, {0xc00052e800, 0x72, 0x80}, {0xc00052ec00, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:543 +0x7e0
+github.com/TimLai666/coimnet/learning.(*Network).lossGradientFrom(_, {_, _}, {{{0xc000c36a80, 0x948, 0x950}, {0xc00052e800, 0x72, 0x80}, {0xc00052ec00, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:336 +0x1c8
+github.com/TimLai666/coimnet/learning.(*Trainer).StepFrom(0xc000166180, {0x1036ec6b8, 0x103861560}, {0xc000721180, 0x3, 0x3}, {0xc0005071d0, 0x3, 0x3})
+	/Users/timlai/Developer/coimnet/learning/trainer.go:352 +0x3b8
+github.com/TimLai666/coimnet/experiment/multimodaleval.train({0x1036ec6b8, 0x103861560}, 0xc000166180, {0xc0004dc008, 0x1c7, 0x249?}, 0x6)
+	/Users/timlai/Developer/coimnet/experiment/multimodaleval/model.go:235 +0x460
+github.com/TimLai666/coimnet/experiment/multimodaleval.runOne({0x1036ec6b8, 0x103861560}, {{0xb4, 0x3fc999999999999a, 0x0, 0x0}, {0xc00023ac00, 0x1, 0x1}, 0x1, ...}, ...)
+	/Users/timlai/Developer/coimnet/experiment/multimodaleval/run.go:292 +0xaac
+github.com/TimLai666/coimnet/experiment/multimodaleval.Run({_, _}, {{_, _, _, _}, {_, _, _}, _, ...})
+	/Users/timlai/Developer/coimnet/experiment/multimodaleval/run.go:255 +0x1414
+github.com/TimLai666/coimnet/experiment/multimodaleval.TestRunUnseenRetrievalUsesTheWholeGallery(0xc000168fc8)
+	/Users/timlai/Developer/coimnet/experiment/multimodaleval/run_test.go:102 +0x2a4
+testing.tRunner(0xc000168fc8, 0x1036dfdd8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/experiment/multimodaleval	600.637s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	1.340s
+ok  	github.com/TimLai666/coimnet/experiment/studenteval	4.774s
+ok  	github.com/TimLai666/coimnet/feather	1.538s
+panic: test timed out after 10m0s
+	running tests:
+		TestBenchmarkSplitsIndividualCalls (3m47s)
+
+goroutine 45896 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive, 3 minutes]:
+testing.(*T).Run(0xc0004c6008, {0x1059ac3dd, 0x22}, 0x10696f030)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc0004c6008)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc0004c6008, 0xc0000c1ab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x10599e7f5, 0x1c}, {0x1059bccca, 0x29}, 0xc0004c2000, {0x106b1ba00, 0x84, 0x84}, {0xc0004a84c0?, 0xc0004a6060?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc0004b00a0)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:308 +0x104
+
+goroutine 46088 [runnable]:
+reflect.Value.Index({0x106705b00?, 0xc000233ab0?, 0x97?}, 0x1609)
+	/usr/local/go/src/reflect/value.go:1400 +0x418
+encoding/json.arrayEncoder.encode({0x0?}, 0xc00017e080, {0x106705b00?, 0xc000233ab0?, 0xc000233ab7?}, {0x0?, 0x0?})
+	/usr/local/go/src/encoding/json/encode.go:890 +0xc4
+encoding/json.sliceEncoder.encode({0x104835fa0?}, 0xc00017e080, {0x106705b00?, 0xc000233ab0?, 0xc0015d9e51?}, {0x40?, 0x8f?})
+	/usr/local/go/src/encoding/json/encode.go:863 +0x378
+encoding/json.structEncoder.encode({{{0xc00029a508, 0x3, 0x4}, 0xc000596c00, 0xc000596c30}}, 0xc00017e080, {0x106859f80?, 0xc000233a80?, 0x104835fa0?}, {0x8?, ...})
+	/usr/local/go/src/encoding/json/encode.go:747 +0x350
+encoding/json.structEncoder.encode({{{0xc0006fb908, 0x5, 0x8}, 0xc000596f60, 0xc000596f90}}, 0xc00017e080, {0x1068abb20?, 0xc000233a10?, 0x104835fa0?}, {0xc?, ...})
+	/usr/local/go/src/encoding/json/encode.go:747 +0x350
+encoding/json.structEncoder.encode({{{0xc0006df508, 0x9, 0x11}, 0xc00068bb00, 0xc00068bb30}}, 0xc00017e080, {0x1068f6f00?, 0xc000233808?, 0xc00052e938?}, {0x54?, ...})
+	/usr/local/go/src/encoding/json/encode.go:747 +0x350
+encoding/json.(*encodeState).reflectValue(0xc00017e080, {0x1068f6f00?, 0xc000233808?, 0x10693ba20?}, {0x28?, 0xea?})
+	/usr/local/go/src/encoding/json/encode.go:367 +0x78
+encoding/json.(*encodeState).marshal(0xc00017e080, {0x1068f6f00, 0xc000233808}, {0x54?, 0x10?})
+	/usr/local/go/src/encoding/json/encode.go:343 +0xb0
+encoding/json.Marshal({0x1068f6f00, 0xc000233808})
+	/usr/local/go/src/encoding/json/encode.go:209 +0xb4
+github.com/TimLai666/coimnet/checkpoint.EncodeIndividual({{0x105990a28, 0x15}, {0x1059e349e, 0x42}, {0xc00003e280, 0x40}, {{0x11170, {0xc001462000, 0x11170, 0x11400}, ...}, ...}, ...})
+	/Users/timlai/Developer/coimnet/checkpoint/individual.go:56 +0x23c
+github.com/TimLai666/coimnet/checkpoint.SaveIndividual({_, _}, {_, _}, {{0x105990a28, 0x15}, {0x1059e349e, 0x42}, {0xc00003e280, 0x40}, ...})
+	/Users/timlai/Developer/coimnet/checkpoint/individual.go:37 +0x11c
+github.com/TimLai666/coimnet/internal/cli.runBenchmark.func7.1()
+	/Users/timlai/Developer/coimnet/internal/cli/benchmark.go:363 +0x160
+github.com/TimLai666/coimnet/internal/cli.benchmarkStage({0x10597929e, 0x8}, 0x2, 0xc000532c90)
+	/Users/timlai/Developer/coimnet/internal/cli/benchmark.go:483 +0x338
+github.com/TimLai666/coimnet/internal/cli.runBenchmark({0x106984cb8, 0x106b5a580}, {0xc0000e0590, 0xa, 0xa}, {0x10697a760, 0xc0000927c0}, {0x10697a680, 0xc00ddf4990})
+	/Users/timlai/Developer/coimnet/internal/cli/benchmark.go:346 +0x35c8
+github.com/TimLai666/coimnet/internal/cli.Run({0x106984cb8, 0x106b5a580}, {0xc0000e0580, 0xb, 0xb}, {0x10697a680, 0xc00ddf4960}, {0x10697a680, 0xc00ddf4990})
+	/Users/timlai/Developer/coimnet/internal/cli/run.go:158 +0x5600
+github.com/TimLai666/coimnet/internal/cli.TestBenchmarkSplitsIndividualCalls(0xc000628d88)
+	/Users/timlai/Developer/coimnet/internal/cli/benchmark_test.go:370 +0x3c0
+testing.tRunner(0xc000628d88, 0x10696f030)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/internal/cli	601.124s
+ok  	github.com/TimLai666/coimnet/internal/delayedfixture	1.633s
+ok  	github.com/TimLai666/coimnet/internal/extsort	1.712s
+ok  	github.com/TimLai666/coimnet/internal/fileio	1.389s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	1.294s
+ok  	github.com/TimLai666/coimnet/internal/redact	1.489s
+ok  	github.com/TimLai666/coimnet/internal/sparse	1.450s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	1.698s
+ok  	github.com/TimLai666/coimnet/learning	7.132s
+ok  	github.com/TimLai666/coimnet/learning/rl	2.970s
+ok  	github.com/TimLai666/coimnet/modulation	2.706s
+ok  	github.com/TimLai666/coimnet/multimodal	1.293s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	1.299s
+ok  	github.com/TimLai666/coimnet/params	3.100s
+ok  	github.com/TimLai666/coimnet/plasticity	1.315s
+ok  	github.com/TimLai666/coimnet/replay	1.308s
+ok  	github.com/TimLai666/coimnet/resources	1.282s
+ok  	github.com/TimLai666/coimnet/signal	2.095s
+ok  	github.com/TimLai666/coimnet/simulate	5.082s
+ok  	github.com/TimLai666/coimnet/tasks/asr	165.694s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	1.937s
+panic: test timed out after 10m0s
+	running tests:
+		TestRunMediaReportImage (17s)
+
+goroutine 172 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0xc0002d4248, {0x105822a4f, 0x17}, 0x10614bae0)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc0002d4248)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc0002d4248, 0xc00003bab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x1058290c9, 0x1c}, {0x105838aaa, 0x28}, 0xc000478000, {0x10627fb00, 0x37, 0x37}, {0xc000287680?, 0xc000284f40?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc0004700a0)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:154 +0x104
+
+goroutine 216 [runnable]:
+github.com/HazelnutParadise/insyra/nn.reduceBroadcastGradientTape(0xc000236820, {0xc0002c82b0, 0x2, 0x2})
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:982 +0x5a0
+github.com/HazelnutParadise/insyra/nn.matMulVJPBatched(0xc0000db680, 0xc0000db7c0, 0xc0000dbb80)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff_attention.go:62 +0xcf8
+github.com/HazelnutParadise/insyra/nn.matMulVJP(0xc0000db680, 0xc0000db7c0, 0xc0000dbb80)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:838 +0x80
+github.com/HazelnutParadise/insyra/nn.(*Tape).MatMul.func1(0xc0000dbb80)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:95 +0x40
+github.com/HazelnutParadise/insyra/nn.(*Tape).backwardFrom(0xc00028c190, 0xc0000db900, 0xc0000dbb80)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:637 +0x140
+github.com/HazelnutParadise/insyra/nn.(*Tape).BackwardFrom(0xc00028c190, 0xc0000db900, 0xc0000dba40)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:622 +0x37c
+github.com/TimLai666/coimnet/learning.(*Network).lossGradientReverse(0xc0002317c0, {0x106158c38, 0x1062d1ea0}, {_, _, _}, _, {_, _, _}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:379 +0x5f4
+github.com/TimLai666/coimnet/learning.(*Network).lossGradientFrom(_, {_, _}, {{{0xc000546000, 0x1400, 0x1400}, {0xc000a69b80, 0x50, 0x50}, {0xc000292000, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:340 +0x278
+github.com/TimLai666/coimnet/learning.(*Trainer).StepFrom(0xc0000d2180, {0x106158c38, 0x1062d1ea0}, {0xc000460480, 0x6, 0x6}, {0xc000460990, 0x6, 0x6})
+	/Users/timlai/Developer/coimnet/learning/trainer.go:352 +0x3b8
+github.com/TimLai666/coimnet/tasks/media.(*Generator).Step(0xc0003c59e0, {0x106158c38, 0x1062d1ea0}, {0xc0001a4945, 0xb}, {0xc000379200, 0xc0, 0xc0001e4a08?})
+	/Users/timlai/Developer/coimnet/tasks/media/generator.go:309 +0xd6c
+github.com/TimLai666/coimnet/tasks/media.trainMediaConditions({0x106158c38, 0x1062d1ea0}, {0x10580a8bd, 0x5}, {0xc00020e000, 0x8, 0xc0002dd3f0?}, 0xa, {0xc0002dd6c8, 0x2, ...})
+	/Users/timlai/Developer/coimnet/tasks/media/run.go:266 +0x1a4
+github.com/TimLai666/coimnet/tasks/media.runMediaSeed({0x106158c38, 0x1062d1ea0}, {{0x10580a8bd, 0x5}, {{0x10580a8bd, 0x5}, 0x10, 0x40, 0x3, 0x3f847ae147ae147b, ...}, ...}, ...)
+	/Users/timlai/Developer/coimnet/tasks/media/run.go:218 +0xa34
+github.com/TimLai666/coimnet/tasks/media.RunMedia({_, _}, {{0x10580a8bd, 0x5}, {{0x10580a8bd, 0x5}, 0x10, 0x40, 0x3, 0x3f847ae147ae147b, ...}, ...})
+	/Users/timlai/Developer/coimnet/tasks/media/run.go:186 +0x73c
+github.com/TimLai666/coimnet/tasks/media.TestRunMediaReportImage(0xc0002d4d88)
+	/Users/timlai/Developer/coimnet/tasks/media/run_test.go:16 +0x25c
+testing.tRunner(0xc0002d4d88, 0x10614bae0)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+FAIL	github.com/TimLai666/coimnet/tasks/media	600.590s
+ok  	github.com/TimLai666/coimnet/tasks/media/realdata	3.070s
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	1.370s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	30.080s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	1.401s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	1.327s
+panic: test timed out after 10m0s
+	running tests:
+		TestRunTextgenLowersPerplexity (6m29s)
+
+goroutine 80662 [running]:
+testing.(*M).startAlarm.func1()
+	/usr/local/go/src/testing/testing.go:2802 +0x498
+created by time.goFunc
+	/usr/local/go/src/time/sleep.go:215 +0x44
+
+goroutine 1 [chan receive, 6 minutes]:
+testing.(*T).Run(0xc00015a488, {0x105235174, 0x1e}, 0x105bde348)
+	/usr/local/go/src/testing/testing.go:2109 +0x7dc
+testing.runTests.func1(0xc00015a488)
+	/usr/local/go/src/testing/testing.go:2585 +0x78
+testing.tRunner(0xc00015a488, 0xc00003bab8)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+testing.runTests({0x105232c2c, 0x1c}, {0x105244895, 0x2a}, 0xc0001440c0, {0x105d44da0, 0x1d, 0x1d}, {0xc00014d940?, 0xc00012d260?, ...})
+	/usr/local/go/src/testing/testing.go:2583 +0x7a4
+testing.(*M).Run(0xc0004185a0)
+	/usr/local/go/src/testing/testing.go:2443 +0xb3c
+main.main()
+	_testmain.go:102 +0x104
+
+goroutine 40964 [sync.WaitGroup.Wait]:
+sync.runtime_SemacquireWaitGroup(0xc000a36b18?, 0x10?)
+	/usr/local/go/src/runtime/sema.go:114 +0x38
+sync.(*WaitGroup).Wait(0xc00011e440)
+	/usr/local/go/src/sync/waitgroup.go:206 +0xb8
+github.com/HazelnutParadise/insyra/nn.parallelFor(0x20, 0x8, 0xc0001de1e0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:65 +0x244
+github.com/HazelnutParadise/insyra/nn.matMul2DWithWorkers(0xc0001d65a0, 0xc0001d6320, 0x0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:1106 +0x4e4
+github.com/HazelnutParadise/insyra/nn.matMul2D(0xc0001d65a0, 0xc0001d6320)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:1092 +0x5d4
+github.com/HazelnutParadise/insyra/nn.MatMul(0xc0001d65a0, 0xc0001d6320)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:967 +0x250
+github.com/HazelnutParadise/insyra/nn.matMulVJPBatched(0xc0001c8000, 0xc0001c8140, 0xc0001d61e0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff_attention.go:58 +0xbe4
+github.com/HazelnutParadise/insyra/nn.matMulVJP(0xc0001c8000, 0xc0001c8140, 0xc0001d61e0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:838 +0x80
+github.com/HazelnutParadise/insyra/nn.(*Tape).MatMul.func1(0xc0001d61e0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:95 +0x40
+github.com/HazelnutParadise/insyra/nn.(*Tape).backwardFrom(0xc000468000, 0xc0001c8280, 0xc0001d61e0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:637 +0x140
+github.com/HazelnutParadise/insyra/nn.(*Tape).BackwardFrom(0xc000468000, 0xc0001c8280, 0xc0001d60a0)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go:622 +0x37c
+github.com/TimLai666/coimnet/learning.(*Network).lossGradientReverse(0xc0001d0000, {0x105bec4d8, 0x105d9a1a0}, {_, _, _}, _, {_, _, _}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:379 +0x5f4
+github.com/TimLai666/coimnet/learning.(*Network).lossGradientFrom(_, {_, _}, {{{0xc00032e000, 0x600, 0x600}, {0xc000162000, 0x30, 0x30}, {0xc000162180, ...}}, ...}, ...)
+	/Users/timlai/Developer/coimnet/learning/network.go:340 +0x278
+github.com/TimLai666/coimnet/learning.(*Trainer).StepFrom(0xc000224180, {0x105bec4d8, 0x105d9a1a0}, {0xc00046ec08, 0x72, 0x72}, {0xc0004d1008, 0x72, 0x72})
+	/Users/timlai/Developer/coimnet/learning/trainer.go:352 +0x3b8
+github.com/TimLai666/coimnet/tasks/textgen.(*Model).Step(0xc000150140, {0x105bec4d8, 0x105d9a1a0}, {{0xc000315a40, 0x26, 0x28}, {0xc000030600, 0x26, 0x26}})
+	/Users/timlai/Developer/coimnet/tasks/textgen/model.go:280 +0xc0c
+github.com/TimLai666/coimnet/tasks/textgen.runTextgenSeed({_, _}, {_, _}, {_, _, _}, {_, _, _}, ...)
+	/Users/timlai/Developer/coimnet/tasks/textgen/run.go:288 +0xaac
+github.com/TimLai666/coimnet/tasks/textgen.RunTextgen({_, _}, {{0x10, 0x20, 0x3, 0x3f847ae147ae147b, 0x1}, {0x0, 0x0}, 0x1, ...})
+	/Users/timlai/Developer/coimnet/tasks/textgen/run.go:212 +0x11b4
+github.com/TimLai666/coimnet/tasks/textgen.TestRunTextgenLowersPerplexity(0xc0000e0b48)
+	/Users/timlai/Developer/coimnet/tasks/textgen/run_test.go:104 +0x1d8
+testing.tRunner(0xc0000e0b48, 0x105bde348)
+	/usr/local/go/src/testing/testing.go:2036 +0x168
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x7c0
+
+goroutine 80734 [runnable]:
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0xc, 0x10)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:62 +0x84
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 40964
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:59 +0xfc
+
+goroutine 80737 [runnable]:
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0x18, 0x1c)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:62 +0x84
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 40964
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:59 +0xfc
+
+goroutine 80733 [runnable]:
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0x8, 0xc)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:62 +0x84
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 40964
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:59 +0xfc
+
+goroutine 80754 [runnable]:
+github.com/HazelnutParadise/insyra/nn.matMul2DWithWorkers.func1(0x1c, 0x20)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:1111 +0x21c
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0x1c, 0x20)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:61 +0x80
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 40964
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:59 +0xfc
+
+goroutine 80735 [runnable]:
+github.com/HazelnutParadise/insyra/nn.matMul2DWithWorkers.func1(0x10, 0x14)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:1111 +0x200
+github.com/HazelnutParadise/insyra/nn.parallelFor.func1(0x10, 0x14)
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:61 +0x80
+created by github.com/HazelnutParadise/insyra/nn.parallelFor in goroutine 40964
+	/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/kernels.go:59 +0xfc
+FAIL	github.com/TimLai666/coimnet/tasks/textgen	600.609s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	1.295s
+ok  	github.com/TimLai666/coimnet/teacher	1.871s
+ok  	github.com/TimLai666/coimnet/teacher/tool	1.330s
+FAIL

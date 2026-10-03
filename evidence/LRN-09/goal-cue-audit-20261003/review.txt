@@ -1,0 +1,37 @@
+CoImNet navigation baseline review (2026-10-03)
+
+Scope
+查閱 experiment/gridnav、experiment/ppo.go、experiment/ppo_collect.go、experiment/imitation.go、experiment/nav2d_policy.go、experiment/nav2d_suite.go，以及 evidence/LRN-09、evidence/TSK-08。這是唯讀驗收審查，沒有跑訓練、下載或修改 repo。
+
+判定
+
+1. 嚴格的「導航學習」驗收目前沒有通過者。LRN-09 PPO 是最接近的 fixture-level learning 證據：三 seed 平均回報 0.3181667 -> 0.6051667，random 0.3573333，aggregate gate passed；但 seed 1 的 final 0.37725 低於自己的 random 0.39775，環境只有左右兩個目標側，且只有回報與終止／到期計數，沒有逐回合抵達率。證據見 evidence/LRN-09/verification.json:64-101、179-207；協定與限制見 experiment/ppo.go:40-60、125-181、201-260、264-343 及 experiment/gridnav/README.md:15-31。這可稱為「小型人工走廊上的有限策略改善」，不能稱為一般導航能力或真實果蠅導航。
+
+2. LRN-09 imitation 500 只證明有限走廊上的專家一致率改善：三 seed 的 expert_agreement 為 0.7778、0.8261、0.5510，先前約 0.216-0.218，資料見 evidence/LRN-09/imitation-baseline.jsonl:3。ImitationSeedResult 只有 agreement、return，evaluateImitation 也只計步驟一致率和回報，沒有 reached/success，見 experiment/imitation.go:74-95、254-290；每一步還會重播 observation prefix，見 experiment/imitation.go:293-309。因此它是專家一致率／有限行為模仿，不是獨立的導航或 stateful memory 證明。
+
+3. TSK-08 有真正的逐回合 SuccessRate，但仍是 fixture plumbing 與弱行為訊號。未見地圖 success 只有 0.00-0.25，expert agreement 0.305-0.401，而 random 約 0.243-0.254；報告明確說 success low、沒有預註冊的 policy superiority claim，見 evidence/TSK-08/verification.json:25-28、29-121、129-134。remember_goal 的 recurrent unseen 是 success 0.1667、agreement 0.3310，random 是 0.1167、0.2466，見 evidence/TSK-08/summary.txt:1-17。它是「有做位置／目標記憶任務」，不是已證明記住目標後仍能導航。nav2d 的 Expert 只在評估計分，SuccessRate 與 ExpertAgreement 的定義見 experiment/nav2d_policy.go:22-45、442-493。
+
+根本缺口與推薦切片
+
+建議沿用 DefaultPPOExperimentConfig（experiment/ppo.go:40-60）與原有 200-update PPO 訓練，在同一個 runPPOSeed 完成最後更新後，立即對仍在記憶體中的 final individual 做一次 frozen paired cue evaluation。不要把舊 aggregate gate 當新成果重跑或重新宣稱。每個 seed 使用現有 40 個固定 eval episode（env seed 1000+i），每回合記錄 reached、timed_out、steps、return、goal_side；goal_side 僅由 evaluator Info 取值，不能進 observation。gridnav 明確只在第一步提供 cue，之後是 0，且 Position/Goal 都在 evaluator-only Info，見 experiment/gridnav/env.go:26-45、88-102、140-164。
+
+最小條件是同一 final policy、同一 env seed、同一零狀態起點的三個 cue 條件：原始 cue、第一步 cue 清零、第一步 cue 翻轉。每個條件各自建立同樣 seed 的 sampled RNG，避免共享可變 RNG；另做 deterministic greedy argmax。報告左右目標側的 n、success、timeout、平均 steps/return 與逐回合 paired delta，不假設兩側樣本數相等。sampled/greedy 是評估分解，不得與既有 sampled aggregate gate 混成新的 learning gate。
+
+只看 Reset 後第一個動作或只看 reset／state reset 的差異，不能當記憶證明。現行 collector 每回合都 RestoreIndividual 後 ResetNeural 到零，再以 Advance 逐步推進，見 experiment/ppo_collect.go:14-16、59-84；continuous core 的同步邊會讀前一步輸出，nav2d 對同一 readout latency 也明文說明，見 experiment/nav2d_policy.go:40-45、408-426 及 dynamics/continuous_test.go:29-33。故所有 cue 條件必須同樣 reset、同樣輸出延遲，並至少另外報告 cue 消失後（step >= 1）的正確方向／到達結果。這項 late-step 指標可避免把第一步的直接 cue 反應誤稱為持續記憶。cue 清零或翻轉仍只能說明 cue dependence；在固定的兩側走廊上不能外推泛化。
+
+一個實作上的阻礙是現有 LRN-09 只保存 final_snapshot_hash，不保存可恢復的個體，見 evidence/LRN-09/verification.json:201-206 與 experiment/ppo.go:125-141；因此不能拿既有 JSON 事後重播。最小做法是把 diagnostic 放在同一 runPPOSeed 的 final evaluate 後、hash 前，對每一條件使用 RestoreIndividual 的副本，並比較 diagnostic 前後的 policy/snapshot hash 確認 optimizer 與參數未被改動。這仍是一次新的訓練執行以產生 final individual，但不是另立一個訓練方法或重跑舊 gate。
+
+契約與方法判定
+
+這個切片若只增加 frozen evaluation，不改 PPO 更新、模型拓樸、optimizer、seed、環境 observation 或 reset 契約，也不改重要研究方法。若直接在 PPOSeedResult 或既有 coimnet-ppo-experiment/v1 增加欄位，則是 additive public/report contract change；建議另出明示 schema 的 cue-diagnostic report（例如 coimnet-gridnav-cue-eval/v1），或明確升版 v2，不要靜默改寫 v1。新增 exported evaluator 也屬公開 API 變更，內部 helper 加獨立報告則可避免。
+
+結論
+
+推薦切片：同一 final PPO individual 的原始／清零／翻轉 cue × sampled／greedy，固定 40 episodes，左右分層、逐回合 reached/timeout、cue 消失後方向指標與 paired delta；保留零狀態 reset，但不把 reset 本身當 memory proof。預期驗收文字只能是「是否在人工雙側走廊上依賴首步提示並回到目標」，不能寫成真實果蠅導航或一般化導航。
+
+最終唯讀複審（2026-10-03）
+
+- P0：無。
+- P1：無新增程式錯誤。20 步可錯端後折返，仍是 ticket 36 的已知 scope 限制，不是 gate 實作錯誤。程式註解已明示 gate 只是描述性比較，不能證明 cue memory 必要性（experiment/ppo_goal_memory_evidence_test.go:87-89）。實際整體 gate=false，seed 2 的 per-seed true 也不能改寫為導航或記憶證據。
+- P2：原先 gate 缺完整矩陣的問題已關閉。現在要求 13 組、同一 seed、每組 40 回合、左右各 20 且摘要計數合法（experiment/ppo_goal_memory_evidence_test.go:89-139）；缺矩陣、重複、混 seed 的測試均拒絕（experiment/ppo_goal_memory_test.go:192-237）。
+- 指定測試 `go test -count=1 -run '^TestPPOGoalCue' ./experiment` 通過；gofmt 無差異。環境變數未設定時，opt-in evidence test 會 skip，不能把該次普通測試輸出當完整證據。環境變數啟用的 run1/run2 均產生 39 runs、1560 episodes、整體 gate=false，報告 SHA-256 相同：2ece8be882112035a825d0bd1312dd09f498fec08723e98fe46d5a1f723644db。

@@ -97,6 +97,8 @@ ASR 資料清單只指定使用者提供的 PCM16 WAV、文字稿、取樣率、
 
 ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在既有 `experiment` 範例中。collector 在個體副本上收集，以獨立 RNG 依動作機率取樣，時間上限的 bootstrap 使用同一遞迴狀態處理下一筆觀察。評估與隨機對照各有獨立 RNG，不改訓練個體。報告固定協定、初始與最終版本、完整快照摘要、各 seed 曲線與失敗紀錄；驗收門檻、檔案責任及重現命令以 [ticket 26](docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md#環境學習整合契約2026-09-22) 為準。
 
+[ticket 36](docs/tickets/36-synthetic-goal-cue-audit.md) 在測試範例內補凍結策略的 sampled／greedy 提示對照，不改公開 PPO 契約或訓練設定。每回合獨立 PCG 使用相同環境種子與 0x1004 串流，原個體完整快照保持不變，重訓摘要必須等於 RunPPO。描述性工程判準與導航能力分開：20 步允許走遍兩端，通過抵達與提示反轉比較不足以證明提示記憶必要性。
+
 | 功能/負責 ticket | 正常流程與測試入口 | 空值/零與錯誤處理 | 互動與失敗情況 |
 | --- | --- | --- | --- |
 | 01 檢查開發環境 | 命令報告實際 build info 與能力，Insyra 編譯/數值探測 | 找不到工具/後端顯示缺少，未知能力不可判通過 | 無網路/裝置不可阻止 CPU，取消要退出 |

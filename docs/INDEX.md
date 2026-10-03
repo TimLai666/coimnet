@@ -54,7 +54,7 @@
 
 ## 例子
 
-- [experiment/gridnav/README.md](../experiment/gridnav/README.md)：人工走廊的模仿與 PPO 範例、取樣與評估契約。
+- [experiment/gridnav/README.md](../experiment/gridnav/README.md)：人工走廊的模仿與 PPO 範例、取樣與評估契約，以及起始提示的逐回合對照。
 - [examples/lifthreshold/README.md](../examples/lifthreshold/README.md)：三顆 LIF 神經元的閾值可訓練性檢查。
 - [examples/multichannel/README.md](../examples/multichannel/README.md)：多通道 adapter 完整流程。
 - [examples/realsubgraph/README.md](../examples/realsubgraph/README.md)：ALIN 真實子圖選取與短訓練。
@@ -138,6 +138,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-simulate-run/v1` | `simulate` |
 | `coimnet-simulate-state/v1` | `simulate` |
 | `coimnet-simulate-state/v2` | `simulate` |
+| `coimnet-synthetic-goal-cue-audit/v1` | `experiment`（測試範例，逐回合提示對照） |
 | `coimnet-teacher-records/v1` | `teacher` |
 | `coimnet-textgen-corpus/v1` | `tasks/textgen` |
 | `coimnet-train-result/v1` | `internal/cli` |
@@ -169,6 +170,6 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–34，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–36，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。
