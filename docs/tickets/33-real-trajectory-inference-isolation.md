@@ -6,7 +6,7 @@ User Story：使用者載入既有軌跡模型時，可以確定訓練集與保�
 
 Blocked by：ticket 32 的整試次分割驗證已完成。
 
-Status：verified_scoped（2026-10-03）。本票只修正推論隔離，不驗收導航學習。完整驗證通過，提交與遠端核對由本輪交付紀錄保存。
+Status：done（2026-10-03）。本票只修正推論隔離，不驗收導航學習。完整驗證及遠端提交核對通過。
 
 ## Root 決策（2026-10-03）
 
@@ -20,7 +20,7 @@ Status：verified_scoped（2026-10-03）。本票只修正推論隔離，不驗�
 - [x] 重疊、組內重複、空識別、未知試次與遺漏皆拒絕。合法分割保留正確 metadata。
 - [x] 實際推論入口對非法快照拒絕且不產生報告，既有新程序合法推論回歸通過。
 - [x] 真實來源與原模型前後指紋一致；合法模型的推論結果與修正前相同。
-- [ ] 主 agent 審查完整差異；Mac 完整 build、test、race、vet、格式及相依性檢查通過，保存來源指紋及日誌後提交推送。
+- [x] 主 agent 審查完整差異；Mac 完整 build、test、race、vet、格式及相依性檢查通過，保存來源指紋及日誌後提交推送。
 
 ## 限制與減法審查
 
@@ -28,4 +28,4 @@ Status：verified_scoped（2026-10-03）。本票只修正推論隔離，不驗�
 
 ## 驗證與交付證據
 
-[verification.json](../../evidence/TSK-11/inference-isolation-20261003/verification.json) 保存紅／綠回歸、真實來源與模型指紋、新程序非法拒絕與合法結果比對，以及 Mac 完整檢查。提交與遠端核對見同目錄的 delivery.json；若尚未產生，表示交付核對仍在進行。
+[verification.json](../../evidence/TSK-11/inference-isolation-20261003/verification.json) 保存紅／綠回歸、真實來源與模型指紋、新程序非法拒絕與合法結果比對，以及 Mac 完整檢查。修正提交 `467d53a` 已推送並核對遠端 main 相符，見 [delivery.json](../../evidence/TSK-11/inference-isolation-20261003/delivery.json)。

@@ -1,0 +1,38 @@
+{
+  "checks": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "delivery-governance.log"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "log": "delivery-governance-race.log"
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "delivery-diff.log"
+    }
+  ],
+  "go_source_matches_full_verification": true,
+  "delivery_links_exist": true
+}
