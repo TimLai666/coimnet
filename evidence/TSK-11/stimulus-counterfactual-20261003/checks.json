@@ -1,0 +1,123 @@
+{
+  "checks": [
+    {
+      "name": "gofmt",
+      "command": [
+        "gofmt",
+        "-l",
+        "all 1741 Go files"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.6107689590000001,
+      "started_utc": "2026-10-03T13:14:07.275149+00:00",
+      "log": "gofmt.log"
+    },
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.6690730420000004,
+      "started_utc": "2026-10-03T13:14:07.886051+00:00",
+      "log": "build.log"
+    },
+    {
+      "name": "test",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-p",
+        "4",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 78.608197042,
+      "started_utc": "2026-10-03T13:14:11.555248+00:00",
+      "log": "test.log"
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-p",
+        "4",
+        "-race",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 367.608389166,
+      "started_utc": "2026-10-03T13:15:30.163503+00:00",
+      "log": "race.log"
+    },
+    {
+      "name": "focused-race",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "./examples/realnavmemory"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 4.054658291999999,
+      "started_utc": "2026-10-03T13:21:37.772251+00:00",
+      "log": "focused-race.log"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.8207223750000026,
+      "started_utc": "2026-10-03T13:21:41.826453+00:00",
+      "log": "vet.log"
+    },
+    {
+      "name": "mod-verify",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 6.036369832999981,
+      "started_utc": "2026-10-03T13:21:42.647208+00:00",
+      "log": "mod-verify.log"
+    },
+    {
+      "name": "tidy-diff",
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.14877133300001333,
+      "started_utc": "2026-10-03T13:21:48.683634+00:00",
+      "log": "tidy-diff.log"
+    }
+  ],
+  "go_file_count": 1741,
+  "source_go_fingerprint_before_after": "b13aec7df97ea506d858b7a2b2dc804e40a9030550793311a9240f54ae4f3cc9",
+  "GOMAXPROCS": 2,
+  "GOMEMLIMIT": "8GiB",
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "go_env": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin"
+  }
+}

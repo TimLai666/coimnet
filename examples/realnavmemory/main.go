@@ -78,8 +78,10 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runMemoryInfer(ctx, args[1:], stdout, stderr)
 	case "rollout":
 		return runMemoryRollout(ctx, args[1:], stdout, stderr)
+	case "counterfactual":
+		return runMemoryCounterfactual(ctx, args[1:], stdout, stderr)
 	default:
-		return fmt.Errorf("realnavmemory: unknown command %q; use prepare, train, infer, or rollout", args[0])
+		return fmt.Errorf("realnavmemory: unknown command %q; use prepare, train, infer, rollout, or counterfactual", args[0])
 	}
 }
 
@@ -89,6 +91,7 @@ func writeMemoryUsage(w io.Writer) {
 	fmt.Fprintln(w, "  realnavmemory train   --input CSV --plan PLAN_JSON --out-dir NEW")
 	fmt.Fprintln(w, "  realnavmemory infer   --input CSV --model BUNDLE_JSON --out-dir NEW")
 	fmt.Fprintln(w, "  realnavmemory rollout --input CSV --model BUNDLE_JSON --out-dir NEW")
+	fmt.Fprintln(w, "  realnavmemory counterfactual --input CSV --model BUNDLE_JSON --out-dir NEW")
 	fmt.Fprintln(w, "All inputs are validated before the new output directory is created.")
 }
 

@@ -1,0 +1,88 @@
+{
+  "schema_version": "coimnet-counterfactual-preregistration/v1",
+  "created_utc": "2026-10-03T13:12:28.199139+00:00",
+  "parent_commit": "16dd116095ad036a69bb8ef2a5a01b7dc6b067d3",
+  "ticket_sha256": "3340d5438954a2093d0714fadb49e9ea585f06529046392bd156bb6ea8a5a8bf",
+  "source": {
+    "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+    "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+  },
+  "bundle": {
+    "path": "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+    "sha256": "e9e8502a7e1a0c52698cca6c138260bf7006ee8995c47b539deae31e8d0881e9"
+  },
+  "split": {
+    "train_trial_ids": [
+      "flytrax20181123_114304.csv\u001f0",
+      "flytrax20181123_152457.csv\u001f1",
+      "flytrax20181127_162328.csv\u001f4",
+      "flytrax20181205_182038.csv\u001f7",
+      "flytrax20181211_185727.csv\u001f13",
+      "flytrax20181212_193040.csv\u001f15",
+      "flytrax20181214_174232.csv\u001f16",
+      "flytrax20181217_192137.csv\u001f17",
+      "flytrax20181218_164433.csv\u001f18",
+      "flytrax20190110_162901.csv\u001f22",
+      "flytrax20190110_170616.csv\u001f23",
+      "flytrax20190110_173636.csv\u001f24",
+      "flytrax20190111_172208.csv\u001f27",
+      "flytrax20190111_190138.csv\u001f28",
+      "flytrax20190116_152245.csv\u001f30",
+      "flytrax20190116_160702.csv\u001f31",
+      "flytrax20190116_163246.csv\u001f32",
+      "flytrax20190116_180834.csv\u001f33",
+      "flytrax20190118_171511.csv\u001f36",
+      "flytrax20190119_171903.csv\u001f38"
+    ],
+    "validation_trial_ids": [
+      "flytrax20181204_163734.csv\u001f5",
+      "flytrax20181207_161754.csv\u001f9",
+      "flytrax20181211_183411.csv\u001f12",
+      "flytrax20181211_192052.csv\u001f14",
+      "flytrax20181218_175537.csv\u001f19",
+      "flytrax20190118_181417.csv\u001f37"
+    ],
+    "test_trial_ids": [
+      "flytrax20181123_162408.csv\u001f3",
+      "flytrax20181204_170930.csv\u001f6",
+      "flytrax20181205_184643.csv\u001f8",
+      "flytrax20181207_180201.csv\u001f10",
+      "flytrax20181211_170828.csv\u001f11",
+      "flytrax20190109_165747.csv\u001f20",
+      "flytrax20190110_152909.csv\u001f21",
+      "flytrax20190110_182810.csv\u001f25",
+      "flytrax20190111_164022.csv\u001f26",
+      "flytrax20190111_192056.csv\u001f29",
+      "flytrax20190116_192744.csv\u001f34",
+      "flytrax20190118_164239.csv\u001f35",
+      "flytrax20190119_174549.csv\u001f39"
+    ]
+  },
+  "seeds": [
+    20261003,
+    20261004,
+    20261005
+  ],
+  "controls": [
+    "delivered",
+    "no_stimulus",
+    "shuffled_stimulus"
+  ],
+  "snapshots": [
+    "before",
+    "after"
+  ],
+  "expected_groups": 18,
+  "expected_pairs": 234,
+  "cutoff": "first source relocation row index within each complete trial",
+  "intervention": "apply original causal control transform, then zero stimulus column 5 for rows [0, cutoff); retain all other recorded features, labels and later stimulus",
+  "autonomous": "erase model-visible replay prefix only; keep original raw stimulus blocks for generated continuation; 200 decisions",
+  "resolution_cm": 1e-06,
+  "resolution_meaning": "engineering reporting scale only, not statistical significance, navigation or biology",
+  "training_or_tuning": false,
+  "limitations": [
+    "artificial eight-node model, not MaleCNS",
+    "same previously evaluated 13 test trials",
+    "output sensitivity does not imply useful memory or navigation success"
+  ]
+}

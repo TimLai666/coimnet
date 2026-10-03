@@ -1,0 +1,152 @@
+[
+  {
+    "name": "build-example",
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "./examples/realnavmemory"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.0976055,
+    "started_utc": "2026-10-03T13:13:59.815319+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stdout": "build-example.stdout.log",
+    "stderr": "build-example.stderr.log"
+  },
+  {
+    "name": "help",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--help"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.4214787080000004,
+    "started_utc": "2026-10-03T13:14:01.913441+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stdout": "help.stdout.log",
+    "stderr": "help.stderr.log"
+  },
+  {
+    "name": "run-a",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--input",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--model",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-counterfactual-20261003-v1/run-a"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 6.614931292,
+    "started_utc": "2026-10-03T13:14:02.335379+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stderr": "run-a.stderr.log",
+    "stdout_report": "report.json",
+    "stdout_sha256": "9cff9f38db9f8050a41f728f79c27c1143504bf29f9fd66c91f29131ef7942f3",
+    "stdout_bytes": 773819
+  },
+  {
+    "name": "run-b",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--input",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--model",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-counterfactual-20261003-v1/run-b"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 8.503091541999998,
+    "started_utc": "2026-10-03T13:14:08.950515+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stderr": "run-b.stderr.log",
+    "stdout_report": "report.json",
+    "stdout_sha256": "9cff9f38db9f8050a41f728f79c27c1143504bf29f9fd66c91f29131ef7942f3",
+    "stdout_bytes": 773819
+  },
+  {
+    "name": "existing-output",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--input",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--model",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-counterfactual-20261003-v1/run-a"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 9.209420042000001,
+    "started_utc": "2026-10-03T13:14:17.459209+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stdout": "existing-output.stdout.log",
+    "stderr": "existing-output.stderr.log"
+  },
+  {
+    "name": "concurrent-existing",
+    "exit_codes": [
+      1,
+      1
+    ],
+    "output_unchanged": true
+  },
+  {
+    "name": "wrong-source",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--input",
+      "/Users/timlai/Developer/coimnet/go.mod",
+      "--model",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-counterfactual-20261003-v1/wrong-source"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 0.04091470899999905,
+    "started_utc": "2026-10-03T13:14:37.990200+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stdout": "wrong-source.stdout.log",
+    "stderr": "wrong-source.stderr.log"
+  },
+  {
+    "name": "wrong-model",
+    "command": [
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/realnavmemory",
+      "counterfactual",
+      "--input",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "--model",
+      "/private/tmp/coimnet-counterfactual-20261003-emenac97/invalid-bundle.json",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-counterfactual-20261003-v1/wrong-model"
+    ],
+    "exit_code": 1,
+    "elapsed_seconds": 0.011504417000004707,
+    "started_utc": "2026-10-03T13:14:38.034352+00:00",
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "stdout": "wrong-model.stdout.log",
+    "stderr": "wrong-model.stderr.log"
+  },
+  {
+    "name": "cancellation",
+    "exit_code": 1,
+    "delay_seconds": 0.2,
+    "partial_output_exists": false
+  }
+]

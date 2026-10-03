@@ -259,6 +259,12 @@ func memoryRunRollout(ctx context.Context, snapshot learning.TrainingSnapshot, t
 }
 
 func memoryModelTrial(ctx context.Context, individual *learning.Individual, trial historyTrial, target memoryRolloutTarget, control string, seed uint64) (memoryRolloutTrial, error) {
+	return memoryModelTrialErase(ctx, individual, trial, target, control, seed, 0)
+}
+
+// Only replayed model-visible stimulus changes. Raw stimulus blocks and every
+// current/future stimulus input retain the original causal schedule.
+func memoryModelTrialErase(ctx context.Context, individual *learning.Individual, trial historyTrial, target memoryRolloutTarget, control string, seed uint64, eraseUntil int) (memoryRolloutTrial, error) {
 	if individual == nil {
 		return memoryRolloutTrial{}, errors.New("nil rollout individual")
 	}
@@ -272,6 +278,12 @@ func memoryModelTrial(ctx context.Context, individual *learning.Individual, tria
 	inputs, err := trialInputs(prefixTrial, control, int64(seed))
 	if err != nil {
 		return memoryRolloutTrial{}, err
+	}
+	if eraseUntil < 0 || eraseUntil > trial.RolloutIndex {
+		return memoryRolloutTrial{}, errors.New("invalid counterfactual replay boundary")
+	}
+	for i := 0; i < eraseUntil; i++ {
+		inputs[i][5] = 0
 	}
 	if trial.RolloutIndex > 0 {
 		if _, err := individual.Advance(ctx, inputs[:trial.RolloutIndex]); err != nil {

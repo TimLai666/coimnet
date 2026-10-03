@@ -1,0 +1,90 @@
+{
+  "schema_version": "coimnet-counterfactual-verification/v1",
+  "created_utc": "2026-10-03T13:32:40.066523+00:00",
+  "ticket": "docs/tickets/35-frozen-stimulus-history-counterfactual.md",
+  "local_acceptance": "verified; delivery pending remote check",
+  "engineering_result": "stimulus-history sensitivity demonstrated in trained delivered and shuffled controls",
+  "navigation_result": "all original and erased groups 0/13; no navigation-learning evidence",
+  "biological_result": "not established; artificial eight-node graph",
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified"
+  },
+  "environment": {
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "platform_execution": "macOS arm64 only; no new Ubuntu/Windows execution"
+  },
+  "repository_go_files": 619,
+  "repository_go_fingerprint": "9e981ca3ce4932268b634b2468f03f1539b65f1867abd7b8c1fa59443ed43281",
+  "fingerprint_encoding": "SHA256 of sorted repository relative path, zero byte, raw file bytes; tracked and nonignored Go files",
+  "checks": "checks.json",
+  "format_note": "the original wide format check also included 1122 ignored historical runs files; repository-gofmt.log separately checks current repository sources",
+  "full_normal": {
+    "packages_passed": 57,
+    "cached": 0
+  },
+  "full_race": {
+    "packages_passed": 57,
+    "cached": 51,
+    "changed_example_fresh_race": "focused-race.log"
+  },
+  "evaluation": "evaluation.json",
+  "analysis": "summary.json",
+  "commands": "commands.json",
+  "source": {
+    "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+    "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+  },
+  "bundle": {
+    "path": "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/train/bundle.json",
+    "sha256": "e9e8502a7e1a0c52698cca6c138260bf7006ee8995c47b539deae31e8d0881e9"
+  },
+  "legacy_complete_report": {
+    "path": "/Users/timlai/Developer/coimnet-data/TSK-11/stimulus-memory-20261003-v1/rollout-a/report.json",
+    "sha256": "6edb1d97122f4b15bd659af05fc2ff5d3cb88eaf0719c02f226649cd37690ce7",
+    "trace_hash_encoding": "Python json UTF-8 ensure_ascii=false compact separators, insertion order retained; trace arrays kept in external complete report"
+  },
+  "paired_report_sha256": "9cff9f38db9f8050a41f728f79c27c1143504bf29f9fd66c91f29131ef7942f3",
+  "two_independent_reports_byte_identical": true,
+  "pairs_verified": 234,
+  "excluded": 0,
+  "legacy_original_matches": true,
+  "zero_controls_exact": true,
+  "input_invariants_verified": true,
+  "parameters_and_saved_optimizer_frozen": true,
+  "source_and_bundle_files_unchanged": true,
+  "no_training": true,
+  "cli_negatives": {
+    "wrong_source": true,
+    "wrong_model": true,
+    "existing_output": true,
+    "concurrent_existing_output": true,
+    "cancellation_without_partial_output": true
+  },
+  "json_artifacts_valid": true,
+  "local_document_links_checked": 313,
+  "handoff_original_checksums": "handoff-integrity.log",
+  "insyra": {
+    "version": "v0.3.4",
+    "module_sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0=",
+    "go_mod_sum": "h1:F+EHB1hX+1Z+KezWUAKkAu7Qw/XQqfoWqGTeVgF2d90="
+  },
+  "review": {
+    "root": "root-review.md",
+    "independent": "independent-review.txt",
+    "confirmed_findings": 0,
+    "spark_error": "Unknown model gpt-5.3-codex-spark",
+    "actual_model": "gpt-5.6-luna",
+    "actual_reasoning_effort": "max"
+  },
+  "red_first": "red.log"
+}

@@ -1,0 +1,107 @@
+CoImNet ticket 35 counterfactual method review (baseline before full diff)
+Date: 2026-10-03
+Reviewer scope: read-only review of docs/tickets/35-frozen-stimulus-history-counterfactual.md and the existing examples/realnavmemory data/model/rollout/storage integration. No project files were modified.
+
+CONFIRMED P1 — the required cutoff (the first source row in the relocation segment) is not represented by historyTrial.
+Evidence: examples/realnavmemory/data.go:23-35 defines historyTrial with ID, condition, steps and RolloutIndex only. buildHistory retains source rows in local trialRows at data.go:49-55 and appends only historyStep values at data.go:123-184, discarding Segment. RolloutIndex is assigned only when the first legal three-row after_relocation window is found at data.go:155-180; it is not the first relocation row. Ticket 35:12 and 34 require the cutoff to be the first relocation source row. A command that derives cutoff from RolloutIndex cannot satisfy that contract when relocation rows precede the first legal after_relocation window. The implementation must retain an explicit per-trial relocation boundary or carry a verified boundary map from the same source read; otherwise the comparison is under-specified.
+
+CONFIRMED P1 — shuffled controls can change post-cutoff stimulus if the implementation mutates raw history before calling the existing transform.
+Evidence: model.go:146-158 builds each block from trial.Steps[(block-1)*16+i].Input[5], and model.go:160-166 writes that transformed block to later rows. Therefore changing any pre-cutoff raw value in a complete source block changes the next block and all later transformed inputs. Ticket 35:12/36 requires transformed inputs after the cutoff to remain byte-for-byte unchanged, while the shuffled schedule must remain based on original raw stimulus. The safe shape is: call trialInputs on the untouched trial once, deep-copy both matrices, zero only erased[i][5] for 0<=i<cutoff, and for autonomous continuation pass the unchanged raw trial separately from the erased model-visible prefix.
+
+CONFIRMED P1 — existing autonomous continuation has the same raw/transformed coupling and will violate the post-cutoff invariant if passed an erased trial.
+Evidence: rollout.go:268-303 builds a truncated prefix and populates rawStimulusBlocks from prefixTrial.Steps[i].Input[5]; rollout.go:327 uses memoryGeneratedStimulus; rollout.go:353-361 extends raw blocks with generated zero rows. For shuffled_stimulus, memoryGeneratedStimulus at rollout.go:371-390 permutes the previous raw block. Passing a trial whose pre-cutoff raw stimulus was zeroed changes the raw block used for later generated blocks, so action/trace differences would include changed future stimulation. Ticket 35:16 explicitly requires raw stimulus blocks and post-start causal scheduling to remain original. Extend the rollout internals with a model-visible clear boundary while keeping raw stimulus sourced from the original trial, and retain the old zero-boundary path bit-for-bit.
+
+NEEDS INVESTIGATION — exact accepted cutoff boundary.
+The draft counterfactual test accepts cutoff 24 with RolloutIndex 40 but rejects -1, 0, 41 and 65 (counterfactual_test.go:14-42). This implies a strict positive cutoff no later than RolloutIndex, although the ticket text only says [0, cutoff) and "illegal boundary". The final implementation should codify and test the intended relation rather than silently accepting an arbitrary row inside the history.
+
+NEEDS INVESTIGATION — report schema must prove the invariant.
+Ticket 35:14-18 requires per-trial recorded MSEs, max Euclidean output/action differences, exact nonzero and >1e-6 counts, earliest difference, complete prediction and trace fingerprints, all model groups and trials, and frozen parameter/optimizer/source evidence. A report containing only aggregate differences cannot establish that post-cutoff stimulus inputs were unchanged. The report builder must compare transformed input rows (especially shuffled post-cutoff rows) and retain fingerprints for both paired inputs/traces.
+
+Baseline focused verification:
+- GOCACHE=/private/tmp/coimnet-counterfactual-gocache go test ./examples/realnavmemory -run 'TestTrialInputsControlsAreCausalAndDoNotAlias|TestMemoryShuffledRollout' -count=1: PASS.
+- GOCACHE=/private/tmp/coimnet-counterfactual-gocache go test ./examples/realnavmemory -run 'TestMemoryRollout' -count=1: PASS.
+- GOCACHE=... go test ./examples/realnavmemory before implementation of counterfactual.go/main.go: FAIL because counterfactualInputs, compareMemoryTrial and command discovery are skeletons.
+
+No full suite, download, commit, stash, reset, or project edits were performed. Review status remains pending the complete diff.
+
+======================================================================
+Second-round review after the complete ticket-35 implementation
+Date: 2026-10-03
+Scope: read-only review of the current diff in counterfactual.go,
+counterfactual_test.go, main.go, rollout.go, and ticket 35. No project
+files, tests, models, or data were modified.
+
+CONFIRMED P0: none.
+
+CONFIRMED P1: none.
+
+CONFIRMED P2: none.
+
+Resolved baseline P1 — independent relocation cutoff.
+The command now retains the source dataset and derives cutoffs from the
+first source row whose Segment is "relocation" in
+counterfactual.go:231-253, called with dataset.Rows at
+counterfactual.go:316-329. It checks complete trial coverage, row counts,
+and 0 < cutoff <= RolloutIndex before any report is built. This removes
+the earlier ambiguity caused by historyTrial not retaining Segment.
+
+Resolved baseline P1 — transform before erasure.
+counterfactualInputs in counterfactual.go:20-39 first calls trialInputs on
+the untouched history, deep-copies every row, and clears only column 5 for
+indices below cutoff. It never edits the source trial. The recorded
+post-cutoff stimulus is independently hashed and compared in
+counterfactual.go:145-152 and 224-226.
+
+Resolved baseline P1 — autonomous raw schedule.
+memoryModelTrialErase in rollout.go:265-315 truncates only a value copy for
+the prefix, builds model-visible inputs from that copy, and builds
+rawStimulusBlocks from the original prefix rows. The counterfactual invokes
+the old boundary 0 and the erased boundary separately at
+counterfactual.go:176-194, then requires exact equality of every paired
+trace stimulus at counterfactual.go:195-202. Generated shuffled rows thus
+continue from the original raw schedule even when positions and actions
+diverge.
+
+Numerics and denominators.
+The paired MSEs use the existing maskedMSE contract at model.go:179-221,
+including its 2*scoredRows denominator. counterfactual.go:133-175 obtains
+the sample count once from the original mask and uses the same scored-row
+set for both losses and all output-difference counts. It preserves exact
+nonzero values while separately counting values above 1e-6; no denominator
+or threshold defect was found.
+
+Zero stimulus, zero readout, cancellation, and persistence.
+The focused counterfactual tests cover zero-stimulus equality, zero-readout
+equality, nil/canceled contexts, invalid boundaries, and the old rollout
+wrapper in counterfactual_test.go:68-140 and 202-256. The command checks
+context before output creation and uses the existing exclusive publisher at
+counterfactual.go:335-355. Existing-output and cancellation evidence is
+present in evidence/TSK-11/stimulus-counterfactual-20261003, and the two
+independent reports are byte-identical with 234 pairs according to its
+evaluation.json. No confirmed storage or reproducibility defect remains.
+
+NEEDS INVESTIGATION (non-blocking, API-contract watch only):
+compareMemoryTrial explicitly verifies post-rollout Parameters but does not
+hash the fresh Individual's Optimizer after Advance at
+counterfactual.go:176-188. The current learning contract states that
+Individual.Advance changes only neural state (learning/individual.go:419-428),
+and the supplied real-run evidence reports the optimizer unchanged, so this
+is not a current defect. If Advance ever gains optimizer-side inference
+state, add an explicit post-call optimizer assertion.
+
+Focused verification for this review:
+- GOCACHE=/private/tmp/coimnet-counterfactual-gocache go test
+  ./examples/realnavmemory -run
+  'TestCounterfactual|TestMemoryShuffledRollout|TestMemoryModelRollout|TestTrialInputsControls|TestMemoryRollout' -count=1: PASS.
+- The same focused counterfactual tests with -count=10: PASS.
+- git diff --check: PASS.
+- Parent-provided evidence inspection: 18 groups, 13 trials each,
+  234 pairs; two report processes byte-identical; source and bundle SHA
+  unchanged; no-stimulus, untrained, and non-rewarded pairs exactly zero;
+  every original and erased group hit 0/13.
+
+Final conclusion: the three baseline P1s are resolved. The current
+implementation has no confirmed P0/P1/P2 finding within the requested
+scope. The only item retained is the non-blocking optimizer assertion watch
+above; it is contradicted as a present failure by the current Advance
+contract and evidence, so it must not block ticket-35 acceptance.

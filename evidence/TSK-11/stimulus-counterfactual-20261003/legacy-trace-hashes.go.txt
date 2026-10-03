@@ -1,0 +1,76 @@
+// Verification utility: normalize existing complete traces with Go's typed JSON
+// encoding, matching the counterfactual fingerprint convention. Run as a
+// temporary .go file; this is evidence tooling, not a model or repository package.
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"os"
+)
+
+type step struct {
+	Index     int        `json:"index"`
+	Input     [6]float64 `json:"input"`
+	Action    [2]float64 `json:"action_cm"`
+	Realized  [2]float64 `json:"realized_cm"`
+	Position  [2]float64 `json:"position_cm"`
+	Collision bool       `json:"collision"`
+	Hit       bool       `json:"hit"`
+}
+type group struct {
+	Seed     uint64 `json:"seed"`
+	Control  string `json:"control"`
+	Phase    string `json:"phase"`
+	Strategy string `json:"strategy"`
+	Trials   []struct {
+		ID    string `json:"trial_id"`
+		Trace []step `json:"trace"`
+	} `json:"trials"`
+}
+type result struct {
+	Seed    uint64 `json:"seed"`
+	Control string `json:"control"`
+	Phase   string `json:"phase"`
+	ID      string `json:"trial_id"`
+	SHA     string `json:"go_trace_sha256"`
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		panic("one complete legacy report path required")
+	}
+	b, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	var report struct {
+		Groups []group `json:"groups"`
+	}
+	if err = json.Unmarshal(b, &report); err != nil {
+		panic(err)
+	}
+	results := make([]result, 0, 234)
+	for _, g := range report.Groups {
+		if g.Strategy != "model" {
+			continue
+		}
+		for _, t := range g.Trials {
+			if len(t.Trace) != 200 {
+				panic("legacy trace lost decisions")
+			}
+			encoded, err := json.Marshal(t.Trace)
+			if err != nil {
+				panic(err)
+			}
+			results = append(results, result{g.Seed, g.Control, g.Phase, t.ID, fmt.Sprintf("%x", sha256.Sum256(encoded))})
+		}
+	}
+	if len(results) != 234 {
+		panic("legacy group/trial coverage mismatch")
+	}
+	if err = json.NewEncoder(os.Stdout).Encode(results); err != nil {
+		panic(err)
+	}
+}

@@ -36,6 +36,11 @@ go run ./examples/realnavmemory rollout \
   --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
   --model /path/to/memory-training/bundle.json \
   --out-dir /path/to/memory-rollout
+
+go run ./examples/realnavmemory counterfactual \
+  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
+  --model /path/to/memory-training/bundle.json \
+  --out-dir /path/to/memory-counterfactual
 ```
 
 The plan and model bundle have separate versioned contracts. Loading validates the source, feature rules, split, architecture, training options, seeds, controls and update budget, including every trainable parameter’s optimizer step count. Invalid inputs fail before an output directory is created. Existing output directories are never overwritten.
@@ -71,3 +76,13 @@ All nine models completed 200 updates on 20 training trials. The 6 validation an
 All 18 model groups (three controls, three seeds, before and after training) hit 0 of 13 return regions. Persistence hit 0 of 13 for every seed. Random movement hit 0, 0 and 1 of 13 for seeds 20261003, 20261004 and 20261005. No trial was excluded, and every group retained 200 decisions per trial. Better imitation loss did not produce successful autonomous navigation.
 
 Two independent inference processes and two independent rollout processes produced byte-identical reports. The source, original v1 model and trained bundle remained unchanged. See the [inference results](../../evidence/TSK-11/stimulus-memory-20261003/inference-report.json), [complete trial summaries](../../evidence/TSK-11/stimulus-memory-20261003/rollout-summary.json) and [training summary](../../evidence/TSK-11/stimulus-memory-20261003/training-summary.json). Full traces and model bundles remain in the external data directory recorded by the evidence.
+
+## Frozen stimulus-history intervention (2026-10-03)
+
+`counterfactual` evaluates the existing nine models before and after training on all 13 test trials, without training or retuning. Each pair starts from zero state. It first applies the original delivered, no-stimulus or delayed-shuffled input transform, then clears only the model-visible stimulus before the first source `relocation` row. All other recorded inputs, labels and later stimulus remain identical. Autonomous continuation keeps the original raw stimulus blocks, so later shuffled stimulus also remains identical when paths diverge.
+
+The report uses schema `coimnet-realnav-memory-counterfactual/v1`. It retains every pair's masked MSE, output and action differences, position separation, hit/distance/collision summaries and complete trace fingerprints. Traces are omitted from the compact paired report. The fixed `1e-6 cm` scale is for engineering reporting; exact nonzero values below it are retained. It is not a significance or navigation-success threshold.
+
+Both trained stimulus controls changed later outputs in the eight rewarded trials for every seed. The five non-rewarded trials, every no-stimulus model and every untrained zero-readout snapshot had exactly zero difference. Clearing history changed trajectories, but all 18 original and all 18 erased groups hit 0/13. The masked MSE effect changed direction across seeds, so this check establishes sensitivity to past stimulus without establishing a useful-memory or navigation benefit.
+
+Two independent processes produced byte-identical reports for all 234 pairs. Every original rollout summary and complete trace fingerprint matches the prior evaluation, and weighted original MSE matches the prior inference results within 1e-15 cm². Source, parameters and saved optimizer remained unchanged. See the [paired report](../../evidence/TSK-11/stimulus-counterfactual-20261003/report.json), [summary](../../evidence/TSK-11/stimulus-counterfactual-20261003/summary.json) and [fixed protocol](../../evidence/TSK-11/stimulus-counterfactual-20261003/preregistration.json).
