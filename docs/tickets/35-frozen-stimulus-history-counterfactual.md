@@ -3,7 +3,7 @@
 Epic：真實任務與能力歸因（TSK-11）。
 User Story：同一模型只改過去刺激，研究者可以核對後段預測與自主行走是否改變。
 Blocked by：34，已完成。
-Status：verified，4／5 已驗證，交付待核對。
+Status：completed，5／5 已驗證並交付。
 
 ## 固定方法
 
@@ -37,10 +37,12 @@ Status：verified，4／5 已驗證，交付待核對。
 - [x] 數值與因果：早期刺激確實可影響後段。零 readout／無刺激無差異。打亂後段不變，來源與模型凍結。
 - [x] 完整命令：help、正常及錯誤、取消／不覆寫。原命令相容。
 - [x] 真實評估：全部配對保留，兩個新程序位元組相同，原組與 ticket 34 相符，輸入指紋不變。
-- [ ] 交付：完整格式／build／一般／race／vet／相依性、獨立審查、文件與證據、提交推送及遠端核對。
+- [x] 交付：完整格式／build／一般／race／vet／相依性、獨立審查、文件與證據、提交推送及遠端核對。
 
 減法審查：共用原模型、核心及行走評分，不新增模型組、reward、RL 或生物假設。差異先按實際大小判讀，不追加事後挑選的門檻。
 
 ## 實際結果
 
 九組模型的訓練前後共 234 配對，兩個新程序逐位元組相同。三個 seed 的已訓練 delivered 與 shuffled 組各有八個 rewarded 試次的後段輸出改變，no_stimulus、未訓練及五個 non-rewarded 試次差異精確為零。原／清除組皆 0／13。清除刺激對 MSE 的效應在 seed 20261004 為負、其他兩個為正，沒有一致記憶收益。[逐組摘要](../../evidence/TSK-11/stimulus-counterfactual-20261003/summary.json)、[配對報告](../../evidence/TSK-11/stimulus-counterfactual-20261003/report.json)。
+
+完整一般與 race 各 57 個套件通過，另跑相關範例全新 race。建置、格式、vet、依賴、來源／模型指紋、原件及文件連結檢查通過，獨立審查無確認缺陷。實作 `21eb2ae` 與證據修正 `bf5d7fa` 已推送並核對遠端。[完整驗證](../../evidence/TSK-11/stimulus-counterfactual-20261003/verification.json)、[交付紀錄](../../evidence/TSK-11/stimulus-counterfactual-20261003/delivery.json)。
