@@ -32,7 +32,7 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 | 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
 | 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
 | 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |
-| 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json) |
+| 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json)・[六步提示對照](experiment/gridnav/README.md#六步左右配對提示檢查) |
 | 二維導航與位置記憶：有限視野、隱藏狀態、碰撞與轉向、目標記憶、新地圖評估，前饋／重連／隨機對照（TSK-08） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-08](evidence/TSK-08/verification.json) |
 | 多模態配對資料：配對／缺失／非同步樣本、ID 不進模型、缺失與零值分離、未見組合分割與評估（TSK-10；留出組合的影像↔文字檢索為 0，不宣稱跨模態概念） | 已訓練（合成資料） | fixture | 核心能力 | [TSK-10](evidence/TSK-10/verification.json) |
 | 多任務共用核心：兩個任務各有 adapter、三種排程、更新份額對宣告比例、每個任務在自己的個體上評估並記錄模型包指紋與血統（TSK-09） | 已訓練（人工資料） | fixture | 核心能力 | [TSK-09](evidence/TSK-09/verification.json) |

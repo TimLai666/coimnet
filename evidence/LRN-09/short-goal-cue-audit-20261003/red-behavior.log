@@ -1,0 +1,21 @@
+=== RUN   TestPPOShortGoalCueEvidence
+    ppo_short_goal_evidence_test.go:17: skeleton not implemented
+--- SKIP: TestPPOShortGoalCueEvidence (0.00s)
+=== RUN   TestPPOShortGoalConfig
+    ppo_short_goal_test.go:20: short-goal config = {Corridor:{Length:0 TimeLimit:0 StepPenalty:0 GoalReward:0} Seeds:[] Updates:0 Hidden:0 EvalEpisodes:0 LearningRate:0 PPO:{Gamma:0 Lambda:0 ClipEpsilon:0 ValueCoef:0 EntropyCoef:0 BurnIn:0 TimeLimit:0 Epochs:0 MiniBatch:0}}, want defaults with only both time limits set to 6: {Corridor:{Length:7 TimeLimit:6 StepPenalty:0.01 GoalReward:1} Seeds:[1 2 3] Updates:200 Hidden:8 EvalEpisodes:40 LearningRate:0.01 PPO:{Gamma:0.99 Lambda:0.95 ClipEpsilon:0.2 ValueCoef:0.5 EntropyCoef:0.01 BurnIn:0 TimeLimit:6 Epochs:1 MiniBatch:1}}
+--- FAIL: TestPPOShortGoalConfig (0.00s)
+=== RUN   TestPPOShortGoalPairs
+    ppo_short_goal_test.go:40: shortGoalPairs returned 0 pairs, want 20
+--- FAIL: TestPPOShortGoalPairs (0.00s)
+=== RUN   TestPPOShortGoalWitnessAndPairProtocol
+    ppo_short_goal_test.go:171: greedy erased reached 0/40, want exactly 20/40
+--- FAIL: TestPPOShortGoalWitnessAndPairProtocol (0.00s)
+=== RUN   TestPPOShortGoalSixStepActionEnumeration
+    ppo_short_goal_test.go:182: shortGoalPairs returned no pair
+--- FAIL: TestPPOShortGoalSixStepActionEnumeration (0.00s)
+=== RUN   TestPPOShortGoalGate
+    ppo_short_goal_test.go:303: complete short-goal gate witness rejected
+--- FAIL: TestPPOShortGoalGate (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment	1.712s
+FAIL

@@ -139,6 +139,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-simulate-state/v1` | `simulate` |
 | `coimnet-simulate-state/v2` | `simulate` |
 | `coimnet-synthetic-goal-cue-audit/v1` | `experiment`（測試範例，逐回合提示對照） |
+| `coimnet-short-goal-cue-audit/v1` | `experiment`（測試範例，6 步左右配對提示對照） |
 | `coimnet-teacher-records/v1` | `teacher` |
 | `coimnet-textgen-corpus/v1` | `tasks/textgen` |
 | `coimnet-train-result/v1` | `internal/cli` |
@@ -170,6 +171,6 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–36，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–37，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。

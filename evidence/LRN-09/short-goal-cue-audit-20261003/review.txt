@@ -1,0 +1,8 @@
+Scope: CLEAN. Host: Codex. Tool: collaboration.spawn_agent. Three independent roles: tests, implementation, adversarial review; all gpt-5.6-luna / max.
+First choice rejected this turn: Unknown model `gpt-5.3-codex-spark` for spawn_agent. Available models: gpt-6.1-sol, gpt-6-astra, gpt-6-sol, gpt-6-luna, gpt-5.6-sol.
+Initial review confirmed two P1 verifier gaps: full declared configuration (including legacy configuration) could change and pass; repeat count/flag were not checked and only one archive was present.
+Root added behavioral failures (review-red.log): changed_config, legacy_config, repeat_count, repeat_flag all incorrectly accepted. Root fixed full expected configuration/legacy hash checks and preserved both actual process reports, logs and independent reproduction manifest.
+Independent follow-up: both P1 fixed; second archive tampering with updated manifest also rejected; no confirmed final findings. Positive readback and eight injected cases passed in reviewer run.
+Reviewer noted Python did not independently compute Go PCG side mapping. Root locked the 20 protocol pairs in Python; native TestPPOShortGoalPairs checks them against gridnav.Reset. No claim of independently implementing PCG in Python.
+Root added archive/log/digest cases; all eleven tampering cases pass (readback-negative-final.log). Root inspected both complete new Go files, the full tracked documentation diff and Python changes; Go source fingerprints remain unchanged across final full validation. Reviewer's implementation summary counted four tests; root actual green and focused-race logs show five passed plus one opt-in skip.
+Go runtime path: no confirmed findings. Research result: all three gates false, no cue-navigation learning evidence. No parameter changes.

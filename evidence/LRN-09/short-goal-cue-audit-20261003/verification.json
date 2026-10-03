@@ -1,0 +1,370 @@
+{
+  "requirement": "LRN-09",
+  "status": "verified_scoped",
+  "profile": "fixture",
+  "date": "2026-10-04",
+  "method_declared_date": "2026-10-03",
+  "verified_at_utc": "2026-10-03T16:07:49.432195+00:00",
+  "scope": "Supplemental test-only six-step paired cue audit. All research gates false; no tuning, public API, PPO update, topology, original audit, imitation or biological claim.",
+  "reproduction_command": [
+    "short_audit_dir=$(mktemp -d); COIMNET_SHORT_GOAL_CUE_EVIDENCE=\"$short_audit_dir\" go test -count=1 -v -run '^TestPPOShortGoalCueEvidence$' ./experiment",
+    "short_audit_dir2=$(mktemp -d); COIMNET_SHORT_GOAL_CUE_EVIDENCE=\"$short_audit_dir2\" go test -count=1 -v -run '^TestPPOShortGoalCueEvidence$' ./experiment; cmp \"$short_audit_dir/report.json\" \"$short_audit_dir2/report.json\"",
+    "python3 evidence/LRN-09/short-goal-cue-audit-20261003/verify_report.py",
+    "python3 evidence/LRN-09/short-goal-cue-audit-20261003/verify_report_test.py",
+    "go test -race -count=1 -v -run '^TestPPOShortGoal' ./experiment",
+    "go build ./...",
+    "go test -p 2 -timeout 30m ./...",
+    "go test -race -p 2 -timeout 30m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "(cd docs/handoff && shasum -a 256 -c SHA256SUMS.txt)",
+    "go test -count=1 -v -run '^TestGovernance' .",
+    "go test -race -count=1 -v -run '^TestGovernance' .",
+    "python3 -c \"from pathlib import Path; import subprocess; p=[s.split('  ',1)[1] for s in Path('evidence/LRN-09/short-goal-cue-audit-20261003/source.sha256').read_text().splitlines() if s.endswith('.go')]; assert not subprocess.check_output(['gofmt','-l',*p], text=True)\"",
+    "smoke_dir=$(mktemp -d); go build -o \"$smoke_dir/coimnet\" ./cmd/coimnet; \"$smoke_dir/coimnet\" doctor; \"$smoke_dir/coimnet\" data sources; \"$smoke_dir/coimnet\" examples run delayed; \"$smoke_dir/coimnet\" examples run lif-threshold; \"$smoke_dir/coimnet\" train delayed --steps 80 --checkpoint \"$smoke_dir/first.json\"; \"$smoke_dir/coimnet\" resume --checkpoint \"$smoke_dir/first.json\" --steps 40 --out \"$smoke_dir/resumed.json\"; \"$smoke_dir/coimnet\" train delayed --steps 120 --checkpoint \"$smoke_dir/continuous.json\"; cmp \"$smoke_dir/resumed.json\" \"$smoke_dir/continuous.json\""
+  ],
+  "environment": {
+    "runtime": [
+      "go version go1.26.5 darwin/arm64",
+      "darwin",
+      "arm64",
+      "1"
+    ],
+    "dependency": "Insyra v0.3.4",
+    "platform": "macOS darwin/arm64 CPU",
+    "other_platforms": "Not executed for this slice"
+  },
+  "input_fingerprints": {
+    "base_commit": "a8fcd73971770647ee5a38b172b0657d9ceddadc",
+    "source_manifest": "source.sha256",
+    "source_file_count": 637,
+    "source_manifest_sha256": "02bd3bb5ff1e65355f260a39cf88768da3e8016bc933226a94d151af21b9daeb",
+    "changed_go_sources": {
+      "experiment/ppo_short_goal_evidence_test.go": "b546f9faf73d2861b2541b1698d4a2b15ee7d220b67990211f80ee6b6d971aed",
+      "experiment/ppo_short_goal_test.go": "2cf20d700bbe3474a4412d54ca06b67077f63e60169284c2205dacf6e22594a2"
+    },
+    "config": {
+      "corridor": {
+        "length": 7,
+        "time_limit": 6,
+        "step_penalty": 0.01,
+        "goal_reward": 1
+      },
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "updates": 200,
+      "hidden": 8,
+      "eval_episodes": 40,
+      "learning_rate": 0.01,
+      "ppo": {
+        "gamma": 0.99,
+        "lambda": 0.95,
+        "clip_epsilon": 0.2,
+        "value_coef": 0.5,
+        "entropy_coef": 0.01,
+        "burn_in": 0,
+        "time_limit": 6,
+        "epochs": 1,
+        "mini_batch": 1
+      }
+    },
+    "config_hash": "1db03cdb002720f7e029ae4dcd03e739f9b8e76ceaecc519f9dbdc3f31724256",
+    "eval_stream": 4101,
+    "eval_pairs": [
+      [
+        1001,
+        1000
+      ],
+      [
+        1002,
+        1004
+      ],
+      [
+        1003,
+        1005
+      ],
+      [
+        1006,
+        1007
+      ],
+      [
+        1008,
+        1009
+      ],
+      [
+        1010,
+        1013
+      ],
+      [
+        1011,
+        1015
+      ],
+      [
+        1012,
+        1018
+      ],
+      [
+        1014,
+        1020
+      ],
+      [
+        1016,
+        1022
+      ],
+      [
+        1017,
+        1023
+      ],
+      [
+        1019,
+        1024
+      ],
+      [
+        1021,
+        1026
+      ],
+      [
+        1025,
+        1027
+      ],
+      [
+        1028,
+        1032
+      ],
+      [
+        1029,
+        1033
+      ],
+      [
+        1030,
+        1034
+      ],
+      [
+        1031,
+        1036
+      ],
+      [
+        1035,
+        1037
+      ],
+      [
+        1039,
+        1038
+      ]
+    ],
+    "report_sha256": "4dc76a3154c3d81f1f48384824e81a962a1ca453aeef6cdaa820e32bc2004928",
+    "report_gzip_sha256": "85b6a88e35dc251560fdd978b830acf92a1e1bfbca0a5ef702a15a6884effeb5",
+    "synthetic_input": "Seven-cell framework corridor, two goal-side situations. Balanced 20 pairs with shared action RNG, no external dataset/model distributed.",
+    "unchanged_from_base": [
+      "experiment/ppo.go",
+      "experiment/ppo_collect.go",
+      "experiment/imitation.go",
+      "experiment/gridnav/env.go",
+      "experiment/ppo_goal_memory_evidence_test.go",
+      "experiment/ppo_goal_memory_test.go",
+      "go.mod",
+      "go.sum"
+    ]
+  },
+  "observed_result": {
+    "normal": {
+      "passed_packages": 57,
+      "cached_packages": 48
+    },
+    "race": {
+      "passed_packages": 57,
+      "cached_packages": 54
+    },
+    "fresh_targeted_race_tests_passed": 5,
+    "opt_in_default": "Skipped without COIMNET_SHORT_GOAL_CUE_EVIDENCE; two explicit evidence processes completed.",
+    "report_runs": 39,
+    "complete_episodes": 1560,
+    "report_processes": 2,
+    "report_repeat_byte_identical": true,
+    "short_goal_cue_gate": false,
+    "short_goal_cue_gate_by_seed": {
+      "1": false,
+      "2": false,
+      "3": false
+    },
+    "sampled_after_reached": [
+      1,
+      14,
+      13
+    ],
+    "sampled_before_reached": [
+      7,
+      9,
+      7
+    ],
+    "sampled_after_erased_reached": [
+      1,
+      14,
+      17
+    ],
+    "sampled_after_flipped_reached": [
+      0,
+      13,
+      18
+    ],
+    "random_reached_each_seed": 7,
+    "training_matches_RunPPO": true,
+    "each_seed_optimizer_updates": 200,
+    "model_evaluation_preserves_full_caller_snapshot": true,
+    "random_evaluation": "Does not inspect or advance the model.",
+    "output_existing_path_rejected_without_change": true,
+    "paired_erased_common_prefix_inputs_actions_outputs_equal": true,
+    "paired_erased_success_ceiling": 0.5,
+    "exhaustive_action_sequences_checked": 729,
+    "hand_constructed_witness": "Original 40/40, flipped 0/40, erased 20/40; validation fixture, not learned model.",
+    "independent_readback": "All positions, rewards, terminal flags, cue interventions, finite outputs, greedy actions, metrics, paired prefixes and gates match.",
+    "readback_fault_injection_cases_rejected": [
+      "paired_output",
+      "bad_counter",
+      "bad_terminal",
+      "bad_snapshot",
+      "changed_config",
+      "legacy_config",
+      "repeat_count",
+      "repeat_flag",
+      "repeat_archive",
+      "repeat_log",
+      "repeat_digest"
+    ],
+    "resume_byte_identical": true,
+    "format_go_sources": 623,
+    "handoff_checksums_passed": 7,
+    "requirements_passed": 89,
+    "requirements_total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified",
+    "two_process_archives_and_logs_independently_verified": true
+  },
+  "TDD": {
+    "behavioral_failure_log": "red-behavior.log",
+    "passed_logs": [
+      "green.log",
+      "focused-race.log"
+    ],
+    "skeleton_failing_tests": 5,
+    "initial_setup_failure": "red.log is Go cache sandbox denial, not behavioral TDD evidence.",
+    "review_failure_log": "review-red.log",
+    "review_passed_logs": [
+      "review-green.log",
+      "readback-negative-final.log"
+    ]
+  },
+  "verification_attempts": {
+    "first_readback": "Validator initially wrongly compared random original cue signs across sides. readback-first.log preserved; random first row now compares only non-cue fields, all erased rows retain full equality. Full actual readback and four tampering tests pass.",
+    "full_tests": "-p 2 -timeout 30m controls scheduling/time only; suite and assertions unchanged. Cached results included and identified.",
+    "indexing": "Auto-review rejected repository indexing because source transmission was not authorized. Used only local reads/search, no workaround."
+  },
+  "limitations": [
+    "All three short-goal research gates false; no cue navigation learning evidence.",
+    "Training success episodes 9/200, 73/200, 72/200; final 20 positive returns 0,6,3. Cause of sparse/one-sided behavior not established.",
+    "No post-hoc hyperparameter changes. New method must be separately declared.",
+    "Only two synthetic goal situations; no general navigation, biological, connectome or cross-platform claim."
+  ],
+  "compression": {
+    "algorithm": "Python gzip.compress(raw, compresslevel=9, mtime=0)",
+    "uncompressed_bytes": 5533866,
+    "compressed_bytes": 96021
+  },
+  "review": {
+    "state": "complete",
+    "artifact": "review.txt",
+    "host": "Codex",
+    "tool": "collaboration.spawn_agent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "confirmed_final_findings": "None. Two initial P1 validator gaps fixed, regression-tested and independently re-reviewed.",
+    "first_choice_rejected": "Unknown model gpt-5.3-codex-spark for spawn_agent"
+  },
+  "test_log": [
+    "build.log",
+    "cli-smoke.log",
+    "documentation-links.log",
+    "environment.log",
+    "focused-race.log",
+    "format.log",
+    "governance-race.log",
+    "governance.log",
+    "green.log",
+    "handoff-checksums.log",
+    "independent-readback.log",
+    "mod-tidy.log",
+    "mod-verify.log",
+    "no-overwrite.log",
+    "race.log",
+    "readback-after-review.log",
+    "readback-final.log",
+    "readback-first.log",
+    "readback-negative-final.log",
+    "readback-negative.log",
+    "red-behavior.log",
+    "red.log",
+    "review-green.log",
+    "review-red.log",
+    "run1.log",
+    "run2.log",
+    "source-all-unchanged.log",
+    "test.log",
+    "validation.log",
+    "vet.log"
+  ],
+  "artifact_sha256": {
+    "verify_report.py": "2107480076000a220d86738c3d8c71a29c8d4722a5756dab8418d3cec5d45a3f",
+    "readback-first.log": "0237a27e49b3387af3e2d18e3042e90657993ef5ed281225aa4d5d3fde46c7c9",
+    "validation.log": "52c03c0e24e1d410439991afa0477e5b5d79f1695748ee369074bf39de2da050",
+    "summary.json": "faf70b3a81c3150c714b206a4178d4ee9489e60e0d3d64ef4300e64f7a420799",
+    "review.txt": "67b2b847da59ef399725fdc20dca81c28a4ca53009da02cce0d2f46f4146d06d",
+    "source-all-unchanged.log": "e33a9d9eec03d2c4cf7ed7e63c52c8ac34c7fe83671dc0eb83c9c148629a51bf",
+    "run1.log": "7a29811955274c86bf6058ad7d49e4d8cba70620541dd4b65e022c0852ac8f47",
+    "reproduction.json": "838b147933d56e7d3b4302392a69ff303820426b23393fb5f13adad51014a35b",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "readback-negative.log": "03f8c7d734c738454ca9d44b09119d0c376072605650eaef35743d31649d0108",
+    "cli-smoke-script.sh": "9b4b97e44b9a10f05cea4a35da038adc4dbc5ed88a281feef5b6ff0900106d49",
+    "run2-report.json.gz": "85b6a88e35dc251560fdd978b830acf92a1e1bfbca0a5ef702a15a6884effeb5",
+    "review-green.log": "61d1e5cd0dfaecdc1c08728c13a1cd903174a3521d4c44c3719ccdfd8d37eb18",
+    "red-source.sha256": "266d5a763be37ff238762b676c3f34c23d2f738a297e89cd2758f1b8c6ae3fe8",
+    "format.log": "921d305b3b70e73d56b52691a832a74ce114a2f2482f10943770477ed32db99e",
+    "run2.log": "47f205ea9e03473d12a2c01f11771ebd4a10941873f1ca1ec1700d2773aefa7b",
+    "environment.log": "0cc1eb34349700bb0c613c94f02bce419433f4304b62a86e212695f3e7167a23",
+    "red.log": "022c018bc90f61660260b084d88c9f67413ce97d00b16ea99dea30fbd6923a8e",
+    "test.log": "944292a9edab10aa49d166107b033cee32eb412844f713329cf35d197b06af09",
+    "cli-smoke.log": "f57a4c5ceddbb1d19186f450044f3666c49161859750004c07b02be65c5dbd3f",
+    "green.log": "0efe37309f73dd735b610fb403b6355c06a2d525498ef25f50c045f5c6d52b78",
+    "readback-after-review.log": "297b121e63c95d048eab2691e88af23e29bcaac35f629c22cc737d381fe8f331",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "governance-race.log": "71a026c1c3f537ace7ab524c1608a56568fa0d8a06fbbd101deaec108f667073",
+    "focused-race.log": "4bd3db77f0cd55b05daa67d1c6c8fe90af9e2deec9134bac1c31ad1df948a927",
+    "red-behavior.log": "f2850c3d720e47cf41571361121fff871bed6c066504d1494c0829290afd4723",
+    "verify_report_test.py": "27a96132c480a4fcbda4e309fcce8f2493e4dacdadbb030acee1c3e07302c0c5",
+    "source.sha256": "02bd3bb5ff1e65355f260a39cf88768da3e8016bc933226a94d151af21b9daeb",
+    "governance.log": "d4b5d383d17c6468060bff5649f66f5276d2ef9c0ef4f7e477a5ea60056efe2c",
+    "handoff-checksums.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "independent-readback.log": "297b121e63c95d048eab2691e88af23e29bcaac35f629c22cc737d381fe8f331",
+    "race.log": "564e40577dffdaa802a4fca047d8c9ae95b37a551ac82127e561086e0a1504e3",
+    "readback-negative-final.log": "31671a6e276818a1ea546e2496990d9a9c82ae9d1657ecd76c279fa4fab28bfb",
+    "report.json.gz": "85b6a88e35dc251560fdd978b830acf92a1e1bfbca0a5ef702a15a6884effeb5",
+    "validation-script.sh": "6c52e1b07dcabe2cfd15a0d4fc92f8513410ba609c3fb1bdcb7281dd1592c387",
+    "review-red.log": "c375bdbb71614dd25ef83bc9636db33ca1c15cc5bb128d4a07c585814bef7395",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "documentation-links.log": "3a6e954f028091ef687a80b5873e1b3bfb60c76f265d38d0b9e0c22882f01c7a",
+    "readback-final.log": "297b121e63c95d048eab2691e88af23e29bcaac35f629c22cc737d381fe8f331",
+    "no-overwrite.log": "be821ad439a064fc84a2c15ccbe40cf0079ebd51ab6af91bf405220f862b167d",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "delivery_phase": "4/5 engineering acceptance; Git delivery pending",
+  "post_validation_checks": {
+    "governance_normal_tests_passed": 4,
+    "governance_race_tests_passed": 4,
+    "local_documentation_links_checked": 312,
+    "source_fingerprint_unchanged": true,
+    "python_syntax": "Both complete scripts compile without pycache."
+  }
+}

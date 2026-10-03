@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已通過 4／5 工程驗收，Git 交付待完成。固定六步、左右共用亂數，39 組／1,560 回合在兩個新程序重現並獨立核對。訓練後 sampled 為 1／40、14／40、13／40，三組提示判準均 false，沒有依提示導航的學習證據。需求維持 89／91。
+
 [ticket 36](docs/tickets/36-synthetic-goal-cue-audit.md) 已完成 5／5 工程驗收並交付：固定模型與 200 更新，39 組共 1,560 回合的報告在新程序重現。訓練後取樣抵達率為 50%、97.5%、67.5%，整體提示工作判準未通過。Mac 完整一般與 race 各 57 套件、建置、vet、相依性與格式通過，實作 `fd069c3` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/goal-cue-audit-20261003/delivery.json)。需求維持 89／91。
 
 2026-10-03 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 已完成 5／5 工程驗收並交付：234 配對的兩個新程序報告相同，未干預側與 ticket 34 的行走摘要及完整 trace 指紋相同。每個 seed 的八個有刺激試次在清除歷史後改變輸出及行走，但所有原／清除模型組皆 0／13，預測誤差效應方向不一致。來源與凍結模型不變，實作 `21eb2ae` 與證據修正 `bf5d7fa` 已推送並核對遠端，需求為 89／91。[交付紀錄](evidence/TSK-11/stimulus-counterfactual-20261003/delivery.json)。[結果](evidence/TSK-11/stimulus-counterfactual-20261003/summary.json)。
@@ -141,6 +143,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent / Luna max | completed | 5／5 工程驗收通過，`55c2ef7` 已推送並核對遠端；模型各 0／13，沒有導航改善證據 |
 | 35 | 研究者可以確認凍結模型是否使用搬移前刺激 | Codex 主 agent / Luna max review | completed | 5／5 通過，`21eb2ae`／`bf5d7fa` 已推送並核對遠端。234 配對重現、原側與前輪一致，所有模型原／清除組 0／13 |
 | 36 | 研究者可以分開判讀回報改善、抵達與使用起始提示 | Codex 主 agent / Luna max review | completed | 5／5 工程驗收與交付，實作 `fd069c3` 已推送。39 組 1,560 回合重現，取樣抵達率 50%、97.5%、67.5%，整體提示判準未通過 |
+| 37 | 研究者可以排除兩端搜尋後驗證提示導航 | Codex 主 agent / Luna max 測試 | in_progress | 4／5，完整一般／race 各 57 套件及獨立審查通過，三組提示判準均 false；Git 交付待完成 |
 
 ## 目前阻礙
 
@@ -158,13 +161,15 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 36 已完成工程驗收與交付。小型走廊的 20 步允許先走錯端再找另一端，清除提示也可全部抵達，不能證明學會使用提示記憶。下一個研究切片建議另設小於 9 步的時限，事前固定方法與驗收條件，先證明必須依提示選對方向，再接真實軌跡。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求累計仍為 89／91。
+[ticket 37](docs/tickets/37-short-goal-cue-audit.md)：固定 6 步、三個 seed 各 200 更新，左右配對共用 PCG 動作亂數。交付 39 組／1,560 回合、新程序重現與提示對照的事前判讀。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-03：ticket 37 在結果產生前固定 6 步與左右共用動作亂數配對，只改測試範例。三個 seed 全部滿足完整抵達、前後／random 改善與清除／反轉提示門檻才記 true，不依結果調參。
 
 2026-10-03：ticket 36 只新增測試範例的提示清除／反轉與逐回合抵達檢查，公開 API、PPO 更新及原模仿模型不變。seed 2 的工作判準通過不等於學得必要提示記憶，20 步的任務可搜尋兩端；後續縮短時限須作另一個事前固定的實驗。
 

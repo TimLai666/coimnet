@@ -52,3 +52,23 @@ COIMNET_GOAL_CUE_EVIDENCE="$audit_dir" go test -count=1 -v -run '^TestPPOGoalCue
 事前的描述性工程判準只有 seed 2 通過，整體 goal_cue_gate=false。seed 1 的左目標是 0／20，seed 3 為 8／20，未達每側 0.8。seed 2 未訓練時 greedy 已是 40／40，訓練後反轉提示也可 40／40。seed 3 的 greedy 則從 0／40 變成 40／40，但清除提示仍是 40／40。
 
 20 步足以先走到錯端再折返，走遍兩端最少只需 9 步。因此本輪支持有限的策略與抵達改善，沒有三組一致依提示導航的證據。環境只有兩種目標情境，不能把 40 回合當作 40 種獨立導航問題，這也不是果蠅接線或生物記憶的驗收。固定判準及限制見 [ticket 36](../../docs/tickets/36-synthetic-goal-cue-audit.md)。
+
+## 六步左右配對提示檢查
+
+[ticket 37](../../docs/tickets/37-short-goal-cue-audit.md) 同時把環境與 PPO 的時限設為 6 步，其餘預設值、模型與 200 更新不變。從中央搜尋兩端至少要 9 步，六步必須選對方向。環境種子 1000～1039 依左、右目標各自排序，再逐一配成 20 對。每對的左右回合使用相同 PCG(1000 + pair_index, 0x1005)，訓練前後與各種提示干預也重設相同來源。
+
+```sh
+short_audit_dir=$(mktemp -d)
+COIMNET_SHORT_GOAL_CUE_EVIDENCE="$short_audit_dir" go test -count=1 -v -run '^TestPPOShortGoalCueEvidence$' ./experiment
+python3 evidence/LRN-09/short-goal-cue-audit-20261003/verify_report.py
+```
+
+第一個命令在新資料夾建立完整 report.json，既有檔案會在訓練前拒絕。第二個命令核對 repo 保存的[完整紀錄](../../evidence/LRN-09/short-goal-cue-audit-20261003/report.json.gz)及[摘要](../../evidence/LRN-09/short-goal-cue-audit-20261003/summary.json)。兩個新程序的 39 組／1,560 回合報告完全相同。清除提示的左右觀察、輸出及動作在任一側終止前逐步相同，每對最多成功一側，抵達率上限 50%。全部 729 種六步動作序列也沒有能搜尋兩端的序列。
+
+| seed | sampled 訓練前抵達 | 訓練後抵達 | 清除提示 | 反轉提示 | greedy 訓練後原提示／清除／反轉 |
+| --- | --- | --- | --- | --- | --- |
+| 1 | 7／40 | 1／40 | 1／40 | 0／40 | 0／40、0／40、0／40 |
+| 2 | 9／40 | 14／40 | 14／40 | 13／40 | 20／40、20／40、20／40 |
+| 3 | 7／40 | 13／40 | 17／40 | 18／40 | 20／40、20／40、20／40 |
+
+random 各為 7／40。三個 seed 的事前判準都未通過，short_goal_cue_gate=false。seed 2 的 greedy 只到左目標，seed 3 只到右目標，清除或反轉提示仍是同樣成績。這次排除了搜尋兩端的捷徑，但沒有學會依提示導航的證據。沒有依結果調整參數，舊二十步報告保留。這仍只有兩種人工目標情境，不能宣稱一般導航、真實接線或生物記憶。
