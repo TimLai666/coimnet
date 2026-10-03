@@ -72,3 +72,20 @@ python3 evidence/LRN-09/short-goal-cue-audit-20261003/verify_report.py
 | 3 | 7／40 | 13／40 | 17／40 | 18／40 | 20／40、20／40、20／40 |
 
 random 各為 7／40。三個 seed 的事前判準都未通過，short_goal_cue_gate=false。seed 2 的 greedy 只到左目標，seed 3 只到右目標，清除或反轉提示仍是同樣成績。這次排除了搜尋兩端的捷徑，但沒有學會依提示導航的證據。沒有依結果調整參數，舊二十步報告保留。這仍只有兩種人工目標情境，不能宣稱一般導航、真實接線或生物記憶。
+
+## 六步訓練回饋診斷
+
+[ticket 38](../../docs/tickets/38-ppo-training-feedback-diagnostic.md) 沿用六步設定，保存 600 訓練回合的全部觀察、行動、獎勵、價值、逾時後續價值、GAE、更新摘要與完整快照指紋。每 20 更新（含 0）在副本上做固定左右、原／清除／反轉提示的 greedy 探測，共 198 回合，不消耗訓練取樣亂數。
+
+```sh
+feedback_dir=$(mktemp -d)
+COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE="$feedback_dir" go test -count=1 -v -run '^TestPPOTrainingFeedback' ./experiment
+python3 evidence/LRN-09/training-feedback-20261004/verify_report.py
+python3 evidence/LRN-09/training-feedback-20261004/verify_report_test.py
+```
+
+環境變數須指向已建立的可寫資料夾。命令只建立 report.json，檔案已存在會在訓練前拒絕，寫入錯誤以失敗回報。全部 600 回合另在副本上逐步核對實際行動機率、價值與逾時下一筆觀察的後續價值。完整曲線、終止次數及最終快照須與 RunPPO 相同。
+
+兩個程序的報告相同，且與 ticket 37 的完整既有報告一致。左右目標回合各有 95～105 次，左右成功分別為 seed 1 的 3／6、seed 2 的 70／3、seed 3 的 1／71。seed 1 第 63 更新後沒有再成功，但全部 200 回合的第一步優勢為正，包含 191 個逾時回合。提示會改變動作分數，最後 greedy 策略卻仍是停留、往左、往右，沒有依提示導航的學習證據。
+
+完整數值、獨立重算及因果限制見[診斷](../../evidence/LRN-09/training-feedback-20261004/analysis.md)與[驗證](../../evidence/LRN-09/training-feedback-20261004/verification.json)。下一個檢查需分離策略與價值梯度；本輪結果不能判定正規化、改回饋或調參哪一種方法一定有效。

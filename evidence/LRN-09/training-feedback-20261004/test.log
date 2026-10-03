@@ -1,0 +1,196 @@
+--- FAIL: TestCancelReleases (0.67s)
+    --- FAIL: TestCancelReleases/download_Fetch (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 79 [running]:
+testing.tRunner.func1.2({0x1015763e0, 0x75d1aa1320d0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x1015763e0?, 0x75d1aa1320d0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x1017871e0, 0x10177e800})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet_test.testCancelDownloadFetch(0x75d1aa08cd88)
+	/Users/timlai/Developer/coimnet/cancel_release_test.go:175 +0x3c
+testing.tRunner(0x75d1aa08cd88, 0x10177e7f8)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 57
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet	3.662s
+ok  	github.com/TimLai666/coimnet/backend	0.246s
+ok  	github.com/TimLai666/coimnet/backend/webgpu	0.318s
+ok  	github.com/TimLai666/coimnet/checkpoint	7.127s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	0.384s
+ok  	github.com/TimLai666/coimnet/connectome	1.170s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	0.373s
+--- FAIL: TestUntrustedTeacherAnswersStayData (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 11 [running]:
+testing.tRunner.func1.2({0x101606500, 0x1982b1762fc0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x101606500?, 0x1982b1762fc0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x1017c3360, 0x1982b1762f80})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet/distill_test.TestUntrustedTeacherAnswersStayData(0x1982b16e8d88)
+	/Users/timlai/Developer/coimnet/distill/untrusted_teacher_test.go:206 +0x88
+testing.tRunner(0x1982b16e8d88, 0x1017bbb98)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet/distill	0.371s
+--- FAIL: TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 22 [running]:
+testing.tRunner.func1.2({0x102b30d20, 0x3cf7df32a3e0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x102b30d20?, 0x3cf7df32a3e0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x102bbea00, 0x3cf7df32a3a0})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet/download.TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys(0x3cf7df37a488)
+	/Users/timlai/Developer/coimnet/download/download_json_depth_test.go:14 +0x78
+testing.tRunner(0x3cf7df37a488, 0x102bba860)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet/download	0.665s
+ok  	github.com/TimLai666/coimnet/dynamics	0.329s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	0.467s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	0.347s
+ok  	github.com/TimLai666/coimnet/examples/realasr	0.327s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	0.433s
+ok  	github.com/TimLai666/coimnet/examples/realnav	0.368s
+ok  	github.com/TimLai666/coimnet/examples/realnavmemory	0.384s
+ok  	github.com/TimLai666/coimnet/examples/realocr	0.320s
+ok  	github.com/TimLai666/coimnet/examples/realsubgraph	0.567s
+ok  	github.com/TimLai666/coimnet/examples/realtext	2.224s
+ok  	github.com/TimLai666/coimnet/experiment	36.367s
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	0.800s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	0.239s
+ok  	github.com/TimLai666/coimnet/experiment/multimodaleval	32.618s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	0.313s
+--- FAIL: TestStudentModeNeverReachesTheNetwork (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 30 [running]:
+testing.tRunner.func1.2({0x1035c5a00, 0x68d25cd1e790})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x1035c5a00?, 0x68d25cd1e790?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x103780ec0, 0x68d25cff2090})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet/experiment/studenteval_test.TestStudentModeNeverReachesTheNetwork(0x68d25cd60fc8)
+	/Users/timlai/Developer/coimnet/experiment/studenteval/assisted_test.go:279 +0x84
+testing.tRunner(0x68d25cd60fc8, 0x1037796b0)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet/experiment/studenteval	0.459s
+ok  	github.com/TimLai666/coimnet/feather	0.296s
+--- FAIL: TestDataDownloadRunE2EAndReceipt (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 46227 [running]:
+testing.tRunner.func1.2({0x1044776e0, 0x5088fd7259f0})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x1044776e0?, 0x5088fd7259f0?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x1046b44e0, 0x5088fdaf4300})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet/internal/cli.newDataDownloadServer(0x5088fd9cee00?, {0x5088fd9cee00, 0x1c, 0x1c})
+	/Users/timlai/Developer/coimnet/internal/cli/data_test.go:260 +0xc0
+github.com/TimLai666/coimnet/internal/cli.TestDataDownloadRunE2EAndReceipt(0x5088fd0fed88)
+	/Users/timlai/Developer/coimnet/internal/cli/data_test.go:149 +0xb0
+testing.tRunner(0x5088fd0fed88, 0x1046aa168)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet/internal/cli	11.842s
+ok  	github.com/TimLai666/coimnet/internal/delayedfixture	0.315s
+ok  	github.com/TimLai666/coimnet/internal/extsort	0.530s
+ok  	github.com/TimLai666/coimnet/internal/fileio	0.241s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	0.239s
+ok  	github.com/TimLai666/coimnet/internal/redact	0.232s
+ok  	github.com/TimLai666/coimnet/internal/sparse	0.234s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	0.237s
+ok  	github.com/TimLai666/coimnet/learning	0.678s
+ok  	github.com/TimLai666/coimnet/learning/rl	0.408s
+ok  	github.com/TimLai666/coimnet/modulation	0.420s
+ok  	github.com/TimLai666/coimnet/multimodal	0.248s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	0.255s
+ok  	github.com/TimLai666/coimnet/params	0.799s
+ok  	github.com/TimLai666/coimnet/plasticity	0.254s
+ok  	github.com/TimLai666/coimnet/replay	0.240s
+ok  	github.com/TimLai666/coimnet/resources	0.241s
+ok  	github.com/TimLai666/coimnet/signal	0.264s
+ok  	github.com/TimLai666/coimnet/simulate	1.395s
+ok  	github.com/TimLai666/coimnet/tasks/asr	2.354s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	0.256s
+ok  	github.com/TimLai666/coimnet/tasks/media	18.351s
+ok  	github.com/TimLai666/coimnet/tasks/media/realdata	0.942s
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	0.262s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	0.878s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	0.236s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	0.244s
+ok  	github.com/TimLai666/coimnet/tasks/textgen	18.286s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	0.240s
+--- FAIL: TestHTTPRetriesOnServerErrorsExactly (0.00s)
+panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]
+
+goroutine 8 [running]:
+testing.tRunner.func1.2({0x105cd0ac0, 0x258facb51470})
+	/usr/local/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/usr/local/go/src/testing/testing.go:1977 +0x318
+panic({0x105cd0ac0?, 0x258facb51470?})
+	/usr/local/go/src/runtime/panic.go:860 +0x12c
+net/http/httptest.newLocalListener()
+	/usr/local/go/src/net/http/httptest/server.go:72 +0xd4
+net/http/httptest.NewUnstartedServer(...)
+	/usr/local/go/src/net/http/httptest/server.go:120
+net/http/httptest.NewServer({0x105e8a5e0, 0x258faca273e0})
+	/usr/local/go/src/net/http/httptest/server.go:107 +0x28
+github.com/TimLai666/coimnet/teacher_test.newReplyServer(0x258fac941b08, 0x105e82cd0)
+	/Users/timlai/Developer/coimnet/teacher/http_test.go:36 +0x9c
+github.com/TimLai666/coimnet/teacher_test.TestHTTPRetriesOnServerErrorsExactly(0x258fac941b08)
+	/Users/timlai/Developer/coimnet/teacher/http_test.go:146 +0x30
+testing.tRunner(0x258fac941b08, 0x105e82b38)
+	/usr/local/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/usr/local/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/TimLai666/coimnet/teacher	0.368s
+ok  	github.com/TimLai666/coimnet/teacher/tool	0.244s
+FAIL

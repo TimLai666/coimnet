@@ -1,0 +1,44 @@
+[
+  {
+    "name": "focused-race",
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "-count=1",
+      "-v",
+      "-run",
+      "^TestPPOTrainingFeedback|^TestPPOCollect",
+      "./experiment"
+    ],
+    "exit_code": 0,
+    "seconds": 23.15533208847046,
+    "log": "focused-race.log"
+  },
+  {
+    "name": "build",
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "exit_code": 0,
+    "seconds": 5.507879257202148,
+    "log": "build.log"
+  },
+  {
+    "name": "test",
+    "command": [
+      "go",
+      "test",
+      "-p",
+      "2",
+      "-timeout",
+      "30m",
+      "./..."
+    ],
+    "exit_code": 1,
+    "seconds": 92.8404700756073,
+    "log": "test.log"
+  }
+]

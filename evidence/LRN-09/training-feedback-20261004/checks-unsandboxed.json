@@ -1,0 +1,100 @@
+[
+  {
+    "name": "test-unsandboxed",
+    "command": [
+      "go",
+      "test",
+      "-p",
+      "2",
+      "-timeout",
+      "30m",
+      "./..."
+    ],
+    "exit_code": 0,
+    "seconds": 38.094658851623535,
+    "log": "test-unsandboxed.log"
+  },
+  {
+    "name": "race",
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "-p",
+      "2",
+      "-timeout",
+      "30m",
+      "./..."
+    ],
+    "exit_code": 0,
+    "seconds": 3037.3542749881744,
+    "log": "race.log"
+  },
+  {
+    "name": "vet",
+    "command": [
+      "go",
+      "vet",
+      "./..."
+    ],
+    "exit_code": 0,
+    "seconds": 8.482871055603027,
+    "log": "vet.log"
+  },
+  {
+    "name": "modules",
+    "command": [
+      "go",
+      "mod",
+      "verify"
+    ],
+    "exit_code": 0,
+    "seconds": 12.875059366226196,
+    "log": "modules.log"
+  },
+  {
+    "name": "tidy",
+    "command": [
+      "go",
+      "mod",
+      "tidy",
+      "-diff"
+    ],
+    "exit_code": 0,
+    "seconds": 0.5033359527587891,
+    "log": "tidy.log"
+  },
+  {
+    "name": "handoff",
+    "command": [
+      "shasum",
+      "-a",
+      "256",
+      "-c",
+      "SHA256SUMS.txt"
+    ],
+    "exit_code": 0,
+    "seconds": 0.051850080490112305,
+    "log": "handoff.log"
+  },
+  {
+    "name": "independent",
+    "command": [
+      "python3",
+      "evidence/LRN-09/training-feedback-20261004/verify_report.py"
+    ],
+    "exit_code": 0,
+    "seconds": 0.20402002334594727,
+    "log": "independent.log"
+  },
+  {
+    "name": "verifier-tests",
+    "command": [
+      "python3",
+      "evidence/LRN-09/training-feedback-20261004/verify_report_test.py"
+    ],
+    "exit_code": 0,
+    "seconds": 1.2485640048980713,
+    "log": "verifier-tests.log"
+  }
+]

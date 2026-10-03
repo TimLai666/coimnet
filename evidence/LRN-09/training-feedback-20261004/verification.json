@@ -1,0 +1,383 @@
+{
+  "requirement": "LRN-09",
+  "ticket": "38-ppo-training-feedback-diagnostic",
+  "status": "verified_scoped",
+  "profile": "fixture",
+  "date": "2026-10-04",
+  "scope": "Test-only diagnosis with all ticket37 parameters fixed; no tuning, production code, model, public API, dependency or prior evidence changes.",
+  "acceptance_verified": 4,
+  "acceptance_total": 5,
+  "environment": {
+    "runtime": "go version go1.26.5 darwin/arm64",
+    "platform": "macOS 27.0.1 darwin/arm64 CPU",
+    "cgo_enabled": true,
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "input_fingerprints": {
+    "base_commit": "67c4c5bbed368507310c39b6b4619d2969cfb6af",
+    "changed_go_sources": {
+      "experiment/ppo_training_feedback_evidence_test.go": "cb454dd68f89bc25982f4f33278fd598aadf830ac343ef0f3197fd2d0a38e556",
+      "experiment/ppo_training_feedback_validation_test.go": "a6079cb06b95cde927231b70d34d67cc322eca90b155cbefab9956cd9fbe1257"
+    },
+    "previous_report_raw_sha256": "4dc76a3154c3d81f1f48384824e81a962a1ca453aeef6cdaa820e32bc2004928",
+    "source_manifest": "source.sha256",
+    "source_file_count": 641,
+    "source_manifest_sha256": "b915b1ea1f9c28815eeef41b8a1afcb4afcdefe576f22b886312819463cfdedf",
+    "config": {
+      "corridor": {
+        "length": 7,
+        "time_limit": 6,
+        "step_penalty": 0.01,
+        "goal_reward": 1
+      },
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "updates": 200,
+      "hidden": 8,
+      "eval_episodes": 40,
+      "learning_rate": 0.01,
+      "ppo": {
+        "gamma": 0.99,
+        "lambda": 0.95,
+        "clip_epsilon": 0.2,
+        "value_coef": 0.5,
+        "entropy_coef": 0.01,
+        "burn_in": 0,
+        "time_limit": 6,
+        "epochs": 1,
+        "mini_batch": 1
+      }
+    },
+    "config_hash": "1db03cdb002720f7e029ae4dcd03e739f9b8e76ceaecc519f9dbdc3f31724256",
+    "protected_prior_files_unchanged": 678,
+    "source_selection": "Tracked Go/sh/module files plus the two owned new Go tests; ignored runs/ copies excluded."
+  },
+  "research_limits": [
+    "Synthetic two-target corridor only; no general-navigation or biological claim.",
+    "Cue changes logits but final greedy actions remain insensitive to cue.",
+    "Policy/value gradient interference and exploration causality have not been isolated.",
+    "Python replays physics, GAE and policy/value loss terms, not neural forward, entropy or Go PCG reset; Go separately replays model values/probabilities/bootstrap."
+  ],
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified",
+    "change": "Only append LRN-09 supplemental evidence path."
+  },
+  "tdd": {
+    "environment_replay_red": "red.log",
+    "environment_replay_green": "green.log",
+    "policy_replay_red": "policy-red.log",
+    "policy_replay_green": "policy-green.log",
+    "behavioral_failures_observed": true,
+    "verifier_mutation_cases": 13
+  },
+  "expected_failures": {
+    "existing-output.log": "Existing report rejected before training; original report SHA remains unchanged.",
+    "test.log": "Sandbox disallowed localhost httptest listener; full normal retry outside sandbox passed.",
+    "governance.log": "Evidence reference was added before verification.json was created; rerun required.",
+    "governance-race.log": "Same missing verification artifact during documentation update; rerun required.",
+    "final-governance.log": "Initial verification lacked the repository required reproduction_command/observed_result/test_log key names; corrected the artifact, not the tests.",
+    "final-governance-race.log": "Same evidence contract mismatch; corrected artifact fields and rerun required."
+  },
+  "review": {
+    "host": "Codex desktop on macOS",
+    "spark_requested": "gpt-5.3-codex-spark/xhigh",
+    "spark_result": "Unknown model rejection",
+    "fallback": "gpt-5.6-luna/max",
+    "roles": "Read-only PPO path and adversarial final diagnostic review",
+    "confirmed_findings_remaining": 0,
+    "report": "review.md"
+  },
+  "remaining_acceptance": [
+    "Commit, push and verify remote before marking ticket complete."
+  ],
+  "verified_at_utc": "2026-10-03T18:10:27.924020+00:00",
+  "observed_result": {
+    "training_episodes": 600,
+    "probe_episodes": 198,
+    "frozen_checkpoints_per_seed": 11,
+    "fresh_process_reports_identical": true,
+    "all_training_policy_value_bootstrap_replayed": true,
+    "full_legacy_report_equals_ticket37": true,
+    "left_right_attempts": [
+      [
+        99,
+        101
+      ],
+      [
+        95,
+        105
+      ],
+      [
+        105,
+        95
+      ]
+    ],
+    "left_right_successes": [
+      [
+        3,
+        6
+      ],
+      [
+        70,
+        3
+      ],
+      [
+        1,
+        71
+      ]
+    ],
+    "last_success_updates": [
+      [
+        45,
+        63
+      ],
+      [
+        200,
+        41
+      ],
+      [
+        10,
+        198
+      ]
+    ],
+    "seed1_positive_first_advantages": 200,
+    "seed1_positive_timeout_first_advantages": 191,
+    "unique_cause_identified": false,
+    "cue_dependent_navigation_evidence": false,
+    "test-unsandboxed_package_count": 57,
+    "race_package_count": 57,
+    "full_go_checks_passed": true,
+    "independent_verifier_passed": true,
+    "verifier_negative_cases_rejected": 13,
+    "governance_normal_race_each_passed": 4,
+    "documents_links_checked": 208,
+    "seed1_timeout_bootstrap_max": 23.40863037109375
+  },
+  "reproduction_command": [
+    "feedback_dir=$(mktemp -d); COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE=\"$feedback_dir\" go test -count=1 -v -run ^TestPPOTrainingFeedback ./experiment",
+    "python3 evidence/LRN-09/training-feedback-20261004/verify_report.py",
+    "python3 evidence/LRN-09/training-feedback-20261004/verify_report_test.py"
+  ],
+  "test_log": [
+    "build.log",
+    "documents.log",
+    "existing-output.log",
+    "final-build.log",
+    "final-focused-race.log",
+    "final-governance-race.log",
+    "final-governance.log",
+    "final-independent.log",
+    "final-verifier-tests.log",
+    "focused-race.log",
+    "format.log",
+    "governance-complete.log",
+    "governance-race-complete.log",
+    "governance-race.log",
+    "governance.log",
+    "green.log",
+    "handoff.log",
+    "independent.log",
+    "modules.log",
+    "policy-green.log",
+    "policy-red.log",
+    "race.log",
+    "red.log",
+    "run1.log",
+    "run2.log",
+    "run3.log",
+    "run4.log",
+    "stage-documents.log",
+    "stage-governance-race.log",
+    "stage-governance.log",
+    "test-unsandboxed.log",
+    "test.log",
+    "tidy.log",
+    "verifier-tests.log",
+    "vet.log"
+  ],
+  "checks": [
+    {
+      "name": "test-unsandboxed",
+      "command": [
+        "go",
+        "test",
+        "-p",
+        "2",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 38.094658851623535,
+      "log": "test-unsandboxed.log"
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-p",
+        "2",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 3037.3542749881744,
+      "log": "race.log"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 8.482871055603027,
+      "log": "vet.log"
+    },
+    {
+      "name": "modules",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "seconds": 12.875059366226196,
+      "log": "modules.log"
+    },
+    {
+      "name": "tidy",
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "seconds": 0.5033359527587891,
+      "log": "tidy.log"
+    },
+    {
+      "name": "handoff",
+      "command": [
+        "shasum",
+        "-a",
+        "256",
+        "-c",
+        "SHA256SUMS.txt"
+      ],
+      "exit_code": 0,
+      "seconds": 0.051850080490112305,
+      "log": "handoff.log"
+    },
+    {
+      "name": "independent",
+      "command": [
+        "python3",
+        "evidence/LRN-09/training-feedback-20261004/verify_report.py"
+      ],
+      "exit_code": 0,
+      "seconds": 0.20402002334594727,
+      "log": "independent.log"
+    },
+    {
+      "name": "verifier-tests",
+      "command": [
+        "python3",
+        "evidence/LRN-09/training-feedback-20261004/verify_report_test.py"
+      ],
+      "exit_code": 0,
+      "seconds": 1.2485640048980713,
+      "log": "verifier-tests.log"
+    }
+  ],
+  "log_profiles": {
+    "final_diagnostic": [
+      "run3.log",
+      "run4.log",
+      "policy-green.log",
+      "final-focused-race.log",
+      "final-independent.log",
+      "final-verifier-tests.log"
+    ],
+    "historical_diagnostic": [
+      "run1.log",
+      "run2.log",
+      "green.log",
+      "focused-race.log",
+      "build.log"
+    ],
+    "full_final_go": [
+      "test-unsandboxed.log",
+      "race.log",
+      "final-build.log",
+      "vet.log",
+      "modules.log",
+      "tidy.log",
+      "format.log"
+    ],
+    "final_governance": [
+      "governance-complete.log",
+      "governance-race-complete.log"
+    ]
+  },
+  "artifacts_sha256": {
+    "analysis.md": "00be3951070cee2d1e9390fe3f6660dc98291a7299ce64a107bce14913a9787c",
+    "build.log": "bdf272a4c012ed6dc81ae39952dad624bc98fb1b7fab92409c01762ea8633e6d",
+    "checks-unsandboxed.json": "824c8093f8587f8e40206e7ab5ae105b16c2c9dc7a95b00a9b150795dec5495b",
+    "checks.json": "eff028c87fe5e32e5d8966640ad87723fe9dea4d23deb8e3b86e7dc6b3cd403d",
+    "documents.log": "7e8e01a85e5f5a9bc1ae0470c711da1dc54c67127fdb56526b4843d4a0154056",
+    "existing-output.log": "f307d8477f3994e9fb831722321bddda19c8733bb7b2caad120e9c5d089f80df",
+    "final-build.log": "c7f90913e7ab1e3b8671f217d7f2eba4292cd8ea4e1136d92a1d2260761ce232",
+    "final-focused-race.log": "98c33f7408c0951945fd240c5257496be47fbd0ae014d9e54af766437cb91106",
+    "final-governance-race.log": "57fdf5ad7ba746ffb9db139d5d720b32798abdaf203058f4b976ce43db2f3d98",
+    "final-governance.log": "8b7e4ce47b20a23ddefc442d4b3663dcddc3fb216e107b75c820d4dde1e7b36a",
+    "final-independent.log": "03b2363a63541694ff340de10da2aa0de2f706322fba1ea645f5afe9525b430b",
+    "final-verifier-tests.log": "98e04fbcb81a1b16083aba7785d16feb29936700e3ee6270f29ef9cc997fcf95",
+    "focused-race.log": "47dd29f52bb29036362b1d38174103add92743a1262a03acbcd76da393a0f4e0",
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "governance-complete.log": "5a4d8b301a38873bd5c1def9e61a2681eebc8ffcc20c4c3671a6b5ec37401890",
+    "governance-race-complete.log": "2d480f69eac0acc0f6794bdc37b06d2c44d8da5149693f414adcc62767205702",
+    "governance-race.log": "bec2327a1eac04284089520441d673795be1f1baaa5bf611045e19dbc56556b5",
+    "governance.log": "d53b9e9b67a4778f34a25c1d958326f81fb7e06987e9ac025782cdf9bacb58b4",
+    "green.log": "2c048c1ef0dc1822dabe94124c4587d9c3dec17815b2d9bf645c25359292ceb7",
+    "handoff.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "independent.log": "03b2363a63541694ff340de10da2aa0de2f706322fba1ea645f5afe9525b430b",
+    "modules.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "policy-green.log": "360e3a86dbb18354c339c133d851eeeead603b205b55738910872394f78fd574",
+    "policy-red.log": "61adfdf147dde7f676d5fe0d1a53b291f8c6dd2b5e58d3057b91d997a05b61cc",
+    "race.log": "f9c99694d6458fe0903c8d80a9d6ea070a1833d52d2800bc7a76e86d4fd5b5cf",
+    "red.log": "6256b37344fbce5a15e82e34800b9f2f2b7cd77a9a808e3ecf18c9b27e14f4bc",
+    "report.json.gz": "27286d7e471543bc7478908dfa8dc3f4433d13a13bac072037139dc7603116de",
+    "reproduction.json": "72cac7910ce3ce9741eaf5175c970d528c0e73eb643b9fa7ea51c2fe73bdefb0",
+    "review.md": "4408dab9b36400dbca85e741e4328bcc360146636e3d909b57074efba53a6ae0",
+    "run1.log": "48515b889e61fa54023dea1d4943830fc60363924fd3ea59c750ad3129d22ae5",
+    "run2-report.json.gz": "27286d7e471543bc7478908dfa8dc3f4433d13a13bac072037139dc7603116de",
+    "run2.log": "4ae0a3fb1f74336c3b0c5b0bb346c68965410d97a267b818c47227abdea5c0ae",
+    "run3.log": "3bf9c2577ab03a272aab36759e42c2c31ead9f2de704c5bbfd8377a138f6a62e",
+    "run4.log": "f2ba1632fee3923d965a7528629d0dd717b2414e5e984667e9a1df6fc78c5d89",
+    "source.sha256": "b915b1ea1f9c28815eeef41b8a1afcb4afcdefe576f22b886312819463cfdedf",
+    "stage-documents.log": "087a04f2746aed62c2fcadf6726fa25060a5a0680d374c98c5e02ae8cfe75b36",
+    "stage-governance-race.log": "3f4c7e4d078461dd1c0e0ee9fa637973ade699d9c71df10c10666c71c9047506",
+    "stage-governance.log": "55ea68a10abbf3bdb4d469c24c269dcaa672b4b308bfd81866f0b1ea3b9a10cb",
+    "summary.json": "3d214c484af5bf75c0862037f47c0c5b1ac0c01aec92a1413f01c631f7b3c82b",
+    "test-unsandboxed.log": "5d8e0839fd6d3841b9819b8d84802985066a8875016f547fcc0e12eb19a65f0b",
+    "test.log": "1e12b380f66306f599012d138147b08fbbf9bf97766b2bb5e16830935ea5ca44",
+    "tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verifier-tests.log": "ede5b02920f259b19315030184a871c23bc9e77f372cd4a4a7a49f985fcbe1ba",
+    "verify_report.py": "c66219126dbd69f69b84c5f3cbb0fb4f8a41791feaf289db95f85e52040689d4",
+    "verify_report_test.py": "1c92ecc147a9d21a05bf8e1f03200894dd12d29d7b5425b621607c887cfb271e",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}
