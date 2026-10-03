@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已通過 4／5 工程驗收，Git 交付待完成。固定六步、左右共用亂數，39 組／1,560 回合在兩個新程序重現並獨立核對。訓練後 sampled 為 1／40、14／40、13／40，三組提示判準均 false，沒有依提示導航的學習證據。需求維持 89／91。
+[ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已完成 5／5 工程驗收與交付，實作 `2733ffe` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/short-goal-cue-audit-20261003/delivery.json)。固定六步、左右共用亂數，39 組／1,560 回合在兩個新程序重現並獨立核對。訓練後 sampled 為 1／40、14／40、13／40，三組提示判準均 false，沒有依提示導航的學習證據。需求維持 89／91。
 
 [ticket 36](docs/tickets/36-synthetic-goal-cue-audit.md) 已完成 5／5 工程驗收並交付：固定模型與 200 更新，39 組共 1,560 回合的報告在新程序重現。訓練後取樣抵達率為 50%、97.5%、67.5%，整體提示工作判準未通過。Mac 完整一般與 race 各 57 套件、建置、vet、相依性與格式通過，實作 `fd069c3` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/goal-cue-audit-20261003/delivery.json)。需求維持 89／91。
 
@@ -143,11 +143,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent / Luna max | completed | 5／5 工程驗收通過，`55c2ef7` 已推送並核對遠端；模型各 0／13，沒有導航改善證據 |
 | 35 | 研究者可以確認凍結模型是否使用搬移前刺激 | Codex 主 agent / Luna max review | completed | 5／5 通過，`21eb2ae`／`bf5d7fa` 已推送並核對遠端。234 配對重現、原側與前輪一致，所有模型原／清除組 0／13 |
 | 36 | 研究者可以分開判讀回報改善、抵達與使用起始提示 | Codex 主 agent / Luna max review | completed | 5／5 工程驗收與交付，實作 `fd069c3` 已推送。39 組 1,560 回合重現，取樣抵達率 50%、97.5%、67.5%，整體提示判準未通過 |
-| 37 | 研究者可以排除兩端搜尋後驗證提示導航 | Codex 主 agent / Luna max 測試 | in_progress | 4／5，完整一般／race 各 57 套件及獨立審查通過，三組提示判準均 false；Git 交付待完成 |
+| 37 | 研究者可以排除兩端搜尋後驗證提示導航 | Codex 主 agent / Luna max 測試與審查 | completed | 5／5 工程驗收與交付，`2733ffe` 已推送且遠端一致；三組提示判準均 false，沒有依提示導航的學習證據 |
 
 ## 目前阻礙
 
-[ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13；[ticket 36](docs/tickets/36-synthetic-goal-cue-audit.md) 的人工走廊整體提示判準也未通過，且 20 步允許搜尋兩端。下一個導航學習切片建議先縮短時限，再事前固定方法與驗收條件。感覺／動作記錄不足，工程成績不能宣稱生物機制。
+[ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已以六步排除搜尋兩端，三組提示判準仍未通過，seed 2／3 的 greedy 策略只成功固定一側。這個偏向的訓練原因尚未確認，下一個切片應先記錄各側訓練成功回饋，再固定改良方法。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
 前一階段的 rl-asr-takeover 跨平台整合已通過（2026-09-22）。該階段 Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
 
@@ -161,7 +161,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 37](docs/tickets/37-short-goal-cue-audit.md)：固定 6 步、三個 seed 各 200 更新，左右配對共用 PCG 動作亂數。交付 39 組／1,560 回合、新程序重現與提示對照的事前判讀。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
+[ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已交付固定六步的 39 組／1,560 回合、新程序重現與提示對照。下一個導航切片先診斷三組模型在 200 更新內是否持續得到左右兩側成功回饋，避免直接依保留評估結果挑參數；改良方法與判準另行事前固定。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 

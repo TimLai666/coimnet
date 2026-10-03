@@ -63,7 +63,7 @@ COIMNET_SHORT_GOAL_CUE_EVIDENCE="$short_audit_dir" go test -count=1 -v -run '^Te
 python3 evidence/LRN-09/short-goal-cue-audit-20261003/verify_report.py
 ```
 
-第一個命令在新資料夾建立完整 report.json，既有檔案會在訓練前拒絕。第二個命令核對 repo 保存的[完整紀錄](../../evidence/LRN-09/short-goal-cue-audit-20261003/report.json.gz)及[摘要](../../evidence/LRN-09/short-goal-cue-audit-20261003/summary.json)。兩個新程序的 39 組／1,560 回合報告完全相同。清除提示的左右觀察、輸出及動作在任一側終止前逐步相同，每對最多成功一側，抵達率上限 50%。全部 729 種六步動作序列也沒有能搜尋兩端的序列。
+第一個命令在新資料夾建立完整 report.json，既有檔案會在訓練前拒絕。第二個命令依[兩個程序的紀錄](../../evidence/LRN-09/short-goal-cue-audit-20261003/reproduction.json)，核對兩份完整報告、實際測試日誌與[摘要](../../evidence/LRN-09/short-goal-cue-audit-20261003/summary.json)。兩個新程序的 39 組／1,560 回合報告完全相同。清除提示的左右觀察、輸出及動作在任一側終止前逐步相同，每對最多成功一側，抵達率上限 50%。全部 729 種六步動作序列也沒有能搜尋兩端的序列。
 
 | seed | sampled 訓練前抵達 | 訓練後抵達 | 清除提示 | 反轉提示 | greedy 訓練後原提示／清除／反轉 |
 | --- | --- | --- | --- | --- | --- |
