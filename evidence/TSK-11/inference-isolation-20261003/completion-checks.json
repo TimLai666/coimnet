@@ -1,0 +1,63 @@
+{
+  "checks": [
+    {
+      "name": "governance",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "log": "governance.log"
+    },
+    {
+      "name": "governance-race",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-v",
+        "."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "log": "governance-race.log"
+    },
+    {
+      "name": "handoff-checksums",
+      "command": [
+        "shasum",
+        "-a",
+        "256",
+        "-c",
+        "SHA256SUMS.txt"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet/docs/handoff",
+      "exit_code": 0,
+      "log": "handoff-checksums.log"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "log": "diff-check.log"
+    }
+  ],
+  "changed_markdown_local_links_verified": 173,
+  "requirements_passed": 89,
+  "requirements_total": 91,
+  "pending": [
+    "TSK-11",
+    "OPS-05"
+  ],
+  "final_go_source_manifest_matches": true
+}

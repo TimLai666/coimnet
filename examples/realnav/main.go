@@ -142,6 +142,7 @@ func writeUsage(w io.Writer) {
 	fmt.Fprintln(w, "       go run ./examples/realnav rollout --data PATH --snapshot PATH --out DIR [--steps N]")
 	fmt.Fprintln(w, "Imports the verified Dryad trajectory, trains a causal next-displacement regressor, and evaluates a frozen snapshot on trial-held-out data.")
 	fmt.Fprintln(w, "Only after_relocation rows and bounded same-trial time windows are used. Reward/fictive distances, condition, segment, and future pose are evaluation metadata, never input features.")
+	fmt.Fprintln(w, "Saved infer/rollout splits must be mutually exclusive and fully cover after_relocation source trials; invalid splits do not create output.")
 	fmt.Fprintln(w, "Train/infer report teacher-forced observer-position prediction. Rollout reports a closed-loop engineering extrapolation. Neither is an animal navigation or connectome result.")
 }
 
@@ -487,6 +488,9 @@ func selectTrials(dataset trajectory.Dataset, ids []string) (trajectory.Dataset,
 }
 
 func rebuildInferenceSplit(dataset trajectory.Dataset, split splitTrials, conditions map[string]string) (trajectory.Dataset, trajectory.Dataset, []causalSample, []causalSample, error) {
+	if err := validateRolloutSplit(dataset, split); err != nil {
+		return trajectory.Dataset{}, trajectory.Dataset{}, nil, nil, fmt.Errorf("realnav: validate inference split: %w", err)
+	}
 	trainDataset, err := selectTrials(dataset, split.Train)
 	if err != nil {
 		return trajectory.Dataset{}, trajectory.Dataset{}, nil, nil, fmt.Errorf("realnav: select training trials: %w", err)

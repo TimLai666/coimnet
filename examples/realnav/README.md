@@ -54,7 +54,10 @@ run report. On Windows, the standard library has no `getrusage` equivalent, so
 
 The saved model includes the complete preprocessing contract: version, feature
 rule, segment, sample limits, numeric scales, and feature lists. Inference
-rejects a snapshot when any of these values differs from the current code. The
+rejects a snapshot when any of these values differs from the current code. It
+also rejects overlapping, repeated, empty, unknown, or omitted trial IDs before
+creating an output directory. The saved training and held-out lists must form a
+complete, disjoint partition of the current after-relocation trials. The
 continuous core resets its recurrent state at the same 256-sample chunk
 boundary during training, evaluation, and inference; the report records this
 chunk size.

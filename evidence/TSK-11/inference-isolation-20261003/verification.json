@@ -1,0 +1,73 @@
+{
+  "requirement": "TSK-11",
+  "status": "verified_scoped",
+  "scope": "legacy infer disjoint complete trial split only; does not establish learned navigation",
+  "reproduction_command": [
+    "python3 evidence/TSK-11/inference-isolation-20261003/verify.py",
+    "real CLI commands: baseline-valid-command.json, baseline-rejections.json, real-checks.json",
+    "COIMNET_TSK11_TRAJECTORY=<pinned CSV.gz> COIMNET_TSK11_SNAPSHOT=<original model.json> go test -count=1 -v ./examples/realnav -run TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+  ],
+  "environment": {
+    "date": "2026-10-03",
+    "platform": "macOS-27.0-arm64-arm-64bit",
+    "machine": "arm64",
+    "go": "go version go1.26.5 darwin/arm64",
+    "base_commit": "5b014a887696b951fa7dbaced34cbfc2728fceb6",
+    "GOMEMLIMIT": "8GiB",
+    "workers": "Spark/xhigh rejected as unknown model; both delegated tasks ran Luna/max",
+    "scope": "legacy realnav infer split isolation; navigation method proposal only"
+  },
+  "input_fingerprints": {
+    "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670",
+    "/Users/timlai/Developer/coimnet-data/TSK-11/autonomous-rollout-20261002/train-a/model.json": "a52fc6560b8dcd0724c01d2c3e2b7915e03147ed2413a380b606210f84d8cd38"
+  },
+  "observed_result": {
+    "old_binary_overlap_exit": 0,
+    "old_binary_omitted_exit": 0,
+    "old_binary_both_created_output": true,
+    "fixed_overlap_exit": 1,
+    "fixed_omitted_exit": 1,
+    "fixed_invalid_output_created": false,
+    "legal_report_equal_except_runtime": true,
+    "original_data_and_model_unchanged": true,
+    "test_first_red": "worker-red.log",
+    "full_suite": {
+      "test": 56,
+      "race": 56
+    },
+    "all_nine_checks_passed": true,
+    "go_source_manifest_unchanged": true,
+    "requirements_passed": 89,
+    "requirements_total": 91,
+    "specified": [
+      "TSK-11",
+      "OPS-05"
+    ],
+    "navigation_method": "proposal only; awaiting user decision"
+  },
+  "test_log": [
+    "format.log",
+    "targeted.log",
+    "targeted-race.log",
+    "build.log",
+    "test.log",
+    "race.log",
+    "vet.log",
+    "mod-verify.log",
+    "mod-tidy.log",
+    "worker-red.log",
+    "real-cli-test.log",
+    "overlap-stderr.log",
+    "omitted-stderr.log"
+  ],
+  "checks": "checks.json",
+  "real_compatibility": "real-checks.json",
+  "independent_review": "review.md",
+  "source_manifest": "source-after.json",
+  "limitations": [
+    "Only darwin/arm64 execution is verified in this slice.",
+    "True reward-feedback arrival, sensory inputs and animal control commands are not available in the trajectory dataset.",
+    "Existing navigation learning result stays 0/13; no new task or biological evidence."
+  ],
+  "post_evidence_governance": "completion-checks.json"
+}
