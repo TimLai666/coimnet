@@ -3,7 +3,7 @@
   "ticket": "34",
   "recorded_at_utc": "2026-10-03T08:25:16.944690+00:00",
   "base_head": "67a44556d322777781244ac0465bcfaf154a2a46",
-  "software_acceptance": "verified; delivery pending commit and push",
+  "software_acceptance": "passed; implementation committed, pushed and remote verified",
   "acceptance_items": [
     {
       "item": 1,
@@ -957,6 +957,11 @@
       "action": "stop obsolete verification processes",
       "target": "own process tree recorded in pre-fix-race-stopped.json",
       "result": "old race marked incomplete; final complete checks pass"
+    },
+    {
+      "action": "commit and push verified stage",
+      "target": "origin/main",
+      "result": "55c2ef7e785f4942f36aa7fff4284b9b3202c926; remote head matches; receipt in delivery.json"
     }
   ],
   "review": {
@@ -969,5 +974,6 @@
     "initial_report": "adversarial-review.txt",
     "closeout_report": "adversarial-closeout.txt",
     "adjudication": "invalid out-of-arena injected history bypassed public pinned import, so that finding was withdrawn; base hash is recorded provenance, not authenticated external-plan state"
-  }
+  },
+  "delivery": "delivery.json"
 }

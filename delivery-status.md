@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-2026-10-03 [ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md) 的完整刺激歷史工程範例已完成 5／5 本機驗收，Git 交付待核對。固定 20 train／6 validation／原 13 test，九組模型各 200 更新。測試 MSE 下降，但所有模型控制、種子與訓練前後都命中 0／13，沒有導航學習證據。方向延續均為 0／13，隨機依序為 0／13、0／13、1／13。最終版推論與自主評估各兩次逐位元組相同，完整一般及 race 各 57 個套件通過，相關套件另做全新 race。TSK-11 與 OPS-05 維持 specified，需求為 89／91。[總證據](evidence/TSK-11/stimulus-memory-20261003/verification.json)。
+2026-10-03 [ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md) 的完整刺激歷史工程範例已完成 5／5 本機驗收。實作 `55c2ef7` 已推送並核對遠端，交付見 [delivery.json](evidence/TSK-11/stimulus-memory-20261003/delivery.json)。固定 20 train／6 validation／原 13 test，九組模型各 200 更新。測試 MSE 下降，但所有模型控制、種子與訓練前後都命中 0／13，沒有導航學習證據。方向延續均為 0／13，隨機依序為 0／13、0／13、1／13。最終版推論與自主評估各兩次逐位元組相同，完整一般及 race 各 57 個套件通過，相關套件另做全新 race。TSK-11 與 OPS-05 維持 specified，需求為 89／91。[總證據](evidence/TSK-11/stimulus-memory-20261003/verification.json)。
 
 2026-10-03 [ticket 33](docs/tickets/33-real-trajectory-inference-isolation.md) 的推論分割修正已驗證並交付。修正提交 `467d53a` 已推送，遠端 main 核對一致。非法分割不建立輸出，合法真實快照的報告除 runtime 外與修正前相同。Mac 完整一般與 race 測試各 56 個套件、建置、vet、格式及相依性檢查通過，來源與原模型前後指紋一致。[本輪證據](evidence/TSK-11/inference-isolation-20261003/verification.json)。TSK-11 與 OPS-05 維持 specified，需求仍為 89／91。
 
@@ -134,7 +134,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
 | 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；ASR 整檔 CTC、因果串流與恢復有前次 Mac／Ubuntu 局部證據，本輪資料匯入、群組分割、離線耗時、CLI 人工範例與 Mac 全套驗證見 TSK-02；嚴格串流檔案保存已驗證人工音調；TSK-11 真實授權資料、跨平台續跑與後續生成階段保留 |
 | 33 | 使用者可以拒絕污染保留集的真實軌跡推論快照 | Codex 主 agent / Luna max | done | 真實非法快照拒絕且無輸出，合法結果相同，Mac 完整驗證通過；修正提交 467d53a 已推送且遠端一致 |
-| 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent / Luna max | verified | 5／5 工程驗收通過，Git 交付待核對；模型各 0／13，沒有導航改善證據 |
+| 34 | 使用者可以比較含刺激歷史的軌跡模型與無記憶控制組 | Codex 主 agent / Luna max | completed | 5／5 工程驗收通過，`55c2ef7` 已推送並核對遠端；模型各 0／13，沒有導航改善證據 |
 
 ## 目前阻礙
 
