@@ -1,0 +1,27 @@
+test_reproduction_fingerprint (__main__.ReportMutations) ... ERROR
+test_reproduction_equality (__main__.ReportMutations) ... ERROR
+
+======================================================================
+ERROR: test_reproduction_fingerprint (__main__.ReportMutations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 79, in test_reproduction_fingerprint
+    verify_reproduction(receipt, HERE, gzip.decompress((HERE / "report.json.gz").read_bytes()))
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report.py", line 240, in verify_reproduction
+    raise NotImplementedError("reproduction receipt checks")
+NotImplementedError: reproduction receipt checks
+
+======================================================================
+ERROR: test_reproduction_equality (__main__.ReportMutations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 85, in test_reproduction_equality
+    verify_reproduction(receipt, HERE, gzip.decompress((HERE / "report.json.gz").read_bytes()))
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report.py", line 240, in verify_reproduction
+    raise NotImplementedError("reproduction receipt checks")
+NotImplementedError: reproduction receipt checks
+
+----------------------------------------------------------------------
+Ran 2 tests in 1.098s
+
+FAILED (errors=2)

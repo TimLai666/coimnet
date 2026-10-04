@@ -1,0 +1,39 @@
+test_component_shape (__main__.ReportMutations) ... ok
+test_count (__main__.ReportMutations) ... ok
+test_frozen_delta (__main__.ReportMutations) ... ok
+test_gradient (__main__.ReportMutations) ... ok
+test_initial_model_coordinates (__main__.ReportMutations) ... FAIL
+test_model (__main__.ReportMutations) ... ok
+test_nan (__main__.ReportMutations) ... ok
+test_optimizer_norm (__main__.ReportMutations) ... ok
+test_order (__main__.ReportMutations) ... ok
+test_output_width (__main__.ReportMutations) ... ok
+test_permuted_delta_coordinates (__main__.ReportMutations) ... FAIL
+test_source (__main__.ReportMutations) ... ok
+test_update_norm (__main__.ReportMutations) ... ok
+test_upstream (__main__.ReportMutations) ... ok
+
+======================================================================
+FAIL: test_initial_model_coordinates (__main__.ReportMutations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 61, in test_initial_model_coordinates
+    self.reject(lambda r: r["initial_models"][0]["parameters"]["readout"].__setitem__(0, 1))
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 22, in reject
+    validate(changed, self.source)
+AssertionError: (<class 'ValueError'>, <class 'KeyError'>, <class 'TypeError'>) not raised
+
+======================================================================
+FAIL: test_permuted_delta_coordinates (__main__.ReportMutations)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 67, in test_permuted_delta_coordinates
+    self.reject(mutate)
+  File "/Users/timlai/Developer/coimnet/evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py", line 22, in reject
+    validate(changed, self.source)
+AssertionError: (<class 'ValueError'>, <class 'KeyError'>, <class 'TypeError'>) not raised
+
+----------------------------------------------------------------------
+Ran 14 tests in 41.812s
+
+FAILED (failures=2)

@@ -89,3 +89,18 @@ python3 evidence/LRN-09/training-feedback-20261004/verify_report_test.py
 兩個程序的報告相同，且與 ticket 37 的完整既有報告一致。左右目標回合各有 95～105 次，左右成功分別為 seed 1 的 3／6、seed 2 的 70／3、seed 3 的 1／71。seed 1 第 63 更新後沒有再成功，但全部 200 回合的第一步優勢為正，包含 191 個逾時回合。提示會改變動作分數，最後 greedy 策略卻仍是停留、往左、往右，沒有依提示導航的學習證據。
 
 完整數值、獨立重算及因果限制見[診斷](../../evidence/LRN-09/training-feedback-20261004/analysis.md)與[驗證](../../evidence/LRN-09/training-feedback-20261004/verification.json)。下一個檢查需分離策略與價值梯度；本輪結果不能判定正規化、改回饋或調參哪一種方法一定有效。
+
+## 固定回合的完整梯度診斷
+
+[ticket 39](../../docs/tickets/39-ppo-gradient-diagnostic.md) 從原始 seed 模型重播 ticket 38 的已保存回合，分開量測 policy、value、entropy 與 total 的完整梯度。每次更新前後的快照指紋、PPOReport，以及合成 upstream 的 StepFrom 參數與 Adam 狀態都須與原更新相同。
+
+```sh
+gradient_dir=$(mktemp -d)
+COIMNET_PPO_GRADIENT_EVIDENCE="$gradient_dir" go test -count=1 -v -run '^TestPPOGradient' ./experiment
+python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report.py
+python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py
+```
+
+第一個命令在已建立的資料夾排他新增 report.json，既有檔案會在重播前拒絕。來源指紋固定為 ticket 38 的已提交報告，其他來源不會被當成相同診斷。後兩個命令核對已保存的證據。Python 重算輸出導數、梯度合成、指標與每個 Adam delta 座標，並核對初始快照與雙程序報告。神經梯度另以 Go 有限差分及原更新比對驗證。
+
+600 次更新中，價值項的共用核心梯度都比策略項大，倍率中位數為 7.05、4.72、7.45，方向相反為 77／200、120／200、123／200。這只支持局部更新競爭，尚未證明偏向單側的唯一成因。原參數與訓練行為保持不變，完整數值與限制見[診斷](../../evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)。

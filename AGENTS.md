@@ -54,6 +54,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
+- `docs/INDEX.md`：格式索引漏列既有宣告，例如 `checkpoint/bundle.go:23` 的 `coimnet-checkpoint-bundle/v2`、`distill/distill.go:15` 的 `coimnet-distill/v1` 與 `dynamics/vector_core.go:13` 的 `coimnet-vector-state/v1`。後續從版本宣告建立完整索引，區分正式格式與測試反例，再補索引一致性檢查（P2）。ticket 39 的新格式已登錄。
 - `internal/cli/doctor.go:257-283`：`coreCapabilities` 將 GPU 六項能力固定標成 `not_implemented`，沒有反映已完成的 WebGPU 純量零延遲連續核心與 episode trainer。改為回報支援設定與實際探測結果，保留裝置常駐狀態、裝置更新與完整圖尚未驗收的限制，並同步 `doctor_test.go` 及整合文件（P2）。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。

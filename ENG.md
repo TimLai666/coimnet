@@ -83,6 +83,10 @@
 
 ## 功能流程、錯誤與驗證責任
 
+### 固定 PPO 梯度診斷（2026-10-04）
+
+[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 只在測試範例內重播 ticket 38 的固定回合。每次由原模型副本的 `Individual.Advance` 計算輸出，與 `rl.Update` 的前向一致。凍結 collector 的 GAE、目標值與舊行動機率，以 `rl.Loss` 分離三項 upstream，再用 `Network.LossGradientFrom` 保存完整梯度。總 upstream 不做回合平均。weights、bias 與 readout 是可更新群組，encoder 與 log_tau 凍結。零範數的角度不定義。分離梯度只用於觀察，完整 upstream 的 `StepFrom` 須和原更新的參數、Adam、累積器與步數完全相同。方法、精度容許範圍及有限差分驗收由票面固定，沒有調整訓練或公開契約。
+
 ### 語音資料與串流
 
 `tasks/asr.Stream` 沿用辨識器的 log-mel 前處理與持續個體，快照需要同時識別取樣率、前處理版本與字母表，僅比對核心形狀不足以安全恢復。每次 `Feed`／`Flush` 成功才提交狀態，取消或數值錯誤保留呼叫前的完整狀態。已分析過的重疊樣本不能重複補窗，尚未分析過的短音訊則在 `Flush` 補零成一窗。驗收歸 ticket 29。

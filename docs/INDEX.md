@@ -69,7 +69,7 @@
 
 ## 檔案格式
 
-repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-]+/v[0-9]+"' --include='*.go' . | sort -u`），每個一列並標所在套件：
+下表收錄已登錄的 schema 版本與所在套件。目前索引尚未涵蓋全部既有宣告，完整盤點列於 [AGENTS.md](../AGENTS.md#follow-ups) 的待處理項目。
 
 | Schema 版本 | 套件 |
 | --- | --- |
@@ -141,6 +141,7 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 | `coimnet-synthetic-goal-cue-audit/v1` | `experiment`（測試範例，逐回合提示對照） |
 | `coimnet-short-goal-cue-audit/v1` | `experiment`（測試範例，6 步左右配對提示對照） |
 | `coimnet-ppo-training-feedback/v1` | `experiment`（測試範例，固定六步的逐次訓練與提示探測） |
+| `coimnet-ppo-gradient-diagnostic/v1` | `experiment`（測試範例，固定回合的三項完整梯度） |
 | `coimnet-teacher-records/v1` | `teacher` |
 | `coimnet-textgen-corpus/v1` | `tasks/textgen` |
 | `coimnet-train-result/v1` | `internal/cli` |
@@ -172,6 +173,6 @@ repo 內 Go 原始碼宣告的 schema 版本字串（`grep -rhoE '"coimnet-[a-z-
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–38，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–39，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。

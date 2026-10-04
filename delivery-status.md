@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已完成 4／5。兩個新程序的 600 次完整梯度報告相同，原更新與合成 upstream 的 StepFrom 相同。價值項的共用核心梯度全部較大，倍率中位數為 7.05、4.72、7.45，方向相反為 77、120、123 次。沒有改訓練參數或模型，也沒有確認偏向的唯一根因。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過，獨立重算、17 種竄改檢查及最後審查通過。提交推送與遠端核對待完成。[診斷](evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)、[工程驗證](evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。
+
 [ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 已完成 5／5 工程驗收與交付，實作 `e0d1c43` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/training-feedback-20261004/delivery.json)。固定六步的 600 訓練與 198 探測回合已在兩個新程序重現，與 ticket 37 的完整既有報告一致。左右目標回合接近各半，左右成功卻分別是 3／6、70／3、1／71。提示能改變輸出，最後 greedy 行動仍不隨提示選方向。Mac 一般與 race 各 57 套件、建置、vet、相依性、格式及交接校驗通過。需求維持 89／91。[診斷](evidence/LRN-09/training-feedback-20261004/analysis.md)。
 
 [ticket 37](docs/tickets/37-short-goal-cue-audit.md) 已完成 5／5 工程驗收與交付，實作 `2733ffe` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/short-goal-cue-audit-20261003/delivery.json)。固定六步、左右共用亂數，39 組／1,560 回合在兩個新程序重現並獨立核對。訓練後 sampled 為 1／40、14／40、13／40，三組提示判準均 false，沒有依提示導航的學習證據。需求維持 89／91。
@@ -147,10 +149,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 36 | 研究者可以分開判讀回報改善、抵達與使用起始提示 | Codex 主 agent / Luna max review | completed | 5／5 工程驗收與交付，實作 `fd069c3` 已推送。39 組 1,560 回合重現，取樣抵達率 50%、97.5%、67.5%，整體提示判準未通過 |
 | 37 | 研究者可以排除兩端搜尋後驗證提示導航 | Codex 主 agent / Luna max 測試與審查 | completed | 5／5 工程驗收與交付，`2733ffe` 已推送且遠端一致；三組提示判準均 false，沒有依提示導航的學習證據 |
 | 38 | 研究者可以核對短時限訓練的兩側成功回饋 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；完整 Mac 驗證與雙程序重現通過，`e0d1c43` 已推送並核對遠端。成功回饋集中單側，唯一因果機制未確認 |
+| 39 | 研究者可以分開核對策略與價值的更新影響 | Codex 主 agent / Luna max 唯讀審查 | verified_scoped | 4／5；600 次完整梯度與更新比對、雙程序重現、獨立重算、17 種竄改檢查、Mac 完整一般與 race 驗證及審查通過。交付待完成 |
 
 ## 目前阻礙
 
-[ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。策略／價值梯度與探索的因果作用尚未分離，不能直接依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
+[ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已分離三項原始梯度，觀察到共用核心的局部競爭。梯度與探索對長期學習的因果作用尚未驗證，不能依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
 前一階段的 rl-asr-takeover 跨平台整合已通過（2026-09-22）。該階段 Ubuntu 初次完整測試的 6 個失敗來自測試的浮點捨入假設、固定梯度數字，以及恢復測試把保存值換成 Mac 字面常數。修正限定於五個測試檔，未改核心運算；保留平均、裁切與 AdamW 的嚴格手算對照及快照逐位一致檢查。兩台機器已用同一份最終來源重跑完整驗證通過，原始失敗與診斷日誌一併保存。
 
@@ -164,13 +167,15 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-下一個導航切片固定相同模型與收集紀錄，分開量測策略／價值對共用核心及讀出的梯度。介入前須明確區分六步時限是任務結束還是收集截斷，再事前固定方法與判準。不能依保留評估結果挑參數。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
+目前接續 [ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 的提交推送及遠端核對。下一個導航因果介入須先明確區分六步時限是任務結束還是收集截斷，再事前固定方法與判準。不能依保留評估結果挑參數。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-04：ticket 39 重播相同六步模型與原始回合，只增加三項完整梯度與實際更新量的診斷。共用核心的局部競爭不能推論長期因果，介入前需固定時限語意及判準。Python 逐座標重算 Adam，神經梯度以 Go 重播、有限差分及原更新比對驗證。
 
 2026-10-04：ticket 38 固定 ticket 37 全部設定，只增加逐回合訓練診斷與每 20 更新的副本探測。觀察性成功回饋失衡不宣稱唯一根因，沒有調參、修改 PPO 或更新能力狀態。
 

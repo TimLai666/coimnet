@@ -1,0 +1,301 @@
+{
+  "requirement": "LRN-09",
+  "ticket": "39-ppo-gradient-diagnostic",
+  "status": "verified_scoped",
+  "profile": "fixture",
+  "date": "2026-10-04",
+  "acceptance_verified": 4,
+  "acceptance_total": 5,
+  "scope": "Test-only fixed-trajectory diagnosis; no production Go code, model, training settings, dependencies or prior evidence changed. Git attributes added separately without rewriting original text.",
+  "environment": {
+    "runtime": "go version go1.26.5 darwin/arm64",
+    "platform": "macOS 27.0.1 darwin/arm64 CPU",
+    "cgo_enabled": true,
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "input_fingerprints": {
+    "base_commit": "359c52891217a113c7cae6a4da06c7cf7b233302",
+    "source_manifest": "source.sha256",
+    "source_file_count": 643,
+    "source_manifest_sha256": "4cdd88b82289d353922bba18e7d7cff35313d0fe03c193e9e6c1b0f69dfceb63",
+    "changed_go_sources": {
+      "experiment/ppo_gradient_diagnostic_test.go": "4f7508dbaa69d12bbd402b375ade8e032ab7a423ec19d697ee05487f56dfa10e",
+      "experiment/ppo_gradient_validation_test.go": "a8d6fa8442cb25e68b4fdb56271b383cd2ba984f15a45d49699eadea5b75d02d"
+    },
+    "protected_prior_files_unchanged": 837,
+    "source_gzip_sha256": "27286d7e471543bc7478908dfa8dc3f4433d13a13bac072037139dc7603116de",
+    "source_raw_sha256": "919306c03712d793357373ed6910ccd97f71485448dac55756c99cf3635da96a",
+    "config": {
+      "corridor": {
+        "length": 7,
+        "time_limit": 6,
+        "step_penalty": 0.01,
+        "goal_reward": 1
+      },
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "updates": 200,
+      "hidden": 8,
+      "eval_episodes": 40,
+      "learning_rate": 0.01,
+      "ppo": {
+        "gamma": 0.99,
+        "lambda": 0.95,
+        "clip_epsilon": 0.2,
+        "value_coef": 0.5,
+        "entropy_coef": 0.01,
+        "burn_in": 0,
+        "time_limit": 6,
+        "epochs": 1,
+        "mini_batch": 1
+      }
+    },
+    "protected_manifest": "protected.sha256",
+    "protected_manifest_sha256": "a54ea6569d48a6909621e37e8f3320b70bb9c35aa1cedf1a1260fc53b99ee0c8"
+  },
+  "reproduction_command": [
+    "COIMNET_PPO_GRADIENT_EVIDENCE=$(mktemp -d) go test -count=1 -v -run ^TestPPOGradient ./experiment",
+    "python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report.py",
+    "python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py"
+  ],
+  "observed_result": {
+    "updates": 600,
+    "original_update_matches": 600,
+    "combined_trainer_matches": 600,
+    "fresh_processes": 2,
+    "exact_report_bytes_equal": true,
+    "report_raw_sha256": "2bcc65751f3145e08b9b86becbe1d565707150698dac5b9dfa510b85fed434d2",
+    "gradient_sum_relative_tolerance": 1e-05,
+    "max_gradient_sum_relative_residual": 1.0490405394564964e-07,
+    "shared_core_counts": [
+      {
+        "seed": 1,
+        "first_update": 1,
+        "last_update": 200,
+        "count": 200,
+        "shared_core_opposing": 77,
+        "shared_core_cosine_defined": 200,
+        "shared_core_cosine_median": 0.4138605734175088,
+        "shared_core_value_larger": 200,
+        "shared_core_value_policy_ratio_median": 7.04933687166076,
+        "gradient_clipped": 195
+      },
+      {
+        "seed": 2,
+        "first_update": 1,
+        "last_update": 200,
+        "count": 200,
+        "shared_core_opposing": 120,
+        "shared_core_cosine_defined": 200,
+        "shared_core_cosine_median": -0.33154397096543,
+        "shared_core_value_larger": 200,
+        "shared_core_value_policy_ratio_median": 4.724167476000224,
+        "gradient_clipped": 191
+      },
+      {
+        "seed": 3,
+        "first_update": 1,
+        "last_update": 200,
+        "count": 200,
+        "shared_core_opposing": 123,
+        "shared_core_cosine_defined": 200,
+        "shared_core_cosine_median": -0.6665697369013541,
+        "shared_core_value_larger": 200,
+        "shared_core_value_policy_ratio_median": 7.454361041679945,
+        "gradient_clipped": 194
+      }
+    ],
+    "readout_policy_value_dot_zero_updates": 600,
+    "finite_difference_directions": 20,
+    "mutation_cases_passed": 17,
+    "unique_cause_identified": false,
+    "training_intervention_performed": false,
+    "biological_mechanism_evidence_added": false
+  },
+  "research_limits": [
+    "Synthetic two-target corridor; no general-navigation or biological evidence.",
+    "Raw local policy/value competition does not prove its long-term Adam-mediated effect or the unique cause of failed cue navigation.",
+    "Python does not reconstruct neural forward or VJP; Go replays models, checks finite differences and compares complete original updates.",
+    "Only fixed settings are validated; no accumulation, schedule, projection, sharing, or weight decay."
+  ],
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified",
+    "change": "Append only LRN-09 supplemental verification path."
+  },
+  "tdd": {
+    "hand_reference_red": "red.log",
+    "numerical_green": "green-numerical.log",
+    "coordinate_mutations_red": "coordinate-red.log",
+    "coordinate_mutations_green": "coordinate-green.log",
+    "reproduction_checks_red": "reproduction-red.log",
+    "final_verifier_green": "final-verifier-tests.log",
+    "all_numerical_regressions_written_before_implementation": false
+  },
+  "expected_failures": {
+    "red.log": "Hand reference rejected unimplemented helper before implementation.",
+    "green.log": "Development compile failure used obsolete rl.Advantages argument shape; corrected to the actual GAEConfig API. This log is not a passing check.",
+    "coordinate-red.log": "Two confirmed validator gaps: initial model coordinate changes and same-norm swapped delta coordinates were accepted before repair.",
+    "reproduction-red.log": "New receipt regression checks rejected the unimplemented skeleton before implementation.",
+    "existing-output.log": "Expected output-exists rejection; original output hash remained unchanged.",
+    "schema-scope-failure.log": "An overbroad new audit exposed a pre-existing incomplete schema catalog. Confirmed against base commit. Final audit checks all links and only newly introduced schema versions; existing catalog omission is recorded as an out-of-scope P2."
+  },
+  "review": {
+    "host": "Codex desktop on macOS",
+    "spark_requested": "gpt-5.3-codex-spark/xhigh",
+    "spark_result": "Unknown model",
+    "actual_reviewer": "gpt-5.6-luna/max",
+    "read_only": true,
+    "main_reviewed_complete_diff": true,
+    "confirmed_validator_gaps_fixed": 2,
+    "remaining_confirmed_findings": 0,
+    "record": "review.md"
+  },
+  "checks": [
+    {
+      "command": "go test -count=1 -timeout 30m ./...",
+      "exit_code": 0,
+      "test_log": "test.log",
+      "packages_passed": 57
+    },
+    {
+      "command": "go test -count=1 -race -timeout 60m ./...",
+      "exit_code": 0,
+      "test_log": "race.log",
+      "packages_passed": 57
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "test_log": "build.log"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "test_log": "vet.log"
+    },
+    {
+      "command": "go mod verify",
+      "exit_code": 0,
+      "test_log": "modules.log"
+    },
+    {
+      "command": "go mod tidy -diff",
+      "exit_code": 0,
+      "test_log": "tidy.log"
+    },
+    {
+      "command": "(cd docs/handoff && shasum -a256 -c SHA256SUMS.txt)",
+      "exit_code": 0,
+      "test_log": "handoff.log"
+    },
+    {
+      "command": "gofmt -l experiment/ppo_gradient_diagnostic_test.go experiment/ppo_gradient_validation_test.go; git diff --check",
+      "exit_code": 0,
+      "test_log": "final-format.log"
+    },
+    {
+      "command": "python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report.py",
+      "exit_code": 0,
+      "test_log": "final-independent.log"
+    },
+    {
+      "command": "python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py",
+      "exit_code": 0,
+      "test_log": "final-verifier-tests.log"
+    },
+    {
+      "command": "go test -count=1 -run ^TestGovernance .",
+      "exit_code": 0,
+      "test_log": "stage-governance.log"
+    },
+    {
+      "command": "go test -count=1 -v -run ^TestGovernance .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "final-governance.log"
+    },
+    {
+      "command": "go test -count=1 -race -v -run ^TestGovernance .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "final-governance-race.log"
+    },
+    {
+      "command": "python3 evidence/LRN-09/gradient-diagnostic-20261004/check_delivery.py",
+      "exit_code": 0,
+      "local_links_checked": 214,
+      "new_schema_versions_checked": 1,
+      "test_log": "final-documents.log"
+    }
+  ],
+  "test_log": [
+    "green-numerical.log",
+    "run1.log",
+    "run2.log",
+    "test.log",
+    "race.log",
+    "final-independent.log",
+    "final-verifier-tests.log"
+  ],
+  "artifact_sha256": {
+    "analysis.md": "830219a765686900681b5da888b0fb5253ca7b987e8e46ed1b09017f203764c3",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "check_delivery.py": "5d5854390948a1bd084e97f7b8bebecde1806e813a140fda90df3eccbeb9e913",
+    "coordinate-green.log": "90c8e5502186860c8a988d322f6ae4664e80896e0555d694f944b3bf30233cac",
+    "coordinate-independent.log": "f81532dd8e9155cb35949632fa3e81e00810b418ddcbfb47e64d3381eac8a924",
+    "coordinate-red.log": "93f08a391d20bb16fe853b5fd8c5cb01ecda1006cc53b82d6ba6fd3006141532",
+    "documents.log": "68ee9169db3601091dbf849165e3ee8790ceb7a61819d86ce498b253657f2eaa",
+    "existing-output.log": "9bfb46c01949c666dceab72bc65d42951ce95e7d9cbed4e20dfe9447aa670b5e",
+    "final-documents.log": "2efce63cc1da98f10c58cc19d1259095d73086e4e85354c91f529c3742e2727b",
+    "final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final-governance-race.log": "122c730c349dc974e62c84a51ff5673ccd2806e04ff848f1f73c429f59b6410a",
+    "final-governance.log": "d6ccf9a699a72326d2a84c7bec9eea0190864844e59f06f66ecb9ec6f0dfc752",
+    "final-independent.log": "fde00ee481d427911fa2f6db94e739cf420773c64a1151010e10bdc68fb462ca",
+    "final-verifier-tests.log": "34a628d0542b85ceeb2678568c610698a90160c52be2d07734d86319d62bbd8e",
+    "green-numerical.log": "90aa3a3163aaf30f7206c82b3278898e529356657feaaabcef7d82e7f72b6908",
+    "green.log": "5b817d82564a1e4c2102ff6a9e7ed66526c639704531ccf60a85df77559ee60e",
+    "handoff.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "independent.log": "f81532dd8e9155cb35949632fa3e81e00810b418ddcbfb47e64d3381eac8a924",
+    "modules.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "protected.sha256": "a54ea6569d48a6909621e37e8f3320b70bb9c35aa1cedf1a1260fc53b99ee0c8",
+    "race.log": "51d9f9cd77bdb3cd0f71ae06ce67ce586fd492eff4b17b9040f8c268c4f07f17",
+    "red.log": "30d7cb9a3e9f101e7a53f6dd9079bfeaab304196aba0222806aef452c1839be6",
+    "report.json.gz": "4bbd8880f86c922ae25645b3daf495fdaf7460862a442f387903046f58fd8d1a",
+    "reproduction-red.log": "fabef2e8f171ba0e25b2121896d148a956c18809d8c894d89feec58209f2e1de",
+    "reproduction.json": "d947124cd756656446998e3dcc15de0bdfe11fca82dfc5a7861a3151a659e391",
+    "review.md": "a33456e7a2d446a882861b0f7c8df0d5f7c660504aee5a5cd0a6ffa938834b75",
+    "run1.log": "aedd6db030fb470e47c7375e51134899255bb07c22ebb94119c6afc563eb95c9",
+    "run2-report.json.gz": "4bbd8880f86c922ae25645b3daf495fdaf7460862a442f387903046f58fd8d1a",
+    "run2.log": "36aafc7d0c8e95729ebefff10c3b8827b535d7735d2a90fe13a0c308de27508c",
+    "schema-scope-failure.log": "500b4f9872c5c071367ee48fc13aac2d665833eec0e9dc36969ca85e00081690",
+    "source.sha256": "4cdd88b82289d353922bba18e7d7cff35313d0fe03c193e9e6c1b0f69dfceb63",
+    "stage-governance.log": "8ddfd5e8d807a5a6a1e59f0b3e2d29cb29f5b9b5677753f73fe1658c4d8bd0b5",
+    "summary.json": "18b512426ba1132eba020658fa1811bf4513f2f011772d86ac4bbd11ceddff4c",
+    "test.log": "882696aac51af893e6f7443cbc9402d71d91091cc26cc8a399236b0b47b061a5",
+    "tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verifier-tests.log": "ecf07fe7666e4c6fa36d91a4bbc554ea03d9c802f69adfa4ffb7957a294f43a8",
+    "verify_report.py": "92dfd5fae65675f6640f4b067520040360cd9a5e90b869fd0cb41dbd3ef40087",
+    "verify_report_test.py": "78686f5cef8e7ef8d47fdc114fc34bf01bace4c55692331b2ddcd455d4fc0be7",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "delivery": "Pending verified implementation commit/push and separate completion record.",
+  "git_attributes": {
+    "commit": "4536b91f08b9ed8f127c0cac46fc6cf1f46aa037",
+    "normalization_command": "git add --renormalize .",
+    "existing_text_files_rewritten": 0
+  },
+  "out_of_scope_followups": [
+    {
+      "severity": "P2",
+      "location": "AGENTS.md Follow-ups",
+      "issue": "Existing docs/INDEX.md omitted declared formats including checkpoint bundle v2. New diagnostic schema is registered; existing catalog repair is deferred and its completeness claim corrected."
+    }
+  ]
+}
