@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已完成 4／5。兩個新程序的 600 次完整梯度報告相同，原更新與合成 upstream 的 StepFrom 相同。價值項的共用核心梯度全部較大，倍率中位數為 7.05、4.72、7.45，方向相反為 77、120、123 次。沒有改訓練參數或模型，也沒有確認偏向的唯一根因。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過，獨立重算、17 種竄改檢查及最後審查通過。提交推送與遠端核對待完成。[診斷](evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)、[工程驗證](evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。
+[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已完成 5／5 工程驗收與交付，實作 `0dc4d64` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/gradient-diagnostic-20261004/delivery.json)。兩個新程序的 600 次完整梯度報告相同，原更新與合成 upstream 的 StepFrom 相同。價值項的共用核心梯度全部較大，倍率中位數為 7.05、4.72、7.45，方向相反為 77、120、123 次。沒有改訓練參數或模型，也沒有確認偏向的唯一根因。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過，獨立重算、17 種竄改檢查及最後審查通過。需求維持 89／91。[診斷](evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)、[工程驗證](evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。
 
 [ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 已完成 5／5 工程驗收與交付，實作 `e0d1c43` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/training-feedback-20261004/delivery.json)。固定六步的 600 訓練與 198 探測回合已在兩個新程序重現，與 ticket 37 的完整既有報告一致。左右目標回合接近各半，左右成功卻分別是 3／6、70／3、1／71。提示能改變輸出，最後 greedy 行動仍不隨提示選方向。Mac 一般與 race 各 57 套件、建置、vet、相依性、格式及交接校驗通過。需求維持 89／91。[診斷](evidence/LRN-09/training-feedback-20261004/analysis.md)。
 
@@ -149,7 +149,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 36 | 研究者可以分開判讀回報改善、抵達與使用起始提示 | Codex 主 agent / Luna max review | completed | 5／5 工程驗收與交付，實作 `fd069c3` 已推送。39 組 1,560 回合重現，取樣抵達率 50%、97.5%、67.5%，整體提示判準未通過 |
 | 37 | 研究者可以排除兩端搜尋後驗證提示導航 | Codex 主 agent / Luna max 測試與審查 | completed | 5／5 工程驗收與交付，`2733ffe` 已推送且遠端一致；三組提示判準均 false，沒有依提示導航的學習證據 |
 | 38 | 研究者可以核對短時限訓練的兩側成功回饋 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；完整 Mac 驗證與雙程序重現通過，`e0d1c43` 已推送並核對遠端。成功回饋集中單側，唯一因果機制未確認 |
-| 39 | 研究者可以分開核對策略與價值的更新影響 | Codex 主 agent / Luna max 唯讀審查 | verified_scoped | 4／5；600 次完整梯度與更新比對、雙程序重現、獨立重算、17 種竄改檢查、Mac 完整一般與 race 驗證及審查通過。交付待完成 |
+| 39 | 研究者可以分開核對策略與價值的更新影響 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；600 次完整梯度與更新比對、雙程序重現、獨立重算、17 種竄改檢查、Mac 完整一般與 race 驗證及審查通過。實作 0dc4d64 已推送並核對遠端 |
 
 ## 目前阻礙
 
@@ -167,7 +167,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-目前接續 [ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 的提交推送及遠端核對。下一個導航因果介入須先明確區分六步時限是任務結束還是收集截斷，再事前固定方法與判準。不能依保留評估結果挑參數。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
+[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已完成。下一個導航因果介入須先明確區分六步時限是任務結束還是收集截斷，再事前固定方法與判準。方法尚未確認，沒有新增可開始的導航實作票。不能依保留評估結果挑參數。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 

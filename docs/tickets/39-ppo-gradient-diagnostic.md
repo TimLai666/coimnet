@@ -3,7 +3,7 @@
 Epic：人工環境學習（LRN-09 補充）。
 User Story：研究者可以判斷固定六步模型中的策略、價值與探索項是否在共用核心產生相反的梯度。
 Blocked by：38，已完成。
-Status：verified_scoped，4／5。
+Status：completed，5／5。
 
 ## Root 決策 2026-10-04
 
@@ -25,7 +25,7 @@ Status：verified_scoped，4／5。
 - [x] 手算先失敗再通過，有限差分、合成與錯誤回歸通過。
 - [x] 600 次完整梯度與更新比對保存，結論限定於觀察資料。
 - [x] 兩個新程序逐位元組重現、獨立重算、完整 Go 驗證及審查通過。
-- [ ] 文件與需求證據同步，提交推送並核對遠端。
+- [x] 文件與需求證據同步，提交推送並核對遠端。
 
 ## 減法審查
 
@@ -35,4 +35,4 @@ Status：verified_scoped，4／5。
 
 兩個新程序的 600 次更新及完整陣列報告相同，更新前後快照及 PPOReport 與 ticket 38 相同。價值項在共用核心的 raw gradient 全部較大，倍率中位數為 7.049337、4.724167、7.454361，與策略項方向相反分別為 77／200、120／200、123／200。原訓練與資料不變。此結果支持局部梯度競爭，未確立長期偏向的唯一根因。[完整診斷](../../evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)。
 
-手算與 20 組有限差分、完整合成、原 Update／StepFrom 比對、既有輸出拒絕及 17 種 Python 竄改檢查通過。Python 另核對初始快照指紋、原 PPOReport、每個 Adam delta 座標與兩份重現報告。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過。審查找到的兩個驗證器缺口已補回歸並修正，沒有剩餘確認缺陷。[工程驗證](../../evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。提交推送與遠端核對待完成。
+手算與 20 組有限差分、完整合成、原 Update／StepFrom 比對、既有輸出拒絕及 17 種 Python 竄改檢查通過。Python 另核對初始快照指紋、原 PPOReport、每個 Adam delta 座標與兩份重現報告。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過。審查找到的兩個驗證器缺口已補回歸並修正，沒有剩餘確認缺陷。[工程驗證](../../evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。實作 `0dc4d64` 已推送並核對遠端，見[交付紀錄](../../evidence/LRN-09/gradient-diagnostic-20261004/delivery.json)。
