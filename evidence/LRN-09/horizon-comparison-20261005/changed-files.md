@@ -56,3 +56,4 @@
 | [experiment/ppo_horizon_validation_test.go](../../../experiment/ppo_horizon_validation_test.go) | 手算、失敗輸入、拷貝、第一回合及取消檢查。 |
 | [evidence/LRN-09/horizon-comparison-20261005/final-documents.log](../../../evidence/LRN-09/horizon-comparison-20261005/final-documents.log) | 保存實際交付核對輸出。 |
 | [evidence/LRN-09/horizon-comparison-20261005/first-collection-red.raw.log.gz](../../../evidence/LRN-09/horizon-comparison-20261005/first-collection-red.raw.log.gz) | 保留修正前六個失敗案例的原始輸出，未刪除尾端空白。 |
+| [evidence/LRN-09/horizon-comparison-20261005/delivery.json](../../../evidence/LRN-09/horizon-comparison-20261005/delivery.json) | 記錄實作提交、推送、遠端核對與 5／5 工程交付。 |

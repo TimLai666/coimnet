@@ -3,7 +3,7 @@
 Epic：人工環境學習（LRN-09 補充）。
 User Story：研究者可以確認把訓練目標對齊六步抵達期限，是否改善依提示選方向。
 Blocked by：37、38、39，已完成。
-Status：in_progress，4／5。
+Status：completed，5／5。
 
 ## Root 決策（2026-10-05）
 
@@ -42,7 +42,11 @@ Status：in_progress，4／5。
 - [x] 測試先紅燈，兩個 helper 完成且主 agent 驗證通過。
 - [x] 兩組完整訓練與提示評估保存，原組與舊證據一致。
 - [x] 雙程序重現、獨立重算、完整 Go 驗證及審查通過。
-- [ ] 文件與需求證據同步，提交推送並核對遠端。
+- [x] 文件與需求證據同步，提交推送並核對遠端。
+
+## 結果與證據
+
+實作 `58cb01e` 已推送並核對遠端。期限組只有 seed 3 通過完整提示判準，整體判準仍未通過；工程交付完成不代表訓練已穩定。[分析](../../evidence/LRN-09/horizon-comparison-20261005/analysis.md)、[工程驗證](../../evidence/LRN-09/horizon-comparison-20261005/verification.json)、[交付紀錄](../../evidence/LRN-09/horizon-comparison-20261005/delivery.json)。
 
 ## 減法審查
 
