@@ -104,3 +104,24 @@ python3 evidence/LRN-09/gradient-diagnostic-20261004/verify_report_test.py
 第一個命令在已建立的資料夾排他新增 report.json，既有檔案會在重播前拒絕。來源指紋固定為 ticket 38 的已提交報告，其他來源不會被當成相同診斷。後兩個命令核對已保存的證據。Python 重算輸出導數、梯度合成、指標與每個 Adam delta 座標，並核對初始快照與雙程序報告。神經梯度另以 Go 有限差分及原更新比對驗證。
 
 600 次更新中，價值項的共用核心梯度都比策略項大，倍率中位數為 7.05、4.72、7.45，方向相反為 77／200、120／200、123／200。這只支持局部更新競爭，尚未證明偏向單側的唯一成因。原參數與訓練行為保持不變，完整數值與限制見[診斷](../../evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)。
+
+## 六步任務期限的訓練對照
+
+[ticket 40](../../docs/tickets/40-six-step-deadline-training-comparison.md) 比較兩種六步訓練目標。原組計入逾時後的預估價值，期限組在六步用完時結束任務、後續價值設零。其餘模型、種子、各 200 更新及提示判準相同，公開 API 與 CLI 的預設行為不變。期限組保留原環境終止紀錄，訓練回合結束不算抵達成功。
+
+```sh
+horizon_dir=$(mktemp -d)
+COIMNET_PPO_HORIZON_EVIDENCE="$horizon_dir" go test -count=1 -v -run '^TestPPOHorizonEvidence$' ./experiment
+python3 evidence/LRN-09/horizon-comparison-20261005/verify_report.py
+python3 evidence/LRN-09/horizon-comparison-20261005/verify_report_test.py
+```
+
+第一個命令在新資料夾排他建立 report.json，包含兩組完整訓練與提示測驗。後兩個命令核對儲存庫的[摘要](../../evidence/LRN-09/horizon-comparison-20261005/summary.json)、雙程序報告及來源指紋。兩組共 1,200 訓練回合、3,120 評估回合，兩次執行逐位元組相同，原組與 ticket 38／37 逐筆一致。
+
+| seed | 原組取樣抵達 | 期限組取樣抵達 | 期限組固定最大分數行動抵達 | 期限組完整提示判準 |
+| --- | --- | --- | --- | --- |
+| 1 | 1／40 | 19／40 | 20／40 | 未通過 |
+| 2 | 14／40 | 26／40 | 40／40 | 未通過 |
+| 3 | 13／40 | 36／40 | 40／40 | 通過 |
+
+seed 3 取樣左、右抵達為 20／20 與 16／20，清除提示降到 10／40、反轉提示為 0／40。這個人工範例已出現依提示選方向的模型，但只有一個種子通過，整體判準為 false，訓練穩定性尚未成立。完整判讀見[分析](../../evidence/LRN-09/horizon-comparison-20261005/analysis.md)。

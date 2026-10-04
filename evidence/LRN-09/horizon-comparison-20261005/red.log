@@ -1,0 +1,79 @@
+=== RUN   TestPPOHorizonEvidence
+    ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set
+--- SKIP: TestPPOHorizonEvidence (0.00s)
+=== RUN   TestPPOHorizonDeadlineRolloutGAE
+    ppo_horizon_validation_test.go:35: deadline rollout not implemented
+--- FAIL: TestPPOHorizonDeadlineRolloutGAE (0.00s)
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nil
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "empty"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/empty
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "empty"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/zero_limit
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "limit"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/negative_limit
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "limit"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/too_long
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "limit"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/short_timeout
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "timeout"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/early_timeout
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "timeout"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/no_ending
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "end"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/conflict
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "both"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/early_done
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "done"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nan_value
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "finite"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/infinite_bootstrap
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "finite"
+=== RUN   TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nan_observation
+    ppo_horizon_validation_test.go:102: error deadline rollout not implemented, want "finite"
+--- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nil (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/empty (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/zero_limit (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/negative_limit (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/too_long (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/short_timeout (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/early_timeout (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/no_ending (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/conflict (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/early_done (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nan_value (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/infinite_bootstrap (0.00s)
+    --- FAIL: TestPPOHorizonDeadlineRolloutRejectsInvalidEpisodes/nan_observation (0.00s)
+=== RUN   TestPPOHorizonArmsShareTheSameCollection
+    ppo_horizon_validation_test.go:114: horizon training not implemented
+--- FAIL: TestPPOHorizonArmsShareTheSameCollection (0.00s)
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/nil
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/canceled
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/zero_updates
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/zero_rate
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/nil#01
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/canceled#01
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/zero_updates#01
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+=== RUN   TestPPOHorizonTrainingRejectsInvalidInput/zero_rate#01
+    ppo_horizon_validation_test.go:206: input rejection: model=false points=0 error=horizon training not implemented
+--- FAIL: TestPPOHorizonTrainingRejectsInvalidInput (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/nil (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/canceled (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/zero_updates (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/zero_rate (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/nil#01 (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/canceled#01 (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/zero_updates#01 (0.00s)
+    --- FAIL: TestPPOHorizonTrainingRejectsInvalidInput/zero_rate#01 (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment	0.425s
+FAIL

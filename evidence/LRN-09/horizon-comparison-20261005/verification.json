@@ -1,0 +1,290 @@
+{
+  "requirement": "LRN-09",
+  "ticket": "40-six-step-deadline-training-comparison",
+  "status": "verified_scoped",
+  "profile": "fixture",
+  "date": "2026-10-05",
+  "acceptance_verified": 4,
+  "acceptance_total": 5,
+  "scope": "Test-only fixed six-step terminal versus unchanged timeout-bootstrap comparison; original public API, defaults, model capacity, dependencies and historical evidence preserved.",
+  "environment": {
+    "runtime": "go version go1.26.5 darwin/arm64",
+    "platform": "macOS 27.0.1 build26A434 darwin/arm64 CPU",
+    "cgo_enabled": true,
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "input_fingerprints": {
+    "base_commit": "69a809fcdaa576a347a273474624b8649a73c4a2",
+    "source_manifest": "source.sha256",
+    "source_file_count": 646,
+    "source_manifest_sha256": "b658c251bd41ea04791d13b6a61b84a42ca6760fb7938df26b4ecbecd130acf8",
+    "protected_manifest": "protected.sha256",
+    "protected_file_count": 883,
+    "protected_manifest_sha256": "d9672ab4a035e2e8c3bb5375546e06ea60af74a6bc035e1b66f1450a196b23c2",
+    "changed_go_sources": {
+      "experiment/ppo_horizon_evidence_test.go": "173707e0f1c7ada30989a32753c0d47c41f44f2b9ec58eba7c5470de9afd3c78",
+      "experiment/ppo_horizon_helpers_test.go": "33fedbff2812edcfed76f18fc8e8d4c4d8ae3d8f5e4d123e20d58e91a07e6477",
+      "experiment/ppo_horizon_validation_test.go": "0c84e573ed01649b732b1b5f2f6f41b46a115eb1b7cd3faa20793fec7dc3c857"
+    },
+    "source_gzip_sha256": {
+      "short-goal-cue-audit-20261003": "85b6a88e35dc251560fdd978b830acf92a1e1bfbca0a5ef702a15a6884effeb5",
+      "training-feedback-20261004": "27286d7e471543bc7478908dfa8dc3f4433d13a13bac072037139dc7603116de"
+    },
+    "config": {
+      "corridor": {
+        "length": 7,
+        "time_limit": 6,
+        "step_penalty": 0.01,
+        "goal_reward": 1
+      },
+      "seeds": [
+        1,
+        2,
+        3
+      ],
+      "updates": 200,
+      "hidden": 8,
+      "eval_episodes": 40,
+      "learning_rate": 0.01,
+      "ppo": {
+        "gamma": 0.99,
+        "lambda": 0.95,
+        "clip_epsilon": 0.2,
+        "value_coef": 0.5,
+        "entropy_coef": 0.01,
+        "burn_in": 0,
+        "time_limit": 6,
+        "epochs": 1,
+        "mini_batch": 1
+      }
+    },
+    "config_hash": "1db03cdb002720f7e029ae4dcd03e739f9b8e76ceaecc519f9dbdc3f31724256"
+  },
+  "reproduction_command": [
+    "COIMNET_PPO_HORIZON_EVIDENCE=/private/tmp/coimnet-horizon-comparison-20261005/run1 go test -count=1 -v -run '^TestPPOHorizonEvidence$' ./experiment",
+    "COIMNET_PPO_HORIZON_EVIDENCE=/private/tmp/coimnet-horizon-comparison-20261005/run2 go test -count=1 -v -run '^TestPPOHorizonEvidence$' ./experiment"
+  ],
+  "observed_result": {
+    "training_episodes": 1200,
+    "evaluation_episodes": 3120,
+    "original_training_matches": 600,
+    "original_evaluation_conditions_match": 39,
+    "fresh_processes": 2,
+    "exact_report_bytes_equal": true,
+    "report_raw_sha256": "e2041c9d85a9f59453afb512bd2ca58a9255623993de33cb242ae56591899b2a",
+    "gates": {
+      "continuing_bootstrap": {
+        "1": false,
+        "2": false,
+        "3": false
+      },
+      "six_step_terminal": {
+        "1": false,
+        "2": false,
+        "3": true
+      }
+    },
+    "overall_gate": {
+      "continuing_bootstrap": false,
+      "six_step_terminal": false
+    },
+    "deadline_sampled_reached": [
+      19,
+      26,
+      36
+    ],
+    "deadline_greedy_reached": [
+      20,
+      40,
+      40
+    ],
+    "mutation_cases_passed": 22,
+    "general_training_stability_established": false,
+    "biological_mechanism_evidence_added": false
+  },
+  "research_limits": [
+    "Fixed seeds and synthetic network only; no general navigation or biological claim.",
+    "Python independently checks physics, targets, losses and gates; Go checks neural replay and PCG collection.",
+    "After policy divergence, training trajectories are not paired.",
+    "Only three predeclared initial seeds; two identical reruns do not add independent training seeds.",
+    "Twelve-neuron synthetic two-target corridor; forty evaluation episodes are not forty distinct navigation problems."
+  ],
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "TSK-11": "specified",
+    "OPS-05": "specified",
+    "change": "Append only LRN-09 supplemental verification path."
+  },
+  "tdd": {
+    "behavioral_red": "red.log",
+    "behavioral_green": "green.log",
+    "fixed_test_sources": "red-source.sha256",
+    "review_regression_red": "first-collection-red.log",
+    "review_regression_green": "first-collection-green.log",
+    "final_verifier_green": "final-verifier-tests.log",
+    "go_behavior_tests_written_before_implementation": true
+  },
+  "expected_failures": {
+    "red.log": "All behavioral checks reject the empty helper skeleton before implementation; opt-in evidence test is skipped when its environment variable is unset.",
+    "first-collection-red.log": "Six confirmed first-rollout consistency corruptions accepted before repair; regression tests fail as expected.",
+    "verifier-mutation-noop.log": "Development negative fixture assigned zero to an already erased zero cue, so no corruption occurred; corrected to one after inspecting the actual trace.",
+    "existing-output.log": "Expected existing-output rejection before training, exit 1; saved raw report remains e2041c9d85a9f59453afb512bd2ca58a9255623993de33cb242ae56591899b2a.",
+    "stage-governance.log": "Governance was started before the new verification.json existed; preserves the ordering failure. Evidence was then saved and rechecked.",
+    "governance-metadata-red.log": "First saved receipt omitted the required test_log key and the new Root decision header lacked its date; metadata corrected without changing tests.",
+    "governance-metadata-race-red.log": "Same metadata-only failure under race; corrected before final governance checks."
+  },
+  "review": {
+    "host": "Codex desktop on macOS",
+    "actual_reviewer": "Claude CLI claude-opus-5-5",
+    "first_route": "agy claude-opus-4-6-thinking rejected with individual quota reached (429), exit 3",
+    "requested_read_only": true,
+    "read_only_violation": "Reviewer created /tmp/x_src; root validated its entire inventory against source.sha256 and conditionally removed it.",
+    "main_reviewed_complete_diff": true,
+    "confirmed_validator_gaps_fixed": 1,
+    "verifier_fingerprints_added": true,
+    "remaining_confirmed_findings": 0,
+    "record": "review.md"
+  },
+  "checks": [
+    {
+      "command_family": "go test ./...",
+      "fresh_execution": true,
+      "exit_code": 0,
+      "test_log": "test.log",
+      "packages_passed": 57
+    },
+    {
+      "command": "go test -count=1 -race -timeout 60m ./...",
+      "exit_code": 0,
+      "test_log": "race.log",
+      "packages_passed": 57
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "test_log": "build.log"
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "test_log": "vet.log"
+    },
+    {
+      "command": "go mod verify",
+      "exit_code": 0,
+      "test_log": "modules.log"
+    },
+    {
+      "command": "go mod tidy -diff",
+      "exit_code": 0,
+      "test_log": "tidy.log"
+    },
+    {
+      "command": "(cd docs/handoff && shasum -a256 -c SHA256SUMS.txt)",
+      "exit_code": 0,
+      "test_log": "handoff.log"
+    },
+    {
+      "command": "gofmt -l experiment/ppo_horizon_helpers_test.go experiment/ppo_horizon_validation_test.go experiment/ppo_horizon_evidence_test.go && git diff --check",
+      "exit_code": 0,
+      "test_log": "final-format.log"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 evidence/LRN-09/horizon-comparison-20261005/verify_report.py",
+      "exit_code": 0,
+      "test_log": "help-independent.log"
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 evidence/LRN-09/horizon-comparison-20261005/verify_report_test.py",
+      "exit_code": 0,
+      "test_log": "final-verifier-tests.log"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestGovernance' .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "final-governance.log"
+    },
+    {
+      "command": "go test -count=1 -race -v -run '^TestGovernance' .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "final-governance-race.log"
+    },
+    {
+      "command": "python3 verify_report.py --help && python3 check_delivery.py --help",
+      "exit_code": 0,
+      "test_log": "help.log",
+      "scope": "Saved-evidence scripts expose their supported no-argument operation."
+    },
+    {
+      "command": "PYTHONDONTWRITEBYTECODE=1 python3 evidence/LRN-09/horizon-comparison-20261005/check_delivery.py",
+      "exit_code": 0,
+      "test_log": "final-documents.log",
+      "local_links_checked": 278,
+      "new_schema_versions_checked": 3
+    }
+  ],
+  "artifact_sha256": {
+    "analysis.md": "c00be4ac70e85982402fb46415548b1228e7345bc48d332063b551b0de52579d",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "changed-files.md": "1e65daa047af409fc25a04bca4613811c3d15c801f50af4a24e3b155bba06643",
+    "check_delivery.py": "5e01e2bb446be90229a82525a681853a1bb3fc1187632188b75d39cd2361ed54",
+    "existing-output.log": "0f272af02521988e0b6097c76c1b958c3f685989fe4c0236ec530fdd4ced246e",
+    "final-documents.log": "2399136fa82362878a40b464438aeebbff445ecbef031478b4b907981da7e060",
+    "final-format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "final-governance-race.log": "601287f22255a96f90493e0dc7e7cf9aba6136710188125788b098de57ad2845",
+    "final-governance.log": "311f4e0f44ce90f93e958ab94b801fa9f6904abd27df22473413420649da5894",
+    "final-independent.log": "245a4ca045e82ca38dfe7c53b1384fb2ec497998a5bfaddaabc1b25a00925cfc",
+    "final-verifier-tests.log": "9b5bee4871b3f227cb3e465aedb0bf5e4e856f036c31b49fee275f51a6d61d1a",
+    "first-collection-green.log": "0253c6dfab95fe80320346ea949a3aa80dae81adb8d581fe244acfab8879577b",
+    "first-collection-red.log": "3ad08c7bfe129e19e0caf10a407c4e7aa4821acab5d92425824423b65b41f65b",
+    "first-collection-red.raw.log.gz": "fa4b8f0c103e3e77de88326481afccc9f013d8460d308c57a71984a0a79404bc",
+    "governance-metadata-race-red.log": "222c097564ac4c84e61a7944d2a30a3407590edbe940aaeaf0fc834246f70943",
+    "governance-metadata-red.log": "285b08c59e8794c5cb6b776ace1f7946effc858444ce00c783c445955b5241ed",
+    "green.log": "3a1cf5803cfeac05fdf8b747643ba07524dd0e9d9fc0cdd1495b39d9e126d585",
+    "handoff.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "help-independent.log": "245a4ca045e82ca38dfe7c53b1384fb2ec497998a5bfaddaabc1b25a00925cfc",
+    "help.log": "aaeddb16c6d98302e927d793931b1f51bb9f3686576e321547d4dd02473cb4af",
+    "independent.log": "245a4ca045e82ca38dfe7c53b1384fb2ec497998a5bfaddaabc1b25a00925cfc",
+    "modules.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "protected.sha256": "d9672ab4a035e2e8c3bb5375546e06ea60af74a6bc035e1b66f1450a196b23c2",
+    "race.log": "a8b4d0fa5aaf2b4ebdff2c1d48bfc383bb3498ae2e327fdf80b3c0611849132a",
+    "red-source.sha256": "1244995755221c8a913af55b98ad320325582fb6812f04b56f11894fc6aad30a",
+    "red.log": "5d215775e17986a07394a30fa47f06e51b715291f8a70fd0ff86e43eae2f4ac9",
+    "report.json.gz": "6700297a84947c0540d9b52709ba592c44942e0da734a834262c6c40bedd32ee",
+    "reproduction.json": "20f5204c9645bb27cfa8ebbf8e4173090cc627f8a3af571277607769e2232494",
+    "review.md": "3240cbcd0359768e65b55aeb848198a290ed8453904074ab696d3a257dcbcb5c",
+    "run1.log": "e5675cc84553cc8aba0064dce33710538a9cc68334a6458a9a246041a83995dd",
+    "run2-report.json.gz": "6700297a84947c0540d9b52709ba592c44942e0da734a834262c6c40bedd32ee",
+    "run2.log": "7a28425b6a8b6687fee3e31bf9db749fdb5a5407709cf528cfa16a8b9b4c1eb4",
+    "source.sha256": "b658c251bd41ea04791d13b6a61b84a42ca6760fb7938df26b4ecbecd130acf8",
+    "stage-governance.log": "69eb657bd9c9c8e120b62c4a92ed69e63147a7384236809968f2a40532dc4838",
+    "summary.json": "47ce7393c96b85daa31ee0eaec93713ffecae7f23f188cb0b2d32972735f976b",
+    "test.log": "729a5688f004dcd3329f6a176f9e3a9a93ada8a6732b99e5e2de0bfd39626093",
+    "tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "verifier-mutation-noop.log": "a0d35a4f02325b8df6f4944001e8931d13ddfdd657c3a36dd30a20a72d98dad3",
+    "verifier-tests.log": "03165976416707188723358c2cebf41df335fd041974f0a199c408db34972f74",
+    "verify_report.py": "d5fd32d05c63f8b36bbcced4cdd0877b9eddab7365caf711256e45b15c358761",
+    "verify_report_test.py": "684b9e1108bb376f069a6a8cc085ca0b07c3d5f98afe4bdd283b9ef890709748",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "delivery": "Pending verified implementation commit/push and separate completion record.",
+  "test_log": [
+    "green.log",
+    "run1.log",
+    "run2.log",
+    "test.log",
+    "race.log",
+    "help-independent.log",
+    "final-verifier-tests.log"
+  ],
+  "log_normalization": {
+    "log": "first-collection-red.log",
+    "change": "Removed one trailing space from unittest status line so staged diff --check passes; all failure details unchanged.",
+    "original_compressed": "first-collection-red.raw.log.gz",
+    "original_raw_sha256": "d4682982220c637f8426bdb469ac1ebd44170db0344b25614f5e014e1ecdc4e0"
+  }
+}

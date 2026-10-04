@@ -83,6 +83,10 @@
 
 ## 功能流程、錯誤與驗證責任
 
+### 六步任務期限的訓練對照
+
+[ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 在測試範例內加入六步就結束任務的訓練組，與原逾時後計入預估價值的設定比較。兩組沿用既有收集器、模型、隨機串流與更新器。期限轉換使用獨立拷貝，原抵達、逾時與後續預估值另行記錄。評估沿用 ticket 37 的左右配對提示測驗及判準，公開預設設定與舊證據保持不變。
+
 ### 固定 PPO 梯度診斷（2026-10-04）
 
 [ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 只在測試範例內重播 ticket 38 的固定回合。每次由原模型副本的 `Individual.Advance` 計算輸出，與 `rl.Update` 的前向一致。凍結 collector 的 GAE、目標值與舊行動機率，以 `rl.Loss` 分離三項 upstream，再用 `Network.LossGradientFrom` 保存完整梯度。總 upstream 不做回合平均。weights、bias 與 readout 是可更新群組，encoder 與 log_tau 凍結。零範數的角度不定義。分離梯度只用於觀察，完整 upstream 的 `StepFrom` 須和原更新的參數、Adam、累積器與步數完全相同。方法、精度容許範圍及有限差分驗收由票面固定，沒有調整訓練或公開契約。

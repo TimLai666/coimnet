@@ -142,6 +142,9 @@
 | `coimnet-short-goal-cue-audit/v1` | `experiment`（測試範例，6 步左右配對提示對照） |
 | `coimnet-ppo-training-feedback/v1` | `experiment`（測試範例，固定六步的逐次訓練與提示探測） |
 | `coimnet-ppo-gradient-diagnostic/v1` | `experiment`（測試範例，固定回合的三項完整梯度） |
+| `coimnet-ppo-horizon-comparison/v1` | `experiment`（測試範例，六步任務期限與原逾時設定對照） |
+| `coimnet-ppo-horizon-reproduction/v1` | `evidence/LRN-09`（兩個新程序的報告與日誌指紋） |
+| `coimnet-ppo-horizon-summary/v1` | `evidence/LRN-09`（期限對照的獨立核對摘要） |
 | `coimnet-teacher-records/v1` | `teacher` |
 | `coimnet-textgen-corpus/v1` | `tasks/textgen` |
 | `coimnet-train-result/v1` | `internal/cli` |
