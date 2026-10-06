@@ -1,6 +1,6 @@
 # PPO 更新 API 使用指南
 
-`learning/rl` 提供從零初始狀態開始的 PPO 更新。呼叫端負責與環境互動並收集每一步的觀察、行動、機率及回饋。
+`learning/rl` 提供 PPO 更新，也支援 CPU 純量連續核心從保存的神經記憶開始訓練。呼叫端負責與環境互動並收集每一步的觀察、行動、機率及回饋。
 
 ## 動作機率與單步損失
 
@@ -40,9 +40,11 @@ ind = next
 
 - 讀出寬度要等於 `actions + 1`：前 `actions` 個是動作 logits，最後一個是價值。
 - 模型必須宣告 `Config.ReadoutEveryStep`，否則只有最後一步有梯度。
-- `cfg.MiniBatch` 只能為 1，一次 `StepFrom` 處理一個完整 rollout。
+- `cfg.MiniBatch` 只能為 1，每次梯度更新處理一個完整 rollout。
 - 個體不能帶 plasticity 或 chemistry，帶了就回 `ErrUnsupportedMechanism`。
-- 每個 rollout 的 `InitialNeural` 必須與同設定、零電位新個體的初始狀態相同，任意遞迴狀態目前不接受。
+- 每個 rollout 的 `InitialNeural` 必須是與模型設定相符的完整合法狀態，包含延遲歷史。
+- CPU 純量連續核心接受保存的非零狀態。這條路徑不支援 `Options.Recompute`。
+- 既有可用的 fresh-zero 路徑保持。非零 LIF／mixed 狀態明確拒絕；vector 與 GPU 的個體持續狀態原本就未提供。
 
 ## Rollout 的欄位
 
@@ -90,14 +92,18 @@ type Transition struct {
 
 - `cfg.BurnIn` 指定的前綴不計直接損失，也不進報告平均，但後續步驟的梯度仍可經核心回傳到前綴。這個入口沒有切斷前綴梯度。`BurnIn` 必須小於 rollout 長度，確保至少有一個計分步。
 - `cfg.TimeLimit` 是每個 rollout 的上限，步數超過就拒絕。最後一步是 `Timeout` 時，步數要恰好等於 `TimeLimit`。
-- `PPOConfig` 其餘欄位：`Gamma`／`Lambda` 在 (0, 1]、`ClipEpsilon` 在 (0, 1)、係數有限且非負、`Epochs` ≥ 1。每個 epoch 依 rollout 順序各做一次 `StepFrom`。
+- `PPOConfig` 其餘欄位：`Gamma`／`Lambda` 在 (0, 1]、`ClipEpsilon` 在 (0, 1)、係數有限且非負、`Epochs` ≥ 1。每個 epoch 依 rollout 順序更新一次，依初始狀態使用 `StepFrom` 或 `StepFromState`。
 
 ## 後端
 
-`learning.Trainer.StepFrom` 是模仿與 PPO 共用的梯度入口。`Update` 從個體快照還原訓練器，保留最佳化器動量、更新次數與尚未完成的梯度累積。每個 rollout 的輸出梯度按步相加，`PPOReport` 則回報最後一個 epoch 計分步驟的損失平均、機率比平均與裁切比例。
+`learning.Trainer.StepFrom` 是從零開始的共用梯度入口。`StepFromState(ctx, initialNeural, input, upstream)` 接受 CPU 純量連續核心的完整保存狀態，沿用裁切、累積、mask、排程與最佳化器流程，拒絕 Recompute。候選新參數在提交前也從同一份保存狀態前向驗證，失敗時原參數、最佳化器與尚未完成的累積視窗保持。需要直接取得梯度時，可使用 `Network.LossGradientFromState(ctx, parameters, initialNeural, input, upstream, window)`。
+
+保存狀態的電位與歷史視為固定起點。梯度只回推目前這段，段內依既有 Truncation 設定截斷。核心的 `Gradient.Initial` 僅報告對起點電位的局部敏感度，不更新起點或回推保存歷史。延遲邊讀取保存的原值，最新歷史值即使與本機 activation 差距在合法的 4 ULP 內，也不會被重建。
+
+`Update` 每個 epoch 都從 rollout 的同一份 `InitialNeural` 計算輸出與梯度。它從個體快照還原訓練器，保留最佳化器動量、更新次數與尚未完成的梯度累積。回傳個體保留呼叫開始時的現行神經狀態，成功更新不會重跑環境或更動原個體。每個 rollout 的輸出梯度按步相加，`PPOReport` 則回報最後一個 epoch 計分步驟的損失平均、機率比平均與裁切比例。
 
 ## 目前狀態
 
 `coimnet examples run gridnav --method ppo` 提供 3 個 seed 各 200 次更新的完整人工範例，包含取樣收集、下一筆觀察的 timeout bootstrap、訓練前與隨機基線對照，以及同平台重現檢查。用法見 [走廊範例](../../experiment/gridnav/README.md)，實際驗證見 [LRN-09](../../evidence/LRN-09/verification.json)。
 
-任意非零初始狀態、切斷暖機前綴梯度，以及可塑性／化學機制的 PPO 梯度仍未支援，依 [ticket 26](../../docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md) 保留後續工作。人工走廊的成功不代表完整果蠅圖已完成回饋學習。
+帶記憶的 CPU 純量連續核心與延遲歷史由 [ticket 43](../../docs/tickets/43-stateful-continuous-ppo.md) 驗收。非零狀態的其他核心／重算、切斷暖機前綴梯度，以及可塑性／化學機制的 PPO 梯度保持未支援，依 [ticket 26](../../docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md) 保留後續工作。人工走廊的成功不代表完整果蠅圖已完成回饋學習。

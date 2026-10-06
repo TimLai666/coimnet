@@ -56,6 +56,11 @@ type Trace struct {
 	voltage, output, drive [][]float64
 	lambda                 []float64
 	alpha                  []float64
+	// history is the owned prefix retained by a stateful segment. The final
+	// row is output at startSteps; rows before it are the preceding delayed
+	// outputs. A nil history identifies the original fresh-zero style path.
+	history    [][]float64
+	startSteps uint64
 }
 
 // Gradient contains summed parameter derivatives and per-step input gradients.
@@ -149,13 +154,27 @@ type reader interface {
 
 // forwardReader reads delayed outputs of a forward Trace.
 type forwardReader struct {
-	output  [][]float64
-	sources []int
-	delays  []int
-	t       int
+	output     [][]float64
+	sources    []int
+	delays     []int
+	t          int
+	history    [][]float64
+	startSteps uint64
 }
 
 func (r forwardReader) at(e int) float64 {
+	if r.history != nil {
+		step := r.startSteps + uint64(r.t)
+		past := uint64(0)
+		if uint64(r.delays[e]) < step {
+			past = step - uint64(r.delays[e])
+		}
+		historyStart := r.startSteps - uint64(len(r.history)-1)
+		if past <= r.startSteps {
+			return r.history[int(past-historyStart)][r.sources[e]]
+		}
+		return r.output[int(past-r.startSteps)][r.sources[e]]
+	}
 	past := 0
 	if r.delays[e] < r.t {
 		past = r.t - r.delays[e]
@@ -214,6 +233,13 @@ func (m *Continuous) synapticDriveParallel(drive, weights []float64, r reader) e
 // Forward evolves a nonempty sequence without changing its arguments. The
 // returned trace owns its buffers. Cancellation or errors publish no state.
 func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (*Trace, error) {
+	return m.forward(ctx, p, initial, inputs, nil)
+}
+
+// forward is the shared scalar forward implementation. A non-nil saved state
+// supplies a copied, constant delayed-output prefix and makes the segment's
+// first absolute step saved.Steps.
+func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, saved *State) (*Trace, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -273,11 +299,24 @@ func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float6
 			}
 		}
 	}
-	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha}
+	var history [][]float64
+	var startSteps uint64
+	if saved != nil {
+		history = cloneRows(saved.History)
+		startSteps = saved.Steps
+	}
+	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha, history: history, startSteps: startSteps}
 	tr.voltage[0] = append([]float64(nil), initial...)
-	tr.output[0] = make([]float64, n)
-	for i, v := range initial {
-		tr.output[0][i] = m.activate(v)
+	if saved != nil {
+		// The saved latest output is authoritative. In particular, it may be
+		// within the State validator's four-ULP portability allowance, so do
+		// not recompute activation(initial Voltage) here.
+		tr.output[0] = append([]float64(nil), history[len(history)-1]...)
+	} else {
+		tr.output[0] = make([]float64, n)
+		for i, v := range initial {
+			tr.output[0][i] = m.activate(v)
+		}
 	}
 	for t, in := range inputs {
 		if err := ctx.Err(); err != nil {
@@ -285,11 +324,11 @@ func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float6
 		}
 		drive := append([]float64(nil), in...)
 		if m.partition != nil {
-			if err := m.synapticDriveParallel(drive, p.Weights, &forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t}); err != nil {
+			if err := m.synapticDriveParallel(drive, p.Weights, &forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}); err != nil {
 				return nil, err
 			}
 		} else {
-			r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t}
+			r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}
 			r.accumulateSerial(drive, p.Weights, m.config.Targets)
 		}
 		if err := ctx.Err(); err != nil {
@@ -385,26 +424,36 @@ func (m *Continuous) Backward(ctx context.Context, tr *Trace, upstream [][]float
 				prev[i] = tr.lambda[i] * dv
 			}
 		}
+		r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}
 		for e, s := range m.config.Sources {
 			if e%4096 == 0 {
 				if err := ctx.Err(); err != nil {
 					return empty, err
 				}
 			}
+			driveGrad := g.Inputs[t][m.config.Targets[e]]
+			g.Weights[e] += driveGrad * r.at(e)
 			past := 0
 			if m.config.Delays[e] < t {
 				past = t - m.config.Delays[e]
 			}
-			driveGrad := g.Inputs[t][m.config.Targets[e]]
-			g.Weights[e] += driveGrad * tr.output[past][s]
-			if past > start || start == 0 {
+			// A stateful segment's past==0 source came from the saved
+			// prefix, so it contributes no reverse signal. Fresh Forward
+			// retains its original initial-output path.
+			if (tr.history == nil || past > 0) && (past > start || start == 0) {
 				gy[past][s] += driveGrad * tr.parameters.Weights[e]
 			}
 		}
 		gv = prev
 	}
-	for i := range gv {
-		g.Initial[i] = gv[i] + gy[0][i]*m.derivative(tr.voltage[0][i])
+	if tr.history != nil {
+		// Saved output history is a constant boundary. Only the membrane leak
+		// path from the segment-start voltage is reported in Initial.
+		copy(g.Initial, gv)
+	} else {
+		for i := range gv {
+			g.Initial[i] = gv[i] + gy[0][i]*m.derivative(tr.voltage[0][i])
+		}
 	}
 	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.Initial} {
 		if err := vector(v, len(v), "gradient"); err != nil {

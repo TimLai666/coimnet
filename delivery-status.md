@@ -2,11 +2,13 @@
 
 ## 目前階段
 
+[ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 完成工程驗收 4／5，待提交及推送核對。CPU 純量連續核心可從保存的電位與延遲歷史接續 PPO，算分、梯度與候選驗證使用同一狀態。22 個頂層專項、372 個相關頂層測試、Mac 完整一般與 race 各 57 個套件，以及 Root／獨立審查通過。2,087 份既有資料與證據、公開簽名、依賴及原範例設定保持。見[工程驗證](evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)。本票沒有阻礙。
+
 [ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md) 已完成 5／5 驗收與交付。10 個新增數值回歸、相關流程的 124 個頂層測試、Mac 完整一般與 race 各 57 套件、建置、vet 及相依性檢查通過。Root 與獨立審查通過，公開 API、依賴及 2,006 份既有資料與證據保持。實作 `8fb25c2` 已推送並核對遠端，見[數值證據](evidence/TCH-04/distribution-ctc-numerics-20261006/verification.json)及[交付紀錄](evidence/TCH-04/distribution-ctc-numerics-20261006/delivery.json)。本票沒有本機執行阻礙。
 
 [ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md) 已完成 5／5 驗收與交付：共用位移正規化、非法數值拒絕與有限加權價值計算完成，13 項新增與既有 20 項 RL 頂層測試通過。Root 接手修正第一版的中間溢位與多餘檢查。沒有本機驗證阻礙，Mac 完整一般與 race 各 57 套件、建置、vet、相依性、獨立審查與檔案審查通過，實作 `6d44edf` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/objective-numerics-20261006/delivery.json)。模型、依賴與非零狀態限制保留。
 
-[訓練框架盤點](evidence/LRN-09/framework-audit-20261006.md) 保存修正前來源 `9202bbf` 的公開入口重現。ticket 41 處理已確認的 PPO 數值缺陷。非零初始狀態及可塑性／化學機制的 PPO 訓練是既有未支援能力，六步期限則屬範例的任務定義。數值缺陷尚未被證明是方向學習失敗的原因。
+[訓練框架盤點](evidence/LRN-09/framework-audit-20261006.md) 保存修正前來源 `9202bbf` 的公開入口重現。ticket 41 處理已確認的 PPO 數值缺陷。盤點時非零初始狀態及可塑性／化學機制的 PPO 訓練尚未支援。CPU 純量連續核心的保存狀態現由 ticket 43 補上，其他限制保留。六步期限屬範例的任務定義。數值缺陷尚未被證明是方向學習失敗的原因。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 已完成 5／5 工程驗收與交付，實作 `58cb01e` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/horizon-comparison-20261005/delivery.json)。兩組共 1,200 訓練回合與 3,120 評估回合在兩個新程序重現，原組與舊證據逐筆一致。六步任務期限組的 seed 3 通過完整提示判準，seed 1／2 未通過；原組三個 seed 均未通過。Mac 完整一般與 race 各 57 套件、建置、vet、相依性及獨立核對通過。審查發現的第一回合核對缺口已修正，22 種竄改案例通過，原公開契約及歷史證據保留。[分析](evidence/LRN-09/horizon-comparison-20261005/analysis.md)、[工程驗證](evidence/LRN-09/horizon-comparison-20261005/verification.json)。
 
@@ -150,7 +152,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 25 | 研究者可以依神經元類型混合連續與脈衝規則、使用向量節點與共享參數，並以重算降低反向歷史記憶體 | 主 agent 指揮 / Opus 5 實作 | in_progress | 第一階段驗證通過：`dynamics.Mixed` 每節點一種規則、單一輸出契約、不雙重計入、編號順序無關、全 0／全 1 逐位等於既有核心（`-race` 下 LIF 核心自身的 1 ULP 差由 build tag 常數釘住）、平滑模式有限差分與手算兩步梯度；`learning` 第三核心與混合個體快照；COR-05 passed；第二階段（向量節點、共享參數）與第三階段（重算）待派工 |
 | 27 | 使用者可以用離線與 HTTP 教師蒸餾學生，並在完全移除教師的情況下評估它 | 主 agent 指揮 / opencode big-pickle 小票實作 | verified_scoped | 三階段 fixture 驗證完成（2026-09-23）：統一教師契約與離線／重播／HTTP／封鎖教師（TCH-01、TCH-02）；學生自編碼、保留集隔離、合法對齊的分布蒸餾與 `StepFrom` 訓練（TCH-03、TCH-04）；`experiment/studenteval` 的 student 模式封鎖教師與網路、teacher_assisted 分開報告並計 fallback、保留集＋獨立來源集與 20% 錯標籤穩健性；工具允許清單與參數驗證、惡意教師回應只當資料（請求數、誘餌 0 次、預算與設定不變、未授權欄位不外傳）（TCH-05、TCH-06 passed）。真實遠端教師與真實任務未跑 |
 | 30 | 使用者可以在目標平台使用 CPU 參考路徑、在真實資料上做全圖前向／反向與訓練、核對治理文件與授權，並匯入 FlyWire | 主 agent 指揮 / opencode big-pickle 小票實作、agy Gemini Flash 證據整理 | in_progress | 第一階段驗證通過：平台矩陣把 compiled 與 executed 分開標記（darwin/arm64 實際執行 unit／race／vet／mod verify，linux 與 windows 只交叉編譯與 vet）、`Workers` 並行在連續與 LIF 核心逐位相同且每步配置量不隨步數增加、治理測試四項、README 能力表與科學界線、授權盤點與 `blocked_permission` 發布清單、INDEX 連結檢查；OPS-04、GOV-01、GOV-04、GOV-05、GOV-06 passed；第二～四階段待派工，第五階段裝置後端（OPS-05）與 FlyWire（DAT-06）受阻於使用者；第二階段進行中（2026-09-19）：FlyWire adapter（CSV／gzip → Feather 與 manifest，命名空間 `flywire-<version>`，root id 到 2^63−1 精確往返、溢位拒絕，`docs/flywire-source-audit.md` 標 blocked_data）已提交，拼接禁止（`MappingEvidence`）票已寫好；第五階段 `backend` 能力宣告、明示回退與更新 ledger 已提交（OPS-05 可做部分）；第四階段乾淨環境腳本待 `report` 命令；第二階段 fixture 部分驗證通過（2026-09-19）：FlyWire adapter、`MappingEvidence` 拼接禁止與 named set 命名空間檢查，`evidence/DAT-06/`（DAT-06 passed，profile fixture；真實 FlyWire 檔案 blocked_data）；第四階段 `scripts/clean-env-verify.sh` 已落地（14 步 passed、3 步 blocked_data），效能報告與 OPS-10 證據待派 |
-| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max / OpenCode big-pickle | verified_scoped | 三階段 fixture 驗證完成：LRN-08、MOD-09 與 LRN-09；第二階段含取樣 collector、3 seed 各 200 次更新、訓練前／隨機對照、同平台逐位重現與 CLI，Mac／Ubuntu 同源通過。任意非零初始狀態、前綴梯度切斷、可塑性／化學 PPO 不支援 |
+| 26 | 研究者可以量測先學 A 再學 B 的保持與適應、完成專家模仿與行動回饋學習，並執行有來源的生物啟發干預協定 | Codex 主 agent / Luna max / OpenCode big-pickle | verified_scoped | 三階段 fixture 驗證完成：LRN-08、MOD-09 與 LRN-09；第二階段含取樣 collector、3 seed 各 200 次更新、訓練前／隨機對照、同平台逐位重現與 CLI，Mac／Ubuntu 同源通過。保存狀態的 CPU 純量連續核心由 ticket 43 接續驗收；其他核心／重算的非零狀態、前綴梯度切斷與可塑性／化學 PPO 不支援 |
 | 28 | 研究者可以在二維環境訓練導航與位置記憶、建立配對／缺失／非同步多模態資料、讓多任務共用同一核心，並比較核心、外圍與接線本身的貢獻 | 主 agent 指揮 / opencode big-pickle 小票實作 | in_progress | 第一、二階段進行中（2026-09-19）：`nav2d` 環境（視野錐、碰撞、終止與時間上限分開、BFS 專家）與四個任務變體、`multimodal` 配對資料契約（值＋presence）已落地並提交；合成產生器、評估與對照待派 |
 | 29 | 使用者可以用同一核心做 OCR、語音轉文字、文字生成與文字條件影音生成，並把有授權的真實任務資料帶入框架 | Codex 主 agent / Luna max | in_progress | OCR fixture 已有 TSK-01 證據；ASR 整檔 CTC、因果串流與恢復有前次 Mac／Ubuntu 局部證據，本輪資料匯入、群組分割、離線耗時、CLI 人工範例與 Mac 全套驗證見 TSK-02；嚴格串流檔案保存已驗證人工音調；TSK-11 真實授權資料、跨平台續跑與後續生成階段保留 |
 | 33 | 使用者可以拒絕污染保留集的真實軌跡推論快照 | Codex 主 agent / Luna max | done | 真實非法快照拒絕且無輸出，合法結果相同，Mac 完整驗證通過；修正提交 467d53a 已推送且遠端一致 |
@@ -163,6 +165,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 40 | 研究者可以比較六步任務期限對提示導航學習的影響 | Codex 主 agent / OpenCode 免費模型 / Opus 審查 | completed | 5／5；實作 58cb01e 已推送並核對；完整一般與 race 各 57 套件、雙程序重現、獨立核對與審查通過；期限組 seed 3 通過，1／2 未通過 |
 | 41 | 研究者可以在大分數下正確計算 PPO 機率與損失，並收到非法數值錯誤 | Codex 主 agent / Luna max 測試、初版實作與審查 | completed | 5／5 驗收。原始 12 項有 9 項失敗，Root 補上加權價值極值回歸並修正，13 項新增與既有 20 項 RL 通過，完整驗證通過，實作 6d44edf 已推送並核對遠端 |
 | 42 | 研究者可以在大分數下取得正確的蒸餾與文字序列損失 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5；10 個新增數值回歸、124 個相關頂層測試、完整一般與 race 各 57 套件及審查通過，實作 8fb25c2 已推送並核對遠端 |
+| 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | in_progress | 4／5；22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過，候選提交失敗原狀保持；待提交與推送核對 |
 
 ## 目前阻礙
 
@@ -180,15 +183,17 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md) 的數值修正已完成交付。下一個可驗證成果是帶既有記憶的分段 PPO 訓練契約與失敗測試，須先核對初始神經狀態在前向、重播與反向梯度中的傳遞。下一張 ticket 尚未建立，不能只移除零狀態保護。
+下一個可驗證成果是 [ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 的提交、推送及遠端提交核對。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
-與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
+與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)。ticket 43 補上 CPU 純量連續核心保存狀態的梯度路徑；ticket 26 的其他核心／重算與機制限制保留。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-06：ticket 43 新增 CPU 純量連續核心的保存狀態梯度入口，包含固定延遲歷史，PPO 算分與梯度使用相同初始狀態。共用 Insyra 橋接與既有最佳化器，fresh-zero 路徑、格式、依賴與範例設定保持。其他核心及 Recompute 的非零狀態保留未支援限制。
 
 2026-10-06：ticket 42 修正蒸餾與共用 CTC 的位移正規化，保留原始不可能目標策略。CTC 額外拒絕已重現的條件路徑機率失精，錯誤清空結果。以公開入口手算及獨立路徑枚舉驗收，不調整模型、任務或依賴。
 

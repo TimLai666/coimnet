@@ -1,0 +1,64 @@
+=== RUN   TestStatefulGradientPreservesSelectedInputSignsSharingAndMasks
+    stateful_options_test.go:37: stateful continuous gradient is not implemented
+--- FAIL: TestStatefulGradientPreservesSelectedInputSignsSharingAndMasks (0.00s)
+=== RUN   TestLossGradientFromStateMatchesFiniteDifferences
+    stateful_test.go:30: LossGradientFromState: stateful continuous gradient is not implemented
+--- FAIL: TestLossGradientFromStateMatchesFiniteDifferences (0.00s)
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/nil_context
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/canceled_context
+    stateful_test.go:174: error=stateful continuous gradient is not implemented, want errors.Is(..., context canceled)
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/empty_input
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/bad_core
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/missing_history
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/state_NaN
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/overflow_steps
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/parameter_NaN
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/input_NaN
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/upstream_shape
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/upstream_NaN
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/negative_window
+=== RUN   TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/theta_on_continuous
+--- FAIL: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/nil_context (0.00s)
+    --- FAIL: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/canceled_context (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/empty_input (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/bad_core (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/missing_history (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/state_NaN (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/overflow_steps (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/parameter_NaN (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/input_NaN (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/upstream_shape (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/upstream_NaN (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/negative_window (0.00s)
+    --- PASS: TestLossGradientFromStateRejectsInvalidStateAndUnsupportedModes/theta_on_continuous (0.00s)
+=== RUN   TestStepFromStateMatchesIndependentFirstAdamUpdate
+    stateful_test.go:220: stateful continuous gradient is not implemented
+--- FAIL: TestStepFromStateMatchesIndependentFirstAdamUpdate (0.00s)
+=== RUN   TestStepFromStateRejectsRecomputeWithoutChangingTrainer
+--- PASS: TestStepFromStateRejectsRecomputeWithoutChangingTrainer (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.197s
+=== RUN   TestStatefulPPOCheckpointNewProcess
+    stateful_checkpoint_test.go:77: rl: rollout 0 initial neural state must be a fresh zero-voltage state
+--- FAIL: TestStatefulPPOCheckpointNewProcess (0.00s)
+=== RUN   TestStatefulUpdateUsesOneNonZeroInitialStateForEveryEpochAndPreservesCaller
+    stateful_test.go:46: Update: rl: rollout 0 initial neural state must be a fresh zero-voltage state
+--- FAIL: TestStatefulUpdateUsesOneNonZeroInitialStateForEveryEpochAndPreservesCaller (0.00s)
+=== RUN   TestStatefulUpdateFreshZeroInitialStateRemainsAccepted
+--- PASS: TestStatefulUpdateFreshZeroInitialStateRemainsAccepted (0.00s)
+=== RUN   TestStatefulUpdateRejectsNonZeroStateWithRecompute
+    stateful_test.go:109: Update error = rl: rollout 0 initial neural state must be a fresh zero-voltage state, want explicit Recompute refusal for non-zero state
+--- FAIL: TestStatefulUpdateRejectsNonZeroStateWithRecompute (0.00s)
+=== RUN   TestStatefulUpdateRejectsMalformedSecondInitialStateAtomically
+    stateful_test.go:143: malformed second rollout was counted before refusal: report={Rollouts:2 Transitions:0 Epochs:2 MeanLoss:0 MeanPolicy:0 MeanValue:0 MeanEntropy:0 MeanRatio:0 ClippedFraction:0 VersionChecks:0 PolicyVersionBefore:402ebb8ffcc8342301a2bf4473756508566ff955b16e403e078df5912ff197b4 PolicyVersionAfter:402ebb8ffcc8342301a2bf4473756508566ff955b16e403e078df5912ff197b4}
+--- FAIL: TestStatefulUpdateRejectsMalformedSecondInitialStateAtomically (0.00s)
+=== RUN   TestStatefulUpdateFreshZeroStateWithRecomputeRemainsAccepted
+--- PASS: TestStatefulUpdateFreshZeroStateWithRecomputeRemainsAccepted (0.00s)
+=== RUN   TestUpdateAcceptsNonFreshInitialNeuralState
+    update_validation_test.go:37: Update rejected a legal non-zero initial state: rl: rollout 0 initial neural state must be a fresh zero-voltage state
+--- FAIL: TestUpdateAcceptsNonFreshInitialNeuralState (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning/rl	0.162s
+FAIL

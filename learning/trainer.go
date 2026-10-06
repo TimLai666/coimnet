@@ -77,9 +77,9 @@ type AdamState struct {
 	Steps  []uint64  `json:"steps"`
 }
 
-// TrainingSnapshot covers the implemented independent-episode training mode.
-// Neural state resets per Step; continuous individuals require a different
-// snapshot profile and must not be represented by this schema.
+// TrainingSnapshot stores parameters and optimizer state, not neural history.
+// Step and StepFrom start from zero; StepFromState uses a caller-owned state
+// that is not stored here. Use IndividualSnapshot to persist a whole individual.
 type TrainingSnapshot struct {
 	SchemaVersion string     `json:"schema_version"`
 	Config        Config     `json:"config"`
@@ -102,7 +102,7 @@ type TrainingSnapshot struct {
 type StepResult struct {
 	Loss float64 `json:"loss"`
 	// LossKnown reports whether Loss is a computed value. Step sets it true;
-	// StepFrom leaves it false and Loss at zero, because the caller-supplied
+	// StepFrom and StepFromState leave it false and Loss at zero: the supplied
 	// upstream gradient never reveals the objective value.
 	LossKnown    bool           `json:"loss_known"`
 	GradientNorm float64        `json:"gradient_norm"`
@@ -319,7 +319,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if err != nil {
 		return zero, err
 	}
-	result, err := tr.stepWithGradient(ctx, input, loss, true, g)
+	result, err := tr.stepWithGradient(ctx, input, loss, true, g, nil)
 	if err != nil {
 		return zero, err
 	}
@@ -353,7 +353,7 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if err != nil {
 		return zero, err
 	}
-	result, err := tr.stepWithGradient(ctx, input, 0, false, g)
+	result, err := tr.stepWithGradient(ctx, input, 0, false, g, nil)
 	if err != nil {
 		return zero, err
 	}
@@ -380,9 +380,9 @@ func gradientHorizon(rows, truncation int) int {
 }
 
 // stepWithGradient is the mask, loss-scale, accumulation, clipping, scheduled
-// AdamW and projection path shared by Step and StepFrom. Step reports the loss
-// it computed with LossKnown true; StepFrom reports zero with LossKnown false.
-func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss float64, known bool, g Gradient) (StepResult, error) {
+// AdamW and projection path shared by all training steps. Step reports its loss
+// with LossKnown true; external-upstream steps report zero with LossKnown false.
+func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss float64, known bool, g Gradient, initial *NeuralState) (StepResult, error) {
 	var zero StepResult
 	var err error
 	p := flatParameters(tr.parameters)
@@ -534,7 +534,13 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	}
 	candidate := unflatten(p, tr.parameters)
 	// Includes positive representable tau, tensor casts and finite forward state.
-	if _, err := tr.network.Predict(ctx, candidate, input); err != nil {
+	// Validate the candidate on the trajectory used to obtain the gradient.
+	if initial != nil {
+		_, err = tr.network.forwardSegmentState(ctx, candidate, input, 0, initial)
+	} else {
+		_, err = tr.network.Predict(ctx, candidate, input)
+	}
+	if err != nil {
 		return zero, fmt.Errorf("candidate update rejected: %w", err)
 	}
 	if !finite(updateNorm) {

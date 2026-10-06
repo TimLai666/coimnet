@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "-c",
+    "import hashlib,json,re\nfrom pathlib import Path\nroot=Path.cwd();stage=root/\"evidence/LRN-09/stateful-continuous-ppo-20261006\"\nv=json.loads((stage/\"verification.json\").read_text())\nfor name,digest in v[\"artifact_sha256\"].items():\n assert hashlib.sha256((stage/name).read_bytes()).hexdigest()==digest,name\ndocs=[root/p for p in [\"ENG.md\",\"README.md\",\"delivery-status.md\",\"learning/rl/README.md\",\"docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md\",\"docs/tickets/43-stateful-continuous-ppo.md\"]]+list(stage.glob(\"*.md\"))\nlinks=0\nfor p in docs:\n for target in re.findall(r\"\\]\\(([^)]+)\\)\",p.read_text()):\n  target=target.split(\"#\",1)[0]\n  if not target or re.match(r\"[a-z]+:\",target):continue\n  assert (p.parent/target).exists(),str(p)+\":\"+target\n  links+=1\nd=json.loads((root/\"docs/requirements-status.json\").read_text())\nassert sum(r[\"status\"]==\"passed\" for r in d[\"requirements\"])==89\nassert [r[\"id\"] for r in d[\"requirements\"] if r[\"status\"]==\"specified\"]==[\"TSK-11\",\"OPS-05\"]\nref=\"../evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json\"\nassert all(ref in r[\"evidence\"] for r in d[\"requirements\"] if r[\"id\"] in [\"COR-08\",\"LRN-01\",\"LRN-09\"])\nprint(json.dumps({\"relative_links_validated\":links,\"artifact_hashes_validated\":len(v[\"artifact_sha256\"]),\"requirements_passed\":89,\"requirements_total\":91}))\n"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet",
+  "started_at": "2026-10-06T16:49:23.404631+00:00",
+  "elapsed_seconds": 0.032726666,
+  "exit_code": 0,
+  "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/docs-final.log"
+}

@@ -1,0 +1,101 @@
+package dynamics // import "github.com/TimLai666/coimnet/dynamics"
+
+func (m *Continuous) ForwardFromState(ctx context.Context, p Parameters, initial State, inputs [][]float64) (*Trace, error)
+    ForwardFromState starts a differentiable CPU scalar continuous segment at a
+    saved state. The state version, configuration hash, shapes, finite values,
+    retained-history capacity, and step counter are validated before any forward
+    result is published. Saved history is copied and treated as a constant
+    boundary; Backward differentiates only this segment. Gradient.Initial
+    reports sensitivity to the segment-start Voltage through the membrane leak
+    path, so an optimizer must not update the saved state from it.
+
+package learning // import "github.com/TimLai666/coimnet/learning"
+
+func (n *Network) LossGradientFromState(ctx context.Context, p Parameters, initial NeuralState, input, upstream [][]float64, window int) (Gradient, error)
+    LossGradientFromState differentiates the supplied input segment from a saved
+    neural state. The state and its delayed history are validated, copied by
+    the core forward path, and treated as a constant boundary. Only CPU scalar
+    continuous cores are supported; window uses the same recurrent truncation
+    semantics as LossGradientFrom. The returned Gradient.Core.Initial reports
+    the segment-start voltage sensitivity and never updates the saved state.
+    Any validation, cancellation, or numerical failure returns a zero Gradient.
+
+package learning // import "github.com/TimLai666/coimnet/learning"
+
+func (tr *Trainer) StepFromState(ctx context.Context, initial NeuralState, input, upstream [][]float64) (StepResult, error)
+    StepFromState applies an external upstream from a saved neural state
+    through the existing mask, accumulation, clipping, schedule, AdamW,
+    and projection path. Only CPU scalar continuous cores are supported.
+    The state is held constant, Recompute is unsupported, and LossKnown is
+    false because the caller supplies the upstream rather than an objective.
+    Candidate parameters are validated from the same saved state before commit.
+    Errors leave the trainer, optimizer, and accumulator unchanged.
+
+package rl // import "github.com/TimLai666/coimnet/learning/rl"
+
+func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, actions int, c PPOConfig) (*learning.Individual, PPOReport, error)
+    Update runs PPO on the individual whose readout is [logits(actions)...,
+    value].
+
+    Every rollout is checked before anything moves: its PolicyVersion must equal
+    PolicyVersion(ind) and its InitialPlastic / InitialChemical must deep-equal
+    the individual's current snapshot parts, or the whole call is refused
+    with ErrStalePolicy and the individual is left untouched. Each accepted
+    rollout then gets its advantages and value targets from Advantages(steps,
+    GAEConfig{Gamma, Lambda}), computed once from the values the collector
+    recorded.
+
+    Each of c.Epochs then walks every rollout in order and takes one StepFrom
+    per fresh-zero rollout or one StepFromState per saved-state rollout:
+    the individual's neural state is set to that rollout's InitialNeural, a
+    forward pass over the rollout's observations gives logits_t and value_t, and
+    upstream row t is zeros for t < c.BurnIn and otherwise [dloss/dlogits...,
+    dloss/dvalue] from Loss(logits_t, action_t, LogProb_t, A_t, value_t,
+    target_t, c). c.MiniBatch currently must be one and c.TimeLimit bounds each
+    rollout. The unit here is one complete rollout because a recurrent policy
+    cannot be cut into shuffled minibatches without breaking the state the
+    gradient flows through.
+
+    Two interface facts shape the signature and the mechanics:
+
+      - learning.Individual has no method that sets an arbitrary NeuralState,
+        so the only route is Snapshot, replace Neural, RestoreIndividual, which
+        builds a new individual. Update therefore returns the updated individual
+        and callers must use the returned pointer; the one they passed in is
+        never mutated.
+      - learning.Individual exposes no StepFrom, so the gradient goes through
+        one learning.Trainer restored from the individual's own snapshot. It
+        carries the parameters, options, optimizer moments, update count and any
+        open accumulation window across every epoch, and the result is written
+        back through a snapshot rather than ResetParameters/ResetOptimizer,
+        which would clear the moments this update just built.
+
+    The individual's persistent neural state is preserved: the returned
+    individual carries the state the caller's individual had, exactly as
+    TrainEpisode retains it. Fresh-zero rollouts retain the legacy StepFrom
+    path; saved CPU scalar continuous states use StepFromState so the gradient
+    starts from the same voltage and delayed history that produced the scored
+    logits.
+
+    The model must declare Config.ReadoutEveryStep and a readout width of
+    actions+1; anything else is refused.
+
+usage: source-integrity.py [-h]
+
+Verify ticket 43 protected inputs, frozen tests, and the exact final Go source
+manifest. Run from any directory; no arguments. Exit 0 on agreement or nonzero
+on mismatch.
+
+optional arguments:
+  -h, --help  show this help message and exit
+usage: cli-workflow.py [-h] [--result RESULT]
+
+Build the CoImNet CLI, run doctor/data/fixture checks, and compare 80+40
+versus 120 training steps in a temporary directory. Exit 0 on success, nonzero
+on failure. Temporary artifacts are cleaned up.
+
+optional arguments:
+  -h, --help       show this help message and exit
+  --result RESULT  New result JSON filename within this evidence directory;
+                   must not exist (default: cli-validation.json). Example:
+                   --result reproduction-cli.json

@@ -1,0 +1,11 @@
+=== RUN   TestStepFromStateRejectsCandidateThatOnlyRunsFromZero
+=== RUN   TestStepFromStateRejectsCandidateThatOnlyRunsFromZero/immediate
+    stateful_candidate_test.go:45: candidate result={Loss:0 LossKnown:false GradientNorm:6.321205588285577e+35 UpdateNorm:9.999999900000002e+09 Updates:1 Projected:map[] LearningRate:1e+10 Applied:true Accumulated:0 GradientHorizonSteps:1} err=<nil>; must reject saved-state replay overflow before commit
+=== RUN   TestStepFromStateRejectsCandidateThatOnlyRunsFromZero/open_accumulation
+    stateful_candidate_test.go:45: candidate result={Loss:0 LossKnown:false GradientNorm:6.321205588285577e+35 UpdateNorm:9.999999900000002e+09 Updates:1 Projected:map[] LearningRate:1e+10 Applied:true Accumulated:0 GradientHorizonSteps:1} err=<nil>; must reject saved-state replay overflow before commit
+--- FAIL: TestStepFromStateRejectsCandidateThatOnlyRunsFromZero (0.00s)
+    --- FAIL: TestStepFromStateRejectsCandidateThatOnlyRunsFromZero/immediate (0.00s)
+    --- FAIL: TestStepFromStateRejectsCandidateThatOnlyRunsFromZero/open_accumulation (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning	0.431s
+FAIL

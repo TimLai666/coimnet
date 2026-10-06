@@ -270,7 +270,9 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 
 `signal.NewSignal` 接受呼叫者已解碼的數值來源，連續、活動、脈衝與調節的具名訊號可用 `go test ./signal -run ExampleNewSignal -count=1 -v` 查看保存與讀回範例。訊號 JSON 的數值欄位拒絕 `null`，例如 `values:[null]` 不會被當成零。`quality.score` 與整個 `valid_range` 可用 `null` 表示未知，省略原本可省略的數值欄位則維持既有預設。從 JSON 建立訊號請使用 `DecodeSignal`，不要先以一般 JSON 解碼器讀入 `SignalSpec`，以免在驗證前就遺失缺值資訊。
 
-`Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，`Predict` 回傳最後一步輸出。設定 `ReadoutEveryStep` 後可用 `PredictAll` 取得每步輸出，並以 `StepFrom` 傳入每步的輸出梯度。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
+`Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，`Predict` 回傳最後一步輸出。設定 `ReadoutEveryStep` 後可用 `PredictAll` 取得每步輸出，並以 `StepFrom` 傳入每步的輸出梯度。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。
+
+CPU 純量連續核心可用 `Continuous.ForwardFromState` 從保存狀態計算目前段的前向與梯度。`Network.LossGradientFromState` 接上編碼器與讀出，`Trainer.StepFromState` 沿用既有最佳化器更新；保存歷史固定，不回推先前經驗，也不支援 Recompute。PPO 的接續用法及限制見 [更新 API](learning/rl/README.md)。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
 
 訊號套件的嚴格 JSON 會在解碼前拒絕非法 UTF-8 與未配對的 Unicode surrogate，避免來源名稱或外部 ID 被改寫。
 

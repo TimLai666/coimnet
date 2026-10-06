@@ -1,0 +1,29 @@
+=== RUN   TestUpdateRejectsFullBurnIn
+    update_test.go:385: burn_in=20 transitions=20 version=efb7f5d54e8b error=rl: rollout 0 burn_in=20 must be smaller than rollout length 20
+--- PASS: TestUpdateRejectsFullBurnIn (0.00s)
+=== RUN   TestUpdateRejectsNonFreshInitialNeuralState
+--- PASS: TestUpdateRejectsNonFreshInitialNeuralState (0.00s)
+=== RUN   TestPolicyVersionBindsConfigAndCoreBias
+--- PASS: TestPolicyVersionBindsConfigAndCoreBias (0.00s)
+=== RUN   TestUpdateRejectsUnsupportedMechanisms
+--- PASS: TestUpdateRejectsUnsupportedMechanisms (0.00s)
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/mini_batch
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/rollout_exceeds_time_limit
+=== RUN   TestUpdateRejectsMiniBatchAndTimeLimitMismatch/timeout_before_declared_limit
+--- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch (0.00s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/mini_batch (0.00s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/rollout_exceeds_time_limit (0.00s)
+    --- PASS: TestUpdateRejectsMiniBatchAndTimeLimitMismatch/timeout_before_declared_limit (0.00s)
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/full_burn_in
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/invalid_burn_in_action
+=== RUN   TestUpdateRejectsFullBurnInAndInvalidBurnInAction/non-finite_burn_in_log_prob
+--- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction (0.00s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/full_burn_in (0.00s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/invalid_burn_in_action (0.00s)
+    --- PASS: TestUpdateRejectsFullBurnInAndInvalidBurnInAction/non-finite_burn_in_log_prob (0.00s)
+=== RUN   TestUpdateValidatesAllRolloutsBeforeCandidateUpdate
+--- PASS: TestUpdateValidatesAllRolloutsBeforeCandidateUpdate (0.00s)
+PASS
+ok  	github.com/TimLai666/coimnet/learning/rl	0.204s

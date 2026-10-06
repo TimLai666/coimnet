@@ -1,0 +1,100 @@
+{
+  "checks": [
+    {
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "./cmd/coimnet"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "doctor"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "f104a12134fe703e3ff643fe5ab86c7e8073270994534ba844abef1a8e43dc96"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "data",
+        "sources"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "82f229f4bebad7ef4366f8fbf20cf8b90295273fd313bf39f9ac6d9098303510"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "examples",
+        "run",
+        "delayed"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "f68e9c6ea1ceac78af75a8260d825fbd316f6765e7c173e0a3cde070365529ff"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "examples",
+        "run",
+        "lif-threshold"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "128242b85f59671f387dee9c8e302a4f71611dac1f7c9a0d9cbea88ece7c93c6"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "80",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/first.json"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "ed0175d04835e393232f9e9b574a22a5db768bee682002eed7877cf38d8811aa"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "resume",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/first.json",
+        "--steps",
+        "40",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/resumed.json"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "a3b7c406dd82656df8f5f38d3b657024929cb983bc7499dfd1fe4e18e603ff43"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "120",
+        "--checkpoint",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ticket43-cli-3jk_ux14/continuous.json"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "ac1723edb9e76c11d08e48ddb41c35b46a6c360a10bcfa41c968944408d36bc6"
+    }
+  ],
+  "resume_matches_continuous_bytes": true,
+  "checkpoint_sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+  "checkpoint_bytes": 1179,
+  "temporary_artifacts_removed": true,
+  "limits": [
+    "doctor invocation is not a GPU capability acceptance test",
+    "small synthetic fixtures do not validate navigation learning or full-graph training"
+  ]
+}

@@ -1,0 +1,418 @@
+{
+  "requirement": "LRN-09",
+  "covered_requirements": [
+    "COR-08",
+    "LRN-01",
+    "LRN-09"
+  ],
+  "status": "verified_scoped",
+  "evidence_type": "software_saved_state_training_supplement",
+  "base_commit": "16718541d6adce7cbc15b74308ccfe37c25c461f",
+  "source_sha256": "c433afec16e04bd78290127850a5336a03b5e247e3b6f41b8de9fdbcc0ce7949",
+  "source_manifest": "source-manifest-v2.json",
+  "verified_at": "2026-10-06T16:48:26.757545+00:00",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "reproduction_command": [
+    "go test -count=1 -v ./dynamics ./learning ./learning/rl -run 'FromState|Stateful|NonFreshInitial|NonZeroInitialState|FreshZeroInitialState|TestUpdate.*Recompute'",
+    "go test -count=1 -v ./dynamics ./learning ./learning/rl",
+    "go build ./...",
+    "go test -count=1 ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "bash scripts/check-target-flow.sh",
+    "python3 evidence/LRN-09/stateful-continuous-ppo-20261006/source-integrity.py",
+    "python3 evidence/LRN-09/stateful-continuous-ppo-20261006/cli-workflow.py --result reproduction-cli.json",
+    "cp evidence/LRN-09/stateful-continuous-ppo-20261006/candidate-probe.go.txt /tmp/coimnet_step_state_candidate_probe.go",
+    "go run /tmp/coimnet_step_state_candidate_probe.go"
+  ],
+  "observed_result": {
+    "focused_top_level_passed": 22,
+    "related_top_level_passed": 372,
+    "full_ordinary_packages_passed": 57,
+    "full_race_packages_passed": 57,
+    "test_counts_overlap": true,
+    "stateful_delay_replay_and_gradients_match_independent_references": true,
+    "candidate_update_validated_from_supplied_state": true,
+    "failed_candidate_preserves_parameters_optimizer_open_accumulation": true,
+    "new_process_full_checkpoint_bytes_match": true,
+    "current_neural_state_and_caller_preserved": true,
+    "fresh_zero_and_recompute_controls_passed": true,
+    "cli_resume_matches_continuous_bytes": true,
+    "cli_checkpoint_sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+    "temporary_cli_artifacts_removed": true,
+    "frozen_final_test_files_unchanged": 10,
+    "protected_historical_inputs_unchanged": 2087,
+    "existing_public_signatures_preserved": true,
+    "go_file_count": 646,
+    "root_review": "root-review.md",
+    "independent_review": "adversarial-review.md",
+    "confirmed_open_in_scope_findings": 0,
+    "requirements_statuses_unchanged": true
+  },
+  "test_log": [
+    "dynamics-red.log",
+    "learning-rl-red.log",
+    "checkpoint-red.log",
+    "ppo-delays-red.log",
+    "candidate-red.log",
+    "feature-final.log",
+    "related-final.log",
+    "full-tests-final.log",
+    "full-race-final.log"
+  ],
+  "command_receipts": {
+    "feature-final": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "./dynamics",
+        "./learning",
+        "./learning/rl",
+        "-run",
+        "FromState|Stateful|NonFreshInitial|NonZeroInitialState|FreshZeroInitialState|TestUpdate.*Recompute",
+        "-v"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:23:10.534876+00:00",
+      "elapsed_seconds": 12.595923625000001,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/feature-final.log"
+    },
+    "related-final": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "./dynamics",
+        "./learning",
+        "./learning/rl"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:24:04.821980+00:00",
+      "elapsed_seconds": 4.3391695,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/related-final.log"
+    },
+    "full-tests-final": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:23:10.543857+00:00",
+      "elapsed_seconds": 144.710911125,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/full-tests-final.log"
+    },
+    "full-race-final": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:23:10.538559+00:00",
+      "elapsed_seconds": 1435.820001667,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/full-race-final.log"
+    },
+    "build-final": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:23:10.534765+00:00",
+      "elapsed_seconds": 12.671172875,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/build-final.log"
+    },
+    "vet-final": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:23:10.534710+00:00",
+      "elapsed_seconds": 10.007493334000001,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/vet-final.log"
+    },
+    "gofmt-final": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,pathlib,subprocess,sys; files=json.loads(pathlib.Path(\"evidence/LRN-09/stateful-continuous-ppo-20261006/source-manifest-v2.json\").read_text())[\"files\"]; p=subprocess.run([\"gofmt\",\"-l\",*files],capture_output=True,text=True); print(p.stdout,end=\"\"); print(p.stderr,end=\"\",file=sys.stderr); sys.exit(p.returncode or bool(p.stdout))"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:24:04.827709+00:00",
+      "elapsed_seconds": 1.25528825,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/gofmt-final.log"
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T15:43:38.225425+00:00",
+      "elapsed_seconds": 2.868212958,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/mod-verify.log"
+    },
+    "mod-tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:00:59.726161+00:00",
+      "elapsed_seconds": 0.164188625,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/mod-tidy.log"
+    },
+    "handoff-integrity": {
+      "command": [
+        "sh",
+        "-c",
+        "cd docs/handoff && shasum -a 256 -c SHA256SUMS.txt"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T15:43:38.225370+00:00",
+      "elapsed_seconds": 0.019076457999999998,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/handoff-integrity.log"
+    },
+    "target-flow": {
+      "command": [
+        "bash",
+        "scripts/check-target-flow.sh"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:07:46.473497+00:00",
+      "elapsed_seconds": 0.44751575,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/target-flow.log"
+    },
+    "source-integrity-precommit": {
+      "command": [
+        "python3",
+        "evidence/LRN-09/stateful-continuous-ppo-20261006/source-integrity.py"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:33:55.953752+00:00",
+      "elapsed_seconds": 0.9682904170000001,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/source-integrity-precommit.log"
+    },
+    "cli-final-green": {
+      "command": [
+        "python3",
+        "evidence/LRN-09/stateful-continuous-ppo-20261006/cli-workflow.py",
+        "--result",
+        "cli-validation-v2.json"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:25:01.959863+00:00",
+      "elapsed_seconds": 8.155261375,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/cli-final-green.log"
+    },
+    "interface-help-final": {
+      "command": [
+        "python3",
+        "-c",
+        "import subprocess; operations=[(\"./dynamics\",\"Continuous.ForwardFromState\"),(\"./learning\",\"Network.LossGradientFromState\"),(\"./learning\",\"Trainer.StepFromState\"),(\"./learning/rl\",\"Update\")]; [subprocess.run([\"go\",\"doc\",p,s],check=True) for p,s in operations]; [subprocess.run([\"python3\",\"evidence/LRN-09/stateful-continuous-ppo-20261006/\"+p,\"--help\"],check=True) for p in [\"source-integrity.py\",\"cli-workflow.py\"]]"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:27:40.076392+00:00",
+      "elapsed_seconds": 0.616282875,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/interface-help-final.log"
+    },
+    "candidate-probe-final": {
+      "command": [
+        "go",
+        "run",
+        "/tmp/coimnet_step_state_candidate_probe.go"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T16:25:03.153048+00:00",
+      "elapsed_seconds": 0.664202459,
+      "exit_code": 0,
+      "log": "evidence/LRN-09/stateful-continuous-ppo-20261006/candidate-probe-final.log"
+    }
+  },
+  "historical_failures": {
+    "expected_red": [
+      "dynamics-red.json",
+      "dynamics-limits-final-red.json",
+      "learning-rl-red.json",
+      "checkpoint-red.json",
+      "ppo-delays-red.json",
+      "candidate-red.json",
+      "test-fixture-red.json"
+    ],
+    "discarded_invalid_limits_fixture": "dynamics-limits-red.json: parameters were rejected before exercising the intended limit; replaced by dynamics-limits-final-red.json",
+    "pre_fix_race": "full-race.json exit -15: intentionally cancelled after independent P1 finding; not counted as a passing race run; see full-race-interruption.json",
+    "cli_receipt_script": "cli-final.json: option variable shadowed after successful CLI operations; final repair verified by cli-final-green.json and cli-validation-v2.json"
+  },
+  "artifact_sha256": {
+    "adversarial-review.md": "e1b73c7a46d87fc48a529c4952e7495a54025d7496cd86e2155bde9119cce427",
+    "analysis.md": "606012ce99c6fe913e2339bf04d81059c1956551024d752c0d8f808b2d59306b",
+    "api-docs.json": "ac05809ec590bf45ca8aa311700a462ad0c4b9a29cd5348b6ac8e7fc92a52527",
+    "api-docs.log": "0561baf3d526d7a7441e518af68965ba10ad3cc6b9a8fdc140f320b988ef2463",
+    "base-source.json": "760339ee429f042195e02cb3dc308b4860fc4c12058f0e40c25f6da3e37788d9",
+    "baseline-learning.json": "65568604f3142220e9ccde8318f3a71f0246dca7765c99ca1ddb4c52b9f0a411",
+    "baseline-learning.log": "c371370df5e8f6cdf767eda45d15ebe793cdf98f45d6a792cc8a019e8b304796",
+    "build-final.json": "ed97f285b14fd4064e0f0220b64abc1fb27f9abdaf8f5603bedd264ce82f640d",
+    "build-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.json": "e22974b38280acbb286b065c75158af8407e9f86771ced94069a1ffcdaca0244",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "candidate-probe-final.json": "fcf86513e894265cf2753ff63e8eeb477446ad3984ea03ee665cc18960aff3b8",
+    "candidate-probe-final.log": "424190bae296f735792838bfd941a4c6e8f5e3a41015f45aad1f6ec9404c54fb",
+    "candidate-probe.go.txt": "867d7a5177893744dc2e55f7e05d59afd3086ffdf85e1c20d5e0d565fd42847d",
+    "candidate-red.json": "8a0084ce11ad1665ffa77b059f450f30e26256a971091b9a038f25ad52d4fbbc",
+    "candidate-red.log": "02ff30d8f282b83a0ac1dbe204d426970af63e2f9da03ea8ac5de2932cdb91d9",
+    "checkpoint-red.json": "e6d8b2db9eef774d48ec2c2fc6703a2bc8684ac1c5fddea71d675ad3f46d4b8c",
+    "checkpoint-red.log": "295bca568cb63f5392289079c88f14130b9ea83c928067fc3b5a93ac73b3c35c",
+    "cli-final-green.json": "f5b6f81b77c13840266dba7926f2474fbb182b41a5fb0ee037da67b8bf552599",
+    "cli-final-green.log": "b1488e8a4d3a8e40401c68f29ebf074356d7dbf3d274dec400764c33194c4ce5",
+    "cli-final.json": "02f0daf7605432e411cf1768de12a4317e1123a5ac8aa752a89a782a2442da8a",
+    "cli-final.log": "82fda084b73ec48a07996b174866b97f3ff7b7e3099ac1aab9c813f355fa57a7",
+    "cli-validation-v2.json": "50b1d192df86a67a3c3313d749a8628c6042427ba9e863c3196e30f1a9695ffe",
+    "cli-validation.json": "c31d716ebf4ed4913c5eb4b89eabf611931e4bc29c75ad28d94758ce23ef5704",
+    "cli-workflow.json": "86aec2f363c0b2c743064601d3e3e47a157a2f199c5c14dc53e217ed0f4de182",
+    "cli-workflow.log": "6113e9559f20e62e3d26c547f87e296f0f99f3e670c42ed78be4e74b580db0c9",
+    "cli-workflow.py": "d96efa752e583845f1f71722fcad08fb25a2a33aaa703ca47d358365f1f9c196",
+    "core-review-green.json": "ff8ff6a9fdea32aeceb6d46857eb5e52de8740468e4e3408f1281faf7a406d73",
+    "core-review-green.log": "a9e28062142d5068eada6ded692efcda30f6b55b005ab43f13d125c30248cc3c",
+    "delegation.json": "b60cd074b8ce6f8bbf6c08f87efed3a1da033ce0f4646e759f967ab861917996",
+    "diff-check.json": "0a26f258bd61ad10a09d374240de7ffe82723c93fe70954069b24d0b74ff6f59",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "dynamics--state_forward_limits_test.go.frozen.txt": "0de8408ecd2fc85dfca0afac399e2469bf63e843059a5bd37e79c623f4c84c71",
+    "dynamics--state_forward_test.go.frozen.txt": "329f91dd6adff81a5fba56c0c4d7a41b632fb158e421d88bc6a8643cf8bc097d",
+    "dynamics-limits-final-red.json": "229850d6c04a24a18c622274532f1357775e7b9c2d5e2d99f1d11cd21c860d75",
+    "dynamics-limits-final-red.log": "9ffd4dc2d0f9f6def6dfaea85b12363ce46bf6555590715add3a5738c3f8454e",
+    "dynamics-limits-red.json": "43071312234f3841395d055ba68e425c1448ecc5295af01a124e22255a0ea8de",
+    "dynamics-limits-red.log": "2aa1d9b36aed2bcf98106c78f101b6adde6882e1ed688922ae66bf3d2398aba4",
+    "dynamics-red.json": "33e6f58208f68a1c109ce30b8670600303bc79c6ab036cf454697ad897003886",
+    "dynamics-red.log": "b7ea3d3451f61d129cf9b08f029fa9d4151ae06c8663a2627b51006e75a862ac",
+    "dynamics-test-frozen.json": "f133a679978feacc61a9bcc8b4c0cd70b1ddcef4f0ee17d53f41f4a0f25ab4e4",
+    "dynamics-tests-red.go.txt": "329f91dd6adff81a5fba56c0c4d7a41b632fb158e421d88bc6a8643cf8bc097d",
+    "environment.json": "aa24d081a3096a40a71bd82a3e42533a4da25dc1ef34de7ac83f0f9241e7be99",
+    "evidence-help.json": "93b04b408d7ad412f38d0aabb7db76dec06bb0d5a287043f5ef6a75caf591941",
+    "evidence-help.log": "c66ef322b0cc14266a2b20588cccfc5b0f2092d12422b4753601e8a1c52d6f38",
+    "feature-final.json": "bb8e9e0793be62c2e3cdb7c4227a89345fe26b5d77469ec62f7b7051c73b8d08",
+    "feature-final.log": "21b0cfddae88a8f7d91f85ff13ffe94db12d45131494fa9bc143f495f4807b47",
+    "feature-green.json": "c26d9138e061d6bf655ed71bb14e890ecac4012d56115a3a4afc20e3c083b7f7",
+    "feature-green.log": "3724752b3166ab516f49a42917c3514f515a4e87b99dfbb986fb1c99a7e1db35",
+    "full-race-final.json": "2dcbefe9ab3142bb35f8655fb1c3642bb1e08b53b0c936348e10da2f2cef4164",
+    "full-race-final.log": "9dea15f2268fa313a52d389d743fce46d65c2549f3fde34e751dc5dc5dcb5221",
+    "full-race-interruption.json": "08385f7f119fb6cb180a4e7377105261b30eb798ac2aac6fedce7ecd42e7464e",
+    "full-race.json": "50b6f7fb4aa03ecb17cc576d697d458a29da73dd8cb4e7e0db19fcb0ff076315",
+    "full-race.log": "f1740571a0c135da64c909556e3a38dd2bf1863527b1d290c8ba78fa50ec5c9a",
+    "full-tests-final.json": "976aa02e017e8b8e4546d19293a5a3fcd4232f46574f7d395b93a35712cfc8c8",
+    "full-tests-final.log": "7633b70c3357cbb66277fbcf8672404d889cbc0bbe33778ba152c91e51687faf",
+    "full-tests.json": "5fecb794c57686e49b5bea8f23325853ed086bb83f179a839a7243efdc225759",
+    "full-tests.log": "114881f6bb4de9f06f225b43de9bf4c076a5d98365ed41a76845f869ad858b2e",
+    "gofmt-final.json": "a5866b36b3f2b2f455c0c0942e7fc513aede4b8573b9dd7cffca0843fde70953",
+    "gofmt-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gofmt.json": "b634302c8dee1f37da50f14e3f1ca76d769dd831c4166b39db96e74c22cef4e2",
+    "gofmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "handoff-integrity.json": "f338632c129b494f9e8f17c3b3fa5a76651136f54d1c6d77cac0c84307533e51",
+    "handoff-integrity.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "interface-help-final.json": "271634efd6353b92535e011a3209021005b5d0e213c6b52165e4ae7f1caeebd5",
+    "interface-help-final.log": "7e8b33085b525317ac8fd673a49049ff4a3857c2b76050e0033cac5c9048dc54",
+    "learning--rl--stateful_checkpoint_test.go.frozen.txt": "f66199e6ac62effb51a6d774434682eef7a6088d38ef3a78e9b98a530a8ca1a5",
+    "learning--rl--stateful_clone_test.go.frozen-v2.txt": "efbef5def0a4f8117ec811d8e4c7f6f19d86c8c038a047829c34c2a1fdfacc88",
+    "learning--rl--stateful_delayed_test.go.frozen.txt": "4691b0e13001e292175844cd15a2663ac8daf1f7f3126e7abe88b355981c05e6",
+    "learning--rl--stateful_test.go.frozen-v2.txt": "2fdd389d977001681d37ef1cd102904d1d7c8287c07f63b8ae03bb7a73b55e18",
+    "learning--rl--stateful_test.go.frozen.txt": "723ab392165adb37be3a17b2d318480756f2882eea1f035d4ad88225157e5e1a",
+    "learning--rl--update_validation_test.go.frozen.txt": "eca5041356db26d785efe46c06c2eb88b72e9c5bec02b495a97d438da127bab2",
+    "learning--stateful_candidate_test.go.frozen.txt": "ee0c32fb5ffb1f7cc3ff817b1f87260e6f372af22df78ae3cfcc38da2c70f7c2",
+    "learning--stateful_options_test.go.frozen.txt": "a1089db9b1a93e9f770ea6269704042dd67e8372355d4133a9baa4817d682f42",
+    "learning--stateful_test.go.frozen.txt": "83452f2ae3d28ff0d8ced8c01d0a26b7080b0e43dc87a3e2284d6e69b811f3b4",
+    "learning-rl-red.json": "8d8bf7f1abec6f3be4536782304432e013350026988f0a657b2d1bc5949e0c7e",
+    "learning-rl-red.log": "b0e127cec7f390e49840445f80806761ee6c3302a4e3938d5730ff25a53ea67f",
+    "mod-tidy.json": "742abd983dd5ac0fe602b910a4e617df3d608ed98cce8066bbd326c49bd69929",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.json": "b2154609eada2ce07093ae329e6af71fa53d18ac39a8cb4cfae00c5058953862",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "ppo-delays-red.json": "9cdb92f2fe8d79d0d005c1f25516a9b0684d826a37b4ed628e32c291676ca35c",
+    "ppo-delays-red.log": "fd815c81fa74aed38b8737f4a036321f422098b83e821ff4bb3b39bf68553e4d",
+    "protected-manifest.json": "ccd1f9e4925105af7d029138876a6bb5af5ab2e4804047774c528bc6697d6c2f",
+    "related-final.json": "3854a4ad4799ddb2d74a3efc696b0c6f4261021e1269879075ee3ac948130870",
+    "related-final.log": "c65e024ad27e4098e5656bd685ccc0028fcfaaff8c61da50beb81a25f259c5ad",
+    "related-tests.json": "72cf7c9b4cb45a2a40e6cd6ad96cfd2f2eaa249e5c68115f498dce10ffbefac8",
+    "related-tests.log": "e9edb92ca9308793b4a07331958121dfa1ca0e74b96f1e3ee2990c64de6d2d75",
+    "remote-before-delivery.json": "2779548387808974d23226236d07d7c18ca8bb56be8593fe2851dd1a188f4537",
+    "remote-before-delivery.log": "f7601df4c0c630952798e42c74d5e689f36c0692d37ef201d04f48e730cfb1fd",
+    "root-review.md": "bc2d0bf2c7602ac151b23e7445a6f5689589de9badbf866ff05408c0290c9169",
+    "root-test-review.md": "861f391dc05c9af840b15ebfbc65100fc1adb0fc7dfceeb6ac39c60e470f3cbf",
+    "source-integrity-final.json": "b5447afc70bf2cece6dea643b4e58cb1afca207d1f703384bd209e662c857dad",
+    "source-integrity-final.log": "4406fc436e6ae60b47edec033c8d349a7392d172bddf76aac76a36cb5490168d",
+    "source-integrity-precommit.json": "fcc7c0150549cb3deaf7a1acf3acf67e4927d19c21feae1c922e317542d048cc",
+    "source-integrity-precommit.log": "bf105470645e47ae70ce51a88906d17bc8975546e4f23f629fc5692bb700675d",
+    "source-integrity-v2.json": "46dac101e0ec0ce6b846866a222cbfe24b9189f420112b13b985be2b498d8a38",
+    "source-integrity-v2.log": "bf105470645e47ae70ce51a88906d17bc8975546e4f23f629fc5692bb700675d",
+    "source-integrity.json": "c9eeb3b718cd492ee4743aca7cb6c97968a9cc8f93507a607c4adcec49979b36",
+    "source-integrity.log": "4406fc436e6ae60b47edec033c8d349a7392d172bddf76aac76a36cb5490168d",
+    "source-integrity.py": "ac3069de0b9532ef2741f4ae293cbdb4bb77c22102fa2224522626eed0dce8ef",
+    "source-manifest-v2.json": "feb374a285cb6195c02f7fbeb4008094378c3a75345dd1b6157ada4c3873aa33",
+    "source-manifest.json": "cfa4fef36c3acb24719053038aea6601601fa3eec4885380a86cd84bbcec8883",
+    "target-flow.json": "1658604e8b87465080a1b7e3b836201b78c2d0b256f5fa9bbd67fcb56a718d71",
+    "target-flow.log": "b4b99aba9db9aedaed7e250a1bc4fb1916633df4ceefc6a6d160ee528a2cf407",
+    "test-fixture-red.json": "d5631486bf1d7ee2d081ced9a4e3df45777c99c4592cae62cbdc7a96f00744ea",
+    "test-fixture-red.log": "91c77124f86faf61d401a92e14319ae9c242891ab5ca11302e4eae6c85059e3e",
+    "test-report.md": "7a06efeb93d48fc4ded172ea123b9b211491b268f189bc1e8ad14c395396da62",
+    "tests-frozen-v2.json": "ec0e476199691e87dab1a75ba165db03f653bc3f4e3ca03c95497d4d791ef3c0",
+    "tests-frozen-v3.json": "c9ababe13dfda5518c74149f5f2c6027c47359cf1d08a685a7f515e2a3b75fec",
+    "tests-frozen.json": "a6665bc2cf180e552d6f44cfb2b08eb614a8260c55f6fb92dfa8c249e056ad22",
+    "vet-final.json": "36bf0ee41f5a6f43230d0e6db74c75a825f6da6b52bd520a25f8f1962fae83cb",
+    "vet-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vet.json": "79d61328cf3e40f46a806977309deb54b37461d0800e002eae177f7fb9b2c455",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "staged-scan.json": "161f6e40d31855077b2e25d3a00401563149cc24c2cae7c4e50fab6d1174e5e6",
+    "staged-scan.log": "b3b9b2eca606d6f853c6c68c7024a9b82db3a90d1bbc81089029645b23bdd8e0",
+    "staged-diff-check.json": "48924f6963b5c4ab16bceaddc1a06333185705e1bef963774190989cced371b6",
+    "staged-diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": [
+    "CPU scalar continuous core only for saved-state gradients; saved voltage/history are fixed segment inputs.",
+    "Nonzero LIF/mixed and Recompute, plasticity/chemistry PPO gradients remain unsupported; vector/GPU individual persistence was not provided.",
+    "Mac arm64 synthetic numerical and integration evidence; no new cross-platform, full-graph, navigation-learning or biological evidence.",
+    "This framework limitation is not an established cause of the previous navigation-learning failure."
+  ],
+  "staging_checks": {
+    "secret_size_data_teacher_scan": "staged-scan.json",
+    "whitespace_check": "staged-diff-check.json",
+    "raw_log_policy": "Raw command logs preserve stdout bytes, including the trailing blank line emitted by go doc in api-docs.log. Whitespace checks cover every non-log deliverable; log integrity is checked by SHA-256."
+  }
+}

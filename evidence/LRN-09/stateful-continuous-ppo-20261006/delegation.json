@@ -1,0 +1,38 @@
+{
+  "host": "Codex desktop",
+  "spark_attempt": {
+    "model": "gpt-5.3-codex-spark",
+    "reasoning_effort": "xhigh",
+    "result": "rejected",
+    "error": "Unknown model `gpt-5.3-codex-spark` for spawn_agent. Available models: gpt-6.1-sol, gpt-6-astra, gpt-6-sol, gpt-6-luna, gpt-5.6-sol"
+  },
+  "accepted_workers": [
+    {
+      "task": "stateful_ppo_tests_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "test-only"
+    },
+    {
+      "task": "stateful_dynamics_impl_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "dynamics/continuous.go and dynamics/state_forward.go, tests forbidden"
+    },
+    {
+      "task": "stateful_learning_impl_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "learning/stateful.go, learning/network.go, learning/rl/update.go; tests forbidden",
+      "followup_scope": "P1 candidate-validation repair: learning/trainer.go and learning/stateful.go only; regression tests frozen and forbidden to edit; Root owns the optional-initial skeleton and test-first verification"
+    },
+    {
+      "task": "stateful_adversarial_review_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only independent core/learning/PPO review; repository mutations forbidden",
+      "final_result": "P1 saved-state candidate validation reproduced, then independently verified fixed; no remaining confirmed in-scope finding"
+    }
+  ],
+  "contract": "Root writes scope and skeleton, reviews and freezes tests, implementation uses separate workers. Root reruns verification, reads complete diff, and owns delivery. No Codex CLI self-dispatch."
+}

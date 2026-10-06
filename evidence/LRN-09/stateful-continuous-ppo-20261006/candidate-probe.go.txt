@@ -1,0 +1,33 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func main() {
+	c := learning.Config{
+		Dynamics: dynamics.Config{Nodes: 1, Sources: []int{0}, Targets: []int{0}, Delays: []int{0}, DT: 1, Activation: "softplus"},
+		InputSize: 1, OutputSize: 1, ReadoutNodes: []int{0},
+	}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{0}, Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+	o := learning.DefaultOptions()
+	o.LearningRate = 1e10
+	o.Beta1, o.Beta2 = 0, 0
+	o.ClipNorm = 1
+	o.Trainable = learning.Trainable{Weights: true}
+	ind, err := learning.NewIndividual(c, p, o, []float64{1e36})
+	if err != nil { panic(err) }
+	initial := ind.Snapshot().Neural
+	tr, err := learning.NewTrainer(c, p, o)
+	if err != nil { panic(err) }
+	input := [][]float64{{0}}
+	up := [][]float64{{-1}}
+	first, err := tr.StepFromState(context.Background(), initial, input, up)
+	fst := tr.Snapshot()
+	fmt.Printf("first result=%+v err=%v weight=%.17g\n", first, err, fst.Parameters.Core.Weights[0])
+	second, err := tr.StepFromState(context.Background(), initial, input, up)
+	fmt.Printf("second result=%+v err=%v weight=%.17g\n", second, err, tr.Snapshot().Parameters.Core.Weights[0])
+}

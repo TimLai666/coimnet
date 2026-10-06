@@ -103,7 +103,7 @@ ASR 資料清單只指定使用者提供的 PCM16 WAV、文字稿、取樣率、
 
 PPO 的機率與損失共用位移後的 log-softmax。`-Inf` 可作動作遮罩，至少一個動作須有有限分數。遮罩動作的 `LogProb` 可為 `-Inf`，`Loss` 回成功時的分項、比值與梯度須全部有限。NaN、+Inf、全部遮罩、非有限純量及不可表示的計算回錯誤。關閉的價值項不計算差值平方。公開介面、模型設定與狀態限制保持，驗收見 [ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md)。
 
-`learning/rl.Update` 使用既有 `Trainer.StepFrom` 的梯度與最佳化器流程，回傳獨立的新個體，原個體保持不變。策略版本識別設定與參數。現階段每份 rollout 只接受從零電位重設狀態收集的單一 episode，不接受可塑性或化學機制，`MiniBatch` 限 1。這些限制讓計算損失與梯度時使用相同的狀態與機制。`BurnIn` 只遮掉前綴的直接損失，後續損失的梯度仍能回傳到前綴。任意持續狀態與切斷前綴梯度的路徑歸 ticket 26 後續工作。環境學習另以 `RunPPO` 的取樣與學習成績驗收，不以更新入口測試取代。
+`learning/rl.Update` 回傳獨立的新個體，保留原個體及回傳個體的現行神經狀態。策略版本識別設定與參數。fresh-zero rollout 沿用 `Trainer.StepFrom`。CPU 純量連續核心的合法持續狀態使用 `StepFromState`，包含延遲歷史，每個 epoch 的算分與梯度從同一份 InitialNeural 出發。段起點的電位與歷史視為常數，只回推目前段，段內沿用 Truncation。`BurnIn` 只遮掉前綴的直接損失，後續梯度仍可回傳到段內前綴。State 最新歷史值依原驗證容許 4 ULP，但不重建或改寫保存值。新 trace 擁有副本。非零狀態的 LIF、mixed 與 Recompute 明確拒絕，保留既有可用的 fresh-zero 路徑。vector 與 GPU 的個體持續狀態原本就未提供。可塑性、化學機制及 `MiniBatch=1` 限制保持。所有 rollout 驗證後才更新候選副本。StepFromState 在提交前以同一保存狀態驗證候選參數，失敗保留原參數、最佳化器與未完成累積視窗。API 為新增方法，沒有保存格式或資料遷移。契約與驗收見 [ticket 43](docs/tickets/43-stateful-continuous-ppo.md)。環境學習另以 `RunPPO` 的取樣與學習成績驗收，不以更新入口測試取代。
 
 ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在既有 `experiment` 範例中。collector 在個體副本上收集，以獨立 RNG 依動作機率取樣，時間上限的 bootstrap 使用同一遞迴狀態處理下一筆觀察。評估與隨機對照各有獨立 RNG，不改訓練個體。報告固定協定、初始與最終版本、完整快照摘要、各 seed 曲線與失敗紀錄；驗收門檻、檔案責任及重現命令以 [ticket 26](docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md#環境學習整合契約2026-09-22) 為準。
 

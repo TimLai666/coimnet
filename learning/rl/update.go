@@ -111,9 +111,10 @@ var ErrUnsupportedMechanism = errors.New("rl: unsupported mechanism for PPO Step
 // the collector recorded.
 //
 // Each of c.Epochs then walks every rollout in order and takes one StepFrom per
-// rollout: the individual's neural state is set to that rollout's
-// InitialNeural, a forward pass over the rollout's observations gives logits_t
-// and value_t, and upstream row t is zeros for t < c.BurnIn and otherwise
+// fresh-zero rollout or one StepFromState per saved-state rollout: the
+// individual's neural state is set to that rollout's InitialNeural, a forward
+// pass over the rollout's observations gives logits_t and value_t, and
+// upstream row t is zeros for t < c.BurnIn and otherwise
 // [dloss/dlogits..., dloss/dvalue] from
 // Loss(logits_t, action_t, LogProb_t, A_t, value_t, target_t, c). c.MiniBatch
 // currently must be one and c.TimeLimit bounds each rollout. The unit here is
@@ -136,9 +137,9 @@ var ErrUnsupportedMechanism = errors.New("rl: unsupported mechanism for PPO Step
 //
 // The individual's persistent neural state is preserved: the returned
 // individual carries the state the caller's individual had, exactly as
-// TrainEpisode retains it. Note that learning.Trainer.StepFrom runs its own
-// forward pass from zero voltage, so the gradient matches the logits scored
-// here exactly when InitialNeural is the zero-voltage start state.
+// TrainEpisode retains it. Fresh-zero rollouts retain the legacy StepFrom path;
+// saved CPU scalar continuous states use StepFromState so the gradient starts
+// from the same voltage and delayed history that produced the scored logits.
 //
 // The model must declare Config.ReadoutEveryStep and a readout width of
 // actions+1; anything else is refused.
@@ -198,6 +199,7 @@ func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, a
 	advantages := make([][]float64, len(rollouts))
 	targets := make([][]float64, len(rollouts))
 	inputs := make([][][]float64, len(rollouts))
+	fromState := make([]bool, len(rollouts))
 	for i, r := range rollouts {
 		if r.PolicyVersion != version ||
 			!reflect.DeepEqual(r.InitialPlastic, base.Plastic) ||
@@ -205,7 +207,18 @@ func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, a
 			return ind, report, fmt.Errorf("rl: rollout %d: %w", i, ErrStalePolicy)
 		}
 		if !reflect.DeepEqual(r.InitialNeural, zeroNeural) {
-			return ind, report, fmt.Errorf("rl: rollout %d initial neural state must be a fresh zero-voltage state", i)
+			if base.Optimizer.Options.Recompute != nil {
+				return ind, report, fmt.Errorf("rl: rollout %d: Recompute is unsupported for a non-fresh initial neural state", i)
+			}
+			if base.Config.LIF != nil || base.Config.Mixed != nil || base.Config.Dynamics.StateDimension > 1 {
+				return ind, report, fmt.Errorf("rl: rollout %d: non-fresh initial neural state requires a CPU scalar continuous core", i)
+			}
+			candidate := base
+			candidate.Neural = r.InitialNeural
+			if _, err := learning.RestoreIndividual(candidate); err != nil {
+				return ind, report, fmt.Errorf("rl: rollout %d initial state: %w", i, err)
+			}
+			fromState[i] = true
 		}
 		if len(r.Steps) == 0 {
 			return ind, report, fmt.Errorf("rl: rollout %d: rollout must contain at least one step", i)
@@ -296,8 +309,14 @@ func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, a
 				}
 				scored++
 			}
-			if _, err := tr.StepFrom(ctx, inputs[i], upstream); err != nil {
-				return ind, report, fmt.Errorf("rl: rollout %d update: %w", i, err)
+			var stepErr error
+			if fromState[i] {
+				_, stepErr = tr.StepFromState(ctx, r.InitialNeural, inputs[i], upstream)
+			} else {
+				_, stepErr = tr.StepFrom(ctx, inputs[i], upstream)
+			}
+			if stepErr != nil {
+				return ind, report, fmt.Errorf("rl: rollout %d update: %w", i, stepErr)
 			}
 		}
 	}
@@ -316,10 +335,8 @@ func Update(ctx context.Context, ind *learning.Individual, rollouts []Rollout, a
 }
 
 // freshZeroNeural reconstructs exactly the state StepFrom's forward path uses.
-// Arbitrary recurrent states need a VJP that carries the derivative through
-// the initial state; Trainer.StepFrom deliberately has no such input, so this
-// limited PPO entry point accepts only the state produced by a fresh individual
-// with the same model and training options.
+// Fresh-zero rollouts use the legacy StepFrom path; non-fresh persistent states
+// are routed through StepFromState only for CPU scalar continuous models.
 func freshZeroNeural(s learning.IndividualSnapshot) (learning.NeuralState, error) {
 	nodes := s.Config.Dynamics.Nodes
 	switch {

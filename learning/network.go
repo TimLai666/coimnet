@@ -495,6 +495,14 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 // positive segment keeps no trace and records what the reverse pass needs to
 // recompute the history in segments of that many steps.
 func (n *Network) forwardSegment(ctx context.Context, p Parameters, input [][]float64, segment int) (*execution, error) {
+	return n.forwardSegmentState(ctx, p, input, segment, nil)
+}
+
+// forwardSegmentState is forwardSegment with an optional saved scalar
+// continuous state. The encoder and readout remain the same Insyra tapes; only
+// the core's initial trajectory changes. A non-nil state is deliberately
+// limited to the concrete CPU scalar continuous core.
+func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [][]float64, segment int, initial *NeuralState) (*execution, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -503,6 +511,17 @@ func (n *Network) forwardSegment(ctx context.Context, p Parameters, input [][]fl
 	}
 	if n == nil {
 		return nil, fmt.Errorf("nil network")
+	}
+	if initial != nil {
+		if segment > 0 {
+			return nil, fmt.Errorf("stateful forward does not support recompute segments")
+		}
+		if _, ok := n.core.(continuousCore); !ok {
+			return nil, fmt.Errorf("stateful forward requires a CPU scalar continuous core")
+		}
+		if err := n.core.validateState(*initial); err != nil {
+			return nil, err
+		}
 	}
 	if len(input) == 0 {
 		return nil, fmt.Errorf("empty input sequence")
@@ -563,6 +582,19 @@ func (n *Network) forwardSegment(ctx context.Context, p Parameters, input [][]fl
 	var y [][]float64
 	if segment > 0 {
 		y, err = observe(ctx, n.core, core, make([]float64, coreWidth), coreInputs, segment)
+	} else if initial != nil {
+		if len(core.ThetaRaw) != 0 {
+			return nil, fmt.Errorf("theta_raw requires a LIF core")
+		}
+		cpu, ok := n.core.(continuousCore)
+		if !ok || initial.Continuous == nil {
+			return nil, fmt.Errorf("stateful forward requires a CPU scalar continuous core")
+		}
+		var trace *dynamics.Trace
+		trace, err = cpu.model.ForwardFromState(ctx, core.Core, *initial.Continuous, coreInputs)
+		if err == nil {
+			tr, y = trace, trace.Outputs()
+		}
 	} else {
 		tr, y, err = n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
 	}

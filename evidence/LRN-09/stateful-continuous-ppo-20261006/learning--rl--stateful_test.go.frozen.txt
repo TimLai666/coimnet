@@ -1,0 +1,287 @@
+package rl_test
+
+import (
+	"context"
+	"math"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/learning/rl"
+)
+
+func TestStatefulUpdateUsesOneNonZeroInitialStateForEveryEpochAndPreservesCaller(t *testing.T) {
+	ctx := context.Background()
+	ind := newPPOIndividual(t, 71, .015)
+	if err := ind.ResetNeural(ctx, make([]float64, ppoNodes)); err != nil {
+		t.Fatalf("ResetNeural: %v", err)
+	}
+	prefix := [][]float64{{.8, -.1, .2, 0}}
+	if _, err := ind.Advance(ctx, prefix); err != nil {
+		t.Fatalf("prefix Advance: %v", err)
+	}
+	initialSnapshot := ind.Snapshot()
+	fresh := newPPOIndividual(t, 71, .015).Snapshot()
+	if reflect.DeepEqual(initialSnapshot.Neural, fresh.Neural) {
+		t.Fatal("fixture did not produce a non-zero initial neural state")
+	}
+	input := [][]float64{
+		{.7, -.2, .1, 0},
+		{-.1, .4, 0, .3},
+		{.2, .1, -.3, .5},
+		{-.4, .2, .6, -.1},
+	}
+	outputs, err := ind.Advance(ctx, input)
+	if err != nil {
+		t.Fatalf("rollout Advance: %v", err)
+	}
+	roll := statefulRollout(t, ind, initialSnapshot, input, outputs)
+	rollBefore := cloneRolloutStateful(roll)
+	individualBefore := snapshotJSON(t, ind)
+	config := ppoUpdateConfig(2, 1, .01)
+
+	updated, report, err := rl.Update(ctx, ind, []rl.Rollout{roll}, ppoActions, config)
+	if err != nil {
+		t.Fatalf("Update: %v", err)
+	}
+	if updated == ind {
+		t.Fatal("Update returned the caller's individual instead of an independent candidate")
+	}
+	if report.Epochs != config.Epochs || report.Transitions != len(roll.Steps) || report.Rollouts != 1 || report.VersionChecks != 1 {
+		t.Fatalf("unexpected PPO report: %+v", report)
+	}
+	if got := snapshotJSON(t, ind); string(got) != string(individualBefore) {
+		t.Fatal("Update changed the original individual")
+	}
+	if !reflect.DeepEqual(roll, rollBefore) {
+		t.Fatal("Update changed the rollout")
+	}
+	updatedSnapshot := updated.Snapshot()
+	if !reflect.DeepEqual(updatedSnapshot.Neural, ind.Snapshot().Neural) {
+		t.Fatal("updated individual did not preserve the caller's current neural state")
+	}
+
+	wantParameters, wantOptimizer := manualStatefulPPO(t, ctx, initialSnapshot, ind.Snapshot(), roll, config)
+	if !reflect.DeepEqual(updatedSnapshot.Parameters, wantParameters) {
+		t.Fatalf("stateful PPO parameters differ from manual Loss + StepFromState replay:\n got %#v\nwant %#v", updatedSnapshot.Parameters, wantParameters)
+	}
+	if !reflect.DeepEqual(updatedSnapshot.Optimizer.State, wantOptimizer.State) || updatedSnapshot.Optimizer.Updates != wantOptimizer.Updates || !reflect.DeepEqual(updatedSnapshot.Optimizer.Accumulator, wantOptimizer.Accumulator) {
+		t.Fatalf("stateful PPO optimizer differs from manual replay:\n got %#v\nwant %#v", updatedSnapshot.Optimizer, wantOptimizer)
+	}
+}
+
+func TestStatefulUpdateFreshZeroInitialStateRemainsAccepted(t *testing.T) {
+	ctx := context.Background()
+	ind := newPPOIndividual(t, 72, .01)
+	roll := collectRollout(ctx, t, ind, 0)
+	if _, _, err := rl.Update(ctx, ind, []rl.Rollout{roll}, ppoActions, ppoUpdateConfig(2, 1, 0)); err != nil {
+		t.Fatalf("fresh-zero Update: %v", err)
+	}
+}
+
+func TestStatefulUpdateRejectsNonZeroStateWithRecompute(t *testing.T) {
+	ctx := context.Background()
+	ind := newPPOIndividual(t, 73, .01)
+	if err := ind.ResetNeural(ctx, make([]float64, ppoNodes)); err != nil {
+		t.Fatalf("ResetNeural: %v", err)
+	}
+	prefix := [][]float64{{.8, -.1, .2, 0}}
+	if _, err := ind.Advance(ctx, prefix); err != nil {
+		t.Fatalf("prefix Advance: %v", err)
+	}
+	initial := ind.Snapshot()
+	input := [][]float64{{.7, -.2, .1, 0}, {-.1, .4, 0, .3}, {.2, .1, -.3, .5}, {-.4, .2, .6, -.1}}
+	outputs, err := ind.Advance(ctx, input)
+	if err != nil {
+		t.Fatalf("rollout Advance: %v", err)
+	}
+	roll := statefulRollout(t, ind, initial, input, outputs)
+	current := ind.Snapshot()
+	current.Optimizer.Options.Recompute = &learning.Recompute{SegmentSteps: 1}
+	ind, err = learning.RestoreIndividual(current)
+	if err != nil {
+		t.Fatalf("RestoreIndividual with Recompute: %v", err)
+	}
+	before := snapshotJSON(t, ind)
+	_, _, err = rl.Update(ctx, ind, []rl.Rollout{roll}, ppoActions, ppoUpdateConfig(1, 1, 0))
+	if err == nil || !strings.Contains(strings.ToLower(err.Error()), "recompute") {
+		t.Fatalf("Update error = %v, want explicit Recompute refusal for non-zero state", err)
+	}
+	if got := snapshotJSON(t, ind); string(got) != string(before) {
+		t.Fatal("individual changed after rejecting non-zero state with Recompute")
+	}
+}
+
+func TestStatefulUpdateRejectsMalformedSecondInitialStateAtomically(t *testing.T) {
+	ctx := context.Background()
+	ind := newPPOIndividual(t, 74, .01)
+	if err := ind.ResetNeural(ctx, make([]float64, ppoNodes)); err != nil {
+		t.Fatalf("ResetNeural: %v", err)
+	}
+	if _, err := ind.Advance(ctx, [][]float64{{.8, -.1, .2, 0}}); err != nil {
+		t.Fatalf("prefix Advance: %v", err)
+	}
+	initial := ind.Snapshot()
+	input := [][]float64{{.7, -.2, .1, 0}, {-.1, .4, 0, .3}, {.2, .1, -.3, .5}, {-.4, .2, .6, -.1}}
+	outputs, err := ind.Advance(ctx, input)
+	if err != nil {
+		t.Fatalf("rollout Advance: %v", err)
+	}
+	first := statefulRollout(t, ind, initial, input, outputs)
+	second := cloneRolloutStateful(first)
+	second.InitialNeural.Continuous.Voltage[0] = math.NaN()
+	before := snapshotJSON(t, ind)
+	updated, report, err := rl.Update(ctx, ind, []rl.Rollout{first, second}, ppoActions, ppoUpdateConfig(2, 1, 0))
+	if err == nil {
+		t.Fatal("Update accepted a malformed second InitialNeural")
+	}
+	if updated != ind {
+		t.Fatal("malformed rollout returned a candidate individual")
+	}
+	if report.VersionChecks != 1 || report.Transitions != len(first.Steps) {
+		t.Fatalf("malformed second rollout was counted before refusal: report=%+v", report)
+	}
+	if got := snapshotJSON(t, ind); string(got) != string(before) {
+		t.Fatal("individual changed while validating a malformed second rollout")
+	}
+}
+
+func TestStatefulUpdateFreshZeroStateWithRecomputeRemainsAccepted(t *testing.T) {
+	ctx := context.Background()
+	ind := newPPOIndividual(t, 75, .01)
+	snapshot := ind.Snapshot()
+	snapshot.Optimizer.Options.Recompute = &learning.Recompute{SegmentSteps: 1}
+	var err error
+	ind, err = learning.RestoreIndividual(snapshot)
+	if err != nil {
+		t.Fatalf("RestoreIndividual with Recompute: %v", err)
+	}
+	roll := collectRollout(ctx, t, ind, 0)
+	updated, _, err := rl.Update(ctx, ind, []rl.Rollout{roll}, ppoActions, ppoUpdateConfig(1, 0, 0))
+	if err != nil {
+		t.Fatalf("fresh-zero Recompute Update: %v", err)
+	}
+	if updated == ind {
+		t.Fatal("fresh-zero Recompute Update returned the caller's individual")
+	}
+}
+
+func statefulRollout(t *testing.T, ind *learning.Individual, initial learning.IndividualSnapshot, input, outputs [][]float64) rl.Rollout {
+	t.Helper()
+	roll := rl.Rollout{
+		PolicyVersion:   rl.PolicyVersion(ind),
+		InitialNeural:   initial.Neural,
+		InitialPlastic:  initial.Plastic,
+		InitialChemical: initial.Chemical,
+		Steps:           make([]rl.Transition, len(input)),
+	}
+	rewards := []float64{.05, -.02, .1, 1}
+	for i := range input {
+		if len(outputs[i]) != ppoOutputs {
+			t.Fatalf("output[%d] width %d, want %d", i, len(outputs[i]), ppoOutputs)
+		}
+		action := (i + 1) % ppoActions
+		logProb, err := rl.LogProb(outputs[i][:ppoActions], action)
+		if err != nil {
+			t.Fatalf("LogProb[%d]: %v", i, err)
+		}
+		roll.Steps[i] = rl.Transition{
+			Obs: append([]float64(nil), input[i]...), Action: action, LogProb: logProb,
+			Value: outputs[i][ppoActions], Reward: rewards[i], Done: i == len(input)-1,
+		}
+	}
+	return roll
+}
+
+func manualStatefulPPO(t *testing.T, ctx context.Context, initial, current learning.IndividualSnapshot, roll rl.Rollout, config rl.PPOConfig) (learning.Parameters, learning.OptimizerSnapshot) {
+	t.Helper()
+	advantages, targets, err := rl.Advantages(roll.Steps, rl.GAEConfig{Gamma: config.Gamma, Lambda: config.Lambda})
+	if err != nil {
+		t.Fatalf("Advantages: %v", err)
+	}
+	trainer, err := learning.NewTrainer(current.Config, current.Parameters, current.Optimizer.Options)
+	if err != nil {
+		t.Fatalf("NewTrainer: %v", err)
+	}
+	shaped := trainer.Snapshot()
+	shaped.Parameters = current.Parameters
+	shaped.Options = current.Optimizer.Options
+	shaped.Optimizer = current.Optimizer.State
+	shaped.Updates = current.Optimizer.Updates
+	shaped.Accumulator = current.Optimizer.Accumulator
+	trainer, err = learning.RestoreTrainer(shaped)
+	if err != nil {
+		t.Fatalf("RestoreTrainer: %v", err)
+	}
+	inputs := make([][]float64, len(roll.Steps))
+	for i, step := range roll.Steps {
+		inputs[i] = append([]float64(nil), step.Obs...)
+	}
+	for epoch := 0; epoch < config.Epochs; epoch++ {
+		trainerSnapshot := trainer.Snapshot()
+		at := current
+		at.Parameters = trainerSnapshot.Parameters
+		at.Optimizer.Options = trainerSnapshot.Options
+		at.Optimizer.State = trainerSnapshot.Optimizer
+		at.Optimizer.Updates = trainerSnapshot.Updates
+		at.Optimizer.Accumulator = trainerSnapshot.Accumulator
+		at.Neural = initial.Neural
+		candidate, err := learning.RestoreIndividual(at)
+		if err != nil {
+			t.Fatalf("RestoreIndividual epoch %d: %v", epoch, err)
+		}
+		outputs, err := candidate.Advance(ctx, inputs)
+		if err != nil {
+			t.Fatalf("manual epoch %d forward: %v", epoch, err)
+		}
+		upstream := make([][]float64, len(roll.Steps))
+		for i, step := range roll.Steps {
+			upstream[i] = make([]float64, ppoOutputs)
+			if i < config.BurnIn {
+				continue
+			}
+			_, dLogits, dValue, err := rl.Loss(outputs[i][:ppoActions], step.Action, step.LogProb, advantages[i], outputs[i][ppoActions], targets[i], config)
+			if err != nil {
+				t.Fatalf("manual epoch %d Loss[%d]: %v", epoch, i, err)
+			}
+			copy(upstream[i], dLogits)
+			upstream[i][ppoActions] = dValue
+		}
+		if _, err := trainer.StepFromState(ctx, initial.Neural, inputs, upstream); err != nil {
+			t.Fatalf("manual epoch %d StepFromState: %v", epoch, err)
+		}
+	}
+	final := trainer.Snapshot()
+	optimizer := current.Optimizer
+	optimizer.Options = final.Options
+	optimizer.State = final.Optimizer
+	optimizer.Updates = final.Updates
+	optimizer.Accumulator = final.Accumulator
+	return final.Parameters, optimizer
+}
+
+func cloneRolloutStateful(r rl.Rollout) rl.Rollout {
+	out := r
+	out.InitialNeural = cloneNeuralForRL(r.InitialNeural)
+	out.Steps = make([]rl.Transition, len(r.Steps))
+	for i, step := range r.Steps {
+		out.Steps[i] = step
+		out.Steps[i].Obs = append([]float64(nil), step.Obs...)
+	}
+	return out
+}
+
+func cloneNeuralForRL(s learning.NeuralState) learning.NeuralState {
+	out := s
+	if s.Continuous != nil {
+		state := *s.Continuous
+		state.Voltage = append([]float64(nil), state.Voltage...)
+		state.History = make([][]float64, len(state.History))
+		for i := range state.History {
+			state.History[i] = append([]float64(nil), state.History[i]...)
+		}
+		out.Continuous = &state
+	}
+	return out
+}
