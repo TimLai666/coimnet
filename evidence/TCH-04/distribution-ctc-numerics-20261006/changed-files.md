@@ -1,6 +1,6 @@
 # 檔案變更清單
 
-本清單相對於原始提交 `4c7ff4879c6b9f1db61e9ce8c19d1ca3f90925c1`，列出本票所有實際新增或修改檔案。共 77 個檔案。
+本清單相對於原始提交 `4c7ff4879c6b9f1db61e9ce8c19d1ca3f90925c1`，列出本票所有實際新增或修改檔案。共 91 個檔案。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
@@ -18,7 +18,13 @@
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/build.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/build.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/build.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/build.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/changed-files.md](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/changed-files.md) | 本次每個實際變更檔案的完整清單。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/completion-governance.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/completion-governance.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/completion-governance.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/completion-governance.log) | 對應驗證或交付命令的原始日誌。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/completion-metadata-review.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/completion-metadata-review.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/completion-scan.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/completion-scan.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/completion-scan.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/completion-scan.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/delegation.txt](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/delegation.txt) | 實際模型拒絕、備援配置與各執行者責任。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/delivery.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/delivery.json) | 實作提交、推送與遠端回讀的交付結果。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/diff-check.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/diff-check.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/diff-check.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/diff-check.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/environment.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/environment.json) | 本機 Go、平台與固定依賴環境。 |
@@ -46,6 +52,12 @@
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/green.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/green.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/handoff-integrity.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/handoff-integrity.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/handoff-integrity.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/handoff-integrity.log) | 對應驗證或交付命令的原始日誌。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-commit.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-commit.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-commit.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-commit.log) | 對應驗證或交付命令的原始日誌。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-push.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-push.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-push.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-push.log) | 對應驗證或交付命令的原始日誌。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-remote.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-remote.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-remote.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/implementation-remote.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.go.txt](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.go.txt) | 公開 Loss 的小型人工數值重現程式。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/impossible-precedence-probe.log) | 對應驗證或交付命令的原始日誌。 |
@@ -58,6 +70,8 @@
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/ocr-verification.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/ocr-verification.json) | TSK-01 共用 CTC 軟體數值補充證據。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/posterior-red.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/posterior-red.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/posterior-red.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/posterior-red.log) | 對應驗證或交付命令的原始日誌。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/precommit-scan.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/precommit-scan.json) | 對應命令、時間、實際退出碼與日誌回條。 |
+| [evidence/TCH-04/distribution-ctc-numerics-20261006/precommit-scan.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/precommit-scan.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe-green.json](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe-green.json) | 對應命令、時間、實際退出碼與日誌回條。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe-green.log](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe-green.log) | 對應驗證或交付命令的原始日誌。 |
 | [evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe.go.txt](/Users/timlai/Developer/coimnet/evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe.go.txt) | 公開 Loss 的小型人工數值重現程式。 |
