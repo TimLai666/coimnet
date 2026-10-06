@@ -3,7 +3,7 @@
 **Epic:** LRN-01／LRN-09 訓練框架
 **User Story:** 使用者可以保存神經狀態，從同一個狀態重播與更新目前這段經驗。
 **Blocked by:** 26、31、41（已交付）
-**Status:** in_progress
+**Status:** completed
 
 ## 交付與契約
 
@@ -46,8 +46,8 @@ CPU 純量連續核心的 PPO 可以使用合法的非零初始神經狀態，�
 - [x] 保存歷史、手算／獨立參考、有限差分、段內截斷、非法值與相容性回歸通過。
 - [x] 多 epoch PPO 及新程序保存恢復與獨立對照通過，原個體、rollout 與 fresh-zero 路徑保持。
 - [x] 完整 gofmt、build、test、race（60m timeout）、vet、依賴、歷史原件檢查與 Root／獨立審查通過。
-- [ ] 證據含命令、環境、來源指紋、結果及日誌，追蹤更新、提交、推送並核對遠端。
+- [x] 證據含命令、環境、來源指紋、結果及日誌，追蹤更新、提交、推送並核對遠端。
 
 減法審查：共用現有 encoder／readout 及最佳化器流程，不新增 PPO 設定、保存格式或額外訓練範例。
 
-最終工程驗收：[verification.json](../../evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)。22 個頂層專項、372 個相關頂層測試、完整一般與 race 各 57 個套件通過。第 5 項待實際提交、推送及遠端核對後完成。
+最終工程驗收：[verification.json](../../evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)。22 個頂層專項、372 個相關頂層測試、完整一般與 race 各 57 個套件通過。實作 `874ac43` 已提交、推送並核對遠端，見[交付紀錄](../../evidence/LRN-09/stateful-continuous-ppo-20261006/delivery.json)。

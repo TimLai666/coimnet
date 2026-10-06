@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 完成工程驗收 4／5，待提交及推送核對。CPU 純量連續核心可從保存的電位與延遲歷史接續 PPO，算分、梯度與候選驗證使用同一狀態。22 個頂層專項、372 個相關頂層測試、Mac 完整一般與 race 各 57 個套件，以及 Root／獨立審查通過。2,087 份既有資料與證據、公開簽名、依賴及原範例設定保持。見[工程驗證](evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)。本票沒有阻礙。
+[ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 已完成 5／5 驗收與交付。CPU 純量連續核心可從保存電位與延遲歷史接續 PPO，算分、梯度與候選驗證使用同一狀態。22 個頂層專項、372 個相關頂層測試、Mac 完整一般與 race 各 57 個套件，以及 Root／獨立審查通過。2,087 份既有資料與證據、公開簽名、依賴及原範例設定保持。實作 `874ac43` 已推送並核對遠端，見[工程驗證](evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)及[交付紀錄](evidence/LRN-09/stateful-continuous-ppo-20261006/delivery.json)。本票沒有阻礙。
 
 [ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md) 已完成 5／5 驗收與交付。10 個新增數值回歸、相關流程的 124 個頂層測試、Mac 完整一般與 race 各 57 套件、建置、vet 及相依性檢查通過。Root 與獨立審查通過，公開 API、依賴及 2,006 份既有資料與證據保持。實作 `8fb25c2` 已推送並核對遠端，見[數值證據](evidence/TCH-04/distribution-ctc-numerics-20261006/verification.json)及[交付紀錄](evidence/TCH-04/distribution-ctc-numerics-20261006/delivery.json)。本票沒有本機執行阻礙。
 
@@ -165,7 +165,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 40 | 研究者可以比較六步任務期限對提示導航學習的影響 | Codex 主 agent / OpenCode 免費模型 / Opus 審查 | completed | 5／5；實作 58cb01e 已推送並核對；完整一般與 race 各 57 套件、雙程序重現、獨立核對與審查通過；期限組 seed 3 通過，1／2 未通過 |
 | 41 | 研究者可以在大分數下正確計算 PPO 機率與損失，並收到非法數值錯誤 | Codex 主 agent / Luna max 測試、初版實作與審查 | completed | 5／5 驗收。原始 12 項有 9 項失敗，Root 補上加權價值極值回歸並修正，13 項新增與既有 20 項 RL 通過，完整驗證通過，實作 6d44edf 已推送並核對遠端 |
 | 42 | 研究者可以在大分數下取得正確的蒸餾與文字序列損失 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5；10 個新增數值回歸、124 個相關頂層測試、完整一般與 race 各 57 套件及審查通過，實作 8fb25c2 已推送並核對遠端 |
-| 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | in_progress | 4／5；22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過，候選提交失敗原狀保持；待提交與推送核對 |
+| 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5。22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過。候選失敗原狀保持，實作 874ac43 已推送並核對遠端 |
 
 ## 目前阻礙
 
@@ -183,7 +183,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-下一個可驗證成果是 [ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 的提交、推送及遠端提交核對。
+[ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 已交付，下一張票尚未固定。建議接著處理 [AGENTS.md](AGENTS.md#follow-ups) 已列的 doctor 能力回報：以支援設定與實際探測取代 GPU 六項寫死的 not_implemented，保留裝置常駐更新與完整圖尚未驗收的限制。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

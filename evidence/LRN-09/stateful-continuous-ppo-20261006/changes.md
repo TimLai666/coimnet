@@ -1,6 +1,6 @@
 # 本輪檔案變更
 
-範圍：基準 `16718541d6adce7cbc15b74308ccfe37c25c461f` 至本票實際變更。共 146 份檔案，每列對應一份檔案。
+範圍：基準 `16718541d6adce7cbc15b74308ccfe37c25c461f` 至本票實際變更。共 147 份檔案，每列對應一份檔案。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
@@ -45,6 +45,7 @@
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/core-review-green.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/core-review-green.json) | 保存實際命令、環境、耗時及退出碼 0 |
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/core-review-green.log](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/core-review-green.log) | 保存對應命令的原始日誌 |
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/delegation.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/delegation.json) | 新增來源指紋、凍結、驗證或交付回條 |
+| [evidence/LRN-09/stateful-continuous-ppo-20261006/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/delivery.json) | 新增來源指紋、凍結、驗證或交付回條 |
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/diff-check.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/diff-check.json) | 保存實際命令、環境、耗時及退出碼 0 |
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/diff-check.log](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/diff-check.log) | 保存對應命令的原始日誌 |
 | [evidence/LRN-09/stateful-continuous-ppo-20261006/docs-final.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/stateful-continuous-ppo-20261006/docs-final.json) | 保存實際命令、環境、耗時及退出碼 0 |
