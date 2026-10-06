@@ -101,6 +101,8 @@ ASR 資料清單只指定使用者提供的 PCM16 WAV、文字稿、取樣率、
 
 ### PPO 更新（2026-09-21）
 
+PPO 的機率與損失共用位移後的 log-softmax。`-Inf` 可作動作遮罩，至少一個動作須有有限分數。遮罩動作的 `LogProb` 可為 `-Inf`，`Loss` 回成功時的分項、比值與梯度須全部有限。NaN、+Inf、全部遮罩、非有限純量及不可表示的計算回錯誤。關閉的價值項不計算差值平方。公開介面、模型設定與狀態限制保持，驗收見 [ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md)。
+
 `learning/rl.Update` 使用既有 `Trainer.StepFrom` 的梯度與最佳化器流程，回傳獨立的新個體，原個體保持不變。策略版本識別設定與參數。現階段每份 rollout 只接受從零電位重設狀態收集的單一 episode，不接受可塑性或化學機制，`MiniBatch` 限 1。這些限制讓計算損失與梯度時使用相同的狀態與機制。`BurnIn` 只遮掉前綴的直接損失，後續損失的梯度仍能回傳到前綴。任意持續狀態與切斷前綴梯度的路徑歸 ticket 26 後續工作。環境學習另以 `RunPPO` 的取樣與學習成績驗收，不以更新入口測試取代。
 
 ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在既有 `experiment` 範例中。collector 在個體副本上收集，以獨立 RNG 依動作機率取樣，時間上限的 bootstrap 使用同一遞迴狀態處理下一筆觀察。評估與隨機對照各有獨立 RNG，不改訓練個體。報告固定協定、初始與最終版本、完整快照摘要、各 seed 曲線與失敗紀錄；驗收門檻、檔案責任及重現命令以 [ticket 26](docs/tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md#環境學習整合契約2026-09-22) 為準。

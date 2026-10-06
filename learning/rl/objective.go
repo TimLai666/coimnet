@@ -72,50 +72,74 @@ type StepLoss struct {
 // entropy = -EntropyCoef*H(softmax(logits)), with loss summing the three.
 // It returns the loss pieces and the gradients dloss/dlogits and dloss/dvalue.
 // On the side of the clip region where the clipped term is the minimum, the
-// policy gradient is exactly zero.
+// policy gradient is exactly zero. Scalar inputs must be finite, and logits
+// follow LogProb's masking rules. Non-finite results return zero loss pieces,
+// nil logits gradient and zero value gradient with an error. ValueCoef=0 skips
+// the value difference calculation. Inputs are never modified.
 func Loss(logits []float64, action int, oldLogProb, advantage, value, target float64, c PPOConfig) (StepLoss, []float64, float64, error) {
 	if err := c.Validate(); err != nil {
 		return StepLoss{}, nil, 0, err
 	}
-	logp, err := LogProb(logits, action)
+	if !finite(oldLogProb) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: old_log_prob must be finite, got %v", oldLogProb)
+	}
+	if !finite(advantage) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: advantage must be finite, got %v", advantage)
+	}
+	if !finite(value) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: value must be finite, got %v", value)
+	}
+	if !finite(target) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: target must be finite, got %v", target)
+	}
+	if len(logits) == 0 {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: logits must be non-empty")
+	}
+	if action < 0 || action >= len(logits) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: action %d out of range [0, %d)", action, len(logits))
+	}
+	logP, err := logSoftmax(logits)
 	if err != nil {
 		return StepLoss{}, nil, 0, err
 	}
-	// Log-probabilities come from log-sum-exp so an underflowed class never
-	// turns 0*log(0) into NaN: a zero probability contributes nothing.
-	lse := logSumExp(logits)
 	p := make([]float64, len(logits))
-	logP := make([]float64, len(logits))
 	var h float64
-	for j, x := range logits {
-		logP[j] = x - lse
+	for j := range logP {
 		p[j] = math.Exp(logP[j])
+		// Masked and underflowed actions contribute nothing to entropy.
 		if p[j] > 0 {
 			h -= p[j] * logP[j]
 		}
 	}
-	r := math.Exp(logp - oldLogProb)
+	r := math.Exp(logP[action] - oldLogProb)
+	if !finite(r) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: probability ratio is non-finite")
+	}
 	clipped := math.Min(math.Max(r, 1-c.ClipEpsilon), 1+c.ClipEpsilon)
-	term := math.Min(r*advantage, clipped*advantage)
-	policy := -term
-	valueLoss := c.ValueCoef * (value - target) * (value - target)
+	policyTerm, clippedTerm := r*advantage, clipped*advantage
+	policy := -math.Min(policyTerm, clippedTerm)
+	var valueLoss, valueGradient float64
+	if c.ValueCoef != 0 {
+		delta := value - target
+		// Apply the coefficient before squaring or doubling, so a small
+		// coefficient can keep a large difference representable (and vice versa).
+		weighted := c.ValueCoef * delta
+		valueLoss = weighted * delta
+		valueGradient = 2 * weighted
+	}
 	entropyLoss := -c.EntropyCoef * h
-
-	st := StepLoss{
-		Loss:    policy + valueLoss + entropyLoss,
-		Policy:  policy,
-		Value:   valueLoss,
-		Entropy: entropyLoss,
-		Ratio:   r,
+	st := StepLoss{Loss: policy + valueLoss + entropyLoss, Policy: policy, Value: valueLoss, Entropy: entropyLoss, Ratio: r}
+	if !finite(st.Loss) || !finite(st.Policy) || !finite(st.Value) || !finite(st.Entropy) || !finite(valueGradient) {
+		return StepLoss{}, nil, 0, fmt.Errorf("rl: loss or value gradient is non-finite")
 	}
 	grad := make([]float64, len(p))
-	if r*advantage <= clipped*advantage {
+	if policyTerm <= clippedTerm {
 		for j := range p {
 			var ind float64
 			if j == action {
 				ind = 1
 			}
-			grad[j] = -advantage * r * (ind - p[j])
+			grad[j] = -policyTerm * (ind - p[j])
 		}
 	} else {
 		st.Clipped = true
@@ -127,10 +151,18 @@ func Loss(logits []float64, action int, oldLogProb, advantage, value, target flo
 			}
 		}
 	}
-	return st, grad, 2 * c.ValueCoef * (value - target), nil
+	for j, g := range grad {
+		if !finite(g) {
+			return StepLoss{}, nil, 0, fmt.Errorf("rl: gradient[%d] is non-finite", j)
+		}
+	}
+	return st, grad, valueGradient, nil
 }
 
-// LogProb is log softmax(logits)[action] via log-sum-exp.
+// LogProb is log softmax(logits)[action] via a shifted normalization.
+// -Inf masks an action; at least one score must be finite. NaN, +Inf, an empty
+// policy, an invalid action or an overflowing finite difference returns an error.
+// The log probability of a masked action is -Inf. Inputs are never modified.
 func LogProb(logits []float64, action int) (float64, error) {
 	if len(logits) == 0 {
 		return 0, fmt.Errorf("rl: logits must be non-empty")
@@ -138,28 +170,64 @@ func LogProb(logits []float64, action int) (float64, error) {
 	if action < 0 || action >= len(logits) {
 		return 0, fmt.Errorf("rl: action %d out of range [0, %d)", action, len(logits))
 	}
-	return logits[action] - logSumExp(logits), nil
+	logP, err := logSoftmax(logits)
+	if err != nil {
+		return 0, err
+	}
+	return logP[action], nil
 }
 
-func logSumExp(x []float64) float64 {
-	max := x[0]
-	for i := 1; i < len(x); i++ {
-		if x[i] > max {
-			max = x[i]
+func logSoftmax(x []float64) ([]float64, error) {
+	if len(x) == 0 {
+		return nil, fmt.Errorf("rl: logits must be non-empty")
+	}
+	max := math.Inf(-1)
+	for i, v := range x {
+		if math.IsNaN(v) || math.IsInf(v, 1) {
+			return nil, fmt.Errorf("rl: logits[%d] must be finite or -Inf, got %v", i, v)
+		}
+		if v > max {
+			max = v
 		}
 	}
-	var sum float64
-	for _, v := range x {
-		sum += math.Exp(v - max)
+	if math.IsInf(max, -1) {
+		return nil, fmt.Errorf("rl: logits must contain at least one finite score")
 	}
-	return max + math.Log(sum)
+	logP := make([]float64, len(x))
+	var sum float64
+	for i, v := range x {
+		if math.IsInf(v, -1) {
+			logP[i] = v
+			continue
+		}
+		logP[i] = v - max
+		if !finite(logP[i]) {
+			return nil, fmt.Errorf("rl: logits[%d] finite difference overflow", i)
+		}
+		// Each exponential is in [0, 1], with at least one equal to 1.
+		sum += math.Exp(logP[i])
+	}
+	logSum := math.Log(sum)
+	for i := range logP {
+		if math.IsInf(logP[i], -1) {
+			continue
+		}
+		logP[i] -= logSum
+		if !finite(logP[i]) {
+			return nil, fmt.Errorf("rl: log probability[%d] is non-finite", i)
+		}
+	}
+	return logP, nil
 }
 
 func softmax(x []float64) []float64 {
-	lse := logSumExp(x)
-	p := make([]float64, len(x))
-	for i, v := range x {
-		p[i] = math.Exp(v - lse)
+	logP, err := logSoftmax(x)
+	if err != nil {
+		return nil
+	}
+	p := make([]float64, len(logP))
+	for i, v := range logP {
+		p[i] = math.Exp(v)
 	}
 	return p
 }

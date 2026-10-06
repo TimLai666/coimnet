@@ -2,6 +2,10 @@
 
 ## 目前階段
 
+[ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md) 已通過 4／5 驗收：共用位移正規化、非法數值拒絕與有限加權價值計算完成，13 項新增與既有 20 項 RL 頂層測試通過。Root 接手修正第一版的中間溢位與多餘檢查。沒有本機驗證阻礙，Mac 完整一般與 race 各 57 套件、建置、vet、相依性、獨立審查與檔案審查通過，提交與推送待完成。模型、依賴與非零狀態限制保留。
+
+[訓練框架盤點](evidence/LRN-09/framework-audit-20261006.md) 保存修正前來源 `9202bbf` 的公開入口重現。ticket 41 處理已確認的 PPO 數值缺陷。非零初始狀態及可塑性／化學機制的 PPO 訓練是既有未支援能力，六步期限則屬範例的任務定義。數值缺陷尚未被證明是方向學習失敗的原因。
+
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 已完成 5／5 工程驗收與交付，實作 `58cb01e` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/horizon-comparison-20261005/delivery.json)。兩組共 1,200 訓練回合與 3,120 評估回合在兩個新程序重現，原組與舊證據逐筆一致。六步任務期限組的 seed 3 通過完整提示判準，seed 1／2 未通過；原組三個 seed 均未通過。Mac 完整一般與 race 各 57 套件、建置、vet、相依性及獨立核對通過。審查發現的第一回合核對缺口已修正，22 種竄改案例通過，原公開契約及歷史證據保留。[分析](evidence/LRN-09/horizon-comparison-20261005/analysis.md)、[工程驗證](evidence/LRN-09/horizon-comparison-20261005/verification.json)。
 
 [ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已完成 5／5 工程驗收與交付，實作 `0dc4d64` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/gradient-diagnostic-20261004/delivery.json)。兩個新程序的 600 次完整梯度報告相同，原更新與合成 upstream 的 StepFrom 相同。價值項的共用核心梯度全部較大，倍率中位數為 7.05、4.72、7.45，方向相反為 77、120、123 次。沒有改訓練參數或模型，也沒有確認偏向的唯一根因。Mac 完整一般與 race 各 57 套件、建置、vet、相依性、格式及交接原件通過，獨立重算、17 種竄改檢查及最後審查通過。需求維持 89／91。[診斷](evidence/LRN-09/gradient-diagnostic-20261004/analysis.md)、[工程驗證](evidence/LRN-09/gradient-diagnostic-20261004/verification.json)。
@@ -153,6 +157,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 38 | 研究者可以核對短時限訓練的兩側成功回饋 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；完整 Mac 驗證與雙程序重現通過，`e0d1c43` 已推送並核對遠端。成功回饋集中單側，唯一因果機制未確認 |
 | 39 | 研究者可以分開核對策略與價值的更新影響 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；600 次完整梯度與更新比對、雙程序重現、獨立重算、17 種竄改檢查、Mac 完整一般與 race 驗證及審查通過。實作 0dc4d64 已推送並核對遠端 |
 | 40 | 研究者可以比較六步任務期限對提示導航學習的影響 | Codex 主 agent / OpenCode 免費模型 / Opus 審查 | completed | 5／5；實作 58cb01e 已推送並核對；完整一般與 race 各 57 套件、雙程序重現、獨立核對與審查通過；期限組 seed 3 通過，1／2 未通過 |
+| 41 | 研究者可以在大分數下正確計算 PPO 機率與損失，並收到非法數值錯誤 | Codex 主 agent / Luna max 測試、初版實作與審查 | in_progress | 4／5 驗收。原始 12 項有 9 項失敗，Root 補上加權價值極值回歸並修正，13 項新增與既有 20 項 RL 通過，完整驗證通過，交付待完成 |
 
 ## 目前阻礙
 
@@ -170,13 +175,17 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。後續建議固定目前設定，事前另選新的初始種子驗證穩定性，不計入本次對照。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
+[ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md) 的 PPO 數值修正完成工程驗收，待交付核對。下一個可驗證成果是修正蒸餾與文字辨識兩條公開入口的同類精度問題，先以手算案例寫失敗測試，再改位移正規化，重現見[數值分析](evidence/LRN-09/objective-numerics-20261006/analysis.md)。這兩處列在 [AGENTS.md](AGENTS.md#follow-ups)，尚未建立下一張 ticket。帶既有記憶的分段 PPO 訓練排在數值修正之後，須定義相符的前向／反向契約，不能只移除零狀態保護。
+
+[ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)；ticket 26 的任意非零初始神經狀態也仍需相符的梯度路徑，不能沿用從零開始的 `StepFrom` 假裝支援。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-06：ticket 41 集中修正通用 PPO 機率、損失及非法數值處理，公開簽名與模型設定保持。蒸餾與文字辨識的同類錯誤另行處理，先於新增帶記憶的 PPO 能力。此數值缺陷尚未證明是方向學習失敗的原因。
 
 2026-10-05：使用者確認 ticket 40 的六步任務期限對照。只在範例內改最後逾時的訓練終止與後續價值，原環境抵達及逾時另存。兩組沿用相同固定模型、種子、預算與 ticket 37 判準，原組須與 ticket 38／37 逐筆一致，所有結果保存。沒有依結果增加容量或搜尋參數。
 

@@ -1,0 +1,10 @@
+package main
+import("fmt";"math";"github.com/TimLai666/coimnet/learning/rl")
+func main(){
+c:=rl.PPOConfig{Gamma:1,Lambda:1,ClipEpsilon:.2,ValueCoef:1e-320,TimeLimit:1,Epochs:1,MiniBatch:1}
+st,g,vg,e:=rl.Loss([]float64{0,0},0,-math.Ln2,0,math.MaxFloat64,-math.MaxFloat64,c)
+fmt.Printf("overflowing_difference step=%+v gradient=%v value_gradient=%g error=%v\n",st,g,vg,e)
+c.ValueCoef=0;c.EntropyCoef=math.MaxFloat64
+st,g,vg,e=rl.Loss([]float64{0,-750},0,0,0,0,0,c)
+fmt.Printf("underflowed_tail step=%+v gradient=%v value_gradient=%g error=%v\n",st,g,vg,e)
+}

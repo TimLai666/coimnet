@@ -1,0 +1,18 @@
+package main
+
+import (
+	"fmt"
+	"github.com/TimLai666/coimnet/distill"
+	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
+)
+
+func main() {
+	d := distill.DistributionDistiller{Temperature: 1, Scale: 1, Mix: 1,
+		Alignment: distill.Alignment{Rule: distill.AlignmentIdentical, TeacherVocabHash: "same", StudentVocabHash: "same"}}
+	for _, shift := range []float64{0, 1e16} {
+		loss, grad, _, err := d.Loss(distill.TeacherDistribution{Probabilities: []float64{0.5, 0.5}}, []float64{shift, shift}, -1)
+		fmt.Printf("distill shift=%g loss=%.17g expected=0 gradient=%v error=%v\n", shift, loss, grad, err)
+		loss, cg, err := ctc.Loss([][]float64{{shift, shift}}, []int{1})
+		fmt.Printf("ctc shift=%g loss=%.17g expected=0.69314718055994529 gradient=%v error=%v\n", shift, loss, cg, err)
+	}
+}

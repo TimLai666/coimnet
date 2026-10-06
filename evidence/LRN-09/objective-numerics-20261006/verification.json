@@ -1,0 +1,287 @@
+{
+  "requirement": "LRN-09",
+  "ticket": "41-ppo-objective-numerical-correctness",
+  "date": "2026-10-06",
+  "status": "verified_scoped",
+  "acceptance_verified": 4,
+  "acceptance_total": 5,
+  "scope": "PPO public numerical correctness; no model, dependency, training recipe, stateful PPO or biological mechanism changes.",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "input_fingerprints": {
+    "base_commit": "9202bbf348accada3a0bfe89638e176993257140",
+    "baseline": "baseline.json",
+    "baseline_sha256": "fb42cfa2eac86ae7c56da8c9cbd8098d2120ffb5c4c0ffc1cf809486760c9734",
+    "source_manifest_format": "SHA256 of compact JSON sorted by relative path: baseline source keys plus two new test paths, using current file hashes.",
+    "existing_source_changes": [
+      "learning/rl/objective.go"
+    ],
+    "protected_files_checked": 1968,
+    "protected_files_changed": [],
+    "source_count": 648,
+    "source_manifest_sha256": "8a1f85d5e9b578af87b3b6d628eb6b21709ca35d65efa4f40b3a88d28e8f5826",
+    "public_signatures_unchanged": true,
+    "frozen_tests_unchanged": true,
+    "changed_go_sources": {
+      "learning/rl/objective.go": "30df00d2fdf9e9b0f5dbc4a9d4f28f7e5e763ceeb14d1668f6a3dee8ba44cf98",
+      "learning/rl/objective_numerical_test.go": "6366c25e66820665e066ff6ad50e460d0aa3e70c03bbde0681ae56259ed66499",
+      "learning/rl/objective_review_test.go": "c4924936181177a34d7fa2e5a799b0a237fd1d2acef9511fcff8c4e82b904815"
+    }
+  },
+  "reproduction_command": [
+    "go test -count=1 -v -run '^TestObjectiveNumerical' ./learning/rl",
+    "go test -count=1 -v -run '^TestObjectiveNumericalWeightedValueExtremesRemainFinite$' ./learning/rl",
+    "go test -count=1 -v ./learning/rl",
+    "go test -count=1 -v -run '^TestPPOCollect' ./experiment",
+    "go build ./...",
+    "go test -count=1 ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "gofmt -l learning/rl/objective.go learning/rl/objective_numerical_test.go learning/rl/objective_review_test.go",
+    "git diff --check",
+    "(cd docs/handoff && shasum -a 256 -c SHA256SUMS.txt)",
+    "python3 - <<'PY' > evidence/LRN-09/objective-numerics-20261006/integrity.log\nfrom pathlib import Path\nimport hashlib,json,re,subprocess\np=Path('evidence/LRN-09/objective-numerics-20261006')\nb=json.loads((p/'baseline.json').read_text())\nsha=lambda path:hashlib.sha256(Path(path).read_bytes()).hexdigest()\nbad=[f for f,h in b['protected'].items() if not Path(f).is_file() or sha(f)!=h]\nchanged=[f for f,h in b['source'].items() if sha(f)!=h]\nassert not bad,bad\nassert changed==['learning/rl/objective.go'],changed\nassert sha('learning/rl/objective_numerical_test.go')=='6366c25e66820665e066ff6ad50e460d0aa3e70c03bbde0681ae56259ed66499'\nassert sha('learning/rl/objective_review_test.go')=='c4924936181177a34d7fa2e5a799b0a237fd1d2acef9511fcff8c4e82b904815'\nbase=subprocess.check_output(['git','show',b['commit']+':learning/rl/objective.go']).decode()\ncurrent=Path('learning/rl/objective.go').read_text()\nfor name in ['LogProb','Loss']:\n    sig=r'^func '+name+r'\\([^\\n]+'\n    assert re.search(sig,base,re.M).group()==re.search(sig,current,re.M).group(),name\nsources={f:sha(f) for f in b['source']}\nfor f in ['learning/rl/objective_numerical_test.go','learning/rl/objective_review_test.go']:\n    sources[f]=sha(f)\nprint(json.dumps({'existing_source_changes':changed,'protected_files_checked':len(b['protected']),'protected_files_changed':bad,'source_count':len(sources),'source_manifest_sha256':hashlib.sha256(json.dumps(sources,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'public_signatures_unchanged':True,'frozen_tests_unchanged':True},indent=2))\nPY",
+    "go test -count=1 -v -run '^TestGovernance' ."
+  ],
+  "observed_result": {
+    "equal_scores_log_probability": "-ln(2) for 0, ±1e16, ±1e308",
+    "equal_scores_probability": 0.5,
+    "equal_scores_ratio": 1,
+    "independent_regression_tests_passed": 13,
+    "existing_rl_tests_passed": 20,
+    "collector_tests_passed": 5,
+    "frozen_tests_unchanged": true,
+    "public_signatures_unchanged": true,
+    "historical_evidence_unchanged": true,
+    "new_model_learning_result": false,
+    "new_biological_mechanism_evidence": false,
+    "full_test_packages_passed": 57,
+    "full_race_packages_passed": 57
+  },
+  "tdd": {
+    "red": "red.log",
+    "green": "green.log",
+    "root_review_red": "review-final-red.log",
+    "tests_not_changed_by_implementation_agent": true
+  },
+  "review": {
+    "host": "Codex desktop",
+    "first_model": "gpt-5.3-codex-spark",
+    "first_effort": "xhigh",
+    "first_error": "Unknown model `gpt-5.3-codex-spark` for spawn_agent.",
+    "fallback_model": "gpt-5.6-luna",
+    "fallback_effort": "max",
+    "test_agent": "ppo_numerical_tests_luna",
+    "implementation_agent": "ppo_numerical_impl_luna",
+    "implementation_outcome": "First implementation preserved; root interrupted unfinished agent and repaired three confirmed finite weighted-value cases, simplified redundant checks and added public Go doc.",
+    "adversarial": "READ_ONLY_COMPLETE",
+    "reviewed_objective_sha256": "30df00d2fdf9e9b0f5dbc4a9d4f28f7e5e763ceeb14d1668f6a3dee8ba44cf98",
+    "remaining_confirmed_in_scope_findings": 0,
+    "record": "review.md",
+    "root_read_full_diff": true,
+    "root_executed_checks": true
+  },
+  "checks": [
+    {
+      "command": "go test -count=1 -v -run '^TestObjectiveNumerical' ./learning/rl",
+      "exit_code": 1,
+      "expected_failure": true,
+      "tests_failed": 9,
+      "tests_passed": 3,
+      "test_log": "red.log",
+      "source": "baseline objective.go before implementation"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestObjectiveNumericalWeightedValueExtremesRemainFinite$' ./learning/rl",
+      "exit_code": 1,
+      "expected_failure": true,
+      "tests_failed": 1,
+      "subtests_failed": 3,
+      "test_log": "review-final-red.log",
+      "source": "first implementation before root repair"
+    },
+    {
+      "command": "go test -count=1 -v ./learning/rl",
+      "exit_code": 0,
+      "tests_passed": 33,
+      "new_tests_passed": 13,
+      "test_log": "green.log"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestPPOCollect' ./experiment",
+      "exit_code": 0,
+      "tests_passed": 5,
+      "test_log": "collector.log"
+    },
+    {
+      "command": "go build ./...",
+      "exit_code": 0,
+      "test_log": "build.log"
+    },
+    {
+      "command": "go test -count=1 ./...",
+      "exit_code": 0,
+      "packages_passed": 57,
+      "test_log": "test.log"
+    },
+    {
+      "command": "go test -count=1 -race -timeout 60m ./...",
+      "test_log": "race.log",
+      "exit_code": 0,
+      "packages_passed": 57
+    },
+    {
+      "command": "go vet ./...",
+      "exit_code": 0,
+      "test_log": "vet.log"
+    },
+    {
+      "command": "go mod verify",
+      "exit_code": 0,
+      "test_log": "modules.log"
+    },
+    {
+      "command": "go mod tidy -diff",
+      "exit_code": 0,
+      "test_log": "tidy.log"
+    },
+    {
+      "command": "gofmt -l learning/rl/objective.go learning/rl/objective_numerical_test.go learning/rl/objective_review_test.go",
+      "exit_code": 0,
+      "test_log": "format.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "test_log": "diff-check.log"
+    },
+    {
+      "command": "(cd docs/handoff && shasum -a 256 -c SHA256SUMS.txt)",
+      "exit_code": 0,
+      "test_log": "handoff.log"
+    },
+    {
+      "command": "python3 - <<'PY' > evidence/LRN-09/objective-numerics-20261006/integrity.log\nfrom pathlib import Path\nimport hashlib,json,re,subprocess\np=Path('evidence/LRN-09/objective-numerics-20261006')\nb=json.loads((p/'baseline.json').read_text())\nsha=lambda path:hashlib.sha256(Path(path).read_bytes()).hexdigest()\nbad=[f for f,h in b['protected'].items() if not Path(f).is_file() or sha(f)!=h]\nchanged=[f for f,h in b['source'].items() if sha(f)!=h]\nassert not bad,bad\nassert changed==['learning/rl/objective.go'],changed\nassert sha('learning/rl/objective_numerical_test.go')=='6366c25e66820665e066ff6ad50e460d0aa3e70c03bbde0681ae56259ed66499'\nassert sha('learning/rl/objective_review_test.go')=='c4924936181177a34d7fa2e5a799b0a237fd1d2acef9511fcff8c4e82b904815'\nbase=subprocess.check_output(['git','show',b['commit']+':learning/rl/objective.go']).decode()\ncurrent=Path('learning/rl/objective.go').read_text()\nfor name in ['LogProb','Loss']:\n    sig=r'^func '+name+r'\\([^\\n]+'\n    assert re.search(sig,base,re.M).group()==re.search(sig,current,re.M).group(),name\nsources={f:sha(f) for f in b['source']}\nfor f in ['learning/rl/objective_numerical_test.go','learning/rl/objective_review_test.go']:\n    sources[f]=sha(f)\nprint(json.dumps({'existing_source_changes':changed,'protected_files_checked':len(b['protected']),'protected_files_changed':bad,'source_count':len(sources),'source_manifest_sha256':hashlib.sha256(json.dumps(sources,sort_keys=True,separators=(',',':')).encode()).hexdigest(),'public_signatures_unchanged':True,'frozen_tests_unchanged':True},indent=2))\nPY",
+      "exit_code": 0,
+      "test_log": "integrity.log"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestGovernance' .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "governance.log"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestGovernance' .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "governance-final.log",
+      "scope": "Final acceptance and evidence metadata"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "test_log": "diff-check-final.log"
+    },
+    {
+      "command": "Python stdlib: resolve local Markdown file links and parse evidence JSON",
+      "exit_code": 0,
+      "test_log": "docs-check.log"
+    },
+    {
+      "command": "bash scripts/scan-commit.sh",
+      "exit_code": 0,
+      "test_log": "scan.log",
+      "scope": "42-file staged implementation snapshot; final staged snapshot rechecked before commit"
+    }
+  ],
+  "interrupted_checks": [
+    {
+      "command": "go test -count=1 -race ./...",
+      "exit_code": 143,
+      "status": "terminated_by_root",
+      "test_log": "race-default-timeout-interrupted.log",
+      "reason": "Previous complete race log took about 20 minutes; default 10-minute timeout was insufficient. Restarted identical full scope with timeout 60m; partial run is not acceptance evidence."
+    }
+  ],
+  "out_of_scope_confirmed_findings": [
+    {
+      "severity": "P2",
+      "files": [
+        "distill/distribution.go:216-230,246",
+        "tasks/ocr/ctc/ctc.go:111-114"
+      ],
+      "description": "Same large-score normalization cancellation; public API reproduced and recorded in AGENTS.md.",
+      "source": "related-probe.go.txt",
+      "test_log": "related-probe.log"
+    }
+  ],
+  "numerical_limits": {
+    "overflowing_value_difference": "An enabled value term rejects an unrepresentable float64 value-target even if ideal weighted outputs would fit.",
+    "underflowed_probability": "Probabilities rounded to zero do not contribute to entropy or its gradient; large coefficients do not recover the omitted tail.",
+    "proof": [
+      "review-probe.go.txt",
+      "review-probe.log",
+      "review-reference.json"
+    ],
+    "documented": "learning/rl/README.md"
+  },
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "change": "Append only LRN-09 supplemental evidence; no requirement definition or status change."
+  },
+  "delivery": "Engineering acceptance complete; implementation commit and remote verification pending.",
+  "test_log": [
+    "red.log",
+    "review-final-red.log",
+    "green.log",
+    "collector.log",
+    "test.log",
+    "race.log",
+    "integrity.log",
+    "governance.log"
+  ],
+  "artifact_sha256": {
+    "baseline.json": "fb42cfa2eac86ae7c56da8c9cbd8098d2120ffb5c4c0ffc1cf809486760c9734",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "collector.log": "8073011887ac1690bb440552ab624971a948645c864745436a9207483486f683",
+    "diff-check-final.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "docs-check.log": "d8778b5f716c5466da203d038a3215c4ee35480741b405a80062ca246e85943b",
+    "environment.json": "c308b731e165079bedb255293d941f37c2b9cf9fe7a277c13ba0e433636abfb0",
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "governance-final.log": "df1db952caad2aebbbbdbe94a773a8bf25ec15df58bdc950552da5120b16cd0a",
+    "governance.log": "7bbd00ada86672ca35a70d82c0d6ba01b3fb13aeb49ed6820abaa3d25b65e475",
+    "green.log": "1b97dcfc534fb269d58be24e7242c5cb0925e0a238cdf91f2daa920ed8ea8e9a",
+    "handoff.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "integrity.log": "71a1f28a3a3f47c2a6330fe0e3374953979eaa6d24dc37d46a9b3bcf754e4211",
+    "modules.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "race-default-timeout-interrupted.log": "9a06b50a088cbbff23ede4e42418a1b2cd58986de941ecbf8fc0139e3d89ddc3",
+    "race.log": "e5d07ab195b559c09414c5b36500cd376f15cdc46ff270b8fd661ab5af756eb5",
+    "red.log": "ea44d24538876d25cf0f6a1a5522f76b3049bb6d24da52017d25d4c1c9a003b7",
+    "related-probe.go.txt": "0ead53a17c129837eaba2ea280868986e7f70a3eaae75d03cf8a5d4e51d55882",
+    "related-probe.log": "63e7a292de1593246ba3e40fa81b6e6942cfe3ee77bd1f43da60f7ed5aa178e8",
+    "remote-baseline.log": "5c28bb99fef8ef8f20b7318c6737ea1fc66a521ae8452c41a4c9d58a6be1ab38",
+    "review-final-red.log": "243dcb75c1414e9c5043761e14ad88af280b7443519b77a3d85e454ca9ec5b68",
+    "review-probe.go.txt": "ed580160c32853a2fc106dc5f6cafc2bacb987ceb60ce250896285011f104958",
+    "review-probe.log": "c992c636bea051a923f1d78785df784b6fa168bb48c2171523c703988a47eb4c",
+    "review-red.log": "d58c9bd7f009b2a4bcf6e99cedb0fe00ff0cc4386df73d37a24af568071e3d24",
+    "review-reference.json": "6b670d502807c1c41938a8efb1cbbe584d4fd746ec547da03fc0f15fe6915c96",
+    "test.log": "9c4b59a7786ed82af8e0e3c3858ea1cc9ddc9febc4e0977f17720b3cb3694263",
+    "tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "scan.log": "b3b9b2eca606d6f853c6c68c7024a9b82db3a90d1bbc81089029645b23bdd8e0"
+  }
+}
