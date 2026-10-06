@@ -31,6 +31,7 @@
 - Go 與 Insyra v0.3.4 固定。Insyra 公開 API 與編譯探測通過後才採用，缺口先查核再依授權提 issue。
 - 2026-09-24 GPU 後端選 WebGPU 作為跨 Mac Metal、Linux Vulkan 與 Windows 的第一條裝置路徑；CPU float64 仍是數值參考。2026-09-25 已在 Mac Metal 驗證 float32 稀疏 drive 與局部反向導數，並以純量零延遲連續核心 adapter 在逐步前向／反向和 CPU 對照。前向拓樸依 target、反向依 source 分組，保留各組內邊宣告順序；漏寫梯度的 Metal shader 迴圈改為每邊獨立寫入並連續重跑驗證。可選的 `learning.NewGPUTrainer`／`RestoreGPUTrainer` 已讓獨立 episode 的 `Step`／`StepFrom` 使用這條核心，並通過 CPU 參數／AdamW 數值對照與 JSON 快照新程序續訓。編碼器與讀出仍走既有 Insyra 路徑，是否由 Insyra 在裝置執行未量測；神經狀態、活化與 AdamW 在 CPU，沒有裝置上參數更新或常駐神經狀態。LIF、混合、延遲、向量／矩陣、重算與完整圖均未支援／驗證，因此 OPS-05 仍未通過。裝置選取、實際執行與回退須分別報告；Insyra dense MatMul 不算稀疏核心加速。Insyra v0.3.4 已提供 CPU `EdgeSum`，稀疏裝置運算與常駐裝置狀態仍待上游提供公開契約，追蹤 [#379](https://github.com/HazelnutParadise/insyra/issues/379)。
 - CPU 參考使用 float64、固定邊順序與同步更新。運算/圖儲存為 O(N+E)，不建立全圖 N×N 矩陣。小型稠密運算只用於獨立測試參考。
+- Doctor 的 GPU 六項字串使用 `implemented_with_constraints`，以新增的 `core.gpu.details` 明列 WebGPU 純量零延遲連續核心及獨立 episode 的條件、CPU 神經狀態／活化／AdamW、未提供的裝置更新／狀態保存與未驗證的完整圖。頂層 `gpu` 只記錄本次作業系統硬體探測。核心與 Insyra encoder／readout 裝置執行維持 `not_probed`。Doctor 不初始化 GPU 或新增訓練流程，既有 v1 欄位與 API 簽名保持，驗收由 [ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 負責。
 - 第一批用純量連續動態與逐邊參數建立完整梯度。向量/共享參數在稀疏數值介面驗證，隨後接入動態。LIF、調節、真實資料與 GPU 仍是完整必做範圍。
 - 未支援的設定返回具體錯誤，不退回別種模型或偷偷縮圖。人工圖與資料產生器在設定、輸出與報告明示名稱。
 - 所有可失敗更新先驗證輸入並計算候選結果，再提交狀態；取消、NaN、Inf 或形狀錯誤不得留半次更新。

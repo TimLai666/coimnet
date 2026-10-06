@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"math"
 	"os"
 	"reflect"
@@ -51,11 +53,28 @@ func TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities(t *testin
 	if !reflect.DeepEqual(report.Insyra.Probe.Gradient, []float32{88, 132}) {
 		t.Fatalf("insyra probe gradient = %v", report.Insyra.Probe.Gradient)
 	}
-	if report.Core.CPU.ContinuousForward != "implemented" || report.Core.CPU.SparseBackward != "implemented" {
-		t.Fatalf("cpu core capabilities = %+v", report.Core.CPU)
+	wantCPU := BackendCapabilities{
+		ContinuousForward:  "implemented",
+		ContinuousBackward: "implemented",
+		ContinuousTraining: "implemented",
+		SparseForward:      "implemented",
+		SparseBackward:     "implemented",
+		SparseTraining:     "implemented",
 	}
-	if report.Core.GPU.SparseTraining != "not_implemented" {
-		t.Fatalf("gpu sparse training = %q", report.Core.GPU.SparseTraining)
+	if !reflect.DeepEqual(report.Core.CPU, wantCPU) {
+		t.Fatalf("cpu core capabilities = %+v, want %+v", report.Core.CPU, wantCPU)
+	}
+	wantGPU := BackendCapabilities{
+		ContinuousForward:  "implemented_with_constraints",
+		ContinuousBackward: "implemented_with_constraints",
+		ContinuousTraining: "implemented_with_constraints",
+		SparseForward:      "implemented_with_constraints",
+		SparseBackward:     "implemented_with_constraints",
+		SparseTraining:     "implemented_with_constraints",
+		Details:            expectedGPUBackendDetails(),
+	}
+	if !reflect.DeepEqual(report.Core.GPU, wantGPU) {
+		t.Fatalf("gpu core capabilities = %+v, want %+v", report.Core.GPU, wantGPU)
 	}
 	if report.Core.InsyraMatrixAcceleration.CoreGPUEquivalent {
 		t.Fatal("Insyra matrix acceleration was reported as CoImNet core GPU")
@@ -78,12 +97,137 @@ func TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities(t *testin
 	if _, ok := document["gpu"]; !ok {
 		t.Fatal("JSON gpu field is missing")
 	}
+	core, ok := document["core"].(map[string]any)
+	if !ok {
+		t.Fatal("JSON core object is missing")
+	}
+	backendFields := []string{
+		"continuous_forward",
+		"continuous_backward",
+		"continuous_training",
+		"sparse_forward",
+		"sparse_backward",
+		"sparse_training",
+	}
+	for _, backendName := range []string{"cpu", "gpu"} {
+		backend, ok := core[backendName].(map[string]any)
+		if !ok {
+			t.Fatalf("JSON core.%s object is missing", backendName)
+		}
+		for _, field := range backendFields {
+			if _, ok := backend[field].(string); !ok {
+				t.Fatalf("JSON core.%s.%s is not a string: %v", backendName, field, backend[field])
+			}
+		}
+		if backendName == "cpu" {
+			if _, ok := backend["details"]; ok {
+				t.Fatal("JSON core.cpu unexpectedly contains details")
+			}
+			continue
+		}
+		gpuDetails, ok := backend["details"].(map[string]any)
+		if !ok {
+			t.Fatal("JSON core.gpu.details object is missing")
+		}
+		for field, want := range map[string]any{
+			"backend":                   "webgpu",
+			"model":                     "continuous",
+			"state_dimension":           float64(1),
+			"edge_shape":                "scalar",
+			"max_delay_steps":           float64(0),
+			"training_scope":            "independent_episode",
+			"recompute":                 "not_supported",
+			"sparse_precision":          "float32",
+			"neural_state":              "cpu_float64",
+			"activation":                "cpu",
+			"optimizer":                 "cpu_adamw",
+			"encoder_readout_execution": "not_probed",
+			"device_parameter_update":   "not_implemented",
+			"device_state_save":         "not_implemented",
+			"full_graph":                "unverified",
+			"execution":                 "not_probed",
+		} {
+			if got := gpuDetails[field]; got != want {
+				t.Errorf("JSON core.gpu.details.%s = %v, want %v", field, got, want)
+			}
+		}
+	}
 	mediaTools, ok := document["media_tools"].(map[string]any)
 	if !ok {
 		t.Fatal("JSON media_tools object is missing")
 	}
 	if _, ok := mediaTools["video_packager"].(map[string]any); !ok {
 		t.Fatal("JSON media_tools.video_packager object is missing")
+	}
+}
+
+func expectedGPUBackendDetails() *GPUBackendDetails {
+	return &GPUBackendDetails{
+		Backend:                 "webgpu",
+		Model:                   "continuous",
+		StateDimension:          1,
+		EdgeShape:               "scalar",
+		MaxDelaySteps:           0,
+		TrainingScope:           "independent_episode",
+		Recompute:               "not_supported",
+		SparsePrecision:         "float32",
+		NeuralState:             "cpu_float64",
+		Activation:              "cpu",
+		Optimizer:               "cpu_adamw",
+		EncoderReadoutExecution: "not_probed",
+		DeviceParameterUpdate:   "not_implemented",
+		DeviceStateSave:         "not_implemented",
+		FullGraph:               "unverified",
+		Execution:               "not_probed",
+	}
+}
+
+func TestDoctorCoreCapabilitiesDetailsAreIndependent(t *testing.T) {
+	first := coreCapabilities()
+	second := coreCapabilities()
+	if first.GPU.Details == nil || second.GPU.Details == nil {
+		t.Fatalf("GPU details = first:%v second:%v, want independent non-nil details", first.GPU.Details, second.GPU.Details)
+	}
+	if first.GPU.Details == second.GPU.Details {
+		t.Fatal("coreCapabilities returned a shared GPU details pointer")
+	}
+	first.GPU.Details.Model = "mutated"
+	first.GPU.Details.MaxDelaySteps = 99
+	if second.GPU.Details.Model != "continuous" || second.GPU.Details.MaxDelaySteps != 0 {
+		t.Fatalf("second GPU details changed after first mutation: %+v", second.GPU.Details)
+	}
+}
+
+func TestGPUProbeMissingOptionalToolDoesNotClaimCoreExecution(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	report, err := Doctor(context.Background())
+	if err != nil {
+		t.Fatalf("Doctor() error = %v", err)
+	}
+	wantReason := "probe_tool_unavailable"
+	if tool, _, _ := gpuProbeSpec(runtime.GOOS); tool == "" {
+		wantReason = "unsupported_platform"
+	}
+	if report.GPU.Status != "unknown" || report.GPU.Reason != wantReason {
+		t.Fatalf("GPU probe = %+v, want unknown/%q", report.GPU, wantReason)
+	}
+	if report.Core.GPU.Details == nil {
+		t.Fatal("GPU details are missing")
+	}
+	if got := report.Core.GPU.Details.Execution; got != "not_probed" {
+		t.Fatalf("hardware probe status %q changed GPU execution to %q", report.GPU.Status, got)
+	}
+	for name, got := range map[string]string{
+		"continuous_forward":  report.Core.GPU.ContinuousForward,
+		"continuous_backward": report.Core.GPU.ContinuousBackward,
+		"continuous_training": report.Core.GPU.ContinuousTraining,
+		"sparse_forward":      report.Core.GPU.SparseForward,
+		"sparse_backward":     report.Core.GPU.SparseBackward,
+		"sparse_training":     report.Core.GPU.SparseTraining,
+	} {
+		if got != "implemented_with_constraints" {
+			t.Errorf("GPU capability %s = %q, want implemented_with_constraints", name, got)
+		}
 	}
 }
 
@@ -136,8 +280,89 @@ func TestBuildInfoReportExtractsInsyraReplacement(t *testing.T) {
 func TestDoctorRejectsCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	if _, err := Doctor(ctx); err == nil {
-		t.Fatal("Doctor() accepted a canceled context")
+	if _, err := Doctor(ctx); !errors.Is(err, context.Canceled) {
+		t.Fatalf("Doctor() error = %v, want context.Canceled", err)
+	}
+}
+
+func TestDoctorRejectsNilContext(t *testing.T) {
+	if _, err := Doctor(nil); err == nil || err.Error() != "doctor: context is nil" {
+		t.Fatalf("Doctor(nil) error = %v, want doctor: context is nil", err)
+	}
+}
+
+func TestDoctorRunWritesV1JSON(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if err := Run(context.Background(), []string{"doctor"}, &stdout, &stderr); err != nil {
+		t.Fatalf("Run(doctor) error = %v", err)
+	}
+	var report DoctorReport
+	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
+		t.Fatalf("Run(doctor) output is not JSON: %v", err)
+	}
+	if report.SchemaVersion != "coimnet-doctor/v1" {
+		t.Fatalf("Run(doctor) schema_version = %q", report.SchemaVersion)
+	}
+}
+
+func TestDoctorHelpDescribesGPUConstraintsAndExecutionSeparation(t *testing.T) {
+	var doctorHelp, stderr bytes.Buffer
+	if err := Run(context.Background(), []string{"doctor", "--help"}, &doctorHelp, &stderr); err != nil {
+		t.Fatalf("Run(doctor --help) error = %v", err)
+	}
+	help := strings.ToLower(doctorHelp.String())
+	for _, phrase := range []string{
+		"pure scalar",
+		"zero-delay",
+		"independent episode",
+		"cpu_float64",
+		"activation=cpu",
+		"cpu_adamw",
+		"full_graph=unverified",
+		"not_probed",
+	} {
+		if !strings.Contains(help, phrase) {
+			t.Errorf("doctor help missing %q", phrase)
+		}
+	}
+	for _, phrase := range []string{"gpu hardware", "does not imply", "execution"} {
+		if !strings.Contains(help, phrase) {
+			t.Errorf("doctor help missing hardware/execution separation phrase %q", phrase)
+		}
+	}
+
+	var overview, overviewErr bytes.Buffer
+	if err := Run(context.Background(), []string{"--help"}, &overview, &overviewErr); err != nil {
+		t.Fatalf("Run(--help) error = %v", err)
+	}
+	if !strings.Contains(strings.ToLower(overview.String()), "support constraints") {
+		t.Fatal("top-level help does not mention GPU support constraints")
+	}
+}
+
+func TestDoctorRunRejectsInvalidArguments(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "unknown flag", args: []string{"doctor", "--unknown"}, want: "flag provided but not defined"},
+		{name: "positional argument", args: []string{"doctor", "extra"}, want: "doctor takes no positional arguments"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var stdout, stderr bytes.Buffer
+			err := Run(context.Background(), test.args, &stdout, &stderr)
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("Run(%v) error = %v, want substring %q", test.args, err, test.want)
+			}
+		})
+	}
+}
+
+func TestDoctorRunPropagatesOutputFailure(t *testing.T) {
+	writeErr := errors.New("doctor JSON output failed")
+	if err := Run(context.Background(), []string{"doctor"}, failingWriter{err: writeErr}, io.Discard); !errors.Is(err, writeErr) {
+		t.Fatalf("Run(doctor) error = %v, want output error", err)
 	}
 }
 

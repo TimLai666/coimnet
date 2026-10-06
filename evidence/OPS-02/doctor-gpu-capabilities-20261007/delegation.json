@@ -1,0 +1,32 @@
+{
+  "host": "Codex",
+  "requested_primary": {
+    "model": "gpt-5.3-codex-spark",
+    "reasoning_effort": "xhigh",
+    "result": "rejected",
+    "error": "Unknown model gpt-5.3-codex-spark for spawn_agent. Available models: gpt-6.1-sol, gpt-6-astra, gpt-6-sol, gpt-6-luna, gpt-5.6-sol"
+  },
+  "actual_workers": [
+    {
+      "task": "/root/doctor_backend_audit_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "roles": [
+        "read-only backend audit",
+        "implementation limited to doctor.go and run.go"
+      ]
+    },
+    {
+      "task": "/root/doctor_gpu_tests_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "roles": [
+        "tests limited to doctor_test.go"
+      ]
+    }
+  ],
+  "root_review": "root-review.md",
+  "root_test_review": "root-test-review.md",
+  "frozen_tests_unchanged": true,
+  "no_worker_commits": true
+}

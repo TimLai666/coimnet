@@ -1,0 +1,23 @@
+package cli // import "github.com/TimLai666/coimnet/internal/cli"
+
+type GPUBackendDetails struct {
+	Backend                 string `json:"backend"`
+	Model                   string `json:"model"`
+	StateDimension          int    `json:"state_dimension"`
+	EdgeShape               string `json:"edge_shape"`
+	MaxDelaySteps           int    `json:"max_delay_steps"`
+	TrainingScope           string `json:"training_scope"`
+	Recompute               string `json:"recompute"`
+	SparsePrecision         string `json:"sparse_precision"`
+	NeuralState             string `json:"neural_state"`
+	Activation              string `json:"activation"`
+	Optimizer               string `json:"optimizer"`
+	EncoderReadoutExecution string `json:"encoder_readout_execution"`
+	DeviceParameterUpdate   string `json:"device_parameter_update"`
+	DeviceStateSave         string `json:"device_state_save"`
+	FullGraph               string `json:"full_graph"`
+	Execution               string `json:"execution"`
+}
+    GPUBackendDetails separates supported configurations from local execution.
+    Hardware inventory alone cannot verify WebGPU dispatch or training.
+

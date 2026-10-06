@@ -1,0 +1,113 @@
+{
+  "schema_version": "coimnet-doctor/v1",
+  "runtime": {
+    "go_version": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64"
+  },
+  "build_info": {
+    "status": "available",
+    "main": {
+      "path": "github.com/TimLai666/coimnet",
+      "version": "v0.0.0-20261006165617-8fb7cffdc5d8+dirty",
+      "sum": "",
+      "replace": null
+    },
+    "insyra": {
+      "path": "github.com/HazelnutParadise/insyra",
+      "version": "v0.3.4",
+      "sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0=",
+      "replace": null
+    }
+  },
+  "cpu": {
+    "logical_cpus": 8,
+    "physical_memory_bytes": 17179869184,
+    "physical_memory_status": "available"
+  },
+  "gpu": {
+    "status": "available",
+    "probe": "system_profiler",
+    "devices": [
+      {
+        "name": "Apple M3",
+        "vendor": "sppci_vendor_Apple",
+        "memory_bytes": null
+      }
+    ]
+  },
+  "insyra": {
+    "probe": {
+      "status": "passed",
+      "operation": "nn.Tape.MatMul+MSELoss+Backward",
+      "output": [
+        23
+      ],
+      "loss": [
+        484
+      ],
+      "gradient": [
+        88,
+        132
+      ]
+    },
+    "matrix_acceleration": {
+      "status": "available_in_dependency",
+      "execution": "not_probed",
+      "scope": "2d_float32_matmul",
+      "core_gpu_equivalent": false,
+      "note": "The probe is an Insyra API check and is not a CoImNet core GPU test."
+    }
+  },
+  "media_tools": {
+    "video_packager": {
+      "tool": "ffmpeg",
+      "status": "available",
+      "path": "/opt/homebrew/bin/ffmpeg",
+      "version": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers"
+    }
+  },
+  "core": {
+    "cpu": {
+      "continuous_forward": "implemented",
+      "continuous_backward": "implemented",
+      "continuous_training": "implemented",
+      "sparse_forward": "implemented",
+      "sparse_backward": "implemented",
+      "sparse_training": "implemented"
+    },
+    "gpu": {
+      "continuous_forward": "implemented_with_constraints",
+      "continuous_backward": "implemented_with_constraints",
+      "continuous_training": "implemented_with_constraints",
+      "sparse_forward": "implemented_with_constraints",
+      "sparse_backward": "implemented_with_constraints",
+      "sparse_training": "implemented_with_constraints",
+      "details": {
+        "backend": "webgpu",
+        "model": "continuous",
+        "state_dimension": 1,
+        "edge_shape": "scalar",
+        "max_delay_steps": 0,
+        "training_scope": "independent_episode",
+        "recompute": "not_supported",
+        "sparse_precision": "float32",
+        "neural_state": "cpu_float64",
+        "activation": "cpu",
+        "optimizer": "cpu_adamw",
+        "encoder_readout_execution": "not_probed",
+        "device_parameter_update": "not_implemented",
+        "device_state_save": "not_implemented",
+        "full_graph": "unverified",
+        "execution": "not_probed"
+      }
+    },
+    "insyra_matrix_acceleration": {
+      "status": "available_in_dependency",
+      "execution": "not_probed",
+      "scope": "2d_float32_matmul",
+      "core_gpu_equivalent": false,
+      "note": "Insyra matrix acceleration does not implement the CoImNet sparse recurrent core."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "-c",
+    "import json,pathlib; p=pathlib.Path(\"docs/insyra-integration.md\").read_text(); assert all(s in p for s in [\"implemented_with_constraints\",\"core.gpu.details\",\"cpu\",\"not_probed\",\"unverified\",\"tickets/44-doctor-gpu-capabilities.md\"]); d=json.loads(pathlib.Path(\"docs/requirements-status.json\").read_text()); status={r[\"id\"]:r[\"status\"] for r in d[\"requirements\"]}; assert len(status)==91 and sum(v==\"passed\" for v in status.values())==89; assert status[\"OPS-05\"]==status[\"TSK-11\"]==\"specified\"; assert pathlib.Path(\"docs/tickets/44-doctor-gpu-capabilities.md\").is_file(); print(\"Doctor documentation and unchanged 89/91 gates checked.\")"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet",
+  "started_at": "2026-10-06T23:31:36.937557+00:00",
+  "elapsed_seconds": 0.026141708,
+  "exit_code": 0,
+  "log": "docs-check.log"
+}

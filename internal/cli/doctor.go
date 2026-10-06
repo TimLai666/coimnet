@@ -120,16 +120,38 @@ type CoreCapabilities struct {
 	InsyraMatrixAcceleration MatrixAccelerationCapability `json:"insyra_matrix_acceleration"`
 }
 
-// BackendCapabilities is intentionally limited to capabilities that exist in
-// the current core. Unsupported GPU entries are explicit rather than inferred
-// from the presence of a physical GPU.
+// BackendCapabilities reports one status string per core path. GPU details
+// record the supported configuration and execution limits separately from
+// local hardware inventory and probe results.
 type BackendCapabilities struct {
-	ContinuousForward  string `json:"continuous_forward"`
-	ContinuousBackward string `json:"continuous_backward"`
-	ContinuousTraining string `json:"continuous_training"`
-	SparseForward      string `json:"sparse_forward"`
-	SparseBackward     string `json:"sparse_backward"`
-	SparseTraining     string `json:"sparse_training"`
+	ContinuousForward  string             `json:"continuous_forward"`
+	ContinuousBackward string             `json:"continuous_backward"`
+	ContinuousTraining string             `json:"continuous_training"`
+	SparseForward      string             `json:"sparse_forward"`
+	SparseBackward     string             `json:"sparse_backward"`
+	SparseTraining     string             `json:"sparse_training"`
+	Details            *GPUBackendDetails `json:"details,omitempty"`
+}
+
+// GPUBackendDetails separates supported configurations from local execution.
+// Hardware inventory alone cannot verify WebGPU dispatch or training.
+type GPUBackendDetails struct {
+	Backend                 string `json:"backend"`
+	Model                   string `json:"model"`
+	StateDimension          int    `json:"state_dimension"`
+	EdgeShape               string `json:"edge_shape"`
+	MaxDelaySteps           int    `json:"max_delay_steps"`
+	TrainingScope           string `json:"training_scope"`
+	Recompute               string `json:"recompute"`
+	SparsePrecision         string `json:"sparse_precision"`
+	NeuralState             string `json:"neural_state"`
+	Activation              string `json:"activation"`
+	Optimizer               string `json:"optimizer"`
+	EncoderReadoutExecution string `json:"encoder_readout_execution"`
+	DeviceParameterUpdate   string `json:"device_parameter_update"`
+	DeviceStateSave         string `json:"device_state_save"`
+	FullGraph               string `json:"full_graph"`
+	Execution               string `json:"execution"`
 }
 
 // Doctor gathers runtime, dependency, hardware, and core capability facts.
@@ -255,6 +277,24 @@ func cpuReport() CPUReport {
 }
 
 func coreCapabilities() CoreCapabilities {
+	gpuDetails := &GPUBackendDetails{
+		Backend:                 "webgpu",
+		Model:                   "continuous",
+		StateDimension:          1,
+		EdgeShape:               "scalar",
+		MaxDelaySteps:           0,
+		TrainingScope:           "independent_episode",
+		Recompute:               "not_supported",
+		SparsePrecision:         "float32",
+		NeuralState:             "cpu_float64",
+		Activation:              "cpu",
+		Optimizer:               "cpu_adamw",
+		EncoderReadoutExecution: "not_probed",
+		DeviceParameterUpdate:   "not_implemented",
+		DeviceStateSave:         "not_implemented",
+		FullGraph:               "unverified",
+		Execution:               "not_probed",
+	}
 	return CoreCapabilities{
 		CPU: BackendCapabilities{
 			ContinuousForward:  "implemented",
@@ -265,12 +305,13 @@ func coreCapabilities() CoreCapabilities {
 			SparseTraining:     "implemented",
 		},
 		GPU: BackendCapabilities{
-			ContinuousForward:  "not_implemented",
-			ContinuousBackward: "not_implemented",
-			ContinuousTraining: "not_implemented",
-			SparseForward:      "not_implemented",
-			SparseBackward:     "not_implemented",
-			SparseTraining:     "not_implemented",
+			ContinuousForward:  "implemented_with_constraints",
+			ContinuousBackward: "implemented_with_constraints",
+			ContinuousTraining: "implemented_with_constraints",
+			SparseForward:      "implemented_with_constraints",
+			SparseBackward:     "implemented_with_constraints",
+			SparseTraining:     "implemented_with_constraints",
+			Details:            gpuDetails,
 		},
 		InsyraMatrixAcceleration: MatrixAccelerationCapability{
 			Status:            "available_in_dependency",

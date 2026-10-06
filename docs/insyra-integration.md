@@ -40,13 +40,27 @@ GPU 探測使用帶兩秒 context timeout 的 `system_profiler SPDisplaysDataTyp
 被判成支援。physical memory 在 macOS 讀 `hw.memsize`，Linux 讀
 `/proc/meminfo`，無法取得時 JSON 保留 `null`。
 
-Doctor 將 CPU continuous/sparse forward、backward 與目前訓練路徑標示為
-`implemented`，GPU sparse training 標示 `not_implemented`。Insyra 的矩陣能力
-另外標示 `scope=2d_float32_matmul`、`status=available_in_dependency`、
-`execution=not_probed`，`core_gpu_equivalent` 固定為 `false`。這表示固定版本
-提供矩陣裝置介面，不代表目前 CoImNet 程式已啟用或執行該加速器。
+Doctor 將 CPU continuous/sparse forward、backward 與訓練路徑標示為
+`implemented`。GPU 六項能力標示為 `implemented_with_constraints`，表示有受限的
+實作。`core.gpu.details` 列出條件：WebGPU、連續核心、每節點一個純量、純量邊、
+零延遲、獨立 episode 訓練，不支援重算。稀疏運算使用 float32，神經狀態使用
+CPU float64，活化與 AdamW 也在 CPU。`device_parameter_update=not_implemented`
+指尚未由裝置上的最佳化器更新參數，CPU 仍會更新參數並傳回 GPU 運算。
+`device_state_save=not_implemented` 指沒有 GPU 常駐神經狀態的保存能力，
+主機上的參數／AdamW 快照與恢復可用。完整圖為 `unverified`。
 
-上述 Doctor GPU 標示落後於目前可選的 WebGPU 純量零延遲連續核心與 episode trainer。實際裝置驗證見 [OPS-05 證據](../evidence/OPS-05/verification.json)，報告修正列於 [AGENTS.md Follow-ups](../AGENTS.md#follow-ups)。
+頂層 `gpu` 只記錄這次作業系統工具的硬體探測。Doctor 不初始化 CoImNet 的 GPU 核心或執行
+核心訓練，因此 `core.gpu.details.execution` 固定為 `not_probed`。工具回報有裝置
+也不會改成執行通過。編碼器與讀出是否在裝置上執行未量測，
+`encoder_readout_execution` 同樣為 `not_probed`。受限實作的既有裝置驗證見
+[OPS-05 證據](../evidence/OPS-05/verification.json)，不作為本次執行探測。
+`coimnet doctor --help` 可查上述範圍與錯誤行為。
+
+Insyra 的矩陣能力另外標示 `scope=2d_float32_matmul`、
+`status=available_in_dependency`、`execution=not_probed`，
+`core_gpu_equivalent` 固定為 `false`。這表示固定版本提供矩陣裝置介面，
+不表示 CoImNet 已啟用或執行該加速器。報告修正與驗收見
+[ticket 44](tickets/44-doctor-gpu-capabilities.md)，OPS-05 的未驗收條件保持。
 
 ## v0.3.4 相容性驗收
 

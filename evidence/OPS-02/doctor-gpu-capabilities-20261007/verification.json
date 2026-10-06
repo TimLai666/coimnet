@@ -1,0 +1,337 @@
+{
+  "requirement": "OPS-02",
+  "covered_requirements": [
+    "GOV-04",
+    "OPS-02",
+    "OPS-05"
+  ],
+  "status": "verified_scoped",
+  "evidence_type": "software_doctor_capability_correction",
+  "base_commit": "8fb7cffdc5d8e2b68c0397ffb97638020525f907",
+  "verified_at": "2026-10-06T23:33:46.531570+00:00",
+  "environment": {
+    "captured_at": "2026-10-06T22:58:55.334946+00:00",
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "base_commit": "8fb7cffdc5d8e2b68c0397ffb97638020525f907",
+    "dependency": "Insyra v0.3.4",
+    "scope": "Doctor diagnostics; no new GPU execution or training claim"
+  },
+  "source_sha256": "be4165f85b44436e024e6382a45527aaf7905b2d87698da8b9e2c06ff772d4e5",
+  "source_manifest": "source-manifest.json",
+  "input_fingerprints": [
+    "initial-target-fingerprints.json",
+    "red-source.json",
+    "frozen-tests.json",
+    "protected-manifest.json"
+  ],
+  "reproduction_command": [
+    "go test -v -count=1 -timeout 5m ./internal/cli -run 'Doctor|GPUProbe|GPUParsers'",
+    "python3 evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py",
+    "go test -count=1 -timeout 60m ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "python3 -c 'import json,pathlib,subprocess,sys; paths=list(json.loads(pathlib.Path(\"evidence/OPS-02/doctor-gpu-capabilities-20261007/source-manifest.json\").read_text())[\"files\"]); p=subprocess.run([\"gofmt\",\"-l\",*paths],capture_output=True,text=True); print(p.stdout,end=\"\"); print(p.stderr,end=\"\",file=sys.stderr); sys.exit(p.returncode or bool(p.stdout))'",
+    "python3 evidence/OPS-02/doctor-gpu-capabilities-20261007/integrity.py",
+    "python3 -c 'import json,pathlib; p=pathlib.Path(\"docs/insyra-integration.md\").read_text(); assert all(s in p for s in [\"implemented_with_constraints\",\"core.gpu.details\",\"cpu\",\"not_probed\",\"unverified\",\"tickets/44-doctor-gpu-capabilities.md\"]); d=json.loads(pathlib.Path(\"docs/requirements-status.json\").read_text()); status={r[\"id\"]:r[\"status\"] for r in d[\"requirements\"]}; assert len(status)==91 and sum(v==\"passed\" for v in status.values())==89; assert status[\"OPS-05\"]==status[\"TSK-11\"]==\"specified\"; assert pathlib.Path(\"docs/tickets/44-doctor-gpu-capabilities.md\").is_file(); print(\"Doctor documentation and unchanged 89/91 gates checked.\")'",
+    "bash scripts/check-target-flow.sh",
+    "python3 evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py --help",
+    "go doc ./internal/cli GPUBackendDetails"
+  ],
+  "command_receipts": {
+    "focused-green": {
+      "command": [
+        "go",
+        "test",
+        "-v",
+        "-count=1",
+        "-timeout",
+        "5m",
+        "./internal/cli",
+        "-run",
+        "Doctor|GPUProbe|GPUParsers"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:08:00.413798+00:00",
+      "elapsed_seconds": 4.1023566659999995,
+      "exit_code": 0,
+      "log": "focused-green.log"
+    },
+    "cli-final": {
+      "command": [
+        "python3",
+        "evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:12:25.849619+00:00",
+      "elapsed_seconds": 3.3377425,
+      "exit_code": 0,
+      "log": "cli-final.log"
+    },
+    "full-tests": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:08:59.644399+00:00",
+      "elapsed_seconds": 108.850385458,
+      "exit_code": 0,
+      "log": "full-tests.log"
+    },
+    "full-race": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:00.896873+00:00",
+      "elapsed_seconds": 1181.3832627499999,
+      "exit_code": 0,
+      "log": "full-race.log"
+    },
+    "build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:29.146386+00:00",
+      "elapsed_seconds": 6.1404555,
+      "exit_code": 0,
+      "log": "build.log"
+    },
+    "vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:29.146460+00:00",
+      "elapsed_seconds": 1.964302166,
+      "exit_code": 0,
+      "log": "vet.log"
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:29.146385+00:00",
+      "elapsed_seconds": 10.138788875000001,
+      "exit_code": 0,
+      "log": "mod-verify.log"
+    },
+    "mod-tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:29.148680+00:00",
+      "elapsed_seconds": 0.185387459,
+      "exit_code": 0,
+      "log": "mod-tidy.log"
+    },
+    "gofmt": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,pathlib,subprocess,sys; paths=list(json.loads(pathlib.Path(\"evidence/OPS-02/doctor-gpu-capabilities-20261007/source-manifest.json\").read_text())[\"files\"]); p=subprocess.run([\"gofmt\",\"-l\",*paths],capture_output=True,text=True); print(p.stdout,end=\"\"); print(p.stderr,end=\"\",file=sys.stderr); sys.exit(p.returncode or bool(p.stdout))"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:09:41.844635+00:00",
+      "elapsed_seconds": 0.34533525000000004,
+      "exit_code": 0,
+      "log": "gofmt.log"
+    },
+    "integrity-final": {
+      "command": [
+        "python3",
+        "evidence/OPS-02/doctor-gpu-capabilities-20261007/integrity.py"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:29:59.604005+00:00",
+      "elapsed_seconds": 0.570122459,
+      "exit_code": 0,
+      "log": "integrity-final.log"
+    },
+    "docs-check": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,pathlib; p=pathlib.Path(\"docs/insyra-integration.md\").read_text(); assert all(s in p for s in [\"implemented_with_constraints\",\"core.gpu.details\",\"cpu\",\"not_probed\",\"unverified\",\"tickets/44-doctor-gpu-capabilities.md\"]); d=json.loads(pathlib.Path(\"docs/requirements-status.json\").read_text()); status={r[\"id\"]:r[\"status\"] for r in d[\"requirements\"]}; assert len(status)==91 and sum(v==\"passed\" for v in status.values())==89; assert status[\"OPS-05\"]==status[\"TSK-11\"]==\"specified\"; assert pathlib.Path(\"docs/tickets/44-doctor-gpu-capabilities.md\").is_file(); print(\"Doctor documentation and unchanged 89/91 gates checked.\")"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:31:36.937557+00:00",
+      "elapsed_seconds": 0.026141708,
+      "exit_code": 0,
+      "log": "docs-check.log"
+    },
+    "target-flow": {
+      "command": [
+        "bash",
+        "scripts/check-target-flow.sh"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:10:05.671204+00:00",
+      "elapsed_seconds": 0.387111416,
+      "exit_code": 0,
+      "log": "target-flow.log"
+    },
+    "evidence-help": {
+      "command": [
+        "python3",
+        "evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py",
+        "--help"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:10:05.672899+00:00",
+      "elapsed_seconds": 0.093573666,
+      "exit_code": 0,
+      "log": "evidence-help.log"
+    },
+    "api-docs": {
+      "command": [
+        "go",
+        "doc",
+        "./internal/cli",
+        "GPUBackendDetails"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "started_at": "2026-10-06T23:12:26.990876+00:00",
+      "elapsed_seconds": 0.07819275,
+      "exit_code": 0,
+      "log": "api-docs.log"
+    }
+  },
+  "observed_result": {
+    "focused_top_level_passed": 13,
+    "red_changed_feature_failures": 4,
+    "red_control_passes": 9,
+    "full_ordinary_packages_passed": 57,
+    "full_race_packages_passed": 57,
+    "test_counts_overlap": true,
+    "gpu_six_statuses": "implemented_with_constraints",
+    "gpu_details_fields": 16,
+    "core_gpu_execution": "not_probed",
+    "full_graph_gpu": "unverified",
+    "real_os_hardware_probe": "available: Apple M3 via system_profiler",
+    "missing_probe_tool": "unknown: probe_tool_unavailable",
+    "cli_checks": 6,
+    "existing_fields_unchanged_in_matching_build_mode": true,
+    "temporary_cli_artifacts_removed": true,
+    "frozen_tests_unchanged": 1,
+    "protected_repository_files_unchanged": 2953,
+    "go_file_count": 646,
+    "root_review": "root-review.md",
+    "root_test_review": "root-test-review.md",
+    "confirmed_open_in_scope_findings": 0,
+    "requirements_statuses_unchanged": true,
+    "framework_passed_requirements": 89,
+    "framework_requirements": 91
+  },
+  "test_log": [
+    "focused-final-red.log",
+    "scope-help-red.log",
+    "focused-green.log",
+    "full-tests.log",
+    "full-race.log",
+    "cli-final.log"
+  ],
+  "limits": [
+    "Doctor reports implementation constraints and this invocation OS hardware inventory. It does not initialize the CoImNet GPU core or prove current core execution.",
+    "GPU state/activation/AdamW remain on CPU; device parameter update and state save are not implemented, full graph remains unverified.",
+    "Insyra encoder/readout device execution remains not_probed; dense MatMul is not CoImNet GPU equivalence.",
+    "OPS-05 and TSK-11 remain specified. No new training-result, full-graph GPU, cross-platform execution or biological evidence."
+  ],
+  "staging_policy": "Preserve raw stdout logs including go doc trailing blank lines. Check all non-log deliverables for whitespace and hash raw logs.",
+  "artifact_sha256": {
+    "api-docs.json": "3738476e85be138247a8693eaa7fef5247d1a9e9f55af171872e4151c42ce4ac",
+    "api-docs.log": "05809e59ca0d9bcd6107e3a8d35fce32b6bf4ccb18bdbb6004ae0ad074b742b8",
+    "build.json": "56f6eb801c8942be724b75d92cfe6eab477201d4b145683367f9b1dedfc3c644",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "cli-final.json": "a4886003f279e217143424605057be0c5ef700cc9451d42152a15a08ac337591",
+    "cli-final.log": "c3751fef3d13d75871bee678467aeec1518a046fc2bbd77771d25631f36b2821",
+    "cli-workflow.json": "faadb4ab82cdd01795780f8abcbfc60dfa509eac6f9c9a820ded4a55d65e9bbe",
+    "cli-workflow.log": "c3751fef3d13d75871bee678467aeec1518a046fc2bbd77771d25631f36b2821",
+    "cli-workflow.py": "308b3e27b27bbb95ad38127ab4bf37156e96b2855d4af55c80b506d91f4e00b5",
+    "delegation.json": "6745007db1575303f572e198b89c9f9f4881e2228c099147fd4907d009d81a5e",
+    "docs-check.json": "ce0c7b8a3ece3faa7cca09609f3ca34881c91dc3154346b0c934efc15b2ad795",
+    "docs-check.log": "4ff853c4aaa30297910517a6c7ba127aa52250e059ed8f9094299570449516d3",
+    "doctor-after-run.json": "15d1c20ab504ea2424d8964b2728042810f8fc5ed34a70e7a2baa38f34ee64b4",
+    "doctor-after-run.log": "62bbd7ea673e1c72e12e4f3ed36d1cc13a3af2ed7e4ee404706bddc304f4057a",
+    "doctor-after.json": "ea18e5ed3c6e29205a6856f052c6cc35349b4a7c90eec2b76a5f480c4fe50723",
+    "doctor-before.json": "73c823cbf69dd7f209650f6b7e2ab1345bedb16896a5cca1a6ed71b6c3a500a4",
+    "doctor-before.log": "749b6dede060b1808315cbfb466bc9af5e0c8d64d451cb3934909693ee0925d5",
+    "environment.json": "aa01cd11522aa589ba575075cd82e0d4ba5f756b2c8df8ed892700fc7c1f23b1",
+    "evidence-help.json": "585f244d1c42abcaa442010bd3e00d60a39b21a9cf0a6b4153de352cfb955aaf",
+    "evidence-help.log": "91922c23acecd1c8a4ad834e9c82264014935ba2fe19ae910d1e2727eed704c1",
+    "focused-final-red.json": "c2fc6abf53b012580f9e22b6042131da53ff90d38aa8acec8af71ee34b91b3c7",
+    "focused-final-red.log": "47cda82dc26671f71e2bdf025c670fc75192d6adade59ac1aa45eeb9e3e7fecb",
+    "focused-green.json": "dfcf3ca9ad7deba2edbe43f360b549e4f4975c99110f2c46563e291d37f3da25",
+    "focused-green.log": "9a7839d18d4bda16ad93e1c913595f6ea6fb8c4b206dcd420aa1716e933fe260",
+    "focused-red.json": "fcba8eb0f09b7a12b60f9181b8f7ccfc864fa4df859bf5dcfc890732cc033ede",
+    "focused-red.log": "2c4ecb4d0f05ad2c5be825156ee32d0552808617746390e255949f90354274c3",
+    "frozen-tests.json": "f672b6e41686983aa5b4bae524dd338678bf7654ff3ea8c80aa160c303b67c1c",
+    "full-race.json": "b6f3b6a41dfe43656d6fe8ee19f4a67080d2cbb04f3c9d3702943c73113f4191",
+    "full-race.log": "b47946b773ada7813f54f2743499298b40f9b09a42c922cdfa06da49cd1f0a6e",
+    "full-tests.json": "0876da6e498e0da0391ecac1a845ea378d402369c0a328a4b1d2c2e093eebdea",
+    "full-tests.log": "0a2b9594eb78b0eccbfd87bc15a4badd36be4eee9777800392b9d3d4d4f24d6e",
+    "gofmt.json": "ec618cffff01a3c8b643aedac4401e5abb601b6216843d2784811b8336af7078",
+    "gofmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "help-before.json": "1b21ed4edc2e8ccdf4afe4fab8cda33f4e7c3c959270982cb01f4dd33fb505a8",
+    "help-before.log": "d7003a850ad4de1f11cfeeb0beae10e4276bbf19a169a97d33f69e38125c3475",
+    "initial-target-fingerprints.json": "01a416f0b5be8831f0009dd228726bf9a22b9a5d76daef7b4898a8b54735a8a8",
+    "integrity-final.json": "a7087d6312459cb6b5dfb31ed25cdb74b130841aa48504ccd36a00ba8939fed5",
+    "integrity-final.log": "d477c97d49a29f32a554a0504c6710810ffe69f6e9d22aee6ffbad8524271158",
+    "integrity.json": "d510ab0b4fc23fadbc56526f37ca77d897c3aca4373dd9e6e5629800878ed172",
+    "integrity.log": "d477c97d49a29f32a554a0504c6710810ffe69f6e9d22aee6ffbad8524271158",
+    "integrity.py": "46456e471859a5b5b1f095179ed49ad342137ba8df6deeb64d5961ae1a191aa0",
+    "mod-tidy.json": "1407aef4475d0b3893104330b53b9d6b821b5c66f48a7ac28ecf05e0ea26bb0a",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.json": "e3cf5c0c314453eb54b34d29dfab8544f1e09550bcc38e989179834437f6544e",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "protected-manifest.json": "da938eb3f04531a89429d6e568ae1cefe9dcd798d37d287812664bae40eb1068",
+    "red-source.json": "28ad4cb16dda22bb7138fd7393f15a5ab97a3865af6620dd6a2c062655e72289",
+    "report-comparison.json": "e4db58fdac13e2147b79920edda3b5df76c4c9e8c2bcaa10d0402d4b8969a81d",
+    "root-review.md": "6af286183995559384a926d1859ea96fdb0bdefcc53f3919d29d28f108459fe1",
+    "root-test-review.md": "ef2d5ecc9dc79f2e4503ed70e15040b2141733835a34e545bdc322f6d373cf1d",
+    "scope-help-red.json": "387d2f05860eaf955f59a4c87392ba04afb4ca5e0e2f91768169d2b7d78bf4df",
+    "scope-help-red.log": "6e96dc1bf5b37ddf8bffa8c7f74ef15698246dbe8153740a64a0f7fa5343825e",
+    "skeleton-build.json": "f531bab9d13fdfd9be63ae3302ed74dd5e9f71f7cdcd406183425a7996838a21",
+    "skeleton-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "skeleton-source.json": "cb9e150d91c39cce1a9a0d7a749e9c459606a7d8cf379ba305eb3b9ad4c1de18",
+    "source-manifest.json": "262d82ee91c7e550dd2995052ecfa365bf3384fb8eb68b8eb0ff2b23de3f5863",
+    "staging.json": "61314ef2f167c70831d09df44481809c34a060f4bb9246ac80aafe859d9bb0d3",
+    "target-flow.json": "a562d0f5dadc85ef184941dbc872deaa7577540279bc08ab479ff098ef7f65e0",
+    "target-flow.log": "b4b99aba9db9aedaed7e250a1bc4fb1916633df4ceefc6a6d160ee528a2cf407",
+    "test-report.md": "6a00ec80bdbc2ca358e70d9146c2f3408ce2c473d418ffecffe2a862c460be47",
+    "vet.json": "3771133dd22fd937aab9d4501cd19eea19b16cb4b2cbdd4e0bab31220086b0dd",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

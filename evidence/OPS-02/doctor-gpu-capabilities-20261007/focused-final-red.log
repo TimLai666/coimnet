@@ -1,0 +1,46 @@
+=== RUN   TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities
+    doctor_test.go:77: gpu core capabilities = {ContinuousForward:not_implemented ContinuousBackward:not_implemented ContinuousTraining:not_implemented SparseForward:not_implemented SparseBackward:not_implemented SparseTraining:not_implemented Details:<nil>}, want {ContinuousForward:implemented_with_constraints ContinuousBackward:implemented_with_constraints ContinuousTraining:implemented_with_constraints SparseForward:implemented_with_constraints SparseBackward:implemented_with_constraints SparseTraining:implemented_with_constraints Details:0x521655a8c000}
+--- FAIL: TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities (0.18s)
+=== RUN   TestDoctorCoreCapabilitiesDetailsAreIndependent
+    doctor_test.go:189: GPU details = first:<nil> second:<nil>, want independent non-nil details
+--- FAIL: TestDoctorCoreCapabilitiesDetailsAreIndependent (0.00s)
+=== RUN   TestGPUProbeMissingOptionalToolDoesNotClaimCoreExecution
+    doctor_test.go:215: GPU details are missing
+--- FAIL: TestGPUProbeMissingOptionalToolDoesNotClaimCoreExecution (0.00s)
+=== RUN   TestDoctorMediaToolProbeReportsAvailabilityAndFailures
+--- PASS: TestDoctorMediaToolProbeReportsAvailabilityAndFailures (0.00s)
+=== RUN   TestDoctorRejectsCancellation
+--- PASS: TestDoctorRejectsCancellation (0.00s)
+=== RUN   TestDoctorRejectsNilContext
+--- PASS: TestDoctorRejectsNilContext (0.00s)
+=== RUN   TestDoctorRunWritesV1JSON
+--- PASS: TestDoctorRunWritesV1JSON (0.16s)
+=== RUN   TestDoctorHelpDescribesGPUConstraintsAndExecutionSeparation
+    doctor_test.go:325: doctor help missing "pure scalar"
+    doctor_test.go:325: doctor help missing "zero-delay"
+    doctor_test.go:325: doctor help missing "independent episode"
+    doctor_test.go:325: doctor help missing "cpu_float64"
+    doctor_test.go:325: doctor help missing "activation=cpu"
+    doctor_test.go:325: doctor help missing "cpu_adamw"
+    doctor_test.go:325: doctor help missing "full_graph=unverified"
+    doctor_test.go:325: doctor help missing "not_probed"
+    doctor_test.go:330: doctor help missing hardware/execution separation phrase "gpu hardware"
+    doctor_test.go:339: top-level help does not mention GPU support constraints
+--- FAIL: TestDoctorHelpDescribesGPUConstraintsAndExecutionSeparation (0.00s)
+=== RUN   TestDoctorRunRejectsInvalidArguments
+=== RUN   TestDoctorRunRejectsInvalidArguments/unknown_flag
+=== RUN   TestDoctorRunRejectsInvalidArguments/positional_argument
+--- PASS: TestDoctorRunRejectsInvalidArguments (0.00s)
+    --- PASS: TestDoctorRunRejectsInvalidArguments/unknown_flag (0.00s)
+    --- PASS: TestDoctorRunRejectsInvalidArguments/positional_argument (0.00s)
+=== RUN   TestDoctorRunPropagatesOutputFailure
+--- PASS: TestDoctorRunPropagatesOutputFailure (0.15s)
+=== RUN   TestGPUParsersSeparateDeviceResults
+--- PASS: TestGPUParsersSeparateDeviceResults (0.00s)
+=== RUN   TestGPUProbeMissingToolIsUnknown
+--- PASS: TestGPUProbeMissingToolIsUnknown (0.00s)
+=== RUN   TestGPUProbeHonorsTimeout
+--- PASS: TestGPUProbeHonorsTimeout (2.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/internal/cli	2.926s
+FAIL
