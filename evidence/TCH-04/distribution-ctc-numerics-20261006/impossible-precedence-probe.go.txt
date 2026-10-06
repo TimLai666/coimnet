@@ -1,0 +1,8 @@
+package main
+import("fmt"; "math"; "github.com/TimLai666/coimnet/tasks/ocr/ctc")
+func main(){
+for _, values:=range []struct{name string; row []float64}{
+{"finite_extremes",[]float64{math.MaxFloat64,-math.MaxFloat64}},
+{"nan",[]float64{math.NaN(),0}},
+}{l,g,r,e:=ctc.LossWith([][]float64{values.row},[]int{1,1},ctc.Options{ZeroOnImpossible:true});fmt.Printf("%s loss=%g grad=%v report=%+v error=%v\n",values.name,l,g,r,e)}
+}

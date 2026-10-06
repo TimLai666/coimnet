@@ -129,6 +129,8 @@ ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在
 
 ## 數值與研究測試
 
+蒸餾與 CTC 的 log 機率在分數位移後正規化。蒸餾溫度作用於位移後差值，KL 與 CE 使用相同的私有計算。partial 機率、類別映射及混合設定保持。CTC 保留路徑合併與無合法路徑策略，每影格的條件路徑機率總和須在 1e-8 內接近 1，超出時回數值精度錯誤。NaN／Inf 輸入或不可表示的數值計算回錯誤，清空損失、梯度及報告。ZeroOnImpossible 只處理無合法路徑，不吞掉數值錯誤。純計算不改輸入，驗收見 [ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md)。
+
 稀疏算子先用規格第 9.2 節的手算值，再以隨機小圖、batch、向量與共享參數對照獨立參考。平滑完整路徑以中心有限差分驗證每組參數與輸入。替代梯度只驗證宣告公式，不拿硬放電做有限差分。
 
 `evidence/gradient-audit-20260913.json` 稽核 bridge 的 `epsilon=1e-2, 2e-3, 1e-3, 1e-4`；目前測試值 `2e-3` 的六組梯度最大絕對誤差為 `9.288636276e-7`，最大相對誤差為 `1.583954284e-3`，通過本稽核選定的 `audit_combined_atol_1e-5_rtol_1e-4` 比較判準 `absolute_error <= 1e-5 + 1e-4*abs(fd)`，此判準不是第 9.4 節逐字公式。第 9.4 節的 `atol=1e-5, rtol=1e-4` 是 float32 前向與參考值比較的工程預設；平滑 float64 有限差分使用相對誤差起始門檻 `1e-4`，近零梯度另看絕對誤差。純 float64 core 的 tanh、softplus 各組在四個 epsilon 的 `relative_error_gt_1e-4_count` 均為 0，近零絕對檢查計數也均為 0；bridge 跨越 Insyra float32 邊界，`epsilon=1e-4` 有三個稽核合併判準失敗，因此保留 `2e-3`，不把結果推廣成所有配置或純 float64 保證。

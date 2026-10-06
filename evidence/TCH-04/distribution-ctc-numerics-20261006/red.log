@@ -1,0 +1,55 @@
+=== RUN   TestDistributionNumericalUniformExtremeScores
+    distribution_numerical_test.go:116: loss = -0.69314718055994529, want 0 (diff 0.693 > 2e-12)
+--- FAIL: TestDistributionNumericalUniformExtremeScores (0.00s)
+=== RUN   TestDistributionNumericalMixedTemperatureAndScale
+=== RUN   TestDistributionNumericalMixedTemperatureAndScale/half
+=== RUN   TestDistributionNumericalMixedTemperatureAndScale/double
+--- PASS: TestDistributionNumericalMixedTemperatureAndScale (0.00s)
+    --- PASS: TestDistributionNumericalMixedTemperatureAndScale/half (0.00s)
+    --- PASS: TestDistributionNumericalMixedTemperatureAndScale/double (0.00s)
+=== RUN   TestDistributionNumericalShiftPartialAndDeclaredMap
+    distribution_numerical_test.go:172: loss = 0.7549289015479852, want 0.54567065265864789 (diff 0.209 > 2e-12)
+--- FAIL: TestDistributionNumericalShiftPartialAndDeclaredMap (0.00s)
+=== RUN   TestDistributionNumericalRejectsNonFiniteAndOverflow
+=== RUN   TestDistributionNumericalRejectsNonFiniteAndOverflow/nan
+    distribution_numerical_test.go:225: Loss = nil, want error for nan
+=== RUN   TestDistributionNumericalRejectsNonFiniteAndOverflow/plus_inf
+    distribution_numerical_test.go:225: Loss = nil, want error for plus inf
+=== RUN   TestDistributionNumericalRejectsNonFiniteAndOverflow/minus_inf
+    distribution_numerical_test.go:225: Loss = nil, want error for minus inf
+=== NAME  TestDistributionNumericalRejectsNonFiniteAndOverflow
+    distribution_numerical_test.go:238: Loss with an overflowing normalization difference = nil, want error
+--- FAIL: TestDistributionNumericalRejectsNonFiniteAndOverflow (0.00s)
+    --- FAIL: TestDistributionNumericalRejectsNonFiniteAndOverflow/nan (0.00s)
+    --- FAIL: TestDistributionNumericalRejectsNonFiniteAndOverflow/plus_inf (0.00s)
+    --- FAIL: TestDistributionNumericalRejectsNonFiniteAndOverflow/minus_inf (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/distill	0.235s
+=== RUN   TestCTCNumericalSingleFrameHandValue
+--- PASS: TestCTCNumericalSingleFrameHandValue (0.00s)
+=== RUN   TestCTCNumericalShiftMatchesEnumeratedPaths
+=== RUN   TestCTCNumericalShiftMatchesEnumeratedPaths/empty
+    numerical_test.go:180: loss = 10, want 10.571726513999598 (diff 0.572)
+=== RUN   TestCTCNumericalShiftMatchesEnumeratedPaths/repeated
+    numerical_test.go:180: loss = 3.7582429349459319, want 4.3299694489455298 (diff 0.572)
+=== RUN   TestCTCNumericalShiftMatchesEnumeratedPaths/distinct
+    numerical_test.go:180: loss = 3.1514507966216758, want 3.7231773106212742 (diff 0.572)
+--- FAIL: TestCTCNumericalShiftMatchesEnumeratedPaths (0.00s)
+    --- FAIL: TestCTCNumericalShiftMatchesEnumeratedPaths/empty (0.00s)
+    --- FAIL: TestCTCNumericalShiftMatchesEnumeratedPaths/repeated (0.00s)
+    --- FAIL: TestCTCNumericalShiftMatchesEnumeratedPaths/distinct (0.00s)
+=== RUN   TestCTCNumericalImpossiblePolicies
+--- PASS: TestCTCNumericalImpossiblePolicies (0.00s)
+=== RUN   TestCTCNumericalRejectsNonFiniteAndOverflow
+=== RUN   TestCTCNumericalRejectsNonFiniteAndOverflow/nan
+=== RUN   TestCTCNumericalRejectsNonFiniteAndOverflow/plus_inf
+=== RUN   TestCTCNumericalRejectsNonFiniteAndOverflow/minus_inf
+=== NAME  TestCTCNumericalRejectsNonFiniteAndOverflow
+    numerical_test.go:263: Loss with an overflowing normalization difference = nil, want error
+--- FAIL: TestCTCNumericalRejectsNonFiniteAndOverflow (0.00s)
+    --- PASS: TestCTCNumericalRejectsNonFiniteAndOverflow/nan (0.00s)
+    --- PASS: TestCTCNumericalRejectsNonFiniteAndOverflow/plus_inf (0.00s)
+    --- PASS: TestCTCNumericalRejectsNonFiniteAndOverflow/minus_inf (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/tasks/ocr/ctc	0.117s
+FAIL

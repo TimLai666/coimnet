@@ -1,0 +1,365 @@
+{
+  "requirement": "TCH-04",
+  "covered_requirements": [
+    "TCH-04",
+    "TSK-01",
+    "TSK-02"
+  ],
+  "status": "verified_scoped",
+  "evidence_type": "software_numerical_correctness_supplement",
+  "base_commit": "4c7ff4879c6b9f1db61e9ce8c19d1ca3f90925c1",
+  "source_sha256": "2e0bd7cd0568881b79b35e0bde06111d9d36e2bd6da20313c6aec56c5d312c89",
+  "source_manifest": "source-manifest.json",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "reproduction_command": [
+    "go test -count=1 -v -run 'Test(Distribution|CTC)Numerical' ./distill ./tasks/ocr/ctc",
+    "go test -count=1 -v ./distill ./tasks/ocr/ctc ./tasks/ocr ./tasks/asr",
+    "go build ./...",
+    "go test -count=1 ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "python3 evidence/TCH-04/distribution-ctc-numerics-20261006/source-integrity.py",
+    "cp evidence/TCH-04/distribution-ctc-numerics-20261006/public-probe.go.txt /tmp/coimnet-sequence-public-probe.go",
+    "go run /tmp/coimnet-sequence-public-probe.go",
+    "cp evidence/TCH-04/distribution-ctc-numerics-20261006/gap-probe.go.txt /tmp/coimnet-gap-probe.go",
+    "go run /tmp/coimnet-gap-probe.go"
+  ],
+  "observed_result": {
+    "final_red_top_level_failed": 9,
+    "final_red_top_level_passed_policy_control": 1,
+    "green_numerical_top_level_passed": 10,
+    "related_top_level_passed": 124,
+    "full_ordinary_packages_passed": 57,
+    "full_race_packages_passed": 57,
+    "uniform_distillation_loss": 0,
+    "single_frame_ctc_loss": 0.6931471805599453,
+    "single_frame_ctc_gradient": [
+      [
+        0.5,
+        -0.5
+      ]
+    ],
+    "lost_posterior_mass_refused": true,
+    "cleared_error_outputs": true,
+    "frozen_tests_unchanged": 3,
+    "protected_historical_inputs_unchanged": 2006,
+    "public_signatures_unchanged": true,
+    "root_review": "root-review.md",
+    "independent_review": "adversarial-review.md",
+    "confirmed_open_in_scope_findings": 0
+  },
+  "test_log": [
+    "red-complete.log",
+    "posterior-red.log",
+    "green.log",
+    "related-tests.log",
+    "full-test.log",
+    "full-race.log"
+  ],
+  "command_receipts": {
+    "existing-tests": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "./distill",
+        "./tasks/ocr/ctc"
+      ],
+      "started_at": "2026-10-06T13:39:06.283569+00:00",
+      "duration_seconds": 1.675055084,
+      "exit_code": 0,
+      "log": "existing-tests.log"
+    },
+    "red-complete": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Test(Distribution|CTC)Numerical",
+        "-v",
+        "./distill",
+        "./tasks/ocr/ctc"
+      ],
+      "started_at": "2026-10-06T13:46:50.948931+00:00",
+      "duration_seconds": 1.202292791,
+      "exit_code": 1,
+      "log": "red-complete.log"
+    },
+    "posterior-red": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "-run",
+        "^TestCTCNumericalRejectsLostPosteriorMass$",
+        "./tasks/ocr/ctc"
+      ],
+      "started_at": "2026-10-06T13:47:25.612673+00:00",
+      "duration_seconds": 0.46671491600000004,
+      "exit_code": 1,
+      "log": "posterior-red.log"
+    },
+    "green": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "-run",
+        "Test(Distribution|CTC)Numerical",
+        "./distill",
+        "./tasks/ocr/ctc"
+      ],
+      "started_at": "2026-10-06T13:56:49.980976+00:00",
+      "duration_seconds": 1.704146166,
+      "exit_code": 0,
+      "log": "green.log"
+    },
+    "related-tests": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-v",
+        "./distill",
+        "./tasks/ocr/ctc",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "started_at": "2026-10-06T13:57:21.414605+00:00",
+      "duration_seconds": 3.145346541,
+      "exit_code": 0,
+      "log": "related-tests.log"
+    },
+    "full-test": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "started_at": "2026-10-06T13:58:04.916500+00:00",
+      "duration_seconds": 50.660529749999995,
+      "exit_code": 0,
+      "log": "full-test.log"
+    },
+    "full-race": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "started_at": "2026-10-06T13:59:08.422774+00:00",
+      "duration_seconds": 1273.819871833,
+      "exit_code": 0,
+      "log": "full-race.log"
+    },
+    "build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-06T13:57:33.152909+00:00",
+      "duration_seconds": 2.434673167,
+      "exit_code": 0,
+      "log": "build.log"
+    },
+    "vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-06T13:57:33.152989+00:00",
+      "duration_seconds": 1.5294135420000001,
+      "exit_code": 0,
+      "log": "vet.log"
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "started_at": "2026-10-06T13:52:07.856018+00:00",
+      "duration_seconds": 3.403428792,
+      "exit_code": 0,
+      "log": "mod-verify.log"
+    },
+    "mod-tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "started_at": "2026-10-06T13:52:07.856031+00:00",
+      "duration_seconds": 0.12342012499999999,
+      "exit_code": 0,
+      "log": "mod-tidy.log"
+    },
+    "handoff-integrity": {
+      "command": [
+        "sh",
+        "-c",
+        "cd docs/handoff && shasum -a 256 -c SHA256SUMS.txt"
+      ],
+      "started_at": "2026-10-06T13:52:07.856032+00:00",
+      "duration_seconds": 0.07030879200000001,
+      "exit_code": 0,
+      "log": "handoff-integrity.log"
+    },
+    "formatting": {
+      "command": [
+        "gofmt",
+        "-l",
+        "distill/distribution.go",
+        "distill/distribution_numerical_test.go",
+        "tasks/ocr/ctc/ctc.go",
+        "tasks/ocr/ctc/numerical_test.go",
+        "tasks/ocr/ctc/posterior_numerical_test.go"
+      ],
+      "started_at": "2026-10-06T13:59:09.598983+00:00",
+      "duration_seconds": 0.026887333,
+      "exit_code": 0,
+      "log": "formatting.log"
+    },
+    "diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-06T13:59:09.739537+00:00",
+      "duration_seconds": 0.050065624999999996,
+      "exit_code": 0,
+      "log": "diff-check.log"
+    },
+    "source-integrity": {
+      "command": [
+        "python3",
+        "evidence/TCH-04/distribution-ctc-numerics-20261006/source-integrity.py"
+      ],
+      "started_at": "2026-10-06T14:05:19.435738+00:00",
+      "duration_seconds": 1.053649084,
+      "exit_code": 0,
+      "log": "source-integrity.log"
+    },
+    "public-probe-green": {
+      "command": [
+        "go",
+        "run",
+        "/tmp/coimnet-sequence-public-probe.go"
+      ],
+      "started_at": "2026-10-06T13:57:54.357962+00:00",
+      "duration_seconds": 0.7761337500000001,
+      "exit_code": 0,
+      "log": "public-probe-green.log"
+    },
+    "gap-probe-green": {
+      "command": [
+        "go",
+        "run",
+        "/tmp/coimnet-gap-probe.go"
+      ],
+      "started_at": "2026-10-06T13:57:54.357962+00:00",
+      "duration_seconds": 0.406737917,
+      "exit_code": 0,
+      "log": "gap-probe-green.log"
+    },
+    "impossible-precedence-probe": {
+      "command": [
+        "go",
+        "run",
+        "/tmp/coimnet-impossible-precedence-probe.go"
+      ],
+      "started_at": "2026-10-06T14:07:48.071590+00:00",
+      "duration_seconds": 1.5013614579999999,
+      "exit_code": 0,
+      "log": "impossible-precedence-probe.log"
+    }
+  },
+  "artifact_sha256": {
+    "adversarial-review.md": "cc2da9b755804421219da501aaf35e073633b24356de130fc5cef0dd0de9822c",
+    "analysis.md": "ea747567c69f1b6fcf1114aed75aeba4ce5340c4fe2c89b17cb36a295888b87b",
+    "baseline.json": "86669865987b69f2ee8c50bb70692c8ad9f5cc1ff8925a43b496361c6ce8be2e",
+    "build.json": "dba2195368b9a7b11cbbc060976102b2b6028a7b400fcc5548a4fead07d2f41d",
+    "build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "delegation.txt": "26207428895972187526ee4598a63ead0e5bac309909086753d494e598870a60",
+    "diff-check.json": "c09a686cb2b8a501f97391b6aa5ca35ddb3f1169743475f33713f9bdcc6ac4e5",
+    "diff-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "environment.json": "170e2f3700651b35ba1af674fd888cad564da5874470efac2004678946fe608a",
+    "existing-tests.json": "c558de553938c266f93543cd1c9321ef9eeed49a1a5a70602f58c79cf7a732f2",
+    "existing-tests.log": "3883cd8e7fa1de583d2bede9ad974cf089601bdb90456e6b7828b23bfc66c994",
+    "formatting.json": "bb3e4a27ecaaa69b626c421e6aaf19ff4f2f0bdf48ffce8fe3b02f321d020e8f",
+    "formatting.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "frozen-tests.json": "99b2408e83e7b91a7546613ee121920a66038574d4a59c7c09a57d0e0afc3773",
+    "full-race.json": "c9b126ca8e7449980dbc2f2273deeb4c4f9352d69c95ca82dfc0e4ded759ccb6",
+    "full-race.log": "fa9ffc4bc253bc53fd7c42886f43c9a62de81e912da6a6913450ff50eb5cafa1",
+    "full-test.json": "237efa0af99009a7ebe6c9a154914916c43327f68f55ca4da8b845c4aeaf6c44",
+    "full-test.log": "f1fc1f60be183cc2ca84288d85bbf7c5fb6afb70c05e3aef1df2b8508c31578f",
+    "gap-probe-green.json": "2c5e1381195fb5a4bff0c85c9b4c71673e2544e25ddd4731dddeb0ff8cdb3e51",
+    "gap-probe-green.log": "4516e7e09ac6e69e1f407ee96387b2c59e9fdd09f0013f5453d5f24023daebee",
+    "gap-probe-red.json": "10ff81ecdf8cf928b86aa4822a163a3989db88adbd88a81f39ffe616b76ba590",
+    "gap-probe-red.log": "64ad209293002ca023abc3dbcc5d11533b9c6c2d4c6ae214ca2aed4acfdc574d",
+    "gap-probe.go.txt": "d30989739cae887e1b1af9a384a54b86792e776a92bc2617682af49ede33a828",
+    "green.json": "38bfa93678e70e91c3fbaa829796e2b0af03df732e70446bd5d240ab1f22753f",
+    "green.log": "4e80457ef5e8f5746996537d90aad9fb5a36887901a56c603b207ad1882de681",
+    "handoff-integrity.json": "a94e819e07060b20e4d2cd00a5ba80ff8fb8af1ea44100792079bbbbc44450ed",
+    "handoff-integrity.log": "23c49d8e2c53d472e68d42733bcd08e1638e3ce72c73f465056f24cc5f7cf530",
+    "impossible-precedence-probe.go.txt": "d0f0ba5f54b867d5b521697d1727864be24fe10ee12dd36ae87cecab40bc6a23",
+    "impossible-precedence-probe.json": "1b850c753e591f192ccdd8853a1a8ee196eb399060413c74f0867ef135b254b9",
+    "impossible-precedence-probe.log": "3e32d6ae0427b98af143beb0c0715c0274a02cebc10e225eca770becb150ef28",
+    "impossible-precedence-review.json": "315b05d5b5011aca9526315385aa088f1f72a9edf397bb76acfc3ef199f545a6",
+    "mod-tidy.json": "7c4a0bf6b872f9bb5f9446f748e5e5728be7bdfaef5fdfddcc80de2afacb653c",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.json": "8dabeff87fd0b40f632308ee6bbb693986ee05367c2c66e7765ba226ddda633a",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "posterior-red.json": "b81c48367036a209f482dc78139f481d6cedde6b71aa51009076c784d6a5e303",
+    "posterior-red.log": "c2d965fac1019f0b61567c1779a99360ccaab20a34d1ad67dba5178579c8da29",
+    "public-probe-green.json": "3da39307bc67c83288f3fc2e3c50440517f8e89823cf512404084442dbe82902",
+    "public-probe-green.log": "2455e8055514450a3be556823b7416ec640959bd734bb08196ecc89887d83202",
+    "public-probe.go.txt": "0377b129c802fabb0638a8a556a39c504e3e6bb4ea086b99fadff7d7519d9e4d",
+    "red-complete.json": "da552cc4578e831f92e97f7ade335e1a80783ab18425ccc321162325ef66a228",
+    "red-complete.log": "a8d3751405dcb70e57be995691f2da515a261adac6272e066975285941690475",
+    "red.json": "f273f461663c6b5271af58bd938e0e22cd3fe52cb8c6a1dde3b271c1d4801c9c",
+    "red.log": "ca9d1cf52b21acc173dd4022adbe790086147052ecf56eb1be7fbb954193f624",
+    "related-tests.json": "d3f4efd5b7af464ac47cb88122ad92dc5e59d9fd37b741d2098c44a3951b4d40",
+    "related-tests.log": "01af8ea40a97e22b0f55073afd2942f1d9a081bf66775e37c33e3f781734e646",
+    "remote-before-delivery.json": "9dbec85158380978f7174cc19290bf374acca283a9464cb1b6eb40976234c1ba",
+    "remote-before-delivery.log": "f2d285ca685c1cc4f2543d3c43bcad8a48f1e80641080d74709d8955413ff65b",
+    "root-review.md": "7967656671bc357df667aa75b692d4ae5434cc0769fd542a5728d1b42a23129b",
+    "root-test-review.md": "55d95c83ad0a1b461b31fb9e5a6ce9287d84e4feb7d70e06de83ee1bc78ab98d",
+    "source-integrity.json": "0e3102eb564e4f677a643482a6bdf01a75f26e86724548e79ac40dfcc5a87cfd",
+    "source-integrity.log": "4817242fae3d1af731ae1db6680f1bdeb5e851ec12056b5a9e13738ec6bc189d",
+    "source-integrity.py": "1302e65b944fb3e2a5487cf1e6e60b6d41d7eb6481125bd6eaac3c956c0537d6",
+    "source-manifest.json": "effc1bb76ecc8172e4203b652be71ec24875484290fa0a6f2940a0a87f8bbe14",
+    "vet.json": "722374c81d27c1e070b70f5ac539eaa6410ebe14f3ff3f9605a00fe30605149b",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "limits": [
+    "Mac arm64 execution only for this slice; no new Ubuntu, Windows or GPU validation.",
+    "Bounded float64 arithmetic; the CTC mass guard rejects the demonstrated precision loss, not a guarantee for arbitrary dynamic range.",
+    "No new evidence of navigation learning or biological mechanism; no model, task, dependency or original requirement status change."
+  ]
+}

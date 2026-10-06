@@ -1,0 +1,27 @@
+{
+  "requirement": "TSK-02",
+  "status": "verified_scoped",
+  "evidence_type": "software_numerical_correctness_supplement",
+  "reproduction_command": "go test -count=1 -v ./tasks/asr ./tasks/ocr/ctc",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "dependency": "Insyra v0.3.4",
+    "other_platforms": "Not executed for this slice"
+  },
+  "source_sha256": "2e0bd7cd0568881b79b35e0bde06111d9d36e2bd6da20313c6aec56c5d312c89",
+  "verification": "verification.json",
+  "observed_result": "Existing task training regressions and shared CTC hand-value, enumeration, shift, impossible-policy and invalid-numeric checks pass.",
+  "test_log": [
+    "related-tests.log",
+    "green.log",
+    "full-test.log",
+    "full-race.log"
+  ],
+  "scope": "Synthetic software correctness supplement; existing task-learning requirement status is unchanged."
+}

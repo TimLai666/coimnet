@@ -44,8 +44,9 @@ func Loss(logits [][]float64, target []int) (loss float64, grad [][]float64, err
 // in a target) and its gradient with respect to the logits (Graves 2006 eq. 16:
 // grad[t][k] = y[t][k] − (1/(p·y[t][k])) Σ_{s: l'_s = k} α_t(s)β_t(s), with α, β
 // computed in log space on the blank-extended sequence l' of length
-// 2·len(target)+1). Bad inputs are errors; an impossible target is
-// ErrNoValidPath unless Options.ZeroOnImpossible.
+// 2·len(target)+1). Bad inputs and non-representable normalization, loss,
+// gradient, or posterior calculations are errors and clear all outputs; an
+// impossible target is ErrNoValidPath unless Options.ZeroOnImpossible.
 func LossWith(logits [][]float64, target []int, o Options) (loss float64, grad [][]float64, r Report, err error) {
 	T := len(logits)
 	if T == 0 {
@@ -104,14 +105,36 @@ func LossWith(logits [][]float64, target []int, o Options) (loss float64, grad [
 				m = v
 			}
 		}
+		shifted := make([]float64, classes)
 		s := 0.0
-		for _, v := range row {
-			s += math.Exp(v - m)
-		}
-		lse := m + math.Log(s)
-		logY[t] = make([]float64, classes)
 		for k, v := range row {
-			logY[t][k] = v - lse
+			d := v - m
+			if !isFinite(d) {
+				return 0, nil, Report{}, numericalError("frame %d class %d normalization difference %v is not finite", t, k, d)
+			}
+			shifted[k] = d
+			e := math.Exp(d)
+			if !isFinite(e) {
+				return 0, nil, Report{}, numericalError("frame %d class %d normalization exponent %v is not finite", t, k, e)
+			}
+			s += e
+			if !isFinite(s) {
+				return 0, nil, Report{}, numericalError("frame %d normalization sum %v is not finite", t, s)
+			}
+		}
+		if !(s > 0) {
+			return 0, nil, Report{}, numericalError("frame %d normalization sum %v is not positive", t, s)
+		}
+		logSum := math.Log(s)
+		if !isFinite(logSum) {
+			return 0, nil, Report{}, numericalError("frame %d normalization log-sum %v is not finite", t, logSum)
+		}
+		logY[t] = make([]float64, classes)
+		for k, d := range shifted {
+			logY[t][k] = d - logSum
+			if !isFinite(logY[t][k]) {
+				return 0, nil, Report{}, numericalError("frame %d class %d log probability %v is not finite", t, k, logY[t][k])
+			}
 		}
 	}
 
@@ -126,11 +149,25 @@ func LossWith(logits [][]float64, target []int, o Options) (loss float64, grad [
 			a := alpha[t-1][s]
 			if s > 0 {
 				a = lse2(a, alpha[t-1][s-1])
+				if math.IsNaN(a) || math.IsInf(a, 1) {
+					return 0, nil, Report{}, numericalError("alpha frame %d state %d merge %v is not finite", t, s, a)
+				}
 				if s > 1 && lp[s] != 0 && lp[s] != lp[s-2] {
 					a = lse2(a, alpha[t-1][s-2])
+					if math.IsNaN(a) || math.IsInf(a, 1) {
+						return 0, nil, Report{}, numericalError("alpha frame %d state %d merge %v is not finite", t, s, a)
+					}
 				}
 			}
-			alpha[t][s] = logY[t][lp[s]] + a
+			if a == negInf {
+				alpha[t][s] = negInf
+				continue
+			}
+			value := logY[t][lp[s]] + a
+			if !isFinite(value) {
+				return 0, nil, Report{}, numericalError("alpha frame %d state %d value %v is not finite", t, s, value)
+			}
+			alpha[t][s] = value
 		}
 	}
 
@@ -144,11 +181,25 @@ func LossWith(logits [][]float64, target []int, o Options) (loss float64, grad [
 			a := beta[t+1][s]
 			if s+1 < S {
 				a = lse2(a, beta[t+1][s+1])
+				if math.IsNaN(a) || math.IsInf(a, 1) {
+					return 0, nil, Report{}, numericalError("beta frame %d state %d merge %v is not finite", t, s, a)
+				}
 				if s+2 < S && lp[s] != 0 && lp[s] != lp[s+2] {
 					a = lse2(a, beta[t+1][s+2])
+					if math.IsNaN(a) || math.IsInf(a, 1) {
+						return 0, nil, Report{}, numericalError("beta frame %d state %d merge %v is not finite", t, s, a)
+					}
 				}
 			}
-			beta[t][s] = logY[t][lp[s]] + a
+			if a == negInf {
+				beta[t][s] = negInf
+				continue
+			}
+			value := logY[t][lp[s]] + a
+			if !isFinite(value) {
+				return 0, nil, Report{}, numericalError("beta frame %d state %d value %v is not finite", t, s, value)
+			}
+			beta[t][s] = value
 		}
 	}
 
@@ -156,25 +207,80 @@ func LossWith(logits [][]float64, target []int, o Options) (loss float64, grad [
 	if S > 1 {
 		logp = lse2(logp, alpha[T-1][S-2])
 	}
+	if !isFinite(logp) {
+		return 0, nil, Report{}, numericalError("target log probability %v is not finite", logp)
+	}
 	loss = -logp
+	if !isFinite(loss) {
+		return 0, nil, Report{}, numericalError("loss %v is not finite", loss)
+	}
 
 	grad = make([][]float64, T)
 	for t := range grad {
 		grad[t] = make([]float64, classes)
+		occupancy := make([]float64, classes)
+		mass := 0.0
+		for s, k := range lp {
+			a := alpha[t][s]
+			b := beta[t][s]
+			// -Inf denotes an unreachable state and contributes zero posterior
+			// mass. It is valid in the dynamic-programming tables.
+			if a == negInf || b == negInf {
+				continue
+			}
+			if !isFinite(a) || !isFinite(b) {
+				return 0, nil, Report{}, numericalError("frame %d state %d posterior inputs are not finite: alpha=%v beta=%v", t, s, a, b)
+			}
+			posteriorLog := a + b
+			if !isFinite(posteriorLog) {
+				return 0, nil, Report{}, numericalError("frame %d state %d posterior log-product %v is not finite", t, s, posteriorLog)
+			}
+			posteriorLog -= logY[t][k]
+			if !isFinite(posteriorLog) {
+				return 0, nil, Report{}, numericalError("frame %d state %d posterior normalization %v is not finite", t, s, posteriorLog)
+			}
+			posteriorLog -= logp
+			if !isFinite(posteriorLog) {
+				return 0, nil, Report{}, numericalError("frame %d state %d posterior log-probability %v is not finite", t, s, posteriorLog)
+			}
+			posterior := math.Exp(posteriorLog)
+			if !isFinite(posterior) {
+				return 0, nil, Report{}, numericalError("frame %d state %d posterior exponent %v is not finite", t, s, posterior)
+			}
+			mass += posterior
+			if !isFinite(mass) {
+				return 0, nil, Report{}, numericalError("frame %d posterior mass %v is not finite", t, mass)
+			}
+			occupancy[k] += posterior
+			if !isFinite(occupancy[k]) {
+				return 0, nil, Report{}, numericalError("frame %d class %d posterior occupancy %v is not finite", t, k, occupancy[k])
+			}
+		}
+		if math.Abs(mass-1) > 1e-8 {
+			return 0, nil, Report{}, numericalError("frame %d posterior mass %.17g differs from 1 by more than 1e-8", t, mass)
+		}
 		for k := range grad[t] {
 			y := math.Exp(logY[t][k])
-			g := y
-			for s := range lp {
-				if lp[s] != k {
-					continue
-				}
-				g -= math.Exp(alpha[t][s] + beta[t][s] - logY[t][k] - logp)
+			if !isFinite(y) {
+				return 0, nil, Report{}, numericalError("frame %d class %d probability %v is not finite", t, k, y)
+			}
+			g := y - occupancy[k]
+			if !isFinite(g) {
+				return 0, nil, Report{}, numericalError("frame %d class %d gradient %v is not finite", t, k, g)
 			}
 			grad[t][k] = g
 		}
 	}
 
 	return loss, grad, Report{Frames: T, Labels: L}, nil
+}
+
+func isFinite(v float64) bool {
+	return !math.IsNaN(v) && !math.IsInf(v, 0)
+}
+
+func numericalError(format string, args ...any) error {
+	return fmt.Errorf("ctc: numerical precision error: "+format, args...)
 }
 
 // lse2 returns log(exp(a)+exp(b)), stable against large magnitudes; −Inf

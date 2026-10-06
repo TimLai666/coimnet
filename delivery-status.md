@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md) 已通過 4／5 驗收。10 個新增數值回歸、相關流程的 124 個頂層測試、Mac 完整一般與 race 各 57 套件、建置、vet 及相依性檢查通過。Root 與獨立審查通過，公開 API、依賴及 2,006 份既有資料與證據保持。沒有本機執行阻礙，下一個可驗證成果是提交與推送核對，見[數值證據](evidence/TCH-04/distribution-ctc-numerics-20261006/verification.json)。
+
 [ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md) 已完成 5／5 驗收與交付：共用位移正規化、非法數值拒絕與有限加權價值計算完成，13 項新增與既有 20 項 RL 頂層測試通過。Root 接手修正第一版的中間溢位與多餘檢查。沒有本機驗證阻礙，Mac 完整一般與 race 各 57 套件、建置、vet、相依性、獨立審查與檔案審查通過，實作 `6d44edf` 已推送並核對遠端，見[交付紀錄](evidence/LRN-09/objective-numerics-20261006/delivery.json)。模型、依賴與非零狀態限制保留。
 
 [訓練框架盤點](evidence/LRN-09/framework-audit-20261006.md) 保存修正前來源 `9202bbf` 的公開入口重現。ticket 41 處理已確認的 PPO 數值缺陷。非零初始狀態及可塑性／化學機制的 PPO 訓練是既有未支援能力，六步期限則屬範例的任務定義。數值缺陷尚未被證明是方向學習失敗的原因。
@@ -104,6 +106,8 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
+本階段完成 ticket 42 的蒸餾與 CTC 數值修正、完整驗證及交付。手算、位移、極值與路徑枚舉以公開 Loss 入口驗收，既有訓練流程回歸以 distill、OCR、ASR 與完整套件測試驗收。
+
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
 
@@ -158,6 +162,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 39 | 研究者可以分開核對策略與價值的更新影響 | Codex 主 agent / Luna max 唯讀審查 | completed | 5／5；600 次完整梯度與更新比對、雙程序重現、獨立重算、17 種竄改檢查、Mac 完整一般與 race 驗證及審查通過。實作 0dc4d64 已推送並核對遠端 |
 | 40 | 研究者可以比較六步任務期限對提示導航學習的影響 | Codex 主 agent / OpenCode 免費模型 / Opus 審查 | completed | 5／5；實作 58cb01e 已推送並核對；完整一般與 race 各 57 套件、雙程序重現、獨立核對與審查通過；期限組 seed 3 通過，1／2 未通過 |
 | 41 | 研究者可以在大分數下正確計算 PPO 機率與損失，並收到非法數值錯誤 | Codex 主 agent / Luna max 測試、初版實作與審查 | completed | 5／5 驗收。原始 12 項有 9 項失敗，Root 補上加權價值極值回歸並修正，13 項新增與既有 20 項 RL 通過，完整驗證通過，實作 6d44edf 已推送並核對遠端 |
+| 42 | 研究者可以在大分數下取得正確的蒸餾與文字序列損失 | Codex 主 agent / Luna max 測試與實作 | in_progress | 4／5；10 個新增數值回歸、124 個相關頂層測試、完整一般與 race 各 57 套件及審查通過，待提交與推送核對 |
 
 ## 目前阻礙
 
@@ -175,7 +180,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 41](docs/tickets/41-ppo-objective-numerical-correctness.md) 的 PPO 數值修正已完成交付。下一個可驗證成果是修正蒸餾與文字辨識兩條公開入口的同類精度問題，先以手算案例寫失敗測試，再改位移正規化，重現見[數值分析](evidence/LRN-09/objective-numerics-20261006/analysis.md)。這兩處列在 [AGENTS.md](AGENTS.md#follow-ups)，尚未建立下一張 ticket。帶既有記憶的分段 PPO 訓練排在數值修正之後，須定義相符的前向／反向契約，不能只移除零狀態保護。
+[ticket 42](docs/tickets/42-distribution-ctc-numerical-correctness.md) 已完成本機驗證與審查，下一個可驗證成果是遠端交付核對。帶既有記憶的分段 PPO 訓練排在數值修正之後，須先定義相符的前向／反向契約。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
@@ -184,6 +189,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-06：ticket 42 修正蒸餾與共用 CTC 的位移正規化，保留原始不可能目標策略。CTC 額外拒絕已重現的條件路徑機率失精，錯誤清空結果。以公開入口手算及獨立路徑枚舉驗收，不調整模型、任務或依賴。
 
 2026-10-06：ticket 41 集中修正通用 PPO 機率、損失及非法數值處理，公開簽名與模型設定保持。蒸餾與文字辨識的同類錯誤另行處理，先於新增帶記憶的 PPO 能力。此數值缺陷尚未證明是方向學習失敗的原因。
 

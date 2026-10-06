@@ -131,9 +131,11 @@ type DistributionReport struct {
 //	mapped through the alignment, KL = Σ_i p_i (log p_i − log q_{a(i)}) over the
 //	given teacher classes (full or partial, p as given), CE = −log softmax(student)[label].
 //
-// Terms with p_i == 0 contribute 0. Everything goes through log-sum-exp so
-// logits of 1e3 stay finite. grad is dLoss/dstudent. label < 0 skips CE (Mix
-// must then be 1).
+// Terms with p_i == 0 contribute 0. Log-softmax uses a shifted score by
+// subtracting the largest student score before dividing by temperature, so
+// representable common shifts do not lose the normalization term. A
+// non-finite intermediate or result is returned as an error. grad is
+// dLoss/dstudent. label < 0 skips CE (Mix must then be 1).
 func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float64, label int) (loss float64, grad []float64, report DistributionReport, err error) {
 	if err := d.Validate(); err != nil {
 		return 0, nil, DistributionReport{}, err
@@ -206,36 +208,39 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 	} else if math.Abs(sum-1) > 1e-9 {
 		return 0, nil, DistributionReport{}, errInvalidTeacherDistribution
 	}
-
-	invT := 1 / d.Temperature
-	x := make([]float64, studentClasses)
-	for j, s := range student {
-		x[j] = s * invT
-	}
-	q := softmax(x)
-	logZ := lse(x)
-
-	kl := 0.0
-	pTilde := make([]float64, studentClasses)
-	m := 1.0
-	if partial {
-		m = sum
-	}
-	for i, p := range teacher.Probabilities {
-		j := classToStudent[i]
-		pTilde[j] += p
-		if p > 0 {
-			// log q_j as x_j − logsumexp(x), so an underflowed q_j never
-			// turns into −Inf.
-			kl += p * (math.Log(p) - (x[j] - logZ))
+	for _, s := range student {
+		if !finite(s) {
+			return 0, nil, DistributionReport{}, errors.New("distill: student logits must be finite")
 		}
 	}
 
-	loss = d.Mix * d.Temperature * d.Temperature * d.Scale * kl
 	grad = make([]float64, studentClasses)
-	klGrad := d.Mix * d.Temperature * d.Temperature * d.Scale * invT
-	for j := range grad {
-		grad[j] = klGrad * (m*q[j] - pTilde[j])
+	if d.Mix > 0 {
+		logQ, q, numericalErr := shiftedLogSoftmax(student, d.Temperature)
+		if numericalErr != nil {
+			return 0, nil, DistributionReport{}, numericalErr
+		}
+		kl := 0.0
+		pTilde := make([]float64, studentClasses)
+		m := 1.0
+		if partial {
+			m = sum
+		}
+		for i, p := range teacher.Probabilities {
+			j := classToStudent[i]
+			pTilde[j] += p
+			if p > 0 {
+				kl += p * (math.Log(p) - logQ[j])
+			}
+		}
+		if !finite(kl) {
+			return 0, nil, DistributionReport{}, errors.New("distill: KL is not finite")
+		}
+		loss = d.Mix * d.Temperature * d.Temperature * d.Scale * kl
+		klGrad := d.Mix * d.Temperature * d.Scale
+		for j := range grad {
+			grad[j] = klGrad * (m*q[j] - pTilde[j])
+		}
 	}
 
 	if label >= 0 {
@@ -243,8 +248,11 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 			return 0, nil, DistributionReport{}, fmt.Errorf("distill: label %d out of range for %d student classes", label, studentClasses)
 		}
 		if d.Mix < 1 {
-			loss += (1 - d.Mix) * (lse(student) - student[label])
-			q1 := softmax(student)
+			logQ, q1, numericalErr := shiftedLogSoftmax(student, 1)
+			if numericalErr != nil {
+				return 0, nil, DistributionReport{}, numericalErr
+			}
+			loss += (1 - d.Mix) * -logQ[label]
 			for j := range grad {
 				dq := q1[j]
 				if j == label {
@@ -252,6 +260,14 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 				}
 				grad[j] += (1 - d.Mix) * dq
 			}
+		}
+	}
+	if !finite(loss) {
+		return 0, nil, DistributionReport{}, errors.New("distill: loss is not finite")
+	}
+	for _, g := range grad {
+		if !finite(g) {
+			return 0, nil, DistributionReport{}, errors.New("distill: gradient is not finite")
 		}
 	}
 
@@ -265,38 +281,38 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 	}, nil
 }
 
-// lse returns the log-sum-exp of x.
-func lse(x []float64) float64 {
-	m := x[0]
-	for _, v := range x[1:] {
-		if v > m {
-			m = v
+// shiftedLogSoftmax returns both log softmax and softmax after shifting the
+// largest score before applying temperature. The shift is not written back to
+// the caller's scores; an unrepresentable difference is a numerical error.
+func shiftedLogSoftmax(scores []float64, temperature float64) ([]float64, []float64, error) {
+	maxScore := scores[0]
+	for _, score := range scores[1:] {
+		if score > maxScore {
+			maxScore = score
 		}
 	}
-	s := 0.0
-	for _, v := range x {
-		s += math.Exp(v - m)
+	logQ := make([]float64, len(scores))
+	normalizer := 0.0
+	for i, score := range scores {
+		logQ[i] = (score - maxScore) / temperature
+		if !finite(logQ[i]) {
+			return nil, nil, errors.New("distill: student normalization difference is not finite")
+		}
+		normalizer += math.Exp(logQ[i])
 	}
-	return m + math.Log(s)
-}
-
-// softmax returns exp(x) normalized by the log-sum-exp of x.
-func softmax(x []float64) []float64 {
-	m := x[0]
-	for _, v := range x[1:] {
-		if v > m {
-			m = v
+	if !finite(normalizer) || normalizer <= 0 {
+		return nil, nil, errors.New("distill: student normalization is not finite")
+	}
+	logNormalizer := math.Log(normalizer)
+	q := make([]float64, len(scores))
+	for i, value := range logQ {
+		logQ[i] = value - logNormalizer
+		q[i] = math.Exp(value) / normalizer
+		if !finite(logQ[i]) || !finite(q[i]) {
+			return nil, nil, errors.New("distill: student log-softmax is not finite")
 		}
 	}
-	s := 0.0
-	for _, v := range x {
-		s += math.Exp(v - m)
-	}
-	q := make([]float64, len(x))
-	for i, v := range x {
-		q[i] = math.Exp(v-m) / s
-	}
-	return q
+	return logQ, q, nil
 }
 
 func finite(v float64) bool {
