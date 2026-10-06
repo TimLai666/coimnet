@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 進行中，驗收 4／5。doctor 的 GPU 六項能力與完整限制已修正。Root 的 13 個頂層專項、真實 CLI 流程、Mac 完整一般與 race 各 57 個套件、建置、vet、格式與相依性檢查通過。2,953 份既有檔案與凍結測試保持。下一個驗證訊號是提交推送及遠端核對。OPS-05 保持 specified。
+[ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 已完成 5／5 驗收與交付。doctor 明列受限的 GPU 訓練支援條件，硬體探測與核心執行分開報告。13 個頂層專項、真實 CLI、Mac 完整一般與 race 各 57 個套件、建置、vet、格式及相依性檢查通過。2,953 份既有檔案與凍結測試保持。實作 `d7c8963` 已推送並核對遠端，見[工程驗證](evidence/OPS-02/doctor-gpu-capabilities-20261007/verification.json)與[交付紀錄](evidence/OPS-02/doctor-gpu-capabilities-20261007/delivery.json)。本票沒有阻礙，OPS-05 保持 specified。
 
 [ticket 43](docs/tickets/43-stateful-continuous-ppo.md) 已完成 5／5 驗收與交付。CPU 純量連續核心可從保存電位與延遲歷史接續 PPO，算分、梯度與候選驗證使用同一狀態。22 個頂層專項、372 個相關頂層測試、Mac 完整一般與 race 各 57 個套件，以及 Root／獨立審查通過。2,087 份既有資料與證據、公開簽名、依賴及原範例設定保持。實作 `874ac43` 已推送並核對遠端，見[工程驗證](evidence/LRN-09/stateful-continuous-ppo-20261006/verification.json)及[交付紀錄](evidence/LRN-09/stateful-continuous-ppo-20261006/delivery.json)。本票沒有阻礙。
 
@@ -168,7 +168,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 41 | 研究者可以在大分數下正確計算 PPO 機率與損失，並收到非法數值錯誤 | Codex 主 agent / Luna max 測試、初版實作與審查 | completed | 5／5 驗收。原始 12 項有 9 項失敗，Root 補上加權價值極值回歸並修正，13 項新增與既有 20 項 RL 通過，完整驗證通過，實作 6d44edf 已推送並核對遠端 |
 | 42 | 研究者可以在大分數下取得正確的蒸餾與文字序列損失 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5；10 個新增數值回歸、124 個相關頂層測試、完整一般與 race 各 57 套件及審查通過，實作 8fb25c2 已推送並核對遠端 |
 | 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5。22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過。候選失敗原狀保持，實作 874ac43 已推送並核對遠端 |
-| 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | in_progress | 4／5。13 個頂層專項、真實 CLI 流程、完整一般與 race 各 57 套件及 Root 審查通過，待 Git 交付 |
+| 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | completed | 5／5。13 個頂層專項、真實 CLI、完整一般與 race 各 57 套件及 Root 審查通過，實作 d7c8963 已推送並核對遠端 |
 
 ## 目前阻礙
 
@@ -186,7 +186,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 的 doctor 能力回報修正已完成專項、CLI 及完整工程檢查，待提交推送及遠端核對。支援設定、本次硬體探測與尚未探測的核心執行分開呈現，裝置常駐更新與完整圖尚未驗收的限制保持。
+[ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 已交付，下一張票尚未固定。建議接著補齊 [docs/INDEX.md](docs/INDEX.md) 漏列的格式宣告與索引一致性檢查，依 [AGENTS.md Follow-ups](AGENTS.md#follow-ups) 查核正式格式及測試反例。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

@@ -19,6 +19,7 @@
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.log](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.log) | 原始驗證輸出，保留實際失敗與通過結果。 |
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/cli-workflow.py) | 可執行的 CLI 或原件一致性驗證。 |
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/delegation.json](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/delegation.json) | 命令回條、環境或實際報告。 |
+| [evidence/OPS-02/doctor-gpu-capabilities-20261007/delivery.json](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/delivery.json) | 命令回條、環境或實際報告。 |
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/docs-check.json](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/docs-check.json) | 命令回條、環境或實際報告。 |
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/docs-check.log](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/docs-check.log) | 原始驗證輸出，保留實際失敗與通過結果。 |
 | [evidence/OPS-02/doctor-gpu-capabilities-20261007/doctor-after-run.json](/Users/timlai/Developer/coimnet/evidence/OPS-02/doctor-gpu-capabilities-20261007/doctor-after-run.json) | 命令回條、環境或實際報告。 |

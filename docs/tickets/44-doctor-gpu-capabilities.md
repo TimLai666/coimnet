@@ -3,7 +3,7 @@
 **Epic:** GOV-04／OPS-02 能力診斷，OPS-05 限制維持
 **User Story:** 使用者可以從 doctor 判斷目前可用的 GPU 程式路徑、必要條件，以及哪些能力尚未在本機執行驗證。
 **Blocked by:** 30 的受限 WebGPU episode trainer（已交付）
-**Status:** in_progress
+**Status:** completed
 
 ## 問題與交付契約
 
@@ -42,6 +42,6 @@
 - [x] GPU 六欄與支援限制、CPU／Insyra／硬體探測分離及 JSON 相容性回歸通過（Root 的 `focused-green.log`，13 個頂層測試）。
 - [x] 真實 CLI 三條流程、help／文件及錯誤行為通過（`cli-workflow.log`，含正常／缺失工具、help／總覽及兩項非法參數）。
 - [x] 完整 gofmt、build、test、race、vet、依賴與歷史原件檢查、Root diff 審查通過。
-- [ ] 保存命令、環境、輸入指紋、結果及日誌。更新追蹤、提交、推送並核對遠端。
+- [x] 保存命令、環境、輸入指紋、結果及日誌。更新追蹤、提交、推送並核對遠端。
 
 減法審查：沿用原有硬體探測，不增加 GPU 初始化、訓練選項或模型。只修正錯誤能力宣告及必要限制。
