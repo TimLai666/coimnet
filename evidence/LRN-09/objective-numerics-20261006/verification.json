@@ -3,7 +3,7 @@
   "ticket": "41-ppo-objective-numerical-correctness",
   "date": "2026-10-06",
   "status": "verified_scoped",
-  "acceptance_verified": 4,
+  "acceptance_verified": 5,
   "acceptance_total": 5,
   "scope": "PPO public numerical correctness; no model, dependency, training recipe, stateful PPO or biological mechanism changes.",
   "environment": {
@@ -204,6 +204,13 @@
       "exit_code": 0,
       "test_log": "scan.log",
       "scope": "42-file staged implementation snapshot; final staged snapshot rechecked before commit"
+    },
+    {
+      "command": "go test -count=1 -v -run '^TestGovernance' .",
+      "exit_code": 0,
+      "tests_passed": 4,
+      "test_log": "governance-delivery.log",
+      "scope": "Delivered implementation completion record"
     }
   ],
   "interrupted_checks": [
@@ -242,7 +249,11 @@
     "total": 91,
     "change": "Append only LRN-09 supplemental evidence; no requirement definition or status change."
   },
-  "delivery": "Engineering acceptance complete; implementation commit and remote verification pending.",
+  "delivery": {
+    "record": "delivery.json",
+    "implementation_commit": "6d44edfe7652115cbe770e8a2cbd0f6e0f96a334",
+    "remote_verified": true
+  },
   "test_log": [
     "red.log",
     "review-final-red.log",
@@ -282,6 +293,7 @@
     "test.log": "9c4b59a7786ed82af8e0e3c3858ea1cc9ddc9febc4e0977f17720b3cb3694263",
     "tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "scan.log": "b3b9b2eca606d6f853c6c68c7024a9b82db3a90d1bbc81089029645b23bdd8e0"
+    "scan.log": "b3b9b2eca606d6f853c6c68c7024a9b82db3a90d1bbc81089029645b23bdd8e0",
+    "governance-delivery.log": "29a70963526c64277018600a2c27cdf125c076761b2eb5a757dd4bb47365323b"
   }
 }

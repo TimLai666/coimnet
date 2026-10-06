@@ -47,3 +47,5 @@
 | [learning/rl/objective_numerical_test.go](/Users/timlai/Developer/coimnet/learning/rl/objective_numerical_test.go) | 新增 12 項公開入口的手算與非法數值回歸。 |
 | [learning/rl/objective_review_test.go](/Users/timlai/Developer/coimnet/learning/rl/objective_review_test.go) | 新增一項加權價值極值回歸，涵蓋三個子案例。 |
 | [evidence/LRN-09/objective-numerics-20261006/scan.log](/Users/timlai/Developer/coimnet/evidence/LRN-09/objective-numerics-20261006/scan.log) | 提交前暫存內容掃描日誌。 |
+| [evidence/LRN-09/objective-numerics-20261006/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-09/objective-numerics-20261006/delivery.json) | 實作提交、推送結果與遠端核對紀錄。 |
+| [evidence/LRN-09/objective-numerics-20261006/governance-delivery.log](/Users/timlai/Developer/coimnet/evidence/LRN-09/objective-numerics-20261006/governance-delivery.log) | 完成交付紀錄的四項治理測試日誌。 |
