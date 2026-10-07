@@ -3,7 +3,7 @@
 **Epic:** 訓練框架的輸入驗證
 **User Story:** 研究者可以在開始導航或歸因實驗前取得明確設定錯誤
 **Blocked by:** 47 共用環境設定解析，已完成
-**Status:** in_progress
+**Status:** completed
 
 ## 問題與範圍
 
@@ -37,7 +37,7 @@ Config.Resolve() (Config, error) 先沿用預設，再由既有 validate(Config)
 - [x] 共用入口拒絕四欄所有非有限值，錯誤與無執行結果符合契約。
 - [x] 合法設定、報告、預設與歷史原件保持，公開流程驗收通過。
 - [x] gofmt、build、完整一般／race、vet、相依性及治理通過。
-- [ ] 完整 diff、需求證據、提交推送與遠端核對完成。
+- [x] 完整 diff、需求證據、提交推送與遠端核對完成。
 
 ## 減法審查
 
@@ -49,3 +49,7 @@ Won't List：不處理策略切片所有權、其他任務設定或調參，均�
 
 [主規格 §18.4](../handoff/CoImNet_Implementation_Plan.zh-TW.md)、[前置工作](47-nav2d-effective-config-reports.md)、[原重現](../../evidence/OPS-03/nav2d-effective-config-20261007/nonfinite-probe.json)、[本票證據](../../evidence/OPS-03/nav2d-finite-config-20261007/)。
 相關需求 OPS-03、TSK-08、TSK-12，狀態計數維持 89／91。
+
+## 驗收結果
+
+5／5 完成。四個新增回歸、11 個選取的頂層測試、八個 CLI 流程、24 筆合法結果逐位元組比較，以及完整一般／race 各 57 套件通過。實作 6f2aa38 已推送，遠端 main 核對一致。完整命令、指紋、日誌、Root 審查與交付紀錄見[工程驗證](../../evidence/OPS-03/nav2d-finite-config-20261007/verification.json)及[交付紀錄](../../evidence/OPS-03/nav2d-finite-config-20261007/delivery.json)。

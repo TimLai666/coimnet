@@ -33,4 +33,4 @@ No confirmed findings in the submitted fix.
 
 建議簡化：所有入口共用既有驗證，只有四組檢查，不增加驗證器或依賴。有限極值可能在後續算術溢位，本票不新增數值上限。這是本機軟體驗證，沒有新的學習成效或生物機制證據。
 
-Recommendation: SHIP。軟體驗證通過，提交推送與遠端核對待完成。
+Recommendation: SHIP。軟體驗證與交付通過，實作 6f2aa38 已推送，遠端 main 核對一致，見[交付紀錄](delivery.json)。

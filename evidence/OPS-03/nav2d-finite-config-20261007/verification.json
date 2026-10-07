@@ -1,8 +1,6 @@
 {
   "status": "passed",
-  "remaining": [
-    "commit and push readback"
-  ],
+  "remaining": [],
   "source_manifest": "source-freeze.json",
   "test_manifest": "test-freeze.json",
   "baseline_manifest": "baseline.json",
@@ -231,6 +229,22 @@
       "elapsed_seconds": 2.126088857650757,
       "log": "governance-ready.log",
       "environment_overrides": {}
+    },
+    "governance-completion": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:27:29.222836+00:00",
+      "elapsed_seconds": 2.444962978363037,
+      "log": "governance-completion.log",
+      "environment_overrides": {}
     }
   },
   "test_summary": {
@@ -262,7 +276,7 @@
   },
   "learning_claim": "none",
   "biological_claim": "none",
-  "updated_at": "2026-10-07T16:06:55.400144+00:00",
+  "updated_at": "2026-10-07T16:29:21.433308+00:00",
   "verified_at": "2026-10-07T16:16:41.928630+00:00",
   "date": "2026-10-08",
   "requirement": [
@@ -330,7 +344,8 @@
     "governance-before-delivery.log",
     "json-check.log",
     "race-all.log",
-    "governance-ready.log"
+    "governance-ready.log",
+    "governance-completion.log"
   ],
   "resolved_failures": [
     {
@@ -339,5 +354,8 @@
       "resolution": "Filled the established evidence contract without changing tests.",
       "verified_by": "governance-ready.json"
     }
-  ]
+  ],
+  "delivery_record": "delivery.json",
+  "source_commit": "6f2aa38172132398e1c910adbd353b2a55e4a286",
+  "delivery_status": "passed"
 }

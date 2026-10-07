@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成 4／5 驗收。四個新增回歸與 11 個選取的頂層測試通過，12 組非法環境設定在全部公開入口回錯。24 筆合法結果在兩個新程序中與修正前逐位元組相同，八個 CLI 流程通過。完整一般與 race 各 57 套件、build、vet、格式、相依性及八個治理／索引專項通過。3,246 份既有檔案與凍結來源保持，Root 審查通過，提交推送與遠端核對待完成。見[工程驗證](evidence/OPS-03/nav2d-finite-config-20261007/verification.json)。
+[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成 5／5 驗收與交付。四個新增回歸與 11 個選取的頂層測試通過，12 組非法環境設定在全部公開入口回錯。24 筆合法結果在兩個新程序中與修正前逐位元組相同，八個 CLI 流程通過。完整一般與 race 各 57 套件、build、vet、格式、相依性及八個治理／索引專項通過。3,246 份既有檔案與凍結來源保持，Root 審查通過，實作 6f2aa38 已推送且遠端一致。見[工程驗證](evidence/OPS-03/nav2d-finite-config-20261007/verification.json)與[交付紀錄](evidence/OPS-03/nav2d-finite-config-20261007/delivery.json)。
 
 [ticket 47](docs/tickets/47-nav2d-effective-config-reports.md) 已完成 5／5 驗收與交付。六個新增回歸、八個真實 CLI 流程、24 筆修正前後報告記錄與兩個新程序重現通過，完整一般測試、build、vet、格式、相依性與治理也通過。完整 race 57 套件通過，Root 與 Luna max 獨立審查完成，實作 685a090 已推送且遠端一致，見[交付紀錄](evidence/OPS-03/nav2d-effective-config-20261007/delivery.json)，訓練結果及歷史原件保持。導航設定的非有限值驗證由 ticket 48 接續。
 
@@ -179,11 +179,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | completed | 5／5。13 個頂層專項、真實 CLI、完整一般與 race 各 57 套件及 Root 審查通過，實作 d7c8963 已推送並核對遠端 |
 | 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | completed | 5／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，實作 baf7b91 已推送並核對遠端 |
 | 46 | 使用者可以拒絕容量資訊與模型不符的模型包 | Codex Root / OpenCode big-pickle 測試與實作 | completed | 5／5。五個回歸、九個 CLI 流程、完整一般／race 各 57 套件及原件核對通過，實作 d4ffe93 已推送核對 |
-| 48 | 研究者可以在導航開始前發現非有限數值設定 | Codex Root / Luna max 報告回歸 | in_progress | 4／5。四個新增回歸、合法報告、八個 CLI、完整一般與 race 各 57 套件及治理通過，交付待完成 |
+| 48 | 研究者可以在導航開始前發現非有限數值設定 | Codex Root / Luna max 報告回歸 | completed | 5／5。四個新增回歸、合法報告、八個 CLI、完整一般與 race 各 57 套件及治理通過，實作 6f2aa38 已推送核對 |
 
 ## 目前阻礙
 
-Ticket 48 沒有決策或環境阻礙，驗證通過，提交推送待完成。
+Ticket 48 已完成交付，本票沒有阻礙。
 
 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已分離三項原始梯度，觀察到共用核心的局部競爭。梯度與探索對長期學習的因果作用尚未驗證，不能依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
@@ -199,7 +199,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成工程驗證，正在完成提交推送與遠端核對。完成後下一個可獨立處理的缺口是 AGENTS.md 記錄的報告 Policies 切片共享。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成交付。下一個可獨立處理的缺口是 AGENTS.md 記錄的報告 Policies 切片共享。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
