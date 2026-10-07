@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+你是資深 Go 測試工程師，只交付能辨識非法浮點輸入的測試。這是人工設計的獨立契約，沒有既有儲存庫原始碼。
+只可讀 contract.go、go.mod，只可新增 config_test.go；禁止其他檔案、shell、網路、工具派工及 git 寫入。
+只寫 Options.Validate() error 的測試：Density、Cost、CollisionCost、Reward 各別 NaN、+Inf、-Inf 都須錯誤。Density 範圍 [0,0.4]，Cost/CollisionCost >=0，Reward >0；合法 0.2/0.01/0.05/1 成功。不得修改實作。現有 Validate 是待填骨架，否定測試預期先失敗。直接完成檔案，不輸出計畫後等待。
+主 agent 將跑 go test -run TestOptionsValidation -v .；你沒有 bash 權限，不宣稱執行過。
+回報新增檔案、每個結論依據、不確定事項與沒有驗證的項目。
+不要 commit，也不要 stash 或 reset

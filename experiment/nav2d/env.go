@@ -2,6 +2,7 @@ package nav2d
 
 import (
 	"fmt"
+	"math"
 	"math/rand/v2"
 )
 
@@ -26,7 +27,7 @@ const (
 // StepPenalty >= 0; CollisionPenalty >= 0; GoalReward > 0; Task is one of
 // remember_goal, avoid_obstacles, adapt_after_change, language_goal ("" maps to
 // avoid_obstacles). Zero values take the defaults (9x9, 0.2, 3, 60, 0.01, 0.05,
-// 1).
+// 1). All floating-point fields must be finite.
 type Config struct {
 	Width            int     `json:"width"`
 	Height           int     `json:"height"`
@@ -88,6 +89,9 @@ func validate(c Config) error {
 	if c.Height < 5 || c.Height%2 == 0 {
 		return fmt.Errorf("nav2d: height %d must be odd and >= 5", c.Height)
 	}
+	if math.IsNaN(c.WallDensity) || math.IsInf(c.WallDensity, 0) {
+		return fmt.Errorf("nav2d: wall density %v must be finite", c.WallDensity)
+	}
 	if c.WallDensity < 0 || c.WallDensity > 0.4 {
 		return fmt.Errorf("nav2d: wall density %v outside [0, 0.4]", c.WallDensity)
 	}
@@ -97,11 +101,20 @@ func validate(c Config) error {
 	if c.TimeLimit < 1 {
 		return fmt.Errorf("nav2d: time limit %d < 1", c.TimeLimit)
 	}
+	if math.IsNaN(c.StepPenalty) || math.IsInf(c.StepPenalty, 0) {
+		return fmt.Errorf("nav2d: step penalty %v must be finite", c.StepPenalty)
+	}
 	if c.StepPenalty < 0 {
 		return fmt.Errorf("nav2d: step penalty %v < 0", c.StepPenalty)
 	}
+	if math.IsNaN(c.CollisionPenalty) || math.IsInf(c.CollisionPenalty, 0) {
+		return fmt.Errorf("nav2d: collision penalty %v must be finite", c.CollisionPenalty)
+	}
 	if c.CollisionPenalty < 0 {
 		return fmt.Errorf("nav2d: collision penalty %v < 0", c.CollisionPenalty)
+	}
+	if math.IsNaN(c.GoalReward) || math.IsInf(c.GoalReward, 0) {
+		return fmt.Errorf("nav2d: goal reward %v must be finite", c.GoalReward)
 	}
 	if c.GoalReward <= 0 {
 		return fmt.Errorf("nav2d: goal reward %v <= 0", c.GoalReward)

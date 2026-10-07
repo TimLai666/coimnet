@@ -1,0 +1,343 @@
+{
+  "status": "passed",
+  "remaining": [
+    "commit and push readback"
+  ],
+  "source_manifest": "source-freeze.json",
+  "test_manifest": "test-freeze.json",
+  "baseline_manifest": "baseline.json",
+  "environment": {
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": [
+      "darwin",
+      "arm64",
+      "go1.26.5",
+      "1"
+    ],
+    "insyra": {
+      "Path": "github.com/HazelnutParadise/insyra",
+      "Version": "v0.3.4",
+      "Time": "2026-09-28T05:55:01Z",
+      "Dir": "/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4",
+      "GoMod": "/Users/timlai/go/pkg/mod/cache/download/github.com/!hazelnut!paradise/insyra/@v/v0.3.4.mod",
+      "GoVersion": "1.25.12",
+      "Sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0=",
+      "GoModSum": "h1:F+EHB1hX+1Z+KezWUAKkAu7Qw/XQqfoWqGTeVgF2d90="
+    },
+    "record": "environment.json"
+  },
+  "input_probe_sha256": "346878c714bb98c579badaa05cb338fc3c11e1fdc49070229f6e81a30b25630e",
+  "checks": {
+    "green-scoped": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "NonFinite|FiniteConfigControls|EffectiveConfig",
+        "-v",
+        "./experiment/nav2d",
+        "./experiment",
+        "./internal/cli"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:52:44.094567+00:00",
+      "elapsed_seconds": 3.8324458599090576,
+      "log": "green-scoped.log",
+      "environment_overrides": {}
+    },
+    "test-all": {
+      "command": [
+        "go",
+        "test",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:53:11.415950+00:00",
+      "elapsed_seconds": 130.7226300239563,
+      "log": "test-all.log",
+      "environment_overrides": {}
+    },
+    "build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:53:12.254525+00:00",
+      "elapsed_seconds": 5.668007135391235,
+      "log": "build.log",
+      "environment_overrides": {}
+    },
+    "vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:54:18.477007+00:00",
+      "elapsed_seconds": 2.2593741416931152,
+      "log": "vet.log",
+      "environment_overrides": {}
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:54:16.530461+00:00",
+      "elapsed_seconds": 11.312342643737793,
+      "log": "mod-verify.log",
+      "environment_overrides": {}
+    },
+    "tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:54:20.199284+00:00",
+      "elapsed_seconds": 0.21089410781860352,
+      "log": "tidy.log",
+      "environment_overrides": {
+        "GOPROXY": "off"
+      }
+    },
+    "format": {
+      "command": [
+        "gofmt",
+        "-l",
+        "experiment/nav2d/env.go",
+        "experiment/nav2d/env_nonfinite_test.go",
+        "experiment/nav2d_nonfinite_test.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:03:00.081188+00:00",
+      "elapsed_seconds": 0.022136926651000977,
+      "log": "format.log",
+      "environment_overrides": {}
+    },
+    "diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:03:00.275996+00:00",
+      "elapsed_seconds": 0.033952951431274414,
+      "log": "diff-check.log",
+      "environment_overrides": {}
+    },
+    "api-doc": {
+      "command": [
+        "go",
+        "doc",
+        "github.com/TimLai666/coimnet/experiment/nav2d.Config"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:58:36.515932+00:00",
+      "elapsed_seconds": 0.17399907112121582,
+      "log": null,
+      "environment_overrides": {},
+      "output": "package nav2d // import \"github.com/TimLai666/coimnet/experiment/nav2d\"\n\ntype Config struct {\n\tWidth            int     `json:\"width\"`\n\tHeight           int     `json:\"height\"`\n\tWallDensity      float64 `json:\"wall_density\"`\n\tViewDepth        int     `json:\"view_depth\"`\n\tTimeLimit        int     `json:\"time_limit\"`\n\tStepPenalty      float64 `json:\"step_penalty\"`\n\tCollisionPenalty float64 `json:\"collision_penalty\"`\n\tGoalReward       float64 `json:\"goal_reward\"`\n\tTask             string  `json:\"task\"`\n}\n    Config declares the map, episode rules and task. Width and Height must be\n    odd and >= 5; WallDensity in [0, 0.4]; ViewDepth in [1, 5]; TimeLimit >= 1;\n    StepPenalty >= 0; CollisionPenalty >= 0; GoalReward > 0; Task is one of\n    remember_goal, avoid_obstacles, adapt_after_change, language_goal (\"\" maps\n    to avoid_obstacles). Zero values take the defaults (9x9, 0.2, 3, 60, 0.01,\n    0.05, 1). All floating-point fields must be finite.\n\nfunc (c Config) Resolve() (Config, error)\n",
+      "output_storage": "embedded exact command output"
+    },
+    "valid-flow": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/nav2d-finite-config-20261007/verify-valid.py"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:56:06.266988+00:00",
+      "elapsed_seconds": 10.634825944900513,
+      "log": "valid-flow.log",
+      "environment_overrides": {}
+    },
+    "cli": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/nav2d-effective-config-20261007/verify-cli.py"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:56:06.387682+00:00",
+      "elapsed_seconds": 5.676095962524414,
+      "log": "cli.log",
+      "environment_overrides": {}
+    },
+    "governance-before-delivery": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:04:20.467620+00:00",
+      "elapsed_seconds": 4.186606168746948,
+      "log": "governance-before-delivery.log",
+      "environment_overrides": {}
+    },
+    "json-check": {
+      "command": [
+        "python3",
+        "-c",
+        "import json,pathlib; p=pathlib.Path(\"evidence/OPS-03/nav2d-finite-config-20261007\"); fs=list(p.glob(\"*.json\")); [json.loads(x.read_bytes(),parse_constant=lambda s:(_ for _ in ()).throw(ValueError(s))) for x in fs]; print(\"JSON documents:\",len(fs))"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:05:47.445458+00:00",
+      "elapsed_seconds": 0.0877220630645752,
+      "log": "json-check.log",
+      "environment_overrides": {}
+    },
+    "race-all": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T15:53:12.371115+00:00",
+      "elapsed_seconds": 1284.4644191265106,
+      "log": "race-all.log",
+      "environment_overrides": {}
+    },
+    "governance-ready": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:19:03.356550+00:00",
+      "elapsed_seconds": 2.126088857650757,
+      "log": "governance-ready.log",
+      "environment_overrides": {}
+    }
+  },
+  "test_summary": {
+    "new_top_level": 4,
+    "scoped_top_level": 11,
+    "general_packages": 57,
+    "general_cached_packages": 0,
+    "invalid_environment_cases": 12,
+    "invalid_report_cases": 12,
+    "pre_fix_failures_per_invalid_test": 7,
+    "finite_control_groups": 4,
+    "exact_error_controls": 7,
+    "race_packages": 57,
+    "race_cached_packages": 0,
+    "governance_top_level": 8
+  },
+  "valid_comparison": "valid-comparison.json",
+  "cli_workflow": "cli-workflow.json",
+  "preservation": "preservation.json",
+  "root_review": "root-review.md",
+  "delegation": "delegation.json",
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "specified": [
+      "TSK-11",
+      "OPS-05"
+    ]
+  },
+  "learning_claim": "none",
+  "biological_claim": "none",
+  "updated_at": "2026-10-07T16:06:55.400144+00:00",
+  "verified_at": "2026-10-07T16:16:41.928630+00:00",
+  "date": "2026-10-08",
+  "requirement": [
+    "OPS-03",
+    "TSK-08",
+    "TSK-12"
+  ],
+  "reproduction_command": [
+    "go test -count=1 -run 'NonFinite|FiniteConfigControls|EffectiveConfig' -v ./experiment/nav2d ./experiment ./internal/cli",
+    "go test -timeout 60m ./...",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "gofmt -l experiment/nav2d/env.go experiment/nav2d/env_nonfinite_test.go experiment/nav2d_nonfinite_test.go",
+    "git diff --check",
+    "go doc github.com/TimLai666/coimnet/experiment/nav2d.Config",
+    "python3 evidence/OPS-03/nav2d-finite-config-20261007/verify-valid.py",
+    "python3 evidence/OPS-03/nav2d-effective-config-20261007/verify-cli.py",
+    "go test -count=1 -run 'Governance|FormatIndex' -v .",
+    "python3 -c 'import json,pathlib; p=pathlib.Path(\"evidence/OPS-03/nav2d-finite-config-20261007\"); fs=list(p.glob(\"*.json\")); [json.loads(x.read_bytes(),parse_constant=lambda s:(_ for _ in ()).throw(ValueError(s))) for x in fs]; print(\"JSON documents:\",len(fs))'",
+    "go test -race -timeout 60m ./...",
+    "go test -count=1 -run 'Governance|FormatIndex' -v ."
+  ],
+  "input_fingerprints": {
+    "source": "source-freeze.json",
+    "tests": "test-freeze.json",
+    "originals": "baseline.json",
+    "public_api_probe": "valid-probe.go.txt",
+    "probe_sha256": "346878c714bb98c579badaa05cb338fc3c11e1fdc49070229f6e81a30b25630e",
+    "cli": "cli-workflow.json"
+  },
+  "observed_result": {
+    "new_top_level": 4,
+    "scoped_top_level": 11,
+    "general_packages": 57,
+    "general_cached_packages": 0,
+    "invalid_environment_cases": 12,
+    "invalid_report_cases": 12,
+    "pre_fix_failures_per_invalid_test": 7,
+    "finite_control_groups": 4,
+    "exact_error_controls": 7,
+    "race_packages": 57,
+    "race_cached_packages": 0,
+    "governance_top_level": 8,
+    "cli_workflows": 8,
+    "valid_run_records_identical": 24,
+    "byte_identical_before_and_two_new_processes": true,
+    "protected_tracked_files": 3246,
+    "protected_existing_go_files": 650,
+    "requirements_passed": 89,
+    "requirements_total": 91
+  },
+  "test_log": [
+    "green-scoped.log",
+    "test-all.log",
+    "build.log",
+    "vet.log",
+    "mod-verify.log",
+    "tidy.log",
+    "format.log",
+    "diff-check.log",
+    "valid-flow.log",
+    "cli.log",
+    "governance-before-delivery.log",
+    "json-check.log",
+    "race-all.log",
+    "governance-ready.log"
+  ],
+  "resolved_failures": [
+    {
+      "record": "governance-final.json",
+      "problem": "Required evidence keys absent: requirement, reproduction_command, observed_result, test_log.",
+      "resolution": "Filled the established evidence contract without changing tests.",
+      "verified_by": "governance-ready.json"
+    }
+  ]
+}

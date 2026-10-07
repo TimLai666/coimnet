@@ -54,6 +54,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
+- `experiment/attribution.go:99`：Comparison.Interval=NaN 會通過 Validate，但 encoding/json 拒絕該設定。補有限值檢查與非有限值回歸（P2）。公開入口重現見 `evidence/OPS-03/nav2d-finite-config-20261007/related-comparison.log`，本票不修改此比較設定。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
@@ -63,7 +64,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
 - `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。
 - `learning/recompute.go`：重算模式的 `observe` 走 `NewState`／`Advance`，所以多了完整歷史路徑沒有的上限：節點數 ×（最大延遲 + 1）不得超過 `dynamics.MaxStateValues`（2^20）。全圖延遲一律為 0 不受影響；2^19 節點、延遲 2 的圖只有開重算時會在 `Step` 報錯。要放寬就讓 `observe` 直接走分段前向，不經串流狀態。
-- `experiment/nav2d/env.go`：既有範圍比較沒有擋非有限值，WallDensity／StepPenalty 的 NaN 與 CollisionPenalty／GoalReward 的 +Inf 都會被 New／Resolve 接受，JSON 匯出才失敗。補有限值檢查並涵蓋全部浮點設定欄位（P2）；公開入口重現見 `evidence/OPS-03/nav2d-effective-config-20261007/nonfinite-probe.json`。
 - `experiment/nav2d_suite.go`：RunNav2D 複製 Seeds 但沒有複製 Policies，回傳報告與呼叫端共用 Policies。呼叫端之後改策略名稱會改到 report.Config，既有 config_hash 就不相符；補切片所有權與雙向修改回歸（P2）。重現見 `evidence/OPS-03/nav2d-effective-config-20261007/ownership-probe.json`。
 - `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。
 - `tasks/media`：核心拓樸（輸入→隱藏與隱藏→隱藏的邊、初始化串流 0／1／2、log tau = log 2）的建構寫了四份：`generator.go` 的 `NewGenerator`、`video.go` 的 `NewVideoGenerator`、`fixed_decoder.go` 的 `NewLatentGenerator`、`external_tool.go` 的 `NewRequestHead`，只差輸入與輸出寬度。抽成一個共用的建構函式，之後改初始化或拓樸才不會漏改；行為不變，四個生成器的決定性測試可當回歸。

@@ -1,0 +1,22 @@
+package main
+
+import (
+ "encoding/json"
+ "math"
+ "os"
+
+ "github.com/TimLai666/coimnet/experiment"
+)
+
+func main() {
+ c := experiment.DefaultAttributionConfig()
+ c.Comparison.Interval = math.NaN()
+ err := c.Validate()
+ _, exportErr := json.Marshal(c)
+ record := struct {
+  Accepted bool `json:"accepted"`
+  ExportError string `json:"export_error"`
+ }{Accepted: err == nil}
+ if exportErr != nil { record.ExportError = exportErr.Error() }
+ if err := json.NewEncoder(os.Stdout).Encode(record); err != nil { panic(err) }
+}

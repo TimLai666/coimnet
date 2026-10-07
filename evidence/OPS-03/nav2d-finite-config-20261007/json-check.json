@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "-c",
+    "import json,pathlib; p=pathlib.Path(\"evidence/OPS-03/nav2d-finite-config-20261007\"); fs=list(p.glob(\"*.json\")); [json.loads(x.read_bytes(),parse_constant=lambda s:(_ for _ in ()).throw(ValueError(s))) for x in fs]; print(\"JSON documents:\",len(fs))"
+  ],
+  "exit_code": 0,
+  "started_at": "2026-10-07T16:05:47.445458+00:00",
+  "elapsed_seconds": 0.0877220630645752,
+  "log": "json-check.log",
+  "environment_overrides": {}
+}

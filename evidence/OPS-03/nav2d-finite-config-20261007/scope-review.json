@@ -1,0 +1,55 @@
+{
+  "status": "passed",
+  "reviewed_at": "2026-10-07T16:05:47.266037+00:00",
+  "source_freeze": "source-freeze.json",
+  "protected_existing_go_files": 650,
+  "existing_production_changes": [
+    "experiment/nav2d/env.go"
+  ],
+  "new_tests": [
+    "experiment/nav2d/env_nonfinite_test.go",
+    "experiment/nav2d_nonfinite_test.go"
+  ],
+  "producer": "Config.Resolve -> validate; New -> Resolve",
+  "public_consumers": [
+    "Nav2DConfig.Validate",
+    "AttributionConfig.Validate",
+    "RunNav2D",
+    "RunNav2DSuite",
+    "RunAttribution"
+  ],
+  "private_consumers": [
+    "nav2dInputWidth",
+    "nav2dExpertEpisode",
+    "nav2dDAggerEpisode",
+    "evaluateNav2D",
+    "newFromMap"
+  ],
+  "graph_occurrence_count": 12,
+  "graph_result_count": 10,
+  "graph_raw_match_count": 2,
+  "constructor_behavior": "One shared check before creating an environment; no state execution on invalid public report input",
+  "out_of_scope_confirmed": [
+    {
+      "severity": "P2",
+      "file": "experiment/attribution.go:99",
+      "trigger": "Comparison.Interval=NaN",
+      "effect": "Validate succeeds but encoding/json rejects config",
+      "evidence": "related-comparison.log",
+      "fixed": false
+    },
+    {
+      "severity": "P2",
+      "file": "experiment/nav2d_suite.go:371",
+      "trigger": "Caller mutates Policies after RunNav2D",
+      "effect": "Saved report config changes; config_hash no longer matches",
+      "evidence": "../nav2d-effective-config-20261007/ownership-probe.json",
+      "fixed": false
+    }
+  ],
+  "limitations": [
+    "Finite extremes can still overflow later arithmetic; this patch does not cap legal finite values.",
+    "Verification is local Mac software evidence, not a new learning or biological claim."
+  ],
+  "standalone_adversarial_review": "Not required for the bounded low-risk self-change; Root reviewed full source/test diff and all consumers."
+}

@@ -1,0 +1,44 @@
+{
+  "host": "Codex",
+  "attempts": [
+    {
+      "tool": "opencode",
+      "model": "opencode/big-pickle",
+      "flags": [
+        "--pure",
+        "--agent",
+        "build",
+        "--model",
+        "opencode/big-pickle",
+        "--format",
+        "json"
+      ],
+      "status": "provider_error",
+      "status_code": 403,
+      "error": "Error from provider (Console): OpenCode's free tier can only be used from within OpenCode",
+      "record": "isolated-dispatch.json",
+      "output": "isolated-output.jsonl",
+      "source_access": "fresh generic synthetic contract only"
+    },
+    {
+      "tool": "collaboration.spawn_agent",
+      "agent": "/root/nav_nonfinite_report_tests",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "status": "completed",
+      "allowed_files": [
+        "experiment/nav2d_nonfinite_test.go"
+      ],
+      "reported_files": [
+        "experiment/nav2d_nonfinite_test.go"
+      ],
+      "root_review": "Both tests read in full, invalid cases fail before patch, positive control passes, no source/other-test edits; accepted after Root green-scoped."
+    }
+  ],
+  "root_owned_implementation": "experiment/nav2d/env.go",
+  "root_owned_environment_tests": "experiment/nav2d/env_nonfinite_test.go",
+  "test_freeze": "test-freeze.json",
+  "root_red": "red-all.json",
+  "root_green": "green-scoped.json"
+}

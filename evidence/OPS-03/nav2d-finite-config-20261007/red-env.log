@@ -1,0 +1,45 @@
+=== RUN   TestEnvironmentNonFiniteConfig
+=== RUN   TestEnvironmentNonFiniteConfig/wall_density/NaN
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:NaN ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:1 Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 NaN 3 60 0.01 0.05 1 avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/wall_density/+Inf
+=== RUN   TestEnvironmentNonFiniteConfig/wall_density/-Inf
+=== RUN   TestEnvironmentNonFiniteConfig/step_penalty/NaN
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:NaN CollisionPenalty:0.05 GoalReward:1 Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 NaN 0.05 1 avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/step_penalty/+Inf
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:+Inf CollisionPenalty:0.05 GoalReward:1 Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 +Inf 0.05 1 avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/step_penalty/-Inf
+=== RUN   TestEnvironmentNonFiniteConfig/collision_penalty/NaN
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:NaN GoalReward:1 Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 0.01 NaN 1 avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/collision_penalty/+Inf
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:+Inf GoalReward:1 Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 0.01 +Inf 1 avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/collision_penalty/-Inf
+=== RUN   TestEnvironmentNonFiniteConfig/goal_reward/NaN
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:NaN Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 0.01 0.05 NaN avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/goal_reward/+Inf
+    env_nonfinite_test.go:33: Resolve = {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:+Inf Task:avoid_obstacles}, <nil>; want zero and error
+    env_nonfinite_test.go:37: New = &{9 9 0.2 3 60 0.01 0.05 +Inf avoid_obstacles [] 0 0 0 0 0 0 0 false false [] 0 [0 0] false [0 0 0 0] 0 false}, <nil>; want nil and error
+=== RUN   TestEnvironmentNonFiniteConfig/goal_reward/-Inf
+--- FAIL: TestEnvironmentNonFiniteConfig (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/wall_density/NaN (0.00s)
+    --- PASS: TestEnvironmentNonFiniteConfig/wall_density/+Inf (0.00s)
+    --- PASS: TestEnvironmentNonFiniteConfig/wall_density/-Inf (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/step_penalty/NaN (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/step_penalty/+Inf (0.00s)
+    --- PASS: TestEnvironmentNonFiniteConfig/step_penalty/-Inf (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/collision_penalty/NaN (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/collision_penalty/+Inf (0.00s)
+    --- PASS: TestEnvironmentNonFiniteConfig/collision_penalty/-Inf (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/goal_reward/NaN (0.00s)
+    --- FAIL: TestEnvironmentNonFiniteConfig/goal_reward/+Inf (0.00s)
+    --- PASS: TestEnvironmentNonFiniteConfig/goal_reward/-Inf (0.00s)
+=== RUN   TestEnvironmentFiniteConfigControls
+--- PASS: TestEnvironmentFiniteConfigControls (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment/nav2d	0.243s
+FAIL

@@ -1,0 +1,14 @@
+{
+  "command": [
+    "go",
+    "doc",
+    "github.com/TimLai666/coimnet/experiment/nav2d.Config"
+  ],
+  "exit_code": 0,
+  "started_at": "2026-10-07T15:58:36.515932+00:00",
+  "elapsed_seconds": 0.17399907112121582,
+  "log": null,
+  "environment_overrides": {},
+  "output": "package nav2d // import \"github.com/TimLai666/coimnet/experiment/nav2d\"\n\ntype Config struct {\n\tWidth            int     `json:\"width\"`\n\tHeight           int     `json:\"height\"`\n\tWallDensity      float64 `json:\"wall_density\"`\n\tViewDepth        int     `json:\"view_depth\"`\n\tTimeLimit        int     `json:\"time_limit\"`\n\tStepPenalty      float64 `json:\"step_penalty\"`\n\tCollisionPenalty float64 `json:\"collision_penalty\"`\n\tGoalReward       float64 `json:\"goal_reward\"`\n\tTask             string  `json:\"task\"`\n}\n    Config declares the map, episode rules and task. Width and Height must be\n    odd and >= 5; WallDensity in [0, 0.4]; ViewDepth in [1, 5]; TimeLimit >= 1;\n    StepPenalty >= 0; CollisionPenalty >= 0; GoalReward > 0; Task is one of\n    remember_goal, avoid_obstacles, adapt_after_change, language_goal (\"\" maps\n    to avoid_obstacles). Zero values take the defaults (9x9, 0.2, 3, 60, 0.01,\n    0.05, 1). All floating-point fields must be finite.\n\nfunc (c Config) Resolve() (Config, error)\n",
+  "output_storage": "embedded exact command output"
+}
