@@ -20,15 +20,16 @@ No confirmed findings within this fix. 新 Config.Resolve 為純值 API，既有
 - 八個真實 CLI 流程包含三個正向、兩份 help、兩個非法任務與拒絕既有目的地；六份正向報告共十六筆 run，均無 failed，Python 獨立重算 hash 相同。
 - 修正前後八份 task report 共二十四筆 run，所有非 Config／ConfigHash 欄位相同。明填自訂設定的 hash 也相同。
 - 651 份 Go 來源與最終測試凍結一致，3,124 份範圍外既有檔案保持。完整一般與 race 各 57 套件、build、vet、gofmt、mod verify、tidy -diff、API discoverability 與八個格式／治理頂層檢查通過。
-- Luna max 的獨立唯讀審查完成，CLEAN、無新增 finding，Root 已核對原始碼與實際證據。提交推送尚待完成。
+- Luna max 的獨立唯讀審查完成，CLEAN、無新增 finding，Root 已核對原始碼與實際證據。實作 685a090 已提交推送，遠端 main 核對一致，見 [delivery.json](delivery.json)。
 
 ## Actions
 
 | 動作 | 對象 | 結果 |
 |---|---|---|
 | 派工 | OpenCode／Claude／Antigravity／Luna | 沒有接收任何 worker 修改。原始碼存取的 OpenCode 呼叫被自動審查拒絕，隔離契約呼叫則 403；其他備援額度／容量受限。Root 自行完成小範圍實作。 |
-| 提交掃描 | 本票 staged diff | scripts/scan-commit.sh 回傳 PASS，原始回條將併入交付紀錄。 |
-| 本機 CLI | /tmp 的測試執行檔及本證據目錄的新報告 | 只建立本票人工報告，既有目的地拒絕覆寫。沒有部署或變更服務。 |
+| 提交掃描 | 本票 staged diff | scripts/scan-commit.sh 回傳 PASS，實際回條見 delivery.json。 |
+| 本機 CLI | /tmp 與新的系統暫存目錄之執行檔、本證據目錄新報告 | 只建立本票人工報告，既有目的地拒絕覆寫。沒有部署或變更服務。 |
+| 提交推送 | origin/main | 實作 685a090 已推送，git ls-remote 的 main 與本機一致。 |
 
 宿主：Codex。
 OpenCode / opencode/big-pickle / run --pure --agent build --model opencode/big-pickle --format json：原始碼派工拒絕，隔離人工契約實際 403。
@@ -46,4 +47,4 @@ Codex subagent / gpt-5.6-luna / max、fork_turns none：首次測試派工 Selec
 
 減法提醒：共用既有預設來源，移除報告層自行推定預設任務的分支。
 
-Next：提交推送與遠端核對。完整 Changed 清單見 [changed-files.md](changed-files.md)。
+Next：本票無剩餘工作；後續優先處理 AGENTS.md 的導航非有限設定 P2。完整 Changed 清單見 [changed-files.md](changed-files.md)。

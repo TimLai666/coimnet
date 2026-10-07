@@ -1,6 +1,6 @@
 # Ticket 47 Changed
 
-本表逐檔列出相對 baa2f2ba45f3564af4385cad53b305538388f397 的新增與修改，共 128 個檔案。
+本表逐檔列出相對 baa2f2ba45f3564af4385cad53b305538388f397 的新增與修改，共 129 個檔案。
 
 | 檔案 | 變更摘要 |
 |---|---|
@@ -132,3 +132,4 @@
 | [internal/cli/nav2d.go](/Users/timlai/Developer/coimnet/internal/cli/nav2d.go) | help 說明有效設定與雜湊 |
 | [internal/cli/nav2d_effective_config_test.go](/Users/timlai/Developer/coimnet/internal/cli/nav2d_effective_config_test.go) | stdout、檔案、完整設定與拒絕覆寫回歸 |
 | [evidence/OPS-03/nav2d-effective-config-20261007/staged-whitespace-check.json](/Users/timlai/Developer/coimnet/evidence/OPS-03/nav2d-effective-config-20261007/staged-whitespace-check.json) | 原始 Go 日誌保留與其他檔案格式檢查的回條 |
+| [evidence/OPS-03/nav2d-effective-config-20261007/delivery.json](/Users/timlai/Developer/coimnet/evidence/OPS-03/nav2d-effective-config-20261007/delivery.json) | 已執行的推送、遠端核對與提交掃描回條 |
