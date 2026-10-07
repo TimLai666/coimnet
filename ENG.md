@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- 導航範例的環境設定由 nav2d.Config.Resolve 共用既有預設值與驗證。New 與新導航／歸因報告共用解析結果；config_hash 計算已展開的報告設定。原有空任務限制、錯誤、訓練與格式版本保持，歷史報告不重寫。驗收見 [ticket 47](docs/tickets/47-nav2d-effective-config-reports.md)。
+
 - 模型包的可選 Capacity 由共同驗證入口核對六個整數欄位。沿用已驗證 Trainer 的容量報告，FreeParameterCount 設為 ParameterCount，符合不帶最佳化器遮罩的 Network.Capacity 語意。不再建立額外網路。nil 舊欄位保持省略，不補寫容量。單檔、bundle、保存及建立個體共用此檢查，驗收見 [ticket 46](docs/tickets/46-model-package-capacity-validation.md)。
 
 - `coimnet-名稱/v數字` 形式的版本來源集中列在 [文件索引](docs/INDEX.md)，分成正式格式、規則與雜湊識別、驗證工具格式、測試資料與反例。Go 字串以 AST 解碼，另核對 shell／Python 工具及四份治理 JSON 的版本欄位；每個版本只列一次，來源檔案及行號須相符。索引檢查併入既有 `go test`，無需 Git 或執行時註冊表，驗收見 [ticket 45](docs/tickets/45-format-index-consistency.md)。

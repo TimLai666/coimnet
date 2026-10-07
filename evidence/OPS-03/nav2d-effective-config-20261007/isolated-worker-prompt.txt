@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+You are a senior Go test engineer writing tests for a synthetic configuration fixture. There is no repository or private source here.
+Only create config_test.go in this isolated directory. You may read contract.go and go.mod only. Do not read or access any other directory. No shell commands.
+TESTS ONLY for EnvironmentConfig.Resolve() (EnvironmentConfig,error). Expect all zeros to resolve to Width9 Height9 WallDensity0.2 ViewDepth3 TimeLimit60 StepPenalty0.01 CollisionPenalty0.05 GoalReward1 Task avoid_obstacles. Expect partial numeric overrides preserved with remaining defaults; explicit custom {7,11,.3,2,8,.02,.08,2,remember_goal} unchanged; resolved output idempotent; receiver unchanged. Ordinary invalid values must return zero output and an error: even/small dimensions, density<0 or >.4, depth>5 or negative, negative time limit, negative penalties, negative goal reward, unknown Task. Use testing and reflect only. Test names must include EffectiveConfig; all top-level tests must demonstrate at least one expected failure on current stub. Controls belong inside those tests. Do not test NaN/Inf semantics.
+Verification command for Root to run: go test -count=1 -run EffectiveConfig -v . No command execution is authorized in this worker.
+Report exact created file, test names and assumptions, do not claim tests ran. This is synthetic material only.
+不要 commit，也不要 stash 或 reset

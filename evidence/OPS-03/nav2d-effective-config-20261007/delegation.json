@@ -1,0 +1,95 @@
+{
+  "host": "Codex",
+  "repository_dispatch": {
+    "tool": "opencode",
+    "model_requested": "opencode/big-pickle",
+    "flags": [
+      "run",
+      "--pure",
+      "--agent",
+      "build",
+      "--model",
+      "opencode/big-pickle",
+      "--format",
+      "json"
+    ],
+    "executed": false,
+    "reason_file": "auto-review-original.txt"
+  },
+  "isolated_dispatches": [
+    {
+      "host": "Codex",
+      "tool": "opencode",
+      "model": "opencode/big-pickle",
+      "flags": [
+        "run",
+        "--pure",
+        "--agent",
+        "build",
+        "--model",
+        "opencode/big-pickle",
+        "--format",
+        "json"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 3.157586097717285
+    },
+    {
+      "tool": "claude",
+      "model_requested": "claude-sonnet-5-5",
+      "flags": [
+        "-p",
+        "--model",
+        "claude-sonnet-5-5",
+        "--permission-mode",
+        "acceptEdits",
+        "--restricted",
+        "--safe-mode",
+        "--strict-mcp-config",
+        "--tools",
+        "",
+        "--output-format",
+        "json"
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 2.2849678993225098
+    },
+    {
+      "tool": "agy",
+      "model_requested": "claude-opus-4-6-thinking",
+      "flags": [
+        "--model",
+        "claude-opus-4-6-thinking",
+        "--mode",
+        "plan",
+        "--sandbox",
+        "--disable-slash-commands",
+        "--print-timeout",
+        "2m",
+        "--output-format",
+        "json"
+      ],
+      "exit_code": 3,
+      "elapsed_seconds": 3.126718044281006
+    }
+  ],
+  "luna": {
+    "model_requested": "gpt-5.6-luna",
+    "reasoning_effort_requested": "max",
+    "fork_turns": "none",
+    "result": "Selected model is at capacity. Please try a different model."
+  },
+  "source_access": "External CLI prompts and permissions contained synthetic contracts only; no repository source was supplied.",
+  "accepted_worker_changes": [],
+  "implementation_owner": "Root",
+  "luna_review": {
+    "model_requested": "gpt-5.6-luna",
+    "reasoning_effort_requested": "max",
+    "fork_turns": "none",
+    "role": "read-only adversarial review",
+    "status": "completed",
+    "result": "CLEAN; no confirmed new findings; no investigation pending",
+    "record": "adversarial-review.md",
+    "accepted_worker_changes": []
+  }
+}

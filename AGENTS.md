@@ -63,7 +63,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
 - `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。
 - `learning/recompute.go`：重算模式的 `observe` 走 `NewState`／`Advance`，所以多了完整歷史路徑沒有的上限：節點數 ×（最大延遲 + 1）不得超過 `dynamics.MaxStateValues`（2^20）。全圖延遲一律為 0 不受影響；2^19 節點、延遲 2 的圖只有開重算時會在 `Step` 報錯。要放寬就讓 `observe` 直接走分段前向，不經串流狀態。
-- `experiment/nav2d_suite.go`：報告的 `config.env` 記的是呼叫端給的零值（寬高、牆密度、視野、時限、獎懲都是 0），實際採用的預設值（9×9、0.2、3、60、0.01、0.05、+1）只在 `nav2d.New` 內部補上；報告應改記補完後的有效設定，雜湊也跟著換。
+- `experiment/nav2d/env.go`：既有範圍比較沒有擋非有限值，WallDensity／StepPenalty 的 NaN 與 CollisionPenalty／GoalReward 的 +Inf 都會被 New／Resolve 接受，JSON 匯出才失敗。補有限值檢查並涵蓋全部浮點設定欄位（P2）；公開入口重現見 `evidence/OPS-03/nav2d-effective-config-20261007/nonfinite-probe.json`。
+- `experiment/nav2d_suite.go`：RunNav2D 複製 Seeds 但沒有複製 Policies，回傳報告與呼叫端共用 Policies。呼叫端之後改策略名稱會改到 report.Config，既有 config_hash 就不相符；補切片所有權與雙向修改回歸（P2）。重現見 `evidence/OPS-03/nav2d-effective-config-20261007/ownership-probe.json`。
 - `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。
 - `tasks/media`：核心拓樸（輸入→隱藏與隱藏→隱藏的邊、初始化串流 0／1／2、log tau = log 2）的建構寫了四份：`generator.go` 的 `NewGenerator`、`video.go` 的 `NewVideoGenerator`、`fixed_decoder.go` 的 `NewLatentGenerator`、`external_tool.go` 的 `NewRequestHead`，只差輸入與輸出寬度。抽成一個共用的建構函式，之後改初始化或拓樸才不會漏改；行為不變，四個生成器的決定性測試可當回歸。
 - `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。

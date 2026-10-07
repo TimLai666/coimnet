@@ -355,18 +355,19 @@ func RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error) {
 	if err := c.Validate(); err != nil {
 		return report, err
 	}
+	env, err := c.Env.Resolve()
+	if err != nil {
+		return report, err
+	}
+	c.Env = env
 	inputs, err := nav2dInputWidth(c.Env)
 	if err != nil {
 		return report, err
 	}
 	c.Seeds = append([]uint64(nil), c.Seeds...)
-	task := c.Env.Task
-	if task == "" {
-		task = nav2d.TaskAvoidObstacles
-	}
 	report = Nav2DReport{
 		SchemaVersion: Nav2DSchemaVersion,
-		Task:          task,
+		Task:          c.Env.Task,
 		Config:        c,
 		ConfigHash:    hash(c),
 		Assumptions:   nav2dAssumptions(),

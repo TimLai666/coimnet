@@ -1,0 +1,12 @@
+package main
+import("encoding/json";"math";"os";"github.com/TimLai666/coimnet/experiment/nav2d")
+func main(){
+ cases:=[]struct{Name string;Config nav2d.Config}{
+ {"nan_wall_density",nav2d.Config{WallDensity:math.NaN()}},
+ {"nan_step_penalty",nav2d.Config{StepPenalty:math.NaN()}},
+ {"infinite_collision_penalty",nav2d.Config{CollisionPenalty:math.Inf(1)}},
+ {"infinite_goal_reward",nav2d.Config{GoalReward:math.Inf(1)}}}
+ results:=[]map[string]any{}
+ for _,c:=range cases {_,nerr:=nav2d.New(c.Config);resolved,rerr:=c.Config.Resolve();_,jerr:=json.Marshal(resolved);row:=map[string]any{"case":c.Name,"new_accepted":nerr==nil,"resolve_accepted":rerr==nil,"json_rejected":jerr!=nil};if jerr!=nil {row["json_error"]=jerr.Error()};results=append(results,row)}
+ if err:=json.NewEncoder(os.Stdout).Encode(results);err!=nil{panic(err)}
+}

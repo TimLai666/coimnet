@@ -1,0 +1,24 @@
+Usage: coimnet examples run nav2d [--task NAME|all] [--seeds 1,2,3] [--episodes 60] [--hidden 16] [--recurrent 4] [--eval 20] [--policies recurrent,feedforward,rewired,random] [--learning-rate 0.05] [--out FILE]
+Runs the synthetic two-dimensional navigation fixture across four tasks by default, comparing the selected policies and seeds. The indented JSON report goes to --out, or stdout when omitted; the summary goes to stdout with --out and stderr otherwise.
+Each config.env contains the effective environment values after defaults; config_hash is SHA-256 of that reported config.
+Example: coimnet examples run nav2d --task avoid_obstacles --seeds 1 --episodes 10 --policies recurrent,random --out nav2d.json
+Errors: unknown task or policy, empty or duplicate seeds, invalid experiment settings, existing --out, missing or non-directory --out parent, positional arguments, cancellation or output failure. Usage errors exit with status 1. Failed runs still emit the full report and return a nonzero status.
+Options and their defaults:
+  -episodes int
+    	training episodes per seed (default 60)
+  -eval int
+    	evaluation episodes per seed (default 20)
+  -hidden int
+    	hidden units (default 16)
+  -learning-rate float
+    	learning rate (default 0.05)
+  -out string
+    	new report JSON file; an existing path is never overwritten (default: stdout)
+  -policies string
+    	comma-separated policies: recurrent,feedforward,rewired,random (default "recurrent,feedforward,rewired,random")
+  -recurrent int
+    	recurrent hidden units (default 4)
+  -seeds string
+    	comma-separated distinct model seeds (default "1,2,3")
+  -task string
+    	task to run: all, remember_goal, avoid_obstacles, adapt_after_change or language_goal (default "all")

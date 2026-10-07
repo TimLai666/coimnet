@@ -36,6 +36,7 @@ func runNav2D(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 	fs.Usage = func() {
 		fmt.Fprintf(usageOutput, "Usage: coimnet examples run nav2d [--task NAME|all] [--seeds %s] [--episodes %d] [--hidden %d] [--recurrent %d] [--eval %d] [--policies %s] [--learning-rate %g] [--out FILE]\n", seedsDefault, c.Episodes, c.Hidden, c.Recurrent, c.EvalEpisodes, policiesDefault, c.LearningRate)
 		fmt.Fprintln(usageOutput, "Runs the synthetic two-dimensional navigation fixture across four tasks by default, comparing the selected policies and seeds. The indented JSON report goes to --out, or stdout when omitted; the summary goes to stdout with --out and stderr otherwise.")
+		fmt.Fprintln(usageOutput, "Each config.env contains the effective environment values after defaults; config_hash is SHA-256 of that reported config.")
 		fmt.Fprintln(usageOutput, "Example: coimnet examples run nav2d --task avoid_obstacles --seeds 1 --episodes 10 --policies recurrent,random --out nav2d.json")
 		fmt.Fprintln(usageOutput, "Errors: unknown task or policy, empty or duplicate seeds, invalid experiment settings, existing --out, missing or non-directory --out parent, positional arguments, cancellation or output failure. Usage errors exit with status 1. Failed runs still emit the full report and return a nonzero status.")
 		fmt.Fprintln(usageOutput, "Options and their defaults:")

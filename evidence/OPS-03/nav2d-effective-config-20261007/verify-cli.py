@@ -1,0 +1,43 @@
+import pathlib,subprocess,json,hashlib,time,argparse,tempfile
+parser=argparse.ArgumentParser(description='Verify effective navigation configs through eight real CLI flows without overwriting saved evidence.')
+parser.add_argument('--output-dir',type=pathlib.Path,help='new directory for executable, reports and logs (default: a fresh temporary directory)')
+args=parser.parse_args()
+root=pathlib.Path(__file__).resolve().parents[3]
+if args.output_dir is None:
+ ev=pathlib.Path(tempfile.mkdtemp(prefix='coimnet-config-cli-'))
+else:
+ ev=args.output_dir.resolve()
+ ev.mkdir(parents=True,exist_ok=False)
+binary=ev/'coimnet'
+build=subprocess.run(['go','build','-o',str(binary),'./cmd/coimnet'],cwd=root,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+(ev/'cli-build.log').write_bytes(build.stdout);assert build.returncode==0
+records=[]
+def run(name,args,expect=0):
+ start=time.time();cmd=[str(binary)]+args;r=subprocess.run(cmd,cwd=root,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
+ (ev/(name+'.stdout.log')).write_bytes(r.stdout);(ev/(name+'.stderr.log')).write_bytes(r.stderr)
+ records.append({'name':name,'command':cmd,'exit_code':r.returncode,'expected_exit_code':expect,'elapsed_seconds':time.time()-start,'stdout':name+'.stdout.log','stderr':name+'.stderr.log'})
+ assert r.returncode==expect,(name,r.returncode,r.stderr.decode())
+ return r
+nav=['examples','run','nav2d','--seeds','7','--episodes','1','--hidden','4','--recurrent','1','--eval','1','--policies','recurrent,random']
+single=run('cli-single',nav+['--task','avoid_obstacles']);s=json.loads(single.stdout);assert single.stderr
+suitePath=ev/'cli-suite-report.json';assert not suitePath.exists()
+suite=run('cli-suite',nav+['--out',str(suitePath)]);suiteReport=json.loads(suitePath.read_bytes());assert not suite.stderr and suite.stdout.startswith(b'nav2d:')
+attr=['examples','run','attribution','--seeds','1,2,3','--episodes','1','--hidden','4','--recurrent','1','--eval','1','--groups','normal,frozen_core','--resamples','100']
+attrPath=ev/'cli-attribution-report.json';assert not attrPath.exists()
+a=run('cli-attribution',attr+['--out',str(attrPath)]);ar=json.loads(attrPath.read_bytes());assert not a.stderr and a.stdout.startswith(b'attribution:')
+expected={'width':9,'height':9,'wall_density':.2,'view_depth':3,'time_limit':60,'step_penalty':.01,'collision_penalty':.05,'goal_reward':1}
+reports=[s]+suiteReport['tasks']+[ar]
+assert len(suiteReport['tasks'])==4
+for report in reports:
+ env=report['config']['env'];assert {k:env[k] for k in expected}==expected
+ if 'task' in report:assert report['task']==env['task']
+ payload=json.dumps(report['config'],ensure_ascii=False,separators=(',',':')).encode()
+ assert hashlib.sha256(payload).hexdigest()==report['config_hash']
+ assert all(not r['failed'] for r in report['runs'])
+for command in ['nav2d','attribution']:
+ h=run('cli-help-'+command,['examples','run',command,'--help']);assert b'effective environment values' in h.stdout and b'config_hash' in h.stdout
+ out=ev/('invalid-'+command+'.json');assert not out.exists()
+ run('cli-invalid-'+command,['examples','run',command,'--task','unknown','--out',str(out)],1);assert not out.exists()
+saved=suitePath.read_bytes();run('cli-existing-out',nav+['--out',str(suitePath)],1);assert suitePath.read_bytes()==saved
+record={'status':'passed','binary_sha256':hashlib.sha256(binary.read_bytes()).hexdigest(),'source_manifest':str(pathlib.Path(__file__).resolve().parent/'source-freeze.json'),'positive_reports':len(reports),'positive_run_records':sum(len(r['runs']) for r in reports),'hash_reference':'Python compact JSON SHA-256 over exact reported config','checks':records}
+(ev/'cli-workflow.json').write_text(json.dumps(record,indent=2)+'\n');print(json.dumps({'checks':len(records),'positive_reports':len(reports),'positive_run_records':record['positive_run_records'],'status':'passed','output_dir':str(ev)}))

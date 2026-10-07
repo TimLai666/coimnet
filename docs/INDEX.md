@@ -80,7 +80,7 @@
 | `coimnet-asr-dataset/v1` | `tasks/asr` | 授權語音資料集 manifest 格式 | [tasks/asr/dataset.go:21](../tasks/asr/dataset.go#L21) |
 | `coimnet-asr-fixture/v1` | `internal/cli` | ASR fixture 範例報告格式 | [internal/cli/asr.go:16](../internal/cli/asr.go#L16) |
 | `coimnet-asr-stream/v1` | `tasks/asr` | ASR 串流檔案狀態格式 | [tasks/asr/stream_file.go:16](../tasks/asr/stream_file.go#L16) |
-| `coimnet-attribution/v1` | `experiment` | 核心與外圍歸因報告格式 | [experiment/attribution.go:526](../experiment/attribution.go#L526) |
+| `coimnet-attribution/v1` | `experiment` | 核心與外圍歸因報告格式 | [experiment/attribution.go:531](../experiment/attribution.go#L531) |
 | `coimnet-benchmark/v2` | `internal/cli` | benchmark 報告格式 | [internal/cli/benchmark.go:34](../internal/cli/benchmark.go#L34) |
 | `coimnet-bio-inspired/v1` | `experiment` | 生物啟發機制設定與報告格式 | [experiment/bioinspired.go:19](../experiment/bioinspired.go#L19) |
 | `coimnet-byte-vocab/v1` | `tasks/textgen/tokenizer` | 位元組詞表的保存與解碼格式 | [tasks/textgen/tokenizer/tokenizer.go:25](../tasks/textgen/tokenizer/tokenizer.go#L25) |
@@ -242,6 +242,6 @@
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–46，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–47，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。

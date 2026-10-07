@@ -1,0 +1,9 @@
+package configfixture
+type EnvironmentConfig struct {
+ Width, Height int
+ WallDensity float64
+ ViewDepth, TimeLimit int
+ StepPenalty, CollisionPenalty, GoalReward float64
+ Task string
+}
+func (c EnvironmentConfig) Resolve() (EnvironmentConfig,error) { return c,nil }

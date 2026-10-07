@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 47](docs/tickets/47-nav2d-effective-config-reports.md) 已完成 4／5 驗收。六個新增回歸、八個真實 CLI 流程、24 筆修正前後報告記錄與兩個新程序重現通過，完整一般測試、build、vet、格式、相依性與治理也通過。完整 race 57 套件通過，Root 與 Luna max 獨立審查完成，提交推送尚未完成，訓練結果及歷史原件保持。下一個獨立缺口是導航設定的非有限值驗證，記於 AGENTS.md。
+
 [ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已完成 5／5 驗收與交付。共同入口核對六欄容量，沒有容量欄位的舊檔保持。五個回歸、九個 CLI 流程、完整一般與 race 各 57 個套件、build、vet、格式、相依性與治理均通過。實作 `d4ffe93` 已推送並核對遠端，見[工程驗證](evidence/STA-01/model-capacity-20261007/verification.json)、[Root 審查](evidence/STA-01/model-capacity-20261007/root-review.md)與[交付紀錄](evidence/STA-01/model-capacity-20261007/delivery.json)。本票沒有阻礙。
 
 [ticket 45](docs/tickets/45-format-index-consistency.md) 已完成 5／5 驗收與交付。124 列、173 個本機連結、8 個格式／治理專項、無 Git 匯出，以及完整一般／race 各 57 個套件、建置、vet、格式與相依性檢查通過。3,022 份既有檔案與 647 份凍結 Go 來源保持。實作 `baf7b91` 已推送並核對遠端，見[工程驗證](evidence/GOV-01/format-index-20261007/verification.json)與[交付紀錄](evidence/GOV-01/format-index-20261007/delivery.json)。本票沒有阻礙。
@@ -192,7 +194,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已完成交付，實作 `d4ffe93` 的遠端提交一致。本票沒有阻礙，下一張框架修正工作票尚未選定。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
+[ticket 47](docs/tickets/47-nav2d-effective-config-reports.md) 完成最後審查，核對凍結來源、保留原件與需求證據後提交推送。下一張可獨立處理的框架工作是 AGENTS.md 記錄的導航非有限設定拒絕。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
@@ -201,6 +203,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-07：ticket 47 用共用設定解析修正新報告與雜湊，原預設值、驗證順序、訓練及格式保持。OpenCode 私人原始碼存取被自動審查拒絕，隔離人工契約的派工收到 403，Claude／Antigravity 額度受限，Luna 滿載。Root 完成此小範圍修正與驗證。
 
 2026-10-07：ticket 46 核對非 nil 的容量報告，模型包全數參數視為可學。驗證共用既有 Trainer，nil 舊欄位保持；不新增 API、保存版本或資料遷移。
 

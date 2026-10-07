@@ -516,6 +516,11 @@ func RunAttribution(ctx context.Context, c AttributionConfig) (AttributionReport
 	if err := c.Validate(); err != nil {
 		return report, err
 	}
+	env, err := c.Env.Resolve()
+	if err != nil {
+		return report, err
+	}
+	c.Env = env
 	inputs, err := nav2dInputWidth(c.Env)
 	if err != nil {
 		return report, err

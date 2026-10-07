@@ -44,6 +44,7 @@ func runAttribution(ctx context.Context, args []string, stdout, stderr io.Writer
 		fmt.Fprintln(usageOutput, "  ablated_retrained: removes the core and retrains encoder and readout from scratch.")
 		fmt.Fprintln(usageOutput, "  capacity_matched_modulator: adds readout capacity sized to the MOD-10 controller and otherwise trains like normal.")
 		fmt.Fprintln(usageOutput, "Comparison: paired bootstrap against normal on the unseen-map success rate and expert agreement, using same-seed differences. When core_only does not learn, the report attaches the troubleshooting checks; the periphery is never enlarged. The only conclusion is the fixed sentence: A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.")
+		fmt.Fprintln(usageOutput, "Each config.env contains the effective environment values after defaults; config_hash is SHA-256 of that reported config.")
 		fmt.Fprintln(usageOutput, "Example: coimnet examples run attribution --task avoid_obstacles --seeds 1,2,3 --out attribution.json")
 		fmt.Fprintln(usageOutput, "Errors: invalid --task, --seeds, --episodes, --hidden, --recurrent, --eval, --groups, --learning-rate, --resamples or --interval; an existing --out, positional arguments, cancellation or output failure. Usage errors exit with status 1. Failed runs still emit the full report and return a nonzero status.")
 		fmt.Fprintln(usageOutput, "Options and their defaults:")

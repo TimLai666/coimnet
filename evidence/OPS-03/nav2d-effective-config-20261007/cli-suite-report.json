@@ -1,0 +1,433 @@
+{
+  "schema_version": "coimnet-nav2d-suite/v1",
+  "tasks": [
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "remember_goal",
+      "config": {
+        "env": {
+          "width": 9,
+          "height": 9,
+          "wall_density": 0.2,
+          "view_depth": 3,
+          "time_limit": 60,
+          "step_penalty": 0.01,
+          "collision_penalty": 0.05,
+          "goal_reward": 1,
+          "task": "remember_goal"
+        },
+        "seeds": [
+          7
+        ],
+        "episodes": 1,
+        "hidden": 4,
+        "recurrent": 1,
+        "learning_rate": 0.05,
+        "eval_episodes": 1,
+        "policies": [
+          "recurrent",
+          "random"
+        ]
+      },
+      "config_hash": "d89c7cdeeee3c0aeb1047c753ef0440c9a11a032665ea4f43ed6029dc51b6354",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 7,
+          "parameters": 2068,
+          "edges": 340,
+          "updates": 1,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56,
+            "mean_return": -3.4000000000000026,
+            "expert_agreement": 0.05
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56,
+            "mean_return": -3.4000000000000026,
+            "expert_agreement": 0.05
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 60,
+            "mean_return": -3.6000000000000028,
+            "expert_agreement": 0
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 7,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 11,
+            "mean_return": -1.1500000000000006,
+            "expert_agreement": 0.26666666666666666
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 1,
+            "mean_return": -0.6500000000000004,
+            "expert_agreement": 0.4
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 7,
+            "mean_return": -0.9500000000000006,
+            "expert_agreement": 0.25
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "avoid_obstacles",
+      "config": {
+        "env": {
+          "width": 9,
+          "height": 9,
+          "wall_density": 0.2,
+          "view_depth": 3,
+          "time_limit": 60,
+          "step_penalty": 0.01,
+          "collision_penalty": 0.05,
+          "goal_reward": 1,
+          "task": "avoid_obstacles"
+        },
+        "seeds": [
+          7
+        ],
+        "episodes": 1,
+        "hidden": 4,
+        "recurrent": 1,
+        "learning_rate": 0.05,
+        "eval_episodes": 1,
+        "policies": [
+          "recurrent",
+          "random"
+        ]
+      },
+      "config_hash": "d5f2ba5cab76da4a3cbfe9c1c592af818e3eb7f5efe7efbc4ab44508f5dd921a",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 7,
+          "parameters": 2068,
+          "edges": 340,
+          "updates": 1,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56,
+            "mean_return": -3.4000000000000026,
+            "expert_agreement": 0.05
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56,
+            "mean_return": -3.4000000000000026,
+            "expert_agreement": 0.05
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 60,
+            "mean_return": -3.6000000000000028,
+            "expert_agreement": 0
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 7,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 11,
+            "mean_return": -1.1500000000000006,
+            "expert_agreement": 0.26666666666666666
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 1,
+            "mean_return": -0.6500000000000004,
+            "expert_agreement": 0.4
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 7,
+            "mean_return": -0.9500000000000006,
+            "expert_agreement": 0.25
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "adapt_after_change",
+      "config": {
+        "env": {
+          "width": 9,
+          "height": 9,
+          "wall_density": 0.2,
+          "view_depth": 3,
+          "time_limit": 60,
+          "step_penalty": 0.01,
+          "collision_penalty": 0.05,
+          "goal_reward": 1,
+          "task": "adapt_after_change"
+        },
+        "seeds": [
+          7
+        ],
+        "episodes": 1,
+        "hidden": 4,
+        "recurrent": 1,
+        "learning_rate": 0.05,
+        "eval_episodes": 1,
+        "policies": [
+          "recurrent",
+          "random"
+        ]
+      },
+      "config_hash": "0c96ce72f0b329e19057377f81f38d812ff9df0ddc6466c03a7831995d862064",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 7,
+          "parameters": 2068,
+          "edges": 340,
+          "updates": 1,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 53,
+            "mean_return": -3.250000000000002,
+            "expert_agreement": 0.05
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 53,
+            "mean_return": -3.250000000000002,
+            "expert_agreement": 0.05
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 56,
+            "mean_return": -3.4000000000000026,
+            "expert_agreement": 0.05
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 7,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 11,
+            "mean_return": -1.1500000000000006,
+            "expert_agreement": 0.26666666666666666
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 2,
+            "mean_return": -0.7000000000000004,
+            "expert_agreement": 0.4
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 5,
+            "mean_return": -0.8500000000000005,
+            "expert_agreement": 0.26666666666666666
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    },
+    {
+      "schema_version": "coimnet-nav2d/v1",
+      "task": "language_goal",
+      "config": {
+        "env": {
+          "width": 9,
+          "height": 9,
+          "wall_density": 0.2,
+          "view_depth": 3,
+          "time_limit": 60,
+          "step_penalty": 0.01,
+          "collision_penalty": 0.05,
+          "goal_reward": 1,
+          "task": "language_goal"
+        },
+        "seeds": [
+          7
+        ],
+        "episodes": 1,
+        "hidden": 4,
+        "recurrent": 1,
+        "learning_rate": 0.05,
+        "eval_episodes": 1,
+        "policies": [
+          "recurrent",
+          "random"
+        ]
+      },
+      "config_hash": "482c5d5f0a0cd742a4248f2d0eab2816f49aa905ee0af163352b0126c6f58429",
+      "runs": [
+        {
+          "policy": "recurrent",
+          "seed": 7,
+          "parameters": 2068,
+          "edges": 340,
+          "updates": 1,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 60,
+            "mean_return": -3.6000000000000028,
+            "expert_agreement": 0
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 60,
+            "mean_return": -3.6000000000000028,
+            "expert_agreement": 0
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 57,
+            "mean_return": -3.4500000000000024,
+            "expert_agreement": 0.03333333333333333
+          },
+          "failed": false
+        },
+        {
+          "policy": "random",
+          "seed": 7,
+          "parameters": 0,
+          "edges": 0,
+          "updates": 0,
+          "before": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 1,
+            "mean_return": -0.6500000000000004,
+            "expert_agreement": 0.26666666666666666
+          },
+          "seen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 3,
+            "mean_return": -0.7500000000000004,
+            "expert_agreement": 0.26666666666666666
+          },
+          "unseen": {
+            "episodes": 1,
+            "success_rate": 0,
+            "timeout_rate": 1,
+            "mean_steps": 60,
+            "mean_collisions": 5,
+            "mean_return": -0.8500000000000005,
+            "expert_agreement": 0.21666666666666667
+          },
+          "failed": false
+        }
+      ],
+      "assumptions": [
+        "Imitation targets come from a BFS expert that sees the whole map; the policy sees only the view cone, heading, collision flag, elapsed time, token, rule-change flag and cue. After a warm start on demonstrations, half of the training episodes are the policy's own rollouts labelled by the expert (DAgger); at evaluation the expert only scores.",
+        "Seen maps are training map seeds; unseen maps are even seeds that training never draws.",
+        "The rewired control keeps parameter count, update budget and every node's recurrent in/out degree; it tests whether this particular wiring matters, not the fly connectome."
+      ]
+    }
+  ]
+}

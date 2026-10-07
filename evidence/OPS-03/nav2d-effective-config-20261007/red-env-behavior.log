@@ -1,0 +1,41 @@
+=== RUN   TestEnvironmentEffectiveConfig
+=== RUN   TestEnvironmentEffectiveConfig/defaults
+    env_effective_config_test.go:26: resolved = {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, want {Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:60 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:1 Task:avoid_obstacles}
+=== RUN   TestEnvironmentEffectiveConfig/partial
+    env_effective_config_test.go:26: resolved = {Width:7 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:8 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:remember_goal}, want {Width:7 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:8 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:1 Task:remember_goal}
+=== RUN   TestEnvironmentEffectiveConfig/explicit
+--- FAIL: TestEnvironmentEffectiveConfig (0.00s)
+    --- FAIL: TestEnvironmentEffectiveConfig/defaults (0.00s)
+    --- FAIL: TestEnvironmentEffectiveConfig/partial (0.00s)
+    --- PASS: TestEnvironmentEffectiveConfig/explicit (0.00s)
+=== RUN   TestEnvironmentEffectiveConfigRejects
+    env_effective_config_test.go:75: {Width:4 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:4 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:4 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: width 4 must be odd and >= 5
+    env_effective_config_test.go:75: {Width:6 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:6 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:6 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: width 6 must be odd and >= 5
+    env_effective_config_test.go:75: {Width:0 Height:4 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:4 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:4 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: height 4 must be odd and >= 5
+    env_effective_config_test.go:75: {Width:0 Height:6 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:6 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:6 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: height 6 must be odd and >= 5
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:-0.1 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:-0.1 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:-0.1 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: wall density -0.1 outside [0, 0.4]
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0.5 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0.5 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0.5 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: wall density 0.5 outside [0, 0.4]
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:-1 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:-1 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:-1 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: view depth -1 outside [1, 5]
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:6 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:6 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:6 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: view depth 6 outside [1, 5]
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:-1 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:-1 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:-1 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: time limit -1 < 1
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:-0.1 CollisionPenalty:0 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:-0.1 CollisionPenalty:0 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:-0.1 CollisionPenalty:0 GoalReward:0 Task:}: <nil> / nav2d: step penalty -0.1 < 0
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:-0.1 GoalReward:0 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:-0.1 GoalReward:0 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:-0.1 GoalReward:0 Task:}: <nil> / nav2d: collision penalty -0.1 < 0
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:-1 Task:}: got {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:-1 Task:}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:-1 Task:}: <nil> / nav2d: goal reward -1 <= 0
+    env_effective_config_test.go:75: {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:unknown}: got {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:unknown}, err <nil>
+    env_effective_config_test.go:78: error changed for {Width:0 Height:0 WallDensity:0 ViewDepth:0 TimeLimit:0 StepPenalty:0 CollisionPenalty:0 GoalReward:0 Task:unknown}: <nil> / nav2d: task "unknown" is not a known task identifier
+--- FAIL: TestEnvironmentEffectiveConfigRejects (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment/nav2d	0.320s
+FAIL

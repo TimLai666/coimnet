@@ -1,0 +1,37 @@
+Usage: coimnet examples run attribution [--task avoid_obstacles] [--seeds 1,2,3] [--episodes 60] [--hidden 16] [--recurrent 4] [--eval 20] [--groups all|normal,frozen_core,...] [--learning-rate 0.05] [--resamples 1000] [--interval 0.95] [--out FILE]
+Runs the synthetic two-dimensional navigation attribution fixture. Reports contain every selected group and seed, paired bootstrap comparisons, and the fixed conclusion. Indented JSON goes to --out, or stdout when omitted; the summary goes to stdout with --out and stderr otherwise.
+Groups:
+  normal: trains core weights and both encoder and readout.
+  frozen_core: fixes core weights at initialization and trains encoder and readout.
+  core_only: fixes an identity encoder and an identity readout that reads only action nodes, and trains only core weights.
+  generic_matched: uniformly samples unique edges between the same node groups with the same edge count, then trains like normal.
+  rewired: performs degree-preserving double-edge swaps on the hidden recurrent block, then trains like normal.
+  ablated_retrained: removes the core and retrains encoder and readout from scratch.
+  capacity_matched_modulator: adds readout capacity sized to the MOD-10 controller and otherwise trains like normal.
+Comparison: paired bootstrap against normal on the unseen-map success rate and expert agreement, using same-seed differences. When core_only does not learn, the report attaches the troubleshooting checks; the periphery is never enlarged. The only conclusion is the fixed sentence: A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.
+Each config.env contains the effective environment values after defaults; config_hash is SHA-256 of that reported config.
+Example: coimnet examples run attribution --task avoid_obstacles --seeds 1,2,3 --out attribution.json
+Errors: invalid --task, --seeds, --episodes, --hidden, --recurrent, --eval, --groups, --learning-rate, --resamples or --interval; an existing --out, positional arguments, cancellation or output failure. Usage errors exit with status 1. Failed runs still emit the full report and return a nonzero status.
+Options and their defaults:
+  -episodes int
+    	training episodes per seed (1..10000) (default 60)
+  -eval int
+    	evaluation episodes per seed (1..1000) (default 20)
+  -groups string
+    	groups to run: all or a comma-separated subset including normal (default "all")
+  -hidden int
+    	hidden units (4..128) (default 16)
+  -interval float
+    	paired bootstrap confidence interval (0..1) (default 0.95)
+  -learning-rate float
+    	learning rate (default 0.05)
+  -out string
+    	new report JSON file; an existing path is never overwritten (default: stdout)
+  -recurrent int
+    	recurrent hidden units (1..hidden) (default 4)
+  -resamples int
+    	paired bootstrap resamples (at least 100) (default 1000)
+  -seeds string
+    	comma-separated distinct seeds, at least three (default "1,2,3")
+  -task string
+    	navigation task: avoid_obstacles, remember_goal, adapt_after_change or language_goal (default "avoid_obstacles")

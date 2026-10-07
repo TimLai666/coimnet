@@ -1,0 +1,353 @@
+{
+  "schema_version": "coimnet-attribution/v1",
+  "config": {
+    "env": {
+      "width": 9,
+      "height": 9,
+      "wall_density": 0.2,
+      "view_depth": 3,
+      "time_limit": 60,
+      "step_penalty": 0.01,
+      "collision_penalty": 0.05,
+      "goal_reward": 1,
+      "task": "avoid_obstacles"
+    },
+    "seeds": [
+      1,
+      2,
+      3
+    ],
+    "episodes": 1,
+    "hidden": 4,
+    "recurrent": 1,
+    "learning_rate": 0.05,
+    "eval_episodes": 1,
+    "groups": [
+      "normal",
+      "frozen_core"
+    ],
+    "comparison": {
+      "method": "paired_bootstrap",
+      "interval": 0.95,
+      "baseline": "normal",
+      "resamples": 100
+    }
+  },
+  "config_hash": "de263c25646d174c24bf26411801be730ebf70b9f4cfd957ed597464a4c6966d",
+  "runs": [
+    {
+      "group": "normal",
+      "seed": 1,
+      "model": {
+        "group": "normal",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1972,
+        "trainable": [
+          "weights",
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 59,
+        "mean_return": -3.5500000000000025,
+        "expert_agreement": 0.016666666666666666
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 60,
+        "mean_return": -3.6000000000000028,
+        "expert_agreement": 0
+      },
+      "activity_before": 0.3587823122446217,
+      "activity_after": 0.36142764143949635,
+      "failed": false
+    },
+    {
+      "group": "normal",
+      "seed": 2,
+      "model": {
+        "group": "normal",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1972,
+        "trainable": [
+          "weights",
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 58,
+        "mean_return": -3.5000000000000027,
+        "expert_agreement": 0
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 54,
+        "mean_return": -3.3000000000000025,
+        "expert_agreement": 0
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 54,
+        "mean_return": -3.3000000000000025,
+        "expert_agreement": 0.03333333333333333
+      },
+      "activity_before": 0.285399208799539,
+      "activity_after": 0.38433099587794084,
+      "failed": false
+    },
+    {
+      "group": "normal",
+      "seed": 3,
+      "model": {
+        "group": "normal",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1972,
+        "trainable": [
+          "weights",
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.25
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.5
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.5
+      },
+      "activity_before": 0.24844600658313828,
+      "activity_after": 0.522933083089757,
+      "failed": false
+    },
+    {
+      "group": "frozen_core",
+      "seed": 1,
+      "model": {
+        "group": "frozen_core",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1632,
+        "trainable": [
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 59,
+        "mean_return": -3.5500000000000025,
+        "expert_agreement": 0.016666666666666666
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 56,
+        "mean_return": -3.4000000000000026,
+        "expert_agreement": 0.016666666666666666
+      },
+      "activity_before": 0.3587823122446217,
+      "activity_after": 0.2856419620577006,
+      "failed": false
+    },
+    {
+      "group": "frozen_core",
+      "seed": 2,
+      "model": {
+        "group": "frozen_core",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1632,
+        "trainable": [
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 58,
+        "mean_return": -3.5000000000000027,
+        "expert_agreement": 0
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.5
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 5,
+        "mean_return": -0.8500000000000004,
+        "expert_agreement": 0.23333333333333334
+      },
+      "activity_before": 0.285399208799539,
+      "activity_after": 0.28690377520667365,
+      "failed": false
+    },
+    {
+      "group": "frozen_core",
+      "seed": 3,
+      "model": {
+        "group": "frozen_core",
+        "nodes": 48,
+        "edges": 340,
+        "parameters": 2068,
+        "free_parameters": 1632,
+        "trainable": [
+          "encoder",
+          "readout"
+        ]
+      },
+      "updates": 1,
+      "before": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.25
+      },
+      "seen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.5
+      },
+      "unseen": {
+        "episodes": 1,
+        "success_rate": 0,
+        "timeout_rate": 1,
+        "mean_steps": 60,
+        "mean_collisions": 0,
+        "mean_return": -0.6000000000000003,
+        "expert_agreement": 0.5
+      },
+      "activity_before": 0.24844600658313828,
+      "activity_after": 0.43634778794505336,
+      "failed": false
+    }
+  ],
+  "comparisons": [
+    {
+      "group": "frozen_core",
+      "metric": "unseen_success_rate",
+      "differences": [
+        0,
+        0,
+        0
+      ],
+      "mean": 0,
+      "lower": 0,
+      "upper": 0,
+      "dropped": 0
+    },
+    {
+      "group": "frozen_core",
+      "metric": "unseen_expert_agreement",
+      "differences": [
+        0.016666666666666666,
+        0.2,
+        0
+      ],
+      "mean": 0.07222222222222223,
+      "lower": 0.005555555555555556,
+      "upper": 0.20000000000000004,
+      "dropped": 0
+    }
+  ],
+  "conclusion": "A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.",
+  "assumptions": [
+    "The core is the navigation policy's random sparse recurrent block, not the fly connectome; the matrix shows that every control runs under one schedule, not which wiring is better.",
+    "Every group trains with trainNav2D on the same maps for the same number of episodes; update counts are reported per run.",
+    "ablated_retrained has no core and capacity_matched_modulator adds a readout-side block sized to the MOD-10 controller; both parameter counts are reported, not matched.",
+    "core_only keeps a fixed identity periphery; when it does not learn, the report lists the checks instead of enlarging the periphery."
+  ]
+}

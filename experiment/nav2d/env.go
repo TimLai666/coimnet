@@ -68,6 +68,18 @@ func (c Config) withDefaults() Config {
 	return c
 }
 
+// Resolve fills zero fields with the defaults documented by Config, validates
+// the result and resolves the empty task to avoid_obstacles. It does not modify
+// the receiver. Invalid input returns a zero Config and the validation error.
+func (c Config) Resolve() (Config, error) {
+	c = c.withDefaults()
+	if err := validate(c); err != nil {
+		return Config{}, err
+	}
+	c.Task = resolveTask(c.Task)
+	return c, nil
+}
+
 // validate rejects a defaulted configuration. withDefaults must run first.
 func validate(c Config) error {
 	if c.Width < 5 || c.Width%2 == 0 {
@@ -182,8 +194,9 @@ type Env struct {
 
 // New validates the configuration and returns a ready-to-reset environment.
 func New(c Config) (*Env, error) {
-	c = c.withDefaults()
-	if err := validate(c); err != nil {
+	var err error
+	c, err = c.Resolve()
+	if err != nil {
 		return nil, err
 	}
 	return &Env{
@@ -195,7 +208,7 @@ func New(c Config) (*Env, error) {
 		stepPenalty:      c.StepPenalty,
 		collisionPenalty: c.CollisionPenalty,
 		goalReward:       c.GoalReward,
-		task:             resolveTask(c.Task),
+		task:             c.Task,
 	}, nil
 }
 

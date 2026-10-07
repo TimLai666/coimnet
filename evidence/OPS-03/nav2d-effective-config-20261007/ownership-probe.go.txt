@@ -1,0 +1,11 @@
+package main
+import("context";"crypto/sha256";"encoding/json";"fmt";"os";"github.com/TimLai666/coimnet/experiment")
+func main(){
+ c:=experiment.DefaultNav2DConfig();c.Seeds=[]uint64{7};c.Episodes=1;c.Hidden=4;c.Recurrent=1;c.EvalEpisodes=1;c.Policies=[]string{experiment.Nav2DRandom}
+ r,err:=experiment.RunNav2D(context.Background(),c);if err!=nil{panic(err)}
+ initial:=r.Config.Policies[0];c.Policies[0]=experiment.Nav2DFeedforward;c.Seeds[0]=9
+ data,err:=json.Marshal(r.Config);if err!=nil{panic(err)}
+ recalculated:=fmt.Sprintf("%x",sha256.Sum256(data))
+ result:=map[string]any{"initial_report_policy":initial,"policy_after_caller_mutation":r.Config.Policies[0],"caller_mutation_changed_report":r.Config.Policies[0]!=initial,"seed_after_caller_mutation":r.Config.Seeds[0],"reported_hash_matches_current_config":r.ConfigHash==recalculated}
+ if err=json.NewEncoder(os.Stdout).Encode(result);err!=nil{panic(err)}
+}
