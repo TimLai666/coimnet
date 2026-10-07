@@ -1,0 +1,28 @@
+{
+  "objective": "Separate caller and navigation report Policies storage while preserving Seeds isolation, config hashes and valid outputs.",
+  "gates": [
+    "Reviewed failing regressions frozen",
+    "Single shared producer fixes single and suite ownership",
+    "Byte-identical valid SDK reports and CLI acceptance; protected originals unchanged",
+    "Full general/race/build/vet/format/dependencies/governance pass",
+    "Complete diff, requirement evidence, commit/push and remote readback"
+  ],
+  "source_commit": "974afa3421a8d2d415026d02d3284fbb0aca38c4",
+  "allowed_existing": [
+    "experiment/nav2d_suite.go",
+    "README.md",
+    "ENG.md",
+    "delivery-status.md",
+    "AGENTS.md",
+    "docs/INDEX.md",
+    "docs/requirements-status.json"
+  ],
+  "worker_slot": "experiment/nav2d_ownership_test.go",
+  "root_implementation": "experiment/nav2d_suite.go",
+  "out_of_scope": [
+    "Comparison.Interval validation",
+    "training parameters or model changes",
+    "mutable report setters or report immutability",
+    "other tasks' report ownership"
+  ]
+}

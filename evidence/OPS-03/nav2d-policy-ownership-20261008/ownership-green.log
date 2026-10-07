@@ -1,0 +1,58 @@
+=== RUN   TestNav2DReportConfigOwnership
+=== RUN   TestNav2DReportConfigOwnership/caller_to_report
+    nav2d_ownership_test.go:83: Seeds control preserved: caller seed edit left report JSON unchanged
+    nav2d_ownership_test.go:89: caller element edits changed the complete report JSON
+=== RUN   TestNav2DReportConfigOwnership/report_to_caller
+    nav2d_ownership_test.go:112: Seeds control preserved: report seed edit left caller JSON unchanged
+    nav2d_ownership_test.go:118: report element edits changed the caller config JSON
+--- FAIL: TestNav2DReportConfigOwnership (0.01s)
+    --- FAIL: TestNav2DReportConfigOwnership/caller_to_report (0.00s)
+    --- FAIL: TestNav2DReportConfigOwnership/report_to_caller (0.00s)
+=== RUN   TestNav2DSuiteConfigOwnership
+=== RUN   TestNav2DSuiteConfigOwnership/caller_to_all
+    nav2d_ownership_test.go:130: task 0 "remember_goal": 4 runs
+    nav2d_ownership_test.go:130: task 1 "avoid_obstacles": 4 runs
+    nav2d_ownership_test.go:130: task 2 "adapt_after_change": 4 runs
+    nav2d_ownership_test.go:130: task 3 "language_goal": 4 runs
+    nav2d_ownership_test.go:151: Seeds control preserved: caller seed edit left suite and all task reports unchanged
+    nav2d_ownership_test.go:157: caller element edits changed the complete suite JSON
+=== RUN   TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_0
+    nav2d_ownership_test.go:177: task 0 "remember_goal": 4 runs
+    nav2d_ownership_test.go:177: task 1 "avoid_obstacles": 4 runs
+    nav2d_ownership_test.go:177: task 2 "adapt_after_change": 4 runs
+    nav2d_ownership_test.go:177: task 3 "language_goal": 4 runs
+    nav2d_ownership_test.go:200: Seeds control preserved: task 0 seed edit left caller and other task reports unchanged
+    nav2d_ownership_test.go:205: task 0 element edits changed the caller config JSON
+=== RUN   TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_1
+    nav2d_ownership_test.go:177: task 0 "remember_goal": 4 runs
+    nav2d_ownership_test.go:177: task 1 "avoid_obstacles": 4 runs
+    nav2d_ownership_test.go:177: task 2 "adapt_after_change": 4 runs
+    nav2d_ownership_test.go:177: task 3 "language_goal": 4 runs
+    nav2d_ownership_test.go:200: Seeds control preserved: task 1 seed edit left caller and other task reports unchanged
+    nav2d_ownership_test.go:205: task 1 element edits changed the caller config JSON
+=== RUN   TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_2
+    nav2d_ownership_test.go:177: task 0 "remember_goal": 4 runs
+    nav2d_ownership_test.go:177: task 1 "avoid_obstacles": 4 runs
+    nav2d_ownership_test.go:177: task 2 "adapt_after_change": 4 runs
+    nav2d_ownership_test.go:177: task 3 "language_goal": 4 runs
+    nav2d_ownership_test.go:200: Seeds control preserved: task 2 seed edit left caller and other task reports unchanged
+    nav2d_ownership_test.go:205: task 2 element edits changed the caller config JSON
+=== RUN   TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_3
+    nav2d_ownership_test.go:177: task 0 "remember_goal": 4 runs
+    nav2d_ownership_test.go:177: task 1 "avoid_obstacles": 4 runs
+    nav2d_ownership_test.go:177: task 2 "adapt_after_change": 4 runs
+    nav2d_ownership_test.go:177: task 3 "language_goal": 4 runs
+    nav2d_ownership_test.go:200: Seeds control preserved: task 3 seed edit left caller and other task reports unchanged
+    nav2d_ownership_test.go:205: task 3 element edits changed the caller config JSON
+--- FAIL: TestNav2DSuiteConfigOwnership (0.05s)
+    --- FAIL: TestNav2DSuiteConfigOwnership/caller_to_all (0.01s)
+    --- FAIL: TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_0 (0.01s)
+    --- FAIL: TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_1 (0.01s)
+    --- FAIL: TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_2 (0.01s)
+    --- FAIL: TestNav2DSuiteConfigOwnership/report_to_caller_and_other_tasks_3 (0.01s)
+=== RUN   TestNav2DReportConfigAppendOwnership
+    nav2d_ownership_test.go:239: report appended policy = "rewired", want "recurrent" after caller append
+--- FAIL: TestNav2DReportConfigAppendOwnership (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment	0.281s
+FAIL

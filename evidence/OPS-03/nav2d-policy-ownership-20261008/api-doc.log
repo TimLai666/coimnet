@@ -1,0 +1,8 @@
+package experiment // import "github.com/TimLai666/coimnet/experiment"
+
+func RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error)
+    RunNav2D trains each policy for each seed with trainNav2D(ctx, p,
+    c.Env, seed, c.Episodes) (demonstrations plus DAgger rollouts on
+    nav2dTrainMap(seed, e)) and evaluates it; a failed run keeps its error and
+    the others continue; ctx cancellation aborts. The report owns its Seeds and
+    Policies independently of the caller.

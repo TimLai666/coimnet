@@ -1,0 +1,15 @@
+package main
+import("context";"encoding/json";"fmt";"os";"github.com/TimLai666/coimnet/experiment";"github.com/TimLai666/coimnet/experiment/nav2d")
+func main(){
+ ctx:=context.Background()
+ n:=experiment.DefaultNav2DConfig();n.Env=nav2d.Config{};n.Seeds=[]uint64{7};n.Episodes=2;n.Hidden=4;n.Recurrent=1;n.EvalEpisodes=2;n.Policies=[]string{experiment.Nav2DRecurrent,experiment.Nav2DRandom}
+ a:=experiment.DefaultAttributionConfig();a.Seeds=[]uint64{1,2,3};a.Episodes=2;a.Hidden=4;a.Recurrent=1;a.EvalEpisodes=2;a.Groups=[]string{experiment.AttributionNormal,experiment.AttributionFrozenCore};a.Comparison.Resamples=100
+ r,e:=experiment.RunNav2D(ctx,n);if e!=nil{panic(e)}
+ s,e:=experiment.RunNav2DSuite(ctx,n);if e!=nil{panic(e)}
+ t,e:=experiment.RunAttribution(ctx,a);if e!=nil{panic(e)}
+ n.Env=nav2d.Config{Width:7,Height:11,WallDensity:0.3,ViewDepth:2,TimeLimit:8,StepPenalty:0.02,CollisionPenalty:0.08,GoalReward:2,Task:nav2d.TaskRememberGoal}
+ custom,e:=experiment.RunNav2D(ctx,n);if e!=nil{panic(e)}
+ a.Env=n.Env;customA,e:=experiment.RunAttribution(ctx,a);if e!=nil{panic(e)}
+ out:=struct{Nav experiment.Nav2DReport;Suite experiment.Nav2DSuiteReport;Attribution experiment.AttributionReport;CustomNav experiment.Nav2DReport;CustomAttribution experiment.AttributionReport}{r,s,t,custom,customA}
+ if e=json.NewEncoder(os.Stdout).Encode(out);e!=nil{panic(fmt.Sprint(e))}
+}

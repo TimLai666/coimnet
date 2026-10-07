@@ -1,0 +1,50 @@
+{
+  "model_discovery": "model-discovery.json",
+  "free_models": [
+    "opencode/big-pickle",
+    "opencode/exo-free",
+    "opencode/fledge-alpha-free",
+    "opencode/ling-3.0-flash-fin-free",
+    "opencode/ling-3.1-flash-free",
+    "opencode/longcat-2.5-preview-free",
+    "opencode/mimo-v2.6-flash-free",
+    "opencode/muse-spark-1.3-contributor-free",
+    "opencode/nemotron-3-ultra-free",
+    "opencode/nemotron-3.5-lightning-free",
+    "opencode/space-bunny-free"
+  ],
+  "initial_sandbox_error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "initial_sandbox_exit_code": 1,
+  "worker": {
+    "host": "Codex",
+    "tool": "opencode",
+    "model_requested": "opencode/big-pickle",
+    "command": [
+      "opencode",
+      "run",
+      "--pure",
+      "--agent",
+      "build",
+      "--model",
+      "opencode/big-pickle",
+      "--format",
+      "json",
+      "你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成\n你是資深 Go 測試工程師，只交能辨識切片共享的公開行為測試；這是全新人工契約，沒有既有儲存庫來源。\n只能讀 contract.go、go.mod，只能新增 ownership_test.go；禁止其他檔案、shell、網路、工具派工及 git 寫入。\n只寫 TestReportConfigOwnership：Build(Config) Report 必須保有獨立 Seeds 與 Policies，呼叫端和報告的雙向元素修改及額外容量下追加互不影響。各方向使用新配置，只比可觀察內容，不比指標。不得修改實作，Build 是待填骨架，否定測試預期失敗。直接完成，不輸出計畫後等待。\n主 agent 將跑 go test -run TestReportConfigOwnership -v .；你沒有 shell 權限，不宣稱執行過。\n回報新增檔案、每個結論依據、不確定與未驗證事項。\n不要 commit，也不要 stash 或 reset"
+    ],
+    "exit_code": -15,
+    "elapsed_seconds": 199.15132784843445,
+    "source_access": "Fresh generic synthetic ownership contract only; no repository source supplied"
+  },
+  "audit": "isolated-audit.json",
+  "fallback": {
+    "tool": "collaboration.spawn_agent",
+    "task": "/root/nav_report_ownership_tests",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "fork_turns": "none",
+    "allowed_file": "experiment/nav2d_ownership_test.go",
+    "root_review": "test-freeze.json"
+  },
+  "host": "Codex",
+  "precedence": "Current AGENTS.md Sub-agent section specifies OpenCode free first, Luna max fallback. User said Spark is gone and OpenCode may be used. Source slot is shorter than delegation/review so Root implements it."
+}

@@ -1,0 +1,341 @@
+{
+  "status": "passed",
+  "remaining": [
+    "delivery"
+  ],
+  "date": "2026-10-08",
+  "requirement": [
+    "OPS-03",
+    "TSK-08"
+  ],
+  "reproduction_command": [
+    "go test -count=1 -run 'ConfigOwnership|ConfigAppendOwnership' -v ./experiment",
+    "go test -count=1 -run 'ConfigOwnership|ConfigAppendOwnership|EffectiveConfig|NonFinite|RunNav2D' -v ./experiment ./experiment/nav2d ./internal/cli",
+    "go test -count=1 -timeout 60m ./...",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "gofmt -l experiment/nav2d_suite.go experiment/nav2d_ownership_test.go",
+    "git diff --check",
+    "python3 evidence/OPS-03/nav2d-policy-ownership-20261008/verify-valid.py",
+    "python3 evidence/OPS-03/nav2d-effective-config-20261007/verify-cli.py",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go test -count=1 -run 'Governance|FormatIndex' -v .",
+    "go doc github.com/TimLai666/coimnet/experiment.RunNav2D"
+  ],
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOCACHE": "/Users/timlai/Library/Caches/go-build",
+    "GOMAXPROCS": "",
+    "GOMEMLIMIT": "",
+    "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+    "GOOS": "darwin",
+    "GOTOOLCHAIN": "auto",
+    "GOVERSION": "go1.26.5",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "cpu_count": 8
+  },
+  "input_fingerprints": {
+    "source": "source-freeze.json",
+    "tests": "test-freeze.json",
+    "originals": "baseline.json",
+    "probe_sha256": "346878c714bb98c579badaa05cb338fc3c11e1fdc49070229f6e81a30b25630e",
+    "cli": "cli-result.json"
+  },
+  "observed_result": {
+    "new_top_level": 3,
+    "root_pre_fix_top_level_failures": 3,
+    "seed_controls_passed_before_fix": 7,
+    "single_element_directions": 2,
+    "suite_element_directions": 5,
+    "spare_capacity_append_case": 1,
+    "runs_per_test_report": 4,
+    "scoped_top_level": 20,
+    "general_packages": 57,
+    "general_cached_packages": 0,
+    "valid_reports": 8,
+    "valid_run_records_identical": 24,
+    "byte_identical_before_and_two_new_processes": true,
+    "cli_workflows": 8,
+    "cli_positive_reports": 6,
+    "cli_positive_run_records": 16,
+    "protected_tracked_files": 3321,
+    "protected_existing_go_files": 652,
+    "frozen_go_files": 654,
+    "requirements_passed": 89,
+    "requirements_total": 91,
+    "governance_top_level": 8,
+    "race_packages": 57,
+    "race_cached_packages": 0
+  },
+  "test_log": [
+    "ownership-fixed.log",
+    "scoped.log",
+    "general.log",
+    "build.log",
+    "vet.log",
+    "mod-verify.log",
+    "tidy.log",
+    "format.log",
+    "diff-check.log",
+    "valid-workflow.log",
+    "cli-workflow.log",
+    "red.log",
+    "race.log",
+    "governance.log",
+    "api-doc.log",
+    "governance-ready.log"
+  ],
+  "checks": {
+    "ownership-fixed": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "ConfigOwnership|ConfigAppendOwnership",
+        "-v",
+        "./experiment"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:48:51.092787+00:00",
+      "elapsed_seconds": 2.548247814178467,
+      "log": "ownership-fixed.log",
+      "environment_overrides": {}
+    },
+    "scoped": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "ConfigOwnership|ConfigAppendOwnership|EffectiveConfig|NonFinite|RunNav2D",
+        "-v",
+        "./experiment",
+        "./experiment/nav2d",
+        "./internal/cli"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:30.327653+00:00",
+      "elapsed_seconds": 76.124764919281,
+      "log": "scoped.log",
+      "environment_overrides": {}
+    },
+    "general": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:49:29.078344+00:00",
+      "elapsed_seconds": 330.1276969909668,
+      "log": "general.log",
+      "environment_overrides": {}
+    },
+    "build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:30.614549+00:00",
+      "elapsed_seconds": 19.467509984970093,
+      "log": "build.log",
+      "environment_overrides": {}
+    },
+    "vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:25.460277+00:00",
+      "elapsed_seconds": 4.291734933853149,
+      "log": "vet.log",
+      "environment_overrides": {}
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:31.451400+00:00",
+      "elapsed_seconds": 34.5561728477478,
+      "log": "mod-verify.log",
+      "environment_overrides": {}
+    },
+    "tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:28.046532+00:00",
+      "elapsed_seconds": 0.5570712089538574,
+      "log": "tidy.log",
+      "environment_overrides": {
+        "GOPROXY": "off"
+      }
+    },
+    "format": {
+      "command": [
+        "gofmt",
+        "-l",
+        "experiment/nav2d_suite.go",
+        "experiment/nav2d_ownership_test.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:29.927607+00:00",
+      "elapsed_seconds": 0.01845407485961914,
+      "log": "format.log",
+      "environment_overrides": {}
+    },
+    "diff-check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:50:28.412466+00:00",
+      "elapsed_seconds": 0.11143612861633301,
+      "log": "diff-check.log",
+      "environment_overrides": {}
+    },
+    "valid-workflow": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/nav2d-policy-ownership-20261008/verify-valid.py"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:49:29.576130+00:00",
+      "elapsed_seconds": 29.742857933044434,
+      "log": "valid-workflow.log",
+      "environment_overrides": {}
+    },
+    "cli-workflow": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/nav2d-effective-config-20261007/verify-cli.py"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:49:29.507040+00:00",
+      "elapsed_seconds": 18.712930917739868,
+      "log": "cli-workflow.log",
+      "environment_overrides": {}
+    },
+    "governance": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:59:35.511650+00:00",
+      "elapsed_seconds": 7.123931169509888,
+      "log": "governance.log",
+      "environment_overrides": {}
+    },
+    "api-doc": {
+      "command": [
+        "go",
+        "doc",
+        "github.com/TimLai666/coimnet/experiment.RunNav2D"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T17:06:41.468295+00:00",
+      "elapsed_seconds": 0.3406248092651367,
+      "log": "api-doc.log",
+      "environment_overrides": {},
+      "raw_stdout": "package experiment // import \"github.com/TimLai666/coimnet/experiment\"\n\nfunc RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error)\n    RunNav2D trains each policy for each seed with trainNav2D(ctx, p,\n    c.Env, seed, c.Episodes) (demonstrations plus DAgger rollouts on\n    nav2dTrainMap(seed, e)) and evaluates it; a failed run keeps its error and\n    the others continue; ctx cancellation aborts. The report owns its Seeds and\n    Policies independently of the caller.\n\n",
+      "raw_stdout_sha256": "d59ce316f45f0cb65e97d30d9df774b5c6ea80b5d5ef2aa0e71e5c63919f92b1",
+      "log_representation": {
+        "normalization": "Removed one redundant final newline for Git text whitespace compliance; exact command output is preserved in raw_stdout.",
+        "sha256": "91aeda448de095533eb1529bfe8e9002316a55ecad16f939894e16d3ea6ff134"
+      }
+    },
+    "race": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T16:49:29.108776+00:00",
+      "elapsed_seconds": 2425.810042858124,
+      "log": "race.log",
+      "environment_overrides": {}
+    },
+    "governance-ready": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-07T17:31:48.277333+00:00",
+      "elapsed_seconds": 3.049997091293335,
+      "log": "governance-ready.log",
+      "environment_overrides": {}
+    }
+  },
+  "race": {
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-race",
+      "-timeout",
+      "60m",
+      "./..."
+    ],
+    "exit_code": 0,
+    "started_at": "2026-10-07T16:49:29.108776+00:00",
+    "elapsed_seconds": 2425.810042858124,
+    "log": "race.log",
+    "environment_overrides": {}
+  },
+  "root_review": "root-review.md",
+  "contract_discovery": "contract-discovery.json",
+  "preservation": "preservation.json",
+  "valid_comparison": "valid-comparison.json",
+  "evidence_audit": "evidence-audit.json",
+  "delegation": "delegation.json",
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "specified": [
+      "TSK-11",
+      "OPS-05"
+    ]
+  },
+  "learning_claim": "none",
+  "biological_claim": "none",
+  "delivery_status": "pending",
+  "updated_at": "2026-10-07T17:37:18.647813+00:00",
+  "verified_at": "2026-10-07T17:31:10.024591+00:00"
+}

@@ -1,0 +1,6 @@
+package policycontract
+
+type Config struct { Seeds []uint64; Policies []string }
+type Report struct { Config Config }
+// Build is an intentionally incomplete synthetic ownership contract.
+func Build(c Config) Report { return Report{Config:c} }

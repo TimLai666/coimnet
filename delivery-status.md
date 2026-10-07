@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 49](docs/tickets/49-nav2d-report-config-ownership.md) 已完成 4／5 工程驗收，交付待完成。三個先失敗回歸、20 個相關頂層測試、24 筆合法結果在兩個新程序中逐位元組相同、八個 CLI 流程通過。完整一般與 race 各 57 套件、build、vet、格式、相依性與八個治理／索引專項通過。654 份凍結 Go 來源及 3,321 份原件核對通過，見[工程驗證](evidence/OPS-03/nav2d-policy-ownership-20261008/verification.json)。
+
 [ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成 5／5 驗收與交付。四個新增回歸與 11 個選取的頂層測試通過，12 組非法環境設定在全部公開入口回錯。24 筆合法結果在兩個新程序中與修正前逐位元組相同，八個 CLI 流程通過。完整一般與 race 各 57 套件、build、vet、格式、相依性及八個治理／索引專項通過。3,246 份既有檔案與凍結來源保持，Root 審查通過，實作 6f2aa38 已推送且遠端一致。見[工程驗證](evidence/OPS-03/nav2d-finite-config-20261007/verification.json)與[交付紀錄](evidence/OPS-03/nav2d-finite-config-20261007/delivery.json)。
 
 [ticket 47](docs/tickets/47-nav2d-effective-config-reports.md) 已完成 5／5 驗收與交付。六個新增回歸、八個真實 CLI 流程、24 筆修正前後報告記錄與兩個新程序重現通過，完整一般測試、build、vet、格式、相依性與治理也通過。完整 race 57 套件通過，Root 與 Luna max 獨立審查完成，實作 685a090 已推送且遠端一致，見[交付紀錄](evidence/OPS-03/nav2d-effective-config-20261007/delivery.json)，訓練結果及歷史原件保持。導航設定的非有限值驗證由 ticket 48 接續。
@@ -118,7 +120,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本階段完成 ticket 48 的導航環境有限值驗證，讓非法數值在執行前回錯，合法設定與報告維持相同，保存失敗回歸、相容性與完整驗證證據。
+本階段完成 ticket 49 的導航報告設定隔離，讓呼叫端、單任務報告與四任務報告互不改到彼此的策略清單，合法報告、雜湊及訓練結果保持。
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
@@ -180,10 +182,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | completed | 5／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，實作 baf7b91 已推送並核對遠端 |
 | 46 | 使用者可以拒絕容量資訊與模型不符的模型包 | Codex Root / OpenCode big-pickle 測試與實作 | completed | 5／5。五個回歸、九個 CLI 流程、完整一般／race 各 57 套件及原件核對通過，實作 d4ffe93 已推送核對 |
 | 48 | 研究者可以在導航開始前發現非有限數值設定 | Codex Root / Luna max 報告回歸 | completed | 5／5。四個新增回歸、合法報告、八個 CLI、完整一般與 race 各 57 套件及治理通過，實作 6f2aa38 已推送核對 |
+| 49 | 研究者可以保留不受外部設定修改影響的導航報告 | Codex Root / Luna max 測試 | in_progress | 4／5。回歸、合法報告、CLI、完整一般／race 各 57 套件、治理與原件核對通過；提交推送待完成 |
 
 ## 目前阻礙
 
-Ticket 48 已完成交付，本票沒有阻礙。
+Ticket 49 沒有決策或環境阻礙。OpenCode 人工契約派工的 --pure 沒採指定目錄，找不到 contract.go，並讀到 repo 的 go.mod 與檔名清單；已停止該子程序。Luna max 僅完成指定新測試，Root 已獨立重跑及凍結，實際工具紀錄見 evidence/OPS-03/nav2d-policy-ownership-20261008/isolated-audit.json。
 
 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已分離三項原始梯度，觀察到共用核心的局部競爭。梯度與探索對長期學習的因果作用尚未驗證，不能依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
@@ -199,7 +202,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md) 已完成交付。下一個可獨立處理的缺口是 AGENTS.md 記錄的報告 Policies 切片共享。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+下一個可驗證成果為 [ticket 49](docs/tickets/49-nav2d-report-config-ownership.md) 的雙向切片隔離及合法報告保持。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
@@ -208,6 +211,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-08：ticket 49 於共用報告入口沿用 Seeds 的切片複製補足 Policies。回傳後的雙向元素修改與追加隔離，不新增不可變 API 或同步能力；合法報告與訓練參數保持。OpenCode 人工契約的 --pure 目錄不符，已停止並改由 Luna max 完成測試，Root 自行審查與最小實作。
 
 2026-10-07：ticket 48 沿用共用環境驗證，只拒絕四個環境欄位的非有限值，保留有限值與各入口原有錯誤次序。OpenCode big-pickle 在隔離人工契約中回覆免費服務 403，Luna max 只撰寫指定報告回歸，Root 審查、凍結測試並完成最小實作。
 

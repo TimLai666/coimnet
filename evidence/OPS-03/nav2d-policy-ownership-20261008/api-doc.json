@@ -1,0 +1,18 @@
+{
+  "command": [
+    "go",
+    "doc",
+    "github.com/TimLai666/coimnet/experiment.RunNav2D"
+  ],
+  "exit_code": 0,
+  "started_at": "2026-10-07T17:06:41.468295+00:00",
+  "elapsed_seconds": 0.3406248092651367,
+  "log": "api-doc.log",
+  "environment_overrides": {},
+  "raw_stdout": "package experiment // import \"github.com/TimLai666/coimnet/experiment\"\n\nfunc RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error)\n    RunNav2D trains each policy for each seed with trainNav2D(ctx, p,\n    c.Env, seed, c.Episodes) (demonstrations plus DAgger rollouts on\n    nav2dTrainMap(seed, e)) and evaluates it; a failed run keeps its error and\n    the others continue; ctx cancellation aborts. The report owns its Seeds and\n    Policies independently of the caller.\n\n",
+  "raw_stdout_sha256": "d59ce316f45f0cb65e97d30d9df774b5c6ea80b5d5ef2aa0e71e5c63919f92b1",
+  "log_representation": {
+    "normalization": "Removed one redundant final newline for Git text whitespace compliance; exact command output is preserved in raw_stdout.",
+    "sha256": "91aeda448de095533eb1529bfe8e9002316a55ecad16f939894e16d3ea6ff134"
+  }
+}

@@ -1,0 +1,193 @@
+{
+  "status": "passed",
+  "binary_sha256": "5c80b013f3bf968475535d494202464f9f954c67570243d71b2a1814c1ae8bf1",
+  "source_manifest": "/Users/timlai/Developer/coimnet/evidence/OPS-03/nav2d-policy-ownership-20261008/source-freeze.json",
+  "positive_reports": 6,
+  "positive_run_records": 16,
+  "hash_reference": "Python compact JSON SHA-256 over exact reported config",
+  "checks": [
+    {
+      "name": "cli-single",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "nav2d",
+        "--seeds",
+        "7",
+        "--episodes",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--eval",
+        "1",
+        "--policies",
+        "recurrent,random",
+        "--task",
+        "avoid_obstacles"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_seconds": 2.258373975753784,
+      "stdout": "cli-single.stdout.log",
+      "stderr": "cli-single.stderr.log"
+    },
+    {
+      "name": "cli-suite",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "nav2d",
+        "--seeds",
+        "7",
+        "--episodes",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--eval",
+        "1",
+        "--policies",
+        "recurrent,random",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/cli-suite-report.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_seconds": 2.28147292137146,
+      "stdout": "cli-suite.stdout.log",
+      "stderr": "cli-suite.stderr.log"
+    },
+    {
+      "name": "cli-attribution",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--seeds",
+        "1,2,3",
+        "--episodes",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--eval",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/cli-attribution-report.json"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_seconds": 7.215588092803955,
+      "stdout": "cli-attribution.stdout.log",
+      "stderr": "cli-attribution.stderr.log"
+    },
+    {
+      "name": "cli-help-nav2d",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "nav2d",
+        "--help"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_seconds": 0.21896982192993164,
+      "stdout": "cli-help-nav2d.stdout.log",
+      "stderr": "cli-help-nav2d.stderr.log"
+    },
+    {
+      "name": "cli-invalid-nav2d",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "nav2d",
+        "--task",
+        "unknown",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/invalid-nav2d.json"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_seconds": 0.08016419410705566,
+      "stdout": "cli-invalid-nav2d.stdout.log",
+      "stderr": "cli-invalid-nav2d.stderr.log"
+    },
+    {
+      "name": "cli-help-attribution",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--help"
+      ],
+      "exit_code": 0,
+      "expected_exit_code": 0,
+      "elapsed_seconds": 0.10362815856933594,
+      "stdout": "cli-help-attribution.stdout.log",
+      "stderr": "cli-help-attribution.stderr.log"
+    },
+    {
+      "name": "cli-invalid-attribution",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--task",
+        "unknown",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/invalid-attribution.json"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_seconds": 0.017429113388061523,
+      "stdout": "cli-invalid-attribution.stdout.log",
+      "stderr": "cli-invalid-attribution.stderr.log"
+    },
+    {
+      "name": "cli-existing-out",
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/coimnet",
+        "examples",
+        "run",
+        "nav2d",
+        "--seeds",
+        "7",
+        "--episodes",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--eval",
+        "1",
+        "--policies",
+        "recurrent,random",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8/cli-suite-report.json"
+      ],
+      "exit_code": 1,
+      "expected_exit_code": 1,
+      "elapsed_seconds": 0.01987600326538086,
+      "stdout": "cli-existing-out.stdout.log",
+      "stderr": "cli-existing-out.stderr.log"
+    }
+  ],
+  "reused_helper": "evidence/OPS-03/nav2d-effective-config-20261007/verify-cli.py",
+  "reused_helper_sha256": "383777f553484e37ba8b980f06333b0601869076e44dcfa548b15af150ffe810",
+  "output_dir": "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-config-cli-w7s90bl8"
+}

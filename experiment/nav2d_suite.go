@@ -344,6 +344,7 @@ func nav2dInputWidth(c nav2d.Config) (int, error) {
 // seed, c.Episodes) (demonstrations plus DAgger rollouts on
 // nav2dTrainMap(seed, e)) and evaluates it; a failed run keeps its error and
 // the others continue; ctx cancellation aborts.
+// The report owns its Seeds and Policies independently of the caller.
 func RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error) {
 	var report Nav2DReport
 	if ctx == nil {
@@ -365,6 +366,7 @@ func RunNav2D(ctx context.Context, c Nav2DConfig) (Nav2DReport, error) {
 		return report, err
 	}
 	c.Seeds = append([]uint64(nil), c.Seeds...)
+	c.Policies = append([]string(nil), c.Policies...)
 	report = Nav2DReport{
 		SchemaVersion: Nav2DSchemaVersion,
 		Task:          c.Env.Task,
