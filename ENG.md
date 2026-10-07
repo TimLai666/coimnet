@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- `coimnet-名稱/v數字` 形式的版本來源集中列在 [文件索引](docs/INDEX.md)，分成正式格式、規則與雜湊識別、驗證工具格式、測試資料與反例。Go 字串以 AST 解碼，另核對 shell／Python 工具及四份治理 JSON 的版本欄位；每個版本只列一次，來源檔案及行號須相符。索引檢查併入既有 `go test`，無需 Git 或執行時註冊表，驗收見 [ticket 45](docs/tickets/45-format-index-consistency.md)。
+
 - Ticket 34 的最終本機證據見 [verification.json](evidence/TSK-11/stimulus-memory-20261003/verification.json)。九組模型採完整歷史遮罩更新，200 次更新同時核對各參數的 optimizer step。自主行走的 recorded current row 保留 raw stimulus，只有後續生成列寫零。完整一般及 race 通過，模仿誤差下降但模型均為 0／13 命中，沒有導航改善或生物機制證據。
 
 - 刺激記憶工程範例與既有軌跡 v1 分開。逐列刺激在同一次 CSV 讀取及來源指紋驗證中取得，已發生 LED 與預定事件分開，模型只接已送出刺激。完整試次從零開始保留神經狀態，後段遮罩損失透過既有 `StepFrom` 回傳完整歷史。凍結反事實評估先套用原控制轉換，再只清除第一個來源 relocation 列之前的模型可見刺激。自主續走保留原始 raw stimulus 區塊，確保後段刺激相同。搬移界線由同次來源讀取建立的獨立 map 提供，不寫進模型特徵。配對報告為 `coimnet-realnav-memory-counterfactual/v1`，工程解析尺度固定為 1e-6 cm，所有非零值均保存。詳見 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md)。核心與舊資料格式不變，固定切分、時鐘、搬移假設、模型及控制預算見 [ticket 34](docs/tickets/34-real-trajectory-stimulus-memory-proposal.md#實作契約與分工2026-10-03)。

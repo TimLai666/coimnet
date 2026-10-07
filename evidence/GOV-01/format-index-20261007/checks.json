@@ -1,0 +1,126 @@
+{
+  "recorded_at": "2026-10-07T11:46:06.529283+00:00",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "python": "3.9.6",
+    "system": "Darwin",
+    "machine": "arm64",
+    "host": "local macOS",
+    "network_for_dependency_check": "GOPROXY=off"
+  },
+  "completed": [
+    {
+      "name": "format red",
+      "command": "go test -count=1 -run '^TestFormatIndex' -v .",
+      "log": "red.log",
+      "exit_code": 1,
+      "observed_result": "expected failure of original INDEX; controls pass",
+      "log_sha256": "ab5f0f672832a17b115ed25816712ddb2c5c9e7cfde608e7e1b515087cc5ab4f"
+    },
+    {
+      "name": "format green",
+      "command": "go test -count=1 -run '^TestFormatIndex' -v .",
+      "log": "green.log",
+      "exit_code": 0,
+      "observed_result": "124 unique versions; four top-level tests and 13 subtests pass",
+      "log_sha256": "66c5fbbde64ce467562614b20c96a7b718107ae488ec972a87282ffd0f7b8e43"
+    },
+    {
+      "name": "archive without Git",
+      "command": "bash evidence/GOV-01/format-index-20261007/archive-command.txt",
+      "log": "archive.log",
+      "exit_code": 0,
+      "observed_result": "all 647 source fingerprints match; focused tests pass without .git",
+      "log_sha256": "1188058331a3936afb2885791e3afb5bc975a5386e11f800a41ec4eeceedecf4"
+    },
+    {
+      "name": "original integrity",
+      "command": "bash evidence/GOV-01/format-index-20261007/integrity-command.txt",
+      "log": "integrity.log",
+      "exit_code": 0,
+      "observed_result": "3022 protected files and 647 Go sources unchanged; 124 unique rows and 173 valid local links; requirements 89/91",
+      "log_sha256": "a3ff0b9b5923e196fb76c48e78e06709bc1237a526e84b66297ae90a4a5888d0"
+    },
+    {
+      "name": "gofmt",
+      "command": "python3 - <<'PY'\nimport json,subprocess\nfrom pathlib import Path\npaths=json.loads(Path('evidence/GOV-01/format-index-20261007/source-manifest.json').read_text())['files']\nr=subprocess.run(['gofmt','-l',*sorted(paths)],capture_output=True,text=True,check=True)\nprint(r.stdout,end='')\nassert not r.stdout\nPY",
+      "log": "gofmt-reproduction.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "build",
+      "command": "go build ./...",
+      "log": "build-allowed.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "vet",
+      "command": "go vet ./...",
+      "log": "vet.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "module verification",
+      "command": "go mod verify",
+      "log": "mod-verify.log",
+      "exit_code": 0,
+      "observed_result": "all modules verified",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+    },
+    {
+      "name": "offline tidy difference",
+      "command": "GOPROXY=off go mod tidy -diff",
+      "log": "mod-tidy.log",
+      "exit_code": 0,
+      "observed_result": "empty output; go.mod and go.sum unchanged",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "full normal",
+      "command": "go test -count=1 -timeout 60m ./...",
+      "log": "full-tests.log",
+      "exit_code": 0,
+      "observed_result": "57 packages pass; one command package has no test files",
+      "log_sha256": "35891f8b1082ed24aa7c2e2cb568c44b360aa8e782bc132a56d13001a3044df2"
+    },
+    {
+      "name": "governance metadata",
+      "command": "go test -count=1 -run '^Test(FormatIndex|Governance)' -v .",
+      "log": "governance.log",
+      "exit_code": 0,
+      "observed_result": "8 top-level format/governance tests pass after status evidence links are appended",
+      "log_sha256": "1b03336c6485ad21540a84483bfb039e1a956f656db91baa4bf36d201e1574ca"
+    },
+    {
+      "name": "full race",
+      "command": "go test -count=1 -race -timeout 60m ./...",
+      "log": "full-race.log",
+      "exit_code": 0,
+      "observed_result": "57 packages pass; one command package has no test files",
+      "log_sha256": "2b89371860790cdf54b269e1329fb768291ee179390450ea64eb95699164f46f"
+    },
+    {
+      "name": "final metadata",
+      "command": "go test -count=1 -run '^Test(FormatIndex|Governance)' -v .",
+      "log": "final-metadata.log",
+      "exit_code": 0,
+      "observed_result": "8 top-level tests pass on the final passed verification record and ticket state",
+      "log_sha256": "8e5de45151b422802007e7c1d334e6405573ca8245cf9e38177b2c6dd5d1a087"
+    }
+  ],
+  "pending": [],
+  "limitations": [
+    {
+      "command": "go build ./...",
+      "log": "build.log",
+      "exit_code": 1,
+      "reason": "Initial sandbox denied the default Go module/build cache writes; the authorized cache-enabled rerun passed."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+set -e
+python3 - <<'PY'
+import hashlib, json, pathlib, shutil, subprocess, tempfile
+
+root = pathlib.Path.cwd()
+evidence = root / 'evidence/GOV-01/format-index-20261007'
+baseline = json.loads((evidence / 'baseline.json').read_text())
+frozen = json.loads((evidence / 'frozen-tests.json').read_text())
+assert hashlib.sha256((root / frozen['test_file']).read_bytes()).hexdigest() == frozen['sha256']
+with tempfile.TemporaryDirectory(prefix='coimnet-format-archive-') as temporary:
+    destination = pathlib.Path(temporary)
+    archive = subprocess.Popen(['git', 'archive', baseline['base_commit']], cwd=root, stdout=subprocess.PIPE)
+    extract = subprocess.run(['tar', '-x', '-C', str(destination)], stdin=archive.stdout)
+    archive.stdout.close()
+    assert archive.wait() == 0 and extract.returncode == 0, 'archive extraction failed'
+    assert not (destination / '.git').exists()
+    old_index = destination / 'docs/INDEX.md'
+    assert hashlib.sha256(old_index.read_bytes()).hexdigest() == baseline['target_sha256']['docs/INDEX.md']
+    assert not (destination / frozen['test_file']).exists()
+    for relative in ['docs/INDEX.md', frozen['test_file']]:
+        shutil.copyfile(root / relative, destination / relative)
+    manifest = json.loads((evidence / 'source-manifest.json').read_text())
+    for relative, expected in manifest['files'].items():
+        assert hashlib.sha256((destination / relative).read_bytes()).hexdigest() == expected, relative
+    command = ['go', 'test', '-count=1', '-run', '^TestFormatIndex', '-v', '.']
+    print('No Git metadata; all', len(manifest['files']), 'Go source fingerprints match.', flush=True)
+    subprocess.run(command, cwd=destination, check=True)
+PY

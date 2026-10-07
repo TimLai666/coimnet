@@ -1,0 +1,47 @@
+{
+  "host": "Codex",
+  "root_contract": "docs/tickets/45-format-index-consistency.md",
+  "attempts": [
+    {
+      "tool": "collaboration.spawn_agent",
+      "task": "format_inventory_audit_spark",
+      "model": "gpt-5.3-codex-spark",
+      "reasoning_effort": "xhigh",
+      "result": "rejected",
+      "error": "Unknown model `gpt-5.3-codex-spark` for spawn_agent. Available models: gpt-6.1-sol, gpt-6-astra, gpt-6-sol, gpt-6-luna, gpt-5.6-sol"
+    },
+    {
+      "tool": "collaboration.spawn_agent",
+      "task": "format_inventory_audit_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "role": "read-only source classification",
+      "result": "completed"
+    },
+    {
+      "tool": "collaboration.spawn_agent",
+      "task": "format_index_tests_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "role": "only format_index_test.go",
+      "result": "completed",
+      "root_review": "Entire test reviewed, strengthened and frozen; root red command confirms the existing index fails while controls pass."
+    },
+    {
+      "tool": "collaboration.spawn_agent",
+      "task": "format_index_docs_luna",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "role": "only docs/INDEX.md; frozen tests may not be changed",
+      "result": "completed",
+      "worker_index_sha256": "5bb1081b6effe5525f7400b1725bee05316cd5376c35b293f63e218671502d81",
+      "root_review": "Entire diff and all source positions personally checked. Canonical source and wording corrections made by root. Root focused tests and no-Git archive pass."
+    }
+  ],
+  "discovery_limit": {
+    "tool": "mcp__codebase_memory_mcp__index_repository",
+    "result": "auto_review_rejected",
+    "reason": "Indexing the repository sends potentially sensitive source contents to an untrusted external knowledge-graph connector, and the user has not explicitly authorized that payload and destination.",
+    "alternative": "Local rg, file reads and Go AST only. No other external indexing attempted."
+  }
+}

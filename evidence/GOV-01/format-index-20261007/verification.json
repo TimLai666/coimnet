@@ -1,0 +1,290 @@
+{
+  "requirement": "GOV-01",
+  "covered_requirements": [
+    "GOV-04"
+  ],
+  "ticket": "45",
+  "verification_state": "passed",
+  "reproduction_command": [
+    "go test -count=1 -run '^TestFormatIndex' -v .",
+    "bash evidence/GOV-01/format-index-20261007/archive-command.txt",
+    "bash evidence/GOV-01/format-index-20261007/integrity-command.txt",
+    "python3 - <<'PY'\nimport json,subprocess\nfrom pathlib import Path\npaths=json.loads(Path('evidence/GOV-01/format-index-20261007/source-manifest.json').read_text())['files']\nr=subprocess.run(['gofmt','-l',*sorted(paths)],capture_output=True,text=True,check=True)\nprint(r.stdout,end='')\nassert not r.stdout\nPY",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "GOPROXY=off go mod tidy -diff",
+    "go test -count=1 -timeout 60m ./...",
+    "go test -count=1 -run '^Test(FormatIndex|Governance)' -v .",
+    "go test -count=1 -race -timeout 60m ./..."
+  ],
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "python": "3.9.6",
+    "system": "Darwin",
+    "machine": "arm64",
+    "host": "local macOS",
+    "network_for_dependency_check": "GOPROXY=off"
+  },
+  "base_commit": "e9286f797451cb8b57fb55b5b1f170dc0d55b492",
+  "recorded_at": "2026-10-07T11:46:06.529283+00:00",
+  "input_fingerprints": {
+    "original_targets": {
+      "ENG.md": "a5eab52919c7e845334594034613c22ae0e4fb75b9ab3b5d6961ec0615e0388c",
+      "docs/requirements-status.json": "65c2f183fd56963c70c3f573f955ffde1aedf373a206e958f42fa7855e920ba2",
+      "AGENTS.md": "89a5be4ee18888013915743b521bf25746b286e39fe1d0201113c42d75c6557d",
+      "delivery-status.md": "9796e1f544c1e098b8d2da01d75722ae3b3fbb7b5d25b25e7afa7efa792b136f",
+      "docs/INDEX.md": "e582828ada8ef50d2751f52fc8cde0ddadddca17f80b35fe79fe44814f96cee2"
+    },
+    "protected_tracked_files": 3022,
+    "baseline_record_sha256": "342e1d695fbde4a1e1ee1cf5b33f324e8fb5a9c9039249e1c0a671d3ab76a69b",
+    "go_source_files": 647,
+    "source_manifest_sha256": "c6a547ba756b10511347ed282d7a21d72610da19d8ffaf86a013b8c8eac323cd",
+    "frozen_test_sha256": "e766f70a8e4d6b068a0419c6d553ea5aafe1375db3b9cc58a0d69bd6534d7e83",
+    "final_index_sha256": "0bce5e8a632430abaeb06546d09eb643998c300a4e9abd7a3e1c87b536cd7b9c",
+    "final_requirement_tracking_sha256": "6ee46d6be08facabc1a693ebb87659c4ae1b31fa6902b920d2af0c6d2dc3f745"
+  },
+  "observed_result": {
+    "index_versions": 124,
+    "original_index_versions": 75,
+    "newly_indexed_versions": 49,
+    "categories": {
+      "formal": 87,
+      "rules": 10,
+      "tools": 14,
+      "test": 13
+    },
+    "local_links_valid": 173,
+    "format_top_level_tests": 4,
+    "format_control_and_error_subtests": 13,
+    "original_index_rejected": true,
+    "controls_pass_on_original_index": true,
+    "exported_source_without_git_passed": true,
+    "normal_packages_passed": 57,
+    "race_state": "passed",
+    "protected_files_unchanged": 3022,
+    "requirements_passed": 89,
+    "requirements_total": 91,
+    "unchanged_gates": {
+      "OPS-05": "specified",
+      "TSK-11": "specified"
+    },
+    "format_and_governance_top_level_tests": 8,
+    "final_index_focused_and_archive_rechecked_after_scope_clarification": true,
+    "race_packages_passed": 57,
+    "go_sources_unchanged_since_freeze": 647,
+    "source_version_inventory_unclassified": 0
+  },
+  "test_log": [
+    "red.log",
+    "green.log",
+    "archive.log",
+    "integrity.log",
+    "gofmt-reproduction.log",
+    "build-allowed.log",
+    "vet.log",
+    "mod-verify.log",
+    "mod-tidy.log",
+    "full-tests.log",
+    "governance.log",
+    "full-race.log",
+    "final-metadata.log"
+  ],
+  "checks": [
+    {
+      "name": "format red",
+      "command": "go test -count=1 -run '^TestFormatIndex' -v .",
+      "log": "red.log",
+      "exit_code": 1,
+      "observed_result": "expected failure of original INDEX; controls pass",
+      "log_sha256": "ab5f0f672832a17b115ed25816712ddb2c5c9e7cfde608e7e1b515087cc5ab4f"
+    },
+    {
+      "name": "format green",
+      "command": "go test -count=1 -run '^TestFormatIndex' -v .",
+      "log": "green.log",
+      "exit_code": 0,
+      "observed_result": "124 unique versions; four top-level tests and 13 subtests pass",
+      "log_sha256": "66c5fbbde64ce467562614b20c96a7b718107ae488ec972a87282ffd0f7b8e43"
+    },
+    {
+      "name": "archive without Git",
+      "command": "bash evidence/GOV-01/format-index-20261007/archive-command.txt",
+      "log": "archive.log",
+      "exit_code": 0,
+      "observed_result": "all 647 source fingerprints match; focused tests pass without .git",
+      "log_sha256": "1188058331a3936afb2885791e3afb5bc975a5386e11f800a41ec4eeceedecf4"
+    },
+    {
+      "name": "original integrity",
+      "command": "bash evidence/GOV-01/format-index-20261007/integrity-command.txt",
+      "log": "integrity.log",
+      "exit_code": 0,
+      "observed_result": "3022 protected files and 647 Go sources unchanged; 124 unique rows and 173 valid local links; requirements 89/91",
+      "log_sha256": "a3ff0b9b5923e196fb76c48e78e06709bc1237a526e84b66297ae90a4a5888d0"
+    },
+    {
+      "name": "gofmt",
+      "command": "python3 - <<'PY'\nimport json,subprocess\nfrom pathlib import Path\npaths=json.loads(Path('evidence/GOV-01/format-index-20261007/source-manifest.json').read_text())['files']\nr=subprocess.run(['gofmt','-l',*sorted(paths)],capture_output=True,text=True,check=True)\nprint(r.stdout,end='')\nassert not r.stdout\nPY",
+      "log": "gofmt-reproduction.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "build",
+      "command": "go build ./...",
+      "log": "build-allowed.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "vet",
+      "command": "go vet ./...",
+      "log": "vet.log",
+      "exit_code": 0,
+      "observed_result": "empty output",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "module verification",
+      "command": "go mod verify",
+      "log": "mod-verify.log",
+      "exit_code": 0,
+      "observed_result": "all modules verified",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+    },
+    {
+      "name": "offline tidy difference",
+      "command": "GOPROXY=off go mod tidy -diff",
+      "log": "mod-tidy.log",
+      "exit_code": 0,
+      "observed_result": "empty output; go.mod and go.sum unchanged",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "full normal",
+      "command": "go test -count=1 -timeout 60m ./...",
+      "log": "full-tests.log",
+      "exit_code": 0,
+      "observed_result": "57 packages pass; one command package has no test files",
+      "log_sha256": "35891f8b1082ed24aa7c2e2cb568c44b360aa8e782bc132a56d13001a3044df2"
+    },
+    {
+      "name": "governance metadata",
+      "command": "go test -count=1 -run '^Test(FormatIndex|Governance)' -v .",
+      "log": "governance.log",
+      "exit_code": 0,
+      "observed_result": "8 top-level format/governance tests pass after status evidence links are appended",
+      "log_sha256": "1b03336c6485ad21540a84483bfb039e1a956f656db91baa4bf36d201e1574ca"
+    },
+    {
+      "name": "full race",
+      "command": "go test -count=1 -race -timeout 60m ./...",
+      "log": "full-race.log",
+      "exit_code": 0,
+      "observed_result": "57 packages pass; one command package has no test files",
+      "log_sha256": "2b89371860790cdf54b269e1329fb768291ee179390450ea64eb95699164f46f"
+    },
+    {
+      "name": "final metadata",
+      "command": "go test -count=1 -run '^Test(FormatIndex|Governance)' -v .",
+      "log": "final-metadata.log",
+      "exit_code": 0,
+      "observed_result": "8 top-level tests pass on the final passed verification record and ticket state",
+      "log_sha256": "8e5de45151b422802007e7c1d334e6405573ca8245cf9e38177b2c6dd5d1a087"
+    }
+  ],
+  "pending_checks": [],
+  "limitations": [
+    "Software and document checks on local macOS only. No new task-learning, biological mechanism, remote execution or full-connectome GPU training evidence.",
+    "The inventory covers coimnet-<ASCII name>/v<integer> direct Go string literals, shell/Python references and four governance JSON schemas. Other identifier namespaces, computed version strings and historical JSON artifacts are outside the declared inventory.",
+    "Initial Go cache writes were denied by the sandbox. The authorized cache-enabled reruns passed.",
+    "External codebase indexing was rejected by automatic approval review; local AST, source reads and searches were used."
+  ],
+  "review": [
+    "source-review.md",
+    "review.md"
+  ],
+  "delegation": "delegation.json",
+  "suite_inputs": {
+    "go_source_manifest_sha256": "c6a547ba756b10511347ed282d7a21d72610da19d8ffaf86a013b8c8eac323cd",
+    "index_sha256_at_full_suite_start": "32f64c78dea76fc84ba1f1b625a617b21d105113eebb70789b6c30f8b2755ea6",
+    "subsequent_index_change": "Only the introductory namespace scope sentence was clarified; all 124 table rows remained identical. Final focused and archive checks passed.",
+    "subsequent_tracking_change": "Only two evidence links were appended to GOV-01/GOV-04; final governance tests passed."
+  },
+  "artifact_sha256": {
+    "archive-command.txt": "49990d0c0b522b8b1d90c82fa0cff1924b4137d331558b5602d9bf8091088024",
+    "archive.log": "1188058331a3936afb2885791e3afb5bc975a5386e11f800a41ec4eeceedecf4",
+    "baseline.json": "342e1d695fbde4a1e1ee1cf5b33f324e8fb5a9c9039249e1c0a671d3ab76a69b",
+    "build-allowed.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "build.log": "d969eeb2916fa720a11edc42c947aed3d36197354eb5899b5b96af6e22f0bc6d",
+    "checks.json": "19d00f85b5db66a270cee20d9d02f5122f65c3c7229c7be2d6bb6a15c744a65c",
+    "commit-scan.log": "b3b9b2eca606d6f853c6c68c7024a9b82db3a90d1bbc81089029645b23bdd8e0",
+    "delegation.json": "5ccc9864be67bbf576fa1aab16191fc3e222cd70059d3d8737ba667c9d23adf0",
+    "final-metadata.log": "8e5de45151b422802007e7c1d334e6405573ca8245cf9e38177b2c6dd5d1a087",
+    "frozen-index.json": "72607d4b8292334edc28dca16c2661804ea749eb04636d3bfcf56e512c09d6f8",
+    "frozen-tests.json": "921cee0a46dccf83e407b89b7d2694bddfb1a3558f33c9f8e93c843265e7fc59",
+    "full-race.log": "2b89371860790cdf54b269e1329fb768291ee179390450ea64eb95699164f46f",
+    "full-tests.log": "35891f8b1082ed24aa7c2e2cb568c44b360aa8e782bc132a56d13001a3044df2",
+    "gofmt-reproduction.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "gofmt.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "governance.log": "1b03336c6485ad21540a84483bfb039e1a956f656db91baa4bf36d201e1574ca",
+    "green.log": "66c5fbbde64ce467562614b20c96a7b718107ae488ec972a87282ffd0f7b8e43",
+    "integrity-command.txt": "7b992089199e13f756402da0f806f2a1812f404e5c2bb3f347680d8a7be3b4d8",
+    "integrity.log": "a3ff0b9b5923e196fb76c48e78e06709bc1237a526e84b66297ae90a4a5888d0",
+    "inventory-delta.json": "d1e9f9dd266c0331884afe3eb844e51f9bf340aca80f8eb16f5f78b79c8629b4",
+    "mod-tidy.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "mod-verify.log": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+    "red.log": "ab5f0f672832a17b115ed25816712ddb2c5c9e7cfde608e7e1b515087cc5ab4f",
+    "remote-before.log": "1d35755f94f2c4fce3fa47dc6fcd748bb56aa0918ad80f7db7fdead5ca923709",
+    "review.md": "bd2b62f73a972d8074ff617336681164887cefe695341a302ab737aec2994d5b",
+    "source-manifest.json": "c6a547ba756b10511347ed282d7a21d72610da19d8ffaf86a013b8c8eac323cd",
+    "source-review.md": "5b01dfe497755f1fe888baf6baece6c46635053fdcd5a7ddd6ffef6f4956a904",
+    "vet.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "changed_files": [
+    "AGENTS.md",
+    "ENG.md",
+    "delivery-status.md",
+    "docs/INDEX.md",
+    "docs/requirements-status.json",
+    "docs/tickets/45-format-index-consistency.md",
+    "evidence/GOV-01/format-index-20261007/archive-command.txt",
+    "evidence/GOV-01/format-index-20261007/archive.log",
+    "evidence/GOV-01/format-index-20261007/baseline.json",
+    "evidence/GOV-01/format-index-20261007/build-allowed.log",
+    "evidence/GOV-01/format-index-20261007/build.log",
+    "evidence/GOV-01/format-index-20261007/checks.json",
+    "evidence/GOV-01/format-index-20261007/commit-scan.log",
+    "evidence/GOV-01/format-index-20261007/delegation.json",
+    "evidence/GOV-01/format-index-20261007/final-metadata.log",
+    "evidence/GOV-01/format-index-20261007/frozen-index.json",
+    "evidence/GOV-01/format-index-20261007/frozen-tests.json",
+    "evidence/GOV-01/format-index-20261007/full-race.log",
+    "evidence/GOV-01/format-index-20261007/full-tests.log",
+    "evidence/GOV-01/format-index-20261007/gofmt-reproduction.log",
+    "evidence/GOV-01/format-index-20261007/gofmt.log",
+    "evidence/GOV-01/format-index-20261007/governance.log",
+    "evidence/GOV-01/format-index-20261007/green.log",
+    "evidence/GOV-01/format-index-20261007/integrity-command.txt",
+    "evidence/GOV-01/format-index-20261007/integrity.log",
+    "evidence/GOV-01/format-index-20261007/inventory-delta.json",
+    "evidence/GOV-01/format-index-20261007/mod-tidy.log",
+    "evidence/GOV-01/format-index-20261007/mod-verify.log",
+    "evidence/GOV-01/format-index-20261007/red.log",
+    "evidence/GOV-01/format-index-20261007/remote-before.log",
+    "evidence/GOV-01/format-index-20261007/review.md",
+    "evidence/GOV-01/format-index-20261007/source-manifest.json",
+    "evidence/GOV-01/format-index-20261007/source-review.md",
+    "evidence/GOV-01/format-index-20261007/verification.json",
+    "evidence/GOV-01/format-index-20261007/vet.log",
+    "format_index_test.go"
+  ],
+  "pre_commit_scan": {
+    "command": "bash scripts/scan-commit.sh",
+    "exit_code": 0,
+    "log": "commit-scan.log"
+  }
+}

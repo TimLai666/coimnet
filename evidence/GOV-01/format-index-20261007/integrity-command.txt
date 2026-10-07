@@ -1,0 +1,37 @@
+set -e
+python3 - <<'PY'
+import hashlib, json, pathlib, re
+
+root = pathlib.Path.cwd()
+evidence = root / 'evidence/GOV-01/format-index-20261007'
+baseline = json.loads((evidence / 'baseline.json').read_text())
+manifest = json.loads((evidence / 'source-manifest.json').read_text())
+frozen = json.loads((evidence / 'frozen-tests.json').read_text())
+digest = lambda p: hashlib.sha256((root / p).read_bytes()).hexdigest()
+for p, expected in baseline['protected_sha256'].items():
+    assert digest(p) == expected, p
+for p, expected in manifest['files'].items():
+    assert digest(p) == expected, p
+assert digest(frozen['test_file']) == frozen['sha256']
+status = json.loads((root / 'docs/requirements-status.json').read_text())['requirements']
+assert len(status) == 91 and sum(r['status'] == 'passed' for r in status) == 89
+gates = {r['id']: r['status'] for r in status}
+assert gates['OPS-05'] == gates['TSK-11'] == 'specified'
+text = (root / 'docs/INDEX.md').read_text()
+versions = re.findall(r'^\| `([^`]+)` \|', text, re.M)
+assert len(versions) == len(set(versions)) == frozen['unique_versions']
+links = re.findall(r'\]\(([^)]+)\)', text)
+for target in links:
+    if '://' in target or target.startswith('#'):
+        continue
+    relative, _, fragment = target.partition('#')
+    path = root / 'docs' / relative
+    assert path.exists(), target
+    if fragment.startswith('L'):
+        line = int(fragment[1:])
+        assert 1 <= line <= len(path.read_text().splitlines()), target
+print('Protected tracked files:', len(baseline['protected_sha256']), 'unchanged.')
+print('Go source files:', len(manifest['files']), 'unchanged since freeze.')
+print('Index versions:', len(versions), 'unique; local links:', len(links), 'valid.')
+print('Requirements: 89/91; OPS-05 and TSK-11 remain specified.')
+PY
