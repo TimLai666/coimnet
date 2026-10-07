@@ -19,8 +19,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Sub-agent
 
-- 需要分工時，優先使用 `gpt-5.3-codex-spark`，reasoning effort 設為最高支援值 `xhigh`。即使工具的模型列表沒有列出，也先嘗試使用。
-- Spark 無法勝任或實際呼叫不可用時，第二選擇為 `gpt-5.6-luna`，reasoning effort 設為最高支援值 `max`。
+- 需要分工時，優先使用 OpenCode 的免費模型。派工前執行 `opencode models` 核對可用模型，並在命令中明示 `--model <provider>/<model>`。
+- OpenCode 免費模型無法勝任或實際呼叫不可用時，第二選擇為 `gpt-5.6-luna`，reasoning effort 設為最高支援值 `max`。
 - 模型或 effort 遭工具拒絕時，回報實際限制，不假裝已使用指定設定。
 - 分派具體且可獨立驗證的工作，標明可修改檔案。主 agent 必須審查依據、修改與驗證結果。
 
