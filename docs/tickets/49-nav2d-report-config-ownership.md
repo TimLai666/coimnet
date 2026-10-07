@@ -3,7 +3,7 @@
 **Epic:** 訓練框架的可重現設定
 **User Story:** 研究者可以在取得報告後調整下一次實驗的設定，不改到既有報告
 **Blocked by:** 47 共用的有效設定報告入口，已完成；48 有限值驗證是保留的來源基準
-**Status:** in_progress
+**Status:** completed
 
 ## 問題與範圍
 
@@ -46,7 +46,7 @@ Root 負責骨架、測試審查及凍結、一處最小實作、完整驗證與
 - [x] 單任務及 suite 的雙欄切片互不影響，共用入口修正。
 - [x] 合法完整報告逐位元組相同，CLI 與原件保存通過。
 - [x] gofmt、build、完整一般／race、vet、相依性及治理通過。
-- [ ] 完整 diff、需求證據、提交推送與遠端核對完成。
+- [x] 完整 diff、需求證據、提交推送與遠端核對完成。
 
 ## 減法審查
 
@@ -58,3 +58,5 @@ Won't List：不處理其他比較設定、不調參、不建立不可變報告 
 
 [工程設計](../../ENG.md)、[有效設定票](47-nav2d-effective-config-reports.md)、[有限值票](48-nav2d-finite-config-validation.md)、[原公開入口重現](../../evidence/OPS-03/nav2d-effective-config-20261007/ownership-probe.json)、[本票證據](../../evidence/OPS-03/nav2d-policy-ownership-20261008/)。
 相關需求 OPS-03、TSK-08，需求狀態不變。
+
+實作 1b088e42151941c132a38d870ff64e9ac8517cb7 已推送 origin/main 並核對遠端相同，見[交付紀錄](../../evidence/OPS-03/nav2d-policy-ownership-20261008/delivery.json)。固定進度 5／5。
