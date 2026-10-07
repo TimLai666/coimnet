@@ -3,7 +3,7 @@
 **Epic:** STA-01／COR-06 模型保存與容量
 **User Story:** 使用者可以載入、保存及使用容量資訊與設定、參數相符的模型包，並繼續讀取沒有容量欄位的舊模型包。
 **Blocked by:** 無
-**Status:** verified_pending_delivery
+**Status:** completed
 
 ## Root 決策（2026-10-07）
 
@@ -42,7 +42,7 @@
 - [x] 六欄不符在共同入口拒絕，單檔、bundle 及建立個體均有覆蓋。
 - [x] 三種核心的合法容量、nil 舊格式、資料所有權及既有原件保持。
 - [x] gofmt、build、完整一般／race、vet、相依性及治理檢查通過。
-- [ ] 完整 diff 審查、需求證據、提交掃描、推送與遠端核對完成。
+- [x] 完整 diff 審查、需求證據、提交掃描、推送與遠端核對完成。
 
 ## 減法審查
 
@@ -62,3 +62,7 @@
 五個新增頂層回歸、九個 CLI 流程、Mac 完整一般與 race 各 57 個套件、build、vet、格式、相依性與八個格式／治理頂層檢查全部通過。648 份 Go 來源凍結，3,053 份範圍外既有檔案保持。證據文件必要欄位已依既有治理契約補齊。原失敗與修復後日誌保留，沒有修改測試。
 
 [工程證據](../../evidence/STA-01/model-capacity-20261007/verification.json)。[Root 審查與派工限制](../../evidence/STA-01/model-capacity-20261007/root-review.md)。本票只有軟體正確性證據，需求狀態維持 89／91。
+
+## 交付結果
+
+實作 `d4ffe93305dca2852620838fd6c998a157431c86` 已推送至 origin/main，唯讀遠端核對取得相同提交。79 份提交檔案的最終掃描通過。交付證據見 [delivery.json](../../evidence/STA-01/model-capacity-20261007/delivery.json)。

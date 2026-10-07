@@ -4,7 +4,7 @@
 
 ## 審查結論
 
-Scope: CLEAN。Root 已審查完整程式差異與測試草稿，沒有尚待修正的已確認缺陷。完整一般／race 已通過，交付尚待提交檢查及遠端核對。
+Scope: CLEAN。Root 已審查完整程式差異與測試草稿，沒有尚待修正的已確認缺陷。完整一般／race 與提交掃描通過，實作 `d4ffe93` 已推送並核對遠端。交付紀錄見 delivery.json。
 
 共同入口對非 nil Capacity 精確核對六個整數欄位，使用已驗證 Trainer 的報告，把 FreeParameterCount 設為 ParameterCount。模型包不保存訓練遮罩，LIF theta 必須包含在容量內。nil 舊欄位不補寫。沒有額外建立 Network，原驗證順序、公開簽名、格式與依賴保持。
 
@@ -119,3 +119,6 @@ Scope: CLEAN。Root 已審查完整程式差異與測試草稿，沒有尚待修
 | [evidence/STA-01/model-capacity-20261007/vet.log](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/vet.log) | 實際命令的輸出或錯誤紀錄 |
 | [evidence/STA-01/model-capacity-20261007/commit-scan.json](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/commit-scan.json) | 提交前掃描命令與結果 |
 | [evidence/STA-01/model-capacity-20261007/commit-scan.log](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/commit-scan.log) | 提交前掃描實際輸出 |
+| [evidence/STA-01/model-capacity-20261007/delivery.json](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/delivery.json) | 實作提交、推送與遠端核對的交付證據 |
+| [evidence/STA-01/model-capacity-20261007/governance-delivery.json](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/governance-delivery.json) | 交付文件的格式與治理檢查紀錄 |
+| [evidence/STA-01/model-capacity-20261007/governance-delivery.log](/Users/timlai/Developer/coimnet/evidence/STA-01/model-capacity-20261007/governance-delivery.log) | 交付文件的八個格式與治理頂層檢查輸出 |

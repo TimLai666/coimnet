@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已通過 4／5 驗收，待提交掃描、推送與遠端核對。共同入口核對六欄容量，沒有容量欄位的舊檔保持。五個回歸、九個 CLI 流程、完整一般與 race 各 57 個套件、build、vet、格式、相依性與治理均通過，沒有阻礙。證據見[工程驗證](evidence/STA-01/model-capacity-20261007/verification.json)與[Root 審查](evidence/STA-01/model-capacity-20261007/root-review.md)。
+[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已完成 5／5 驗收與交付。共同入口核對六欄容量，沒有容量欄位的舊檔保持。五個回歸、九個 CLI 流程、完整一般與 race 各 57 個套件、build、vet、格式、相依性與治理均通過。實作 `d4ffe93` 已推送並核對遠端，見[工程驗證](evidence/STA-01/model-capacity-20261007/verification.json)、[Root 審查](evidence/STA-01/model-capacity-20261007/root-review.md)與[交付紀錄](evidence/STA-01/model-capacity-20261007/delivery.json)。本票沒有阻礙。
 
 [ticket 45](docs/tickets/45-format-index-consistency.md) 已完成 5／5 驗收與交付。124 列、173 個本機連結、8 個格式／治理專項、無 Git 匯出，以及完整一般／race 各 57 個套件、建置、vet、格式與相依性檢查通過。3,022 份既有檔案與 647 份凍結 Go 來源保持。實作 `baf7b91` 已推送並核對遠端，見[工程驗證](evidence/GOV-01/format-index-20261007/verification.json)與[交付紀錄](evidence/GOV-01/format-index-20261007/delivery.json)。本票沒有阻礙。
 
@@ -174,7 +174,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5。22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過。候選失敗原狀保持，實作 874ac43 已推送並核對遠端 |
 | 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | completed | 5／5。13 個頂層專項、真實 CLI、完整一般與 race 各 57 套件及 Root 審查通過，實作 d7c8963 已推送並核對遠端 |
 | 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | completed | 5／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，實作 baf7b91 已推送並核對遠端 |
-| 46 | 使用者可以拒絕容量資訊與模型不符的模型包 | Codex Root / OpenCode big-pickle 測試與實作 | verified_pending_delivery | 4／5。五個回歸、九個 CLI 流程、完整一般／race 各 57 套件及原件核對通過，待 Git 交付 |
+| 46 | 使用者可以拒絕容量資訊與模型不符的模型包 | Codex Root / OpenCode big-pickle 測試與實作 | completed | 5／5。五個回歸、九個 CLI 流程、完整一般／race 各 57 套件及原件核對通過，實作 d4ffe93 已推送核對 |
 
 ## 目前阻礙
 
@@ -192,7 +192,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 的工程驗收已完成，下一個成果是提交掃描、推送及遠端提交核對。本票沒有實作阻礙。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
+[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已完成交付，實作 `d4ffe93` 的遠端提交一致。本票沒有阻礙，下一張框架修正工作票尚未選定。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
