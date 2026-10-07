@@ -58,3 +58,4 @@ Scope: CLEAN。本次修正既有格式索引，新增一份只使用標準函�
 | [evidence/GOV-01/format-index-20261007/vet.log](vet.log) | 完整靜態檢查成功輸出。 |
 | [format_index_test.go](../../../format_index_test.go) | 新增來源盤點、索引驗證及正常／失敗控制。 |
 | [evidence/GOV-01/format-index-20261007/commit-scan.log](commit-scan.log) | 提交前範圍、敏感內容與檔案大小掃描通過。 |
+| [evidence/GOV-01/format-index-20261007/delivery.json](delivery.json) | 實作提交、推送與遠端讀回一致的交付紀錄。 |

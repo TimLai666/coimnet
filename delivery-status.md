@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 45](docs/tickets/45-format-index-consistency.md) 已完成 4／5 驗收，提交交付待完成。124 列、173 個本機連結、8 個格式／治理專項、無 Git 匯出，以及完整一般／race 各 57 個套件、建置、vet、格式與相依性檢查通過。3,022 份既有檔案與 647 份凍結 Go 來源保持，見[工程驗證](evidence/GOV-01/format-index-20261007/verification.json)。本票沒有阻礙。
+[ticket 45](docs/tickets/45-format-index-consistency.md) 已完成 5／5 驗收與交付。124 列、173 個本機連結、8 個格式／治理專項、無 Git 匯出，以及完整一般／race 各 57 個套件、建置、vet、格式與相依性檢查通過。3,022 份既有檔案與 647 份凍結 Go 來源保持。實作 `baf7b91` 已推送並核對遠端，見[工程驗證](evidence/GOV-01/format-index-20261007/verification.json)與[交付紀錄](evidence/GOV-01/format-index-20261007/delivery.json)。本票沒有阻礙。
 
 [ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 已完成 5／5 驗收與交付。doctor 明列受限的 GPU 訓練支援條件，硬體探測與核心執行分開報告。13 個頂層專項、真實 CLI、Mac 完整一般與 race 各 57 個套件、建置、vet、格式及相依性檢查通過。2,953 份既有檔案與凍結測試保持。實作 `d7c8963` 已推送並核對遠端，見[工程驗證](evidence/OPS-02/doctor-gpu-capabilities-20261007/verification.json)與[交付紀錄](evidence/OPS-02/doctor-gpu-capabilities-20261007/delivery.json)。本票沒有阻礙，OPS-05 保持 specified。
 
@@ -171,7 +171,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 42 | 研究者可以在大分數下取得正確的蒸餾與文字序列損失 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5；10 個新增數值回歸、124 個相關頂層測試、完整一般與 race 各 57 套件及審查通過，實作 8fb25c2 已推送並核對遠端 |
 | 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5。22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過。候選失敗原狀保持，實作 874ac43 已推送並核對遠端 |
 | 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | completed | 5／5。13 個頂層專項、真實 CLI、完整一般與 race 各 57 套件及 Root 審查通過，實作 d7c8963 已推送並核對遠端 |
-| 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | in_progress | 4／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，提交交付待完成 |
+| 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | completed | 5／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，實作 baf7b91 已推送並核對遠端 |
 
 ## 目前阻礙
 
@@ -189,7 +189,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 45](docs/tickets/45-format-index-consistency.md) 驗證已完成，下一個成果是提交、推送與遠端提交核對。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
+[ticket 45](docs/tickets/45-format-index-consistency.md) 已交付，下一張票尚未固定。建議接著核對 [checkpoint/package.go](checkpoint/package.go) 的可選 Capacity，避免載入被改過的容量資訊，既有 nil 欄位保留相容性。此項已在 [AGENTS.md Follow-ups](AGENTS.md#follow-ups) 記錄。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

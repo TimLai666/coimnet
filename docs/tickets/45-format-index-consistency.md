@@ -3,7 +3,7 @@
 **Epic:** GOV-01／GOV-04 文件準確性
 **User Story:** 維護者可以從文件找到框架、範例、驗證工具與測試反例的版本來源，不把版本識別或錯誤案例誤當可讀取格式。
 **Blocked by:** 無
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策（2026-10-07）
 
@@ -40,6 +40,6 @@
 - [x] 完整盤點與分類通過：124 個版本，正式 87、規則識別 10、驗證工具 14、測試資料與反例 13，見同目錄的 `inventory-delta.json` 及 `source-review.md`。
 - [x] INDEX 與來源、用途、連結及新增檢查一致，Root 全文審查、反例測試、173 個本機連結與無 Git 匯出驗證通過，見 `green.log`、`archive.log`、`integrity.log`、`frozen-index.json`。
 - [x] 完整格式、建置、一般／race 各 57 個套件、vet、相依性、8 個格式／治理專項及既有檔案指紋檢查通過，見 `verification.json`、`checks.json` 與對應日誌。
-- [ ] 命令、環境、指紋、結果及日誌保存；追蹤、提交、推送並核對遠端完成。
+- [x] 命令、環境、指紋、結果及日誌保存，GOV-01／GOV-04 追蹤更新。實作 `baf7b91` 已提交、推送並核對遠端，見 `delivery.json`。
 
 減法審查：維護既有單一索引，檢查加入現有 go test，不另建格式註冊表或新指令。
