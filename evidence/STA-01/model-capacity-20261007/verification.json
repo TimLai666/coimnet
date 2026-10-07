@@ -1,0 +1,259 @@
+{
+  "status": "passed",
+  "date": "2026-10-07",
+  "requirements": [
+    "STA-01",
+    "COR-06"
+  ],
+  "environment": {
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": [
+      "darwin",
+      "arm64",
+      "go1.26.5",
+      "1"
+    ],
+    "platform": "macOS arm64"
+  },
+  "inputs": {
+    "base_commit": "204486523fb086c6c5531d94c5907a9aecc93bde",
+    "source_fingerprints": "source-freeze.json",
+    "test_fingerprints": "test-freeze.json",
+    "original_fingerprints": "baseline.json",
+    "cli_input_fingerprints": "cli-workflow.json"
+  },
+  "checks": [
+    {
+      "name": "root-green",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "^TestModelPackageCapacityValidation",
+        "-v",
+        "./checkpoint"
+      ],
+      "started_at": "2026-10-07T12:52:44.862678+00:00",
+      "elapsed_seconds": 2.2946757499999997,
+      "exit_code": 0,
+      "log": "root-green.log",
+      "record": "root-green.json"
+    },
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-07T12:54:32.191347+00:00",
+      "elapsed_seconds": 7.313071416,
+      "exit_code": 0,
+      "log": "build.log",
+      "environment_overrides": {},
+      "record": "build.json"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-07T12:54:39.506453+00:00",
+      "elapsed_seconds": 2.2478152499999995,
+      "exit_code": 0,
+      "log": "vet.log",
+      "environment_overrides": {},
+      "record": "vet.json"
+    },
+    {
+      "name": "mod-verify",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "started_at": "2026-10-07T12:54:41.755887+00:00",
+      "elapsed_seconds": 11.693748708000001,
+      "exit_code": 0,
+      "log": "mod-verify.log",
+      "environment_overrides": {},
+      "record": "mod-verify.json"
+    },
+    {
+      "name": "mod-tidy-diff",
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "started_at": "2026-10-07T12:54:53.451119+00:00",
+      "elapsed_seconds": 0.20462154199999816,
+      "exit_code": 0,
+      "log": "mod-tidy-diff.log",
+      "environment_overrides": {
+        "GOPROXY": "off"
+      },
+      "record": "mod-tidy-diff.json"
+    },
+    {
+      "name": "gofmt",
+      "command": [
+        "gofmt",
+        "-l",
+        "checkpoint/package.go",
+        "checkpoint/package_capacity_validation_test.go"
+      ],
+      "started_at": "2026-10-07T12:54:53.656647+00:00",
+      "elapsed_seconds": 0.024860874999998117,
+      "exit_code": 0,
+      "log": "gofmt.log",
+      "environment_overrides": {},
+      "record": "gofmt.json"
+    },
+    {
+      "name": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "started_at": "2026-10-07T12:54:53.682238+00:00",
+      "elapsed_seconds": 0.05295466699999807,
+      "exit_code": 0,
+      "log": "diff-check.log",
+      "environment_overrides": {},
+      "record": "diff-check.json"
+    },
+    {
+      "name": "full-test",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "started_at": "2026-10-07T12:53:35.004714+00:00",
+      "elapsed_seconds": 127.688573417,
+      "exit_code": 0,
+      "log": "full-test.log",
+      "record": "full-test.json"
+    },
+    {
+      "name": "full-race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "started_at": "2026-10-07T12:53:36.338041+00:00",
+      "elapsed_seconds": 1250.8723022499998,
+      "exit_code": 0,
+      "log": "full-race.log",
+      "record": "full-race.json"
+    },
+    {
+      "name": "governance-repaired",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "^(TestFormatIndex|TestGovernance)",
+        "-v",
+        "."
+      ],
+      "started_at": "2026-10-07T13:18:03.112400+00:00",
+      "elapsed_seconds": 2.543796833,
+      "exit_code": 0,
+      "log": "governance-repaired.log",
+      "record": "governance-repaired.json"
+    }
+  ],
+  "test_first_evidence": {
+    "command_record": "root-final-red.json",
+    "log": "root-final-red.log",
+    "negative_top_level_failed": 3,
+    "positive_top_level_passed": 2
+  },
+  "root_review": "root-review.md",
+  "delegation": "delegation.json",
+  "public_apis_and_schema_versions_unchanged": true,
+  "dependencies_unchanged": true,
+  "evidence_scope": "software correctness on small artificial fixtures; no new task-learning or biological evidence",
+  "remaining_project_requirements": {
+    "passed": 89,
+    "total": 91,
+    "specified": [
+      "TSK-11",
+      "OPS-05"
+    ]
+  },
+  "requirement": "STA-01",
+  "covered_requirements": [
+    "COR-06"
+  ],
+  "ticket": "46",
+  "reproduction_command": [
+    "go test -count=1 -run '^TestModelPackageCapacityValidation' -v ./checkpoint",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "GOPROXY=off go mod tidy -diff",
+    "gofmt -l checkpoint/package.go checkpoint/package_capacity_validation_test.go",
+    "git diff --check",
+    "go test -count=1 -timeout 60m ./...",
+    "go test -race -count=1 -timeout 60m ./...",
+    "go test -count=1 -run '^(TestFormatIndex|TestGovernance)' -v ."
+  ],
+  "observed_result": {
+    "new_top_level_regressions": 5,
+    "normal_packages_passed": 57,
+    "race_packages_passed": 57,
+    "cli_flows_passed": 9,
+    "protected_originals_unchanged": 3053,
+    "frozen_go_sources_unchanged": 648,
+    "six_fields_exactly_validated": true,
+    "checksum_valid_mismatches_rejected": true,
+    "legacy_nil_preserved": true,
+    "existing_destinations_preserved": true,
+    "lif_all_parameters_counted": true,
+    "no_extra_network_constructed": true
+  },
+  "test_log": [
+    "root-green.log",
+    "build.log",
+    "vet.log",
+    "mod-verify.log",
+    "mod-tidy-diff.log",
+    "gofmt.log",
+    "diff-check.log",
+    "full-test.log",
+    "full-race.log",
+    "root-final-red.log",
+    "cli-workflow.json",
+    "delegation.json",
+    "governance-repaired.log"
+  ],
+  "governance_first_attempt": {
+    "record": "governance-final.json",
+    "log": "governance-final.log",
+    "exit_code": 1,
+    "cause": "new evidence omitted four required top-level keys",
+    "repair": "add the established evidence keys; no tests or requirement status were changed"
+  },
+  "commit_scan": {
+    "record": "commit-scan.json",
+    "log": "commit-scan.log",
+    "exit_code": 0
+  }
+}

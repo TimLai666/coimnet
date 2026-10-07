@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 已通過 4／5 驗收，待提交掃描、推送與遠端核對。共同入口核對六欄容量，沒有容量欄位的舊檔保持。五個回歸、九個 CLI 流程、完整一般與 race 各 57 個套件、build、vet、格式、相依性與治理均通過，沒有阻礙。證據見[工程驗證](evidence/STA-01/model-capacity-20261007/verification.json)與[Root 審查](evidence/STA-01/model-capacity-20261007/root-review.md)。
+
 [ticket 45](docs/tickets/45-format-index-consistency.md) 已完成 5／5 驗收與交付。124 列、173 個本機連結、8 個格式／治理專項、無 Git 匯出，以及完整一般／race 各 57 個套件、建置、vet、格式與相依性檢查通過。3,022 份既有檔案與 647 份凍結 Go 來源保持。實作 `baf7b91` 已推送並核對遠端，見[工程驗證](evidence/GOV-01/format-index-20261007/verification.json)與[交付紀錄](evidence/GOV-01/format-index-20261007/delivery.json)。本票沒有阻礙。
 
 [ticket 44](docs/tickets/44-doctor-gpu-capabilities.md) 已完成 5／5 驗收與交付。doctor 明列受限的 GPU 訓練支援條件，硬體探測與核心執行分開報告。13 個頂層專項、真實 CLI、Mac 完整一般與 race 各 57 個套件、建置、vet、格式及相依性檢查通過。2,953 份既有檔案與凍結測試保持。實作 `d7c8963` 已推送並核對遠端，見[工程驗證](evidence/OPS-02/doctor-gpu-capabilities-20261007/verification.json)與[交付紀錄](evidence/OPS-02/doctor-gpu-capabilities-20261007/delivery.json)。本票沒有阻礙，OPS-05 保持 specified。
@@ -112,7 +114,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本階段完成 ticket 45 的格式索引、來源分類與一致性檢查，保存原索引失敗及修正後的完整驗證證據。既有模型、公開契約、相依性與原件保持。
+本階段完成 ticket 46 的模型包容量驗證，拒絕與設定、參數不符的容量報告，保存修正前失敗、合法與舊格式相容及完整驗證證據。
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
@@ -172,6 +174,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 43 | 使用者可以接續連續核心的既有記憶進行 PPO 訓練 | Codex 主 agent / Luna max 測試、實作與獨立審查 | completed | 5／5。22 個專項、372 個相關頂層測試、完整一般與 race 各 57 套件及獨立審查通過。候選失敗原狀保持，實作 874ac43 已推送並核對遠端 |
 | 44 | 使用者能區分 GPU 支援條件與本機探測 | Codex 主 agent / Luna max 測試與實作 | completed | 5／5。13 個頂層專項、真實 CLI、完整一般與 race 各 57 套件及 Root 審查通過，實作 d7c8963 已推送並核對遠端 |
 | 45 | 維護者能找到每個版本的用途與來源，並在漏登錄時收到失敗 | Codex 主 agent / Luna max 盤點、測試與文件 | completed | 5／5；124 列、173 個本機連結、8 個專項、無 Git 匯出、完整一般／race 各 57 套件及原件查核通過，實作 baf7b91 已推送並核對遠端 |
+| 46 | 使用者可以拒絕容量資訊與模型不符的模型包 | Codex Root / OpenCode big-pickle 測試與實作 | verified_pending_delivery | 4／5。五個回歸、九個 CLI 流程、完整一般／race 各 57 套件及原件核對通過，待 Git 交付 |
 
 ## 目前阻礙
 
@@ -189,7 +192,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 45](docs/tickets/45-format-index-consistency.md) 已交付，下一張票尚未固定。建議接著核對 [checkpoint/package.go](checkpoint/package.go) 的可選 Capacity，避免載入被改過的容量資訊，既有 nil 欄位保留相容性。此項已在 [AGENTS.md Follow-ups](AGENTS.md#follow-ups) 記錄。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
+[ticket 46](docs/tickets/46-model-package-capacity-validation.md) 的工程驗收已完成，下一個成果是提交掃描、推送及遠端提交核對。本票沒有實作阻礙。GPU 裝置常駐更新與完整圖驗收仍屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
@@ -198,6 +201,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-07：ticket 46 核對非 nil 的容量報告，模型包全數參數視為可學。驗證共用既有 Trainer，nil 舊欄位保持；不新增 API、保存版本或資料遷移。
 
 2026-10-07：ticket 45 沿用單一 INDEX，不增加執行時註冊表或指令。正式格式、版本識別、驗證工具與測試反例分開；一致性檢查不依賴 Git 或外部服務，也不掃描模型及歷史 JSON 成果。
 

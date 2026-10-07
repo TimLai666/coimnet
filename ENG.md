@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- 模型包的可選 Capacity 由共同驗證入口核對六個整數欄位。沿用已驗證 Trainer 的容量報告，FreeParameterCount 設為 ParameterCount，符合不帶最佳化器遮罩的 Network.Capacity 語意。不再建立額外網路。nil 舊欄位保持省略，不補寫容量。單檔、bundle、保存及建立個體共用此檢查，驗收見 [ticket 46](docs/tickets/46-model-package-capacity-validation.md)。
+
 - `coimnet-名稱/v數字` 形式的版本來源集中列在 [文件索引](docs/INDEX.md)，分成正式格式、規則與雜湊識別、驗證工具格式、測試資料與反例。Go 字串以 AST 解碼，另核對 shell／Python 工具及四份治理 JSON 的版本欄位；每個版本只列一次，來源檔案及行號須相符。索引檢查併入既有 `go test`，無需 Git 或執行時註冊表，驗收見 [ticket 45](docs/tickets/45-format-index-consistency.md)。
 
 - Ticket 34 的最終本機證據見 [verification.json](evidence/TSK-11/stimulus-memory-20261003/verification.json)。九組模型採完整歷史遮罩更新，200 次更新同時核對各參數的 optimizer step。自主行走的 recorded current row 保留 raw stimulus，只有後續生成列寫零。完整一般及 race 通過，模仿誤差下降但模型均為 0／13 命中，沒有導航改善或生物機制證據。

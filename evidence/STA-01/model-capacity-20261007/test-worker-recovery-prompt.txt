@@ -1,0 +1,8 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+Role: precise Go test engineer. Only allowed to modify checkpoint/package_capacity_validation_test.go. The earlier test writer generated a reviewed proposal but OpenCode edit permissions used absolute paths while tools check worktree-relative paths. Root has fixed the runtime config. Do not explore or redesign the tests.
+Task: apply the complete proposal unchanged using this exact allowed command: cp evidence/STA-01/model-capacity-20261007/test-worker-proposal.txt checkpoint/package_capacity_validation_test.go
+Then run: gofmt -w checkpoint/package_capacity_validation_test.go
+Then run: go test -count=1 -run '^TestModelPackageCapacityValidation' -v ./checkpoint
+The current implementation intentionally still lacks capacity validation. Corruption cases should FAIL, positive controls should PASS. Do not fix production, weaken tests, or edit any other file.
+Report: changed file, exact exit and results, any unverified limits. If Go cache permission fails report it; Root will run authoritative verification.
+不要 commit，也不要 stash 或 reset。No git writes, extra agents, installs, services, external network tools, or broader exploration.

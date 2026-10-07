@@ -1,0 +1,61 @@
+{
+  "permission": {
+    "*": "deny",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny"
+    },
+    "edit": {
+      "*": "deny",
+      "checkpoint/package_capacity_validation_test.go": "allow"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "bash": {
+      "*": "deny",
+      "git status --short": "allow",
+      "gofmt -w checkpoint/package_capacity_validation_test.go": "allow",
+      "go test -count=1 -run * -v ./checkpoint": "allow",
+      "cp evidence/STA-01/model-capacity-20261007/test-worker-proposal.txt checkpoint/package_capacity_validation_test.go": "allow"
+    },
+    "task": "deny",
+    "question": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "external_directory": "deny"
+  },
+  "agent": {
+    "build": {
+      "permission": {
+        "*": "deny",
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          "checkpoint/package_capacity_validation_test.go": "allow"
+        },
+        "glob": "allow",
+        "grep": "allow",
+        "bash": {
+          "*": "deny",
+          "git status --short": "allow",
+          "gofmt -w checkpoint/package_capacity_validation_test.go": "allow",
+          "go test -count=1 -run * -v ./checkpoint": "allow",
+          "cp evidence/STA-01/model-capacity-20261007/test-worker-proposal.txt checkpoint/package_capacity_validation_test.go": "allow"
+        },
+        "task": "deny",
+        "question": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    }
+  },
+  "autoupdate": false,
+  "share": "disabled",
+  "formatter": false
+}

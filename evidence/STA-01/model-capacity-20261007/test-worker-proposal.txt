@@ -1,0 +1,367 @@
+package checkpoint
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+)
+
+// The three supported cores pin their six report fields independently of
+// Network.Capacity, in CapacityReport field order Nodes, Edges, StateDimension,
+// ParameterCount, FreeParameterCount, MultAddsPerStep: continuous
+// (2,1,1,8,8,3), LIF (3,3,1,16,16,6), vector (2,1,3,26,26,15).
+type capacityValidationFixture struct {
+	name string
+	want learning.CapacityReport
+	pkg  ModelPackage
+}
+
+func capacityValidationFixtures(t *testing.T) []capacityValidationFixture {
+	t.Helper()
+	c, p := newPackageVectorModel()
+	vector, err := NewModelPackage(c, p, packageUnits(), []string{"evidence/COR-06/verification.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return []capacityValidationFixture{
+		{"continuous", learning.CapacityReport{Nodes: 2, Edges: 1, StateDimension: 1, ParameterCount: 8, FreeParameterCount: 8, MultAddsPerStep: 3}, newTestModelPackage(t, false)},
+		{"lif", learning.CapacityReport{Nodes: 3, Edges: 3, StateDimension: 1, ParameterCount: 16, FreeParameterCount: 16, MultAddsPerStep: 6}, newTestModelPackage(t, true)},
+		{"vector", learning.CapacityReport{Nodes: 2, Edges: 1, StateDimension: 3, ParameterCount: 26, FreeParameterCount: 26, MultAddsPerStep: 15}, vector},
+	}
+}
+
+// capacityMutation changes exactly one field of one report. Zero and negative
+// replacements are among the cases, and every mutation has to move the report
+// off the pin it was copied from or the case would prove nothing.
+type capacityMutation struct {
+	name   string
+	mutate func(*learning.CapacityReport)
+}
+
+var capacityValidationMutations = []capacityMutation{
+	{"nodes_zero", func(r *learning.CapacityReport) { r.Nodes = 0 }},
+	{"edges_negative", func(r *learning.CapacityReport) { r.Edges = -1 }},
+	{"state_dimension_changed", func(r *learning.CapacityReport) { r.StateDimension++ }},
+	{"parameter_count_zero", func(r *learning.CapacityReport) { r.ParameterCount = 0 }},
+	{"free_parameter_count_negative", func(r *learning.CapacityReport) { r.FreeParameterCount = -1 }},
+	{"mult_adds_per_step_changed", func(r *learning.CapacityReport) { r.MultAddsPerStep++ }},
+}
+
+func corruptedCapacityPackage(t *testing.T, fixture capacityValidationFixture, mutation capacityMutation) ModelPackage {
+	t.Helper()
+	report := *fixture.pkg.Capacity
+	mutation.mutate(&report)
+	if report == *fixture.pkg.Capacity {
+		t.Fatalf("%s/%s: mutation left %+v unchanged", fixture.name, mutation.name, report)
+	}
+	corrupt := fixture.pkg
+	corrupt.Capacity = &report
+	return corrupt
+}
+
+func requireCapacityRejection(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("accepted a package whose capacity report does not match its model")
+	}
+	message := strings.ToLower(err.Error())
+	if strings.Contains(message, "checksum") {
+		t.Fatalf("a checksum error must not stand in for capacity validation: %v", err)
+	}
+	if !strings.Contains(message, "capacity") {
+		t.Fatalf("rejection does not mention capacity: %v", err)
+	}
+}
+
+func requirePinnedCapacity(t *testing.T, pkg ModelPackage, want learning.CapacityReport) {
+	t.Helper()
+	if pkg.Capacity == nil {
+		t.Fatal("package carries no capacity report")
+	}
+	if *pkg.Capacity != want {
+		t.Fatalf("capacity %+v, want the pinned report %+v", *pkg.Capacity, want)
+	}
+}
+
+// writeCapacityEnvelope writes the payload with a freshly recomputed, valid
+// checksum, so nothing but the report itself can make a reader refuse it.
+func writeCapacityEnvelope(t *testing.T, dir, name string, pkg ModelPackage) string {
+	t.Helper()
+	payload, err := json.Marshal(pkg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	document, err := marshalEnvelopeFor(ModelPackageSchemaVersion, payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, name)
+	writeRaw(t, path, document)
+	return path
+}
+
+// TestModelPackageCapacityValidationRejectsCorruptedSingleFile mutates each of
+// the six report fields of each supported core, rewrites the document with a
+// valid checksum and requires LoadModelPackage to refuse it outright. The
+// uncorrupted control proves the forgery path itself is sound.
+func TestModelPackageCapacityValidationRejectsCorruptedSingleFile(t *testing.T) {
+	for _, fixture := range capacityValidationFixtures(t) {
+		t.Run(fixture.name, func(t *testing.T) {
+			dir := t.TempDir()
+			control, err := LoadModelPackage(context.Background(), writeCapacityEnvelope(t, dir, "control.json", fixture.pkg))
+			if err != nil {
+				t.Fatalf("the uncorrupted control must load: %v", err)
+			}
+			requirePinnedCapacity(t, control, fixture.want)
+			for _, mutation := range capacityValidationMutations {
+				t.Run(mutation.name, func(t *testing.T) {
+					corrupt := corruptedCapacityPackage(t, fixture, mutation)
+					path := writeCapacityEnvelope(t, dir, fixture.name+"-"+mutation.name+".json", corrupt)
+					loaded, err := LoadModelPackage(context.Background(), path)
+					requireCapacityRejection(t, err)
+					if !reflect.DeepEqual(loaded, ModelPackage{}) {
+						t.Fatalf("rejected load returned a partial package: %+v", loaded)
+					}
+				})
+			}
+		})
+	}
+}
+
+// TestModelPackageCapacityValidationRejectsCorruptedOutputs requires every
+// remaining public entry point to refuse a mismatched report, to publish no
+// file or directory, to return nil or the zero package, and to leave the
+// caller's own package byte for byte as it was. The corrupted bundles are
+// forged with the private writeBundle, the only route that bypasses the public
+// validation, so LoadModelPackageBundle is the first check that sees them.
+func TestModelPackageCapacityValidationRejectsCorruptedOutputs(t *testing.T) {
+	for _, fixture := range capacityValidationFixtures(t) {
+		t.Run(fixture.name, func(t *testing.T) {
+			dir := t.TempDir()
+			options := learning.DefaultOptions()
+			options.Trainable.Theta = fixture.name == "lif"
+			initial := make([]float64, fixture.want.Nodes)
+			// The forged bundle of a valid package has to load, so the forged
+			// rejections below can only be attributed to the report.
+			controlDir := filepath.Join(dir, "control-bundle")
+			manifest := BundleManifest{Kind: BundleModelPackage, DocumentSchema: ModelPackageSchemaVersion, Topology: fixture.pkg.Topology}
+			if err := writeBundle(context.Background(), controlDir, manifest, fixture.pkg); err != nil {
+				t.Fatal(err)
+			}
+			control, err := LoadModelPackageBundle(context.Background(), controlDir)
+			if err != nil {
+				t.Fatalf("the uncorrupted forged bundle must load: %v", err)
+			}
+			requirePinnedCapacity(t, control, fixture.want)
+
+			points := []struct {
+				name       string
+				skipVector bool
+				run        func(t *testing.T, corrupt ModelPackage, tag string)
+			}{
+				{"save_single", false, func(t *testing.T, corrupt ModelPackage, tag string) {
+					path := filepath.Join(dir, "save-"+tag+".json")
+					err := SaveModelPackage(context.Background(), path, corrupt)
+					requireCapacityRejection(t, err)
+					if _, statErr := os.Stat(path); !os.IsNotExist(statErr) {
+						t.Fatalf("rejected SaveModelPackage published %s", path)
+					}
+				}},
+				{"save_bundle", false, func(t *testing.T, corrupt ModelPackage, tag string) {
+					bundleDir := filepath.Join(dir, "save-bundle-"+tag)
+					err := SaveModelPackageBundle(context.Background(), bundleDir, corrupt)
+					requireCapacityRejection(t, err)
+					if _, statErr := os.Stat(bundleDir); !os.IsNotExist(statErr) {
+						t.Fatalf("rejected SaveModelPackageBundle created %s", bundleDir)
+					}
+				}},
+				{"seed_individual", true, func(t *testing.T, corrupt ModelPackage, _ string) {
+					individual, err := NewIndividualFromPackage(corrupt, options, initial)
+					requireCapacityRejection(t, err)
+					if individual != nil {
+						t.Fatal("rejected NewIndividualFromPackage returned an individual")
+					}
+				}},
+				{"load_forged_bundle", false, func(t *testing.T, corrupt ModelPackage, tag string) {
+					forgedDir := filepath.Join(dir, "forged-bundle-"+tag)
+					forge := BundleManifest{Kind: BundleModelPackage, DocumentSchema: ModelPackageSchemaVersion, Topology: corrupt.Topology}
+					if err := writeBundle(context.Background(), forgedDir, forge, corrupt); err != nil {
+						t.Fatal(err)
+					}
+					loaded, err := LoadModelPackageBundle(context.Background(), forgedDir)
+					requireCapacityRejection(t, err)
+					if !reflect.DeepEqual(loaded, ModelPackage{}) {
+						t.Fatalf("rejected bundle load returned a partial package: %+v", loaded)
+					}
+				}},
+			}
+			for _, point := range points {
+				if point.skipVector && fixture.name == "vector" {
+					t.Run(point.name, func(t *testing.T) {
+						t.Skip("the vector core has no persistent individual yet; unrelated limitation")
+					})
+					continue
+				}
+				t.Run(point.name, func(t *testing.T) {
+					for _, mutation := range capacityValidationMutations {
+						corrupt := corruptedCapacityPackage(t, fixture, mutation)
+						before := mustJSON(t, corrupt)
+						point.run(t, corrupt, mutation.name)
+						if after := mustJSON(t, corrupt); !bytes.Equal(before, after) {
+							t.Fatalf("%s changed the caller's package: %s -> %s", point.name, before, after)
+						}
+					}
+				})
+			}
+		})
+	}
+}
+
+// TestModelPackageCapacityValidationKeepsValidReportsExact holds the positive
+// side: the pinned report survives single-file and bundle round trips, the
+// resaved document is byte identical, no returned report is shared with the
+// package it came from, and the scalar cores still seed an individual.
+func TestModelPackageCapacityValidationKeepsValidReportsExact(t *testing.T) {
+	for _, fixture := range capacityValidationFixtures(t) {
+		t.Run(fixture.name, func(t *testing.T) {
+			dir := t.TempDir()
+			single := filepath.Join(dir, "model.json")
+			if err := SaveModelPackage(context.Background(), single, fixture.pkg); err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := LoadModelPackage(context.Background(), single)
+			if err != nil {
+				t.Fatal(err)
+			}
+			requirePinnedCapacity(t, loaded, fixture.want)
+			if !reflect.DeepEqual(loaded, fixture.pkg) {
+				t.Fatalf("single-file round trip changed the package:\n got %+v\nwant %+v", loaded, fixture.pkg)
+			}
+			loaded.Capacity.Nodes += 1000
+			requirePinnedCapacity(t, fixture.pkg, fixture.want)
+			reloaded, err := LoadModelPackage(context.Background(), single)
+			if err != nil {
+				t.Fatal(err)
+			}
+			requirePinnedCapacity(t, reloaded, fixture.want)
+			resave := filepath.Join(dir, "resaved.json")
+			if err := SaveModelPackage(context.Background(), resave, reloaded); err != nil {
+				t.Fatal(err)
+			}
+			if !sameFileBytes(t, single, resave) {
+				t.Fatal("resaving a loaded package changed its bytes")
+			}
+			bundleDir := filepath.Join(dir, "bundle")
+			if err := SaveModelPackageBundle(context.Background(), bundleDir, fixture.pkg); err != nil {
+				t.Fatal(err)
+			}
+			fromBundle, err := LoadModelPackageBundle(context.Background(), bundleDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			requirePinnedCapacity(t, fromBundle, fixture.want)
+			if !reflect.DeepEqual(fromBundle, fixture.pkg) {
+				t.Fatalf("bundle round trip changed the package:\n got %+v\nwant %+v", fromBundle, fixture.pkg)
+			}
+			// The vector core has no persistent individual yet, so the seed
+			// control uses the scalar cores only.
+			if fixture.name == "vector" {
+				return
+			}
+			options := learning.DefaultOptions()
+			options.Trainable.Theta = fixture.name == "lif"
+			individual, err := NewIndividualFromPackage(fixture.pkg, options, make([]float64, fixture.want.Nodes))
+			if err != nil {
+				t.Fatalf("the valid %s package must seed an individual: %v", fixture.name, err)
+			}
+			if individual == nil {
+				t.Fatalf("the valid %s package seeded nothing", fixture.name)
+			}
+		})
+	}
+}
+
+// TestModelPackageCapacityValidationKeepsNilCapacity keeps the pre-capacity
+// artefact honest: it loads with no report, round trips through both formats
+// without one being synthesised, resaves byte identically, and is never
+// rewritten in place.
+func TestModelPackageCapacityValidationKeepsNilCapacity(t *testing.T) {
+	fixture := filepath.Join("..", "evidence", "OPS-03", "fixture", "tiny.coimpkg")
+	published, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fingerprint := sha256.Sum256(published)
+	legacy, err := LoadModelPackage(context.Background(), fixture)
+	if err != nil {
+		t.Fatalf("the pre-capacity fixture must still load: %v", err)
+	}
+	if legacy.Capacity != nil {
+		t.Fatalf("old fixture carries capacity %+v, want nil", *legacy.Capacity)
+	}
+	dir := t.TempDir()
+	single := filepath.Join(dir, "legacy.json")
+	if err := SaveModelPackage(context.Background(), single, legacy); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadModelPackage(context.Background(), single)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.Capacity != nil {
+		t.Fatalf("the round trip synthesised a capacity report: %+v", *loaded.Capacity)
+	}
+	if !reflect.DeepEqual(loaded, legacy) {
+		t.Fatalf("single-file round trip changed the package:\n got %+v\nwant %+v", loaded, legacy)
+	}
+	resave := filepath.Join(dir, "legacy-resaved.json")
+	if err := SaveModelPackage(context.Background(), resave, loaded); err != nil {
+		t.Fatal(err)
+	}
+	if !sameFileBytes(t, single, resave) {
+		t.Fatal("resaving a nil-capacity package changed its bytes")
+	}
+	bundleDir := filepath.Join(dir, "legacy-bundle")
+	if err := SaveModelPackageBundle(context.Background(), bundleDir, legacy); err != nil {
+		t.Fatal(err)
+	}
+	fromBundle, err := LoadModelPackageBundle(context.Background(), bundleDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fromBundle.Capacity != nil {
+		t.Fatalf("the bundle round trip synthesised a capacity report: %+v", *fromBundle.Capacity)
+	}
+	if !reflect.DeepEqual(fromBundle, legacy) {
+		t.Fatalf("bundle round trip changed the package:\n got %+v\nwant %+v", fromBundle, legacy)
+	}
+	after, err := os.ReadFile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sha256.Sum256(after) != fingerprint {
+		t.Fatal("the published fixture changed on disk")
+	}
+	t.Logf("fixture %s sha256:%x", fixture, fingerprint)
+}
+
+func sameFileBytes(t *testing.T, first, second string) bool {
+	t.Helper()
+	a, err := os.ReadFile(first)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := os.ReadFile(second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return bytes.Equal(a, b)
+}

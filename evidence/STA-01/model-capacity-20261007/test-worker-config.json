@@ -1,0 +1,59 @@
+{
+  "permission": {
+    "*": "deny",
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny"
+    },
+    "edit": {
+      "*": "deny",
+      "/Users/timlai/Developer/coimnet/checkpoint/package_capacity_validation_test.go": "allow"
+    },
+    "glob": "allow",
+    "grep": "allow",
+    "bash": {
+      "*": "deny",
+      "git status --short": "allow",
+      "gofmt -w checkpoint/package_capacity_validation_test.go": "allow",
+      "go test -count=1 -run * -v ./checkpoint": "allow"
+    },
+    "task": "deny",
+    "question": "deny",
+    "webfetch": "deny",
+    "websearch": "deny",
+    "external_directory": "deny"
+  },
+  "agent": {
+    "build": {
+      "permission": {
+        "*": "deny",
+        "read": {
+          "*": "allow",
+          "*.env": "deny",
+          "*.env.*": "deny"
+        },
+        "edit": {
+          "*": "deny",
+          "/Users/timlai/Developer/coimnet/checkpoint/package_capacity_validation_test.go": "allow"
+        },
+        "glob": "allow",
+        "grep": "allow",
+        "bash": {
+          "*": "deny",
+          "git status --short": "allow",
+          "gofmt -w checkpoint/package_capacity_validation_test.go": "allow",
+          "go test -count=1 -run * -v ./checkpoint": "allow"
+        },
+        "task": "deny",
+        "question": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "external_directory": "deny"
+      }
+    }
+  },
+  "autoupdate": false,
+  "share": "disabled",
+  "formatter": false
+}

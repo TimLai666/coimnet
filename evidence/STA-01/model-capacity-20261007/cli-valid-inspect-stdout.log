@@ -1,0 +1,109 @@
+{
+  "schema_version": "coimnet-model-package/v1",
+  "kind": "model_package",
+  "topology": {
+    "nodes": 3,
+    "edges": 2,
+    "fingerprint": "f75a605a1fcbaea023eb618377547dbff016670bd1b0aeafce56232d837e0d71"
+  },
+  "parameters": {
+    "count": 12,
+    "weights": 2,
+    "bias": 3,
+    "log_tau": 3,
+    "encoder": 3,
+    "readout": 1,
+    "min": -0.25,
+    "max": 0.5,
+    "mean": 0.125
+  },
+  "modes": {
+    "plastic": false,
+    "chemical": false,
+    "core": "continuous"
+  },
+  "mapping": {
+    "units": {
+      "time_step": "model_step",
+      "time_constant": "model_step"
+    },
+    "compatible_versions": {
+      "individual": [
+        "coimnet-individual-checkpoint/v1"
+      ],
+      "training": [
+        "coimnet-episode-training/v1"
+      ]
+    }
+  },
+  "resources": {
+    "items": [
+      {
+        "name": "graph_index",
+        "formula": "(N+1+E)*8 = (3+1+2)*8 = 48",
+        "bytes": 48
+      },
+      {
+        "name": "base_parameters",
+        "formula": "E*w = 2*8 = 16",
+        "bytes": 16
+      },
+      {
+        "name": "optimizer",
+        "formula": "0 (optimizer none)",
+        "bytes": 0
+      },
+      {
+        "name": "neural_state",
+        "formula": "N*C*w*B = 3*1*8*1 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "fast_changes",
+        "formula": "PlasticEdges*w*B = 0*8*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "eligibility",
+        "formula": "EligibilityEdges*w*B = 0*8*1 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "delays",
+        "formula": "N*(MaxDelay+1)*w*B = 3*(0+1)*8*1 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "backward_history",
+        "formula": "2*E*w*T*B = 2*2*8*1000*1 = 32000",
+        "bytes": 32000
+      },
+      {
+        "name": "encoder",
+        "formula": "EncoderValues*w = 3*8 = 24",
+        "bytes": 24
+      },
+      {
+        "name": "readout",
+        "formula": "ReadoutValues*w = 1*8 = 8",
+        "bytes": 8
+      },
+      {
+        "name": "modulation",
+        "formula": "(Regions*Channels + Receptors)*w = (0*0 + 0)*8 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "replay",
+        "formula": "ReplayItems*ReplayItemBytes = 0*0 = 0",
+        "bytes": 0
+      },
+      {
+        "name": "buffers",
+        "formula": "BufferFactor*subtotal = 0*32144 = 0",
+        "bytes": 0
+      }
+    ],
+    "total_bytes": 32144
+  }
+}

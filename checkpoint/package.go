@@ -78,11 +78,9 @@ type ModelPackage struct {
 	Units              Units               `json:"units"`
 	EvidenceRegistry   []string            `json:"evidence_registry"`
 	CompatibleVersions CompatibleVersions  `json:"compatible_versions"`
-	// Capacity is the report of what this model can store and what one step
-	// costs. NewModelPackage fills it through learning.NewNetwork; it is
-	// optional on the wire, so a package written before this field existed
-	// loads with a nil Capacity and keeps its recorded fingerprint, and
-	// canonicalModelPackage copies a declared value without recomputing it.
+	// Capacity reports model size and one-step cost through Network.Capacity.
+	// A declared report must match the validated configuration and parameters.
+	// Older packages omit it; nil stays nil without changing the fingerprint.
 	Capacity *learning.CapacityReport `json:"capacity,omitempty"`
 }
 
@@ -245,9 +243,7 @@ func canonicalModelPackage(pkg ModelPackage) (ModelPackage, error) {
 		Units:              pkg.Units,
 		EvidenceRegistry:   evidence,
 		CompatibleVersions: CompatibleVersions{Individual: append([]string(nil), pkg.CompatibleVersions.Individual...), Training: append([]string(nil), pkg.CompatibleVersions.Training...)},
-		// Copied, never recomputed: a package built before this field existed
-		// loads with nil and keeps its fingerprint, and only NewModelPackage
-		// synthesises a report.
+		// Own the optional report; validate it below without filling nil.
 		Capacity: ownedCapacity(pkg.Capacity),
 	}
 	fingerprint, err := topologyFingerprint(owned.Config)
@@ -258,6 +254,16 @@ func canonicalModelPackage(pkg ModelPackage) (ModelPackage, error) {
 		return empty, fmt.Errorf("model package topology fingerprint %+v does not describe its configuration %+v", pkg.Topology, fingerprint)
 	}
 	owned.Topology = fingerprint
+	// Packages have no optimizer masks, so all parameters count as free,
+	// including LIF theta disabled by the validator's DefaultOptions.
+	// Reuse the validated trainer to match Network.Capacity without rebuilding.
+	if owned.Capacity != nil {
+		expected := trainer.Capacity()
+		expected.FreeParameterCount = expected.ParameterCount
+		if *owned.Capacity != expected {
+			return empty, fmt.Errorf("model package capacity %+v does not match model %+v", *owned.Capacity, expected)
+		}
+	}
 	return normalizeModelPackage(owned), nil
 }
 
