@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "date": "2026-10-09",
+  "source_commit": "933ba4cde8292a409d370ca65713a4b30c65d46b",
+  "base_commit": "8bbb4fb8885971e4effbeadf2512eb9dd045ff61",
+  "branch": "main",
+  "remote": "origin",
+  "remote_ref": "refs/heads/main",
+  "remote_commit": "933ba4cde8292a409d370ca65713a4b30c65d46b",
+  "remote_matches_source": true,
+  "verified_at": "2026-10-08T17:38:45.038Z",
+  "engineering": "verification.json",
+  "diff_review": "root-review.md",
+  "evidence_audit": "evidence-audit.json",
+  "precommit_review": "precommit-review.json",
+  "source_actions": [
+    {
+      "command": [
+        "git",
+        "commit",
+        "-m",
+        "fix(experiment): reject non-finite comparison intervals"
+      ],
+      "exit_code": 0,
+      "output_excerpt": [
+        "[main 933ba4c] fix(experiment): reject non-finite comparison intervals",
+        " 115 files changed, 11139 insertions(+), 9 deletions(-)"
+      ]
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/scan-commit.sh"
+      ],
+      "exit_code": 0,
+      "output": "PASS\nscan-commit: /Users/timlai/Developer/coimnet: staged diff is clean\n"
+    },
+    {
+      "command": [
+        "git",
+        "push",
+        "origin",
+        "main"
+      ],
+      "exit_code": 0,
+      "output": "To https://github.com/TimLai666/coimnet.git\n   8bbb4fb..933ba4c  main -> main\n"
+    },
+    {
+      "command": [
+        "git",
+        "ls-remote",
+        "--heads",
+        "origin",
+        "main"
+      ],
+      "exit_code": 0,
+      "output": "933ba4cde8292a409d370ca65713a4b30c65d46b\trefs/heads/main\n"
+    }
+  ],
+  "source_worktree_after_push": "clean, git status --short returned empty",
+  "source_go_files_frozen": 655,
+  "requirements": "89 passed / 91 unchanged",
+  "learning_claim": "none",
+  "biological_claim": "none",
+  "record_commit": "Following docs-only commit records verified source delivery; its SHA and remote readback are reported after commit."
+}

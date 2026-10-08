@@ -3,7 +3,7 @@
 **Epic:** 訓練框架的可保存設定
 **User Story:** 研究者可以在開始比較前取得設定錯誤，不等訓練完成才發現報告無法保存
 **Blocked by:** 無；49 是保存的來源基準
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策｜2026-10-09：問題與共用契約
 
@@ -30,7 +30,7 @@ Root 負責骨架、實作、測試審查與凍結、完整驗證及交付。wor
 - [x] 兩個共用比較入口拒絕非有限值，公開 Run 不開始訓練。
 - [x] 合法完整報告、CLI 保存與歷史原件通過。
 - [x] gofmt、build、完整一般與 race、vet、相依性、治理通過。
-- [ ] 完整 diff、需求證據、提交推送與遠端核對完成。
+- [x] 完整 diff、需求證據、提交推送與遠端核對完成。
 
 ## 減法審查
 
@@ -43,4 +43,4 @@ Won't List：不調參、不修改模型、不處理 OCR 或其他不同欄位�
 [工程設計](../../ENG.md)、[原重現](../../evidence/OPS-03/nav2d-finite-config-20261007/related-comparison.log)、[本票證據](../../evidence/OPS-03/comparison-finite-20261009/)。
 相關需求 OPS-03、LRN-08、TSK-12，需求狀態不變。
 
-Root 驗收：三個新增頂層測試、14 組非法配置與 10 個合法控制、37 個相關頂層測試、7 份原提交與雙程序合法報告、22 個既有錯誤、13 個 CLI 流程通過。完整一般／race 各 57 套件及格式、build、vet、相依性通過。另確認 report.Protocol.Comparison 共用設定的既有 P2，見 AGENTS.md 與 ownership-followup.json，實作另票處理。工程驗收 4／5，待提交推送與遠端核對。
+Root 驗收：三個新增頂層測試、14 組非法配置與 10 個合法控制、37 個相關頂層測試、7 份原提交與雙程序合法報告、22 個既有錯誤、13 個 CLI 流程通過。完整一般／race 各 57 套件及格式、build、vet、相依性通過。另確認 report.Protocol.Comparison 共用設定的既有 P2，見 AGENTS.md 與 ownership-followup.json，實作另票處理。完成 5／5 驗收與交付。實作 933ba4c 已推送且遠端一致，見 delivery.json。

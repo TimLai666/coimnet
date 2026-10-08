@@ -1,6 +1,6 @@
 # Ticket 50 變更清單
 
-核心只修改兩處既有判斷並新增回歸測試。表列本票實際檔案；初版失敗、修正前對照與最終回條均保留。交付紀錄在推送核對後補入。
+核心只修改兩處既有判斷並新增回歸測試。表列本票實際檔案；初版失敗、修正前對照與最終回條均保留。實作 933ba4c 已推送且遠端一致，交付回條見 delivery.json。
 
 | 檔案 | 變更摘要 |
 |---|---|
@@ -119,3 +119,6 @@
 | [experiment/continual.go](/Users/timlai/Developer/coimnet/experiment/continual.go) | 修改：連續任務比較只接受嚴格介於 0 與 1 的數值 |
 | [evidence/OPS-03/comparison-finite-20261009/inventory.md](/Users/timlai/Developer/coimnet/evidence/OPS-03/comparison-finite-20261009/inventory.md) | 新增：逐檔變更清單 |
 | [evidence/OPS-03/comparison-finite-20261009/precommit-review.json](/Users/timlai/Developer/coimnet/evidence/OPS-03/comparison-finite-20261009/precommit-review.json) | 新增：完整變更內容的提交前指紋 |
+| [evidence/OPS-03/comparison-finite-20261009/delivery.json](/Users/timlai/Developer/coimnet/evidence/OPS-03/comparison-finite-20261009/delivery.json) | 新增：實際提交、推送與遠端讀回證據 |
+| [evidence/OPS-03/comparison-finite-20261009/delivery-governance.json](/Users/timlai/Developer/coimnet/evidence/OPS-03/comparison-finite-20261009/delivery-governance.json) | 新增：完成交付紀錄後的八個治理／索引檢查回條 |
+| [evidence/OPS-03/comparison-finite-20261009/delivery-governance.log](/Users/timlai/Developer/coimnet/evidence/OPS-03/comparison-finite-20261009/delivery-governance.log) | 新增：交付紀錄治理檢查的文字輸出 |
