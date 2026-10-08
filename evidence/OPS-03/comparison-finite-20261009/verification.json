@@ -1,0 +1,406 @@
+{
+  "status": "passed",
+  "remaining": [
+    "commit and remote readback"
+  ],
+  "date": "2026-10-09",
+  "requirement": [
+    "OPS-03",
+    "LRN-08",
+    "TSK-12"
+  ],
+  "reproduction_command": [
+    "go test -count=1 -run ComparisonFinite -v ./experiment",
+    "go test -count=1 -run 'Comparison|Attribution|Continual|RunAttribution' -v ./experiment ./internal/cli",
+    "go test -count=1 -timeout 60m ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "python3 evidence/OPS-03/comparison-finite-20261009/verify-sdk.py NEW_PREFIX",
+    "python3 evidence/OPS-03/comparison-finite-20261009/verify-cli.py NEW_PHASE"
+  ],
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOCACHE": "/Users/timlai/Library/Caches/go-build",
+    "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+    "GOOS": "darwin",
+    "GOPROXY": "https://proxy.golang.org,direct",
+    "GOTOOLCHAIN": "auto",
+    "GOVERSION": "go1.26.5",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "cpu_count": 8,
+    "GOMAXPROCS": "",
+    "GOMEMLIMIT": ""
+  },
+  "input_fingerprints": {
+    "originals": "baseline.json",
+    "sources": "source-freeze.json",
+    "tests": "test-freeze.json",
+    "canonical_probe": "ready-baseline.json"
+  },
+  "observed_result": {
+    "new_top_level": 3,
+    "root_pre_fix_top_level_failures": 2,
+    "invalid_configurations": 14,
+    "valid_controls": 10,
+    "scoped_top_level": 37,
+    "general_packages": 57,
+    "general_cached_packages": 0,
+    "valid_sdk_reports": 7,
+    "fresh_current_processes": 2,
+    "canonical_report_bytes_identical": true,
+    "declared_and_realized_intervals_match": true,
+    "existing_error_cases_identical": 22,
+    "cli_workflows": 13,
+    "protected_tracked_files": 3401,
+    "protected_existing_go_files": 652,
+    "frozen_module_go_files": 655,
+    "race_packages": 57,
+    "race_cached_packages": 0,
+    "governance_top_level": 8
+  },
+  "checks": {
+    "fixed": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "ComparisonFinite",
+        "-v",
+        "./experiment"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:43:04.550415+00:00",
+      "elapsed_seconds": 2.9575958251953125,
+      "log": "fixed.log",
+      "raw_stdout": "=== RUN   TestAttributionComparisonFinite\n=== RUN   TestAttributionComparisonFinite/NaN\n=== RUN   TestAttributionComparisonFinite/+Inf\n=== RUN   TestAttributionComparisonFinite/-Inf\n=== RUN   TestAttributionComparisonFinite/zero\n=== RUN   TestAttributionComparisonFinite/one\n=== RUN   TestAttributionComparisonFinite/negative\n=== RUN   TestAttributionComparisonFinite/above_one\n--- PASS: TestAttributionComparisonFinite (0.00s)\n    --- PASS: TestAttributionComparisonFinite/NaN (0.00s)\n    --- PASS: TestAttributionComparisonFinite/+Inf (0.00s)\n    --- PASS: TestAttributionComparisonFinite/-Inf (0.00s)\n    --- PASS: TestAttributionComparisonFinite/zero (0.00s)\n    --- PASS: TestAttributionComparisonFinite/one (0.00s)\n    --- PASS: TestAttributionComparisonFinite/negative (0.00s)\n    --- PASS: TestAttributionComparisonFinite/above_one (0.00s)\n=== RUN   TestContinualComparisonFinite\n=== RUN   TestContinualComparisonFinite/NaN\n=== RUN   TestContinualComparisonFinite/+Inf\n=== RUN   TestContinualComparisonFinite/-Inf\n=== RUN   TestContinualComparisonFinite/zero\n=== RUN   TestContinualComparisonFinite/one\n=== RUN   TestContinualComparisonFinite/negative\n=== RUN   TestContinualComparisonFinite/above_one\n--- PASS: TestContinualComparisonFinite (0.00s)\n    --- PASS: TestContinualComparisonFinite/NaN (0.00s)\n    --- PASS: TestContinualComparisonFinite/+Inf (0.00s)\n    --- PASS: TestContinualComparisonFinite/-Inf (0.00s)\n    --- PASS: TestContinualComparisonFinite/zero (0.00s)\n    --- PASS: TestContinualComparisonFinite/one (0.00s)\n    --- PASS: TestContinualComparisonFinite/negative (0.00s)\n    --- PASS: TestContinualComparisonFinite/above_one (0.00s)\n=== RUN   TestComparisonFiniteValidControls\n=== RUN   TestComparisonFiniteValidControls/attribution/5e-324\n=== RUN   TestComparisonFiniteValidControls/continual/5e-324\n=== RUN   TestComparisonFiniteValidControls/attribution/0.5\n=== RUN   TestComparisonFiniteValidControls/continual/0.5\n=== RUN   TestComparisonFiniteValidControls/attribution/0.95\n=== RUN   TestComparisonFiniteValidControls/continual/0.95\n=== RUN   TestComparisonFiniteValidControls/attribution/0.9999999999999999\n=== RUN   TestComparisonFiniteValidControls/continual/0.9999999999999999\n=== RUN   TestComparisonFiniteValidControls/default_attribution\n=== RUN   TestComparisonFiniteValidControls/continual_nil_comparison\n--- PASS: TestComparisonFiniteValidControls (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/5e-324 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/5e-324 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.5 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.5 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.95 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.95 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.9999999999999999 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.9999999999999999 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/default_attribution (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual_nil_comparison (0.00s)\nPASS\nok  \tgithub.com/TimLai666/coimnet/experiment\t0.443s\n",
+      "raw_stderr": ""
+    },
+    "scoped": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Comparison|Attribution|Continual|RunAttribution",
+        "-v",
+        "./experiment",
+        "./internal/cli"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:43:39.951937+00:00",
+      "elapsed_seconds": 175.0184919834137,
+      "log": "scoped.log",
+      "raw_stdout": "=== RUN   TestAttributionEvidence\n    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set\n--- SKIP: TestAttributionEvidence (0.00s)\n=== RUN   TestAttributionGroupsParameterTable\n    attribution_models_test.go:132: group\tnodes\tedges\tparams\tfree\tmod\taddon\t\ttrainable\n    attribution_models_test.go:135: normal\t60\t928\t2728\t2608\t0\t0\t\t[weights encoder readout]\n    attribution_models_test.go:135: frozen_core\t60\t928\t2728\t1680\t0\t0\t\t[encoder readout]\n    attribution_models_test.go:135: core_only\t60\t928\t2728\t928\t0\t0\t\t[weights]\n    attribution_models_test.go:135: generic_matched\t60\t928\t2728\t2608\t0\t0\t\t[weights encoder readout]\n    attribution_models_test.go:135: rewired\t60\t928\t2728\t2608\t0\t0\t\t[weights encoder readout]\n    attribution_models_test.go:135: ablated_retrained\t4\t0\t184\t176\t0\t0\t\t[encoder readout]\n    attribution_models_test.go:135: capacity_matched_modulator\t60\t928\t2752\t2632\t21\t24\t\t[weights encoder readout]\n--- PASS: TestAttributionGroupsParameterTable (0.01s)\n=== RUN   TestAttributionGenericMatchedShape\n--- PASS: TestAttributionGenericMatchedShape (0.01s)\n=== RUN   TestAttributionTrainableGroupsHold\n--- PASS: TestAttributionTrainableGroupsHold (0.04s)\n=== RUN   TestAttributionAddOnStartsSilent\n--- PASS: TestAttributionAddOnStartsSilent (0.00s)\n=== RUN   TestAttributionGroupsShareTheLearningRate\n--- PASS: TestAttributionGroupsShareTheLearningRate (0.01s)\n=== RUN   TestAttributionRejects\n--- PASS: TestAttributionRejects (0.00s)\n=== RUN   TestRunAttributionReportsEveryGroupAndSeed\n    attribution_test.go:84: normal seed 1: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: normal seed 2: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: normal seed 3: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: frozen_core seed 1: unseen success 0.000 agreement 0.456 updates 4\n    attribution_test.go:84: frozen_core seed 2: unseen success 0.333 agreement 0.130 updates 4\n    attribution_test.go:84: frozen_core seed 3: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: core_only seed 1: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: core_only seed 2: unseen success 0.000 agreement 0.150 updates 4\n    attribution_test.go:84: core_only seed 3: unseen success 0.000 agreement 0.161 updates 4\n    attribution_test.go:84: generic_matched seed 1: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: generic_matched seed 2: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: generic_matched seed 3: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: rewired seed 1: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: rewired seed 2: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: rewired seed 3: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: ablated_retrained seed 1: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:84: ablated_retrained seed 2: unseen success 0.000 agreement 0.344 updates 4\n    attribution_test.go:84: ablated_retrained seed 3: unseen success 0.000 agreement 0.189 updates 4\n    attribution_test.go:84: capacity_matched_modulator seed 1: unseen success 0.000 agreement 0.417 updates 4\n    attribution_test.go:84: capacity_matched_modulator seed 2: unseen success 0.000 agreement 0.500 updates 4\n    attribution_test.go:84: capacity_matched_modulator seed 3: unseen success 0.000 agreement 0.022 updates 4\n    attribution_test.go:108: frozen_core unseen_success_rate: mean +0.1111 CI [0.0000, 0.3333] dropped 0 diffs [0 0.3333333333333333 0]\n    attribution_test.go:108: frozen_core unseen_expert_agreement: mean -0.1383 CI [-0.3704, -0.0148] dropped 0 diffs [-0.04444444444444445 -0.37037037037037035 0]\n    attribution_test.go:108: core_only unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: core_only unseen_expert_agreement: mean -0.2296 CI [-0.4778, -0.0241] dropped 0 diffs [-0.4777777777777778 -0.35 0.1388888888888889]\n    attribution_test.go:108: generic_matched unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: generic_matched unseen_expert_agreement: mean -0.1593 CI [-0.4778, 0.0000] dropped 0 diffs [0 -0.4777777777777778 0]\n    attribution_test.go:108: rewired unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: rewired unseen_expert_agreement: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: ablated_retrained unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: ablated_retrained unseen_expert_agreement: mean -0.1556 CI [-0.4778, 0.0593] dropped 0 diffs [-0.4777777777777778 -0.15555555555555556 0.16666666666666666]\n    attribution_test.go:108: capacity_matched_modulator unseen_success_rate: mean +0.0000 CI [0.0000, 0.0000] dropped 0 diffs [0 0 0]\n    attribution_test.go:108: capacity_matched_modulator unseen_expert_agreement: mean -0.0278 CI [-0.0833, 0.0000] dropped 0 diffs [-0.08333333333333331 0 0]\n--- PASS: TestRunAttributionReportsEveryGroupAndSeed (48.56s)\n=== RUN   TestAttributionCoreOnlyChecks\n--- PASS: TestAttributionCoreOnlyChecks (0.00s)\n=== RUN   TestAttributionNeverEnlargesThePeriphery\n--- PASS: TestAttributionNeverEnlargesThePeriphery (33.82s)\n=== RUN   TestRunAttributionIsDeterministic\n--- PASS: TestRunAttributionIsDeterministic (75.75s)\n=== RUN   TestAttributionConfigValidate\n--- PASS: TestAttributionConfigValidate (0.00s)\n=== RUN   TestRunAttributionHonoursCancellation\n--- PASS: TestRunAttributionHonoursCancellation (0.00s)\n=== RUN   TestAttributionReadoutScaleUsesActionNodes\n--- PASS: TestAttributionReadoutScaleUsesActionNodes (0.01s)\n=== RUN   TestAttributionComparisonFinite\n=== RUN   TestAttributionComparisonFinite/NaN\n=== RUN   TestAttributionComparisonFinite/+Inf\n=== RUN   TestAttributionComparisonFinite/-Inf\n=== RUN   TestAttributionComparisonFinite/zero\n=== RUN   TestAttributionComparisonFinite/one\n=== RUN   TestAttributionComparisonFinite/negative\n=== RUN   TestAttributionComparisonFinite/above_one\n--- PASS: TestAttributionComparisonFinite (0.00s)\n    --- PASS: TestAttributionComparisonFinite/NaN (0.00s)\n    --- PASS: TestAttributionComparisonFinite/+Inf (0.00s)\n    --- PASS: TestAttributionComparisonFinite/-Inf (0.00s)\n    --- PASS: TestAttributionComparisonFinite/zero (0.00s)\n    --- PASS: TestAttributionComparisonFinite/one (0.00s)\n    --- PASS: TestAttributionComparisonFinite/negative (0.00s)\n    --- PASS: TestAttributionComparisonFinite/above_one (0.00s)\n=== RUN   TestContinualComparisonFinite\n=== RUN   TestContinualComparisonFinite/NaN\n=== RUN   TestContinualComparisonFinite/+Inf\n=== RUN   TestContinualComparisonFinite/-Inf\n=== RUN   TestContinualComparisonFinite/zero\n=== RUN   TestContinualComparisonFinite/one\n=== RUN   TestContinualComparisonFinite/negative\n=== RUN   TestContinualComparisonFinite/above_one\n--- PASS: TestContinualComparisonFinite (0.00s)\n    --- PASS: TestContinualComparisonFinite/NaN (0.00s)\n    --- PASS: TestContinualComparisonFinite/+Inf (0.00s)\n    --- PASS: TestContinualComparisonFinite/-Inf (0.00s)\n    --- PASS: TestContinualComparisonFinite/zero (0.00s)\n    --- PASS: TestContinualComparisonFinite/one (0.00s)\n    --- PASS: TestContinualComparisonFinite/negative (0.00s)\n    --- PASS: TestContinualComparisonFinite/above_one (0.00s)\n=== RUN   TestComparisonFiniteValidControls\n=== RUN   TestComparisonFiniteValidControls/attribution/5e-324\n=== RUN   TestComparisonFiniteValidControls/continual/5e-324\n=== RUN   TestComparisonFiniteValidControls/attribution/0.5\n=== RUN   TestComparisonFiniteValidControls/continual/0.5\n=== RUN   TestComparisonFiniteValidControls/attribution/0.95\n=== RUN   TestComparisonFiniteValidControls/continual/0.95\n=== RUN   TestComparisonFiniteValidControls/attribution/0.9999999999999999\n=== RUN   TestComparisonFiniteValidControls/continual/0.9999999999999999\n=== RUN   TestComparisonFiniteValidControls/default_attribution\n=== RUN   TestComparisonFiniteValidControls/continual_nil_comparison\n--- PASS: TestComparisonFiniteValidControls (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/5e-324 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/5e-324 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.5 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.5 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.95 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.95 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/attribution/0.9999999999999999 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual/0.9999999999999999 (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/default_attribution (0.00s)\n    --- PASS: TestComparisonFiniteValidControls/continual_nil_comparison (0.00s)\n=== RUN   TestComparisonAbsentWithoutDeclaration\n--- PASS: TestComparisonAbsentWithoutDeclaration (0.02s)\n=== RUN   TestComparisonUsesOnlyPairsWhereBothSucceeded\n--- PASS: TestComparisonUsesOnlyPairsWhereBothSucceeded (0.00s)\n=== RUN   TestContinualFixtureShape\n--- PASS: TestContinualFixtureShape (0.00s)\n=== RUN   TestContinualMatrixUntrainedCellsMatchDirectScores\n--- PASS: TestContinualMatrixUntrainedCellsMatchDirectScores (0.01s)\n=== RUN   TestContinualMatrixTrainsAndKeepsEveryRecord\n    continual_run_test.go:141: seed 7 scores=[[-0.05988871976099566 -0.03944798311446511] [-0.03132802665617636 -0.011401685945988923] [-0.1410963631139751 -0.011401685945988923]] failed=[[false false] [false false] [false false]] forgetting=[[0 0] [0 0] [0.10976833645779875 0]]\n    continual_run_test.go:141: seed 42 scores=[[-0.06510242430357843 -0.0494798181735517] [-0.035271626671576385 -0.016422384753911043] [-0.1403428813333713 -0.016422384753911043]] failed=[[false false] [false false] [false false]] forgetting=[[0 0] [0 0] [0.10507125466179493 0]]\n    continual_run_test.go:141: seed 123 scores=[[-0.0706412377595995 -0.05910399925391928] [-0.035584999492793264 -0.016249686372598215] [-0.16653023809008743 -0.016249686372598215]] failed=[[false false] [false false] [false false]] forgetting=[[0 0] [0 0] [0.13094523859729418 0]]\n--- PASS: TestContinualMatrixTrainsAndKeepsEveryRecord (0.21s)\n=== RUN   TestContinualMatrixKeepsFailedRuns\n--- PASS: TestContinualMatrixKeepsFailedRuns (0.03s)\n=== RUN   TestContinualMatrixIsDeterministic\n--- PASS: TestContinualMatrixIsDeterministic (0.17s)\n=== RUN   TestContinualMatrixRejects\n--- PASS: TestContinualMatrixRejects (0.01s)\n=== RUN   TestAttributionEffectiveConfigReport\n=== RUN   TestAttributionEffectiveConfigReport/errors\n--- PASS: TestAttributionEffectiveConfigReport (7.47s)\n    --- PASS: TestAttributionEffectiveConfigReport/errors (0.00s)\n=== RUN   TestContinualEpisodeMatchesDelayedEpisodeAtDelayThree\n--- PASS: TestContinualEpisodeMatchesDelayedEpisodeAtDelayThree (0.00s)\n=== RUN   TestContinualEpisodeChannelAndFlip\n--- PASS: TestContinualEpisodeChannelAndFlip (0.00s)\n=== RUN   TestContinualProtocolValidateAcceptsTheFixture\n--- PASS: TestContinualProtocolValidateAcceptsTheFixture (0.00s)\n=== RUN   TestContinualProtocolValidateRejects\n=== RUN   TestContinualProtocolValidateRejects/no_tasks\n=== RUN   TestContinualProtocolValidateRejects/empty_task_name\n=== RUN   TestContinualProtocolValidateRejects/duplicate_task_name\n=== RUN   TestContinualProtocolValidateRejects/unknown_generator\n=== RUN   TestContinualProtocolValidateRejects/unknown_param_key\n=== RUN   TestContinualProtocolValidateRejects/missing_delay\n=== RUN   TestContinualProtocolValidateRejects/missing_channel\n=== RUN   TestContinualProtocolValidateRejects/delay_too_large\n=== RUN   TestContinualProtocolValidateRejects/delay_too_small\n=== RUN   TestContinualProtocolValidateRejects/delay_not_integer\n=== RUN   TestContinualProtocolValidateRejects/channel_too_large\n=== RUN   TestContinualProtocolValidateRejects/channel_not_integer\n=== RUN   TestContinualProtocolValidateRejects/zero_gain\n=== RUN   TestContinualProtocolValidateRejects/gain_above_one\n=== RUN   TestContinualProtocolValidateRejects/no_stages\n=== RUN   TestContinualProtocolValidateRejects/unknown_stage_kind\n=== RUN   TestContinualProtocolValidateRejects/unknown_task_in_stage\n=== RUN   TestContinualProtocolValidateRejects/rule_change_with_budget\n=== RUN   TestContinualProtocolValidateRejects/train_task_budget_too_high\n=== RUN   TestContinualProtocolValidateRejects/too_few_seeds\n=== RUN   TestContinualProtocolValidateRejects/duplicate_seed\n=== RUN   TestContinualProtocolValidateRejects/zero_episodes\n=== RUN   TestContinualProtocolValidateRejects/episodes_too_high\n=== RUN   TestContinualProtocolValidateRejects/unknown_metric\n=== RUN   TestContinualProtocolValidateRejects/state_switch_empty_concentration\n=== RUN   TestContinualProtocolValidateRejects/state_switch_ragged_rows\n=== RUN   TestContinualProtocolValidateRejects/state_switch_non-finite_value\n=== RUN   TestContinualProtocolValidateRejects/state_switch_negative_value\n=== RUN   TestContinualProtocolValidateRejects/comparison_unknown_method\n=== RUN   TestContinualProtocolValidateRejects/comparison_interval_at_zero\n=== RUN   TestContinualProtocolValidateRejects/comparison_interval_at_one\n=== RUN   TestContinualProtocolValidateRejects/comparison_unknown_baseline\n=== RUN   TestContinualProtocolValidateRejects/comparison_too_few_resamples\n=== RUN   TestContinualProtocolValidateRejects/comparison_too_many_resamples\n--- PASS: TestContinualProtocolValidateRejects (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/no_tasks (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/empty_task_name (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/duplicate_task_name (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/unknown_generator (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/unknown_param_key (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/missing_delay (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/missing_channel (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/delay_too_large (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/delay_too_small (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/delay_not_integer (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/channel_too_large (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/channel_not_integer (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/zero_gain (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/gain_above_one (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/no_stages (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/unknown_stage_kind (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/unknown_task_in_stage (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/rule_change_with_budget (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/train_task_budget_too_high (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/too_few_seeds (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/duplicate_seed (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/zero_episodes (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/episodes_too_high (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/unknown_metric (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/state_switch_empty_concentration (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/state_switch_ragged_rows (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/state_switch_non-finite_value (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/state_switch_negative_value (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_unknown_method (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_interval_at_zero (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_interval_at_one (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_unknown_baseline (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_too_few_resamples (0.00s)\n    --- PASS: TestContinualProtocolValidateRejects/comparison_too_many_resamples (0.00s)\nPASS\nok  \tgithub.com/TimLai666/coimnet/experiment\t166.554s\n=== RUN   TestExamplesRunAttributionWritesReport\n--- PASS: TestExamplesRunAttributionWritesReport (32.10s)\n=== RUN   TestExamplesRunAttributionGroupsSubset\n--- PASS: TestExamplesRunAttributionGroupsSubset (7.42s)\n=== RUN   TestExamplesRunAttributionRejects\n=== RUN   TestExamplesRunAttributionRejects/too_few_seeds\n=== RUN   TestExamplesRunAttributionRejects/groups_lack_normal\n=== RUN   TestExamplesRunAttributionRejects/unknown_group\n=== RUN   TestExamplesRunAttributionRejects/invalid_interval\n=== RUN   TestExamplesRunAttributionRejects/too_few_resamples\n=== RUN   TestExamplesRunAttributionRejects/zero_eval_episodes\n=== RUN   TestExamplesRunAttributionRejects/zero_training_episodes\n=== RUN   TestExamplesRunAttributionRejects/existing_output\n--- PASS: TestExamplesRunAttributionRejects (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/too_few_seeds (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/groups_lack_normal (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/unknown_group (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/invalid_interval (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/too_few_resamples (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/zero_eval_episodes (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/zero_training_episodes (0.00s)\n    --- PASS: TestExamplesRunAttributionRejects/existing_output (0.00s)\n=== RUN   TestExamplesHelpWrapsAttributionOverview\n--- PASS: TestExamplesHelpWrapsAttributionOverview (0.00s)\n=== RUN   TestExamplesListIncludesAttribution\n--- PASS: TestExamplesListIncludesAttribution (0.00s)\n=== RUN   TestContinualMatrixWritesAReport\n--- PASS: TestContinualMatrixWritesAReport (0.02s)\n=== RUN   TestContinualMatrixWithChemistry\n--- PASS: TestContinualMatrixWithChemistry (0.07s)\n=== RUN   TestContinualMatrixRejects\n--- PASS: TestContinualMatrixRejects (0.00s)\nPASS\nok  \tgithub.com/TimLai666/coimnet/internal/cli\t40.167s\n",
+      "raw_stderr": ""
+    },
+    "general": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:43:42.037039+00:00",
+      "elapsed_seconds": 253.62069296836853,
+      "log": "general.log",
+      "raw_stdout": "ok  \tgithub.com/TimLai666/coimnet\t14.571s\nok  \tgithub.com/TimLai666/coimnet/backend\t0.266s\nok  \tgithub.com/TimLai666/coimnet/backend/webgpu\t1.014s\nok  \tgithub.com/TimLai666/coimnet/checkpoint\t51.628s\n?   \tgithub.com/TimLai666/coimnet/cmd/coimnet\t[no test files]\nok  \tgithub.com/TimLai666/coimnet/config\t0.784s\nok  \tgithub.com/TimLai666/coimnet/connectome\t5.110s\nok  \tgithub.com/TimLai666/coimnet/connectome/flywire\t0.465s\nok  \tgithub.com/TimLai666/coimnet/distill\t0.402s\nok  \tgithub.com/TimLai666/coimnet/download\t1.926s\nok  \tgithub.com/TimLai666/coimnet/dynamics\t1.505s\nok  \tgithub.com/TimLai666/coimnet/examples/lifthreshold\t1.762s\nok  \tgithub.com/TimLai666/coimnet/examples/multichannel\t0.760s\nok  \tgithub.com/TimLai666/coimnet/examples/realasr\t0.606s\nok  \tgithub.com/TimLai666/coimnet/examples/realmedia\t1.787s\nok  \tgithub.com/TimLai666/coimnet/examples/realnav\t1.079s\nok  \tgithub.com/TimLai666/coimnet/examples/realnavmemory\t0.918s\nok  \tgithub.com/TimLai666/coimnet/examples/realocr\t0.435s\nok  \tgithub.com/TimLai666/coimnet/examples/realsubgraph\t1.414s\nok  \tgithub.com/TimLai666/coimnet/examples/realtext\t23.041s\nok  \tgithub.com/TimLai666/coimnet/experiment\t238.047s\nok  \tgithub.com/TimLai666/coimnet/experiment/fullgraph\t2.016s\nok  \tgithub.com/TimLai666/coimnet/experiment/gridnav\t0.252s\nok  \tgithub.com/TimLai666/coimnet/experiment/multimodaleval\t219.466s\nok  \tgithub.com/TimLai666/coimnet/experiment/nav2d\t0.293s\nok  \tgithub.com/TimLai666/coimnet/experiment/studenteval\t3.632s\nok  \tgithub.com/TimLai666/coimnet/feather\t0.770s\nok  \tgithub.com/TimLai666/coimnet/internal/cli\t195.499s\nok  \tgithub.com/TimLai666/coimnet/internal/delayedfixture\t0.396s\nok  \tgithub.com/TimLai666/coimnet/internal/extsort\t0.611s\nok  \tgithub.com/TimLai666/coimnet/internal/fileio\t0.272s\nok  \tgithub.com/TimLai666/coimnet/internal/jsonkey\t0.240s\nok  \tgithub.com/TimLai666/coimnet/internal/redact\t0.238s\nok  \tgithub.com/TimLai666/coimnet/internal/sparse\t0.617s\nok  \tgithub.com/TimLai666/coimnet/internal/strictjson\t0.633s\nok  \tgithub.com/TimLai666/coimnet/learning\t5.244s\nok  \tgithub.com/TimLai666/coimnet/learning/rl\t0.600s\nok  \tgithub.com/TimLai666/coimnet/modulation\t0.954s\nok  \tgithub.com/TimLai666/coimnet/multimodal\t0.352s\nok  \tgithub.com/TimLai666/coimnet/multimodal/synthetic\t0.306s\nok  \tgithub.com/TimLai666/coimnet/params\t3.738s\nok  \tgithub.com/TimLai666/coimnet/plasticity\t0.270s\nok  \tgithub.com/TimLai666/coimnet/replay\t0.291s\nok  \tgithub.com/TimLai666/coimnet/resources\t0.263s\nok  \tgithub.com/TimLai666/coimnet/signal\t0.388s\nok  \tgithub.com/TimLai666/coimnet/simulate\t5.396s\nok  \tgithub.com/TimLai666/coimnet/tasks/asr\t18.649s\nok  \tgithub.com/TimLai666/coimnet/tasks/asr/audio\t0.276s\nok  \tgithub.com/TimLai666/coimnet/tasks/media\t159.488s\nok  \tgithub.com/TimLai666/coimnet/tasks/media/realdata\t5.338s\nok  \tgithub.com/TimLai666/coimnet/tasks/nav2d/trajectory\t0.480s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr\t2.913s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr/ctc\t0.235s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr/glyphs\t0.243s\nok  \tgithub.com/TimLai666/coimnet/tasks/textgen\t170.835s\nok  \tgithub.com/TimLai666/coimnet/tasks/textgen/tokenizer\t0.242s\nok  \tgithub.com/TimLai666/coimnet/teacher\t0.755s\nok  \tgithub.com/TimLai666/coimnet/teacher/tool\t0.245s\n",
+      "raw_stderr": ""
+    },
+    "build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:44:29.843374+00:00",
+      "elapsed_seconds": 12.317523956298828,
+      "log": "build.log",
+      "raw_stdout": "",
+      "raw_stderr": ""
+    },
+    "vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:44:30.708136+00:00",
+      "elapsed_seconds": 5.103667974472046,
+      "log": "vet.log",
+      "raw_stdout": "",
+      "raw_stderr": ""
+    },
+    "mod-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:44:29.816615+00:00",
+      "elapsed_seconds": 20.444262742996216,
+      "log": "mod-verify.log",
+      "raw_stdout": "all modules verified\n",
+      "raw_stderr": ""
+    },
+    "tidy": {
+      "command": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:44:29.983224+00:00",
+      "elapsed_seconds": 0.3642690181732178,
+      "log": "tidy.log",
+      "raw_stdout": "",
+      "raw_stderr": ""
+    },
+    "format": {
+      "command": [
+        "gofmt",
+        "-l",
+        "experiment/attribution.go",
+        "experiment/continual.go",
+        "experiment/comparison_finite_test.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:44:27.893875+00:00",
+      "elapsed_seconds": 0.023565292358398438,
+      "log": "format.log",
+      "raw_stdout": "",
+      "raw_stderr": ""
+    },
+    "cli-after": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/comparison-finite-20261009/verify-cli.py",
+        "after"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:43:42.534999+00:00",
+      "elapsed_seconds": 14.755476951599121,
+      "log": "cli-after.log",
+      "raw_stdout": "{\"workflows\": 13, \"positive_reports\": 2, \"phase\": \"after\"}\n",
+      "raw_stderr": ""
+    },
+    "sdk-isolated": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/comparison-finite-20261009/verify-sdk.py"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:00:42.790645+00:00",
+      "elapsed_seconds": 11.092533111572266,
+      "log": "sdk-isolated.log",
+      "raw_stdout": "{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-base-3oez2sy6/scratch/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:00:43.791607+00:00\", \"elapsed_seconds\": 6.539026975631714, \"log\": \"valid-isolated-before.log\"}\n{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-current-sdxmwdd4/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:00:50.499177+00:00\", \"elapsed_seconds\": 1.7723987102508545, \"log\": \"valid-isolated-after-a.log\"}\n{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-current-jyke83sw/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:00:52.355279+00:00\", \"elapsed_seconds\": 1.5057311058044434, \"log\": \"valid-isolated-after-b.log\"}\nSeven reports with independent declarations match original source and two current processes\n",
+      "raw_stderr": ""
+    },
+    "priority-after": {
+      "command": [
+        "go",
+        "run",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-sdk-_h2tncot/main.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:45:29.458665+00:00",
+      "elapsed_seconds": 4.926668882369995,
+      "log": "priority-after.log",
+      "raw_stdout": "{\"attribution-baseline-before-interval\":\"attribution comparison: unsupported baseline \\\"invalid\\\"\",\"attribution-cancel\":\"context canceled\",\"attribution-earlier-field\":\"attribution config episodes 0, want a value in [1, 10000]\",\"attribution-error-{\\\"Value\\\":\\\"+Inf\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got +Inf\",\"attribution-error-{\\\"Value\\\":\\\"-0.1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got -0.1\",\"attribution-error-{\\\"Value\\\":\\\"-Inf\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got -Inf\",\"attribution-error-{\\\"Value\\\":\\\"0\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 0\",\"attribution-error-{\\\"Value\\\":\\\"1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 1\",\"attribution-error-{\\\"Value\\\":\\\"1.1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 1.1\",\"attribution-method\":\"attribution comparison: unsupported method \\\"invalid\\\"\",\"attribution-nil-context\":\"attribution run needs a context\",\"continual-cancel\":\"context canceled\",\"continual-error-{\\\"Value\\\":\\\"+Inf\\\"}\":\"comparison: interval must be strictly between 0 and 1, got +Inf\",\"continual-error-{\\\"Value\\\":\\\"-0.1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got -0.1\",\"continual-error-{\\\"Value\\\":\\\"-Inf\\\"}\":\"comparison: interval must be strictly between 0 and 1, got -Inf\",\"continual-error-{\\\"Value\\\":\\\"0\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 0\",\"continual-error-{\\\"Value\\\":\\\"1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 1\",\"continual-error-{\\\"Value\\\":\\\"1.1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 1.1\",\"continual-interval-before-baseline\":\"comparison: interval must be strictly between 0 and 1, got 0\",\"continual-method-before-interval\":\"comparison: unsupported method \\\"invalid\\\"\",\"continual-nil-builder\":\"build must not be nil\",\"continual-nil-context\":\"context must not be nil\"}\n",
+      "raw_stderr": ""
+    },
+    "race": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout",
+        "60m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T16:43:41.693417+00:00",
+      "elapsed_seconds": 1994.9239251613617,
+      "log": "race.log",
+      "raw_stdout": "ok  \tgithub.com/TimLai666/coimnet\t74.305s\nok  \tgithub.com/TimLai666/coimnet/backend\t1.292s\nok  \tgithub.com/TimLai666/coimnet/backend/webgpu\t2.174s\nok  \tgithub.com/TimLai666/coimnet/checkpoint\t28.541s\n?   \tgithub.com/TimLai666/coimnet/cmd/coimnet\t[no test files]\nok  \tgithub.com/TimLai666/coimnet/config\t1.856s\nok  \tgithub.com/TimLai666/coimnet/connectome\t10.055s\nok  \tgithub.com/TimLai666/coimnet/connectome/flywire\t2.362s\nok  \tgithub.com/TimLai666/coimnet/distill\t2.361s\nok  \tgithub.com/TimLai666/coimnet/download\t3.290s\nok  \tgithub.com/TimLai666/coimnet/dynamics\t13.262s\nok  \tgithub.com/TimLai666/coimnet/examples/lifthreshold\t3.751s\nok  \tgithub.com/TimLai666/coimnet/examples/multichannel\t1.738s\nok  \tgithub.com/TimLai666/coimnet/examples/realasr\t1.927s\nok  \tgithub.com/TimLai666/coimnet/examples/realmedia\t20.867s\nok  \tgithub.com/TimLai666/coimnet/examples/realnav\t7.631s\nok  \tgithub.com/TimLai666/coimnet/examples/realnavmemory\t10.532s\nok  \tgithub.com/TimLai666/coimnet/examples/realocr\t1.579s\nok  \tgithub.com/TimLai666/coimnet/examples/realsubgraph\t4.936s\nok  \tgithub.com/TimLai666/coimnet/examples/realtext\t358.160s\nok  \tgithub.com/TimLai666/coimnet/experiment\t1955.638s\nok  \tgithub.com/TimLai666/coimnet/experiment/fullgraph\t3.779s\nok  \tgithub.com/TimLai666/coimnet/experiment/gridnav\t1.293s\nok  \tgithub.com/TimLai666/coimnet/experiment/multimodaleval\t1692.050s\nok  \tgithub.com/TimLai666/coimnet/experiment/nav2d\t1.305s\nok  \tgithub.com/TimLai666/coimnet/experiment/studenteval\t5.526s\nok  \tgithub.com/TimLai666/coimnet/feather\t1.443s\nok  \tgithub.com/TimLai666/coimnet/internal/cli\t1156.813s\nok  \tgithub.com/TimLai666/coimnet/internal/delayedfixture\t1.504s\nok  \tgithub.com/TimLai666/coimnet/internal/extsort\t2.128s\nok  \tgithub.com/TimLai666/coimnet/internal/fileio\t1.487s\nok  \tgithub.com/TimLai666/coimnet/internal/jsonkey\t1.286s\nok  \tgithub.com/TimLai666/coimnet/internal/redact\t1.314s\nok  \tgithub.com/TimLai666/coimnet/internal/sparse\t1.281s\nok  \tgithub.com/TimLai666/coimnet/internal/strictjson\t1.310s\nok  \tgithub.com/TimLai666/coimnet/learning\t10.313s\nok  \tgithub.com/TimLai666/coimnet/learning/rl\t5.277s\nok  \tgithub.com/TimLai666/coimnet/modulation\t2.107s\nok  \tgithub.com/TimLai666/coimnet/multimodal\t1.271s\nok  \tgithub.com/TimLai666/coimnet/multimodal/synthetic\t1.262s\nok  \tgithub.com/TimLai666/coimnet/params\t3.538s\nok  \tgithub.com/TimLai666/coimnet/plasticity\t1.254s\nok  \tgithub.com/TimLai666/coimnet/replay\t1.270s\nok  \tgithub.com/TimLai666/coimnet/resources\t1.255s\nok  \tgithub.com/TimLai666/coimnet/signal\t2.327s\nok  \tgithub.com/TimLai666/coimnet/simulate\t7.704s\nok  \tgithub.com/TimLai666/coimnet/tasks/asr\t267.306s\nok  \tgithub.com/TimLai666/coimnet/tasks/asr/audio\t2.493s\nok  \tgithub.com/TimLai666/coimnet/tasks/media\t1360.617s\nok  \tgithub.com/TimLai666/coimnet/tasks/media/realdata\t5.013s\nok  \tgithub.com/TimLai666/coimnet/tasks/nav2d/trajectory\t1.520s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr\t65.304s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr/ctc\t1.261s\nok  \tgithub.com/TimLai666/coimnet/tasks/ocr/glyphs\t1.267s\nok  \tgithub.com/TimLai666/coimnet/tasks/textgen\t1895.526s\nok  \tgithub.com/TimLai666/coimnet/tasks/textgen/tokenizer\t1.403s\nok  \tgithub.com/TimLai666/coimnet/teacher\t2.019s\nok  \tgithub.com/TimLai666/coimnet/teacher/tool\t1.277s\n",
+      "raw_stderr": ""
+    },
+    "governance-preliminary": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:04:49.721139+00:00",
+      "elapsed_seconds": 4.3428027629852295,
+      "log": "governance-preliminary.log",
+      "raw_stdout": "=== RUN   TestFormatIndex\n    format_index_test.go:78: format inventory unique versions=124\n    format_index_test.go:83: format inventory categories: formal=87 rules=10 tools=14 test=13 unclassified=0\n--- PASS: TestFormatIndex (0.76s)\n=== RUN   TestFormatIndexControls\n=== RUN   TestFormatIndexControls/missing\n=== RUN   TestFormatIndexControls/duplicate\n=== RUN   TestFormatIndexControls/stale\n=== RUN   TestFormatIndexControls/wrong_source\n=== RUN   TestFormatIndexControls/wrong_line\n=== RUN   TestFormatIndexControls/known_counterexample_as_formal\n=== RUN   TestFormatIndexControls/known_report_as_test\n=== RUN   TestFormatIndexControls/outside_category\n=== RUN   TestFormatIndexControls/malformed_extra_row\n=== RUN   TestFormatIndexControls/empty\n--- PASS: TestFormatIndexControls (0.04s)\n    --- PASS: TestFormatIndexControls/missing (0.00s)\n    --- PASS: TestFormatIndexControls/duplicate (0.00s)\n    --- PASS: TestFormatIndexControls/stale (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_source (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_line (0.00s)\n    --- PASS: TestFormatIndexControls/known_counterexample_as_formal (0.00s)\n    --- PASS: TestFormatIndexControls/known_report_as_test (0.00s)\n    --- PASS: TestFormatIndexControls/outside_category (0.00s)\n    --- PASS: TestFormatIndexControls/malformed_extra_row (0.01s)\n    --- PASS: TestFormatIndexControls/empty (0.00s)\n=== RUN   TestFormatIndexGoLiteralsAndScopes\n--- PASS: TestFormatIndexGoLiteralsAndScopes (0.00s)\n=== RUN   TestFormatIndexNoGitAndReadErrors\n=== RUN   TestFormatIndexNoGitAndReadErrors/parse\n=== RUN   TestFormatIndexNoGitAndReadErrors/index_read\n=== RUN   TestFormatIndexNoGitAndReadErrors/JSON_read\n--- PASS: TestFormatIndexNoGitAndReadErrors (0.01s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/parse (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/index_read (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/JSON_read (0.00s)\n=== RUN   TestGovernanceRequirementIDsMatchHandoff\n--- PASS: TestGovernanceRequirementIDsMatchHandoff (0.00s)\n=== RUN   TestGovernanceStatusValuesAreDeclared\n--- PASS: TestGovernanceStatusValuesAreDeclared (0.00s)\n=== RUN   TestGovernancePassedRequirementsHaveEvidence\n--- PASS: TestGovernancePassedRequirementsHaveEvidence (0.03s)\n=== RUN   TestGovernanceTicketsHaveDatedRootDecisions\n    governance_test.go:301: no Root 決策 section: 01-environment.md\n    governance_test.go:301: no Root 決策 section: 02-sparse.md\n    governance_test.go:301: no Root 決策 section: 03-signals.md\n    governance_test.go:301: no Root 決策 section: 04-continuous-training.md\n    governance_test.go:301: no Root 決策 section: 05-resume.md\n    governance_test.go:301: no Root 決策 section: 06-source-download.md\n    governance_test.go:301: no Root 決策 section: 07-feather-reader.md\n    governance_test.go:301: no Root 決策 section: 10-real-subgraph-example.md\n    governance_test.go:301: no Root 決策 section: 34-real-trajectory-stimulus-memory-proposal.md\n    governance_test.go:301: no Root 決策 section: 35-frozen-stimulus-history-counterfactual.md\n    governance_test.go:301: no Root 決策 section: 36-synthetic-goal-cue-audit.md\n    governance_test.go:301: no Root 決策 section: 42-distribution-ctc-numerical-correctness.md\n    governance_test.go:301: no Root 決策 section: 43-stateful-continuous-ppo.md\n    governance_test.go:301: no Root 決策 section: 44-doctor-gpu-capabilities.md\n    governance_test.go:301: no Root 決策 section: 50-comparison-finite-validation.md\n--- PASS: TestGovernanceTicketsHaveDatedRootDecisions (0.01s)\nPASS\nok  \tgithub.com/TimLai666/coimnet\t1.432s\n",
+      "raw_stderr": ""
+    },
+    "sdk-ready": {
+      "command": [
+        "python3",
+        "evidence/OPS-03/comparison-finite-20261009/verify-sdk.py",
+        "ready"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:28:17.180036+00:00",
+      "elapsed_seconds": 4.09473991394043,
+      "log": "sdk-ready.log",
+      "raw_stdout": "{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-base-qh8iwibv/scratch/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:28:17.392203+00:00\", \"elapsed_seconds\": 2.2347662448883057, \"log\": \"ready-before.log\"}\n{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-current-t2h8qwv5/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:28:19.721203+00:00\", \"elapsed_seconds\": 0.7182009220123291, \"log\": \"ready-after-a.log\"}\n{\"command\": [\"go\", \"run\", \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-current-2yq9yao0/main.go\"], \"exit_code\": 0, \"started_at\": \"2026-10-08T17:28:20.469641+00:00\", \"elapsed_seconds\": 0.796532154083252, \"log\": \"ready-after-b.log\"}\nSeven reports with independent declarations match original source and two current processes\n",
+      "raw_stderr": ""
+    },
+    "priority-ready": {
+      "command": [
+        "go",
+        "run",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-proof-ready-30q8lze9/main.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:28:18.058163+00:00",
+      "elapsed_seconds": 1.503305435180664,
+      "log": "priority-ready.log",
+      "raw_stdout": "{\"attribution-baseline-before-interval\":\"attribution comparison: unsupported baseline \\\"invalid\\\"\",\"attribution-cancel\":\"context canceled\",\"attribution-earlier-field\":\"attribution config episodes 0, want a value in [1, 10000]\",\"attribution-error-{\\\"Value\\\":\\\"+Inf\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got +Inf\",\"attribution-error-{\\\"Value\\\":\\\"-0.1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got -0.1\",\"attribution-error-{\\\"Value\\\":\\\"-Inf\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got -Inf\",\"attribution-error-{\\\"Value\\\":\\\"0\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 0\",\"attribution-error-{\\\"Value\\\":\\\"1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 1\",\"attribution-error-{\\\"Value\\\":\\\"1.1\\\"}\":\"attribution comparison: interval must be strictly between 0 and 1, got 1.1\",\"attribution-method\":\"attribution comparison: unsupported method \\\"invalid\\\"\",\"attribution-nil-context\":\"attribution run needs a context\",\"continual-cancel\":\"context canceled\",\"continual-error-{\\\"Value\\\":\\\"+Inf\\\"}\":\"comparison: interval must be strictly between 0 and 1, got +Inf\",\"continual-error-{\\\"Value\\\":\\\"-0.1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got -0.1\",\"continual-error-{\\\"Value\\\":\\\"-Inf\\\"}\":\"comparison: interval must be strictly between 0 and 1, got -Inf\",\"continual-error-{\\\"Value\\\":\\\"0\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 0\",\"continual-error-{\\\"Value\\\":\\\"1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 1\",\"continual-error-{\\\"Value\\\":\\\"1.1\\\"}\":\"comparison: interval must be strictly between 0 and 1, got 1.1\",\"continual-interval-before-baseline\":\"comparison: interval must be strictly between 0 and 1, got 0\",\"continual-method-before-interval\":\"comparison: unsupported method \\\"invalid\\\"\",\"continual-nil-builder\":\"build must not be nil\",\"continual-nil-context\":\"context must not be nil\"}\n",
+      "raw_stderr": ""
+    },
+    "ownership-ready": {
+      "command": [
+        "go",
+        "run",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-proof-ready-i41282vo/main.go"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:28:19.607097+00:00",
+      "elapsed_seconds": 0.770272970199585,
+      "log": "ownership-ready.log",
+      "raw_stdout": "{\"after_interval\":0.5,\"before_interval\":0.95,\"protocol_hash_unchanged\":true,\"realized_interval\":0.95,\"report_bytes_changed\":true,\"scope\":\"separate P2 follow-up, implementation unchanged\"}\n",
+      "raw_stderr": ""
+    },
+    "artifact-format": {
+      "command": [
+        "gofmt",
+        "-l",
+        "evidence/OPS-03/comparison-finite-20261009/valid-probe.go.txt",
+        "evidence/OPS-03/comparison-finite-20261009/priority-probe.go.txt",
+        "evidence/OPS-03/comparison-finite-20261009/ownership-probe.go.txt"
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:31:55.395433+00:00",
+      "elapsed_seconds": 0.011198997497558594,
+      "log": "artifact-format.log",
+      "raw_stdout": "",
+      "raw_stderr": ""
+    },
+    "governance-final": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:19:04.666082+00:00",
+      "elapsed_seconds": 3.4147257804870605,
+      "log": "governance-final.log",
+      "raw_stdout": "=== RUN   TestFormatIndex\n    format_index_test.go:78: format inventory unique versions=124\n    format_index_test.go:83: format inventory categories: formal=87 rules=10 tools=14 test=13 unclassified=0\n--- PASS: TestFormatIndex (0.63s)\n=== RUN   TestFormatIndexControls\n=== RUN   TestFormatIndexControls/missing\n=== RUN   TestFormatIndexControls/duplicate\n=== RUN   TestFormatIndexControls/stale\n=== RUN   TestFormatIndexControls/wrong_source\n=== RUN   TestFormatIndexControls/wrong_line\n=== RUN   TestFormatIndexControls/known_counterexample_as_formal\n=== RUN   TestFormatIndexControls/known_report_as_test\n=== RUN   TestFormatIndexControls/outside_category\n=== RUN   TestFormatIndexControls/malformed_extra_row\n=== RUN   TestFormatIndexControls/empty\n--- PASS: TestFormatIndexControls (0.03s)\n    --- PASS: TestFormatIndexControls/missing (0.00s)\n    --- PASS: TestFormatIndexControls/duplicate (0.00s)\n    --- PASS: TestFormatIndexControls/stale (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_source (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_line (0.00s)\n    --- PASS: TestFormatIndexControls/known_counterexample_as_formal (0.00s)\n    --- PASS: TestFormatIndexControls/known_report_as_test (0.00s)\n    --- PASS: TestFormatIndexControls/outside_category (0.00s)\n    --- PASS: TestFormatIndexControls/malformed_extra_row (0.00s)\n    --- PASS: TestFormatIndexControls/empty (0.00s)\n=== RUN   TestFormatIndexGoLiteralsAndScopes\n--- PASS: TestFormatIndexGoLiteralsAndScopes (0.00s)\n=== RUN   TestFormatIndexNoGitAndReadErrors\n=== RUN   TestFormatIndexNoGitAndReadErrors/parse\n=== RUN   TestFormatIndexNoGitAndReadErrors/index_read\n=== RUN   TestFormatIndexNoGitAndReadErrors/JSON_read\n--- PASS: TestFormatIndexNoGitAndReadErrors (0.01s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/parse (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/index_read (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/JSON_read (0.00s)\n=== RUN   TestGovernanceRequirementIDsMatchHandoff\n--- PASS: TestGovernanceRequirementIDsMatchHandoff (0.00s)\n=== RUN   TestGovernanceStatusValuesAreDeclared\n--- PASS: TestGovernanceStatusValuesAreDeclared (0.00s)\n=== RUN   TestGovernancePassedRequirementsHaveEvidence\n--- PASS: TestGovernancePassedRequirementsHaveEvidence (0.04s)\n=== RUN   TestGovernanceTicketsHaveDatedRootDecisions\n    governance_test.go:301: no Root 決策 section: 01-environment.md\n    governance_test.go:301: no Root 決策 section: 02-sparse.md\n    governance_test.go:301: no Root 決策 section: 03-signals.md\n    governance_test.go:301: no Root 決策 section: 04-continuous-training.md\n    governance_test.go:301: no Root 決策 section: 05-resume.md\n    governance_test.go:301: no Root 決策 section: 06-source-download.md\n    governance_test.go:301: no Root 決策 section: 07-feather-reader.md\n    governance_test.go:301: no Root 決策 section: 10-real-subgraph-example.md\n    governance_test.go:301: no Root 決策 section: 34-real-trajectory-stimulus-memory-proposal.md\n    governance_test.go:301: no Root 決策 section: 35-frozen-stimulus-history-counterfactual.md\n    governance_test.go:301: no Root 決策 section: 36-synthetic-goal-cue-audit.md\n    governance_test.go:301: no Root 決策 section: 42-distribution-ctc-numerical-correctness.md\n    governance_test.go:301: no Root 決策 section: 43-stateful-continuous-ppo.md\n    governance_test.go:301: no Root 決策 section: 44-doctor-gpu-capabilities.md\n--- PASS: TestGovernanceTicketsHaveDatedRootDecisions (0.01s)\nPASS\nok  \tgithub.com/TimLai666/coimnet\t1.469s\n",
+      "raw_stderr": ""
+    },
+    "governance-precommit-reviewed": {
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-run",
+        "Governance|FormatIndex",
+        "-v",
+        "."
+      ],
+      "exit_code": 0,
+      "started_at": "2026-10-08T17:34:31.204349+00:00",
+      "elapsed_seconds": 2.289870023727417,
+      "log": "governance-precommit-reviewed.log",
+      "raw_stdout": "=== RUN   TestFormatIndex\n    format_index_test.go:78: format inventory unique versions=124\n    format_index_test.go:83: format inventory categories: formal=87 rules=10 tools=14 test=13 unclassified=0\n--- PASS: TestFormatIndex (0.25s)\n=== RUN   TestFormatIndexControls\n=== RUN   TestFormatIndexControls/missing\n=== RUN   TestFormatIndexControls/duplicate\n=== RUN   TestFormatIndexControls/stale\n=== RUN   TestFormatIndexControls/wrong_source\n=== RUN   TestFormatIndexControls/wrong_line\n=== RUN   TestFormatIndexControls/known_counterexample_as_formal\n=== RUN   TestFormatIndexControls/known_report_as_test\n=== RUN   TestFormatIndexControls/outside_category\n=== RUN   TestFormatIndexControls/malformed_extra_row\n=== RUN   TestFormatIndexControls/empty\n--- PASS: TestFormatIndexControls (0.02s)\n    --- PASS: TestFormatIndexControls/missing (0.00s)\n    --- PASS: TestFormatIndexControls/duplicate (0.00s)\n    --- PASS: TestFormatIndexControls/stale (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_source (0.00s)\n    --- PASS: TestFormatIndexControls/wrong_line (0.00s)\n    --- PASS: TestFormatIndexControls/known_counterexample_as_formal (0.00s)\n    --- PASS: TestFormatIndexControls/known_report_as_test (0.00s)\n    --- PASS: TestFormatIndexControls/outside_category (0.00s)\n    --- PASS: TestFormatIndexControls/malformed_extra_row (0.00s)\n    --- PASS: TestFormatIndexControls/empty (0.00s)\n=== RUN   TestFormatIndexGoLiteralsAndScopes\n--- PASS: TestFormatIndexGoLiteralsAndScopes (0.00s)\n=== RUN   TestFormatIndexNoGitAndReadErrors\n=== RUN   TestFormatIndexNoGitAndReadErrors/parse\n=== RUN   TestFormatIndexNoGitAndReadErrors/index_read\n=== RUN   TestFormatIndexNoGitAndReadErrors/JSON_read\n--- PASS: TestFormatIndexNoGitAndReadErrors (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/parse (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/index_read (0.00s)\n    --- PASS: TestFormatIndexNoGitAndReadErrors/JSON_read (0.00s)\n=== RUN   TestGovernanceRequirementIDsMatchHandoff\n--- PASS: TestGovernanceRequirementIDsMatchHandoff (0.00s)\n=== RUN   TestGovernanceStatusValuesAreDeclared\n--- PASS: TestGovernanceStatusValuesAreDeclared (0.00s)\n=== RUN   TestGovernancePassedRequirementsHaveEvidence\n--- PASS: TestGovernancePassedRequirementsHaveEvidence (0.01s)\n=== RUN   TestGovernanceTicketsHaveDatedRootDecisions\n    governance_test.go:301: no Root 決策 section: 01-environment.md\n    governance_test.go:301: no Root 決策 section: 02-sparse.md\n    governance_test.go:301: no Root 決策 section: 03-signals.md\n    governance_test.go:301: no Root 決策 section: 04-continuous-training.md\n    governance_test.go:301: no Root 決策 section: 05-resume.md\n    governance_test.go:301: no Root 決策 section: 06-source-download.md\n    governance_test.go:301: no Root 決策 section: 07-feather-reader.md\n    governance_test.go:301: no Root 決策 section: 10-real-subgraph-example.md\n    governance_test.go:301: no Root 決策 section: 34-real-trajectory-stimulus-memory-proposal.md\n    governance_test.go:301: no Root 決策 section: 35-frozen-stimulus-history-counterfactual.md\n    governance_test.go:301: no Root 決策 section: 36-synthetic-goal-cue-audit.md\n    governance_test.go:301: no Root 決策 section: 42-distribution-ctc-numerical-correctness.md\n    governance_test.go:301: no Root 決策 section: 43-stateful-continuous-ppo.md\n    governance_test.go:301: no Root 決策 section: 44-doctor-gpu-capabilities.md\n--- PASS: TestGovernanceTicketsHaveDatedRootDecisions (0.00s)\nPASS\nok  \tgithub.com/TimLai666/coimnet\t0.776s\n",
+      "raw_stderr": ""
+    }
+  },
+  "test_log": [
+    "fixed.log",
+    "scoped.log",
+    "general.log",
+    "build.log",
+    "vet.log",
+    "mod-verify.log",
+    "tidy.log",
+    "format.log",
+    "cli-after.log",
+    "sdk-isolated.log",
+    "priority-after.log",
+    "race.log",
+    "governance-preliminary.log",
+    "sdk-ready.log",
+    "priority-ready.log",
+    "ownership-ready.log",
+    "artifact-format.log",
+    "governance-final.log",
+    "governance-precommit-reviewed.log"
+  ],
+  "root_review": "root-review.md",
+  "preservation": "preservation.json",
+  "valid_comparison": "ready-comparison.json",
+  "cli_comparison": "cli-comparison.json",
+  "delegation": "delegation.json",
+  "probe_correction": "probe-correction.json",
+  "requirements": {
+    "passed": 89,
+    "total": 91,
+    "specified": [
+      "TSK-11",
+      "OPS-05"
+    ]
+  },
+  "learning_claim": "none",
+  "biological_claim": "none",
+  "follow_up": {
+    "severity": "P2",
+    "location": "experiment/continual_run.go:187",
+    "evidence": "ownership-followup.json",
+    "changed": false,
+    "formatted_probe": "ownership-ready.json"
+  },
+  "updated_at": "2026-10-08T17:32:59.149783+00:00",
+  "delivery_status": "pending",
+  "existing_error_comparison": {
+    "baseline": "priority-before.json",
+    "current": "priority-ready.json",
+    "cases": 22,
+    "bytes_identical": true
+  },
+  "artifact_format": "artifact-format.json",
+  "evidence_audit": "evidence-audit.json",
+  "environment_limit": {
+    "initial_setup_failure": "governance-precommit.json",
+    "reason": "sandbox denied existing Go cache access",
+    "retry": "governance-precommit-reviewed.json",
+    "resolved": true
+  }
+}

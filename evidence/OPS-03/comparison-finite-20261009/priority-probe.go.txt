@@ -1,0 +1,69 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	e "github.com/TimLai666/coimnet/experiment"
+	"math"
+	"os"
+	"strconv"
+)
+
+func main() {
+	c := e.DefaultAttributionConfig()
+	c.Comparison.Interval = math.NaN()
+	p := e.ContinualProtocol{Tasks: []e.TaskSpec{{Name: "A", Generator: e.GeneratorDelayedCorrelation, Params: map[string]float64{"delay": 1, "channel": 0}}}, Stages: []e.Stage{{Kind: e.StageTrainTask, Task: "A", Budget: 1}}, Seeds: []uint64{1, 2, 3}, Evaluation: e.Evaluation{Episodes: 1, Metric: e.MetricNegMSE}, Comparison: &e.PreRegistered{Method: e.ComparisonPairedBootstrap, Interval: math.NaN(), Baseline: e.BaselineIndependent, Resamples: 100}}
+	result := map[string]string{}
+	record := func(k string, err error) {
+		if err == nil {
+			panic(k)
+		}
+		result[k] = err.Error()
+	}
+	_, err := e.RunAttribution(nil, c)
+	record("attribution-nil-context", err)
+	_, err = e.RunContinualMatrix(nil, p, e.ContinualFixture)
+	record("continual-nil-context", err)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	_, err = e.RunAttribution(ctx, c)
+	if !errors.Is(err, context.Canceled) {
+		panic(err)
+	}
+	record("attribution-cancel", err)
+	_, err = e.RunContinualMatrix(ctx, p, e.ContinualFixture)
+	if !errors.Is(err, context.Canceled) {
+		panic(err)
+	}
+	record("continual-cancel", err)
+	_, err = e.RunContinualMatrix(context.Background(), p, nil)
+	record("continual-nil-builder", err)
+	c.Episodes = 0
+	record("attribution-earlier-field", c.Validate())
+	c.Episodes = 1
+	c.Comparison.Method = "invalid"
+	record("attribution-method", c.Validate())
+	c.Comparison.Method = e.ComparisonPairedBootstrap
+	c.Comparison.Interval = 0
+	c.Comparison.Baseline = "invalid"
+	record("attribution-baseline-before-interval", c.Validate())
+	p.Comparison.Interval = 0
+	p.Comparison.Baseline = "invalid"
+	record("continual-interval-before-baseline", p.Validate())
+	p.Comparison.Method = "invalid"
+	record("continual-method-before-interval", p.Validate())
+	for _, value := range []float64{math.Inf(1), math.Inf(-1), 0, 1, -.1, 1.1} {
+		c.Comparison = e.PreRegistered{Method: e.ComparisonPairedBootstrap, Interval: value, Baseline: e.AttributionNormal, Resamples: 100}
+		p.Comparison = &e.PreRegistered{Method: e.ComparisonPairedBootstrap, Interval: value, Baseline: e.BaselineIndependent, Resamples: 100}
+		key := ""
+		b, _ := json.Marshal(struct{ Value string }{Value: fmtFloat(value)})
+		key = string(b)
+		record("attribution-error-"+key, c.Validate())
+		record("continual-error-"+key, p.Validate())
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+		panic(err)
+	}
+}
+func fmtFloat(x float64) string { return strconv.FormatFloat(x, 'g', -1, 64) }

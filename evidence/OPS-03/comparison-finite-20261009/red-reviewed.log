@@ -1,0 +1,64 @@
+=== RUN   TestAttributionComparisonFinite
+=== RUN   TestAttributionComparisonFinite/NaN
+    comparison_finite_test.go:73: AttributionConfig.Validate accepted interval NaN
+    comparison_finite_test.go:80: RunAttribution accepted interval NaN
+    comparison_finite_test.go:85: RunAttribution report = {SchemaVersion:coimnet-attribution/v1 Config:{Env:{Width:9 Height:9 WallDensity:0.2 ViewDepth:3 TimeLimit:2 StepPenalty:0.01 CollisionPenalty:0.05 GoalReward:1 Task:avoid_obstacles} Seeds:[1 2 3] Episodes:1 Hidden:4 Recurrent:1 LearningRate:0.05 EvalEpisodes:1 Groups:[normal] Comparison:{Method:paired_bootstrap Interval:NaN Baseline:normal Resamples:1000}} ConfigHash:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 Runs:[{Group:normal Seed:1 Model:{Group:normal Nodes:48 Edges:340 Parameters:2068 FreeParameters:1972 Trainable:[weights encoder readout] ModulatorParameters:0 AddOnParameters:0 Rewire:<nil>} Updates:1 Before:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0} Seen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:1 MeanReturn:-0.07 ExpertAgreement:0.5} Unseen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0.5} ActivityBefore:0.2397722594419478 ActivityAfter:0.2017028366948516 Checks:<nil> Failed:false Error:} {Group:normal Seed:2 Model:{Group:normal Nodes:48 Edges:340 Parameters:2068 FreeParameters:1972 Trainable:[weights encoder readout] ModulatorParameters:0 AddOnParameters:0 Rewire:<nil>} Updates:1 Before:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0} Seen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0} Unseen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0.5} ActivityBefore:0.17938622559562212 ActivityAfter:0.3583259166333835 Checks:<nil> Failed:false Error:} {Group:normal Seed:3 Model:{Group:normal Nodes:48 Edges:340 Parameters:2068 FreeParameters:1972 Trainable:[weights encoder readout] ModulatorParameters:0 AddOnParameters:0 Rewire:<nil>} Updates:1 Before:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0.5} Seen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:1} Unseen:{Episodes:1 SuccessRate:0 TimeoutRate:1 MeanSteps:2 MeanCollisions:0 MeanReturn:-0.02 ExpertAgreement:0.5} ActivityBefore:0.16353811594393594 ActivityAfter:0.2720472415176057 Checks:<nil> Failed:false Error:}] Comparisons:[] Conclusion:A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior. Assumptions:[The core is the navigation policy's random sparse recurrent block, not the fly connectome; the matrix shows that every control runs under one schedule, not which wiring is better. Every group trains with trainNav2D on the same maps for the same number of episodes; update counts are reported per run. ablated_retrained has no core and capacity_matched_modulator adds a readout-side block sized to the MOD-10 controller; both parameter counts are reported, not matched. core_only keeps a fixed identity periphery; when it does not learn, the report lists the checks instead of enlarging the periphery.]}, want zero report
+=== RUN   TestAttributionComparisonFinite/+Inf
+=== RUN   TestAttributionComparisonFinite/-Inf
+=== RUN   TestAttributionComparisonFinite/zero
+=== RUN   TestAttributionComparisonFinite/one
+=== RUN   TestAttributionComparisonFinite/negative
+=== RUN   TestAttributionComparisonFinite/above_one
+--- FAIL: TestAttributionComparisonFinite (0.01s)
+    --- FAIL: TestAttributionComparisonFinite/NaN (0.01s)
+    --- PASS: TestAttributionComparisonFinite/+Inf (0.00s)
+    --- PASS: TestAttributionComparisonFinite/-Inf (0.00s)
+    --- PASS: TestAttributionComparisonFinite/zero (0.00s)
+    --- PASS: TestAttributionComparisonFinite/one (0.00s)
+    --- PASS: TestAttributionComparisonFinite/negative (0.00s)
+    --- PASS: TestAttributionComparisonFinite/above_one (0.00s)
+=== RUN   TestContinualComparisonFinite
+=== RUN   TestContinualComparisonFinite/NaN
+    comparison_finite_test.go:97: ContinualProtocol.Validate accepted interval NaN
+    comparison_finite_test.go:109: RunContinualMatrix accepted interval NaN
+    comparison_finite_test.go:114: builder called 6 times for interval NaN, want 0
+    comparison_finite_test.go:117: RunContinualMatrix report = {SchemaVersion:coimnet-continual-matrix/v1 Profile:fixture Protocol:{Tasks:[{Name:A Generator:delayed-correlation/v1 Params:map[channel:0 delay:1]}] Stages:[{Kind:train_task Task:A Budget:1}] Seeds:[1 2 3] Evaluation:{Episodes:1 FixedChemistry:false StateSwitch:<nil> Metric:neg_mse} Comparison:0x1d38e86fcc00} ProtocolHash:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 Width:1 Seeds:[{Seed:1 Scores:[[0]] Failed:[[true]] Forgetting:[[0]] Switched:[] SwitchedFailed:[]} {Seed:2 Scores:[[0]] Failed:[[true]] Forgetting:[[0]] Switched:[] SwitchedFailed:[]} {Seed:3 Scores:[[0]] Failed:[[true]] Forgetting:[[0]] Switched:[] SwitchedFailed:[]}] Cells:[[{Mean:0 Std:0 Min:0 Max:0 Succeeded:0 Total:3}]] ForgettingCells:[[{Mean:0 Std:0 Min:0 Max:0 Succeeded:0 Total:3}]] Runs:[{Seed:1 Stage:-1 Task: Control: Status:failed Error:builder must not run} {Seed:2 Stage:-1 Task: Control: Status:failed Error:builder must not run} {Seed:3 Stage:-1 Task: Control: Status:failed Error:builder must not run} {Seed:1 Stage:-1 Task:A Control:independent Status:failed Error:builder must not run} {Seed:2 Stage:-1 Task:A Control:independent Status:failed Error:builder must not run} {Seed:3 Stage:-1 Task:A Control:independent Status:failed Error:builder must not run}] Assumptions:[Evaluation episodes come from a seed derived from the run seed and the task index; training never sees them. Every evaluation runs on a twin restored from the individual's snapshot, so evaluating never advances or trains the individual. Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell. A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule. independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting. Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim.] Independent:[{Task:A Seeds:[{Seed:1 Score:0 Failed:true Error:builder must not run} {Seed:2 Score:0 Failed:true Error:builder must not run} {Seed:3 Score:0 Failed:true Error:builder must not run}] Stat:{Mean:0 Std:0 Min:0 Max:0 Succeeded:0 Total:3}}] Comparison:0x1d38e87d8730}, want zero report
+=== RUN   TestContinualComparisonFinite/+Inf
+=== RUN   TestContinualComparisonFinite/-Inf
+=== RUN   TestContinualComparisonFinite/zero
+=== RUN   TestContinualComparisonFinite/one
+=== RUN   TestContinualComparisonFinite/negative
+=== RUN   TestContinualComparisonFinite/above_one
+--- FAIL: TestContinualComparisonFinite (0.00s)
+    --- FAIL: TestContinualComparisonFinite/NaN (0.00s)
+    --- PASS: TestContinualComparisonFinite/+Inf (0.00s)
+    --- PASS: TestContinualComparisonFinite/-Inf (0.00s)
+    --- PASS: TestContinualComparisonFinite/zero (0.00s)
+    --- PASS: TestContinualComparisonFinite/one (0.00s)
+    --- PASS: TestContinualComparisonFinite/negative (0.00s)
+    --- PASS: TestContinualComparisonFinite/above_one (0.00s)
+=== RUN   TestComparisonFiniteValidControls
+=== RUN   TestComparisonFiniteValidControls/attribution/5e-324
+=== RUN   TestComparisonFiniteValidControls/continual/5e-324
+=== RUN   TestComparisonFiniteValidControls/attribution/0.5
+=== RUN   TestComparisonFiniteValidControls/continual/0.5
+=== RUN   TestComparisonFiniteValidControls/attribution/0.95
+=== RUN   TestComparisonFiniteValidControls/continual/0.95
+=== RUN   TestComparisonFiniteValidControls/attribution/0.9999999999999999
+=== RUN   TestComparisonFiniteValidControls/continual/0.9999999999999999
+=== RUN   TestComparisonFiniteValidControls/default_attribution
+=== RUN   TestComparisonFiniteValidControls/continual_nil_comparison
+--- PASS: TestComparisonFiniteValidControls (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/attribution/5e-324 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/continual/5e-324 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/attribution/0.5 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/continual/0.5 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/attribution/0.95 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/continual/0.95 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/attribution/0.9999999999999999 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/continual/0.9999999999999999 (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/default_attribution (0.00s)
+    --- PASS: TestComparisonFiniteValidControls/continual_nil_comparison (0.00s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/experiment	0.198s
+FAIL

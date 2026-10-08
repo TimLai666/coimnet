@@ -96,7 +96,7 @@ func (c AttributionConfig) Validate() error {
 	if c.Comparison.Baseline != AttributionNormal {
 		return fmt.Errorf("attribution comparison: unsupported baseline %q", c.Comparison.Baseline)
 	}
-	if c.Comparison.Interval <= 0 || c.Comparison.Interval >= 1 {
+	if !(c.Comparison.Interval > 0 && c.Comparison.Interval < 1) {
 		return fmt.Errorf("attribution comparison: interval must be strictly between 0 and 1, got %g", c.Comparison.Interval)
 	}
 	if c.Comparison.Resamples < 100 {

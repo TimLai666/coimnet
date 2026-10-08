@@ -1,0 +1,34 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	e "github.com/TimLai666/coimnet/experiment"
+	"os"
+)
+
+func main() {
+	p := e.ContinualProtocol{Tasks: []e.TaskSpec{{Name: "A", Generator: e.GeneratorDelayedCorrelation, Params: map[string]float64{"delay": 1, "channel": 0}}}, Stages: []e.Stage{{Kind: e.StageTrainTask, Task: "A", Budget: 1}}, Seeds: []uint64{1, 2, 3}, Evaluation: e.Evaluation{Episodes: 1, Metric: e.MetricNegMSE}, Comparison: &e.PreRegistered{Method: e.ComparisonPairedBootstrap, Interval: .95, Baseline: e.BaselineIndependent, Resamples: 100}}
+	r, err := e.RunContinualMatrix(context.Background(), p, e.ContinualFixture)
+	if err != nil {
+		panic(err)
+	}
+	before, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	beforeHash := r.ProtocolHash
+	beforeInterval := r.Protocol.Comparison.Interval
+	p.Comparison.Interval = .5
+	after, err := json.Marshal(r)
+	if err != nil {
+		panic(err)
+	}
+	if bytes.Equal(before, after) || r.Protocol.Comparison.Interval != .5 || r.ProtocolHash != beforeHash {
+		panic("ownership reproduction did not reproduce")
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(map[string]any{"before_interval": beforeInterval, "after_interval": r.Protocol.Comparison.Interval, "realized_interval": r.Comparison.Interval, "protocol_hash_unchanged": r.ProtocolHash == beforeHash, "report_bytes_changed": !bytes.Equal(before, after), "scope": "separate P2 follow-up, implementation unchanged"}); err != nil {
+		panic(err)
+	}
+}

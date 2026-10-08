@@ -174,7 +174,7 @@ func (p ContinualProtocol) Validate() error {
 		if c.Method != ComparisonPairedBootstrap {
 			return fmt.Errorf("comparison: unsupported method %q", c.Method)
 		}
-		if c.Interval <= 0 || c.Interval >= 1 {
+		if !(c.Interval > 0 && c.Interval < 1) {
 			return fmt.Errorf("comparison: interval must be strictly between 0 and 1, got %g", c.Interval)
 		}
 		if c.Baseline != BaselineIndependent {

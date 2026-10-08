@@ -1,0 +1,10 @@
+package main
+import ("context";"encoding/json";"fmt";"os";"math"; e "github.com/TimLai666/coimnet/experiment")
+func main(){
+ c:=e.DefaultAttributionConfig();c.Episodes=1;c.Hidden=4;c.Recurrent=1;c.EvalEpisodes=1;c.Env.TimeLimit=3;c.Groups=[]string{e.AttributionNormal,e.AttributionFrozenCore};c.Comparison.Resamples=100
+ p:=e.ContinualProtocol{Tasks:[]e.TaskSpec{{Name:"A",Generator:e.GeneratorDelayedCorrelation,Params:map[string]float64{"delay":2,"channel":0}},{Name:"B",Generator:e.GeneratorDelayedCorrelation,Params:map[string]float64{"delay":3,"channel":1}}},Stages:[]e.Stage{{Kind:e.StageTrainTask,Task:"A",Budget:1},{Kind:e.StageTrainTask,Task:"B",Budget:1},{Kind:e.StageRuleChange,Task:"A"}},Seeds:[]uint64{1,2,3},Evaluation:e.Evaluation{Episodes:1,Metric:e.MetricNegMSE},Comparison:&e.PreRegistered{Method:e.ComparisonPairedBootstrap,Interval:.95,Baseline:e.BaselineIndependent,Resamples:100}}
+ reports:=map[string]any{}
+ for _,v:=range []float64{.5,.95,math.Nextafter(1,0)} {c.Comparison.Interval=v;r,err:=e.RunAttribution(context.Background(),c);if err!=nil{panic(err)};for _,run:=range r.Runs {if run.Failed{panic(run.Error)}};reports[fmt.Sprintf("attribution-%g",v)]=r;p.Comparison=&e.PreRegistered{Method:e.ComparisonPairedBootstrap,Interval:v,Baseline:e.BaselineIndependent,Resamples:100};m,err:=e.RunContinualMatrix(context.Background(),p,e.ContinualFixture);if err!=nil{panic(err)};reports[fmt.Sprintf("continual-%g",v)]=m}
+ p.Comparison=nil;m,err:=e.RunContinualMatrix(context.Background(),p,e.ContinualFixture);if err!=nil{panic(err)};reports["continual-nil"]=m
+ if err:=json.NewEncoder(os.Stdout).Encode(reports);err!=nil{panic(err)}
+}

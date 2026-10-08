@@ -1,0 +1,1254 @@
+{
+  "phase": "after",
+  "records": [
+    {
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "./cmd/coimnet"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/attribution.json"
+      ],
+      "exit_code": 0,
+      "stdout": "attribution: 2 groups x 3 seeds, 0 failed runs; conclusion: A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/attribution.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --out \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/attribution.json\" already exists; choose a new path\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Usage: coimnet examples run attribution [--task avoid_obstacles] [--seeds 1,2,3] [--episodes 1] [--hidden 4] [--recurrent 1] [--eval 1] [--groups all|normal,frozen_core,...] [--learning-rate 0.05] [--resamples 100] [--interval 0.95] [--out FILE]\nRuns the synthetic two-dimensional navigation attribution fixture. Reports contain every selected group and seed, paired bootstrap comparisons, and the fixed conclusion. Indented JSON goes to --out, or stdout when omitted; the summary goes to stdout with --out and stderr otherwise.\nGroups:\n  normal: trains core weights and both encoder and readout.\n  frozen_core: fixes core weights at initialization and trains encoder and readout.\n  core_only: fixes an identity encoder and an identity readout that reads only action nodes, and trains only core weights.\n  generic_matched: uniformly samples unique edges between the same node groups with the same edge count, then trains like normal.\n  rewired: performs degree-preserving double-edge swaps on the hidden recurrent block, then trains like normal.\n  ablated_retrained: removes the core and retrains encoder and readout from scratch.\n  capacity_matched_modulator: adds readout capacity sized to the MOD-10 controller and otherwise trains like normal.\nComparison: paired bootstrap against normal on the unseen-map success rate and expert agreement, using same-seed differences. When core_only does not learn, the report attaches the troubleshooting checks; the periphery is never enlarged. The only conclusion is the fixed sentence: A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.\nEach config.env contains the effective environment values after defaults; config_hash is SHA-256 of that reported config.\nExample: coimnet examples run attribution --task avoid_obstacles --seeds 1,2,3 --out attribution.json\nErrors: invalid --task, --seeds, --episodes, --hidden, --recurrent, --eval, --groups, --learning-rate, --resamples or --interval; an existing --out, positional arguments, cancellation or output failure. Usage errors exit with status 1. Failed runs still emit the full report and return a nonzero status.\nOptions and their defaults:\n  -episodes int\n    \ttraining episodes per seed (1..10000) (default 60)\n  -eval int\n    \tevaluation episodes per seed (1..1000) (default 20)\n  -groups string\n    \tgroups to run: all or a comma-separated subset including normal (default \"all\")\n  -hidden int\n    \thidden units (4..128) (default 16)\n  -interval float\n    \tpaired bootstrap confidence interval (0..1) (default 0.95)\n  -learning-rate float\n    \tlearning rate (default 0.05)\n  -out string\n    \tnew report JSON file; an existing path is never overwritten (default: stdout)\n  -recurrent int\n    \trecurrent hidden units (1..hidden) (default 4)\n  -resamples int\n    \tpaired bootstrap resamples (at least 100) (default 1000)\n  -seeds string\n    \tcomma-separated distinct seeds, at least three (default \"1,2,3\")\n  -task string\n    \tnavigation task: avoid_obstacles, remember_goal, adapt_after_change or language_goal (default \"avoid_obstacles\")\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/continual.json"
+      ],
+      "exit_code": 0,
+      "stdout": "continual-matrix: 3 seeds, 3 stages x 2 tasks, 0 failed runs, report /var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/continual.json\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/continual.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --out \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/continual.json\" already exists; choose a new path\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Usage: coimnet examples run continual-matrix --out FILE [--seeds 7,42,123] [--budget 20] [--episodes 16] [--chemistry]\nBuilds the fixed two-task fixture, task A (delay 2, channel 0) and task B (delay 3, channel 1), on the three-neuron delayed-core individual and runs the continual stages train A, train B and rule-change A, where the rule change negates the gain of task A. Every seed trains its own individual; each stage is scored on both tasks with evaluation episodes the training never sees. A preregistered paired bootstrap compares every last-stage cell against the same seeds' independent re-initialized control. The report is written as indented JSON to a new --out file and a one-line summary goes to stdout.\n--chemistry adds the hypothesized octopamine layer, freezes it during evaluation and records every cell re-scored under a switched concentration.\nExample: coimnet examples run continual-matrix --chemistry --out continual-matrix.json\nErrors: missing --out, an existing --out path, fewer than three seeds or duplicate seeds, an unparsable seed, a budget outside 0..100000, episodes outside 1..10000, cancellation or output failure. Usage errors exit with status 1 and name the flag.\nOptions and their defaults:\n  -budget uint\n    \ttraining episodes per train_task stage (0..100000) (default 20)\n  -chemistry\n    \tenable the chemistry layer and re-score every cell under a switched chemical state\n  -episodes int\n    \tevaluation episodes per cell (1..10000) (default 16)\n  -out string\n    \tnew continual matrix report JSON file; an existing path is never overwritten (required)\n  -seeds string\n    \tcomma-separated deterministic seeds, at least three, no duplicates (default \"7,42,123\")\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "NaN",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid-NaN.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got NaN\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "+Inf",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid-+Inf.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got +Inf\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "-Inf",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid--Inf.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got -Inf\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "0",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid-0.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got 0\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid-1.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got 1\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "-0.1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid--0.1.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got -0.1\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/coimnet",
+        "examples",
+        "run",
+        "attribution",
+        "--episodes",
+        "1",
+        "--eval",
+        "1",
+        "--hidden",
+        "4",
+        "--recurrent",
+        "1",
+        "--groups",
+        "normal,frozen_core",
+        "--resamples",
+        "100",
+        "--interval",
+        "1.1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-comparison-cli-9m2js8p2/invalid-1.1.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --interval: attribution comparison: interval must be strictly between 0 and 1, got 1.1\n"
+    }
+  ],
+  "reports": {
+    "attribution": {
+      "sha256": "08cb029187c7db0a1fa2fdf83dc23597859d54ae26b60fffd2b0db87e3e9e8ed",
+      "report": {
+        "schema_version": "coimnet-attribution/v1",
+        "config": {
+          "env": {
+            "width": 9,
+            "height": 9,
+            "wall_density": 0.2,
+            "view_depth": 3,
+            "time_limit": 60,
+            "step_penalty": 0.01,
+            "collision_penalty": 0.05,
+            "goal_reward": 1,
+            "task": "avoid_obstacles"
+          },
+          "seeds": [
+            1,
+            2,
+            3
+          ],
+          "episodes": 1,
+          "hidden": 4,
+          "recurrent": 1,
+          "learning_rate": 0.05,
+          "eval_episodes": 1,
+          "groups": [
+            "normal",
+            "frozen_core"
+          ],
+          "comparison": {
+            "method": "paired_bootstrap",
+            "interval": 0.95,
+            "baseline": "normal",
+            "resamples": 100
+          }
+        },
+        "config_hash": "de263c25646d174c24bf26411801be730ebf70b9f4cfd957ed597464a4c6966d",
+        "runs": [
+          {
+            "group": "normal",
+            "seed": 1,
+            "model": {
+              "group": "normal",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1972,
+              "trainable": [
+                "weights",
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 59,
+              "mean_return": -3.5500000000000025,
+              "expert_agreement": 0.016666666666666666
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 60,
+              "mean_return": -3.6000000000000028,
+              "expert_agreement": 0
+            },
+            "activity_before": 0.3587823122446217,
+            "activity_after": 0.36142764143949635,
+            "failed": false
+          },
+          {
+            "group": "normal",
+            "seed": 2,
+            "model": {
+              "group": "normal",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1972,
+              "trainable": [
+                "weights",
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 58,
+              "mean_return": -3.5000000000000027,
+              "expert_agreement": 0
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 54,
+              "mean_return": -3.3000000000000025,
+              "expert_agreement": 0
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 54,
+              "mean_return": -3.3000000000000025,
+              "expert_agreement": 0.03333333333333333
+            },
+            "activity_before": 0.285399208799539,
+            "activity_after": 0.38433099587794084,
+            "failed": false
+          },
+          {
+            "group": "normal",
+            "seed": 3,
+            "model": {
+              "group": "normal",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1972,
+              "trainable": [
+                "weights",
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.25
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.5
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.5
+            },
+            "activity_before": 0.24844600658313828,
+            "activity_after": 0.522933083089757,
+            "failed": false
+          },
+          {
+            "group": "frozen_core",
+            "seed": 1,
+            "model": {
+              "group": "frozen_core",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1632,
+              "trainable": [
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 59,
+              "mean_return": -3.5500000000000025,
+              "expert_agreement": 0.016666666666666666
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 56,
+              "mean_return": -3.4000000000000026,
+              "expert_agreement": 0.016666666666666666
+            },
+            "activity_before": 0.3587823122446217,
+            "activity_after": 0.2856419620577006,
+            "failed": false
+          },
+          {
+            "group": "frozen_core",
+            "seed": 2,
+            "model": {
+              "group": "frozen_core",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1632,
+              "trainable": [
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 58,
+              "mean_return": -3.5000000000000027,
+              "expert_agreement": 0
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.5
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 5,
+              "mean_return": -0.8500000000000004,
+              "expert_agreement": 0.23333333333333334
+            },
+            "activity_before": 0.285399208799539,
+            "activity_after": 0.28690377520667365,
+            "failed": false
+          },
+          {
+            "group": "frozen_core",
+            "seed": 3,
+            "model": {
+              "group": "frozen_core",
+              "nodes": 48,
+              "edges": 340,
+              "parameters": 2068,
+              "free_parameters": 1632,
+              "trainable": [
+                "encoder",
+                "readout"
+              ]
+            },
+            "updates": 1,
+            "before": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.25
+            },
+            "seen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.5
+            },
+            "unseen": {
+              "episodes": 1,
+              "success_rate": 0,
+              "timeout_rate": 1,
+              "mean_steps": 60,
+              "mean_collisions": 0,
+              "mean_return": -0.6000000000000003,
+              "expert_agreement": 0.5
+            },
+            "activity_before": 0.24844600658313828,
+            "activity_after": 0.43634778794505336,
+            "failed": false
+          }
+        ],
+        "comparisons": [
+          {
+            "group": "frozen_core",
+            "metric": "unseen_success_rate",
+            "differences": [
+              0,
+              0,
+              0
+            ],
+            "mean": 0,
+            "lower": 0,
+            "upper": 0,
+            "dropped": 0
+          },
+          {
+            "group": "frozen_core",
+            "metric": "unseen_expert_agreement",
+            "differences": [
+              0.016666666666666666,
+              0.2,
+              0
+            ],
+            "mean": 0.07222222222222223,
+            "lower": 0.005555555555555556,
+            "upper": 0.20000000000000004,
+            "dropped": 0
+          }
+        ],
+        "conclusion": "A drop after freezing or removing the core shows dependence on it, not that the original wiring is superior.",
+        "assumptions": [
+          "The core is the navigation policy's random sparse recurrent block, not the fly connectome; the matrix shows that every control runs under one schedule, not which wiring is better.",
+          "Every group trains with trainNav2D on the same maps for the same number of episodes; update counts are reported per run.",
+          "ablated_retrained has no core and capacity_matched_modulator adds a readout-side block sized to the MOD-10 controller; both parameter counts are reported, not matched.",
+          "core_only keeps a fixed identity periphery; when it does not learn, the report lists the checks instead of enlarging the periphery."
+        ]
+      }
+    },
+    "continual": {
+      "sha256": "4e56c6bddf66929a033bc3ceb9ab59b6dd748e1cc84d9f9036ae393d28de5c79",
+      "report": {
+        "schema_version": "coimnet-continual-matrix/v1",
+        "profile": "fixture",
+        "protocol": {
+          "tasks": [
+            {
+              "name": "A",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 0,
+                "delay": 2
+              }
+            },
+            {
+              "name": "B",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 1,
+                "delay": 3
+              }
+            }
+          ],
+          "stages": [
+            {
+              "kind": "train_task",
+              "task": "A",
+              "budget": 1
+            },
+            {
+              "kind": "train_task",
+              "task": "B",
+              "budget": 1
+            },
+            {
+              "kind": "rule_change",
+              "task": "A",
+              "budget": 0
+            }
+          ],
+          "seeds": [
+            7,
+            42,
+            123
+          ],
+          "evaluation": {
+            "episodes": 1,
+            "fixed_chemistry": false,
+            "metric": "neg_mse"
+          },
+          "comparison": {
+            "method": "paired_bootstrap",
+            "interval": 0.9,
+            "baseline": "independent",
+            "resamples": 1000
+          }
+        },
+        "protocol_hash": "3953d3328116c5ae5bf4cc31ea461343a90f3f364f9acd8608941c3bf1eea7a0",
+        "width": 2,
+        "seeds": [
+          {
+            "seed": 7,
+            "scores": [
+              [
+                -0.027702564537551766,
+                -0.030463709221506836
+              ],
+              [
+                -0.02753733514324052,
+                -0.03022543282643411
+              ],
+              [
+                -0.029739235809471454,
+                -0.03022543282643411
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.0022019006662309347,
+                0
+              ]
+            ]
+          },
+          {
+            "seed": 42,
+            "scores": [
+              [
+                -0.07589176996170549,
+                -0.14410271954017104
+              ],
+              [
+                -0.07551629450500168,
+                -0.1431839960602422
+              ],
+              [
+                -0.07983599704198696,
+                -0.1431839960602422
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.004319702536985284,
+                0
+              ]
+            ]
+          },
+          {
+            "seed": 123,
+            "scores": [
+              [
+                -0.13155761435005867,
+                -0.11581645964576202
+              ],
+              [
+                -0.13089061104013566,
+                -0.11504106821980481
+              ],
+              [
+                -0.14044718757645747,
+                -0.11504106821980481
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.009556576536321804,
+                0
+              ]
+            ]
+          }
+        ],
+        "cells": [
+          [
+            {
+              "mean": -0.07838398294977197,
+              "std": 0.04243525411002026,
+              "min": -0.13155761435005867,
+              "max": -0.027702564537551766,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.0967942961358133,
+              "std": 0.04830347258048698,
+              "min": -0.14410271954017104,
+              "max": -0.030463709221506836,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.07798141356279262,
+              "std": 0.04222978821189094,
+              "min": -0.13089061104013566,
+              "max": -0.02753733514324052,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.08334080680930529,
+              "std": 0.04526422733785215,
+              "min": -0.14044718757645747,
+              "max": -0.029739235809471454,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "forgetting_cells": [
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0.0053593932465126745,
+              "std": 0.0030912275735412295,
+              "min": 0.0022019006662309347,
+              "max": 0.009556576536321804,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "runs": [
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          }
+        ],
+        "assumptions": [
+          "Evaluation episodes come from a seed derived from the run seed and the task index; training never sees them.",
+          "Every evaluation runs on a twin restored from the individual's snapshot, so evaluating never advances or trains the individual.",
+          "Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell.",
+          "A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule.",
+          "independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting.",
+          "Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim."
+        ],
+        "independent": [
+          {
+            "task": "A",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.029568031433858045,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.07945087616625303,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.13975798916417898,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.08292563225476335,
+              "std": 0.045051911861454956,
+              "min": -0.13975798916417898,
+              "max": -0.029568031433858045,
+              "succeeded": 3,
+              "total": 3
+            }
+          },
+          {
+            "task": "B",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.030463709140230985,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.14410271918663295,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.11581645742714004,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.09679429525133465,
+              "std": 0.048303472211036355,
+              "min": -0.14410271918663295,
+              "max": -0.030463709140230985,
+              "succeeded": 3,
+              "total": 3
+            }
+          }
+        ],
+        "comparison": {
+          "method": "paired_bootstrap",
+          "baseline": "independent",
+          "interval": 0.9,
+          "resamples": 1000,
+          "seed": 7,
+          "tasks": [
+            {
+              "task": "A",
+              "pairs": 3,
+              "mean_difference": -0.0004151745545419444,
+              "lower": -0.0005878392334303049,
+              "upper": -0.00024250987565358392,
+              "insufficient": false
+            },
+            {
+              "task": "B",
+              "pairs": 3,
+              "mean_difference": 0.0006441295491742839,
+              "lower": 0.00041731394497632884,
+              "upper": 0.0008709451533722388,
+              "insufficient": false
+            }
+          ]
+        }
+      }
+    }
+  }
+}

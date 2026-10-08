@@ -1,0 +1,32 @@
+{
+  "host": "Codex",
+  "free_model": {
+    "model": "opencode/big-pickle",
+    "flags": [
+      "--pure",
+      "--agent",
+      "build",
+      "--model",
+      "opencode/big-pickle",
+      "--format",
+      "json",
+      "--dir",
+      "/private/tmp/coimnet-comparison-worker-20261009"
+    ],
+    "result": "timeout 90s, no test file, no source reads emitted",
+    "models": "models.json",
+    "receipt": "opencode-result.json"
+  },
+  "fallback": {
+    "tool": "collaboration.spawn_agent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "allowed": "experiment/comparison_finite_test.go",
+    "review_correction": "add four missing continual valid interval controls before freeze",
+    "root_red": "red-reviewed.json",
+    "frozen": "test-freeze.json"
+  },
+  "implementation": "Root two predicates; separate from test worker",
+  "no_other_workers_writing": true,
+  "opencode_process_stopped": true
+}
