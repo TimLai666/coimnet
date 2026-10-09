@@ -1,0 +1,12 @@
+{
+  "command": [
+    "python3",
+    "-c",
+    "import pathlib,subprocess,json; r=pathlib.Path.cwd(); e=r/\"evidence/LRN-08/protocol-ownership-20261009\"; files=list(json.loads((e/\"source-freeze.json\").read_text())[\"files\"]); p=subprocess.run([\"gofmt\",\"-l\",*files],capture_output=True,text=True); print(p.stdout,end=\"\"); print(p.stderr,end=\"\"); assert p.returncode==0 and not p.stdout"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet",
+  "exit_code": 0,
+  "seconds": 0.505735625,
+  "log": "format.log",
+  "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+}

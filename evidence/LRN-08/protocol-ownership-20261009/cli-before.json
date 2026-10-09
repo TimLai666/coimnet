@@ -1,0 +1,1385 @@
+{
+  "phase": "before",
+  "records": [
+    {
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "./cmd/coimnet"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/plain.json"
+      ],
+      "exit_code": 0,
+      "stdout": "continual-matrix: 3 seeds, 3 stages x 2 tasks, 0 failed runs, report /var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/plain.json\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/plain.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --out \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/plain.json\" already exists; choose a new path\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Usage: coimnet examples run continual-matrix --out FILE [--seeds 7,42,123] [--budget 20] [--episodes 16] [--chemistry]\nBuilds the fixed two-task fixture, task A (delay 2, channel 0) and task B (delay 3, channel 1), on the three-neuron delayed-core individual and runs the continual stages train A, train B and rule-change A, where the rule change negates the gain of task A. Every seed trains its own individual; each stage is scored on both tasks with evaluation episodes the training never sees. A preregistered paired bootstrap compares every last-stage cell against the same seeds' independent re-initialized control. The report is written as indented JSON to a new --out file and a one-line summary goes to stdout.\n--chemistry adds the hypothesized octopamine layer, freezes it during evaluation and records every cell re-scored under a switched concentration.\nExample: coimnet examples run continual-matrix --chemistry --out continual-matrix.json\nErrors: missing --out, an existing --out path, fewer than three seeds or duplicate seeds, an unparsable seed, a budget outside 0..100000, episodes outside 1..10000, cancellation or output failure. Usage errors exit with status 1 and name the flag.\nOptions and their defaults:\n  -budget uint\n    \ttraining episodes per train_task stage (0..100000) (default 20)\n  -chemistry\n    \tenable the chemistry layer and re-score every cell under a switched chemical state\n  -episodes int\n    \tevaluation episodes per cell (1..10000) (default 16)\n  -out string\n    \tnew continual matrix report JSON file; an existing path is never overwritten (required)\n  -seeds string\n    \tcomma-separated deterministic seeds, at least three, no duplicates (default \"7,42,123\")\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--episodes",
+        "0",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/plain-bad.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --episodes must be between 1 and 10000\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--chemistry",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/chemistry.json"
+      ],
+      "exit_code": 0,
+      "stdout": "continual-matrix: 3 seeds, 3 stages x 2 tasks, 0 failed runs, report /var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/chemistry.json\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--chemistry",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/chemistry.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --out \"/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/chemistry.json\" already exists; choose a new path\n"
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--chemistry",
+        "--help"
+      ],
+      "exit_code": 0,
+      "stdout": "Usage: coimnet examples run continual-matrix --out FILE [--seeds 7,42,123] [--budget 20] [--episodes 16] [--chemistry]\nBuilds the fixed two-task fixture, task A (delay 2, channel 0) and task B (delay 3, channel 1), on the three-neuron delayed-core individual and runs the continual stages train A, train B and rule-change A, where the rule change negates the gain of task A. Every seed trains its own individual; each stage is scored on both tasks with evaluation episodes the training never sees. A preregistered paired bootstrap compares every last-stage cell against the same seeds' independent re-initialized control. The report is written as indented JSON to a new --out file and a one-line summary goes to stdout.\n--chemistry adds the hypothesized octopamine layer, freezes it during evaluation and records every cell re-scored under a switched concentration.\nExample: coimnet examples run continual-matrix --chemistry --out continual-matrix.json\nErrors: missing --out, an existing --out path, fewer than three seeds or duplicate seeds, an unparsable seed, a budget outside 0..100000, episodes outside 1..10000, cancellation or output failure. Usage errors exit with status 1 and name the flag.\nOptions and their defaults:\n  -budget uint\n    \ttraining episodes per train_task stage (0..100000) (default 20)\n  -chemistry\n    \tenable the chemistry layer and re-score every cell under a switched chemical state\n  -episodes int\n    \tevaluation episodes per cell (1..10000) (default 16)\n  -out string\n    \tnew continual matrix report JSON file; an existing path is never overwritten (required)\n  -seeds string\n    \tcomma-separated deterministic seeds, at least three, no duplicates (default \"7,42,123\")\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/coimnet",
+        "examples",
+        "run",
+        "continual-matrix",
+        "--budget",
+        "1",
+        "--episodes",
+        "1",
+        "--chemistry",
+        "--episodes",
+        "0",
+        "--out",
+        "/var/folders/1m/qxhd6mg10158sb5ft6bltlwc0000gn/T/coimnet-ownership-cli-mrf27bdr/chemistry-bad.json"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "coimnet: --episodes must be between 1 and 10000\n"
+    }
+  ],
+  "reports": {
+    "plain": {
+      "sha256": "4e56c6bddf66929a033bc3ceb9ab59b6dd748e1cc84d9f9036ae393d28de5c79",
+      "report": {
+        "schema_version": "coimnet-continual-matrix/v1",
+        "profile": "fixture",
+        "protocol": {
+          "tasks": [
+            {
+              "name": "A",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 0,
+                "delay": 2
+              }
+            },
+            {
+              "name": "B",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 1,
+                "delay": 3
+              }
+            }
+          ],
+          "stages": [
+            {
+              "kind": "train_task",
+              "task": "A",
+              "budget": 1
+            },
+            {
+              "kind": "train_task",
+              "task": "B",
+              "budget": 1
+            },
+            {
+              "kind": "rule_change",
+              "task": "A",
+              "budget": 0
+            }
+          ],
+          "seeds": [
+            7,
+            42,
+            123
+          ],
+          "evaluation": {
+            "episodes": 1,
+            "fixed_chemistry": false,
+            "metric": "neg_mse"
+          },
+          "comparison": {
+            "method": "paired_bootstrap",
+            "interval": 0.9,
+            "baseline": "independent",
+            "resamples": 1000
+          }
+        },
+        "protocol_hash": "3953d3328116c5ae5bf4cc31ea461343a90f3f364f9acd8608941c3bf1eea7a0",
+        "width": 2,
+        "seeds": [
+          {
+            "seed": 7,
+            "scores": [
+              [
+                -0.027702564537551766,
+                -0.030463709221506836
+              ],
+              [
+                -0.02753733514324052,
+                -0.03022543282643411
+              ],
+              [
+                -0.029739235809471454,
+                -0.03022543282643411
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.0022019006662309347,
+                0
+              ]
+            ]
+          },
+          {
+            "seed": 42,
+            "scores": [
+              [
+                -0.07589176996170549,
+                -0.14410271954017104
+              ],
+              [
+                -0.07551629450500168,
+                -0.1431839960602422
+              ],
+              [
+                -0.07983599704198696,
+                -0.1431839960602422
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.004319702536985284,
+                0
+              ]
+            ]
+          },
+          {
+            "seed": 123,
+            "scores": [
+              [
+                -0.13155761435005867,
+                -0.11581645964576202
+              ],
+              [
+                -0.13089061104013566,
+                -0.11504106821980481
+              ],
+              [
+                -0.14044718757645747,
+                -0.11504106821980481
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.009556576536321804,
+                0
+              ]
+            ]
+          }
+        ],
+        "cells": [
+          [
+            {
+              "mean": -0.07838398294977197,
+              "std": 0.04243525411002026,
+              "min": -0.13155761435005867,
+              "max": -0.027702564537551766,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.0967942961358133,
+              "std": 0.04830347258048698,
+              "min": -0.14410271954017104,
+              "max": -0.030463709221506836,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.07798141356279262,
+              "std": 0.04222978821189094,
+              "min": -0.13089061104013566,
+              "max": -0.02753733514324052,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.08334080680930529,
+              "std": 0.04526422733785215,
+              "min": -0.14044718757645747,
+              "max": -0.029739235809471454,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "forgetting_cells": [
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0.0053593932465126745,
+              "std": 0.0030912275735412295,
+              "min": 0.0022019006662309347,
+              "max": 0.009556576536321804,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "runs": [
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          }
+        ],
+        "assumptions": [
+          "Evaluation episodes come from a seed derived from the run seed and the task index; training never sees them.",
+          "Every evaluation runs on a twin restored from the individual's snapshot, so evaluating never advances or trains the individual.",
+          "Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell.",
+          "A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule.",
+          "independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting.",
+          "Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim."
+        ],
+        "independent": [
+          {
+            "task": "A",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.029568031433858045,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.07945087616625303,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.13975798916417898,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.08292563225476335,
+              "std": 0.045051911861454956,
+              "min": -0.13975798916417898,
+              "max": -0.029568031433858045,
+              "succeeded": 3,
+              "total": 3
+            }
+          },
+          {
+            "task": "B",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.030463709140230985,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.14410271918663295,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.11581645742714004,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.09679429525133465,
+              "std": 0.048303472211036355,
+              "min": -0.14410271918663295,
+              "max": -0.030463709140230985,
+              "succeeded": 3,
+              "total": 3
+            }
+          }
+        ],
+        "comparison": {
+          "method": "paired_bootstrap",
+          "baseline": "independent",
+          "interval": 0.9,
+          "resamples": 1000,
+          "seed": 7,
+          "tasks": [
+            {
+              "task": "A",
+              "pairs": 3,
+              "mean_difference": -0.0004151745545419444,
+              "lower": -0.0005878392334303049,
+              "upper": -0.00024250987565358392,
+              "insufficient": false
+            },
+            {
+              "task": "B",
+              "pairs": 3,
+              "mean_difference": 0.0006441295491742839,
+              "lower": 0.00041731394497632884,
+              "upper": 0.0008709451533722388,
+              "insufficient": false
+            }
+          ]
+        }
+      }
+    },
+    "chemistry": {
+      "sha256": "856d77a2cf11f2821d49d5871d46f6b7471bd5ba9e83c198e78a9c79af79a812",
+      "report": {
+        "schema_version": "coimnet-continual-matrix/v1",
+        "profile": "fixture",
+        "protocol": {
+          "tasks": [
+            {
+              "name": "A",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 0,
+                "delay": 2
+              }
+            },
+            {
+              "name": "B",
+              "generator": "delayed-correlation/v1",
+              "params": {
+                "channel": 1,
+                "delay": 3
+              }
+            }
+          ],
+          "stages": [
+            {
+              "kind": "train_task",
+              "task": "A",
+              "budget": 1
+            },
+            {
+              "kind": "train_task",
+              "task": "B",
+              "budget": 1
+            },
+            {
+              "kind": "rule_change",
+              "task": "A",
+              "budget": 0
+            }
+          ],
+          "seeds": [
+            7,
+            42,
+            123
+          ],
+          "evaluation": {
+            "episodes": 1,
+            "fixed_chemistry": true,
+            "state_switch": {
+              "concentration": [
+                [
+                  2
+                ]
+              ]
+            },
+            "metric": "neg_mse"
+          },
+          "comparison": {
+            "method": "paired_bootstrap",
+            "interval": 0.9,
+            "baseline": "independent",
+            "resamples": 1000
+          }
+        },
+        "protocol_hash": "e106277f321f6b0254fb8beeb0b09c3d47593009c523ddbe95aec1702fdc8d14",
+        "width": 2,
+        "seeds": [
+          {
+            "seed": 7,
+            "scores": [
+              [
+                -0.027702564537551766,
+                -0.030463709221506836
+              ],
+              [
+                -0.02753733514324052,
+                -0.03022543282643411
+              ],
+              [
+                -0.029739235809471454,
+                -0.03022543282643411
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.0022019006662309347,
+                0
+              ]
+            ],
+            "switched": [
+              [
+                -0.02807079555551912,
+                -0.030981913732201466
+              ],
+              [
+                -0.027970940928936292,
+                -0.0308376225012653
+              ],
+              [
+                -0.029292081281401698,
+                -0.0308376225012653
+              ]
+            ],
+            "switched_failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ]
+          },
+          {
+            "seed": 42,
+            "scores": [
+              [
+                -0.07589176996170549,
+                -0.14410271954017104
+              ],
+              [
+                -0.07551629450500168,
+                -0.1431839960602422
+              ],
+              [
+                -0.07983599704198696,
+                -0.1431839960602422
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.004319702536985284,
+                0
+              ]
+            ],
+            "switched": [
+              [
+                -0.07659706683853226,
+                -0.14579330937025242
+              ],
+              [
+                -0.07637062419143831,
+                -0.14523849367564928
+              ],
+              [
+                -0.07896244555790631,
+                -0.14523849367564928
+              ]
+            ],
+            "switched_failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ]
+          },
+          {
+            "seed": 123,
+            "scores": [
+              [
+                -0.13155761435005867,
+                -0.11581645964576202
+              ],
+              [
+                -0.13089061104013566,
+                -0.11504106821980481
+              ],
+              [
+                -0.14044718757645747,
+                -0.11504106821980481
+              ]
+            ],
+            "failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ],
+            "forgetting": [
+              [
+                0,
+                0
+              ],
+              [
+                0,
+                0
+              ],
+              [
+                0.009556576536321804,
+                0
+              ]
+            ],
+            "switched": [
+              [
+                -0.13317785654500955,
+                -0.11765665552932421
+              ],
+              [
+                -0.13277499121474762,
+                -0.11718742050076915
+              ],
+              [
+                -0.1385089371365407,
+                -0.11718742050076915
+              ]
+            ],
+            "switched_failed": [
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ],
+              [
+                false,
+                false
+              ]
+            ]
+          }
+        ],
+        "cells": [
+          [
+            {
+              "mean": -0.07838398294977197,
+              "std": 0.04243525411002026,
+              "min": -0.13155761435005867,
+              "max": -0.027702564537551766,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.0967942961358133,
+              "std": 0.04830347258048698,
+              "min": -0.14410271954017104,
+              "max": -0.030463709221506836,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.07798141356279262,
+              "std": 0.04222978821189094,
+              "min": -0.13089061104013566,
+              "max": -0.02753733514324052,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": -0.08334080680930529,
+              "std": 0.04526422733785215,
+              "min": -0.14044718757645747,
+              "max": -0.029739235809471454,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": -0.09615016570216038,
+              "std": 0.048010824476777555,
+              "min": -0.1431839960602422,
+              "max": -0.03022543282643411,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "forgetting_cells": [
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ],
+          [
+            {
+              "mean": 0.0053593932465126745,
+              "std": 0.0030912275735412295,
+              "min": 0.0022019006662309347,
+              "max": 0.009556576536321804,
+              "succeeded": 3,
+              "total": 3
+            },
+            {
+              "mean": 0,
+              "std": 0,
+              "min": 0,
+              "max": 0,
+              "succeeded": 3,
+              "total": 3
+            }
+          ]
+        ],
+        "runs": [
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 7,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 42,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 0,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 1,
+            "task": "B",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "A",
+            "status": "ok"
+          },
+          {
+            "seed": 123,
+            "stage": 2,
+            "task": "B",
+            "status": "ok"
+          }
+        ],
+        "assumptions": [
+          "Evaluation episodes come from a seed derived from the run seed and the task index; training never sees them.",
+          "Every evaluation runs on a twin restored from the individual's snapshot, so evaluating never advances or trains the individual.",
+          "Failed stages and evaluations are kept as records; aggregates use the successful seeds only and report succeeded/total per cell.",
+          "A rule_change stage negates the task's target gain; every later training and evaluation of that task uses the new rule.",
+          "independent is the per-task re-initialized control, not a continual result; state_switch re-scores a cell under a switched chemistry, so a moved score with unchanged parameters and plastic state is expression, not forgetting.",
+          "Comparison follows the pre-registered method; the interval is a bootstrap percentile interval over seeds, not a significance claim."
+        ],
+        "independent": [
+          {
+            "task": "A",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.029568031433858045,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.07945087616625303,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.13975798916417898,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.08292563225476335,
+              "std": 0.045051911861454956,
+              "min": -0.13975798916417898,
+              "max": -0.029568031433858045,
+              "succeeded": 3,
+              "total": 3
+            }
+          },
+          {
+            "task": "B",
+            "seeds": [
+              {
+                "seed": 7,
+                "score": -0.030463709140230985,
+                "failed": false
+              },
+              {
+                "seed": 42,
+                "score": -0.14410271918663295,
+                "failed": false
+              },
+              {
+                "seed": 123,
+                "score": -0.11581645742714004,
+                "failed": false
+              }
+            ],
+            "stat": {
+              "mean": -0.09679429525133465,
+              "std": 0.048303472211036355,
+              "min": -0.14410271918663295,
+              "max": -0.030463709140230985,
+              "succeeded": 3,
+              "total": 3
+            }
+          }
+        ],
+        "comparison": {
+          "method": "paired_bootstrap",
+          "baseline": "independent",
+          "interval": 0.9,
+          "resamples": 1000,
+          "seed": 7,
+          "tasks": [
+            {
+              "task": "A",
+              "pairs": 3,
+              "mean_difference": -0.0004151745545419444,
+              "lower": -0.0005878392334303049,
+              "upper": -0.00024250987565358392,
+              "insufficient": false
+            },
+            {
+              "task": "B",
+              "pairs": 3,
+              "mean_difference": 0.0006441295491742839,
+              "lower": 0.00041731394497632884,
+              "upper": 0.0008709451533722388,
+              "insufficient": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "workflows": 8
+}

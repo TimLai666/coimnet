@@ -1,0 +1,93 @@
+{
+  "status": "passed",
+  "remaining": [],
+  "date": "2026-10-09",
+  "requirement": [
+    "LRN-08"
+  ],
+  "reproduction_command": [
+    "go test -count=1 -run ContinualOwnership -v ./experiment",
+    "go test -count=1 -run 'Continual|StateSwitch|Independent|ComparisonFinite' -v ./experiment ./internal/cli",
+    "go test -count=1 -timeout 60m ./...",
+    "go test -count=1 -race -timeout 60m ./...",
+    "go build ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go mod tidy -diff",
+    "python3 -c 'import pathlib,subprocess,json; r=pathlib.Path.cwd(); e=r/\"evidence/LRN-08/protocol-ownership-20261009\"; files=list(json.loads((e/\"source-freeze.json\").read_text())[\"files\"]); p=subprocess.run([\"gofmt\",\"-l\",*files],capture_output=True,text=True); print(p.stdout,end=\"\"); print(p.stderr,end=\"\"); assert p.returncode==0 and not p.stdout'",
+    "python3 evidence/LRN-08/protocol-ownership-20261009/verify-sdk.py",
+    "python3 evidence/LRN-08/protocol-ownership-20261009/verify-cli.py after",
+    "go test -count=1 -run 'Governance|Format' -v ."
+  ],
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOCACHE": "/Users/timlai/Library/Caches/go-build",
+    "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+    "GOOS": "darwin",
+    "GOPROXY": "https://proxy.golang.org,direct",
+    "GOTOOLCHAIN": "auto",
+    "GOVERSION": "go1.26.5",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "cpu_count": 8,
+    "GOMAXPROCS": "",
+    "GOMEMLIMIT": ""
+  },
+  "input_fingerprints": {
+    "originals": "baseline.json",
+    "sources": "source-freeze.json",
+    "tests": "test-freeze.json",
+    "probes": {
+      "valid-probe.go.txt": "76985c7d7f86d85c8ecd58ab9208a3ad6fbd47e93beca3cc8ee750215517b747",
+      "related-followup-probe.go.txt": "2f75cbb8908cc993a88dacbaeb4f79e60271c625cdb023c4f0a1a8f3b51b2303"
+    },
+    "logger_versions": "harness-versions.json"
+  },
+  "observed_result": {
+    "new_top_level": 8,
+    "root_pre_fix_top_level_failures": 6,
+    "passing_pre_fix_controls": 2,
+    "ownership_leaf_cases": 31,
+    "scoped_top_level": 30,
+    "general_packages": 57,
+    "race_packages": 57,
+    "cached_general_or_race_packages": 0,
+    "sdk_reports": 7,
+    "normal_sdk_reports_without_failed_records": 4,
+    "fresh_current_processes": 2,
+    "report_bytes_identical_to_original_source": true,
+    "nil_empty_rows_preserved": true,
+    "cancel_and_builder_failures_preserved": true,
+    "cli_workflows": 8,
+    "cli_report_variants": 2,
+    "frozen_go_sources": 656,
+    "protected_tracked_files": 3514,
+    "new_task_learning_claim": false,
+    "new_biological_claim": false,
+    "related_p2_followups": 2,
+    "governance_top_level": 8
+  },
+  "test_log": [
+    "ownership-green.log",
+    "scoped-green.log",
+    "sdk-proof.log",
+    "cli-after-check.log",
+    "build.log",
+    "vet.log",
+    "module-verify.log",
+    "module-tidy.log",
+    "format.log",
+    "full-test.log",
+    "full-race.log",
+    "ownership-red.log",
+    "governance.log"
+  ],
+  "review": "root-review.md",
+  "preservation": "preservation.json",
+  "limitations": [
+    "Local macOS arm64 execution only",
+    "Caller concurrent mutation during validation/copy is not supported",
+    "Related BioInspiredConfig P2 findings are recorded but not fixed in this ticket"
+  ],
+  "delivery_evidence": "delivery.json (separate post-push receipt)"
+}

@@ -54,7 +54,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
-- `experiment/continual_run.go:187`：RunContinualMatrix 的 report.Protocol.Comparison 與呼叫端共用指標。回傳後把呼叫端 Interval 從 0.95 改成 0.5，舊報告的宣告跟著變，protocol_hash 與已實現的比較區間保持原值（P2）。公開入口重現見 `evidence/OPS-03/comparison-finite-20261009/ownership-followup.json`。建議複製比較設定，並檢查 Protocol 其他可變欄位。
+- `experiment/bioinspired_run.go:109`／`bioinspired_npf.go:127`：兩種 RunBioInspired 報告的 Config 與呼叫端共用 Seeds、Registry、Quantitative，時間協定另共用 PulseSteps。公開入口七組修改均改到舊報告，ConfigHash 與執行結果保持原值（P2）。重現見 `evidence/LRN-08/protocol-ownership-20261009/related-followup-summary.json`。建議在共用入口驗證後、雜湊及執行前複製完整可變設定，另票處理。
+- `experiment/bioinspired.go:97`：NPF 協定的 Suppressed 與 Tolerance 都接受 NaN，Validate 及公開 Run 均回成功，報告卻不能編碼成 JSON（P2）。公開入口重現見同一份 related-followup-summary.json。建議保留原錯誤次序、補有限值檢查與合法報告對照，另票處理。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。

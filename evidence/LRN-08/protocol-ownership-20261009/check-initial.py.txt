@@ -1,0 +1,7 @@
+import subprocess,json,time,os,sys,pathlib,hashlib,platform
+root=pathlib.Path(__file__).resolve().parents[3];ev=pathlib.Path(__file__).resolve().parent
+name=sys.argv[1];cmd=sys.argv[2:];t=time.monotonic()
+with (ev/(name+'.log')).open('xb') as log:
+ p=subprocess.run(cmd,cwd=os.environ.get('COIMNET_CHECK_CWD',root),stdout=log,stderr=subprocess.STDOUT)
+meta={'command':cmd,'cwd':os.environ.get('COIMNET_CHECK_CWD',str(root)),'exit_code':p.returncode,'seconds':time.monotonic()-t,'log':name+'.log','log_sha256':hashlib.sha256((ev/(name+'.log')).read_bytes()).hexdigest()}
+(ev/(name+'.json')).open('x').write(json.dumps(meta,indent=2)+'\n');print(json.dumps(meta));sys.exit(p.returncode)

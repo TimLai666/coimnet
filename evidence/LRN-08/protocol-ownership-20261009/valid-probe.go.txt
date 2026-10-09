@@ -1,0 +1,31 @@
+package main
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "os"
+ e "github.com/TimLai666/coimnet/experiment"
+ "github.com/TimLai666/coimnet/learning"
+)
+func protocol() e.ContinualProtocol {return e.ContinualProtocol{
+ Tasks: []e.TaskSpec{{Name:"A",Generator:e.GeneratorDelayedCorrelation,Params:map[string]float64{"delay":2,"channel":0}},{Name:"B",Generator:e.GeneratorDelayedCorrelation,Params:map[string]float64{"delay":3,"channel":1}}},
+ Stages: []e.Stage{{Kind:e.StageTrainTask,Task:"A",Budget:1},{Kind:e.StageTrainTask,Task:"B",Budget:1},{Kind:e.StageRuleChange,Task:"A"}},
+ Seeds: []uint64{7,42,123}, Evaluation:e.Evaluation{Episodes:1,Metric:e.MetricNegMSE},
+ Comparison:&e.PreRegistered{Method:e.ComparisonPairedBootstrap,Interval:.95,Baseline:e.BaselineIndependent,Resamples:100}}}
+func main(){
+ reports:=map[string]any{}
+ for _,name:=range []string{"plain","nil-comparison","chemistry","interval-half","empty-rows","builder-failure","cancelled"}{
+  p:=protocol();build:=e.ContinualFixture;ctx:=context.Background()
+  switch name {
+  case "nil-comparison":p.Comparison=nil
+  case "interval-half":p.Comparison.Interval=.5
+  case "chemistry":p.Evaluation.FixedChemistry=true;p.Evaluation.StateSwitch=&e.StateSwitch{Concentration:[][]float64{{2}}};build=e.ContinualFixtureWithChemistry
+  case "empty-rows":p.Evaluation.StateSwitch=&e.StateSwitch{Concentration:[][]float64{nil,{}}};build=e.ContinualFixtureWithChemistry
+  case "builder-failure":build=func(uint64)(*learning.Individual,error){return nil,fmt.Errorf("fixture builder failure")}
+  case "cancelled":var cancel context.CancelFunc;ctx,cancel=context.WithCancel(ctx);build=func(seed uint64)(*learning.Individual,error){cancel();return e.ContinualFixture(seed)}
+  }
+  report,err:=e.RunContinualMatrix(ctx,p,build);message:="";if err!=nil{message=err.Error()}
+  reports[name]=struct{Report e.ContinualReport `json:"report"`;Error string `json:"error"`}{report,message}
+ }
+ if err:=json.NewEncoder(os.Stdout).Encode(reports);err!=nil{panic(err)}
+}

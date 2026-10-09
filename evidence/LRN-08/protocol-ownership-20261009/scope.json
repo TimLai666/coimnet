@@ -1,0 +1,128 @@
+{
+  "scope": "RunContinualMatrix protocol snapshot before hash/build",
+  "graph_project": "coimnet",
+  "trace": {
+    "function": "coimnet.experiment.RunContinualMatrix",
+    "direction": "inbound",
+    "callers": [
+      {
+        "name": "TestPublicAPINeverPanics",
+        "qualified_name": "coimnet.TestPublicAPINeverPanics",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestContinualMatrixUntrainedCellsMatchDirectScores",
+        "qualified_name": "coimnet.experiment.TestContinualMatrixUntrainedCellsMatchDirectScores",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestContinualMatrixTrainsAndKeepsEveryRecord",
+        "qualified_name": "coimnet.experiment.TestContinualMatrixTrainsAndKeepsEveryRecord",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestContinualMatrixKeepsFailedRuns",
+        "qualified_name": "coimnet.experiment.TestContinualMatrixKeepsFailedRuns",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestContinualMatrixIsDeterministic",
+        "qualified_name": "coimnet.experiment.TestContinualMatrixIsDeterministic",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestContinualMatrixRejects",
+        "qualified_name": "coimnet.experiment.TestContinualMatrixRejects",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestIndependentMatchesDirectSingleTaskTraining",
+        "qualified_name": "coimnet.experiment.TestIndependentMatchesDirectSingleTaskTraining",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestStateSwitchMovesScoreWithoutTouchingParameters",
+        "qualified_name": "coimnet.experiment.TestStateSwitchMovesScoreWithoutTouchingParameters",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestStateSwitchWithoutChemistryIsRecorded",
+        "qualified_name": "coimnet.experiment.TestStateSwitchWithoutChemistryIsRecorded",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "TestStateSwitchShapeMismatchIsRecorded",
+        "qualified_name": "coimnet.experiment.TestStateSwitchShapeMismatchIsRecorded",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "runContinualMatrix",
+        "qualified_name": "coimnet.internal.cli.runContinualMatrix",
+        "hop": 1
+      },
+      {
+        "name": "TestComparisonAbsentWithoutDeclaration",
+        "qualified_name": "coimnet.experiment.TestComparisonAbsentWithoutDeclaration",
+        "hop": 1,
+        "is_test": true
+      },
+      {
+        "name": "Run",
+        "qualified_name": "coimnet.internal.cli.Run",
+        "hop": 2
+      }
+    ]
+  },
+  "changed_producer": "experiment/continual_run.go",
+  "worker_file": "experiment/continual_ownership_test.go",
+  "mutable_fields": [
+    "Tasks",
+    "Tasks[].Params",
+    "Stages",
+    "Seeds",
+    "Comparison",
+    "Evaluation.StateSwitch",
+    "Evaluation.StateSwitch.Concentration",
+    "Evaluation.StateSwitch.Concentration[]"
+  ],
+  "public_signature_unchanged": true,
+  "no_concurrent_caller_mutation_guarantee": true,
+  "won_t_list": [
+    "task/model changes",
+    "other protocol/report types",
+    "other existing follow-ups"
+  ],
+  "required_gates": 5,
+  "delegation": [
+    {
+      "tool": "opencode",
+      "model": "opencode/big-pickle",
+      "flags": [
+        "--pure",
+        "--agent",
+        "build",
+        "--format",
+        "json"
+      ],
+      "result": "timeout 90 seconds, no output",
+      "evidence": "opencode.json"
+    },
+    {
+      "tool": "collaboration.spawn_agent",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "task": "continual_ownership_tests",
+      "allowed_file": "experiment/continual_ownership_test.go"
+    }
+  ]
+}

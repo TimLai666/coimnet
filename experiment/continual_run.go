@@ -3,6 +3,8 @@ package experiment
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/TimLai666/coimnet/learning"
 )
@@ -166,7 +168,9 @@ func runSeedMatrix(ctx context.Context, p ContinualProtocol, seed uint64, width 
 // chemistry and, after every seed, the independent control is built and kept
 // apart from the matrix; a declared Comparison is attached to the report once
 // every cell is aggregated. A context error aborts the whole run with that
-// error; every other failure becomes a RunRecord.
+// error; every other failure becomes a RunRecord. The validated protocol is
+// copied before hashing or calling build, so caller changes cannot rewrite
+// this run or its returned protocol.
 func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(seed uint64) (*learning.Individual, error)) (ContinualReport, error) {
 	var report ContinualReport
 	if ctx == nil {
@@ -180,6 +184,24 @@ func RunContinualMatrix(ctx context.Context, p ContinualProtocol, build func(see
 	}
 	if err := p.Validate(); err != nil {
 		return report, err
+	}
+	p.Tasks = slices.Clone(p.Tasks)
+	for i := range p.Tasks {
+		p.Tasks[i].Params = maps.Clone(p.Tasks[i].Params)
+	}
+	p.Stages = slices.Clone(p.Stages)
+	p.Seeds = slices.Clone(p.Seeds)
+	if p.Comparison != nil {
+		comparison := *p.Comparison
+		p.Comparison = &comparison
+	}
+	if p.Evaluation.StateSwitch != nil {
+		stateSwitch := *p.Evaluation.StateSwitch
+		stateSwitch.Concentration = slices.Clone(stateSwitch.Concentration)
+		for i, row := range stateSwitch.Concentration {
+			stateSwitch.Concentration[i] = slices.Clone(row)
+		}
+		p.Evaluation.StateSwitch = &stateSwitch
 	}
 	report = ContinualReport{
 		SchemaVersion: ContinualSchemaVersion,
