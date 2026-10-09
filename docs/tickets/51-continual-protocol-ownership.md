@@ -3,7 +3,7 @@
 **Epic:** 訓練框架的可保存設定
 **User Story:** 研究者可以修改後續任務設定，而先前報告的宣告、識別與結果保持一致
 **Blocked by:** 無；50 是來源基準
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策｜2026-10-09：問題與共用契約
 
@@ -28,7 +28,7 @@ Root 審查及凍結先失敗測試，填入共用入口的複製步驟，完成
 - [x] 共用入口在雜湊與執行前複製全部可變 Protocol 欄位。
 - [x] 合法完整報告、CLI 保存、空值、錯誤及原件通過。
 - [x] gofmt、build、完整一般與 race、vet、相依性及治理通過。
-- [ ] 完整 diff、需求證據、提交推送及遠端核對完成。
+- [x] 完整 diff、需求證據、提交推送及遠端核對完成。
 
 ## 減法審查
 
@@ -39,4 +39,4 @@ Won't List：不改模型或任務設定，不處理其他報告型別及 AGENTS
 
 [工程設計](../../ENG.md)、[前票重現](../../evidence/OPS-03/comparison-finite-20261009/ownership-followup.json)、[本票證據](../../evidence/LRN-08/protocol-ownership-20261009/)。相關需求 LRN-08，需求狀態不變。
 
-Root 驗收：八組新回歸、30 個相關頂層測試、七份完整 SDK 報告與原提交及兩個新程序一致、八個 CLI 流程通過。完整一般與 race 各 57 套件，以及格式、build、vet、相依性與八個治理／索引專項通過。656 份 Go 來源凍結，3,514 份原件保持。工程驗收完成 4／5，提交推送與遠端核對待完成。生物啟發範例的兩個不同設定 P2 已另列 AGENTS.md，不納入本票修正。
+Root 驗收：八組新回歸、30 個相關頂層測試、七份完整 SDK 報告與原提交及兩個新程序一致、八個 CLI 流程通過。完整一般與 race 各 57 套件，以及格式、build、vet、相依性與八個治理／索引專項通過。656 份 Go 來源凍結，3,514 份原件保持。已完成 5／5 驗收與交付，實作 `3546b88` 已推送並核對遠端。見[工程驗證](../../evidence/LRN-08/protocol-ownership-20261009/verification.json)與[交付紀錄](../../evidence/LRN-08/protocol-ownership-20261009/delivery.json)。生物啟發範例的兩個不同設定 P2 已另列 AGENTS.md，不納入本票修正。

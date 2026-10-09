@@ -20,13 +20,14 @@ RunContinualMatrix 現在於原有驗證之後、計算識別碼與執行之前�
 | CLI 流程與完整輸出 | verify-cli.py、cli-before.json、cli-after.json |
 | 全部 Go 來源凍結 | source-freeze.json |
 | 完整一般測試及各項檢查 | full-test.log、build.log、vet.log、format.log、module-verify.log、module-tidy.log |
-| 完整 race 測試 | full-race.log，完成結果以同名 JSON 為準 |
+| 完整 race 測試 | full-race.log、full-race.json |
+| 工程驗收與來源交付 | verification.json、delivery.json |
 | OpenCode 本輪逾時 | opencode.json、opencode.log |
 | 另票待辦的公開重現 | related-followup-probe.go.txt、related-followup-summary.json |
 
-check.py 保存每個命令的 argv、工作目錄、返回值、時間及日誌指紋。environment.json 保存本輪執行環境。完整驗收結論須等全部命令與文件檢查完成，不能只依上面的專項通過判斷。
+check.py 保存每個命令的 argv、工作目錄、返回值、時間及日誌指紋。environment.json 保存本輪執行環境。完整一般與 race 各 57 套件及工程驗收通過，結論見 verification.json。實作提交與遠端核對見 delivery.json。
 
-第一次 SDK 探測誤以 .go.txt 檔名執行，Go 拒絕這個副檔名；sdk-before.json 保存該失敗。正式基準使用相同內容的暫存 .go 檔，sdk-baseline.json 記錄成功執行，獨立原提交與兩個新程序再驗證相同結果。失敗嘗試不計入通過數。
+第一次 SDK 探測誤以 .go.txt 檔名執行，Go 拒絕這個副檔名。sdk-before.json 保存該失敗。正式基準使用相同內容的暫存 .go 檔，sdk-baseline.json 記錄成功執行，獨立原提交與兩個新程序再驗證相同結果。失敗嘗試不計入通過數。交付後的文件治理檢查第一次受 Go 快取的沙盒權限限制，原始輸出保存在 governance-delivery.log，取得既有驗證授權後於 governance-delivery-authorized.log 通過。
 
 ## 重跑
 

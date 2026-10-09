@@ -1,6 +1,6 @@
 # Ticket 51 變更檔案
 
-以下是本輪相對基準 bcae456 的檔案清單。所有變更屬本票修正、回歸或驗收證據。
+以下是本輪相對基準 bcae456 的檔案清單。所有變更屬本票修正、回歸、驗收或交付證據。
 
 | 檔案 | 變更摘要 |
 |---|---|
@@ -13,6 +13,7 @@
 | [evidence/LRN-08/protocol-ownership-20261009/baseline.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/baseline.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/build.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/build.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/build.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/build.log) | 保存驗證命令的完整實際輸出。 |
+| [evidence/LRN-08/protocol-ownership-20261009/change-summary.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/change-summary.json) | 保存完整變更檔案清單與實際檔案數。 |
 | [evidence/LRN-08/protocol-ownership-20261009/changes.md](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/changes.md) | 列出每個實際變更檔案及摘要。 |
 | [evidence/LRN-08/protocol-ownership-20261009/check-initial.py.txt](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/check-initial.py.txt) | 保存驗收工具實際執行時的版本。 |
 | [evidence/LRN-08/protocol-ownership-20261009/check.py](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/check.py) | 保存本輪可重現的驗收工具。 |
@@ -22,6 +23,8 @@
 | [evidence/LRN-08/protocol-ownership-20261009/cli-before-check.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/cli-before-check.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/cli-before-check.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/cli-before-check.log) | 保存驗證命令的完整實際輸出。 |
 | [evidence/LRN-08/protocol-ownership-20261009/cli-before.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/cli-before.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
+| [evidence/LRN-08/protocol-ownership-20261009/delivery-audit.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/delivery-audit.json) | 核對交付後來源、原件、文件連結與全部命令回條。 |
+| [evidence/LRN-08/protocol-ownership-20261009/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/delivery.json) | 保存實作提交、推送與遠端一致的實際交付結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/diff-check.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/diff-check.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/diff-check.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/diff-check.log) | 保存驗證命令的完整實際輸出。 |
 | [evidence/LRN-08/protocol-ownership-20261009/entry-documents.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/entry-documents.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
@@ -32,6 +35,10 @@
 | [evidence/LRN-08/protocol-ownership-20261009/full-race.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/full-race.log) | 保存驗證命令的完整實際輸出。 |
 | [evidence/LRN-08/protocol-ownership-20261009/full-test.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/full-test.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/full-test.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/full-test.log) | 保存驗證命令的完整實際輸出。 |
+| [evidence/LRN-08/protocol-ownership-20261009/governance-delivery-authorized.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance-delivery-authorized.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
+| [evidence/LRN-08/protocol-ownership-20261009/governance-delivery-authorized.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance-delivery-authorized.log) | 保存驗證命令的完整實際輸出。 |
+| [evidence/LRN-08/protocol-ownership-20261009/governance-delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance-delivery.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
+| [evidence/LRN-08/protocol-ownership-20261009/governance-delivery.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance-delivery.log) | 保存驗證命令的完整實際輸出。 |
 | [evidence/LRN-08/protocol-ownership-20261009/governance.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
 | [evidence/LRN-08/protocol-ownership-20261009/governance.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/governance.log) | 保存驗證命令的完整實際輸出。 |
 | [evidence/LRN-08/protocol-ownership-20261009/harness-versions.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/harness-versions.json) | 保存命令回條、指紋或已觀察的驗證結果。 |
@@ -79,4 +86,3 @@
 | [evidence/LRN-08/protocol-ownership-20261009/vet.log](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/vet.log) | 保存驗證命令的完整實際輸出。 |
 | [experiment/continual_ownership_test.go](/Users/timlai/Developer/coimnet/experiment/continual_ownership_test.go) | 新增八組公開入口回歸，涵蓋雙向修改、追加、空值、回呼、失敗與取消。 |
 | [experiment/continual_run.go](/Users/timlai/Developer/coimnet/experiment/continual_run.go) | 在驗證後、雜湊與 builder 前複製完整可變任務設定。 |
-| [evidence/LRN-08/protocol-ownership-20261009/change-summary.json](/Users/timlai/Developer/coimnet/evidence/LRN-08/protocol-ownership-20261009/change-summary.json) | 保存完整變更檔案清單與實際檔案數。 |
