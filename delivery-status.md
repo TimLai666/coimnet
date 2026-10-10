@@ -2,9 +2,9 @@
 
 ## 目前階段
 
-[ticket 55](docs/tickets/55-network-model-bundles.md) 完成 3／5 驗收。三種 SDK 資料夾模型已在實際 SMB 分享上保存、讀回並由新程序接續。一般專項 23 個頂層測試通過，race 22 個通過、既有大容量案例略過；兩個獨立程序保存只有一個成功。完成後取消與同步失敗保留成果，不確定的檔案系統錯誤保留目錄並回報狀態。原生磁碟完整套件及交付核對待完成，見 [Root 審查](evidence/STA-01/network-model-20261010/root-review.md)。
+[ticket 55](docs/tickets/55-network-model-bundles.md) 完成 4／5 驗收與階段交付。三種 SDK 資料夾模型已在實際 SMB 分享上保存、讀回並由新程序接續。一般專項 23 個頂層測試通過，race 22 個通過、既有大容量案例略過；兩個獨立程序保存只有一個成功。完成後取消與同步失敗保留成果，不確定的發布錯誤保留目錄並回報狀態。實作 `79339be`、回歸 `842bd1d` 已推送核對；完整原生磁碟套件待驗收，見 [交付紀錄](evidence/STA-01/network-model-20261010/delivery.json)。
 
-[ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 完成 3／5 驗收。設定的雙向、報告間及取消後部分報告隔離通過，26 個相關頂層測試及 14 份合法報告與修正前和兩個新程序相同。本輪最後來源共 662 份 Go 檔，指紋保持；完整套件尚未通過。原設定測試的 389 份暫存共 241 MB 已清除。基準 HEAD 為 `9c23868`，目前專案位置為 `/Volumes/SSD/Developer/coimnet`。
+[ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 完成 4／5 驗收與階段交付。設定的雙向、報告間及取消後部分報告隔離通過，26 個相關頂層測試及 14 份合法報告與修正前和兩個新程序相同。最後 662 份 Go 來源指紋保持；完整套件尚未通過。實作與回歸已推送核對，本輪兩個工作合計 420 份暫存、241,051,766 位元組已清除。基準 HEAD 為 `9c23868`，目前專案位置為 `/Volumes/SSD/Developer/coimnet`。
 
 [ticket 52](docs/tickets/52-bioinspired-finite-validation.md) 與 [ticket 53](docs/tickets/53-project-local-data-and-runs.md) 各完成 5／5 驗收與交付。非有限值在執行前回錯，七組合法報告逐位元組相同。207 份資料及結果已搬回專案，清理後保留的 479 份原件逐檔核對通過，9,151 份暫存共 714 MB 已清除。完整一般與 race 各 57 套件、格式、build、vet、相依性與八個治理／索引專項通過。實作 `d3aa982` 已推送並核對遠端，見[數值交付](evidence/MOD-09/finite-config-20261010/delivery.json)與[保存交付](evidence/OPS-03/local-storage-20261010/delivery.json)。
 
@@ -197,8 +197,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 49 | 研究者可以保留不受外部設定修改影響的導航報告 | Codex Root / Luna max 測試 | completed | 5／5。回歸、合法報告、CLI、完整一般／race 各 57 套件、治理與原件核對通過，實作 1b088e4 已推送核對 |
 | 50 | 研究者可以在比較開始前發現非法數值設定 | Codex Root / Luna max 測試 | completed | 5／5。兩處設定驗證、三個新增回歸、合法 SDK／CLI、完整一般與 race 各 57 套件及治理通過，實作 933ba4c 已推送核對 |
 | 51 | 研究者可以保留連續任務執行當時的設定 | Codex Root / Luna max 測試 | completed | 5／5。八組回歸、30 個相關頂層、七份完整報告與雙程序一致、八個 CLI、完整一般／race 各 57 套件及治理通過，實作 3546b88 已推送核對 |
-| 54 | 研究者可以保留生物啟發協定執行當時的設定 | Codex Root / Luna max 測試與唯讀審查 | in_progress | 3／5。26 個相關頂層與取消後部分報告隔離通過，14 份合法完整報告與修正前及雙程序相同，完整檢查及交付待完成 |
-| 55 | 使用者可以把模型存在網路磁碟並讀回接續 | Codex Root / Luna max 測試與唯讀審查 | in_progress | 3／5。實際 SMB 保存、一般／race 專項、新程序接續、舊格式與兩程序單一勝方通過；原生完整套件及交付待完成 |
+| 54 | 研究者可以保留生物啟發協定執行當時的設定 | Codex Root / Luna max 測試與唯讀審查 | in_progress | 4／5。26 個相關頂層、14 份合法報告及雙程序一致，暫存清除、實作與回歸推送核對完成；原生完整套件待驗收 |
+| 55 | 使用者可以把模型存在網路磁碟並讀回接續 | Codex Root / Luna max 測試與唯讀審查 | verified_scoped | 4／5。SMB 保存、一般／race 專項、新程序接續、舊格式、並行單一勝方及階段交付完成；原生完整套件待驗收 |
 
 ## 目前阻礙
 
@@ -220,9 +220,9 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-完成 [ticket 55](docs/tickets/55-network-model-bundles.md) 的最後暫存清理與提交推送核對。接著在原生磁碟驗收最後來源的完整套件，才勾選 tickets 54、55 的完整檢查。單檔發布契約保持，不以降低保護的方式讓 SMB 測試通過。
+在原生磁碟驗收最後來源的完整套件，才勾選 tickets 54、55 的完整檢查。網路模型保存的 SDK 支援與階段交付已完成；舊單檔發布契約保持。使用者已授權 mac-1 驗證，但首次 SSH 主機金鑰尚未接受，沒有遠端執行證據；不以專案外暫存或降低保存保護繞過限制。
 
-本階段 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 驗收兩種生物啟發協定的雙向、報告間及取消後部分報告設定隔離，並核對合法報告與修正前相同。完整來源驗證、暫存清理與推送核對完成後才標示交付。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+本階段 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 的雙向、報告間與取消後部分報告設定隔離，合法報告一致及階段交付已完成。完整原生磁碟驗證仍待完成；GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

@@ -27,7 +27,7 @@
 - [x] 共用入口複製全部可變設定，雙向與報告間隔離通過。
 - [x] 合法完整報告、雙程序、空值與錯誤控制通過。
 - [ ] gofmt、build、完整一般與 race、vet、相依性及治理通過。
-- [ ] 完整 diff、需求證據、暫存清理、提交推送與遠端核對完成。
+- [x] 完整 diff、需求證據、暫存清理、提交推送與遠端核對完成。
 
 ## 減法審查
 
@@ -36,3 +36,5 @@
 ## 來源
 
 [工程設計](../../ENG.md)、[已確認重現](../../evidence/LRN-08/protocol-ownership-20261009/related-followup-summary.json)、[本票證據](../../evidence/MOD-09/protocol-ownership-20261010/)。需求 MOD-09，整體能力狀態保持。
+
+完成 4／5 驗收。設定修正與回歸已提交推送並核對遠端，本輪暫存已清除。完整檢查有環境與舊單檔發布限制，不能勾選通過，見 [本輪完整檢查](../../evidence/STA-01/network-model-20261010/full-check-summary.json)與 [交付紀錄](../../evidence/STA-01/network-model-20261010/delivery.json)。
