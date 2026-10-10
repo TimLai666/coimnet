@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 )
@@ -94,10 +95,10 @@ func (c BioInspiredConfig) Validate() error {
 		if len(c.PulseSteps) != 0 {
 			return fmt.Errorf("pulse_steps: must be empty for %s", ProtocolNPFMemoryExpression)
 		}
-		if c.Suppressed <= 0 || c.Suppressed >= 1 {
+		if !(c.Suppressed > 0 && c.Suppressed < 1) {
 			return fmt.Errorf("suppressed: must be strictly between 0 and 1, got %g", c.Suppressed)
 		}
-		if c.Tolerance <= 0 {
+		if !(c.Tolerance > 0) || math.IsInf(c.Tolerance, 0) {
 			return fmt.Errorf("tolerance: must be > 0, got %g", c.Tolerance)
 		}
 	}

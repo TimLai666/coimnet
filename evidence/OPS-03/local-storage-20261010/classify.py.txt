@@ -1,0 +1,62 @@
+from pathlib import Path
+import ctypes, hashlib, json, os
+
+base = Path('/Users/timlai/Developer/coimnet')
+evidence = base / 'evidence/OPS-03/local-storage-20261010'
+libc = ctypes.CDLL(None, use_errno=True)
+rename = libc.renamex_np
+rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+rename.restype = ctypes.c_int
+
+def fingerprint(p):
+    assert p.is_file() and not p.is_symlink(), p
+    h = hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda: f.read(4 * 1024 * 1024), b''):
+            h.update(block)
+    return {'path': str(p.relative_to(base)), 'size': p.stat().st_size,
+            'sha256': h.hexdigest()}
+
+operations = []
+sample = base / 'data/TSK-11/openslr31/sample'
+for name in ['final-run-1.json', 'final-run-1.time.log', 'final-run-2.json',
+             'final-run-2.stderr.log', 'first-run.json', 'reviewed-run-1.json',
+             'reviewed-run-1.time.log', 'reviewed-run-2.json',
+             'reviewed-run-2.stderr.log']:
+    operations.append((sample / name, base / 'runs/TSK-11/real-asr-20260925' / name))
+operations += [(base / 'data/TSK-11/gutenberg/evidence',
+                base / 'runs/TSK-11/gutenberg-20260924'),
+               (base / 'data/TSK-11/gutenberg/runner',
+                base / 'runs/.tools/TSK-11/gutenberg-runner')]
+plan = []
+for src, dst in operations:
+    assert not src.is_symlink() and not dst.exists() and not dst.is_symlink()
+    files = sorted(src.rglob('*')) if src.is_dir() else [src]
+    assert not any(p.is_symlink() for p in files)
+    records = [fingerprint(p) for p in files if p.is_file()]
+    plan.append({'source': str(src.relative_to(base)),
+                 'destination': str(dst.relative_to(base)), 'files': records})
+with (evidence / 'classification-plan.json').open('x') as f:
+    json.dump(plan, f, indent=2); f.write('\n')
+results = []
+for op in plan:
+    src, dst = base / op['source'], base / op['destination']
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    for rec in op['files']:
+        assert fingerprint(base / rec['path']) == rec
+    assert src.lstat().st_dev == dst.parent.stat().st_dev
+    if rename(os.fsencode(src), os.fsencode(dst), 4):
+        errno = ctypes.get_errno()
+        raise OSError(errno, os.strerror(errno), str(src))
+    for rec in op['files']:
+        old = base / rec['path']
+        new = dst / old.relative_to(src) if old != src else dst
+        after = fingerprint(new)
+        assert after['sha256'] == rec['sha256'] and after['size'] == rec['size']
+        results.append({'source': rec['path'], 'destination': after['path'],
+                        'size': rec['size'], 'sha256': rec['sha256'],
+                        'exclusive_rename': True, 'verified_equal': True})
+    assert not src.exists()
+with (evidence / 'classification-moves.json').open('x') as f:
+    json.dump(results, f, indent=2); f.write('\n')
+print(json.dumps({'files': len(results), 'bytes': sum(r['size'] for r in results)}))

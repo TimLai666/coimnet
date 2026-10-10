@@ -19,6 +19,9 @@
 
 ## 共用決策
 
+- 生物啟發協定沿用既有驗證順序與錯誤，NPF Suppressed 只接受嚴格介於 0 與 1 的值，Tolerance 只接受嚴格正且有限的值。合法報告及模型保持，見 [ticket 52](docs/tickets/52-bioinspired-finite-validation.md)。
+- 本機必要資料與執行結果放在專案內已忽略的 data／runs，過程暫存放 runs/.tmp 並於證據保存後清除。搬移前後比對逐檔 SHA-256，歷史 provenance 不改寫。realnav 解析符號連結後，以最近的 `.git` 為 repository 邊界，只允許該 repository 的 runs 新子目錄或既有支援的外部目錄，保持來源重疊與既有輸出拒絕；不引入執行時 Git 依賴。見 [ticket 53](docs/tickets/53-project-local-data-and-runs.md)。
+
 - 歸因與連續任務的 Comparison.Interval 沿用原 Validate 錯誤位置，只接受嚴格介於 0 與 1 的數值。NaN 與正負無限大在建模／訓練前被拒絕。nil Comparison、取消／nil 的優先順序、格式與合法報告保持，驗收見 [ticket 50](docs/tickets/50-comparison-finite-validation.md)。連續任務入口於驗證通過後、雜湊與 builder 前複製 Tasks 及 Params、Stages、Seeds、Comparison 與 StateSwitch 的內外化學列，讓呼叫端與每次執行分開持有資料。標準庫複製保留 nil 與非 nil 空列，不新增並行修改輸入的保證，驗收見 [ticket 51](docs/tickets/51-continual-protocol-ownership.md)。
 
 - 導航範例的環境設定由 nav2d.Config.Resolve 共用既有預設值與驗證。New 與新導航／歸因報告共用解析結果，config_hash 計算已展開的報告設定。WallDensity、StepPenalty、CollisionPenalty、GoalReward 在各自的範圍檢查前拒絕 NaN 與正負無限大。零值預設、有限值的原錯誤與檢查順序、空任務限制、訓練與格式版本保持，歷史報告不重寫。RunNav2D 在計算雜湊前複製 Seeds 與 Policies，單任務、呼叫端及 suite 各任務分開持有兩份切片。驗收見 [ticket 47](docs/tickets/47-nav2d-effective-config-reports.md)、[ticket 48](docs/tickets/48-nav2d-finite-config-validation.md)與 [ticket 49](docs/tickets/49-nav2d-report-config-ownership.md)。

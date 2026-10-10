@@ -6,12 +6,13 @@ The repository contains only this manifest, code, and documentation. Keep source
 
 ## Run
 
-Place the verified source MP4 files directly in an external data directory, then choose a new output directory that does not already exist and is separate from the data directory:
+Place the verified source MP4 files in the Git-ignored `data/TSK-11/blender-open-movies` directory. From the repository root, choose a new output subdirectory under `runs/TSK-11`, separate from the data directory:
 
 ```sh
+mkdir -p runs/TSK-11
 go run ./examples/realmedia \
-  --data-root /path/to/TSK-11/blender-open-movies \
-  --out-dir /tmp/coimnet-realmedia-run-01
+  --data-root data/TSK-11/blender-open-movies \
+  --out-dir runs/TSK-11/realmedia-run-01
 ```
 
 The command writes the exact manifest, trained snapshot, JSON report, predicted PNG sequence, 8 kHz mono WAV, synchronized H.264/AAC preview MP4, and a frame/audio timeline. It refuses an existing output directory. The preview MP4 is enlarged from the model's 8×8 pixels for easier viewing; enlargement does not add image detail. The report lists SHA-256 fingerprints for the manifest, model, and each media artifact; the command prints the report's own SHA-256 separately.

@@ -1,0 +1,13 @@
+from pathlib import Path
+import json,subprocess,time,os,hashlib
+root=Path('/Users/timlai/Developer/coimnet');out=root/'evidence/MOD-09/finite-config-20261010'
+checks=[('unit-final',['go','test','-count=1','-timeout','30m','./...']),('race',['go','test','-race','-count=1','-timeout','30m','./...']),('vet',['go','vet','./...']),('mod-verify',['go','mod','verify']),('dependencies',['go','list','-m','all'])]
+env=os.environ.copy();env['GOPROXY']='off';results=[]
+meta={'platform':subprocess.check_output(['uname','-a'],text=True).strip(),'go_env':json.loads(subprocess.check_output(['go','env','-json','GOOS','GOARCH','GOVERSION','GOMOD','GOPROXY','GOCACHE'],text=True)),'verification_GOPROXY':'off','client_date':'2026-10-10','base_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()}
+(out/'environment-final.json').write_text(json.dumps(meta,indent=2)+'\n')
+for name,args in checks:
+ start=time.monotonic();log=out/(name+'.log')
+ with log.open('x') as f:p=subprocess.run(args,cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT)
+ r={'name':name,'command':args,'exit_code':p.returncode,'elapsed_seconds':time.monotonic()-start,'log':str(log.relative_to(root)),'sha256':hashlib.sha256(log.read_bytes()).hexdigest()};results.append(r)
+ (out/'checks-final.json').write_text(json.dumps(results,indent=2)+'\n');print(json.dumps(r),flush=True)
+ if p.returncode!=0:raise SystemExit(p.returncode)

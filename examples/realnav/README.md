@@ -16,9 +16,9 @@ it does not establish animal control, learned homing, or path integration.
 
 ## Data and causal contract
 
-The default source is kept outside this repository:
+The local source is kept in the Git-ignored `data/` directory:
 
-`/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz`
+`data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz`
 
 The expected source SHA-256 is
 `83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670`.
@@ -64,13 +64,14 @@ chunk size.
 
 ## Run
 
-Keep data, snapshots, and reports outside the repository. Training creates a
-new output directory and writes the exact snapshot there:
+Keep source data under `data/` and snapshots and reports under `runs/`; both
+directories are Git-ignored. Training creates a new output subdirectory and
+writes the exact snapshot there:
 
 ```sh
 go run ./examples/realnav train \
-  --data /Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
-  --out /tmp/coimnet-realnav-run-01
+  --data data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --out runs/TSK-11/realnav-run-01
 ```
 
 Inference is a separate invocation. It loads the saved snapshot and refuses
@@ -78,9 +79,9 @@ to train:
 
 ```sh
 go run ./examples/realnav infer \
-  --data /Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
-  --snapshot /tmp/coimnet-realnav-run-01/model.json \
-  --out /tmp/coimnet-realnav-infer-01
+  --data data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --snapshot runs/TSK-11/realnav-run-01/model.json \
+  --out runs/TSK-11/realnav-infer-01
 ```
 
 The report includes held-out one-step displacement MSE and angular error,
@@ -99,9 +100,9 @@ trials without using future recorded positions for subsequent actions:
 
 ```sh
 go run ./examples/realnav rollout \
-  --data /Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
-  --snapshot /tmp/coimnet-realnav-run-01/model.json \
-  --out /tmp/coimnet-realnav-rollout-01 \
+  --data data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --snapshot runs/TSK-11/realnav-run-01/model.json \
+  --out runs/TSK-11/realnav-rollout-01 \
   --steps 200
 ```
 
@@ -161,5 +162,7 @@ fresh-process snapshot inference. It does not download the Dryad source.
 go test -count=1 ./examples/realnav
 go test -count=1 -race ./examples/realnav
 go vet ./examples/realnav
-GOOS=windows GOARCH=amd64 go test -c -o /tmp/realnav.test.exe ./examples/realnav
+mkdir -p runs/.tmp
+GOOS=windows GOARCH=amd64 go test -c -o runs/.tmp/realnav.test.exe ./examples/realnav
+rm runs/.tmp/realnav.test.exe
 ```

@@ -1,0 +1,78 @@
+{
+  "status": "passed",
+  "date": "2026-10-10",
+  "requirement": "OPS-03",
+  "reproduction_command": [
+    "python3 evidence/OPS-03/local-storage-20261010/verify-final.py.txt",
+    "go test -count=1 -v -run \"TestLocalRuns|TestRolloutOutputRejectsRepositoryAndSymlink\" ./examples/realnav",
+    "go run ./examples/realnav infer --data data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz --snapshot runs/TSK-11/autonomous-rollout-20261002/train-a/model.json --out runs/.tmp/realnav-readback (new output only; clear after comparing)"
+  ],
+  "environment": {
+    "platform": "Darwin TimdeAir.home 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:05:41 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T8122 arm64",
+    "go_env": {
+      "GOARCH": "arm64",
+      "GOCACHE": "/Users/timlai/Library/Caches/go-build",
+      "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+      "GOOS": "darwin",
+      "GOPROXY": "https://proxy.golang.org,direct",
+      "GOVERSION": "go1.26.5"
+    },
+    "verification_GOPROXY": "off",
+    "client_date": "2026-10-10",
+    "base_commit": "9f69d2f9a8e7e320171eb12362ad4b469116cd8f"
+  },
+  "input_fingerprints": {
+    "original_inventory": "storage-before.json",
+    "retained_final_paths": "retained-after.json",
+    "migration": "migration-plan.json",
+    "classification": "classification-moves.json",
+    "source_copy_archive_comparison": "source-copies.json",
+    "compiled_temporaries": "compiled-temporaries.json"
+  },
+  "observed_result": {
+    "external_files_moved": 207,
+    "external_bytes_moved": 1074253281,
+    "all_moved_file_hashes_equal": true,
+    "classification_files_relocated": 18,
+    "legacy_ASR_source_relocated_unchanged": true,
+    "retained_original_files": 479,
+    "retained_original_bytes": 36155856373,
+    "removed_regular_files": 9151,
+    "removed_bytes": 714124927,
+    "source_copy_symlinks_removed_without_following": 2,
+    "external_data_and_run_roots_absent": true,
+    "owned_outside_temporaries_absent": true,
+    "project_runs_tmp_absent": true,
+    "root_green_top_level_tests": 5,
+    "unit_packages": 57,
+    "race_packages": 57,
+    "realnav_actual_source_model_inference_normalized_report_equal": true,
+    "holdout_trial_ids": 13,
+    "realnav_readback": "realnav-readback.json",
+    "nearest_git_marker_policy": "new strict runs descendants allowed; source overlap, resolved tracked/source symlinks, prefix siblings, and existing outputs still refused",
+    "retained_after_all_cleanup": true
+  },
+  "test_log": [
+    "root-red.log",
+    "root-green.log",
+    "realnav-infer.stderr.log",
+    "realnav-infer.stdout.json",
+    "windows-compile.log",
+    "retained-final.log",
+    "../../MOD-09/finite-config-20261010/checks-final.json"
+  ],
+  "cleanup": [
+    "cleanup-first.json",
+    "cleanup-final.json"
+  ],
+  "review": "root-review.md",
+  "preservation": "Original report/model/receipt paths remain historical provenance; active README commands use local ignored data/runs. MaleCNS raw files, derived graph/params and full-graph results retained. Only source copies, disposable compiled executables, owned caches, and archived small temporaries removed.",
+  "windows": "compiled only, not executed; temporary executable removed",
+  "requirements": "89/91 unchanged",
+  "learning_claim": "none",
+  "biological_claim": "none",
+  "remaining": [
+    "source commit/push and remote readback pending"
+  ],
+  "delivery_evidence": "delivery.json after source push"
+}

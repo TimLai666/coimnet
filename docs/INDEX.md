@@ -82,7 +82,7 @@
 | `coimnet-asr-stream/v1` | `tasks/asr` | ASR 串流檔案狀態格式 | [tasks/asr/stream_file.go:16](../tasks/asr/stream_file.go#L16) |
 | `coimnet-attribution/v1` | `experiment` | 核心與外圍歸因報告格式 | [experiment/attribution.go:531](../experiment/attribution.go#L531) |
 | `coimnet-benchmark/v2` | `internal/cli` | benchmark 報告格式 | [internal/cli/benchmark.go:34](../internal/cli/benchmark.go#L34) |
-| `coimnet-bio-inspired/v1` | `experiment` | 生物啟發機制設定與報告格式 | [experiment/bioinspired.go:19](../experiment/bioinspired.go#L19) |
+| `coimnet-bio-inspired/v1` | `experiment` | 生物啟發機制設定與報告格式 | [experiment/bioinspired.go:20](../experiment/bioinspired.go#L20) |
 | `coimnet-byte-vocab/v1` | `tasks/textgen/tokenizer` | 位元組詞表的保存與解碼格式 | [tasks/textgen/tokenizer/tokenizer.go:25](../tasks/textgen/tokenizer/tokenizer.go#L25) |
 | `coimnet-checkpoint-bundle/v2` | `checkpoint` | checkpoint bundle 目錄格式 | [checkpoint/bundle.go:23](../checkpoint/bundle.go#L23) |
 | `coimnet-config/v1` | `config` | CLI 與 SDK 組態文件格式 | [config/config.go:23](../config/config.go#L23) |

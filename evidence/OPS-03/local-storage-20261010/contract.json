@@ -1,0 +1,12 @@
+{
+  "slot": "examples/realnav/main.go prepareOutputDirectory .git boundary",
+  "change": "Allow only a new strict descendant of <nearest repository>/runs after resolving output symlinks; preserve source-directory overlap and existing-output refusal and tracked-path rejection. The repository already ignores /runs/. No runtime Git or new dependency.",
+  "expected": [
+    "New repo/runs/nested/result succeeds with data in repo/data",
+    "Existing output directory/file/symlink stays untouched",
+    "Tracked repo/examples paths, repo root, runs-prefix sibling reject",
+    "runs symlink into tracked source rejects after resolution",
+    "Output overlaps source data directory still rejects even under runs",
+    "Existing external output support remains"
+  ]
+}

@@ -129,7 +129,7 @@ type previewClip struct {
 
 func main() {
 	dataRoot := flag.String("data-root", "", "external directory containing the licensed source MP4 files")
-	outDir := flag.String("out-dir", "", "new output directory outside the repository and data root")
+	outDir := flag.String("out-dir", "", "new output directory separate from the data root (prefer runs/)")
 	flag.Parse()
 	if *dataRoot == "" || *outDir == "" {
 		fmt.Fprintln(os.Stderr, "realmedia: both --data-root and --out-dir are required")

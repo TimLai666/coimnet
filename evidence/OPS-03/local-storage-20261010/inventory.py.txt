@@ -1,0 +1,27 @@
+from pathlib import Path
+import hashlib,json,os,stat,time
+rootdir=Path('/Users/timlai/Developer/coimnet')
+roots=[Path('/Users/timlai/Developer/coimnet-data'),Path('/Users/timlai/Developer/coimnet-runs'),rootdir/'data',rootdir/'runs/OPS-07',rootdir/'runs/OPS-10']
+records=[];t=time.monotonic()
+for root in roots:
+ files=[];links=[]
+ for parent,dirs,names in os.walk(root,followlinks=False):
+  for name in sorted(dirs):
+   p=Path(parent)/name
+   if p.is_symlink():links.append({'path':str(p.relative_to(root)),'target':os.readlink(p)})
+  for name in sorted(names):
+   p=Path(parent)/name;before=p.lstat()
+   if stat.S_ISLNK(before.st_mode):links.append({'path':str(p.relative_to(root)),'target':os.readlink(p)});continue
+   if not stat.S_ISREG(before.st_mode):raise RuntimeError('not regular '+str(p))
+   h=hashlib.sha256()
+   with p.open('rb') as f:
+    for chunk in iter(lambda:f.read(4*1024*1024),b''):h.update(chunk)
+   after=p.lstat()
+   assert (before.st_ino,before.st_size,before.st_mtime_ns)==(after.st_ino,after.st_size,after.st_mtime_ns),p
+   files.append({'path':str(p.relative_to(root)),'size':before.st_size,'sha256':h.hexdigest()})
+ files.sort(key=lambda x:x['path']);links.sort(key=lambda x:x['path'])
+ records.append({'root':str(root),'files':files,'links':links,'count':len(files),'bytes':sum(x['size'] for x in files),'tree_sha256':hashlib.sha256(json.dumps({'files':files,'links':links},sort_keys=True,separators=(',',':')).encode()).hexdigest()})
+ print(root.name,len(files),records[-1]['bytes'],'symlinks',len(links),flush=True)
+out=rootdir/'evidence/OPS-03/local-storage-20261010/storage-before.json'; assert not out.exists()
+out.write_text(json.dumps({'roots':records,'elapsed_seconds':time.monotonic()-t},indent=2)+'\n')
+print('Storage manifest saved',out.stat().st_size,'bytes',flush=True)

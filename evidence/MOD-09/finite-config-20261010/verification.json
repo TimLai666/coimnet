@@ -1,0 +1,175 @@
+{
+  "status": "passed",
+  "remaining": [
+    "source commit/push and remote readback pending"
+  ],
+  "date": "2026-10-10",
+  "requirement": "MOD-09",
+  "reproduction_command": [
+    "go test -count=1 -v -run BioInspired.*Finite ./experiment",
+    "go build ./...",
+    "go test -count=1 -timeout 30m ./...",
+    "go test -race -count=1 -timeout 30m ./...",
+    "go vet ./...",
+    "go mod verify",
+    "go list -m all"
+  ],
+  "environment": {
+    "platform": "Darwin TimdeAir.home 27.0.0 Darwin Kernel Version 27.0.0: Tue Aug 11 21:05:41 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T8122 arm64",
+    "go_env": {
+      "GOARCH": "arm64",
+      "GOCACHE": "/Users/timlai/Library/Caches/go-build",
+      "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+      "GOOS": "darwin",
+      "GOPROXY": "https://proxy.golang.org,direct",
+      "GOVERSION": "go1.26.5"
+    },
+    "verification_GOPROXY": "off",
+    "client_date": "2026-10-10",
+    "base_commit": "9f69d2f9a8e7e320171eb12362ad4b469116cd8f"
+  },
+  "input_fingerprints": {
+    "source_manifest": "frozen-go-source-final.json",
+    "go_files": 658,
+    "frozen_tests": "frozen-tests.json",
+    "legal_reports_sha256": "76fd815906f92d94dfcec5b2ab05e00f73e3bf0494015b7beb9f272800c9fdb6",
+    "protected_baseline": "protected-before.json"
+  },
+  "observed_result": {
+    "new_top_level_tests": 8,
+    "root_red_failing_top_level_tests": 3,
+    "root_green_top_level_tests": 17,
+    "invalid_NPF_field_cases": 12,
+    "illegal_Ecdysone_field_controls": 14,
+    "legal_complete_reports": 7,
+    "legal_reports_pre_fix_and_two_fresh_processes_byte_equal": true,
+    "unit_packages": 57,
+    "race_packages": 57,
+    "public_errors_and_order_preserved": true,
+    "invalid_public_run_returns_zero_report": true,
+    "finite_boundary_controls_passed": true
+  },
+  "checks": [
+    {
+      "name": "unit-final",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 65.502991791,
+      "log": "evidence/MOD-09/finite-config-20261010/unit-final.log",
+      "sha256": "2d38bdb1d78cefbc0f42a939bd35f9a6c4aee2d17a713eb427dfc71a452fdfaa"
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 1468.5664134590002,
+      "log": "evidence/MOD-09/finite-config-20261010/race.log",
+      "sha256": "8245f393a0dd2f853a7584359f4d75fe126f399278ae2dba3b9155650bc1fdd3"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.809402916999943,
+      "log": "evidence/MOD-09/finite-config-20261010/vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "mod-verify",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 3.2072923339999306,
+      "log": "evidence/MOD-09/finite-config-20261010/mod-verify.log",
+      "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "go",
+        "list",
+        "-m",
+        "all"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 0.0179168329998447,
+      "log": "evidence/MOD-09/finite-config-20261010/dependencies.log",
+      "sha256": "0c2bc4f8b892be040ddf6e51b966a85ab46e806a2d6fe12de18e311753c92436"
+    }
+  ],
+  "format": "format-final.json",
+  "build": "build-final.json",
+  "test_log": [
+    "root-red.log",
+    "root-green.log",
+    "unit.log",
+    "unit-final.log",
+    "race.log",
+    "vet.log",
+    "mod-verify.log",
+    "dependencies.log"
+  ],
+  "review": "root-review.md",
+  "initial_suite_failure": {
+    "test": "TestFormatIndex",
+    "cause": "Importing math shifted BioInspiredSchemaVersion from line 19 to line 20; docs/INDEX.md referenced old line. Updated index; final unit and race passed.",
+    "log": "unit.log"
+  },
+  "delegation": {
+    "host": "Codex",
+    "primary": {
+      "tool": "OpenCode",
+      "model": "opencode/big-pickle",
+      "flags": "--pure --agent plan --model opencode/big-pickle --format json --dir /private/tmp",
+      "result": "403: OpenCode's free tier can only be used from within OpenCode",
+      "dispatch": "opencode-dispatch.json",
+      "output": "opencode.stdout.jsonl"
+    },
+    "fallback": {
+      "tool": "native collaboration",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "scope": "test-only bio_finite_tests, test-only local_runs_tests, read-only storage_audit; Root owns implementation and acceptance"
+    }
+  },
+  "limitations": [
+    "Engineering validation only; no new task-learning or biological claim.",
+    "No remote platform or GPU execution in this stage.",
+    "Bio-inspired mutable report config ownership P2 retained separately."
+  ],
+  "delivery_evidence": "delivery.json after source push",
+  "legal_report_reproduction": {
+    "source": "legal-probe.go.txt",
+    "copy_to": "runs/.tmp/probe.go",
+    "command": [
+      "go",
+      "run",
+      "runs/.tmp/probe.go"
+    ],
+    "cleanup": "Remove own temporary probe after capturing the seven JSON reports."
+  },
+  "governance": "governance-final.json"
+}

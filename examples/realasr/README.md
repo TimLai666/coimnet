@@ -3,7 +3,9 @@
 這個獨立範例讀取使用者提供的 `coimnet-asr-dataset/v1` manifest 與其中列出的 PCM 16-bit WAV，實際走過資料匯入、說話者／場次分割、一次訓練、獨立推論及 CER／WER 評估。它不下載資料，也不保存模型或 checkpoint。
 
 ```sh
-go run ./examples/realasr --manifest /path/to/manifest.json
+mkdir -p runs/TSK-11
+go run ./examples/realasr --manifest data/TSK-11/openslr31/sample/manifest.json \
+  > runs/TSK-11/realasr-report.json
 ```
 
 `--help` 會列出完整格式、固定設定及錯誤條件。成功時只在 stdout 輸出一份縮排 JSON，失敗訊息寫到 stderr 且不輸出部分報告。

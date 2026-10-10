@@ -1,0 +1,75 @@
+from pathlib import Path
+import hashlib, json, os, subprocess, time
+
+base = Path('/Users/timlai/Developer/coimnet')
+out = base / 'evidence/OPS-03/local-storage-20261010'
+before = json.loads((out / 'storage-before.json').read_text())
+ops = json.loads((out / 'migration-plan.json').read_text())['operations']
+classification = json.loads((out / 'classification-moves.json').read_text())
+classification.append(json.loads((out / 'legacy-runner-location.json').read_text()))
+relocated = {str(base / r['source']): base / r['destination'] for r in classification}
+compiled = {str(base / r['path']) for r in json.loads((out / 'compiled-temporaries.json').read_text())}
+source_copies = [base / r['directory'] for r in json.loads((out / 'source-copies.json').read_text())]
+
+def sha(p):
+    h = hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda: f.read(4 * 1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+def within(p, root):
+    return p == root or root in p.parents
+
+start = time.monotonic()
+verified, removed = [], []
+for root in before['roots']:
+    for rec in root['files']:
+        src = Path(root['root']) / rec['path']
+        dst = src
+        reason = None
+        if root['root'] in [r['root'] for r in before['roots'][:2]] and src.name == '.DS_Store':
+            reason = 'Finder metadata in emptied external root'
+        elif any(within(src, copy) for copy in source_copies):
+            reason = 'Verified exact Git archive source copy'
+        if not reason:
+            for op in ops:
+                p = Path(op['source'])
+                if within(src, p):
+                    dst = Path(op['destination']) / src.relative_to(p)
+                    break
+            dst = relocated.get(str(dst), dst)
+            if str(dst) in compiled:
+                reason = 'Disposable compiled validation executable'
+        if reason:
+            assert not src.exists() and not src.is_symlink(), src
+            assert not dst.exists() and not dst.is_symlink(), dst
+            removed.append({'original': str(src), 'reason': reason})
+            continue
+        assert dst.is_file() and not dst.is_symlink(), dst
+        assert dst.stat().st_size == rec['size'] and sha(dst) == rec['sha256'], dst
+        verified.append({'original': str(src), 'path': str(dst.relative_to(base)),
+                         'size': rec['size'], 'sha256': rec['sha256']})
+    for rec in root['links']:
+        p = Path(root['root']) / rec['path']
+        assert any(within(p, copy) for copy in source_copies)
+        assert not p.exists() and not p.is_symlink(), p
+
+actual = set()
+for name in ['data', 'runs/OPS-07', 'runs/OPS-10', 'runs/TSK-11', 'runs/.tools/TSK-11']:
+    for current, dirs, files in os.walk(base / name, followlinks=False):
+        assert not any((Path(current) / p).is_symlink() for p in dirs + files)
+        actual.update(str((Path(current) / f).relative_to(base)) for f in files)
+assert actual == {r['path'] for r in verified}, (sorted(actual - {r['path'] for r in verified}), sorted({r['path'] for r in verified} - actual))
+ignored = ['data/TSK-11', 'data/malecns-v1.0', 'runs/TSK-11', 'runs/OPS-07', 'runs/OPS-10', 'runs/.tools/TSK-11']
+for name in ignored:
+    subprocess.run(['git', 'check-ignore', '--quiet', name], cwd=base, check=True)
+result = {'method': 'Rehash every retained original at its final path; match complete path sets without following links.',
+          'files': verified, 'retained_count': len(verified),
+          'retained_bytes': sum(r['size'] for r in verified),
+          'removed_baseline_count': len(removed), 'removed_baseline': removed,
+          'ignored_paths': ignored, 'exact_path_set': True,
+          'elapsed_seconds': time.monotonic() - start}
+with (out / 'retained-after.json').open('x') as f:
+    json.dump(result, f, indent=2); f.write('\n')
+print(json.dumps({k: v for k, v in result.items() if k not in ['files', 'removed_baseline']}, indent=2))

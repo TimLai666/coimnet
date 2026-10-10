@@ -1,0 +1,16 @@
+package main
+import("context";"encoding/json";"fmt";"math";"os";e "github.com/TimLai666/coimnet/experiment")
+func config(proto string)e.BioInspiredConfig{c:=e.BioInspiredConfig{Protocol:proto,Seeds:[]uint64{1,2,3},Episodes:1,Registry:[]string{"S14"},PulseSteps:[]int{0}};if proto==e.ProtocolNPFMemoryExpression{c.PulseSteps=nil;c.Registry=[]string{"S15"};c.Suppressed=.4;c.Tolerance=1e-9};return c}
+func main(){records:=[]map[string]any{}
+ for _,proto:=range []string{e.ProtocolEcdysoneInspired,e.ProtocolNPFMemoryExpression}{
+  fields:=[]string{"seeds","registry","quantitative"};if proto==e.ProtocolEcdysoneInspired{fields=append(fields,"pulse_steps")}
+  for _,field:=range fields{c:=config(proto);if field=="quantitative"{c.Quantitative=&e.QuantitativeEvidence{Method:"fixture method",Data:"fixture data",Fit:"fixture fit",HeldOutIntervention:"fixture intervention"}}
+   report,err:=e.RunBioInspired(context.Background(),c);if err!=nil{panic(err)};before,err:=json.Marshal(report);if err!=nil{panic(err)};configHash:=report.ConfigHash
+   switch field{case "seeds":c.Seeds[0]=999;case "registry":c.Registry[0]="caller changed";case "pulse_steps":c.PulseSteps[0]=1;case "quantitative":c.Quantitative.Method="caller changed"}
+   after,err:=json.Marshal(report);if err!=nil{panic(err)};cfg,err:=json.Marshal(report.Config);if err!=nil{panic(err)}
+   records=append(records,map[string]any{"protocol":proto,"field":field,"report_changed":string(before)!=string(after),"config_hash_unchanged":configHash==report.ConfigHash,"reported_config":json.RawMessage(cfg),"failed_seeds":report.Seeds})
+  }
+ }
+ for _,field:=range []string{"suppressed","tolerance"}{c:=config(e.ProtocolNPFMemoryExpression);if field=="suppressed"{c.Suppressed=math.NaN()}else{c.Tolerance=math.NaN()};validation:=c.Validate();report,runErr:=e.RunBioInspired(context.Background(),c);_,jsonErr:=json.Marshal(report);errorText:=func(err error)string{if err==nil{return ""};return fmt.Sprint(err)};records=append(records,map[string]any{"field":field,"validate_error":errorText(validation),"run_error":errorText(runErr),"json_error":errorText(jsonErr)})}
+ if err:=json.NewEncoder(os.Stdout).Encode(records);err!=nil{panic(err)}
+}

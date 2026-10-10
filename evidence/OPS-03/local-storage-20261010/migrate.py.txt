@@ -1,0 +1,35 @@
+from pathlib import Path
+import ctypes,hashlib,json,os
+base=Path('/Users/timlai/Developer/coimnet')
+plan=json.loads((base/'evidence/OPS-03/local-storage-20261010/migration-plan.json').read_text())
+libc=ctypes.CDLL(None,use_errno=True)
+rename=libc.renamex_np;rename.argtypes=[ctypes.c_char_p,ctypes.c_char_p,ctypes.c_uint];rename.restype=ctypes.c_int
+# RENAME_EXCL = 0x4, verified in local macOS SDK sys/stdio.h lines 37,52.
+def sha(p):
+ h=hashlib.sha256()
+ with p.open('rb') as f:
+  for chunk in iter(lambda:f.read(4*1024*1024),b''):h.update(chunk)
+ return h.hexdigest()
+log=base/'evidence/OPS-03/local-storage-20261010/migration.jsonl'
+assert not log.exists()
+for folder in [base/'data/TSK-11',base/'runs/TSK-11']:
+ assert not folder.exists() and not folder.is_symlink();folder.mkdir()
+with log.open('x') as logf:
+ for op in plan['operations']:
+  src=Path(op['source']);dst=Path(op['destination']);root=Path(op['source_manifest_root'])
+  assert not src.is_symlink() and not dst.exists() and not dst.is_symlink()
+  assert src.lstat().st_dev==dst.parent.stat().st_dev
+  for f in op['files']:
+   path=root/f['path'];assert path.is_file() and not path.is_symlink()
+   assert path.stat().st_size==f['size'] and sha(path)==f['sha256'],path
+  if rename(os.fsencode(src),os.fsencode(dst),4)!=0:
+   errno=ctypes.get_errno();raise OSError(errno,os.strerror(errno),str(src))
+  for f in op['files']:
+   old=root/f['path'];relative=old.relative_to(src) if old!=src else Path('.')
+   new=dst/relative if relative!=Path('.') else dst
+   assert new.is_file() and not new.is_symlink()
+   assert new.stat().st_size==f['size'] and sha(new)==f['sha256'],new
+  assert not src.exists()
+  result={'source':str(src),'destination':str(dst),'files_verified':op['count'],'bytes_verified':op['bytes'],'exclusive_rename':True,'sha256_equal':True}
+  logf.write(json.dumps(result)+'\n');logf.flush();os.fsync(logf.fileno())
+  print(src.name,op['count'],'verified',flush=True)

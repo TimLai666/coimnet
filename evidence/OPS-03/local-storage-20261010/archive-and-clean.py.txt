@@ -1,0 +1,76 @@
+from pathlib import Path
+import hashlib, json, os
+
+base = Path('/Users/timlai/Developer/coimnet')
+scratch = base / 'runs/.tmp/bio-finite-20261010'
+bio = base / 'evidence/MOD-09/finite-config-20261010'
+storage = base / 'evidence/OPS-03/local-storage-20261010'
+checks = json.loads((bio / 'checks-final.json').read_text())
+assert len(checks) == 5 and all(c['exit_code'] == 0 for c in checks)
+
+def sha(p):
+    h = hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda: f.read(4 * 1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+archives = []
+for srcname, dest in [
+    ('contract.json', bio / 'contract.json'),
+    ('probe.go', bio / 'legal-probe.go.txt'),
+    ('luna-red.log', bio / 'delegated-red.log'),
+    ('verify.py', bio / 'verify-initial.py.txt'),
+    ('verify-final.py', bio / 'verify-final.py.txt'),
+    ('opencode-dispatch.json', bio / 'opencode-dispatch.json'),
+    ('opencode-prompt.txt', bio / 'opencode-prompt.txt'),
+    ('opencode.stdout.jsonl', bio / 'opencode.stdout.jsonl'),
+    ('opencode.stderr.log', bio / 'opencode.stderr.log'),
+    ('storage-contract.json', storage / 'contract.json'),
+    ('inventory.py', storage / 'inventory.py.txt'),
+    ('migrate.py', storage / 'migrate.py.txt'),
+    ('classify.py', storage / 'classify.py.txt'),
+    ('cleanup.py', storage / 'cleanup.py.txt'),
+    ('verify-retained.py', storage / 'verify-retained.py.txt'),
+    ('local-runs-red.log', storage / 'delegated-red.log'),
+    ('archive-and-clean.py', storage / 'archive-and-clean.py.txt'),
+]:
+    src = scratch / srcname
+    assert src.is_file() and not src.is_symlink()
+    digest = sha(src)
+    with dest.open('xb') as f: f.write(src.read_bytes())
+    assert sha(src) == digest == sha(dest)
+    archives.append({'source': str(src.relative_to(base)),
+                     'destination': str(dest.relative_to(base)), 'sha256': digest})
+assert sha(scratch / 'realnav-infer/report.json') == sha(storage / 'realnav-infer.stdout.json')
+archives.append({'source': 'runs/.tmp/bio-finite-20261010/realnav-infer/report.json',
+                 'destination': str((storage / 'realnav-infer.stdout.json').relative_to(base)),
+                 'sha256': sha(storage / 'realnav-infer.stdout.json')})
+
+files, dirs = [], []
+for current, subdirs, names in os.walk(scratch, followlinks=False):
+    current = Path(current); dirs.append(current)
+    assert not any((current / name).is_symlink() for name in subdirs + names)
+    for name in names:
+        p = current / name
+        assert p.is_file()
+        files.append({'path': str(p.relative_to(base)), 'size': p.stat().st_size, 'sha256': sha(p)})
+assert 'cached build artifacts from the Go build system' in (scratch / 'go-cache/README').read_text()
+inventory_digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+for f in files:
+    p = base / f['path']
+    assert p.is_file() and not p.is_symlink() and p.stat().st_size == f['size'] and sha(p) == f['sha256']
+    p.unlink()
+for p in sorted(dirs, key=lambda p: len(p.parts), reverse=True):
+    p.rmdir()
+parent_removed = False
+if not list(scratch.parent.iterdir()):
+    scratch.parent.rmdir(); parent_removed = True
+result = {'archives': archives, 'regular_files_removed': len(files),
+          'bytes_removed': sum(f['size'] for f in files),
+          'inventory_sha256': inventory_digest,
+          'scratch_absent': not scratch.exists(), 'tmp_parent_removed_if_empty': parent_removed,
+          'reason': 'Owned scratch, archived small reproduction records, and disposable worker Go cache; full checks finished.'}
+with (storage / 'cleanup-final.json').open('x') as f:
+    json.dump(result, f, indent=2); f.write('\n')
+print(json.dumps({k:v for k,v in result.items() if k!='archives'}, indent=2))

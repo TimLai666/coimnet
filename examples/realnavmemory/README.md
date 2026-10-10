@@ -14,33 +14,33 @@ The original test trials have been evaluated before. They are not a new untouche
 
 ## Run
 
-Keep the source, original model and new trained models outside Git. Every output directory must be new. From the repository root:
+Keep the source under the Git-ignored `data/TSK-11/` directory and models and reports under `runs/TSK-11/`. Every output directory must be new. From the repository root:
 
 ```sh
 go run ./examples/realnavmemory prepare \
-  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
-  --base-model /path/to/realnav-v1/model.json \
-  --out-dir /path/to/memory-plan
+  --input data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --base-model runs/TSK-11/realnav-run-01/model.json \
+  --out-dir runs/TSK-11/memory-plan
 
 go run ./examples/realnavmemory train \
-  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
-  --plan /path/to/memory-plan/plan.json \
-  --out-dir /path/to/memory-training
+  --input data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --plan runs/TSK-11/memory-plan/plan.json \
+  --out-dir runs/TSK-11/memory-training
 
 go run ./examples/realnavmemory infer \
-  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
-  --model /path/to/memory-training/bundle.json \
-  --out-dir /path/to/memory-inference
+  --input data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --model runs/TSK-11/memory-training/bundle.json \
+  --out-dir runs/TSK-11/memory-inference
 
 go run ./examples/realnavmemory rollout \
-  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
-  --model /path/to/memory-training/bundle.json \
-  --out-dir /path/to/memory-rollout
+  --input data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --model runs/TSK-11/memory-training/bundle.json \
+  --out-dir runs/TSK-11/memory-rollout
 
 go run ./examples/realnavmemory counterfactual \
-  --input /path/to/all_ds_t01_d2_cm_no2.csv.gz \
-  --model /path/to/memory-training/bundle.json \
-  --out-dir /path/to/memory-counterfactual
+  --input data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz \
+  --model runs/TSK-11/memory-training/bundle.json \
+  --out-dir runs/TSK-11/memory-counterfactual
 ```
 
 The plan and model bundle have separate versioned contracts. Loading validates the source, feature rules, split, architecture, training options, seeds, controls and update budget, including every trainable parameter’s optimizer step count. Invalid inputs fail before an output directory is created. Existing output directories are never overwritten.

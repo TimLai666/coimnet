@@ -45,7 +45,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 - 保留 `docs/handoff/` 原件與校驗碼，原始接線、訓練參數及執行狀態分開保存。
 - MaleCNS v1.0 官方發布中能接上機制的檔案都屬納入範圍（盤點見 `docs/malecns-release-catalog.md`）；每份新檔案沿用 `data download` 回條與逐批讀取驗證，adapter 須記錄用了哪些欄位、推導規則版本與未知計數。下載頁未描述的過濾變體不得使用。受體表現不在發布內，須另接明示來源的外部資料集。
-- 大型資料、模型、快照與訓練輸出放在 Git 外的本機目錄。小型測試資料須有來源、授權與指紋。
+- 大型資料、模型、快照與訓練輸出放在專案內已忽略的 `data/`、`models/`、`checkpoints/`、`runs/`。暫存放 `runs/.tmp/`，驗證與必要證據保存完成後清除。不另建專案外的資料或執行目錄。小型測試資料須有來源、授權與指紋。
 - 儲存庫只交付框架。特定模型的資料處理、訓練程式與模型若納入，必須明示為範例；個人訓練專案留在 repo 外。新任務範例放 `examples/`，既有 `experiment` 為人工驗證範例。`evidence/` 中的小型人工快照僅作恢復測試證據，不作模型產品發布。
 - 更動模型定位或可選生物機制前讀 `docs/model-and-mechanisms.md`。更動效能或硬體需求前讀 `docs/resources.md`，區分實測、算術估算與尚未驗證的完整圖訓練。
 - 本機已有 `LICENSE`，沿用原件。引用的資料、程式與模型各自核對授權。
@@ -55,7 +55,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 ## Follow-ups
 
 - `experiment/bioinspired_run.go:109`／`bioinspired_npf.go:127`：兩種 RunBioInspired 報告的 Config 與呼叫端共用 Seeds、Registry、Quantitative，時間協定另共用 PulseSteps。公開入口七組修改均改到舊報告，ConfigHash 與執行結果保持原值（P2）。重現見 `evidence/LRN-08/protocol-ownership-20261009/related-followup-summary.json`。建議在共用入口驗證後、雜湊及執行前複製完整可變設定，另票處理。
-- `experiment/bioinspired.go:97`：NPF 協定的 Suppressed 與 Tolerance 都接受 NaN，Validate 及公開 Run 均回成功，報告卻不能編碼成 JSON（P2）。公開入口重現見同一份 related-followup-summary.json。建議保留原錯誤次序、補有限值檢查與合法報告對照，另票處理。
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。

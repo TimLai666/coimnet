@@ -1,0 +1,131 @@
+from pathlib import Path
+import hashlib, json, os, shutil
+
+base = Path('/Users/timlai/Developer/coimnet')
+out = base / 'evidence/OPS-03/local-storage-20261010'
+
+def sha(p):
+    h = hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda: f.read(4 * 1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+def inventory(root):
+    files, links, dirs = [], [], []
+    assert root.is_dir() and not root.is_symlink(), root
+    for current, subdirs, names in os.walk(root, followlinks=False):
+        current = Path(current); dirs.append(current)
+        for name in list(subdirs):
+            p = current / name
+            if p.is_symlink():
+                links.append({'path': str(p), 'target': os.readlink(p)})
+                subdirs.remove(name)
+        for name in names:
+            p = current / name
+            if p.is_symlink():
+                links.append({'path': str(p), 'target': os.readlink(p)})
+            else:
+                assert p.is_file(), p
+                files.append({'path': str(p), 'size': p.stat().st_size,
+                              'sha256': sha(p)})
+    return files, links, dirs
+
+def delete_files(files):
+    # Every removal requires the content read earlier to remain identical.
+    for f in files:
+        p = Path(f['path'])
+        assert p.is_file() and not p.is_symlink(), p
+        assert p.stat().st_size == f['size'] and sha(p) == f['sha256'], p
+        p.unlink()
+
+def remove_empty(dirs):
+    for p in sorted(dirs, key=lambda p: len(p.parts), reverse=True):
+        p.rmdir()
+
+groups = []
+journal = (out / 'cleanup-first.jsonl').open('x')
+def checkpoint():
+    journal.write(json.dumps(groups[-1]) + '\n')
+    journal.flush(); os.fsync(journal.fileno())
+compiled = json.loads((out / 'compiled-temporaries.json').read_text())
+files = [dict(path=str(base / r['path']), size=r['size'], sha256=r['sha256'])
+         for r in compiled]
+delete_files(files)
+groups.append({'kind': 'compiled_test_executables', 'files': files,
+               'reason': 'Disposable validation executables; current example source and model/result files retained.'})
+checkpoint()
+
+for r in json.loads((out / 'source-copies.json').read_text()):
+    root = base / r['directory']
+    files, links, dirs = inventory(root)
+    observed = {str(Path(f['path']).relative_to(root)):
+                {'size': f['size'], 'sha256': f['sha256']} for f in files}
+    assert observed == r['files'] and not r['modified'] and not r['extra'] and not r['missing']
+    expected_links = [{'path': str(root / l['path']), 'target': l['target']} for l in r['links']]
+    assert sorted(links, key=lambda l: l['path']) == sorted(expected_links, key=lambda l: l['path'])
+    delete_files(files)
+    for l in links:
+        p = Path(l['path']); assert p.is_symlink() and os.readlink(p) == l['target']
+        p.unlink()  # Remove only the link, never its MaleCNS target.
+    remove_empty(dirs)
+    groups.append({'kind': 'git_archive_source_copy', 'root': r['directory'],
+                   'count': len(files), 'bytes': sum(f['size'] for f in files),
+                   'commit': r['commit'], 'links_removed': links,
+                   'reason': r['reproduction'], 'absent_after': not root.exists()})
+    checkpoint()
+
+old = [Path('/private/tmp/coimnet-continual-ownership-test.log'),
+       Path('/private/tmp/coimnet-ownership-opencode-20261009/prompt.txt'),
+       Path('/private/tmp/coimnet-ownership-valid-20261009.go'),
+       Path('/private/tmp/coimnet-related-ownership-20261009.go')]
+archive_names = ['old-continual-red.log', 'old-opencode-prompt.txt',
+                 'old-valid-probe.go.txt', 'old-related-probe.go.txt']
+old_records = []
+for p, name in zip(old, archive_names):
+    assert p.is_file() and not p.is_symlink()
+    rec = {'path': str(p), 'size': p.stat().st_size, 'sha256': sha(p)}
+    dest = out / name
+    with dest.open('xb') as f: f.write(p.read_bytes())
+    assert sha(dest) == rec['sha256']
+    rec['archive'] = str(dest.relative_to(base)); old_records.append(rec)
+delete_files(old_records)
+Path('/private/tmp/coimnet-ownership-opencode-20261009').rmdir()
+groups.append({'kind': 'prior_turn_temporaries', 'files': old_records,
+               'reason': 'Full contents archived before removal.'})
+checkpoint()
+
+cache = Path('/private/tmp/coimnet-gocache-bio-finite-20261010')
+files, links, dirs = inventory(cache)
+assert not links
+assert 'cached build artifacts from the Go build system' in (cache / 'README').read_text()
+tree_digest = hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest()
+delete_files(files); remove_empty(dirs)
+groups.append({'kind': 'owned_worker_go_cache', 'root': str(cache),
+               'count': len(files), 'bytes': sum(f['size'] for f in files),
+               'inventory_sha256': tree_digest, 'absent_after': not cache.exists(),
+               'reason': 'Worker confirmed created only for this task and no longer used; Root uses normal Go cache.'})
+checkpoint()
+
+baseline = json.loads((out / 'storage-before.json').read_text())
+metadata = []
+for r in baseline['roots'][:2]:
+    root = Path(r['root'])
+    for f in r['files']:
+        if Path(f['path']).name == '.DS_Store':
+            metadata.append(dict(path=str(root / f['path']), size=f['size'], sha256=f['sha256']))
+delete_files(metadata)
+for r in baseline['roots'][:2]:
+    root = Path(r['root'])
+    files, links, dirs = inventory(root)
+    assert not files and not links
+    remove_empty(dirs)
+groups.append({'kind': 'empty_external_data_run_roots', 'files': metadata,
+               'roots': [r['root'] for r in baseline['roots'][:2]],
+               'absent_after': all(not Path(r['root']).exists() for r in baseline['roots'][:2]),
+               'reason': 'Only Finder metadata and empty folders remained after verified migration.'})
+checkpoint(); journal.close()
+with (out / 'cleanup-first.json').open('x') as f:
+    json.dump(groups, f, indent=2); f.write('\n')
+print(json.dumps({'groups': len(groups), 'regular_files_removed': sum(len(g.get('files', [])) or g.get('count', 0) for g in groups),
+                  'bytes_removed': sum(sum(f['size'] for f in g.get('files', [])) or g.get('bytes', 0) for g in groups)}, indent=2))

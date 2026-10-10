@@ -705,7 +705,7 @@ func runRollout(ctx context.Context, args []string, stdout, stderr io.Writer) er
 	}
 	dataPath := fs.String("data", "", "external licensed trajectory CSV or CSV.gz with return-target metadata")
 	snapshotPath := fs.String("snapshot", "", "saved model.json produced by train")
-	outPath := fs.String("out", "", "new output directory outside the repository and data directory")
+	outPath := fs.String("out", "", "new output directory under runs or outside the repository, separate from the data directory")
 	steps := fs.Int("steps", defaultRolloutSteps, "maximum model decision steps per trial (1..4096)")
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {

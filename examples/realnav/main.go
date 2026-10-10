@@ -150,7 +150,7 @@ func runTrain(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 	fs := flag.NewFlagSet("realnav train", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	dataPath := fs.String("data", "", "external licensed trajectory CSV or CSV.gz")
-	outPath := fs.String("out", "", "new output directory outside the repository and data directory")
+	outPath := fs.String("out", "", "new output directory under runs or outside the repository, separate from the data directory")
 	epochs := fs.Int("epochs", defaultEpochs, "training epochs over trial-held-out training samples")
 	if err := fs.Parse(args); err != nil {
 		return err
@@ -229,7 +229,7 @@ func runInfer(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 	fs.SetOutput(stderr)
 	dataPath := fs.String("data", "", "external licensed trajectory CSV or CSV.gz")
 	snapshotPath := fs.String("snapshot", "", "saved model.json produced by train")
-	outPath := fs.String("out", "", "new output directory outside the repository and data directory")
+	outPath := fs.String("out", "", "new output directory under runs or outside the repository, separate from the data directory")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
@@ -406,6 +406,9 @@ func prepareOutputDirectory(outPath, dataPath string) (string, error) {
 	}
 	for ancestor := resolvedOutput; ; ancestor = filepath.Dir(ancestor) {
 		if _, err := os.Lstat(filepath.Join(ancestor, ".git")); err == nil {
+			if pathWithin(resolvedOutput, filepath.Join(ancestor, "runs")) {
+				break
+			}
 			return "", errors.New("realnav: output directory must be outside the repository")
 		} else if !errors.Is(err, os.ErrNotExist) {
 			return "", fmt.Errorf("realnav: inspect repository boundary: %w", err)

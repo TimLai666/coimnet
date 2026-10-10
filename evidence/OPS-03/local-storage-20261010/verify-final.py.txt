@@ -1,0 +1,45 @@
+from pathlib import Path
+import hashlib, json, subprocess
+
+base = Path(__file__).resolve().parents[3]
+evidence = Path(__file__).resolve().parent
+retained = json.loads((evidence / 'retained-after.json').read_text())
+
+def sha(p):
+    h = hashlib.sha256()
+    with p.open('rb') as f:
+        for block in iter(lambda: f.read(4 * 1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+
+for f in retained['files']:
+    p = base / f['path']
+    assert p.is_file() and not p.is_symlink(), p
+    assert p.stat().st_size == f['size'] and sha(p) == f['sha256'], p
+for name in retained['ignored_paths']:
+    subprocess.run(['git', 'check-ignore', '--quiet', name], cwd=base, check=True)
+absent = [base / 'runs/.tmp',
+          base / 'runs/OPS-10/work/src',
+          base / 'runs/OPS-10/attempt1-bcc0053-work/src',
+          base.parent / 'coimnet-data', base.parent / 'coimnet-runs',
+          Path('/private/tmp/coimnet-continual-ownership-test.log'),
+          Path('/private/tmp/coimnet-ownership-opencode-20261009'),
+          Path('/private/tmp/coimnet-ownership-valid-20261009.go'),
+          Path('/private/tmp/coimnet-related-ownership-20261009.go'),
+          Path('/private/tmp/coimnet-gocache-bio-finite-20261010')]
+for p in absent:
+    assert not p.exists() and not p.is_symlink(), p
+for f in json.loads((evidence / 'compiled-temporaries.json').read_text()):
+    assert not (base / f['path']).exists()
+first = json.loads((evidence / 'cleanup-first.json').read_text())
+final = json.loads((evidence / 'cleanup-final.json').read_text())
+count = sum(len(g.get('files', [])) or g.get('count', 0) for g in first)
+size = sum(sum(f['size'] for f in g.get('files', [])) or g.get('bytes', 0) for g in first)
+print(json.dumps({'retained_files_verified_after_all_cleanup': len(retained['files']),
+                  'retained_bytes': retained['retained_bytes'],
+                  'removed_regular_files': count + final['regular_files_removed'],
+                  'removed_bytes': size + final['bytes_removed'],
+                  'source_copy_symlinks_unlinked_without_following': 2,
+                  'ignored_paths_verified': retained['ignored_paths'],
+                  'absent_paths_verified': [str(p) for p in absent],
+                  'result': 'passed'}, indent=2))

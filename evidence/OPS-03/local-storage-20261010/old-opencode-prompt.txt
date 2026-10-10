@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：嚴格的資深 Go 測試工程師，依人工契約設計回歸，不臆測實作。
+任務：設計一份黑箱測試矩陣。假設 Run(ctx,p,build) 接受含 Tasks []Task{Params map[string]float64}、Stages []Stage、Seeds []uint64、Comparison *Comparison、Evaluation{StateSwitch *Switch{Concentration [][]float64}} 的 Protocol；回傳 report.Protocol、ProtocolHash、結果。builder 是同步回呼。驗證之後、hash/build 之前須深複製全部可變設定。先前 bug 為淺層存入。化學列可為 nil 或非 nil 空列。錯誤順序 ctx nil、ctx canceled、builder nil、Validate。
+檔案責任：只在指定目前暫存目錄新增 test-plan.md，禁止讀取或寫入其他目录、repo、Git、網路。不是實際 repo，沒有可執行 API；請提供測試設計，不宣稱執行。
+預期結果：雙向 caller/report、兩份 reports、map 插入刪除、slice 預留容量追加、nested rows、builder 修改原輸入不影響本次；nil/空表示及部分取消報告保留。
+驗證與回報：附各案例的可觀察斷言、哪個案例應在舊版失敗、未驗證事項。回報只列 test-plan.md 與未知，禁止臆測。
+不要 commit，也不要 stash 或 reset

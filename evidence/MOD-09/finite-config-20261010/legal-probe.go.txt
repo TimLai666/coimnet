@@ -1,0 +1,10 @@
+package main
+import("context";"encoding/json";"fmt";"math";"os";"github.com/TimLai666/coimnet/experiment")
+func main(){
+ npf:=experiment.BioInspiredConfig{Protocol:experiment.ProtocolNPFMemoryExpression,Seeds:[]uint64{1,2,3},Episodes:1,Suppressed:.4,Tolerance:1e-3,Registry:[]string{"S15"}}
+ ecd:=experiment.BioInspiredConfig{Protocol:experiment.ProtocolEcdysoneInspired,Seeds:[]uint64{1,2,3},Episodes:1,PulseSteps:[]int{0,1,2,3},Registry:[]string{"S14"}}
+ controls:=map[string]experiment.BioInspiredConfig{"npf":npf,"ecdysone":ecd}; c:=npf;c.Suppressed=math.SmallestNonzeroFloat64;controls["suppressed-smallest"]=c;c=npf;c.Suppressed=math.Nextafter(1,0);controls["suppressed-near-one"]=c;c=npf;c.Tolerance=math.SmallestNonzeroFloat64;controls["tolerance-smallest"]=c;c=npf;c.Tolerance=math.MaxFloat64;controls["tolerance-largest"]=c;c=npf;c.PulseSteps=[]int{};controls["npf-empty-pulses"]=c
+ results:=map[string]json.RawMessage{}
+ for name,cfg:=range controls{if err:=cfg.Validate();err!=nil{panic(err)};r,err:=experiment.RunBioInspired(context.Background(),cfg);if err!=nil{panic(err)};b,err:=json.Marshal(r);if err!=nil{panic(err)};results[name]=b}
+ b,err:=json.MarshalIndent(results,"","  ");if err!=nil{panic(err)};fmt.Fprintln(os.Stdout,string(b))
+}

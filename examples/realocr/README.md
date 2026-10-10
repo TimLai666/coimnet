@@ -20,10 +20,10 @@ KMNIST 是 28×28 灰階的單字元くずし字資料集。每筆資料只代�
 
 ## 下載與 metadata
 
-資料必須放在 Git 外，例如：
+資料放在專案已忽略的 `data/`，不納入 Git。從專案根目錄下載：
 
 ```sh
-data_dir=/Users/timlai/Developer/coimnet-data/TSK-11/kmnist
+data_dir=data/TSK-11/kmnist
 mkdir -p "$data_dir"
 curl -L --fail --retry 3 -o "$data_dir/train-images-idx3-ubyte.gz" \
   https://codh.rois.ac.jp/kmnist/dataset/kmnist/train-images-idx3-ubyte.gz
@@ -45,13 +45,14 @@ shasum -a 256 "$data_dir"/*
 以下是小樣本實跑設定。`--train-count` 和 `--test-count` 是每個 split 的總數，程式依 label 以固定 round-robin 選取，避免只取到檔案開頭的單一類別。訓練與測試資料是兩個不同 IDX split，測試資料不會進入更新迴圈。
 
 ```sh
+mkdir -p runs/TSK-11
 go run ./examples/realocr \
-  --data-dir /Users/timlai/Developer/coimnet-data/TSK-11/kmnist \
+  --data-dir data/TSK-11/kmnist \
   --train-count 1000 \
   --test-count 200 \
   --epochs 1 \
   --seed 20260924 \
-  --report /tmp/coimnet-realocr.json
+  --report runs/TSK-11/realocr-report.json
 ```
 
 stdout 和 `--report` 是不含執行時間的 deterministic JSON，包含：
