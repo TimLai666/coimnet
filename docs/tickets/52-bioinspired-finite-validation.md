@@ -3,7 +3,7 @@
 **Epic:** 生物啟發範例的可驗證設定
 **User Story:** 合法設定與報告保持，非法數值在執行及雜湊前回錯
 **Blocked by:** 無
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策｜2026-10-10：共用契約與驗收
 
@@ -13,11 +13,13 @@
 - [x] NPF Suppressed 嚴格介於 0 與 1，Tolerance 嚴格正且有限，沿用原錯誤位置與文字。
 - [x] 合法 NPF／Ecdysone 完整報告與修正前及兩個新程序逐位元組相同。
 - [x] gofmt、build、完整一般與 race、vet、相依性及治理通過。
-- [ ] Root 審查完整 diff、需求證據、提交推送與遠端核對完成。
+- [x] Root 審查完整 diff、需求證據、提交推送與遠端核對完成。
 
 ## 驗證證據
 
 八個新增回歸與九個既有控制通過，修正前有三個新增回歸會失敗。七份完整合法報告在修正前與兩個新程序逐位元組相同。完整一般與 race 各 57 套件、格式、build、vet、相依性及八個治理／索引專項通過，見 [MOD-09 驗證](../../evidence/MOD-09/finite-config-20261010/verification.json)。
+
+實作 `d3aa982` 已推送，遠端 main 與來源提交相同。交付紀錄見 [delivery.json](../../evidence/MOD-09/finite-config-20261010/delivery.json)。
 
 ## 減法審查
 

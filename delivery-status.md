@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 52](docs/tickets/52-bioinspired-finite-validation.md) 與 [ticket 53](docs/tickets/53-project-local-data-and-runs.md) 各完成 4／5 驗收，提交推送與遠端核對待完成。非有限值在執行前回錯，七組合法報告逐位元組相同。207 份資料及結果已搬回專案，清理後保留的 479 份原件逐檔核對通過，9,151 份暫存共 714 MB 已清除。完整一般與 race 各 57 套件、格式、build、vet、相依性與八個治理／索引專項通過。
+[ticket 52](docs/tickets/52-bioinspired-finite-validation.md) 與 [ticket 53](docs/tickets/53-project-local-data-and-runs.md) 各完成 5／5 驗收與交付。非有限值在執行前回錯，七組合法報告逐位元組相同。207 份資料及結果已搬回專案，清理後保留的 479 份原件逐檔核對通過，9,151 份暫存共 714 MB 已清除。完整一般與 race 各 57 套件、格式、build、vet、相依性與八個治理／索引專項通過。實作 `d3aa982` 已推送並核對遠端，見[數值交付](evidence/MOD-09/finite-config-20261010/delivery.json)與[保存交付](evidence/OPS-03/local-storage-20261010/delivery.json)。
 
 [ticket 51](docs/tickets/51-continual-protocol-ownership.md) 已完成 5／5 驗收與交付。目標是讓連續任務的執行、雜湊與報告各自保留呼叫時的完整設定。八組回歸、30 個相關頂層測試、七份完整報告與雙程序一致、八個 CLI 流程、完整一般與 race 各 57 套件及格式、build、vet、相依性通過。656 份 Go 來源與 3,514 份原件保持，八個治理／索引專項通過，實作 `3546b88` 已推送並核對遠端，見[工程驗證](evidence/LRN-08/protocol-ownership-20261009/verification.json)與[交付紀錄](evidence/LRN-08/protocol-ownership-20261009/delivery.json)。
 
@@ -126,7 +126,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本階段完成 ticket 52 的生物啟發數值驗證與 ticket 53 的專案內資料保存。合法報告及歷史證據保持，必要來源、模型與執行結果先核對指紋再搬移，暫存確認用途後清除。
+本階段已完成 ticket 52 的生物啟發數值驗證與 ticket 53 的專案內資料保存。合法報告及歷史證據保持，必要來源、模型與執行結果先核對指紋再搬移，暫存確認用途後清除。
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
@@ -143,8 +143,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 52 | 研究者可在生物啟發協定執行前拒絕非法數值 | Codex Root / Luna max 測試 | in_progress | 4／5 驗收；17 個相關頂層測試、七份合法報告一致、Mac 完整檢查通過，提交推送待完成 |
-| 53 | 使用者可在專案內保存必要資料與結果，並清除暫存 | Codex Root / Luna max 測試及唯讀盤點 | in_progress | 4／5 驗收；207 份移位指紋相同，479 份必要原件保持，9,151 份暫存清除，提交推送待完成 |
+| 52 | 研究者可在生物啟發協定執行前拒絕非法數值 | Codex Root / Luna max 測試 | completed | 5／5。17 個相關頂層測試、七份合法報告一致、Mac 完整檢查通過，實作 d3aa982 已推送核對 |
+| 53 | 使用者可在專案內保存必要資料與結果，並清除暫存 | Codex Root / Luna max 測試及唯讀盤點 | completed | 5／5。207 份移位指紋相同，479 份必要原件保持，9,151 份暫存清除，實作 d3aa982 已推送核對 |
 | 01 | 開發者可核對環境與 Insyra 實際能力 | 主 agent / API 查核 agent | verified_scoped | Mac 與 Ubuntu 實際 doctor、Insyra 數值探測通過 |
 | 02 | 使用者可計算稀疏前向與完整梯度 | sparse agent | verified_scoped | 手算、獨立稠密參考、形狀錯誤、有限差分已通過 |
 | 03 | 使用者可提供與對齊具名訊號 | 主 agent / Luna 審查 | in_progress | SIG-01／02／04／05／06 fixture 已通過；SIG-03 控制器資料流待完成 |
@@ -196,7 +196,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-Tickets 52、53 沒有目前已確認的交付阻礙，Mac 完整檢查與清理後原件核對通過。OpenCode 免費模型本輪實際回覆 `403: OpenCode's free tier can only be used from within OpenCode`，已依專案規則改 Luna max 完成測試與唯讀盤點，Root 審查及修正。
+Tickets 52、53 已完成交付，沒有目前已確認的阻礙。Mac 完整檢查與清理後原件核對通過。OpenCode 免費模型本輪實際回覆 `403: OpenCode's free tier can only be used from within OpenCode`，已依專案規則改 Luna max 完成測試與唯讀盤點，Root 審查及修正。
 
 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已分離三項原始梯度，觀察到共用核心的局部競爭。梯度與探索對長期學習的因果作用尚未驗證，不能依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
@@ -212,7 +212,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-目前下一個可驗證成果是完成 tickets 52、53 的提交推送及遠端核對。生物啟發範例的設定共用 P2 保留於 [AGENTS.md](AGENTS.md#follow-ups)，兩票交付後另票處理，驗收為雙向設定隔離及合法報告不變。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+本階段 tickets 52、53 已完成。下一個可驗證成果是讓生物啟發範例的報告保留執行當時的設定，避免呼叫端修改設定後連舊報告也被改動。此 P2 記於 [AGENTS.md](AGENTS.md#follow-ups)，後續另立工作票，驗收為雙向設定隔離及合法報告不變。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 
