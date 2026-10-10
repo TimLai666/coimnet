@@ -1,0 +1,729 @@
+--- FAIL: TestOnlyNetworkPackagesImportHTTP (95.73s)
+    privacy_test.go:95: go list -deps failed: exit status 1
+        backend/webgpu/sparse_backward.go:12:2: missing go.sum entry for module providing package github.com/gogpu/gputypes (imported by github.com/TimLai666/coimnet/backend/webgpu); to add:
+        	go get github.com/TimLai666/coimnet/backend/webgpu
+        backend/webgpu/sparse_backward.go:13:2: missing go.sum entry for module providing package github.com/gogpu/wgpu (imported by github.com/TimLai666/coimnet/backend/webgpu); to add:
+        	go get github.com/TimLai666/coimnet/backend/webgpu
+        backend/webgpu/sparse_backward.go:14:2: missing go.sum entry for module providing package github.com/gogpu/wgpu/hal/allbackends (imported by github.com/TimLai666/coimnet/backend/webgpu); to add:
+        	go get github.com/TimLai666/coimnet/backend/webgpu
+        internal/fileio/open_unix.go:8:2: missing go.sum entry for module providing package golang.org/x/sys/unix (imported by github.com/TimLai666/coimnet/download); to add:
+        	go get github.com/TimLai666/coimnet/download
+        learning/individual.go:11:2: missing go.sum entry for module providing package github.com/HazelnutParadise/insyra/nn (imported by github.com/TimLai666/coimnet/internal/cli); to add:
+        	go get github.com/TimLai666/coimnet/internal/cli
+        feather/reader.go:15:2: missing go.sum entry for module providing package github.com/apache/arrow/go/v17/arrow (imported by github.com/TimLai666/coimnet/connectome); to add:
+        	go get github.com/TimLai666/coimnet/connectome
+        feather/validate.go:8:2: missing go.sum entry for module providing package github.com/apache/arrow/go/v17/arrow/array (imported by github.com/TimLai666/coimnet/connectome); to add:
+        	go get github.com/TimLai666/coimnet/connectome
+        feather/reader.go:16:2: missing go.sum entry for module providing package github.com/apache/arrow/go/v17/arrow/ipc (imported by github.com/TimLai666/coimnet/connectome/flywire); to add:
+        	go get github.com/TimLai666/coimnet/connectome/flywire
+        feather/allocator.go:7:2: missing go.sum entry for module providing package github.com/apache/arrow/go/v17/arrow/memory (imported by github.com/TimLai666/coimnet/connectome/flywire); to add:
+        	go get github.com/TimLai666/coimnet/connectome/flywire
+        github.com/TimLai666/coimnet 
+        internal/goarch 
+        unsafe 
+        internal/abi internal/goarch unsafe
+        internal/unsafeheader unsafe
+        internal/cpu unsafe
+        internal/bytealg internal/cpu unsafe
+        internal/byteorder 
+        internal/chacha8rand internal/byteorder internal/cpu internal/goarch unsafe
+        internal/coverage/rtcov unsafe
+        internal/godebugs 
+        internal/goexperiment 
+        internal/goos 
+        internal/profilerecord 
+        internal/runtime/atomic internal/cpu internal/goarch unsafe
+        internal/runtime/exithook internal/runtime/atomic unsafe
+        internal/runtime/gc internal/goarch
+        internal/runtime/sys internal/cpu internal/goarch internal/goos
+        internal/runtime/gc/scan internal/goarch internal/runtime/gc internal/runtime/sys unsafe
+        internal/asan unsafe
+        internal/msan unsafe
+        internal/race internal/abi unsafe
+        internal/runtime/math internal/goarch
+        internal/runtime/maps internal/abi internal/asan internal/goarch internal/msan internal/race internal/runtime/math internal/runtime/sys unsafe
+        internal/runtime/pprof/label 
+        math/bits unsafe
+        internal/strconv math/bits unsafe
+        internal/stringslite internal/bytealg unsafe
+        internal/trace/tracev2 
+        runtime internal/abi internal/bytealg internal/byteorder internal/chacha8rand internal/coverage/rtcov internal/cpu internal/goarch internal/godebugs internal/goexperiment internal/goos internal/profilerecord internal/runtime/atomic internal/runtime/exithook internal/runtime/gc internal/runtime/gc/scan internal/runtime/maps internal/runtime/math internal/runtime/pprof/label internal/runtime/sys internal/strconv internal/stringslite internal/trace/tracev2 math/bits unsafe
+        internal/reflectlite internal/abi internal/goarch internal/unsafeheader runtime unsafe
+        errors internal/reflectlite unsafe
+        cmp 
+        iter internal/race runtime unsafe
+        math math/bits unsafe
+        unicode/utf8 
+        strconv errors internal/bytealg internal/strconv internal/stringslite unicode/utf8
+        sync/atomic unsafe
+        internal/sync internal/abi internal/goarch internal/race sync/atomic unsafe
+        internal/synctest internal/abi unsafe
+        sync internal/race internal/sync internal/synctest runtime sync/atomic unsafe
+        unicode 
+        reflect errors internal/abi internal/bytealg internal/goarch internal/race internal/runtime/maps internal/runtime/sys internal/strconv internal/unsafeheader iter math runtime strconv sync unicode unicode/utf8 unsafe
+        slices cmp iter math/bits unsafe
+        internal/fmtsort cmp reflect slices
+        io errors sync
+        internal/oserror errors
+        path errors internal/bytealg unicode/utf8
+        internal/bisect runtime sync sync/atomic
+        internal/godebug internal/bisect internal/godebugs sync sync/atomic unsafe
+        syscall errors internal/abi internal/asan internal/bytealg internal/byteorder internal/goarch internal/msan internal/oserror internal/race internal/strconv runtime sync sync/atomic unsafe
+        time errors internal/bytealg internal/godebug internal/stringslite math/bits runtime sync syscall unsafe
+        io/fs errors internal/bytealg internal/oserror io path slices time unicode/utf8
+        internal/filepathlite errors internal/bytealg internal/stringslite io/fs slices
+        internal/syscall/unix internal/abi runtime syscall unsafe
+        internal/poll errors internal/strconv internal/syscall/unix io runtime sync sync/atomic syscall time unsafe
+        internal/syscall/execenv syscall
+        internal/testlog sync sync/atomic unsafe
+        os errors internal/bytealg internal/filepathlite internal/poll internal/strconv internal/stringslite internal/syscall/execenv internal/syscall/unix internal/testlog io io/fs runtime slices sync sync/atomic syscall time unsafe
+        fmt errors internal/fmtsort internal/stringslite io math os reflect slices strconv sync unicode/utf8
+        sort internal/reflectlite math/bits slices
+        strings errors internal/abi internal/bytealg internal/stringslite io iter math/bits sync unicode unicode/utf8 unsafe
+        github.com/TimLai666/coimnet/backend fmt reflect sort strings sync
+        context errors internal/reflectlite sync sync/atomic time
+        encoding/binary errors io math reflect slices sync
+        github.com/gogpu/gputypes 
+        github.com/gogpu/wgpu 
+        github.com/gogpu/wgpu/hal/allbackends 
+        github.com/TimLai666/coimnet/backend/webgpu context encoding/binary errors fmt github.com/gogpu/gputypes github.com/gogpu/wgpu github.com/gogpu/wgpu/hal/allbackends math strings sync time
+        bytes errors internal/bytealg io iter math/bits unicode unicode/utf8 unsafe
+        bufio bytes errors io strings unicode/utf8
+        hash io
+        crypto hash io strconv
+        crypto/internal/fips140deps/godebug internal/godebug
+        crypto/internal/fips140 crypto/internal/fips140deps/godebug errors runtime strings unsafe
+        crypto/internal/fips140/alias unsafe
+        crypto/internal/fips140deps/byteorder internal/byteorder
+        crypto/internal/fips140deps/cpu internal/cpu internal/goarch
+        crypto/internal/impl strings
+        crypto/internal/fips140/sha256 bytes crypto/internal/fips140 crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/impl errors hash math/bits
+        crypto/internal/constanttime 
+        crypto/internal/fips140/subtle crypto/internal/constanttime crypto/internal/fips140/alias crypto/internal/fips140deps/byteorder math/bits
+        crypto/internal/fips140/sha3 bytes crypto/internal/fips140 crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/impl errors math/bits runtime unsafe
+        crypto/internal/fips140/sha512 bytes crypto/internal/fips140 crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/impl errors hash math/bits
+        crypto/internal/fips140/hmac bytes crypto/internal/fips140 crypto/internal/fips140/sha256 crypto/internal/fips140/sha3 crypto/internal/fips140/sha512 errors hash
+        crypto/internal/fips140/check crypto/internal/fips140 crypto/internal/fips140/hmac crypto/internal/fips140/sha256 crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/godebug io unsafe
+        crypto/internal/fips140/aes bytes crypto/internal/fips140 crypto/internal/fips140/alias crypto/internal/fips140/check crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/fips140deps/godebug crypto/internal/impl errors math/bits strconv
+        crypto/internal/fips140deps/time time
+        crypto/internal/entropy/v1.0.0 crypto/internal/fips140deps/time errors math/bits sync/atomic unsafe
+        crypto/internal/sysrand internal/syscall/unix os sync sync/atomic time unsafe
+        crypto/internal/fips140/drbg bytes crypto/internal/entropy/v1.0.0 crypto/internal/fips140 crypto/internal/fips140/aes crypto/internal/fips140/check crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder crypto/internal/sysrand errors io math/bits sync sync/atomic
+        crypto/internal/fips140/aes/gcm crypto/internal/fips140 crypto/internal/fips140/aes crypto/internal/fips140/alias crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/impl errors math
+        crypto/fips140 crypto/internal/fips140 crypto/internal/fips140/check internal/godebug unsafe
+        crypto/internal/fips140only crypto/fips140 crypto/internal/fips140/drbg crypto/internal/fips140/sha256 crypto/internal/fips140/sha3 crypto/internal/fips140/sha512 hash io
+        crypto/subtle crypto/internal/constanttime crypto/internal/fips140/subtle internal/runtime/sys unsafe
+        crypto/cipher bytes crypto/internal/fips140/aes crypto/internal/fips140/aes/gcm crypto/internal/fips140/alias crypto/internal/fips140only crypto/subtle errors internal/byteorder io
+        crypto/internal/boring/sig 
+        crypto/internal/boring crypto crypto/cipher crypto/internal/boring/sig hash
+        crypto/sha256 crypto crypto/internal/boring crypto/internal/fips140/sha256 hash
+        encoding/hex errors fmt io slices strings
+        encoding 
+        encoding/base64 internal/byteorder io slices strconv
+        unicode/utf16 
+        encoding/json bytes cmp encoding encoding/base64 errors fmt io math reflect slices strconv strings sync unicode unicode/utf16 unicode/utf8 unsafe
+        github.com/TimLai666/coimnet/dynamics context crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/backend/webgpu math sync
+        golang.org/x/sys/unix 
+        github.com/TimLai666/coimnet/internal/fileio context errors fmt golang.org/x/sys/unix io os
+        github.com/TimLai666/coimnet/internal/jsonkey strings unicode
+        github.com/HazelnutParadise/insyra/nn 
+        container/heap sort
+        github.com/TimLai666/coimnet/internal/strictjson bytes encoding/json errors fmt github.com/TimLai666/coimnet/internal/jsonkey io reflect strconv strings
+        math/rand internal/godebug math sync sync/atomic unsafe
+        math/big bytes errors fmt internal/byteorder io math math/bits math/rand slices strconv strings sync unsafe
+        github.com/TimLai666/coimnet/signal bytes container/heap context crypto/sha256 encoding/json errors fmt github.com/TimLai666/coimnet/internal/strictjson io math math/big math/bits reflect sort strconv strings unicode/utf8
+        github.com/TimLai666/coimnet/modulation fmt github.com/TimLai666/coimnet/signal math strings
+        github.com/TimLai666/coimnet/plasticity fmt math
+        math/rand/v2 errors internal/byteorder internal/chacha8rand math math/bits unsafe
+        github.com/TimLai666/coimnet/learning context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/HazelnutParadise/insyra/nn github.com/TimLai666/coimnet/backend/webgpu github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/plasticity github.com/TimLai666/coimnet/signal math math/rand/v2 reflect strings sync
+        github.com/TimLai666/coimnet/replay cmp crypto/sha256 encoding/binary encoding/hex fmt math math/rand/v2 slices sync
+        path/filepath errors internal/bytealg internal/filepathlite io/fs os runtime slices strings syscall unicode/utf8
+        github.com/TimLai666/coimnet/checkpoint bufio bytes context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/internal/jsonkey github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/plasticity github.com/TimLai666/coimnet/replay github.com/TimLai666/coimnet/signal io math os path path/filepath reflect strconv strings syscall unicode/utf8
+        flag encoding errors fmt io os reflect runtime slices strconv strings time
+        github.com/TimLai666/coimnet/experiment/gridnav fmt math math/rand/v2
+        github.com/TimLai666/coimnet/experiment/nav2d fmt math math/rand/v2
+        github.com/TimLai666/coimnet/internal/delayedfixture github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning math
+        github.com/TimLai666/coimnet/learning/rl context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/learning math reflect
+        maps iter unsafe
+        github.com/TimLai666/coimnet/experiment context crypto/sha256 encoding/json errors fmt github.com/TimLai666/coimnet/checkpoint github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/experiment/gridnav github.com/TimLai666/coimnet/experiment/nav2d github.com/TimLai666/coimnet/internal/delayedfixture github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/learning/rl github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/plasticity github.com/TimLai666/coimnet/replay github.com/TimLai666/coimnet/signal maps math math/rand/v2 reflect slices sort strings
+        github.com/TimLai666/coimnet/config bytes context encoding/json errors fmt github.com/TimLai666/coimnet/experiment github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/plasticity math reflect sort strconv strings
+        github.com/apache/arrow/go/v17/arrow 
+        github.com/apache/arrow/go/v17/arrow/array 
+        github.com/apache/arrow/go/v17/arrow/ipc 
+        github.com/apache/arrow/go/v17/arrow/memory 
+        github.com/TimLai666/coimnet/feather bytes context encoding/binary errors fmt github.com/TimLai666/coimnet/internal/fileio github.com/apache/arrow/go/v17/arrow github.com/apache/arrow/go/v17/arrow/array github.com/apache/arrow/go/v17/arrow/ipc github.com/apache/arrow/go/v17/arrow/memory io sync
+        github.com/TimLai666/coimnet/internal/extsort bufio bytes container/heap context errors fmt io math os path/filepath slices
+        regexp/syntax slices sort strconv strings sync unicode unicode/utf8
+        regexp bytes io regexp/syntax slices strconv strings sync unicode unicode/utf8
+        github.com/TimLai666/coimnet/connectome bufio bytes context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/feather github.com/TimLai666/coimnet/internal/extsort github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/signal github.com/apache/arrow/go/v17/arrow github.com/apache/arrow/go/v17/arrow/array hash io math os path/filepath regexp slices sort strconv strings time unicode/utf8 unsafe
+        hash/crc32 errors hash internal/byteorder internal/cpu sync sync/atomic
+        compress/flate bufio errors fmt io math math/bits sort strconv sync
+        compress/gzip bufio compress/flate encoding/binary errors fmt hash/crc32 io time
+        container/list 
+        crypto/internal/randutil io math/rand/v2
+        crypto/internal/rand crypto/internal/boring crypto/internal/fips140/drbg crypto/internal/randutil internal/godebug io unsafe
+        crypto/rand crypto/internal/boring crypto/internal/fips140/drbg crypto/internal/fips140only crypto/internal/rand errors io math/big unsafe
+        crypto/aes crypto/cipher crypto/internal/boring crypto/internal/fips140/aes strconv
+        crypto/des crypto/cipher crypto/internal/fips140/alias crypto/internal/fips140only errors internal/byteorder strconv sync
+        crypto/internal/fips140/nistec/fiat crypto/internal/fips140/check crypto/internal/fips140/subtle errors math/bits
+        crypto/internal/fips140/nistec crypto/internal/constanttime crypto/internal/fips140/check crypto/internal/fips140/nistec/fiat crypto/internal/fips140deps/byteorder errors math/bits runtime sync unsafe
+        crypto/internal/fips140/ecdh bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/nistec crypto/internal/fips140deps/byteorder errors io math/bits sync
+        crypto/internal/fips140/edwards25519/field crypto/internal/fips140/check crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder errors math/bits
+        crypto/ecdh bytes crypto crypto/internal/boring crypto/internal/fips140/ecdh crypto/internal/fips140/edwards25519/field crypto/internal/fips140only crypto/internal/rand crypto/subtle errors io
+        crypto/elliptic crypto/internal/fips140/nistec errors io math/big sync
+        crypto/internal/boring/bbig crypto/internal/boring math/big unsafe
+        crypto/internal/fips140/bigmod crypto/internal/fips140/check crypto/internal/fips140deps/byteorder crypto/internal/fips140deps/cpu crypto/internal/impl errors math/bits
+        crypto/internal/fips140/ecdsa bytes crypto/internal/fips140 crypto/internal/fips140/bigmod crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/hmac crypto/internal/fips140/nistec crypto/internal/fips140/sha512 errors hash io sync
+        weak internal/abi runtime unsafe
+        crypto/internal/fips140cache runtime sync weak
+        crypto/sha3 crypto crypto/internal/fips140/sha3 hash unsafe
+        crypto/internal/fips140hash crypto/internal/fips140/sha3 crypto/sha3 hash unsafe
+        crypto/sha512 crypto crypto/internal/boring crypto/internal/fips140/sha512 hash
+        internal/saferio io unsafe
+        encoding/asn1 bytes errors fmt internal/saferio math math/big reflect slices strconv strings time unicode/utf16 unicode/utf8
+        vendor/golang.org/x/crypto/cryptobyte/asn1 
+        vendor/golang.org/x/crypto/cryptobyte encoding/asn1 errors fmt vendor/golang.org/x/crypto/cryptobyte/asn1 math/big reflect time
+        crypto/ecdsa crypto crypto/ecdh crypto/elliptic crypto/internal/boring crypto/internal/boring/bbig crypto/internal/fips140/ecdsa crypto/internal/fips140/nistec crypto/internal/fips140cache crypto/internal/fips140hash crypto/internal/fips140only crypto/internal/rand crypto/sha512 crypto/subtle errors vendor/golang.org/x/crypto/cryptobyte vendor/golang.org/x/crypto/cryptobyte/asn1 io math/big math/rand/v2
+        crypto/internal/fips140/edwards25519 crypto/internal/constanttime crypto/internal/fips140/check crypto/internal/fips140/edwards25519/field crypto/internal/fips140deps/byteorder errors math/bits sync
+        crypto/internal/fips140/ed25519 bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/edwards25519 crypto/internal/fips140/sha512 errors strconv sync
+        crypto/ed25519 crypto crypto/internal/fips140/ed25519 crypto/internal/fips140cache crypto/internal/fips140only crypto/internal/rand crypto/rand crypto/subtle errors internal/godebug io strconv
+        crypto/internal/fips140/hkdf bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/hmac crypto/internal/fips140/sha256 errors hash
+        crypto/hkdf crypto/internal/fips140/hkdf crypto/internal/fips140hash crypto/internal/fips140only errors hash
+        crypto/hmac crypto/internal/boring crypto/internal/fips140/hmac crypto/internal/fips140hash crypto/internal/fips140only crypto/subtle hash
+        crypto/internal/fips140/mlkem bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/sha3 crypto/internal/fips140/subtle crypto/internal/fips140deps/byteorder errors sync
+        crypto/mlkem crypto crypto/internal/fips140/mlkem
+        vendor/golang.org/x/crypto/internal/alias unsafe
+        vendor/golang.org/x/crypto/chacha20 crypto/cipher encoding/binary errors vendor/golang.org/x/crypto/internal/alias math/bits runtime
+        vendor/golang.org/x/crypto/internal/poly1305 crypto/subtle encoding/binary math/bits
+        vendor/golang.org/x/crypto/chacha20poly1305 crypto/cipher crypto/fips140 encoding/binary errors vendor/golang.org/x/crypto/chacha20 vendor/golang.org/x/crypto/internal/alias vendor/golang.org/x/crypto/internal/poly1305
+        crypto/hpke bytes crypto crypto/cipher crypto/ecdh crypto/fips140 crypto/hkdf crypto/internal/fips140/aes crypto/internal/fips140/aes/gcm crypto/internal/fips140/drbg crypto/internal/rand crypto/mlkem crypto/sha256 crypto/sha3 crypto/sha512 errors fmt vendor/golang.org/x/crypto/chacha20poly1305 hash internal/byteorder slices
+        crypto/internal/fips140/tls12 bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/hmac crypto/internal/fips140/sha256 crypto/internal/fips140/sha512 errors hash
+        crypto/internal/fips140/tls13 bytes crypto/internal/fips140 crypto/internal/fips140/check crypto/internal/fips140/hkdf crypto/internal/fips140/sha256 crypto/internal/fips140deps/byteorder errors hash
+        crypto/md5 crypto crypto/internal/fips140only errors hash internal/byteorder math/bits
+        crypto/rc4 crypto/internal/fips140/alias crypto/internal/fips140only errors strconv
+        crypto/internal/fips140/rsa bytes crypto/internal/constanttime crypto/internal/fips140 crypto/internal/fips140/bigmod crypto/internal/fips140/check crypto/internal/fips140/drbg crypto/internal/fips140/sha256 crypto/internal/fips140/sha3 crypto/internal/fips140/sha512 crypto/internal/fips140/subtle errors hash io sync
+        crypto/rsa crypto crypto/internal/boring crypto/internal/boring/bbig crypto/internal/fips140/bigmod crypto/internal/fips140/rsa crypto/internal/fips140hash crypto/internal/fips140only crypto/internal/rand crypto/rand crypto/subtle errors fmt hash internal/godebug io math math/big
+        crypto/sha1 crypto crypto/internal/boring crypto/internal/fips140only crypto/internal/impl errors hash internal/byteorder internal/cpu math/bits
+        crypto/tls/internal/fips140tls crypto/fips140 sync/atomic
+        crypto/dsa crypto/internal/fips140only crypto/internal/rand errors io math/big
+        crypto/x509/internal/macos bytes errors internal/abi runtime strconv time unsafe
+        crypto/x509/pkix encoding/asn1 encoding/hex fmt math/big time
+        encoding/pem bytes encoding/base64 errors io slices strings
+        vendor/golang.org/x/net/dns/dnsmessage errors slices
+        internal/nettrace 
+        unique internal/abi internal/goarch internal/stringslite internal/sync runtime sync sync/atomic unsafe weak
+        net/netip cmp errors internal/bytealg internal/byteorder math math/bits strconv unique
+        internal/routebsd errors internal/byteorder net/netip runtime syscall unsafe
+        internal/singleflight sync
+        net cmp context errors vendor/golang.org/x/net/dns/dnsmessage internal/bytealg internal/godebug internal/nettrace internal/poll internal/routebsd internal/singleflight internal/strconv internal/stringslite internal/syscall/unix io io/fs net/netip os runtime slices sync sync/atomic syscall time unsafe
+        net/url errors fmt internal/godebug net/netip path slices strconv strings unsafe
+        crypto/x509 bytes crypto crypto/aes crypto/cipher crypto/des crypto/dsa crypto/ecdh crypto/ecdsa crypto/ed25519 crypto/elliptic crypto/md5 crypto/rsa crypto/sha1 crypto/sha256 crypto/sha512 crypto/x509/internal/macos crypto/x509/pkix encoding/asn1 encoding/hex encoding/pem errors fmt vendor/golang.org/x/crypto/cryptobyte vendor/golang.org/x/crypto/cryptobyte/asn1 internal/godebug io iter maps math math/big math/bits net net/netip net/url runtime slices strconv strings sync time unicode unicode/utf16 unicode/utf8 unsafe
+        crypto/tls bytes container/list context crypto crypto/aes crypto/cipher crypto/des crypto/ecdh crypto/ecdsa crypto/ed25519 crypto/elliptic crypto/fips140 crypto/hkdf crypto/hmac crypto/hpke crypto/internal/boring crypto/internal/fips140/aes crypto/internal/fips140/aes/gcm crypto/internal/fips140/tls12 crypto/internal/fips140/tls13 crypto/md5 crypto/mlkem crypto/rand crypto/rc4 crypto/rsa crypto/sha1 crypto/sha256 crypto/sha512 crypto/subtle crypto/tls/internal/fips140tls crypto/x509 encoding/pem errors fmt vendor/golang.org/x/crypto/chacha20poly1305 vendor/golang.org/x/crypto/cryptobyte hash internal/byteorder internal/cpu internal/godebug io net os runtime slices sort strconv strings sync sync/atomic time unsafe weak
+        vendor/golang.org/x/text/transform bytes errors io unicode/utf8
+        log/internal 
+        log fmt io log/internal os runtime sync sync/atomic time
+        vendor/golang.org/x/text/unicode/bidi bytes container/list fmt log sort unicode/utf8
+        vendor/golang.org/x/text/secure/bidirule errors vendor/golang.org/x/text/transform vendor/golang.org/x/text/unicode/bidi unicode/utf8
+        vendor/golang.org/x/text/unicode/norm encoding/binary fmt vendor/golang.org/x/text/transform io sync unicode/utf8
+        vendor/golang.org/x/net/idna fmt vendor/golang.org/x/text/secure/bidirule vendor/golang.org/x/text/unicode/bidi vendor/golang.org/x/text/unicode/norm math strings unicode/utf8
+        net/textproto bufio bytes errors fmt io math net strconv strings sync unsafe
+        vendor/golang.org/x/net/http/httpguts vendor/golang.org/x/net/idna net net/textproto strings unicode/utf8
+        vendor/golang.org/x/net/http/httpproxy errors fmt vendor/golang.org/x/net/idna net net/netip net/url os strings unicode/utf8
+        vendor/golang.org/x/net/http2/hpack bytes errors fmt io sync
+        mime bufio bytes encoding/base64 errors fmt io maps os slices strings sync unicode unicode/utf8
+        mime/quotedprintable bufio bytes fmt io
+        mime/multipart bufio bytes crypto/rand errors fmt internal/godebug io maps math mime mime/quotedprintable net/textproto os path/filepath slices strconv strings unsafe
+        net/http/httptrace context crypto/tls internal/nettrace net net/textproto reflect time
+        net/http/internal bufio bytes errors fmt io
+        net/http/internal/ascii strings unicode
+        net/http/internal/httpcommon context errors fmt vendor/golang.org/x/net/http/httpguts vendor/golang.org/x/net/http2/hpack net/http/httptrace net/textproto net/url sort strconv strings sync
+        net/http bufio bytes compress/flate compress/gzip container/list context crypto/rand crypto/tls encoding/base64 encoding/binary errors fmt vendor/golang.org/x/net/http/httpguts vendor/golang.org/x/net/http/httpproxy vendor/golang.org/x/net/http2/hpack vendor/golang.org/x/net/idna internal/godebug io io/fs log maps math math/bits math/rand mime mime/multipart net net/http/httptrace net/http/internal net/http/internal/ascii net/http/internal/httpcommon net/textproto net/url os path path/filepath reflect runtime slices sort strconv strings sync sync/atomic time unicode unicode/utf8 unsafe
+        github.com/TimLai666/coimnet/download bytes context crypto/sha256 encoding/base64 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/internal/jsonkey golang.org/x/sys/unix hash/crc32 io net/http net/url os path/filepath strconv strings syscall time
+        encoding/csv bufio bytes errors fmt io strings unicode unicode/utf8
+        github.com/TimLai666/coimnet/params bufio bytes context crypto/sha256 encoding/binary encoding/csv encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/connectome github.com/TimLai666/coimnet/feather github.com/TimLai666/coimnet/internal/extsort github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/internal/strictjson github.com/apache/arrow/go/v17/arrow github.com/apache/arrow/go/v17/arrow/array hash io math os path path/filepath reflect slices strconv strings time unicode/utf8
+        github.com/TimLai666/coimnet/resources fmt math strings
+        github.com/TimLai666/coimnet/simulate context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/connectome github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/params github.com/TimLai666/coimnet/plasticity io math math/rand/v2 sort strings time
+        github.com/TimLai666/coimnet/experiment/fullgraph bytes context crypto/sha256 encoding/binary encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/checkpoint github.com/TimLai666/coimnet/connectome github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/params github.com/TimLai666/coimnet/plasticity github.com/TimLai666/coimnet/resources github.com/TimLai666/coimnet/simulate io math os path/filepath runtime slices time
+        github.com/TimLai666/coimnet/multimodal fmt github.com/TimLai666/coimnet/signal math strings
+        github.com/TimLai666/coimnet/multimodal/synthetic fmt github.com/TimLai666/coimnet/multimodal github.com/TimLai666/coimnet/signal math math/rand/v2
+        github.com/TimLai666/coimnet/experiment/multimodaleval context crypto/sha256 encoding/json fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/multimodal github.com/TimLai666/coimnet/multimodal/synthetic github.com/TimLai666/coimnet/signal math math/rand/v2
+        math/cmplx math math/bits
+        github.com/TimLai666/coimnet/tasks/asr/audio bytes encoding/binary errors fmt math math/bits math/cmplx os
+        github.com/TimLai666/coimnet/tasks/ocr/ctc errors fmt math
+        github.com/TimLai666/coimnet/tasks/ocr/glyphs errors math/rand/v2
+        github.com/TimLai666/coimnet/tasks/ocr context crypto/sha256 encoding/json errors fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/ocr/ctc github.com/TimLai666/coimnet/tasks/ocr/glyphs math math/rand/v2 strings
+        github.com/TimLai666/coimnet/tasks/asr bytes context crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/checkpoint github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/asr/audio github.com/TimLai666/coimnet/tasks/ocr github.com/TimLai666/coimnet/tasks/ocr/ctc io math math/rand/v2 os path/filepath strings time unicode/utf8
+        github.com/TimLai666/coimnet/teacher/tool bytes context encoding/json errors fmt strings sync
+        image/color 
+        image bufio errors image/color io math/bits strconv sync sync/atomic
+        hash/adler32 errors hash internal/byteorder
+        compress/zlib bufio compress/flate encoding/binary errors fmt hash hash/adler32 io
+        image/png bufio compress/zlib encoding/binary fmt hash hash/crc32 image image/color io strconv
+        os/exec bytes context errors internal/godebug internal/syscall/execenv internal/syscall/unix io io/fs os path/filepath runtime strconv strings sync/atomic syscall time
+        github.com/TimLai666/coimnet/tasks/media bytes context crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/asr/audio github.com/TimLai666/coimnet/teacher/tool image image/color image/png io math math/rand/v2 os os/exec path/filepath strings sync
+        github.com/TimLai666/coimnet/tasks/textgen/tokenizer bytes crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/internal/strictjson os strings unicode/utf8
+        github.com/TimLai666/coimnet/teacher bufio bytes context encoding/json errors fmt github.com/TimLai666/coimnet/config github.com/TimLai666/coimnet/signal math net/http net/url os strings sync time unicode
+        github.com/TimLai666/coimnet/tasks/textgen bytes context crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/textgen/tokenizer github.com/TimLai666/coimnet/teacher io math math/rand/v2 os path/filepath sort strconv strings unicode/utf8
+        runtime/debug fmt internal/poll os runtime slices strconv strings time unsafe
+        github.com/TimLai666/coimnet/internal/cli bytes context crypto/sha256 encoding/binary encoding/hex encoding/json errors flag fmt github.com/HazelnutParadise/insyra/nn github.com/TimLai666/coimnet/checkpoint github.com/TimLai666/coimnet/config github.com/TimLai666/coimnet/connectome github.com/TimLai666/coimnet/download github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/experiment github.com/TimLai666/coimnet/experiment/fullgraph github.com/TimLai666/coimnet/experiment/gridnav github.com/TimLai666/coimnet/experiment/multimodaleval github.com/TimLai666/coimnet/experiment/nav2d github.com/TimLai666/coimnet/feather github.com/TimLai666/coimnet/internal/fileio github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/modulation github.com/TimLai666/coimnet/params github.com/TimLai666/coimnet/plasticity github.com/TimLai666/coimnet/resources github.com/TimLai666/coimnet/simulate github.com/TimLai666/coimnet/tasks/asr github.com/TimLai666/coimnet/tasks/asr/audio github.com/TimLai666/coimnet/tasks/media github.com/TimLai666/coimnet/tasks/ocr github.com/TimLai666/coimnet/tasks/textgen golang.org/x/sys/unix io math math/rand/v2 net/http os os/exec path/filepath runtime runtime/debug sort strconv strings time
+        os/signal context os slices sync syscall
+        github.com/TimLai666/coimnet/cmd/coimnet context fmt github.com/TimLai666/coimnet/internal/cli os os/signal
+        github.com/TimLai666/coimnet/connectome/flywire compress/gzip context crypto/sha256 encoding/csv encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/connectome github.com/apache/arrow/go/v17/arrow github.com/apache/arrow/go/v17/arrow/array github.com/apache/arrow/go/v17/arrow/ipc github.com/apache/arrow/go/v17/arrow/memory io math os path/filepath strconv strings
+        github.com/TimLai666/coimnet/distill bytes context crypto/sha256 encoding/hex encoding/json errors fmt github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/teacher math sort
+        github.com/TimLai666/coimnet/examples/lifthreshold context encoding/json errors flag fmt github.com/TimLai666/coimnet/experiment io os os/signal syscall
+        github.com/TimLai666/coimnet/examples/multichannel context fmt github.com/TimLai666/coimnet/signal math
+        github.com/TimLai666/coimnet/examples/realasr context encoding/json errors flag fmt github.com/TimLai666/coimnet/tasks/asr github.com/TimLai666/coimnet/tasks/asr/audio io os os/signal sort syscall
+        embed errors internal/bytealg internal/stringslite io io/fs time
+        github.com/TimLai666/coimnet/tasks/media/realdata bytes context crypto/sha256 encoding/binary encoding/hex encoding/json fmt github.com/TimLai666/coimnet/internal/strictjson io math net/url os os/exec path/filepath regexp sort strconv strings unicode/utf8
+        hash/fnv errors hash internal/byteorder math/bits
+        github.com/TimLai666/coimnet/examples/realmedia context crypto/sha256 embed encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/asr/audio github.com/TimLai666/coimnet/tasks/media github.com/TimLai666/coimnet/tasks/media/realdata hash/fnv io math math/rand os os/exec path/filepath strconv strings time unicode
+        github.com/TimLai666/coimnet/tasks/nav2d/trajectory bufio bytes compress/gzip context crypto/sha256 encoding/csv encoding/hex errors fmt io math math/rand/v2 os path/filepath sort strconv strings
+        github.com/TimLai666/coimnet/examples/realnav bytes context crypto/sha256 encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/nav2d/trajectory io math math/rand math/rand/v2 os os/signal path/filepath reflect runtime sort strings syscall time
+        github.com/TimLai666/coimnet/examples/realnavmemory bytes context crypto/sha256 encoding/binary encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/internal/strictjson github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/tasks/nav2d/trajectory io math math/rand os os/signal path/filepath reflect sort strings syscall
+        github.com/TimLai666/coimnet/examples/realocr compress/gzip context crypto/sha256 encoding/binary encoding/csv encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/tasks/ocr github.com/TimLai666/coimnet/tasks/ocr/glyphs io math os path/filepath runtime runtime/debug strconv strings time unicode/utf8
+        github.com/TimLai666/coimnet/examples/realsubgraph context crypto/sha256 encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/connectome github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/signal io math os os/signal strings syscall
+        github.com/TimLai666/coimnet/examples/realtext context crypto/sha256 encoding/hex encoding/json errors flag fmt github.com/TimLai666/coimnet/tasks/textgen github.com/TimLai666/coimnet/tasks/textgen/tokenizer io os os/signal runtime sort strings syscall unicode/utf8
+        github.com/TimLai666/coimnet/experiment/studenteval context crypto/sha256 encoding/json errors fmt github.com/TimLai666/coimnet/distill github.com/TimLai666/coimnet/dynamics github.com/TimLai666/coimnet/experiment github.com/TimLai666/coimnet/learning github.com/TimLai666/coimnet/teacher math
+        github.com/TimLai666/coimnet/internal/redact bytes crypto/sha256 encoding/hex io regexp strconv
+        github.com/TimLai666/coimnet/internal/sparse fmt math
+--- FAIL: TestFormatIndex (84.22s)
+    format_index_test.go:78: format inventory unique versions=124
+    format_index_test.go:83: format inventory categories: formal=87 rules=10 tools=14 test=13 unclassified=0
+    format_index_test.go:85: inventory unique versions=124: format index validation failed:
+        source for "coimnet-real-task-evidence/v1" at INDEX line 210 was not discovered at privacy_test.go:196
+FAIL
+FAIL	github.com/TimLai666/coimnet	333.724s
+ok  	github.com/TimLai666/coimnet/backend	3.976s
+ok  	github.com/TimLai666/coimnet/backend/webgpu	5.715s
+--- FAIL: TestSaveLoadRoundTripAndAliasIsolation (0.37s)
+    checkpoint_test.go:63: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadRoundTripAndAliasIsolation3497147870/001/.episode.json.tmp-1166395708 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadRoundTripAndAliasIsolation3497147870/001/episode.json: operation not supported
+--- FAIL: TestSaveDoesNotOverwrite (0.41s)
+    checkpoint_test.go:92: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveDoesNotOverwrite1968448865/001/.episode.json.tmp-1286171900 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveDoesNotOverwrite1968448865/001/episode.json: operation not supported
+--- FAIL: TestConcurrentSavesHaveOneWinner (0.49s)
+    checkpoint_test.go:134: concurrent saves had 0 successful publishers, want 1
+--- FAIL: TestCanceledAfterPublicationLeavesLoadableCheckpoint (0.53s)
+    checkpoint_test.go:266: Save error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCanceledAfterPublicationLeavesLoadableCheckpoint2727464706/001/.published.json.tmp-2549082413 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCanceledAfterPublicationLeavesLoadableCheckpoint2727464706/001/published.json: operation not supported, want context.Canceled
+--- FAIL: TestLoadChecksContextAfterValidation (0.68s)
+    checkpoint_test.go:280: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadChecksContextAfterValidation503806169/001/.valid.json.tmp-941564841 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadChecksContextAfterValidation503806169/001/valid.json: operation not supported
+--- FAIL: TestSubprocessResumeMatchesUninterruptedTraining (0.40s)
+    checkpoint_test.go:311: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSubprocessResumeMatchesUninterruptedTraining464186583/001/.midpoint.json.tmp-2972560775 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSubprocessResumeMatchesUninterruptedTraining464186583/001/midpoint.json: operation not supported
+--- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars (18.58s)
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_data_seed (0.59s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_data_1308919268/001/.valid.json.tmp-749779588 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_data_1308919268/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_data_seed (0.55s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_data_see3239021576/001/.valid.json.tmp-2757543774 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_data_see3239021576/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_next_sample (0.70s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_next_3439597928/001/.valid.json.tmp-2080540515 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_next_3439597928/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_next_sample (0.84s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_next_sam3829295143/001/.valid.json.tmp-3982294814 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_next_sam3829295143/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_generator (0.50s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_generato4146687756/001/.valid.json.tmp-2015852662 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_generato4146687756/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training (0.50s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train1040124209/001/.valid.json.tmp-1804192757 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train1040124209/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_training (0.52s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_training1607440583/001/.valid.json.tmp-1057982445 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_training1607440583/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training.updates (0.49s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train3858449066/001/.valid.json.tmp-2816050408 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train3858449066/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_training.updates (0.37s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_training8466629/001/.valid.json.tmp-2536184233 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_training8466629/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_options.weight_decay (0.49s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optio412411566/001/.valid.json.tmp-853388982 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optio412411566/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_options.weight_decay (0.43s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_options.1990108257/001/.valid.json.tmp-607412319 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_options.1990108257/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_options.learning_rate (0.66s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_options.3636691299/001/.valid.json.tmp-2830203671 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_options.3636691299/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_options.truncation (0.58s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optio2086840344/001/.valid.json.tmp-498065020 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optio2086840344/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_trainable.weights (0.82s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_trainabl521340005/001/.valid.json.tmp-978244240 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_trainabl521340005/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_trainable (0.90s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train2781569387/001/.valid.json.tmp-4207086390 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train2781569387/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_config.input_size (1.01s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_confi2656154220/001/.valid.json.tmp-1032681783 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_confi2656154220/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_config.dynamics.dt (1.01s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_config.d373718465/001/.valid.json.tmp-647162416 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_config.d373718465/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_config.dynamics.nodes (0.92s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_confi2443733267/001/.valid.json.tmp-3878524561 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_confi2443733267/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_config.dynamics.activation (0.62s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_config.d202028413/001/.valid.json.tmp-2074140043 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_config.d202028413/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_parameters (0.70s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_param2304928099/001/.valid.json.tmp-2399227995 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_param2304928099/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_parameters.core (0.82s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_paramete224564161/001/.valid.json.tmp-2043339833 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_paramete224564161/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_optimizer (0.86s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optim1026840068/001/.valid.json.tmp-3360552221 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_optim1026840068/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_core.bias (0.80s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_3300280351/001/.valid.json.tmp-3036045917 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_3300280351/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_optimizer.steps (1.43s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_2212913570/001/.valid.json.tmp-4216877234 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_2212913570/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/null_element_in_readout_nodes (0.80s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_232913141/001/.valid.json.tmp-2697302413 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsnull_element_232913141/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeLoadRejectsMissingOrNullRequiredScalars/missing_training.schema_version (0.67s)
+        episode_required_test.go:107: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train4138396064/001/.valid.json.tmp-376156314 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadRejectsMissingOrNullRequiredScalarsmissing_train4138396064/001/valid.json: operation not supported
+--- FAIL: TestEpisodeLoadKeepsLegalZeroValuesNullableArraysAndOmittedOptionalFields (0.71s)
+    episode_required_test.go:122: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadKeepsLegalZeroValuesNullableArraysAndOmittedOptio2039137103/001/.valid.json.tmp-1014475585 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeLoadKeepsLegalZeroValuesNullableArraysAndOmittedOptio2039137103/001/valid.json: operation not supported
+--- FAIL: TestSaveLoadIndividualRoundTripAndAliasIsolation (0.98s)
+    individual_test.go:40: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualRoundTripAndAliasIsolation3015441795/001/.individual.json.tmp-177115241 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualRoundTripAndAliasIsolation3015441795/001/individual.json: operation not supported
+--- FAIL: TestSaveLoadIndividualSupportsZeroEdgeModel (0.71s)
+    individual_test.go:71: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualSupportsZeroEdgeModel1128862086/001/.zero-edge.json.tmp-1636751017 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualSupportsZeroEdgeModel1128862086/001/zero-edge.json: operation not supported
+--- FAIL: TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner (0.71s)
+    individual_test.go:193: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner2325471169/001/.winner.json.tmp-1937020615 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveIndividualCancellationNoOverwriteAndConcurrentWinner2325471169/001/winner.json: operation not supported
+--- FAIL: TestIndividualCheckpointSubprocessResume (0.84s)
+    individual_test.go:259: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestIndividualCheckpointSubprocessResume2394960950/001/.mid.json.tmp-639740909 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestIndividualCheckpointSubprocessResume2394960950/001/mid.json: operation not supported
+--- FAIL: TestSaveLoadLIFIndividualRoundTrip (0.53s)
+    individual_test.go:397: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadLIFIndividualRoundTrip3746609804/001/.lif-individual.json.tmp-576103049 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadLIFIndividualRoundTrip3746609804/001/lif-individual.json: operation not supported
+--- FAIL: TestLoadIndividualReadsPreUnionContinuousCheckpoint (0.70s)
+    individual_test.go:467: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsPreUnionContinuousCheckpoint4244933182/001/.upgraded.json.tmp-1546399526 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsPreUnionContinuousCheckpoint4244933182/001/upgraded.json: operation not supported
+--- FAIL: TestLIFIndividualCheckpointSubprocessResume (0.48s)
+    individual_test.go:670: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFIndividualCheckpointSubprocessResume3353870420/001/.mid.json.tmp-173975093 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFIndividualCheckpointSubprocessResume3353870420/001/mid.json: operation not supported
+--- FAIL: TestSaveLoadIndividualCarriesThePlasticPart (0.39s)
+    individual_test.go:785: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesThePlasticPart3028536260/001/.payload.json.tmp-2390582983 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesThePlasticPart3028536260/001/payload.json: operation not supported
+--- FAIL: TestSaveLoadIndividualCarriesConsolidationSlowAndEpisodes (0.42s)
+    individual_test.go:888: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesConsolidationSlowAndEpisodes1584095328/001/.payload.json.tmp-1867223208 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesConsolidationSlowAndEpisodes1584095328/001/payload.json: operation not supported
+--- FAIL: TestLoadIndividualRejectsMalformedPlasticParts (0.46s)
+    individual_test.go:944: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedPlasticParts1199809238/001/.payload.json.tmp-3890208404 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedPlasticParts1199809238/001/payload.json: operation not supported
+--- FAIL: TestSaveLoadIndividualCarriesTheAccumulatorPart (0.47s)
+    individual_test.go:1017: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesTheAccumulatorPart2676184318/001/.payload.json.tmp-4017892181 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesTheAccumulatorPart2676184318/001/payload.json: operation not supported
+--- FAIL: TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow (0.36s)
+    individual_test.go:1062: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow784677494/001/.payload.json.tmp-1759908530 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsAnAbsentAccumulatorAsNoWindow784677494/001/payload.json: operation not supported
+--- FAIL: TestLoadIndividualRejectsMalformedAccumulatorParts (0.53s)
+    individual_test.go:1085: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedAccumulatorParts143730367/001/.payload.json.tmp-2036975018 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedAccumulatorParts143730367/001/payload.json: operation not supported
+--- FAIL: TestSaveLoadIndividualCarriesTheChemicalPart (0.40s)
+    individual_test.go:1196: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesTheChemicalPart3168323497/001/.payload.json.tmp-865801775 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadIndividualCarriesTheChemicalPart3168323497/001/payload.json: operation not supported
+--- FAIL: TestLoadIndividualRejectsMalformedChemicalParts (0.45s)
+    individual_test.go:1248: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedChemicalParts2842546292/001/.payload.json.tmp-2613502701 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualRejectsMalformedChemicalParts2842546292/001/payload.json: operation not supported
+--- FAIL: TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled (0.41s)
+    individual_test.go:1309: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled3960871980/001/.payload.json.tmp-3708589414 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualReadsAnAbsentChemicalPartAsDisabled3960871980/001/payload.json: operation not supported
+--- FAIL: TestSaveLoadMixedIndividualRoundTrip (0.40s)
+    individual_test.go:1362: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadMixedIndividualRoundTrip2530683165/001/.mixed-individual.json.tmp-1724706584 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadMixedIndividualRoundTrip2530683165/001/mixed-individual.json: operation not supported
+--- FAIL: TestLIFEpisodeCheckpointRoundTrip (0.83s)
+    lif_snapshot_test.go:64: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFEpisodeCheckpointRoundTrip1172127227/001/.lif-round-trip.json.tmp-3124966003 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFEpisodeCheckpointRoundTrip1172127227/001/lif-round-trip.json: operation not supported
+--- FAIL: TestLIFCheckpointRejectsNullThetaRaw (0.47s)
+    lif_snapshot_test.go:110: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFCheckpointRejectsNullThetaRaw3743130848/001/.lif.json.tmp-2583350268 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFCheckpointRejectsNullThetaRaw3743130848/001/lif.json: operation not supported
+--- FAIL: TestMigrateRefusesSamePathAndExistingTarget (0.50s)
+    migrate_test.go:20: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateRefusesSamePathAndExistingTarget3296284167/001/.source.json.tmp-1348300024 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateRefusesSamePathAndExistingTarget3296284167/001/source.json: operation not supported
+--- FAIL: TestMigrateSameSchemaIsAByteCopy (0.55s)
+    migrate_test.go:75: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateSameSchemaIsAByteCopy2173001632/001/.source.json.tmp-3083524626 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateSameSchemaIsAByteCopy2173001632/001/source.json: operation not supported
+--- FAIL: TestMigrateUpgradesPreUnionIndividual (0.45s)
+    migrate_test.go:122: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateUpgradesPreUnionIndividual1430228940/001/.saved.json.tmp-240493941 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateUpgradesPreUnionIndividual1430228940/001/saved.json: operation not supported
+--- FAIL: TestMigrateHonoursContext (0.44s)
+    migrate_test.go:212: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateHonoursContext901949031/001/.source.json.tmp-2917091980 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestMigrateHonoursContext901949031/001/source.json: operation not supported
+--- FAIL: TestEpisodeCheckpointOmitsUnusedConstraintFields (0.47s)
+    options_compat_test.go:28: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsUnusedConstraintFields3157009086/001/.plain.json.tmp-1437819970 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsUnusedConstraintFields3157009086/001/plain.json: operation not supported
+--- FAIL: TestEpisodeCheckpointCarriesMasksRangesAndEdgeSigns (0.58s)
+    options_compat_test.go:70: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesMasksRangesAndEdgeSigns1425301657/001/.constrained.json.tmp-927367095 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesMasksRangesAndEdgeSigns1425301657/001/constrained.json: operation not supported
+--- FAIL: TestEpisodeCheckpointRejectsAMaskThatDoesNotMatchTheTopology (0.38s)
+    options_compat_test.go:91: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAMaskThatDoesNotMatchTheTopology1153780299/001/.valid.json.tmp-3297019479 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAMaskThatDoesNotMatchTheTopology1153780299/001/valid.json: operation not supported
+--- FAIL: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs (2.44s)
+    --- FAIL: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_mask_element (0.38s)
+        options_compat_test.go:117: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull341159486/001/.valid.json.tmp-525188257 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull341159486/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_range_bound (0.38s)
+        options_compat_test.go:117: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull1767228307/001/.valid.json.tmp-977593703 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull1767228307/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_edge_sign (0.46s)
+        options_compat_test.go:117: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull1240574947/001/.valid.json.tmp-244046277 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull1240574947/001/valid.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs/null_min_log_magnitude (0.55s)
+        options_compat_test.go:117: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull467473356/001/.valid.json.tmp-2309574690 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructsnull467473356/001/valid.json: operation not supported
+    options_compat_test.go:126: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs3509408509/001/.valid.json.tmp-3572835314 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsNullInsideTheNewOptionalStructs3509408509/001/valid.json: operation not supported
+--- FAIL: TestEpisodeCheckpointOmitsUnusedStageTwoFields (0.45s)
+    options_compat_test.go:185: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsUnusedStageTwoFields3073234277/001/.stage-two-plain.json.tmp-1615197318 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsUnusedStageTwoFields3073234277/001/stage-two-plain.json: operation not supported
+--- FAIL: TestEpisodeCheckpointCarriesTheStageTwoFields (0.58s)
+    options_compat_test.go:240: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesTheStageTwoFields3451616242/001/.accumulating.json.tmp-828478217 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesTheStageTwoFields3451616242/001/accumulating.json: operation not supported
+--- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel (6.53s)
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_sum (0.53s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel1694863084/001/.accumulating.json.tmp-3395894429 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel1694863084/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/missing_count (0.45s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel3165951908/001/.accumulating.json.tmp-4097371252 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel3165951908/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_count (0.56s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2294686121/001/.accumulating.json.tmp-3969889499 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2294686121/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/unknown_schedule_kind (0.44s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2336762031/001/.accumulating.json.tmp-164115012 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2336762031/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_schedule_kind (0.40s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2845144190/001/.accumulating.json.tmp-368845829 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2845144190/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_count (0.53s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2240529051/001/.accumulating.json.tmp-3456202586 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2240529051/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/no_window_declared (0.50s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2112473255/001/.accumulating.json.tmp-2045559423 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2112473255/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/null_sum_element (0.52s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel840308209/001/.accumulating.json.tmp-2122521619 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel840308209/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/negative_loss_scale (0.50s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel3442556791/001/.accumulating.json.tmp-566917923 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel3442556791/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/short_sum (0.54s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel4018705610/001/.accumulating.json.tmp-134336913 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel4018705610/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_at_the_window (0.49s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2273318473/001/.accumulating.json.tmp-3356053858 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel2273318473/001/accumulating.json: operation not supported
+    --- FAIL: TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel/count_above_the_window (0.50s)
+        options_compat_test.go:303: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel1222195490/001/.accumulating.json.tmp-277348991 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel1222195490/001/accumulating.json: operation not supported
+    options_compat_test.go:312: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel529268183/001/.accumulating.json.tmp-1890769377 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsAnAccumulatorThatDoesNotFitTheModel529268183/001/accumulating.json: operation not supported
+--- FAIL: TestEpisodeCheckpointOmitsAnAbsentReplayPart (0.51s)
+    options_compat_test.go:386: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsAnAbsentReplayPart3957041062/001/.no-replay.json.tmp-3847990879 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointOmitsAnAbsentReplayPart3957041062/001/no-replay.json: operation not supported
+--- FAIL: TestEpisodeCheckpointCarriesTheReplayPart (0.55s)
+    options_compat_test.go:418: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesTheReplayPart3513536325/001/.replay.json.tmp-800804730 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointCarriesTheReplayPart3513536325/001/replay.json: operation not supported
+--- FAIL: TestEpisodeCheckpointRejectsMalformedReplayParts (0.62s)
+    options_compat_test.go:467: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsMalformedReplayParts882717084/001/.replay.json.tmp-3417000322 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestEpisodeCheckpointRejectsMalformedReplayParts882717084/001/replay.json: operation not supported
+--- FAIL: TestModelPackageCarriesCapacity (0.79s)
+    package_capacity_test.go:68: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCarriesCapacity3421028144/001/.vector.coimpkg.tmp-2707056051 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCarriesCapacity3421028144/001/vector.coimpkg: operation not supported
+--- FAIL: TestModelPackageCapacityValidationKeepsValidReportsExact (1.11s)
+    --- FAIL: TestModelPackageCapacityValidationKeepsValidReportsExact/continuous (0.35s)
+        package_capacity_validation_test.go:246: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactcontinu612137777/001/.model.json.tmp-2265757596 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactcontinu612137777/001/model.json: operation not supported
+    --- FAIL: TestModelPackageCapacityValidationKeepsValidReportsExact/lif (0.39s)
+        package_capacity_validation_test.go:246: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactlif779250149/001/.model.json.tmp-236932199 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactlif779250149/001/model.json: operation not supported
+    --- FAIL: TestModelPackageCapacityValidationKeepsValidReportsExact/vector (0.37s)
+        package_capacity_validation_test.go:246: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactvector3911383604/001/.model.json.tmp-1002743743 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsValidReportsExactvector3911383604/001/model.json: operation not supported
+--- FAIL: TestModelPackageCapacityValidationKeepsNilCapacity (0.33s)
+    package_capacity_validation_test.go:328: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsNilCapacity4126755395/001/.legacy.json.tmp-2275642622 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageCapacityValidationKeepsNilCapacity4126755395/001/legacy.json: operation not supported
+--- FAIL: TestModelPackageRoundTripAndByteIdenticalSave (0.82s)
+    --- FAIL: TestModelPackageRoundTripAndByteIdenticalSave/continuous (0.44s)
+        package_test.go:155: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageRoundTripAndByteIdenticalSavecontinuous288278524/001/.model.json.tmp-595886479 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageRoundTripAndByteIdenticalSavecontinuous288278524/001/model.json: operation not supported
+    --- FAIL: TestModelPackageRoundTripAndByteIdenticalSave/lif (0.38s)
+        package_test.go:155: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageRoundTripAndByteIdenticalSavelif817542706/001/.model.json.tmp-201958070 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelPackageRoundTripAndByteIdenticalSavelif817542706/001/model.json: operation not supported
+--- FAIL: TestSaveModelPackageCancellationNoOverwriteAndInvalidInput (0.43s)
+    package_test.go:340: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveModelPackageCancellationNoOverwriteAndInvalidInput2073880463/001/.model.json.tmp-4200440585 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveModelPackageCancellationNoOverwriteAndInvalidInput2073880463/001/model.json: operation not supported
+--- FAIL: TestArtefactKindsRefuseEachOther (0.64s)
+    package_test.go:423: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestArtefactKindsRefuseEachOther2446944572/001/.model.json.tmp-2255053275 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestArtefactKindsRefuseEachOther2446944572/001/model.json: operation not supported
+--- FAIL: TestLIFIndividualFromPackageSubprocessResume (0.94s)
+    package_test.go:568: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFIndividualFromPackageSubprocessResume3057726256/001/.model.json.tmp-3500212865 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLIFIndividualFromPackageSubprocessResume3057726256/001/model.json: operation not supported
+--- FAIL: TestSelectedProjectionSubprocessResume (0.66s)
+    projection_test.go:55: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSelectedProjectionSubprocessResume2215860043/001/.midpoint.json.tmp-741174643 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSelectedProjectionSubprocessResume2215860043/001/midpoint.json: operation not supported
+--- FAIL: TestLoadIndividualAcceptsScalarPointerRuleFields (0.47s)
+    required_test.go:30: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualAcceptsScalarPointerRuleFields1152565763/001/.receptor-gated.json.tmp-3376500700 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadIndividualAcceptsScalarPointerRuleFields1152565763/001/receptor-gated.json: operation not supported
+--- FAIL: TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupted (0.46s)
+    individual_full_resume_test.go:64: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupte2650469154/001/.mid.json.tmp-542513010 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupte2650469154/001/mid.json: operation not supported
+--- FAIL: TestSaveLoadPayloadCanonicalizesBeforeChecksum (0.34s)
+    payload_test.go:17: SavePayload: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadPayloadCanonicalizesBeforeChecksum1502671330/001/.pretty.json.tmp-1262900910 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveLoadPayloadCanonicalizesBeforeChecksum1502671330/001/pretty.json: operation not supported
+--- FAIL: ExampleSaveIndividual (0.18s)
+got:
+save: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/coimnet-individual-example-166829139/.individual.json.tmp-2768881395 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/coimnet-individual-example-166829139/individual.json: operation not supported
+want:
+2 1 true
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	197.336s
+?   	github.com/TimLai666/coimnet/cmd/coimnet	[no test files]
+ok  	github.com/TimLai666/coimnet/config	22.120s
+--- FAIL: TestIndividualLearningPreservesAnatomyStore (2.97s)
+    individual_test.go:21: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestIndividualLearningPreservesAnatomyStore2917043706/003/.before.coimgraph.tmp-1744577529 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestIndividualLearningPreservesAnatomyStore2917043706/003/before.coimgraph: operation not supported
+--- FAIL: TestLoadBoundsJSONBuffersAndRejectsUnknownConverter (2.84s)
+    store_limits_test.go:58: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadBoundsJSONBuffersAndRejectsUnknownConverter2356719530/003/.original.tmp-2919466540 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadBoundsJSONBuffersAndRejectsUnknownConverter2356719530/003/original: operation not supported
+--- FAIL: TestLoadReceiptHashesValidatedBytesWhenPathChanges (3.18s)
+    store_receipt_test.go:33: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadReceiptHashesValidatedBytesWhenPathChanges470851569/003/.graph.tmp-107208452 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadReceiptHashesValidatedBytesWhenPathChanges470851569/003/graph: operation not supported
+--- FAIL: TestLoadRejectsRehashedUnknownConverter (6.10s)
+    store_receipt_test.go:90: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsRehashedUnknownConverter3494990096/003/.unknown.tmp-1756416123 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsRehashedUnknownConverter3494990096/003/unknown: operation not supported
+--- FAIL: TestStoreRoundTripPreservesGraphReportAndBytes (3.96s)
+    store_test.go:69: Save: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStoreRoundTripPreservesGraphReportAndBytes720135119/003/.graph.coimgraph.tmp-541483930 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStoreRoundTripPreservesGraphReportAndBytes720135119/003/graph.coimgraph: operation not supported
+--- FAIL: TestStoreRoundTripAggregatedAndEmptyGraphs (4.74s)
+    store_test.go:132: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStoreRoundTripAggregatedAndEmptyGraphs4197282429/003/.aggregated.coimgraph.tmp-2073549497 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStoreRoundTripAggregatedAndEmptyGraphs4197282429/003/aggregated.coimgraph: operation not supported
+--- FAIL: TestSaveRefusesExistingTargetMissingParentAndCancellation (5.57s)
+    store_test.go:162: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveRefusesExistingTargetMissingParentAndCancellation23734103/003/.graph.coimgraph.tmp-2114049222 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveRefusesExistingTargetMissingParentAndCancellation23734103/003/graph.coimgraph: operation not supported
+--- FAIL: TestLoadRejectsTamperingTruncationAndLimits (3.83s)
+    store_test.go:204: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsTamperingTruncationAndLimits446151987/003/.graph.coimgraph.tmp-2143462349 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsTamperingTruncationAndLimits446151987/003/graph.coimgraph: operation not supported
+--- FAIL: TestLoadRejectsInvalidContentWithValidSectionHashes (5.24s)
+    store_test.go:293: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsInvalidContentWithValidSectionHashes1112217362/003/.swapped.coimgraph.tmp-1514446085 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsInvalidContentWithValidSectionHashes1112217362/003/swapped.coimgraph: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/connectome	124.526s
+ok  	github.com/TimLai666/coimnet/connectome/flywire	19.517s
+ok  	github.com/TimLai666/coimnet/distill	12.004s
+--- FAIL: TestFetchFreshReturnsReceiptAndVerifiesHashes (2.54s)
+    download_test.go:59: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchFreshReturnsReceiptAndVerifiesHashes3800849429/001/source.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchFreshReturnsReceiptAndVerifiesHashes3800849429/001/source.bin: operation not supported
+--- FAIL: TestFetchReceiptRecordsReproducibleResponseHeaders (2.97s)
+    download_test.go:135: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchReceiptRecordsReproducibleResponseHeaders1467824023/001/headers.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchReceiptRecordsReproducibleResponseHeaders1467824023/001/headers.bin: operation not supported
+--- FAIL: TestFetchAutomaticallyVerifiesProviderCRC32C (4.23s)
+    --- FAIL: TestFetchAutomaticallyVerifiesProviderCRC32C/matching (2.19s)
+        download_test.go:186: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchAutomaticallyVerifiesProviderCRC32Cmatching634236098/001/provider-crc.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchAutomaticallyVerifiesProviderCRC32Cmatching634236098/001/provider-crc.bin: operation not supported
+--- FAIL: TestFetchCancellationRetainsPartialForResume (5.60s)
+    download_test.go:275: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchCancellationRetainsPartialForResume639709988/001/source.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchCancellationRetainsPartialForResume639709988/001/source.bin: operation not supported
+--- FAIL: TestFetchRetriesTransientInterruption (2.32s)
+    download_test.go:316: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchRetriesTransientInterruption2153327527/001/retry.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchRetriesTransientInterruption2153327527/001/retry.bin: operation not supported
+--- FAIL: TestFetchLockOverwriteAndConcurrentRace (1.95s)
+    download_test.go:551: concurrent loser error = publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchLockOverwriteAndConcurrentRace3784080646/001/exclusive.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchLockOverwriteAndConcurrentRace3784080646/001/exclusive.bin: operation not supported, want lock error
+--- FAIL: TestFetchTruncatesPartLongerThanMetadataAndResumes (8.58s)
+    resume_test.go:89: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchTruncatesPartLongerThanMetadataAndResumes1314706716/001/whole.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchTruncatesPartLongerThanMetadataAndResumes1314706716/001/whole.bin: operation not supported
+--- FAIL: TestFetchReclaimsLockOfDeadProcess (3.06s)
+    resume_test.go:208: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchReclaimsLockOfDeadProcess3870356739/001/reclaim.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchReclaimsLockOfDeadProcess3870356739/001/reclaim.bin: operation not supported
+--- FAIL: TestFetchCheckpointsMetadataDuringTransfer (3.35s)
+    resume_test.go:302: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchCheckpointsMetadataDuringTransfer1136670219/001/checkpoint.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestFetchCheckpointsMetadataDuringTransfer1136670219/001/checkpoint.bin: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/download	82.353s
+ok  	github.com/TimLai666/coimnet/dynamics	8.298s
+ok  	github.com/TimLai666/coimnet/examples/lifthreshold	8.762s
+ok  	github.com/TimLai666/coimnet/examples/multichannel	8.861s
+ok  	github.com/TimLai666/coimnet/examples/realasr	18.928s
+ok  	github.com/TimLai666/coimnet/examples/realmedia	12.051s
+ok  	github.com/TimLai666/coimnet/examples/realnav	34.522s
+ok  	github.com/TimLai666/coimnet/examples/realnavmemory	16.032s
+ok  	github.com/TimLai666/coimnet/examples/realocr	20.732s
+--- FAIL: TestRunFixtureIsDeterministicAndReadOnly (2.24s)
+    main_test.go:103: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunFixtureIsDeterministicAndReadOnly1233579134/001/.graph.coimgraph.tmp-581137649 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunFixtureIsDeterministicAndReadOnly1233579134/001/graph.coimgraph: operation not supported
+--- FAIL: TestRunRejectsUnsafeGraphContent (11.78s)
+    --- FAIL: TestRunRejectsUnsafeGraphContent/duplicate_pair (4.97s)
+        main_test.go:203: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentduplicate_pair2609486149/001/.graph.coimgraph.tmp-743012141 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentduplicate_pair2609486149/001/graph.coimgraph: operation not supported
+    --- FAIL: TestRunRejectsUnsafeGraphContent/null_weight (4.17s)
+        main_test.go:203: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentnull_weight522439924/001/.graph.coimgraph.tmp-1553335273 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentnull_weight522439924/001/graph.coimgraph: operation not supported
+    --- FAIL: TestRunRejectsUnsafeGraphContent/negative_weight (2.64s)
+        main_test.go:203: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentnegative_weight3690432507/001/.graph.coimgraph.tmp-3624029197 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUnsafeGraphContentnegative_weight3690432507/001/graph.coimgraph: operation not supported
+--- FAIL: TestRunPropagatesOutputFailure (3.50s)
+    main_test.go:227: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunPropagatesOutputFailure2983179269/001/.graph.coimgraph.tmp-3821051026 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunPropagatesOutputFailure2983179269/001/graph.coimgraph: operation not supported
+--- FAIL: TestRunRejectsWrongStoreOrSelection (2.50s)
+    validation_test.go:15: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsWrongStoreOrSelection2198504333/001/.graph.coimgraph.tmp-3404967021 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsWrongStoreOrSelection2198504333/001/graph.coimgraph: operation not supported
+--- FAIL: TestRunRejectsImpostorRealProfile (4.61s)
+    --- FAIL: TestRunRejectsImpostorRealProfile/impostor-v0 (3.07s)
+        validation_test.go:47: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsImpostorRealProfileimpostor-v04059827937/001/.graph.coimgraph.tmp-4265412066 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsImpostorRealProfileimpostor-v04059827937/001/graph.coimgraph: operation not supported
+    --- FAIL: TestRunRejectsImpostorRealProfile/v1.0 (1.54s)
+        validation_test.go:47: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsImpostorRealProfilev1.02306599063/001/.graph.coimgraph.tmp-2663697922 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsImpostorRealProfilev1.02306599063/001/graph.coimgraph: operation not supported
+--- FAIL: TestRunRejectsSubgraphWithoutInternalEdges (0.88s)
+    validation_test.go:67: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsSubgraphWithoutInternalEdges959943449/001/.graph.coimgraph.tmp-3430188255 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsSubgraphWithoutInternalEdges959943449/001/graph.coimgraph: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/examples/realsubgraph	35.386s
+ok  	github.com/TimLai666/coimnet/examples/realtext	90.371s
+ok  	github.com/TimLai666/coimnet/experiment	850.054s
+ok  	github.com/TimLai666/coimnet/experiment/fullgraph	50.931s
+ok  	github.com/TimLai666/coimnet/experiment/gridnav	3.331s
+ok  	github.com/TimLai666/coimnet/experiment/multimodaleval	691.957s
+ok  	github.com/TimLai666/coimnet/experiment/nav2d	2.454s
+ok  	github.com/TimLai666/coimnet/experiment/studenteval	10.642s
+ok  	github.com/TimLai666/coimnet/feather	14.605s
+--- FAIL: TestBenchmarkWritesReport (0.43s)
+    benchmark_test.go:20: benchmark: benchmark stage "snapshot" repetition 1: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkWritesReport355268897/001/.b.json.snapshot.tmp.json.tmp-600981934 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkWritesReport355268897/001/b.json.snapshot.tmp.json: operation not supported 
+--- FAIL: TestBenchmarkStoreMode (2.00s)
+    benchmark_test.go:165: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkStoreMode2534543307/001/.graph.coimgraph.tmp-3794086987 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkStoreMode2534543307/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestBenchmarkStoreModeRejects (4.06s)
+    benchmark_test.go:245: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkStoreModeRejects3314115763/001/.graph.coimgraph.tmp-2172266681 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkStoreModeRejects3314115763/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestBenchmarkDefaultRowsPerCall (1.44s)
+    benchmark_test.go:346: benchmark: benchmark stage "snapshot" repetition 1: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkDefaultRowsPerCall3984760403/001/.default.json.snapshot.tmp.json.tmp-3731232933 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkDefaultRowsPerCall3984760403/001/default.json.snapshot.tmp.json: operation not supported; stderr=
+--- FAIL: TestBenchmarkSplitsIndividualCalls (24.89s)
+    benchmark_test.go:371: benchmark: benchmark stage "snapshot" repetition 1: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkSplitsIndividualCalls2359553079/001/.large.json.snapshot.tmp.json.tmp-3845170238 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkSplitsIndividualCalls2359553079/001/large.json.snapshot.tmp.json: operation not supported; stderr=
+--- FAIL: TestBenchmarkSnapshotStageLeavesNoTempFile (0.44s)
+    benchmark_test.go:414: benchmark: benchmark stage "snapshot" repetition 1: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkSnapshotStageLeavesNoTempFile2105596286/001/.b.json.snapshot.tmp.json.tmp-1422662847 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestBenchmarkSnapshotStageLeavesNoTempFile2105596286/001/b.json.snapshot.tmp.json: operation not supported 
+--- FAIL: TestCheckpointMigrateCLIWritesMigratedFileAndPrintsReport (0.56s)
+    checkpoint_test.go:62: SaveIndividual: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIWritesMigratedFileAndPrintsReport1418678183/001/.source.json.tmp-3984134985 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIWritesMigratedFileAndPrintsReport1418678183/001/source.json: operation not supported
+--- FAIL: TestCheckpointMigrateCLIUpgradesPreUnionIndividual (0.56s)
+    checkpoint_test.go:108: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIUpgradesPreUnionIndividual3889987639/001/.saved.json.tmp-2488507543 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIUpgradesPreUnionIndividual3889987639/001/saved.json: operation not supported
+--- FAIL: TestCheckpointMigrateCLIRefusesExistingTarget (0.65s)
+    checkpoint_test.go:168: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIRefusesExistingTarget3380844741/001/.source.json.tmp-1190059089 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIRefusesExistingTarget3380844741/001/source.json: operation not supported
+--- FAIL: TestCheckpointMigrateCLIRefusesSamePath (0.74s)
+    checkpoint_test.go:198: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIRefusesSamePath1956867952/001/.source.json.tmp-1452173799 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestCheckpointMigrateCLIRefusesSamePath1956867952/001/source.json: operation not supported
+--- FAIL: TestRunDryRunReportsAnEstimateAndPassesEveryCheck (0.71s)
+    config_run_test.go:148: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunReportsAnEstimateAndPassesEveryCheck1158103321/001/.tiny.coimpkg.tmp-613959077 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunReportsAnEstimateAndPassesEveryCheck1158103321/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunDryRunNeverCallsTheTeacher (0.68s)
+    config_run_test.go:218: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunNeverCallsTheTeacher2750472358/001/.tiny.coimpkg.tmp-3170727311 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunNeverCallsTheTeacher2750472358/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit (1.15s)
+    config_run_test.go:242: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit2644217544/001/.tiny.coimpkg.tmp-1717882936 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunRefusesWhenTheEstimateExceedsTheLimit2644217544/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules (0.98s)
+    config_run_test.go:287: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules4049959918/001/.tiny.coimpkg.tmp-2515329370 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunDryRunCountsPlasticEdgesFromTheDeclaredRules4049959918/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunRejectsUsageErrorsWithStatusOne (0.86s)
+    config_run_test.go:341: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUsageErrorsWithStatusOne1907621674/001/.tiny.coimpkg.tmp-1172689110 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunRejectsUsageErrorsWithStatusOne1907621674/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunWithoutDryRunSaysWhichStageImplementsIt (0.63s)
+    config_run_test.go:363: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunWithoutDryRunSaysWhichStageImplementsIt1774005052/001/.tiny.coimpkg.tmp-2180597137 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunWithoutDryRunSaysWhichStageImplementsIt1774005052/001/tiny.coimpkg: operation not supported
+--- FAIL: TestRunOverridesAreAppliedAndRecorded (0.43s)
+    config_run_test.go:375: SaveModelPackage() error = publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunOverridesAreAppliedAndRecorded4093383514/001/.tiny.coimpkg.tmp-3023341693 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestRunOverridesAreAppliedAndRecorded4093383514/001/tiny.coimpkg: operation not supported
+--- FAIL: TestDataDownloadRunE2EAndReceipt (1.10s)
+    data_test.go:156: data download: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadRunE2EAndReceipt2075261669/001/source.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadRunE2EAndReceipt2075261669/001/source.bin: operation not supported; stderr=
+--- FAIL: TestDataDownloadRejectsOverwriteChecksumAndSize (1.00s)
+    data_test.go:184: initial data download: publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadRejectsOverwriteChecksumAndSize283982896/001/source.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadRejectsOverwriteChecksumAndSize283982896/001/source.bin: operation not supported; stderr=
+--- FAIL: TestDataDownloadReportsPublishedReceiptWriteFailure (1.21s)
+    data_test.go:249: error = publish downloaded file without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadReportsPublishedReceiptWriteFailure2977717972/001/source.bin.part /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDownloadReportsPublishedReceiptWriteFailure2977717972/001/source.bin: operation not supported, want published receipt-write context and writer error
+--- FAIL: TestDataDeriveWritesAParameterSetAndReport (2.31s)
+    derive_test.go:162: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDeriveWritesAParameterSetAndReport4056210145/001/.graph.coimgraph.tmp-2195818389 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDeriveWritesAParameterSetAndReport4056210145/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestDataDeriveAndValidateFailuresAndHelp (3.69s)
+    derive_test.go:237: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDeriveAndValidateFailuresAndHelp1848769738/001/.graph.coimgraph.tmp-983558527 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataDeriveAndValidateFailuresAndHelp1848769738/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestExportModelPackageToMarkdown (0.42s)
+    export_report_test.go:60: SaveModelPackage: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExportModelPackageToMarkdown2540809973/001/.model.coimpkg.tmp-4171810654 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExportModelPackageToMarkdown2540809973/001/model.coimpkg: operation not supported
+--- FAIL: TestExamplesRunFullGraphEndToEnd (4.61s)
+    fullgraph_test.go:23: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExamplesRunFullGraphEndToEnd2373212016/001/.graph.coimgraph.tmp-2464200825 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExamplesRunFullGraphEndToEnd2373212016/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestExamplesRunFullGraphRejects (3.37s)
+    fullgraph_test.go:115: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExamplesRunFullGraphRejects1598208566/001/.graph.coimgraph.tmp-1292427689 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestExamplesRunFullGraphRejects1598208566/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestDataImportStoreAndValidateRoundTrip (2.95s)
+    import_test.go:210: data import --out-store: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataImportStoreAndValidateRoundTrip3105791924/001/.graph.coimgraph.tmp-1022932401 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestDataImportStoreAndValidateRoundTrip3105791924/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestModelInspectIndividual (0.48s)
+    model_test.go:87: SaveIndividual: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelInspectIndividual2634727736/001/.individual.json.tmp-1028320274 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelInspectIndividual2634727736/001/individual.json: operation not supported
+--- FAIL: TestModelInspectPackage (0.49s)
+    model_test.go:144: SaveModelPackage: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelInspectPackage498244554/001/.model.coimpkg.tmp-849454222 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelInspectPackage498244554/001/model.coimpkg: operation not supported
+--- FAIL: TestModelValidateAcceptsAndRejects (0.44s)
+    model_test.go:199: SaveIndividual: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelValidateAcceptsAndRejects2947419677/001/.valid.json.tmp-1318106917 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestModelValidateAcceptsAndRejects2947419677/001/valid.json: operation not supported
+--- FAIL: TestSimulateRunReportsTheSpikingCoreOnAStore (3.52s)
+    simulate_test.go:164: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsTheSpikingCoreOnAStore3842147201/001/.graph.coimgraph.tmp-1617141029 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsTheSpikingCoreOnAStore3842147201/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunReportsTheContinuousCore (2.60s)
+    simulate_test.go:206: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsTheContinuousCore2320190485/001/.graph.coimgraph.tmp-848579142 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsTheContinuousCore2320190485/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunSavesAndContinuesState (3.58s)
+    simulate_test.go:226: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunSavesAndContinuesState3240621394/001/.graph.coimgraph.tmp-891692323 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunSavesAndContinuesState3240621394/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunResolvesSelectorsAndReportsThem (3.61s)
+    simulate_test.go:281: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunResolvesSelectorsAndReportsThem4082067700/001/.graph.coimgraph.tmp-3136013854 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunResolvesSelectorsAndReportsThem4082067700/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunFailuresAndHelp (4.12s)
+    simulate_test.go:318: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunFailuresAndHelp2074604164/001/.graph.coimgraph.tmp-1066361996 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunFailuresAndHelp2074604164/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunReportsStabilityFlagsWithoutFailing (4.52s)
+    simulate_test.go:416: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsStabilityFlagsWithoutFailing463291592/001/.graph.coimgraph.tmp-2841430815 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunReportsStabilityFlagsWithoutFailing463291592/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunAppliesADerivedParameterSet (4.15s)
+    simulate_test.go:469: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunAppliesADerivedParameterSet3741319522/001/.graph.coimgraph.tmp-2353507297 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunAppliesADerivedParameterSet3741319522/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunContinuesADerivedRunFromAState (4.42s)
+    simulate_test.go:516: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunContinuesADerivedRunFromAState2486681818/001/.graph.coimgraph.tmp-673898827 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunContinuesADerivedRunFromAState2486681818/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunDerivedParameterFailuresAndHelp (2.71s)
+    simulate_test.go:542: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunDerivedParameterFailuresAndHelp3916991815/001/.graph.coimgraph.tmp-479125680 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunDerivedParameterFailuresAndHelp3916991815/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateCompareRunsTheMatrixAndWritesEveryCell (2.76s)
+    simulate_test.go:801: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareRunsTheMatrixAndWritesEveryCell14340611/001/.graph.coimgraph.tmp-1779921021 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareRunsTheMatrixAndWritesEveryCell14340611/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateCompareRunsTheDerivedSource (2.58s)
+    simulate_test.go:873: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareRunsTheDerivedSource1917629787/001/.graph.coimgraph.tmp-3226067604 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareRunsTheDerivedSource1917629787/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateCompareFailuresAndHelp (3.02s)
+    simulate_test.go:916: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareFailuresAndHelp1934602783/001/.graph.coimgraph.tmp-2623562888 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareFailuresAndHelp1934602783/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunAcceptsThePlasticityBlock (4.06s)
+    simulate_test.go:1036: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunAcceptsThePlasticityBlock2629685062/001/.graph.coimgraph.tmp-4257996344 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunAcceptsThePlasticityBlock2629685062/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateCompareAcceptsTheLearningVariants (2.61s)
+    simulate_test.go:1080: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareAcceptsTheLearningVariants3367767480/001/.graph.coimgraph.tmp-3899363858 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateCompareAcceptsTheLearningVariants3367767480/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestSimulateRunRefusesStateFlagsWithThePlasticityBlock (2.82s)
+    simulate_test.go:1153: data import: connectome: publish store without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunRefusesStateFlagsWithThePlasticityBlock3535588648/001/.graph.coimgraph.tmp-1450256583 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSimulateRunRefusesStateFlagsWithThePlasticityBlock3535588648/001/graph.coimgraph: operation not supported; stderr=
+--- FAIL: TestTrainResumeAndObservationOnlyPrediction (0.58s)
+    train_test.go:28: [train delayed --steps 12 --checkpoint /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestTrainResumeAndObservationOnlyPrediction4048600285/001/first.json]: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestTrainResumeAndObservationOnlyPrediction4048600285/001/.first.json.tmp-2152276031 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestTrainResumeAndObservationOnlyPrediction4048600285/001/first.json: operation not supported 
+FAIL
+FAIL	github.com/TimLai666/coimnet/internal/cli	395.753s
+ok  	github.com/TimLai666/coimnet/internal/delayedfixture	8.284s
+ok  	github.com/TimLai666/coimnet/internal/extsort	30.106s
+ok  	github.com/TimLai666/coimnet/internal/fileio	9.361s
+ok  	github.com/TimLai666/coimnet/internal/jsonkey	2.262s
+ok  	github.com/TimLai666/coimnet/internal/redact	2.298s
+ok  	github.com/TimLai666/coimnet/internal/sparse	2.241s
+ok  	github.com/TimLai666/coimnet/internal/strictjson	2.315s
+ok  	github.com/TimLai666/coimnet/learning	22.593s
+--- FAIL: TestStatefulPPOCheckpointNewProcess (0.35s)
+    stateful_checkpoint_test.go:85: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStatefulPPOCheckpointNewProcess1964247853/001/.before.json.tmp-705488537 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStatefulPPOCheckpointNewProcess1964247853/001/before.json: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/learning/rl	6.394s
+ok  	github.com/TimLai666/coimnet/modulation	17.322s
+ok  	github.com/TimLai666/coimnet/multimodal	2.196s
+ok  	github.com/TimLai666/coimnet/multimodal/synthetic	2.777s
+--- FAIL: TestSaveAndLoadRoundTrip (5.04s)
+    set_test.go:33: Save: params: publish parameter set without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveAndLoadRoundTrip286921420/001/.params.coimparams.tmp-2442008432 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveAndLoadRoundTrip286921420/001/params.coimparams: operation not supported
+--- FAIL: TestSaveIsByteIdenticalAndNeverOverwrites (5.12s)
+    set_test.go:73: params: publish parameter set without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveIsByteIdenticalAndNeverOverwrites3310657823/001/.a.coimparams.tmp-3571271452 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestSaveIsByteIdenticalAndNeverOverwrites3310657823/001/a.coimparams: operation not supported
+--- FAIL: TestLoadRejectsEveryTamperedByte (3.72s)
+    set_test.go:107: params: publish parameter set without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsEveryTamperedByte3833244048/001/.params.coimparams.tmp-2806433318 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestLoadRejectsEveryTamperedByte3833244048/001/params.coimparams: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/params	70.755s
+ok  	github.com/TimLai666/coimnet/plasticity	2.711s
+ok  	github.com/TimLai666/coimnet/replay	3.270s
+ok  	github.com/TimLai666/coimnet/resources	2.652s
+ok  	github.com/TimLai666/coimnet/signal	3.011s
+ok  	github.com/TimLai666/coimnet/simulate	163.554s
+--- FAIL: TestStreamFileResumesExactlyAndDoesNotOverwrite (0.73s)
+    stream_file_test.go:41: Save: asr: save stream: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileResumesExactlyAndDoesNotOverwrite1703525500/001/.stream.json.tmp-1115590243 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileResumesExactlyAndDoesNotOverwrite1703525500/001/stream.json: operation not supported
+--- FAIL: TestStreamFileRejectsTamperingEvenWithFreshChecksum (0.87s)
+    stream_file_test.go:99: asr: save stream: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileRejectsTamperingEvenWithFreshChecksum2866212709/001/.valid.json.tmp-2971687000 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileRejectsTamperingEvenWithFreshChecksum2866212709/001/valid.json: operation not supported
+--- FAIL: TestStreamFileRejectsWrongSchemaAndChecksum (0.56s)
+    stream_file_test.go:224: asr: save stream: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileRejectsWrongSchemaAndChecksum2697298849/001/.good.json.tmp-3654939049 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileRejectsWrongSchemaAndChecksum2697298849/001/good.json: operation not supported
+--- FAIL: TestStreamFileAcrossProcess (0.52s)
+    stream_file_test.go:275: asr: save stream: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileAcrossProcess2851265164/001/.stream.json.tmp-1151683580 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestStreamFileAcrossProcess2851265164/001/stream.json: operation not supported
+FAIL
+FAIL	github.com/TimLai666/coimnet/tasks/asr	48.406s
+ok  	github.com/TimLai666/coimnet/tasks/asr/audio	9.846s
+--- FAIL: TestPackageVideoToolFails (4.27s)
+    testing.go:1464: TempDir RemoveAll cleanup: unlinkat /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestPackageVideoToolFails3421776851/002: directory not empty
+--- FAIL: TestPackageVideoPackages (4.92s)
+    testing.go:1464: TempDir RemoveAll cleanup: unlinkat /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestPackageVideoPackages4233103450/002: directory not empty
+FAIL
+FAIL	github.com/TimLai666/coimnet/tasks/media	515.993s
+ok  	github.com/TimLai666/coimnet/tasks/media/realdata	5.665s
+ok  	github.com/TimLai666/coimnet/tasks/nav2d/trajectory	16.820s
+ok  	github.com/TimLai666/coimnet/tasks/ocr	12.840s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/ctc	2.612s
+ok  	github.com/TimLai666/coimnet/tasks/ocr/glyphs	2.612s
+ok  	github.com/TimLai666/coimnet/tasks/textgen	1027.141s
+ok  	github.com/TimLai666/coimnet/tasks/textgen/tokenizer	3.622s
+ok  	github.com/TimLai666/coimnet/teacher	10.794s
+ok  	github.com/TimLai666/coimnet/teacher/tool	2.411s
+FAIL

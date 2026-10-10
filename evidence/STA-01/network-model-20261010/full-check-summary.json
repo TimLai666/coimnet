@@ -1,0 +1,97 @@
+{
+  "utc": "2026-10-10T16:08:42.511611+00:00",
+  "full_checks": {
+    "unit-full-final": {
+      "execution": {
+        "args": [
+          "/usr/local/go/bin/go",
+          "test",
+          "-count=1",
+          "-timeout",
+          "30m",
+          "-p",
+          "2",
+          "./..."
+        ],
+        "cwd": "/Volumes/SSD/Developer/coimnet",
+        "exit_code": 1,
+        "seconds": 1307.172810458,
+        "log": "unit-full-final.log",
+        "sha256": "5b4ac3080c69316465b154579885eef88b2a856aba5e02f1ba1db8b7a18f6ad5",
+        "finished_utc": "2026-10-10T15:32:08.961801+00:00"
+      },
+      "top_level_failures": 132,
+      "subtest_failures": 53,
+      "failure_entries": 185,
+      "passed_packages": 47,
+      "failed_packages": [
+        "github.com/TimLai666/coimnet",
+        "github.com/TimLai666/coimnet/checkpoint",
+        "github.com/TimLai666/coimnet/connectome",
+        "github.com/TimLai666/coimnet/download",
+        "github.com/TimLai666/coimnet/examples/realsubgraph",
+        "github.com/TimLai666/coimnet/internal/cli",
+        "github.com/TimLai666/coimnet/learning/rl",
+        "github.com/TimLai666/coimnet/params",
+        "github.com/TimLai666/coimnet/tasks/asr",
+        "github.com/TimLai666/coimnet/tasks/media"
+      ],
+      "unsupported_literal_occurrences": 176,
+      "race_warning_occurrences": 0,
+      "timeout_occurrences": 0,
+      "bundle_test_failure_entries": []
+    },
+    "race-full-final": {
+      "execution": {
+        "args": [
+          "/usr/local/go/bin/go",
+          "test",
+          "-count=1",
+          "-race",
+          "-timeout",
+          "30m",
+          "-p",
+          "2",
+          "./..."
+        ],
+        "cwd": "/Volumes/SSD/Developer/coimnet",
+        "exit_code": 1,
+        "seconds": 3207.967619916,
+        "log": "race-full-final.log",
+        "sha256": "942d03ed2049258225597f3f3821b2afeb87cd7ce5878ba76212c9e4bb4599c8",
+        "finished_utc": "2026-10-10T16:03:49.051221+00:00"
+      },
+      "top_level_failures": 134,
+      "subtest_failures": 53,
+      "failure_entries": 187,
+      "passed_packages": 47,
+      "failed_packages": [
+        "github.com/TimLai666/coimnet",
+        "github.com/TimLai666/coimnet/checkpoint",
+        "github.com/TimLai666/coimnet/connectome",
+        "github.com/TimLai666/coimnet/download",
+        "github.com/TimLai666/coimnet/examples/realsubgraph",
+        "github.com/TimLai666/coimnet/internal/cli",
+        "github.com/TimLai666/coimnet/learning/rl",
+        "github.com/TimLai666/coimnet/params",
+        "github.com/TimLai666/coimnet/tasks/asr",
+        "github.com/TimLai666/coimnet/tasks/media"
+      ],
+      "unsupported_literal_occurrences": 176,
+      "race_warning_occurrences": 0,
+      "timeout_occurrences": 0,
+      "bundle_test_failure_entries": []
+    }
+  },
+  "source": "source-freeze.json (before final two-file publication-error follow-up and INDEX correction)",
+  "resolved_and_reverified": [
+    "TestFormatIndex: INDEX privacy literal corrected from line 196 to 204; governance-index-fix has eleven PASS top-level tests."
+  ],
+  "remaining": [
+    "Legacy single-file checkpoint, graph, parameter, download, CLI and ASR publication fails on actual os.Link ENOTSUP.",
+    "Go checksum misses recurred despite unchanged files; root cause unconfirmed, successful final build/vet and dependency retries retained.",
+    "Media TempDir RemoveAll ENOTEMPTY reproduced in ordinary and race checks; actual directory empty when read later, root cause unconfirmed."
+  ],
+  "no_failure_count_is_a_root_cause_count": true,
+  "overall_full_suite_passed": false
+}

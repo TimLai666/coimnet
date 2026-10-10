@@ -1,0 +1,310 @@
+{
+  "utc": "2026-10-10T16:08:42.511611+00:00",
+  "status": "verified_network_bundle_scope; full_native_suite_pending",
+  "baseline_head": "9c23868e5db17c5cccd355d1109b7326bb77fd15",
+  "environment": {
+    "cwd": "/Volumes/SSD/Developer/coimnet",
+    "mount": "//timlai@mac-1/SSD on /Volumes/SSD (smbfs)",
+    "go": "go1.26.5 darwin/arm64",
+    "CGO_ENABLED": "1",
+    "GOPROXY": "off",
+    "TMPDIR_and_GOTMPDIR": "runs/.tmp/network-model-20261010/go-tmp",
+    "SSH_executed": false
+  },
+  "public_operations": [
+    "Save/LoadModelPackageBundle",
+    "Save/LoadIndividualBundle",
+    "Save/LoadTrainingBundle"
+  ],
+  "format": "existing checkpoint bundle v2; same three files and strict checksums",
+  "source_reference": "source-final.json",
+  "go_source_files": 662,
+  "all_final_go_source_hashes_match": true,
+  "module_hashes": {
+    "go.mod": "2622c1051c899f0d6233a71e4704def8d3c14e36139d33be5098ebafc739f25e",
+    "go.sum": "42014c0cea685214276aa5136d57222c05f262f4223b374de140109e512ca052"
+  },
+  "checks": {
+    "root-red": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-count=1",
+        "-run",
+        "^TestNetworkBundle",
+        "-v",
+        "./checkpoint"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 1,
+      "seconds": 59.332538917,
+      "log": "root-red.log",
+      "sha256": "5ed4ead6c1e1126fdcf08157c132a4aea71a2d21bffc5e0752d3647729750dc8",
+      "finished_utc": "2026-10-10T14:56:59.325827+00:00"
+    },
+    "errors-red": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-count=1",
+        "-run",
+        "^(TestNetworkBundleCancellationWithCleanupFailureRetainsOutput|TestNetworkBundlePublishedDirectorySyncFailureRetainsModel)$",
+        "-v",
+        "./checkpoint"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 1,
+      "seconds": 63.559278708,
+      "log": "errors-red.log",
+      "sha256": "12f27375b3b5e97a409ca878fdab7409bd006569578b5d374bbd8e8e743476f8",
+      "finished_utc": "2026-10-10T15:32:42.693681+00:00"
+    },
+    "bundle-final-green": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-count=1",
+        "-run",
+        "^(TestNetworkBundle|TestBundle)",
+        "-v",
+        "./checkpoint"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 129.98760979099998,
+      "log": "bundle-final-green.log",
+      "sha256": "865b7e7b128e6776e0a8fc96485ae1a1defd855d448e58b5adec1357075f9c9e",
+      "finished_utc": "2026-10-10T15:35:35.038427+00:00"
+    },
+    "bundle-final-race": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-count=1",
+        "-race",
+        "-run",
+        "^(TestNetworkBundle|TestBundle)",
+        "-v",
+        "./checkpoint"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 117.029122791,
+      "log": "bundle-final-race.log",
+      "sha256": "081268847c7beced90ab29e3b549de977cfd7a6cd9e53d7a15701009e2708f02",
+      "finished_utc": "2026-10-10T15:35:29.997219+00:00"
+    },
+    "sdk-final-readback": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "run",
+        "runs/.tmp/network-model-20261010/sdk-probe.go",
+        "verify-saved",
+        "runs/.tmp/network-model-20261010/old",
+        "runs/.tmp/network-model-20261010/new",
+        "evidence/STA-01/network-model-20261010/sdk-final-readback.json"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 15.689696542,
+      "log": "sdk-final-readback.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finished_utc": "2026-10-10T15:35:06.192279+00:00"
+    },
+    "build-final-read-retry": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "build",
+        "./..."
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 115.05079308399999,
+      "log": "build-final-read-retry.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finished_utc": "2026-10-10T15:51:46.263448+00:00"
+    },
+    "vet-post-error-fix": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "vet",
+        "./..."
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 159.949956625,
+      "log": "vet-post-error-fix.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "finished_utc": "2026-10-10T15:38:40.329698+00:00"
+    },
+    "deps-diagnostic-retry": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "list",
+        "-deps",
+        "./..."
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 155.98513633299999,
+      "log": "deps-diagnostic-retry.log",
+      "sha256": "95f1d5fbc78eb585946a543aed16e0d87f83f9c37d9d0cefdd89a6939456e4bf",
+      "finished_utc": "2026-10-10T15:26:11.203137+00:00"
+    },
+    "module-final": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "mod",
+        "verify"
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 3.655225375,
+      "log": "module-final.log",
+      "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "finished_utc": "2026-10-10T15:10:24.941083+00:00"
+    },
+    "governance-index-fix": {
+      "args": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-count=1",
+        "-race",
+        "-run",
+        "^(TestGovernance|TestFormatIndex|TestNoTelemetry)",
+        "-v",
+        "."
+      ],
+      "cwd": "/Volumes/SSD/Developer/coimnet",
+      "exit_code": 0,
+      "seconds": 251.339678917,
+      "log": "governance-index-fix.log",
+      "sha256": "f3a63d74aef69b318bac7d21a0842688a72be88f2057fd79a18fb16c1e163b9c",
+      "finished_utc": "2026-10-10T15:28:41.698929+00:00"
+    }
+  },
+  "normal_top_level_pass": 23,
+  "race_top_level_pass": 22,
+  "race_top_level_skip": {
+    "count": 1,
+    "name": "TestBundleLargerThanSingleFileLimit",
+    "reason": "existing race instrumentation memory cost; normal test passed"
+  },
+  "fresh_process_three_kinds": [
+    {
+      "kind": "model_package",
+      "old_save_error": "publish bundle manifest: publish checkpoint without overwrite: link runs/.tmp/network-model-20261010/old/.sdk-probe-source-171738953/bundle/.manifest.json.tmp-527547323 runs/.tmp/network-model-20261010/old/.sdk-probe-source-171738953/bundle/manifest.json: operation not supported",
+      "files": [
+        {
+          "name": "arrays.bin",
+          "old_bytes": 0,
+          "old_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "new_bytes": 0,
+          "new_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "equal": true
+        },
+        {
+          "name": "document.json",
+          "old_bytes": 780,
+          "old_sha256": "1e9ba6ccad8799f6c35fe707bc74d290846dec09e7a5d3cfc932ae642c7ce26d",
+          "new_bytes": 780,
+          "new_sha256": "1e9ba6ccad8799f6c35fe707bc74d290846dec09e7a5d3cfc932ae642c7ce26d",
+          "equal": true
+        },
+        {
+          "name": "manifest.json",
+          "old_bytes": 480,
+          "old_sha256": "4924116d1da5e8118c915f13db15ec453bdb8eeed75657511186ddf56273cf78",
+          "new_bytes": 480,
+          "new_sha256": "4924116d1da5e8118c915f13db15ec453bdb8eeed75657511186ddf56273cf78",
+          "equal": true
+        }
+      ],
+      "files_equal": true,
+      "old_load_ok": true,
+      "new_load_ok": true,
+      "resume_json_equal": true
+    },
+    {
+      "kind": "individual",
+      "old_save_error": "publish bundle manifest: publish checkpoint without overwrite: link runs/.tmp/network-model-20261010/old/.sdk-probe-source-3090214581/bundle/.manifest.json.tmp-1566070395 runs/.tmp/network-model-20261010/old/.sdk-probe-source-3090214581/bundle/manifest.json: operation not supported",
+      "files": [
+        {
+          "name": "arrays.bin",
+          "old_bytes": 0,
+          "old_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "new_bytes": 0,
+          "new_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "equal": true
+        },
+        {
+          "name": "document.json",
+          "old_bytes": 1584,
+          "old_sha256": "20a69963730132122a6f94133215ec858889ac86daaa496cb2552e5f1d11a4c8",
+          "new_bytes": 1584,
+          "new_sha256": "20a69963730132122a6f94133215ec858889ac86daaa496cb2552e5f1d11a4c8",
+          "equal": true
+        },
+        {
+          "name": "manifest.json",
+          "old_bytes": 486,
+          "old_sha256": "fd7941e031f71206fa20939850d7daa927bb4a39141449f96fbb0363d0a1ce64",
+          "new_bytes": 486,
+          "new_sha256": "fd7941e031f71206fa20939850d7daa927bb4a39141449f96fbb0363d0a1ce64",
+          "equal": true
+        }
+      ],
+      "files_equal": true,
+      "old_load_ok": true,
+      "new_load_ok": true,
+      "resume_json_equal": true
+    },
+    {
+      "kind": "training",
+      "old_save_error": "publish bundle manifest: publish checkpoint without overwrite: link runs/.tmp/network-model-20261010/old/.sdk-probe-source-4056657406/bundle/.manifest.json.tmp-3468763405 runs/.tmp/network-model-20261010/old/.sdk-probe-source-4056657406/bundle/manifest.json: operation not supported",
+      "files": [
+        {
+          "name": "arrays.bin",
+          "old_bytes": 0,
+          "old_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "new_bytes": 0,
+          "new_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "equal": true
+        },
+        {
+          "name": "document.json",
+          "old_bytes": 1072,
+          "old_sha256": "fb78dce68e5cb9245684a5a6306260c39daa6a2cc51fb8b8d975b1905f90830a",
+          "new_bytes": 1072,
+          "new_sha256": "fb78dce68e5cb9245684a5a6306260c39daa6a2cc51fb8b8d975b1905f90830a",
+          "equal": true
+        },
+        {
+          "name": "manifest.json",
+          "old_bytes": 479,
+          "old_sha256": "35d1d9726085792c66e6f725fd0e01f9d9b1a7a67f1985e608e35b6506402422",
+          "new_bytes": 479,
+          "new_sha256": "35d1d9726085792c66e6f725fd0e01f9d9b1a7a67f1985e608e35b6506402422",
+          "equal": true
+        }
+      ],
+      "files_equal": true,
+      "old_load_ok": true,
+      "new_load_ok": true,
+      "resume_json_equal": true
+    }
+  ],
+  "old_v2_limit": "Pre-fix save failed on SMB. Complete pre-publication byte copies were captured and loaded; they are not previously successful published models.",
+  "independent_process_race": "cross-process-execution.json: exactly one winner, all three winner bundles load/resume",
+  "full_suite": "full-check-summary.json; failed, started before final follow-up, not full final-source validation",
+  "root_review": "root-review.md",
+  "independent_review": "independent-review.md",
+  "preserved_originals": "originals-after.json",
+  "cleanup": "cleanup.json (written after the actual conditional cleanup)",
+  "limits": [
+    "No actual NAS outage or injected file.Sync/Close fault.",
+    "Directory-sync failure was a real controlled move producing ENOENT, not a network disconnect.",
+    "The SDK fixture is a small artificial continuous model, not full-brain training.",
+    "Legacy single-file publication and CLI episode/data-cursor snapshots remain separate and require native hardlink support."
+  ]
+}
