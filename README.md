@@ -126,6 +126,32 @@ printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
 
 三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。
 
+### 網路磁碟上的模型保存
+
+先在作業系統掛載網路磁碟，再用 `checkpoint` 的資料夾保存入口。每次保存使用一個尚未存在的新目錄，父目錄須已存在。
+
+| 保存內容 | 保存／載入 API |
+| --- | --- |
+| 模型設定與參數 | `SaveModelPackageBundle`／`LoadModelPackageBundle` |
+| 持續個體的神經與學習狀態 | `SaveIndividualBundle`／`LoadIndividualBundle` |
+| 訓練器與最佳化器狀態 | `SaveTrainingBundle`／`LoadTrainingBundle` |
+
+例如把既有模型包 `pkg` 存到已掛載的分享資料夾，再讀回：
+
+```go
+err := checkpoint.SaveModelPackageBundle(ctx, "/Volumes/Models/model-001", pkg)
+if err != nil {
+    return err
+}
+restored, err := checkpoint.LoadModelPackageBundle(ctx, "/Volumes/Models/model-001")
+```
+
+資料夾格式是既有 `coimnet-checkpoint-bundle/v2`，包含 `document.json`、`arrays.bin` 與最後寫入的 `manifest.json`。移動或備份時須保存整個目錄。載入會核對檔案大小、校驗碼、版本與狀態，缺失或截斷的完成清單會被拒絕。檔案系統須支援排他建立檔案與目錄、檔案及目錄同步。
+
+保存完成後才發生取消或同步錯誤時，框架會保留模型並回報已發佈。網路錯誤造成結果無法確認時，也會保留目錄並回報狀態未確認。遇到這兩種錯誤，先用對應的載入 API 確認成果，避免刪除可能已完成的模型。
+
+這些入口保存 SDK 的模型、個體與訓練器。上方人工範例的 `train delayed`／`resume` 使用單檔並包含資料游標，不能用訓練器資料夾快照取代。
+
 個體快照可以遷移到新檔而不動原件：`./bin/coimnet checkpoint migrate --src old.json --dst migrated.json` 讀 `--src`、寫 `--dst`（已存在的路徑拒絕、同路徑拒絕），印出含前後 SHA-256、欄位變更清單與資訊損失的 JSON 報告；聯集出現以前的連續個體檔會升級成 `coimnet-individual-checkpoint/v1` 聯集形，同版本則逐位複製。
 
 取得官方原始資料：
@@ -251,6 +277,8 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 [多通道 adapter 範例](examples/multichannel/README.md) 將不同頻率的連續值、區間與脈衝轉成六欄輸入，接到既有核心與訓練器。執行 `go test ./examples/multichannel -run ExampleAdapt -count=1 -v` 可跑人工資料的完整流程。
 
 ## Go SDK
+
+`experiment.RunBioInspired` 的兩種人工生物啟發協定各自保存本次設定。回傳後修改呼叫端設定或另一份報告，不會連動修改既有報告，取消後的部分報告也適用。保留空值、原有錯誤與合法輸出；執行期間請勿並行修改傳入設定。驗收見 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md)。
 
 新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)；兩者都已通過 fixture 驗收，範圍與限制見上表的 LRN-09 與 TSK-02 列。
 

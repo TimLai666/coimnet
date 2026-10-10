@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -220,11 +221,19 @@ type ExpressionResult struct {
 
 // RunBioInspired dispatches on Protocol; ecdysone_inspired runs the timing
 // protocol and npf_memory_expression_hypothesis the state protocol, both after
-// Validate. A quantitative name with complete evidence passes Validate but is
-// not implemented.
+// Validate. It copies mutable configuration before running, so each returned
+// report retains its invocation's settings. A quantitative name with complete
+// evidence passes Validate but is not implemented.
 func RunBioInspired(ctx context.Context, c BioInspiredConfig) (BioInspiredReport, error) {
 	if err := c.Validate(); err != nil {
 		return BioInspiredReport{}, err
+	}
+	c.Seeds = slices.Clone(c.Seeds)
+	c.PulseSteps = slices.Clone(c.PulseSteps)
+	c.Registry = slices.Clone(c.Registry)
+	if c.Quantitative != nil {
+		quantitative := *c.Quantitative
+		c.Quantitative = &quantitative
 	}
 	switch c.Protocol {
 	case ProtocolEcdysoneInspired:

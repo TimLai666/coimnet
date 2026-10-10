@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-10T15:55:09.686184+00:00",
+  "status": "root_cause_unconfirmed",
+  "unchanged_modules": {
+    "go.mod": "2622c1051c899f0d6233a71e4704def8d3c14e36139d33be5098ebafc739f25e",
+    "go.sum": "42014c0cea685214276aa5136d57222c05f262f4223b374de140109e512ca052"
+  },
+  "failed_attempts": [
+    "vet-final",
+    "deps-final",
+    "build-post-error-fix"
+  ],
+  "nine_error_occurrences_cover_five_module_roots": true,
+  "confirmed_go_source_mechanism": {
+    "locked_read": "cmd/go/internal/lockedfile/lockedfile.go:105-114",
+    "darwin_flock": "cmd/go/internal/lockedfile/internal/filelock/filelock_unix.go:21-40",
+    "map_initialized_before_read": "cmd/go/internal/modfetch/fetch.go:543-565",
+    "read_failure_returned": "cmd/go/internal/modfetch/fetch.go:568-586",
+    "HaveSum_returns_false_without_surfacing_read_error": "cmd/go/internal/modfetch/fetch.go:633-638"
+  },
+  "diagnostic": "locked-read-probe.json: twenty separate-process read-only shared locks/readbacks all matched expected checksum",
+  "limits": [
+    "The Go source permits a read/lock error to surface as missing checksums, but no failing-process read/lock error was observed.",
+    "No attribution to SMB, GPU, race, or a dependency change is confirmed.",
+    "No go get, tidy, cache deletion, or dependency edit was performed."
+  ],
+  "successful_retries": [
+    "vet-diagnostic-retry",
+    "deps-diagnostic-retry",
+    "vet-post-error-fix",
+    "build-final-read-retry"
+  ]
+}

@@ -126,10 +126,23 @@ func TestOnlyNetworkPackagesImportHTTP(t *testing.T) {
 }
 
 func TestNoTelemetry(t *testing.T) {
-	root := repoRoot(t)
+	hits, err := scanTelemetry(repoRoot(t))
+	if err != nil {
+		t.Fatalf("walk failed: %v", err)
+	}
+	if len(hits) > 0 {
+		t.Fatalf("telemetry/analytics string in non-test Go file:\n%s", strings.Join(hits, "\n"))
+	}
+}
+
+func scanTelemetry(root string) ([]string, error) {
 	patterns := []string{"analytics", "telemetry", "segment.io", "sentry", "mixpanel", "posthog"}
 	var hits []string
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		// Generated Go files and directories here can disappear during tests.
+		if path == filepath.Join(root, "runs", ".tmp") && (err != nil || d.IsDir()) {
+			return filepath.SkipDir
+		}
 		if err != nil {
 			return err
 		}
@@ -163,12 +176,7 @@ func TestNoTelemetry(t *testing.T) {
 		}
 		return nil
 	})
-	if err != nil {
-		t.Fatalf("walk failed: %v", err)
-	}
-	if len(hits) > 0 {
-		t.Fatalf("telemetry/analytics string in non-test Go file:\n%s", strings.Join(hits, "\n"))
-	}
+	return hits, err
 }
 
 func TestScanCommitScriptFlagsSecrets(t *testing.T) {

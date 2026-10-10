@@ -1,0 +1,119 @@
+=== RUN   TestNetworkBundleCancellationWithCleanupFailureRetainsOutput
+--- PASS: TestNetworkBundleCancellationWithCleanupFailureRetainsOutput (1.15s)
+=== RUN   TestNetworkBundlePublishedDirectorySyncFailureRetainsModel
+--- PASS: TestNetworkBundlePublishedDirectorySyncFailureRetainsModel (0.96s)
+=== RUN   TestBundleModelPackageRoundTrip
+--- PASS: TestBundleModelPackageRoundTrip (0.93s)
+=== RUN   TestBundleIndividualRoundTrip
+=== RUN   TestBundleIndividualRoundTrip/continuous
+=== RUN   TestBundleIndividualRoundTrip/LIF
+=== RUN   TestBundleIndividualRoundTrip/plasticity
+=== RUN   TestBundleIndividualRoundTrip/chemistry
+=== RUN   TestBundleIndividualRoundTrip/receptor_zero_gates_hebbian_rate
+--- PASS: TestBundleIndividualRoundTrip (4.50s)
+    --- PASS: TestBundleIndividualRoundTrip/continuous (1.13s)
+    --- PASS: TestBundleIndividualRoundTrip/LIF (0.89s)
+    --- PASS: TestBundleIndividualRoundTrip/plasticity (0.82s)
+    --- PASS: TestBundleIndividualRoundTrip/chemistry (0.90s)
+    --- PASS: TestBundleIndividualRoundTrip/receptor_zero_gates_hebbian_rate (0.76s)
+=== RUN   TestBundleTrainingRoundTrip
+--- PASS: TestBundleTrainingRoundTrip (0.87s)
+=== RUN   TestBundleKindsRefuseEachOther
+--- PASS: TestBundleKindsRefuseEachOther (1.41s)
+=== RUN   TestBundleReadManifestOnly
+=== RUN   TestBundleReadManifestOnly/document_and_arrays_metadata
+=== RUN   TestBundleReadManifestOnly/missing_arrays_file
+=== RUN   TestBundleReadManifestOnly/missing_manifest
+--- PASS: TestBundleReadManifestOnly (2.72s)
+    --- PASS: TestBundleReadManifestOnly/document_and_arrays_metadata (1.17s)
+    --- PASS: TestBundleReadManifestOnly/missing_arrays_file (0.83s)
+    --- PASS: TestBundleReadManifestOnly/missing_manifest (0.71s)
+=== RUN   TestBundleRejectsTamperedTopology
+=== RUN   TestBundleRejectsTamperedTopology/individual
+=== RUN   TestBundleRejectsTamperedTopology/training
+--- PASS: TestBundleRejectsTamperedTopology (7.97s)
+    --- PASS: TestBundleRejectsTamperedTopology/individual (1.85s)
+    --- PASS: TestBundleRejectsTamperedTopology/training (6.12s)
+=== RUN   TestBundleLargerThanSingleFileLimit
+    bundle_kinds_test.go:276: race instrumentation makes the large bundle fixture too memory intensive
+--- SKIP: TestBundleLargerThanSingleFileLimit (0.00s)
+=== RUN   TestNetworkBundleConcurrentModelWritersHaveOneWinner
+--- PASS: TestNetworkBundleConcurrentModelWritersHaveOneWinner (3.80s)
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest
+--- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput (5.30s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save (0.38s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest (4.92s)
+=== RUN   TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle
+--- PASS: TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle (6.45s)
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-0
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-1
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-240
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-479
+--- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore (1.57s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-0 (0.10s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-1 (0.06s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-240 (0.11s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-479 (0.14s)
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/existing_file
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle
+--- PASS: TestNetworkBundleExistingTargetsRemainUnchanged (1.85s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/existing_file (0.35s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory (0.39s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle (1.11s)
+=== RUN   TestBundleRoundTrip
+--- PASS: TestBundleRoundTrip (1.03s)
+=== RUN   TestBundleKeepsPointersToZero
+--- PASS: TestBundleKeepsPointersToZero (1.01s)
+=== RUN   TestBundleExtractsOnlyLargeArrays
+--- PASS: TestBundleExtractsOnlyLargeArrays (1.72s)
+=== RUN   TestBundleArrayPrimitiveKinds
+--- PASS: TestBundleArrayPrimitiveKinds (1.91s)
+=== RUN   TestBundleRefusesExistingDir
+=== RUN   TestBundleRefusesExistingDir/directory
+=== RUN   TestBundleRefusesExistingDir/file
+--- PASS: TestBundleRefusesExistingDir (2.32s)
+    --- PASS: TestBundleRefusesExistingDir/directory (1.27s)
+    --- PASS: TestBundleRefusesExistingDir/file (0.79s)
+=== RUN   TestBundleIncompleteWithoutManifest
+--- PASS: TestBundleIncompleteWithoutManifest (0.81s)
+=== RUN   TestBundleDetectsTampering
+=== RUN   TestBundleDetectsTampering/arrays_file_byte
+=== RUN   TestBundleDetectsTampering/array_entry_byte
+=== RUN   TestBundleDetectsTampering/document_byte
+=== RUN   TestBundleDetectsTampering/short_arrays_file
+=== RUN   TestBundleDetectsTampering/unknown_manifest_field
+=== RUN   TestBundleDetectsTampering/kind_mismatch
+=== RUN   TestBundleDetectsTampering/schema_mismatch
+=== RUN   TestBundleDetectsTampering/document_name_traversal
+=== RUN   TestBundleDetectsTampering/discontinuous_offset
+=== RUN   TestBundleDetectsTampering/unknown_dtype
+=== RUN   TestBundleDetectsTampering/duplicate_path
+=== RUN   TestBundleDetectsTampering/missing_path
+--- PASS: TestBundleDetectsTampering (17.94s)
+    --- PASS: TestBundleDetectsTampering/arrays_file_byte (1.03s)
+    --- PASS: TestBundleDetectsTampering/array_entry_byte (1.75s)
+    --- PASS: TestBundleDetectsTampering/document_byte (1.03s)
+    --- PASS: TestBundleDetectsTampering/short_arrays_file (1.07s)
+    --- PASS: TestBundleDetectsTampering/unknown_manifest_field (2.88s)
+    --- PASS: TestBundleDetectsTampering/kind_mismatch (1.28s)
+    --- PASS: TestBundleDetectsTampering/schema_mismatch (1.75s)
+    --- PASS: TestBundleDetectsTampering/document_name_traversal (2.43s)
+    --- PASS: TestBundleDetectsTampering/discontinuous_offset (1.18s)
+    --- PASS: TestBundleDetectsTampering/unknown_dtype (1.28s)
+    --- PASS: TestBundleDetectsTampering/duplicate_path (1.17s)
+    --- PASS: TestBundleDetectsTampering/missing_path (1.09s)
+=== RUN   TestBundleWriteFailureLeavesNothing
+--- PASS: TestBundleWriteFailureLeavesNothing (0.44s)
+=== RUN   TestBundleRejectsBadManifestInput
+=== RUN   TestBundleRejectsBadManifestInput/unknown_kind
+=== RUN   TestBundleRejectsBadManifestInput/empty_document_schema
+--- PASS: TestBundleRejectsBadManifestInput (0.55s)
+    --- PASS: TestBundleRejectsBadManifestInput/unknown_kind (0.32s)
+    --- PASS: TestBundleRejectsBadManifestInput/empty_document_schema (0.22s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	75.241s

@@ -19,6 +19,10 @@
 
 ## 共用決策
 
+- 網路磁碟的模型保存沿用 v2 bundle 及三種既有 Bundle SDK。排他建立目錄後先保存資料，最後寫完整完成清單，載入端拒絕缺失或截斷清單。完成清單完整寫出後即保留成果，後續取消與同步失敗分開回報。單檔發布的既有契約保持。驗收見 [ticket 55](docs/tickets/55-network-model-bundles.md)。
+
+- 生物啟發協定於共用 RunBioInspired 入口的既有驗證後複製全部可變設定，再計算雜湊及執行。每次報告各自持有種子、脈衝步、來源登錄與定量證據，保留 nil／空值及原驗證順序。回傳後修改設定與報告互不影響，不保證執行期間並行修改輸入安全。見 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md)。
+
 - 生物啟發協定沿用既有驗證順序與錯誤，NPF Suppressed 只接受嚴格介於 0 與 1 的值，Tolerance 只接受嚴格正且有限的值。合法報告及模型保持，見 [ticket 52](docs/tickets/52-bioinspired-finite-validation.md)。
 - 本機必要資料與執行結果放在專案內已忽略的 data／runs，過程暫存放 runs/.tmp 並於證據保存後清除。搬移前後比對逐檔 SHA-256，歷史 provenance 不改寫。realnav 解析符號連結後，以最近的 `.git` 為 repository 邊界，只允許該 repository 的 runs 新子目錄或既有支援的外部目錄，保持來源重疊與既有輸出拒絕；不引入執行時 Git 依賴。見 [ticket 53](docs/tickets/53-project-local-data-and-runs.md)。
 

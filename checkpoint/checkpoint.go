@@ -287,17 +287,22 @@ func LoadPayload(ctx context.Context, path, schema string) ([]byte, error) {
 // before publication cleaning up the temporary file, while cancellation after
 // publication still completes the durability step.
 func publishDocument(ctx context.Context, path string, document []byte) (retErr error) {
+	_, retErr = publishDocumentWithStatus(ctx, path, document)
+	return retErr
+}
+
+func publishDocumentWithStatus(ctx context.Context, path string, document []byte) (published bool, retErr error) {
 	if path == "" {
-		return fmt.Errorf("checkpoint path must not be empty")
+		return false, fmt.Errorf("checkpoint path must not be empty")
 	}
 	if len(document) > maxCheckpointBytes {
-		return fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
+		return false, fmt.Errorf("checkpoint exceeds %d byte limit", maxCheckpointBytes)
 	}
 
 	dir := filepath.Dir(path)
 	temp, err := os.CreateTemp(dir, "."+filepath.Base(path)+".tmp-*")
 	if err != nil {
-		return fmt.Errorf("create checkpoint temporary file: %w", err)
+		return false, fmt.Errorf("create checkpoint temporary file: %w", err)
 	}
 	tempPath := temp.Name()
 	removeTemp := true
@@ -317,25 +322,26 @@ func publishDocument(ctx context.Context, path string, document []byte) (retErr 
 	}()
 
 	if err := writeContext(ctx, temp, document); err != nil {
-		return err
+		return false, err
 	}
 	if err := contextError(ctx); err != nil {
-		return err
+		return false, err
 	}
 	if err := temp.Sync(); err != nil {
-		return fmt.Errorf("sync checkpoint temporary file: %w", err)
+		return false, fmt.Errorf("sync checkpoint temporary file: %w", err)
 	}
 	if err := temp.Close(); err != nil {
 		tempClosed = true
-		return fmt.Errorf("close checkpoint temporary file: %w", err)
+		return false, fmt.Errorf("close checkpoint temporary file: %w", err)
 	}
 	tempClosed = true
 	if err := contextError(ctx); err != nil {
-		return err
+		return false, err
 	}
 	if err := os.Link(tempPath, path); err != nil {
-		return fmt.Errorf("publish checkpoint without overwrite: %w", err)
+		return false, fmt.Errorf("publish checkpoint without overwrite: %w", err)
 	}
+	published = true
 	removeErr := os.Remove(tempPath)
 	if removeErr == nil {
 		removeTemp = false
@@ -354,7 +360,7 @@ func publishDocument(ctx context.Context, path string, document []byte) (retErr 
 	if contextErr != nil {
 		retErr = errors.Join(retErr, fmt.Errorf("checkpoint published; context ended after publication: %w", contextErr))
 	}
-	return retErr
+	return published, retErr
 }
 
 func decodeDocument(data []byte) (State, error) {

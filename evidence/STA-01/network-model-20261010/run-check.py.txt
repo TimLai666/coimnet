@@ -1,0 +1,11 @@
+from pathlib import Path
+import subprocess,json,time,os,hashlib,sys,datetime
+root=Path.cwd();w=root/"runs/.tmp/network-model-20261010";e=root/"evidence/STA-01/network-model-20261010"
+tag=sys.argv[1];args=sys.argv[2:];start=time.monotonic()
+env=dict(os.environ,GOTMPDIR=str(w/"go-tmp"),TMPDIR=str(w/"go-tmp"),GOPROXY="off")
+log=e/(tag+".log")
+with log.open("xb") as out:r=subprocess.run(args,stdout=out,stderr=subprocess.STDOUT,env=env)
+meta={"args":args,"cwd":str(root),"exit_code":r.returncode,"seconds":time.monotonic()-start,"log":log.name,"sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"finished_utc":datetime.datetime.now(datetime.timezone.utc).isoformat()}
+with (e/(tag+"-execution.json")).open("x") as f:json.dump(meta,f,indent=2);f.write("\n")
+print(json.dumps(meta));print(log.read_text(errors="replace")[-2000:])
+sys.exit(r.returncode)

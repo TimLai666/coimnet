@@ -1,0 +1,19 @@
+# Root contract: BioInspired configuration ownership
+
+RunBioInspired(context.Context, BioInspiredConfig) (BioInspiredReport, error) validates input, then dispatches to ecdysone_inspired or npf_memory_expression_hypothesis. Both report constructors currently assign Config: c, sharing caller Seeds, PulseSteps, Registry slices and Quantitative *QuantitativeEvidence (four immutable string fields). ConfigHash and result seeds stay unchanged when those shared fields are later modified.
+
+Scope: copy all mutable fields once in the common public entry after existing Validate and before hashing/execution. Preserve slice order, nil versus non-nil empty slices, and nil versus present Quantitative. No public signature, numerical operations, model, dependency, schema version, validation order or error changes. Caller mutation while the entry is reading/copying its input is unsupported.
+
+Test-only slot: experiment/bioinspired_ownership_test.go, package experiment. Exercise the actual public RunBioInspired, use Episodes=1, three distinct seeds, source registries S14/S15, valid pulse steps [0,1,3] for ecdysone and suppressed .4/tolerance 1e-3 for NPF. Never call private clone helpers.
+
+Required observable outcomes:
+1. Both protocols: after successful return, mutating original Seeds, Registry and each of Quantitative.Method/Data/Fit/HeldOutIntervention leaves complete serialized report, ConfigHash, report.Registry and result seeds unchanged. Ecdysone caller PulseSteps mutation likewise leaves curve and config unchanged. Assert successful seed outcomes before mutation.
+2. Both protocols: modifying report.Config in the reverse direction leaves the original caller config and a second report from the same input unchanged. Give input slices extra capacity and append/reslice to expose shared unused backing storage. Include an NPF non-nil empty PulseSteps slice with reserved capacity. Compare JSON and also inspect preserved hidden/backing elements where JSON cannot see them.
+3. Both protocols: two independent runs retain original complete configuration values; hash equals independent sha256(json.Marshal(original Config)); do not use production hash() as oracle. Quantitative nil, present-empty and present-complete are preserved; NPF PulseSteps nil versus non-nil empty must preserve JSON null versus []. Use reflect.DeepEqual as needed to distinguish nilness. Legal output values are compared by Root with pre-fix probe in two new processes.
+4. Invalid config, nil context, pre-cancelled context, unsupported complete quantitative name and pulse-outside-episode retain existing errors and zero-report behavior; reuse existing controls instead of duplicating an entire validation suite. Cancellation can return partial reports; if adding a deterministic custom context to trigger partial return, mutate inputs only after return and verify owned partial config. Do not promise concurrent input mutation safety or add flaky timing sleeps.
+
+Expected RED: element/Quantitative ownership tests fail on current sources for both protocols. Empty/nil/hash/legal/error controls should pass already. Root reviews and freezes the test hash, then adds only the common-entry copying.
+
+End-to-end acceptance: SDK both protocols with mutation isolation; seven legal baseline reports plus complete Quantitative configurations and null/empty preservation in fresh pre/post processes; existing SDK validation/context failure controls. No BioInspired CLI entry exists: both protocol runners are reached only by the public SDK, so no command is added.
+
+Verification: gofmt; go test -count=1 -v ./experiment -run '^TestBioInspiredOwnership'; list and run all related BioInspired/Ecdysone/NPF tests; full Go build/unit/race/vet/mod verify and governance checks. Temporary files only under runs/.tmp/bio-ownership-20261010 and cleaned after required logs are archived.

@@ -1,0 +1,115 @@
+=== RUN   TestBundleModelPackageRoundTrip
+--- PASS: TestBundleModelPackageRoundTrip (1.82s)
+=== RUN   TestBundleIndividualRoundTrip
+=== RUN   TestBundleIndividualRoundTrip/continuous
+=== RUN   TestBundleIndividualRoundTrip/LIF
+=== RUN   TestBundleIndividualRoundTrip/plasticity
+=== RUN   TestBundleIndividualRoundTrip/chemistry
+=== RUN   TestBundleIndividualRoundTrip/receptor_zero_gates_hebbian_rate
+--- PASS: TestBundleIndividualRoundTrip (6.03s)
+    --- PASS: TestBundleIndividualRoundTrip/continuous (2.48s)
+    --- PASS: TestBundleIndividualRoundTrip/LIF (0.87s)
+    --- PASS: TestBundleIndividualRoundTrip/plasticity (0.78s)
+    --- PASS: TestBundleIndividualRoundTrip/chemistry (0.91s)
+    --- PASS: TestBundleIndividualRoundTrip/receptor_zero_gates_hebbian_rate (0.98s)
+=== RUN   TestBundleTrainingRoundTrip
+--- PASS: TestBundleTrainingRoundTrip (0.89s)
+=== RUN   TestBundleKindsRefuseEachOther
+--- PASS: TestBundleKindsRefuseEachOther (1.54s)
+=== RUN   TestBundleReadManifestOnly
+=== RUN   TestBundleReadManifestOnly/document_and_arrays_metadata
+=== RUN   TestBundleReadManifestOnly/missing_arrays_file
+=== RUN   TestBundleReadManifestOnly/missing_manifest
+--- PASS: TestBundleReadManifestOnly (3.56s)
+    --- PASS: TestBundleReadManifestOnly/document_and_arrays_metadata (1.05s)
+    --- PASS: TestBundleReadManifestOnly/missing_arrays_file (1.16s)
+    --- PASS: TestBundleReadManifestOnly/missing_manifest (1.35s)
+=== RUN   TestBundleRejectsTamperedTopology
+=== RUN   TestBundleRejectsTamperedTopology/individual
+=== RUN   TestBundleRejectsTamperedTopology/training
+--- PASS: TestBundleRejectsTamperedTopology (2.78s)
+    --- PASS: TestBundleRejectsTamperedTopology/individual (1.68s)
+    --- PASS: TestBundleRejectsTamperedTopology/training (1.10s)
+=== RUN   TestBundleLargerThanSingleFileLimit
+    bundle_kinds_test.go:320: document_bytes=8986 arrays_bytes=266352024
+--- PASS: TestBundleLargerThanSingleFileLimit (16.51s)
+=== RUN   TestNetworkBundleConcurrentModelWritersHaveOneWinner
+--- PASS: TestNetworkBundleConcurrentModelWritersHaveOneWinner (1.19s)
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest
+--- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput (1.35s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save (0.46s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest (0.89s)
+=== RUN   TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle
+--- PASS: TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle (2.25s)
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-0
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-1
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-240
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-479
+--- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore (4.02s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-0 (0.29s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-1 (0.17s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-240 (0.17s)
+    --- PASS: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore/manifest-bytes-479 (0.19s)
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/existing_file
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle
+--- PASS: TestNetworkBundleExistingTargetsRemainUnchanged (3.06s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/existing_file (0.71s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory (0.92s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle (1.43s)
+=== RUN   TestBundleRoundTrip
+--- PASS: TestBundleRoundTrip (1.37s)
+=== RUN   TestBundleKeepsPointersToZero
+--- PASS: TestBundleKeepsPointersToZero (1.38s)
+=== RUN   TestBundleExtractsOnlyLargeArrays
+--- PASS: TestBundleExtractsOnlyLargeArrays (1.53s)
+=== RUN   TestBundleArrayPrimitiveKinds
+--- PASS: TestBundleArrayPrimitiveKinds (1.33s)
+=== RUN   TestBundleRefusesExistingDir
+=== RUN   TestBundleRefusesExistingDir/directory
+=== RUN   TestBundleRefusesExistingDir/file
+--- PASS: TestBundleRefusesExistingDir (1.05s)
+    --- PASS: TestBundleRefusesExistingDir/directory (0.37s)
+    --- PASS: TestBundleRefusesExistingDir/file (0.44s)
+=== RUN   TestBundleIncompleteWithoutManifest
+--- PASS: TestBundleIncompleteWithoutManifest (0.93s)
+=== RUN   TestBundleDetectsTampering
+=== RUN   TestBundleDetectsTampering/arrays_file_byte
+=== RUN   TestBundleDetectsTampering/array_entry_byte
+=== RUN   TestBundleDetectsTampering/document_byte
+=== RUN   TestBundleDetectsTampering/short_arrays_file
+=== RUN   TestBundleDetectsTampering/unknown_manifest_field
+=== RUN   TestBundleDetectsTampering/kind_mismatch
+=== RUN   TestBundleDetectsTampering/schema_mismatch
+=== RUN   TestBundleDetectsTampering/document_name_traversal
+=== RUN   TestBundleDetectsTampering/discontinuous_offset
+=== RUN   TestBundleDetectsTampering/unknown_dtype
+=== RUN   TestBundleDetectsTampering/duplicate_path
+=== RUN   TestBundleDetectsTampering/missing_path
+--- PASS: TestBundleDetectsTampering (14.26s)
+    --- PASS: TestBundleDetectsTampering/arrays_file_byte (1.07s)
+    --- PASS: TestBundleDetectsTampering/array_entry_byte (1.25s)
+    --- PASS: TestBundleDetectsTampering/document_byte (0.97s)
+    --- PASS: TestBundleDetectsTampering/short_arrays_file (0.95s)
+    --- PASS: TestBundleDetectsTampering/unknown_manifest_field (1.02s)
+    --- PASS: TestBundleDetectsTampering/kind_mismatch (0.93s)
+    --- PASS: TestBundleDetectsTampering/schema_mismatch (0.85s)
+    --- PASS: TestBundleDetectsTampering/document_name_traversal (0.84s)
+    --- PASS: TestBundleDetectsTampering/discontinuous_offset (0.86s)
+    --- PASS: TestBundleDetectsTampering/unknown_dtype (1.03s)
+    --- PASS: TestBundleDetectsTampering/duplicate_path (3.30s)
+    --- PASS: TestBundleDetectsTampering/missing_path (1.19s)
+=== RUN   TestBundleWriteFailureLeavesNothing
+--- PASS: TestBundleWriteFailureLeavesNothing (0.35s)
+=== RUN   TestBundleRejectsBadManifestInput
+=== RUN   TestBundleRejectsBadManifestInput/unknown_kind
+=== RUN   TestBundleRejectsBadManifestInput/empty_document_schema
+--- PASS: TestBundleRejectsBadManifestInput (0.52s)
+    --- PASS: TestBundleRejectsBadManifestInput/unknown_kind (0.26s)
+    --- PASS: TestBundleRejectsBadManifestInput/empty_document_schema (0.25s)
+PASS
+ok  	github.com/TimLai666/coimnet/checkpoint	75.215s

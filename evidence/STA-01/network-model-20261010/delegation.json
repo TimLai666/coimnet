@@ -1,0 +1,27 @@
+{
+  "host": "Codex",
+  "first_choice_attempt_record": "../../MOD-09/protocol-ownership-20261010/delegation.json",
+  "first_choice_outcome": "OpenCode request rejected by automatic approval review before execution in this logical task; no private source transfer claimed.",
+  "fallback_tool": "collaboration native agents",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "fork_turns": "none",
+  "workers": [
+    {
+      "task": "network_bundle_review",
+      "scope": "read-only architecture and adversarial review"
+    },
+    {
+      "task": "network_bundle_error_tests",
+      "allowed_files": [
+        "checkpoint/bundle_error_test.go"
+      ],
+      "scope": "tests only; production unchanged"
+    },
+    {
+      "task": "network_full_check_audit",
+      "scope": "read-only failure counts and Go checksum source investigation"
+    }
+  ],
+  "root_responsibility": "contract, full diff/test review, test freeze, RED/GREEN execution, production implementation, SDK verification, cleanup and delivery"
+}

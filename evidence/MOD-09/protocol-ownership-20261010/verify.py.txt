@@ -1,0 +1,17 @@
+from pathlib import Path
+import subprocess,json,time,os,hashlib,sys
+root=Path.cwd();w=(root/"runs/.tmp/bio-ownership-20261010");e=root/"evidence/MOD-09/protocol-ownership-20261010"
+env=dict(os.environ,GOTMPDIR=str(w/"go-tmp"),TMPDIR=str(w/"go-tmp"),GOPROXY="off")
+checks=[("build",["go","build","./..."]), ("unit",["go","test","-count=1","-timeout","30m","./..."]), ("race",["go","test","-race","-count=1","-timeout","30m","./..."]), ("vet",["go","vet","./..."]), ("mod-verify",["go","mod","verify"]), ("dependencies",["go","list","-m","all"])]
+results=[]
+for tag,args in checks:
+ print("CHECK_START",tag,flush=True);start=time.monotonic();log=e/(tag+".log")
+ with log.open("xb") as out:r=subprocess.run(args,stdout=out,stderr=subprocess.STDOUT,env=env)
+ meta={"name":tag,"args":args,"exit_code":r.returncode,"seconds":time.monotonic()-start,"log":log.name,"sha256":hashlib.sha256(log.read_bytes()).hexdigest()}
+ (e/(tag+"-execution.json")).write_text(json.dumps(meta,indent=2)+"\n")
+ results.append(meta);(e/"checks.json").write_text(json.dumps(results,indent=2)+"\n")
+ print("CHECK_DONE",tag,"EXIT",r.returncode,"SECONDS",round(meta["seconds"],2),flush=True)
+ if r.returncode:
+  print(log.read_text(errors="replace")[-4000:],flush=True)
+print("ALL_CHECKS_FINISHED",flush=True)
+sys.exit(1 if any(x["exit_code"] for x in results) else 0)

@@ -1,0 +1,27 @@
+=== RUN   TestNetworkBundleConcurrentModelWritersHaveOneWinner
+    bundle_network_test.go:99: neither concurrent model bundle save succeeded
+--- FAIL: TestNetworkBundleConcurrentModelWritersHaveOneWinner (1.04s)
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save
+=== RUN   TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest
+--- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput (1.13s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/before_save (0.42s)
+    --- PASS: TestNetworkBundleCancellationBeforePublicationCleansOwnedOutput/after_document_before_manifest (0.71s)
+=== RUN   TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle
+    bundle_network_test.go:168: SaveModelPackageBundle error = publish bundle manifest: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleCancellationAfterManifestPreservesLoadableBundl4010299432/001/bundle/.manifest.json.tmp-2857249001 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleCancellationAfterManifestPreservesLoadableBundl4010299432/001/bundle/manifest.json: operation not supported, want context.Canceled
+--- FAIL: TestNetworkBundleCancellationAfterManifestPreservesLoadableBundle (0.74s)
+=== RUN   TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore
+    bundle_network_test.go:189: publish bundle manifest: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore3236463098/001/bundle/.manifest.json.tmp-2161254958 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore3236463098/001/bundle/manifest.json: operation not supported
+--- FAIL: TestNetworkBundleTruncatedManifestRejectedAndFullBytesRestore (0.75s)
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/existing_file
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory
+=== RUN   TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle
+    bundle_network_test.go:269: publish bundle manifest: publish checkpoint without overwrite: link /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleExistingTargetsRemainUnchangedcomplete_model_b1493561388/001/model/.manifest.json.tmp-4288924492 /Volumes/SSD/Developer/coimnet/runs/.tmp/network-model-20261010/go-tmp/TestNetworkBundleExistingTargetsRemainUnchangedcomplete_model_b1493561388/001/model/manifest.json: operation not supported
+--- FAIL: TestNetworkBundleExistingTargetsRemainUnchanged (1.60s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/existing_file (0.40s)
+    --- PASS: TestNetworkBundleExistingTargetsRemainUnchanged/empty_directory (0.44s)
+    --- FAIL: TestNetworkBundleExistingTargetsRemainUnchanged/complete_model_bundle (0.76s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	12.208s
+FAIL

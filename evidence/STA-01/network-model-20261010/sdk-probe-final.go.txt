@@ -1,0 +1,776 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+const (
+	manifestFile = "manifest.json"
+	documentFile = "document.json"
+	arraysFile   = "arrays.bin"
+
+	captureSummaryFile = "capture-summary.json"
+	summarySchema      = "coimnet-network-sdk-probe/v1"
+)
+
+var (
+	ctxBackground = context.Background()
+	prefixInput   = [][]float64{{.7}, {0}, {.2}}
+	prefixTarget  = []float64{.4}
+	tailInput     = [][]float64{{.2}, {-.1}, {0}}
+	tailTarget    = []float64{-.15}
+)
+
+type captureContext struct {
+	context.Context
+	sourceDir  string
+	destDir    string
+	captured   bool
+	captureErr error
+}
+
+// Err observes only a complete manifest JSON temporary file. It deliberately
+// returns nil after copying: Save must continue to the real os.Link call so
+// capture-old records the native ENOTSUP/EOPNOTSUPP failure rather than a
+// cancellation that the probe manufactured.
+func (c *captureContext) Err() error {
+	if c.captureErr != nil {
+		return c.captureErr
+	}
+	if err := c.Context.Err(); err != nil {
+		return err
+	}
+	if c.captured {
+		return nil
+	}
+	entries, err := os.ReadDir(c.sourceDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		c.captureErr = fmt.Errorf("observe capture directory: %w", err)
+		return c.captureErr
+	}
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasPrefix(entry.Name(), ".manifest.json.tmp-") {
+			continue
+		}
+		manifestPath := filepath.Join(c.sourceDir, entry.Name())
+		manifest, complete, err := readCompleteJSON(manifestPath)
+		if err != nil {
+			c.captureErr = err
+			return c.captureErr
+		}
+		if !complete {
+			continue
+		}
+		document, err := readRegular(filepath.Join(c.sourceDir, documentFile))
+		if err != nil {
+			c.captureErr = fmt.Errorf("read capture document: %w", err)
+			return c.captureErr
+		}
+		if !json.Valid(document) {
+			continue
+		}
+		arrays, err := readRegular(filepath.Join(c.sourceDir, arraysFile))
+		if err != nil {
+			c.captureErr = fmt.Errorf("read capture arrays: %w", err)
+			return c.captureErr
+		}
+		if err := writeCapturedBundle(c.destDir, map[string][]byte{
+			documentFile: document,
+			arraysFile:   arrays,
+			manifestFile: manifest,
+		}); err != nil {
+			c.captureErr = err
+			return c.captureErr
+		}
+		c.captured = true
+		return nil
+	}
+	return nil
+}
+
+type capturedKind struct {
+	Kind          string       `json:"kind"`
+	SaveError     string       `json:"save_error"`
+	SaveSucceeded bool         `json:"save_succeeded"`
+	Published     bool         `json:"published"`
+	Captured      bool         `json:"captured"`
+	Files         []fileDigest `json:"files"`
+}
+
+type captureSummary struct {
+	Schema    string         `json:"schema"`
+	Mode      string         `json:"mode"`
+	Command   []string       `json:"command"`
+	GoRuntime string         `json:"go_runtime"`
+	OS        string         `json:"os"`
+	Arch      string         `json:"arch"`
+	Kinds     []capturedKind `json:"kinds"`
+}
+
+type fileDigest struct {
+	Name   string `json:"name"`
+	Bytes  int64  `json:"bytes"`
+	SHA256 string `json:"sha256"`
+}
+
+type fileComparison struct {
+	Name      string `json:"name"`
+	OldBytes  int64  `json:"old_bytes"`
+	OldSHA256 string `json:"old_sha256"`
+	NewBytes  int64  `json:"new_bytes"`
+	NewSHA256 string `json:"new_sha256"`
+	Equal     bool   `json:"equal"`
+}
+
+type verifiedKind struct {
+	Kind            string           `json:"kind"`
+	OldSaveError    string           `json:"old_save_error"`
+	Files           []fileComparison `json:"files"`
+	FilesEqual      bool             `json:"files_equal"`
+	OldLoadOK       bool             `json:"old_load_ok"`
+	NewLoadOK       bool             `json:"new_load_ok"`
+	ResumeJSONEqual bool             `json:"resume_json_equal"`
+}
+
+type verifySummary struct {
+	Schema    string         `json:"schema"`
+	Mode      string         `json:"mode"`
+	Command   []string       `json:"command"`
+	GoRuntime string         `json:"go_runtime"`
+	OS        string         `json:"os"`
+	Arch      string         `json:"arch"`
+	OldParent string         `json:"old_parent"`
+	NewParent string         `json:"new_parent"`
+	Kinds     []verifiedKind `json:"kinds"`
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		die("usage: sdk-probe.go capture-old <output-parent> | verify <old-parent> <new-parent> <summary-json>")
+	}
+	switch os.Args[1] {
+	case "capture-old":
+		if len(os.Args) != 3 {
+			die("usage: sdk-probe.go capture-old <output-parent>")
+		}
+		if err := captureOld(os.Args[2]); err != nil {
+			die("capture-old: %v", err)
+		}
+	case "verify":
+		if len(os.Args) != 5 {
+			die("usage: sdk-probe.go verify <old-parent> <new-parent> <summary-json>")
+		}
+		if err := verify(os.Args[2], os.Args[3], os.Args[4], true); err != nil {
+			die("verify: %v", err)
+		}
+	case "verify-saved":
+		if len(os.Args) != 5 {
+			die("usage: sdk-probe.go verify-saved <old-parent> <new-parent> <summary-json>")
+		}
+		if err := verify(os.Args[2], os.Args[3], os.Args[4], false); err != nil {
+			die("verify-saved: %v", err)
+		}
+	default:
+		die("unknown mode %q", os.Args[1])
+	}
+}
+
+func captureOld(parent string) error {
+	if err := ensureParent(parent); err != nil {
+		return err
+	}
+	if _, err := os.Stat(filepath.Join(parent, captureSummaryFile)); err == nil {
+		return fmt.Errorf("capture summary already exists: %s", filepath.Join(parent, captureSummaryFile))
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("stat capture summary: %w", err)
+	}
+
+	kinds := []struct {
+		name string
+		save func(context.Context, string) error
+	}{
+		{name: checkpoint.BundleModelPackage, save: func(ctx context.Context, dir string) error {
+			return checkpoint.SaveModelPackageBundle(ctx, dir, continuousPackage())
+		}},
+		{name: checkpoint.BundleIndividual, save: func(ctx context.Context, dir string) error {
+			initial := initialIndividualSnapshot()
+			individual, err := learning.RestoreIndividual(initial)
+			if err != nil {
+				return err
+			}
+			if err := runIndividualPrefix(individual); err != nil {
+				return err
+			}
+			return checkpoint.SaveIndividualBundle(ctx, dir, individual.Snapshot())
+		}},
+		{name: checkpoint.BundleTraining, save: func(ctx context.Context, dir string) error {
+			training, err := trainerAfterPrefix()
+			if err != nil {
+				return err
+			}
+			return checkpoint.SaveTrainingBundle(ctx, dir, training)
+		}},
+	}
+
+	result := captureSummary{
+		Schema:    summarySchema,
+		Mode:      "capture-old",
+		Command:   append([]string(nil), os.Args...),
+		GoRuntime: runtime.Version(),
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+	}
+	for _, kind := range kinds {
+		captured, err := captureOne(parent, kind.name, kind.save)
+		if err != nil {
+			return fmt.Errorf("%s: %w", kind.name, err)
+		}
+		result.Kinds = append(result.Kinds, captured)
+	}
+	if err := writeExclusiveJSON(filepath.Join(parent, captureSummaryFile), result); err != nil {
+		return err
+	}
+	return nil
+}
+
+func captureOne(parent, kind string, save func(context.Context, string) error) (capturedKind, error) {
+	var result capturedKind
+	result.Kind = kind
+	dest := filepath.Join(parent, kind)
+	if _, err := os.Lstat(dest); err == nil {
+		return result, fmt.Errorf("capture destination already exists: %s", dest)
+	} else if !os.IsNotExist(err) {
+		return result, fmt.Errorf("stat capture destination: %w", err)
+	}
+	work, err := os.MkdirTemp(parent, ".sdk-probe-source-")
+	if err != nil {
+		return result, fmt.Errorf("create source parent: %w", err)
+	}
+	defer os.RemoveAll(work)
+	source := filepath.Join(work, "bundle")
+	ctx := &captureContext{Context: ctxBackground, sourceDir: source, destDir: dest}
+	saveErr := save(ctx, source)
+	if saveErr == nil {
+		return result, fmt.Errorf("Save unexpectedly succeeded; old capture requires an unpublished native link failure")
+	}
+	result.SaveError = saveErr.Error()
+	result.SaveSucceeded = false
+	if !errors.Is(saveErr, syscall.ENOTSUP) && !errors.Is(saveErr, syscall.EOPNOTSUPP) {
+		return result, fmt.Errorf("Save error is not ENOTSUP/EOPNOTSUPP: %w", saveErr)
+	}
+	if !ctx.captured {
+		return result, fmt.Errorf("Save failed with unsupported link but no complete manifest was captured: %w", saveErr)
+	}
+	if _, err := os.Lstat(source); !os.IsNotExist(err) {
+		return result, fmt.Errorf("source bundle remained after failed Save: %v", err)
+	}
+	result.Published = false
+	result.Captured = true
+	result.Files, err = digestBundleFiles(dest)
+	if err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func verify(oldParent, newParent, summaryPath string, save bool) error {
+	oldCapture, err := readCaptureSummary(oldParent)
+	if err != nil {
+		return err
+	}
+	if err := ensureParent(newParent); err != nil {
+		return err
+	}
+	if filepath.Clean(oldParent) == filepath.Clean(newParent) {
+		return fmt.Errorf("old and new parents must differ")
+	}
+
+	if save {
+		if err := saveNewBundles(newParent); err != nil {
+			return err
+		}
+	}
+	model := verifyModel(oldParent, newParent, oldCapture)
+	individual := verifyIndividual(oldParent, newParent, oldCapture)
+	training := verifyTraining(oldParent, newParent, oldCapture)
+	result := verifySummary{
+		Schema:    summarySchema,
+		Mode:      os.Args[1],
+		Command:   append([]string(nil), os.Args...),
+		GoRuntime: runtime.Version(),
+		OS:        runtime.GOOS,
+		Arch:      runtime.GOARCH,
+		OldParent: oldParent,
+		NewParent: newParent,
+		Kinds:     []verifiedKind{model, individual, training},
+	}
+	for _, kind := range result.Kinds {
+		if !kind.FilesEqual || !kind.OldLoadOK || !kind.NewLoadOK || !kind.ResumeJSONEqual {
+			return fmt.Errorf("%s verification was not equal", kind.Kind)
+		}
+	}
+	if err := writeExclusiveJSON(summaryPath, result); err != nil {
+		return err
+	}
+	return nil
+}
+
+func saveNewBundles(parent string) error {
+	if err := checkpoint.SaveModelPackageBundle(ctxBackground, filepath.Join(parent, checkpoint.BundleModelPackage), continuousPackage()); err != nil {
+		return fmt.Errorf("save new model package bundle: %w", err)
+	}
+	initial := initialIndividualSnapshot()
+	individual, err := learning.RestoreIndividual(initial)
+	if err != nil {
+		return err
+	}
+	if err := runIndividualPrefix(individual); err != nil {
+		return err
+	}
+	if err := checkpoint.SaveIndividualBundle(ctxBackground, filepath.Join(parent, checkpoint.BundleIndividual), individual.Snapshot()); err != nil {
+		return fmt.Errorf("save new individual bundle: %w", err)
+	}
+	training, err := trainerAfterPrefix()
+	if err != nil {
+		return err
+	}
+	if err := checkpoint.SaveTrainingBundle(ctxBackground, filepath.Join(parent, checkpoint.BundleTraining), training); err != nil {
+		return fmt.Errorf("save new training bundle: %w", err)
+	}
+	return nil
+}
+
+func verifyModel(oldParent, newParent string, oldCapture captureSummary) verifiedKind {
+	kind := checkpoint.BundleModelPackage
+	result := verifiedKind{Kind: kind, OldSaveError: captureError(oldCapture, kind)}
+	result.FilesEqual = compareFiles(&result, filepath.Join(oldParent, kind), filepath.Join(newParent, kind))
+	oldPkg, err := checkpoint.LoadModelPackageBundle(ctxBackground, filepath.Join(oldParent, kind))
+	if err != nil {
+		die("load old %s bundle: %v", kind, err)
+	}
+	result.OldLoadOK = true
+	newPkg, err := checkpoint.LoadModelPackageBundle(ctxBackground, filepath.Join(newParent, kind))
+	if err != nil {
+		die("load new %s bundle: %v", kind, err)
+	}
+	result.NewLoadOK = true
+	oldIndividual, err := checkpoint.NewIndividualFromPackage(oldPkg, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		die("seed individual from old model package: %v", err)
+	}
+	newIndividual, err := checkpoint.NewIndividualFromPackage(newPkg, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		die("seed individual from new model package: %v", err)
+	}
+	baseline, err := checkpoint.NewIndividualFromPackage(continuousPackage(), learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		die("seed model package baseline: %v", err)
+	}
+	oldOutput, err := oldIndividual.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance old model package individual: %v", err)
+	}
+	newOutput, err := newIndividual.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance new model package individual: %v", err)
+	}
+	baselineOutput, err := baseline.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance model package baseline: %v", err)
+	}
+	result.ResumeJSONEqual = jsonEqual(oldOutput, newOutput) && jsonEqual(oldOutput, baselineOutput) && jsonEqual(oldIndividual.Snapshot(), newIndividual.Snapshot()) && jsonEqual(oldIndividual.Snapshot(), baseline.Snapshot())
+	return result
+}
+
+func verifyIndividual(oldParent, newParent string, oldCapture captureSummary) verifiedKind {
+	kind := checkpoint.BundleIndividual
+	result := verifiedKind{Kind: kind, OldSaveError: captureError(oldCapture, kind)}
+	result.FilesEqual = compareFiles(&result, filepath.Join(oldParent, kind), filepath.Join(newParent, kind))
+	oldSnapshot, err := checkpoint.LoadIndividualBundle(ctxBackground, filepath.Join(oldParent, kind))
+	if err != nil {
+		die("load old %s bundle: %v", kind, err)
+	}
+	result.OldLoadOK = true
+	newSnapshot, err := checkpoint.LoadIndividualBundle(ctxBackground, filepath.Join(newParent, kind))
+	if err != nil {
+		die("load new %s bundle: %v", kind, err)
+	}
+	result.NewLoadOK = true
+	oldIndividual, err := learning.RestoreIndividual(oldSnapshot)
+	if err != nil {
+		die("restore old individual: %v", err)
+	}
+	newIndividual, err := learning.RestoreIndividual(newSnapshot)
+	if err != nil {
+		die("restore new individual: %v", err)
+	}
+	baseline, err := learning.RestoreIndividual(initialIndividualSnapshot())
+	if err != nil {
+		die("restore individual baseline: %v", err)
+	}
+	if err := runIndividualPrefix(baseline); err != nil {
+		die("prepare individual baseline: %v", err)
+	}
+	oldOutput, err := oldIndividual.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance restored old individual: %v", err)
+	}
+	newOutput, err := newIndividual.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance restored new individual: %v", err)
+	}
+	baselineOutput, err := baseline.Advance(ctxBackground, tailInput)
+	if err != nil {
+		die("advance uninterrupted individual: %v", err)
+	}
+	result.ResumeJSONEqual = jsonEqual(oldOutput, newOutput) && jsonEqual(oldOutput, baselineOutput) && jsonEqual(oldIndividual.Snapshot(), newIndividual.Snapshot()) && jsonEqual(oldIndividual.Snapshot(), baseline.Snapshot())
+	return result
+}
+
+func verifyTraining(oldParent, newParent string, oldCapture captureSummary) verifiedKind {
+	kind := checkpoint.BundleTraining
+	result := verifiedKind{Kind: kind, OldSaveError: captureError(oldCapture, kind)}
+	result.FilesEqual = compareFiles(&result, filepath.Join(oldParent, kind), filepath.Join(newParent, kind))
+	oldSnapshot, err := checkpoint.LoadTrainingBundle(ctxBackground, filepath.Join(oldParent, kind))
+	if err != nil {
+		die("load old %s bundle: %v", kind, err)
+	}
+	result.OldLoadOK = true
+	newSnapshot, err := checkpoint.LoadTrainingBundle(ctxBackground, filepath.Join(newParent, kind))
+	if err != nil {
+		die("load new %s bundle: %v", kind, err)
+	}
+	result.NewLoadOK = true
+	oldTrainer, err := learning.RestoreTrainer(oldSnapshot)
+	if err != nil {
+		die("restore old trainer: %v", err)
+	}
+	newTrainer, err := learning.RestoreTrainer(newSnapshot)
+	if err != nil {
+		die("restore new trainer: %v", err)
+	}
+	baselineSnapshot, err := trainerAfterPrefix()
+	if err != nil {
+		die("prepare trainer baseline: %v", err)
+	}
+	baseline, err := learning.RestoreTrainer(baselineSnapshot)
+	if err != nil {
+		die("restore trainer baseline: %v", err)
+	}
+	oldPrediction, err := oldTrainer.Predict(ctxBackground, tailInput)
+	if err != nil {
+		die("predict old trainer: %v", err)
+	}
+	newPrediction, err := newTrainer.Predict(ctxBackground, tailInput)
+	if err != nil {
+		die("predict new trainer: %v", err)
+	}
+	baselinePrediction, err := baseline.Predict(ctxBackground, tailInput)
+	if err != nil {
+		die("predict uninterrupted trainer: %v", err)
+	}
+	oldResult, err := oldTrainer.Step(ctxBackground, tailInput, tailTarget)
+	if err != nil {
+		die("step old trainer: %v", err)
+	}
+	newResult, err := newTrainer.Step(ctxBackground, tailInput, tailTarget)
+	if err != nil {
+		die("step new trainer: %v", err)
+	}
+	baselineResult, err := baseline.Step(ctxBackground, tailInput, tailTarget)
+	if err != nil {
+		die("step uninterrupted trainer: %v", err)
+	}
+	result.ResumeJSONEqual = jsonEqual(oldPrediction, newPrediction) && jsonEqual(oldPrediction, baselinePrediction) && jsonEqual(oldResult, newResult) && jsonEqual(oldResult, baselineResult) && jsonEqual(oldTrainer.Snapshot(), newTrainer.Snapshot()) && jsonEqual(oldTrainer.Snapshot(), baseline.Snapshot())
+	_ = oldTrainer.Close()
+	_ = newTrainer.Close()
+	_ = baseline.Close()
+	return result
+}
+
+func compareFiles(result *verifiedKind, oldDir, newDir string) bool {
+	oldFiles, err := digestBundleFiles(oldDir)
+	if err != nil {
+		die("digest old bundle %s: %v", oldDir, err)
+	}
+	newFiles, err := digestBundleFiles(newDir)
+	if err != nil {
+		die("digest new bundle %s: %v", newDir, err)
+	}
+	if len(oldFiles) != len(newFiles) {
+		return false
+	}
+	for i := range oldFiles {
+		oldFile, newFile := oldFiles[i], newFiles[i]
+		dataOld, err := os.ReadFile(filepath.Join(oldDir, oldFile.Name))
+		if err != nil {
+			die("read old bundle file %s: %v", oldFile.Name, err)
+		}
+		dataNew, err := os.ReadFile(filepath.Join(newDir, newFile.Name))
+		if err != nil {
+			die("read new bundle file %s: %v", newFile.Name, err)
+		}
+		result.Files = append(result.Files, fileComparison{
+			Name: oldFile.Name, OldBytes: oldFile.Bytes, OldSHA256: oldFile.SHA256,
+			NewBytes: newFile.Bytes, NewSHA256: newFile.SHA256, Equal: oldFile.Name == newFile.Name && bytes.Equal(dataOld, dataNew),
+		})
+	}
+	for _, file := range result.Files {
+		if !file.Equal {
+			return false
+		}
+	}
+	return true
+}
+
+func digestBundleFiles(dir string) ([]fileDigest, error) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, err
+	}
+	want := map[string]bool{documentFile: true, arraysFile: true, manifestFile: true}
+	if len(entries) != len(want) {
+		return nil, fmt.Errorf("bundle %q has %d files, want exactly %d", dir, len(entries), len(want))
+	}
+	result := make([]fileDigest, 0, len(entries))
+	for _, entry := range entries {
+		if !want[entry.Name()] {
+			return nil, fmt.Errorf("bundle %q has unexpected file %q", dir, entry.Name())
+		}
+		data, err := readRegular(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			return nil, err
+		}
+		sum := sha256.Sum256(data)
+		result = append(result, fileDigest{Name: entry.Name(), Bytes: int64(len(data)), SHA256: hex.EncodeToString(sum[:])})
+	}
+	// os.ReadDir returns sorted entries, so this order is stable in the JSON.
+	return result, nil
+}
+
+func readCaptureSummary(parent string) (captureSummary, error) {
+	data, err := os.ReadFile(filepath.Join(parent, captureSummaryFile))
+	if err != nil {
+		return captureSummary{}, fmt.Errorf("read capture summary: %w", err)
+	}
+	var summary captureSummary
+	if err := json.Unmarshal(data, &summary); err != nil {
+		return captureSummary{}, fmt.Errorf("decode capture summary: %w", err)
+	}
+	if summary.Schema != summarySchema || summary.Mode != "capture-old" || len(summary.Kinds) != 3 {
+		return captureSummary{}, fmt.Errorf("invalid capture summary identity")
+	}
+	for _, kind := range summary.Kinds {
+		if kind.SaveSucceeded || kind.Published || !kind.Captured || kind.SaveError == "" || len(kind.Files) != 3 {
+			return captureSummary{}, fmt.Errorf("capture summary for %s does not prove an unpublished failed capture", kind.Kind)
+		}
+		if !strings.Contains(kind.SaveError, "operation not supported") && !strings.Contains(kind.SaveError, "not supported") {
+			return captureSummary{}, fmt.Errorf("capture summary for %s does not record unsupported native link error", kind.Kind)
+		}
+	}
+	return summary, nil
+}
+
+func captureError(summary captureSummary, kind string) string {
+	for _, captured := range summary.Kinds {
+		if captured.Kind == kind {
+			return captured.SaveError
+		}
+	}
+	die("capture summary has no %s", kind)
+	return ""
+}
+
+func continuousModel() (learning.Config, learning.Parameters) {
+	config := learning.Config{
+		Dynamics:  dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{1}, DT: .5, Activation: "tanh"},
+		InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1},
+	}
+	parameters := learning.Parameters{
+		Core:    dynamics.Parameters{Weights: []float64{.25}, Bias: []float64{.1, -.1}, LogTau: []float64{0, 0}},
+		Encoder: []float64{.5, .2}, Readout: []float64{.8},
+	}
+	return config, parameters
+}
+
+func continuousPackage() checkpoint.ModelPackage {
+	config, parameters := continuousModel()
+	pkg, err := checkpoint.NewModelPackage(config, parameters, checkpoint.Units{TimeStep: "model_step", TimeConstant: "model_step"}, []string{"evidence/STA-01/verification.json"})
+	if err != nil {
+		die("build continuous model package: %v", err)
+	}
+	return pkg
+}
+
+func initialIndividualSnapshot() learning.IndividualSnapshot {
+	config, parameters := continuousModel()
+	individual, err := learning.NewIndividual(config, parameters, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		die("build initial individual: %v", err)
+	}
+	return individual.Snapshot()
+}
+
+func runIndividualPrefix(individual *learning.Individual) error {
+	if _, err := individual.Advance(ctxBackground, prefixInput); err != nil {
+		return fmt.Errorf("individual prefix advance: %w", err)
+	}
+	if _, err := individual.TrainEpisode(ctxBackground, prefixInput, prefixTarget); err != nil {
+		return fmt.Errorf("individual prefix training: %w", err)
+	}
+	return nil
+}
+
+func trainerAfterPrefix() (learning.TrainingSnapshot, error) {
+	config, parameters := continuousModel()
+	trainer, err := learning.NewTrainer(config, parameters, learning.DefaultOptions())
+	if err != nil {
+		return learning.TrainingSnapshot{}, err
+	}
+	defer trainer.Close()
+	if _, err := trainer.Step(ctxBackground, prefixInput, prefixTarget); err != nil {
+		return learning.TrainingSnapshot{}, err
+	}
+	return trainer.Snapshot(), nil
+}
+
+func readCompleteJSON(path string) ([]byte, bool, error) {
+	infoBefore, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("stat manifest temporary file: %w", err)
+	}
+	if !infoBefore.Mode().IsRegular() {
+		return nil, false, nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("read manifest temporary file: %w", err)
+	}
+	infoAfter, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("restat manifest temporary file: %w", err)
+	}
+	if infoBefore.Size() != infoAfter.Size() || int64(len(data)) != infoAfter.Size() || !json.Valid(data) {
+		return nil, false, nil
+	}
+	return data, true, nil
+}
+
+func readRegular(path string) ([]byte, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return nil, err
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("path is not a regular file: %s", path)
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func writeCapturedBundle(dir string, files map[string][]byte) error {
+	if err := os.Mkdir(dir, 0o755); err != nil {
+		return fmt.Errorf("create captured bundle: %w", err)
+	}
+	for _, name := range []string{documentFile, arraysFile, manifestFile} {
+		data, ok := files[name]
+		if !ok {
+			return fmt.Errorf("capture file %q is missing", name)
+		}
+		file, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+		if err != nil {
+			return fmt.Errorf("create captured %s: %w", name, err)
+		}
+		_, writeErr := io.Copy(file, bytes.NewReader(data))
+		syncErr := file.Sync()
+		closeErr := file.Close()
+		if writeErr != nil || syncErr != nil || closeErr != nil {
+			return errors.Join(writeErr, syncErr, closeErr)
+		}
+	}
+	return nil
+}
+
+func ensureParent(path string) error {
+	if path == "" {
+		return fmt.Errorf("parent path must not be empty")
+	}
+	if err := os.MkdirAll(path, 0o755); err != nil {
+		return fmt.Errorf("create parent %q: %w", path, err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("parent is not a directory: %s", path)
+	}
+	return nil
+}
+
+func writeExclusiveJSON(path string, value any) error {
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return fmt.Errorf("marshal summary: %w", err)
+	}
+	data = append(data, '\n')
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return fmt.Errorf("create exclusive summary %q: %w", path, err)
+	}
+	_, writeErr := file.Write(data)
+	syncErr := file.Sync()
+	closeErr := file.Close()
+	if writeErr != nil || syncErr != nil || closeErr != nil {
+		return errors.Join(writeErr, syncErr, closeErr)
+	}
+	return nil
+}
+
+func jsonEqual(a, b any) bool {
+	left, err := json.Marshal(a)
+	if err != nil {
+		die("marshal comparison value: %v", err)
+	}
+	right, err := json.Marshal(b)
+	if err != nil {
+		die("marshal comparison value: %v", err)
+	}
+	return bytes.Equal(left, right)
+}
+
+func die(format string, args ...any) {
+	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	os.Exit(1)
+}

@@ -1,0 +1,29 @@
+{
+  "host": "Codex",
+  "first_choice": {
+    "tool": "opencode run",
+    "model": "opencode/big-pickle",
+    "flags": [
+      "--agent",
+      "build",
+      "--model",
+      "opencode/big-pickle",
+      "--format",
+      "json",
+      "--dir",
+      "/Volumes/SSD/Developer/coimnet"
+    ],
+    "outcome": "rejected_before_execution_by_automatic_approval",
+    "reason": "Writable external agent could read private project source; explicit destination permission and hard file scope unavailable."
+  },
+  "fallback": {
+    "tool": "collaboration.spawn_agent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "fork_turns": "none",
+    "allowed_files": [
+      "experiment/bioinspired_ownership_test.go"
+    ]
+  },
+  "prompt": "test-prompt.txt"
+}

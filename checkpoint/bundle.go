@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"strings"
+	"syscall"
 
 	"github.com/TimLai666/coimnet/internal/fileio"
 )
@@ -94,6 +95,7 @@ func writeBundle(ctx context.Context, dir string, manifest BundleManifest, value
 		return fmt.Errorf("create bundle directory %q: %w", dir, err)
 	}
 	complete := false
+	retainOwnedDir := false
 	var arraysFile *os.File
 	arraysClosed := false
 	defer func() {
@@ -103,7 +105,7 @@ func writeBundle(ctx context.Context, dir string, manifest BundleManifest, value
 				retErr = errors.Join(retErr, fmt.Errorf("close bundle arrays %q: %w", arraysFile.Name(), err))
 			}
 		}
-		if !complete {
+		if !complete && !retainOwnedDir {
 			if err := os.RemoveAll(dir); err != nil {
 				retErr = errors.Join(retErr, fmt.Errorf("remove incomplete bundle directory %q: %w", dir, err))
 			}
@@ -170,14 +172,100 @@ func writeBundle(ctx context.Context, dir string, manifest BundleManifest, value
 	if len(manifestBytes) > maxBundleManifestBytes {
 		return fmt.Errorf("bundle manifest exceeds %d byte limit", maxBundleManifestBytes)
 	}
-	if err := publishDocument(ctx, filepath.Join(dir, bundleManifestFile), manifestBytes); err != nil {
-		return fmt.Errorf("publish bundle manifest: %w", err)
+	published, manifestErr := publishBundleManifest(ctx, filepath.Join(dir, bundleManifestFile), manifestBytes)
+	complete = published
+	if manifestErr != nil {
+		// Only a pure context error proves that no filesystem failure occurred.
+		if !published && manifestErr != context.Canceled && manifestErr != context.DeadlineExceeded {
+			retainOwnedDir = true
+			return fmt.Errorf("publish bundle manifest: %w; bundle retained; publication unconfirmed", manifestErr)
+		}
+		if !published {
+			return fmt.Errorf("publish bundle manifest: %w", manifestErr)
+		}
+		retErr = errors.Join(retErr, fmt.Errorf("bundle published; manifest finalization failed: %w", manifestErr))
 	}
-	if err := syncDirectory(ctx, dir); err != nil {
-		return fmt.Errorf("sync bundle directory %q: %w", dir, err)
+	bundleSyncErr := syncDirectory(context.Background(), dir)
+	parentSyncErr := syncDirectory(context.Background(), filepath.Dir(dir))
+	if bundleSyncErr != nil {
+		retErr = errors.Join(retErr, fmt.Errorf("bundle published but durability unconfirmed: %w", bundleSyncErr))
 	}
-	complete = true
-	return nil
+	if parentSyncErr != nil {
+		retErr = errors.Join(retErr, fmt.Errorf("bundle published but parent directory durability unconfirmed: %w", parentSyncErr))
+	}
+	if err := contextError(ctx); err != nil {
+		retErr = errors.Join(retErr, fmt.Errorf("bundle published; context ended after publication: %w", err))
+	}
+	return retErr
+}
+
+func publishBundleManifest(ctx context.Context, path string, document []byte) (published bool, retErr error) {
+	published, nativeErr := publishDocumentWithStatus(ctx, path, document)
+	if published || nativeErr == nil || !unsupportedBundleLinkError(nativeErr) {
+		return published, nativeErr
+	}
+
+	// A joined error includes a failed temporary-file cleanup. Preserve that
+	// failure rather than proceeding with another publication attempt.
+	if _, joined := nativeErr.(interface{ Unwrap() []error }); joined {
+		return false, nativeErr
+	}
+	return publishBundleManifestFallback(ctx, path, document)
+}
+
+func unsupportedBundleLinkError(err error) bool {
+	var linkErr *os.LinkError
+	if !errors.As(err, &linkErr) {
+		return false
+	}
+	return errors.Is(linkErr.Err, syscall.ENOTSUP) || errors.Is(linkErr.Err, syscall.EOPNOTSUPP)
+}
+
+type bundleCountingWriter struct {
+	writer io.Writer
+	n      int64
+}
+
+func (w *bundleCountingWriter) Write(data []byte) (int, error) {
+	n, err := w.writer.Write(data)
+	w.n += int64(n)
+	return n, err
+}
+
+func publishBundleManifestFallback(ctx context.Context, path string, document []byte) (published bool, retErr error) {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return false, fmt.Errorf("create bundle manifest %q: %w", path, err)
+	}
+	closed := false
+	defer func() {
+		if !closed {
+			closed = true
+			if closeErr := file.Close(); closeErr != nil {
+				retErr = errors.Join(retErr, fmt.Errorf("close bundle manifest %q: %w", path, closeErr))
+			}
+		}
+	}()
+
+	writer := &bundleCountingWriter{writer: file}
+	writeErr := writeContext(ctx, writer, document)
+	fullWrite := writer.n == int64(len(document))
+	if !fullWrite {
+		return false, writeErr
+	}
+
+	published = true
+	if writeErr != nil {
+		retErr = errors.Join(retErr, writeErr)
+	}
+	if syncErr := file.Sync(); syncErr != nil {
+		retErr = errors.Join(retErr, fmt.Errorf("sync bundle manifest %q: %w", path, syncErr))
+	}
+	if closeErr := file.Close(); closeErr != nil {
+		retErr = errors.Join(retErr, fmt.Errorf("close bundle manifest %q: %w", path, closeErr))
+	}
+	closed = true
+	return published, retErr
 }
 
 // readBundle validates a bundle directory and decodes its document and arrays into value.

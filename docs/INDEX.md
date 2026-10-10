@@ -82,9 +82,9 @@
 | `coimnet-asr-stream/v1` | `tasks/asr` | ASR 串流檔案狀態格式 | [tasks/asr/stream_file.go:16](../tasks/asr/stream_file.go#L16) |
 | `coimnet-attribution/v1` | `experiment` | 核心與外圍歸因報告格式 | [experiment/attribution.go:531](../experiment/attribution.go#L531) |
 | `coimnet-benchmark/v2` | `internal/cli` | benchmark 報告格式 | [internal/cli/benchmark.go:34](../internal/cli/benchmark.go#L34) |
-| `coimnet-bio-inspired/v1` | `experiment` | 生物啟發機制設定與報告格式 | [experiment/bioinspired.go:20](../experiment/bioinspired.go#L20) |
+| `coimnet-bio-inspired/v1` | `experiment` | 生物啟發機制設定與報告格式 | [experiment/bioinspired.go:21](../experiment/bioinspired.go#L21) |
 | `coimnet-byte-vocab/v1` | `tasks/textgen/tokenizer` | 位元組詞表的保存與解碼格式 | [tasks/textgen/tokenizer/tokenizer.go:25](../tasks/textgen/tokenizer/tokenizer.go#L25) |
-| `coimnet-checkpoint-bundle/v2` | `checkpoint` | checkpoint bundle 目錄格式 | [checkpoint/bundle.go:23](../checkpoint/bundle.go#L23) |
+| `coimnet-checkpoint-bundle/v2` | `checkpoint` | checkpoint bundle 目錄格式 | [checkpoint/bundle.go:24](../checkpoint/bundle.go#L24) |
 | `coimnet-config/v1` | `config` | CLI 與 SDK 組態文件格式 | [config/config.go:23](../config/config.go#L23) |
 | `coimnet-continual-matrix/v1` | `experiment` | 持續學習矩陣報告格式 | [experiment/continual.go:9](../experiment/continual.go#L9) |
 | `coimnet-continuous-state/v1` | `dynamics` | 連續核心個體狀態格式 | [dynamics/state.go:14](../dynamics/state.go#L14) |
@@ -207,7 +207,7 @@
 | `coimnet-individual-checkpoint/v9` | `checkpoint` | 個體快照未知版本拒絕反例 | [checkpoint/package_test.go:281](../checkpoint/package_test.go#L281) |
 | `coimnet-lif-state/v0` | `dynamics` | LIF 狀態不支援版本的拒絕反例 | [dynamics/lif_state_test.go:358](../dynamics/lif_state_test.go#L358) |
 | `coimnet-model-package/v2` | `checkpoint` | 模型包未來版本拒絕反例 | [checkpoint/package_test.go:254](../checkpoint/package_test.go#L254) |
-| `coimnet-real-task-evidence/v1` | `privacy` | 隱私掃描測試的人造資料識別，沒有正式讀寫契約 | [privacy_test.go:196](../privacy_test.go#L196) |
+| `coimnet-real-task-evidence/v1` | `privacy` | 隱私掃描測試的人造資料識別，沒有正式讀寫契約 | [privacy_test.go:204](../privacy_test.go#L204) |
 | `coimnet-realnav-memory-bundle/v999` | `examples/realnavmemory` | 導航記憶 bundle 未知版本拒絕反例 | [examples/realnavmemory/storage_test.go:49](../examples/realnavmemory/storage_test.go#L49) |
 | `coimnet-replay/v0` | `checkpoint` | 重播狀態未知版本拒絕反例 | [checkpoint/options_compat_test.go:493](../checkpoint/options_compat_test.go#L493) |
 | `coimnet-simulate-compare/v2` | `simulate` | 空模型比較未知版本拒絕反例 | [simulate/compare_test.go:345](../simulate/compare_test.go#L345) |
