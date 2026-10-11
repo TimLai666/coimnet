@@ -1,0 +1,251 @@
+{
+  "requirement": "LRN-02",
+  "reproduction_command": [
+    "python3 evidence/LRN-02/activation-reuse-20261011/run_checks.py green",
+    "python3 evidence/LRN-02/activation-reuse-20261011/run_checks.py full",
+    "python3 evidence/LRN-02/activation-reuse-20261011/run_cli.py",
+    "go test -race -json -count=1 -timeout=30m -run '^(TestGovernance|TestFormatIndex|TestNoTelemetry)' ."
+  ],
+  "environment": {
+    "['hostname']": "TimdeAir.home\n",
+    "['go', 'version']": "go version go1.26.5 darwin/arm64\n",
+    "['go', 'env', 'GOOS', 'GOARCH', 'CGO_ENABLED']": "darwin\narm64\n1\n",
+    "['sw_vers']": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434\n",
+    "['sysctl', '-n', 'hw.memsize', 'hw.model', 'machdep.cpu.brand_string']": "",
+    "['df', '-h', '.']": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   397Gi    33Gi    93%    3.8M  346M    1%   /System/Volumes/Data\n",
+    "['uptime']": "17:30  2 users, load averages: 4.18 4.39 4.66\n",
+    "['git', 'rev-parse', 'HEAD']": "90c6b93bb902fb16ce62ac937ae0e379becbb8ff\n",
+    "validation_root": "/Users/timlai/Developer/coimnet",
+    "cache_location": "runs/.tmp/recompute-activation-20261011/gocache",
+    "module_files_sha256": {
+      "go.mod": "2622c1051c899f0d6233a71e4704def8d3c14e36139d33be5098ebafc739f25e",
+      "go.sum": "42014c0cea685214276aa5136d57222c05f262f4223b374de140109e512ca052"
+    },
+    "hardware_probe": {
+      "command": [
+        "sysctl",
+        "-n",
+        "hw.memsize",
+        "hw.model",
+        "machdep.cpu.brand_string"
+      ],
+      "exit_code": 1,
+      "stdout": "",
+      "stderr": "sysctl: sysctl fmt -1 1024 1: Operation not permitted\n"
+    },
+    "hardware_probe_native": {
+      "command": [
+        "sysctl",
+        "-n",
+        "hw.memsize",
+        "hw.model",
+        "machdep.cpu.brand_string"
+      ],
+      "exit_code": 0,
+      "stdout": "17179869184\nMac15,12\nApple M3\n"
+    }
+  },
+  "input_fingerprints": {
+    "source": "source-final.json",
+    "source_sha256": "3112fb53ea83c58a81fe8b4d6bfcb280b5c7d12a30ba55b95bb45ca2591cdeee",
+    "frozen_tests": "frozen-tests-final.json",
+    "frozen_tests_sha256": "a133b3e024af60a3cbae2d104e28d919ff861524c488ae637bbd68610a59fd41",
+    "performance_comparison_sha256": "eab2dacc18e9dc2eda8e0209fc58f0d9d854f494322efe8e7125430fac7d791f",
+    "performance_runs_sha256": "f632741a3c17971700e88e7455005d2b45707b25a9feee5b3c884a39d8612d25",
+    "benchmark_source_sha256": "64319dd7d6a336e666971a241894385bf6342076950059174660651290bbf126",
+    "baseline_head": "90c6b93bb902fb16ce62ac937ae0e379becbb8ff"
+  },
+  "observed_result": {
+    "core_and_full_checks_passed": true,
+    "governance": "passed",
+    "counts": {
+      "green": {
+        "passed_packages": 2,
+        "passed_top_level_tests": 34,
+        "skipped_events": 1
+      },
+      "unit": {
+        "passed_packages": 57,
+        "passed_top_level_tests": 1774,
+        "skipped_events": 20
+      },
+      "race": {
+        "passed_packages": 57,
+        "passed_top_level_tests": 1773,
+        "skipped_events": 21
+      },
+      "governance": {
+        "passed_packages": 1,
+        "passed_top_level_tests": 11,
+        "skipped_events": 0
+      }
+    },
+    "performance_gate_passed": true,
+    "dense_time_reduction_percent": [
+      58.88,
+      91.41
+    ],
+    "cli_commands_passed": 9,
+    "cli_resumed_snapshot_equals_continuous": true,
+    "training_and_biology_claims": "Software and synthetic CPU timing only; no task-learning or biological mechanism claim",
+    "lossless_evidence_archive_verified": true
+  },
+  "test_log": {
+    "full_commands": "logs/full-commands.json",
+    "green_commands": "logs/green-commands.json",
+    "cli_commands": "cli/commands.json",
+    "unit": "logs/unit.log.gz",
+    "race": "logs/race.log.gz",
+    "performance": "performance/runs.json",
+    "governance": "logs/governance.log",
+    "final_governance": "logs/final-governance.log"
+  },
+  "checks": [
+    {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "started_at": "2026-10-11T12:49:00.406492+00:00",
+      "elapsed_seconds": 3.145,
+      "exit_code": 0,
+      "log": "modules.log",
+      "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+    },
+    {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "started_at": "2026-10-11T12:49:03.552048+00:00",
+      "elapsed_seconds": 2.929,
+      "exit_code": 0,
+      "log": "build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-p",
+        "2",
+        "-count=1",
+        "-timeout=30m",
+        "./..."
+      ],
+      "started_at": "2026-10-11T12:49:06.481056+00:00",
+      "elapsed_seconds": 102.507,
+      "exit_code": 0,
+      "log": "unit.log",
+      "sha256": "817d6bbc337f76b5d86bad5fba0f24fd8238c34d5d45b66063e496162c6dd5c7"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-p",
+        "2",
+        "-count=1",
+        "-timeout=30m",
+        "./..."
+      ],
+      "started_at": "2026-10-11T12:50:48.991317+00:00",
+      "elapsed_seconds": 2637.1,
+      "exit_code": 0,
+      "log": "race.log",
+      "sha256": "bdf8c2d6181646395e93de44f7c3ad0a0bf6b09d414dd3e63c2c9ed7a535dc6b"
+    },
+    {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-10-11T13:34:46.085158+00:00",
+      "elapsed_seconds": 4.481,
+      "exit_code": 0,
+      "log": "vet.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "go",
+        "list",
+        "-deps",
+        "./..."
+      ],
+      "started_at": "2026-10-11T13:34:50.567247+00:00",
+      "elapsed_seconds": 0.24,
+      "exit_code": 0,
+      "log": "dependencies.log",
+      "sha256": "95f1d5fbc78eb585946a543aed16e0d87f83f9c37d9d0cefdd89a6939456e4bf"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/check-target-flow.sh"
+      ],
+      "started_at": "2026-10-11T13:34:50.807910+00:00",
+      "elapsed_seconds": 0.237,
+      "exit_code": 0,
+      "log": "target-flow.log",
+      "sha256": "8071d0342d9ce36f38cd33147ed5ef85a47a77f4eb70312d0cd0a3d3d3451448"
+    },
+    {
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/coimnet",
+        "./cmd/coimnet"
+      ],
+      "started_at": "2026-10-11T13:34:51.045458+00:00",
+      "elapsed_seconds": 2.279,
+      "exit_code": 0,
+      "log": "cli-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "-timeout=30m",
+        "-run",
+        "^(TestGovernance|TestFormatIndex|TestNoTelemetry)",
+        "."
+      ],
+      "started_at": "2026-10-11T13:36:17.751781+00:00",
+      "elapsed_seconds": 6.426,
+      "exit_code": 0,
+      "log": "governance.log",
+      "sha256": "634ec86503ccfeb292ecf2f0c7a9e03e528d204e4168eeedc3f49ef96cd72a7f"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "-timeout=30m",
+        "-run",
+        "^(TestGovernance|TestFormatIndex|TestNoTelemetry)",
+        "."
+      ],
+      "started_at": "2026-10-11T13:41:59.207934+00:00",
+      "elapsed_seconds": 29.418,
+      "exit_code": 0,
+      "log": "final-governance.log",
+      "sha256": "8d24f10751596531f68bf1e555919bb43aa83dcd36283bee4ffbdcb058a39ed2"
+    }
+  ],
+  "passed": true
+}

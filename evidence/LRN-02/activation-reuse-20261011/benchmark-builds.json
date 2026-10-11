@@ -1,0 +1,44 @@
+{
+  "overlay": {
+    "dynamics/recompute.go": "ee1b39895a304deb953a3180e8c7f8e521bde52f908fb5454b27c751fc80270a",
+    "dynamics/forward_recompute.go": "26636e3c2de10727261a8dadcd728855c63d3ee2b2f89e2fc65c40a40c27fa34"
+  },
+  "benchmark_sha256": "64319dd7d6a336e666971a241894385bf6342076950059174660651290bbf126",
+  "test_sha256": "93354d1e0b988bc33c0f8e55d39d16a26b9ee5b0046f9af0caefa695e669bb30",
+  "builds": [
+    {
+      "mode": "baseline",
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/baseline-overlay.json",
+        "-c",
+        "-o",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline-candidate5.test",
+        "./dynamics"
+      ],
+      "exit_code": 0,
+      "seconds": 0.998960458,
+      "binary_sha256": "40b85c183bd85fd6112a1d10d0a39f9ff07fcb9ed606f84937c4fc84cddf6df4",
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "mode": "improved",
+      "command": [
+        "go",
+        "test",
+        "-c",
+        "-o",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved-candidate5.test",
+        "./dynamics"
+      ],
+      "exit_code": 0,
+      "seconds": 0.9955333330000002,
+      "binary_sha256": "e48f50d30a8c08a47edac8b511d6cd2fd601b5ef7cd2b3d244079b7df34feff6",
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

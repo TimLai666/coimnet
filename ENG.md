@@ -163,6 +163,8 @@ ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在
 
 實測資源與適用設定見 [資源說明](docs/resources.md)。反向視窗（`Options.Truncation`）只控制梯度傳遞，前向 trace 仍保存完整輸入序列歷史，縮短視窗不會降低歷史配置量；每一步的梯度實際往回追溯幾步寫在 `StepResult.GradientHorizonSteps`（視窗短於輸入列數時是視窗，否則是整段），更早的列仍影響預測與狀態，但收不到梯度。要降低反向歷史用 `Options.Recompute{SegmentSteps}`（LRN-02）：`Step`／`StepFrom` 不保存核心 trace，前向逐段推進，反向從每段起點的檢查點重跑該段，梯度、參數、最佳化器狀態與更新次數和完整歷史逐位相同；`Predict`、`PredictAll`、`Spikes` 一律走完整前向。只有連續與 LIF 核心支援，混合與向量核心在 `NewTrainer`、`RestoreTrainer`、`Individual.ResetOptimizer` 寫入前就拒絕。重算省下的是核心歷史（`T = 256`、`S = 16` 時從 257 列降到 81 列），網路層仍保留整段的核心輸入、核心輸出、上游梯度與輸入梯度，所以實測最大 RSS 只省 24–34%，不是數量級；有限序列前向由連續與 LIF 的 `ForwardRecompute` 逐段執行，保留目前段落及已發生的延遲前史，容量不經持續狀態 API。完整輸出矩陣仍需 T×N 空間，LIF 段落另有 O(T) 的列指標，這不是整個訓練器的固定記憶體上限。持續個體的 `MaxStateValues` 保護另行保留，驗收見 [ticket 56](docs/tickets/56-recompute-sequence-capacity.md)。訓練回合從零狀態開始、不碰可塑性、化學狀態與亂數，所以重算不會重複學習、重複隨機事件或呼叫教師，證據見 [LRN-02](evidence/LRN-02/verification.json)。啟動前記憶體預估（OPS-06）已由 `resources.Estimate` 提供；全圖訓練（OPS-07）依原需求追蹤，文件估算不取代這項功能。
 
+連續核心的分段重算在單段及必要延遲前史內保存活化輸出，供驅動與權重梯度共用。每次段落前向建立輸出列時，每個節點活化只計算一次，相鄰相同延遲的邊共用選出的列，連續相同目標的邊在 float64 本機變數依原順序累加，換目標前及結尾寫回。已驗證等長的連線陣列在迴圈前切片，避免重複索引檢查。宣告邊順序、乘加式及導數保持。檢查點仍只保存電位，`RecomputeStats` 仍只統計電位列，新增輸出暫存的實際成本須另量測。零邊反向略過輸出暫存，零邊前向維持原本的公開輸出計算。有邊的 `ForwardRecompute` 回傳新產生的輸出列，不另活化一次。公開契約與快照格式保持，驗收見 [ticket 57](docs/tickets/57-recompute-activation-reuse.md)。
+
 目前沒有資料庫或已發布格式，不需要資料庫遷移。建立第一版外部格式後，版本變更必須保存舊原件並提供相容性驗證。
 
 減法審查：沿用原始完整規格與需求追蹤，不再複製 85 條定義。只為立即可做的使用流程細分 tickets，不建空套件或假命令。

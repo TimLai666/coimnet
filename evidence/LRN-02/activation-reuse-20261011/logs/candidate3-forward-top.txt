@@ -1,0 +1,34 @@
+File: dynamics-improved-candidate3.test
+Type: cpu
+Time: 2026-10-11 20:25:32 CST
+Duration: 4.24s, Total samples = 3.42s (80.68%)
+Showing nodes accounting for 3.35s, 97.95% of 3.42s total
+Dropped 18 nodes (cum <= 0.02s)
+      flat  flat%   sum%        cum   cum%
+     2.95s 86.26% 86.26%      3.05s 89.18%  github.com/TimLai666/coimnet/dynamics.(*Continuous).driveRow
+     0.13s  3.80% 90.06%      0.13s  3.80%  runtime.madvise
+     0.10s  2.92% 92.98%      0.10s  2.92%  math.tanh
+     0.09s  2.63% 95.61%      0.09s  2.63%  runtime.asyncPreempt
+     0.03s  0.88% 96.49%      3.21s 93.86%  github.com/TimLai666/coimnet/dynamics.(*Continuous).recomputeSegmentForward
+     0.02s  0.58% 97.08%      3.27s 95.61%  github.com/TimLai666/coimnet/dynamics.(*Continuous).ForwardRecompute
+     0.02s  0.58% 97.66%      0.02s  0.58%  runtime.kevent
+     0.01s  0.29% 97.95%      0.11s  3.22%  github.com/TimLai666/coimnet/dynamics.(*Continuous).activate
+         0     0% 97.95%      3.27s 95.61%  github.com/TimLai666/coimnet/dynamics_test.BenchmarkRecomputeActivation.func1
+         0     0% 97.95%      0.10s  2.92%  math.Tanh (inline)
+         0     0% 97.95%      0.02s  0.58%  runtime.(*mcache).nextFree
+         0     0% 97.95%      0.02s  0.58%  runtime.(*mcache).refill
+         0     0% 97.95%      0.02s  0.58%  runtime.(*mcentral).cacheSpan
+         0     0% 97.95%      0.13s  3.80%  runtime.(*mheap).alloc.func1
+         0     0% 97.95%      0.13s  3.80%  runtime.(*mheap).allocSpan
+         0     0% 97.95%      0.02s  0.58%  runtime.gcMarkTermination.func3
+         0     0% 97.95%      0.02s  0.58%  runtime.makeslice
+         0     0% 97.95%      0.03s  0.88%  runtime.mallocgc
+         0     0% 97.95%      0.03s  0.88%  runtime.mallocgcSmallNoscan
+         0     0% 97.95%      0.02s  0.58%  runtime.netpoll
+         0     0% 97.95%      0.02s  0.58%  runtime.startTheWorldWithSema
+         0     0% 97.95%      0.13s  3.80%  runtime.sysUsed (inline)
+         0     0% 97.95%      0.13s  3.80%  runtime.sysUsedOS (inline)
+         0     0% 97.95%      0.16s  4.68%  runtime.systemstack
+         0     0% 97.95%      3.23s 94.44%  testing.(*B).launch
+         0     0% 97.95%      0.04s  1.17%  testing.(*B).run1.func1
+         0     0% 97.95%      3.27s 95.61%  testing.(*B).runN

@@ -1,0 +1,23 @@
+File: dynamics-baseline.test
+Type: cpu
+Time: 2026-10-11 17:36:05 CST
+Duration: 12.46s, Total samples = 10.97s (88.05%)
+Showing nodes accounting for 10.60s, 96.63% of 10.97s total
+Dropped 66 nodes (cum <= 0.05s)
+Showing top 15 nodes out of 25
+      flat  flat%   sum%        cum   cum%
+     7.03s 64.08% 64.08%      7.05s 64.27%  math.tanh
+     1.26s 11.49% 75.57%     10.33s 94.17%  github.com/TimLai666/coimnet/dynamics.(*Continuous).BackwardRecomputeStats
+     1.18s 10.76% 86.33%      6.70s 61.08%  github.com/TimLai666/coimnet/dynamics.(*Continuous).driveRow
+     0.62s  5.65% 91.98%      7.68s 70.01%  github.com/TimLai666/coimnet/dynamics.(*Continuous).activate
+     0.33s  3.01% 94.99%      0.33s  3.01%  runtime.madvise
+     0.11s  1.00% 95.99%      7.16s 65.27%  math.Tanh (inline)
+     0.03s  0.27% 96.26%      4.50s 41.02%  github.com/TimLai666/coimnet/dynamics.(*Continuous).recomputeSegmentForward
+     0.02s  0.18% 96.44%      0.11s  1.00%  runtime.(*timers).check
+     0.01s 0.091% 96.54%      0.18s  1.64%  runtime.findRunnable
+     0.01s 0.091% 96.63%      0.24s  2.19%  runtime.schedule
+         0     0% 96.63%     10.33s 94.17%  github.com/TimLai666/coimnet/dynamics.(*Continuous).BackwardRecompute (inline)
+         0     0% 96.63%      0.10s  0.91%  github.com/TimLai666/coimnet/dynamics.(*Continuous).derivative
+         0     0% 96.63%     10.33s 94.17%  github.com/TimLai666/coimnet/dynamics_test.BenchmarkRecomputeActivation.func2
+         0     0% 96.63%      0.33s  3.01%  runtime.(*mheap).alloc.func1
+         0     0% 96.63%      0.33s  3.01%  runtime.(*mheap).allocSpan

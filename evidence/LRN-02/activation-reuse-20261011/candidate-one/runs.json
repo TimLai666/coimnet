@@ -1,0 +1,2418 @@
+[
+  {
+    "pair": 0,
+    "warmup": true,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:01.728406+00:00",
+    "elapsed_seconds": 10.31,
+    "load_average": [
+      7.49755859375,
+      4.99169921875,
+      4.81396484375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "ffaff28b2409c96e4368a77c780c747481892e3e2dae27acb0f80f4ed244a556",
+    "stderr_sha256": "2c22de4b43a847fc24b136910def92997ba8547069ab681b39cbec00b8e974d8",
+    "max_rss_bytes": 36339712,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 55144417.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 211161097.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 3823583.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 14199625.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 1667125.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 6948417.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 45165097.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 211250750.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1954750.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 8578458.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 996542.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 6046250.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 168823903.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 812480569.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 6003472.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 21601903.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3609236.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 11180194.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 183449847.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 740288708.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 11566930.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 35471778.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3534764.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 12122042.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 0,
+    "warmup": true,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:12.048298+00:00",
+    "elapsed_seconds": 4.394,
+    "load_average": [
+      11.302734375,
+      5.90869140625,
+      5.14208984375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "5bca9589a45c4997a6285c2828d098eca9fa1340b7ac8535c3da9044adbdd197",
+    "stderr_sha256": "470c70157773b504c788ea9c0f0c054197a771d12371e95e1977e3e723d54fe0",
+    "max_rss_bytes": 38699008,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 34740236.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 128401139.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1205792.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 12883069.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 1035250.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10574847.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 30014042.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 146809861.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 2129514.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 16994917.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 1644139.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 14592042.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 45097028.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 179442486.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 5864986.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 27692778.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 5891958.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 21522250.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 39850069.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 197143847.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 8181208.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 26657514.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 10194306.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 35505278.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 1,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:16.453530+00:00",
+    "elapsed_seconds": 3.927,
+    "load_average": [
+      11.302734375,
+      5.90869140625,
+      5.14208984375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "9e0580958421b86d7ba089581736c8f87946aa4567bc933a7dd5796951c807bb",
+    "stderr_sha256": "72a9e65974e672a6398f07aba5146816b7ade5674ef384779e3438a80c5eff14",
+    "max_rss_bytes": 39763968,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 42030986.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 176174014.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 3025056.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 16818153.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 3039583.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 8913930.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 41297070.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 179556069.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 3559958.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 18809111.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 2886125.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 15822792.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 33419014.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 199688444.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4122445.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 16403903.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3547694.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 15142681.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 31018278.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 119082889.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 3966014.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 17494125.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3844319.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 15248180.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 1,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:20.387674+00:00",
+    "elapsed_seconds": 7.794,
+    "load_average": [
+      11.2783203125,
+      5.9931640625,
+      5.17626953125
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "cea829330ed2b662850c6c463bf8f921fbad7ee0580470bc0e1cf7e4958a9636",
+    "stderr_sha256": "40848f58854d8e05e04efa35ff89591c0eb415f17ed6f2405d3d90d07c18df33",
+    "max_rss_bytes": 37683200,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 34113903.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 152258389.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1322833.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10764667.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 852681.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 8092070.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 32524653.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 148496722.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1336389.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 10804181.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 833055.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 8228958.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 138915667.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 597490083.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4836694.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17973750.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 2617764.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 8907403.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 141784042.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 585691264.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 4683125.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 18293222.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 2602417.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 8979556.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 2,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:28.188243+00:00",
+    "elapsed_seconds": 7.916,
+    "load_average": [
+      10.07861328125,
+      5.91064453125,
+      5.15576171875
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "bf38c04299a9fe19d65cf89220c1aef3bded7dfb8b93a32c3d095f608389b61e",
+    "stderr_sha256": "7c2cbbebc77232161b684ad21935757b20cef4403fe894af44b0862bdb476efd",
+    "max_rss_bytes": 39911424,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 32409569.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 150070236.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1278153.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10563681.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 826139.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 8148542.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 31100361.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 151089250.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1451569.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 11473736.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 893264.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 8448667.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 141599667.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 625358486.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4733389.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17985722.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 2660431.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 8949264.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 145038417.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 588891806.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 4969570.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 17517542.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 2691403.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 9223875.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 2,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:36.110778+00:00",
+    "elapsed_seconds": 2.965,
+    "load_average": [
+      9.51171875,
+      5.8623046875,
+      5.14306640625
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "5ac69fba2b1bc8b6ba6790847b9a08ccca20600453b35bd93b4e66af5eab87f0",
+    "stderr_sha256": "e8a839052e59747bc90e83cbfafee30e5f1ee192782f9fed07480f5be396b300",
+    "max_rss_bytes": 40124416,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 29610194.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 116533472.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1167264.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 9881917.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 1035167.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10213097.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 29497917.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 119360611.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1378014.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 11222208.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 1132153.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 9873958.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 33124542.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 127296347.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 3729167.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17251931.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3968514.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 15747250.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 31869431.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 121608611.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 4209222.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 16655292.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3436194.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 14179542.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 3,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:39.082292+00:00",
+    "elapsed_seconds": 2.894,
+    "load_average": [
+      9.310546875,
+      5.880859375,
+      5.15380859375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "c9886e899657083a15abd7f20edaf081b647ca821ea4562b7acdc1e2874c0df2",
+    "stderr_sha256": "1920270c1d64bd81edc700595497ff8e0ad1f0109fae662044a8fb334715032e",
+    "max_rss_bytes": 40189952,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 28437042.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 116733389.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1120403.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10949278.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 978361.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10564236.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 28615167.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 119736264.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1192903.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 11253861.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 963694.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 9703264.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 30625639.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 121024069.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 3597444.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 15050930.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3361486.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 14311070.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 30907736.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 119413986.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 3918555.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 16180833.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3384528.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 14084181.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 3,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:41.983281+00:00",
+    "elapsed_seconds": 9.383,
+    "load_average": [
+      8.88525390625,
+      5.849609375,
+      5.14697265625
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "4f08384e6f668ca3de2918a40b4cea4b72b1632e9cae543afc802649c6c99551",
+    "stderr_sha256": "5e15dd9c85dd727052078219b2c6d36a6a3f0569448112506b203708314765c1",
+    "max_rss_bytes": 38633472,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 30707097.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 179459083.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1262167.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10443264.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 820736.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 7967333.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 31011750.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 142708097.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1294500.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 9846181.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 822097.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 7870945.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 140634583.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 590060708.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 5305125.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 19305153.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 2932570.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 10389111.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 147446431.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 1063809014.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 8088597.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 30313708.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 6750806.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 9875153.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 4,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:33:51.377489+00:00",
+    "elapsed_seconds": 10.583,
+    "load_average": [
+      8.57373046875,
+      5.83544921875,
+      5.14599609375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "7f5daf0c230cca7ceb1ad0e74b870ab7faeb5ce8c7bd607857fecc20e5a20821",
+    "stderr_sha256": "d1db046240dac37b80bc91f25609d45cb80b663d5d5eb8f9b4f09e4228e32778",
+    "max_rss_bytes": 35897344,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 87484805.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 431264597.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 3209986.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 23514070.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 2535736.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 13197444.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 102919542.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 314264403.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 2594444.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 16895445.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 2033292.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 6325833.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 216788319.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 585134167.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4790486.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17435722.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 2594875.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 8651903.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 139236306.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 606685472.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 4933945.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 18947597.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3061125.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 9644111.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 4,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:01.969215+00:00",
+    "elapsed_seconds": 3.293,
+    "load_average": [
+      9.7958984375,
+      6.27490234375,
+      5.31689453125
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "6e391e57c74e94d5b07e6875629913688ce662276e6b17382808bf2849ed6960",
+    "stderr_sha256": "38186ef57f0191f90c0e747b8802428a7cafce3d83dbb8f22ce6512c84f12f3e",
+    "max_rss_bytes": 38502400,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 30587861.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 184874639.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1268431.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 11795542.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 1318944.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10821806.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 31931472.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 123832431.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1388319.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 12131222.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 1074486.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 10691097.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 33243083.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 135088208.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4090694.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17320833.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 4083486.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 16388181.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 31802111.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 123497222.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 3834306.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 15970319.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3417264.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 14554653.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 5,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:05.270788+00:00",
+    "elapsed_seconds": 2.89,
+    "load_average": [
+      9.7958984375,
+      6.27490234375,
+      5.31689453125
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "4ba0f7134d56decfadfa47bacb1d817d25f34dc5b0faa4d492ca5f8af9e7cecb",
+    "stderr_sha256": "014bebf44e5a54b4c2ed83b53d406f9aa5cff747c2c3c26f4a66dff258432a50",
+    "max_rss_bytes": 40845312,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 28576250.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 114720264.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1159264.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 11190681.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 950611.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10250792.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 28296708.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 116086139.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1337486.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 11878028.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 1009028.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 10129667.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 30773222.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 119712097.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 3613736.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 17143250.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3535611.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 15739417.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 31102208.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 119139472.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 3976250.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 16731514.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 3539278.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 14765319.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 5,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:08.168699+00:00",
+    "elapsed_seconds": 8.002,
+    "load_average": [
+      9.25146484375,
+      6.22021484375,
+      5.30322265625
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "2e42800da6ca66f3722993a1971fc69ded48cd84e34c1eb6b9131abf6fd91028",
+    "stderr_sha256": "cab7017aa9ed6adf1e976323d72c67458f72607e6ac073c35ee837b954a44c90",
+    "max_rss_bytes": 38518784,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 31797555.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 153726819.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1561889.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10631903.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 844583.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 8184986.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 31765875.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 146570028.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1339681.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 10033472.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 851847.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 7794986.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 142435069.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 622183306.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4901556.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 18987347.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 2711528.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 9315750.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 146472070.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 612674514.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 5117903.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 19639097.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 2835250.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 9691986.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 6,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:16.179521+00:00",
+    "elapsed_seconds": 10.252,
+    "load_average": [
+      8.83056640625,
+      6.18310546875,
+      5.29541015625
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "ef50aac6bfadcd0c91157bd50460ba9fe2eb4d9aa15ad2e1c50e233db877c701",
+    "stderr_sha256": "2ec6fada95b9522a3732fea4f76d0ba0d303c9e61ce3cbc1a0d471269ca4aa01",
+    "max_rss_bytes": 37011456,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 37340056.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 177374930.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 1399736.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 10863889.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 923778.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 8464722.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 35513014.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 159580764.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 1323819.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 10409805.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 873000.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 10814819.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 157718445.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 603469375.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 4922625.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 18833597.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 3033903.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 9390431.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 149836305.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 1118806208.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 22380389.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 46202333.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 7292333.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 14997625.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  },
+  {
+    "pair": 6,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:26.450678+00:00",
+    "elapsed_seconds": 5.641,
+    "load_average": [
+      8.529296875,
+      6.20849609375,
+      5.31494140625
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "81ad1c9aec1ff4fc9f16bb9865484e14e19e284e86e9f6fbe39af7f1a60e1261",
+    "stderr_sha256": "10394276f8f4f89b2956c6b391b9a475a7f3291c95848f1009b8871811fb0147",
+    "max_rss_bytes": 36749312,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 45654208.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 259486583.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 2824695.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 21131458.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 3238028.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 16812486.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 48239347.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 279869667.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 3234528.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 17247667.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 3001792.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 11303722.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 47047417.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 252940264.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 6691445.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 21491639.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 6715667.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 20028264.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 54997625.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 212479180.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 9491930.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 26033347.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 7168250.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 19651653.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 7,
+    "warmup": false,
+    "mode": "improved",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-improved.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:32.106444+00:00",
+    "elapsed_seconds": 5.217,
+    "load_average": [
+      12.82275390625,
+      7.19189453125,
+      5.67333984375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "78bdbb5595acb4d25a97fac29e80d79941fdb5330f10a68f8d0711da22b7960e",
+    "stdout_sha256": "76a5197500e50b9445a114cf5cad903aa96d8445196754c7defd98483d0b6db1",
+    "stderr_sha256": "b7fa976d07a0d880fda33cd45b5e6064e77f8047b58ca2891d7a50ea9fb18e65",
+    "max_rss_bytes": 44089344,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 40860903.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 213411722.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 3091222.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 18036361.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 3565708.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 15486222.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 42992792.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 197794319.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 5228139.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 19408875.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 3015625.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 14136389.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 47914736.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 211276389.0,
+        "bytes_per_op": 11970816,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 10654833.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 28570694.0,
+        "bytes_per_op": 10938624,
+        "allocs_per_op": 698
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 11387306.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 32904305.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 52190264.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 215624000.0,
+        "bytes_per_op": 12709488,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 10939292.0,
+        "bytes_per_op": 3610272,
+        "allocs_per_op": 232
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 36941847.0,
+        "bytes_per_op": 11677296,
+        "allocs_per_op": 743
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 9584903.0,
+        "bytes_per_op": 3314760,
+        "allocs_per_op": 214
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 31124333.0,
+        "bytes_per_op": 10922240,
+        "allocs_per_op": 697
+      }
+    }
+  },
+  {
+    "pair": 7,
+    "warmup": false,
+    "mode": "baseline",
+    "command": [
+      "/usr/bin/time",
+      "-l",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-activation-20261011/bin/dynamics-baseline.test",
+      "-test.run",
+      "^$",
+      "-test.bench",
+      "^BenchmarkRecomputeActivation$",
+      "-test.benchtime=3x",
+      "-test.count=1",
+      "-test.cpu=1"
+    ],
+    "started_at": "2026-10-11T09:34:37.337535+00:00",
+    "elapsed_seconds": 20.867,
+    "load_average": [
+      14.0380859375,
+      7.537109375,
+      5.8037109375
+    ],
+    "exit_code": 0,
+    "binary_sha256": "66c6c36a836184a071c5fe6a998aedd672099d5b52e4e1ee0d22568aae17b13b",
+    "stdout_sha256": "4f635e38f7561deb321f14c1f241f7128c1ba3d8ed902e34b51426f0c0ab66a9",
+    "stderr_sha256": "c2ab620849d1307338749de7b4a715cc260c73463bc138594528a29a89437270",
+    "max_rss_bytes": 35028992,
+    "benchmarks": {
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-forward": {
+        "ns_per_op": 109763861.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg64-backward": {
+        "ns_per_op": 432112222.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-forward": {
+        "ns_per_op": 3109430.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg1-backward": {
+        "ns_per_op": 20604958.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-forward": {
+        "ns_per_op": 2129944.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d0-deg0-backward": {
+        "ns_per_op": 10210708.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-forward": {
+        "ns_per_op": 98179625.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg64-backward": {
+        "ns_per_op": 566096569.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-forward": {
+        "ns_per_op": 3456403.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg1-backward": {
+        "ns_per_op": 17471458.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-forward": {
+        "ns_per_op": 2466403.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/tanh-d3-deg0-backward": {
+        "ns_per_op": 9222847.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-forward": {
+        "ns_per_op": 346247042.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg64-backward": {
+        "ns_per_op": 1488536611.0,
+        "bytes_per_op": 9739264,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-forward": {
+        "ns_per_op": 12812097.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg1-backward": {
+        "ns_per_op": 39606847.0,
+        "bytes_per_op": 8707072,
+        "allocs_per_op": 554
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-forward": {
+        "ns_per_op": 7235194.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d0-deg0-backward": {
+        "ns_per_op": 12612944.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-forward": {
+        "ns_per_op": 391727222.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg64-backward": {
+        "ns_per_op": 1542245986.0,
+        "bytes_per_op": 10182640,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-forward": {
+        "ns_per_op": 14532375.0,
+        "bytes_per_op": 3395424,
+        "allocs_per_op": 215
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg1-backward": {
+        "ns_per_op": 42322083.0,
+        "bytes_per_op": 9150448,
+        "allocs_per_op": 581
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-forward": {
+        "ns_per_op": 7179639.0,
+        "bytes_per_op": 3247560,
+        "allocs_per_op": 206
+      },
+      "BenchmarkRecomputeActivation/softplus-d3-deg0-backward": {
+        "ns_per_op": 12148556.0,
+        "bytes_per_op": 8690688,
+        "allocs_per_op": 553
+      }
+    }
+  }
+]

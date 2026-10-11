@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "rss_median_bytes": {
+    "baseline": 37863424,
+    "improved": 40894464
+  },
+  "extra_live_output_rows_formula": "(min(steps,maxDelay)+segment+1) * Nodes * 8 bytes, plus slice headers; checkpoints remain voltage-only",
+  "output_cache_example": {
+    "nodes": 2048,
+    "segment": 16,
+    "delay": 3,
+    "numeric_bytes": 327680,
+    "slice_header_bytes": 480
+  },
+  "limitations": [
+    "Synthetic CPU fixture; not a whole-connectome timing guarantee.",
+    "Shared desktop load is recorded, not controlled.",
+    "RSS covers each whole benchmark process, including fixtures and Go GC."
+  ]
+}

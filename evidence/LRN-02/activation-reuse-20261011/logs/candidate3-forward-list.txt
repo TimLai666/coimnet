@@ -1,0 +1,24 @@
+Total: 3.42s
+ROUTINE ======================== github.com/TimLai666/coimnet/dynamics.(*Continuous).driveRow in /Users/timlai/Developer/coimnet/dynamics/recompute.go
+     2.95s      3.05s (flat, cum) 89.18% of Total
+         .          .    338:func (m *Continuous) driveRow(p Parameters, inputs [][]float64, output [][]float64, lo, t int) []float64 {
+         .       10ms    339:	drive := append([]float64(nil), inputs[t]...)
+         .          .    340:	lastDelay := -1
+         .          .    341:	var delayedOutput []float64
+     230ms      240ms    342:	for e, src := range m.config.Sources {
+     830ms      860ms    343:		delay := m.config.Delays[e]
+         .          .    344:		if delay != lastDelay {
+         .          .    345:			past := 0
+         .          .    346:			if delay < t {
+         .          .    347:				past = t - delay
+         .          .    348:			}
+         .          .    349:			delayedOutput = output[past-lo]
+         .          .    350:			lastDelay = delay
+         .          .    351:		}
+     1.86s      1.90s    352:		drive[m.config.Targets[e]] += p.Weights[e] * delayedOutput[src]
+         .          .    353:	}
+         .          .    354:	for i := range drive {
+      30ms       40ms    355:		drive[i] += p.Bias[i]
+         .          .    356:	}
+         .          .    357:	return drive
+         .          .    358:}
