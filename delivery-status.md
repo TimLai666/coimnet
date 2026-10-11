@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md) 已完成 3／4 驗收。真實全圖八組交錯配對已量測，正式七組的完整更新耗時由中位數 18.30 降到 8.46 秒，配對減少 52.56%；十六次全部輸出、梯度、更新參數與 Adam 狀態相同。一般與 race 各 57 套件、11 個治理專項及全部原生檢查已通過，正式交付與副本清理待完成。[量測報告](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)。
+[ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md) 已完成 4／4 驗收與主要證據交付。真實全圖八組交錯配對已量測，正式七組的完整更新耗時由中位數 18.30 降到 8.46 秒，配對減少 52.56%；十六次全部輸出、梯度、更新參數與 Adam 狀態相同。一般與 race 各 57 套件、11 個治理專項及全部原生檢查已通過。主要證據已推送並核對遠端 `20a0896`，本輪 14,742 份副本與暫存共 2.62 GB 已清除，原始全圖與參數指紋保持。[量測報告](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)、[交付回條](evidence/LRN-02/fullgraph-activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/fullgraph-activation-reuse-20261011/cleanup.json)。
 
 [ticket 57](docs/tickets/57-recompute-activation-reuse.md) 已完成 5／5 驗收與交付。34 個重算專項、八組效能門檻、完整一般與 race 各 57 套件、格式、build、vet、相依性、11 個治理專項及 CLI 新程序恢復比對通過。固定人工密集圖耗時降低 58.88–91.41%，記憶體成本與限制見[資源說明](docs/resources.md#分段活化共用量測2026-10-11)。來源與證據已推送並核對遠端 `9414b9d`，669 份來源／模組的提交內容與驗收指紋相同。本輪驗收副本及 2.07 GB 暫存已清除，見[驗收證據](evidence/LRN-02/activation-reuse-20261011/verification.json)、[交付回條](evidence/LRN-02/activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/activation-reuse-20261011/cleanup.json)。
 
@@ -155,7 +155,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 58 | 使用者可以核對真實全腦分段訓練的效率改善 | Codex Root / Luna max 唯讀稽核 | in_progress | 3／4。全圖十六次數值相同，七組配對完成；一般與 race 各 57 套件、11 個治理專項通過；交付與清理待完成 |
+| 58 | 使用者可以核對真實全腦分段訓練的效率改善 | Codex Root / Luna max 唯讀稽核 | completed | 4／4。全圖十六次數值相同，七組配對完成；一般與 race 各 57 套件、11 個治理專項通過。主證據 `20a0896` 已推送核對，2.62 GB 本輪副本與暫存已清除 |
 | 52 | 研究者可在生物啟發協定執行前拒絕非法數值 | Codex Root / Luna max 測試 | completed | 5／5。17 個相關頂層測試、七份合法報告一致、Mac 完整檢查通過，實作 d3aa982 已推送核對 |
 | 53 | 使用者可在專案內保存必要資料與結果，並清除暫存 | Codex Root / Luna max 測試及唯讀盤點 | completed | 5／5。207 份移位指紋相同，479 份必要原件保持，9,151 份暫存清除，實作 d3aa982 已推送核對 |
 | 01 | 開發者可核對環境與 Insyra 實際能力 | 主 agent / API 查核 agent | verified_scoped | Mac 與 Ubuntu 實際 doctor、Insyra 數值探測通過 |
@@ -232,7 +232,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 58 的全圖量測已完成，下一個可驗證成果為正式證據交付與本輪副本清理。框架維持 89／91，TSK-11 與 OPS-05 不因效能改善改成通過。
+ticket 58 的全圖量測、主要證據交付與本輪副本清理已完成。下一個 ticket 尚未建立，本輪沒有未完成驗收項目。框架維持 89／91，TSK-11 與 OPS-05 不因效能改善改成通過。建議下一輪先為一項真實任務固定保留集、簡單基準與實用門檻。
 
 先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
