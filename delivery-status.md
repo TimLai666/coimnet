@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 56](docs/tickets/56-recompute-sequence-capacity.md) 已完成 4／5 驗收。兩種核心的有限序列重算已避開持續狀態容量限制，公開 Step／StepFrom、參數及最佳化器逐位相同。完整一般與 race 各 57 套件、28 個重算及 11 個治理專項、格式、build、vet、相依性與 CLI 恢復比對通過。待回存、提交推送及暫存清理，見[驗收證據](evidence/LRN-02/sequence-capacity-20261011/verification.json)。
+[ticket 56](docs/tickets/56-recompute-sequence-capacity.md) 已完成 5／5 驗收與交付。兩種核心的有限序列重算已避開持續狀態容量限制，公開 Step／StepFrom、參數及最佳化器逐位相同。完整一般與 race 各 57 套件、28 個重算及 11 個治理專項、格式、build、vet、相依性與 CLI 恢復比對通過。程式與證據已推送並核對遠端 `0aab316`，665 份 Go 來源及模組的提交內容與驗收指紋一致。本輪驗收副本及 1.21 GB 暫存已清除，見[驗收證據](evidence/LRN-02/sequence-capacity-20261011/verification.json)與[交付回條](evidence/LRN-02/sequence-capacity-20261011/delivery.json)。
 
 tickets 54、55 已完成本機原生磁碟完整驗收。已提交來源 `cf00886` 的 662 份 Go 來源與模組指紋一致，格式、build、完整一般與 race 各 57 套件、vet、相依性及 11 個治理／索引／隱私專項通過。14 份合法報告與修正前及兩個新程序逐位元組相同。正式證據存回專案，本輪本機副本與快取、先前 39 份中斷映像暫存均已清除，失敗紀錄保留。見 [完整驗收](evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/requirement-verification.json)與 [清理紀錄](evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/cleanup.json)。
 
@@ -202,8 +202,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 50 | 研究者可以在比較開始前發現非法數值設定 | Codex Root / Luna max 測試 | completed | 5／5。兩處設定驗證、三個新增回歸、合法 SDK／CLI、完整一般與 race 各 57 套件及治理通過，實作 933ba4c 已推送核對 |
 | 51 | 研究者可以保留連續任務執行當時的設定 | Codex Root / Luna max 測試 | completed | 5／5。八組回歸、30 個相關頂層、七份完整報告與雙程序一致、八個 CLI、完整一般／race 各 57 套件及治理通過，實作 3546b88 已推送核對 |
 | 54 | 研究者可以保留生物啟發協定執行當時的設定 | Codex Root / Luna max 測試與唯讀審查 | completed | 5／5。2026-10-11 最終來源的完整一般與 race 各 57 套件、11 個治理專項、14 份合法報告雙程序比對通過，驗收副本與快取已清除 |
-| 56 | 使用者可以對合法大型模型開啟分段重算訓練 | Codex Root / Luna max 測試、實作與唯讀審查 | in_progress | 4／5。完整一般與 race 各 57 套件、28 個重算與 11 個治理專項及 CLI 通過，待回存、提交推送與清理 |
 | 55 | 使用者可以把模型存在網路磁碟並讀回接續 | Codex Root / Luna max 測試與唯讀審查 | completed | 5／5。SMB 資料夾模型保存、讀回、接續與並行保護通過，2026-10-11 最終來源的本機完整一般／race 各 57 套件通過，暫存已清除 |
+| 56 | 使用者可以對合法大型模型開啟分段重算訓練 | Codex Root / Luna max 測試、實作與唯讀審查 | completed | 5／5。完整一般與 race 各 57 套件、28 個重算與 11 個治理專項及 CLI 通過，665 份 Go 提交指紋一致；原專案回存、暫存清理、推送及遠端核對完成 |
 
 ## 目前阻礙
 
@@ -227,9 +227,9 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-下一個可驗證成果是 ticket 56 的證據回存、暫存清理、提交推送與遠端核對。完整檢查與需求證據已完成。
+ticket 56 已完成，下一個 ticket 尚未建立。建議接續既有連續核心分段重算的逐邊活化效能待辦，以相同訓練結果及人工圖量測驗證；範圍見 [AGENTS.md](AGENTS.md#follow-ups)。
 
-本階段 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

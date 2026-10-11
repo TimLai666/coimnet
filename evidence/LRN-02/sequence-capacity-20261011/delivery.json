@@ -1,0 +1,94 @@
+{
+  "ticket": 56,
+  "status": "completed",
+  "completed_conditions": 5,
+  "total_conditions": 5,
+  "baseline": "20527ae510c0dff9b825e2f8763717f9e3357426",
+  "source_root": "/Volumes/SSD/Developer/coimnet",
+  "recorded_at": "2026-10-11T09:05:00.219570+00:00",
+  "commits": {
+    "fix": "0f216baa29777cb1f724d0f4c96072e5587e2945",
+    "regressions": "c0284e4873db09552e41a72a638edd8b5164f9a0",
+    "evidence": "0aab316c6be986ec0c7168d742020a30c1c0d510"
+  },
+  "push": {
+    "remote": "https://github.com/TimLai666/coimnet.git",
+    "branch": "main",
+    "exit_code": 0,
+    "remote_readback": "0aab316c6be986ec0c7168d742020a30c1c0d510",
+    "force": false
+  },
+  "committed_source_readback": {
+    "commit": "0aab316c6be986ec0c7168d742020a30c1c0d510",
+    "files": 667,
+    "go_files": 665,
+    "all_sha256_match": "source-final.json",
+    "module_files_unchanged": true
+  },
+  "cleanup": {
+    "record": "cleanup.json",
+    "removed_path": "/Users/timlai/Developer/coimnet",
+    "files": 14689,
+    "bytes": 1210635721,
+    "native_path_exists": false
+  },
+  "archived_proof": {
+    "manifest": "log-manifest.json",
+    "files": 53,
+    "all_archived_and_raw_sha256_match": true,
+    "unit_top_level_passed": 1768,
+    "race_top_level_passed": 1767,
+    "unit_packages_passed": 57,
+    "race_packages_passed": 57,
+    "cross_process_resume_bytes_equal": true
+  },
+  "whitespace_check": {
+    "source_and_documents": "passed",
+    "retained_original_go_doc_stdout": [
+      "cli/continuous-api.log",
+      "cli/lif-api.log"
+    ],
+    "reason": "go doc emits a final blank line; both original stdout hashes match the manifest. Other staged files passed the normal whitespace check."
+  },
+  "delegation": {
+    "host": "Codex",
+    "external_attempt": {
+      "tool": "opencode",
+      "model": "opencode/big-pickle",
+      "flags": [
+        "--agent",
+        "plan",
+        "--model",
+        "opencode/big-pickle",
+        "--dir",
+        "/Volumes/SSD/Developer/coimnet",
+        "--format",
+        "json"
+      ],
+      "result": "rejected by automatic approval review before model execution",
+      "reason": "Private source export to the external model destination was not specifically authorized."
+    },
+    "fallback": {
+      "tool": "native collaboration agents",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "tasks": 4,
+      "reason": "AGENTS.md specifies this fallback and highest supported effort."
+    }
+  },
+  "project_requirement_status": "89/91 unchanged",
+  "limitations": [
+    "Synthetic CPU fixtures only; no new full-connectome, GPU or cross-platform validation.",
+    "Full output storage is T*N. LIF also allocates O(T) row pointers per segment. This is not a fixed-memory guarantee for the complete trainer.",
+    "RSS uses one independent process per core/mode, with an ordinary shared desktop workload; it is not a performance guarantee.",
+    "The initial sandboxed RSS attempt completed training but /usr/bin/time could not read kern.clockrate. Its failed measurement logs are preserved separately.",
+    "The pre-existing per-edge continuous activation cost and legacy measurement scratch-path issues remain follow-ups."
+  ],
+  "final_metadata_scope": [
+    "delivery-status.md",
+    "docs/tickets/56-recompute-sequence-capacity.md",
+    "delivery.json",
+    "changed-files.md",
+    "scan-delivery.log"
+  ]
+}

@@ -78,3 +78,5 @@
 | [evidence/LRN-02/sequence-capacity-20261011/source-final.json](/Volumes/SSD/Developer/coimnet/evidence/LRN-02/sequence-capacity-20261011/source-final.json) | 665 份最終 Go 來源與模組指紋。 |
 | [evidence/LRN-02/sequence-capacity-20261011/verification.json](/Volumes/SSD/Developer/coimnet/evidence/LRN-02/sequence-capacity-20261011/verification.json) | LRN-02 命令、環境、結果、指紋及原始日誌索引。 |
 | [evidence/LRN-02/sequence-capacity-20261011/changed-files.md](/Volumes/SSD/Developer/coimnet/evidence/LRN-02/sequence-capacity-20261011/changed-files.md) | 本輪全部新增與修改檔案的逐檔摘要。 |
+| [evidence/LRN-02/sequence-capacity-20261011/delivery.json](/Volumes/SSD/Developer/coimnet/evidence/LRN-02/sequence-capacity-20261011/delivery.json) | 保存提交、推送讀回、來源指紋與清理的實際交付結果。 |
+| [evidence/LRN-02/sequence-capacity-20261011/scan-delivery.log](/Volumes/SSD/Developer/coimnet/evidence/LRN-02/sequence-capacity-20261011/scan-delivery.log) | 完成狀態與交付回條提交的 staged diff 掃描結果。 |
