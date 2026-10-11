@@ -1,0 +1,255 @@
+{
+  "requirement": "LRN-02",
+  "status": "passed",
+  "ticket": 56,
+  "reproduction_command": [
+    "Use a native disk checkout; do not put Go caches or heavy verification on SMB.",
+    "mkdir -p runs/.tmp/recompute-capacity-20261011/logs",
+    "python3 evidence/LRN-02/sequence-capacity-20261011/run_checks.py green",
+    "python3 evidence/LRN-02/sequence-capacity-20261011/run_rss.py",
+    "python3 evidence/LRN-02/sequence-capacity-20261011/run_checks.py full",
+    "python3 evidence/LRN-02/sequence-capacity-20261011/run_cli.py",
+    "go test -race -count=1 -timeout=30m -run '^(TestGovernance|TestFormatIndex|TestNoTelemetry)' ."
+  ],
+  "environment": {
+    "host": "TimdeAir.home",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": [
+      "darwin",
+      "arm64",
+      "1"
+    ],
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434\n",
+    "hardware": "17179869184\nMac15,12\nApple M3\n",
+    "filesystem": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   398Gi    33Gi    93%    3.8M  345M    1%   /System/Volumes/Data\n",
+    "offline_modules": true,
+    "cache_location": "runs/.tmp/recompute-capacity-20261011/gocache",
+    "tmp_location": "runs/.tmp/recompute-capacity-20261011",
+    "source_baseline": "20527ae510c0dff9b825e2f8763717f9e3357426"
+  },
+  "input_fingerprints": {
+    "source": "source-final.json",
+    "baseline": "head-baseline.json",
+    "frozen_tests": "frozen-tests.json",
+    "synthetic_capacity_fixture": {
+      "nodes": 349526,
+      "edges": 3,
+      "delay": 2,
+      "steps": 4,
+      "segments": [
+        1,
+        2
+      ],
+      "public_entries": [
+        "Step",
+        "StepFrom"
+      ]
+    },
+    "rss_inputs": "logs/rss-native/rss-runs.json"
+  },
+  "observed_result": {
+    "test_counts": {
+      "red": {
+        "package_statuses": {
+          "pass": 0,
+          "fail": 2,
+          "skip": 0
+        },
+        "top_level_statuses": {
+          "pass": 3,
+          "fail": 5,
+          "skip": 0
+        }
+      },
+      "green": {
+        "package_statuses": {
+          "pass": 2,
+          "fail": 0,
+          "skip": 0
+        },
+        "top_level_statuses": {
+          "pass": 28,
+          "fail": 0,
+          "skip": 1
+        }
+      },
+      "unit": {
+        "package_statuses": {
+          "pass": 57,
+          "fail": 0,
+          "skip": 1
+        },
+        "top_level_statuses": {
+          "pass": 1768,
+          "fail": 0,
+          "skip": 17
+        }
+      },
+      "race": {
+        "package_statuses": {
+          "pass": 57,
+          "fail": 0,
+          "skip": 1
+        },
+        "top_level_statuses": {
+          "pass": 1767,
+          "fail": 0,
+          "skip": 18
+        }
+      }
+    },
+    "format_source_count": 665,
+    "capacity_regression": "Full-history and recompute Step/StepFrom results, parameters, optimizer state and update counts match bit for bit for both cores. Persistent state still rejects a third retained row above MaxStateValues.",
+    "sdk_forward": "Both cores match Forward outputs bit for bit with delay, nonzero initial voltage, LIF mechanisms and extreme segment/delay values.",
+    "rss_runs": [
+      {
+        "core": "continuous",
+        "mode": "full",
+        "nodes": 50000,
+        "edges": 400000,
+        "steps": 256,
+        "segment": 0,
+        "gradient_norm": 0.12541121877975528,
+        "update_norm": 1.7386900420845879,
+        "parameters_sha256": "b43ad56f4997ac90008687721c5bed9402f95b6e00dd6f7a101cab56440feae9",
+        "max_rss_bytes": 1015513088,
+        "elapsed_seconds": 2.299,
+        "command": [
+          "/usr/bin/time",
+          "-l",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/learning.test",
+          "-test.run",
+          "^TestRecomputeRSSHelper$",
+          "-test.count=1",
+          "-test.timeout=30m"
+        ],
+        "stdout_sha256": "8e14f58b52c42eacfedc25b7089ef86b8809bddebc5937090722f93316489205",
+        "stderr_sha256": "9bd2ad75fe2546c5c4be4470bae9cfadc056b42ddcbbd7dd4653d31cc09c0410"
+      },
+      {
+        "core": "continuous",
+        "mode": "recompute",
+        "nodes": 50000,
+        "edges": 400000,
+        "steps": 256,
+        "segment": 16,
+        "gradient_norm": 0.12541121877975528,
+        "update_norm": 1.7386900420845879,
+        "parameters_sha256": "b43ad56f4997ac90008687721c5bed9402f95b6e00dd6f7a101cab56440feae9",
+        "max_rss_bytes": 768049152,
+        "elapsed_seconds": 3.499,
+        "command": [
+          "/usr/bin/time",
+          "-l",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/learning.test",
+          "-test.run",
+          "^TestRecomputeRSSHelper$",
+          "-test.count=1",
+          "-test.timeout=30m"
+        ],
+        "stdout_sha256": "a458eade9816424da80981ca7eaac6f5c2c98aca7e6727570fe70c93cd715700",
+        "stderr_sha256": "9ed2140841faf75e34510d7455c5777aa8457c792ef42b6da1b04548a05b6ac8"
+      },
+      {
+        "core": "lif",
+        "mode": "full",
+        "nodes": 20000,
+        "edges": 160000,
+        "steps": 256,
+        "segment": 0,
+        "gradient_norm": 0.03484812851722017,
+        "update_norm": 0.7986994230338813,
+        "parameters_sha256": "ae82fdfaaa93b7f69db5ad0d49c7b7c15477ef1757f07c5b5c7d815edfa40903",
+        "max_rss_bytes": 793247744,
+        "elapsed_seconds": 1.155,
+        "command": [
+          "/usr/bin/time",
+          "-l",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/learning.test",
+          "-test.run",
+          "^TestRecomputeRSSHelper$",
+          "-test.count=1",
+          "-test.timeout=30m"
+        ],
+        "stdout_sha256": "142f5ac3c84d2145445d9b8ff90200091b58f98b4406c9791c83d7a81a025406",
+        "stderr_sha256": "5e1a2a23a20cff7381cfbcdf3125ec5ef66668dbd01724af50aea04c80f92033"
+      },
+      {
+        "core": "lif",
+        "mode": "recompute",
+        "nodes": 20000,
+        "edges": 160000,
+        "steps": 256,
+        "segment": 16,
+        "gradient_norm": 0.03484812851722017,
+        "update_norm": 0.7986994230338813,
+        "parameters_sha256": "ae82fdfaaa93b7f69db5ad0d49c7b7c15477ef1757f07c5b5c7d815edfa40903",
+        "max_rss_bytes": 603422720,
+        "elapsed_seconds": 2.164,
+        "command": [
+          "/usr/bin/time",
+          "-l",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/learning.test",
+          "-test.run",
+          "^TestRecomputeRSSHelper$",
+          "-test.count=1",
+          "-test.timeout=30m"
+        ],
+        "stdout_sha256": "02a1b6b9bca4293e05c3351a8ffbed3a7e6df0364aef2db3b62789e0aa7cdc64",
+        "stderr_sha256": "0aff16b12da4c7dafd8bc6a011db0739e1e5f99501e451c464e6eba918511303"
+      }
+    ],
+    "cli_resume": {
+      "equal": true,
+      "sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c"
+    },
+    "scope": {
+      "modified_existing_go": [
+        "learning/recompute.go"
+      ],
+      "new_go": [
+        "dynamics/forward_recompute.go",
+        "dynamics/forward_recompute_test.go",
+        "learning/recompute_capacity_test.go"
+      ],
+      "unchanged_existing_go": 661,
+      "module_files_unchanged": true
+    },
+    "independent_review": "No confirmed blockers; see root-review.md",
+    "governance": {
+      "top_level_passed": 11,
+      "tests": [
+        "TestNoTelemetry",
+        "TestNoTelemetryProjectTempBoundary",
+        "TestNoTelemetrySourceErrorsRemainVisible",
+        "TestFormatIndex",
+        "TestFormatIndexControls",
+        "TestFormatIndexGoLiteralsAndScopes",
+        "TestFormatIndexNoGitAndReadErrors",
+        "TestGovernanceRequirementIDsMatchHandoff",
+        "TestGovernanceStatusValuesAreDeclared",
+        "TestGovernancePassedRequirementsHaveEvidence",
+        "TestGovernanceTicketsHaveDatedRootDecisions"
+      ],
+      "exit_code": 0
+    }
+  },
+  "test_log": [
+    "logs/red.log",
+    "logs/green.log",
+    "logs/unit.log.gz",
+    "logs/race.log.gz",
+    "logs/full-commands.json",
+    "cli/commands.json",
+    "logs/rss-native/rss-runs.json",
+    "logs/governance.log"
+  ],
+  "limitations": [
+    "Synthetic CPU fixtures only; no new full-connectome, GPU or cross-platform validation.",
+    "Full output storage is T*N. LIF also allocates O(T) row pointers per segment. This is not a fixed-memory guarantee for the complete trainer.",
+    "RSS uses one independent process per core/mode, with an ordinary shared desktop workload; it is not a performance guarantee.",
+    "The initial sandboxed RSS attempt completed training but /usr/bin/time could not read kern.clockrate. Its failed measurement logs are preserved separately.",
+    "The pre-existing per-edge continuous activation cost and legacy measurement scratch-path issues remain follow-ups."
+  ],
+  "delivery": "Cleanup, commits and remote readback are recorded separately in cleanup.json and delivery.json."
+}

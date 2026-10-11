@@ -62,9 +62,9 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `dynamics/recompute.go`：連續核心分段重算的 `driveRow` 對每條邊、每一步都呼叫一次 `activate`（第一趟前向、段落重算、反向各一次），計算量跟邊數成正比而不是節點數；在兩千五百萬條邊的全圖上會比 `Forward` 慢很多。可在每段重算時先把該段各列的 activate(voltage) 存成輸出列（只多 S 列），數值不變。LIF 版讀的是 syn 列，沒有這個問題。
 - `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
 - `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。
-- `learning/recompute.go`：重算模式的 `observe` 走 `NewState`／`Advance`，所以多了完整歷史路徑沒有的上限：節點數 ×（最大延遲 + 1）不得超過 `dynamics.MaxStateValues`（2^20）。全圖延遲一律為 0 不受影響；2^19 節點、延遲 2 的圖只有開重算時會在 `Step` 報錯。要放寬就讓 `observe` 直接走分段前向，不經串流狀態。
 - `experiment/attribution.go`：TSK-12 的 `normal` 組同時學核心權重與 encoder，在學習率 0.05 下活動量從 0.25 升到 0.93、未見地圖分數是七組最低（`evidence/TSK-12/summary.txt`），讓各組對 `normal` 的差值都變成正的。要改善得先在另一組 seed 上事前選定學習率或每組學習率，再用原本的 seed 重跑，不能拿這次結果挑參數。
 - `tasks/media`：核心拓樸（輸入→隱藏與隱藏→隱藏的邊、初始化串流 0／1／2、log tau = log 2）的建構寫了四份：`generator.go` 的 `NewGenerator`、`video.go` 的 `NewVideoGenerator`、`fixed_decoder.go` 的 `NewLatentGenerator`、`external_tool.go` 的 `NewRequestHead`，只差輸入與輸出寬度。抽成一個共用的建構函式，之後改初始化或拓樸才不會漏改；行為不變，四個生成器的決定性測試可當回歸。
 - `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。
 - `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但預設 GC 下程序峰值足跡會超出這個存活陣列估算；2026-09-24 已提交的 OPS-07 證據中，預設 GC 峰值足跡 12.22 GiB、85 秒，設 `GOMEMLIMIT=8GiB` 時 8.01 GiB、72 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，執行全圖命令時建議明示 `GOMEMLIMIT=8GiB`。OPS-10 腳本本身尚未設定。
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
+- `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。

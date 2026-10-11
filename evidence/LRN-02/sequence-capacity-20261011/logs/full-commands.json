@@ -1,0 +1,111 @@
+[
+  {
+    "command": [
+      "go",
+      "mod",
+      "verify"
+    ],
+    "started_at": "2026-10-11T08:08:39.890940+00:00",
+    "elapsed_seconds": 2.93,
+    "exit_code": 0,
+    "log": "modules.log",
+    "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+  },
+  {
+    "command": [
+      "go",
+      "build",
+      "./..."
+    ],
+    "started_at": "2026-10-11T08:08:42.821328+00:00",
+    "elapsed_seconds": 4.358,
+    "exit_code": 0,
+    "log": "build.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-json",
+      "-p",
+      "2",
+      "-count=1",
+      "-timeout=30m",
+      "./..."
+    ],
+    "started_at": "2026-10-11T08:08:47.180259+00:00",
+    "elapsed_seconds": 95.151,
+    "exit_code": 0,
+    "log": "unit.log",
+    "sha256": "b41bb000238ea66838b9ad6cf0ca36fa1c9b658ef6325d98a3e57e1831bc9ba7"
+  },
+  {
+    "command": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-p",
+      "2",
+      "-count=1",
+      "-timeout=30m",
+      "./..."
+    ],
+    "started_at": "2026-10-11T08:10:22.333934+00:00",
+    "elapsed_seconds": 2081.156,
+    "exit_code": 0,
+    "log": "race.log",
+    "sha256": "e675b21dd19c01d82424bec5350e24e517e7685dd0b2982309e360224ba69b22"
+  },
+  {
+    "command": [
+      "go",
+      "vet",
+      "./..."
+    ],
+    "started_at": "2026-10-11T08:45:03.504507+00:00",
+    "elapsed_seconds": 3.186,
+    "exit_code": 0,
+    "log": "vet.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "command": [
+      "go",
+      "list",
+      "-deps",
+      "./..."
+    ],
+    "started_at": "2026-10-11T08:45:06.690659+00:00",
+    "elapsed_seconds": 0.258,
+    "exit_code": 0,
+    "log": "dependencies.log",
+    "sha256": "95f1d5fbc78eb585946a543aed16e0d87f83f9c37d9d0cefdd89a6939456e4bf"
+  },
+  {
+    "command": [
+      "bash",
+      "scripts/check-target-flow.sh"
+    ],
+    "started_at": "2026-10-11T08:45:06.948926+00:00",
+    "elapsed_seconds": 0.23,
+    "exit_code": 0,
+    "log": "target-flow.log",
+    "sha256": "8071d0342d9ce36f38cd33147ed5ef85a47a77f4eb70312d0cd0a3d3d3451448"
+  },
+  {
+    "command": [
+      "go",
+      "build",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "./cmd/coimnet"
+    ],
+    "started_at": "2026-10-11T08:45:07.179538+00:00",
+    "elapsed_seconds": 1.5,
+    "exit_code": 0,
+    "log": "cli-build.log",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+]

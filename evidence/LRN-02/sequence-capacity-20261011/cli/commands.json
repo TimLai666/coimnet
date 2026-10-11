@@ -1,0 +1,124 @@
+[
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "doctor"
+    ],
+    "started_at": "2026-10-11T08:45:30.616745+00:00",
+    "elapsed_seconds": 0.828,
+    "exit_code": 0,
+    "log": "doctor.log",
+    "sha256": "703e8cc276517771bad591e6f480630c28d4a85b30438d5cfa49d9e2b1480b63"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "data",
+      "sources"
+    ],
+    "started_at": "2026-10-11T08:45:31.444752+00:00",
+    "elapsed_seconds": 0.009,
+    "exit_code": 0,
+    "log": "data-sources.log",
+    "sha256": "82f229f4bebad7ef4366f8fbf20cf8b90295273fd313bf39f9ac6d9098303510"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "examples",
+      "run",
+      "delayed"
+    ],
+    "started_at": "2026-10-11T08:45:31.453653+00:00",
+    "elapsed_seconds": 0.366,
+    "exit_code": 0,
+    "log": "delayed.log",
+    "sha256": "f68e9c6ea1ceac78af75a8260d825fbd316f6765e7c173e0a3cde070365529ff"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "examples",
+      "run",
+      "lif-threshold"
+    ],
+    "started_at": "2026-10-11T08:45:31.820585+00:00",
+    "elapsed_seconds": 0.284,
+    "exit_code": 0,
+    "log": "lif-threshold.log",
+    "sha256": "128242b85f59671f387dee9c8e302a4f71611dac1f7c9a0d9cbea88ece7c93c6"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "train",
+      "delayed",
+      "--steps",
+      "80",
+      "--checkpoint",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/cli/first.json"
+    ],
+    "started_at": "2026-10-11T08:45:32.104585+00:00",
+    "elapsed_seconds": 0.025,
+    "exit_code": 0,
+    "log": "train-first.log",
+    "sha256": "ec4586f697b1d7b83ad8df5e3a261db03892db4d768df39e5cf89fd892e08416"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "resume",
+      "--checkpoint",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/cli/first.json",
+      "--steps",
+      "40",
+      "--out",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/cli/resumed.json"
+    ],
+    "started_at": "2026-10-11T08:45:32.129567+00:00",
+    "elapsed_seconds": 0.019,
+    "exit_code": 0,
+    "log": "train-resumed.log",
+    "sha256": "a8b34d42d3660945cfb596715137edd0fda83d795ac5c293b3da9e366111dfc2"
+  },
+  {
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/coimnet",
+      "train",
+      "delayed",
+      "--steps",
+      "120",
+      "--checkpoint",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-capacity-20261011/cli/continuous.json"
+    ],
+    "started_at": "2026-10-11T08:45:32.149364+00:00",
+    "elapsed_seconds": 0.022,
+    "exit_code": 0,
+    "log": "train-continuous.log",
+    "sha256": "efbac3f92aa2b8af4eb881d9cbe3550facb5023b812242c56d668e5630aa0af8"
+  },
+  {
+    "command": [
+      "go",
+      "doc",
+      "./dynamics.Continuous.ForwardRecompute"
+    ],
+    "started_at": "2026-10-11T08:45:32.171354+00:00",
+    "elapsed_seconds": 0.052,
+    "exit_code": 0,
+    "log": "continuous-api.log",
+    "sha256": "5d791e104938d91e421bb3508f4443b841408b040f4da5cb7e33e0f873989412"
+  },
+  {
+    "command": [
+      "go",
+      "doc",
+      "./dynamics.LIF.ForwardRecompute"
+    ],
+    "started_at": "2026-10-11T08:45:32.223413+00:00",
+    "elapsed_seconds": 0.041,
+    "exit_code": 0,
+    "log": "lif-api.log",
+    "sha256": "7e033088f8f9d3054e0bffac3c91f0d96ddf4608f06ef2a8fdae5c72f130409c"
+  }
+]

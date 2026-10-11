@@ -1,0 +1,8 @@
+package dynamics // import "github.com/TimLai666/coimnet/dynamics"
+
+func (m *LIF) ForwardRecompute(ctx context.Context, p LIFParameters, initial []float64, inputs [][]float64, segment int) ([][]float64, error)
+    ForwardRecompute returns the synaptic outputs of a fresh LIF sequence using
+    one segment's neural history and its delay prefix. Segment must be positive.
+    It preserves adaptation, refractory and homeostatic state between segments.
+    Errors and cancellation return no outputs and do not change any arguments.
+

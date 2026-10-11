@@ -31,7 +31,7 @@
 - `config`：組態展開
 - `connectome`：標準化接線圖與圖儲存
 - `download`：官方資料下載與續傳
-- `dynamics`：連續、LIF 與混合核心
+- `dynamics`：連續、LIF 與混合核心。連續及 LIF 的 [ForwardRecompute](../dynamics/forward_recompute.go) 可逐段計算有限序列輸出，使用方式與驗收見 [ticket 56](tickets/56-recompute-sequence-capacity.md)。
 - `feather`：Feather V2 逐批讀取
 - `learning`：核心、外圍模型、訓練器與持續個體
 - [`learning/rl`](../learning/rl/README.md)：PPO 更新入口、適用狀態與限制
@@ -242,6 +242,6 @@
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–49，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–56，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。

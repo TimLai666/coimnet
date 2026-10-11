@@ -1,0 +1,8 @@
+package dynamics // import "github.com/TimLai666/coimnet/dynamics"
+
+func (m *Continuous) ForwardRecompute(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, segment int) ([][]float64, error)
+    ForwardRecompute returns the activated outputs of a fresh continuous
+    sequence using at most one segment's voltage history and its delay prefix.
+    Segment must be positive. It does not construct or export persistent state.
+    Errors and cancellation return no outputs and do not change any arguments.
+
