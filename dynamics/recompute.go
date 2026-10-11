@@ -12,7 +12,9 @@ import (
 // CheckpointRows is the total number of voltage rows saved across all
 // segment-start checkpoints. MaxSegmentRows is the largest number of voltage
 // rows held at once while any single segment is recomputed: that segment's
-// checkpoint rows plus the rows newly produced for it.
+// checkpoint rows plus the rows newly produced for it. Temporary activated
+// output rows used by a segment are deliberately not counted in these
+// voltage-only statistics.
 type RecomputeStats struct {
 	Steps, Segment, Checkpoints, CheckpointRows, MaxSegmentRows, FullHistoryRows int
 }
@@ -20,12 +22,17 @@ type RecomputeStats struct {
 // BackwardRecompute returns exactly what Backward(Forward(p, initial, inputs), upstream, window) returns, bit for bit, while
 // keeping only checkpoints instead of the whole forward history. It runs the forward once and stores, at the start of every
 // segment of `segment` steps, the voltages of the maxDelay+1 most recent rows (maxDelay = the largest edge delay, 0 when
-// there are no delays), which is everything a segment needs to restart: outputs are activate(voltage). The backward then
-// walks the segments from last to first; for each it re-runs the forward of that segment from its checkpoint (the same
-// floating-point operations in the same order as Forward, so the recomputed rows are bit-identical), and runs the backward
-// loop of Backward over the segment's rows with the adjoints carried from the later segment: gv, and the output adjoints gy
-// of the rows [start−maxDelay, start] that later steps reached through delays. Parameter gradients are accumulated in the
-// same global order as Backward (t descending, edges in declared order), so the sums are bit-identical.
+// there are no delays), which is everything a segment needs to restart. The
+// segment's activated output rows are temporary and are regenerated from the
+// voltage-only checkpoint. The backward then walks the segments from last to
+// first; for each it re-runs the forward of that segment from its checkpoint
+// (the same floating-point operations in the same order as Forward, so the
+// recomputed rows are bit-identical), and runs the backward loop of Backward
+// over the segment's rows with the adjoints carried from the later segment:
+// gv, and the output adjoints gy of the rows [start−maxDelay, start] that
+// later steps reached through delays. Parameter gradients are accumulated in
+// the same global order as Backward (t descending, edges in declared order),
+// so the sums are bit-identical.
 // segment ≤ 0 is an error; segment ≥ len(inputs) is one segment (the whole history).
 // Peak retained history is O((T/segment)·(maxDelay+1)·N + (segment+maxDelay+1)·N) instead of O(T·N).
 func (m *Continuous) BackwardRecompute(ctx context.Context, p Parameters, initial []float64, inputs, upstream [][]float64, window, segment int) (Gradient, error) {
@@ -115,7 +122,7 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 	checkpoints := []recomputeCheckpoint{{lo: 0, rows: [][]float64{append([]float64(nil), initial...)}}}
 	for s := 0; s < steps; {
 		end := min(s+segment, steps)
-		rows, err := m.recomputeSegmentForward(ctx, p, inputs, checkpoints[len(checkpoints)-1], s, end, lambda, alpha)
+		rows, _, err := m.recomputeSegmentForward(ctx, p, inputs, checkpoints[len(checkpoints)-1], s, end, lambda, alpha, len(m.config.Sources) > 0)
 		if err != nil {
 			return empty, stats, err
 		}
@@ -154,7 +161,7 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 	for k := len(checkpoints) - 1; k >= 0; k-- {
 		start := k * segment
 		end := min(start+segment, steps)
-		rows, err := m.recomputeSegmentForward(ctx, p, inputs, checkpoints[k], start, end, lambda, alpha)
+		rows, outputRows, err := m.recomputeSegmentForward(ctx, p, inputs, checkpoints[k], start, end, lambda, alpha, len(m.config.Sources) > 0)
 		if err != nil {
 			return empty, stats, err
 		}
@@ -183,7 +190,7 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 			}
 			prev := make([]float64, n)
 			g.Inputs[t] = make([]float64, n)
-			drive := m.driveRow(p, inputs, rows, lo, t)
+			drive := m.driveRow(p, inputs, outputRows, lo, t)
 			for i := 0; i < n; i++ {
 				dv := gv[i] + gySeg[t+1-lo][i]*m.derivative(rows[t+1-lo][i])
 				g.Inputs[t][i] = alpha[i] * dv
@@ -210,7 +217,7 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 					past = t - m.config.Delays[e]
 				}
 				driveGrad := g.Inputs[t][m.config.Targets[e]]
-				g.Weights[e] += driveGrad * m.activate(rows[past-lo][src])
+				g.Weights[e] += driveGrad * outputRows[past-lo][src]
 				if past > wstart || wstart == 0 {
 					gySeg[past-lo][src] += driveGrad * p.Weights[e]
 				}
@@ -263,44 +270,106 @@ type recomputeCheckpoint struct {
 }
 
 // recomputeSegmentForward re-runs Forward's per-step loop for the steps
-// [start, end) from the checkpoint rows and returns the voltage rows
-// [checkpoint.lo, end]. The checkpoint rows are shared (read only); the rows
-// newly produced for the steps are fresh buffers. Every floating-point
-// operation mirrors Forward's reference pass in the same order, so the returned
-// rows are bit-identical to a full Forward run.
-func (m *Continuous) recomputeSegmentForward(ctx context.Context, p Parameters, inputs [][]float64, cp recomputeCheckpoint, start, end int, lambda, alpha []float64) ([][]float64, error) {
+// [start, end) from the checkpoint rows and returns the voltage and activated
+// output rows [checkpoint.lo, end] when needOutput is true. Checkpoint voltage
+// rows are shared read only; all output rows and rows newly produced for the
+// steps are fresh buffers. needOutput is true for public outputs when edges
+// exist and for edge-driven recomputation; edge-free backward and public
+// forward passes leave it false so this helper allocates no output cache.
+// Edge-free public forward callers activate the returned voltage rows for
+// their required public outputs. Every floating-point
+// operation mirrors Forward's reference pass in the same order, so the
+// returned rows are bit-identical to a full Forward run when outputs are
+// requested.
+func (m *Continuous) recomputeSegmentForward(ctx context.Context, p Parameters, inputs [][]float64, cp recomputeCheckpoint, start, end int, lambda, alpha []float64, needOutput bool) ([][]float64, [][]float64, error) {
 	rows := make([][]float64, 0, end-cp.lo+1)
 	rows = append(rows, cp.rows...)
+	var outputRows [][]float64
+	if needOutput {
+		outputRows = make([][]float64, len(cp.rows), end-cp.lo+1)
+		for row, voltage := range cp.rows {
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
+			}
+			output := make([]float64, len(voltage))
+			for i, value := range voltage {
+				output[i] = m.activate(value)
+				if !finite(output[i]) {
+					return nil, nil, fmt.Errorf("non-finite output at row %d neuron %d", cp.lo+row, i)
+				}
+			}
+			outputRows[row] = output
+		}
+	}
 	for t := start; t < end; t++ {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		drive := m.driveRow(p, inputs, rows, cp.lo, t)
+		drive := m.driveRow(p, inputs, outputRows, cp.lo, t)
 		vnext := make([]float64, m.config.Nodes)
+		var ynext []float64
+		if needOutput {
+			ynext = make([]float64, m.config.Nodes)
+		}
 		for i := range drive {
 			vnext[i] = lambda[i]*rows[t-cp.lo][i] + alpha[i]*drive[i]
+			if needOutput {
+				ynext[i] = m.activate(vnext[i])
+			}
 			if !finite(drive[i]) || !finite(vnext[i]) {
-				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
+				return nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
+			}
+			if needOutput && !finite(ynext[i]) {
+				return nil, nil, fmt.Errorf("non-finite output at step %d neuron %d", t, i)
 			}
 		}
 		rows = append(rows, vnext)
+		if needOutput {
+			outputRows = append(outputRows, ynext)
+		}
 	}
-	return rows, nil
+	return rows, outputRows, nil
 }
 
 // driveRow recomputes step t's drive exactly as Forward computed it: a copy of
 // inputs[t], each edge's weight times the activated delayed output added in
-// declared edge order, then the bias. rows holds the recomputed voltage
-// history covering [lo, t]; output[max(0, t-delay)] is
-// activate(rows[max(0, t-delay)-lo]).
-func (m *Continuous) driveRow(p Parameters, inputs [][]float64, rows [][]float64, lo, t int) []float64 {
+// declared edge order, then the bias. output holds the recomputed activated
+// history covering [lo, t].
+func (m *Continuous) driveRow(p Parameters, inputs [][]float64, output [][]float64, lo, t int) []float64 {
 	drive := append([]float64(nil), inputs[t]...)
-	for e, src := range m.config.Sources {
-		past := 0
-		if m.config.Delays[e] < t {
-			past = t - m.config.Delays[e]
+	sources := m.config.Sources
+	// NewContinuous fixes topology lengths; callers validate weight length.
+	// Slice once to let the compiler prove the edge-index bounds in the loop.
+	targets := m.config.Targets[:len(sources)]
+	delays := m.config.Delays[:len(sources)]
+	weights := p.Weights[:len(sources)]
+	// Keep consecutive edges for one target in a local float64 accumulator.
+	lastTarget := -1
+	var targetDrive float64
+	lastDelay := -1
+	var delayedOutput []float64
+	for e, src := range sources {
+		target := targets[e]
+		if target != lastTarget {
+			if lastTarget >= 0 {
+				drive[lastTarget] = targetDrive
+			}
+			targetDrive = drive[target]
+			lastTarget = target
 		}
-		drive[m.config.Targets[e]] += p.Weights[e] * m.activate(rows[past-lo][src])
+		delay := delays[e]
+		if delay != lastDelay {
+			past := 0
+			if delay < t {
+				past = t - delay
+			}
+			delayedOutput = output[past-lo]
+			lastDelay = delay
+		}
+		targetDrive += weights[e] * delayedOutput[src]
+	}
+	if lastTarget >= 0 {
+		drive[lastTarget] = targetDrive
 	}
 	for i := range drive {
 		drive[i] += p.Bias[i]

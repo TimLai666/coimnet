@@ -72,6 +72,7 @@ func (m *Continuous) ForwardRecompute(ctx context.Context, p Parameters, initial
 	steps := len(inputs)
 	outputs := make([][]float64, steps)
 	maxDelay := m.maxEdgeDelay()
+	needOutput := len(m.config.Sources) > 0
 	cp := recomputeCheckpoint{lo: 0, rows: [][]float64{append([]float64(nil), initial...)}}
 	for start := 0; start < steps; {
 		if err := ctx.Err(); err != nil {
@@ -82,13 +83,17 @@ func (m *Continuous) ForwardRecompute(ctx context.Context, p Parameters, initial
 			width = remaining
 		}
 		end := start + width
-		rows, err := m.recomputeSegmentForward(ctx, p, inputs, cp, start, end, lambda, alpha)
+		rows, outputRows, err := m.recomputeSegmentForward(ctx, p, inputs, cp, start, end, lambda, alpha, needOutput)
 		if err != nil {
 			return nil, err
 		}
 		for t := start; t < end; t++ {
 			if err := ctx.Err(); err != nil {
 				return nil, err
+			}
+			if needOutput {
+				outputs[t] = outputRows[t+1-cp.lo]
+				continue
 			}
 			voltage := rows[t+1-cp.lo]
 			output := make([]float64, n)
