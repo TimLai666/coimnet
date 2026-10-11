@@ -3,7 +3,7 @@
 **Epic:** 跨時間訓練與效能
 **User Story:** 使用者可以保留相同模型、資料及訓練結果，讓分段重算共用同一神經元的輸出
 **Blocked by:** 無；25 與 56 已完成
-**Status:** in_progress
+**Status:** done
 
 ## Root 決策（2026-10-11）
 
@@ -17,7 +17,7 @@
 - [x] 窄幅修正全部連續重算位置，數值、錯誤與所有權符合下表。
 - [x] 同輸入、同編譯器、獨立程序的配對量測通過改善門檻，記憶體成本與限制有證據。
 - [x] 格式、build、完整一般與 race、vet、相依性、治理及完整使用流程通過。
-- [ ] Root 完整 diff 審查、需求證據、提交推送與遠端核對完成，保存證據後清除本輪暫存。
+- [x] Root 完整 diff 審查、需求證據、提交推送與遠端核對完成，保存證據後清除本輪暫存。
 
 | 條件／失敗 | 預期結果與驗收 |
 | --- | --- |
@@ -45,3 +45,5 @@
 LIF 讀取突觸輸出，本票不改 LIF、GPU、向量核心、模型、訓練設定或既有快照。
 
 證據：`evidence/LRN-02/activation-reuse-20261011/`。依據為[主規格](../handoff/CoImNet_Implementation_Plan.zh-TW.md)第 10.2 節及 LRN-02、[工程設計](../../ENG.md)及 [ticket 56](56-recompute-sequence-capacity.md)。
+
+完整一般與 race 各 57 套件、34 個重算專項、11 個治理專項及 CLI 恢復比對通過。修正與驗收提交已推送並核對遠端 `9414b9d`，669 份來源／模組提交內容與驗收指紋相同。本輪驗收副本及其中暫存已清除，見[交付回條](../../evidence/LRN-02/activation-reuse-20261011/delivery.json)與[清理回條](../../evidence/LRN-02/activation-reuse-20261011/cleanup.json)。

@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 57](docs/tickets/57-recompute-activation-reuse.md) 已完成 4／5 驗收。34 個重算專項、八組效能門檻、完整一般與 race 各 57 套件、格式、build、vet、相依性、11 個治理專項及 CLI 新程序恢復比對全部通過。固定人工密集圖耗時降低 58.88–91.41%，記憶體成本與人工圖限制見[資源說明](docs/resources.md#分段活化共用量測2026-10-11)。本機原生磁碟副本的最終來源與凍結測試指紋保持，正式驗收見[證據](evidence/LRN-02/activation-reuse-20261011/verification.json)。尚待提交推送、遠端核對與清除本輪 `runs/.tmp/recompute-activation-20261011/` 及驗收副本。
+[ticket 57](docs/tickets/57-recompute-activation-reuse.md) 已完成 5／5 驗收與交付。34 個重算專項、八組效能門檻、完整一般與 race 各 57 套件、格式、build、vet、相依性、11 個治理專項及 CLI 新程序恢復比對通過。固定人工密集圖耗時降低 58.88–91.41%，記憶體成本與限制見[資源說明](docs/resources.md#分段活化共用量測2026-10-11)。來源與證據已推送並核對遠端 `9414b9d`，669 份來源／模組的提交內容與驗收指紋相同。本輪驗收副本及 2.07 GB 暫存已清除，見[驗收證據](evidence/LRN-02/activation-reuse-20261011/verification.json)、[交付回條](evidence/LRN-02/activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/activation-reuse-20261011/cleanup.json)。
 
 [ticket 56](docs/tickets/56-recompute-sequence-capacity.md) 已完成 5／5 驗收與交付。兩種核心的有限序列重算已避開持續狀態容量限制，公開 Step／StepFrom、參數及最佳化器逐位相同。完整一般與 race 各 57 套件、28 個重算及 11 個治理專項、格式、build、vet、相依性與 CLI 恢復比對通過。程式與證據已推送並核對遠端 `0aab316`，665 份 Go 來源及模組的提交內容與驗收指紋一致。本輪驗收副本及 1.21 GB 暫存已清除，見[驗收證據](evidence/LRN-02/sequence-capacity-20261011/verification.json)與[交付回條](evidence/LRN-02/sequence-capacity-20261011/delivery.json)。
 
@@ -229,7 +229,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 57 的下一個可驗證成果是提交推送、遠端內容核對與本輪暫存清理。全部驗收命令已通過，89／91 的需求計數保持。
+ticket 57 已完成。下一個 ticket 尚未建立；本輪沒有未完成項目，89／91 的需求計數保持。
 
 先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
