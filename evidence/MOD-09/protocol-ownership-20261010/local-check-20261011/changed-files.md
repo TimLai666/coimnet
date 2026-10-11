@@ -58,3 +58,10 @@
 | [verification.json](verification.json) | 七項原生磁碟驗收的實際執行摘要。 |
 | [vet-execution.json](vet-execution.json) | 對應驗證命令、起訖時間、結束碼及日誌指紋。 |
 | [vet.log](vet.log) | 對應驗證的原始執行日誌。 |
+| [delivery.json](delivery.json) | 本次實際提交、推送、遠端讀回與完成範圍。 |
+
+另有一份保留在本機的診斷檔案，已由 Gitignore 排除。
+
+| 檔案 | 變更摘要 |
+| --- | --- |
+| [完整快取清單](../native-check-20261011/local-cleanup-inventory-20261011.json) | 保存刪除前逐檔指紋，僅保留在原專案，不納入 Git。 |

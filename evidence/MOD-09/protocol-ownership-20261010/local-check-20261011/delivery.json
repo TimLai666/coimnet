@@ -1,0 +1,61 @@
+{
+  "utc": "2026-10-11T07:35:55.726227+00:00",
+  "test_source_commit": "cf008866cc0aa3fa9d2cab69c202930e51f6571c",
+  "acceptance_commit": "e7478febc4b276cf6480446ff471d8838818bff9",
+  "delivery_actions": [
+    {
+      "command": "git commit -m 'docs: close native acceptance for ownership and network models'",
+      "exit_code": 0,
+      "commit": "e7478febc4b276cf6480446ff471d8838818bff9",
+      "files": 54
+    },
+    {
+      "command": "git push origin main",
+      "exit_code": 0,
+      "remote": "https://github.com/TimLai666/coimnet.git",
+      "branch": "main",
+      "observed_update": "cf00886..e7478fe main -> main"
+    },
+    {
+      "command": "git ls-remote origin refs/heads/main",
+      "exit_code": 0,
+      "remote_commit": "e7478febc4b276cf6480446ff471d8838818bff9",
+      "matches_local_commit": true
+    }
+  ],
+  "verification": {
+    "unit_packages_passed": 57,
+    "race_packages_passed": 57,
+    "packages_without_tests": 1,
+    "governance_tests_passed": 11,
+    "go_files_unchanged": 662,
+    "module_files_unchanged": true,
+    "legal_reports_equal_to_baseline_and_two_fresh_processes": 14,
+    "ticket_54_items": "5/5",
+    "ticket_55_items": "5/5",
+    "framework_requirements": "89/91 unchanged"
+  },
+  "evidence": {
+    "full_native": "requirement-verification.json",
+    "network_sdk": "../../../STA-01/network-model-20261010/verification.json",
+    "main_documentation_review": "documentation-review.json",
+    "cleanup": "cleanup.json",
+    "closeout": "closeout.json"
+  },
+  "cleanup": {
+    "local_replica_removed": true,
+    "local_files_removed": 12760,
+    "local_bytes_removed": 1081522817,
+    "previous_interrupted_temp_removed": true,
+    "previous_interrupted_files_removed": 39,
+    "previous_interrupted_bytes_removed": 1140369397,
+    "source_document_draft_removed": true,
+    "original_source_retained": true,
+    "raw_cache_inventory_retained_locally_and_gitignored": true
+  },
+  "limitations": [
+    "The legacy single-file save format requires hardlink support on this SMB share.",
+    "NAS disconnect and server-failure durability were not tested."
+  ],
+  "receipt_scope": "This receipt records the acceptance commit already pushed and read back before the receipt was created. Its own later commit is checked separately."
+}
