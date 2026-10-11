@@ -3,7 +3,7 @@
 **Epic:** 訓練框架的可保存設定
 **User Story:** 研究者可以修改下一次實驗設定，先前報告的設定、雜湊與結果保持一致
 **Blocked by:** 無；52、53 是已完成的來源基準
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策｜2026-10-10：問題與共用契約
 
@@ -26,7 +26,7 @@
 - [x] Root 審查先失敗回歸與合法控制，凍結測試。
 - [x] 共用入口複製全部可變設定，雙向與報告間隔離通過。
 - [x] 合法完整報告、雙程序、空值與錯誤控制通過。
-- [ ] gofmt、build、完整一般與 race、vet、相依性及治理通過。
+- [x] gofmt、build、完整一般與 race、vet、相依性及治理通過。
 - [x] 完整 diff、需求證據、暫存清理、提交推送與遠端核對完成。
 
 ## 減法審查
@@ -37,4 +37,4 @@
 
 [工程設計](../../ENG.md)、[已確認重現](../../evidence/LRN-08/protocol-ownership-20261009/related-followup-summary.json)、[本票證據](../../evidence/MOD-09/protocol-ownership-20261010/)。需求 MOD-09，整體能力狀態保持。
 
-完成 4／5 驗收。設定修正與回歸已提交推送並核對遠端，本輪暫存已清除。完整檢查有環境與舊單檔發布限制，不能勾選通過，見 [本輪完整檢查](../../evidence/STA-01/network-model-20261010/full-check-summary.json)與 [交付紀錄](../../evidence/STA-01/network-model-20261010/delivery.json)。
+完成 5／5 驗收。已提交來源 `cf00886` 在這台 Mac 原生磁碟完成格式、build、完整一般與 race 各 57 套件、vet、相依性與 11 個治理／索引／隱私專項。14 份合法報告與修正前及兩個新程序逐位元組相同。本輪副本與暫存已清除，見 [完整驗收](../../evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/requirement-verification.json)與 [清理紀錄](../../evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/cleanup.json)。原修正的提交推送紀錄保留於 [先前交付](../../evidence/STA-01/network-model-20261010/delivery.json)。

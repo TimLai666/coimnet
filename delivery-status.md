@@ -2,9 +2,11 @@
 
 ## 目前階段
 
-[ticket 55](docs/tickets/55-network-model-bundles.md) 完成 4／5 驗收與階段交付。三種 SDK 資料夾模型已在實際 SMB 分享上保存、讀回並由新程序接續。一般專項 23 個頂層測試通過，race 22 個通過、既有大容量案例略過；兩個獨立程序保存只有一個成功。完成後取消與同步失敗保留成果，不確定的發布錯誤保留目錄並回報狀態。實作 `79339be`、回歸 `842bd1d` 已推送核對；完整原生磁碟套件待驗收，見 [交付紀錄](evidence/STA-01/network-model-20261010/delivery.json)。
+tickets 54、55 已完成本機原生磁碟完整驗收。已提交來源 `cf00886` 的 662 份 Go 來源與模組指紋一致，格式、build、完整一般與 race 各 57 套件、vet、相依性及 11 個治理／索引／隱私專項通過。14 份合法報告與修正前及兩個新程序逐位元組相同。正式證據存回專案，本輪本機副本與快取、先前 39 份中斷映像暫存均已清除，失敗紀錄保留。見 [完整驗收](evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/requirement-verification.json)與 [清理紀錄](evidence/MOD-09/protocol-ownership-20261010/local-check-20261011/cleanup.json)。
 
-[ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 完成 4／5 驗收與階段交付。設定的雙向、報告間及取消後部分報告隔離通過，26 個相關頂層測試及 14 份合法報告與修正前和兩個新程序相同。最後 662 份 Go 來源指紋保持；完整套件尚未通過。實作與回歸已推送核對，本輪兩個工作合計 420 份暫存、241,051,766 位元組已清除。基準 HEAD 為 `9c23868`，目前專案位置為 `/Volumes/SSD/Developer/coimnet`。
+[ticket 55](docs/tickets/55-network-model-bundles.md) 完成 5／5 驗收。三種 SDK 資料夾模型已在實際 SMB 分享上保存、讀回並由新程序接續。一般專項 23 個頂層測試、race 22 個通過，既有大容量案例只在 race 略過。兩個獨立程序保存只有一個成功。原實作 `79339be`、回歸 `842bd1d` 已推送核對，最後來源的完整原生磁碟套件現已通過。舊單檔格式在本 SMB 分享上的限制與 NAS 故障耐久性未驗證的範圍保留。
+
+[ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 完成 5／5 驗收。設定的雙向、報告間及取消後部分報告隔離通過，14 份合法報告在本次兩個新程序中與修正前相同。最後來源完整一般與 race 各 57 套件通過。基準 HEAD 為 `9c23868`，主要專案保留於 `/Volumes/SSD/Developer/coimnet`。
 
 [ticket 52](docs/tickets/52-bioinspired-finite-validation.md) 與 [ticket 53](docs/tickets/53-project-local-data-and-runs.md) 各完成 5／5 驗收與交付。非有限值在執行前回錯，七組合法報告逐位元組相同。207 份資料及結果已搬回專案，清理後保留的 479 份原件逐檔核對通過，9,151 份暫存共 714 MB 已清除。完整一般與 race 各 57 套件、格式、build、vet、相依性與八個治理／索引專項通過。實作 `d3aa982` 已推送並核對遠端，見[數值交付](evidence/MOD-09/finite-config-20261010/delivery.json)與[保存交付](evidence/OPS-03/local-storage-20261010/delivery.json)。
 
@@ -197,14 +199,16 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | 49 | 研究者可以保留不受外部設定修改影響的導航報告 | Codex Root / Luna max 測試 | completed | 5／5。回歸、合法報告、CLI、完整一般／race 各 57 套件、治理與原件核對通過，實作 1b088e4 已推送核對 |
 | 50 | 研究者可以在比較開始前發現非法數值設定 | Codex Root / Luna max 測試 | completed | 5／5。兩處設定驗證、三個新增回歸、合法 SDK／CLI、完整一般與 race 各 57 套件及治理通過，實作 933ba4c 已推送核對 |
 | 51 | 研究者可以保留連續任務執行當時的設定 | Codex Root / Luna max 測試 | completed | 5／5。八組回歸、30 個相關頂層、七份完整報告與雙程序一致、八個 CLI、完整一般／race 各 57 套件及治理通過，實作 3546b88 已推送核對 |
-| 54 | 研究者可以保留生物啟發協定執行當時的設定 | Codex Root / Luna max 測試與唯讀審查 | in_progress | 4／5。26 個相關頂層、14 份合法報告及雙程序一致，暫存清除、實作與回歸推送核對完成；原生完整套件待驗收 |
-| 55 | 使用者可以把模型存在網路磁碟並讀回接續 | Codex Root / Luna max 測試與唯讀審查 | verified_scoped | 4／5。SMB 保存、一般／race 專項、新程序接續、舊格式、並行單一勝方及階段交付完成；原生完整套件待驗收 |
+| 54 | 研究者可以保留生物啟發協定執行當時的設定 | Codex Root / Luna max 測試與唯讀審查 | completed | 5／5。2026-10-11 最終來源的完整一般與 race 各 57 套件、11 個治理專項、14 份合法報告雙程序比對通過，驗收副本與快取已清除 |
+| 55 | 使用者可以把模型存在網路磁碟並讀回接續 | Codex Root / Luna max 測試與唯讀審查 | completed | 5／5。SMB 資料夾模型保存、讀回、接續與並行保護通過，2026-10-11 最終來源的本機完整一般／race 各 57 套件通過，暫存已清除 |
 
 ## 目前阻礙
 
-目前專案由 mac-1 透過 SMB 分享。資料夾模型保存已支援；舊單檔、圖、參數與下載發布仍需要 hardlink。完整一般與 race 各有 47 個通過套件、10 個失敗套件及 176 次不支援操作的文字出現，沒有觀察到資料競爭警告或測試逾時。兩輪在最後兩個錯誤處理檔案補強與 INDEX 校正前啟動，最後來源已另通過資料夾專項、build、vet 與治理檢查。Go 依賴校驗曾反覆回報缺少已有項目，相同檔案下重試通過，根因未確認；media 的測試目錄清理失敗也已重現，根因未確認。沒有遠端執行證據，網路模型驗證不需要 SSH。
+目前專案由 mac-1 透過 SMB 分享。資料夾模型保存已支援，舊單檔、圖、參數與下載發布仍需要 hardlink。2026-10-11 已在 TimdeAir 原生磁碟完成最終來源的完整驗收，一般與 race 各 57 個套件通過，驗收副本與快取已清除。NAS 斷線與伺服器故障後的耐久性沒有實測。
 
-Ticket 54 仍在驗收。OpenCode 派工在執行前被自動審核拒絕，原因為外部代理可能讀取私人原始碼且沒有硬性檔案邊界；本輪沒有模型呼叫或 403 回應。依專案規則改用 Luna max 補回歸測試與唯讀審查，Root 核對、凍結與修正。Tickets 52、53 的完整檢查與交付屬前一階段。
+前次直接在 SMB 執行的完整一般與 race 各有 47 個通過套件、10 個失敗套件及 176 次不支援操作的文字出現，沒有觀察到資料競爭警告或測試逾時。那兩輪在最後兩個錯誤處理檔案補強與 INDEX 校正前啟動。當時 Go 依賴校驗反覆回報缺少已有項目，相同檔案下重試通過，media 的測試目錄清理失敗也曾重現，兩者根因未確認。這些失敗紀錄保留，不能用後續本機通過推論 SMB 上的所有儲存操作都可用。網路模型驗證不需要 SSH，本輪沒有遠端執行。
+
+Tickets 54、55 的實作、回歸與本機完整驗收已完成。先前 OpenCode 派工在執行前被自動審核拒絕，原因為外部代理可能讀取私人原始碼且沒有硬性檔案邊界。本次文件派工也在執行前被拒絕，原因為未授權向外部模型傳送私人專案文件。兩次都沒有模型呼叫或 403 回應，依專案規則改用 Luna max，Root 親自核對與驗證。Tickets 52、53 的完整檢查與交付屬前一階段。
 
 [ticket 35](docs/tickets/35-frozen-stimulus-history-counterfactual.md) 的真實軌跡原／清除組均為 0／13。[ticket 38](docs/tickets/38-ppo-training-feedback-diagnostic.md) 確認 seed 2／3 的成功回饋與最後策略集中同一側，但目標兩側都有供給。seed 1 最後 137 更新沒有成功，逾時第一步優勢全部為正。[ticket 39](docs/tickets/39-ppo-gradient-diagnostic.md) 已分離三項原始梯度，觀察到共用核心的局部競爭。梯度與探索對長期學習的因果作用尚未驗證，不能依此選參數。感覺／動作記錄不足，工程成績不能宣稱生物機制。
 
@@ -220,9 +224,9 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-在原生磁碟驗收最後來源的完整套件，才勾選 tickets 54、55 的完整檢查。網路模型保存的 SDK 支援與階段交付已完成；舊單檔發布契約保持。使用者已授權 mac-1 驗證，但首次 SSH 主機金鑰尚未接受，沒有遠端執行證據；不以專案外暫存或降低保存保護繞過限制。
+tickets 54、55 的設定隔離及網路資料夾模型保存已完成完整驗收、證據保存與暫存清理。接續框架工作依下列既有需求與 follow-ups 推進。
 
-本階段 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 的雙向、報告間與取消後部分報告設定隔離，合法報告一致及階段交付已完成。完整原生磁碟驗證仍待完成；GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+本階段 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
 [ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
 

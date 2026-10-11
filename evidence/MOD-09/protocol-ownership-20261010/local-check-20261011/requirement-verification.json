@@ -1,0 +1,87 @@
+{
+  "requirement": [
+    "MOD-09",
+    "STA-01",
+    "STA-02",
+    "STA-03",
+    "OPS-09"
+  ],
+  "reproduction_command": [
+    "gofmt -l $(git ls-files '*.go')",
+    "go build ./...",
+    "go test -count=1 -timeout=30m -p=2 ./...",
+    "go test -count=1 -race -timeout=30m -p=2 ./...",
+    "go vet ./...",
+    "go list -deps ./...",
+    "go mod verify",
+    "go test -count=1 -race -run '^(TestGovernance|TestFormatIndex|TestNoTelemetry)' -v ."
+  ],
+  "environment": {
+    "utc": "2026-10-11T06:11:28.990110+00:00",
+    "commit": "cf008866cc0aa3fa9d2cab69c202930e51f6571c",
+    "host": "TimdeAir.home",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "filesystem": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   393Gi    38Gi    92%    3.8M  396M    1%   /System/Volumes/Data\n",
+    "go": {
+      "CC": "clang",
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOMODCACHE": "/Users/timlai/go/pkg/mod",
+      "GOOS": "darwin",
+      "GOPATH": "/Users/timlai/go",
+      "GOVERSION": "go1.26.5"
+    },
+    "environment_overrides": {
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/bio-ownership-local-20261011/tmp",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/bio-ownership-local-20261011/go-tmp",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/bio-ownership-local-20261011/go-cache",
+      "GOPROXY": "off",
+      "GOTOOLCHAIN": "local",
+      "GOFLAGS": "-buildvcs=false"
+    },
+    "verification_scope": "All packages on local native disk, same frozen source as SMB implementation; no mac-1 SSH or network-disk cache/image writes."
+  },
+  "observed_result": {
+    "all_seven_checks_passed": true,
+    "unit_packages_passed": 57,
+    "race_packages_passed": 57,
+    "packages_without_tests": 1,
+    "go_sources_unchanged": 662,
+    "module_files_unchanged": true,
+    "ownership_tests_frozen": true,
+    "full_legal_reports_equal_to_baseline_and_two_fresh_processes": 14,
+    "scope": "Final committed source on this Mac native disk; existing network Bundle SDK evidence uses exactly the same Go and module hashes.",
+    "post_metadata_governance_tests_passed": 11
+  },
+  "test_log": [
+    "format.log",
+    "build.log",
+    "unit-full.log",
+    "race-full.log",
+    "vet.log",
+    "dependencies.log",
+    "modules.log",
+    "governance-final.log"
+  ],
+  "execution_records": [
+    "format-execution.json",
+    "build-execution.json",
+    "unit-full-execution.json",
+    "race-full-execution.json",
+    "vet-execution.json",
+    "dependencies-execution.json",
+    "modules-execution.json"
+  ],
+  "source_reference": "source-after.json",
+  "full_execution_summary": "verification.json",
+  "report_comparison": "legal-comparison.json",
+  "network_sdk_evidence": "../../../STA-01/network-model-20261010/verification.json",
+  "network_crash_durability_tested": false,
+  "limitations": [
+    "The legacy single-file save API still needs native hardlink support on this SMB share.",
+    "No NAS disconnect or server-failure durability test was performed."
+  ],
+  "finished_utc": "2026-10-11T07:00:31.786645+00:00",
+  "post_metadata_governance_record": "governance-final-execution.json"
+}

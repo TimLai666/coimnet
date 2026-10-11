@@ -1,0 +1,110 @@
+import datetime
+import hashlib
+import json
+import os
+import platform
+import subprocess
+import time
+from pathlib import Path
+
+ROOT = Path('/Users/timlai/Developer/coimnet')
+BASE = ROOT / 'runs/.tmp/bio-ownership-local-20261011'
+EVIDENCE = ROOT / 'evidence/MOD-09/protocol-ownership-20261010/local-check-20261011'
+GO = '/usr/local/go/bin/go'
+EXPECTED_HEAD = 'cf008866cc0aa3fa9d2cab69c202930e51f6571c'
+
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def save(name, value):
+    with (EVIDENCE / name).open('x') as out:
+        json.dump(value, out, indent=2)
+        out.write('\n')
+
+
+def source():
+    files = subprocess.check_output(['git', 'ls-files', '*.go'], cwd=ROOT, text=True).splitlines()
+    return {'go_files': len(files),
+            'source': [{'file': f, 'sha256': digest(ROOT / f)} for f in files],
+            'modules': {f: digest(ROOT / f) for f in ['go.mod', 'go.sum']}}
+
+
+def check(name, args):
+    print(json.dumps({'check': name, 'state': 'running', 'utc': now()}), flush=True)
+    started = now()
+    tick = time.monotonic()
+    with (EVIDENCE / (name + '.log')).open('xb') as out:
+        result = subprocess.run(args, cwd=ROOT, env=ENV, stdout=out, stderr=subprocess.STDOUT)
+    record = {'name': name, 'args': args, 'cwd': str(ROOT), 'started_utc': started,
+              'finished_utc': now(), 'seconds': time.monotonic() - tick,
+              'exit_code': result.returncode, 'log': name + '.log',
+              'sha256': digest(EVIDENCE / (name + '.log'))}
+    if name == 'format':
+        record['unformatted_files'] = (EVIDENCE / (name + '.log')).read_text().splitlines()
+        record['passed'] = result.returncode == 0 and not record['unformatted_files']
+    else:
+        record['passed'] = result.returncode == 0
+    if name in ['unit-full', 'race-full']:
+        lines = (EVIDENCE / (name + '.log')).read_text().splitlines()
+        record['passed_packages'] = sum(line.startswith('ok ') for line in lines)
+        record['without_test_packages'] = sum(line.startswith('? ') for line in lines)
+        record['failed_package_lines'] = [line for line in lines if line.startswith('FAIL\t') or line.startswith('FAIL ')]
+    save(name + '-execution.json', record)
+    print(json.dumps(record), flush=True)
+    return record
+
+
+assert ROOT.resolve() == ROOT
+assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == EXPECTED_HEAD
+assert subprocess.check_output(['git', 'status', '--short'], cwd=ROOT, text=True) == ''
+EVIDENCE.mkdir()
+for name in ['tmp', 'go-tmp', 'go-cache']:
+    (BASE / name).mkdir()
+ENV = os.environ.copy()
+ENV.update({'TMPDIR': str(BASE / 'tmp'), 'GOTMPDIR': str(BASE / 'go-tmp'),
+            'GOCACHE': str(BASE / 'go-cache'), 'GOPROXY': 'off',
+            'GOTOOLCHAIN': 'local', 'GOFLAGS': '-buildvcs=false',
+            'PATH': '/usr/local/go/bin:' + ENV.get('PATH', '')})
+before = source()
+expected = json.loads((ROOT / 'evidence/STA-01/network-model-20261010/source-final.json').read_text())
+assert before['source'] == expected['source']
+assert before['modules'] == expected['modules']
+freeze = json.loads((ROOT / 'evidence/MOD-09/protocol-ownership-20261010/test-freeze.json').read_text())
+assert digest(ROOT / 'experiment/bioinspired_ownership_test.go') == 'e08ad03584d10910f45c3ca8fd9ec2f9d7eb22de764549d57f2f971b5e7bfa36'
+save('source-before.json', before)
+save('environment.json', {
+    'utc': now(), 'commit': EXPECTED_HEAD, 'host': platform.node(),
+    'platform': platform.platform(), 'machine': platform.machine(),
+    'filesystem': subprocess.check_output(['/bin/df', '-h', str(ROOT)], text=True),
+    'go': json.loads(subprocess.check_output([GO, 'env', '-json', 'GOVERSION', 'GOOS', 'GOARCH', 'CGO_ENABLED', 'GOMODCACHE', 'GOPATH', 'CC'], cwd=ROOT, env=ENV, text=True)),
+    'environment_overrides': {k: ENV[k] for k in ['TMPDIR', 'GOTMPDIR', 'GOCACHE', 'GOPROXY', 'GOTOOLCHAIN', 'GOFLAGS']},
+    'verification_scope': 'All packages on local native disk, same frozen source as SMB implementation; no mac-1 SSH or network-disk cache/image writes.'})
+paths = [str(ROOT / item['file']) for item in before['source']]
+checks = [
+    ('format', ['/usr/local/go/bin/gofmt', '-l'] + paths),
+    ('build', [GO, 'build', './...']),
+    ('unit-full', [GO, 'test', '-count=1', '-timeout=30m', '-p=2', './...']),
+    ('race-full', [GO, 'test', '-count=1', '-race', '-timeout=30m', '-p=2', './...']),
+    ('vet', [GO, 'vet', './...']),
+    ('dependencies', [GO, 'list', '-deps', './...']),
+    ('modules', [GO, 'mod', 'verify']),
+]
+results = [check(name, args) for name, args in checks]
+after = source()
+save('source-after.json', after)
+summary = {'finished_utc': now(), 'commit': EXPECTED_HEAD,
+           'go_files': before['go_files'], 'source_unchanged': before == after,
+           'tests_frozen': digest(ROOT / 'experiment/bioinspired_ownership_test.go') == 'e08ad03584d10910f45c3ca8fd9ec2f9d7eb22de764549d57f2f971b5e7bfa36',
+           'checks': results,
+           'all_checks_passed': all(r['passed'] for r in results) and before == after,
+           'network_crash_durability_tested': False,
+           'cleanup_complete': False}
+save('verification.json', summary)
+print(json.dumps(summary), flush=True)
+raise SystemExit(0 if summary['all_checks_passed'] else 1)
