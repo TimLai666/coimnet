@@ -1,0 +1,205 @@
+{
+  "review_date": "2026-10-11",
+  "method": "Current requirement state and preserved primary reports read directly; existing task training and private large artifacts were not rerun. Historical task data provenance is retained as recorded.",
+  "requirements": {
+    "total": 91,
+    "passed": 89,
+    "not_passed": [
+      {
+        "id": "TSK-11",
+        "status": "specified",
+        "evidence": [
+          "../evidence/TSK-11/verification.json",
+          "../evidence/TSK-11/autonomous-rollout-20261002/verification.json",
+          "../evidence/TSK-11/inference-isolation-20261003/verification.json",
+          "../evidence/TSK-11/stimulus-memory-20261003/verification.json",
+          "../evidence/TSK-11/stimulus-counterfactual-20261003/verification.json"
+        ]
+      },
+      {
+        "id": "OPS-05",
+        "status": "specified",
+        "evidence": [
+          "../evidence/OPS-05/verification.json",
+          "../evidence/insyra-v0.3.4-20261001/verification.json",
+          "../evidence/OPS-02/doctor-gpu-capabilities-20261007/verification.json"
+        ]
+      }
+    ]
+  },
+  "primary_report_sha256": {
+    "docs/requirements-status.json": "38481b8cc3359f604d42c7c76a56b9c99a2a370d6496c01ca92376f4dbf8582d",
+    "evidence/OPS-07/verification.json": "a700cb65cbab7578b31d2ca81ecf80f2f5aa21c1580cc1318d1db4ec3208f5cc",
+    "evidence/OPS-05/verification.json": "af1794a126ba5ed660706fbb6db8fa27e8bc9d09af02609156208aade6d7880c",
+    "evidence/TSK-11/real-text-20260924/verification.json": "dffd097ecdd4edecfe7f8a4df70380cd841c3347537d6b66b0f0a949c0f21200",
+    "evidence/TSK-11/real-text-20260924/report.json": "bee4ddaeb22318e3ccae0292b291231f9336155fd4a9b271d86d5b89c19d1bf2",
+    "evidence/TSK-11/real-ocr-20260924/report.json": "3b50213a23f3c7c0392de2dd1292e4635ba521bb202aa2ae030e4021b44d9bfe",
+    "evidence/TSK-11/real-asr-20260924/report.json": "96d5418d062ea907f3871446032a72a96fdbd6b70a22d50d8844a91eb7f0b192",
+    "evidence/TSK-11/real-media-20260925/report.json": "864ae96a3289cad67604f18175fc4e188278fe4c6527f621beddc2ebf7ca2a77",
+    "evidence/TSK-11/real-nav-20260925/verification.json": "2effc230a5176b4103b692784143bb46418659a0d922c2e10ed8596d642c849b",
+    "evidence/TSK-11/autonomous-rollout-20261002/verification.json": "b8eaba27d6f281ba6079075caac44f53a10e412b8a3ea8de006e20d35ca7813e"
+  },
+  "software": "CPU training, gradients, AdamW, state persistence, and full MaleCNS graph execution are verified within recorded profiles.",
+  "fullgraph_task_usefulness": "No real held-out task usefulness or biological fidelity demonstrated by the fullgraph timing experiment.",
+  "task_examples_use_full_malecns_graph": false,
+  "observed_tasks": {
+    "text": {
+      "train_sources": 2,
+      "held_out_sources": 1,
+      "selected_bytes_per_document": 8192,
+      "updates": 390,
+      "holdout_tokens": 8129,
+      "before_perplexity": 260.18470432283067,
+      "after_perplexity": 14.175226774453042,
+      "before_next_token_correct": 1,
+      "after_next_token_correct": 306,
+      "accuracy_denominator_bytes": 1024,
+      "run_wall_seconds": 8.13,
+      "max_resident_set_bytes": 79134720,
+      "peak_memory_footprint_bytes": 108757880
+    },
+    "single_character_ocr": {
+      "before": {
+        "cer": 4.74,
+        "exact_lines": 0,
+        "samples": 200
+      },
+      "after": {
+        "cer": 0.9,
+        "exact_lines": 0.1,
+        "samples": 200
+      },
+      "model_persisted": false,
+      "limitations": [
+        "This is a single-character handwritten/cursive image task, not natural page OCR.",
+        "It has no page layout, line segmentation, reading order, multi-character text, or manuscript context.",
+        "The report uses bounded balanced subsets rather than the full official train/test sets.",
+        "No trained model or checkpoint is saved by this example; only the deterministic report is emitted."
+      ]
+    },
+    "asr": {
+      "imported_count": 6,
+      "train_count": 4,
+      "test_count": 2,
+      "before": {
+        "cer": {
+          "substitutions": 38,
+          "deletions": 8,
+          "insertions": 4,
+          "reference_length": 53,
+          "rate": 0.9433962264150944,
+          "defined": true
+        },
+        "wer": {
+          "substitutions": 2,
+          "deletions": 7,
+          "insertions": 0,
+          "reference_length": 9,
+          "rate": 1,
+          "defined": true
+        },
+        "exact_utterances": 0,
+        "samples": 2,
+        "front_end": {
+          "version": "coimnet-logmel/v1",
+          "sample_rate": 16000,
+          "config": {
+            "window": 256,
+            "hop": 128,
+            "mels": 12,
+            "f_min": 0,
+            "f_max": 8000,
+            "floor": 1e-10
+          },
+          "frames": 778
+        }
+      },
+      "after": {
+        "cer": {
+          "substitutions": 36,
+          "deletions": 12,
+          "insertions": 4,
+          "reference_length": 53,
+          "rate": 0.9811320754716981,
+          "defined": true
+        },
+        "wer": {
+          "substitutions": 2,
+          "deletions": 7,
+          "insertions": 0,
+          "reference_length": 9,
+          "rate": 1,
+          "defined": true
+        },
+        "exact_utterances": 0,
+        "samples": 2,
+        "front_end": {
+          "version": "coimnet-logmel/v1",
+          "sample_rate": 16000,
+          "config": {
+            "window": 256,
+            "hop": 128,
+            "mels": 12,
+            "f_min": 0,
+            "f_max": 8000,
+            "floor": 1e-10
+          },
+          "frames": 778
+        }
+      },
+      "scope_limitations": [
+        "This report covers only the user-supplied manifest and its referenced PCM16 WAV recordings.",
+        "Training runs one TrainUtterance call per training recording and does not establish convergence or production accuracy.",
+        "The held-out split is by connected speaker/session groups; with a small or imbalanced corpus it may be small and generalisation may be weak.",
+        "CER/WER are offline transcript metrics; no natural-speech, word-timing, GPU, cross-platform or full-brain claim is made."
+      ]
+    },
+    "media": {
+      "scores_before": {
+        "samples": 1,
+        "frames": 8,
+        "audio_samples": 16000,
+        "image_mse": 0.13171076129192757,
+        "audio_mse": 0.00039956499307159044,
+        "balanced_mse": 0.06605516314249958,
+        "clipped_image_values": 737,
+        "clipped_audio_values": 0
+      },
+      "scores_after": {
+        "samples": 1,
+        "frames": 8,
+        "audio_samples": 16000,
+        "image_mse": 0.1215302372268125,
+        "audio_mse": 0.011545969122746611,
+        "balanced_mse": 0.06653810317477955,
+        "clipped_image_values": 462,
+        "clipped_audio_values": 0
+      },
+      "content_check": "Flow completed, but the Big Buck Bunny test preview is nearly black and does not match the human annotation (white rabbit and green grass). The held-out source test balanced MSE did not improve.",
+      "limitations": [
+        "This is an example-specific supervised sequence regressor, not a general text-to-video or text-to-audio model. Text uses signed FNV-1a hashed unigrams/bigrams plus four position features.",
+        "The two training clips and one validation clip come from Elephants Dream; validation is not source-held-out. Big Buck Bunny is one independent held-out test source with one two-second clip, so it is not broad source-generalization evidence.",
+        "The held-out source test score did not improve, and visual inspection found the generated preview does not match its annotation; the media processing path runs, but content quality did not pass.",
+        "Frames are reduced to 8x8 RGB at 4 fps and embedded source audio is downmixed to mono 8 kHz. The MSE metrics do not measure perceptual quality, caption correctness, or semantic audio/video synchronization.",
+        "The sample uses the MP4's embedded licensed film audio. Elephants Dream's separately distributed extra soundtrack files have a different NC-ND exception and are not used.",
+        "tasks/media.VideoGenerator retains its synthetic RenderVideo target contract; this example trains actual decoded arrays through the public learning API without changing that generator."
+      ]
+    },
+    "trajectory": {
+      "test_samples": 39372,
+      "test_mse_before": 0.009512843882362473,
+      "test_mse_after": 0.010153092972745094,
+      "persistence_baseline_mse": 0.009512843882362504,
+      "status": "partial: all four engineering workflow steps pass, but learned held-out prediction is worse than the causal persistence baseline and no closed-loop navigation was tested"
+    },
+    "autonomous_engineering_rollout": {
+      "evaluated_trials": 13,
+      "model_successes": 0,
+      "task_learning_status": "no navigation capability demonstrated; all four strategies hit 0/13",
+      "biological_status": "not evaluated; observer proxy and engineering arena"
+    }
+  },
+  "recommended_next_gate": "Predeclare one real task, independent held-out split, a simple baseline, and a utility threshold; verify learning before expensive full-connectome scaling. No new task implementation authorized or started in this measurement.",
+  "reviewed_source_head": "38adbe4b6b1668c42dece0be7388eae5e75f36d4",
+  "requirement_status_snapshot": "requirements-status-reviewed.json"
+}

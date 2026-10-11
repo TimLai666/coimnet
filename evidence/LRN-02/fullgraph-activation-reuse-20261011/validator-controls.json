@@ -1,0 +1,36 @@
+{
+  "all_rejected": true,
+  "positive_passed": true,
+  "cases": [
+    {
+      "case": "mismatched-gradient",
+      "exit_code": 1,
+      "rejected": true,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/validator-controls/mismatched-gradient/evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py\", line 51, in <module>\n    assert sig == reference, name\nAssertionError: pair-1-improved\n"
+    },
+    {
+      "case": "wrong-shape",
+      "exit_code": 1,
+      "rejected": true,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/validator-controls/wrong-shape/evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py\", line 51, in <module>\n    assert sig == reference, name\nAssertionError: pair-1-improved\n"
+    },
+    {
+      "case": "wrong-summary",
+      "exit_code": 1,
+      "rejected": true,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/validator-controls/wrong-summary/evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py\", line 80, in <module>\n    assert paired == row[\"median_paired_reduction_percent\"]\nAssertionError\n"
+    },
+    {
+      "case": "wrong-order",
+      "exit_code": 1,
+      "rejected": true,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/validator-controls/wrong-order/evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py\", line 28, in <module>\n    assert [(r[\"pair\"], r[\"variant\"]) for r in records] == expected_order\nAssertionError\n"
+    },
+    {
+      "case": "disabled-assertions",
+      "exit_code": 1,
+      "rejected": true,
+      "stderr": "Traceback (most recent call last):\n  File \"/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/validator-controls/disabled-assertions/evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py\", line 9, in <module>\n    raise RuntimeError(\"Verification requires enabled Python assertions; omit -O and PYTHONOPTIMIZE.\")\nRuntimeError: Verification requires enabled Python assertions; omit -O and PYTHONOPTIMIZE.\n"
+    }
+  ]
+}

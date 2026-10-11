@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md) 已完成 3／4 驗收。真實全圖八組交錯配對已量測，正式七組的完整更新耗時由中位數 18.30 降到 8.46 秒，配對減少 52.56%；十六次全部輸出、梯度、更新參數與 Adam 狀態相同。一般與 race 各 57 套件、11 個治理專項及全部原生檢查已通過，正式交付與副本清理待完成。[量測報告](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)。
+
 [ticket 57](docs/tickets/57-recompute-activation-reuse.md) 已完成 5／5 驗收與交付。34 個重算專項、八組效能門檻、完整一般與 race 各 57 套件、格式、build、vet、相依性、11 個治理專項及 CLI 新程序恢復比對通過。固定人工密集圖耗時降低 58.88–91.41%，記憶體成本與限制見[資源說明](docs/resources.md#分段活化共用量測2026-10-11)。來源與證據已推送並核對遠端 `9414b9d`，669 份來源／模組的提交內容與驗收指紋相同。本輪驗收副本及 2.07 GB 暫存已清除，見[驗收證據](evidence/LRN-02/activation-reuse-20261011/verification.json)、[交付回條](evidence/LRN-02/activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/activation-reuse-20261011/cleanup.json)。
 
 [ticket 56](docs/tickets/56-recompute-sequence-capacity.md) 已完成 5／5 驗收與交付。兩種核心的有限序列重算已避開持續狀態容量限制，公開 Step／StepFrom、參數及最佳化器逐位相同。完整一般與 race 各 57 套件、28 個重算及 11 個治理專項、格式、build、vet、相依性與 CLI 恢復比對通過。程式與證據已推送並核對遠端 `0aab316`，665 份 Go 來源及模組的提交內容與驗收指紋一致。本輪驗收副本及 1.21 GB 暫存已清除，見[驗收證據](evidence/LRN-02/sequence-capacity-20261011/verification.json)與[交付回條](evidence/LRN-02/sequence-capacity-20261011/delivery.json)。
@@ -136,7 +138,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本階段處理 ticket 57 的連續核心分段重算效能。以單段輸出暫存移除逐邊重複活化，保持合法輸出與梯度逐位相同，並完成配對效能、完整驗證、證據交付與本輪暫存清理。
+本階段處理 ticket 58 的真實全腦分段訓練效能量測。核對 ticket 57 的改善在原始完整接線順序下是否仍有效，分開報告耗時、記憶體、框架完成度與模型能力，保存證據後清除本輪本機副本與暫存。
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
@@ -153,6 +155,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 58 | 使用者可以核對真實全腦分段訓練的效率改善 | Codex Root / Luna max 唯讀稽核 | in_progress | 3／4。全圖十六次數值相同，七組配對完成；一般與 race 各 57 套件、11 個治理專項通過；交付與清理待完成 |
 | 52 | 研究者可在生物啟發協定執行前拒絕非法數值 | Codex Root / Luna max 測試 | completed | 5／5。17 個相關頂層測試、七份合法報告一致、Mac 完整檢查通過，實作 d3aa982 已推送核對 |
 | 53 | 使用者可在專案內保存必要資料與結果，並清除暫存 | Codex Root / Luna max 測試及唯讀盤點 | completed | 5／5。207 份移位指紋相同，479 份必要原件保持，9,151 份暫存清除，實作 d3aa982 已推送核對 |
 | 01 | 開發者可核對環境與 Insyra 實際能力 | 主 agent / API 查核 agent | verified_scoped | Mac 與 Ubuntu 實際 doctor、Insyra 數值探測通過 |
@@ -229,7 +232,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 57 已完成。下一個 ticket 尚未建立；本輪沒有未完成項目，89／91 的需求計數保持。
+ticket 58 的全圖量測已完成，下一個可驗證成果為正式證據交付與本輪副本清理。框架維持 89／91，TSK-11 與 OPS-05 不因效能改善改成通過。
 
 先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
 
@@ -240,6 +243,8 @@ ticket 57 已完成。下一個 ticket 尚未建立；本輪沒有未完成項�
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-11：ticket 58 事前固定完整 MaleCNS 圖、16 步、段長 8、截斷窗 8，直接量測三個既有 SDK 重算呼叫。只有兩份核心檔以 Go overlay 對照，正式七組交錯配對，所有原始結果保留；人工刺激與目標不計為真實任務或生物成績。詳見本票與完整量測報告。
 
 2026-10-11：ticket 56 新增連續及 LIF 的 ForwardRecompute，以既有段落運算處理有限序列，訓練 observe 呼叫該入口。保留既有反向公式、持續狀態容量保護與公開訓練流程，不新增設定、格式或相依性。
 

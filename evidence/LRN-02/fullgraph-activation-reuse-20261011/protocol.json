@@ -1,0 +1,45 @@
+{
+  "schema_version": "coimnet-fullgraph-activation-measurement/v1",
+  "frozen_before_runs": true,
+  "source_head": "38adbe4b6b1668c42dece0be7388eae5e75f36d4",
+  "baseline_commit": "90c6b93bb902fb16ce62ac937ae0e379becbb8ff",
+  "baseline_difference": [
+    "dynamics/recompute.go",
+    "dynamics/forward_recompute.go"
+  ],
+  "graph": "MaleCNS v1.0 annotated_neurons full graph, every stored edge in original source-major order",
+  "nodes": 165122,
+  "edges": 25563197,
+  "steps": 16,
+  "segment_steps": 8,
+  "truncation_steps": 8,
+  "activation": "tanh",
+  "dt": 1,
+  "input_nodes": "protocol alin (24)",
+  "readout_nodes": "protocol descending_neuron (1314)",
+  "input": "engineering scalar 0.1 + 0.01*(t%5), scattered through encoder onto 24 ALIN nodes",
+  "upstream": "engineering 0.001 on each declared readout per row",
+  "target": [
+    0.3
+  ],
+  "parameters": "unchanged fullgraph.LoadModel derived release/v1; kernel uses public learning.EffectiveWeights",
+  "initial": "zero",
+  "stages": [
+    "ForwardRecompute",
+    "BackwardRecomputeStats",
+    "Trainer.Step with Options.Recompute"
+  ],
+  "pairs": 8,
+  "warmup_pair": 0,
+  "measured_pairs": 7,
+  "order": "baseline/improved on even pairs, improved/baseline on odd pairs",
+  "independent_processes": true,
+  "gomaxprocs": 1,
+  "gomemlimit": "8GiB",
+  "gogc": "100",
+  "timing": "wall clock of public calls only; load, constructors, explicit GC and digest outside stage timer",
+  "memory": "allocation deltas per call and whole-process macOS time -l RSS/peak footprint",
+  "numerical_gate": "same shape, exact Float64bits SHA-256 of all output and five kernel gradients; same StepResult, all five updated parameter groups and all Adam state values across every run",
+  "performance": "descriptive paired ratios and median/min/max; no performance threshold selected from outcome",
+  "scope": "real connectome; engineered dynamics/input/target; no biological or task-quality inference"
+}

@@ -10,18 +10,18 @@
 
 官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。
 
-CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。
+CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
 模型達標與完整 GPU 稀疏訓練仍未驗證；Mac Metal 已通過稀疏原語與可選 episode 訓練器的小圖硬體對照。公開授權資料已用於語音、文字、單字元 OCR、文字條件影音與果蠅軌跡的小型範例。軌跡範例提供單步位移預測與另列的自主行走工程評估，保留集單步表現比方向延續基準差，工程命中率不能當作真實回巢能力；TSK-11 與 OPS-05 都未整體通過。按類型混合仍只在人工圖驗過，完整需求以[開發進度](delivery-status.md)追蹤。
 
 ## 能力狀態
 
-未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，`male-full` 只用於 NAT-01～06 與 OPS-07 那幾列，OPS-08 兼用 fixture＋male-full（效能量測），其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
+未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，`male-full` 用於 NAT-01～06 與 OPS-07；LRN-02 與 OPS-08 兼用 fixture＋male-full（分段重算與效能量測），其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
 
 | 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |
 | --- | --- | --- | --- | --- |
 | 連續核心訓練：可訓練稀疏連續動態、真實連線計算、完整／截斷梯度、受限更新與完整最佳化器（COR-02、COR-07、COR-08、COR-10、LRN-01、LRN-03） | 已訓練（人工資料） | fixture | 核心能力 | [COR-02](evidence/COR-02/verification.json)・[COR-07](evidence/COR-07/verification.json)・[COR-08](evidence/COR-08/verification.json)・[COR-10](evidence/COR-10/verification.json)・[LRN-01](evidence/LRN-01/verification.json)・[LRN-03](evidence/LRN-03/verification.json) |
-| 反向歷史重算：訓練步不保存核心歷史、反向逐段重算，梯度與完整歷史逐位相同，不重複學習、隨機事件或教師呼叫（LRN-02） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-02](evidence/LRN-02/verification.json) |
+| 反向歷史重算：訓練步不保存核心歷史、反向逐段重算；人工圖梯度與完整歷史逐位相同，真實全圖修改前後的輸出、梯度、更新參數及 Adam 狀態相同；16 步／段長 8 的完整更新耗時配對減少 52.56%（LRN-02，人工刺激，不是任務成績） | 已訓練（人工資料）；全圖一次更新 | fixture＋male-full | 核心能力 | [LRN-02](evidence/LRN-02/verification.json)・[全圖量測](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md) |
 | LIF 放電核心：替代梯度閾值訓練、慢速穩定與個體持續狀態（COR-03、COR-04、COR-09） | 已訓練（人工資料） | fixture | 核心能力 | [COR-03](evidence/COR-03/verification.json)・[COR-04](evidence/COR-04/verification.json)・[COR-09](evidence/COR-09/verification.json) |
 | 混合核心：連續／脈衝依神經元類型混合執行（COR-05） | 初始化模型（未訓練） | fixture | 核心能力 | [COR-05](evidence/COR-05/verification.json) |
 | 向量節點與共享參數：純量或多維節點、共享或逐項參數、分開回報容量（COR-06） | 已訓練（人工資料） | fixture | 核心能力 | [COR-06](evidence/COR-06/verification.json) |

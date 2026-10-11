@@ -1,0 +1,48 @@
+"""Run required native-disk checks after the performance processes finish."""
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+ROOT = Path(__file__).resolve().parents[3]
+WORK = Path(__file__).resolve().parent
+PROOF = ROOT / "evidence/LRN-02/fullgraph-activation-reuse-20261011"
+LOGS = PROOF / "validation"
+LOGS.mkdir(exist_ok=False)
+ENV = dict(os.environ, GOCACHE=str(WORK / "cache"), GOTMPDIR=str(WORK / "tmp"),
+           TMPDIR=str(WORK / "tmp"), GOMAXPROCS="8", GOMEMLIMIT="8GiB")
+records = []
+commands = [
+    ("format", ["gofmt", "-l"]),
+    ("modules", ["go", "mod", "verify"]),
+    ("build", ["go", "build", "./..."]),
+    ("harness-vet", ["go", "vet", str(WORK / "measure.go")]),
+    ("unit", ["go", "test", "-json", "-p", "2", "-count=1", "-timeout=30m", "./..."]),
+    ("race", ["go", "test", "-race", "-json", "-p", "2", "-count=1", "-timeout=30m", "./..."]),
+    ("vet", ["go", "vet", "./..."]),
+    ("dependencies", ["go", "list", "-deps", "./..."]),
+    ("target-flow", ["bash", "scripts/check-target-flow.sh"]),
+]
+for name, argv in commands:
+    if name == "format":
+        files = subprocess.check_output(["git", "ls-files", "*.go"], cwd=ROOT, text=True).splitlines()
+        argv += files + [str(WORK / "measure.go")]
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    clock = time.monotonic()
+    print("START", name, started, flush=True)
+    log = LOGS / (name + ".log")
+    with log.open("xb") as out:
+        proc = subprocess.run(argv, cwd=ROOT, env=ENV, stdout=out, stderr=subprocess.STDOUT, timeout=7200)
+    records.append({"name": name, "argv": argv, "started_at": started,
+                    "seconds": time.monotonic() - clock, "exit_code": proc.returncode,
+                    "log": str(log.relative_to(PROOF)),
+                    "sha256": hashlib.sha256(log.read_bytes()).hexdigest()})
+    (LOGS / "commands.json").write_text(json.dumps({"environment": {k: ENV[k] for k in
+        ["GOCACHE", "GOTMPDIR", "TMPDIR", "GOMAXPROCS", "GOMEMLIMIT"]}, "commands": records}, indent=2) + "\n")
+    print("DONE", name, proc.returncode, round(records[-1]["seconds"], 3), flush=True)
+    if proc.returncode or (name == "format" and log.stat().st_size):
+        raise RuntimeError(f"{name} failed: see {log}")
+print("ALL REQUIRED CHECKS PASSED", flush=True)

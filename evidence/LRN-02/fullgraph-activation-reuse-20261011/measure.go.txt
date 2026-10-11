@@ -1,0 +1,235 @@
+// This measurement program is an engineering experiment, not a task model.
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"runtime"
+	"runtime/debug"
+	"time"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/experiment/fullgraph"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+const steps, segment, window = 16, 8, 8
+
+type digest struct {
+	Values  int    `json:"values"`
+	Nonzero int    `json:"nonzero"`
+	SHA256  string `json:"sha256"`
+}
+type stage struct {
+	MS             float64                  `json:"ms"`
+	AllocatedBytes uint64                   `json:"allocated_bytes"`
+	Allocations    uint64                   `json:"allocations"`
+	GCCycles       uint32                   `json:"gc_cycles"`
+	Digests        map[string]digest        `json:"digests"`
+	Stats          *dynamics.RecomputeStats `json:"recompute_stats,omitempty"`
+	Step           *learning.StepResult     `json:"step_result,omitempty"`
+}
+type report struct {
+	Files                   map[string]string `json:"files"`
+	Nodes, Edges            int
+	LoadMS                  float64            `json:"load_ms"`
+	SetupMS                 map[string]float64 `json:"setup_ms"`
+	Stages                  map[string]stage   `json:"stages"`
+	TopologySHA256          string             `json:"topology_sha256"`
+	InputSHA256             map[string]digest  `json:"input_fingerprints"`
+	GoVersion, GOOS, GOARCH string
+	GOMAXPROCS              int
+	MemoryLimit             int64 `json:"memory_limit_bytes"`
+}
+
+func floats(rows ...[]float64) digest {
+	h := sha256.New()
+	var b [8]byte
+	d := digest{}
+	for _, row := range rows {
+		for _, v := range row {
+			if math.IsNaN(v) || math.IsInf(v, 0) {
+				panic("non-finite digest input")
+			}
+			binary.LittleEndian.PutUint64(b[:], math.Float64bits(v))
+			_, _ = h.Write(b[:])
+			d.Values++
+			if v != 0 {
+				d.Nonzero++
+			}
+		}
+	}
+	d.SHA256 = hex.EncodeToString(h.Sum(nil))
+	return d
+}
+func uints(values []uint64) digest {
+	h := sha256.New()
+	var b [8]byte
+	d := digest{Values: len(values)}
+	for _, v := range values {
+		binary.LittleEndian.PutUint64(b[:], v)
+		_, _ = h.Write(b[:])
+		if v != 0 {
+			d.Nonzero++
+		}
+	}
+	d.SHA256 = hex.EncodeToString(h.Sum(nil))
+	return d
+}
+func topology(c dynamics.Config) string {
+	h := sha256.New()
+	var b [8]byte
+	// Include each declared edge in order, with its explicit zero delay.
+	for e, s := range c.Sources {
+		for _, v := range []int{s, c.Targets[e], 0} {
+			binary.LittleEndian.PutUint64(b[:], uint64(v))
+			_, _ = h.Write(b[:])
+		}
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+func measure(work func() error) (stage, error) {
+	runtime.GC()
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	start := time.Now()
+	err := work()
+	elapsed := time.Since(start)
+	runtime.ReadMemStats(&after)
+	return stage{MS: float64(elapsed) / float64(time.Millisecond), AllocatedBytes: after.TotalAlloc - before.TotalAlloc, Allocations: after.Mallocs - before.Mallocs, GCCycles: after.NumGC - before.NumGC}, err
+}
+func kernels(ctx context.Context, loaded fullgraph.LoadedModel, r *report) error {
+	start := time.Now()
+	cfg := loaded.Config.Dynamics
+	p := loaded.Parameters.Core
+	var err error
+	p.Weights, err = learning.EffectiveWeights(loaded.Config, loaded.Parameters)
+	if err != nil {
+		return err
+	}
+	m, err := dynamics.NewContinuous(cfg)
+	if err != nil {
+		return err
+	}
+	initial := make([]float64, loaded.Nodes)
+	inputs := make([][]float64, steps)
+	upstream := make([][]float64, steps)
+	for t := range steps {
+		inputs[t] = make([]float64, loaded.Nodes)
+		upstream[t] = make([]float64, loaded.Nodes)
+		for j, node := range loaded.Config.InputNodes {
+			inputs[t][node] = (0.1 + 0.01*float64(t%5)) * loaded.Parameters.Encoder[j]
+		}
+		for _, node := range loaded.Config.ReadoutNodes {
+			upstream[t][node] = 0.001
+		}
+	}
+	r.SetupMS["kernels"] = float64(time.Since(start)) / float64(time.Millisecond)
+	r.TopologySHA256 = topology(cfg)
+	r.InputSHA256 = map[string]digest{"inputs": floats(inputs...), "upstream": floats(upstream...), "effective_weights": floats(p.Weights), "bias": floats(p.Bias), "log_tau": floats(p.LogTau), "initial": floats(initial)}
+	var output [][]float64
+	f, err := measure(func() error { output, err = m.ForwardRecompute(ctx, p, initial, inputs, segment); return err })
+	if err != nil {
+		return err
+	}
+	if len(output) != steps {
+		return fmt.Errorf("forward rows %d", len(output))
+	}
+	for _, row := range output {
+		if len(row) != loaded.Nodes {
+			return fmt.Errorf("forward shape")
+		}
+	}
+	f.Digests = map[string]digest{"outputs": floats(output...)}
+	r.Stages["forward"] = f
+	output = nil
+	var g dynamics.Gradient
+	var stats dynamics.RecomputeStats
+	b, err := measure(func() error {
+		g, stats, err = m.BackwardRecomputeStats(ctx, p, initial, inputs, upstream, window, segment)
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	if len(g.Weights) != loaded.Edges || len(g.Bias) != loaded.Nodes || len(g.LogTau) != loaded.Nodes || len(g.Initial) != loaded.Nodes || len(g.Inputs) != steps {
+		return fmt.Errorf("gradient shape")
+	}
+	for _, row := range g.Inputs {
+		if len(row) != loaded.Nodes {
+			return fmt.Errorf("gradient input shape")
+		}
+	}
+	b.Digests = map[string]digest{"weights": floats(g.Weights), "bias": floats(g.Bias), "log_tau": floats(g.LogTau), "initial": floats(g.Initial), "inputs": floats(g.Inputs...)}
+	b.Stats = &stats
+	r.Stages["backward"] = b
+	return nil
+}
+func update(ctx context.Context, loaded fullgraph.LoadedModel, r *report) error {
+	start := time.Now()
+	opts := loaded.Options
+	opts.Recompute = &learning.Recompute{SegmentSteps: segment}
+	tr, err := learning.NewTrainer(loaded.Config, loaded.Parameters, opts)
+	if err != nil {
+		return err
+	}
+	defer tr.Close()
+	input := make([][]float64, steps)
+	for t := range steps {
+		input[t] = []float64{0.1 + 0.01*float64(t%5)}
+	}
+	r.SetupMS["trainer"] = float64(time.Since(start)) / float64(time.Millisecond)
+	var result learning.StepResult
+	s, err := measure(func() error { result, err = tr.Step(ctx, input, []float64{0.3}); return err })
+	if err != nil {
+		return err
+	}
+	if !result.Applied || result.Updates != 1 {
+		return fmt.Errorf("update did not apply")
+	}
+	s.Step = &result
+	snap := tr.Snapshot()
+	p := snap.Parameters
+	s.Digests = map[string]digest{"parameters_weights": floats(p.Core.Weights), "parameters_bias": floats(p.Core.Bias), "parameters_log_tau": floats(p.Core.LogTau), "parameters_encoder": floats(p.Encoder), "parameters_readout": floats(p.Readout), "adam_first": floats(snap.Optimizer.First), "adam_second": floats(snap.Optimizer.Second), "adam_steps": uints(snap.Optimizer.Steps)}
+	r.Stages["training_step"] = s
+	return nil
+}
+func run() error {
+	if len(os.Args) != 4 {
+		return fmt.Errorf("usage: measure STORE PARAMS PROTOCOL; writes JSON to stdout; no input writes")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer cancel()
+	start := time.Now()
+	loaded, err := fullgraph.LoadModel(ctx, fullgraph.Options{Store: os.Args[1], Params: os.Args[2], Protocol: os.Args[3], InputSet: "alin", ReadoutSet: "descending_neuron", Truncation: window, LearningRate: 0.001, MaxMemoryMiB: 12288})
+	if err != nil {
+		return err
+	}
+	if loaded.Nodes != 165122 || loaded.Edges != 25563197 || len(loaded.Config.InputNodes) != 24 || len(loaded.Config.ReadoutNodes) != 1314 {
+		return fmt.Errorf("unexpected graph or set counts")
+	}
+	if len(loaded.Config.Dynamics.Delays) != 0 {
+		return fmt.Errorf("unexpected declared delays")
+	}
+	r := report{Files: loaded.Files, Nodes: loaded.Nodes, Edges: loaded.Edges, LoadMS: float64(time.Since(start)) / float64(time.Millisecond), SetupMS: map[string]float64{}, Stages: map[string]stage{}, GoVersion: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, GOMAXPROCS: runtime.GOMAXPROCS(0), MemoryLimit: debug.SetMemoryLimit(-1)}
+	if err := kernels(ctx, loaded, &r); err != nil {
+		return fmt.Errorf("kernels: %w", err)
+	}
+	runtime.GC()
+	if err := update(ctx, loaded, &r); err != nil {
+		return fmt.Errorf("trainer: %w", err)
+	}
+	return json.NewEncoder(os.Stdout).Encode(r)
+}
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}

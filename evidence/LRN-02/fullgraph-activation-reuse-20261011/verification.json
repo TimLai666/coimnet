@@ -1,0 +1,124 @@
+{
+  "requirement": "LRN-02",
+  "profile": "male-full; engineered stimulus, target and dynamics assumptions",
+  "reproduction_command": [
+    "python3 evidence/LRN-02/fullgraph-activation-reuse-20261011/verify_measurement.py",
+    "Native disk: recreate and run the preserved run_measurement.py.txt and run_validation_native.py.txt using README.md and builds.json"
+  ],
+  "environment": {
+    "measurement": "environment.json",
+    "native_validation": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/tmp",
+      "GOMAXPROCS": "8",
+      "GOMEMLIMIT": "8GiB"
+    }
+  },
+  "input_fingerprints": [
+    {
+      "source": "/Volumes/SSD/Developer/coimnet/data/malecns-v1.0/graph-v1.coimgraph",
+      "copy": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/graph-v1.coimgraph",
+      "bytes": 664407846,
+      "sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd"
+    },
+    {
+      "source": "/Volumes/SSD/Developer/coimnet/data/malecns-v1.0/params-derive-v1.coimparams",
+      "copy": "/Users/timlai/Developer/coimnet/data/malecns-v1.0/params-derive-v1.coimparams",
+      "bytes": 463451966,
+      "sha256": "c4db0f3f93390b66c417cee2a96d805179e4fb178678615ec537260710c58c77"
+    }
+  ],
+  "source_head": "38adbe4b6b1668c42dece0be7388eae5e75f36d4",
+  "baseline_commit": "90c6b93bb902fb16ce62ac937ae0e379becbb8ff",
+  "checked_at": "2026-10-11T15:47:09.772568+00:00",
+  "observed_result": {
+    "nodes": 165122,
+    "edges": 25563197,
+    "independent_processes": 16,
+    "measured_pairs": 7,
+    "exact_outputs_gradients_parameters_adam": true,
+    "nonzero_direct_core_gradient_groups": [
+      "weights",
+      "bias",
+      "log_tau",
+      "initial",
+      "inputs"
+    ],
+    "paired_reductions_percent": {
+      "forward": 66.2428155026715,
+      "backward": 63.06498505603201,
+      "training_step": 52.55709192826935
+    },
+    "performance_summary": "performance-summary.json",
+    "all_native_commands_passed": true,
+    "source_go_module_files": 669,
+    "framework_requirements_passed": 89,
+    "framework_requirements_total": 91,
+    "remaining_framework_requirements": [
+      "TSK-11",
+      "OPS-05"
+    ],
+    "capability_review": "capability-review.json"
+  },
+  "test_log": [
+    "validation-summary.json",
+    "validation-native/unit.log.gz",
+    "validation-native/race.log.gz",
+    "validation-native/commands.json",
+    "validator-controls.json",
+    "binary-rebuild-verification.json",
+    "log-archives.json",
+    "final-governance.json",
+    "final-governance.log"
+  ],
+  "limitations": [
+    "Single M3 desktop, CPU float64, 16 steps/segment 8/truncation 8; no other hardware or longer training claim.",
+    "Common desktop load is recorded, not isolated.",
+    "Whole-process RSS/footprint, not stage-specific peak.",
+    "GOGC configured as 100 in the launcher, no child runtime readback.",
+    "Post-update old/new parameter groups match; pre-update per-group deltas not preserved.",
+    "No task quality or biological fidelity gate."
+  ],
+  "measurement_and_native_validation_passed": true,
+  "final_governance": {
+    "argv": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "-timeout=30m",
+      "-run",
+      "^(TestGovernance|TestFormatIndex|TestNoTelemetry)",
+      "."
+    ],
+    "started_at": "2026-10-11T15:47:55.989931+00:00",
+    "seconds": 6.614346167,
+    "exit_code": 0,
+    "top_tests_passed": [
+      "TestNoTelemetry",
+      "TestNoTelemetryProjectTempBoundary",
+      "TestNoTelemetrySourceErrorsRemainVisible",
+      "TestFormatIndex",
+      "TestFormatIndexControls",
+      "TestFormatIndexGoLiteralsAndScopes",
+      "TestFormatIndexNoGitAndReadErrors",
+      "TestGovernanceRequirementIDsMatchHandoff",
+      "TestGovernanceStatusValuesAreDeclared",
+      "TestGovernancePassedRequirementsHaveEvidence",
+      "TestGovernanceTicketsHaveDatedRootDecisions"
+    ],
+    "failed_events": [],
+    "log": "final-governance.log",
+    "sha256": "acaae405d9e9ac7f19b514113f169502e9888a8e7fe9cb1ee924134e31c4184d",
+    "environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/fullgraph-activation-20261011/tmp",
+      "GOMAXPROCS": "8",
+      "GOMEMLIMIT": "8GiB"
+    }
+  },
+  "passed": true
+}

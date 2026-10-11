@@ -1,0 +1,88 @@
+"""Run the frozen protocol sequentially; preserve every raw process result."""
+import hashlib
+import json
+import os
+from pathlib import Path
+import re
+import statistics
+import subprocess
+import time
+
+ROOT = Path(__file__).resolve().parents[3]
+SCRATCH = Path(__file__).resolve().parent
+PROOF = ROOT / "evidence/LRN-02/fullgraph-activation-reuse-20261011"
+DATA = ROOT / "data/malecns-v1.0"
+ENV = dict(os.environ, GOCACHE=str(SCRATCH / "cache"),
+           GOTMPDIR=str(SCRATCH / "tmp"), TMPDIR=str(SCRATCH / "tmp"),
+           GOMAXPROCS="1", GOMEMLIMIT="8GiB", GOGC="100")
+
+def save(name, value):
+    (PROOF / name).write_text(json.dumps(value, indent=2) + "\n")
+
+def signature(doc):
+    return {
+        "files": doc["files"], "nodes": doc["Nodes"], "edges": doc["Edges"],
+        "topology": doc["topology_sha256"], "input": doc["input_fingerprints"],
+        "stages": {k: {f: v[f] for f in ["digests", "recompute_stats", "step_result"] if f in v}
+                   for k, v in doc["stages"].items()},
+    }
+
+protocol = (PROOF / "protocol.json").read_bytes()
+assert hashlib.sha256(protocol).hexdigest() == (SCRATCH / "protocol.sha256").read_text().strip()
+records = []
+reference = None
+for pair in range(8):
+    for variant in (["baseline", "improved"] if pair % 2 == 0 else ["improved", "baseline"]):
+        name = f"pair-{pair}-{variant}"
+        binary = SCRATCH / "bin" / variant
+        argv = ["/usr/bin/time", "-l", str(binary), str(DATA / "graph-v1.coimgraph"),
+                str(DATA / "params-derive-v1.coimparams"),
+                str(ROOT / "evidence/NAT-05/compare-fullgraph-derived-continuous.json")]
+        before = subprocess.check_output(["uptime"], text=True).strip()
+        start = time.time()
+        with (PROOF / (name + ".json")).open("xb") as out, (PROOF / (name + ".stderr")).open("xb") as err:
+            result = subprocess.run(argv, env=ENV, stdout=out, stderr=err, timeout=900)
+        log = (PROOF / (name + ".stderr")).read_text()
+        record = {"pair": pair, "variant": variant, "warmup": pair == 0,
+                  "argv": argv, "binary_sha256": hashlib.sha256(binary.read_bytes()).hexdigest(),
+                  "exit_code": result.returncode, "wall_seconds": time.time() - start,
+                  "uptime_before": before, "uptime_after": subprocess.check_output(["uptime"], text=True).strip(),
+                  "logs": {suffix: hashlib.sha256((PROOF / (name + suffix)).read_bytes()).hexdigest()
+                           for suffix in [".json", ".stderr"]}}
+        for field, label in [("max_rss_bytes", "maximum resident set size"),
+                             ("peak_footprint_bytes", "peak memory footprint")]:
+            match = re.search(r"(\d+)\s+" + label, log)
+            record[field] = int(match.group(1)) if match else None
+        records.append(record)
+        save("runs.json", records)
+        if result.returncode:
+            raise RuntimeError(f"{name} exit {result.returncode}: {log}")
+        doc = json.loads((PROOF / (name + ".json")).read_text())
+        sig = signature(doc)
+        if reference is None:
+            reference = sig
+        if sig != reference:
+            save("numerical-mismatch.json", {"run": name, "reference": reference, "observed": sig})
+            raise RuntimeError(f"{name}: numerical mismatch")
+        print(name, {s: round(v["ms"], 2) for s, v in doc["stages"].items()},
+              "RSS MiB", round(record["max_rss_bytes"] / 2**20, 2), "exact", flush=True)
+
+save("numerical-equivalence.json", {"passed": True, "runs": len(records), "signature": reference})
+summary = {"warmup_pairs": 1, "measured_pairs": 7, "stages": {}, "memory": {}}
+for stage in ["forward", "backward", "training_step"]:
+    row = {"paired_ratios_new_over_old": []}
+    for variant in ["baseline", "improved"]:
+        docs = [json.loads((PROOF / f"pair-{p}-{variant}.json").read_text())["stages"][stage] for p in range(1, 8)]
+        row[variant] = {field: {"median": statistics.median(vals), "min": min(vals), "max": max(vals), "raw": vals}
+                        for field in ["ms", "allocated_bytes", "allocations", "gc_cycles"]
+                        for vals in [[v[field] for v in docs]]}
+    row["paired_ratios_new_over_old"] = [n / o for n, o in zip(row["improved"]["ms"]["raw"], row["baseline"]["ms"]["raw"])]
+    row["median_paired_reduction_percent"] = 100 * (1 - statistics.median(row["paired_ratios_new_over_old"]))
+    row["ratio_of_medians_reduction_percent"] = 100 * (1 - row["improved"]["ms"]["median"] / row["baseline"]["ms"]["median"])
+    summary["stages"][stage] = row
+for variant in ["baseline", "improved"]:
+    summary["memory"][variant] = {field: {"median": statistics.median(vals), "min": min(vals), "max": max(vals), "raw": vals}
+                                  for field in ["max_rss_bytes", "peak_footprint_bytes", "wall_seconds"]
+                                  for vals in [[r[field] for r in records if r["variant"] == variant and not r["warmup"]]]}
+save("performance-summary.json", summary)
+print("ALL 16 RUNS EXACT; 7 MEASURED PAIRS COMPLETE", flush=True)

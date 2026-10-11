@@ -1,0 +1,64 @@
+{
+  "go": {
+    "argv": [
+      "go",
+      "env",
+      "-json",
+      "GOVERSION",
+      "GOOS",
+      "GOARCH",
+      "GOARM64",
+      "GOFLAGS",
+      "CGO_ENABLED"
+    ],
+    "exit_code": 0,
+    "stdout": "{\n\t\"CGO_ENABLED\": \"1\",\n\t\"GOARCH\": \"arm64\",\n\t\"GOARM64\": \"v8.0\",\n\t\"GOFLAGS\": \"\",\n\t\"GOOS\": \"darwin\",\n\t\"GOVERSION\": \"go1.26.5\"\n}\n",
+    "stderr": ""
+  },
+  "os": {
+    "argv": [
+      "sw_vers"
+    ],
+    "exit_code": 0,
+    "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434\n",
+    "stderr": ""
+  },
+  "hardware": {
+    "argv": [
+      "sysctl",
+      "hw.model",
+      "hw.memsize",
+      "hw.ncpu",
+      "machdep.cpu.brand_string"
+    ],
+    "exit_code": 0,
+    "stdout": "hw.model: Mac15,12\nhw.memsize: 17179869184\nhw.ncpu: 8\nmachdep.cpu.brand_string: Apple M3\n",
+    "stderr": ""
+  },
+  "disk": {
+    "argv": [
+      "df",
+      "-h",
+      "."
+    ],
+    "exit_code": 0,
+    "stdout": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   419Gi    11Gi    98%    4.2M  118M    3%   /System/Volumes/Data\n",
+    "stderr": ""
+  },
+  "uptime": {
+    "argv": [
+      "uptime"
+    ],
+    "exit_code": 0,
+    "stdout": "22:49  up 21:19, 2 users, load averages: 4.32 6.36 7.22\n",
+    "stderr": ""
+  },
+  "env": {
+    "GOMAXPROCS": "1",
+    "GOMEMLIMIT": "8GiB",
+    "GOGC": "100",
+    "GOCACHE": "runs/.tmp/fullgraph-activation-20261011/cache",
+    "GOTMPDIR": "runs/.tmp/fullgraph-activation-20261011/tmp",
+    "TMPDIR": "runs/.tmp/fullgraph-activation-20261011/tmp"
+  }
+}

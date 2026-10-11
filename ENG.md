@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- 真實全圖的分段重算效能直接量測既有 SDK 的 ForwardRecompute、BackwardRecomputeStats 與啟用 Recompute 的 Trainer.Step，因 benchmark CLI 的既有路徑未啟用重算。固定完整圖、原始邊順序、參數與事前設定，只有兩份核心檔透過 Go overlay 對照修改前版本。載入、建構、明示 GC 與摘要分開計時，全部原始程序、輸出／梯度／更新／Adam 指紋、配置量與整個程序的 RSS／足跡都保留。效能結果不改模型或任務驗收狀態，見 [ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md)。
+
 - 網路磁碟的模型保存沿用 v2 bundle 及三種既有 Bundle SDK。排他建立目錄後先保存資料，最後寫完整完成清單，載入端拒絕缺失或截斷清單。完成清單完整寫出後即保留成果，後續取消與同步失敗分開回報。單檔發布的既有契約保持。驗收見 [ticket 55](docs/tickets/55-network-model-bundles.md)。
 
 - 生物啟發協定於共用 RunBioInspired 入口的既有驗證後複製全部可變設定，再計算雜湊及執行。每次報告各自持有種子、脈衝步、來源登錄與定量證據，保留 nil／空值及原驗證順序。回傳後修改設定與報告互不影響，不保證執行期間並行修改輸入安全。見 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md)。
