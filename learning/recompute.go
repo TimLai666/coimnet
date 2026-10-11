@@ -48,9 +48,9 @@ func matchForwardTheta(core coreModel, p Parameters) error {
 }
 
 // observe runs the core forward without keeping a trace and returns exactly the rows core.forward returns as its second result
-// (activated outputs for the continuous core, the synaptic trace for the LIF core), bit for bit. It starts a fresh state at
-// initial (model.NewState) and advances it in chunks of min(segment, dynamics.MaxStateValues/nodes) rows, appending each
-// chunk's outputs; the LIF events are dropped. It applies the same theta_raw length checks as the matching forward.
+// (activated outputs for the continuous core, the synaptic trace for the LIF core), bit for bit. It starts a fresh sequence at
+// initial and delegates to the matching core's segmented forward, so the persistent-state capacity limit does not apply. It
+// applies the same theta_raw length checks as the matching forward.
 func observe(ctx context.Context, core coreModel, p Parameters, initial []float64, inputs [][]float64, segment int) ([][]float64, error) {
 	if segment <= 0 {
 		return nil, fmt.Errorf("recompute segment must be positive")
@@ -64,28 +64,15 @@ func observe(ctx context.Context, core coreModel, p Parameters, initial []float6
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("empty sequence")
 	}
-	state, err := core.newState(initial)
-	if err != nil {
-		return nil, err
+	switch c := core.(type) {
+	case continuousCore:
+		return c.model.ForwardRecompute(ctx, p.Core, initial, inputs, segment)
+	case lifCore:
+		return c.model.ForwardRecompute(ctx, dynamics.LIFParameters{
+			Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
+		}, initial, inputs, segment)
 	}
-	chunk := segment
-	if limit := dynamics.MaxStateValues / core.nodes(); chunk > limit {
-		chunk = limit
-	}
-	var out [][]float64
-	for start := 0; start < len(inputs); start += chunk {
-		end := start + chunk
-		if end > len(inputs) {
-			end = len(inputs)
-		}
-		var outputs, _ [][]float64
-		state, outputs, _, err = core.advance(ctx, p, state, inputs[start:end])
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, outputs...)
-	}
-	return out, nil
+	return nil, fmt.Errorf("learning: unsupported recompute core %T", core)
 }
 
 // backwardRecompute returns core.backward(core.forward(p, initial, inputs), upstream, window) through the core's
