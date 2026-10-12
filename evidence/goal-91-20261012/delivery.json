@@ -6,7 +6,10 @@
   "recorded_at": "2026-10-12T03:23:33.047189+00:00",
   "reproduction_command": [
     "git ls-remote origin refs/heads/main",
-    "git show a28ce23b4f4c317d7ed5f46466ce43d22910c5bc:evidence/goal-91-20261012/full-validation/complete/source-frozen.json"
+    "git show a28ce23b4f4c317d7ed5f46466ce43d22910c5bc:evidence/goal-91-20261012/full-validation/complete/source-frozen.json",
+    "git diff eb8492e477c365bfd374d3c2012e955db6e12060 HEAD --check",
+    "git check-attr whitespace -- evidence/OPS-05/device-adam-20261012/shader-before-fix.log learning/network.go",
+    "shasum -a 256 evidence/OPS-05/device-adam-20261012/shader-before-fix.log"
   ],
   "environment": {
     "native_project": "/Users/timlai/Developer/coimnet",
@@ -35,7 +38,35 @@
     "removed_symlinks": 913,
     "native_input_copies_removed": 25,
     "protected_smb_originals_verified_before_cleanup": 25,
-    "followup_commit_scope": "Delivery metadata and completed checklist only; source/test/WGSL/module bytes remain frozen. The followup remote tip is checked after pushing."
+    "followup_commit_scope": "Delivery metadata and completed checklist only; source/test/WGSL/module bytes remain frozen. The followup remote tip is checked after pushing.",
+    "metadata_commit_before_hygiene": "4185dc557a84c3ff1e1d6d3e4c1e3c0e83d5e14e",
+    "metadata_remote_readback_before_hygiene": "4185dc557a84c3ff1e1d6d3e4c1e3c0e83d5e14e",
+    "metadata_smb_commit_before_hygiene": "4185dc557a84c3ff1e1d6d3e4c1e3c0e83d5e14e",
+    "metadata_three_targets_matched_before_hygiene": true,
+    "changed_files_including_closure": 359,
+    "raw_diagnostic_whitespace_preservation": {
+      "checked_at": "2026-10-12T03:48:00.732472+00:00",
+      "path": "evidence/OPS-05/device-adam-20261012/shader-before-fix.log",
+      "sha256": "8f150c36ececcf5261d25fa4cbcaf22e2445e917f91bb2d7b752083dc303e809",
+      "preserved_exact_bytes": true,
+      "trailing_whitespace_lines": 35,
+      "attribute": "evidence/OPS-05/device-adam-20261012/shader-before-fix.log whitespace=-blank-at-eol",
+      "scope": "Disable only blank-at-eol for this exact immutable diagnostic; other paths and whitespace checks retain their existing settings.",
+      "reference": "https://git-scm.com/docs/gitattributes#_checking_whitespace_errors",
+      "checks": {
+        "git diff eb8492e477c365bfd374d3c2012e955db6e12060 HEAD --check": {
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        },
+        "git diff --check": {
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": ""
+        }
+      },
+      "followup_commit_scope": "Only .gitattributes and these two closure records; final remote and SMB tips are checked after pushing without self-referential commit hashes."
+    }
   },
   "input_fingerprints": {
     "source_manifest": "evidence/goal-91-20261012/full-validation/complete/source-frozen.json",

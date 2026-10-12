@@ -1,9 +1,10 @@
 # 本輪檔案變更
 
-相對基準 `eb8492e`，共 358 個新增或修改檔案。程式與主要證據提交為 `a28ce23`，最後的交付紀錄另行提交。
+相對基準 `eb8492e`，共 359 個新增或修改檔案。程式與主要證據提交為 `a28ce23`，最後的交付紀錄另行提交。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
+| [.gitattributes](/Users/timlai/Developer/coimnet/.gitattributes) | 修改：為一份原始 GPU 編譯日誌保留行尾空白，其餘檔案沿用既有檢查 |
 | [AGENTS.md](/Users/timlai/Developer/coimnet/AGENTS.md) | 修改：移除已修正並通過測試的 OCR 非有限值提醒 |
 | [ENG.md](/Users/timlai/Developer/coimnet/ENG.md) | 修改：記錄任務模型保存、裝置更新、OCR 與影音的共用契約 |
 | [README.md](/Users/timlai/Developer/coimnet/README.md) | 修改：更新 91 項工程驗收、SDK 入口及實測限制 |
