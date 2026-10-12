@@ -210,3 +210,4 @@
 | [tasks/ocr/page_recognizer.go](../../../tasks/ocr/page_recognizer.go) | 明確拒絕單字元模式進入頁面流程 |
 | [tasks/ocr/persistence.go](../../../tasks/ocr/persistence.go) | 依模式驗證保存物的形狀與配置 |
 | [tasks/ocr/recognizer.go](../../../tasks/ocr/recognizer.go) | 模式初始化、對齊、分類目標、推論與原子錯誤 |
+| [evidence/TSK-11/quality-20261012/delivery.json](delivery.json) | 記錄實作提交、遠端與原專案讀回及保留成果 |
