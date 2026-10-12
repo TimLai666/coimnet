@@ -215,3 +215,4 @@
 | [modulation/receptor_location.go](/Users/timlai/Developer/coimnet/modulation/receptor_location.go) | 接入受體位置、來源視窗、濃度與受體反應梯度 |
 | [modulation/receptor_location_test.go](/Users/timlai/Developer/coimnet/modulation/receptor_location_test.go) | 新增受體位置、化學回授、數值、隔離或存檔接續測試 |
 | [modulation/receptors.go](/Users/timlai/Developer/coimnet/modulation/receptors.go) | 接入受體位置、來源視窗、濃度與受體反應梯度 |
+| [evidence/MOD-02/receptor-chemistry-20261012/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/receptor-chemistry-20261012/delivery.json) | 保存實際推送及遠端提交核對回條 |

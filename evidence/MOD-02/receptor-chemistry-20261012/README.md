@@ -1,6 +1,6 @@
 # 受體位置與一般化學訓練驗收
 
-本證據對應 [ticket 65](../../../docs/tickets/65-receptor-location-and-chemical-training.md)。受體位置決定讀取的區域濃度，一般訓練的前向與反向涵蓋神經活動、來源釋放、濃度、受體反應及神經效果。最終工程證據是 [verification.json](verification.json)。
+本證據對應 [ticket 65](../../../docs/tickets/65-receptor-location-and-chemical-training.md)。受體位置決定讀取的區域濃度，一般訓練的前向與反向涵蓋神經活動、來源釋放、濃度、受體反應及神經效果。最終工程證據是 [verification.json](verification.json)。本票已完成 5／5，實作 `9ed31a5` 已推送並核對遠端，見 [delivery.json](delivery.json)。本輪暫存已清除，見 [cleanup.json](cleanup.json)。
 
 ## 已驗證的能力
 
