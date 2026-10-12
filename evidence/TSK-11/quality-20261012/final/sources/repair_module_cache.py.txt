@@ -1,0 +1,26 @@
+import pathlib,json,os,subprocess,hashlib,time
+root=pathlib.Path('runs/.tmp/real-task-quality-20261012').resolve();cache=root/'go-mod-cache'
+s=(root/'logs/module-list-pre-repair.jsonl').read_text();decoder=json.JSONDecoder();rows=[]
+while s.strip():
+    s=s.lstrip();value,end=decoder.raw_decode(s);rows.append(value);s=s[end:]
+records=json.loads((root/'logs/module-cache-repair.json').read_text()) if (root/'logs/module-cache-repair.json').exists() else []
+import re
+for line in ((root/'full/module.log').read_text()+(root/'full/module.stderr').read_text()).splitlines():
+    match=re.match(r'^(\S+) (\S+): (.+) is not a directory$',line)
+    if match:
+        rows.append({'Path':match.group(1),'Version':match.group(2),'Dir':match.group(3)})
+for module in rows:
+    if module.get('Main') or not module.get('Dir'):continue
+    destination=pathlib.Path(module['Dir'])
+    assert cache in destination.parents
+    if not destination.is_symlink():continue
+    target=destination.resolve(strict=True);assert target.is_dir() and str(target).startswith('/Users/timlai/go/pkg/mod/')
+    link=os.readlink(destination)
+    # Inspected owned link only. The shared source module remains read-only.
+    assert os.readlink(destination)==link;destination.unlink()
+    start=time.time();p=subprocess.run(['/bin/cp','-cR',str(target),str(destination)],capture_output=True)
+    record={'path':module['Path'],'version':module.get('Version'),'source':str(target),'destination':str(destination),'method':'APFS clone via cp -cR','exit_code':p.returncode,'elapsed_seconds':time.time()-start,'stderr':p.stderr.decode()};records.append(record)
+    (root/'logs/module-cache-repair.json').write_text(json.dumps(records,indent=2)+'\n')
+    if p.returncode:raise RuntimeError(record)
+    assert destination.is_dir() and not destination.is_symlink()
+print(json.dumps({'cloned_modules':len(records),'all_commands_passed':all(r['exit_code']==0 for r in records)}),flush=True)

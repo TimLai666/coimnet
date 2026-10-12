@@ -1,0 +1,108 @@
+// EXAMPLE EVALUATION DRIVER: compiled with realocr source copies and public SDK.
+// Uses its strict LoadDataset and the public OCR SDK. No dataset is embedded.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"math"
+	"math/rand/v2"
+	"os"
+	"reflect"
+	"sort"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+func qualityMust(err error) { if err != nil { panic(err) } }
+func qualityEmit(v any) { qualityMust(json.NewEncoder(os.Stdout).Encode(v)) }
+
+func main() {
+	dir := flag.String("data-dir", "", "fingerprinted official KMNIST source directory")
+	mode := flag.String("mode", "train", "train, restore, baseline or equivalence")
+	seed := flag.Uint64("seed", 20260924, "model and order seed")
+	modelPath := flag.String("model", "", "new bundle for train; existing bundle for restore")
+	flag.Parse()
+	ctx := context.Background()
+	ds, err := LoadDataset(*dir, DatasetLimits{TrainCount: 6000, TestCount: 2200})
+	qualityMust(err)
+	development := append([]int(nil), ds.TestIndices[:200]...)
+	ds.Test = ds.Test[200:]
+	ds.TestIndices = ds.TestIndices[200:]
+	if len(ds.Train) != 6000 || len(ds.Test) != 2000 { panic("selection size") }
+	seen := map[int]bool{}
+	for _, i := range development { seen[i] = true }
+	for _, i := range ds.TestIndices { if seen[i] { panic("development/final overlap") } }
+	alphabet := make([]rune, len(ds.Metadata.Mapping))
+	for i, m := range ds.Metadata.Mapping { alphabet[i] = []rune(m.Char)[0] }
+	config := ocr.RecognizerConfig{Height:28, Hidden:24, Alphabet:alphabet, LearningRate:0.002, Seed:*seed, TrainableEncoder:true, InputProfile:"single-character", CharacterWidth:28}
+	qualityEmit(map[string]any{"event":"selection", "schema":"coimnet-ocr-quality/v1", "train_count":len(ds.Train), "test_count":len(ds.Test), "test_offset_per_class":20, "train_indices":ds.TrainIndices, "test_indices":ds.TestIndices, "train_indices_sha256":digestIntSlice(ds.TrainIndices), "test_indices_sha256":digestIntSlice(ds.TestIndices), "source_files":ds.FileFingerprints, "metadata_sha256":ds.MetadataSHA256, "mapping":ds.Metadata.Mapping, "config":config, "order":"PCG(seed,37) shuffles the previous epoch permutation at each epoch; updates use train split only", "epochs":20, "program":programFingerprint()})
+	if *mode == "baseline" { qualityBaseline(ds, alphabet); return }
+	var model *ocr.Recognizer
+	if *mode == "restore" { model, err = ocr.LoadRecognizer(ctx,*modelPath) } else { model, err = ocr.NewRecognizer(config) }
+	qualityMust(err)
+	if !reflect.DeepEqual(model.Config(), config) { panic("task config mismatch") }
+	if *mode == "equivalence" { qualityEquivalence(ctx, model, ds.Train[:10]); return }
+	if *mode != "train" && *mode != "restore" { panic("unknown mode") }
+	initial := model.Snapshot()
+	before := qualityScore(ctx,model,ds.Test,alphabet)
+	if *mode == "train" {
+		order := make([]int,len(ds.Train)); for i:=range order { order[i]=i }
+		rng := rand.New(rand.NewPCG(*seed,37))
+		for epoch:=0;epoch<20;epoch++ {
+			rng.Shuffle(len(order),func(i,j int){order[i],order[j]=order[j],order[i]})
+			loss:=0.0
+			for _,i:=range order { s:=ds.Train[i]; rep,e:=model.TrainLine(ctx,s.Image,s.Text); qualityMust(e); if rep.Impossible { panic("single character impossible") }; loss+=rep.Loss }
+			qualityEmit(map[string]any{"event":"epoch", "epoch":epoch+1,"mean_training_cross_entropy":loss/float64(len(order)),"updates":model.Snapshot().Updates})
+		}
+		qualityMust(model.Save(ctx,*modelPath))
+	}
+	after := qualityScore(ctx,model,ds.Test,alphabet)
+	train := qualityScore(ctx,model,ds.Train,alphabet)
+	final := model.Snapshot()
+	p := model.Parameters(); for i:=range p.Core.Weights {p.Core.Weights[i]=0}
+	disconnected,e:=ocr.NewRecognizerWith(config,p); qualityMust(e)
+	null := qualityScore(ctx,disconnected,ds.Test,alphabet)
+	qualityEmit(map[string]any{"event":"final", "mode":*mode,"seed":*seed,"before":before,"after":after,"train":train,"disconnected_core":null,"updates":final.Updates,"model":*modelPath,"snapshot_sha256":qualityDigest(final),"config_sha256":qualityDigest(model.Config()),"parameter_delta":qualityDelta(initial.Parameters,final.Parameters),"quality_gate":after.Accuracy>=0.8 && (*mode=="restore" || after.Accuracy>before.Accuracy)})
+}
+
+type qualityScoreReport struct { Accuracy float64 `json:"accuracy"`; CER float64 `json:"cer"`; MeanCrossEntropy float64 `json:"mean_cross_entropy"`; Samples int `json:"samples"`; Confusion [][]int `json:"confusion"` }
+func qualityScore(ctx context.Context,m *ocr.Recognizer,samples []glyphs.Sample,alphabet []rune) qualityScoreReport {
+	sn:=m.Snapshot(); tr,e:=learning.RestoreTrainer(sn); qualityMust(e)
+	classes:=map[rune]int{};for i,c:=range alphabet {classes[c]=i}
+	out:=qualityScoreReport{Samples:len(samples), Confusion:make([][]int,len(alphabet))};for i:=range out.Confusion {out.Confusion[i]=make([]int,len(alphabet))}
+	correct:=0;loss:=0.0
+	for _,s:=range samples {
+		prediction,e:=m.Infer(ctx,s.Image);qualityMust(e);r:=[]rune(prediction);if len(r)!=1 {panic("classification did not return exactly one rune")}
+		want,ok:=classes[[]rune(s.Text)[0]];if !ok {panic("unknown label")};got,ok:=classes[r[0]];if !ok {panic("unknown prediction")};out.Confusion[want][got]++;if prediction==s.Text {correct++}
+		inputs,e:=m.Inputs(s.Image);qualityMust(e);logits,e:=tr.PredictAll(ctx,inputs);qualityMust(e);last:=logits[len(logits)-1];mx:=last[1];for _,v:=range last[2:] {if v>mx {mx=v}};sum:=0.0;for _,v:=range last[1:] {sum+=math.Exp(v-mx)};loss+=math.Log(sum)+mx-last[want+1]
+	}
+	out.Accuracy=float64(correct)/float64(len(samples));out.CER=1-out.Accuracy;out.MeanCrossEntropy=loss/float64(len(samples));return out
+}
+func qualityDigest(v any) string { hash,e:=digestJSON(v);qualityMust(e);return hash }
+func qualityDelta(a,b learning.Parameters) map[string]any {
+	out:=map[string]any{}
+	for _,group:=range []struct{name string;a,b []float64}{{"encoder",a.Encoder,b.Encoder},{"core_weights",a.Core.Weights,b.Core.Weights},{"core_bias",a.Core.Bias,b.Core.Bias},{"readout",a.Readout,b.Readout},{"log_tau",a.Core.LogTau,b.Core.LogTau}} {
+		changed:=0;sum:=0.0;for i,x:=range group.a {d:=group.b[i]-x;if d!=0 {changed++};sum+=d*d};out[group.name]=map[string]any{"count":len(group.a),"changed":changed,"l2":math.Sqrt(sum)}
+	};return out
+}
+func qualityEquivalence(ctx context.Context,m *ocr.Recognizer,samples []glyphs.Sample) {
+	sn:=m.Snapshot();tr,e:=learning.RestoreTrainer(sn);qualityMust(e);net,e:=learning.NewNetwork(sn.Config);qualityMust(e)
+	for _,s:=range samples {
+		zero,e:=m.Inputs(s.Image);qualityMust(e);duplicate:=[][]float64{append([]float64(nil),zero[0]...),append([]float64(nil),zero[0]...)}
+		a,e:=tr.PredictAll(ctx,zero);qualityMust(e);b,e:=tr.PredictAll(ctx,duplicate);qualityMust(e);if !reflect.DeepEqual(a,b) {panic("zero propagation logits differ")}
+		up:=make([][]float64,2);for i:=range up {up[i]=make([]float64,sn.Config.OutputSize)};for i:=1;i<sn.Config.OutputSize;i++ {up[1][i]=float64(i)/17}
+		ga,e:=net.LossGradientFrom(ctx,sn.Parameters,zero,up,0);qualityMust(e);gb,e:=net.LossGradientFrom(ctx,sn.Parameters,duplicate,up,0);qualityMust(e);if !reflect.DeepEqual(ga,gb) {panic("zero propagation parameter gradients differ")}
+	};qualityEmit(map[string]any{"event":"equivalence","samples":len(samples),"all_logits_exact_equal":true,"all_parameter_gradients_exact_equal":true,"simplification":"second whole-image drive replaced by zero propagation step"})
+}
+func qualityBaseline(ds Dataset,alphabet []rune) {
+	labels:=map[string]int{};for i,c:=range alphabet {labels[string(c)]=i};confusion:=make([][]int,len(alphabet));for i:=range confusion {confusion[i]=make([]int,len(alphabet))};correct:=0
+	for _,s:=range ds.Test {
+		type neighbor struct{distance float64;class int};ns:=make([]neighbor,len(ds.Train));for i,a:=range ds.Train {d:=0.0;for j,x:=range a.Image.Pixels {v:=x-s.Image.Pixels[j];d+=v*v};ns[i]=neighbor{d,labels[a.Text]}}
+		sort.SliceStable(ns,func(i,j int)bool{return ns[i].distance<ns[j].distance});votes:=make([]int,len(alphabet));for _,n:=range ns[:4] {votes[n.class]++};best:=0;for i:=1;i<len(votes);i++ {if votes[i]>votes[best] {best=i}};want:=labels[s.Text];confusion[want][best]++;if want==best {correct++}
+	};qualityEmit(map[string]any{"event":"baseline","classifier":"4NN, squared Euclidean normalized pixels, uniform votes, stable training-index distance ties, lowest class vote ties","train":len(ds.Train),"test":len(ds.Test),"correct":correct,"accuracy":float64(correct)/float64(len(ds.Test)),"confusion":confusion});fmt.Fprintln(os.Stderr,"baseline complete")
+}

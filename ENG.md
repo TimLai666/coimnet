@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- OCR 新輸入模式以明示 opt-in 設定加入。舊欄位／CTC 模式與已存模型保持；aligned-columns 補一個傳遞步並同時對齊讀出與外部梯度；single-character 以完整圖片的一次輸入及一個零傳遞步，僅最後讀出計算單字元分類。所有模式保留既有稀疏連續核心與 Insyra 梯度，資料、容量、目標與人工核心範圍明示。正式品質設定在測試前凍結，已用於開發的 200 張測試圖片排除。見 [ticket 64](docs/tickets/64-real-task-quality.md)。
+
 - GPU episode 的裝置 AdamW 以明示 opt-in 模式加入既有 Trainer。成功提交前讀回完整候選並驗證，提交後更新主機鏡像，既有 Snapshot 不改成可失敗操作。參數和動量常駐，但神經狀態、Insyra 編碼／讀出與稀疏算子參數傳輸仍在主機，量測須分開且不宣稱加速。原規格 §17.4 的完整神經狀態常駐是可行時的方向，不將 GPU 全圖或第二平台另加為 OPS-05 門檻。見 [ticket 61](docs/tickets/61-gpu-device-training.md)。
 
 - OCR 圖片前處理採有上限的標準 PNG／JPEG 解碼、明示灰階／墨色／nearest 縮放及來源 metadata，單欄頁面分行仍由同一 Recognizer 辨識。新增可選可訓練 identity 初值 encoder，缺省 false 保持舊模型，保存 mode 與 optimizer，配對比較獨立揭露 encoder 容量。影音範例沿用 task bundle，把來源、特徵／縮放／解碼設定與完整 snapshot 一起保存，新程序讀回後使用同一 predict／score／preview，沒有隱藏重訓。見 [ticket 62](docs/tickets/62-ocr-images-page-and-encoder.md)、[ticket 63](docs/tickets/63-realmedia-model-restore.md)。

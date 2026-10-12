@@ -1,0 +1,73 @@
+import gzip,hashlib,json,pathlib,shutil
+
+repo=pathlib.Path.cwd();root=repo/'runs/.tmp/real-task-quality-20261012';evidence=repo/'evidence/TSK-11/quality-20261012';final=evidence/'final'
+def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+def read(p):return json.loads(pathlib.Path(p).read_text())
+def store(p,x):
+    b=(json.dumps(x,ensure_ascii=False,indent=2)+'\n').encode()
+    if p.exists():assert p.read_bytes()==b,('refuse replacement',p)
+    else:p.parent.mkdir(parents=True,exist_ok=True);p.write_bytes(b)
+def archive(source,destination,compressed=False):
+    b=source.read_bytes();saved=gzip.compress(b,mtime=0) if compressed else b
+    if destination.exists():assert destination.read_bytes()==saved,('refuse replacement',destination)
+    else:destination.parent.mkdir(parents=True,exist_ok=True);destination.write_bytes(saved)
+    assert (gzip.decompress(destination.read_bytes()) if compressed else destination.read_bytes())==b
+    return {'path':str(destination.relative_to(repo)),'sha256':sha(destination),'bytes':destination.stat().st_size,'original_sha256':hashlib.sha256(b).hexdigest(),'original_bytes':len(b)}
+
+summary=read(root/'quality-summary.json');models=summary['models'];assert [m['seed'] for m in models]==[20260924,20260925,20260926]
+for m in models:
+    assert m['restore_exact_equal'] and m['trained']['updates']==120000
+    assert m['trained']['quality_gate']==(m['trained']['after']['accuracy']>=.8 and m['trained']['after']['accuracy']>m['trained']['before']['accuracy'])
+commands=read(root/'full/commands.json');assert [r['name'] for r in commands]==['environment','format','build','unit','race','vet','module','module-list'];assert all(r['exit_code']==0 for r in commands)
+frozen=read(root/'quality-source-frozen.json');assert frozen==read(root/'full/source-frozen.json');assert all(sha(repo/p)==h for p,h in frozen.items())
+cli=read(root/'cli/verification.json');assert cli['source_unchanged'] and cli['unknown_profile_no_bundle']
+for c in cli['comparisons']:
+    if 'epochs' in c:assert c['bundle_exact_equal'] and c['old_bundle_new_process_loaded']
+    else:assert c['actual_cli_save_restore_equal'] and c['no_restore_updates']
+def parse_events(p):return [json.loads(l) for l in p.read_text().splitlines()]
+tests={}
+for kind in ['unit','race']:
+    rows=parse_events(root/'full'/f'{kind}.log');failed=[r for r in rows if r['Action']=='fail'];assert not failed
+    packages=[r['Package'] for r in rows if r['Action']=='pass' and 'Test' not in r];assert len(packages)==57
+    tests[kind]={'passed_packages':len(packages),'passed_top_level_tests':sum(r['Action']=='pass' and 'Test' in r and '/' not in r['Test'] for r in rows),'passed_test_events':sum(r['Action']=='pass' and 'Test' in r for r in rows),'skipped':[{k:r[k] for k in ['Package','Test'] if k in r} for r in rows if r['Action']=='skip'],'failures':len(failed)}
+green=parse_events(root/'logs/profile-green-final.jsonl');assert not any(r['Action']=='fail' for r in green)
+tests['scoped_green']={'passed_test_events':sum(r['Action']=='pass' and 'Test' in r for r in green),'failed_events':sum(r['Action']=='fail' for r in green)}
+baseline=next(r for r in parse_events(root/'logs/quality-baseline.jsonl') if r.get('event')=='baseline')
+equiv=next(r for r in parse_events(root/'logs/quality-equivalence.jsonl') if r.get('event')=='equivalence');assert equiv['all_logits_exact_equal'] and equiv['all_parameter_gradients_exact_equal']
+
+artifacts=[]
+for p in sorted((root/'logs').iterdir()):
+    if p.name.startswith(('quality-','profile-red','profile-green','aligned-metadata-red','module-cache-repair','module-list-pre-repair','governance','finish-checks')):
+        artifacts.append(archive(p,final/'logs'/(p.name+'.gz'),True))
+for directory in ['full','full-attempt1','full-attempt2','cli']:
+    for p in sorted((root/directory).iterdir()):
+        if not p.is_file():continue
+        compressed=p.suffix in ('.log','.stderr')
+        artifacts.append(archive(p,final/directory/(p.name+('.gz' if compressed else '')),compressed))
+for name in ['quality-source-frozen.json','quality-build-inputs.json','quality-built.json','quality-summary.json','input-copy.json','baseline-source.json','historical-preservation.json','full-attempt1-inventory.json','full-attempt2-inventory.json']:
+    artifacts.append(archive(root/name,final/name))
+for name in ['quality_driver.go','run_quality.py','full_validation.py','cli_e2e.py','curate_final.py','cleanup_owned.py','repair_module_cache.py','finish_checks.py']:
+    artifacts.append(archive(root/name,final/'sources'/(name+'.txt')))
+artifacts.append(archive(root/'data/kmnist/metadata.json',final/'input-metadata.json'))
+
+model_files={}
+for m in models:
+    path=pathlib.Path(m['trained']['model']);actual={p.name:sha(p) for p in path.iterdir() if p.is_file()};assert actual==m['files'];model_files[str(path.relative_to(repo))]=actual
+base=read(root/'baseline-source.json');changed=[p for p,h in base.items() if sha(repo/p)!=h];assert set(changed)=={'examples/realocr/main.go','tasks/ocr/page_recognizer.go','tasks/ocr/persistence.go','tasks/ocr/recognizer.go'}
+historical=read(root/'historical-preservation.json');assert all(sha(repo/p)==h for p,h in historical.items())
+mods=(root/'full/module-list.log').read_text();decoder=json.JSONDecoder();entries=[]
+while mods.strip():
+    mods=mods.lstrip();x,end=decoder.raw_decode(mods);entries.append(x);mods=mods[end:]
+insyra=[x for x in entries if x['Path']=='github.com/HazelnutParadise/insyra'];assert len(insyra)==1 and insyra[0]['Version']=='v0.3.4'
+protocol=read(evidence/'protocol.json');assert sha(evidence/'protocol.json')=='896228827d608d79849808b1eeed059617b23892bef1d211b3425c38860b9b24'
+result={
+ 'schema_version':'coimnet-ocr-quality-validation/v1',
+ 'reproduction_command':{'formal_driver':read(root/'quality-built.json'),'full_framework':commands,'cli':read(root/'cli/commands.json'),'protocol':'evidence/TSK-11/quality-20261012/protocol.json'},
+ 'environment':read(root/'full/environment.log'),
+ 'input_fingerprints':{'source_files':len(frozen),'source_manifest':'evidence/TSK-11/quality-20261012/final/quality-source-frozen.json','protocol_sha256':sha(evidence/'protocol.json'),'source_unchanged':True,'only_existing_source_changes':changed,'new_code_files':['tasks/ocr/input_profile.go','tasks/ocr/input_profile_test.go','examples/realocr/input_profile_test.go'],'historical_files_preserved':len(historical),'input_copy_receipt':'evidence/TSK-11/quality-20261012/final/input-copy.json','models':model_files,'artifacts':artifacts},
+ 'observed_result':{'formal_validation_completed':True,'model_quality_gate_passed':all(m['trained']['quality_gate'] for m in models),'threshold_accuracy':.8,'each_seed':[{'seed':m['seed'],'before':m['trained']['before'],'after':m['trained']['after'],'train':m['trained']['train'],'disconnected_core':m['trained']['disconnected_core'],'parameter_delta':m['trained']['parameter_delta'],'updates':m['trained']['updates'],'new_process_restore_exact_equal':m['restore_exact_equal'],'passed':m['trained']['quality_gate']} for m in models],'same_data_4nn':baseline,'zero_propagation_equivalence':equiv,'engineering_checks':tests,'legacy_cli':cli,'dependency':{'insyra_version':insyra[0]['Version'],'module_verify_exit_code':next(c['exit_code'] for c in commands if c['name']=='module')},'interpretation':['The new profile can fit the training images; held-out accuracy is below the preregistered threshold and the same-data 4NN baseline.','The training/test gap establishes poor generalization, but does not isolate regularization, invariance, capacity or data coverage as its sole cause.','Earlier 1000/200 development results are not a matched final comparison with the 6000/2000 final protocol.','Timing, whole-image representation, encoder capacity/trainability and objective changes are explicit; gains are not attributed solely to timing.','This artificial continuous example core uses no connectome, chemistry, receptor, LIF or local-plasticity mechanism.'],'cleanup':'pending','delivery':'pending'},
+ 'test_log':{'artifacts':artifacts,'failed_attempts':{'full-attempt1':'Three retained probe .go sources were compiled together as one package; archive extensions changed to .go.txt with exact original bytes.','full-attempt2':'Loopback httptest listeners were blocked by the sandbox. The final full suite used the approved native execution environment.','module-attempt-symlinks':'go mod verify rejects module directories represented by symlinks; the same 187 native cached source modules were cloned into the owned cache, then the unchanged pinned dependencies were verified.'},'review':'evidence/TSK-11/quality-20261012/review.md'},
+ 'limitations':['Not natural page OCR or a generally useful OCR model.','The full framework test suite was executed on this Mac; skipped hardware or optional integration cases remain skipped.','No full-brain task quality or biological-mechanism benefit is demonstrated.','Necessary model bundles remain in project-local ignored models; licensed raw source data remains outside Git.']
+}
+store(evidence/'verification.json',result)
+print(json.dumps({'curated_artifacts':len(artifacts),'source_files':len(frozen),'accuracy':[m['trained']['after']['accuracy'] for m in models],'quality_gate_passed':result['observed_result']['model_quality_gate_passed'],'tests':tests},ensure_ascii=False),flush=True)

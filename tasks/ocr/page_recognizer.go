@@ -17,12 +17,17 @@ type PageOptions struct {
 	MaxLinePixels int
 }
 
-// InferPage reads single-column horizontal blocks using this line recognizer.
-// Bounds remain in the caller's image coordinates. Errors return no partial page.
+// InferPage segments horizontal blocks and recognizes each normalized line.
+// It supports column-oriented profiles; single-character is reserved for
+// complete-image classification and is rejected. Bounds remain in the
+// caller's image coordinates, and errors return no partial page.
 func (r *Recognizer) InferPage(ctx context.Context, image glyphs.Image, options PageOptions) (Page, error) {
 	var zero Page
 	if r == nil || r.trainer == nil {
 		return zero, errors.New("ocr: nil recognizer")
+	}
+	if r.config.InputProfile == inputProfileSingleCharacter {
+		return zero, errors.New("ocr: single-character profile does not support page inference")
 	}
 	if ctx == nil {
 		return zero, errors.New("ocr: context must not be nil")

@@ -1,0 +1,24 @@
+import os,pathlib,json,subprocess,time,hashlib
+repo=pathlib.Path.cwd();root=repo/'runs/.tmp/real-task-quality-20261012';full=root/'full';env=os.environ.copy();env.update(GOCACHE=str(root.resolve()/'go-build'),GOMODCACHE=str(root.resolve()/'go-mod-cache'),GOTMPDIR=str(root.resolve()/'go-tmp'),TMPDIR=str(root.resolve()/'go-tmp'),GOTOOLCHAIN='local',GOPROXY='off',GOMAXPROCS='2')
+def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+frozen=json.loads((root/'quality-source-frozen.json').read_text())
+commands=json.loads((full/'commands.json').read_text());assert len(commands)==7 and commands[-1]['name']=='module' and commands[-1]['exit_code']==1
+(full/'module-attempt-symlinks.record.json').write_text(json.dumps(commands[-1],indent=2)+'\n')
+for suffix in ['log','stderr']:
+    a=full/f'module.{suffix}';b=full/f'module-attempt-symlinks.{suffix}';assert not b.exists();a.rename(b)
+commands=commands[:-1]
+def run(name,cmd):
+    assert all(sha(repo/p)==h for p,h in frozen.items())
+    start=time.time()
+    with open(full/f'{name}.log','xb') as out,open(full/f'{name}.stderr','xb') as err:p=subprocess.run(cmd,env=env,stdout=out,stderr=err)
+    record={'name':name,'argv':cmd,'exit_code':p.returncode,'elapsed_seconds':time.time()-start,'stdout_sha256':sha(full/f'{name}.log'),'stderr_sha256':sha(full/f'{name}.stderr')};commands.append(record);(full/'commands.json').write_text(json.dumps(commands,indent=2)+'\n');print(json.dumps(record),flush=True)
+    assert p.returncode==0;assert all(sha(repo/p)==h for p,h in frozen.items())
+go='/usr/local/go/bin/go'
+run('module',[go,'mod','verify'])
+run('module-list',[go,'list','-m','-json','all'])
+regex='^(TestGovernance|TestFormatIndex|TestOnlyNetworkPackagesImportHTTP|TestNoTelemetry|TestScanCommitScriptFlagsSecrets)'
+cmd=[go,'test','-p','2','-count=1','-json','-run',regex,'.'];start=time.time()
+with open(root/'logs/governance.jsonl','xb') as out,open(root/'logs/governance.stderr','xb') as err:p=subprocess.run(cmd,env=env,stdout=out,stderr=err)
+rows=[json.loads(l) for l in (root/'logs/governance.jsonl').read_text().splitlines()];assert p.returncode==0 and not any(r['Action']=='fail' for r in rows)
+record={'command':cmd,'exit_code':p.returncode,'elapsed_seconds':time.time()-start,'passed_top_level_tests':[r['Test'] for r in rows if r['Action']=='pass' and 'Test' in r and '/' not in r['Test']],'log_sha256':sha(root/'logs/governance.jsonl'),'source_unchanged':all(sha(repo/p)==h for p,h in frozen.items())}
+(repo/'evidence/TSK-11/quality-20261012/governance.json').write_text(json.dumps(record,indent=2)+'\n');print(json.dumps(record),flush=True)

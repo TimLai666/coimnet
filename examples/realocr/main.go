@@ -133,6 +133,7 @@ type RunConfig struct {
 	MaxUncompressedBytes int64   `json:"max_uncompressed_bytes"`
 	Selection            string  `json:"selection"`
 	Encoder              string  `json:"encoder,omitempty"`
+	InputProfile         string  `json:"input_profile,omitempty"`
 }
 
 // EvalResult keeps the two requested before/after metrics compact and
@@ -244,6 +245,7 @@ func main() {
 		hidden          = flag.Int("hidden", defaultHidden, "recognizer recurrent hidden nodes")
 		learningRate    = flag.Float64("learning-rate", defaultLearningRate, "positive finite AdamW learning rate")
 		encoder         = flag.String("encoder", "fixed", "--encoder mode: fixed or trainable")
+		inputProfile    = flag.String("input-profile", "", "input profile: columns (legacy default), aligned-columns or single-character; single-character reads the complete 28x28 image in two neural steps")
 		seed            = flag.Uint64("seed", 20260924, "deterministic recognizer initialization seed")
 		maxCompressed   = flag.Int64("max-compressed-bytes", defaultMaxCompressedBytes, "maximum compressed bytes per IDX gzip")
 		maxUncompressed = flag.Int64("max-uncompressed-bytes", defaultMaxUncompressedBytes, "maximum uncompressed bytes per IDX gzip")
@@ -275,7 +277,7 @@ func main() {
 		Seed: *seed, TrainCount: *trainCount, TestCount: *testCount, Epochs: *epochs,
 		Hidden: *hidden, LearningRate: *learningRate,
 		MaxCompressedBytes: *maxCompressed, MaxUncompressedBytes: *maxUncompressed,
-		Selection: "balanced_round_robin_by_label_v1", Encoder: *encoder,
+		Selection: "balanced_round_robin_by_label_v1", Encoder: *encoder, InputProfile: *inputProfile,
 	}, *modelInput, *modelOutput)
 	if err != nil {
 		fatal(err)
@@ -704,23 +706,20 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 
 func runWithModel(ctx context.Context, dataset Dataset, config RunConfig, modelInput, modelOutput string) (Report, error) {
 	var zero Report
+	if ctx == nil {
+		return zero, errors.New("realocr: context is required")
+	}
 	if err := validateRunConfig(config, dataset); err != nil {
 		return zero, err
 	}
 	if err := ctx.Err(); err != nil {
 		return zero, err
 	}
-	alphabet := make([]rune, len(dataset.Metadata.Mapping))
-	for i, mapping := range dataset.Metadata.Mapping {
-		alphabet[i] = []rune(mapping.Char)[0]
-	}
-	modelConfig := ocr.RecognizerConfig{
-		Height: imageRows, Hidden: config.Hidden, Alphabet: alphabet,
-		LearningRate: config.LearningRate, Seed: config.Seed,
-		TrainableEncoder: config.Encoder == "trainable",
+	modelConfig, err := runRecognizerConfig(config, dataset)
+	if err != nil {
+		return zero, err
 	}
 	var recognizer *ocr.Recognizer
-	var err error
 	if modelInput == "" {
 		recognizer, err = ocr.NewRecognizer(modelConfig)
 	} else {
@@ -765,21 +764,34 @@ func runWithModel(ctx context.Context, dataset Dataset, config RunConfig, modelI
 	if err != nil {
 		return zero, err
 	}
+	dataScope := DataScope{
+		Data:           "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per 28x28 sample",
+		Language:       "Japanese hiragana label subset: 10 official KMNIST classes",
+		Resolution:     "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
+		SequenceLength: "one Unicode character per sample; 28 image columns are read as the CTC time sequence",
+		Periphery: func() string {
+			if config.Encoder == "trainable" {
+				return "identity-initialized trainable row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+			}
+			return "identity row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+		}(),
+	}
+	if config.InputProfile == "aligned-columns" {
+		dataScope.SequenceLength = "29 neural steps: 28 image columns followed by one zero propagation step; discard the first blind row to score 28 visible CTC frames"
+	}
+	if config.InputProfile == "single-character" {
+		dataScope.Data = "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per complete 28x28 image input"
+		dataScope.SequenceLength = "two neural steps: complete image input followed by one zero propagation step; final row classification"
+		if config.Encoder == "trainable" {
+			dataScope.Periphery = "whole-image trainable encoder, recurrent continuous core, final-row non-blank classifier"
+		} else {
+			dataScope.Periphery = "whole-image encoder, recurrent continuous core, final-row non-blank classifier"
+		}
+	}
 	report := Report{
 		SchemaVersion: reportSchemaVersion,
 		Example:       "realocr: official KMNIST single-character OCR example",
-		DataScope: DataScope{
-			Data:           "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per 28x28 sample",
-			Language:       "Japanese hiragana label subset: 10 official KMNIST classes",
-			Resolution:     "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
-			SequenceLength: "one Unicode character per sample; 28 image columns are read as the CTC time sequence",
-			Periphery: func() string {
-				if config.Encoder == "trainable" {
-					return "identity-initialized trainable row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
-				}
-				return "identity row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
-			}(),
-		},
+		DataScope:     dataScope,
 		Source: SourceReport{
 			Dataset: dataset.Metadata.Dataset, RepositoryURL: dataset.Metadata.RepositoryURL,
 			DatasetURL: dataset.Metadata.DatasetURL, License: dataset.Metadata.License,
@@ -847,6 +859,82 @@ func validateRunConfig(config RunConfig, dataset Dataset) error {
 	}
 	if config.Encoder != "" && config.Encoder != "fixed" && config.Encoder != "trainable" {
 		return fmt.Errorf("realocr: unknown encoder mode %q", config.Encoder)
+	}
+	for split, samples := range map[string][]glyphs.Sample{"train": dataset.Train, "test": dataset.Test} {
+		for i, sample := range samples {
+			if err := validateRunImage(config.InputProfile, sample.Image); err != nil {
+				return fmt.Errorf("realocr: %s sample %d: %w", split, i, err)
+			}
+		}
+	}
+	if _, err := runRecognizerConfig(config, dataset); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runRecognizerConfig(config RunConfig, dataset Dataset) (ocr.RecognizerConfig, error) {
+	var zero ocr.RecognizerConfig
+	if config.InputProfile != "" && config.InputProfile != "columns" && config.InputProfile != "aligned-columns" && config.InputProfile != "single-character" {
+		return zero, fmt.Errorf("realocr: unknown input profile %q", config.InputProfile)
+	}
+	if len(dataset.Metadata.Mapping) == 0 {
+		return zero, errors.New("realocr: class mapping is empty")
+	}
+	alphabet := make([]rune, len(dataset.Metadata.Mapping))
+	for i, mapping := range dataset.Metadata.Mapping {
+		if !utf8.ValidString(mapping.Char) {
+			return zero, fmt.Errorf("realocr: class mapping row %d is not valid UTF-8", i)
+		}
+		runes := []rune(mapping.Char)
+		if len(runes) != 1 || !utf8.ValidRune(runes[0]) {
+			return zero, fmt.Errorf("realocr: class mapping row %d must contain one Unicode scalar", i)
+		}
+		alphabet[i] = runes[0]
+	}
+	model := ocr.RecognizerConfig{
+		Height:           imageRows,
+		Hidden:           config.Hidden,
+		Alphabet:         alphabet,
+		LearningRate:     config.LearningRate,
+		Seed:             config.Seed,
+		TrainableEncoder: config.Encoder == "trainable",
+		InputProfile:     config.InputProfile,
+	}
+	if config.InputProfile == "single-character" {
+		model.CharacterWidth = imageCols
+	}
+	if err := model.Validate(); err != nil {
+		return zero, fmt.Errorf("realocr: invalid model configuration: %w", err)
+	}
+	return model, nil
+}
+
+func validateRunImage(profile string, image glyphs.Image) error {
+	if image.Height != imageRows {
+		return fmt.Errorf("image height %d, want %d", image.Height, imageRows)
+	}
+	if image.Width <= 0 {
+		return errors.New("image width must be positive")
+	}
+	if profile == "single-character" && image.Width != imageCols {
+		return fmt.Errorf("single-character image width %d, want %d", image.Width, imageCols)
+	}
+	maxInt := int(^uint(0) >> 1)
+	if image.Width > maxInt/image.Height {
+		return errors.New("image dimensions overflow")
+	}
+	area := image.Width * image.Height
+	if area > maxInt/8 {
+		return errors.New("image allocation size overflow")
+	}
+	if len(image.Pixels) != area {
+		return fmt.Errorf("%d pixels for a %dx%d image", len(image.Pixels), image.Width, image.Height)
+	}
+	for i, pixel := range image.Pixels {
+		if math.IsNaN(pixel) || math.IsInf(pixel, 0) {
+			return fmt.Errorf("image pixel %d is not finite", i)
+		}
 	}
 	return nil
 }

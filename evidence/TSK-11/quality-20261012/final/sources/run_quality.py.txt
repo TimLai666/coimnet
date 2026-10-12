@@ -1,0 +1,55 @@
+import hashlib,json,os,pathlib,subprocess,time
+
+repo=pathlib.Path.cwd()
+root=repo/'runs/.tmp/real-task-quality-20261012'
+env=os.environ.copy()
+env.update(GOCACHE=str(root/'go-build'),GOMODCACHE=str(root/'go-mod-cache'),GOTMPDIR=str(root/'go-tmp'),TMPDIR=str(root/'go-tmp'),GOTOOLCHAIN='local',GOPROXY='off',GOMAXPROCS='2')
+go='/usr/local/go/bin/go'
+def sha(p): return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+source_paths=[p for p in subprocess.check_output(['git','ls-files','-co','--exclude-standard'],text=True).splitlines() if not p.startswith(('evidence/','runs/','data/','models/','checkpoints/')) and (p.endswith(('.go','.sh','.wgsl')) or p in ('go.mod','go.sum'))]
+frozen={p:sha(repo/p) for p in sorted(set(source_paths))}
+def unchanged():
+    assert all(sha(repo/p)==h for p,h in frozen.items()),'source changed during formal validation'
+def run(name,cmd):
+    unchanged();start=time.time()
+    with open(root/'logs'/f'{name}.jsonl','xb') as out,open(root/'logs'/f'{name}.stderr','xb') as err: p=subprocess.run(cmd,env=env,stdout=out,stderr=err)
+    record={'command':cmd,'exit_code':p.returncode,'elapsed_seconds':time.time()-start,'stdout_sha256':sha(root/'logs'/f'{name}.jsonl'),'stderr_sha256':sha(root/'logs'/f'{name}.stderr')}
+    with open(root/'logs'/f'{name}-command.json','x') as f:json.dump(record,f,indent=2);f.write('\n')
+    print(json.dumps({'name':name,**record}),flush=True);unchanged()
+    if p.returncode:raise RuntimeError(f'{name} exited {p.returncode}')
+    return [json.loads(l) for l in (root/'logs'/f'{name}.jsonl').read_text().splitlines()] if name not in ('quality-build','quality-cli-build') else []
+
+with open(root/'quality-source-frozen.json','x') as f:json.dump(frozen,f,indent=2);f.write('\n')
+driver=root/'driver';driver.mkdir()
+main=(repo/'examples/realocr/main.go').read_bytes();assert main.count(b'func main() {')==1
+(driver/'main.go').write_bytes(main.replace(b'func main() {',b'func realOCRMain() {',1))
+(driver/'model.go').write_bytes((repo/'examples/realocr/model.go').read_bytes())
+(driver/'quality_driver.go').write_bytes((root/'quality_driver.go').read_bytes())
+build={'transformation':'exact bytes of examples/realocr/main.go with the sole func main renamed to realOCRMain; model.go exact copied; evaluation driver adds replacement main','sources':{str(p.relative_to(repo)):sha(p) for p in driver.glob('*.go')},'original_main_sha256':sha(repo/'examples/realocr/main.go'),'original_model_sha256':sha(repo/'examples/realocr/model.go'),'driver_sha256':sha(root/'quality_driver.go')}
+with open(root/'quality-build-inputs.json','x') as f:json.dump(build,f,indent=2);f.write('\n')
+binary=root/'bin/quality'
+run('quality-build',[go,'build','-p','2','-o',str(binary),*[str(p) for p in sorted(driver.glob('*.go'))]])
+build['binary_sha256']=sha(binary)
+with open(root/'quality-built.json','x') as f:json.dump(build,f,indent=2);f.write('\n')
+data=str(root/'data/kmnist')
+common=[str(binary),'--data-dir',data]
+run('quality-equivalence',common+['--mode','equivalence'])
+run('quality-baseline',common+['--mode','baseline'])
+models=repo/'models/TSK-11/quality-20261012'
+assert not models.exists(),'refuse to replace existing models'
+models.mkdir(parents=True)
+summaries=[]
+for seed in (20260924,20260925,20260926):
+    model=models/f'seed-{seed}'
+    train=run(f'quality-train-{seed}',common+['--mode','train','--seed',str(seed),'--model',str(model)])
+    trained=next(x for x in train if x.get('event')=='final')
+    files_before={p.name:sha(p) for p in model.iterdir() if p.is_file()}
+    restored=run(f'quality-restore-{seed}',common+['--mode','restore','--seed',str(seed),'--model',str(model)])
+    restored=next(x for x in restored if x.get('event')=='final')
+    assert trained['after']==restored['after'] and trained['train']==restored['train']
+    assert trained['snapshot_sha256']==restored['snapshot_sha256'] and trained['config_sha256']==restored['config_sha256']
+    assert trained['updates']==restored['updates']==120000
+    assert files_before=={p.name:sha(p) for p in model.iterdir() if p.is_file()}
+    summaries.append({'seed':seed,'trained':trained,'restore_exact_equal':True,'files':files_before})
+with open(root/'quality-summary.json','x') as f:json.dump({'models':summaries,'all_seeds_quality_gate':all(x['trained']['quality_gate'] for x in summaries),'source_unchanged':True},f,indent=2);f.write('\n')
+print(json.dumps({'quality_complete':True,'accuracy':[x['trained']['after']['accuracy'] for x in summaries],'all_seeds_quality_gate':all(x['trained']['quality_gate'] for x in summaries)}),flush=True)

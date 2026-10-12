@@ -1,0 +1,27 @@
+import hashlib,json,os,pathlib,subprocess,time
+repo=pathlib.Path.cwd();root=repo/'runs/.tmp/real-task-quality-20261012';out=root/'full';out.mkdir()
+env=os.environ.copy();env.update(GOCACHE=str(root/'go-build'),GOMODCACHE=str(root/'go-mod-cache'),GOTMPDIR=str(root/'go-tmp'),TMPDIR=str(root/'go-tmp'),GOTOOLCHAIN='local',GOPROXY='off',GOMAXPROCS='2')
+def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+paths=[p for p in subprocess.check_output(['git','ls-files','-co','--exclude-standard'],text=True).splitlines() if not p.startswith(('evidence/','runs/','data/','models/','checkpoints/')) and (p.endswith(('.go','.sh','.wgsl')) or p in ('go.mod','go.sum'))]
+frozen={p:sha(repo/p) for p in sorted(set(paths))}
+(out/'source-frozen.json').write_text(json.dumps(frozen,indent=2)+'\n')
+commands=[]
+def run(name,cmd):
+    assert all(sha(repo/p)==h for p,h in frozen.items()),'source changed'
+    start=time.time()
+    with open(out/f'{name}.log','xb') as log,open(out/f'{name}.stderr','xb') as err:p=subprocess.run(cmd,stdout=log,stderr=err,env=env)
+    r={'name':name,'argv':cmd,'exit_code':p.returncode,'elapsed_seconds':time.time()-start,'stdout_sha256':sha(out/f'{name}.log'),'stderr_sha256':sha(out/f'{name}.stderr')}
+    commands.append(r);(out/'commands.json').write_text(json.dumps(commands,indent=2)+'\n');print(json.dumps(r),flush=True)
+    assert all(sha(repo/p)==h for p,h in frozen.items()),'source changed'
+    if p.returncode:raise RuntimeError(f'{name} exit {p.returncode}')
+    if name=='format' and (out/f'{name}.log').stat().st_size:raise RuntimeError('unformatted source')
+go='/usr/local/go/bin/go'
+run('environment',[go,'env','-json','GOVERSION','GOOS','GOARCH','CGO_ENABLED','GOCACHE','GOMODCACHE','GOTMPDIR'])
+run('format',['/usr/local/go/bin/gofmt','-l',*[str(repo/p) for p in frozen if p.endswith('.go')]])
+run('build',[go,'build','-p','2','./...'])
+run('unit',[go,'test','-p','2','-json','-count=1','-timeout=45m','./...'])
+run('race',[go,'test','-race','-p','2','-json','-count=1','-timeout=45m','./...'])
+run('vet',[go,'vet','-p','2','./...'])
+run('module',[go,'mod','verify'])
+run('module-list',[go,'list','-m','-json','all'])
+print(json.dumps({'full_validation_completed':True,'source_files':len(frozen),'commands':len(commands)}),flush=True)

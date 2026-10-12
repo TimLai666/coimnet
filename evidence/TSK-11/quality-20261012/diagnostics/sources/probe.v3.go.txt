@@ -1,0 +1,68 @@
+package main
+
+import (
+ "compress/gzip"
+ "context"
+ "encoding/binary"
+ "encoding/json"
+ "flag"
+ "io"
+ "math"
+ "math/rand/v2"
+ "os"
+ "path/filepath"
+ "sort"
+
+ "github.com/TimLai666/coimnet/learning"
+ "github.com/TimLai666/coimnet/tasks/ocr"
+ "github.com/TimLai666/coimnet/tasks/ocr/ctc"
+ "github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+type sample struct { image glyphs.Image; label int }
+func must(err error) { if err!=nil { panic(err) } }
+func idx(path string, magic uint32) []byte {
+ f,e:=os.Open(path);must(e);defer f.Close();z,e:=gzip.NewReader(f);must(e);defer z.Close()
+ b,e:=io.ReadAll(io.LimitReader(z,(64<<20)+1));must(e)
+ if len(b)>64<<20 || len(b)<8 || binary.BigEndian.Uint32(b)!=magic { panic("invalid bounded IDX") }
+ n:=int(binary.BigEndian.Uint32(b[4:8]));header,width:=8,1
+ if magic==2051 { header,width=16,784; if len(b)<16 || binary.BigEndian.Uint32(b[8:12])!=28 || binary.BigEndian.Uint32(b[12:16])!=28 { panic("invalid shape") } }
+ if len(b)!=header+n*width { panic("invalid payload") };return b[header:]
+}
+func data(dir,split string,count,offset int) []sample {
+ im,la:="train-images-idx3-ubyte.gz","train-labels-idx1-ubyte.gz";if split=="test" { im,la="t10k-images-idx3-ubyte.gz","t10k-labels-idx1-ubyte.gz" }
+ pixels,labels:=idx(filepath.Join(dir,im),2051),idx(filepath.Join(dir,la),2049);if len(pixels)!=len(labels)*784 { panic("image label counts") }
+ groups:=make([][]int,10);for i,c:=range labels { if c>=10 {panic("label range")};groups[c]=append(groups[c],i) }
+ out:=make([]sample,0,count);for i:=0;i<count;i++ { c:=i%10;j:=offset+i/10;if j>=len(groups[c]) {panic("selection bounds")};k:=groups[c][j];p:=make([]float64,784);for x,v:=range pixels[k*784:(k+1)*784] {p[x]=float64(v)/255};out=append(out,sample{glyphs.Image{Width:28,Height:28,Pixels:p},c}) };return out
+}
+var fullImage bool
+func inputRows(r *ocr.Recognizer,img glyphs.Image) ([][]float64,error) {if fullImage {return [][]float64{append([]float64(nil),img.Pixels...),append([]float64(nil),img.Pixels...)},nil};return r.Columns(img)}
+func boolInt(v bool) int {if v{return 1};return 0}
+func emit(v any) { e:=json.NewEncoder(os.Stdout);must(e.Encode(v)) }
+func main() {
+ dir:=flag.String("data-dir","","fingerprinted KMNIST directory");model:=flag.String("model","","saved recognizer bundle")
+ mode:=flag.String("mode","probe","probe, tiny or baseline");epochs:=flag.Int("epochs",100,"tiny training epochs");tail:=flag.Int("tail",0,"appended zero steps")
+ shuffle:=flag.Bool("shuffle",false,"shuffle tiny training order");lr:=flag.Float64("lr",0.002,"tiny learning rate")
+ seed:=flag.Uint64("seed",20260924,"initialization and order seed");trainCount:=flag.Int("train-count",1000,"balanced training examples");testCount:=flag.Int("test-count",200,"balanced test examples")
+ offset:=flag.Int("test-offset",0,"per-class test index offset");align:=flag.Bool("align",false,"discard blind first output and append one propagation step");flag.BoolVar(&fullImage,"full-image",false,"whole image in two propagation rows; final-row classification");flag.Parse();ctx:=context.Background()
+ alphabet:=[]rune{'お','き','す','つ','な','は','ま','や','れ','を'}
+ if *mode=="baseline" {
+  tr,te:=data(*dir,"train",*trainCount,0),data(*dir,"test",*testCount,*offset);correct:=0;confusion:=make([][]int,10);for i:=range confusion {confusion[i]=make([]int,10)}
+  for _,s:=range te { ds:=make([]struct{d float64;c int},len(tr));for i,a:=range tr {var d float64;for j,x:=range a.image.Pixels {v:=x-s.image.Pixels[j];d+=v*v};ds[i]=struct{d float64;c int}{d,a.label} };sort.SliceStable(ds,func(i,j int)bool{return ds[i].d<ds[j].d});votes:=make([]int,10);k:=4;if len(ds)<k {k=len(ds)};for _,n:=range ds[:k] {votes[n.c]++};best:=0;for c:=1;c<10;c++ {if votes[c]>votes[best]{best=c}};confusion[s.label][best]++;if best==s.label {correct++} }
+  emit(map[string]any{"mode":*mode,"train":len(tr),"test":len(te),"test_offset_per_class":*offset,"accuracy":float64(correct)/float64(len(te)),"confusion":confusion});return
+ }
+ config:=ocr.RecognizerConfig{Height:28,Hidden:24,Alphabet:alphabet,LearningRate:*lr,Seed:*seed}
+ var r *ocr.Recognizer;var e error;if *model!="" {r,e=ocr.LoadRecognizer(ctx,*model)} else {r,e=ocr.NewRecognizer(config)};must(e)
+ if *mode=="tiny" {
+  tr:=data(*dir,"train",*trainCount,0);sn:=r.Snapshot();if fullImage {sn.Config.InputSize=784;sn.Parameters.Encoder=make([]float64,784*28);rng:=rand.New(rand.NewPCG(*seed,42));for i:=range sn.Parameters.Encoder {sn.Parameters.Encoder[i]=(rng.Float64()*2-1)/math.Sqrt(784)};sn.Options.Trainable.Encoder=true;sn.Optimizer=learning.AdamState{};sn.Updates=0};trainer,e:=learning.NewTrainer(sn.Config,sn.Parameters,sn.Options);must(e);rng:=rand.New(rand.NewPCG(*seed,37));order:=make([]int,len(tr));for i:=range order {order[i]=i}
+  for epoch:=0;epoch<*epochs;epoch++ { if *shuffle {rng.Shuffle(len(order),func(i,j int){order[i],order[j]=order[j],order[i]})};var loss,norm float64
+   for _,i:=range order {s:=tr[i];cols,e:=inputRows(r,s.image);must(e);for k:=0;k<*tail+boolInt(*align);k++ {cols=append(cols,make([]float64,28))};logits,e:=trainer.PredictAll(ctx,cols);must(e);if *align {logits=logits[1:]};l,g,e:=ctc.Loss(logits,[]int{s.label+1});must(e);if fullImage {last:=logits[len(logits)-1];mx:=last[1];for _,v:=range last[2:] {if v>mx {mx=v}};sum:=0.;for _,v:=range last[1:] {sum+=math.Exp(v-mx)};l=math.Log(sum)+mx-last[s.label+1];g=make([][]float64,len(logits));for i:=range g {g[i]=make([]float64,11)};for k,v:=range last[1:] {g[len(g)-1][k+1]=math.Exp(v-mx)/sum};g[len(g)-1][s.label+1]-=1};if *align {g=append([][]float64{make([]float64,11)},g...)};step,e:=trainer.StepFrom(ctx,cols,g);must(e);loss+=l;norm+=step.GradientNorm}
+   if epoch==0 || (epoch+1)%10==0 || epoch==*epochs-1 {correct:=0;hist:=map[string]int{};for _,s:=range tr {cols,e:=inputRows(r,s.image);must(e);for k:=0;k<*tail+boolInt(*align);k++ {cols=append(cols,make([]float64,28))};logits,e:=trainer.PredictAll(ctx,cols);must(e);if *align {logits=logits[1:]};ids,e:=ctc.Decode(logits);must(e);if fullImage {last:=logits[len(logits)-1];best:=1;for k:=2;k<11;k++ {if last[k]>last[best] {best=k}};ids=[]int{best}};out:=[]rune{};for _,id:=range ids {out=append(out,alphabet[id-1])};pred:=string(out);hist[pred]++;if pred==string(alphabet[s.label]){correct++}};emit(map[string]any{"mode":*mode,"full_image":fullImage,"epoch":epoch+1,"ctc_loss_mean":loss/float64(len(tr)),"gradient_norm_mean":norm/float64(len(tr)),"train_accuracy":float64(correct)/float64(len(tr)),"histogram":hist,"tail":*tail,"align":*align,"shuffle":*shuffle,"lr":*lr,"seed":*seed}) }
+  };if fullImage {te:=data(*dir,"test",*testCount,*offset);correct:=0;hist:=map[string]int{};for _,sample:=range te {cols,e:=inputRows(r,sample.image);must(e);logits,e:=trainer.PredictAll(ctx,cols);must(e);last:=logits[len(logits)-1];best:=1;for k:=2;k<11;k++ {if last[k]>last[best] {best=k}};hist[string(alphabet[best-1])]++;if best-1==sample.label {correct++}};emit(map[string]any{"mode":"full-image-final-test","train_count":len(tr),"test_count":len(te),"epochs":*epochs,"accuracy":float64(correct)/float64(len(te)),"histogram":hist,"seed":*seed,"test_offset_per_class":*offset})};return
+ }
+ trainer,e:=learning.RestoreTrainer(r.Snapshot());must(e)
+ for _,split:=range []string{"train","test"} {samples:=data(*dir,split,*testCount,*offset);hist:=map[string]int{};correct,rankCorrect:=0,0;var loss,lastInk float64;confusion:=make([][]int,10);for i:=range confusion {confusion[i]=make([]int,11)}
+  for _,s:=range samples {cols,e:=inputRows(r,s.image);must(e);for _,x:=range cols[len(cols)-1] {lastInk+=x};for k:=0;k<*tail+boolInt(*align);k++ {cols=append(cols,make([]float64,28))};logits,e:=trainer.PredictAll(ctx,cols);must(e);if *align {logits=logits[1:]};ids,e:=ctc.Decode(logits);must(e);if fullImage {last:=logits[len(logits)-1];best:=1;for k:=2;k<11;k++ {if last[k]>last[best] {best=k}};ids=[]int{best}};out:=[]rune{};for _,id:=range ids {out=append(out,alphabet[id-1])};pred:=string(out);hist[pred]++;pc:=10;if len(ids)==1 {pc=ids[0]-1};confusion[s.label][pc]++;if pred==string(alphabet[s.label]){correct++};best,bestLoss:=0,math.Inf(1);for k:=0;k<10;k++ {l,_,e:=ctc.Loss(logits,[]int{k+1});must(e);if l<bestLoss {best,bestLoss=k,l};if k==s.label {loss+=l}};if best==s.label {rankCorrect++} }
+  emit(map[string]any{"mode":*mode,"split":split,"samples":len(samples),"tail":*tail,"align":*align,"greedy_accuracy":float64(correct)/float64(len(samples)),"known_single_character_ctc_rank_accuracy":float64(rankCorrect)/float64(len(samples)),"ctc_loss_mean":loss/float64(len(samples)),"last_column_ink_mean":lastInk/float64(len(samples)),"histogram":hist,"confusion":confusion})
+ }
+}

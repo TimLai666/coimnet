@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-12T11:33:23.307637+00:00",
+  "source_commit": "d2d3011153c07be0d572dcca08f93e36c7b55ac5",
+  "task": "KMNIST bounded single-character recognition with CoImNet CPU continuous artificial example core; no natural-page, connectome advantage or full-brain quality claim",
+  "development_data": "first 1000 balanced official training samples and first 200 official test samples already used for diagnostic comparisons; never report these as blind final test",
+  "final_protocol": {
+    "training": 6000,
+    "training_selection": "balanced round-robin official training samples",
+    "epochs": 20,
+    "learning_rate": 0.002,
+    "hidden": 24,
+    "encoder": "trainable",
+    "seed_list": [
+      20260924,
+      20260925,
+      20260926
+    ],
+    "evaluation": "2000 balanced official test samples, per-class offset 20 excludes the 200 diagnostic samples",
+    "held_out_labels_not_used_for_selection": true,
+    "usefulness_gate": "Each seed reaches at least 80% exact single-character accuracy and exceeds its untrained result; report same-data 4-nearest-neighbor comparison separately, with no required superiority claim",
+    "freeze_before_final": true,
+    "training_order": "PCG(seed,37) shuffles the previous epoch permutation once per epoch; identical to the development prototype policy. Only training indices are shuffled.",
+    "runner": "Temporary driver built from exact examples/realocr source copies with only the original main renamed; use unchanged strict LoadDataset and public tasks/ocr SDK. Select 2200 balanced test samples then discard first 200. Preserve driver source, transformation and hashes as evidence. Standard CLI verified separately."
+  },
+  "scope": [
+    "diagnose existing constant-class failure with controlled alignment and input/objective experiments",
+    "add compatible optional aligned-columns and single-character OCR input profiles; preserve old profile and saved models",
+    "prove real-data held-out performance and true new-process restore; disconnect core control",
+    "full framework validation, evidence preservation and owned temp cleanup"
+  ],
+  "skeleton": {
+    "SDK": "RecognizerConfig optional InputProfile/CharacterWidth; Inputs returns actual neural-step inputs; aligned profile adds a zero terminal step and aligns logits/upstream; character profile uses one full-image row followed by one zero propagation row and final-row softmax; seeded encoder PCG(seed,42) scaled by sqrt(input width).",
+    "CLI": "--input-profile with empty legacy default, aligned-columns or single-character; all effective configuration and capacity saved/reported; training split only updates model",
+    "compatibility": "Default profile and existing checkpoints, constructor, tensor shapes and inference outputs unchanged; new profiles persist explicitly"
+  },
+  "resource_limit": "native APFS only; project-owned caches and 21.24MB licensed source copies under runs/.tmp; no SSH and no training on SMB; no new dependencies"
+}

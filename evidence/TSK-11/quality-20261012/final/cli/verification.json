@@ -1,0 +1,83 @@
+{
+  "comparisons": [
+    {
+      "epochs": 1,
+      "bundle_exact_equal": true,
+      "report_fields_exact_equal": [
+        "config",
+        "config_hash",
+        "before",
+        "after",
+        "train",
+        "encoder_profile",
+        "data_scope"
+      ],
+      "old_bundle_new_process_loaded": true,
+      "bundle_files": {
+        "arrays.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "document.json": "ff322a3a235d3604b284686b12572afe0cbb68c5e49640e45a7184ffd27c7039",
+        "manifest.json": "7cbd4949ea84009893881c0086ce589eddc8005c45c8c564813e9f127885431c"
+      }
+    },
+    {
+      "epochs": 10,
+      "bundle_exact_equal": true,
+      "report_fields_exact_equal": [
+        "config",
+        "config_hash",
+        "before",
+        "after",
+        "train",
+        "encoder_profile",
+        "data_scope"
+      ],
+      "old_bundle_new_process_loaded": true,
+      "bundle_files": {
+        "arrays.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "document.json": "372125b6278e7a209985e28549437e542f120316946b29406e078056656e8969",
+        "manifest.json": "561bb95bd207cf1d5051997cb0d7584112247c5f7cfb710b73c68017d1fddddb"
+      }
+    },
+    {
+      "profile": "aligned-columns",
+      "actual_cli_save_restore_equal": true,
+      "no_restore_updates": true,
+      "encoder_parameters": 784,
+      "config_hash": "629fed5a7dedd87987cccaa21e349971f0eb4a845eae05e41f743fd4598b674e",
+      "data_scope": {
+        "data": "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per 28x28 sample",
+        "language": "Japanese hiragana label subset: 10 official KMNIST classes",
+        "resolution": "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
+        "sequence_length": "29 neural steps: 28 image columns followed by one zero propagation step; discard the first blind row to score 28 visible CTC frames",
+        "periphery": "identity-initialized trainable row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+      },
+      "files": {
+        "arrays.bin": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "document.json": "4633e433442acae9a571e85aaad24cdd0ee37f7f380344bfa41e9a033e7cd955",
+        "manifest.json": "c9fb4c6074e120569a6ea05d49a0739db57e6b0e646f9e148c11527da3ea24e4"
+      }
+    },
+    {
+      "profile": "single-character",
+      "actual_cli_save_restore_equal": true,
+      "no_restore_updates": true,
+      "encoder_parameters": 21952,
+      "config_hash": "0df3d29d22a4b213d55f92982510b8fa7a62a7022e30254354478b3f3e765441",
+      "data_scope": {
+        "data": "official ROIS-CODH Kuzushiji-MNIST handwritten/cursive character images, one character per complete 28x28 image input",
+        "language": "Japanese hiragana label subset: 10 official KMNIST classes",
+        "resolution": "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
+        "sequence_length": "two neural steps: complete image input followed by one zero propagation step; final row classification",
+        "periphery": "whole-image trainable encoder, recurrent continuous core, final-row non-blank classifier"
+      },
+      "files": {
+        "arrays.bin": "59434fa717f8eb5ab84be92d77c4fdd8ad4c12d75dec928af55476195e265a4d",
+        "document.json": "3bf3edacf603bc62c96b878c1285bba5cc3698f0874afb43694a2e78be3cfdf5",
+        "manifest.json": "5425388b7fb80c072f46aa2b331cb46154c6a866d2f4d3c2b9f633eb36324593"
+      }
+    }
+  ],
+  "unknown_profile_no_bundle": true,
+  "candidate_binary_sha256": "33186826b1700b4296940670d0583c18872ecc5a37c9b99dc95b4e9f8dfd45f2",
+  "source_unchanged": true
+}

@@ -1,0 +1,51 @@
+import hashlib,json,os,pathlib,shutil,stat,time
+
+repo=pathlib.Path.cwd().resolve();root=repo/'runs/.tmp/real-task-quality-20261012';evidence=repo/'evidence/TSK-11/quality-20261012'
+assert root.is_dir() and not root.is_symlink() and root.resolve()==root
+assert root.parent==repo/'runs/.tmp' and root.name=='real-task-quality-20261012'
+assert root.stat().st_dev==repo.stat().st_dev
+def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+def read(p):return json.loads(pathlib.Path(p).read_text())
+verification=read(evidence/'verification.json');assert verification['observed_result']['formal_validation_completed']
+assert read(evidence/'governance.json')['exit_code']==0
+frozen=read(root/'quality-source-frozen.json');assert all(sha(repo/p)==h for p,h in frozen.items())
+historical=read(root/'historical-preservation.json');assert all(sha(repo/p)==h for p,h in historical.items())
+models=verification['input_fingerprints']['models']
+assert all(sha(repo/path/name)==h for path,files in models.items() for name,h in files.items())
+copies=read(root/'input-copy.json')
+source_info=[{'name':name,**entry} for name,entry in copies.items()] if isinstance(copies,dict) else copies
+# Field names are inspected by Root before running this script; this loop
+# verifies only the six explicit data originals and their owned copies.
+for entry in source_info:
+    original=pathlib.Path(entry['source']);owned=pathlib.Path(entry['copy']);expected=entry['sha256']
+    assert original.is_file() and owned.is_file() and root in owned.parents
+    assert sha(original)==expected and sha(owned)==expected
+all_evidence={str(p.relative_to(repo)):sha(p) for p in evidence.rglob('*') if p.is_file()}
+inventory=[];file_bytes=0;links=0
+for directory,dirs,files in os.walk(root,followlinks=False):
+    for name in dirs+files:
+        p=pathlib.Path(directory)/name;s=p.lstat();rel=str(p.relative_to(root))
+        if stat.S_ISLNK(s.st_mode):inventory.append({'path':rel,'kind':'symlink','target':os.readlink(p),'bytes':s.st_size});links+=1
+        elif stat.S_ISREG(s.st_mode):inventory.append({'path':rel,'kind':'file','bytes':s.st_size});file_bytes+=s.st_size
+        elif stat.S_ISDIR(s.st_mode):inventory.append({'path':rel,'kind':'directory'})
+        else:raise RuntimeError(f'unsupported temp entry {p}')
+receipt={'owned_root':str(root),'authorization':'User requested cleanup of this task temporary files after validation; keep necessary source data and model bundles in ignored project directories.','before':{'regular_files':sum(x['kind']=='file' for x in inventory),'regular_file_bytes':file_bytes,'symlinks':links,'entries':len(inventory)},'source_files_preserved':len(frozen),'historical_files_preserved':len(historical),'licensed_data_originals_preserved':source_info,'retained_models':models,'evidence_files_verified':len(all_evidence),'deletion_policy':'Remove only the exact inspected owned root. Do not follow Go module cache symlinks and do not remove their targets.','verification_after':'pending'}
+inv=evidence/'cleanup-inventory.json';assert not inv.exists();inv.write_text(json.dumps(inventory,ensure_ascii=False,indent=2)+'\n')
+path=evidence/'cleanup.json';assert not path.exists();path.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n')
+writable_dirs=0
+for directory,dirs,files in os.walk(root,followlinks=False):
+    p=pathlib.Path(directory);assert p.resolve()==p and (p==root or root in p.parents)
+    mode=stat.S_IMODE(p.stat().st_mode)
+    if not mode & stat.S_IWUSR:
+        os.chmod(p,mode|stat.S_IWUSR|stat.S_IXUSR);writable_dirs+=1
+receipt['owned_readonly_directories_made_writable_for_cleanup']=writable_dirs
+shutil.rmtree(root)
+assert not root.exists()
+assert all(sha(repo/p)==h for p,h in frozen.items())
+assert all(sha(repo/p)==h for p,h in historical.items())
+assert all(sha(repo/path/name)==h for path,files in models.items() for name,h in files.items())
+assert all(sha(repo/p)==h for p,h in all_evidence.items())
+assert all(sha(entry['source'])==entry['sha256'] for entry in source_info)
+receipt['verification_after']={'owned_root_removed':True,'source_and_historical_files_unchanged':True,'all_retained_models_unchanged':True,'all_previous_evidence_unchanged':True,'all_licensed_data_originals_unchanged':True,'module_symlink_targets_not_deleted':True}
+path.write_text(json.dumps(receipt,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'removed':receipt['before'],'retained_models':len(models),'source_files':len(frozen),'historical_files':len(historical),'owned_root_removed':True},ensure_ascii=False),flush=True)

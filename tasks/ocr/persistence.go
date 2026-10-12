@@ -100,24 +100,37 @@ func LoadRecognizer(ctx context.Context, path string) (*Recognizer, error) {
 
 func validateOCRCheckpointShape(config RecognizerConfig, snapshot learning.TrainingSnapshot) error {
 	network := snapshot.Config
-	if config.Height != network.InputSize || config.Height != len(network.InputNodes) ||
-		config.Hidden != len(network.ReadoutNodes) ||
-		config.Hidden != network.Dynamics.Nodes-config.Height ||
-		len(config.Alphabet) != network.OutputSize-1 {
+	inputSize, err := recognizerInputSize(config)
+	if err != nil {
+		return fmt.Errorf("ocr: checkpoint input dimensions: %w", err)
+	}
+	nodes, err := profileSum(config.Height, config.Hidden, "network nodes")
+	if err != nil {
+		return fmt.Errorf("ocr: checkpoint network dimensions: %w", err)
+	}
+	edges, err := profileProduct(nodes, config.Hidden, "dense edge")
+	if err != nil {
+		return fmt.Errorf("ocr: checkpoint edge dimensions: %w", err)
+	}
+	encoderLength, err := profileProduct(inputSize, config.Height, "encoder")
+	if err != nil {
+		return fmt.Errorf("ocr: checkpoint encoder dimensions: %w", err)
+	}
+	readoutLength, err := profileProduct(config.Hidden, len(config.Alphabet)+1, "readout")
+	if err != nil {
+		return fmt.Errorf("ocr: checkpoint readout dimensions: %w", err)
+	}
+	if inputSize != network.InputSize || config.Height != len(network.InputNodes) ||
+		config.Hidden != len(network.ReadoutNodes) || nodes != network.Dynamics.Nodes ||
+		len(config.Alphabet)+1 != network.OutputSize {
 		return errors.New("ocr: checkpoint task dimensions do not match training config")
 	}
 	// Reconstruction is dense even if the supplied saved network is sparse.
 	// Match every allocated array before running the constructor.
-	maxInt := int(^uint(0) >> 1)
-	if config.Hidden <= 0 || config.Height <= 0 || network.Dynamics.Nodes > maxInt/config.Hidden ||
-		config.Height > maxInt/config.Height || network.OutputSize > maxInt/config.Hidden {
-		return errors.New("ocr: checkpoint reconstruction dimensions overflow")
-	}
-	edges := network.Dynamics.Nodes * config.Hidden
 	if len(network.Dynamics.Sources) != edges || len(network.Dynamics.Targets) != edges ||
 		len(snapshot.Parameters.Core.Weights) != edges ||
-		len(snapshot.Parameters.Encoder) != config.Height*config.Height ||
-		len(snapshot.Parameters.Readout) != config.Hidden*network.OutputSize {
+		len(snapshot.Parameters.Encoder) != encoderLength ||
+		len(snapshot.Parameters.Readout) != readoutLength {
 		return errors.New("ocr: checkpoint dense array sizes do not match task config")
 	}
 	return nil

@@ -2,7 +2,7 @@
 
 這是明確標示為範例的真實資料入口。它從 ROIS-CODH 官方 KMNIST IDX gzip 檔案讀取有上限的小樣本，使用既有 `tasks/ocr.Recognizer` 完成訓練、獨立推論與評估，輸出固定 seed 的 JSON 報告，並可選擇保存完整模型 bundle 或載入既有 bundle 只做評估。
 
-KMNIST 是 28×28 灰階的單字元くずし字資料集。每筆資料只代表一個日本平假名類別，這個範例把 28 個影像欄位當成 CTC 時序，不能推論成自然頁面 OCR 能力。它沒有頁面版面、切行、閱讀順序、多字元文字或古籍上下文。
+KMNIST 是 28×28 灰階的單字元くずし字資料集。每筆資料只代表一個日本平假名類別，預設把 28 個影像欄位當成 CTC 時序，也可選用整張影像的單字元分類模式。兩者都不能推論成自然頁面 OCR 能力。它沒有頁面版面、切行、閱讀順序、多字元文字或古籍上下文。
 
 ## Raster 與頁面入口
 
@@ -11,6 +11,29 @@ KMNIST 是 28×28 灰階的單字元くずし字資料集。每筆資料只代�
 `Recognizer.InferPage` 使用同一個 Recognizer 將單欄水平頁面分行、依來源座標裁切區塊並保留閱讀順序，再以 nearest 方式縮放，再把每個區塊的文字寫入 `Page.Blocks[].Text`。`PageOptions` 的 `Threshold` 與 `MaxLinePixels` 控制分行與每行容量；空頁回傳非 nil 的空 blocks，`EvalReport.EmptyOutputs`／`EmptyOutputRatio` 只把解碼後完全空字串計入。
 
 realocr 的 `--encoder` 只接受 `fixed`（預設）或 `trainable`。報告會保留 `config.encoder`、`encoder_profile.mode`、encoder／core／readout capacity 與實際 updates，方便把新增的 encoder 容量和核心更新分開閱讀；這個範例仍只涵蓋 bounded KMNIST 單字元流程，不宣稱自然 OCR 品質。
+
+## 輸入模式
+
+`--input-profile` 選擇圖片進入模型的方式，未指定時保留舊模型的欄位輸入與 CTC 行為。
+
+| 設定 | 輸入與訓練目標 |
+| --- | --- |
+| 空值或 `columns` | 每欄 28 個值，共 28 個神經步，逐步讀出後計算 CTC。 |
+| `aligned-columns` | 欄位輸入後加一個零傳遞步，共 29 步。略過第一個尚未收到圖片的讀出，再以 28 列計算 CTC，最後欄可傳到讀出節點。 |
+| `single-character` | 一次輸入完整 28×28 圖片的 784 個值，再用一個零傳遞步，合計兩個神經步。只用最後列分類十個非空白字元，訓練目標是單字元分類誤差。 |
+
+單字元模式的輸入編碼器有 784×28 = 21,952 個參數，以 `PCG(seed,42)` 的隨機投影初始化。`--encoder trainable` 允許更新它，`fixed` 則凍結此投影。核心保持 28 個輸入節點與設定數量的隱藏節點。設定、尺寸、實際容量與目標會保存在模型及報告中。
+
+SDK 的 `RecognizerConfig.InputProfile` 使用相同名稱。`CharacterWidth` 在單字元模式必須是正整數，其他模式保持零。`Recognizer.Inputs` 回傳所選模式實際使用的神經步，`Columns` 保留原始欄位轉換。單字元模式只接受一個已知字元的標籤，並拒絕 `InferPage`，頁面入口需使用欄位模式。
+
+```sh
+go run ./examples/realocr --data-dir data/TSK-11/kmnist \
+  --input-profile single-character --encoder trainable \
+  --train-count 1000 --test-count 200 --epochs 20 --seed 20260924 \
+  --model-output models/TSK-11/single-character-example
+```
+
+這是使用範例。正式品質驗證另凍結資料切分與三個種子，排除已用來調整模式的圖片，見[品質驗證](../../evidence/TSK-11/quality-20261012/README.md)。
 
 ## 來源與授權
 

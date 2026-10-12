@@ -1,0 +1,42 @@
+import hashlib,json,os,pathlib,subprocess,time
+repo=pathlib.Path.cwd();root=repo/'runs/.tmp/real-task-quality-20261012';out=root/'cli';out.mkdir()
+env=os.environ.copy();env.update(GOCACHE=str(root/'go-build'),GOMODCACHE=str(root/'go-mod-cache'),GOTMPDIR=str(root/'go-tmp'),TMPDIR=str(root/'go-tmp'),GOTOOLCHAIN='local',GOPROXY='off',GOMAXPROCS='2')
+def sha(p):return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+frozen=json.loads((root/'quality-source-frozen.json').read_text());commands=[]
+def run(name,cmd,want=0):
+    assert all(sha(repo/p)==h for p,h in frozen.items())
+    start=time.time()
+    with open(out/f'{name}.json','xb') as log,open(out/f'{name}.stderr','xb') as err:p=subprocess.run(cmd,stdout=log,stderr=err,env=env)
+    record={'name':name,'command':cmd,'exit_code':p.returncode,'elapsed_seconds':time.time()-start,'stdout_sha256':sha(out/f'{name}.json'),'stderr_sha256':sha(out/f'{name}.stderr')};commands.append(record);(out/'commands.json').write_text(json.dumps(commands,indent=2)+'\n')
+    print(json.dumps(record),flush=True);assert p.returncode==want,(name,p.returncode,want);assert all(sha(repo/p)==h for p,h in frozen.items())
+    return json.loads((out/f'{name}.json').read_text()) if name!='build' and want==0 else None
+binary=root/'bin/realocr-candidate';run('build',['/usr/local/go/bin/go','build','-p','2','-o',str(binary),'./examples/realocr'])
+data=str(root/'data/kmnist');common=[str(binary),'--data-dir',data,'--encoder','fixed','--seed','20260924']
+comparisons=[]
+for epochs in (1,10):
+    name=f'legacy-e{epochs}';new=out/name
+    report=run(name,common+['--train-count','1000','--test-count','200','--epochs',str(epochs),'--model-output',str(new)])
+    original=root/'models'/f'legacy-fixed-e{epochs}'
+    files=[p.name for p in original.iterdir() if p.is_file()]
+    assert all((original/f).read_bytes()==(new/f).read_bytes() for f in files),'legacy bundle bytes changed'
+    old=json.loads((root/'logs'/f'legacy-fixed-e{epochs}.json').read_text())
+    fields=['config','config_hash','before','after','train','encoder_profile','data_scope']
+    assert all(report[f]==old[f] for f in fields),'legacy deterministic behavior changed'
+    restored=run(name+'-restore',common+['--train-count','1000','--test-count','200','--epochs',str(epochs),'--model-input',str(original)])
+    assert restored['after']==old['after'] and restored['train']['updates']==restored['train']['epochs']==0
+    comparisons.append({'epochs':epochs,'bundle_exact_equal':True,'report_fields_exact_equal':fields,'old_bundle_new_process_loaded':True,'bundle_files':{f:sha(new/f) for f in files}})
+for profile in ('aligned-columns','single-character'):
+    common=[str(binary),'--data-dir',data,'--input-profile',profile,'--encoder','trainable','--seed','20260924','--train-count','10','--test-count','10','--epochs','1']
+    model=out/profile
+    saved=run(profile+'-save',common+['--model-output',str(model)])
+    files={p.name:sha(p) for p in model.iterdir() if p.is_file()}
+    restored=run(profile+'-restore',common+['--model-input',str(model)])
+    assert saved['after']==restored['after'] and saved['config_hash']==restored['config_hash']
+    assert restored['train']['updates']==restored['train']['epochs']==0
+    assert files=={p.name:sha(p) for p in model.iterdir() if p.is_file()}
+    comparisons.append({'profile':profile,'actual_cli_save_restore_equal':True,'no_restore_updates':True,'encoder_parameters':saved['encoder_profile']['encoder_parameters'],'config_hash':saved['config_hash'],'data_scope':saved['data_scope'],'files':files})
+invalid=out/'must-not-exist'
+run('unknown-profile',[str(binary),'--data-dir',data,'--input-profile','unknown','--train-count','10','--test-count','10','--model-output',str(invalid)],1)
+assert not invalid.exists()
+(out/'verification.json').write_text(json.dumps({'comparisons':comparisons,'unknown_profile_no_bundle':True,'candidate_binary_sha256':sha(binary),'source_unchanged':True},indent=2)+'\n')
+print(json.dumps({'actual_cli_completed':True,'commands':len(commands)}),flush=True)
