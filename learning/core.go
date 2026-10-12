@@ -102,6 +102,10 @@ func (c continuousCore) forward(ctx context.Context, p Parameters, initial []flo
 }
 
 func (c continuousCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+	if trace, ok := tr.(*dynamics.ContinuousCoupledRecomputeTrace); ok {
+		g, err := c.model.BackwardCoupledRecompute(ctx, trace, upstream, window)
+		return coreGradient{core: g}, err
+	}
 	trace, ok := tr.(*dynamics.Trace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
@@ -192,6 +196,10 @@ func (l lifCore) forward(ctx context.Context, p Parameters, initial []float64, i
 }
 
 func (l lifCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+	if trace, ok := tr.(*dynamics.LIFCoupledRecomputeTrace); ok {
+		g, err := l.model.BackwardCoupledRecompute(ctx, trace, upstream, window)
+		return coreGradient{core: dynamics.Gradient{Weights: g.Weights, Bias: g.Bias, LogTau: g.LogTau, Inputs: g.Inputs, Initial: g.Initial}, thetaRaw: g.ThetaRaw}, err
+	}
 	trace, ok := tr.(*dynamics.LIFTrace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")

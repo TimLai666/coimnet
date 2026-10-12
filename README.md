@@ -124,7 +124,7 @@ printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
 
 訓練器可以限制更新範圍與更新方式：`learning.Options` 的 `Trainable` 群組旗標搭配 `Masks` 逐邊、逐節點指定哪些參數能動，被凍結的參數連動量、步數與權重衰減都不變；`Config.EdgeSigns` 讓有依據的邊固定興奮或抑制、只學幅度，符號永遠不會翻轉；`Ranges` 在每次更新後把數值投影回宣告的區間並回報被投影的數量。一步的順序是固定的：梯度先乘 `LossScale` 再除回（乘出非有限值就整步拒絕，不留半次狀態），累積滿 `AccumulateSteps` 次才平均，平均後才套 `ClipNorm`，再交給 AdamW 以 `Schedule`（`constant`／`step`／`cosine`，都可加線性暖身）算出的學習率更新。學習率只由已完成的更新次數決定，累積到一半的梯度也進快照，因此中途保存再恢復與一次跑完的結果逐位相同。
 
-快照保存這個獨立序列模式的完整參數、最佳化器、資料 seed 與下一筆樣本位置，沒有持續個體或化學狀態。檔案上限為 64 MiB，以校驗碼、版本與形狀檢查後恢復。目的路徑已存在時拒絕覆寫，檔案系統須支援 hardlink 與目錄同步。
+訓練快照保存完整參數、最佳化器、資料 seed 與格式定義的資料游標。設定 `Config.Chemistry` 時，也保存每回合的化學起點、來源視窗、資源、回饋與受體位置。每個回合從自己的副本開始，不保存或推進持續個體的神經狀態。一般任務的資料進度由呼叫端管理，不能把人工 delayed 格式的游標當成任意資料產生器的游標。檔案上限為 64 MiB，以校驗碼、版本與形狀檢查後恢復。目的路徑已存在時拒絕覆寫，檔案系統須支援 hardlink 與目錄同步。
 
 三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。
 
@@ -299,7 +299,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 - `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
 - `learning.NewIndividual` 對連續與 LIF 兩種核心建立隔離的持續個體，`ResetNeural`／`ResetParameters`／`ResetOptimizer` 各自只重設指定資料。`checkpoint.SaveIndividual`／`LoadIndividual` 保存持續神經狀態，LIF 個體另外保存突觸跡、適應、不應期與慢速穩定狀態，詳見[個體狀態與保存](docs/individual-state.md)。
-- `checkpoint.NewModelPackage`、`SaveModelPackage`、`LoadModelPackage` 保存模型包，`NewIndividualFromPackage` 由模型包建立新個體，結果與用同一份設定、參數直接呼叫 `learning.NewIndividual` 相同。
+- `checkpoint.NewModelPackage`、`SaveModelPackage`、`LoadModelPackage` 保存模型包，`NewIndividualFromPackage` 由模型包建立新個體，結果與用同一份設定、參數直接呼叫 `learning.NewIndividual` 相同。模型包不接受獨立回合的 `Config.Chemistry`；保存這類訓練器請使用訓練快照或 `SaveTrainingBundle`。
 - `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
 - `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
 - `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。
@@ -310,6 +310,10 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 `signal.NewSignal` 接受呼叫者已解碼的數值來源，連續、活動、脈衝與調節的具名訊號可用 `go test ./signal -run ExampleNewSignal -count=1 -v` 查看保存與讀回範例。訊號 JSON 的數值欄位拒絕 `null`，例如 `values:[null]` 不會被當成零。`quality.score` 與整個 `valid_range` 可用 `null` 表示未知，省略原本可省略的數值欄位則維持既有預設。從 JSON 建立訊號請使用 `DecodeSignal`，不要先以一般 JSON 解碼器讀入 `SignalSpec`，以免在驗證前就遺失缺值資訊。
 
 `Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，`Predict` 回傳最後一步輸出。設定 `ReadoutEveryStep` 後可用 `PredictAll` 取得每步輸出，並以 `StepFrom` 傳入每步的輸出梯度。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。
+
+`learning.Config.Chemistry` 接受可選的 `ChemicalEpisode`。`Part` 指定化學設定、濃度與來源狀態，`SourceStep` 指定來源時鐘，`InitialActivity` 可指定第一步釋放所觀察的活動。每個獨立回合使用這份起點的私有副本，後續釋放讀取前一步的實際神經輸出。訓練反向包含這條活動回授與濃度變化，控制器參數及受體反應係數保持固定。CPU 純量連續、LIF 與混合核心支援完整歷史，連續與 LIF 另支援分段重算。GPU、向量、PPO、混合核心重算及從持續神經狀態重算的組合會明示拒絕。
+
+持續個體沿用 `Individual.EnableChemistry`，`TrainEpisode` 從個體當下的化學狀態、來源視窗、來源時鐘與上一列活動建立獨立訓練副本，成功只提交參數與最佳化器。這個入口不能同時另設 `Config.Chemistry`。受體的 `Location.Region` 指定讀取的區域濃度，`Compartment` 保存研究部位，尚未分別模擬各部位的電位。實測 Rdl 定位的來源與類型推論見[受體位置範例](examples/receptorlocation/README.md)。
 
 CPU 純量連續核心可用 `Continuous.ForwardFromState` 從保存狀態計算目前段的前向與梯度。`Network.LossGradientFromState` 接上編碼器與讀出，`Trainer.StepFromState` 沿用既有最佳化器更新；保存歷史固定，不回推先前經驗，也不支援 Recompute。PPO 的接續用法及限制見 [更新 API](learning/rl/README.md)。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
 

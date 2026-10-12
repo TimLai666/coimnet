@@ -67,3 +67,4 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
 - `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
 - `docs/model-and-mechanisms.md:65`：「暫時連線狀態、局部學習、近期參與紀錄」仍標為待實作，與 `evidence/LRN-04/`、`evidence/LRN-05/`、`evidence/MOD-05/` 的 CPU 小圖證據不一致；依各驗收範圍核對並更新機制表，保留完整圖與生物證據尚未驗證的限制（P2）。
+- `learning/individual.go`：持續個體 `Advance` 的 `ReleaseTotal` 累加缺少有限值檢查，基準 `0720762` 已有同一段邏輯。待實測 controller 固定釋放 `1e308`、化學 `Tau=1e-308`、兩列輸入時，狀態有限但總量可能溢位，導致回報無法 JSON 編碼；若重現，先在私有候選累加時拒絕並驗證失敗不提交。此疑點不屬 ticket 65 新訓練橋，尚未執行最小重現（P2）。

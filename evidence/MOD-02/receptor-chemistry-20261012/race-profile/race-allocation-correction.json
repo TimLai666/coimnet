@@ -1,0 +1,18 @@
+{
+  "cause": "Mixed and LIF success-path input labels use fmt.Sprintf; fmt printer recycling uses sync.Pool.Put, which randomly discards objects under race instrumentation. Separate AllocsPerRun counts can therefore differ for identical original calls. Same-core numeric comparisons still run in both builds. Allocation comparisons run in ordinary builds only.",
+  "before_sha256": {
+    "dynamics/mixed_coupled_test.go": "a6df59b11bfed06d936c55a15f92098bbd29a6bb6fdcffc1937f5d588deaf3df",
+    "dynamics/lif_coupled_test.go": "54bb837e83c174ad09fe9cf348a85520c0c303c711c829aef40b54172356efae"
+  },
+  "after_sha256": {
+    "dynamics/mixed_coupled_test.go": "7ebdb89ba6803f6a3810945125cf6f4b3c1b4932560473a88d1ff7d59b021e55",
+    "dynamics/lif_coupled_test.go": "79dde7d108c3503c97de9c7483334735bc1fc397faeee00472220cb66933d0b7",
+    "dynamics/coupled_allocation_default_test.go": "4925314a51e28e4df0cc1204fae66d821642ffe52aa25ffd3989b42d4b736d87",
+    "dynamics/coupled_allocation_race_test.go": "59da28ff2d36e6954cc95e8923a9a29dee645603387011891036644b73671f7a"
+  },
+  "stdlib_sha256": {
+    "/usr/local/go/src/fmt/print.go": "57250462a0d06d61f124b4530493bcdd150e9de29600bd60347e1c74457ac8a1",
+    "/usr/local/go/src/sync/pool.go": "d03a971c04ba5be782e997ba2c20e24d313f3540595b0a51b52f0081143a29c2",
+    "/usr/local/go/src/testing/allocs.go": "4fa935b51bd22e94d35d285234c4fb42329708348901915565990e64e8864a72"
+  }
+}

@@ -1,0 +1,888 @@
+// This file keeps its own sequence and reverse doubles so the LIF coupled
+// contract is tested independently of the continuous and mixed tests.
+package dynamics
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+)
+
+type lifCoupledSequence struct {
+	mods          []*Modulation
+	forwardRows   [][]float64
+	forwardSteps  []int
+	forwardErr    error
+	returnNil     bool
+	mutateInput   bool
+	reverseRows   map[int][]ActivityGradient
+	reverseErrAt  int
+	reverseErr    error
+	newReverseErr error
+	reverses      []*lifCoupledReverse
+}
+
+type lifCoupledReverse struct {
+	totalsteps int
+	window     int
+	calls      []int
+	gradients  []ModulationGradient
+	rows       map[int][]ActivityGradient
+	errAt      int
+	err        error
+}
+
+func (s *lifCoupledSequence) Forward(ctx context.Context, step int, previousRawOutput []float64) (*Modulation, error) {
+	if ctx == nil {
+		return nil, errors.New("lif coupled sequence received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	s.forwardSteps = append(s.forwardSteps, step)
+	s.forwardRows = append(s.forwardRows, lifCoupledCloneVector(previousRawOutput))
+	if s.mutateInput && len(previousRawOutput) > 0 {
+		previousRawOutput[0] = 777
+	}
+	if s.forwardErr != nil {
+		return nil, s.forwardErr
+	}
+	if s.returnNil {
+		return nil, nil
+	}
+	if step < 0 || step >= len(s.mods) {
+		return nil, fmt.Errorf("lif coupled sequence step %d is out of range", step)
+	}
+	return s.mods[step], nil
+}
+
+func (s *lifCoupledSequence) NewReverse(ctx context.Context, totalsteps, window int) (ModulationReverse, error) {
+	if ctx == nil {
+		return nil, errors.New("lif coupled sequence received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s.newReverseErr != nil {
+		return nil, s.newReverseErr
+	}
+	r := &lifCoupledReverse{
+		totalsteps: totalsteps,
+		window:     window,
+		rows:       s.reverseRows,
+		errAt:      s.reverseErrAt,
+		err:        s.reverseErr,
+	}
+	s.reverses = append(s.reverses, r)
+	return r, nil
+}
+
+func (r *lifCoupledReverse) BackwardStep(ctx context.Context, step int, gradient ModulationGradient) ([]ActivityGradient, error) {
+	if ctx == nil {
+		return nil, errors.New("lif coupled reverse received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if r.err != nil && (r.errAt < 0 || r.errAt == step) {
+		return nil, r.err
+	}
+	r.calls = append(r.calls, step)
+	r.gradients = append(r.gradients, ModulationGradient{
+		Gain:      lifCoupledCloneVector(gradient.Gain),
+		Offset:    lifCoupledCloneVector(gradient.Offset),
+		Threshold: lifCoupledCloneVector(gradient.Threshold),
+	})
+	return lifCoupledCloneActivityRows(r.rows[step]), nil
+}
+
+func lifCoupledCloneVector(values []float64) []float64 {
+	return append([]float64(nil), values...)
+}
+
+func lifCoupledCloneRows(rows [][]float64) [][]float64 {
+	result := make([][]float64, len(rows))
+	for i, row := range rows {
+		result[i] = lifCoupledCloneVector(row)
+	}
+	return result
+}
+
+func lifCoupledCloneActivityRows(rows []ActivityGradient) []ActivityGradient {
+	result := make([]ActivityGradient, len(rows))
+	for i, row := range rows {
+		result[i] = ActivityGradient{Step: row.Step, Values: lifCoupledCloneVector(row.Values)}
+	}
+	return result
+}
+
+func lifCoupledCloneParameters(p LIFParameters) LIFParameters {
+	return LIFParameters{
+		Weights:  lifCoupledCloneVector(p.Weights),
+		Bias:     lifCoupledCloneVector(p.Bias),
+		LogTau:   lifCoupledCloneVector(p.LogTau),
+		ThetaRaw: lifCoupledCloneVector(p.ThetaRaw),
+	}
+}
+
+func lifCoupledBitsEqual(t *testing.T, name string, got, want []float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s has length %d, want %d", name, len(got), len(want))
+	}
+	for i := range want {
+		if math.Float64bits(got[i]) != math.Float64bits(want[i]) {
+			t.Fatalf("%s[%d] = %v (%#x), want %v (%#x)", name, i, got[i], math.Float64bits(got[i]), want[i], math.Float64bits(want[i]))
+		}
+	}
+}
+
+func lifCoupledRowsBitsEqual(t *testing.T, name string, got, want [][]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s has %d rows, want %d", name, len(got), len(want))
+	}
+	for row := range want {
+		lifCoupledBitsEqual(t, fmt.Sprintf("%s[%d]", name, row), got[row], want[row])
+	}
+}
+
+func lifCoupledClose(t *testing.T, name string, got, want float64) {
+	t.Helper()
+	if math.Abs(got-want) > 4e-9*(1+math.Abs(want)) {
+		t.Fatalf("%s = %.16g, want %.16g", name, got, want)
+	}
+}
+
+func lifCoupledFDClose(t *testing.T, name string, got, want float64) {
+	t.Helper()
+	diff := math.Abs(got - want)
+	if diff > 1e-4*math.Abs(want) && diff > 2e-7 {
+		t.Fatalf("%s = %.16g, central difference %.16g", name, got, want)
+	}
+}
+
+func lifCoupledGradientsBitsEqual(t *testing.T, name string, got, want LIFGradient) {
+	t.Helper()
+	lifCoupledBitsEqual(t, name+" weights", got.Weights, want.Weights)
+	lifCoupledBitsEqual(t, name+" bias", got.Bias, want.Bias)
+	lifCoupledBitsEqual(t, name+" log_tau", got.LogTau, want.LogTau)
+	lifCoupledBitsEqual(t, name+" theta_raw", got.ThetaRaw, want.ThetaRaw)
+	lifCoupledRowsBitsEqual(t, name+" inputs", got.Inputs, want.Inputs)
+	lifCoupledBitsEqual(t, name+" initial", got.Initial, want.Initial)
+}
+
+func lifCoupledGradientIsZero(g LIFGradient) bool {
+	return g.Weights == nil && g.Bias == nil && g.LogTau == nil && g.ThetaRaw == nil && g.Inputs == nil && g.Initial == nil
+}
+
+func lifCoupledNeutralMods(steps, nodes int) []*Modulation {
+	mods := make([]*Modulation, steps)
+	for step := range mods {
+		gain, offset, threshold := make([]float64, nodes), make([]float64, nodes), make([]float64, nodes)
+		for i := range gain {
+			gain[i] = 1
+		}
+		mods[step] = &Modulation{Gain: [][]float64{gain}, Offset: [][]float64{offset}, Threshold: [][]float64{threshold}}
+	}
+	return mods
+}
+
+func lifCoupledTwoNodeFixture(t *testing.T) (*LIF, LIFParameters, []float64, [][]float64) {
+	t.Helper()
+	m, err := NewLIF(LIFConfig{
+		Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{1},
+		DT: math.Log(2), TauSyn: 1, ThetaMin: 0, ThetaMax: 8, VReset: -1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := LIFParameters{
+		Weights: []float64{1}, Bias: []float64{.1, .2}, LogTau: []float64{0, 0}, ThetaRaw: []float64{0, 0},
+	}
+	initial := []float64{0, 0}
+	inputs := [][]float64{{10, 0}, {0, 0}, {0, 0}}
+	return m, p, initial, inputs
+}
+
+func TestLIFCoupledNilNeutralAndAllocationIdentity(t *testing.T) {
+	m, p, initial, inputs := lifCoupledTwoNodeFixture(t)
+	plain, err := m.Forward(context.Background(), p, initial, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nilTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	neutralSeq := &lifCoupledSequence{mods: lifCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1}
+	neutralTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, neutralSeq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifCoupledRowsBitsEqual(t, "nil outputs", nilTrace.Outputs(), plain.Outputs())
+	lifCoupledRowsBitsEqual(t, "neutral outputs", neutralTrace.Outputs(), plain.Outputs())
+	lifCoupledRowsBitsEqual(t, "nil spikes", nilTrace.Spikes(), plain.Spikes())
+	lifCoupledRowsBitsEqual(t, "neutral spikes", neutralTrace.Spikes(), plain.Spikes())
+	lifCoupledRowsBitsEqual(t, "nil voltages", nilTrace.Voltages(), plain.Voltages())
+	lifCoupledRowsBitsEqual(t, "neutral voltages", neutralTrace.Voltages(), plain.Voltages())
+	lifCoupledBitsEqual(t, "nil final voltage", nilTrace.FinalVoltage(), plain.FinalVoltage())
+	lifCoupledBitsEqual(t, "neutral final voltage", neutralTrace.FinalVoltage(), plain.FinalVoltage())
+
+	upstream := [][]float64{{.1, -.2}, {.3, .4}, {-.2, .5}}
+	plainGradient, err := m.Backward(context.Background(), plain, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nilGradient, err := m.Backward(context.Background(), nilTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	neutralGradient, err := m.Backward(context.Background(), neutralTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifCoupledGradientsBitsEqual(t, "nil gradient", nilGradient, plainGradient)
+	lifCoupledGradientsBitsEqual(t, "neutral gradient", neutralGradient, plainGradient)
+	if !reflect.DeepEqual(neutralSeq.forwardSteps, []int{0, 1, 2}) {
+		t.Fatalf("sequence steps %v, want [0 1 2]", neutralSeq.forwardSteps)
+	}
+
+	plainAllocs := testing.AllocsPerRun(20, func() {
+		_, _ = m.Forward(context.Background(), p, initial, inputs)
+	})
+	coupledAllocs := testing.AllocsPerRun(20, func() {
+		_, _ = m.ForwardCoupled(context.Background(), p, initial, inputs, nil)
+	})
+	if coupledAllocs != plainAllocs {
+		t.Fatalf("nil ForwardCoupled allocations = %v, plain Forward allocations = %v", coupledAllocs, plainAllocs)
+	}
+}
+
+func TestLIFCoupledForwardRawActivityEquationDelayAndOwnership(t *testing.T) {
+	m, p, initial, inputs := lifCoupledTwoNodeFixture(t)
+	wantP, wantInitial, wantInputs := lifCoupledCloneParameters(p), lifCoupledCloneVector(initial), lifCoupledCloneRows(inputs)
+	mods := lifCoupledNeutralMods(len(inputs), 2)
+	for step, mod := range mods {
+		mod.Gain[0][0], mod.Gain[0][1] = 2, 3
+		mod.Offset[0][0], mod.Offset[0][1] = .25, -.4
+		if step == 1 {
+			// This value is intentionally non-neutral at a later row. It checks
+			// that the trace owns the row instead of retaining this pointer.
+			mod.Gain[0][1] = 3
+		}
+	}
+	seq := &lifCoupledSequence{mods: mods, reverseErrAt: -1, mutateInput: true}
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(p, wantP) || !reflect.DeepEqual(initial, wantInitial) || !reflect.DeepEqual(inputs, wantInputs) {
+		t.Fatal("coupled forward changed caller-owned parameters, initial, or inputs")
+	}
+	lifCoupledRowsBitsEqual(t, "raw rows", seq.forwardRows, [][]float64{{0, 0}, {1, 0}, {.5, 0}})
+	if !reflect.DeepEqual(seq.forwardSteps, []int{0, 1, 2}) {
+		t.Fatalf("forward steps %v, want [0 1 2]", seq.forwardSteps)
+	}
+	lifCoupledRowsBitsEqual(t, "outputs", tr.Outputs(), [][]float64{{1, 0}, {.5, 0}, {.25, 0}})
+	// Delay 1 reads the prehistory at step 1 and the step-0 raw output at
+	// step 2. The target voltage therefore sees synapse 0 only in the third
+	// row. The target currents are gain*(input+synapse)+offset+bias.
+	lifCoupledClose(t, "target voltage step 1", tr.Voltages()[0][1], -.1)
+	lifCoupledClose(t, "target voltage step 2", tr.Voltages()[1][1], -.15)
+	lifCoupledClose(t, "target voltage step 3", tr.Voltages()[2][1], 1.325)
+
+	beforeOutputs := tr.Outputs()
+	referenceMods := lifCoupledNeutralMods(len(inputs), 2)
+	for _, mod := range referenceMods {
+		mod.Gain[0][0], mod.Gain[0][1] = 2, 3
+		mod.Offset[0][0], mod.Offset[0][1] = .25, -.4
+	}
+	referenceSeq := &lifCoupledSequence{mods: referenceMods, reverseErrAt: -1}
+	referenceTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, referenceSeq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	upstream := [][]float64{{.1, -.2}, {.3, .4}, {-.2, .5}}
+	wantGradient, err := m.Backward(context.Background(), referenceTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mods[1].Gain[0][1] = 900
+	mods[2].Offset[0][0] = -900
+	mods[0].Threshold[0][1] = 900
+	lifCoupledRowsBitsEqual(t, "owned outputs", tr.Outputs(), beforeOutputs)
+	beforeUpstream := lifCoupledCloneRows(upstream)
+	gotGradient, err := m.Backward(context.Background(), tr, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifCoupledGradientsBitsEqual(t, "owned modulation gradient", gotGradient, wantGradient)
+	if !reflect.DeepEqual(upstream, beforeUpstream) {
+		t.Fatal("Backward changed caller-owned upstream")
+	}
+}
+
+type lifCoupledSmoothSequence struct {
+	forwardRows [][]float64
+	reverses    []*lifCoupledSmoothReverse
+}
+
+type lifCoupledSmoothReverse struct {
+	gradients []ModulationGradient
+	rows      [][]ActivityGradient
+	calls     []int
+}
+
+func (s *lifCoupledSmoothSequence) Forward(ctx context.Context, step int, previousRawOutput []float64) (*Modulation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	prev := lifCoupledCloneVector(previousRawOutput)
+	s.forwardRows = append(s.forwardRows, prev)
+	if len(previousRawOutput) > 0 {
+		previousRawOutput[0] = 1001
+	}
+	gain := []float64{1.08 + .04*prev[0], .94 + .03*prev[1]}
+	offset := []float64{.06 - .02*prev[1], -.04 + .025*prev[0]}
+	threshold := []float64{.03 + .01*prev[0], .02 - .01*prev[1]}
+	return &Modulation{Gain: [][]float64{gain}, Offset: [][]float64{offset}, Threshold: [][]float64{threshold}}, nil
+}
+
+func (s *lifCoupledSmoothSequence) NewReverse(ctx context.Context, totalsteps, window int) (ModulationReverse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r := &lifCoupledSmoothReverse{}
+	s.reverses = append(s.reverses, r)
+	return r, nil
+}
+
+func (r *lifCoupledSmoothReverse) BackwardStep(ctx context.Context, step int, gradient ModulationGradient) ([]ActivityGradient, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r.calls = append(r.calls, step)
+	r.gradients = append(r.gradients, ModulationGradient{
+		Gain: lifCoupledCloneVector(gradient.Gain), Offset: lifCoupledCloneVector(gradient.Offset), Threshold: lifCoupledCloneVector(gradient.Threshold),
+	})
+	if step == 0 {
+		r.rows = append(r.rows, nil)
+		return nil, nil
+	}
+	values := []float64{
+		.04*gradient.Gain[0] + .025*gradient.Offset[1] + .01*gradient.Threshold[0],
+		.03*gradient.Gain[1] - .02*gradient.Offset[0] - .01*gradient.Threshold[1],
+	}
+	row := []ActivityGradient{{Step: step - 1, Values: values}}
+	r.rows = append(r.rows, lifCoupledCloneActivityRows(row))
+	return row, nil
+}
+
+func lifCoupledSmoothFixture(t *testing.T) (*LIF, LIFParameters, []float64, [][]float64, [][]float64) {
+	t.Helper()
+	m, err := NewLIF(LIFConfig{
+		Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0},
+		DT: .3, TauSyn: .9, ThetaMin: 0, ThetaMax: 2, VReset: -1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 1.7},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.smooth = true
+	p := LIFParameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.05}, LogTau: []float64{.1, -.2}, ThetaRaw: []float64{.2, -.15}}
+	initial := []float64{.15, -.25}
+	inputs := [][]float64{{.4, -.2}, {-.3, .5}, {.2, -.4}, {.35, .1}}
+	upstream := [][]float64{{.31, -.27}, {-.22, .45}, {.37, -.19}, {-.28, .33}}
+	return m, p, initial, inputs, upstream
+}
+
+func lifCoupledObjective(t *testing.T, m *LIF, p LIFParameters, initial []float64, inputs, upstream [][]float64) float64 {
+	t.Helper()
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &lifCoupledSmoothSequence{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result float64
+	for step, row := range tr.Outputs() {
+		for node, value := range row {
+			result += value * upstream[step][node]
+		}
+	}
+	return result
+}
+
+func TestLIFCoupledSmoothFiniteDifferenceIncludesActivityFeedback(t *testing.T) {
+	m, p, initial, inputs, upstream := lifCoupledSmoothFixture(t)
+	seq := &lifCoupledSmoothSequence{}
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeP, beforeInitial, beforeInputs := lifCoupledCloneParameters(p), lifCoupledCloneVector(initial), lifCoupledCloneRows(inputs)
+	beforeUpstream := lifCoupledCloneRows(upstream)
+	gradient, err := m.Backward(context.Background(), tr, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(p, beforeP) || !reflect.DeepEqual(initial, beforeInitial) || !reflect.DeepEqual(inputs, beforeInputs) {
+		t.Fatal("smooth coupled forward/backward changed caller-owned arrays")
+	}
+	if !reflect.DeepEqual(upstream, beforeUpstream) {
+		t.Fatal("smooth coupled backward changed caller-owned upstream")
+	}
+	if len(seq.reverses) != 1 {
+		t.Fatalf("reverse sessions=%d, want one", len(seq.reverses))
+	}
+	if len(seq.reverses[0].gradients) != len(inputs) {
+		t.Fatalf("gradients=%d, want %d", len(seq.reverses[0].gradients), len(inputs))
+	}
+	if !reflect.DeepEqual(seq.reverses[0].calls, []int{3, 2, 1, 0}) {
+		t.Fatalf("reverse call order %v, want [3 2 1 0]", seq.reverses[0].calls)
+	}
+	activityNonzero := false
+	for _, row := range seq.reverses[0].rows {
+		for _, activity := range row {
+			for _, value := range activity.Values {
+				if value != 0 {
+					activityNonzero = true
+				}
+			}
+		}
+	}
+	if !activityNonzero {
+		t.Fatal("smooth coupled reverse never returned an activity-dependent increment")
+	}
+
+	const epsilon = 1e-6
+	base := lifCoupledCloneParameters(p)
+	for i := range base.Weights {
+		plus, minus := lifCoupledCloneParameters(base), lifCoupledCloneParameters(base)
+		plus.Weights[i] += epsilon
+		minus.Weights[i] -= epsilon
+		fd := (lifCoupledObjective(t, m, plus, initial, inputs, upstream) - lifCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		lifCoupledFDClose(t, fmt.Sprintf("weights[%d]", i), gradient.Weights[i], fd)
+	}
+	for i := range base.Bias {
+		plus, minus := lifCoupledCloneParameters(base), lifCoupledCloneParameters(base)
+		plus.Bias[i] += epsilon
+		minus.Bias[i] -= epsilon
+		fd := (lifCoupledObjective(t, m, plus, initial, inputs, upstream) - lifCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		lifCoupledFDClose(t, fmt.Sprintf("bias[%d]", i), gradient.Bias[i], fd)
+	}
+	for i := range base.LogTau {
+		plus, minus := lifCoupledCloneParameters(base), lifCoupledCloneParameters(base)
+		plus.LogTau[i] += epsilon
+		minus.LogTau[i] -= epsilon
+		fd := (lifCoupledObjective(t, m, plus, initial, inputs, upstream) - lifCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		lifCoupledFDClose(t, fmt.Sprintf("log_tau[%d]", i), gradient.LogTau[i], fd)
+	}
+	for i := range base.ThetaRaw {
+		plus, minus := lifCoupledCloneParameters(base), lifCoupledCloneParameters(base)
+		plus.ThetaRaw[i] += epsilon
+		minus.ThetaRaw[i] -= epsilon
+		fd := (lifCoupledObjective(t, m, plus, initial, inputs, upstream) - lifCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		lifCoupledFDClose(t, fmt.Sprintf("theta_raw[%d]", i), gradient.ThetaRaw[i], fd)
+	}
+	for i := range initial {
+		plus, minus := lifCoupledCloneVector(initial), lifCoupledCloneVector(initial)
+		plus[i] += epsilon
+		minus[i] -= epsilon
+		fd := (lifCoupledObjective(t, m, base, plus, inputs, upstream) - lifCoupledObjective(t, m, base, minus, inputs, upstream)) / (2 * epsilon)
+		lifCoupledFDClose(t, fmt.Sprintf("initial[%d]", i), gradient.Initial[i], fd)
+	}
+	for step := range inputs {
+		for node := range inputs[step] {
+			plus, minus := lifCoupledCloneRows(inputs), lifCoupledCloneRows(inputs)
+			plus[step][node] += epsilon
+			minus[step][node] -= epsilon
+			fd := (lifCoupledObjective(t, m, base, initial, plus, upstream) - lifCoupledObjective(t, m, base, initial, minus, upstream)) / (2 * epsilon)
+			lifCoupledFDClose(t, fmt.Sprintf("inputs[%d][%d]", step, node), gradient.Inputs[step][node], fd)
+		}
+	}
+}
+
+func TestLIFCoupledHardSurrogateResetRefractoryAndChemicalRecurrence(t *testing.T) {
+	m, err := NewLIF(LIFConfig{
+		Nodes: 1, DT: math.Log(2), TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1,
+		RefractorySteps: 2, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	initial := []float64{0}
+	inputs := [][]float64{{3}, {0}, {0}, {0}}
+	seq := &lifCoupledSequence{mods: lifCoupledNeutralMods(4, 1), reverseErrAt: -1}
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifCoupledRowsBitsEqual(t, "hard spikes", tr.Spikes(), [][]float64{{1}, {0}, {0}, {0}})
+	lifCoupledRowsBitsEqual(t, "hard outputs", tr.Outputs(), [][]float64{{1}, {.5}, {.25}, {.125}})
+	lifCoupledRowsBitsEqual(t, "hard voltages", tr.Voltages(), [][]float64{{-1}, {-1}, {-1}, {-.5}})
+	upstream := [][]float64{{0}, {0}, {0}, {1}}
+	g, err := m.Backward(context.Background(), tr, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(seq.reverses) != 1 || len(seq.reverses[0].gradients) != 4 {
+		t.Fatalf("reverse records = %#v", seq.reverses)
+	}
+	r := seq.reverses[0]
+	if !reflect.DeepEqual(r.calls, []int{3, 2, 1, 0}) {
+		t.Fatalf("reverse call order %v, want [3 2 1 0]", r.calls)
+	}
+	// The two refractory rows ignore their core drive and threshold, but the
+	// synaptic recurrence still carries the step-3 loss back to step 0.
+	for _, index := range []int{1, 2} {
+		if r.gradients[3-index].Gain[0] != 0 || r.gradients[3-index].Offset[0] != 0 || r.gradients[3-index].Threshold[0] != 0 {
+			t.Fatalf("refractory modulation gradient at reverse row %d = %#v, want zero", index, r.gradients[3-index])
+		}
+	}
+	lifCoupledClose(t, "step 3 input gradient", g.Inputs[3][0], .03125)
+	lifCoupledClose(t, "step 0 input gradient", g.Inputs[0][0], .015625)
+	lifCoupledClose(t, "step 1 input gradient", g.Inputs[1][0], 0)
+	lifCoupledClose(t, "step 2 input gradient", g.Inputs[2][0], 0)
+	lifCoupledClose(t, "bias gradient", g.Bias[0], .046875)
+	lifCoupledClose(t, "theta raw gradient", g.ThetaRaw[0], -.046875)
+	// Detached reset removes later voltage recurrence. The initial voltage
+	// still changes the first spike through lambda times its surrogate slope.
+	lifCoupledClose(t, "initial gradient through the first spike", g.Initial[0], .015625)
+	lifCoupledClose(t, "step 0 gain gradient", r.gradients[3].Gain[0], .046875)
+	lifCoupledClose(t, "step 0 offset gradient", r.gradients[3].Offset[0], .015625)
+	lifCoupledClose(t, "step 0 threshold gradient", r.gradients[3].Threshold[0], -.03125)
+	lifCoupledClose(t, "step 3 offset gradient", r.gradients[0].Offset[0], .03125)
+	lifCoupledClose(t, "step 3 threshold gradient", r.gradients[0].Threshold[0], -.0625)
+}
+
+func TestLIFCoupledThresholdFloorDetachesAllThresholdPaths(t *testing.T) {
+	m, err := NewLIF(LIFConfig{
+		Nodes: 1, DT: math.Log(2), TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1,
+		Adaptation:  LIFAdaptation{Enabled: true, TauAdapt: 1, Beta: .4},
+		Homeostasis: &LIFHomeostasis{Enabled: true, TauRate: 1, TargetRate: 0, Eta: .5, HMax: 1},
+		Surrogate:   LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	inputs := [][]float64{{2}, {2}, {2}}
+	for _, shift := range []float64{-3} {
+		mods := lifCoupledNeutralMods(len(inputs), 1)
+		for _, mod := range mods {
+			mod.Threshold[0][0] = shift
+		}
+		seq := &lifCoupledSequence{mods: mods, reverseErrAt: -1}
+		tr, err := m.ForwardCoupled(context.Background(), p, []float64{0}, inputs, seq)
+		if err != nil {
+			t.Fatal(err)
+		}
+		g, err := m.Backward(context.Background(), tr, [][]float64{{0}, {0}, {1}}, 0)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if g.ThetaRaw[0] != 0 {
+			t.Fatalf("theta_raw gradient at threshold floor = %v, want zero", g.ThetaRaw[0])
+		}
+		if len(seq.reverses) != 1 || len(seq.reverses[0].gradients) != len(inputs) {
+			t.Fatalf("missing threshold reverse session: %#v", seq.reverses)
+		}
+		for i, row := range seq.reverses[0].gradients {
+			if row.Threshold[0] != 0 {
+				t.Fatalf("threshold shift gradient row %d = %v, want zero at floor", i, row.Threshold[0])
+			}
+		}
+	}
+
+	plain, err := NewLIF(LIFConfig{Nodes: 1, DT: math.Log(2), TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mod := lifCoupledNeutralMods(1, 1)
+	mod[0].Threshold[0][0] = -.2
+	seq := &lifCoupledSequence{mods: mod, reverseErrAt: -1}
+	tr, err := plain.ForwardCoupled(context.Background(), p, []float64{0}, [][]float64{{2}}, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := plain.Backward(context.Background(), tr, [][]float64{{1}}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(seq.reverses) != 1 || len(seq.reverses[0].gradients) != 1 {
+		t.Fatalf("missing threshold reverse session: %#v", seq.reverses)
+	}
+	if seq.reverses[0].gradients[0].Threshold[0] == 0 || g.ThetaRaw[0] == 0 {
+		t.Fatalf("unclamped shift gradients = threshold %v theta_raw %v, want nonzero", seq.reverses[0].gradients[0].Threshold[0], g.ThetaRaw[0])
+	}
+}
+
+func TestLIFCoupledReverseAddsRowsAndUsesFreshSessions(t *testing.T) {
+	m, err := NewLIF(LIFConfig{Nodes: 1, DT: .3, TauSyn: .9, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := LIFParameters{Bias: []float64{.1}, LogTau: []float64{.2}, ThetaRaw: []float64{-.1}}
+	initial := []float64{.2}
+	inputs := [][]float64{{.3}, {.1}, {.4}}
+	upstream := [][]float64{{.1}, {.2}, {1}}
+	newTrace := func(rows []ActivityGradient) (*LIFTrace, *lifCoupledSequence) {
+		seq := &lifCoupledSequence{mods: lifCoupledNeutralMods(3, 1), reverseErrAt: -1, reverseRows: map[int][]ActivityGradient{2: rows}}
+		tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tr, seq
+	}
+	baseTrace, baseSeq := newTrace(nil)
+	base, err := m.Backward(context.Background(), baseTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oneTrace, oneSeq := newTrace([]ActivityGradient{{Step: 1, Values: []float64{.4}}})
+	one, err := m.Backward(context.Background(), oneTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	twoTrace, twoSeq := newTrace([]ActivityGradient{{Step: 1, Values: []float64{.4}}, {Step: 1, Values: []float64{.4}}})
+	two, err := m.Backward(context.Background(), twoTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func(name string, got, b, o float64) { lifCoupledFDClose(t, name, got, b+2*(o-b)) }
+	for i := range two.Weights {
+		check("weights", two.Weights[i], base.Weights[i], one.Weights[i])
+	}
+	for i := range two.Bias {
+		check("bias", two.Bias[i], base.Bias[i], one.Bias[i])
+		check("log_tau", two.LogTau[i], base.LogTau[i], one.LogTau[i])
+		check("theta_raw", two.ThetaRaw[i], base.ThetaRaw[i], one.ThetaRaw[i])
+		check("initial", two.Initial[i], base.Initial[i], one.Initial[i])
+	}
+	for step := range two.Inputs {
+		check("inputs", two.Inputs[step][0], base.Inputs[step][0], one.Inputs[step][0])
+	}
+	if len(baseSeq.reverses) != 1 || len(oneSeq.reverses) != 1 || len(twoSeq.reverses) != 1 {
+		t.Fatal("each backward must create one reverse session")
+	}
+	if baseSeq.reverses[0] == oneSeq.reverses[0] || oneSeq.reverses[0] == twoSeq.reverses[0] {
+		t.Fatal("reverse session was reused across traces")
+	}
+	// A second pass over the same trace must create another independent session
+	// and must reproduce the first result.
+	repeat, err := m.Backward(context.Background(), oneTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(oneSeq.reverses) != 2 || oneSeq.reverses[0] == oneSeq.reverses[1] {
+		t.Fatal("repeated Backward did not use a fresh reverse session")
+	}
+	for i := range repeat.Weights {
+		lifCoupledClose(t, "repeat weight", repeat.Weights[i], one.Weights[i])
+	}
+}
+
+type lifCoupledWindowReverse struct{}
+
+func (lifCoupledWindowReverse) BackwardStep(_ context.Context, step int, gradient ModulationGradient) ([]ActivityGradient, error) {
+	if step == 0 {
+		return nil, nil
+	}
+	// A zero adjoint cannot create loss in an earlier truncation block.
+	var magnitude float64
+	for _, values := range [][]float64{gradient.Gain, gradient.Offset, gradient.Threshold} {
+		for _, value := range values {
+			magnitude += math.Abs(value)
+		}
+	}
+	if magnitude == 0 {
+		return nil, nil
+	}
+	return []ActivityGradient{
+		{Step: step - 1, Values: []float64{.2, .2}},
+		{Step: step - 2, Values: []float64{.1, .1}},
+	}, nil
+}
+
+type lifCoupledWindowSequence struct {
+	mods  []*Modulation
+	calls []int
+}
+
+func (s *lifCoupledWindowSequence) Forward(_ context.Context, step int, _ []float64) (*Modulation, error) {
+	s.calls = append(s.calls, step)
+	return s.mods[0], nil
+}
+
+func (s *lifCoupledWindowSequence) NewReverse(_ context.Context, _, _ int) (ModulationReverse, error) {
+	return lifCoupledWindowReverse{}, nil
+}
+
+func TestLIFCoupledTruncationDetachesLegalEarlierActivityRows(t *testing.T) {
+	m, p, initial, inputs, _ := lifCoupledSmoothFixture(t)
+	fullSeq := &lifCoupledWindowSequence{mods: []*Modulation{lifCoupledNeutralMods(1, 2)[0]}}
+	fullTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, fullSeq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fullSeq.calls) != len(inputs) {
+		t.Fatalf("sequence calls=%d, want %d", len(fullSeq.calls), len(inputs))
+	}
+	upstream := make([][]float64, len(inputs))
+	for i := range upstream {
+		upstream[i] = []float64{0, 0}
+	}
+	upstream[len(upstream)-1] = []float64{.7, -.4}
+	full, err := m.Backward(context.Background(), fullTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cutTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &lifCoupledWindowSequence{mods: []*Modulation{lifCoupledNeutralMods(1, 2)[0]}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	cut, err := m.Backward(context.Background(), cutTrace, upstream, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(full.Inputs[0][0])+math.Abs(full.Inputs[1][0]) == 0 {
+		t.Fatal("full backward did not reach the first activity window")
+	}
+	for step := 0; step < 2; step++ {
+		for node, value := range cut.Inputs[step] {
+			if value != 0 {
+				t.Fatalf("cut input gradient[%d][%d] = %v, crossed fixed boundary", step, node, value)
+			}
+		}
+	}
+	for node, value := range cut.Initial {
+		if value != 0 {
+			t.Fatalf("cut initial gradient[%d] = %v, crossed fixed boundary", node, value)
+		}
+	}
+}
+
+type lifCoupledInvalidReverse struct {
+	kind         string
+	nodes, steps int
+}
+
+func (r lifCoupledInvalidReverse) BackwardStep(_ context.Context, step int, _ ModulationGradient) ([]ActivityGradient, error) {
+	values := make([]float64, r.nodes)
+	switch r.kind {
+	case "future":
+		return []ActivityGradient{{Step: r.steps, Values: values}}, nil
+	case "too-negative":
+		return []ActivityGradient{{Step: -2, Values: values}}, nil
+	case "shape":
+		return []ActivityGradient{{Step: -1, Values: []float64{0}}}, nil
+	case "nonfinite":
+		values[0] = math.NaN()
+		return []ActivityGradient{{Step: -1, Values: values}}, nil
+	case "error":
+		return nil, errors.New("lif coupled reverse failure")
+	default:
+		return nil, errors.New("unknown invalid reverse mode")
+	}
+}
+
+type lifCoupledInvalidSequence struct {
+	mods    []*Modulation
+	reverse lifCoupledInvalidReverse
+}
+
+func (s lifCoupledInvalidSequence) Forward(_ context.Context, step int, _ []float64) (*Modulation, error) {
+	return s.mods[step], nil
+}
+
+func (s lifCoupledInvalidSequence) NewReverse(_ context.Context, _, _ int) (ModulationReverse, error) {
+	return s.reverse, nil
+}
+
+func TestLIFCoupledForwardAndBackwardFailuresAreAtomic(t *testing.T) {
+	m, p, initial, inputs := lifCoupledTwoNodeFixture(t)
+	badMods := []struct {
+		name string
+		mod  *Modulation
+	}{
+		{"wrong gain width", &Modulation{Gain: [][]float64{{1}}}},
+		{"multiple gain rows", &Modulation{Gain: [][]float64{{1, 1}, {1, 1}}}},
+		{"nonfinite gain", &Modulation{Gain: [][]float64{{math.NaN(), 1}}}},
+	}
+	for _, tc := range badMods {
+		t.Run(tc.name, func(t *testing.T) {
+			seq := &lifCoupledSequence{mods: []*Modulation{tc.mod}, reverseErrAt: -1}
+			beforeP, beforeInitial, beforeInputs := lifCoupledCloneParameters(p), lifCoupledCloneVector(initial), lifCoupledCloneRows(inputs)
+			tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+			if err == nil || tr != nil {
+				t.Fatalf("trace=%v err=%v, want nil trace and error", tr, err)
+			}
+			if !reflect.DeepEqual(p, beforeP) || !reflect.DeepEqual(initial, beforeInitial) || !reflect.DeepEqual(inputs, beforeInputs) {
+				t.Fatal("failed forward changed caller-owned arrays")
+			}
+		})
+	}
+	for _, tc := range []struct {
+		name string
+		seq  *lifCoupledSequence
+	}{
+		{"nil modulation", &lifCoupledSequence{mods: []*Modulation{nil}, reverseErrAt: -1, returnNil: true}},
+		{"sequence error", &lifCoupledSequence{mods: lifCoupledNeutralMods(3, 2), reverseErrAt: -1, forwardErr: errors.New("lif coupled forward failure")}},
+		{"numeric overflow", &lifCoupledSequence{mods: lifCoupledNeutralMods(3, 2), reverseErrAt: -1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			callP := lifCoupledCloneParameters(p)
+			if tc.name == "numeric overflow" {
+				callP.Bias[0] = math.MaxFloat64
+			}
+			callInputs := lifCoupledCloneRows(inputs)
+			if tc.name == "numeric overflow" {
+				callInputs[0][0] = math.MaxFloat64
+			}
+			tr, err := m.ForwardCoupled(context.Background(), callP, initial, callInputs, tc.seq)
+			if err == nil || tr != nil {
+				t.Fatalf("trace=%v err=%v, want nil trace and error", tr, err)
+			}
+		})
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	tr, err := m.ForwardCoupled(canceled, p, initial, inputs, &lifCoupledSequence{mods: lifCoupledNeutralMods(3, 2), reverseErrAt: -1})
+	if err == nil || tr != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled forward trace=%v err=%v", tr, err)
+	}
+
+	upstream := [][]float64{{.1, -.2}, {.3, .4}, {-.2, .5}}
+	for _, kind := range []string{"future", "too-negative", "shape", "nonfinite", "error"} {
+		t.Run("reverse "+kind, func(t *testing.T) {
+			seq := lifCoupledInvalidSequence{mods: lifCoupledNeutralMods(3, 2), reverse: lifCoupledInvalidReverse{kind: kind, nodes: 2, steps: 3}}
+			tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+			if err != nil {
+				t.Fatal(err)
+			}
+			beforeTrace := tr.Outputs()
+			beforeUpstream := lifCoupledCloneRows(upstream)
+			g, err := m.Backward(context.Background(), tr, upstream, 0)
+			if err == nil || !lifCoupledGradientIsZero(g) {
+				t.Fatalf("gradient=%#v err=%v, want zero gradient and error", g, err)
+			}
+			lifCoupledRowsBitsEqual(t, "trace after failed reverse", tr.Outputs(), beforeTrace)
+			if !reflect.DeepEqual(upstream, beforeUpstream) {
+				t.Fatal("failed reverse changed upstream")
+			}
+		})
+	}
+	newReverseTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &lifCoupledSequence{mods: lifCoupledNeutralMods(3, 2), reverseErrAt: -1, newReverseErr: errors.New("lif coupled NewReverse failure")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	newReverseGradient, err := m.Backward(context.Background(), newReverseTrace, upstream, 0)
+	if err == nil || !lifCoupledGradientIsZero(newReverseGradient) {
+		t.Fatalf("NewReverse failure gradient=%#v err=%v, want zero gradient and error", newReverseGradient, err)
+	}
+}

@@ -61,6 +61,9 @@ type ChemicalPart struct {
 	State           modulation.ChemistryState  `json:"state"`
 	Resources       map[string]float64         `json:"resources"`
 	PendingFeedback []signal.FeedbackSpec      `json:"pending_feedback"`
+	// SourceStates carries activity-window memory independently of the
+	// immutable source declarations. Absent means the legacy fresh boundary.
+	SourceStates []ChemicalSourceState `json:"source_states,omitempty"`
 	// Expression is the readout-only gain, absent while it was never declared
 	// or after it was cleared. The snapshot carries a copy and a restored
 	// individual validates it, but the forward path reads it from the
@@ -122,6 +125,9 @@ func newChemicalRuntime(c modulation.ChemistryConfig, nodes int) (*chemicalRunti
 	}
 	sources := make([]modulation.Source, len(owned.Sources))
 	for k, spec := range owned.Sources {
+		if spec.Controller != nil && spec.Controller.Nodes != nodes {
+			return nil, fmt.Errorf("source %d controller has %d nodes, want %d", k, spec.Controller.Nodes, nodes)
+		}
 		if sources[k], err = spec.Build(); err != nil {
 			return nil, fmt.Errorf("source %d: %w", k, err)
 		}
@@ -277,9 +283,9 @@ func (r *chemicalRuntime) finishRow(row *chemicalRow, nodes int, step uint64) (c
 // the feedback still queued are kept: they are inputs of the task, not chemical
 // state.
 //
-// The layer lives on the persistent individual only. An independent training
-// episode has no access to it, so there is no way to enable it on a
-// non-persistent path.
+// TrainEpisode uses a private copy of this boundary without advancing the
+// persistent chemical state. An ordinary Network declares its independent
+// episode boundary through Config.Chemistry.
 func (i *Individual) EnableChemistry(c modulation.ChemistryConfig) error {
 	if i == nil || i.trainer == nil {
 		return fmt.Errorf("uninitialized individual")

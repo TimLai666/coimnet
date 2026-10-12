@@ -1,0 +1,43 @@
+--- FAIL: TestReceptorLocationUsesExplicitRegionForOccupancyAndEffects (0.00s)
+    receptor_location_test.go:52: occupancy region = 0, want explicit receptor region 1
+--- FAIL: TestReceptorLocationKeepsReceptorsOnOneCellIndependent (0.00s)
+    receptor_location_test.go:98: occupancy 1 region = 0, want 1
+    receptor_location_test.go:101: occupancy 1 = 0.5, want 0.66666666666666663
+    receptor_location_test.go:114: combined offset = 2, want 2.3333333333333335
+--- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds (0.00s)
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/unsupported_compartment (0.00s)
+        receptor_location_test.go:184: Validate() accepted unsupported compartment
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/missing_evidence (0.00s)
+        receptor_location_test.go:184: Validate() accepted missing evidence
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/missing_measurement_kind (0.00s)
+        receptor_location_test.go:184: Validate() accepted missing measurement kind
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/missing_mapping_version (0.00s)
+        receptor_location_test.go:184: Validate() accepted missing mapping version
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/missing_anatomical_location (0.00s)
+        receptor_location_test.go:184: Validate() accepted missing anatomical location
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/whitespace_evidence (0.00s)
+        receptor_location_test.go:184: Validate() accepted whitespace evidence
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/whitespace_measurement_kind (0.00s)
+        receptor_location_test.go:184: Validate() accepted whitespace measurement kind
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/whitespace_mapping_version (0.00s)
+        receptor_location_test.go:184: Validate() accepted whitespace mapping version
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/whitespace_anatomical_location (0.00s)
+        receptor_location_test.go:184: Validate() accepted whitespace anatomical location
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/negative_region (0.00s)
+        receptor_location_test.go:184: Validate() accepted negative region
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/rejects_declared_region_count (0.00s)
+        receptor_location_test.go:205: Validate() accepted location region 2
+    --- FAIL: TestReceptorLocationValidationRejectsInvalidFieldsAndBounds/rejects_integer_maximum (0.00s)
+        receptor_location_test.go:205: Validate() accepted location region 9223372036854775807
+--- FAIL: TestReceptorLocationOccupanciesRejectsInvalidStateWithEmptyResult (0.00s)
+    --- FAIL: TestReceptorLocationOccupanciesRejectsInvalidStateWithEmptyResult/location_region_outside_state (0.00s)
+        receptor_location_test.go:228: Occupancies() accepted location region outside state
+--- FAIL: TestChemistryConfigCloneOwnsReceptorLocationPointers (0.00s)
+    receptor_location_test.go:275: receptor 0 Clone() shares its location pointer
+FAIL
+FAIL	github.com/TimLai666/coimnet/modulation	1.431s
+--- FAIL: TestSaveLoadIndividualPreservesReceptorLocationAndOwnsPointers (0.03s)
+    receptor_location_test.go:166: mutating Snapshot() location changed the individual: region 0
+FAIL
+FAIL	github.com/TimLai666/coimnet/checkpoint	0.774s
+FAIL

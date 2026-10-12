@@ -1,0 +1,189 @@
+{
+  "requirement": [
+    "MOD-02",
+    "MOD-03",
+    "MOD-04",
+    "MOD-07",
+    "LRN-01",
+    "LRN-02",
+    "STA-03",
+    "SIG-03"
+  ],
+  "reproduction_command": {
+    "full_suite": [
+      "bash",
+      "scripts/verify.sh",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/full-verify-v5"
+    ],
+    "source_example": [
+      "/usr/local/go/bin/go",
+      "run",
+      "-p",
+      "2",
+      "./examples/receptorlocation",
+      "--store",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/source-graph-v2.coimgraph"
+    ],
+    "target_flow": [
+      "bash",
+      "scripts/check-target-flow.sh"
+    ],
+    "cache_precondition": "Create project-local go-build, go-mod-cache and go-tmp directories and populate required pinned modules before replaying the recorded offline environment."
+  },
+  "environment": {
+    "go": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "cgo_enabled": true,
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/go-build",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/go-tmp",
+      "GOTOOLCHAIN": "local",
+      "GOPROXY": "off",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "test_timeout": "60m",
+    "native_storage": true
+  },
+  "observed_result": {
+    "full_suite_exit_code": 0,
+    "normal_packages_passed": 58,
+    "race_packages_passed": 58,
+    "normal_and_race_package_sets_equal": true,
+    "format_build_vet_module_verify": "passed",
+    "cli_doctor_sources_examples_train_resume": "passed",
+    "fresh_cli_resume_bytes_equal": true,
+    "neural_chemical_gradient_and_recompute": "passed within declared CPU scalar support",
+    "fresh_process_chemical_continuous_and_lif": "passed with partial accumulated gradients and fixed episode initial conditions",
+    "target_flow": "passed",
+    "source_files_matched": 772,
+    "supplemental_evidence_go_files_matched": 2,
+    "graph_nodes": 165122,
+    "graph_edges": 25563197,
+    "graph_sha256": "a6c0ddffd507e0f7c2941b2d76d65ebecb7a19d2da0523d282b1cd1161bb9fcd",
+    "receptor_mapping": {
+      "kind": "cell_type_inferred",
+      "version": "fendl-2020-to-malecns-v1.0:type/v1",
+      "mapped": 13580,
+      "excluded_unclear": 4,
+      "examples": [
+        {
+          "index": 3619,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "13882"
+          },
+          "type": "T4a"
+        },
+        {
+          "index": 4015,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "14326"
+          },
+          "type": "T5b"
+        },
+        {
+          "index": 5617,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "16122"
+          },
+          "type": "T4c"
+        },
+        {
+          "index": 10174,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "21218"
+          },
+          "type": "T4b"
+        },
+        {
+          "index": 10880,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "22003"
+          },
+          "type": "T4d"
+        },
+        {
+          "index": 13328,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "24740"
+          },
+          "type": "T5d"
+        },
+        {
+          "index": 14916,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "26518"
+          },
+          "type": "T5c"
+        },
+        {
+          "index": 32421,
+          "id": {
+            "namespace": "malecns-v1.0",
+            "external_id": "46342"
+          },
+          "type": "T5a"
+        }
+      ]
+    },
+    "source_read_only": true,
+    "source_store_durability_confirmation": false,
+    "biology_quantitative_fidelity": "not evaluated",
+    "ocr_quality_improvement": "not evaluated by this ticket",
+    "final_governance_top_level_tests_passed": 11,
+    "temporary_cleanup_complete": true
+  },
+  "test_log": [
+    "full/validation.log.gz",
+    "target-flow/target-flow-v1.launcher.log",
+    "source/source-fullgraph-current-v2.json",
+    "training-candidate/",
+    "extreme-gradient-candidate/",
+    "fresh-process-candidate/",
+    "race-profile/",
+    "governance/final-governance-v1.jsonl"
+  ],
+  "scope": {
+    "ticket": 65,
+    "accepted_milestones": 4,
+    "total_milestones": 5,
+    "overall_ticket_complete": false,
+    "remaining": [
+      "commit and remote verification"
+    ],
+    "general_training": [
+      "CPU scalar continuous",
+      "CPU scalar LIF",
+      "CPU scalar mixed"
+    ],
+    "chemical_recompute": [
+      "CPU scalar continuous",
+      "CPU scalar LIF"
+    ],
+    "stateful_chemical_training": [
+      "CPU scalar continuous"
+    ],
+    "unsupported_combinations_are_rejected": true,
+    "controller_and_receptor_coefficients_fixed_in_general_training": true,
+    "compartment_is_provenance_not_separate_membrane_voltage": true,
+    "release_broadcasts_to_regions": true
+  },
+  "source_manifest": "full/source.sha256",
+  "supplemental_source_manifest": "full/supplemental-source-v5.json",
+  "full_suite_receipt": "full/full-verify-v5.receipt.json",
+  "cli_resume_sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c",
+  "completed_at_utc": "2026-10-12T19:13:57.493279+00:00",
+  "final_governance_receipt": "governance/final-governance-v1.receipt.json",
+  "cleanup_receipt": "cleanup.json"
+}

@@ -1,0 +1,31 @@
+package dynamics
+
+import (
+ "context"
+ "math"
+ "testing"
+)
+
+func TestTicket65MixedCoupledBaselineRoundingProbe(t *testing.T) {
+ p, initial, inputs, _ := mixedCoupledTwinParameters(true)
+ mixed, err := NewMixed(mixedCoupledAllLIFConfig())
+ if err != nil { t.Fatal(err) }
+ lif, err := NewLIF(LIFConfig{Nodes:2,Sources:[]int{0,1},Targets:[]int{1,0},Delays:[]int{1,0},DT:.3,TauSyn:1,ThetaMin:0,ThetaMax:2,VReset:-1,RefractorySteps:1,Surrogate:LIFSurrogate{Kind:"fast_sigmoid",Scale:2}})
+ if err != nil { t.Fatal(err) }
+ lp:=LIFParameters{Weights:p.Weights,Bias:p.Bias,LogTau:p.LogTau,ThetaRaw:p.ThetaRaw}
+ mp, err:=mixed.Forward(context.Background(),p,initial,inputs);if err!=nil {t.Fatal(err)}
+ lc, err:=lif.Forward(context.Background(),lp,initial,inputs);if err!=nil {t.Fatal(err)}
+ mc, err:=mixed.ForwardCoupled(context.Background(),p,initial,inputs,&mixedCoupledSequence{mods:mixedCoupledNeutralMods(len(inputs),2),reverseErrAt:-1});if err!=nil {t.Fatal(err)}
+ ll, err:=lif.ForwardCoupled(context.Background(),lp,initial,inputs,&mixedCoupledSequence{mods:mixedCoupledNeutralMods(len(inputs),2),reverseErrAt:-1});if err!=nil {t.Fatal(err)}
+ mixedCoupledRowsBitsEqual(t,"mixed neutral versus original voltage",mc.Voltages(),mp.Voltages())
+ mixedCoupledRowsBitsEqual(t,"LIF neutral versus original voltage",ll.Voltages(),lc.Voltages())
+ assertMatchesLIFReference(t,"original cross-core voltage",mp.Voltages(),lc.Voltages())
+ differences:=0
+ for row:=range mp.Voltages() {
+  for col:=range mp.Voltages()[row] {
+   a,b,c,d:=math.Float64bits(mp.Voltages()[row][col]),math.Float64bits(lc.Voltages()[row][col]),math.Float64bits(mc.Voltages()[row][col]),math.Float64bits(ll.Voltages()[row][col])
+   if a!=b {differences++;t.Logf("row=%d node=%d original mixed=%#x original LIF=%#x coupled mixed=%#x coupled LIF=%#x",row,col,a,b,c,d)}
+  }
+ }
+ t.Logf("original cross-core bit differences=%d, build contract exact=%v",differences,lifReferenceContractsLikeMixed)
+}

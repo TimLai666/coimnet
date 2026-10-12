@@ -1,0 +1,806 @@
+// This file keeps an independent mixed-rule sequence and reverse double. It
+// deliberately does not reuse the continuous or LIF coupled test doubles.
+package dynamics
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+)
+
+type mixedCoupledSequence struct {
+	mods          []*Modulation
+	forwardRows   [][]float64
+	forwardSteps  []int
+	forwardErr    error
+	returnNil     bool
+	mutateInput   bool
+	reverseRows   map[int][]ActivityGradient
+	reverseErrAt  int
+	reverseErr    error
+	newReverseErr error
+	reverses      []*mixedCoupledReverse
+}
+
+type mixedCoupledReverse struct {
+	gradients []ModulationGradient
+	rows      map[int][]ActivityGradient
+	calls     []int
+	errAt     int
+	err       error
+}
+
+func (s *mixedCoupledSequence) Forward(ctx context.Context, step int, previousRawOutput []float64) (*Modulation, error) {
+	if ctx == nil {
+		return nil, errors.New("mixed coupled sequence received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	s.forwardSteps = append(s.forwardSteps, step)
+	s.forwardRows = append(s.forwardRows, mixedCoupledCloneVector(previousRawOutput))
+	if s.mutateInput && len(previousRawOutput) > 0 {
+		previousRawOutput[0] = 991
+	}
+	if s.forwardErr != nil {
+		return nil, s.forwardErr
+	}
+	if s.returnNil {
+		return nil, nil
+	}
+	if step < 0 || step >= len(s.mods) {
+		return nil, fmt.Errorf("mixed coupled sequence step %d is out of range", step)
+	}
+	return s.mods[step], nil
+}
+
+func (s *mixedCoupledSequence) NewReverse(ctx context.Context, totalsteps, window int) (ModulationReverse, error) {
+	if ctx == nil {
+		return nil, errors.New("mixed coupled sequence received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s.newReverseErr != nil {
+		return nil, s.newReverseErr
+	}
+	r := &mixedCoupledReverse{rows: s.reverseRows, errAt: s.reverseErrAt, err: s.reverseErr}
+	s.reverses = append(s.reverses, r)
+	return r, nil
+}
+
+func (r *mixedCoupledReverse) BackwardStep(ctx context.Context, step int, gradient ModulationGradient) ([]ActivityGradient, error) {
+	if ctx == nil {
+		return nil, errors.New("mixed coupled reverse received nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if r.err != nil && (r.errAt < 0 || r.errAt == step) {
+		return nil, r.err
+	}
+	r.calls = append(r.calls, step)
+	r.gradients = append(r.gradients, ModulationGradient{
+		Gain:      mixedCoupledCloneVector(gradient.Gain),
+		Offset:    mixedCoupledCloneVector(gradient.Offset),
+		Threshold: mixedCoupledCloneVector(gradient.Threshold),
+	})
+	return mixedCoupledCloneActivityRows(r.rows[step]), nil
+}
+
+func mixedCoupledCloneVector(values []float64) []float64 {
+	return append([]float64(nil), values...)
+}
+
+func mixedCoupledCloneRows(rows [][]float64) [][]float64 {
+	result := make([][]float64, len(rows))
+	for i, row := range rows {
+		result[i] = mixedCoupledCloneVector(row)
+	}
+	return result
+}
+
+func mixedCoupledCloneActivityRows(rows []ActivityGradient) []ActivityGradient {
+	result := make([]ActivityGradient, len(rows))
+	for i, row := range rows {
+		result[i] = ActivityGradient{Step: row.Step, Values: mixedCoupledCloneVector(row.Values)}
+	}
+	return result
+}
+
+func mixedCoupledCloneParameters(p MixedParameters) MixedParameters {
+	return MixedParameters{
+		Weights:  mixedCoupledCloneVector(p.Weights),
+		Bias:     mixedCoupledCloneVector(p.Bias),
+		LogTau:   mixedCoupledCloneVector(p.LogTau),
+		ThetaRaw: mixedCoupledCloneVector(p.ThetaRaw),
+	}
+}
+
+func mixedCoupledRowsBitsEqual(t *testing.T, name string, got, want [][]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s has %d rows, want %d", name, len(got), len(want))
+	}
+	for row := range want {
+		if len(got[row]) != len(want[row]) {
+			t.Fatalf("%s[%d] has %d values, want %d", name, row, len(got[row]), len(want[row]))
+		}
+		for node := range want[row] {
+			if math.Float64bits(got[row][node]) != math.Float64bits(want[row][node]) {
+				t.Fatalf("%s[%d][%d] = %v (%#x), want %v (%#x)", name, row, node, got[row][node], math.Float64bits(got[row][node]), want[row][node], math.Float64bits(want[row][node]))
+			}
+		}
+	}
+}
+
+func mixedCoupledVectorBitsEqual(t *testing.T, name string, got, want []float64) {
+	t.Helper()
+	mixedCoupledRowsBitsEqual(t, name, [][]float64{got}, [][]float64{want})
+}
+
+func mixedCoupledClose(t *testing.T, name string, got, want float64) {
+	t.Helper()
+	if math.Abs(got-want) > 4e-9*(1+math.Abs(want)) {
+		t.Fatalf("%s = %.16g, want %.16g", name, got, want)
+	}
+}
+
+func mixedCoupledFDClose(t *testing.T, name string, got, want float64) {
+	t.Helper()
+	diff := math.Abs(got - want)
+	if diff > 1e-4*math.Abs(want) && diff > 2e-7 {
+		t.Fatalf("%s = %.16g, central difference %.16g", name, got, want)
+	}
+}
+
+func mixedCoupledGradientsBitsEqual(t *testing.T, name string, got, want MixedGradient) {
+	t.Helper()
+	mixedCoupledVectorBitsEqual(t, name+" weights", got.Weights, want.Weights)
+	mixedCoupledVectorBitsEqual(t, name+" bias", got.Bias, want.Bias)
+	mixedCoupledVectorBitsEqual(t, name+" log_tau", got.LogTau, want.LogTau)
+	mixedCoupledVectorBitsEqual(t, name+" theta_raw", got.ThetaRaw, want.ThetaRaw)
+	mixedCoupledRowsBitsEqual(t, name+" inputs", got.Inputs, want.Inputs)
+	mixedCoupledVectorBitsEqual(t, name+" initial", got.Initial, want.Initial)
+}
+
+func mixedCoupledGradientIsZero(g MixedGradient) bool {
+	return g.Weights == nil && g.Bias == nil && g.LogTau == nil && g.ThetaRaw == nil && g.Inputs == nil && g.Initial == nil
+}
+
+func mixedCoupledNeutralMods(steps, nodes int) []*Modulation {
+	mods := make([]*Modulation, steps)
+	for step := range mods {
+		gain, offset, threshold := make([]float64, nodes), make([]float64, nodes), make([]float64, nodes)
+		for node := range gain {
+			gain[node] = 1
+		}
+		mods[step] = &Modulation{Gain: [][]float64{gain}, Offset: [][]float64{offset}, Threshold: [][]float64{threshold}}
+	}
+	return mods
+}
+
+func mixedCoupledRule() LIFRule {
+	return LIFRule{TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, RefractorySteps: 1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+}
+
+func mixedCoupledAllContinuousConfig() MixedConfig {
+	return MixedConfig{
+		Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .3,
+		NodeRule: []uint8{RuleContinuous, RuleContinuous}, Continuous: ContinuousRule{Activation: "tanh"},
+	}
+}
+
+func mixedCoupledAllLIFConfig() MixedConfig {
+	return MixedConfig{
+		Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .3,
+		NodeRule: []uint8{RuleLIF, RuleLIF}, LIF: mixedCoupledRule(),
+	}
+}
+
+func mixedCoupledTwinParameters(withTheta bool) (MixedParameters, []float64, [][]float64, [][]float64) {
+	p := MixedParameters{Weights: []float64{.35, -.2}, Bias: []float64{.12, -.08}, LogTau: []float64{.1, -.15}}
+	if withTheta {
+		p.ThetaRaw = []float64{.15, -.2}
+	}
+	initial := []float64{.2, -.1}
+	inputs := [][]float64{{.4, -.2}, {-.3, .5}, {.2, -.4}, {.35, .1}}
+	upstream := [][]float64{{.31, -.27}, {-.22, .45}, {.37, -.19}, {-.28, .33}}
+	return p, initial, inputs, upstream
+}
+
+func TestMixedCoupledNilNeutralAllocationAndSingleRuleIdentity(t *testing.T) {
+	p, initial, inputs, upstream := mixedCoupledTwinParameters(false)
+	continuousModel, err := NewMixed(mixedCoupledAllContinuousConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	continuousReference, err := NewContinuous(Config{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .3, Activation: "tanh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain, err := continuousModel.Forward(context.Background(), p, initial, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nilTrace, err := continuousModel.ForwardCoupled(context.Background(), p, initial, inputs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	refPlain, err := continuousReference.Forward(context.Background(), Parameters{Weights: p.Weights, Bias: p.Bias, LogTau: p.LogTau}, initial, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledRowsBitsEqual(t, "all-cont plain outputs", plain.Outputs(), refPlain.Outputs())
+	mixedCoupledRowsBitsEqual(t, "all-cont nil outputs", nilTrace.Outputs(), plain.Outputs())
+	mixedCoupledVectorBitsEqual(t, "all-cont nil final voltage", nilTrace.FinalVoltage(), plain.FinalVoltage())
+	neutralMixed := &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1}
+	neutralTrace, err := continuousModel.ForwardCoupled(context.Background(), p, initial, inputs, neutralMixed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(neutralMixed.forwardSteps) != len(inputs) {
+		t.Fatalf("sequence calls=%d, want %d", len(neutralMixed.forwardSteps), len(inputs))
+	}
+	neutralReference, err := continuousReference.ForwardCoupled(context.Background(), Parameters{Weights: p.Weights, Bias: p.Bias, LogTau: p.LogTau}, initial, inputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledRowsBitsEqual(t, "all-cont coupled outputs", neutralTrace.Outputs(), neutralReference.Outputs())
+	mixedCoupledVectorBitsEqual(t, "all-cont coupled final voltage", neutralTrace.FinalVoltage(), neutralReference.FinalVoltage())
+	gradient, err := continuousModel.Backward(context.Background(), neutralTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	referenceGradient, err := continuousReference.Backward(context.Background(), neutralReference, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nilGradient, err := continuousModel.Backward(context.Background(), nilTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledVectorBitsEqual(t, "all-cont nil weights", nilGradient.Weights, gradient.Weights)
+	mixedCoupledVectorBitsEqual(t, "all-cont nil bias", nilGradient.Bias, gradient.Bias)
+	mixedCoupledVectorBitsEqual(t, "all-cont nil log_tau", nilGradient.LogTau, gradient.LogTau)
+	mixedCoupledRowsBitsEqual(t, "all-cont nil inputs", nilGradient.Inputs, gradient.Inputs)
+	mixedCoupledVectorBitsEqual(t, "all-cont nil initial", nilGradient.Initial, gradient.Initial)
+	mixedCoupledVectorBitsEqual(t, "all-cont weights", gradient.Weights, referenceGradient.Weights)
+	mixedCoupledVectorBitsEqual(t, "all-cont bias", gradient.Bias, referenceGradient.Bias)
+	mixedCoupledVectorBitsEqual(t, "all-cont log_tau", gradient.LogTau, referenceGradient.LogTau)
+	mixedCoupledRowsBitsEqual(t, "all-cont inputs", gradient.Inputs, referenceGradient.Inputs)
+	mixedCoupledVectorBitsEqual(t, "all-cont initial", gradient.Initial, referenceGradient.Initial)
+
+	lifP, lifInitial, lifInputs, lifUpstream := mixedCoupledTwinParameters(true)
+	lifModel, err := NewMixed(mixedCoupledAllLIFConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifReference, err := NewLIF(LIFConfig{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .3, TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, RefractorySteps: 1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifPlain, err := lifModel.Forward(context.Background(), lifP, lifInitial, lifInputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifNil, err := lifModel.ForwardCoupled(context.Background(), lifP, lifInitial, lifInputs, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedTrace, err := lifModel.ForwardCoupled(context.Background(), lifP, lifInitial, lifInputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(lifInputs), 2), reverseErrAt: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifTrace, err := lifReference.ForwardCoupled(context.Background(), LIFParameters{Weights: lifP.Weights, Bias: lifP.Bias, LogTau: lifP.LogTau, ThetaRaw: lifP.ThetaRaw}, lifInitial, lifInputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(lifInputs), 2), reverseErrAt: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledRowsBitsEqual(t, "all-lif outputs", mixedTrace.Outputs(), lifTrace.Outputs())
+	mixedCoupledRowsBitsEqual(t, "all-lif nil outputs", lifNil.Outputs(), lifPlain.Outputs())
+	mixedCoupledRowsBitsEqual(t, "all-lif spikes", mixedTrace.Spikes(), lifTrace.Spikes())
+	mixedCoupledRowsBitsEqual(t, "all-lif voltages", mixedTrace.Voltages(), lifTrace.Voltages())
+	mixedCoupledVectorBitsEqual(t, "all-lif final voltage", mixedTrace.FinalVoltage(), lifTrace.FinalVoltage())
+	mixedCoupledVectorBitsEqual(t, "all-lif nil final voltage", lifNil.FinalVoltage(), lifPlain.FinalVoltage())
+	mixedGradient, err := lifModel.Backward(context.Background(), mixedTrace, lifUpstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifPlainGradient, err := lifModel.Backward(context.Background(), lifPlain, lifUpstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lifNilGradient, err := lifModel.Backward(context.Background(), lifNil, lifUpstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledVectorBitsEqual(t, "all-lif nil weights", lifNilGradient.Weights, lifPlainGradient.Weights)
+	mixedCoupledVectorBitsEqual(t, "all-lif nil bias", lifNilGradient.Bias, lifPlainGradient.Bias)
+	mixedCoupledVectorBitsEqual(t, "all-lif nil log_tau", lifNilGradient.LogTau, lifPlainGradient.LogTau)
+	mixedCoupledVectorBitsEqual(t, "all-lif nil theta_raw", lifNilGradient.ThetaRaw, lifPlainGradient.ThetaRaw)
+	mixedCoupledRowsBitsEqual(t, "all-lif nil inputs", lifNilGradient.Inputs, lifPlainGradient.Inputs)
+	mixedCoupledVectorBitsEqual(t, "all-lif nil initial", lifNilGradient.Initial, lifPlainGradient.Initial)
+	lifGradient, err := lifReference.Backward(context.Background(), lifTrace, lifUpstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledVectorBitsEqual(t, "all-lif weights", mixedGradient.Weights, lifGradient.Weights)
+	mixedCoupledVectorBitsEqual(t, "all-lif bias", mixedGradient.Bias, lifGradient.Bias)
+	mixedCoupledVectorBitsEqual(t, "all-lif log_tau", mixedGradient.LogTau, lifGradient.LogTau)
+	mixedCoupledVectorBitsEqual(t, "all-lif theta_raw", mixedGradient.ThetaRaw, lifGradient.ThetaRaw)
+	mixedCoupledRowsBitsEqual(t, "all-lif inputs", mixedGradient.Inputs, lifGradient.Inputs)
+	mixedCoupledVectorBitsEqual(t, "all-lif initial", mixedGradient.Initial, lifGradient.Initial)
+
+	plainAllocs := testing.AllocsPerRun(20, func() { _, _ = continuousModel.Forward(context.Background(), p, initial, inputs) })
+	coupledAllocs := testing.AllocsPerRun(20, func() { _, _ = continuousModel.ForwardCoupled(context.Background(), p, initial, inputs, nil) })
+	if coupledAllocs != plainAllocs {
+		t.Fatalf("continuous nil coupled allocations = %v, plain allocations = %v", coupledAllocs, plainAllocs)
+	}
+	lifPlainAllocs := testing.AllocsPerRun(20, func() { _, _ = lifModel.Forward(context.Background(), lifP, lifInitial, lifInputs) })
+	lifCoupledAllocs := testing.AllocsPerRun(20, func() { _, _ = lifModel.ForwardCoupled(context.Background(), lifP, lifInitial, lifInputs, nil) })
+	if lifCoupledAllocs != lifPlainAllocs {
+		t.Fatalf("all-LIF nil coupled allocations = %v, plain allocations = %v", lifCoupledAllocs, lifPlainAllocs)
+	}
+}
+
+func mixedCoupledCrossTypeFixture(t *testing.T) (*Mixed, MixedParameters, []float64, [][]float64) {
+	t.Helper()
+	m, err := NewMixed(MixedConfig{
+		Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: math.Log(2),
+		NodeRule: []uint8{RuleContinuous, RuleLIF}, Continuous: ContinuousRule{Activation: "tanh"},
+		LIF: LIFRule{TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := MixedParameters{Weights: []float64{1, .4}, Bias: []float64{.1, .2}, LogTau: []float64{0, 0}, ThetaRaw: []float64{0}}
+	initial := []float64{.2, 0}
+	inputs := [][]float64{{2, 2}, {0, 0}, {0, 0}}
+	return m, p, initial, inputs
+}
+
+func TestMixedCoupledRawActivityCrossTypeEquationAndOwnership(t *testing.T) {
+	m, p, initial, inputs := mixedCoupledCrossTypeFixture(t)
+	mods := mixedCoupledNeutralMods(len(inputs), 2)
+	for _, mod := range mods {
+		mod.Gain[0][0], mod.Gain[0][1] = 2, 3
+		mod.Offset[0][0], mod.Offset[0][1] = .25, -.4
+	}
+	seq := &mixedCoupledSequence{mods: mods, reverseErrAt: -1, mutateInput: true}
+	beforeP, beforeInitial, beforeInputs := mixedCoupledCloneParameters(p), mixedCoupledCloneVector(initial), mixedCoupledCloneRows(inputs)
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(p, beforeP) || !reflect.DeepEqual(initial, beforeInitial) || !reflect.DeepEqual(inputs, beforeInputs) {
+		t.Fatal("mixed coupled forward changed caller-owned arrays")
+	}
+	if len(seq.forwardRows) != len(inputs) || !reflect.DeepEqual(seq.forwardSteps, []int{0, 1, 2}) {
+		t.Fatalf("forward observations rows=%d steps=%v, want %d rows [0 1 2]", len(seq.forwardRows), seq.forwardSteps, len(inputs))
+	}
+	firstRaw := []float64{math.Tanh(.2), 0}
+	mixedCoupledRowsBitsEqual(t, "mixed initial raw activity", seq.forwardRows[:1], [][]float64{firstRaw})
+	for step := 1; step < len(inputs); step++ {
+		mixedCoupledVectorBitsEqual(t, fmt.Sprintf("mixed raw activity step %d", step), seq.forwardRows[step], tr.Outputs()[step-1])
+	}
+	// At step 0 the continuous node sees the LIF prehistory 0 through its
+	// delay-0 edge. The LIF node sees the activated continuous prehistory through
+	// its delay-1 edge. This checks both raw prehistory conventions and the
+	// gain*(input+synapse)+offset+bias ordering.
+	wantContinuousVoltage := .5*.2 + .5*(2*2+.25+.1)
+	mixedCoupledClose(t, "continuous voltage step 0", tr.Voltages()[0][0], wantContinuousVoltage)
+	mixedCoupledClose(t, "lif voltage after step 0 reset", tr.Voltages()[0][1], -1)
+	if tr.Spikes()[0][1] != 1 {
+		t.Fatalf("step-0 LIF spike = %v, want 1", tr.Spikes()[0][1])
+	}
+	if seq.forwardRows[0][1] != 0 {
+		t.Fatalf("initial LIF raw activity = %v, want zero", seq.forwardRows[0][1])
+	}
+
+	wantOutputs := tr.Outputs()
+	referenceMods := mixedCoupledNeutralMods(len(inputs), 2)
+	for _, mod := range referenceMods {
+		mod.Gain[0][0], mod.Gain[0][1] = 2, 3
+		mod.Offset[0][0], mod.Offset[0][1] = .25, -.4
+	}
+	referenceTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSequence{mods: referenceMods, reverseErrAt: -1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	upstream := [][]float64{{.1, -.2}, {.3, .4}, {-.2, .5}}
+	beforeUpstream := mixedCoupledCloneRows(upstream)
+	wantGradient, err := m.Backward(context.Background(), referenceTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mods[1].Gain[0][0], mods[2].Offset[0][1], mods[0].Threshold[0][1] = 500, -500, 500
+	mixedCoupledRowsBitsEqual(t, "owned outputs", tr.Outputs(), wantOutputs)
+	gotGradient, err := m.Backward(context.Background(), tr, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mixedCoupledGradientsBitsEqual(t, "owned modulation gradient", gotGradient, wantGradient)
+	if !reflect.DeepEqual(upstream, beforeUpstream) {
+		t.Fatal("mixed coupled backward changed caller-owned upstream")
+	}
+}
+
+type mixedCoupledSmoothSequence struct {
+	forwardRows [][]float64
+	reverses    []*mixedCoupledSmoothReverse
+}
+
+type mixedCoupledSmoothReverse struct {
+	gradients []ModulationGradient
+	rows      [][]ActivityGradient
+	calls     []int
+}
+
+func (s *mixedCoupledSmoothSequence) Forward(ctx context.Context, step int, previousRawOutput []float64) (*Modulation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	prev := mixedCoupledCloneVector(previousRawOutput)
+	s.forwardRows = append(s.forwardRows, prev)
+	if len(previousRawOutput) > 0 {
+		previousRawOutput[0] = 444
+	}
+	gain := []float64{1.1 + .04*prev[0], .95 + .03*prev[1]}
+	offset := []float64{.06 - .02*prev[1], -.04 + .025*prev[0]}
+	threshold := []float64{0, .02 + .01*prev[0]}
+	return &Modulation{Gain: [][]float64{gain}, Offset: [][]float64{offset}, Threshold: [][]float64{threshold}}, nil
+}
+
+func (s *mixedCoupledSmoothSequence) NewReverse(ctx context.Context, _, _ int) (ModulationReverse, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r := &mixedCoupledSmoothReverse{}
+	s.reverses = append(s.reverses, r)
+	return r, nil
+}
+
+func (r *mixedCoupledSmoothReverse) BackwardStep(ctx context.Context, step int, gradient ModulationGradient) ([]ActivityGradient, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r.calls = append(r.calls, step)
+	r.gradients = append(r.gradients, ModulationGradient{Gain: mixedCoupledCloneVector(gradient.Gain), Offset: mixedCoupledCloneVector(gradient.Offset), Threshold: mixedCoupledCloneVector(gradient.Threshold)})
+	row := []ActivityGradient{{Step: step - 1, Values: []float64{
+		.04*gradient.Gain[0] + .025*gradient.Offset[1] + .01*gradient.Threshold[1],
+		.03*gradient.Gain[1] - .02*gradient.Offset[0],
+	}}}
+	r.rows = append(r.rows, mixedCoupledCloneActivityRows(row))
+	return row, nil
+}
+
+func mixedCoupledSmoothFixture(t *testing.T) (*Mixed, MixedParameters, []float64, [][]float64, [][]float64) {
+	t.Helper()
+	m, err := NewMixed(MixedConfig{
+		Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .3,
+		NodeRule: []uint8{RuleContinuous, RuleLIF}, Continuous: ContinuousRule{Activation: "tanh"},
+		LIF: LIFRule{TauSyn: .9, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 1.7}},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.smooth = true
+	p := MixedParameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.05}, LogTau: []float64{.1, -.2}, ThetaRaw: []float64{.2}}
+	initial := []float64{.15, -.25}
+	inputs := [][]float64{{.4, -.2}, {-.3, .5}, {.2, -.4}, {.35, .1}}
+	upstream := [][]float64{{.31, -.27}, {-.22, .45}, {.37, -.19}, {-.28, .33}}
+	return m, p, initial, inputs, upstream
+}
+
+func mixedCoupledObjective(t *testing.T, m *Mixed, p MixedParameters, initial []float64, inputs, upstream [][]float64) float64 {
+	t.Helper()
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSmoothSequence{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result float64
+	for step, row := range tr.Outputs() {
+		for node, value := range row {
+			result += value * upstream[step][node]
+		}
+	}
+	return result
+}
+
+func TestMixedCoupledSmoothFiniteDifferenceAndActivityFeedback(t *testing.T) {
+	m, p, initial, inputs, upstream := mixedCoupledSmoothFixture(t)
+	seq := &mixedCoupledSmoothSequence{}
+	tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeP, beforeInitial, beforeInputs := mixedCoupledCloneParameters(p), mixedCoupledCloneVector(initial), mixedCoupledCloneRows(inputs)
+	beforeUpstream := mixedCoupledCloneRows(upstream)
+	g, err := m.Backward(context.Background(), tr, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(p, beforeP) || !reflect.DeepEqual(initial, beforeInitial) || !reflect.DeepEqual(inputs, beforeInputs) {
+		t.Fatal("mixed smooth coupled changed caller-owned arrays")
+	}
+	if !reflect.DeepEqual(upstream, beforeUpstream) {
+		t.Fatal("mixed smooth coupled backward changed caller-owned upstream")
+	}
+	if len(seq.reverses) != 1 {
+		t.Fatalf("reverse sessions=%d, want one", len(seq.reverses))
+	}
+	if len(seq.reverses[0].gradients) != len(inputs) {
+		t.Fatalf("reverse gradients=%d, want %d", len(seq.reverses[0].gradients), len(inputs))
+	}
+	if !reflect.DeepEqual(seq.reverses[0].calls, []int{3, 2, 1, 0}) {
+		t.Fatalf("reverse call order %v, want [3 2 1 0]", seq.reverses[0].calls)
+	}
+	activityNonzero := false
+	for _, rows := range seq.reverses[0].rows {
+		for _, row := range rows {
+			for _, value := range row.Values {
+				if value != 0 {
+					activityNonzero = true
+				}
+			}
+		}
+	}
+	if !activityNonzero {
+		t.Fatal("mixed smooth coupled reverse never returned activity feedback")
+	}
+
+	const epsilon = 1e-6
+	base := mixedCoupledCloneParameters(p)
+	for i := range base.Weights {
+		plus, minus := mixedCoupledCloneParameters(base), mixedCoupledCloneParameters(base)
+		plus.Weights[i] += epsilon
+		minus.Weights[i] -= epsilon
+		fd := (mixedCoupledObjective(t, m, plus, initial, inputs, upstream) - mixedCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		mixedCoupledFDClose(t, fmt.Sprintf("weights[%d]", i), g.Weights[i], fd)
+	}
+	for i := range base.Bias {
+		plus, minus := mixedCoupledCloneParameters(base), mixedCoupledCloneParameters(base)
+		plus.Bias[i] += epsilon
+		minus.Bias[i] -= epsilon
+		fd := (mixedCoupledObjective(t, m, plus, initial, inputs, upstream) - mixedCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		mixedCoupledFDClose(t, fmt.Sprintf("bias[%d]", i), g.Bias[i], fd)
+	}
+	for i := range base.LogTau {
+		plus, minus := mixedCoupledCloneParameters(base), mixedCoupledCloneParameters(base)
+		plus.LogTau[i] += epsilon
+		minus.LogTau[i] -= epsilon
+		fd := (mixedCoupledObjective(t, m, plus, initial, inputs, upstream) - mixedCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		mixedCoupledFDClose(t, fmt.Sprintf("log_tau[%d]", i), g.LogTau[i], fd)
+	}
+	for i := range base.ThetaRaw {
+		plus, minus := mixedCoupledCloneParameters(base), mixedCoupledCloneParameters(base)
+		plus.ThetaRaw[i] += epsilon
+		minus.ThetaRaw[i] -= epsilon
+		fd := (mixedCoupledObjective(t, m, plus, initial, inputs, upstream) - mixedCoupledObjective(t, m, minus, initial, inputs, upstream)) / (2 * epsilon)
+		mixedCoupledFDClose(t, fmt.Sprintf("theta_raw[%d]", i), g.ThetaRaw[i], fd)
+	}
+	for i := range initial {
+		plus, minus := mixedCoupledCloneVector(initial), mixedCoupledCloneVector(initial)
+		plus[i] += epsilon
+		minus[i] -= epsilon
+		fd := (mixedCoupledObjective(t, m, base, plus, inputs, upstream) - mixedCoupledObjective(t, m, base, minus, inputs, upstream)) / (2 * epsilon)
+		mixedCoupledFDClose(t, fmt.Sprintf("initial[%d]", i), g.Initial[i], fd)
+	}
+	for step := range inputs {
+		for node := range inputs[step] {
+			plus, minus := mixedCoupledCloneRows(inputs), mixedCoupledCloneRows(inputs)
+			plus[step][node] += epsilon
+			minus[step][node] -= epsilon
+			fd := (mixedCoupledObjective(t, m, base, initial, plus, upstream) - mixedCoupledObjective(t, m, base, initial, minus, upstream)) / (2 * epsilon)
+			mixedCoupledFDClose(t, fmt.Sprintf("inputs[%d][%d]", step, node), g.Inputs[step][node], fd)
+		}
+	}
+}
+
+func TestMixedCoupledReverseAddsRowsFreshAndTruncates(t *testing.T) {
+	m, p, initial, inputs, _ := mixedCoupledSmoothFixture(t)
+	upstream := [][]float64{{0, 0}, {0, 0}, {0, 0}, {.7, -.4}}
+	newTrace := func(rows []ActivityGradient) (*MixedTrace, *mixedCoupledSequence) {
+		seq := &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1, reverseRows: map[int][]ActivityGradient{3: rows}}
+		tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, seq)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return tr, seq
+	}
+	baseTrace, baseSeq := newTrace(nil)
+	base, err := m.Backward(context.Background(), baseTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oneTrace, oneSeq := newTrace([]ActivityGradient{{Step: 2, Values: []float64{.3, -.2}}})
+	one, err := m.Backward(context.Background(), oneTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	twoTrace, twoSeq := newTrace([]ActivityGradient{{Step: 2, Values: []float64{.3, -.2}}, {Step: 2, Values: []float64{.3, -.2}}})
+	two, err := m.Backward(context.Background(), twoTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	check := func(name string, got, b, o float64) { mixedCoupledFDClose(t, name, got, b+2*(o-b)) }
+	for i := range two.Weights {
+		check("weights", two.Weights[i], base.Weights[i], one.Weights[i])
+	}
+	for i := range two.Bias {
+		check("bias", two.Bias[i], base.Bias[i], one.Bias[i])
+		check("log_tau", two.LogTau[i], base.LogTau[i], one.LogTau[i])
+		check("initial", two.Initial[i], base.Initial[i], one.Initial[i])
+	}
+	for i := range two.ThetaRaw {
+		check("theta_raw", two.ThetaRaw[i], base.ThetaRaw[i], one.ThetaRaw[i])
+	}
+	for step := range two.Inputs {
+		for node := range two.Inputs[step] {
+			check("inputs", two.Inputs[step][node], base.Inputs[step][node], one.Inputs[step][node])
+		}
+	}
+	if len(baseSeq.reverses) != 1 || len(oneSeq.reverses) != 1 || len(twoSeq.reverses) != 1 {
+		t.Fatal("each Backward must create one reverse session")
+	}
+	if baseSeq.reverses[0] == oneSeq.reverses[0] || oneSeq.reverses[0] == twoSeq.reverses[0] {
+		t.Fatal("reverse session reused")
+	}
+	repeat, err := m.Backward(context.Background(), oneTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(oneSeq.reverses) != 2 || oneSeq.reverses[0] == oneSeq.reverses[1] {
+		t.Fatal("repeated Backward did not use a fresh reverse")
+	}
+	for i := range repeat.Weights {
+		mixedCoupledClose(t, "repeat weight", repeat.Weights[i], one.Weights[i])
+	}
+
+	cutTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1, reverseRows: map[int][]ActivityGradient{3: {{Step: 2, Values: []float64{.2, .1}}, {Step: 1, Values: []float64{.1, .1}}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fullTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(len(inputs), 2), reverseErrAt: -1, reverseRows: map[int][]ActivityGradient{3: {{Step: 2, Values: []float64{.2, .1}}, {Step: 1, Values: []float64{.1, .1}}}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	full, err := m.Backward(context.Background(), fullTrace, upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cut, err := m.Backward(context.Background(), cutTrace, upstream, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if math.Abs(full.Inputs[0][0])+math.Abs(full.Inputs[1][0]) == 0 {
+		t.Fatal("full mixed backward did not reach first window")
+	}
+	for step := 0; step < 2; step++ {
+		for node, value := range cut.Inputs[step] {
+			if value != 0 {
+				t.Fatalf("cut input gradient[%d][%d] = %v, crossed boundary", step, node, value)
+			}
+		}
+	}
+	for node, value := range cut.Initial {
+		if value != 0 {
+			t.Fatalf("cut initial gradient[%d] = %v, crossed boundary", node, value)
+		}
+	}
+}
+
+type mixedCoupledInvalidReverse struct {
+	kind         string
+	nodes, steps int
+}
+
+func (r mixedCoupledInvalidReverse) BackwardStep(_ context.Context, _ int, _ ModulationGradient) ([]ActivityGradient, error) {
+	values := make([]float64, r.nodes)
+	switch r.kind {
+	case "future":
+		return []ActivityGradient{{Step: r.steps, Values: values}}, nil
+	case "too-negative":
+		return []ActivityGradient{{Step: -2, Values: values}}, nil
+	case "shape":
+		return []ActivityGradient{{Step: -1, Values: []float64{0}}}, nil
+	case "nonfinite":
+		values[0] = math.NaN()
+		return []ActivityGradient{{Step: -1, Values: values}}, nil
+	case "error":
+		return nil, errors.New("mixed coupled reverse failure")
+	default:
+		return nil, errors.New("unknown mixed reverse mode")
+	}
+}
+
+type mixedCoupledInvalidSequence struct {
+	mods    []*Modulation
+	reverse mixedCoupledInvalidReverse
+}
+
+func (s mixedCoupledInvalidSequence) Forward(_ context.Context, step int, _ []float64) (*Modulation, error) {
+	return s.mods[step], nil
+}
+func (s mixedCoupledInvalidSequence) NewReverse(_ context.Context, _, _ int) (ModulationReverse, error) {
+	return s.reverse, nil
+}
+
+func TestMixedCoupledForwardAndBackwardFailuresAreAtomic(t *testing.T) {
+	m, p, initial, inputs := mixedCoupledCrossTypeFixture(t)
+	badMods := []struct {
+		name string
+		mod  *Modulation
+	}{
+		{"wrong width", &Modulation{Gain: [][]float64{{1}}}},
+		{"multiple rows", &Modulation{Gain: [][]float64{{1, 1}, {1, 1}}}},
+		{"nonfinite", &Modulation{Gain: [][]float64{{math.NaN(), 1}}}},
+		{"continuous threshold", &Modulation{Threshold: [][]float64{{.1, 0}}}},
+	}
+	for _, tc := range badMods {
+		t.Run(tc.name, func(t *testing.T) {
+			tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSequence{mods: []*Modulation{tc.mod}, reverseErrAt: -1})
+			if err == nil || tr != nil {
+				t.Fatalf("trace=%v err=%v, want nil trace and error", tr, err)
+			}
+		})
+	}
+	for _, tc := range []struct {
+		name string
+		seq  *mixedCoupledSequence
+	}{
+		{"nil modulation", &mixedCoupledSequence{mods: []*Modulation{nil}, returnNil: true, reverseErrAt: -1}},
+		{"source error", &mixedCoupledSequence{mods: mixedCoupledNeutralMods(3, 2), forwardErr: errors.New("mixed coupled forward failure"), reverseErrAt: -1}},
+		{"numeric overflow", &mixedCoupledSequence{mods: mixedCoupledNeutralMods(3, 2), reverseErrAt: -1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			callP := mixedCoupledCloneParameters(p)
+			callInputs := mixedCoupledCloneRows(inputs)
+			if tc.name == "numeric overflow" {
+				callP.Bias[0] = math.MaxFloat64
+				callInputs[0][0] = math.MaxFloat64
+			}
+			tr, err := m.ForwardCoupled(context.Background(), callP, initial, callInputs, tc.seq)
+			if err == nil || tr != nil {
+				t.Fatalf("trace=%v err=%v, want nil trace and error", tr, err)
+			}
+		})
+	}
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	tr, err := m.ForwardCoupled(canceled, p, initial, inputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(3, 2), reverseErrAt: -1})
+	if err == nil || tr != nil || !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled mixed forward trace=%v err=%v", tr, err)
+	}
+
+	upstream := [][]float64{{.1, -.2}, {.3, .4}, {-.2, .5}}
+	for _, kind := range []string{"future", "too-negative", "shape", "nonfinite", "error"} {
+		t.Run("reverse "+kind, func(t *testing.T) {
+			tr, err := m.ForwardCoupled(context.Background(), p, initial, inputs, mixedCoupledInvalidSequence{mods: mixedCoupledNeutralMods(3, 2), reverse: mixedCoupledInvalidReverse{kind: kind, nodes: 2, steps: 3}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			beforeTrace := tr.Outputs()
+			beforeUpstream := mixedCoupledCloneRows(upstream)
+			g, err := m.Backward(context.Background(), tr, upstream, 0)
+			if err == nil || !mixedCoupledGradientIsZero(g) {
+				t.Fatalf("gradient=%#v err=%v, want zero gradient and error", g, err)
+			}
+			mixedCoupledRowsBitsEqual(t, "trace after failed reverse", tr.Outputs(), beforeTrace)
+			if !reflect.DeepEqual(upstream, beforeUpstream) {
+				t.Fatal("failed reverse changed upstream")
+			}
+		})
+	}
+	newReverseTrace, err := m.ForwardCoupled(context.Background(), p, initial, inputs, &mixedCoupledSequence{mods: mixedCoupledNeutralMods(3, 2), reverseErrAt: -1, newReverseErr: errors.New("mixed coupled NewReverse failure")})
+	if err != nil {
+		t.Fatal(err)
+	}
+	newReverseGradient, err := m.Backward(context.Background(), newReverseTrace, upstream, 0)
+	if err == nil || !mixedCoupledGradientIsZero(newReverseGradient) {
+		t.Fatalf("NewReverse failure gradient=%#v err=%v, want zero gradient and error", newReverseGradient, err)
+	}
+}

@@ -1,0 +1,33 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-p",
+    "2",
+    "./checkpoint",
+    "-run",
+    "ChemicalEpisodeValidation",
+    "-count=1",
+    "-json"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 4.199911417,
+  "failed": [
+    "TestChemicalEpisodeValidationAcceptsCaseRenamedWireFields/PART",
+    "TestChemicalEpisodeValidationAcceptsCaseRenamedWireFields",
+    "TestChemicalEpisodeValidationRejectsMissingFieldsUnderCaseRenamedParents/Chemistry_missing_source_step",
+    "TestChemicalEpisodeValidationRejectsMissingFieldsUnderCaseRenamedParents/resources_energy_null",
+    "TestChemicalEpisodeValidationRejectsMissingFieldsUnderCaseRenamedParents/INITIAL_ACTIVITY_null_element",
+    "TestChemicalEpisodeValidationRejectsMissingFieldsUnderCaseRenamedParents",
+    "TestChemicalEpisodeValidationUnicodeRoundTripAndRejectsUnpairedSurrogates/reject_unpaired_surrogate_location_evidence",
+    "TestChemicalEpisodeValidationUnicodeRoundTripAndRejectsUnpairedSurrogates/reject_unpaired_surrogate_location_anatomical_location",
+    "TestChemicalEpisodeValidationUnicodeRoundTripAndRejectsUnpairedSurrogates",
+    "TestChemicalEpisodeValidationRejectsInvalidProducerResourcesBeforePublish/energy_and_Energy",
+    "TestChemicalEpisodeValidationRejectsInvalidProducerResourcesBeforePublish/two_invalid_UTF8_names",
+    "TestChemicalEpisodeValidationRejectsInvalidProducerResourcesBeforePublish"
+  ],
+  "top_passed": [
+    "TestChemicalEpisodeValidationAllowsDeclaredOptionalNulls"
+  ],
+  "test_sha256": "874edd82e437124f0df43b22669c546a5a3a238f0a3ea6308c52d76b0d8a213b"
+}

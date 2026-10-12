@@ -1,0 +1,104 @@
+--- FAIL: TestObservationsFromCSVReadsTheEmbeddedSourceTranscription (0.00s)
+    source_test.go:33: observationsFromCSV() returned 0 rows, want 28
+--- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult (0.00s)
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/empty_input (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/header_only (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/missing_column_in_header (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/unknown_column_in_header (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/reordered_header (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/wrong_header_spelling (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/unsupported_cell_type (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/unsupported_marker (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/unsupported_subtype (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/source_row_below_two (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/duplicate_source_row (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/duplicate_sample_ID (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/negative_puncta (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/non-integer_puncta (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/puncta_integer_overflow (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+    --- FAIL: TestObservationsFromCSVRejectsMalformedOrUnsupportedRowsWithNoPartialResult/malformed_CSV (0.00s)
+        source_test.go:100: observationsFromCSV() accepted malformed input and returned []
+--- FAIL: TestObservationsFromCSVRejectsNilReaderAndEmptyFields (0.00s)
+    source_test.go:111: observationsFromCSV(nil) returned nil error and []
+--- FAIL: TestObservationsFromCSVRejectsNilReaderBeforeReading (0.00s)
+    source_test.go:139: observationsFromCSV(typed nil reader) returned nil error and []
+--- FAIL: TestMapObservationsInfersOnlySupportedMaleCNSTypesAndKeepsSourceIDs (0.00s)
+    source_test.go:190: mapping report kind = "", want cell_type_inferred
+--- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs (0.00s)
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/nil_observations (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/empty_observations (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/only_T4_source (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/only_T5_source (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/unsupported_source_type (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/invalid_marker (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/invalid_subtype (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/no_matching_nodes (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/zero_total_nodes (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsEmptyOrInvalidInputsWithZeroOutputs/negative_total_nodes (0.00s)
+        source_test.go:310: mapObservations() accepted invalid input and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+--- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs (0.00s)
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/duplicate_index (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/unsorted_index (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/index_outside_total_nodes (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/wrong_namespace (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/empty_external_ID (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/invalid_node_ID_namespace (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+    --- FAIL: TestMapObservationsRejectsMalformedNodeDeclarationsWithZeroOutputs/missing_node_type (0.00s)
+        source_test.go:364: mapObservations() accepted malformed nodes and returned {Records:[] Mix: AllowAssumedCoefficients:false}, {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}
+--- FAIL: TestMapObservationsExcludesUnclearAndNonCandidateTypesWithoutMappingThem (0.00s)
+    source_test.go:383: mapping report mapped = 0, want only four T4a/b and T5c/d nodes
+--- FAIL: TestMapObservationsAcceptsAscendingNonContiguousNodeIndices (0.00s)
+    source_test.go:410: mapping report = {Kind: Version: Mapped:0 ExcludedUnclear:0 Examples:[]}, want mapped 4 and excluded_unclear 1
+--- FAIL: TestMappedReceptorsFeedTheLocationControlWithTheOriginalNodeCount (0.00s)
+    source_test.go:440: mapped control = {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}, want located -0.1 and legacy 0
+--- FAIL: TestLocationControlUsesDeclaredCoefficientsAndLeavesSourceRecordsUnchanged (0.00s)
+    --- FAIL: TestLocationControlUsesDeclaredCoefficientsAndLeavesSourceRecordsUnchanged/one_cell (0.00s)
+        source_test.go:492: located mean offset = 0, want -0.1
+    --- FAIL: TestLocationControlUsesDeclaredCoefficientsAndLeavesSourceRecordsUnchanged/three_cells (0.00s)
+        source_test.go:492: located mean offset = 0, want -0.1
+--- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport (0.00s)
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/zero_nodes (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/negative_nodes (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/no_receptors (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/empty_cells (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/cell_outside_nodes (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+    --- FAIL: TestLocationControlRejectsInvalidDeclarationsWithZeroReport/invalid_location_region (0.00s)
+        source_test.go:556: locationControl() accepted invalid declaration and returned {LocatedMeanOffset:0 LegacyMeanOffset:0 AssumedResponses:0}
+FAIL
+FAIL	github.com/TimLai666/coimnet/examples/receptorlocation	1.106s
+FAIL

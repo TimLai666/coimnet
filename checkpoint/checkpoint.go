@@ -64,7 +64,7 @@ func NewState(snapshot learning.TrainingSnapshot, dataSeed, next uint64) (State,
 	if err != nil {
 		return State{}, fmt.Errorf("invalid training snapshot: %w", err)
 	}
-	owned := trainer.Snapshot()
+	owned := normalizeEpisodeTrainingSnapshot(trainer.Snapshot())
 	if next != owned.Updates {
 		return State{}, fmt.Errorf("next sample %d does not equal training updates %d", next, owned.Updates)
 	}
@@ -93,7 +93,7 @@ func canonicalTraining(s State) (learning.TrainingSnapshot, error) {
 	if err != nil {
 		return learning.TrainingSnapshot{}, fmt.Errorf("invalid training snapshot: %w", err)
 	}
-	return trainer.Snapshot(), nil
+	return normalizeEpisodeTrainingSnapshot(trainer.Snapshot()), nil
 }
 
 func canonicalState(s State) (State, error) {
@@ -134,8 +134,14 @@ func Save(ctx context.Context, path string, state State) (retErr error) {
 	if err := contextError(ctx); err != nil {
 		return err
 	}
+	if err := validateWireStrings(reflect.ValueOf(owned), "payload"); err != nil {
+		return fmt.Errorf("marshal checkpoint payload: %w", err)
+	}
 	payload, err := json.Marshal(owned)
 	if err != nil {
+		return fmt.Errorf("marshal checkpoint payload: %w", err)
+	}
+	if err := checkUniqueJSON(payload); err != nil {
 		return fmt.Errorf("marshal checkpoint payload: %w", err)
 	}
 	document, err := marshalEnvelope(payload)
@@ -364,6 +370,9 @@ func publishDocumentWithStatus(ctx context.Context, path string, document []byte
 }
 
 func decodeDocument(data []byte) (State, error) {
+	if err := validateJSONUnicode(data); err != nil {
+		return State{}, fmt.Errorf("decode checkpoint: %w", err)
+	}
 	if err := checkUniqueJSON(data); err != nil {
 		return State{}, err
 	}
@@ -390,7 +399,7 @@ func decodeDocument(data []byte) (State, error) {
 	}
 	// Missing or null required values must fail before encoding/json would
 	// silently decode them as zero.
-	if err := checkRequiredFields(raw.Payload, reflect.TypeOf(State{}), "payload"); err != nil {
+	if err := checkEpisodeRequiredFields(raw.Payload); err != nil {
 		return State{}, fmt.Errorf("decode checkpoint payload: %w", err)
 	}
 	var state State

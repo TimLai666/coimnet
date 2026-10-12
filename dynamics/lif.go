@@ -118,6 +118,9 @@ type LIF struct {
 type LIFTrace struct {
 	model      *LIF
 	parameters LIFParameters
+	// coupled is present only on a ForwardCoupled trace. Keeping the field
+	// nil on the ordinary path preserves that path's allocation profile.
+	coupled    *lifCoupledTrace
 	rate       [][]float64 // steps+1 rows, activity estimate r; row 0 is zero
 	homeo      [][]float64 // steps+1 rows, threshold offset h; row 0 is zero
 	voltage    [][]float64 // steps+1 rows, after reset; row 0 is the initial voltage
@@ -508,6 +511,9 @@ func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, 
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if tr.coupled != nil {
+		return m.backwardLIFCoupled(ctx, tr, upstream, window)
 	}
 	gx := make([][]float64, steps+1)
 	for t := range gx {

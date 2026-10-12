@@ -145,6 +145,9 @@ type MixedTrace struct {
 	thetaSlope []float64   // one entry per LIF node, ascending
 	lambda     []float64
 	alpha      []float64
+	// coupled is present only on a ForwardCoupled trace. Keeping it nil on
+	// the ordinary path preserves Forward's allocation and arithmetic path.
+	coupled *mixedCoupledTrace
 }
 
 // NewMixed validates the assignment, both rule blocks and the topology, and
@@ -563,6 +566,9 @@ func (m *Mixed) Backward(ctx context.Context, tr *MixedTrace, upstream [][]float
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if tr.coupled != nil {
+		return m.backwardCoupled(ctx, tr, upstream, window)
 	}
 	gout := make([][]float64, steps+1)
 	for t := range gout {

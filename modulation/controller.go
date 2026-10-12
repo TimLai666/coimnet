@@ -28,9 +28,10 @@ type ControllerInputs struct {
 // (Hidden) → q = softplus(w2·h + b2), released on Channel. Parameters is
 // row-major W1 (Hidden×InputWidth), then b1 (Hidden), then w2 (Hidden), then
 // b2 (1). The activity window is a ring the source itself keeps across Release
-// calls (rows before the first call are zeros); it is not part of any snapshot
-// in this stage, so a restored controller starts its window from zeros again.
-// Channels is Channel+1, like the other per-channel sources.
+// calls (rows before the first call are zeros). State exposes that runtime ring
+// through ControllerState while declaration fields remain separate. Restore
+// clears the release cache; Clone gives the candidate its own cache. Channels
+// is Channel+1, like the other per-channel sources.
 type Controller struct {
 	Inputs     ControllerInputs `json:"inputs"`
 	Nodes      int              `json:"nodes"`
@@ -66,14 +67,20 @@ func (c *Controller) Channels() int { return c.Channel + 1 }
 // declaration copies the declared fields alone, leaving the window and the
 // cached forward pass behind: a built or cloned controller owns its own ring.
 func (c *Controller) declaration() *Controller {
+	if c == nil {
+		return nil
+	}
 	inputs := c.Inputs
-	inputs.Resources = append([]string(nil), c.Inputs.Resources...)
-	return &Controller{Inputs: inputs, Nodes: c.Nodes, Hidden: c.Hidden, Channel: c.Channel, Parameters: append([]float64(nil), c.Parameters...)}
+	inputs.Resources = cloneControllerStrings(c.Inputs.Resources)
+	return &Controller{Inputs: inputs, Nodes: c.Nodes, Hidden: c.Hidden, Channel: c.Channel, Parameters: cloneControllerValues(c.Parameters)}
 }
 
 // Validate checks the declaration itself: the node count, hidden layer, channel
 // and window, resource names neither blank nor repeated, ParameterCount finite parameters.
 func (c *Controller) Validate() error {
+	if c == nil {
+		return fmt.Errorf("modulation: cannot validate a nil controller")
+	}
 	switch {
 	case c.Nodes < 1:
 		return fmt.Errorf("modulation: controller source summarises %d nodes, want at least 1", c.Nodes)
@@ -81,6 +88,8 @@ func (c *Controller) Validate() error {
 		return fmt.Errorf("modulation: controller source declares %d hidden units, outside [1,%d]", c.Hidden, maxControllerHidden)
 	case c.Channel < 0:
 		return fmt.Errorf("modulation: controller source declares channel %d", c.Channel)
+	case c.Channel == int(^uint(0)>>1):
+		return fmt.Errorf("modulation: controller source channel %d cannot form a channel count", c.Channel)
 	case c.Inputs.SummaryWindow < 1 || c.Inputs.SummaryWindow > maxSummaryWindow:
 		return fmt.Errorf("modulation: controller source summarises %d rows, outside [1,%d]", c.Inputs.SummaryWindow, maxSummaryWindow)
 	}
@@ -108,16 +117,27 @@ func (c *Controller) Validate() error {
 // Release summarises this step's activity with the window behind it, reads the
 // feedback that has arrived and the declared resources, and releases one rate.
 func (c *Controller) Release(step uint64, ctx SourceContext) ([]float64, error) {
+	if c == nil {
+		return nil, fmt.Errorf("modulation: cannot release from a nil controller")
+	}
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
 	if err := ctx.checkFeedback(step); err != nil {
 		return nil, err
 	}
-	if err := c.observe(step, ctx.Activity); err != nil {
+	if err := c.validateWindow(); err != nil {
 		return nil, err
 	}
-	x, err := c.inputs(step, ctx)
+
+	// All mutable state lives on a private candidate until the complete summary,
+	// MLP and checked release have succeeded. A malformed activity or a numeric
+	// overflow therefore cannot consume a ring row or replace the last cache.
+	candidate := c.Clone()
+	if err := candidate.observe(step, ctx.Activity); err != nil {
+		return nil, err
+	}
+	x, err := candidate.inputs(step, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -126,20 +146,51 @@ func (c *Controller) Release(step uint64, ctx SourceContext) ([]float64, error) 
 	for j := range h {
 		z := c.Parameters[bias1+j]
 		for i, v := range x {
-			z += c.Parameters[j*width+i] * v
+			product := c.Parameters[j*width+i] * v
+			if !finite(product) {
+				return nil, fmt.Errorf("modulation: controller hidden product %d,%d is not finite at step %d", j, i, step)
+			}
+			z += product
+			if !finite(z) {
+				return nil, fmt.Errorf("modulation: controller hidden unit %d is not finite at step %d", j, step)
+			}
 		}
 		h[j] = math.Tanh(z)
+		if !finite(h[j]) {
+			return nil, fmt.Errorf("modulation: controller hidden unit %d is not finite at step %d", j, step)
+		}
 	}
 	z := c.Parameters[bias1+2*c.Hidden]
 	for j, v := range h {
-		z += c.Parameters[bias1+c.Hidden+j] * v
+		product := c.Parameters[bias1+c.Hidden+j] * v
+		if !finite(product) {
+			return nil, fmt.Errorf("modulation: controller readout product %d is not finite at step %d", j, step)
+		}
+		z += product
+		if !finite(z) {
+			return nil, fmt.Errorf("modulation: controller readout is not finite at step %d", step)
+		}
 	}
 	q := softplus(z)
-	// Kept so the gradient of the next ticket reads the step that produced this rate.
-	c.lastX, c.lastH, c.lastQ, c.released = x, h, q, true
+	if !finite(q) {
+		return nil, fmt.Errorf("modulation: controller release rate is not finite at step %d", step)
+	}
 	rates := make([]float64, c.Channels())
 	rates[c.Channel] = nonNegative(q)
-	return checkedRelease(rates, c.Channels())
+	checked, err := checkedRelease(rates, c.Channels())
+	if err != nil {
+		return nil, err
+	}
+
+	// Commit the candidate ring and the cache together, after every finite and
+	// channel check has passed.
+	c.window = candidate.window
+	c.filled = candidate.filled
+	c.lastX = x
+	c.lastH = h
+	c.lastQ = q
+	c.released = true
+	return checked, nil
 }
 
 // observe writes this step's activity into the ring as its newest row and drops
@@ -156,7 +207,7 @@ func (c *Controller) observe(step uint64, activity []float64) error {
 			}
 		}
 	}
-	if len(c.window) != c.Inputs.SummaryWindow || len(c.window[0]) != c.Nodes {
+	if len(c.window) != c.Inputs.SummaryWindow || !controllerRowsShape(c.window, c.Nodes) {
 		c.window = make([][]float64, c.Inputs.SummaryWindow)
 		for i := range c.window {
 			c.window[i] = make([]float64, c.Nodes)
@@ -178,23 +229,24 @@ func (c *Controller) observe(step uint64, activity []float64) error {
 // rows no activity has reached yet count as the zeros they hold; the mean score
 // of the arrived feedback; one value per declared resource, zero when absent.
 func (c *Controller) inputs(step uint64, ctx SourceContext) ([]float64, error) {
-	var sum, squares float64
-	for _, row := range c.window[len(c.window)-c.filled:] {
-		for _, v := range row {
-			sum, squares = sum+v, squares+v*v
-		}
+	mean, variance, _, err := controllerSummary(c.window, c.filled, c.Nodes)
+	if err != nil {
+		return nil, fmt.Errorf("modulation: controller activity summary failed at step %d: %w", step, err)
 	}
-	total := float64(len(c.window) * c.Nodes)
-	mean := sum / total
-	// Rounding can push a variance of zero just below it; it is never negative.
-	x := append(make([]float64, 0, c.InputWidth()), mean, nonNegative(squares/total-mean*mean))
+	x := append(make([]float64, 0, c.InputWidth()), mean, variance)
 	if c.Inputs.UseFeedback {
 		var score float64
-		for _, f := range ctx.Feedback {
+		for i, f := range ctx.Feedback {
 			score += f.Score()
+			if !finite(score) {
+				return nil, fmt.Errorf("modulation: feedback score summary is not finite at step %d after item %d", step, i)
+			}
 		}
 		if len(ctx.Feedback) > 0 {
 			score /= float64(len(ctx.Feedback))
+			if !finite(score) {
+				return nil, fmt.Errorf("modulation: feedback score summary is not finite at step %d", step)
+			}
 		}
 		x = append(x, score)
 	}
@@ -205,7 +257,80 @@ func (c *Controller) inputs(step uint64, ctx SourceContext) ([]float64, error) {
 		}
 		x = append(x, amount)
 	}
+	for i, value := range x {
+		if !finite(value) {
+			return nil, fmt.Errorf("modulation: controller input %d is not finite at step %d", i, step)
+		}
+	}
 	return x, nil
+}
+
+func controllerRowsShape(window [][]float64, nodes int) bool {
+	if window == nil {
+		return false
+	}
+	for _, row := range window {
+		if len(row) != nodes {
+			return false
+		}
+	}
+	return true
+}
+
+// controllerSummary computes the population mean and variance over the
+// complete declared window denominator. Rows before the first observation are
+// already zero and are omitted from the summation. The raw variance is returned
+// separately so BackwardActivity can apply the clamp's zero derivative.
+func controllerSummary(window [][]float64, filled, nodes int) (float64, float64, float64, error) {
+	if len(window) == 0 || nodes < 1 || filled < 0 || filled > len(window) {
+		return 0, 0, 0, fmt.Errorf("modulation: controller activity summary has invalid window shape")
+	}
+	total := float64(len(window)) * float64(nodes)
+	if !finite(total) || total <= 0 {
+		return 0, 0, 0, fmt.Errorf("modulation: controller activity summary size is not finite")
+	}
+	var sum, squares float64
+	start := len(window) - filled
+	for i := start; i < len(window); i++ {
+		row := window[i]
+		if len(row) != nodes {
+			return 0, 0, 0, fmt.Errorf("modulation: controller activity summary row %d has %d values, want %d", i, len(row), nodes)
+		}
+		for j, value := range row {
+			if !finite(value) {
+				return 0, 0, 0, fmt.Errorf("modulation: controller activity summary row %d node %d is not finite", i, j)
+			}
+			square := value * value
+			if !finite(square) {
+				return 0, 0, 0, fmt.Errorf("modulation: controller activity summary square at row %d node %d is not finite", i, j)
+			}
+			sum += value
+			if !finite(sum) {
+				return 0, 0, 0, fmt.Errorf("modulation: controller activity summary sum is not finite")
+			}
+			squares += square
+			if !finite(squares) {
+				return 0, 0, 0, fmt.Errorf("modulation: controller activity summary squares are not finite")
+			}
+		}
+	}
+	mean := sum / total
+	if !finite(mean) {
+		return 0, 0, 0, fmt.Errorf("modulation: controller activity mean is not finite")
+	}
+	meanSquare := mean * mean
+	if !finite(meanSquare) {
+		return 0, 0, 0, fmt.Errorf("modulation: controller activity mean square is not finite")
+	}
+	rawVariance := squares/total - meanSquare
+	if !finite(rawVariance) {
+		return 0, 0, 0, fmt.Errorf("modulation: controller activity variance is not finite")
+	}
+	variance := rawVariance
+	if variance <= 0 {
+		variance = 0
+	}
+	return mean, variance, rawVariance, nil
 }
 
 // softplus is log(1 + e^z), the readout that makes a release rate non-negative

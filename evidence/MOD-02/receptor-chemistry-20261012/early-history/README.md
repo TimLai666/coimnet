@@ -1,0 +1,3 @@
+# Earlier training checks
+
+This archive retains earlier failing tests, candidate runs, source freezes and minimal empty-slot overlays. Each record keeps its original command and tested source, and is implementation history rather than final-source acceptance. `artifacts.json` maps every inspected original file to an archive member or an identical artifact already retained in the parent evidence tree. Archive members are relative regular files only. Restore the archived source versions and rewrite overlay paths when replaying a historical run elsewhere. The parent verification.json records the accepted source and full-suite results.

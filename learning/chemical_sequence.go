@@ -1,0 +1,680 @@
+package learning
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"strings"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+// chemicalSequence is the private bridge between one CPU scalar core and one
+// private chemical runtime. Forward owns every observation needed by reverse;
+// reverse only reads those observations and never calls a source again.
+type chemicalSequence struct {
+	config          modulation.ChemistryConfig
+	kinetics        *modulation.Kinetics
+	runtime         *chemicalRuntime
+	nodes           int
+	steps           int
+	sourceStep      uint64
+	initialActivity []float64
+	expression      *ExpressionGain
+	frozen          bool
+	rows            []chemicalSequenceRow
+	rawOutputs      [][]float64
+}
+
+type chemicalSequenceRow struct {
+	before     modulation.ChemistryState
+	after      modulation.ChemistryState
+	release    [][]float64
+	occupancy  []modulation.OccupancyRecord
+	modulation *dynamics.Modulation
+	sources    []modulation.Source
+	activity   []float64
+}
+
+func newChemicalSequence(ctx context.Context, episode *ChemicalEpisode, nodes int, frozen bool, steps int) (*chemicalSequence, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if episode == nil {
+		return nil, fmt.Errorf("nil chemical episode")
+	}
+	if nodes < 1 || steps < 1 {
+		return nil, fmt.Errorf("chemical sequence needs positive nodes and steps")
+	}
+	if episode.SourceStep > math.MaxInt64 {
+		return nil, fmt.Errorf("chemical episode source_step %d does not fit an int64 timestamp", episode.SourceStep)
+	}
+	stepCount := uint64(steps)
+	// The last row is SourceStep+steps-1. A one-row episode at MaxInt64 is
+	// valid; only extending beyond that boundary is refused before any runtime
+	// or source state is created.
+	if stepCount-1 > uint64(math.MaxInt64)-episode.SourceStep {
+		return nil, fmt.Errorf("chemical episode source clock overflows int64 for %d steps", steps)
+	}
+	if !frozen && stepCount > math.MaxUint64-episode.Part.State.Steps {
+		return nil, fmt.Errorf("chemical episode kinetics step counter overflows for %d steps", steps)
+	}
+	owned := copyChemicalEpisode(episode)
+	if err := owned.Part.Config.Validate(nodes); err != nil {
+		return nil, fmt.Errorf("chemical sequence config: %w", err)
+	}
+	if err := owned.Part.Config.ValidateState(owned.Part.State); err != nil {
+		return nil, fmt.Errorf("chemical sequence state: %w", err)
+	}
+	if owned.InitialActivity != nil {
+		if len(owned.InitialActivity) != nodes {
+			return nil, fmt.Errorf("chemical sequence initial_activity has %d values, want %d", len(owned.InitialActivity), nodes)
+		}
+		for node, value := range owned.InitialActivity {
+			if !finite(value) {
+				return nil, fmt.Errorf("chemical sequence initial_activity[%d] is not finite", node)
+			}
+		}
+	}
+	runtime, err := newChemicalRuntime(owned.Part.Config, nodes)
+	if err != nil {
+		return nil, fmt.Errorf("chemical sequence runtime: %w", err)
+	}
+	runtime.state = copyChemicalState(owned.Part.State)
+	runtime.resources = make(map[string]float64, len(owned.Part.Resources))
+	for name, amount := range owned.Part.Resources {
+		if strings.TrimSpace(name) == "" || !finite(amount) {
+			return nil, fmt.Errorf("chemical sequence resource %q is invalid", name)
+		}
+		runtime.resources[name] = amount
+	}
+	for index, spec := range owned.Part.PendingFeedback {
+		feedback, err := signal.NewFeedback(spec)
+		if err != nil {
+			return nil, fmt.Errorf("chemical sequence pending feedback %d: %w", index, err)
+		}
+		if spec.AvailableAt.Unit != modulation.ReleaseTimeUnit {
+			return nil, fmt.Errorf("chemical sequence pending feedback %d uses time unit %q, want %q", index, spec.AvailableAt.Unit, modulation.ReleaseTimeUnit)
+		}
+		if err := feedback.Validate(); err != nil {
+			return nil, fmt.Errorf("chemical sequence pending feedback %d: %w", index, err)
+		}
+		runtime.pending = append(runtime.pending, feedback)
+	}
+	if err := runtime.restoreSourceStates(owned.Part.SourceStates); err != nil {
+		return nil, fmt.Errorf("chemical sequence source state: %w", err)
+	}
+	runtime.frozen = frozen
+	kinetics, err := modulation.NewChemistry(owned.Part.Config.Chemistry)
+	if err != nil {
+		return nil, fmt.Errorf("chemical sequence kinetics: %w", err)
+	}
+	return &chemicalSequence{
+		config:          owned.Part.Config.Clone(),
+		kinetics:        kinetics,
+		runtime:         runtime,
+		nodes:           nodes,
+		steps:           steps,
+		sourceStep:      owned.SourceStep,
+		initialActivity: append([]float64(nil), owned.InitialActivity...),
+		expression:      copyExpression(owned.Part.Expression),
+		frozen:          frozen,
+		rows:            make([]chemicalSequenceRow, 0, steps),
+	}, nil
+}
+
+// Forward is called once per core row. The activity passed to advanceOne is
+// always the previous raw core output; an explicit initial activity is used
+// only for the first row and is a constant reverse boundary.
+func (s *chemicalSequence) Forward(ctx context.Context, step int, previous []float64) (*dynamics.Modulation, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || s.runtime == nil || s.kinetics == nil {
+		return nil, fmt.Errorf("uninitialized chemical sequence")
+	}
+	if step != len(s.rows) {
+		return nil, fmt.Errorf("chemical sequence received step %d after %d rows", step, len(s.rows))
+	}
+	if step >= s.steps {
+		return nil, fmt.Errorf("chemical sequence step %d is outside the declared %d-step episode", step, s.steps)
+	}
+	if len(previous) != s.nodes {
+		return nil, fmt.Errorf("chemical sequence previous activity has %d values, want %d", len(previous), s.nodes)
+	}
+	for node, value := range previous {
+		if !finite(value) {
+			return nil, fmt.Errorf("chemical sequence previous activity[%d] is not finite", node)
+		}
+	}
+	if uint64(step) > math.MaxInt64-s.sourceStep {
+		return nil, fmt.Errorf("chemical sequence source clock overflows int64 at step %d", step)
+	}
+	absoluteStep := s.sourceStep + uint64(step)
+	activity := append([]float64(nil), previous...)
+	if step == 0 && s.initialActivity != nil {
+		activity = append([]float64(nil), s.initialActivity...)
+	}
+	before := copyChemicalState(s.runtime.state)
+	row, err := s.runtime.advanceOne(before, absoluteStep, activity, s.nodes)
+	if err != nil {
+		return nil, fmt.Errorf("chemical sequence step %d: %w", step, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if !s.frozen && row.state.Steps != before.Steps+1 {
+		return nil, fmt.Errorf("chemical sequence step %d did not advance kinetics exactly once", step)
+	}
+	release := make([][]float64, len(row.state.Concentration))
+	if !s.frozen {
+		if len(row.release) != s.config.Chemistry.Channels {
+			return nil, fmt.Errorf("chemical sequence step %d release width %d, want %d", step, len(row.release), s.config.Chemistry.Channels)
+		}
+		for region := range release {
+			release[region] = make([]float64, len(row.release))
+			for channel, value := range row.release {
+				if !finite(value) || value < 0 {
+					return nil, fmt.Errorf("chemical sequence step %d release[%d] is invalid", step, channel)
+				}
+				release[region][channel] = value
+			}
+		}
+	}
+	ownedModulation := copyChemicalModulation(row.modulated)
+	if ownedModulation == nil {
+		return nil, fmt.Errorf("chemical sequence step %d returned nil modulation", step)
+	}
+	ownedRow := chemicalSequenceRow{
+		before:     before,
+		after:      copyChemicalState(row.state),
+		release:    release,
+		occupancy:  append([]modulation.OccupancyRecord(nil), row.occupancy...),
+		modulation: ownedModulation,
+		sources:    cloneChemicalSources(s.runtime.sources),
+		activity:   activity,
+	}
+	s.rows = append(s.rows, ownedRow)
+	s.runtime.state = copyChemicalState(row.state)
+	return copyChemicalModulation(ownedModulation), nil
+}
+
+func (s *chemicalSequence) setRawOutputs(ctx context.Context, outputs [][]float64) error {
+	if ctx == nil {
+		return fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if s == nil || len(outputs) != len(s.rows) {
+		return fmt.Errorf("chemical sequence raw output rows do not match forward rows")
+	}
+	owned := make([][]float64, len(outputs))
+	for step, row := range outputs {
+		if len(row) != s.nodes {
+			return fmt.Errorf("chemical sequence raw output[%d] has %d values, want %d", step, len(row), s.nodes)
+		}
+		owned[step] = make([]float64, s.nodes)
+		for node, value := range row {
+			if !finite(value) {
+				return fmt.Errorf("chemical sequence raw output[%d][%d] is not finite", step, node)
+			}
+			owned[step][node] = value
+		}
+	}
+	s.rawOutputs = owned
+	return nil
+}
+
+func (s *chemicalSequence) applyExpression(ctx context.Context, raw [][]float64) ([][]float64, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil {
+		return nil, fmt.Errorf("nil chemical sequence")
+	}
+	if s.expression == nil {
+		return raw, nil
+	}
+	if len(raw) != len(s.rows) {
+		return nil, fmt.Errorf("chemical expression rows do not match raw outputs")
+	}
+	out := copyRows(raw)
+	for step, row := range out {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		gain, _, err := chemicalExpressionGain(s.rows[step].occupancy, s.expression)
+		if err != nil {
+			return nil, fmt.Errorf("chemical expression step %d: %w", step, err)
+		}
+		for _, node := range s.expression.Nodes {
+			if node < 0 || node >= len(row) {
+				return nil, fmt.Errorf("chemical expression node %d is outside raw output", node)
+			}
+			value := row[node] * gain
+			if !finite(value) {
+				return nil, fmt.Errorf("chemical expression step %d node %d is non-finite", step, node)
+			}
+			row[node] = value
+		}
+	}
+	return out, nil
+}
+
+// NewReverse allocates a fresh reverse session with private row/source copies.
+// Releasing or backpropagating through a controller is never repeated here.
+func (s *chemicalSequence) NewReverse(ctx context.Context, steps, window int) (dynamics.ModulationReverse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || s.kinetics == nil {
+		return nil, fmt.Errorf("uninitialized chemical sequence")
+	}
+	if steps != len(s.rows) || steps != len(s.rawOutputs) || steps < 1 {
+		return nil, fmt.Errorf("chemical reverse has %d steps, want %d completed rows", steps, len(s.rows))
+	}
+	if window < 0 {
+		return nil, fmt.Errorf("negative chemical reverse window")
+	}
+	if s.expression != nil {
+		if s.expression.Receptor < 0 || s.expression.Receptor >= len(s.config.Receptors.Records) {
+			return nil, fmt.Errorf("chemical expression receptor %d is out of range", s.expression.Receptor)
+		}
+		if !finite(s.expression.Scale) || !finite(s.expression.Min) || !finite(s.expression.Max) || s.expression.Min > 1 || s.expression.Max < 1 {
+			return nil, fmt.Errorf("chemical expression bounds or scale are invalid")
+		}
+		previous := -1
+		if len(s.expression.Nodes) == 0 {
+			return nil, fmt.Errorf("chemical expression names no node")
+		}
+		for _, node := range s.expression.Nodes {
+			if node < 0 || node >= s.nodes || node <= previous {
+				return nil, fmt.Errorf("chemical expression node %d is invalid", node)
+			}
+			previous = node
+		}
+	}
+	for step, row := range s.rawOutputs {
+		if len(row) != s.nodes {
+			return nil, fmt.Errorf("chemical raw output[%d] has %d values, want %d", step, len(row), s.nodes)
+		}
+		for node, value := range row {
+			if !finite(value) {
+				return nil, fmt.Errorf("chemical raw output[%d][%d] is not finite", step, node)
+			}
+		}
+	}
+	kinetics, err := modulation.NewChemistry(s.config.Chemistry)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]chemicalSequenceRow, len(s.rows))
+	for index, row := range s.rows {
+		rows[index] = copyChemicalSequenceRow(row)
+	}
+	seeds := make([][]float64, len(rows))
+	for index, row := range rows {
+		seeds[index] = make([]float64, len(row.occupancy))
+	}
+	return &chemicalReverse{
+		config:      s.config.Clone(),
+		kinetics:    kinetics,
+		rows:        rows,
+		rawOutputs:  copyRows(s.rawOutputs),
+		expression:  copyExpression(s.expression),
+		nodes:       s.nodes,
+		window:      window,
+		seeds:       seeds,
+		nextReadout: 0,
+		nextStep:    steps - 1,
+		frozen:      s.frozen,
+	}, nil
+}
+
+type chemicalReverse struct {
+	config      modulation.ChemistryConfig
+	kinetics    *modulation.Kinetics
+	rows        []chemicalSequenceRow
+	rawOutputs  [][]float64
+	expression  *ExpressionGain
+	nodes       int
+	window      int
+	seeds       [][]float64
+	nextReadout int
+	nextStep    int
+	frozen      bool
+	carry       [][]float64
+}
+
+func (r *chemicalReverse) BackwardReadout(ctx context.Context, step int, up []float64) ([]float64, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if r == nil || step != r.nextReadout || step < 0 || step >= len(r.rows) {
+		return nil, fmt.Errorf("chemical readout reverse step %d is out of order", step)
+	}
+	if len(up) != r.nodes {
+		return nil, fmt.Errorf("chemical readout upstream has %d values, want %d", len(up), r.nodes)
+	}
+	for node, value := range up {
+		if !finite(value) {
+			return nil, fmt.Errorf("chemical readout upstream[%d] is not finite", node)
+		}
+	}
+	out := append([]float64(nil), up...)
+	seeds := append([]float64(nil), r.seeds[step]...)
+	if r.expression != nil {
+		gain, interior, err := chemicalExpressionGain(r.rows[step].occupancy, r.expression)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range r.expression.Nodes {
+			out[node] *= gain
+			if !finite(out[node]) {
+				return nil, fmt.Errorf("chemical readout raw adjoint at node %d is not finite", node)
+			}
+		}
+		if interior {
+			count := chemicalExpressionRecordCount(r.rows[step].occupancy, r.expression.Receptor)
+			if count > 0 {
+				for recordIndex, record := range r.rows[step].occupancy {
+					if record.Receptor != r.expression.Receptor {
+						continue
+					}
+					seed := 0.0
+					for _, node := range r.expression.Nodes {
+						term := up[node] * r.rawOutputs[step][node]
+						if !finite(term) {
+							return nil, fmt.Errorf("chemical expression seed at step %d node %d is not finite", step, node)
+						}
+						seed += term
+						if !finite(seed) {
+							return nil, fmt.Errorf("chemical expression seed at step %d is not finite", step)
+						}
+					}
+					seed *= r.expression.Scale / float64(count)
+					if !finite(seed) {
+						return nil, fmt.Errorf("chemical expression seed at step %d record %d is not finite", step, recordIndex)
+					}
+					seeds[recordIndex] = seed
+				}
+			}
+		}
+	}
+	copy(r.seeds[step], seeds)
+	r.nextReadout++
+	return out, nil
+}
+
+func (r *chemicalReverse) BackwardStep(ctx context.Context, step int, gradient dynamics.ModulationGradient) ([]dynamics.ActivityGradient, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if r == nil || step != r.nextStep || step < 0 || step >= len(r.rows) {
+		return nil, fmt.Errorf("chemical reverse step %d is out of order", step)
+	}
+	if len(gradient.Gain) != r.nodes || len(gradient.Offset) != r.nodes || len(gradient.Threshold) != r.nodes {
+		return nil, fmt.Errorf("chemical modulation gradient at step %d has the wrong node width", step)
+	}
+	for node := 0; node < r.nodes; node++ {
+		if !finite(gradient.Gain[node]) || !finite(gradient.Offset[node]) || !finite(gradient.Threshold[node]) {
+			return nil, fmt.Errorf("chemical modulation gradient at step %d node %d is not finite", step, node)
+		}
+	}
+	row := r.rows[step]
+	occupancyGradient, err := modulation.BackwardEffects(
+		r.config.Effects, row.occupancy, r.config.Receptors.Mix, r.nodes,
+		gradient.Gain, gradient.Offset, gradient.Threshold,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("chemical effects reverse at step %d: %w", step, err)
+	}
+	for index, seed := range r.seeds[step] {
+		value := occupancyGradient[index] + seed
+		if !finite(value) {
+			return nil, fmt.Errorf("chemical occupancy gradient at step %d record %d is not finite", step, index)
+		}
+		occupancyGradient[index] = value
+	}
+	if r.frozen {
+		r.nextStep--
+		return nil, nil
+	}
+	concentrationGradient, err := r.config.Receptors.BackwardOccupancies(row.after, r.config.Regions.NodeRegion, occupancyGradient)
+	if err != nil {
+		return nil, fmt.Errorf("chemical occupancy reverse at step %d: %w", step, err)
+	}
+	upstream := copyChemicalGrid(concentrationGradient)
+	if r.carry != nil {
+		if len(r.carry) != len(upstream) {
+			return nil, fmt.Errorf("chemical concentration carry has %d regions, want %d", len(r.carry), len(upstream))
+		}
+		for region := range upstream {
+			if len(r.carry[region]) != len(upstream[region]) {
+				return nil, fmt.Errorf("chemical concentration carry region %d has the wrong width", region)
+			}
+			for channel, value := range r.carry[region] {
+				upstream[region][channel] += value
+				if !finite(upstream[region][channel]) {
+					return nil, fmt.Errorf("chemical concentration carry overflow at step %d", step)
+				}
+			}
+		}
+	}
+	chemGradient, err := r.kinetics.Backward(row.before, row.release, nil, upstream)
+	if err != nil {
+		return nil, fmt.Errorf("chemical kinetics reverse at step %d: %w", step, err)
+	}
+	nextCarry := chemGradient.Concentration
+	if r.window > 0 && step%r.window == 0 {
+		nextCarry = nil
+	}
+	activity := make(map[int][]float64)
+	start := 0
+	if r.window > 0 {
+		start = step / r.window * r.window
+	}
+	addActivity := func(target int, values []float64) error {
+		if target < start || target < 0 || target >= step {
+			return nil
+		}
+		if len(values) != r.nodes {
+			return fmt.Errorf("activity gradient target %d has %d values, want %d", target, len(values), r.nodes)
+		}
+		row, ok := activity[target]
+		if !ok {
+			row = make([]float64, r.nodes)
+			activity[target] = row
+		}
+		for node, value := range values {
+			if !finite(value) {
+				return fmt.Errorf("activity gradient target %d node %d is not finite", target, node)
+			}
+			row[node] += value
+			if !finite(row[node]) {
+				return fmt.Errorf("activity gradient target %d node %d overflowed", target, node)
+			}
+		}
+		return nil
+	}
+	for channel, spec := range r.config.Sources {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		var releaseGradient float64
+		for region, values := range chemGradient.Release {
+			if channel >= len(values) {
+				return nil, fmt.Errorf("chemical release gradient region %d has no channel %d", region, channel)
+			}
+			releaseGradient += values[channel]
+			if !finite(releaseGradient) {
+				return nil, fmt.Errorf("chemical release gradient channel %d overflowed", channel)
+			}
+		}
+		switch spec.Kind {
+		case modulation.SourceController:
+			controller, ok := row.sources[channel].(*modulation.Controller)
+			if !ok || controller == nil {
+				return nil, fmt.Errorf("chemical source %d is not a controller", channel)
+			}
+			windowGradient, err := controller.BackwardActivity(releaseGradient)
+			if err != nil {
+				return nil, fmt.Errorf("chemical controller reverse source %d at step %d: %w", channel, step, err)
+			}
+			for windowRow, values := range windowGradient {
+				target := step - (len(windowGradient) - 1 - windowRow) - 1
+				if err := addActivity(target, values); err != nil {
+					return nil, err
+				}
+			}
+		case modulation.SourceNeuralActivity:
+			if spec.Neural == nil {
+				return nil, fmt.Errorf("chemical neural source %d has no declaration", channel)
+			}
+			if len(spec.Neural.Nodes) == 0 {
+				return nil, fmt.Errorf("chemical neural source %d has no nodes", channel)
+			}
+			var mean float64
+			for _, node := range spec.Neural.Nodes {
+				if node < 0 || node >= len(row.activity) {
+					return nil, fmt.Errorf("chemical neural source %d activity node %d is outside the core", channel, node)
+				}
+				mean += row.activity[node]
+			}
+			mean /= float64(len(spec.Neural.Nodes))
+			product := mean * spec.Neural.Gain
+			if !finite(product) {
+				return nil, fmt.Errorf("chemical neural source %d clamp input is not finite", channel)
+			}
+			if product > 0 {
+				values := make([]float64, r.nodes)
+				factor := releaseGradient * spec.Neural.Gain / float64(len(spec.Neural.Nodes))
+				if !finite(factor) {
+					return nil, fmt.Errorf("chemical neural source %d activity gradient is not finite", channel)
+				}
+				for _, node := range spec.Neural.Nodes {
+					values[node] += factor
+				}
+				if err := addActivity(step-1, values); err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+	r.carry = nextCarry
+	r.nextStep--
+	result := make([]dynamics.ActivityGradient, 0, len(activity))
+	for target := start; target < step; target++ {
+		if values, ok := activity[target]; ok {
+			result = append(result, dynamics.ActivityGradient{Step: target, Values: append([]float64(nil), values...)})
+		}
+	}
+	return result, nil
+}
+
+func chemicalExpressionGain(records []modulation.OccupancyRecord, expression *ExpressionGain) (float64, bool, error) {
+	if expression == nil {
+		return 1, false, nil
+	}
+	count := chemicalExpressionRecordCount(records, expression.Receptor)
+	occupancy := meanOccupancy(records, expression.Receptor)
+	if !finite(occupancy) {
+		return 0, false, fmt.Errorf("expression occupancy is not finite")
+	}
+	scaled := expression.Scale * occupancy
+	if !finite(scaled) {
+		return 0, false, fmt.Errorf("expression scaled occupancy is not finite")
+	}
+	uncapped := 1 + scaled
+	if !finite(uncapped) {
+		return 0, false, fmt.Errorf("expression gain is not finite before clamping")
+	}
+	gain := clamp(uncapped, expression.Min, expression.Max)
+	if !finite(gain) {
+		return 0, false, fmt.Errorf("expression gain is not finite")
+	}
+	return gain, count > 0 && gain > expression.Min && gain < expression.Max, nil
+}
+
+func chemicalExpressionRecordCount(records []modulation.OccupancyRecord, receptor int) int {
+	count := 0
+	for _, record := range records {
+		if record.Receptor == receptor {
+			count++
+		}
+	}
+	return count
+}
+
+func copyChemicalSequenceRow(row chemicalSequenceRow) chemicalSequenceRow {
+	return chemicalSequenceRow{
+		before:     copyChemicalState(row.before),
+		after:      copyChemicalState(row.after),
+		release:    copyChemicalGrid(row.release),
+		occupancy:  append([]modulation.OccupancyRecord(nil), row.occupancy...),
+		modulation: copyChemicalModulation(row.modulation),
+		sources:    cloneChemicalSources(row.sources),
+		activity:   append([]float64(nil), row.activity...),
+	}
+}
+
+func copyChemicalModulation(mod *dynamics.Modulation) *dynamics.Modulation {
+	if mod == nil {
+		return nil
+	}
+	return &dynamics.Modulation{
+		Gain:      copyRows(mod.Gain),
+		Offset:    copyRows(mod.Offset),
+		Threshold: copyRows(mod.Threshold),
+	}
+}
+
+func copyChemicalGrid(grid [][]float64) [][]float64 { return copyRows(grid) }
+
+func cloneChemicalSources(sources []modulation.Source) []modulation.Source {
+	if sources == nil {
+		return nil
+	}
+	owned := make([]modulation.Source, len(sources))
+	for index, source := range sources {
+		switch value := source.(type) {
+		case *modulation.Controller:
+			owned[index] = value.Clone()
+		case modulation.ExternalTimeline:
+			value.Entries = append([]modulation.TimelineEntry(nil), value.Entries...)
+			owned[index] = value
+		case modulation.NeuralActivity:
+			value.Nodes = append([]int(nil), value.Nodes...)
+			owned[index] = value
+		case modulation.Replay:
+			value.Trace = copyRows(value.Trace)
+			owned[index] = value
+		case modulation.InternalResource:
+			owned[index] = value
+		default:
+			owned[index] = source
+		}
+	}
+	return owned
+}

@@ -54,6 +54,10 @@ type Config struct {
 	// canonical JSON, its recorded fingerprint and its bit-for-bit last-step
 	// behaviour.
 	ReadoutEveryStep bool `json:"readout_every_step,omitempty"`
+	// Chemistry declares the isolated chemical boundary of each independent
+	// prediction/training episode. nil preserves the original path. Persistent
+	// Individuals instead use EnableChemistry and may not declare this field.
+	Chemistry *ChemicalEpisode `json:"chemistry,omitempty"`
 }
 
 // Parameters uses a row-major encoder [input,input-node] (or [input,node]
@@ -83,6 +87,9 @@ type Network struct {
 	config Config
 	core   coreModel
 	fixed  bool
+	// chemicalFrozen is used only by the private network of an Individual's
+	// training episode while FreezeChemistry holds its persistent boundary.
+	chemicalFrozen bool
 }
 
 // NewNetwork validates dimensions and copies connectivity and readout selection.
@@ -137,7 +144,11 @@ func NewNetwork(c Config) (*Network, error) {
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	c.LIFIndex = append([]int(nil), c.LIFIndex...)
 	c.Sharing = copySharing(c.Sharing)
-	return &Network{c, core, hasFixedSigns(c.EdgeSigns)}, nil
+	c.Chemistry, err = prepareChemicalEpisode(c.Chemistry, core, c.ReadoutNodes)
+	if err != nil {
+		return nil, err
+	}
+	return &Network{config: c, core: core, fixed: hasFixedSigns(c.EdgeSigns)}, nil
 }
 
 // Config returns an independent copy of the complete model configuration.
@@ -161,6 +172,7 @@ func (n *Network) Config() Config {
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	c.LIFIndex = append([]int(nil), c.LIFIndex...)
 	c.Sharing = copySharing(c.Sharing)
+	c.Chemistry = copyChemicalEpisode(c.Chemistry)
 	return c
 }
 
@@ -415,7 +427,7 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 		}
 	}
 	var cg coreGradient
-	if e.segment > 0 {
+	if e.segment > 0 && e.trace == nil {
 		cg, err = backwardRecompute(ctx, n.core, e.coreParams, make([]float64, coreWidth), e.coreInputs, up, window, e.segment)
 	} else {
 		cg, err = n.core.backward(ctx, e.trace, up, window)
@@ -580,7 +592,9 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 	}
 	var tr coreTrace
 	var y [][]float64
-	if segment > 0 {
+	if n.config.Chemistry != nil {
+		tr, y, err = n.forwardChemical(ctx, core, coreInputs, segment, initial)
+	} else if segment > 0 {
 		y, err = observe(ctx, n.core, core, make([]float64, coreWidth), coreInputs, segment)
 	} else if initial != nil {
 		if len(core.ThetaRaw) != 0 {

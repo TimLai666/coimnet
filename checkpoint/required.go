@@ -33,6 +33,10 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 	if err := json.Unmarshal(data, &object); err != nil {
 		return fmt.Errorf("%s is not a JSON object: %w", path, err)
 	}
+	object, err := presenceObject(object)
+	if err != nil {
+		return fmt.Errorf("%s: %w", path, err)
+	}
 	for i := 0; i < target.NumField(); i++ {
 		field := target.Field(i)
 		if !field.IsExported() {
@@ -43,7 +47,7 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 			continue
 		}
 		fieldPath := path + "." + name
-		raw, present := object[name]
+		raw, present := jsonField(object, name)
 		switch field.Type.Kind() {
 		case reflect.Bool, reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
 			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,

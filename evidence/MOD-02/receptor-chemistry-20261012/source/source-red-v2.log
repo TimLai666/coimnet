@@ -1,0 +1,15 @@
+--- FAIL: TestMapObservationsAcceptsAOneTypeGraphWithoutInventingAnEmptyRecord (0.00s)
+    --- FAIL: TestMapObservationsAcceptsAOneTypeGraphWithoutInventingAnEmptyRecord/T4_only (0.00s)
+        source_test.go:323: mapObservations() error = receptorlocation: source candidates must contain both T4 and T5 MaleCNS cells
+    --- FAIL: TestMapObservationsAcceptsAOneTypeGraphWithoutInventingAnEmptyRecord/T5_only (0.00s)
+        source_test.go:323: mapObservations() error = receptorlocation: source candidates must contain both T4 and T5 MaleCNS cells
+--- FAIL: TestMapObservationsReportsEachExactSubtypeAtMostOnce (0.00s)
+    source_test.go:389: mapping report contains more than one example for exact subtype "T4a"
+    source_test.go:389: mapping report contains more than one example for exact subtype "T4b"
+    source_test.go:389: mapping report contains more than one example for exact subtype "T4c"
+    source_test.go:408: mapping report example subtypes = map[T4a:true T4b:true T4c:true T4d:true T5a:true], want one each of map[T4a:map[body-t4a-1:{} body-t4a-2:{}] T4b:map[body-t4b-1:{} body-t4b-2:{}] T4c:map[body-t4c-1:{} body-t4c-2:{}] T4d:map[body-t4d-1:{} body-t4d-2:{}] T5a:map[body-t5a-1:{} body-t5a-2:{}] T5b:map[body-t5b-1:{} body-t5b-2:{}] T5c:map[body-t5c-1:{} body-t5c-2:{}] T5d:map[body-t5d-1:{} body-t5d-2:{}]]
+--- FAIL: TestLocationControlDoesNotFitBetaOrCoefficientsToPunctaOrCellCount (0.00s)
+    source_test.go:661: control coefficients depend on cell count: one={LocatedMeanOffset:-0.1 LegacyMeanOffset:0 AssumedResponses:1} three={LocatedMeanOffset:-0.10000000000000002 LegacyMeanOffset:0 AssumedResponses:3}
+FAIL
+FAIL	github.com/TimLai666/coimnet/examples/receptorlocation	1.144s
+FAIL

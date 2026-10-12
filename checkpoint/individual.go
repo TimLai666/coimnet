@@ -53,6 +53,9 @@ func EncodeIndividual(snapshot learning.IndividualSnapshot) ([]byte, error) {
 		return nil, fmt.Errorf("invalid individual snapshot: %w", err)
 	}
 	owned := normalizeIndividualSnapshot(individual.Snapshot())
+	if err := validateWireStrings(reflect.ValueOf(owned), "payload"); err != nil {
+		return nil, fmt.Errorf("marshal individual checkpoint payload: %w", err)
+	}
 	payload, err := json.Marshal(owned)
 	if err != nil {
 		return nil, fmt.Errorf("marshal individual checkpoint payload: %w", err)
@@ -228,10 +231,11 @@ func requireIndividualFields(data []byte) error {
 // The values themselves are validated by learning.RestoreIndividual, which
 // owns the rule the episode trainer already applies.
 func requireIndividualAccumulator(optimizer map[string]json.RawMessage) error {
-	if !presentAndNotNull(optimizer, "accumulator") {
+	raw, present := jsonField(optimizer, "accumulator")
+	if !present || isJSONNull(raw) {
 		return nil
 	}
-	return checkRequiredFields(optimizer["accumulator"], reflect.TypeOf(learning.GradientAccumulator{}), "$.payload.optimizer.accumulator")
+	return checkRequiredFields(raw, reflect.TypeOf(learning.GradientAccumulator{}), "$.payload.optimizer.accumulator")
 }
 
 // requireIndividualPlastic checks the optional local plasticity part. Absent or
@@ -240,10 +244,11 @@ func requireIndividualAccumulator(optimizer map[string]json.RawMessage) error {
 // because a decay that is omitted rather than written would otherwise decode as
 // a perfectly valid zero and silently become a different rule.
 func requireIndividualPlastic(payload map[string]json.RawMessage) error {
-	if !presentAndNotNull(payload, "plastic") {
+	raw, present := jsonField(payload, "plastic")
+	if !present || isJSONNull(raw) {
 		return nil
 	}
-	part, err := requiredObject(payload["plastic"], "$.payload.plastic", "config", "state")
+	part, err := requiredObject(raw, "$.payload.plastic", "config", "state")
 	if err != nil {
 		return err
 	}
@@ -261,10 +266,11 @@ func requireIndividualPlastic(payload map[string]json.RawMessage) error {
 // into a different one. The values themselves are validated by
 // learning.RestoreIndividual, which owns the rule the runtime already applies.
 func requireIndividualChemical(payload map[string]json.RawMessage) error {
-	if !presentAndNotNull(payload, "chemical") {
+	chemical, present := jsonField(payload, "chemical")
+	if !present || isJSONNull(chemical) {
 		return nil
 	}
-	part, err := requiredObject(payload["chemical"], "$.payload.chemical", "config", "state", "resources", "pending_feedback")
+	part, err := requiredObject(chemical, "$.payload.chemical", "config", "state", "resources", "pending_feedback")
 	if err != nil {
 		return err
 	}
@@ -274,15 +280,36 @@ func requireIndividualChemical(payload map[string]json.RawMessage) error {
 	if err = checkRequiredFields(part["state"], reflect.TypeOf(modulation.ChemistryState{}), "$.payload.chemical.state"); err != nil {
 		return err
 	}
+	// SourceStates is optional for legacy chemical checkpoints, but a present
+	// list is a complete boundary: walk every entry so a missing or null
+	// ControllerState.window or .filled cannot decode as a zero value. The
+	// runtime restore below enforces source alignment and the legacy fresh
+	// canonicalization after this structural walk succeeds.
+	if raw, present := jsonField(part, "source_states"); present {
+		if isJSONNull(raw) {
+			return fmt.Errorf("$.payload.chemical.source_states is null")
+		}
+		if err = checkArrayElements(raw, reflect.TypeOf(learning.ChemicalSourceState{}), "$.payload.chemical.source_states"); err != nil {
+			return err
+		}
+	}
 	// The resource map is data rather than a declared struct, so only its shape
 	// is checked here: it must be an object and it must not be null.
-	if _, err = requiredObject(part["resources"], "$.payload.chemical.resources"); err != nil {
+	resourcesRaw, _ := jsonField(part, "resources")
+	resources, err := requiredObject(resourcesRaw, "$.payload.chemical.resources")
+	if err != nil {
 		return err
 	}
-	if isJSONNull(part["pending_feedback"]) {
+	for name, raw := range resources {
+		if isJSONNull(raw) {
+			return fmt.Errorf("$.payload.chemical.resources[%q] is null", name)
+		}
+	}
+	pendingFeedback, _ := jsonField(part, "pending_feedback")
+	if isJSONNull(pendingFeedback) {
 		return fmt.Errorf("$.payload.chemical.pending_feedback is null")
 	}
-	return checkArrayElements(part["pending_feedback"], reflect.TypeOf(signal.FeedbackSpec{}), "$.payload.chemical.pending_feedback")
+	return checkArrayElements(pendingFeedback, reflect.TypeOf(signal.FeedbackSpec{}), "$.payload.chemical.pending_feedback")
 }
 
 // requireIndividualNeural checks the neural union of a checkpoint: which core it
@@ -378,7 +405,7 @@ func requireMixedConfig(raw json.RawMessage) error {
 }
 
 func presentAndNotNull(object map[string]json.RawMessage, field string) bool {
-	raw, ok := object[field]
+	raw, ok := jsonField(object, field)
 	return ok && !isJSONNull(raw)
 }
 
@@ -390,18 +417,41 @@ func upgradeIndividualNeural(payload []byte) ([]byte, error) {
 	if err := json.Unmarshal(payload, &object); err != nil {
 		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
 	}
-	neural, ok := object["neural"]
+	view, err := presenceObject(object)
+	if err != nil {
+		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
+	}
+	neural, ok := jsonField(view, "neural")
 	if !ok {
 		return payload, nil
+	}
+	neuralKey := ""
+	for key := range object {
+		if canonicalJSONKey(key) == canonicalJSONKey("neural") {
+			neuralKey = key
+			break
+		}
+	}
+	if neuralKey == "" {
+		return nil, fmt.Errorf("decode individual checkpoint payload: neural field is not addressable")
 	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(neural, &fields); err != nil {
 		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
 	}
-	if _, ok := fields["core"]; ok {
+	fields, err = presenceObject(fields)
+	if err != nil {
+		return nil, fmt.Errorf("decode individual checkpoint payload: %w", err)
+	}
+	if _, ok := jsonField(fields, "core"); ok {
 		return payload, nil
 	}
-	object["neural"] = json.RawMessage(`{"core":"` + learning.NeuralCoreContinuous + `","continuous":` + string(neural) + `}`)
+	for _, half := range []string{"continuous", "lif", "mixed"} {
+		if _, ok := jsonField(fields, half); ok {
+			return payload, nil
+		}
+	}
+	object[neuralKey] = json.RawMessage(`{"core":"` + learning.NeuralCoreContinuous + `","continuous":` + string(neural) + `}`)
 	return json.Marshal(object)
 }
 
@@ -413,12 +463,16 @@ func requiredObject(data []byte, path string, fields ...string) (map[string]json
 	if object == nil {
 		return nil, fmt.Errorf("required object %s must not be null", path)
 	}
+	view, err := presenceObject(object)
+	if err != nil {
+		return nil, fmt.Errorf("required object %s: %w", path, err)
+	}
 	for _, field := range fields {
-		if _, ok := object[field]; !ok {
+		if _, ok := jsonField(view, field); !ok {
 			return nil, fmt.Errorf("missing required field %s.%s", path, field)
 		}
 	}
-	return object, nil
+	return view, nil
 }
 
 // normalizeIndividualSnapshot changes nil required arrays to empty arrays so

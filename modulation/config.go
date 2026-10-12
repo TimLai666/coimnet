@@ -220,6 +220,11 @@ func (c ChemistryConfig) Validate(nodes int) error {
 	if err := receptors.Validate(nodes, c.Chemistry.Channels); err != nil {
 		return err
 	}
+	for i, record := range c.Receptors.Records {
+		if err := validateReceptorLocation(record.Location, c.Chemistry.Regions); err != nil {
+			return fmt.Errorf("modulation: receptor %d location: %w", i, err)
+		}
+	}
 	for i, effect := range c.Effects {
 		if effect.Receptor < 0 || effect.Receptor >= len(c.Receptors.Records) {
 			return fmt.Errorf("modulation: effect %d names receptor %d, outside the %d declared receptors", i, effect.Receptor, len(c.Receptors.Records))
@@ -279,6 +284,10 @@ func (c ChemistryConfig) Clone() ChemistryConfig {
 		for i, record := range c.Receptors.Records {
 			owned.Receptors.Records[i] = record
 			owned.Receptors.Records[i].Cells = append([]int(nil), record.Cells...)
+			if record.Location != nil {
+				location := *record.Location
+				owned.Receptors.Records[i].Location = &location
+			}
 		}
 	}
 	return owned

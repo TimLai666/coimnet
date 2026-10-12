@@ -129,6 +129,9 @@ func SaveModelPackage(ctx context.Context, path string, pkg ModelPackage) error 
 	if err := contextError(ctx); err != nil {
 		return err
 	}
+	if err := validateWireStrings(reflect.ValueOf(owned), "payload"); err != nil {
+		return fmt.Errorf("marshal model package payload: %w", err)
+	}
 	payload, err := json.Marshal(owned)
 	if err != nil {
 		return fmt.Errorf("marshal model package payload: %w", err)
@@ -219,6 +222,9 @@ func canonicalModelPackage(pkg ModelPackage) (ModelPackage, error) {
 	// individual snapshot is the artefact that carries a mixed core today.
 	if pkg.Config.Mixed != nil {
 		return empty, fmt.Errorf("a model package cannot carry the mixed core yet; save a persistent individual instead")
+	}
+	if pkg.Config.Chemistry != nil {
+		return empty, fmt.Errorf("a model package cannot carry episode Config.Chemistry; save an episode training checkpoint instead")
 	}
 	if err := validateCompatibleVersions(pkg.CompatibleVersions); err != nil {
 		return empty, err

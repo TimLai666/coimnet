@@ -29,16 +29,17 @@ const (
 // label only. Evidence, MeasurementKind and MappingVersion are required, so a
 // record always names where it came from and which mapping produced it.
 type Receptor struct {
-	Cells           []int   `json:"cells"`
-	CellType        string  `json:"cell_type,omitempty"`
-	Signal          string  `json:"signal"`
-	Channel         int     `json:"channel"`
-	Status          string  `json:"status"`
-	Kd              float64 `json:"engineering_kd"`
-	N               float64 `json:"engineering_n"`
-	Evidence        string  `json:"evidence"`
-	MeasurementKind string  `json:"measurement_kind"`
-	MappingVersion  string  `json:"mapping_version"`
+	Cells           []int             `json:"cells"`
+	CellType        string            `json:"cell_type,omitempty"`
+	Signal          string            `json:"signal"`
+	Channel         int               `json:"channel"`
+	Status          string            `json:"status"`
+	Kd              float64           `json:"engineering_kd"`
+	N               float64           `json:"engineering_n"`
+	Evidence        string            `json:"evidence"`
+	MeasurementKind string            `json:"measurement_kind"`
+	MappingVersion  string            `json:"mapping_version"`
+	Location        *ReceptorLocation `json:"location,omitempty"`
 }
 
 // Receptors is a declared receptor set. AllowAssumedCoefficients is the single
@@ -144,6 +145,9 @@ func (r *Receptors) Validate(nodes, channels int) error {
 		if record.MappingVersion == "" {
 			return fmt.Errorf("modulation: receptor %d has no mapping_version", i)
 		}
+		if err := validateReceptorLocation(record.Location, 0); err != nil {
+			return fmt.Errorf("modulation: receptor %d location: %w", i, err)
+		}
 		// Coefficients are checked only where they will be used. A half
 		// declared unknown record is a mistake, not a skip, so it is refused
 		// as soon as the run allows assumed coefficients at all.
@@ -175,10 +179,11 @@ func checkedCoefficients(i int, record Receptor) error {
 
 func usableCoefficients(record Receptor) bool { return checkedCoefficients(0, record) == nil }
 
-// Occupancies evaluates every receptor against the concentration of the region
-// its cells sit in. regionOf names one region per node, so its length is the
-// node count. The result is in declaration order, one record per receptor per
-// cell, together with the counts a report needs.
+// Occupancies evaluates every receptor against the concentration of its
+// declared location region, or the regionOf mapping for a nil Location.
+// regionOf names one region per node, so its length is the node count. The
+// result is in declaration order, one record per receptor per cell, together
+// with the counts a report needs.
 //
 // A refused call returns no record and an empty summary.
 func (r *Receptors) Occupancies(state ChemistryState, regionOf []int) ([]OccupancyRecord, OccupancySummary, error) {
@@ -189,6 +194,11 @@ func (r *Receptors) Occupancies(state ChemistryState, regionOf []int) ([]Occupan
 	regions, channels, err := concentrationShape(state.Concentration)
 	if err != nil {
 		return nil, empty, err
+	}
+	for i, record := range r.Records {
+		if err := validateReceptorLocation(record.Location, regions); err != nil {
+			return nil, empty, fmt.Errorf("modulation: receptor %d location: %w", i, err)
+		}
 	}
 	if len(regionOf) == 0 {
 		return nil, empty, fmt.Errorf("modulation: the region map names no node, so no cell has a region")
@@ -208,7 +218,10 @@ func (r *Receptors) Occupancies(state ChemistryState, regionOf []int) ([]Occupan
 	records, summary := make([]OccupancyRecord, 0, total), empty
 	for i, record := range r.Records {
 		for _, cell := range record.Cells {
-			region := regionOf[cell]
+			region, err := receptorRegion(record, cell, regions, regionOf)
+			if err != nil {
+				return nil, empty, fmt.Errorf("modulation: receptor %d cell %d: %w", i, cell, err)
+			}
 			out := OccupancyRecord{Receptor: i, Cell: cell, Region: region, Channel: record.Channel, Status: record.Status}
 			switch record.Status {
 			case StatusUnresponsive:

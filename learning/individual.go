@@ -172,6 +172,9 @@ type plasticRuntime struct {
 // and persistent neural state at initial voltage. Anatomy is immutable; changing
 // connectivity requires creating a new individual. This does not mutate c or p.
 func NewIndividual(c Config, p Parameters, o Options, initial []float64) (*Individual, error) {
+	if c.Chemistry != nil {
+		return nil, fmt.Errorf("individual chemistry must use EnableChemistry, not Config.Chemistry")
+	}
 	tr, err := NewTrainer(c, p, o)
 	if err != nil {
 		return nil, err
@@ -191,6 +194,9 @@ func NewIndividual(c Config, p Parameters, o Options, initial []float64) (*Indiv
 // RestoreIndividual validates all parts before creating an isolated individual.
 // Unknown profiles or missing delayed history are errors, never zero-filled.
 func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
+	if s.Config.Chemistry != nil {
+		return nil, fmt.Errorf("individual chemistry must use its Chemical part, not Config.Chemistry")
+	}
 	if s.SchemaVersion != IndividualVersion {
 		return nil, fmt.Errorf("unsupported individual schema %q", s.SchemaVersion)
 	}
@@ -244,6 +250,9 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 			return nil, fmt.Errorf("individual chemical part: %w", err)
 		}
 		runtime.state = copyChemicalState(s.Chemical.State)
+		if err := runtime.restoreSourceStates(s.Chemical.SourceStates); err != nil {
+			return nil, fmt.Errorf("individual chemical part: %w", err)
+		}
 		for name, amount := range s.Chemical.Resources {
 			if strings.TrimSpace(name) == "" {
 				return nil, fmt.Errorf("individual chemical part: a resource needs a name")
@@ -410,6 +419,7 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 			State:           copyChemicalState(i.chemical.state),
 			Resources:       resources,
 			PendingFeedback: pending,
+			SourceStates:    i.chemical.sourceStates(),
 			Expression:      copyExpression(i.expression),
 		}
 	}
@@ -599,6 +609,7 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	if i.chemical != nil {
 		i.chemical.state = stepwise.chemical
 		i.chemical.report = stepwise.chemistry
+		i.chemical.sources = stepwise.chemicalSources
 	}
 	return rows(values, n.config.OutputSize), report, nil
 }
@@ -607,12 +618,13 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 // it is committed: the caller owns every field until the whole call has
 // succeeded.
 type stepwiseResult struct {
-	neural    NeuralState
-	outputs   [][]float64
-	fast      plasticity.State
-	plastic   PlasticReport
-	chemical  modulation.ChemistryState
-	chemistry ChemistryReport
+	neural          NeuralState
+	outputs         [][]float64
+	fast            plasticity.State
+	plastic         PlasticReport
+	chemical        modulation.ChemistryState
+	chemistry       ChemistryReport
+	chemicalSources []modulation.Source
 	// rowOccupancy holds the occupancy records of every input row, in row
 	// order, so a readout path can read the same occupancy a row's modulation
 	// itself was built from. ChemistryReport.Occupancy keeps only the last
@@ -652,7 +664,12 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 	}
 	var activity []float64
 	var base uint64
+	var chemistry *chemicalRuntime
 	if i.chemical != nil {
+		candidate := *i.chemical
+		candidate.sources = i.chemical.cloneSources()
+		chemistry = &candidate
+		result.chemicalSources = candidate.sources
 		result.chemical = i.chemical.state
 		// The activity a source averages over is the node outputs of the step
 		// before this one, which the persistent history already holds, and is
@@ -670,7 +687,7 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 		var chemical chemicalRow
 		if i.chemical != nil {
 			var err error
-			chemical, err = i.chemical.advanceOne(result.chemical, base+uint64(t), activity, nodes)
+			chemical, err = chemistry.advanceOne(result.chemical, base+uint64(t), activity, nodes)
 			if err != nil {
 				return stepwiseResult{}, fmt.Errorf("individual chemistry: %w", err)
 			}
@@ -812,7 +829,13 @@ func (i *Individual) TrainEpisode(ctx context.Context, input [][]float64, target
 		return StepResult{}, err
 	}
 	defer i.mu.Unlock()
-	result, err := i.trainer.Step(ctx, input, target)
+	var result StepResult
+	var err error
+	if i.chemical != nil {
+		result, err = i.trainChemicalEpisode(ctx, input, target)
+	} else {
+		result, err = i.trainer.Step(ctx, input, target)
+	}
 	if err != nil {
 		return result, err
 	}

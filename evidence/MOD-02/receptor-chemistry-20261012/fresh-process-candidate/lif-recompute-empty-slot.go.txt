@@ -1,0 +1,8 @@
+package dynamics
+import("context"; "fmt")
+type LIFCoupledRecomputeTrace struct{}
+func(tr *LIFCoupledRecomputeTrace) Outputs()[][]float64{return nil}
+func(tr *LIFCoupledRecomputeTrace) FinalVoltage()[]float64{return nil}
+func(tr *LIFCoupledRecomputeTrace) Stats()RecomputeStats{return RecomputeStats{}}
+func(m *LIF) ForwardCoupledRecompute(ctx context.Context,p LIFParameters,initial []float64,inputs [][]float64,sequence RecomputableModulationSequence,segment int)(*LIFCoupledRecomputeTrace,error){return nil,fmt.Errorf("LIF coupled recompute is not implemented")}
+func(m *LIF) BackwardCoupledRecompute(ctx context.Context,tr *LIFCoupledRecomputeTrace,upstream [][]float64,window int)(LIFGradient,error){return LIFGradient{},fmt.Errorf("LIF coupled recompute is not implemented")}

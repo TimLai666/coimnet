@@ -56,6 +56,9 @@ type Trace struct {
 	voltage, output, drive [][]float64
 	lambda                 []float64
 	alpha                  []float64
+	// coupled is present only on a ForwardCoupled trace. Keeping the field
+	// nil on the ordinary path preserves that path's allocation profile.
+	coupled *coupledTrace
 	// history is the owned prefix retained by a stateful segment. The final
 	// row is output at startSteps; rows before it are the preceding delayed
 	// outputs. A nil history identifies the original fresh-zero style path.
@@ -386,6 +389,9 @@ func (m *Continuous) Backward(ctx context.Context, tr *Trace, upstream [][]float
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if tr.coupled != nil {
+		return m.backwardCoupled(ctx, tr, upstream, window)
 	}
 	gy := make([][]float64, steps+1)
 	for t := range gy {

@@ -101,6 +101,9 @@ func RestoreGPUTrainer(ctx context.Context, s TrainingSnapshot) (*Trainer, error
 }
 
 func validateGPUTrainerSupport(c Config, o Options) error {
+	if c.Chemistry != nil {
+		return fmt.Errorf("%w: chemistry", ErrGPUTrainerUnsupported)
+	}
 	if c.LIF != nil {
 		return fmt.Errorf("%w: LIF core", ErrGPUTrainerUnsupported)
 	}

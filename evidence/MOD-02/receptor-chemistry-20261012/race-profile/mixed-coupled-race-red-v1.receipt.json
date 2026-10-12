@@ -1,0 +1,31 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-p",
+    "2",
+    "./dynamics",
+    "-run",
+    "^(TestTicket65MixedCoupledBaselineRoundingProbe|TestMixedMembraneContraction|TestMixedAllLIFRulesMatchLIFBitForBit|TestMixedCoupledNilNeutralAllocationAndSingleRuleIdentity)$"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 4.9729695000000005,
+  "source_sha256": {
+    "dynamics/receptor_chemistry_rounding_probe_test.go": "7eb33ca519c636b9665cdf8a999b83578378f273f6e08a8a1759c0810a27ceb7",
+    "dynamics/mixed_coupled_test.go": "d48ca32b8201e42d3f2c41e24379078a20f610988f7e462b4b87b04e5d7751e3",
+    "dynamics/mixed_test.go": "f9743a1b21b6f31138f3c119bf71c9e354e94827ba17a03261d49ffcfaa663af",
+    "dynamics/mixed_coupled.go": "5270fe679bf20d64b1e8ad7928a40ab81b45e7646d48f0c280bb3087674462c2",
+    "dynamics/lif_coupled.go": "eaccb4d17e12045aba050e8dc4c239863ed6b3f78182b73500c4e702ade456ef",
+    "dynamics/lif.go": "95b4fd8f3c098f6ff49693f7025e2e91b6fd8394fede837d81fcdfbc3e84ec5f",
+    "dynamics/mixed.go": "3d7741a6db48c31039d1fb50036ef24f24822db8ba5e29c0459bef5aae3d96f4",
+    "go.mod": "2622c1051c899f0d6233a71e4704def8d3c14e36139d33be5098ebafc739f25e",
+    "go.sum": "42014c0cea685214276aa5136d57222c05f262f4223b374de140109e512ca052"
+  },
+  "failed_tests": [
+    "TestMixedCoupledNilNeutralAllocationAndSingleRuleIdentity"
+  ],
+  "log": "runs/.tmp/receptor-chemistry-20261012/mixed-coupled-race-red-v1.jsonl"
+}

@@ -1,0 +1,136 @@
+{
+  "status": "candidate_not_full_acceptance",
+  "accepted_milestones": 2,
+  "total_milestones": 5,
+  "checks": [
+    {
+      "label": "coupled-chemical-recompute-candidate-v1",
+      "exit": 0,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-json",
+        "-count=1",
+        "-p",
+        "2",
+        "./dynamics",
+        "./learning",
+        "-run",
+        "Coupled|ChemicalStateful|ChemicalEpisode|ChemicalMultichannel|IndividualChemical|ChemicalSourceState|NilChemistryEpisode|ChemicalRecompute"
+      ],
+      "passed_top": 64,
+      "receipt": "coupled-chemical-recompute-candidate-v1.json",
+      "log": "coupled-chemical-recompute-candidate-v1.jsonl"
+    },
+    {
+      "label": "lif-chemical-recompute-red-v2",
+      "exit": 1,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-json",
+        "-count=1",
+        "-p",
+        "2",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/receptor-chemistry-20261012/lif-recompute-red-overlay.json",
+        "./learning",
+        "-run",
+        "ChemicalRecomputeLIF"
+      ],
+      "passed_top": 1,
+      "receipt": "lif-chemical-recompute-red-v2.json",
+      "log": "lif-chemical-recompute-red-v2.jsonl"
+    },
+    {
+      "label": "chemical-checkpoint-validation-red-v1",
+      "exit": 1,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-p",
+        "2",
+        "./checkpoint",
+        "-run",
+        "ChemicalEpisodeValidation",
+        "-count=1",
+        "-json"
+      ],
+      "passed_top": 1,
+      "receipt": "chemical-checkpoint-validation-red-v1.json",
+      "log": "chemical-checkpoint-validation-red-v1.jsonl"
+    },
+    {
+      "label": "chemical-stateful-candidate-v2",
+      "exit": 0,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-p",
+        "2",
+        "./learning",
+        "-run",
+        "ChemicalStateful",
+        "-count=1",
+        "-json"
+      ],
+      "passed_top": 4,
+      "receipt": "chemical-stateful-candidate-v2.json",
+      "log": "chemical-stateful-candidate-v2.jsonl"
+    },
+    {
+      "label": "chemical-model-package-red-v1",
+      "exit": 1,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-json",
+        "-count=1",
+        "-p",
+        "2",
+        "./checkpoint",
+        "-run",
+        "TestModelPackageRejectsEpisodeChemistry"
+      ],
+      "passed_top": 0,
+      "receipt": "chemical-model-package-red-v1.receipt.json",
+      "log": "chemical-model-package-red-v1.jsonl"
+    },
+    {
+      "label": "checkpoint-presence-package-candidate-v4",
+      "exit": 0,
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-json",
+        "-count=1",
+        "-p",
+        "2",
+        "./checkpoint"
+      ],
+      "passed_top": 133,
+      "receipt": "checkpoint-presence-package-candidate-v4.receipt.json",
+      "log": "checkpoint-presence-package-candidate-v4.jsonl"
+    }
+  ],
+  "limitations": [
+    "Full build/unit/race/vet/modules and governance acceptance pending.",
+    "Fresh-process checkpoint with coupled recompute still pending.",
+    "Biological receptor locations do not establish quantitative hormone response or task quality.",
+    "Task temporary files and caches remain in runs/.tmp until acceptance evidence is complete."
+  ],
+  "artifacts": {
+    "coupled-chemical-recompute-candidate-v1.json": "aa6a479d33697b74e892500fb51f7f059a11c5ea74d8e96f21671b69a9cf42fd",
+    "coupled-chemical-recompute-candidate-v1.jsonl": "3ffe5a9ce4da62e95ce1027da09bbb0005c39a66474aef2709310b0880c78e3f",
+    "lif-chemical-recompute-red-v2.json": "3afb5cbbb0d884d4febf38bdb86e590f6ff555e37346cf39c104098ee5f25812",
+    "lif-chemical-recompute-red-v2.jsonl": "37635ea02b62df79ef36f662b53d9fda2435ea5b714494e547bf233f6f297570",
+    "chemical-checkpoint-validation-red-v1.json": "c5ce7d8e4be990168fb0e6e424692bfeea756aee647546762f779d935ad58a65",
+    "chemical-checkpoint-validation-red-v1.jsonl": "8ded92be8265e4548cc1018feb8218b5777da054eafed08064bb7b5896ada301",
+    "chemical-stateful-candidate-v2.json": "bee248a3c0d5a3d5aea2e95c00224fec118c656bcba999130bdc70322816698e",
+    "chemical-stateful-candidate-v2.jsonl": "665749b6675cf53a397b3116fd79b32afb21e44cc4f557e6a83a6f86a11fee34",
+    "chemical-model-package-red-v1.receipt.json": "45dc3f75289c214a8fadd60a5b9292e1428d313495e6abcf15b1f2046e2751c3",
+    "chemical-model-package-red-v1.jsonl": "11928f5d07caf7e76d7330dc1c9959cdec40ca6b9a4e52278ece892b93d85682",
+    "checkpoint-presence-package-candidate-v4.receipt.json": "9bd36cebb4a95c360eda216a08efd6842275c7dac512af4ed4d1aae6d93865f4",
+    "checkpoint-presence-package-candidate-v4.jsonl": "c5797735c3e6850388a98180787486e760fe5efdbb0dae2ff21c5d2a6613d4eb"
+  }
+}

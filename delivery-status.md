@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 65](docs/tickets/65-receptor-location-and-chemical-training.md) 已驗收 4／5：有來源的受體位置／分布、一般訓練的化學回授、新程序接續、失敗原子性及分段重算／關閉對照通過。完整一般與 race 各 58 套件、格式、build、vet、相依性及 CLI 新程序接續通過，772 份來源與兩份 evidence Go 程式已核對。實測 Rdl 表保存 28 筆觀察，完整 MaleCNS 圖有 13,580 個細胞類型推論節點，4 個不明類型排除。細胞內位置目前是來源紀錄，化學釋放對各區域全域作用，反應係數採工程設定；本票未驗證生物定量重現或 OCR 品質改善。見[最終工程證據](evidence/MOD-02/receptor-chemistry-20261012/verification.json)。最終治理／索引／隱私 11 項通過，本輪 62,032 個暫存檔共 6.15 GB 及 1,323 個快取連結已清除。剩餘提交／遠端交付。
+
 [ticket 64](docs/tickets/64-real-task-quality.md) 的單字元模式修正、品質驗證與交付已完成。新模式、169 個相關測試、實際 CLI、舊模型逐位元組相容、完整一般／race 各 57 套件、格式、build、vet、相依性及 13 個治理專項通過。三個種子的正式測試為 73.25%、71.45%、71.50%，低於 80% 門檻及四個最近鄰的 81.85%，模型品質沒有達標。已清除 57,028 個暫存檔與 1,585 個快取連結，保留三個模型及六份原始資料。原 91／91 工程驗收保持，詳見[品質證據](evidence/TSK-11/quality-20261012/verification.json)。實作 `3cf5bd6` 已推送並同步原專案，詳見[交付回條](evidence/TSK-11/quality-20261012/delivery.json)。
 
 ### 已完成的工程驗收
@@ -256,7 +258,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-本輪 91／91 工程驗收、完整驗證、暫存清理與主要提交交付已完成，目前沒有待執行的必要 ticket。模型實用品質、GPU 全圖及其他 GPU 平台依各自研究或擴充驗證處理。
+下一個可驗證成果為 [ticket 65](docs/tickets/65-receptor-location-and-chemical-training.md) 的提交／遠端交付。治理與本輪暫存清理已完成。五項條件目前 4／5。原 91／91 是前次工程驗收，本票新增能力由自己的最終證據驗收。
 
 先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。OPS-05 必須有裝置稀疏前向／反向、更新／恢復及實際量測。主規格 §17.4 的常駐狀態是條件性效能方向，全圖驗證另由 OPS-07 驗收，不能直接追加為 OPS-05 的無條件門檻。
 
