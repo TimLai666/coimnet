@@ -167,7 +167,30 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		fs.SetOutput(stderr)
 		usageOutput := &outputCapture{writer: stdout}
 		fs.Usage = func() {
-			fmt.Fprintln(usageOutput, "Usage: coimnet doctor\nReport actual runtime, CPU, memory, detected devices and GPU support constraints as JSON.\nThe WebGPU core path uses float32 sparse operations and a pure scalar, zero-delay continuous model for independent episode training: neural_state=cpu_float64, activation=cpu, optimizer=cpu_adamw.\nRecompute is unsupported. Full graph support is unverified (full_graph=unverified); device parameter updates and device state saving are not implemented.\nGPU hardware does not imply core execution: execution=not_probed. Insyra encoder/readout execution is not measured (not_probed).\nMissing optional device tools are reported as unknown.\nExample: coimnet doctor\nErrors: invalid arguments, canceled execution or output failure.")
+			fmt.Fprintln(usageOutput, `Usage: coimnet doctor
+Report actual runtime, CPU, memory, detected devices and GPU support constraints as JSON.
+
+Legacy host mode uses learning.NewGPUTrainer and learning.RestoreGPUTrainer. Its
+pure scalar, zero-delay continuous model trains independent episodes with
+float32 sparse operations, neural_state=cpu_float64, activation=cpu and the
+cpu_adamw optimizer. Its episode snapshot supports host save/restore.
+
+Opt-in device mode uses learning.NewGPUDeviceTrainer and
+learning.RestoreGPUDeviceTrainer. It uses float32 and a resident optimizer
+(device_adamw), then provides complete_training_bundle save/restore through a
+verified CPU parameter mirror. Host neural state and activations remain on the host;
+sparse transfers are limited to the supported core path. Unsupported options, in
+stable order, are: lif, vector_matrix_edges, delays, recompute,
+persistent_neural_state, ranges, fixed_signs, weight_sharing.
+
+GPU hardware does not imply core execution: execution=not_probed. Full graph
+support is unverified (full_graph=unverified). Insyra encoder/readout
+execution is not measured (not_probed). Insyra execution limits remain, and
+matrix acceleration does not remove them. Device parameter updates and device
+state saving remain not_implemented for the legacy host trainer.
+Missing optional device tools are reported as unknown.
+Example: coimnet doctor
+Errors: invalid arguments, canceled execution or output failure.`)
 		}
 		if err := fs.Parse(args[1:]); errors.Is(err, flag.ErrHelp) {
 			return usageOutput.Err()

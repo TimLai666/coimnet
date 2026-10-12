@@ -1,6 +1,6 @@
 // Command realasr imports one user-provided licensed ASR manifest, trains the
 // shared recognizer once on each training utterance, and prints an auditable
-// JSON report. It does not download data or persist model parameters.
+// JSON report, with optional task-model saving or independent evaluation.
 package main
 
 import (
@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	osSignal "os/signal"
+	"reflect"
 	"sort"
 	"syscall"
 
@@ -39,10 +40,10 @@ var realASRFrontEnd = audio.FrontEndConfig{
 	Floor:  1e-10,
 }
 
-// realASRReport is deliberately a data-only report. The model itself stays in
-// memory for the run and no checkpoint or temporary model file is created.
+// realASRReport records this invocation; Model is present only when saving or loading.
 type realASRReport struct {
 	SchemaVersion    string                  `json:"schema_version"`
+	Model            *realASRModelArtifact   `json:"model,omitempty"`
 	ManifestSHA256   string                  `json:"manifest_sha256"`
 	ImportedCount    int                     `json:"imported_count"`
 	TrainCount       int                     `json:"train_count"`
@@ -57,6 +58,14 @@ type realASRReport struct {
 	After            asr.EvalReport          `json:"after"`
 	FirstRetained    realASRFirstRetained    `json:"first_retained"`
 	ScopeLimitations []string                `json:"scope_limitations"`
+}
+
+// SHA256 identifies the canonical manifest, which binds the document and arrays.
+type realASRModelArtifact struct {
+	Path    string `json:"path"`
+	Mode    string `json:"mode"`
+	SHA256  string `json:"sha256"`
+	Updates uint64 `json:"updates"`
 }
 
 type realASRSettings struct {
@@ -98,15 +107,17 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	diagnosticOutput := &errorTrackingWriter{Writer: stderr}
 	fs.SetOutput(diagnosticOutput)
 	usageOutput := &errorTrackingWriter{Writer: stdout}
-	var manifestPath string
+	var manifestPath, modelInput, modelOutput string
 	fs.StringVar(&manifestPath, "manifest", "", "licensed coimnet-asr-dataset/v1 manifest to import")
+	fs.StringVar(&modelInput, "model-input", "", "existing task-model bundle to evaluate without training; excludes --model-output")
+	fs.StringVar(&modelOutput, "model-output", "", "new task-model bundle directory to save after training; excludes --model-input")
 	fs.Usage = func() {
-		fmt.Fprintln(usageOutput, "Usage: go run ./examples/realasr --manifest PATH")
-		fmt.Fprintln(usageOutput, "Imports the supplied licensed PCM16 WAV manifest, splits by speaker/session, trains one fixed recognizer update per training sample, and prints one JSON report. No data is downloaded and no model is saved.")
+		fmt.Fprintln(usageOutput, "Usage: go run ./examples/realasr --manifest PATH [--model-output NEW_DIR | --model-input DIR]")
+		fmt.Fprintln(usageOutput, "Imports the supplied licensed PCM16 WAV manifest, splits by speaker/session, trains one fixed recognizer update per training sample, and prints one JSON report. No data is downloaded. --model-output saves complete task configuration and optimizer state; --model-input evaluates a saved model without updates.")
 		fmt.Fprintln(usageOutput, "Defaults: target audio 16 kHz, peak 0.8; test fraction 1/3 with split seed 42; log-mel window/hop/mels 256/128/12 (FMin 0, FMax 8000, floor 1e-10); hidden 24; learning rate 0.001; model seed 5.")
 		fmt.Fprintln(usageOutput, "Report: imported/train/test counts, impossible training count, sorted training alphabet, before/after CER and WER on the held-out set, an independent Transcribe result for the first held-out sample, manifest and decoded WAV SHA-256 values, license metadata and scope limitations.")
-		fmt.Fprintln(usageOutput, "Limitations: one pass over the supplied recordings; no natural-speech quality claim, no word-timing claim, no model checkpoint, and no GPU execution claim. Low accuracy is reported as observed rather than treated as success.")
-		fmt.Fprintln(usageOutput, "Errors: missing or extra arguments, unreadable or malformed manifest/WAV, missing license fields, unsupported WAV, invalid split, empty training alphabet, unknown training rune, cancellation, numerical failure or output failure.")
+		fmt.Fprintln(usageOutput, "Limitations: one pass over the supplied recordings; no natural-speech quality claim, no word-timing claim, and no GPU execution claim. Low accuracy is reported as observed rather than treated as success.")
+		fmt.Fprintln(usageOutput, "Errors: missing or extra arguments, unreadable or malformed manifest/WAV, missing license fields, unsupported WAV, invalid split, empty training alphabet, unknown training rune, cancellation, numerical failure, invalid/incompatible model bundle, conflicting model flags, existing output directory or output failure.")
 		fmt.Fprintln(usageOutput, "Options:")
 		fs.SetOutput(usageOutput)
 		fs.PrintDefaults()
@@ -138,10 +149,17 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return err
 	}
 
-	return execute(ctx, manifestPath, stdout)
+	if modelInput != "" && modelOutput != "" {
+		return errors.New("--model-input and --model-output are mutually exclusive")
+	}
+	return executeWithModel(ctx, manifestPath, stdout, modelInput, modelOutput)
 }
 
 func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
+	return executeWithModel(ctx, manifestPath, stdout, "", "")
+}
+
+func executeWithModel(ctx context.Context, manifestPath string, stdout io.Writer, modelInput, modelOutput string) error {
 	dataset, err := asr.ReadDataset(manifestPath, realASRSampleRate, realASRPeak)
 	if err != nil {
 		return fmt.Errorf("import dataset: %w", err)
@@ -161,14 +179,23 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 	if len(alphabetRunes) == 0 {
 		return errors.New("training texts produce an empty rune alphabet")
 	}
-	recognizer, err := asr.NewRecognizer(asr.RecognizerConfig{
+	modelConfig := asr.RecognizerConfig{
 		SampleRate:   realASRSampleRate,
 		FrontEnd:     realASRFrontEnd,
 		Hidden:       realASRHidden,
 		Alphabet:     alphabetRunes,
 		LearningRate: realASRLearningRate,
 		Seed:         realASRModelSeed,
-	})
+	}
+	var recognizer *asr.Recognizer
+	if modelInput == "" {
+		recognizer, err = asr.NewRecognizer(modelConfig)
+	} else {
+		recognizer, err = asr.LoadRecognizer(ctx, modelInput)
+		if err == nil && !reflect.DeepEqual(recognizer.Config(), modelConfig) {
+			return errors.New("saved model task configuration differs from the fixed example profile")
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("build recognizer: %w", err)
 	}
@@ -178,16 +205,18 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 		return fmt.Errorf("evaluate before training: %w", err)
 	}
 	impossible := 0
-	for i, utterance := range train {
-		if err := ctx.Err(); err != nil {
-			return err
-		}
-		training, err := recognizer.TrainUtterance(ctx, utterance.Samples, utterance.Text)
-		if err != nil {
-			return fmt.Errorf("train utterance %d: %w", i, err)
-		}
-		if training.Impossible {
-			impossible++
+	if modelInput == "" {
+		for i, utterance := range train {
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			training, err := recognizer.TrainUtterance(ctx, utterance.Samples, utterance.Text)
+			if err != nil {
+				return fmt.Errorf("train utterance %d: %w", i, err)
+			}
+			if training.Impossible {
+				impossible++
+			}
 		}
 	}
 	after, err := recognizer.Evaluate(ctx, test)
@@ -232,6 +261,28 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 			"The held-out split is by connected speaker/session groups; with a small or imbalanced corpus it may be small and generalisation may be weak.",
 			"CER/WER are offline transcript metrics; no natural-speech, word-timing, GPU, cross-platform or full-brain claim is made.",
 		},
+	}
+
+	modelPath, mode := modelInput, "restored"
+	if modelOutput != "" {
+		if err := recognizer.Save(ctx, modelOutput); err != nil {
+			return fmt.Errorf("save model: %w", err)
+		}
+		modelPath, mode = modelOutput, "saved"
+		verified, err := asr.LoadRecognizer(ctx, modelOutput)
+		if err != nil {
+			return fmt.Errorf("verify saved model: %w", err)
+		}
+		if !reflect.DeepEqual(verified.Config(), recognizer.Config()) || !reflect.DeepEqual(verified.Snapshot(), recognizer.Snapshot()) {
+			return errors.New("saved model differs from the model evaluated in this invocation")
+		}
+		recognizer = verified
+	}
+	if modelPath != "" {
+		report.Model = &realASRModelArtifact{Path: modelPath, Mode: mode, SHA256: recognizer.LoadedCheckpointSHA256(), Updates: recognizer.Snapshot().Updates}
+	}
+	if modelInput != "" {
+		report.ScopeLimitations[1] = "This invocation evaluates a restored model without training; model.updates records the saved historical update count."
 	}
 
 	encoder := json.NewEncoder(stdout)

@@ -154,7 +154,22 @@ RSS 與足跡分別是 macOS `/usr/bin/time -l` 回報的 maximum resident set s
 
 三份已取得的 MaleCNS v1.0 原件共 **1,109,008,094 bytes（約 1.03 GiB）**。這是磁碟檔案大小。逐批讀取不需將所有原件常駐記憶體，後續圖建構、排序暫存與模型訓練會另外使用資源。原件大小與完整性見[官方資料驗證](../evidence/malecns-source-20260913/cli-v4/verification.json)及其中指向的讀取報告。
 
-Mac 的 CPU 路徑已通過完整驗證。Ubuntu 1 的 CPU 路徑也已通過，環境為約 32 GiB RAM、4 個可見邏輯 CPU，附 RTX 4070 約 12 GB 顯示記憶體。[Ubuntu 環境紀錄](../evidence/cpu-reference-20260913/ubuntu-v4/doctor.json) Mac Apple M3 Metal 已實測 [WebGPU 稀疏 drive](../evidence/OPS-05/sparse-drive-20260924/verification.json)、[局部反向導數及零延遲連續核心 adapter](../evidence/OPS-05/sparse-backward-20260925/verification.json)，以及[可選 GPU episode 訓練器](../evidence/OPS-05/gpu-trainer-20260925/verification.json)。130 節點、910 邊的原語單次主機計時：初始化 3.08 ms、編譯 0.58 ms、拓樸傳輸 0.10 ms、暖機 2.14 ms，每次輸入傳輸 0.035 ms、dispatch 0.088 ms、讀回 0.323 ms；測試內 float32 CPU 對照最大絕對差 0。這不是 GPU 計時器或 CPU 加速比。訓練器在 4 節點、5 邊的 fixture 上通過 `Step`／`StepFrom`、AdamW 狀態與新程序 JSON 快照續訓對照，**尚未量 GPU 記憶體或完整模型速度**。編碼器與讀出仍走既有 Insyra 路徑，其實際裝置執行未量測；神經狀態、活化與 AdamW 在 CPU，並逐步傳輸且沒有裝置參數更新。因此不能推算全圖訓練加速或顯示記憶體需求。Apple 統一記憶體由系統與程式共用，不能當成額外一份獨立顯示記憶體相加。
+Mac 的 CPU 路徑已通過完整驗證。Ubuntu 1 的 CPU 路徑也已通過，環境為約 32 GiB RAM、4 個可見邏輯 CPU，附 RTX 4070 約 12 GB 顯示記憶體。[Ubuntu 環境紀錄](../evidence/cpu-reference-20260913/ubuntu-v4/doctor.json) Mac Apple M3 Metal 已實測 [WebGPU 稀疏 drive](../evidence/OPS-05/sparse-drive-20260924/verification.json)、[局部反向導數及零延遲連續核心 adapter](../evidence/OPS-05/sparse-backward-20260925/verification.json)，以及[可選 GPU episode 訓練器](../evidence/OPS-05/gpu-trainer-20260925/verification.json)。130 節點、910 邊的原語單次主機計時：初始化 3.08 ms、編譯 0.58 ms、拓樸傳輸 0.10 ms、暖機 2.14 ms，每次輸入傳輸 0.035 ms、dispatch 0.088 ms、讀回 0.323 ms；測試內 float32 CPU 對照最大絕對差 0。這不是 GPU 計時器或 CPU 加速比。既有 `NewGPUTrainer` 在 4 節點、5 邊的 fixture 上通過 `Step`／`StepFrom`、host AdamW 狀態與新程序 JSON 快照續訓對照，**尚未量 GPU 記憶體或完整模型速度**。新增的 `NewGPUDeviceTrainer`／`RestoreGPUDeviceTrainer` 只把 float32 AdamW 的 p/m/v/count 更新放到裝置，成功候選仍 readback 到 host mirror；神經狀態、活化與稀疏權重傳輸仍在 host，編碼器與讀出仍走既有 Insyra 路徑，未確認這兩部分是否在裝置執行。裝置 AdamW 更新與新程序恢復已有下節的小圖實測，全圖的 GPU 容量、訓練加速與實際顯示記憶體配置仍未量測。Apple 統一記憶體由系統與程式共用，不能當成額外一份獨立顯示記憶體相加。
+
+### 2026-10-12 小圖裝置 AdamW 緩衝區量測
+
+本次量測使用 [bundle-run-final/verification.json](../evidence/OPS-05/device-training-20261012/bundle-run-final/verification.json)、[root-final-metal.json](../evidence/OPS-05/device-training-20261012/root-final-metal.json) 與 [root-final-metal.log](../evidence/OPS-05/device-training-20261012/root-final-metal.log)。固定 4 節點稀疏 fixture 的新建構、裝置更新、完整候選 readback、保存與新程序恢復均在 Apple M3 的 Metal 後端（Adapter `Apple M3`、Backend `Metal`）receipt 中回報 `passed: true`；`same_prediction`、`same_snapshot`、`same_steps` 都是 `true`，累積更新數是 2，CPU 參數最大絕對差為 `2.798762427369539e-7`。這是小圖與 task bundle 流程證據，不是全腦或有用模型證據。
+
+| 項目 | receipt 數值 |
+| --- | ---: |
+| construction | 0.052793875 s |
+| initialization / compilation | 46,136,916 ns / 3,225,041 ns |
+| initial transfer / warmup | 3,292 ns / 11,915,459 ns |
+| transfer / dispatch / readback | 58,333 ns / 50,041 ns / 687,751 ns |
+| `AllocatedBytes` / `BytesUploaded` / `BytesReadBack` | 1,548 / 1,028 / 748 |
+| values / chunks | 23 / 1 |
+
+`AllocatedBytes` 與 `maxOptimizerBytes` 都是 logical buffer／預算數字，不是 allocator VRAM 或程序 RSS。root final 的指定 WebGPU、dynamics、learning 測試命令 exit 0，耗時 6.929304122 s，日誌 SHA-256 為 `b634146a4993716a706b4160d8e546d0e3b94d89aaf87e129037e22ba0acfdaf`；這些數字只是本機本次觀察，沒有速度或其他平台的推論。候選讀回與 host mirror 不代表神經狀態、activation、稀疏權重傳輸或 Insyra 編碼器／讀出已在裝置執行。
 
 Windows 已交叉編譯，尚未在 PC 上執行。PC 顯示卡型號與資源需求均未實測。[Windows 建置紀錄](../evidence/cpu-reference-20260913/macos-v4/windows-crossbuild.json)
 

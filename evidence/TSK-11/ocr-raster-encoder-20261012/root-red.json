@@ -1,0 +1,147 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-p",
+    "1",
+    "-count=1",
+    "-json",
+    "-timeout=180s",
+    "-run",
+    "^Test(OCRRaster|OCRPage|OCREncoder|OCREvaluate|RealOCR)",
+    "./tasks/ocr",
+    "./examples/realocr"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next",
+  "exit_code": 1,
+  "elapsed": 12.127795934677124,
+  "log_sha256": "828cfb3fbc3f01ebee0d0d747682c74f55d52574d4e793659f79d674bba7ed97",
+  "sources": {
+    "tasks/ocr/raster_test.go": "6d5a6717331d79b62ccb23c2d7cf9cabe748e99a8ef1913a685b5a14a4241c46",
+    "tasks/ocr/page_recognizer_test.go": "20296984c37384fd44a7ae82088426c96b4da23947b11726b2e7440b58917b29",
+    "tasks/ocr/encoder_mode_test.go": "03e3d3dad5732340c8ffdd8fdc95e2ea0467232a1214b5ddeeaf1b2dc7f77fe4",
+    "examples/realocr/encoder_mode_test.go": "5fbc3135ddd75ac6ee3d179be47ab62c52e5c70cb327c8ff98acfcbfa886ed4d",
+    "tasks/ocr/raster.go": "845c0e1b8cacf4e68ff8e3731f02675265c7b61c8f4e8049b24845520719e3e2",
+    "tasks/ocr/page_recognizer.go": "1fafdd3f9b40399b27f7c5cee4047e603af41174b2a489503c5106d7eae17476",
+    "tasks/ocr/recognizer.go": "7a26635a40d065dc853abf94ac9aa94a02c212ef8d2f723b36e5192e2dd17c5b",
+    "tasks/ocr/page.go": "741f6e762baca9dba8f7b68f12b728eb1b0ed12748216e3e4e70c1a815dc8576",
+    "examples/realocr/main.go": "c438179f608e6765713a6206e2fb812da3f306bf55e6bcf61e8204362e84d572"
+  },
+  "tests": [
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCREncoderModesShareSeededParametersAndCapacity",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCREncoderTrainingFreezesFixedAndUpdatesTrainable",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCREncoderSaveLoadPreservesModeAndNextUpdate",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPageInferUsesTheRecognizerOnOwnedNormalizedCrops",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPageScalesDifferentLineHeightAndPreservesReadingOrder",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPageBlankIsSuccessfulWithNonNilEmptyBlocks",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPageRejectsInvalidNilCanceledAndLineLimitsWithoutPartialPage",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPagePublicProjectionRejectsNaNShapeAndOverflowInputs",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRPagePublicProjectionRejectsNonFinitePixels",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRRasterPNGDecodeMetadataPixelsAndOwnership",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRRasterPNGAlphaCompositesWhiteAndSupportsRGB",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRRasterJPEGUsesIndependentDecodedPixels",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRRasterNearestScalingAndLimits",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/tasks/ocr",
+      "Test": "TestOCRRasterRejectsMissingBrokenUnsupportedNilAndCanceled",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/examples/realocr",
+      "Test": "TestRealOCREncoderRunProfilesComeFromActualSnapshotAndEvaluation",
+      "Action": "fail",
+      "Elapsed": 0.03
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/examples/realocr",
+      "Test": "TestRealOCREncoderRejectsUnknownModeAndModelModeMismatch",
+      "Action": "fail",
+      "Elapsed": 0.12
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/examples/realocr",
+      "Test": "TestRealOCREncoderEvalResultCarriesEmptyOutputMetrics",
+      "Action": "fail",
+      "Elapsed": 0
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/examples/realocr",
+      "Test": "TestRealOCREncoderCLIFlagHelp",
+      "Action": "fail",
+      "Elapsed": 1.29
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/examples/realocr",
+      "Test": "TestRealOCREncoderCLIFlagRun",
+      "Action": "fail",
+      "Elapsed": 0.41
+    }
+  ],
+  "non_json_lines": []
+}

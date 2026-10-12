@@ -1,0 +1,51 @@
+{
+  "requirement": "OPS-05「研究者可以使用可驗證的裝置稀疏前向與反向。驗收：與 CPU 比對、裝置更新／恢復測試及實際量測；未測不標通過。」",
+  "profile": "specified",
+  "date": "2026-09-25",
+  "scope": "Partial OPS-05 progress: backend capability/fallback/ledger checks, hardware WebGPU float32 sparse drive and sparse local derivative, scalar zero-delay recurrent dynamics adapter, and opt-in episode trainer with CPU AdamW and JSON snapshot restart. Device-side optimizer update and resident state remain incomplete.",
+  "reproduction_command": [
+    "go test -count=1 -race -v ./backend/ > evidence/OPS-05/backend-tests.log 2>&1",
+    "go test -count=1 -v ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/gpu-test.log 2>&1",
+    "go test -count=20 ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/stress-20.log 2>&1",
+    "go test -count=100 ./backend/webgpu -run '^TestSparseBackwardCrossesWorkgroupBoundaries$' > evidence/OPS-05/sparse-backward-20260925/stress-100.log 2>&1",
+    "go test -race -count=1 ./backend/webgpu > evidence/OPS-05/sparse-backward-20260925/race.log 2>&1",
+    "go test -v -count=1 ./dynamics -run '^TestGPU' > evidence/OPS-05/sparse-backward-20260925/adapter-test.log 2>&1",
+    "go test -race -v -count=1 ./dynamics -run '^TestGPU' > evidence/OPS-05/sparse-backward-20260925/adapter-race.log 2>&1",
+    "See evidence/OPS-05/gpu-trainer-20260925/verification.json for targeted GPU trainer, 20-repeat, race, full learning and vet commands."
+  ],
+  "environment": [
+    "Mac15,12 Apple M3, 16 GiB unified memory, darwin/arm64, Go 1.26.5; selected hardware WebGPU adapter Apple M3 via Metal. Ubuntu 1 RTX 4070 and Windows GPU were not executed."
+  ],
+  "observed_result": {
+    "status": "specified: Mac Metal sparse primitives and opt-in episode trainer pass scoped CPU comparisons and new-process JSON snapshot continuation; full OPS-05 remains incomplete.",
+    "ready": "WebGPU float32 sparse drive and local derivatives execute on Apple M3 Metal without silent CPU fallback. 130 nodes/910 edges match independent float32 CPU results with max absolute difference 0; stress 20/100 repetitions and race passed. NewGPUTrainer Step, StepFrom, AdamW moments and new-process JSON snapshot continuation match CPU or uninterrupted GPU paths in 4-node fixture with no GPU skips; see sparse-backward-20260925/verification.json and gpu-trainer-20260925/verification.json.",
+    "missing": "No device-side optimizer update, persistent device-state save/restore, full-graph capacity/speedup benchmark or GPU memory measurement. GPUContinuous supports scalar zero-delay continuous dynamics only, keeping activation and state update on CPU and transferring values each step. Ubuntu 1 and Windows hardware execution are unverified; direct Mac SSH to Ubuntu 1 rejects authentication and this task has no remote command channel.",
+    "next_acceptance": "Implement device-side update and state lifecycle without changing CPU contracts; measure transfer/compute, memory and speedup on representative graphs, then execute on Ubuntu 1 and Windows when a command channel is available."
+  },
+  "assumption_statement": "Insyra v0.3.2 can accelerate eligible dense float32 matrix multiplication, but it does not expose CoImNet sparse recurrent device execution. The Mac WebGPU primitive timings are host wall-clock observations, not a full-model speedup or an Ubuntu performance prediction.",
+  "test_log": [
+    "evidence/OPS-05/backend-tests.log",
+    "evidence/OPS-05/sparse-drive-20260924/verification.json",
+    "evidence/OPS-05/sparse-backward-20260925/verification.json",
+    "evidence/OPS-05/sparse-backward-20260925/gpu-test.log",
+    "evidence/OPS-05/sparse-backward-20260925/stress-20.log",
+    "evidence/OPS-05/sparse-backward-20260925/stress-100.log",
+    "evidence/OPS-05/sparse-backward-20260925/race.log",
+    "evidence/OPS-05/sparse-backward-20260925/adapter-test.log",
+    "evidence/OPS-05/sparse-backward-20260925/adapter-race.log",
+    "evidence/OPS-05/gpu-trainer-20260925/verification.json"
+  ],
+  "limitations": [
+    "Full OPS-05 acceptance is incomplete and remains specified, not passed.",
+    "The host phase times are single observations, not GPU timestamp-query or CPU-versus-GPU speedup measurements.",
+    "The original source-row WGSL weight gradient output sometimes left slots unwritten on Metal; separate per-edge writes and sentinel regression now pass, but the underlying compiler/driver layer was not identified.",
+    "Ubuntu 1 and Windows GPU execution are not verified.",
+    "Insyra sparse recurrent device API gap is tracked at https://github.com/HazelnutParadise/insyra/issues/379."
+  ],
+  "input_fingerprints": {
+    "sparse_drive_evidence": "evidence/OPS-05/sparse-drive-20260924/verification.json",
+    "sparse_backward_evidence": "evidence/OPS-05/sparse-backward-20260925/verification.json",
+    "gpu_trainer_evidence": "evidence/OPS-05/gpu-trainer-20260925/verification.json",
+    "base_commit": "ef9845125cd34062d246ed6cc35cb09f04b60da8"
+  }
+}

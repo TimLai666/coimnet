@@ -1,0 +1,159 @@
+{
+  "device": {
+    "top_tests": {
+      "pass": 38,
+      "skip": 2
+    },
+    "bundle": {
+      "adapters": {
+        "Forward": {
+          "Adapter": "Apple M3",
+          "Backend": "Metal",
+          "Vendor": "Apple",
+          "Driver": "Metal",
+          "DeviceType": "DiscreteGPU"
+        },
+        "Backward": {
+          "Adapter": "Apple M3",
+          "Backend": "Metal",
+          "Vendor": "Apple",
+          "Driver": "Metal",
+          "DeviceType": "DiscreteGPU"
+        }
+      },
+      "construction_seconds": 0.052793875,
+      "cpu_parameter_max_abs_error": 2.798762427369539e-07,
+      "final_accumulated": 2,
+      "optimizer": {
+        "Device": {
+          "Adapter": "Apple M3",
+          "Backend": "Metal",
+          "Vendor": "Apple",
+          "Driver": "Metal",
+          "DeviceType": "DiscreteGPU"
+        },
+        "Initialization": 46136916,
+        "Compilation": 3225041,
+        "InitialTransfer": 3292,
+        "Warmup": 11915459,
+        "Transfer": 58333,
+        "Dispatch": 50041,
+        "Readback": 687751,
+        "AllocatedBytes": 1548,
+        "BytesUploaded": 1028,
+        "BytesReadBack": 748,
+        "Values": 23,
+        "Chunks": 1
+      },
+      "passed": true,
+      "same_prediction": true,
+      "same_snapshot": true,
+      "same_steps": true,
+      "scope": "deterministic 4-node sparse fixture; actual training bundle in separate Metal process; not fullbrain or useful-model evidence",
+      "updates": 2
+    },
+    "log_sha256": "b634146a4993716a706b4160d8e546d0e3b94d89aaf87e129037e22ba0acfdaf"
+  },
+  "ocr": {
+    "fixed": {
+      "before": {
+        "cer": 4.74,
+        "exact_lines": 0,
+        "samples": 200,
+        "empty_outputs": 0,
+        "empty_output_ratio": 0
+      },
+      "after": {
+        "cer": 0.9,
+        "exact_lines": 0.1,
+        "samples": 200,
+        "empty_outputs": 0,
+        "empty_output_ratio": 0
+      },
+      "train_updates": 1000,
+      "restore_updates": 0,
+      "cumulative_updates": 1000,
+      "encoder_profile": {
+        "mode": "fixed",
+        "encoder_parameters": 784,
+        "core_parameters": 1352,
+        "readout_parameters": 264,
+        "updates": 1000
+      },
+      "config_hash": "5fb3dedb16defdbc4494c1c51e76e8deadbde6af217f2bd83c90282aab0f715d",
+      "model_manifest_sha256": "7cbd4949ea84009893881c0086ce589eddc8005c45c8c564813e9f127885431c"
+    },
+    "trainable": {
+      "before": {
+        "cer": 4.74,
+        "exact_lines": 0,
+        "samples": 200,
+        "empty_outputs": 0,
+        "empty_output_ratio": 0
+      },
+      "after": {
+        "cer": 0.9,
+        "exact_lines": 0.1,
+        "samples": 200,
+        "empty_outputs": 0,
+        "empty_output_ratio": 0
+      },
+      "train_updates": 1000,
+      "restore_updates": 0,
+      "cumulative_updates": 1000,
+      "encoder_profile": {
+        "mode": "trainable",
+        "encoder_parameters": 784,
+        "core_parameters": 1352,
+        "readout_parameters": 264,
+        "updates": 1000
+      },
+      "config_hash": "81890cf1b50fdf364f3d79f036cee7bdbf905799231880eaa768dfcb29f1e970",
+      "model_manifest_sha256": "84e448847fe746a6410db2775519c74d411b75e0b4f291f8243db5cea1a9771f"
+    }
+  },
+  "media": {
+    "commands": 6,
+    "same_files": 11,
+    "test_scores_before": {
+      "samples": 1,
+      "frames": 8,
+      "audio_samples": 16000,
+      "image_mse": 0.13171076129192757,
+      "audio_mse": 0.00039956499307159044,
+      "balanced_mse": 0.06605516314249958,
+      "temporal_pairs": 7,
+      "temporal_delta_mse": 0.0019214406636393936,
+      "clipped_image_values": 737,
+      "clipped_audio_values": 0
+    },
+    "test_scores_after": {
+      "samples": 1,
+      "frames": 8,
+      "audio_samples": 16000,
+      "image_mse": 0.1215302372268125,
+      "audio_mse": 0.011545969122746611,
+      "balanced_mse": 0.06653810317477955,
+      "temporal_pairs": 7,
+      "temporal_delta_mse": 0.0019809547294963046,
+      "clipped_image_values": 462,
+      "clipped_audio_values": 0
+    },
+    "new_process": true,
+    "no_retraining": true,
+    "model_unchanged": true,
+    "score_equal": true
+  },
+  "checked_source_entries": 182,
+  "source_comment_exceptions": [
+    {
+      "path": "backend/webgpu/doc.go",
+      "receipt_sha256": "70054c94549e9406f4c602db77f9c41ffcac690a4b3ae4af7cf1e67960339c14",
+      "current_sha256": "4719672ea79945f524852aea716434595f614631abda10b4abce498320979328",
+      "reason": "Package comments changed after hardware tests; executable content is only package webgpu. Final integrated frozen source includes the new comment."
+    }
+  ],
+  "main_matches_integrated_frozen_files": 708,
+  "passed": true,
+  "created_utc": "2026-10-12T02:31:36.655245+00:00"
+}

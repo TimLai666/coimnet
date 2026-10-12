@@ -17,11 +17,12 @@ import (
 // row), Hidden recurrent nodes, an alphabet whose class k is Alphabet[k-1]
 // (blank is 0), the learning rate and the weight seed.
 type RecognizerConfig struct {
-	Height       int     `json:"height"`
-	Hidden       int     `json:"hidden"`
-	Alphabet     []rune  `json:"alphabet"`
-	LearningRate float64 `json:"learning_rate"`
-	Seed         uint64  `json:"seed"`
+	Height           int     `json:"height"`
+	Hidden           int     `json:"hidden"`
+	Alphabet         []rune  `json:"alphabet"`
+	LearningRate     float64 `json:"learning_rate"`
+	Seed             uint64  `json:"seed"`
+	TrainableEncoder bool    `json:"trainable_encoder,omitempty"`
 }
 
 // Validate reports the first field that cannot build a recognizer: Height
@@ -53,9 +54,10 @@ func (c RecognizerConfig) Validate() error {
 // Recognizer reads a line image column by column and emits one logit row per
 // column.
 type Recognizer struct {
-	trainer *learning.Trainer
-	config  RecognizerConfig
-	index   map[rune]int
+	trainer                *learning.Trainer
+	config                 RecognizerConfig
+	index                  map[rune]int
+	loadedCheckpointSHA256 string
 }
 
 // TrainReport is one TrainLine call: the CTC loss before the update, whether
@@ -72,9 +74,11 @@ type TrainReport struct {
 // concatenated edit counts of every sample, the share of lines decoded exactly
 // and how many samples were read.
 type EvalReport struct {
-	CER        EditReport `json:"cer"`
-	ExactLines float64    `json:"exact_lines"`
-	Samples    int        `json:"samples"`
+	CER              EditReport `json:"cer"`
+	ExactLines       float64    `json:"exact_lines"`
+	Samples          int        `json:"samples"`
+	EmptyOutputs     int        `json:"empty_outputs"`
+	EmptyOutputRatio float64    `json:"empty_output_ratio"`
 }
 
 // NewRecognizer builds the continuous core: Height+Hidden nodes, the first
@@ -85,7 +89,8 @@ type EvalReport struct {
 // [-0.3, 0.3] with rand.NewPCG(Seed, 0) and the readout with
 // rand.NewPCG(Seed, 1). Bias starts at 0 and the time constants at log(2).
 // Training is the AdamW baseline of learning.DefaultOptions at LearningRate
-// with the weight, bias and readout groups unfrozen, DT 1 and tanh.
+// with the weight, bias and readout groups unfrozen, and the identity encoder
+// group controlled by TrainableEncoder, with DT 1 and tanh.
 func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	if err := c.Validate(); err != nil {
 		return nil, err
@@ -119,7 +124,7 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 		ReadoutEveryStep: true,
 	}
 	// The encoder is the identity from the Height inputs onto the Height input
-	// nodes, row-major [input, input-node], and stays frozen.
+	// nodes, row-major [input, input-node]. Its trainability follows the config.
 	encoder := make([]float64, c.Height*c.Height)
 	for i := 0; i < c.Height; i++ {
 		encoder[i*c.Height+i] = 1
@@ -140,7 +145,7 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	}
 	o := learning.DefaultOptions()
 	o.LearningRate = c.LearningRate
-	o.Trainable = learning.Trainable{Weights: true, Bias: true, Readout: true}
+	o.Trainable = learning.Trainable{Encoder: c.TrainableEncoder, Weights: true, Bias: true, Readout: true}
 	tr, err := learning.NewTrainer(cfg, p, o)
 	if err != nil {
 		return nil, err
@@ -320,7 +325,7 @@ func (r *Recognizer) Evaluate(ctx context.Context, samples []glyphs.Sample) (Eva
 	if r == nil || r.trainer == nil {
 		return zero, errors.New("ocr: nil recognizer")
 	}
-	var subs, dels, ins, reference, exact int
+	var subs, dels, ins, reference, exact, emptyOutputs int
 	for i, s := range samples {
 		hypothesis, err := r.Infer(ctx, s.Image)
 		if err != nil {
@@ -334,10 +339,15 @@ func (r *Recognizer) Evaluate(ctx context.Context, samples []glyphs.Sample) (Eva
 		if hypothesis == s.Text {
 			exact++
 		}
+		if hypothesis == "" {
+			emptyOutputs++
+		}
 	}
 	report := EvalReport{CER: newReport(reference, subs, dels, ins), Samples: len(samples)}
 	if len(samples) > 0 {
 		report.ExactLines = float64(exact) / float64(len(samples))
+		report.EmptyOutputs = emptyOutputs
+		report.EmptyOutputRatio = float64(emptyOutputs) / float64(len(samples))
 	}
 	return report, nil
 }

@@ -26,19 +26,19 @@
 
 `go doc ./...` 可列出全部套件的公開 API。開放的套件路徑：
 
-- `backend/webgpu`：目前已實測的稀疏 GPU 運算原語；完整訓練仍見 OPS-05
+- `backend/webgpu`：稀疏 GPU 運算、常駐 float32 AdamW 與 `StepChecked` 候選讀回；不代表完整模型加速，完整網路、全圖與其他平台仍見 OPS-05
 - `checkpoint`：模型包、個體快照、訓練快照與恢復
 - `config`：組態展開
 - `connectome`：標準化接線圖與圖儲存
 - `download`：官方資料下載與續傳
 - `dynamics`：連續、LIF 與混合核心。連續及 LIF 的 [ForwardRecompute](../dynamics/forward_recompute.go) 可逐段計算有限序列輸出，使用方式與驗收見 [ticket 56](tickets/56-recompute-sequence-capacity.md)。
 - `feather`：Feather V2 逐批讀取
-- `learning`：核心、外圍模型、訓練器與持續個體
+- `learning`：核心、外圍模型、CPU／legacy GPU 訓練器與 opt-in GPU device 訓練器
 - [`learning/rl`](../learning/rl/README.md)：PPO 更新入口、適用狀態與限制
 - [`tasks/asr`](../tasks/asr/README.md)：音訊轉文字、因果串流與恢復
 - `tasks/media/realdata`：授權影音來源的嚴格匯入（範例用）
 - `tasks/nav2d/trajectory`：授權果蠅軌跡的逐批匯入、試次隔離、因果樣本、逐列刺激紀錄與獨立目標計分資料（範例用）
-- `tasks/ocr`：單行 OCR 與頁面區塊處理
+- `tasks/ocr`：有上限 raster 讀取、單行 OCR 與頁面區塊處理
 - `tasks/textgen`：文字語料匯入與生成
 - `modulation`：調節來源、化學、受體與效果
 - `params`：動態參數推導與參數集
@@ -77,6 +77,7 @@
 | --- | --- | --- | --- |
 | `coimnet-ablation/v1` | `experiment` | 消融報告格式，也記錄消融證據使用的 MappingVersion | [experiment/ablation.go:16](../experiment/ablation.go#L16) |
 | `coimnet-adaptive-evaluation/v1` | `experiment` | 適應性評估報告格式 | [experiment/adaptive_run.go:276](../experiment/adaptive_run.go#L276) |
+| `coimnet-asr-checkpoint/v1` | `tasks/asr` | ASR 任務模型與訓練狀態 bundle 格式 | [tasks/asr/persistence.go:15](../tasks/asr/persistence.go#L15) |
 | `coimnet-asr-dataset/v1` | `tasks/asr` | 授權語音資料集 manifest 格式 | [tasks/asr/dataset.go:21](../tasks/asr/dataset.go#L21) |
 | `coimnet-asr-fixture/v1` | `internal/cli` | ASR fixture 範例報告格式 | [internal/cli/asr.go:16](../internal/cli/asr.go#L16) |
 | `coimnet-asr-stream/v1` | `tasks/asr` | ASR 串流檔案狀態格式 | [tasks/asr/stream_file.go:16](../tasks/asr/stream_file.go#L16) |
@@ -93,6 +94,7 @@
 | `coimnet-delayed-report/v2` | `experiment` | 延遲任務報告格式 | [experiment/delayed.go:116](../experiment/delayed.go#L116) |
 | `coimnet-derivation-report/v1` | `params` | 參數推導報告格式 | [params/report.go:10](../params/report.go#L10) |
 | `coimnet-derivation-rules/v1` | `params` | 參數推導規則文件格式 | [params/rules.go:33](../params/rules.go#L33) |
+| `coimnet-device-adamw/v1` | `backend/webgpu` | GPU 常駐 AdamW 快照格式 | [backend/webgpu/device_adam.go:14](../backend/webgpu/device_adam.go#L14) |
 | `coimnet-distill/v1` | `distill` | 蒸餾資料格式 | [distill/distill.go:15](../distill/distill.go#L15) |
 | `coimnet-doctor/v1` | `internal/cli` | doctor 能力檢查報告格式 | [internal/cli/doctor.go:19](../internal/cli/doctor.go#L19) |
 | `coimnet-download-part/v1` | `download` | 下載分段暫存狀態格式 | [download/download.go:33](../download/download.go#L33) |
@@ -123,16 +125,19 @@
 | `coimnet-nav2d-suite/v1` | `experiment` | 二維導航四項任務的比較報告格式 | [experiment/nav2d_suite.go:16](../experiment/nav2d_suite.go#L16) |
 | `coimnet-nav2d-trajectory/v1` | `tasks/nav2d/trajectory` | 果蠅軌跡資料格式 | [tasks/nav2d/trajectory/trajectory.go:31](../tasks/nav2d/trajectory/trajectory.go#L31) |
 | `coimnet-nav2d/v1` | `experiment` | 二維導航環境報告格式 | [experiment/nav2d_suite.go:14](../experiment/nav2d_suite.go#L14) |
+| `coimnet-ocr-checkpoint/v1` | `tasks/ocr` | OCR 任務模型與訓練狀態 bundle 格式 | [tasks/ocr/persistence.go:15](../tasks/ocr/persistence.go#L15) |
 | `coimnet-ocr-fixture/v1` | `tasks/ocr` | OCR fixture 報告格式 | [tasks/ocr/fixture.go:15](../tasks/ocr/fixture.go#L15) |
+| `coimnet-ocr-raster/v1` | `tasks/ocr` | 有上限 PNG／JPEG raster 與來源、尺寸、縮放 metadata 格式 | [tasks/ocr/raster.go:23](../tasks/ocr/raster.go#L23) |
 | `coimnet-parameter-derive/v1` | `internal/cli` | CLI 參數推導報告格式 | [internal/cli/derive.go:19](../internal/cli/derive.go#L19) |
 | `coimnet-parameter-set/v1` | `params` | 導出參數集格式 | [params/set.go:28](../params/set.go#L28) |
 | `coimnet-parameter-validate/v1` | `internal/cli` | CLI 參數驗證報告格式 | [internal/cli/derive.go:20](../internal/cli/derive.go#L20) |
 | `coimnet-ppo-experiment/v1` | `experiment` | PPO 實驗設定與報告格式 | [experiment/ppo.go:15](../experiment/ppo.go#L15) |
 | `coimnet-prediction/v1` | `internal/cli` | CLI 預測輸出格式 | [internal/cli/train.go:153](../internal/cli/train.go#L153) |
-| `coimnet-real-asr-example/v1` | `examples/realasr` | 真實語音範例報告格式 | [examples/realasr/main.go:23](../examples/realasr/main.go#L23) |
+| `coimnet-real-asr-example/v1` | `examples/realasr` | 真實語音範例報告格式 | [examples/realasr/main.go:24](../examples/realasr/main.go#L24) |
 | `coimnet-real-subgraph-example/v1` | `examples/realsubgraph` | 真實子圖範例報告格式 | [examples/realsubgraph/main.go:25](../examples/realsubgraph/main.go#L25) |
-| `coimnet-real-text-example/v1` | `examples/realtext` | 真實文字範例報告格式 | [examples/realtext/main.go:28](../examples/realtext/main.go#L28) |
+| `coimnet-real-text-example/v1` | `examples/realtext` | 真實文字範例報告格式 | [examples/realtext/main.go:29](../examples/realtext/main.go#L29) |
 | `coimnet-realmedia-example/v1` | `examples/realmedia` | 真實影音範例報告格式 | [examples/realmedia/main.go:32](../examples/realmedia/main.go#L32) |
+| `coimnet-realmedia-model/v1` | `examples/realmedia` | 真實影音模型 task bundle 設定與完整訓練狀態格式 | [examples/realmedia/model.go:18](../examples/realmedia/model.go#L18) |
 | `coimnet-realmedia/v1` | `tasks/media/realdata` | 授權影音 manifest 格式 | [tasks/media/realdata/manifest.go:24](../tasks/media/realdata/manifest.go#L24) |
 | `coimnet-realnav-example/v1` | `examples/realnav` | 真實導航範例報告格式，也作 realnavmemory 的 base model 版本 | [examples/realnav/main.go:26](../examples/realnav/main.go#L26) |
 | `coimnet-realnav-memory-bundle/v1` | `examples/realnavmemory` | 導航記憶 bundle 格式 | [examples/realnavmemory/storage.go:23](../examples/realnavmemory/storage.go#L23) |
@@ -141,8 +146,8 @@
 | `coimnet-realnav-memory-plan/v1` | `examples/realnavmemory` | 導航記憶規劃資料格式 | [examples/realnavmemory/storage.go:22](../examples/realnavmemory/storage.go#L22) |
 | `coimnet-realnav-memory-rollout/v1` | `examples/realnavmemory` | 導航記憶 rollout 報告格式 | [examples/realnavmemory/rollout.go:16](../examples/realnavmemory/rollout.go#L16) |
 | `coimnet-realnav-rollout/v1` | `examples/realnav` | 真實導航 rollout 報告格式 | [examples/realnav/rollout.go:24](../examples/realnav/rollout.go#L24) |
-| `coimnet-realocr-data/v1` | `examples/realocr` | 真實 OCR 資料報告格式 | [examples/realocr/main.go:34](../examples/realocr/main.go#L34) |
-| `coimnet-realocr/v1` | `examples/realocr` | 真實 OCR 報告格式 | [examples/realocr/main.go:35](../examples/realocr/main.go#L35) |
+| `coimnet-realocr-data/v1` | `examples/realocr` | 真實 OCR 資料報告格式 | [examples/realocr/main.go:35](../examples/realocr/main.go#L35) |
+| `coimnet-realocr/v1` | `examples/realocr` | 真實 OCR 報告格式 | [examples/realocr/main.go:36](../examples/realocr/main.go#L36) |
 | `coimnet-replay/v1` | `replay` | 重播狀態格式 | [replay/policy.go:28](../replay/policy.go#L28) |
 | `coimnet-report/v1` | `internal/cli` | 需求匯出總報告格式 | [internal/cli/report.go:24](../internal/cli/report.go#L24) |
 | `coimnet-requirements-addendum/v1` | `docs` | 需求補遺治理 JSON 格式 | [docs/requirements-addendum.json:2](../docs/requirements-addendum.json#L2) |
@@ -156,6 +161,7 @@
 | `coimnet-simulate-state/v1` | `simulate` | 原生模擬狀態格式 | [simulate/protocol.go:38](../simulate/protocol.go#L38) |
 | `coimnet-student-evaluation/v1` | `experiment/studenteval` | 學生獨立評估報告格式 | [experiment/studenteval/studenteval.go:23](../experiment/studenteval/studenteval.go#L23) |
 | `coimnet-teacher-records/v1` | `teacher` | 離線教師紀錄格式 | [teacher/records.go:13](../teacher/records.go#L13) |
+| `coimnet-textgen-checkpoint/v1` | `tasks/textgen` | 文字生成任務模型與訓練狀態 bundle 格式 | [tasks/textgen/persistence.go:15](../tasks/textgen/persistence.go#L15) |
 | `coimnet-textgen-corpus/v1` | `tasks/textgen` | 文字語料 manifest 格式 | [tasks/textgen/corpus.go:24](../tasks/textgen/corpus.go#L24) |
 | `coimnet-textgen/v1` | `tasks/textgen` | 文字生成報告格式 | [tasks/textgen/run.go:15](../tasks/textgen/run.go#L15) |
 | `coimnet-train-result/v1` | `internal/cli` | CLI 訓練結果格式 | [internal/cli/train.go:107](../internal/cli/train.go#L107) |
@@ -182,6 +188,8 @@
 
 | 版本 | 套件/用途範圍 | 用途說明 | 來源 |
 | --- | --- | --- | --- |
+| `coimnet-goal-acceptance/v1` | `evidence/goal-91-20261012` | 91 項工程驗收與證據彙整紀錄 | [evidence/goal-91-20261012/contracts-and-validation-drivers/close_acceptance_metadata.py:34](../evidence/goal-91-20261012/contracts-and-validation-drivers/close_acceptance_metadata.py#L34) |
+| `coimnet-integrated-validation/v1` | `evidence/goal-91-20261012` | 完整驗證命令、來源與保存日誌核對紀錄 | [evidence/goal-91-20261012/contracts-and-validation-drivers/preserve_final_checks.py:56](../evidence/goal-91-20261012/contracts-and-validation-drivers/preserve_final_checks.py#L56) |
 | `coimnet-clean-env-run/v1` | `scripts` | 乾淨環境驗證流程的執行報告格式 | [scripts/clean-env-verify.sh:423](../scripts/clean-env-verify.sh#L423) |
 | `coimnet-counterfactual-summary/v1` | `evidence/TSK-11/stimulus-counterfactual-20261003` | 刺激反事實分析工具的報告格式 | [evidence/TSK-11/stimulus-counterfactual-20261003/analyze.py:56](../evidence/TSK-11/stimulus-counterfactual-20261003/analyze.py#L56) |
 | `coimnet-multitask-suite/v1` | `experiment` | 多任務測試報告格式 | [experiment/multitask_evidence_test.go:55](../experiment/multitask_evidence_test.go#L55) |
@@ -203,17 +211,21 @@
 | --- | --- | --- | --- |
 | `coimnet-connectome-builder/v999` | `connectome` | 接線建構器未知版本拒絕反例 | [connectome/store_receipt_test.go:82](../connectome/store_receipt_test.go#L82) |
 | `coimnet-dataset-manifest/v9` | `connectome` | 接線資料集未知版本拒絕反例 | [connectome/build_test.go:278](../connectome/build_test.go#L278) |
+| `coimnet-device-adamw/v2` | `backend/webgpu` | AdamW 快照未知版本拒絕反例 | [backend/webgpu/device_adam_test.go:293](../backend/webgpu/device_adam_test.go#L293) |
 | `coimnet-graph-store/v9` | `connectome` | 圖儲存未知版本拒絕反例 | [connectome/store_test.go:246](../connectome/store_test.go#L246) |
 | `coimnet-individual-checkpoint/v9` | `checkpoint` | 個體快照未知版本拒絕反例 | [checkpoint/package_test.go:281](../checkpoint/package_test.go#L281) |
 | `coimnet-lif-state/v0` | `dynamics` | LIF 狀態不支援版本的拒絕反例 | [dynamics/lif_state_test.go:358](../dynamics/lif_state_test.go#L358) |
 | `coimnet-model-package/v2` | `checkpoint` | 模型包未來版本拒絕反例 | [checkpoint/package_test.go:254](../checkpoint/package_test.go#L254) |
+| `coimnet-other-task/v1` | `checkpoint` | 任務 bundle schema 不符拒絕反例 | [checkpoint/task_bundle_test.go:501](../checkpoint/task_bundle_test.go#L501) |
 | `coimnet-real-task-evidence/v1` | `privacy` | 隱私掃描測試的人造資料識別，沒有正式讀寫契約 | [privacy_test.go:204](../privacy_test.go#L204) |
 | `coimnet-realnav-memory-bundle/v999` | `examples/realnavmemory` | 導航記憶 bundle 未知版本拒絕反例 | [examples/realnavmemory/storage_test.go:49](../examples/realnavmemory/storage_test.go#L49) |
 | `coimnet-replay/v0` | `checkpoint` | 重播狀態未知版本拒絕反例 | [checkpoint/options_compat_test.go:493](../checkpoint/options_compat_test.go#L493) |
 | `coimnet-simulate-compare/v2` | `simulate` | 空模型比較未知版本拒絕反例 | [simulate/compare_test.go:345](../simulate/compare_test.go#L345) |
 | `coimnet-simulate-protocol/v2` | `simulate` | 原生模擬協定未知版本拒絕反例 | [simulate/simulate_test.go:567](../simulate/simulate_test.go#L567) |
 | `coimnet-simulate-state/v2` | `simulate` | 原生模擬狀態未知版本拒絕反例 | [simulate/simulate_test.go:729](../simulate/simulate_test.go#L729) |
+| `coimnet-task-fixture/v1` | `checkpoint` | 任務 bundle 測試 fixture 格式 | [checkpoint/task_bundle_test.go:23](../checkpoint/task_bundle_test.go#L23) |
 | `coimnet-unknown/v9` | `checkpoint` | checkpoint 遷移的未知 schema 拒絕反例 | [checkpoint/migrate_test.go:187](../checkpoint/migrate_test.go#L187) |
+| `coimnet-wrong-bundle/v1` | `checkpoint` | 任務 bundle schema 竄改拒絕反例 | [checkpoint/task_bundle_test.go:496](../checkpoint/task_bundle_test.go#L496) |
 
 格式變更的相容規則見 [ENG](../ENG.md) 與對應 [tickets](tickets/)。欄位層級的格式說明見 [config-schema.md](config-schema.md)、[個體狀態](individual-state.md)、[訊號映射](signal-projections.md)、[訊號取樣](signal-resampling.md)。
 
@@ -242,6 +254,6 @@
 
 ## 票與決策
 
-- 工作票：[docs/tickets/](tickets/)（01–56，每個 ticket 含 root 決策、契約、驗收與依據）。
+- 工作票：[docs/tickets/](tickets/)（01–63，每個 ticket 含 root 決策、契約、驗收與依據）。
 - 決策紀錄：[delivery-status.md](../delivery-status.md#決策紀錄)。
 - 驗證與提交程序的執行規範：[AGENTS.md](../AGENTS.md) 的「實作與驗證」與「資料與操作範圍」兩段。

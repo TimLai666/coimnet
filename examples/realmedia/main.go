@@ -60,6 +60,7 @@ type parameterChange struct {
 type report struct {
 	SchemaVersion     string                  `json:"schema_version"`
 	GeneratedAtUTC    string                  `json:"generated_at_utc"`
+	Model             *mediaModelArtifact     `json:"model,omitempty"`
 	Dataset           string                  `json:"dataset"`
 	ManifestSHA256    string                  `json:"manifest_sha256"`
 	ReportPath        string                  `json:"report_path"`
@@ -80,6 +81,7 @@ type report struct {
 type trainingReport struct {
 	Epochs               int                        `json:"epochs"`
 	Updates              uint64                     `json:"updates"`
+	ThisRunUpdates       uint64                     `json:"this_run_updates"`
 	Optimizer            string                     `json:"optimizer"`
 	LearningRate         float64                    `json:"learning_rate"`
 	Objective            string                     `json:"objective"`
@@ -130,28 +132,42 @@ type previewClip struct {
 func main() {
 	dataRoot := flag.String("data-root", "", "external directory containing the licensed source MP4 files")
 	outDir := flag.String("out-dir", "", "new output directory separate from the data root (prefer runs/)")
+	modelInput := flag.String("model-input", "", "existing realmedia task-model bundle to load without training; excludes --model-output")
+	modelOutput := flag.String("model-output", "", "new realmedia task-model bundle directory to save after training; excludes --model-input")
+	flag.Usage = func() {
+		fmt.Fprintln(flag.CommandLine.Output(), "Usage: go run ./examples/realmedia --data-root DATA_DIR --out-dir OUTPUT_DIR [--model-output NEW_BUNDLE | --model-input BUNDLE]")
+		fmt.Fprintln(flag.CommandLine.Output(), "Imports the licensed real-media manifest, trains or restores the fixed example model, and writes PNG/WAV/timeline previews plus a JSON report.")
+		fmt.Fprintln(flag.CommandLine.Output(), "--model-output saves the complete task configuration, parameters, optimizer state and update count; --model-input loads that bundle and performs independent inference with zero updates.")
+		fmt.Fprintln(flag.CommandLine.Output(), "The model flags are mutually exclusive. Data, output, and model directories must be separate; existing output directories are rejected.")
+		flag.PrintDefaults()
+	}
 	flag.Parse()
 	if *dataRoot == "" || *outDir == "" {
 		fmt.Fprintln(os.Stderr, "realmedia: both --data-root and --out-dir are required")
 		os.Exit(2)
 	}
-	if err := run(context.Background(), *dataRoot, *outDir); err != nil {
+	if err := runWithModel(context.Background(), *dataRoot, *outDir, *modelInput, *modelOutput); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run(ctx context.Context, dataRoot, outDir string) (runErr error) {
+func runWithModel(ctx context.Context, dataRoot, outDir, modelInput, modelOutput string) (runErr error) {
+	if err := mediaContextError(ctx); err != nil {
+		return err
+	}
+	if modelInput != "" && modelOutput != "" {
+		return fmt.Errorf("realmedia: --model-input and --model-output are mutually exclusive")
+	}
+	if dataRoot == "" || outDir == "" {
+		return fmt.Errorf("realmedia: data root and output directory are required")
+	}
 	loaded, err := realdata.ParseManifest(manifestJSON)
 	if err != nil {
-		return err
+		return fmt.Errorf("realmedia: parse embedded manifest: %w", err)
 	}
 	if err := validateExampleOutput(loaded.Manifest.Output); err != nil {
 		return err
-	}
-	outputPath, err := filepath.Abs(outDir)
-	if err != nil {
-		return fmt.Errorf("realmedia: resolve output directory: %w", err)
 	}
 	dataPath, err := filepath.Abs(dataRoot)
 	if err != nil {
@@ -160,6 +176,10 @@ func run(ctx context.Context, dataRoot, outDir string) (runErr error) {
 	dataPath, err = filepath.EvalSymlinks(dataPath)
 	if err != nil {
 		return fmt.Errorf("realmedia: resolve data directory symlinks: %w", err)
+	}
+	outputPath, err := filepath.Abs(outDir)
+	if err != nil {
+		return fmt.Errorf("realmedia: resolve output directory: %w", err)
 	}
 	outputParent, err := filepath.EvalSymlinks(filepath.Dir(outputPath))
 	if err != nil {
@@ -175,32 +195,105 @@ func run(ctx context.Context, dataRoot, outDir string) (runErr error) {
 		return fmt.Errorf("realmedia: check output directory: %w", err)
 	}
 
-	dataset, err := realdata.Import(ctx, dataPath, loaded.Manifest, realdata.DefaultLimits())
-	if err != nil {
-		return fmt.Errorf("realmedia: import licensed clips: %w", err)
+	var modelInputPath, modelOutputPath string
+	if modelInput != "" {
+		modelInputPath, err = filepath.Abs(modelInput)
+		if err != nil {
+			return fmt.Errorf("realmedia: resolve model input: %w", err)
+		}
+		modelInputPath, err = filepath.EvalSymlinks(modelInputPath)
+		if err != nil {
+			return fmt.Errorf("realmedia: resolve model input symlinks: %w", err)
+		}
+		if pathsOverlap(modelInputPath, dataPath) || pathsOverlap(modelInputPath, outputPath) {
+			return fmt.Errorf("realmedia: model input must be separate from raw data and output directories")
+		}
 	}
-	fit, err := fitSamples(ctx, dataset.Samples, exampleEpochs)
-	if err != nil {
-		return err
+	if modelOutput != "" {
+		modelOutputPath, err = filepath.Abs(modelOutput)
+		if err != nil {
+			return fmt.Errorf("realmedia: resolve model output: %w", err)
+		}
+		modelOutputParent, parentErr := filepath.EvalSymlinks(filepath.Dir(modelOutputPath))
+		if parentErr != nil {
+			return fmt.Errorf("realmedia: model output directory parent must already exist: %w", parentErr)
+		}
+		modelOutputPath = filepath.Join(modelOutputParent, filepath.Base(modelOutputPath))
+		if _, statErr := os.Lstat(modelOutputPath); statErr == nil {
+			return fmt.Errorf("realmedia: model output directory %q already exists; choose a new path", modelOutputPath)
+		} else if !errors.Is(statErr, os.ErrNotExist) {
+			return fmt.Errorf("realmedia: check model output directory: %w", statErr)
+		}
+		if pathsOverlap(modelOutputPath, dataPath) || pathsOverlap(modelOutputPath, outputPath) {
+			return fmt.Errorf("realmedia: model output must be separate from raw data and output directories")
+		}
 	}
+
+	expectedModelConfig := newMediaModelConfig(loaded.SHA256, loaded.Manifest.Output)
+	var modelArtifact *mediaModelArtifact
+	created := false
+	defer func() {
+		if runErr != nil && created {
+			_ = os.RemoveAll(outputPath)
+		}
+		if runErr != nil && modelArtifact != nil && modelArtifact.Mode == "saved" {
+			runErr = fmt.Errorf("%w; model bundle retained at %q (partial success)", runErr, modelArtifact.Path)
+		}
+	}()
+	var dataset realdata.Dataset
+	var fit fitResult
+	if modelInputPath != "" {
+		snapshot, verifiedSHA, loadErr := loadMediaModel(ctx, modelInputPath, expectedModelConfig)
+		if loadErr != nil {
+			return loadErr
+		}
+		dataset, err = realdata.Import(ctx, dataPath, loaded.Manifest, realdata.DefaultLimits())
+		if err != nil {
+			return fmt.Errorf("realmedia: import licensed clips: %w", err)
+		}
+		fit, err = fitFromSnapshot(ctx, dataset.Samples, snapshot)
+		if err != nil {
+			return err
+		}
+		modelArtifact = &mediaModelArtifact{Mode: "restored", Path: modelInputPath, ManifestSHA256: verifiedSHA, Updates: snapshot.Updates}
+	} else {
+		dataset, err = realdata.Import(ctx, dataPath, loaded.Manifest, realdata.DefaultLimits())
+		if err != nil {
+			return fmt.Errorf("realmedia: import licensed clips: %w", err)
+		}
+		fit, err = fitSamples(ctx, dataset.Samples, exampleEpochs)
+		if err != nil {
+			return err
+		}
+		if modelOutputPath != "" {
+			if saveErr := saveMediaModel(ctx, modelOutputPath, expectedModelConfig, fit.Snapshot); saveErr != nil {
+				return saveErr
+			}
+			modelArtifact = &mediaModelArtifact{Mode: "saved", Path: modelOutputPath, Updates: fit.Snapshot.Updates}
+			verifiedSnapshot, verifiedSHA, verifyErr := loadMediaModel(ctx, modelOutputPath, expectedModelConfig)
+			if verifyErr != nil {
+				return fmt.Errorf("realmedia: model bundle saved at %q but verification failed: %w", modelOutputPath, verifyErr)
+			}
+			if digestJSON(verifiedSnapshot) != digestJSON(fit.Snapshot) {
+				return fmt.Errorf("realmedia: model bundle saved at %q but readback differs from the trained snapshot", modelOutputPath)
+			}
+			modelArtifact.ManifestSHA256 = verifiedSHA
+		}
+	}
+
 	modelBytes, err := json.MarshalIndent(fit.Snapshot, "", "  ")
 	if err != nil {
 		return fmt.Errorf("realmedia: encode trained model: %w", err)
 	}
 	changeReport := parameterChanges(fit.Before.Parameters, fit.Snapshot.Parameters)
-	if changeReport["core_weights"].MaxAbs == 0 {
+	if modelInputPath == "" && changeReport["core_weights"].MaxAbs == 0 {
 		return fmt.Errorf("realmedia: learning produced no core weight change")
 	}
 
 	if err := os.Mkdir(outputPath, 0o700); err != nil {
 		return fmt.Errorf("realmedia: create new output directory: %w", err)
 	}
-	created := true
-	defer func() {
-		if runErr != nil && created {
-			_ = os.RemoveAll(outputPath)
-		}
-	}()
+	created = true
 
 	artifacts := make([]artifact, 0, 12)
 	addArtifact := func(kind, path string) error {
@@ -238,7 +331,8 @@ func run(ctx context.Context, dataRoot, outDir string) (runErr error) {
 		if !ok {
 			return fmt.Errorf("realmedia: missing test sample for prediction %s/%s", prediction.SourceID, prediction.SegmentID)
 		}
-		files, err := writePreview(ctx, outputPath, loaded.Manifest.Output, sample, prediction)
+		previewPath := filepath.Join(outputPath, prediction.SourceID+"-"+prediction.SegmentID)
+		files, err := writePreview(ctx, previewPath, loaded.Manifest.Output, sample, prediction)
 		if err != nil {
 			return err
 		}
@@ -255,13 +349,21 @@ func run(ctx context.Context, dataRoot, outDir string) (runErr error) {
 	sourceIDs := splitSourceIDs(dataset.Samples)
 	reportValue := report{
 		SchemaVersion: reportSchema, GeneratedAtUTC: time.Now().UTC().Format(time.RFC3339Nano),
+		Model:   modelArtifact,
 		Dataset: dataset.Dataset, ManifestSHA256: loaded.SHA256,
 		ReportPath: filepath.Join(outputPath, "report.json"), OutputDir: outputPath,
 		Sources: dataset.Sources, Clips: summarizeClips(dataset.Samples),
 		SplitSourceIDs: sourceIDs, TrainTestDisjoint: disjoint(sourceIDs["train"], sourceIDs["test"]),
 		Transform: dataset.Transform, OutputClock: dataset.Output, Toolchain: dataset.Toolchain,
 		Training: trainingReport{
-			Epochs: exampleEpochs, Updates: fit.Snapshot.Updates, Optimizer: "learning.Trainer StepFrom with AdamW",
+			Epochs: func() int {
+				if modelInputPath != "" {
+					return 0
+				}
+				return exampleEpochs
+			}(),
+			Updates: fit.Snapshot.Updates, ThisRunUpdates: fit.Snapshot.Updates - fit.Before.Updates,
+			Optimizer:    "learning.Trainer StepFrom with AdamW",
 			LearningRate: fit.Snapshot.Options.LearningRate,
 			Objective:    "per-step MSE on actual decoded RGB and embedded audio; image and audio group MSEs are equally weighted",
 			ScoresBefore: fit.BeforeScores, ScoresAfter: fit.AfterScores, ParameterChanges: changeReport,
@@ -311,7 +413,7 @@ func writePreview(ctx context.Context, outputPath string, clock realdata.OutputS
 	if len(prediction.Rows) != len(sample.Frames) {
 		return previewFiles{}, fmt.Errorf("realmedia: test prediction row count %d does not match source frames %d", len(prediction.Rows), len(sample.Frames))
 	}
-	clipDir := filepath.Join(outputPath, prediction.SourceID+"-"+prediction.SegmentID)
+	clipDir := outputPath
 	framesDir := filepath.Join(clipDir, "frames")
 	if err := os.MkdirAll(framesDir, 0o700); err != nil {
 		return previewFiles{}, fmt.Errorf("realmedia: create preview directory: %w", err)

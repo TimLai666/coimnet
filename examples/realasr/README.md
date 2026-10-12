@@ -1,6 +1,6 @@
 # 真實授權語音範例
 
-這個獨立範例讀取使用者提供的 `coimnet-asr-dataset/v1` manifest 與其中列出的 PCM 16-bit WAV，實際走過資料匯入、說話者／場次分割、一次訓練、獨立推論及 CER／WER 評估。它不下載資料，也不保存模型或 checkpoint。
+這個獨立範例讀取使用者提供的 `coimnet-asr-dataset/v1` manifest 與其中列出的 PCM 16-bit WAV，實際走過資料匯入、說話者／場次分割、一次訓練、獨立推論及 CER／WER 評估。它不下載資料，並可選擇保存完整模型 bundle 或載入既有 bundle 只做評估。
 
 ```sh
 mkdir -p runs/TSK-11
@@ -9,6 +9,27 @@ go run ./examples/realasr --manifest data/TSK-11/openslr31/sample/manifest.json 
 ```
 
 `--help` 會列出完整格式、固定設定及錯誤條件。成功時只在 stdout 輸出一份縮排 JSON，失敗訊息寫到 stderr 且不輸出部分報告。
+
+## 模型保存與載入
+
+`--model-output NEW_DIR` 會在訓練後以新的目錄保存完整 task-model bundle，包含 `manifest.json`、`document.json` 與 `arrays.bin`，其中保存任務設定、完整最佳化器狀態與更新次數。`--model-input DIR` 會載入 bundle、沿用目前 manifest 的 speaker/session 固定切分只做保留集評估，並跳過訓練；載入的模型若與目前範例固定設定（包含訓練字母表）不一致會拒絕。兩個旗標互斥，`--model-output` 的目錄必須不存在，既有路徑不會覆寫。
+
+以下使用目前 README 的資料路徑，兩次命令分別保存與載入模型。`realasr-bundle-20261012` 是新的 bundle 目錄；報告仍放在 `runs/TSK-11`：
+
+```sh
+mkdir -p models/TSK-11 runs/TSK-11
+go run ./examples/realasr \
+  --manifest data/TSK-11/openslr31/sample/manifest.json \
+  --model-output models/TSK-11/realasr-bundle-20261012 \
+  > runs/TSK-11/realasr-save-report.json
+
+go run ./examples/realasr \
+  --manifest data/TSK-11/openslr31/sample/manifest.json \
+  --model-input models/TSK-11/realasr-bundle-20261012 \
+  > runs/TSK-11/realasr-load-report.json
+```
+
+有模型旗標時，報告最上層的 `model.sha256` 是 canonical `manifest.json` 的 hash，綁定 `document.json`、`arrays.bin` 與拓撲；`model.updates` 是 bundle 保存的歷史更新數。ASR 報告沒有 `training.epochs`／`training.updates` 欄位；`model.mode: "restored"` 與 `model.updates` 只描述載入模式與 bundle 歷史值，載入模式本身會跳過訓練迴圈。
 
 manifest 必須符合 `coimnet-asr-dataset/v1`，並在 `license` 提供非空的 `holder`、`terms`、`source`。每筆 recording 需要相對於 manifest 的 `path`、`text`、`speaker`、`session`、`sample_rate` 及 `channels`。匯入器只接受 PCM 16-bit WAV，會依 SDK 規則混音、線性重取樣及峰值正規化；範例固定目標取樣率 16 kHz、峰值 0.8。
 

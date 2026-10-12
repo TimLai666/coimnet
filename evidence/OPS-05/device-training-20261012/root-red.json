@@ -1,0 +1,93 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-p",
+    "1",
+    "-count=1",
+    "-json",
+    "-timeout",
+    "180s",
+    "-run",
+    "^(TestDeviceAdamWChecked|TestGPUDeviceTrainer|TestNewGPUDeviceTrainer|TestRestoreGPUDeviceTrainer)",
+    "./backend/webgpu",
+    "./learning"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next",
+  "exit_code": 1,
+  "elapsed_seconds": 2.7916007041931152,
+  "source_sha256": {
+    "backend/webgpu/device_adam_checked_test.go": "d05fafcc97c68f91d7fb6c7bf8924105d563661dc062d1fbac21ff2d9ca5fc4f",
+    "learning/gpu_device_trainer_test.go": "79e6ebeb3a2fad629f033ec248845d0a0852033de6845c357d1a39c1f6ee2e56",
+    "backend/webgpu/device_adam_checked.go": "1239c888904423d074c6d7af8d0428a9a7c82acdc68a2d2857a1c9c6f893253f",
+    "learning/gpu_device_trainer.go": "e6c19d9117879ef440a507bdd956f3fcd52b6b066496915eef313a3e1a38b1b8"
+  },
+  "log_sha256": "f6870a6c6e6ef44b656d07671662f7e906da761c4ba2593e7342194404711fbd",
+  "test_results": [
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedTransactions",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedRejectsInvalidInputsAtomically",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedCloseIsTerminalAndIdempotent",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedRestoreOwnsStateAndIgnoresFrozenHugeGradient",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestGPUDeviceTrainerMatchesCPUAndUsesUpdatedParameters",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestNewGPUDeviceTrainerQuantizesKernelOptionsAndRejectsFloat32Boundary",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestGPUDeviceTrainerAccumulatesMasksClipAndScheduleZero",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestGPUDeviceTrainerCandidateRollbackPreservesAccumulator",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestGPUDeviceTrainerCloseIsIdempotentAndSnapshotReadable",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestNewGPUDeviceTrainerRejectsUnsupportedBeforeDeviceOpen",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestRestoreGPUDeviceTrainerContinuesPartialAccumulationAcrossProcess",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestRestoreGPUDeviceTrainerRejectsUnrepresentableStateAndCounterOverflow",
+      "Action": "fail"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/learning",
+      "Test": "TestGPUDeviceTrainerChildProcess",
+      "Action": "skip"
+    }
+  ]
+}

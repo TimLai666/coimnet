@@ -1,0 +1,2252 @@
+=== RUN   TestDeviceAdamWMatchesFloat32ReferenceAcrossWorkgroups
+    device_adam_test.go:30: NewDeviceAdamW: webgpu sparse drive: shader compilation failed: create compute pipeline: wgpu: failed to create compute pipeline: metal: failed to compile MSL: program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+         | Error Domain=MTLLibraryErrorDomain Code=3 "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        " UserInfo={NSLocalizedDescription=program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        } | {
+            NSLocalizedDescription = "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')\n    uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);\n                                               ^~~~~~~~\n";
+        }
+        MSL:
+        // language: metal2.1
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using metal::uint;
+        struct DefaultConstructible {
+            template<typename T>
+            operator T() && {
+                return T {};
+            }
+        };
+        
+        struct _mslBufferSizes {
+            uint size0;
+            uint size1;
+            uint size2;
+            uint size3;
+        };
+        
+        struct Settings {
+            float beta1_;
+            float beta2_;
+            float epsilon;
+            float weight_decay;
+            float learning_rate;
+            uint value_count;
+            uint reserved0_;
+            uint reserved1_;
+        };
+        typedef metal::uint4 type_3[1];
+        typedef metal::uint2 type_5[1];
+        typedef metal::atomic_uint type_7[1];
+        constant uint STATUS_NON_FINITE = 1u;
+        constant uint STATUS_COUNTER_OVERFLOW = 2u;
+        constant uint STATUS_INVALID_STATE = 4u;
+        
+        bool finite(
+            float value
+        ) {
+            uint exponent = as_type<uint>(value) & 2139095040u;
+            return exponent != 2139095040u;
+        }
+        
+        void fail(
+            uint flag,
+            device type_7& status,
+            constant _mslBufferSizes& _buffer_sizes
+        ) {
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+            return;
+        }
+        
+        float beta_power(
+            float beta,
+            uint step
+        ) {
+            if (beta == 0.0) {
+                return 0.0;
+            }
+            return metal::pow(beta, static_cast<float>(step));
+        }
+        
+        struct main_Input {
+        };
+        kernel void main_(
+          metal::uint3 gid [[thread_position_in_grid]]
+        , device type_3 const& current_state [[buffer(0)]]
+        , device type_5 const& input [[buffer(1)]]
+        , device type_3& shadow_state [[buffer(2)]]
+        , device type_7& status [[buffer(3)]]
+        , constant Settings& settings [[buffer(4)]]
+        , constant _mslBufferSizes& _buffer_sizes [[buffer(5)]]
+        ) {
+            bool local = {};
+            bool local_1 = {};
+            bool local_2 = {};
+            bool local_3 = {};
+            bool local_4 = {};
+            bool local_5 = {};
+            bool local_6 = {};
+            bool local_7 = {};
+            bool local_8 = {};
+            bool local_9 = {};
+            bool local_10 = {};
+            bool local_11 = {};
+            bool local_12 = {};
+            bool local_13 = {};
+            bool local_14 = {};
+            bool local_15 = {};
+            bool local_16 = {};
+            bool local_17 = {};
+            bool local_18 = {};
+            uint index = gid.x;
+            uint _e4 = settings.value_count;
+            if (index >= _e4) {
+                return;
+            }
+            metal::uint4 previous = uint(index) < 1 + (_buffer_sizes.size0 - 0 - 16) / 16 ? current_state[index] : DefaultConstructible();
+            uint _e12 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].y : DefaultConstructible();
+            bool enabled = _e12 != 0u;
+            if (!(enabled)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                return;
+            }
+            float parameter = as_type<float>(previous.x);
+            float first_previous = as_type<float>(previous.y);
+            float second_previous = as_type<float>(previous.z);
+            bool _e24 = finite(parameter);
+            if (!(!(_e24))) {
+                bool _e29 = finite(first_previous);
+                local = !(_e29);
+            } else {
+                local = true;
+            }
+            bool _e32 = local;
+            if (!(_e32)) {
+                bool _e36 = finite(second_previous);
+                local_1 = !(_e36);
+            } else {
+                local_1 = true;
+            }
+            bool _e39 = local_1;
+            if (!(_e39)) {
+                local_2 = second_previous < 0.0;
+            } else {
+                local_2 = true;
+            }
+            bool _e46 = local_2;
+            if (_e46) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(5u, status, _buffer_sizes);
+                return;
+            }
+            uint _e53 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].x : DefaultConstructible();
+            float gradient = as_type<float>(_e53);
+            bool _e55 = finite(gradient);
+            if (!(_e55)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (previous.w == 4294967295u) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_COUNTER_OVERFLOW, status, _buffer_sizes);
+                return;
+            }
+            float beta1_ = settings.beta1_;
+            float beta2_ = settings.beta2_;
+            float epsilon = settings.epsilon;
+            float weight_decay = settings.weight_decay;
+            float learning_rate = settings.learning_rate;
+            bool _e81 = finite(beta1_);
+            if (!(!(_e81))) {
+                bool _e86 = finite(beta2_);
+                local_3 = !(_e86);
+            } else {
+                local_3 = true;
+            }
+            bool _e89 = local_3;
+            if (!(_e89)) {
+                bool _e93 = finite(epsilon);
+                local_4 = !(_e93);
+            } else {
+                local_4 = true;
+            }
+            bool _e96 = local_4;
+            if (!(_e96)) {
+                bool _e100 = finite(weight_decay);
+                local_5 = !(_e100);
+            } else {
+                local_5 = true;
+            }
+            bool _e103 = local_5;
+            if (!(_e103)) {
+                bool _e107 = finite(learning_rate);
+                local_6 = !(_e107);
+            } else {
+                local_6 = true;
+            }
+            bool _e110 = local_6;
+            if (_e110) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_ = 1.0 - beta1_;
+            float one_minus_beta2_ = 1.0 - beta2_;
+            bool _e117 = finite(one_minus_beta1_);
+            if (!(!(_e117))) {
+                bool _e122 = finite(one_minus_beta2_);
+                local_7 = !(_e122);
+            } else {
+                local_7 = true;
+            }
+            bool _e125 = local_7;
+            if (_e125) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float gradient_square = gradient * gradient;
+            bool _e130 = finite(gradient_square);
+            if (!(_e130)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_decay = beta1_ * first_previous;
+            float first_gradient = one_minus_beta1_ * gradient;
+            bool _e137 = finite(first_decay);
+            if (!(!(_e137))) {
+                bool _e142 = finite(first_gradient);
+                local_8 = !(_e142);
+            } else {
+                local_8 = true;
+            }
+            bool _e145 = local_8;
+            if (_e145) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first = first_decay + first_gradient;
+            bool _e150 = finite(first);
+            if (!(_e150)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second_decay = beta2_ * second_previous;
+            float second_gradient = one_minus_beta2_ * gradient_square;
+            bool _e157 = finite(second_decay);
+            if (!(!(_e157))) {
+                bool _e162 = finite(second_gradient);
+                local_9 = !(_e162);
+            } else {
+                local_9 = true;
+            }
+            bool _e165 = local_9;
+            if (_e165) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second = second_decay + second_gradient;
+            bool _e170 = finite(second);
+            if (!(!(_e170))) {
+                local_10 = second < 0.0;
+            } else {
+                local_10 = true;
+            }
+            bool _e178 = local_10;
+            if (_e178) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            uint next_step = previous.w + 1u;
+            float _e185 = beta_power(beta1_, next_step);
+            float _e186 = beta_power(beta2_, next_step);
+            bool _e187 = finite(_e185);
+            if (!(!(_e187))) {
+                bool _e192 = finite(_e186);
+                local_11 = !(_e192);
+            } else {
+                local_11 = true;
+            }
+            bool _e195 = local_11;
+            if (_e195) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_power = 1.0 - _e185;
+            float one_minus_beta2_power = 1.0 - _e186;
+            bool _e201 = finite(one_minus_beta1_power);
+            if (!(!(_e201))) {
+                bool _e206 = finite(one_minus_beta2_power);
+                local_12 = !(_e206);
+            } else {
+                local_12 = true;
+            }
+            bool _e209 = local_12;
+            if (!(_e209)) {
+                local_13 = one_minus_beta1_power <= 0.0;
+            } else {
+                local_13 = true;
+            }
+            bool _e216 = local_13;
+            if (!(_e216)) {
+                local_14 = one_minus_beta2_power <= 0.0;
+            } else {
+                local_14 = true;
+            }
+            bool _e223 = local_14;
+            if (_e223) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_hat = first / one_minus_beta1_power;
+            float second_hat = second / one_minus_beta2_power;
+            bool _e229 = finite(first_hat);
+            if (!(!(_e229))) {
+                bool _e234 = finite(second_hat);
+                local_15 = !(_e234);
+            } else {
+                local_15 = true;
+            }
+            bool _e237 = local_15;
+            if (!(_e237)) {
+                local_16 = second_hat < 0.0;
+            } else {
+                local_16 = true;
+            }
+            bool _e244 = local_16;
+            if (_e244) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float root_second = metal::sqrt(second_hat);
+            float denominator = root_second + epsilon;
+            bool _e250 = finite(root_second);
+            if (!(!(_e250))) {
+                bool _e255 = finite(denominator);
+                local_17 = !(_e255);
+            } else {
+                local_17 = true;
+            }
+            bool _e258 = local_17;
+            if (!(_e258)) {
+                local_18 = denominator <= 0.0;
+            } else {
+                local_18 = true;
+            }
+            bool _e265 = local_18;
+            if (_e265) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_ratio = first_hat / denominator;
+            bool _e270 = finite(first_ratio);
+            if (!(_e270)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float adam_update = learning_rate * first_ratio;
+            bool _e276 = finite(adam_update);
+            if (!(_e276)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_scale = learning_rate * weight_decay;
+            bool _e282 = finite(decay_scale);
+            if (!(_e282)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_update = decay_scale * parameter;
+            bool _e288 = finite(decay_update);
+            if (!(_e288)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float candidate = (parameter - adam_update) - decay_update;
+            bool _e295 = finite(candidate);
+            if (!(_e295)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                shadow_state[index] = metal::uint4(as_type<uint>(candidate), as_type<uint>(first), as_type<uint>(second), next_step);
+            }
+            return;
+        }
+--- FAIL: TestDeviceAdamWMatchesFloat32ReferenceAcrossWorkgroups (0.22s)
+=== RUN   TestDeviceAdamWSnapshotRestoreContinuesExactly
+    device_adam_test.go:110: NewDeviceAdamW: webgpu sparse drive: shader compilation failed: create compute pipeline: wgpu: failed to create compute pipeline: metal: failed to compile MSL: program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+         | Error Domain=MTLLibraryErrorDomain Code=3 "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        " UserInfo={NSLocalizedDescription=program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        } | {
+            NSLocalizedDescription = "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')\n    uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);\n                                               ^~~~~~~~\n";
+        }
+        MSL:
+        // language: metal2.1
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using metal::uint;
+        struct DefaultConstructible {
+            template<typename T>
+            operator T() && {
+                return T {};
+            }
+        };
+        
+        struct _mslBufferSizes {
+            uint size0;
+            uint size1;
+            uint size2;
+            uint size3;
+        };
+        
+        struct Settings {
+            float beta1_;
+            float beta2_;
+            float epsilon;
+            float weight_decay;
+            float learning_rate;
+            uint value_count;
+            uint reserved0_;
+            uint reserved1_;
+        };
+        typedef metal::uint4 type_3[1];
+        typedef metal::uint2 type_5[1];
+        typedef metal::atomic_uint type_7[1];
+        constant uint STATUS_NON_FINITE = 1u;
+        constant uint STATUS_COUNTER_OVERFLOW = 2u;
+        constant uint STATUS_INVALID_STATE = 4u;
+        
+        bool finite(
+            float value
+        ) {
+            uint exponent = as_type<uint>(value) & 2139095040u;
+            return exponent != 2139095040u;
+        }
+        
+        void fail(
+            uint flag,
+            device type_7& status,
+            constant _mslBufferSizes& _buffer_sizes
+        ) {
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+            return;
+        }
+        
+        float beta_power(
+            float beta,
+            uint step
+        ) {
+            if (beta == 0.0) {
+                return 0.0;
+            }
+            return metal::pow(beta, static_cast<float>(step));
+        }
+        
+        struct main_Input {
+        };
+        kernel void main_(
+          metal::uint3 gid [[thread_position_in_grid]]
+        , device type_3 const& current_state [[buffer(0)]]
+        , device type_5 const& input [[buffer(1)]]
+        , device type_3& shadow_state [[buffer(2)]]
+        , device type_7& status [[buffer(3)]]
+        , constant Settings& settings [[buffer(4)]]
+        , constant _mslBufferSizes& _buffer_sizes [[buffer(5)]]
+        ) {
+            bool local = {};
+            bool local_1 = {};
+            bool local_2 = {};
+            bool local_3 = {};
+            bool local_4 = {};
+            bool local_5 = {};
+            bool local_6 = {};
+            bool local_7 = {};
+            bool local_8 = {};
+            bool local_9 = {};
+            bool local_10 = {};
+            bool local_11 = {};
+            bool local_12 = {};
+            bool local_13 = {};
+            bool local_14 = {};
+            bool local_15 = {};
+            bool local_16 = {};
+            bool local_17 = {};
+            bool local_18 = {};
+            uint index = gid.x;
+            uint _e4 = settings.value_count;
+            if (index >= _e4) {
+                return;
+            }
+            metal::uint4 previous = uint(index) < 1 + (_buffer_sizes.size0 - 0 - 16) / 16 ? current_state[index] : DefaultConstructible();
+            uint _e12 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].y : DefaultConstructible();
+            bool enabled = _e12 != 0u;
+            if (!(enabled)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                return;
+            }
+            float parameter = as_type<float>(previous.x);
+            float first_previous = as_type<float>(previous.y);
+            float second_previous = as_type<float>(previous.z);
+            bool _e24 = finite(parameter);
+            if (!(!(_e24))) {
+                bool _e29 = finite(first_previous);
+                local = !(_e29);
+            } else {
+                local = true;
+            }
+            bool _e32 = local;
+            if (!(_e32)) {
+                bool _e36 = finite(second_previous);
+                local_1 = !(_e36);
+            } else {
+                local_1 = true;
+            }
+            bool _e39 = local_1;
+            if (!(_e39)) {
+                local_2 = second_previous < 0.0;
+            } else {
+                local_2 = true;
+            }
+            bool _e46 = local_2;
+            if (_e46) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(5u, status, _buffer_sizes);
+                return;
+            }
+            uint _e53 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].x : DefaultConstructible();
+            float gradient = as_type<float>(_e53);
+            bool _e55 = finite(gradient);
+            if (!(_e55)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (previous.w == 4294967295u) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_COUNTER_OVERFLOW, status, _buffer_sizes);
+                return;
+            }
+            float beta1_ = settings.beta1_;
+            float beta2_ = settings.beta2_;
+            float epsilon = settings.epsilon;
+            float weight_decay = settings.weight_decay;
+            float learning_rate = settings.learning_rate;
+            bool _e81 = finite(beta1_);
+            if (!(!(_e81))) {
+                bool _e86 = finite(beta2_);
+                local_3 = !(_e86);
+            } else {
+                local_3 = true;
+            }
+            bool _e89 = local_3;
+            if (!(_e89)) {
+                bool _e93 = finite(epsilon);
+                local_4 = !(_e93);
+            } else {
+                local_4 = true;
+            }
+            bool _e96 = local_4;
+            if (!(_e96)) {
+                bool _e100 = finite(weight_decay);
+                local_5 = !(_e100);
+            } else {
+                local_5 = true;
+            }
+            bool _e103 = local_5;
+            if (!(_e103)) {
+                bool _e107 = finite(learning_rate);
+                local_6 = !(_e107);
+            } else {
+                local_6 = true;
+            }
+            bool _e110 = local_6;
+            if (_e110) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_ = 1.0 - beta1_;
+            float one_minus_beta2_ = 1.0 - beta2_;
+            bool _e117 = finite(one_minus_beta1_);
+            if (!(!(_e117))) {
+                bool _e122 = finite(one_minus_beta2_);
+                local_7 = !(_e122);
+            } else {
+                local_7 = true;
+            }
+            bool _e125 = local_7;
+            if (_e125) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float gradient_square = gradient * gradient;
+            bool _e130 = finite(gradient_square);
+            if (!(_e130)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_decay = beta1_ * first_previous;
+            float first_gradient = one_minus_beta1_ * gradient;
+            bool _e137 = finite(first_decay);
+            if (!(!(_e137))) {
+                bool _e142 = finite(first_gradient);
+                local_8 = !(_e142);
+            } else {
+                local_8 = true;
+            }
+            bool _e145 = local_8;
+            if (_e145) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first = first_decay + first_gradient;
+            bool _e150 = finite(first);
+            if (!(_e150)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second_decay = beta2_ * second_previous;
+            float second_gradient = one_minus_beta2_ * gradient_square;
+            bool _e157 = finite(second_decay);
+            if (!(!(_e157))) {
+                bool _e162 = finite(second_gradient);
+                local_9 = !(_e162);
+            } else {
+                local_9 = true;
+            }
+            bool _e165 = local_9;
+            if (_e165) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second = second_decay + second_gradient;
+            bool _e170 = finite(second);
+            if (!(!(_e170))) {
+                local_10 = second < 0.0;
+            } else {
+                local_10 = true;
+            }
+            bool _e178 = local_10;
+            if (_e178) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            uint next_step = previous.w + 1u;
+            float _e185 = beta_power(beta1_, next_step);
+            float _e186 = beta_power(beta2_, next_step);
+            bool _e187 = finite(_e185);
+            if (!(!(_e187))) {
+                bool _e192 = finite(_e186);
+                local_11 = !(_e192);
+            } else {
+                local_11 = true;
+            }
+            bool _e195 = local_11;
+            if (_e195) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_power = 1.0 - _e185;
+            float one_minus_beta2_power = 1.0 - _e186;
+            bool _e201 = finite(one_minus_beta1_power);
+            if (!(!(_e201))) {
+                bool _e206 = finite(one_minus_beta2_power);
+                local_12 = !(_e206);
+            } else {
+                local_12 = true;
+            }
+            bool _e209 = local_12;
+            if (!(_e209)) {
+                local_13 = one_minus_beta1_power <= 0.0;
+            } else {
+                local_13 = true;
+            }
+            bool _e216 = local_13;
+            if (!(_e216)) {
+                local_14 = one_minus_beta2_power <= 0.0;
+            } else {
+                local_14 = true;
+            }
+            bool _e223 = local_14;
+            if (_e223) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_hat = first / one_minus_beta1_power;
+            float second_hat = second / one_minus_beta2_power;
+            bool _e229 = finite(first_hat);
+            if (!(!(_e229))) {
+                bool _e234 = finite(second_hat);
+                local_15 = !(_e234);
+            } else {
+                local_15 = true;
+            }
+            bool _e237 = local_15;
+            if (!(_e237)) {
+                local_16 = second_hat < 0.0;
+            } else {
+                local_16 = true;
+            }
+            bool _e244 = local_16;
+            if (_e244) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float root_second = metal::sqrt(second_hat);
+            float denominator = root_second + epsilon;
+            bool _e250 = finite(root_second);
+            if (!(!(_e250))) {
+                bool _e255 = finite(denominator);
+                local_17 = !(_e255);
+            } else {
+                local_17 = true;
+            }
+            bool _e258 = local_17;
+            if (!(_e258)) {
+                local_18 = denominator <= 0.0;
+            } else {
+                local_18 = true;
+            }
+            bool _e265 = local_18;
+            if (_e265) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_ratio = first_hat / denominator;
+            bool _e270 = finite(first_ratio);
+            if (!(_e270)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float adam_update = learning_rate * first_ratio;
+            bool _e276 = finite(adam_update);
+            if (!(_e276)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_scale = learning_rate * weight_decay;
+            bool _e282 = finite(decay_scale);
+            if (!(_e282)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_update = decay_scale * parameter;
+            bool _e288 = finite(decay_update);
+            if (!(_e288)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float candidate = (parameter - adam_update) - decay_update;
+            bool _e295 = finite(candidate);
+            if (!(_e295)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                shadow_state[index] = metal::uint4(as_type<uint>(candidate), as_type<uint>(first), as_type<uint>(second), next_step);
+            }
+            return;
+        }
+--- FAIL: TestDeviceAdamWSnapshotRestoreContinuesExactly (0.01s)
+=== RUN   TestDeviceAdamWRejectsInvalidStepInputsAtomically
+    device_adam_test.go:192: NewDeviceAdamW: webgpu sparse drive: shader compilation failed: create compute pipeline: wgpu: failed to create compute pipeline: metal: failed to compile MSL: program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+         | Error Domain=MTLLibraryErrorDomain Code=3 "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        " UserInfo={NSLocalizedDescription=program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        } | {
+            NSLocalizedDescription = "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')\n    uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);\n                                               ^~~~~~~~\n";
+        }
+        MSL:
+        // language: metal2.1
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using metal::uint;
+        struct DefaultConstructible {
+            template<typename T>
+            operator T() && {
+                return T {};
+            }
+        };
+        
+        struct _mslBufferSizes {
+            uint size0;
+            uint size1;
+            uint size2;
+            uint size3;
+        };
+        
+        struct Settings {
+            float beta1_;
+            float beta2_;
+            float epsilon;
+            float weight_decay;
+            float learning_rate;
+            uint value_count;
+            uint reserved0_;
+            uint reserved1_;
+        };
+        typedef metal::uint4 type_3[1];
+        typedef metal::uint2 type_5[1];
+        typedef metal::atomic_uint type_7[1];
+        constant uint STATUS_NON_FINITE = 1u;
+        constant uint STATUS_COUNTER_OVERFLOW = 2u;
+        constant uint STATUS_INVALID_STATE = 4u;
+        
+        bool finite(
+            float value
+        ) {
+            uint exponent = as_type<uint>(value) & 2139095040u;
+            return exponent != 2139095040u;
+        }
+        
+        void fail(
+            uint flag,
+            device type_7& status,
+            constant _mslBufferSizes& _buffer_sizes
+        ) {
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+            return;
+        }
+        
+        float beta_power(
+            float beta,
+            uint step
+        ) {
+            if (beta == 0.0) {
+                return 0.0;
+            }
+            return metal::pow(beta, static_cast<float>(step));
+        }
+        
+        struct main_Input {
+        };
+        kernel void main_(
+          metal::uint3 gid [[thread_position_in_grid]]
+        , device type_3 const& current_state [[buffer(0)]]
+        , device type_5 const& input [[buffer(1)]]
+        , device type_3& shadow_state [[buffer(2)]]
+        , device type_7& status [[buffer(3)]]
+        , constant Settings& settings [[buffer(4)]]
+        , constant _mslBufferSizes& _buffer_sizes [[buffer(5)]]
+        ) {
+            bool local = {};
+            bool local_1 = {};
+            bool local_2 = {};
+            bool local_3 = {};
+            bool local_4 = {};
+            bool local_5 = {};
+            bool local_6 = {};
+            bool local_7 = {};
+            bool local_8 = {};
+            bool local_9 = {};
+            bool local_10 = {};
+            bool local_11 = {};
+            bool local_12 = {};
+            bool local_13 = {};
+            bool local_14 = {};
+            bool local_15 = {};
+            bool local_16 = {};
+            bool local_17 = {};
+            bool local_18 = {};
+            uint index = gid.x;
+            uint _e4 = settings.value_count;
+            if (index >= _e4) {
+                return;
+            }
+            metal::uint4 previous = uint(index) < 1 + (_buffer_sizes.size0 - 0 - 16) / 16 ? current_state[index] : DefaultConstructible();
+            uint _e12 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].y : DefaultConstructible();
+            bool enabled = _e12 != 0u;
+            if (!(enabled)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                return;
+            }
+            float parameter = as_type<float>(previous.x);
+            float first_previous = as_type<float>(previous.y);
+            float second_previous = as_type<float>(previous.z);
+            bool _e24 = finite(parameter);
+            if (!(!(_e24))) {
+                bool _e29 = finite(first_previous);
+                local = !(_e29);
+            } else {
+                local = true;
+            }
+            bool _e32 = local;
+            if (!(_e32)) {
+                bool _e36 = finite(second_previous);
+                local_1 = !(_e36);
+            } else {
+                local_1 = true;
+            }
+            bool _e39 = local_1;
+            if (!(_e39)) {
+                local_2 = second_previous < 0.0;
+            } else {
+                local_2 = true;
+            }
+            bool _e46 = local_2;
+            if (_e46) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(5u, status, _buffer_sizes);
+                return;
+            }
+            uint _e53 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].x : DefaultConstructible();
+            float gradient = as_type<float>(_e53);
+            bool _e55 = finite(gradient);
+            if (!(_e55)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (previous.w == 4294967295u) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_COUNTER_OVERFLOW, status, _buffer_sizes);
+                return;
+            }
+            float beta1_ = settings.beta1_;
+            float beta2_ = settings.beta2_;
+            float epsilon = settings.epsilon;
+            float weight_decay = settings.weight_decay;
+            float learning_rate = settings.learning_rate;
+            bool _e81 = finite(beta1_);
+            if (!(!(_e81))) {
+                bool _e86 = finite(beta2_);
+                local_3 = !(_e86);
+            } else {
+                local_3 = true;
+            }
+            bool _e89 = local_3;
+            if (!(_e89)) {
+                bool _e93 = finite(epsilon);
+                local_4 = !(_e93);
+            } else {
+                local_4 = true;
+            }
+            bool _e96 = local_4;
+            if (!(_e96)) {
+                bool _e100 = finite(weight_decay);
+                local_5 = !(_e100);
+            } else {
+                local_5 = true;
+            }
+            bool _e103 = local_5;
+            if (!(_e103)) {
+                bool _e107 = finite(learning_rate);
+                local_6 = !(_e107);
+            } else {
+                local_6 = true;
+            }
+            bool _e110 = local_6;
+            if (_e110) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_ = 1.0 - beta1_;
+            float one_minus_beta2_ = 1.0 - beta2_;
+            bool _e117 = finite(one_minus_beta1_);
+            if (!(!(_e117))) {
+                bool _e122 = finite(one_minus_beta2_);
+                local_7 = !(_e122);
+            } else {
+                local_7 = true;
+            }
+            bool _e125 = local_7;
+            if (_e125) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float gradient_square = gradient * gradient;
+            bool _e130 = finite(gradient_square);
+            if (!(_e130)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_decay = beta1_ * first_previous;
+            float first_gradient = one_minus_beta1_ * gradient;
+            bool _e137 = finite(first_decay);
+            if (!(!(_e137))) {
+                bool _e142 = finite(first_gradient);
+                local_8 = !(_e142);
+            } else {
+                local_8 = true;
+            }
+            bool _e145 = local_8;
+            if (_e145) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first = first_decay + first_gradient;
+            bool _e150 = finite(first);
+            if (!(_e150)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second_decay = beta2_ * second_previous;
+            float second_gradient = one_minus_beta2_ * gradient_square;
+            bool _e157 = finite(second_decay);
+            if (!(!(_e157))) {
+                bool _e162 = finite(second_gradient);
+                local_9 = !(_e162);
+            } else {
+                local_9 = true;
+            }
+            bool _e165 = local_9;
+            if (_e165) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second = second_decay + second_gradient;
+            bool _e170 = finite(second);
+            if (!(!(_e170))) {
+                local_10 = second < 0.0;
+            } else {
+                local_10 = true;
+            }
+            bool _e178 = local_10;
+            if (_e178) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            uint next_step = previous.w + 1u;
+            float _e185 = beta_power(beta1_, next_step);
+            float _e186 = beta_power(beta2_, next_step);
+            bool _e187 = finite(_e185);
+            if (!(!(_e187))) {
+                bool _e192 = finite(_e186);
+                local_11 = !(_e192);
+            } else {
+                local_11 = true;
+            }
+            bool _e195 = local_11;
+            if (_e195) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_power = 1.0 - _e185;
+            float one_minus_beta2_power = 1.0 - _e186;
+            bool _e201 = finite(one_minus_beta1_power);
+            if (!(!(_e201))) {
+                bool _e206 = finite(one_minus_beta2_power);
+                local_12 = !(_e206);
+            } else {
+                local_12 = true;
+            }
+            bool _e209 = local_12;
+            if (!(_e209)) {
+                local_13 = one_minus_beta1_power <= 0.0;
+            } else {
+                local_13 = true;
+            }
+            bool _e216 = local_13;
+            if (!(_e216)) {
+                local_14 = one_minus_beta2_power <= 0.0;
+            } else {
+                local_14 = true;
+            }
+            bool _e223 = local_14;
+            if (_e223) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_hat = first / one_minus_beta1_power;
+            float second_hat = second / one_minus_beta2_power;
+            bool _e229 = finite(first_hat);
+            if (!(!(_e229))) {
+                bool _e234 = finite(second_hat);
+                local_15 = !(_e234);
+            } else {
+                local_15 = true;
+            }
+            bool _e237 = local_15;
+            if (!(_e237)) {
+                local_16 = second_hat < 0.0;
+            } else {
+                local_16 = true;
+            }
+            bool _e244 = local_16;
+            if (_e244) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float root_second = metal::sqrt(second_hat);
+            float denominator = root_second + epsilon;
+            bool _e250 = finite(root_second);
+            if (!(!(_e250))) {
+                bool _e255 = finite(denominator);
+                local_17 = !(_e255);
+            } else {
+                local_17 = true;
+            }
+            bool _e258 = local_17;
+            if (!(_e258)) {
+                local_18 = denominator <= 0.0;
+            } else {
+                local_18 = true;
+            }
+            bool _e265 = local_18;
+            if (_e265) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_ratio = first_hat / denominator;
+            bool _e270 = finite(first_ratio);
+            if (!(_e270)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float adam_update = learning_rate * first_ratio;
+            bool _e276 = finite(adam_update);
+            if (!(_e276)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_scale = learning_rate * weight_decay;
+            bool _e282 = finite(decay_scale);
+            if (!(_e282)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_update = decay_scale * parameter;
+            bool _e288 = finite(decay_update);
+            if (!(_e288)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float candidate = (parameter - adam_update) - decay_update;
+            bool _e295 = finite(candidate);
+            if (!(_e295)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                shadow_state[index] = metal::uint4(as_type<uint>(candidate), as_type<uint>(first), as_type<uint>(second), next_step);
+            }
+            return;
+        }
+--- FAIL: TestDeviceAdamWRejectsInvalidStepInputsAtomically (0.01s)
+=== RUN   TestDeviceAdamWRejectsNonFiniteCandidateAndCounterOverflowAtomically
+    device_adam_test.go:250: NewDeviceAdamW: webgpu sparse drive: shader compilation failed: create compute pipeline: wgpu: failed to create compute pipeline: metal: failed to compile MSL: program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+         | Error Domain=MTLLibraryErrorDomain Code=3 "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        " UserInfo={NSLocalizedDescription=program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        } | {
+            NSLocalizedDescription = "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')\n    uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);\n                                               ^~~~~~~~\n";
+        }
+        MSL:
+        // language: metal2.1
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using metal::uint;
+        struct DefaultConstructible {
+            template<typename T>
+            operator T() && {
+                return T {};
+            }
+        };
+        
+        struct _mslBufferSizes {
+            uint size0;
+            uint size1;
+            uint size2;
+            uint size3;
+        };
+        
+        struct Settings {
+            float beta1_;
+            float beta2_;
+            float epsilon;
+            float weight_decay;
+            float learning_rate;
+            uint value_count;
+            uint reserved0_;
+            uint reserved1_;
+        };
+        typedef metal::uint4 type_3[1];
+        typedef metal::uint2 type_5[1];
+        typedef metal::atomic_uint type_7[1];
+        constant uint STATUS_NON_FINITE = 1u;
+        constant uint STATUS_COUNTER_OVERFLOW = 2u;
+        constant uint STATUS_INVALID_STATE = 4u;
+        
+        bool finite(
+            float value
+        ) {
+            uint exponent = as_type<uint>(value) & 2139095040u;
+            return exponent != 2139095040u;
+        }
+        
+        void fail(
+            uint flag,
+            device type_7& status,
+            constant _mslBufferSizes& _buffer_sizes
+        ) {
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+            return;
+        }
+        
+        float beta_power(
+            float beta,
+            uint step
+        ) {
+            if (beta == 0.0) {
+                return 0.0;
+            }
+            return metal::pow(beta, static_cast<float>(step));
+        }
+        
+        struct main_Input {
+        };
+        kernel void main_(
+          metal::uint3 gid [[thread_position_in_grid]]
+        , device type_3 const& current_state [[buffer(0)]]
+        , device type_5 const& input [[buffer(1)]]
+        , device type_3& shadow_state [[buffer(2)]]
+        , device type_7& status [[buffer(3)]]
+        , constant Settings& settings [[buffer(4)]]
+        , constant _mslBufferSizes& _buffer_sizes [[buffer(5)]]
+        ) {
+            bool local = {};
+            bool local_1 = {};
+            bool local_2 = {};
+            bool local_3 = {};
+            bool local_4 = {};
+            bool local_5 = {};
+            bool local_6 = {};
+            bool local_7 = {};
+            bool local_8 = {};
+            bool local_9 = {};
+            bool local_10 = {};
+            bool local_11 = {};
+            bool local_12 = {};
+            bool local_13 = {};
+            bool local_14 = {};
+            bool local_15 = {};
+            bool local_16 = {};
+            bool local_17 = {};
+            bool local_18 = {};
+            uint index = gid.x;
+            uint _e4 = settings.value_count;
+            if (index >= _e4) {
+                return;
+            }
+            metal::uint4 previous = uint(index) < 1 + (_buffer_sizes.size0 - 0 - 16) / 16 ? current_state[index] : DefaultConstructible();
+            uint _e12 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].y : DefaultConstructible();
+            bool enabled = _e12 != 0u;
+            if (!(enabled)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                return;
+            }
+            float parameter = as_type<float>(previous.x);
+            float first_previous = as_type<float>(previous.y);
+            float second_previous = as_type<float>(previous.z);
+            bool _e24 = finite(parameter);
+            if (!(!(_e24))) {
+                bool _e29 = finite(first_previous);
+                local = !(_e29);
+            } else {
+                local = true;
+            }
+            bool _e32 = local;
+            if (!(_e32)) {
+                bool _e36 = finite(second_previous);
+                local_1 = !(_e36);
+            } else {
+                local_1 = true;
+            }
+            bool _e39 = local_1;
+            if (!(_e39)) {
+                local_2 = second_previous < 0.0;
+            } else {
+                local_2 = true;
+            }
+            bool _e46 = local_2;
+            if (_e46) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(5u, status, _buffer_sizes);
+                return;
+            }
+            uint _e53 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].x : DefaultConstructible();
+            float gradient = as_type<float>(_e53);
+            bool _e55 = finite(gradient);
+            if (!(_e55)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (previous.w == 4294967295u) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_COUNTER_OVERFLOW, status, _buffer_sizes);
+                return;
+            }
+            float beta1_ = settings.beta1_;
+            float beta2_ = settings.beta2_;
+            float epsilon = settings.epsilon;
+            float weight_decay = settings.weight_decay;
+            float learning_rate = settings.learning_rate;
+            bool _e81 = finite(beta1_);
+            if (!(!(_e81))) {
+                bool _e86 = finite(beta2_);
+                local_3 = !(_e86);
+            } else {
+                local_3 = true;
+            }
+            bool _e89 = local_3;
+            if (!(_e89)) {
+                bool _e93 = finite(epsilon);
+                local_4 = !(_e93);
+            } else {
+                local_4 = true;
+            }
+            bool _e96 = local_4;
+            if (!(_e96)) {
+                bool _e100 = finite(weight_decay);
+                local_5 = !(_e100);
+            } else {
+                local_5 = true;
+            }
+            bool _e103 = local_5;
+            if (!(_e103)) {
+                bool _e107 = finite(learning_rate);
+                local_6 = !(_e107);
+            } else {
+                local_6 = true;
+            }
+            bool _e110 = local_6;
+            if (_e110) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_ = 1.0 - beta1_;
+            float one_minus_beta2_ = 1.0 - beta2_;
+            bool _e117 = finite(one_minus_beta1_);
+            if (!(!(_e117))) {
+                bool _e122 = finite(one_minus_beta2_);
+                local_7 = !(_e122);
+            } else {
+                local_7 = true;
+            }
+            bool _e125 = local_7;
+            if (_e125) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float gradient_square = gradient * gradient;
+            bool _e130 = finite(gradient_square);
+            if (!(_e130)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_decay = beta1_ * first_previous;
+            float first_gradient = one_minus_beta1_ * gradient;
+            bool _e137 = finite(first_decay);
+            if (!(!(_e137))) {
+                bool _e142 = finite(first_gradient);
+                local_8 = !(_e142);
+            } else {
+                local_8 = true;
+            }
+            bool _e145 = local_8;
+            if (_e145) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first = first_decay + first_gradient;
+            bool _e150 = finite(first);
+            if (!(_e150)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second_decay = beta2_ * second_previous;
+            float second_gradient = one_minus_beta2_ * gradient_square;
+            bool _e157 = finite(second_decay);
+            if (!(!(_e157))) {
+                bool _e162 = finite(second_gradient);
+                local_9 = !(_e162);
+            } else {
+                local_9 = true;
+            }
+            bool _e165 = local_9;
+            if (_e165) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second = second_decay + second_gradient;
+            bool _e170 = finite(second);
+            if (!(!(_e170))) {
+                local_10 = second < 0.0;
+            } else {
+                local_10 = true;
+            }
+            bool _e178 = local_10;
+            if (_e178) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            uint next_step = previous.w + 1u;
+            float _e185 = beta_power(beta1_, next_step);
+            float _e186 = beta_power(beta2_, next_step);
+            bool _e187 = finite(_e185);
+            if (!(!(_e187))) {
+                bool _e192 = finite(_e186);
+                local_11 = !(_e192);
+            } else {
+                local_11 = true;
+            }
+            bool _e195 = local_11;
+            if (_e195) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_power = 1.0 - _e185;
+            float one_minus_beta2_power = 1.0 - _e186;
+            bool _e201 = finite(one_minus_beta1_power);
+            if (!(!(_e201))) {
+                bool _e206 = finite(one_minus_beta2_power);
+                local_12 = !(_e206);
+            } else {
+                local_12 = true;
+            }
+            bool _e209 = local_12;
+            if (!(_e209)) {
+                local_13 = one_minus_beta1_power <= 0.0;
+            } else {
+                local_13 = true;
+            }
+            bool _e216 = local_13;
+            if (!(_e216)) {
+                local_14 = one_minus_beta2_power <= 0.0;
+            } else {
+                local_14 = true;
+            }
+            bool _e223 = local_14;
+            if (_e223) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_hat = first / one_minus_beta1_power;
+            float second_hat = second / one_minus_beta2_power;
+            bool _e229 = finite(first_hat);
+            if (!(!(_e229))) {
+                bool _e234 = finite(second_hat);
+                local_15 = !(_e234);
+            } else {
+                local_15 = true;
+            }
+            bool _e237 = local_15;
+            if (!(_e237)) {
+                local_16 = second_hat < 0.0;
+            } else {
+                local_16 = true;
+            }
+            bool _e244 = local_16;
+            if (_e244) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float root_second = metal::sqrt(second_hat);
+            float denominator = root_second + epsilon;
+            bool _e250 = finite(root_second);
+            if (!(!(_e250))) {
+                bool _e255 = finite(denominator);
+                local_17 = !(_e255);
+            } else {
+                local_17 = true;
+            }
+            bool _e258 = local_17;
+            if (!(_e258)) {
+                local_18 = denominator <= 0.0;
+            } else {
+                local_18 = true;
+            }
+            bool _e265 = local_18;
+            if (_e265) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_ratio = first_hat / denominator;
+            bool _e270 = finite(first_ratio);
+            if (!(_e270)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float adam_update = learning_rate * first_ratio;
+            bool _e276 = finite(adam_update);
+            if (!(_e276)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_scale = learning_rate * weight_decay;
+            bool _e282 = finite(decay_scale);
+            if (!(_e282)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_update = decay_scale * parameter;
+            bool _e288 = finite(decay_update);
+            if (!(_e288)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float candidate = (parameter - adam_update) - decay_update;
+            bool _e295 = finite(candidate);
+            if (!(_e295)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                shadow_state[index] = metal::uint4(as_type<uint>(candidate), as_type<uint>(first), as_type<uint>(second), next_step);
+            }
+            return;
+        }
+--- FAIL: TestDeviceAdamWRejectsNonFiniteCandidateAndCounterOverflowAtomically (0.01s)
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/empty_schema
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/unknown_schema
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/empty_parameters
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/first_shape
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/second_shape
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/steps_shape
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/parameter_NaN
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/first_Inf
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/second_negative
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/nonzero_moments_at_step_zero
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/beta1_NaN
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/beta2_one
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/epsilon_zero
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/weight_decay_negative
+=== RUN   TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/zero_budget
+--- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/empty_schema (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/unknown_schema (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/empty_parameters (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/first_shape (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/second_shape (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/steps_shape (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/parameter_NaN (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/first_Inf (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/second_negative (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/nonzero_moments_at_step_zero (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/beta1_NaN (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/beta2_one (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/epsilon_zero (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/weight_decay_negative (0.00s)
+    --- PASS: TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen/zero_budget (0.00s)
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/nil_context
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/canceled_context
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/empty_parameters
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/parameter_NaN
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/parameter_Inf
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta1_NaN
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta1_one
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta2_NaN
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta2_negative
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/epsilon_zero
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/epsilon_Inf
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/weight_decay_negative
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/weight_decay_Inf
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/max_bytes_zero
+=== RUN   TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/max_bytes_too_small
+--- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/nil_context (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/canceled_context (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/empty_parameters (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/parameter_NaN (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/parameter_Inf (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta1_NaN (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta1_one (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta2_NaN (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/beta2_negative (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/epsilon_zero (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/epsilon_Inf (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/weight_decay_negative (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/weight_decay_Inf (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/max_bytes_zero (0.00s)
+    --- PASS: TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen/max_bytes_too_small (0.00s)
+=== RUN   TestDeviceAdamWNilReceiverAndCloseIdempotent
+    device_adam_test.go:388: NewDeviceAdamW: webgpu sparse drive: shader compilation failed: create compute pipeline: wgpu: failed to create compute pipeline: metal: failed to compile MSL: program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+         | Error Domain=MTLLibraryErrorDomain Code=3 "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        " UserInfo={NSLocalizedDescription=program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+                                                       ^~~~~~~~
+        } | {
+            NSLocalizedDescription = "program_source:49:48: error: cannot take the address of an rvalue of type 'metal::uint' (aka 'unsigned int')\n    uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);\n                                               ^~~~~~~~\n";
+        }
+        MSL:
+        // language: metal2.1
+        #include <metal_stdlib>
+        #include <simd/simd.h>
+        
+        using metal::uint;
+        struct DefaultConstructible {
+            template<typename T>
+            operator T() && {
+                return T {};
+            }
+        };
+        
+        struct _mslBufferSizes {
+            uint size0;
+            uint size1;
+            uint size2;
+            uint size3;
+        };
+        
+        struct Settings {
+            float beta1_;
+            float beta2_;
+            float epsilon;
+            float weight_decay;
+            float learning_rate;
+            uint value_count;
+            uint reserved0_;
+            uint reserved1_;
+        };
+        typedef metal::uint4 type_3[1];
+        typedef metal::uint2 type_5[1];
+        typedef metal::atomic_uint type_7[1];
+        constant uint STATUS_NON_FINITE = 1u;
+        constant uint STATUS_COUNTER_OVERFLOW = 2u;
+        constant uint STATUS_INVALID_STATE = 4u;
+        
+        bool finite(
+            float value
+        ) {
+            uint exponent = as_type<uint>(value) & 2139095040u;
+            return exponent != 2139095040u;
+        }
+        
+        void fail(
+            uint flag,
+            device type_7& status,
+            constant _mslBufferSizes& _buffer_sizes
+        ) {
+            uint _e3 = metal::atomic_fetch_or_explicit(&uint(0) < 1 + (_buffer_sizes.size3 - 0 - 4) / 4 ? status[0] : DefaultConstructible(), flag, metal::memory_order_relaxed);
+            return;
+        }
+        
+        float beta_power(
+            float beta,
+            uint step
+        ) {
+            if (beta == 0.0) {
+                return 0.0;
+            }
+            return metal::pow(beta, static_cast<float>(step));
+        }
+        
+        struct main_Input {
+        };
+        kernel void main_(
+          metal::uint3 gid [[thread_position_in_grid]]
+        , device type_3 const& current_state [[buffer(0)]]
+        , device type_5 const& input [[buffer(1)]]
+        , device type_3& shadow_state [[buffer(2)]]
+        , device type_7& status [[buffer(3)]]
+        , constant Settings& settings [[buffer(4)]]
+        , constant _mslBufferSizes& _buffer_sizes [[buffer(5)]]
+        ) {
+            bool local = {};
+            bool local_1 = {};
+            bool local_2 = {};
+            bool local_3 = {};
+            bool local_4 = {};
+            bool local_5 = {};
+            bool local_6 = {};
+            bool local_7 = {};
+            bool local_8 = {};
+            bool local_9 = {};
+            bool local_10 = {};
+            bool local_11 = {};
+            bool local_12 = {};
+            bool local_13 = {};
+            bool local_14 = {};
+            bool local_15 = {};
+            bool local_16 = {};
+            bool local_17 = {};
+            bool local_18 = {};
+            uint index = gid.x;
+            uint _e4 = settings.value_count;
+            if (index >= _e4) {
+                return;
+            }
+            metal::uint4 previous = uint(index) < 1 + (_buffer_sizes.size0 - 0 - 16) / 16 ? current_state[index] : DefaultConstructible();
+            uint _e12 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].y : DefaultConstructible();
+            bool enabled = _e12 != 0u;
+            if (!(enabled)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                return;
+            }
+            float parameter = as_type<float>(previous.x);
+            float first_previous = as_type<float>(previous.y);
+            float second_previous = as_type<float>(previous.z);
+            bool _e24 = finite(parameter);
+            if (!(!(_e24))) {
+                bool _e29 = finite(first_previous);
+                local = !(_e29);
+            } else {
+                local = true;
+            }
+            bool _e32 = local;
+            if (!(_e32)) {
+                bool _e36 = finite(second_previous);
+                local_1 = !(_e36);
+            } else {
+                local_1 = true;
+            }
+            bool _e39 = local_1;
+            if (!(_e39)) {
+                local_2 = second_previous < 0.0;
+            } else {
+                local_2 = true;
+            }
+            bool _e46 = local_2;
+            if (_e46) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(5u, status, _buffer_sizes);
+                return;
+            }
+            uint _e53 = uint(index) < 1 + (_buffer_sizes.size1 - 0 - 8) / 8 ? input[index].x : DefaultConstructible();
+            float gradient = as_type<float>(_e53);
+            bool _e55 = finite(gradient);
+            if (!(_e55)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (previous.w == 4294967295u) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_COUNTER_OVERFLOW, status, _buffer_sizes);
+                return;
+            }
+            float beta1_ = settings.beta1_;
+            float beta2_ = settings.beta2_;
+            float epsilon = settings.epsilon;
+            float weight_decay = settings.weight_decay;
+            float learning_rate = settings.learning_rate;
+            bool _e81 = finite(beta1_);
+            if (!(!(_e81))) {
+                bool _e86 = finite(beta2_);
+                local_3 = !(_e86);
+            } else {
+                local_3 = true;
+            }
+            bool _e89 = local_3;
+            if (!(_e89)) {
+                bool _e93 = finite(epsilon);
+                local_4 = !(_e93);
+            } else {
+                local_4 = true;
+            }
+            bool _e96 = local_4;
+            if (!(_e96)) {
+                bool _e100 = finite(weight_decay);
+                local_5 = !(_e100);
+            } else {
+                local_5 = true;
+            }
+            bool _e103 = local_5;
+            if (!(_e103)) {
+                bool _e107 = finite(learning_rate);
+                local_6 = !(_e107);
+            } else {
+                local_6 = true;
+            }
+            bool _e110 = local_6;
+            if (_e110) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_ = 1.0 - beta1_;
+            float one_minus_beta2_ = 1.0 - beta2_;
+            bool _e117 = finite(one_minus_beta1_);
+            if (!(!(_e117))) {
+                bool _e122 = finite(one_minus_beta2_);
+                local_7 = !(_e122);
+            } else {
+                local_7 = true;
+            }
+            bool _e125 = local_7;
+            if (_e125) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float gradient_square = gradient * gradient;
+            bool _e130 = finite(gradient_square);
+            if (!(_e130)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_decay = beta1_ * first_previous;
+            float first_gradient = one_minus_beta1_ * gradient;
+            bool _e137 = finite(first_decay);
+            if (!(!(_e137))) {
+                bool _e142 = finite(first_gradient);
+                local_8 = !(_e142);
+            } else {
+                local_8 = true;
+            }
+            bool _e145 = local_8;
+            if (_e145) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first = first_decay + first_gradient;
+            bool _e150 = finite(first);
+            if (!(_e150)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second_decay = beta2_ * second_previous;
+            float second_gradient = one_minus_beta2_ * gradient_square;
+            bool _e157 = finite(second_decay);
+            if (!(!(_e157))) {
+                bool _e162 = finite(second_gradient);
+                local_9 = !(_e162);
+            } else {
+                local_9 = true;
+            }
+            bool _e165 = local_9;
+            if (_e165) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float second = second_decay + second_gradient;
+            bool _e170 = finite(second);
+            if (!(!(_e170))) {
+                local_10 = second < 0.0;
+            } else {
+                local_10 = true;
+            }
+            bool _e178 = local_10;
+            if (_e178) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            uint next_step = previous.w + 1u;
+            float _e185 = beta_power(beta1_, next_step);
+            float _e186 = beta_power(beta2_, next_step);
+            bool _e187 = finite(_e185);
+            if (!(!(_e187))) {
+                bool _e192 = finite(_e186);
+                local_11 = !(_e192);
+            } else {
+                local_11 = true;
+            }
+            bool _e195 = local_11;
+            if (_e195) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float one_minus_beta1_power = 1.0 - _e185;
+            float one_minus_beta2_power = 1.0 - _e186;
+            bool _e201 = finite(one_minus_beta1_power);
+            if (!(!(_e201))) {
+                bool _e206 = finite(one_minus_beta2_power);
+                local_12 = !(_e206);
+            } else {
+                local_12 = true;
+            }
+            bool _e209 = local_12;
+            if (!(_e209)) {
+                local_13 = one_minus_beta1_power <= 0.0;
+            } else {
+                local_13 = true;
+            }
+            bool _e216 = local_13;
+            if (!(_e216)) {
+                local_14 = one_minus_beta2_power <= 0.0;
+            } else {
+                local_14 = true;
+            }
+            bool _e223 = local_14;
+            if (_e223) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_hat = first / one_minus_beta1_power;
+            float second_hat = second / one_minus_beta2_power;
+            bool _e229 = finite(first_hat);
+            if (!(!(_e229))) {
+                bool _e234 = finite(second_hat);
+                local_15 = !(_e234);
+            } else {
+                local_15 = true;
+            }
+            bool _e237 = local_15;
+            if (!(_e237)) {
+                local_16 = second_hat < 0.0;
+            } else {
+                local_16 = true;
+            }
+            bool _e244 = local_16;
+            if (_e244) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float root_second = metal::sqrt(second_hat);
+            float denominator = root_second + epsilon;
+            bool _e250 = finite(root_second);
+            if (!(!(_e250))) {
+                bool _e255 = finite(denominator);
+                local_17 = !(_e255);
+            } else {
+                local_17 = true;
+            }
+            bool _e258 = local_17;
+            if (!(_e258)) {
+                local_18 = denominator <= 0.0;
+            } else {
+                local_18 = true;
+            }
+            bool _e265 = local_18;
+            if (_e265) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float first_ratio = first_hat / denominator;
+            bool _e270 = finite(first_ratio);
+            if (!(_e270)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float adam_update = learning_rate * first_ratio;
+            bool _e276 = finite(adam_update);
+            if (!(_e276)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_scale = learning_rate * weight_decay;
+            bool _e282 = finite(decay_scale);
+            if (!(_e282)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float decay_update = decay_scale * parameter;
+            bool _e288 = finite(decay_update);
+            if (!(_e288)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            float candidate = (parameter - adam_update) - decay_update;
+            bool _e295 = finite(candidate);
+            if (!(_e295)) {
+                if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                    shadow_state[index] = previous;
+                }
+                fail(STATUS_NON_FINITE, status, _buffer_sizes);
+                return;
+            }
+            if (uint(index) < 1 + (_buffer_sizes.size2 - 0 - 16) / 16) {
+                shadow_state[index] = metal::uint4(as_type<uint>(candidate), as_type<uint>(first), as_type<uint>(second), next_step);
+            }
+            return;
+        }
+--- FAIL: TestDeviceAdamWNilReceiverAndCloseIdempotent (0.01s)
+FAIL
+FAIL	github.com/TimLai666/coimnet/backend/webgpu	0.539s
+FAIL

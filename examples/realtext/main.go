@@ -1,6 +1,6 @@
 // Command realtext imports one user-provided real textgen manifest, performs a
 // bounded source-held-out training run, and prints one auditable JSON report.
-// It does not download data or persist model parameters.
+// Optional model bundles support saving and independent evaluation without training.
 package main
 
 import (
@@ -14,6 +14,7 @@ import (
 	"io"
 	"os"
 	osSignal "os/signal"
+	"reflect"
 	"runtime"
 	"sort"
 	"strings"
@@ -37,16 +38,25 @@ const (
 )
 
 type realTextReport struct {
-	SchemaVersion        string                `json:"schema_version"`
-	Input                realTextInput         `json:"input"`
-	Runtime              realTextRuntime       `json:"runtime"`
-	Scope                textgen.DataScope     `json:"scope"`
-	Documents            []realTextDocument    `json:"documents"`
-	Split                realTextSplit         `json:"split"`
-	Training             realTextTraining      `json:"training"`
-	Metrics              realTextMetricSummary `json:"metrics"`
-	IndependentInference realTextInference     `json:"independent_inference"`
-	ScopeLimitations     []string              `json:"scope_limitations"`
+	SchemaVersion        string                 `json:"schema_version"`
+	Model                *realTextModelArtifact `json:"model,omitempty"`
+	Input                realTextInput          `json:"input"`
+	Runtime              realTextRuntime        `json:"runtime"`
+	Scope                textgen.DataScope      `json:"scope"`
+	Documents            []realTextDocument     `json:"documents"`
+	Split                realTextSplit          `json:"split"`
+	Training             realTextTraining       `json:"training"`
+	Metrics              realTextMetricSummary  `json:"metrics"`
+	IndependentInference realTextInference      `json:"independent_inference"`
+	ScopeLimitations     []string               `json:"scope_limitations"`
+}
+
+// SHA256 identifies the canonical manifest, which binds the document and arrays.
+type realTextModelArtifact struct {
+	Path    string `json:"path"`
+	Mode    string `json:"mode"`
+	SHA256  string `json:"sha256"`
+	Updates uint64 `json:"updates"`
 }
 
 type realTextInput struct {
@@ -148,15 +158,17 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	diagnosticOutput := &errorTrackingWriter{Writer: stderr}
 	usageOutput := &errorTrackingWriter{Writer: stdout}
 	fs.SetOutput(diagnosticOutput)
-	var manifestPath string
+	var manifestPath, modelInput, modelOutput string
 	fs.StringVar(&manifestPath, "manifest", "", "strict coimnet-textgen-corpus/v1 manifest to import")
+	fs.StringVar(&modelInput, "model-input", "", "existing task-model bundle to evaluate without training; excludes --model-output")
+	fs.StringVar(&modelOutput, "model-output", "", "new task-model bundle directory to save after training; excludes --model-input")
 	fs.Usage = func() {
-		fmt.Fprintln(usageOutput, "Usage: go run ./examples/realtext --manifest PATH")
-		fmt.Fprintln(usageOutput, "Imports the supplied real English text manifest, performs a source split, runs one bounded training pass, and prints before/after holdout metrics plus independent inference. No data is downloaded and no model is saved.")
+		fmt.Fprintln(usageOutput, "Usage: go run ./examples/realtext --manifest PATH [--model-output NEW_DIR | --model-input DIR]")
+		fmt.Fprintln(usageOutput, "Imports the supplied real English text manifest, performs a source split, runs one bounded training pass, and prints before/after holdout metrics plus independent inference. No data is downloaded. --model-output saves task configuration, vocabulary and optimizer state; --model-input evaluates a saved model without updates.")
 		fmt.Fprintln(usageOutput, "Fixed settings: source split fraction 0.34 with seed 7; 8 KiB selected window per document; byte vocabulary; model embed/hidden/settle 16/32/3; learning rate 0.01; model seed 7; 3 epochs; max tokens 128; inference max tokens 96 with seed 19.")
-		fmt.Fprintln(usageOutput, "Report: ReadCorpus manifest SHA-256, parsed document SHA-256 values, source split, holdout NLL/perplexity, next-token accuracy, vocabulary hash, and an independent generation result.")
+		fmt.Fprintln(usageOutput, "Report: ReadCorpus manifest SHA-256, parsed document SHA-256 values, source split, holdout NLL/perplexity, next-token accuracy, vocabulary hash, and an independent generation result. model.sha256 hashes the canonical bundle manifest when model flags are used.")
 		fmt.Fprintln(usageOutput, "Limitations: this is a bounded acceptance run, not full-corpus training or a language-quality evaluation. No GPU or accelerator claim is made from backend logs.")
-		fmt.Fprintln(usageOutput, "Errors: missing or malformed manifest, non-real scope, invalid source split, cancellation, numerical failure, or output failure.")
+		fmt.Fprintln(usageOutput, "Errors: missing or malformed manifest, non-real scope, invalid source split, cancellation, numerical failure, invalid/incompatible model bundle, conflicting model flags, existing output directory or output failure.")
 		fmt.Fprintln(usageOutput, "Options:")
 		fs.SetOutput(usageOutput)
 		fs.PrintDefaults()
@@ -184,10 +196,17 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	return execute(ctx, manifestPath, stdout)
+	if modelInput != "" && modelOutput != "" {
+		return errors.New("--model-input and --model-output are mutually exclusive")
+	}
+	return executeWithModel(ctx, manifestPath, stdout, modelInput, modelOutput)
 }
 
 func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
+	return executeWithModel(ctx, manifestPath, stdout, "", "")
+}
+
+func executeWithModel(ctx context.Context, manifestPath string, stdout io.Writer, modelInput, modelOutput string) error {
 	corpus, err := textgen.ReadCorpus(ctx, manifestPath)
 	if err != nil {
 		return fmt.Errorf("import corpus: %w", err)
@@ -229,7 +248,15 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 
 	modelConfig := textgen.DefaultModelConfig()
 	modelConfig.Seed = realTextModelSeed
-	model, err := textgen.NewModel(vocab, modelConfig)
+	var model *textgen.Model
+	if modelInput == "" {
+		model, err = textgen.NewModel(vocab, modelConfig)
+	} else {
+		model, err = textgen.LoadModel(ctx, modelInput)
+		if err == nil && (model.Config() != modelConfig || model.Vocabulary().Hash() != vocab.Hash()) {
+			return errors.New("saved model configuration or vocabulary differs from the fixed example profile")
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("create model: %w", err)
 	}
@@ -256,7 +283,11 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 		}
 		exampleCounts[i] = len(examples[i])
 	}
-	for epoch := 0; epoch < realTextEpochs; epoch++ {
+	epochs := realTextEpochs
+	if modelInput != "" {
+		epochs = 0
+	}
+	for epoch := 0; epoch < epochs; epoch++ {
 		for documentIndex, documentExamples := range examples {
 			for exampleIndex, example := range documentExamples {
 				if err := ctx.Err(); err != nil {
@@ -297,7 +328,7 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 		Training: realTextTraining{
 			ModelConfig:                   modelConfig,
 			ModelSeed:                     realTextModelSeed,
-			Epochs:                        realTextEpochs,
+			Epochs:                        epochs,
 			MaxTokens:                     realTextMaxTokens,
 			SelectedBytesPerTrainDocument: realTextWindowBytes,
 			TrainingDocuments:             len(preparedTrain),
@@ -323,6 +354,29 @@ func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
 			"The generated continuation is an observable sample, not a human or task-quality judgment.",
 			"The report does not infer GPU or accelerator training from any backend log; no accelerator claim is made.",
 		},
+	}
+
+	modelPath, mode := modelInput, "restored"
+	if modelOutput != "" {
+		if err := model.Save(ctx, modelOutput); err != nil {
+			return fmt.Errorf("save model: %w", err)
+		}
+		modelPath, mode = modelOutput, "saved"
+		verified, err := textgen.LoadModel(ctx, modelOutput)
+		if err != nil {
+			return fmt.Errorf("verify saved model: %w", err)
+		}
+		if verified.Config() != model.Config() || verified.Vocabulary().Hash() != model.Vocabulary().Hash() ||
+			!reflect.DeepEqual(verified.Snapshot(), model.Snapshot()) {
+			return errors.New("saved model differs from the model evaluated in this invocation")
+		}
+		model = verified
+	}
+	if modelPath != "" {
+		report.Model = &realTextModelArtifact{Path: modelPath, Mode: mode, SHA256: model.LoadedCheckpointSHA256(), Updates: model.Snapshot().Updates}
+	}
+	if modelInput != "" {
+		report.ScopeLimitations[0] = "This invocation evaluates a restored model without training; model.updates records historical updates, and training.updates is zero."
 	}
 
 	encoder := json.NewEncoder(stdout)

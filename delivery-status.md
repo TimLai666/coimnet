@@ -2,6 +2,12 @@
 
 ## 目前階段
 
+原始 85 項與 NAT 六項工程需求已完成 91／91 驗收，最終一般、race、格式、build、vet、相依性與治理檢查通過，708 份程式／模組指紋與主專案相同。tickets 59–63 的本機與 SMB 任務保存、實際 Metal 更新／新程序接續、OCR 圖片／頁面／編碼器對照、真實影音模型還原都有[最終證據](evidence/goal-91-20261012/verification.json)。模型品質負面結果與 GPU 全圖／其他平台未測範圍保留。本輪 26,282 份暫存／副本共 3.45 GB 及 913 個快取連結已清除，25 份 SMB 資料原件保持，見[清理回條](evidence/goal-91-20261012/cleanup.json)。提交交付待完成。
+
+### 較早階段交付紀錄
+
+以下狀態與數字保留各階段交付當時的範圍，最新累計以本頁首段及需求追蹤檔為準。
+
 [ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md) 已完成 4／4 驗收與主要證據交付。真實全圖八組交錯配對已量測，正式七組的完整更新耗時由中位數 18.30 降到 8.46 秒，配對減少 52.56%；十六次全部輸出、梯度、更新參數與 Adam 狀態相同。一般與 race 各 57 套件、11 個治理專項及全部原生檢查已通過。主要證據已推送並核對遠端 `20a0896`，本輪 14,742 份副本與暫存共 2.62 GB 已清除，原始全圖與參數指紋保持。[量測報告](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)、[交付回條](evidence/LRN-02/fullgraph-activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/fullgraph-activation-reuse-20261011/cleanup.json)。
 
 [ticket 57](docs/tickets/57-recompute-activation-reuse.md) 已完成 5／5 驗收與交付。34 個重算專項、八組效能門檻、完整一般與 race 各 57 套件、格式、build、vet、相依性、11 個治理專項及 CLI 新程序恢復比對通過。固定人工密集圖耗時降低 58.88–91.41%，記憶體成本與限制見[資源說明](docs/resources.md#分段活化共用量測2026-10-11)。來源與證據已推送並核對遠端 `9414b9d`，669 份來源／模組的提交內容與驗收指紋相同。本輪驗收副本及 2.07 GB 暫存已清除，見[驗收證據](evidence/LRN-02/activation-reuse-20261011/verification.json)、[交付回條](evidence/LRN-02/activation-reuse-20261011/delivery.json)與[清理回條](evidence/LRN-02/activation-reuse-20261011/cleanup.json)。
@@ -138,7 +144,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本階段處理 ticket 58 的真實全腦分段訓練效能量測。核對 ticket 57 的改善在原始完整接線順序下是否仍有效，分開報告耗時、記憶體、框架完成度與模型能力，保存證據後清除本輪本機副本與暫存。
+本階段目標是完成原始 91／91 工程驗收。TSK-11 依 §13.1–13.6 完成五類有授權真實任務流程與保存恢復，OPS-05 完成裝置稀疏前向／反向、更新／恢復、CPU 對照與實測。§20.2 允許負面研究結果，§17.4 完整常駐是可行時的方向。模型實用性、GPU 全圖加速與生物機制成果分開判斷。
 
 2026-09-15 使用者決定：把整個規格做完。原始 85 項到 2026-09-15 ticket 16 為止通過 26 項、NAT 六項通過五項，其餘依相依順序開票，先做能在 fixture 上驗證的，真實任務資料（TSK-11）與 GPU 後端（OPS-05）需要使用者提供資料或決定時明確標為受阻。路線：
 15 強化（已驗證）→ 16 LIF 個體、慢速穩定、模型包（COR-04、STA-01、STA-03 部分）→ 17 遮罩、固定符號、完整最佳化器（COR-10、LRN-03、COR-07 證據）→ 18 局部可塑性（LRN-04、LRN-05、MOD-05 閘門）→ 19 runner 上的可塑性對照（NAT-06）→ 20 訊號來源與回饋三分離（SIG-03、MOD-01、MOD-08）→ 21 化學濃度、受體與調節效果（MOD-02、MOD-03、MOD-04）→ 22 記憶表現、控制器、對照與干預（MOD-06、MOD-07、MOD-10、COR-11）→ 23 運行中學習、重播、適應性評估（LRN-06、LRN-07、LRN-10）→ 24 遷移、敏感資料、SDK／CLI／組態／資源預估（STA-05、STA-06、OPS-01、OPS-02、OPS-03、OPS-06）→ 25 混合類型、向量節點、重算（COR-05、COR-06、LRN-02）→ 26 持續學習矩陣與模仿學習（LRN-08、LRN-09）→ 27 教師與蒸餾（TCH-01..06）→ 28 導航環境、多模態配對、共用核心、歸因（TSK-08、TSK-10、TSK-09、TSK-12）→ 29 真實任務（TSK-01..07、TSK-11，受阻於授權資料）→ 30 平台、裝置、全圖訓練、效能、治理、FlyWire（OPS-04、OPS-05、OPS-07、OPS-08、OPS-10、GOV-01/04/05/06、DAT-06）。
@@ -151,7 +157,19 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料（ticket 03）。ticket 05 已加入持續個體、選擇性重設、安全快照與隔離驗收，舊 episode 快照缺失／null scalar 靜默變零的 P1 缺口已於 2026-09-14 修正。下一步接續原規格的 LIF 放電核心。人工延遲關聯流程保留為 CPU 數值參考。框架不綁定使用者的單一模型或任務程式。
 
-## 進行中
+## 里程碑
+
+| id | 目標 | 負責者 | 狀態 | 驗證訊號 |
+| --- | --- | --- | --- | --- |
+| 59 | OCR／語音／文字模型保存與新程序讀回 | Codex Root／Luna | in_progress | 功能與本機／SMB 比對通過，清理及交付待完成 |
+| 60 | 裝置 AdamW 更新與恢復 | Codex Root／Luna | in_progress | 實際 Metal 與 CPU 對照通過，清理及交付待完成 |
+| 61 | GPU 裝置訓練器及完整 bundle 接續 | Codex Root／Luna | in_progress | 部分累積窗的新程序精確接續通過，清理及交付待完成 |
+| 62 | 圖片／頁面辨識與編碼器對照 | Codex Root／Luna | in_progress | PNG／JPEG、頁面、真實 KMNIST 配對驗證通過，清理及交付待完成 |
+| 63 | 真實影音模型新程序生成 | Codex Root／Luna | in_progress | 120 次更新後 11 份模型／內容相同，清理及交付待完成 |
+
+### 較早階段紀錄
+
+以下是各階段當時的驗證狀態，保留歷史範圍及限制。
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
@@ -212,7 +230,9 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-目前專案由 mac-1 透過 SMB 分享。資料夾模型保存已支援，舊單檔、圖、參數與下載發布仍需要 hardlink。2026-10-11 已在 TimdeAir 原生磁碟完成最終來源的完整驗收，一般與 race 各 57 個套件通過，驗收副本與快取已清除。NAS 斷線與伺服器故障後的耐久性沒有實測。
+目前沒有阻擋原始工程驗收的功能缺口。完整檢查在 TimdeAir 的原生 APFS 磁碟執行，SMB 只做小模型保存與新程序讀回。暫存清理已完成，提交交付待完成。NAS 斷線及伺服器故障後耐久性未實測。
+
+### 既有環境與研究限制
 
 前次直接在 SMB 執行的完整一般與 race 各有 47 個通過套件、10 個失敗套件及 176 次不支援操作的文字出現，沒有觀察到資料競爭警告或測試逾時。那兩輪在最後兩個錯誤處理檔案補強與 INDEX 校正前啟動。當時 Go 依賴校驗反覆回報缺少已有項目，相同檔案下重試通過，media 的測試目錄清理失敗也曾重現，兩者根因未確認。這些失敗紀錄保留，不能用後續本機通過推論 SMB 上的所有儲存操作都可用。網路模型驗證不需要 SSH，本輪沒有遠端執行。
 
@@ -232,17 +252,19 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 58 的全圖量測、主要證據交付與本輪副本清理已完成。下一個 ticket 尚未建立，本輪沒有未完成驗收項目。框架維持 89／91，TSK-11 與 OPS-05 不因效能改善改成通過。建議下一輪先為一項真實任務固定保留集、簡單基準與實用門檻。
+本輪必要功能、最終完整驗證與暫存清理已完成，下一個可驗證成果是已核對遠端的提交。目前沒有新的必要實作 ticket。
 
-先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。GPU 裝置常駐更新與完整圖驗收屬 OPS-05。
+先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。OPS-05 必須有裝置稀疏前向／反向、更新／恢復及實際量測。主規格 §17.4 的常駐狀態是條件性效能方向，全圖驗證另由 OPS-07 驗收，不能直接追加為 OPS-05 的無條件門檻。
 
-[ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，不能依保留評估結果挑參數。新的初始種子穩定性驗證排在上述框架工作之後，採固定設定，另存證據。[ticket 30](docs/tickets/30-platforms-full-graph-training-governance-and-flywire.md) 的 OPS-05 仍需裝置常駐更新、完整圖及 Ubuntu RTX 4070 證據。需求維持 89／91。
+[ticket 40](docs/tickets/40-six-step-deadline-training-comparison.md) 的期限對照已完成交付。方向學習只有一個 seed 通過，新的初始種子穩定性研究須採固定設定並另存證據。OPS-05 的裝置更新整合已完成，GPU 全圖與 Ubuntu RTX 4070 是未驗證的擴充範圍，不能由 Mac 小圖推論。
 
 與這兩項需求獨立的後續工作記於 [AGENTS.md](AGENTS.md#follow-ups)。ticket 43 補上 CPU 純量連續核心保存狀態的梯度路徑；ticket 26 的其他核心／重算與機制限制保留。跨平台 ASR 串流接續與超過 64 MiB 個體保存尚未驗證，不能以本機人工音調證據代替。
 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-12：依原規格 §13.2 補 PNG／JPEG、同一 OCR 模型的頁面文字、固定／可訓練編碼器對照與空輸出率，依 §13.1／15.3 補影音模型 task bundle 和新程序推論。§20.2 允許負面研究結果，不追加「所有真實任務必須改善」的門檻。OPS-05 以實際裝置稀疏訓練更新／恢復及量測驗收，§17.4 可行時常駐神經狀態、GPU 全圖及其他平台維持未驗證擴充，不能當無條件門檻。共用決策見 ENG.md，範圍由 tickets 61–63 固定。
 
 2026-10-11：ticket 58 事前固定完整 MaleCNS 圖、16 步、段長 8、截斷窗 8，直接量測三個既有 SDK 重算呼叫。只有兩份核心檔以 Go overlay 對照，正式七組交錯配對，所有原始結果保留；人工刺激與目標不計為真實任務或生物成績。詳見本票與完整量測報告。
 
@@ -312,4 +334,4 @@ ticket 58 的全圖量測、主要證據交付與本輪副本清理已完成。�
 
 ## 來源與接手
 
-[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[85 項需求狀態](docs/requirements-status.json)。交接原件與既有 LICENSE 保持不變。所有完成狀態以實際證據為準，近期階段完成不等於整個框架完成。
+[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[最終驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。91／91 依原始工程條件驗收，模型品質、生物歸因及未測硬體須依各自證據判斷。

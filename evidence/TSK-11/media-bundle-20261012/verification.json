@@ -1,0 +1,133 @@
+{
+  "input_source_and_license": [
+    {
+      "id": "elephants-dream-teaser",
+      "license": {
+        "attribution": "(c) copyright 2006, Blender Foundation / Netherlands Media Art Institute / www.elephantsdream.org",
+        "attribution_source": "https://orange.blender.org/page/2/",
+        "holder": "Blender Foundation (Elephants Dream)",
+        "source": "https://orange.blender.org/press/",
+        "terms": "Creative Commons Attribution 2.5"
+      },
+      "origin": "https://orange.blender.org/blog/elephants-dream-teaser/",
+      "sha256": "5fe4e42a4c6893f40c90d841ac3e638d7b68d31b04d4a91f22b2bb5071d8c2d6"
+    },
+    {
+      "id": "big-buck-bunny",
+      "license": {
+        "attribution": "(c) copyright 2008, Blender Foundation / www.bigbuckbunny.org",
+        "attribution_source": "https://peach.blender.org/about/",
+        "holder": "(c) copyright 2008, Blender Foundation / www.bigbuckbunny.org",
+        "source": "https://peach.blender.org/about/",
+        "terms": "Creative Commons Attribution 3.0"
+      },
+      "origin": "https://download.blender.org/demo/movies/BBB/",
+      "sha256": "ae51005850b0ff757fe60c3dd7a12d754d3cd2397d87d939b55235e457f97658"
+    }
+  ],
+  "output_files_preserved": [
+    "trained/restored PNG frame previews",
+    "trained/restored predicted WAV previews",
+    "trained/restored predicted MP4 previews",
+    "trained/restored timeline.json"
+  ],
+  "pending": [
+    "full framework validation",
+    "cleanup"
+  ],
+  "preserved_failure_evidence": [
+    {
+      "exit_code": 1,
+      "source": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-red.json"
+    }
+  ],
+  "scope": "TSK-11 media bundle evidence preservation; scoped real-media example execution and restore only",
+  "scoped_pass": [
+    {
+      "command_exit_codes": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "model_files": {
+        "arrays.bin": "17a4ca127cab80bab0de8c76a41e3c93b6f72d424f6266f50708e690092d8d0c",
+        "document.json": "9015236bd34618ff1eb91d5090afb0f507bff042f6220bf1e432f515a7d46751",
+        "manifest.json": "d9e2268de959556d994a54bba36610c99c919cc11a2af8c90060dc66b3378a62"
+      },
+      "models_unchanged": true,
+      "name": "root-real-verification",
+      "new_process": true,
+      "no_retraining": true,
+      "passed": true,
+      "restored_equal_files": {
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-00.png": "b96464ccbe793c04191d85a30b4b8a937b01f29f678f86b590085b283ee74f12",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-01.png": "541c2c34c03c433a9343e0260cc9df5b5fbfc43decb825f9a23d82661879fe5c",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-02.png": "5524a40cc237cc0e98107eb1be06723880a8a35c4a8d7938a3bb4cbd94e2bab5",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-03.png": "1df7841f80c6833091b89e2a0bf0b67c3bc19f30ed6ee1f139abc105070cd6e6",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-04.png": "27746c16e4a52492c01c4c23a4c1c608b141fd59638cf5abf6e803e55dec671c",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-05.png": "a023d7d9c4ce2497d0681957873ea112c46ccc0ab82fef7e19efc14c132fd9bd",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-06.png": "1aeef5d9f7342c9fb13b88eed79275c4eefe74a6716e6032660a8ee78afa52bc",
+        "big-buck-bunny-rabbit-leaves-hollow/frames/frame-07.png": "68aa5a171f6057f88b460a8a82b4db48916d87e84602321d9e7eecbfcf42d0b2",
+        "big-buck-bunny-rabbit-leaves-hollow/predicted.wav": "3148aef3f8aaf316bf7bb9496523088e4fd3db39269779b08dd91780aed6006d",
+        "big-buck-bunny-rabbit-leaves-hollow/timeline.json": "ab3007c96e79940944188cea3da18c8a26df581f9799f8ceee50777c26b0d026",
+        "trained-model.json": "1d22973f22808ca313748a512c9cfc1da28bb755a7dc18bef70e43400b5f7f12"
+      },
+      "score_equal": true,
+      "source": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/verification.json"
+    },
+    {
+      "content_check": "Flow completed, but the Big Buck Bunny test preview is nearly black and does not match the human annotation (white rabbit and green grass). The held-out source test balanced MSE did not improve.",
+      "manifest_sha256": "688d340db225f92dc4a7bbee25b2547c3cabe9ff24dfcbdb5474638a58475bbb",
+      "model_manifest_sha256": "d9e2268de959556d994a54bba36610c99c919cc11a2af8c90060dc66b3378a62",
+      "name": "trained-report",
+      "source": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/trained/report.json",
+      "test_scores_after": {
+        "audio_mse": 0.011545969122746611,
+        "audio_samples": 16000,
+        "balanced_mse": 0.06653810317477955,
+        "clipped_audio_values": 0,
+        "clipped_image_values": 462,
+        "frames": 8,
+        "image_mse": 0.1215302372268125,
+        "samples": 1,
+        "temporal_delta_mse": 0.0019809547294963046,
+        "temporal_pairs": 7
+      },
+      "train_test_sources_disjoint": true,
+      "updates": 120
+    },
+    {
+      "content_check": "Flow completed, but the Big Buck Bunny test preview is nearly black and does not match the human annotation (white rabbit and green grass). The held-out source test balanced MSE did not improve.",
+      "manifest_sha256": "688d340db225f92dc4a7bbee25b2547c3cabe9ff24dfcbdb5474638a58475bbb",
+      "model_manifest_sha256": "d9e2268de959556d994a54bba36610c99c919cc11a2af8c90060dc66b3378a62",
+      "name": "restored-report",
+      "source": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/restored/report.json",
+      "test_scores_after": {
+        "audio_mse": 0.011545969122746611,
+        "audio_samples": 16000,
+        "balanced_mse": 0.06653810317477955,
+        "clipped_audio_values": 0,
+        "clipped_image_values": 462,
+        "frames": 8,
+        "image_mse": 0.1215302372268125,
+        "samples": 1,
+        "temporal_delta_mse": 0.0019809547294963046,
+        "temporal_pairs": 7
+      },
+      "train_test_sources_disjoint": true,
+      "updates": 120
+    }
+  ],
+  "source_links": [
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/verification.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/trained/report.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/restored/report.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/trained/manifest.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/restored/manifest.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/model/manifest.json",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-red.json"
+  ]
+}

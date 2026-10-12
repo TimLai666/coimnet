@@ -57,10 +57,11 @@ type Example struct {
 // encoder, held for Settle rows, and the readout of the Hidden nodes on the
 // last row of that hold predicts the next token.
 type Model struct {
-	vocab     tokenizer.Vocabulary
-	vocabSize int
-	config    ModelConfig
-	trainer   *learning.Trainer
+	vocab                  tokenizer.Vocabulary
+	vocabSize              int
+	config                 ModelConfig
+	trainer                *learning.Trainer
+	loadedCheckpointSHA256 string
 }
 
 // NewModel builds a core with Embed input nodes followed by Hidden hidden

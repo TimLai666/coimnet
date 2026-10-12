@@ -136,22 +136,62 @@ type BackendCapabilities struct {
 // GPUBackendDetails separates supported configurations from local execution.
 // Hardware inventory alone cannot verify WebGPU dispatch or training.
 type GPUBackendDetails struct {
-	Backend                 string `json:"backend"`
-	Model                   string `json:"model"`
-	StateDimension          int    `json:"state_dimension"`
-	EdgeShape               string `json:"edge_shape"`
-	MaxDelaySteps           int    `json:"max_delay_steps"`
-	TrainingScope           string `json:"training_scope"`
-	Recompute               string `json:"recompute"`
-	SparsePrecision         string `json:"sparse_precision"`
-	NeuralState             string `json:"neural_state"`
-	Activation              string `json:"activation"`
-	Optimizer               string `json:"optimizer"`
-	EncoderReadoutExecution string `json:"encoder_readout_execution"`
-	DeviceParameterUpdate   string `json:"device_parameter_update"`
-	DeviceStateSave         string `json:"device_state_save"`
-	FullGraph               string `json:"full_graph"`
-	Execution               string `json:"execution"`
+	Trainer                 string                   `json:"trainer,omitempty"`
+	DeviceTrainer           *GPUDeviceTrainerDetails `json:"device_trainer,omitempty"`
+	Backend                 string                   `json:"backend"`
+	Model                   string                   `json:"model"`
+	StateDimension          int                      `json:"state_dimension"`
+	EdgeShape               string                   `json:"edge_shape"`
+	MaxDelaySteps           int                      `json:"max_delay_steps"`
+	TrainingScope           string                   `json:"training_scope"`
+	Recompute               string                   `json:"recompute"`
+	SparsePrecision         string                   `json:"sparse_precision"`
+	NeuralState             string                   `json:"neural_state"`
+	Activation              string                   `json:"activation"`
+	Optimizer               string                   `json:"optimizer"`
+	EncoderReadoutExecution string                   `json:"encoder_readout_execution"`
+	DeviceParameterUpdate   string                   `json:"device_parameter_update"`
+	DeviceStateSave         string                   `json:"device_state_save"`
+	FullGraph               string                   `json:"full_graph"`
+	Execution               string                   `json:"execution"`
+}
+
+// GPUDeviceTrainerDetails describes the opt-in optimizer without probing hardware.
+// Neural state, activations and sparse weight transfers retain the parent limits.
+type GPUDeviceTrainerDetails struct {
+	Constructor        string   `json:"constructor"`
+	RestoreConstructor string   `json:"restore_constructor"`
+	Optimizer          string   `json:"optimizer"`
+	Precision          string   `json:"precision"`
+	ParameterMirror    string   `json:"parameter_mirror"`
+	Snapshot           string   `json:"snapshot"`
+	UnsupportedOptions []string `json:"unsupported_options"`
+	Execution          string   `json:"execution"`
+	FullGraph          string   `json:"full_graph"`
+}
+
+// deviceTrainerCapabilities is filled from the supported SDK profile.
+func deviceTrainerCapabilities() *GPUDeviceTrainerDetails {
+	return &GPUDeviceTrainerDetails{
+		Constructor:        "learning.NewGPUDeviceTrainer",
+		RestoreConstructor: "learning.RestoreGPUDeviceTrainer",
+		Optimizer:          "device_adamw",
+		Precision:          "float32",
+		ParameterMirror:    "verified_cpu_mirror",
+		Snapshot:           "complete_training_bundle",
+		UnsupportedOptions: []string{
+			"lif",
+			"vector_matrix_edges",
+			"delays",
+			"recompute",
+			"persistent_neural_state",
+			"ranges",
+			"fixed_signs",
+			"weight_sharing",
+		},
+		Execution: "not_probed",
+		FullGraph: "unverified",
+	}
 }
 
 // Doctor gathers runtime, dependency, hardware, and core capability facts.
@@ -278,6 +318,8 @@ func cpuReport() CPUReport {
 
 func coreCapabilities() CoreCapabilities {
 	gpuDetails := &GPUBackendDetails{
+		Trainer:                 "learning.NewGPUTrainer",
+		DeviceTrainer:           deviceTrainerCapabilities(),
 		Backend:                 "webgpu",
 		Model:                   "continuous",
 		StateDimension:          1,

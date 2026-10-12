@@ -1,0 +1,70 @@
+[
+  {
+    "name": "build",
+    "command": [
+      "/usr/local/go/bin/go",
+      "build",
+      "-p",
+      "2",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/realocr",
+      "./examples/realocr"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.060832977294922,
+    "log": "build.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "fixed-train",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "fixed",
+      "--model-output",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/fixed-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/fixed-train.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 2.968306064605713,
+    "log": "fixed-train.log",
+    "log_sha256": "bd259f5d563e7da95f2585b60a1e7117ae24d498cd11c7ea7e143b816d083d7c"
+  },
+  {
+    "name": "fixed-restore",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "fixed",
+      "--model-input",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/fixed-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair/fixed-restore.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.66336989402771,
+    "log": "fixed-restore.log",
+    "log_sha256": "79a546c028e97707dd9326f1e5c7cd17c821ececca49dd83035e9a5b88a6c9ef"
+  }
+]

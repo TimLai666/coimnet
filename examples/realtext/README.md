@@ -2,11 +2,32 @@
 
 這個範例讀取使用者提供的 `coimnet-textgen-corpus/v1` manifest，依 `source` 做完整來源切分，從每份文件取固定小視窗，執行一次可重現的 byte-level text generation 訓練，並輸出訓練前後的 holdout NLL/perplexity、next-token accuracy 與獨立推論結果。
 
-範例只讀取 `--manifest` 指定的資料，不下載資料、不寫入資料、不保存模型或二進位檔。成功時只在 stdout 輸出一份縮排 JSON，失敗時寫 stderr 且不輸出部分報告。
+範例只讀取 `--manifest` 指定的資料，不下載或修改資料；只有指定 `--model-output` 時才建立模型 bundle。成功時只在 stdout 輸出一份縮排 JSON，失敗時寫 stderr 且不輸出部分報告。
 
 ```sh
 go run ./examples/realtext --manifest data/TSK-11/gutenberg/manifest.json
 ```
+
+## 模型保存與載入
+
+`--model-output NEW_DIR` 會在訓練後以新的目錄保存完整 task-model bundle，包含 `manifest.json`、`document.json` 與 `arrays.bin`，其中保存模型設定、byte vocabulary、完整最佳化器狀態與更新次數。`--model-input DIR` 會載入 bundle，依目前 manifest 的固定 source split 與 byte vocabulary 做 holdout 評估及獨立推論，並跳過訓練；載入的模型若與目前範例固定設定或 vocabulary hash 不一致會拒絕。兩個旗標互斥，`--model-output` 的目錄必須不存在，既有路徑不會覆寫。
+
+以下使用目前 README 的資料路徑，兩次命令分別保存與載入模型。`realtext-bundle-20261012` 是新的 bundle 目錄；報告仍放在 `runs/TSK-11`：
+
+```sh
+mkdir -p models/TSK-11 runs/TSK-11
+go run ./examples/realtext \
+  --manifest data/TSK-11/gutenberg/manifest.json \
+  --model-output models/TSK-11/realtext-bundle-20261012 \
+  > runs/TSK-11/realtext-save-report.json
+
+go run ./examples/realtext \
+  --manifest data/TSK-11/gutenberg/manifest.json \
+  --model-input models/TSK-11/realtext-bundle-20261012 \
+  > runs/TSK-11/realtext-load-report.json
+```
+
+有模型旗標時，報告最上層的 `model.sha256` 是 canonical `manifest.json` 的 hash，綁定 `document.json`、`arrays.bin` 與拓撲；`model.updates` 是 bundle 保存的歷史更新數。載入報告的 `training.epochs` 與 `training.updates` 都是 `0`，不代表把保存時的歷史更新數清掉。
 
 manifest 必須是 `coimnet-textgen-corpus/v1`，`scope.kind` 必須是 `real`，每份文件須提供相對於 manifest 的 `path` 或內嵌 `text`，以及完整的 `license.holder`、`license.terms`、`license.source`。相對路徑由 `tasks/textgen.ReadCorpus` 解析，目錄逃逸與格式錯誤會被拒絕。
 

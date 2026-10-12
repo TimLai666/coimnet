@@ -5,6 +5,7 @@ package ocr
 
 import (
 	"errors"
+	"math"
 
 	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
 )
@@ -38,10 +39,10 @@ func SegmentLines(img glyphs.Image, threshold float64) ([]Block, error) {
 	if img.Width <= 0 || img.Height <= 0 {
 		return nil, errors.New("ocr: empty image")
 	}
-	if len(img.Pixels) != img.Width*img.Height {
-		return nil, errors.New("ocr: pixel count does not match width*height")
+	if err := validatePageImage(img); err != nil {
+		return nil, err
 	}
-	if threshold <= 0 || threshold >= 1 {
+	if !finitePageFloat(threshold) || threshold <= 0 || threshold >= 1 {
 		return nil, errors.New("ocr: threshold outside (0, 1)")
 	}
 	blocks := []Block{}
@@ -80,7 +81,7 @@ func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, err
 	if gap < 0 {
 		return glyphs.Image{}, errors.New("ocr: gap cannot be negative")
 	}
-	if background < 0 || background > 1 {
+	if !finitePageFloat(background) || background < 0 || background > 1 {
 		return glyphs.Image{}, errors.New("ocr: background outside [0, 1]")
 	}
 	maxWidth := int(^uint(0) >> 1)
@@ -88,11 +89,8 @@ func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, err
 		if ln.Width <= 0 || ln.Height <= 0 {
 			return glyphs.Image{}, errors.New("ocr: non-positive line dimensions")
 		}
-		if ln.Width > maxWidth/ln.Height {
-			return glyphs.Image{}, errors.New("ocr: line dimensions overflow")
-		}
-		if len(ln.Pixels) != ln.Width*ln.Height {
-			return glyphs.Image{}, errors.New("ocr: pixel count does not match width*height")
+		if err := validatePageImage(ln); err != nil {
+			return glyphs.Image{}, err
 		}
 	}
 	width := 0
@@ -111,10 +109,11 @@ func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, err
 		return glyphs.Image{}, errors.New("ocr: page height overflows int")
 	}
 	height += gap * count
-	if width > maxWidth/height {
-		return glyphs.Image{}, errors.New("ocr: page pixel count overflows int")
+	area, err := rasterImageArea(width, height)
+	if err != nil {
+		return glyphs.Image{}, err
 	}
-	img := glyphs.Image{Width: width, Height: height, Pixels: make([]float64, width*height)}
+	img := glyphs.Image{Width: width, Height: height, Pixels: make([]float64, area)}
 	for i := range img.Pixels {
 		img.Pixels[i] = background
 	}
@@ -133,17 +132,22 @@ func Stack(lines []glyphs.Image, gap int, background float64) (glyphs.Image, err
 // Crop returns a copy of the pixels inside r. Errors: r outside the image or
 // empty.
 func Crop(img glyphs.Image, r Rect) (glyphs.Image, error) {
+	if err := validatePageImage(img); err != nil {
+		return glyphs.Image{}, err
+	}
 	if r.X0 < 0 || r.Y0 < 0 || r.X1 > img.Width || r.Y1 > img.Height {
 		return glyphs.Image{}, errors.New("ocr: rect outside image")
 	}
 	if r.X0 >= r.X1 || r.Y0 >= r.Y1 {
 		return glyphs.Image{}, errors.New("ocr: empty rect")
 	}
-	out := glyphs.Image{
-		Width:  r.X1 - r.X0,
-		Height: r.Y1 - r.Y0,
-		Pixels: make([]float64, (r.X1-r.X0)*(r.Y1-r.Y0)),
+	width := r.X1 - r.X0
+	height := r.Y1 - r.Y0
+	area, err := rasterImageArea(width, height)
+	if err != nil {
+		return glyphs.Image{}, err
 	}
+	out := glyphs.Image{Width: width, Height: height, Pixels: make([]float64, area)}
 	for y := r.Y0; y < r.Y1; y++ {
 		for x := r.X0; x < r.X1; x++ {
 			out.Pixels[(y-r.Y0)*out.Width+(x-r.X0)] = img.Pixels[y*img.Width+x]
@@ -180,4 +184,24 @@ func inkColumnSpan(img glyphs.Image, y0, y1 int, threshold float64) (int, int) {
 		}
 	}
 	return x0, x1
+}
+
+func validatePageImage(img glyphs.Image) error {
+	area, err := rasterImageArea(img.Width, img.Height)
+	if err != nil {
+		return err
+	}
+	if len(img.Pixels) != area {
+		return errors.New("ocr: pixel count does not match width*height")
+	}
+	for _, pixel := range img.Pixels {
+		if !finitePageFloat(pixel) {
+			return errors.New("ocr: pixel values must be finite")
+		}
+	}
+	return nil
+}
+
+func finitePageFloat(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0)
 }

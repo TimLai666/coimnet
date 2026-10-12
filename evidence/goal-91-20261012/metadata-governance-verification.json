@@ -1,0 +1,42 @@
+{
+  "requirement": [
+    "TSK-11",
+    "OPS-05"
+  ],
+  "reproduction_command": "GOMAXPROCS=2 go test -p 2 -count=1 -json -run '^(TestGovernance|TestFormatIndex|TestOnlyNetworkPackagesImportHTTP|TestNoTelemetry|TestScanCommitScriptFlagsSecrets)' .",
+  "environment": {
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "native_disk": true,
+    "go": "1.26.5",
+    "cache": "project-local ignored cache, same as full validation"
+  },
+  "observed_result": {
+    "exit_code": 0,
+    "passed_top_level_tests": [
+      "TestOnlyNetworkPackagesImportHTTP",
+      "TestNoTelemetry",
+      "TestScanCommitScriptFlagsSecrets",
+      "TestNoTelemetryProjectTempBoundary",
+      "TestNoTelemetrySourceErrorsRemainVisible",
+      "TestFormatIndex",
+      "TestFormatIndexControls",
+      "TestFormatIndexGoLiteralsAndScopes",
+      "TestFormatIndexNoGitAndReadErrors",
+      "TestGovernanceRequirementIDsMatchHandoff",
+      "TestGovernanceStatusValuesAreDeclared",
+      "TestGovernancePassedRequirementsHaveEvidence",
+      "TestGovernanceTicketsHaveDatedRootDecisions"
+    ],
+    "requirements_passed": 91,
+    "all_historical_adapters_verified": true
+  },
+  "test_log": [
+    "evidence/goal-91-20261012/metadata-governance-attempt1.log.gz",
+    "evidence/goal-91-20261012/metadata-governance-attempt2.log.gz",
+    "evidence/goal-91-20261012/metadata-governance-complete.log.gz"
+  ],
+  "input_fingerprints": {
+    "final_log_sha256": "7c31620ea6e7db02f68ed84e5df87dc9d8d87cdab2814376170a264ab2ccf45a",
+    "requirements_status_sha256": "bcc0be296335e46b63eb2b41360dd39e7098ff0a0d395820abb90037c31981e3"
+  }
+}

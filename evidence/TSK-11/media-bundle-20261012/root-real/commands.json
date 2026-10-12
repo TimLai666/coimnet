@@ -1,0 +1,97 @@
+[
+  {
+    "name": "unit",
+    "command": [
+      "/usr/local/go/bin/go",
+      "test",
+      "-p",
+      "1",
+      "-count=1",
+      "-json",
+      "-timeout=180s",
+      "./examples/realmedia"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.3825690746307373,
+    "log": "unit.log",
+    "log_sha256": "eace26e7c285a76748f3db2a75ab3778e0290419a78b51f50176fd6225acb9c2"
+  },
+  {
+    "name": "race",
+    "command": [
+      "/usr/local/go/bin/go",
+      "test",
+      "-race",
+      "-p",
+      "1",
+      "-count=1",
+      "-json",
+      "-timeout=180s",
+      "./examples/realmedia"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 12.283346891403198,
+    "log": "race.log",
+    "log_sha256": "9fdd694a6abbf123f45058ecc6ccff9e65749fa45c2c59d369f94675668f623a"
+  },
+  {
+    "name": "vet",
+    "command": [
+      "/usr/local/go/bin/go",
+      "vet",
+      "./examples/realmedia"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.2510552406311035,
+    "log": "vet.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "build",
+    "command": [
+      "/usr/local/go/bin/go",
+      "build",
+      "-p",
+      "2",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/realmedia",
+      "./examples/realmedia"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.9107210636138916,
+    "log": "build.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "licensed-train",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/realmedia",
+      "--data-root",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/blender-open-movies",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/trained",
+      "--model-output",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/model"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.2125391960144043,
+    "log": "licensed-train.log",
+    "log_sha256": "63b9631392671c2df56af77ee7565e93623fa33868ed7cb7ad98fcd44bcbfd35"
+  },
+  {
+    "name": "licensed-restore",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/realmedia",
+      "--data-root",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/blender-open-movies",
+      "--out-dir",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/restored",
+      "--model-input",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/63/root-real/model"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.968487024307251,
+    "log": "licensed-restore.log",
+    "log_sha256": "1d3c7b59fe2109ac0db182816d04d9b2ec878b6f2b8777ab7559a70440484782"
+  }
+]

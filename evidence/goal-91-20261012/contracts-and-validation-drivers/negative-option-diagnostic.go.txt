@@ -1,0 +1,25 @@
+package review
+import (
+ "context"
+ "errors"
+ "math"
+ "testing"
+ "github.com/TimLai666/coimnet/learning"
+ "github.com/TimLai666/coimnet/dynamics"
+ "github.com/TimLai666/coimnet/backend/webgpu"
+)
+func TestNegativeOptionUnderflow(t *testing.T) {
+ c:=learning.Config{Dynamics:dynamics.Config{Nodes:1,DT:0.4,Activation:"tanh"},InputSize:1,OutputSize:1,ReadoutNodes:[]int{0}}
+ p:=learning.Parameters{Core:dynamics.Parameters{Bias:[]float64{0},LogTau:[]float64{0}},Encoder:[]float64{0.1},Readout:[]float64{0.1}}
+ for _, field:=range []string{"beta1","beta2","weight_decay"} {
+  t.Run(field,func(t *testing.T){
+   o:=learning.DefaultOptions()
+   switch field {case "beta1":o.Beta1=-math.SmallestNonzeroFloat64;case "beta2":o.Beta2=-math.SmallestNonzeroFloat64;case "weight_decay":o.WeightDecay=-math.SmallestNonzeroFloat64}
+   if _,err:=learning.NewTrainer(c,p,o);err==nil {t.Fatal("CPU did not reject negative option")}
+   tr,err:=learning.NewGPUDeviceTrainer(context.Background(),c,p,o,1<<20)
+   if tr!=nil {defer tr.Close();t.Log("GPU constructor accepted negative original option");return}
+   if errors.Is(err,webgpu.ErrUnavailable) {t.Log("GPU constructor passed invalid option to hardware setup:",err);return}
+   t.Fatalf("negative original option was rejected instead: %v",err)
+  })
+ }
+}

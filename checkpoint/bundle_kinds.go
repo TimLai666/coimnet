@@ -177,10 +177,9 @@ func validatedIndividualSnapshot(snapshot learning.IndividualSnapshot) (learning
 	return normalizeIndividualSnapshot(individual.Snapshot()), nil
 }
 
-// ReadBundleManifest reads and validates only dir/manifest.json, exactly as the first two steps of readBundle do (without
-// the kind check and without touching the payload), and returns it, so a caller can report a bundle's payload size and
-// SHA-256 without decoding it. bundle.go is read-only in this ticket, so implement the manifest read and its checks here
-// (the same checks as readBundle's steps 1 and 2) instead of refactoring readBundle.
+// ReadBundleManifest reads basic manifest metadata without verifying payload
+// files or task-specific required fields. Use a bundle Load function to validate
+// the complete saved artifact before relying on its content.
 func ReadBundleManifest(ctx context.Context, dir string) (BundleManifest, error) {
 	var empty BundleManifest
 	if err := contextError(ctx); err != nil {

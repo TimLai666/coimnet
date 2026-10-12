@@ -1,0 +1,65 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-p",
+    "1",
+    "-count=1",
+    "-json",
+    "-timeout",
+    "120s",
+    "-run",
+    "^TestRealMediaModel",
+    "./examples/realmedia"
+  ],
+  "exit_code": 1,
+  "elapsed_seconds": 1.9473848342895508,
+  "source_sha256": {
+    "examples/realmedia/model.go": "1ac4ca00f683eedb9cbd56d2f01f221772b4212ce215b87b180feb47da720bbd",
+    "examples/realmedia/model_test.go": "38536c2e0c74646f69d4d1d34b82be6c9916cefd6d5891c1ffc73cd27326d152",
+    "examples/realmedia/model_run_test.go": "e7e9575d8735e635a16e41afec6a93962b42e18f7aebc9ce45fec311ef390848"
+  },
+  "log_sha256": "c8c0f3b236035da54c136387f74c441182b7386027e854060500972bcb3fe9df",
+  "test_results": [
+    {
+      "Test": "TestRealMediaModelChildLoad",
+      "Action": "skip"
+    },
+    {
+      "Test": "TestRealMediaModelChildProcessLoadsBundlePredictsScoresAndWritesPreview",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelRunFlagsAreExclusiveAndDoNotPublishPartialOutput",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelRunCanceledDoesNotPublishOutput",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelConstructorBindsExistingModelContract",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelSaveLoadRoundTripPreservesFullTrainingState",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelFitFromSnapshotIsFrozenAndMatchesIndependentInference",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelRejectsInvalidConfigSnapshotAndContextWithoutPartialBundle",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelLoadRejectsConfigMismatchAndCorruptBundle",
+      "Action": "fail"
+    },
+    {
+      "Test": "TestRealMediaModelFitFromSnapshotRejectsNilCancelInvalidSamplesAndSnapshot",
+      "Action": "fail"
+    }
+  ]
+}

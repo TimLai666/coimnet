@@ -19,6 +19,12 @@
 
 ## 共用決策
 
+- GPU episode 的裝置 AdamW 以明示 opt-in 模式加入既有 Trainer。成功提交前讀回完整候選並驗證，提交後更新主機鏡像，既有 Snapshot 不改成可失敗操作。參數和動量常駐，但神經狀態、Insyra 編碼／讀出與稀疏算子參數傳輸仍在主機，量測須分開且不宣稱加速。原規格 §17.4 的完整神經狀態常駐是可行時的方向，不將 GPU 全圖或第二平台另加為 OPS-05 門檻。見 [ticket 61](docs/tickets/61-gpu-device-training.md)。
+
+- OCR 圖片前處理採有上限的標準 PNG／JPEG 解碼、明示灰階／墨色／nearest 縮放及來源 metadata，單欄頁面分行仍由同一 Recognizer 辨識。新增可選可訓練 identity 初值 encoder，缺省 false 保持舊模型，保存 mode 與 optimizer，配對比較獨立揭露 encoder 容量。影音範例沿用 task bundle，把來源、特徵／縮放／解碼設定與完整 snapshot 一起保存，新程序讀回後使用同一 predict／score／preview，沒有隱藏重訓。見 [ticket 62](docs/tickets/62-ocr-images-page-and-encoder.md)、[ticket 63](docs/tickets/63-realmedia-model-restore.md)。
+
+- 任務模型保存沿用網路磁碟 v2 bundle，將任務設定、詞表與完整訓練狀態一起保存。任務 Load 重新核對設定與網路、最佳化器，不用缺失欄位建立新模型。三類任務公開 Save／Load 與真實資料範例見 [ticket 59](docs/tickets/59-task-model-save-restore.md)。GPU 參數更新先採獨立 float32 裝置格式，候選更新與提交分開，既有 CPU／episode GPUTrainer 保持。所有宣告參數分塊運算，量測常駐狀態與傳輸量，見 [ticket 60](docs/tickets/60-device-adam-update-restore.md)。
+
 - 真實全圖的分段重算效能直接量測既有 SDK 的 ForwardRecompute、BackwardRecomputeStats 與啟用 Recompute 的 Trainer.Step，因 benchmark CLI 的既有路徑未啟用重算。固定完整圖、原始邊順序、參數與事前設定，只有兩份核心檔透過 Go overlay 對照修改前版本。載入、建構、明示 GC 與摘要分開計時，全部原始程序、輸出／梯度／更新／Adam 指紋、配置量與整個程序的 RSS／足跡都保留。效能結果不改模型或任務驗收狀態，見 [ticket 58](docs/tickets/58-fullgraph-recompute-efficiency.md)。
 
 - 網路磁碟的模型保存沿用 v2 bundle 及三種既有 Bundle SDK。排他建立目錄後先保存資料，最後寫完整完成清單，載入端拒絕缺失或截斷清單。完成清單完整寫出後即保留成果，後續取消與同步失敗分開回報。單檔發布的既有契約保持。驗收見 [ticket 55](docs/tickets/55-network-model-bundles.md)。

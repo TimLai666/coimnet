@@ -1,0 +1,74 @@
+{
+  "passed": true,
+  "source_manifest_sha256": "cbd3329a337c2318099280fc14644899f1aa40d08a8970349f989ecd04ee96a4",
+  "source_files": 708,
+  "binary_sha256": "0b24f706f8185dea9b988e96ea086f63259ee2557e9a4abdc47676de2773a75c",
+  "commands": [
+    {
+      "command": [
+        "/usr/local/go/bin/go",
+        "build",
+        "-p",
+        "2",
+        "-o",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/doctor-cli/coimnet",
+        "./cmd/coimnet"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "elapsed_seconds": 5.465920916,
+      "stdout": "build.stdout",
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stderr": "build.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/doctor-cli/coimnet",
+        "doctor"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "elapsed_seconds": 0.9583632079999997,
+      "stdout": "doctor.stdout",
+      "stdout_sha256": "eb3c216da78fa4c3114d68012174aae1f77bf05fe307c42c049225b0a200f971",
+      "stderr": "doctor.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "command": [
+        "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/doctor-cli/coimnet",
+        "doctor",
+        "--help"
+      ],
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "exit_code": 0,
+      "elapsed_seconds": 0.013712542000000383,
+      "stdout": "help.stdout",
+      "stdout_sha256": "e6e9197f0243c3080e15b74cbcfe76f6584b22d60200c066ade907059eb2b70e",
+      "stderr": "help.stderr",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "device_trainer": {
+    "constructor": "learning.NewGPUDeviceTrainer",
+    "restore_constructor": "learning.RestoreGPUDeviceTrainer",
+    "optimizer": "device_adamw",
+    "precision": "float32",
+    "parameter_mirror": "verified_cpu_mirror",
+    "snapshot": "complete_training_bundle",
+    "unsupported_options": [
+      "lif",
+      "vector_matrix_edges",
+      "delays",
+      "recompute",
+      "persistent_neural_state",
+      "ranges",
+      "fixed_signs",
+      "weight_sharing"
+    ],
+    "execution": "not_probed",
+    "full_graph": "unverified"
+  },
+  "claim": "Binary doctor and help accurately distinguish legacy and device trainer capability. This probe is not a device execution benchmark."
+}

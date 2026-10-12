@@ -163,6 +163,27 @@ func TestDoctorReportContainsRuntimeBuildProbeAndSeparatedCapabilities(t *testin
 
 func expectedGPUBackendDetails() *GPUBackendDetails {
 	return &GPUBackendDetails{
+		Trainer: "learning.NewGPUTrainer",
+		DeviceTrainer: &GPUDeviceTrainerDetails{
+			Constructor:        "learning.NewGPUDeviceTrainer",
+			RestoreConstructor: "learning.RestoreGPUDeviceTrainer",
+			Optimizer:          "device_adamw",
+			Precision:          "float32",
+			ParameterMirror:    "verified_cpu_mirror",
+			Snapshot:           "complete_training_bundle",
+			UnsupportedOptions: []string{
+				"lif",
+				"vector_matrix_edges",
+				"delays",
+				"recompute",
+				"persistent_neural_state",
+				"ranges",
+				"fixed_signs",
+				"weight_sharing",
+			},
+			Execution: "not_probed",
+			FullGraph: "unverified",
+		},
 		Backend:                 "webgpu",
 		Model:                   "continuous",
 		StateDimension:          1,

@@ -1,0 +1,127 @@
+{
+  "schema_version": "coimnet-historical-evidence-adapter/v1",
+  "requirement": "TSK-11 historical stimulus-counterfactual engineering evidence",
+  "reproduction_command": [
+    {
+      "name": "build",
+      "argv": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "test",
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "-p",
+        "4",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "race",
+      "argv": [
+        "go",
+        "test",
+        "-p",
+        "4",
+        "-race",
+        "-timeout",
+        "30m",
+        "./..."
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "focused-race",
+      "argv": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "./examples/realnavmemory"
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "vet",
+      "argv": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "mod-verify",
+      "argv": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "historical_exit_code": 0
+    },
+    {
+      "name": "tidy-diff",
+      "argv": [
+        "go",
+        "mod",
+        "tidy",
+        "-diff"
+      ],
+      "historical_exit_code": 0
+    }
+  ],
+  "environment": {
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "go_env": {
+      "CGO_ENABLED": "1",
+      "GOARCH": "arm64",
+      "GOOS": "darwin"
+    },
+    "GOMAXPROCS": 2,
+    "GOMEMLIMIT": "8GiB",
+    "platform_execution": "macOS arm64 only; no new Ubuntu/Windows execution"
+  },
+  "observed_result": {
+    "original_receipt": "evidence/TSK-11/stimulus-counterfactual-20261003/verification.json",
+    "original_sha256": "f630c6107d7df9304ffa156bc8399214d6020f3e984323356368a45c549c169a",
+    "historical_software_acceptance": "completed; all five engineering acceptance items verified and implementation delivery confirmed",
+    "historical_task_result": {
+      "engineering_result": "stimulus-history sensitivity demonstrated in trained delivered and shuffled controls",
+      "navigation_result": "all original and erased groups 0/13; no navigation-learning evidence",
+      "biological_result": "not established; artificial eight-node graph"
+    },
+    "record_scope": "Historical 2026-10-03 results, not a new execution or current-source validation."
+  },
+  "test_log": [
+    "evidence/TSK-11/stimulus-counterfactual-20261003/gofmt.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/build.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/test.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/race.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/focused-race.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/vet.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/mod-verify.log",
+    "evidence/TSK-11/stimulus-counterfactual-20261003/tidy-diff.log"
+  ],
+  "input_fingerprints": {
+    "original_receipt_sha256": "f630c6107d7df9304ffa156bc8399214d6020f3e984323356368a45c549c169a",
+    "source": {
+      "path": "/Users/timlai/Developer/coimnet-data/TSK-11/dryad-path-integration/all_ds_t01_d2_cm_no2.csv.gz",
+      "sha256": "83e13b7057957cf41a45dc91996a4519be7066519242b6912c65b2418cb91670"
+    },
+    "original_checks": "evidence/TSK-11/stimulus-counterfactual-20261003/checks.json",
+    "original_checks_sha256": "59d51992ae2e4e93cc50ef0038a74af103fe6b75101d2a7b19459246309e8e4f"
+  },
+  "limitations": [
+    "Original checks.json abbreviates its gofmt argument list; the wrapper lists only concrete command arguments. The raw historical record remains unchanged."
+  ],
+  "purpose": "Supply project governance keys while preserving protected historical bytes and hashes."
+}

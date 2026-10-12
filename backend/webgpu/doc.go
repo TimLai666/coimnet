@@ -17,12 +17,27 @@
 // derivative before calling Backward; CSR edge results are restored to
 // declaration order on the host.
 //
+// DeviceAdamW keeps the AdamW p/m/v/counter state: parameters, first and
+// second moments, and per-parameter update counters remain resident on the
+// GPU. A successful Step swaps the device banks only after every chunk
+// succeeds, so the update commits atomically across the full array. Snapshot
+// explicitly reads the resident state back into owned host slices.
+//
+// StepChecked computes a candidate on the device, reads the complete float32
+// candidate into an owned host mirror, and gives it to the acceptance callback
+// before swapping the resident bank. It permits a zero learning rate while
+// still advancing the checked optimizer state. learning.NewGPUDeviceTrainer and
+// learning.RestoreGPUDeviceTrainer use this checked path; their neural state,
+// activations, and sparse weight transfers remain host-side.
+//
 // These are primitives, not a complete continuous network Forward or
-// Backward pass. This package does not implement optimizer parameter updates,
-// training orchestration, model-state checkpoint restore, or CPU fallback.
+// Backward pass, neural-state system, or training integration. The package
+// never silently falls back to the CPU.
 // A missing or software-only adapter is reported as ErrUnavailable; execution
 // errors are returned to the caller and are never silently rerun on the CPU.
 // Metrics identify the selected adapter and backend and expose measured
 // initialization, shader compilation, topology transfer, warmup, per-call
-// transfer, dispatch, and readback durations.
+// transfer, dispatch, and readback durations. AdamW MaxBytes is a logical
+// budget, not allocator VRAM or process RSS, and these metrics do not claim a
+// speedup.
 package webgpu

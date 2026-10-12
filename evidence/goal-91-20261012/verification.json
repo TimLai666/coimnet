@@ -1,0 +1,326 @@
+{
+  "schema_version": "coimnet-goal-acceptance/v1",
+  "requirement": [
+    "TSK-11",
+    "OPS-05"
+  ],
+  "date": "2026-10-12",
+  "profile": "passed_engineering_acceptance_delivery_pending",
+  "reproduction_command": [
+    "See evidence/goal-91-20261012/full-validation/complete/commands.json and environment.json for all seven integrated commands.",
+    "See each scoped verification for licensed-data training, actual Metal execution and new-process restore commands."
+  ],
+  "environment": {
+    "cwd": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next",
+    "native_disk": true,
+    "base_commit": "eb8492e477c365bfd374d3c2012e955db6e12060",
+    "os_uname": [
+      "Darwin",
+      "TimdeMacBook-Air.local",
+      "27.0.0",
+      "Darwin Kernel Version 27.0.0: Tue Aug 11 21:05:41 PDT 2026; root:xnu-13432.1.9~1/RELEASE_ARM64_T8122",
+      "arm64"
+    ],
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "environment_overrides": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/go-build",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-20261012/go-tmp",
+      "GOPROXY": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2"
+    },
+    "note": "Two scheduler threads and two package workers bound concurrent native verification; test cases and assertions are unchanged. This is functional validation, not a performance benchmark."
+  },
+  "input_fingerprints": {
+    "base_commit": "eb8492e477c365bfd374d3c2012e955db6e12060",
+    "source_manifest": "evidence/goal-91-20261012/full-validation/complete/source-frozen.json",
+    "source_manifest_sha256": "cbd3329a337c2318099280fc14644899f1aa40d08a8970349f989ecd04ee96a4"
+  },
+  "observed_result": {
+    "requirements_passed": 91,
+    "requirements_total": 91,
+    "engineering_acceptance_passed": true,
+    "full_validation": {
+      "all_seven_checks_passed": true,
+      "source_files": 708,
+      "main_and_isolated_copy_match": true,
+      "counts": {
+        "unit": {
+          "packages_passed": 57,
+          "packages_skipped": 1,
+          "top_level_tests_passed": 1869,
+          "top_level_tests_skipped": 20,
+          "skipped_tests": [
+            {
+              "package": "github.com/TimLai666/coimnet/backend/webgpu",
+              "test": "TestDeviceAdamWChildProcess"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+              "test": null
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/examples/realnav",
+              "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/examples/realmedia",
+              "test": "TestRealMediaModelChildLoad"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestAttributionEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+              "test": "TestFullGraphEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+              "test": "TestFullGraphResumeEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+              "test": "TestMultimodalEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestMultiTaskEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestNav2DSuiteEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOGoalCueEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOGradientEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOHorizonEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOShortGoalCueEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOTrainingFeedbackEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/learning",
+              "test": "TestGPUDeviceTrainerChildProcess"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/learning",
+              "test": "TestRecomputeRSSHelper"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestMediaEvidence/image"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestMediaEvidence/audio"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestRolesEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestVideoEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+              "test": "TestReadTitovaSourceWhenConfigured"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/textgen",
+              "test": "TestTextgenEvidence"
+            }
+          ],
+          "failed": 0
+        },
+        "race": {
+          "packages_passed": 57,
+          "packages_skipped": 1,
+          "top_level_tests_passed": 1868,
+          "top_level_tests_skipped": 21,
+          "skipped_tests": [
+            {
+              "package": "github.com/TimLai666/coimnet/backend/webgpu",
+              "test": "TestDeviceAdamWChildProcess"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/checkpoint",
+              "test": "TestBundleLargerThanSingleFileLimit"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+              "test": null
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/examples/realnav",
+              "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/examples/realmedia",
+              "test": "TestRealMediaModelChildLoad"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestAttributionEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+              "test": "TestFullGraphEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+              "test": "TestFullGraphResumeEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+              "test": "TestMultimodalEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestMultiTaskEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestNav2DSuiteEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOGoalCueEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOGradientEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOHorizonEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOShortGoalCueEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/experiment",
+              "test": "TestPPOTrainingFeedbackEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/learning",
+              "test": "TestGPUDeviceTrainerChildProcess"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/learning",
+              "test": "TestRecomputeRSSHelper"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestMediaEvidence/image"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestMediaEvidence/audio"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestRolesEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+              "test": "TestReadTitovaSourceWhenConfigured"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/textgen",
+              "test": "TestTextgenEvidence"
+            },
+            {
+              "package": "github.com/TimLai666/coimnet/tasks/media",
+              "test": "TestVideoEvidence"
+            }
+          ],
+          "failed": 0
+        },
+        "governance": {
+          "packages_passed": 1,
+          "packages_skipped": 0,
+          "top_level_tests_passed": 13,
+          "top_level_tests_skipped": 0,
+          "skipped_tests": [],
+          "failed": 0
+        }
+      },
+      "elapsed_seconds": {
+        "format": 0.330599,
+        "build": 4.294154416,
+        "unit": 123.503550917,
+        "race": 2038.939790583,
+        "vet": 1.520453125000131,
+        "modules": 5.881650041999819,
+        "governance": 3.141669500000262
+      }
+    },
+    "root_scoped_verification": "evidence/goal-91-20261012/root-scoped-verification.json",
+    "cleanup_complete": true,
+    "delivery_complete": false,
+    "quality": {
+      "ocr_single_character_cer": 0.9,
+      "ocr_exact_ratio": 0.1,
+      "ocr_empty_output_ratio": 0,
+      "navigation_hits": "0/13",
+      "text": "Held-out perplexity improves; generated text is fragmented.",
+      "media": "Held-out balanced MSE and audio MSE worsen; generated frames are nearly black.",
+      "speech": "No useful natural speech-recognition quality established."
+    },
+    "cleanup_receipt": "evidence/goal-91-20261012/cleanup.json",
+    "metadata_governance": "evidence/goal-91-20261012/metadata-governance-verification.json"
+  },
+  "test_log": [
+    "evidence/goal-91-20261012/full-validation/complete/format.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/build.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/unit.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/race.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/vet.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/modules.log.gz",
+    "evidence/goal-91-20261012/full-validation/complete/governance.log.gz"
+  ],
+  "child_evidence": [
+    "evidence/TSK-11/task-checkpoint-20261012/native-verification.json",
+    "evidence/TSK-11/task-checkpoint-20261012/smb-verification.json",
+    "evidence/TSK-11/ocr-raster-encoder-20261012/verification.json",
+    "evidence/TSK-11/media-bundle-20261012/verification.json",
+    "evidence/OPS-05/device-adam-20261012/verification.json",
+    "evidence/OPS-05/device-training-20261012/verification.json",
+    "evidence/goal-91-20261012/full-validation/complete/verification.json",
+    "evidence/goal-91-20261012/doctor-verification.json",
+    "evidence/goal-91-20261012/cleanup.json",
+    "evidence/goal-91-20261012/metadata-governance-verification.json"
+  ],
+  "acceptance_interpretation": {
+    "sources": [
+      "docs/handoff/requirements.json",
+      "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md",
+      "ENG.md"
+    ],
+    "TSK-11": "Five licensed real task classes import, train, independently infer and evaluate, with task model persistence and the section 13.2 image/page/encoder comparison interfaces. Section 20.2 permits negative research results.",
+    "OPS-05": "Actual sparse device forward/backward, device AdamW update and restore, independent CPU comparison, phase and logical buffer measurements. Section 17.4 full residency is conditional on feasibility; OPS-07 separately records CPU full-graph execution."
+  },
+  "limitations": [
+    "91/91 is engineering acceptance of the original 85 requirements plus 6 NAT requirements. It does not establish a useful general model, learned biological navigation or a connectome advantage.",
+    "Actual device training is the declared scalar zero-delay float32 profile on Apple M3 Metal. Neural state, activations and sparse weight transfers remain on the host; Insyra encoder/readout device execution is not probed.",
+    "GPU full-graph capacity, speedup, allocator VRAM and Linux/Windows GPU execution remain unverified.",
+    "Scoped preservation receipts retain their creation-time pending fields and historical scratch paths. This parent and the final full-validation/cleanup receipts record subsequent closure without rewriting raw historical receipts."
+  ]
+}

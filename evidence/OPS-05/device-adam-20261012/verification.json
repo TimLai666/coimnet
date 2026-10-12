@@ -1,0 +1,105 @@
+{
+  "requirement_id": "OPS-05",
+  "stage": "device optimizer primitive; not complete sparse training integration",
+  "passed": false,
+  "hardware_checks_passed": true,
+  "full_validation": "evidence/TSK-11/task-checkpoint-20261012/full-validation/verification.json",
+  "native_cleanup": "pending",
+  "base_commit": "eb8492e477c365bfd374d3c2012e955db6e12060",
+  "environment": {
+    "platform": "Darwin 27.0.0 arm64",
+    "hardware": {
+      "model": "Mac15,12",
+      "memory_bytes": 17179869184,
+      "logical_cpus": 8,
+      "verification": "sysctl hw.model hw.memsize hw.ncpu, executed on native host"
+    },
+    "go_version": "go version go1.26.5 darwin/arm64"
+  },
+  "input": {
+    "test_fixtures": "Deterministic float32 vectors, gradient/mask updates and independent host reference; no connectome data or useful-model claim",
+    "source_sha256": {
+      "backend/webgpu/device_adam.go": "4ae953bf0cc5c984167d28a1d98c3de1f09f227e95fd34e9b877e6c7aee8935e",
+      "backend/webgpu/device_adam_buffers.go": "218df671b784ce865b1a95da3a66abdbfba4d09a378ab5a17016d24e14f24bb7",
+      "backend/webgpu/device_adam_execute.go": "68f9e6f41f079e5569133313caa10ec61c2a0a3597f4f316ec331de2095d455c",
+      "backend/webgpu/device_adam.wgsl": "200c54435c7af02c88821fe0d6e3f89eaa0b2fb664f6c63e37b55c841690da5f",
+      "backend/webgpu/device_adam_test.go": "806ad8240257d5659be6f4155a3e57d51d1623a6015b8e7f7812e35f9cae4cdc",
+      "backend/webgpu/device_adam_transaction_test.go": "8d083654aa6b3953e23c4f97cc017c1cc4094095c73c1f25f0cc599b82919ad1",
+      "backend/webgpu/device_adam_hardware_test.go": "6ab87a0da3b9e737654ddb2e9de66c97a6ffd87fe6e88817516e8bb0091a2e81"
+    }
+  },
+  "observed": {
+    "top_level_passed": [
+      "TestDeviceAdamWHardwareChunkFailureRollsBackEveryBank",
+      "TestDeviceAdamWFreshProcessContinuation",
+      "TestDeviceAdamWMatchesFloat32ReferenceAcrossWorkgroups",
+      "TestDeviceAdamWSnapshotRestoreContinuesExactly",
+      "TestDeviceAdamWRejectsInvalidStepInputsAtomically",
+      "TestDeviceAdamWRejectsNonFiniteCandidateAndCounterOverflowAtomically",
+      "TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen",
+      "TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen",
+      "TestDeviceAdamWNilReceiverAndCloseIdempotent",
+      "TestDeviceAdamWPlanIncludesExplicitUploadBuffers",
+      "TestDeviceAdamWCancelledMapDrainsBeforeReuse"
+    ],
+    "top_level_skip": [
+      "TestDeviceAdamWChildProcess"
+    ],
+    "child_process": "Actual Metal restore and continuation completed; the top-level helper skip is intentional",
+    "metrics": [
+      "device_adam_hardware_test.go:76: real-device chunks=3 allocated_logical_bytes=7492 adapter=Apple M3 backend=Metal",
+      "device_adam_hardware_test.go:150: restored_hardware_metrics={Device:{Adapter:Apple M3 Backend:Metal Vendor:Apple Driver:Metal DeviceType:DiscreteGPU} Initialization:348.383167ms Compilation:124.271334ms InitialTransfer:5.75µs Warmup:2.400167ms Transfer:48.125µs Dispatch:41.834µs Readback:208.125µs AllocatedBytes:268 BytesUploaded:168 BytesReadBack:56 Values:3 Chunks:1}",
+      "device_adam_hardware_test.go:119: constructor_and_step_metrics={Device:{Adapter:Apple M3 Backend:Metal Vendor:Apple Driver:Metal DeviceType:DiscreteGPU} Initialization:3.592834ms Compilation:1.154791ms InitialTransfer:833ns Warmup:1.9635ms Transfer:30.792µs Dispatch:55.5µs Readback:141.708µs AllocatedBytes:268 BytesUploaded:228 BytesReadBack:108 Values:3 Chunks:1}"
+    ],
+    "cross_chunk_case": "Three real device chunks with a reduced planning limit, 130 values and 7492 logical buffer bytes; not native capacity or fullgraph measurement"
+  },
+  "logs": [
+    {
+      "source": "runs/.tmp/goal-91-20261012/device-adam-hardware-first.log",
+      "artifact": "shader-before-fix.log",
+      "bytes": 93364,
+      "sha256": "8f150c36ececcf5261d25fa4cbcaf22e2445e917f91bb2d7b752083dc303e809"
+    },
+    {
+      "source": "runs/.tmp/goal-91-20261012/device-adam-hardware-final.jsonl",
+      "artifact": "upload-scope-before-fix.jsonl",
+      "bytes": 46809,
+      "sha256": "4e181a66af81e4ace6f4d15df9bac64de58e482715f2decd1a6e57d6d5fc91b4"
+    },
+    {
+      "source": "runs/.tmp/goal-91-20261012/device-adam-hardware-upload-fixed.jsonl",
+      "artifact": "hardware.jsonl",
+      "bytes": 52361,
+      "sha256": "446086baf7374a0c866d7adab29bb2c2eec2bd44da77505dd69b82aa15510900"
+    },
+    {
+      "source": "runs/.tmp/goal-91-20261012/red-adam-explicit-budget.log",
+      "artifact": "budget-before-fix.log",
+      "bytes": 259,
+      "sha256": "43e0f924c38d7cbd66449cd394596051a395da083520fa250f0d53d3f5339404"
+    },
+    {
+      "source": "runs/.tmp/goal-91-20261012/red-adam-map-cancel.log",
+      "artifact": "cancel-before-fix.log",
+      "bytes": 290,
+      "sha256": "be2ad149ac3f9ff4643fb7c1384fa31fda9b4266a4f8b636a82a9c449c65530c"
+    }
+  ],
+  "limitations": [
+    "Metal on Apple M3 only; no Linux/Windows execution evidence",
+    "Logical buffer Size excludes backend alignment and driver physical memory",
+    "Existing GPUTrainer uses CPU AdamW; this primitive does not yet change that path"
+  ],
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-count=1",
+    "-json",
+    "-timeout",
+    "180s",
+    "-run",
+    "^(TestDeviceAdamW|TestNewDeviceAdamW|TestRestoreDeviceAdamW)",
+    "./backend/webgpu"
+  ],
+  "full_validation_passed": true
+}

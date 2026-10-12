@@ -2,10 +2,12 @@ package learning
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"sync"
 
+	"github.com/TimLai666/coimnet/backend/webgpu"
 	"github.com/TimLai666/coimnet/dynamics"
 )
 
@@ -137,11 +139,15 @@ type Trainer struct {
 	optimizer   AdamState
 	updates     uint64
 	accumulator *GradientAccumulator
+	deviceAdam  *webgpu.DeviceAdamW
 }
 
 // NewTrainer validates the entire model before making an owned parameter copy.
 func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if err := validateOptions(o); err != nil {
+		return nil, err
+	}
+	if err := preflightTrainerParameters(c, p); err != nil {
 		return nil, err
 	}
 	n, err := NewNetwork(c)
@@ -242,10 +248,18 @@ func (tr *Trainer) Close() error {
 	}
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
-	if core, ok := tr.network.core.(gpuContinuousCore); ok && core.gpu != nil {
-		return core.gpu.Close()
+	var closeErrs []error
+	if tr.deviceAdam != nil {
+		if err := tr.deviceAdam.Close(); err != nil {
+			closeErrs = append(closeErrs, err)
+		}
 	}
-	return nil
+	if core, ok := tr.network.core.(gpuContinuousCore); ok && core.gpu != nil {
+		if err := core.gpu.Close(); err != nil {
+			closeErrs = append(closeErrs, err)
+		}
+	}
+	return errors.Join(closeErrs...)
 }
 
 // Predict runs a frozen, independent episode without changing trainer state.
@@ -385,6 +399,9 @@ func gradientHorizon(rows, truncation int) int {
 func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss float64, known bool, g Gradient, initial *NeuralState) (StepResult, error) {
 	var zero StepResult
 	var err error
+	if tr.deviceAdam != nil && initial != nil {
+		return zero, ErrGPUTrainerStateUnsupported
+	}
 	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
 	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes(), tr.network.core)
@@ -398,7 +415,6 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 		reduceSharedGradients(grad, plan)
 		mask, _ = sharedMaskFreeze(mask, plan)
 	}
-	state := copyAdam(tr.optimizer)
 	// Loss scaling multiplies and divides back here, before the gradient
 	// reaches the accumulator or the clip: a product that leaves the
 	// representable range rejects the whole step rather than saturating it.
@@ -491,6 +507,10 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	if !finite(rate) || rate < 0 {
 		return zero, fmt.Errorf("scheduled learning rate %g at update %d is not usable", rate, tr.updates)
 	}
+	if tr.deviceAdam != nil {
+		return tr.applyDeviceAdamUpdate(ctx, input, loss, known, mean, mask, norm, scale, rate)
+	}
+	state := copyAdam(tr.optimizer)
 	// Only a constrained model pays for the pre-update copy the projection
 	// needs to report an update norm that includes the projection.
 	project := constrained(tr.network.fixed, tr.options.Ranges)

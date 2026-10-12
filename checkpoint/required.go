@@ -116,6 +116,14 @@ func checkRequiredFields(data []byte, target reflect.Type, path string) error {
 }
 
 func checkArrayElements(data []byte, element reflect.Type, path string) error {
+	// encoding/json represents byte slices as base64 strings.
+	if element.Kind() == reflect.Uint8 && isJSONScalarToken(data, "string") {
+		var values []byte
+		if err := json.Unmarshal(data, &values); err != nil {
+			return fmt.Errorf("%s is not a valid encoded byte slice: %w", path, err)
+		}
+		return nil
+	}
 	var items []json.RawMessage
 	if err := json.Unmarshal(data, &items); err != nil {
 		return fmt.Errorf("%s is not a JSON array: %w", path, err)

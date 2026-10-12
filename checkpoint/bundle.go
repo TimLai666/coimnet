@@ -26,10 +26,12 @@ const BundleSchemaVersion = "coimnet-checkpoint-bundle/v2"
 // BundleModelPackage identifies a model package bundle.
 // BundleIndividual identifies an individual snapshot bundle.
 // BundleTraining identifies a training snapshot bundle.
+// BundleTaskTraining identifies a task configuration and training bundle.
 const (
 	BundleModelPackage = "model_package"
 	BundleIndividual   = "individual"
 	BundleTraining     = "training"
+	BundleTaskTraining = "task_training"
 )
 
 const (
@@ -291,6 +293,11 @@ func readBundle(ctx context.Context, dir, kind string, value any) (BundleManifes
 	if err := checkUniqueJSON(data); err != nil {
 		return empty, fmt.Errorf("invalid bundle manifest %q: %w", manifestPath, err)
 	}
+	if kind == BundleTaskTraining {
+		if err := checkRequiredFields(data, reflect.TypeOf(BundleManifest{}), "manifest"); err != nil {
+			return empty, fmt.Errorf("invalid task bundle manifest %q: %w", manifestPath, err)
+		}
+	}
 	var manifest BundleManifest
 	if err := decodeStrict(data, &manifest); err != nil {
 		return empty, fmt.Errorf("decode bundle manifest %q: %w", manifestPath, err)
@@ -480,7 +487,7 @@ func bundleSkeleton(value reflect.Value, path string, arrays *[]bundleArrayValue
 		if path != "" {
 			fieldPath = path + "." + name
 		}
-		if field.Kind() == reflect.Slice && field.Len() >= bundleArrayThreshold {
+		if field.Kind() == reflect.Slice && field.Type() != reflect.TypeOf(json.RawMessage{}) && field.Len() >= bundleArrayThreshold {
 			if dtype := bundleDType(field.Type().Elem().Kind()); dtype != "" {
 				*arrays = append(*arrays, bundleArrayValue{entry: BundleArray{Path: fieldPath, DType: dtype, Length: int64(field.Len())}, value: field})
 				copy.Field(i).Set(reflect.MakeSlice(field.Type(), 0, 0))
@@ -792,7 +799,7 @@ func digestHex(data []byte) string { sum := sha256.Sum256(data); return hex.Enco
 // validBundleKind reports whether kind names one of the supported bundle kinds.
 func validBundleKind(kind string) bool {
 	switch kind {
-	case BundleModelPackage, BundleIndividual, BundleTraining:
+	case BundleModelPackage, BundleIndividual, BundleTraining, BundleTaskTraining:
 		return true
 	default:
 		return false

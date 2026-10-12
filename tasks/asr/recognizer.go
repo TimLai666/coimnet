@@ -62,9 +62,10 @@ func (c RecognizerConfig) Validate() error {
 // Recognizer reads log-mel frames one per step and emits one logit row per
 // frame (blank 0, class k = Alphabet[k-1]).
 type Recognizer struct {
-	trainer *learning.Trainer
-	config  RecognizerConfig
-	index   map[rune]int
+	trainer                *learning.Trainer
+	config                 RecognizerConfig
+	index                  map[rune]int
+	loadedCheckpointSHA256 string
 }
 
 // TrainReport is one TrainUtterance call: the CTC loss before the update,

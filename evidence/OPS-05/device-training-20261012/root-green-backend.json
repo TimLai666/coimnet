@@ -1,0 +1,116 @@
+{
+  "command": [
+    "/usr/local/go/bin/go",
+    "test",
+    "-p",
+    "1",
+    "-count=1",
+    "-json",
+    "-timeout",
+    "180s",
+    "-run",
+    "^Test(DeviceAdamW|NewDeviceAdamW|RestoreDeviceAdamW)",
+    "./backend/webgpu"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 1.9749019145965576,
+  "source_sha256": {
+    "backend/webgpu/device_adam_checked_test.go": "d05fafcc97c68f91d7fb6c7bf8924105d563661dc062d1fbac21ff2d9ca5fc4f",
+    "backend/webgpu/device_adam_execute.go": "de09379656f3a8d4752f4442d467ce9c27a2a1a834346ffe0ac688731097b87d",
+    "backend/webgpu/device_adam.wgsl": "200c54435c7af02c88821fe0d6e3f89eaa0b2fb664f6c63e37b55c841690da5f",
+    "backend/webgpu/device_adam_test.go": "806ad8240257d5659be6f4155a3e57d51d1623a6015b8e7f7812e35f9cae4cdc",
+    "backend/webgpu/device_adam.go": "4ae953bf0cc5c984167d28a1d98c3de1f09f227e95fd34e9b877e6c7aee8935e",
+    "backend/webgpu/sparse_drive.go": "f2edb1ec14334f32af83c8ce61c3e01f77198da71c2f1a718454cc1ef203e055",
+    "backend/webgpu/sparse_backward.go": "2192dd139fb4f68e599bd71540c9ecb58dbda74a42b27c2fe876518d72b4f84e",
+    "backend/webgpu/doc.go": "70054c94549e9406f4c602db77f9c41ffcac690a4b3ae4af7cf1e67960339c14",
+    "backend/webgpu/device_adam_hardware_test.go": "6ab87a0da3b9e737654ddb2e9de66c97a6ffd87fe6e88817516e8bb0091a2e81",
+    "backend/webgpu/sparse_drive_test.go": "ea5925dc42864d70b8a02733506ba425a892511c48fb9e752eaa3a190b55dbd8",
+    "backend/webgpu/device_adam_buffers.go": "218df671b784ce865b1a95da3a66abdbfba4d09a378ab5a17016d24e14f24bb7",
+    "backend/webgpu/sparse_backward_test.go": "84fb30d57124602f605be3cff250b286fce7276c0f254f709370b17d0595e927",
+    "backend/webgpu/device_adam_transaction_test.go": "8d083654aa6b3953e23c4f97cc017c1cc4094095c73c1f25f0cc599b82919ad1",
+    "backend/webgpu/device_adam_checked.go": "20744b7bcb5b565bed96dd4ffe849871c3c1831395503e98526a5cd9e04dfde6"
+  },
+  "log_sha256": "35df499257adc9cad8786d54934c7d77b111d4d1520dadf6b7db2510d6177913",
+  "test_results": [
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedTransactions",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedRejectsInvalidInputsAtomically",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedCloseIsTerminalAndIdempotent",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCheckedRestoreOwnsStateAndIgnoresFrozenHugeGradient",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWHardwareChunkFailureRollsBackEveryBank",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWFreshProcessContinuation",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWChildProcess",
+      "Action": "skip"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWMatchesFloat32ReferenceAcrossWorkgroups",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWSnapshotRestoreContinuesExactly",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWRejectsInvalidStepInputsAtomically",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWRejectsNonFiniteCandidateAndCounterOverflowAtomically",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestRestoreDeviceAdamWRejectsCorruptSnapshotsBeforeDeviceOpen",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestNewDeviceAdamWRejectsInvalidConfigBeforeDeviceOpen",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWNilReceiverAndCloseIdempotent",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWPlanIncludesExplicitUploadBuffers",
+      "Action": "pass"
+    },
+    {
+      "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+      "Test": "TestDeviceAdamWCancelledMapDrainsBeforeReuse",
+      "Action": "pass"
+    }
+  ]
+}

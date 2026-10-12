@@ -2,7 +2,7 @@
 
 This example imports short intervals from two official Blender open films, trains a small sample-specific sequence regressor through `learning.Trainer.StepFrom`, creates a new frozen `learning.Network` for `PredictAll`, and evaluates decoded RGB frames and the audio embedded in each source MP4. The existing `tasks/media.VideoGenerator` fixture contract remains unchanged and continues to use synthetic `RenderVideo` targets.
 
-The repository contains only this manifest, code, and documentation. Keep source movies and all run outputs outside Git. The importer verifies each MP4 SHA-256, probes its dimensions, duration, codecs and audio-track metadata, rejects unsafe paths, and applies bounded FFmpeg transforms. It requires `ffmpeg` and `ffprobe` on `PATH`.
+The repository contains only this manifest, code, and documentation. Keep source movies in the Git-ignored `data/` tree and model/run outputs in the Git-ignored `models/` and `runs/` trees. The importer verifies each MP4 SHA-256, probes its dimensions, duration, codecs and audio-track metadata, rejects unsafe paths, and applies bounded FFmpeg transforms. It requires `ffmpeg` and `ffprobe` on `PATH`.
 
 ## Run
 
@@ -16,6 +16,27 @@ go run ./examples/realmedia \
 ```
 
 The command writes the exact manifest, trained snapshot, JSON report, predicted PNG sequence, 8 kHz mono WAV, synchronized H.264/AAC preview MP4, and a frame/audio timeline. It refuses an existing output directory. The preview MP4 is enlarged from the model's 8×8 pixels for easier viewing; enlargement does not add image detail. The report lists SHA-256 fingerprints for the manifest, model, and each media artifact; the command prints the report's own SHA-256 separately.
+
+## Save and restore a model bundle
+
+`--model-output NEW` trains once and saves a new `coimnet-realmedia-model/v1` task bundle. Its config binds the verified manifest SHA-256, output specification, encoder/decoder/scale profiles, feature dimensions, seed, and output scales; the bundle manifest SHA-256 is read back before the run continues. `--model-input OLD` loads an existing bundle in a new process and performs inference without training. The two flags are mutually exclusive. Data, media output, model input, and model output paths must be separate, and an existing output or model-output directory is rejected.
+
+The following are the two complete new-process commands. `realmedia-trained` and `realmedia-restored` are separate output directories, and `realmedia-model` is created by the first command:
+
+```sh
+mkdir -p models/TSK-11 runs/TSK-11
+go run ./examples/realmedia \
+  --data-root data/TSK-11/blender-open-movies \
+  --out-dir runs/TSK-11/realmedia-trained \
+  --model-output models/TSK-11/realmedia-model
+
+go run ./examples/realmedia \
+  --data-root data/TSK-11/blender-open-movies \
+  --out-dir runs/TSK-11/realmedia-restored \
+  --model-input models/TSK-11/realmedia-model
+```
+
+The trained report records cumulative `training.updates` and `training.this_run_updates`; the restored report records `training.epochs: 0`, `training.this_run_updates: 0`, and retains the cumulative update count from the bundle. A 2026-10-12 licensed receipt recorded 120 cumulative updates, with 11 trained-model/PNG/WAV/timeline files equal between the trained and restored runs. The restored score was equal as well. PNG, WAV, and timeline equality does not promise byte equality for the preview MP4 because its container and time metadata may differ. If a later report or export step fails after a model bundle is committed, the model path is retained and the error reports that partial success.
 
 The manifest's expected source fingerprints are:
 

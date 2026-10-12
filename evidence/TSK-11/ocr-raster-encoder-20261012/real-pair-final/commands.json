@@ -1,0 +1,122 @@
+[
+  {
+    "name": "build",
+    "command": [
+      "/usr/local/go/bin/go",
+      "build",
+      "-p",
+      "2",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/realocr",
+      "./examples/realocr"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 1.9606389999389648,
+    "log": "build.log",
+    "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "name": "fixed-train",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "fixed",
+      "--model-output",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/fixed-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/fixed-train.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 4.408232927322388,
+    "log": "fixed-train.log",
+    "log_sha256": "f0f63b2a2e570ef5047291015f875343ac55ad3ca7fe1feecdc3b53b3ff98208"
+  },
+  {
+    "name": "fixed-restore",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "fixed",
+      "--model-input",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/fixed-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/fixed-restore.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.9253737926483154,
+    "log": "fixed-restore.log",
+    "log_sha256": "6ac236e33ca4f02dacaed579f488b476b35e49b0f77dbf436dc59c2ce3ac8b78"
+  },
+  {
+    "name": "trainable-train",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "trainable",
+      "--model-output",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/trainable-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/trainable-train.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 3.472843885421753,
+    "log": "trainable-train.log",
+    "log_sha256": "91f0afb5b232899f099f1a77f0edf0ecef3c70fc80296cd161bfdf352fb27c34"
+  },
+  {
+    "name": "trainable-restore",
+    "command": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/realocr",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/data/TSK-11/kmnist",
+      "--train-count",
+      "1000",
+      "--test-count",
+      "200",
+      "--epochs",
+      "1",
+      "--seed",
+      "20260924",
+      "--encoder",
+      "trainable",
+      "--model-input",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/trainable-model",
+      "--report",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/real-pair-final/trainable-restore.json"
+    ],
+    "exit_code": 0,
+    "elapsed_seconds": 0.9362270832061768,
+    "log": "trainable-restore.log",
+    "log_sha256": "2e1737331b809b5a87bbdbcf6d9d9dc860f1a00e536eb5691626ea9298f35f11"
+  }
+]

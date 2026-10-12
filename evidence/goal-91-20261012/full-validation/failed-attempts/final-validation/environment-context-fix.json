@@ -1,0 +1,17 @@
+{
+  "problem": "The isolated plain source copy had no own Git boundary. Existing realnav output-boundary tests resolved the parent repository and regarded the nested clone path under parent runs as permitted output.",
+  "repair": "Initialized a real empty local Git repository at the isolated copy root. No executable source, test case, or assertion changed.",
+  "git_init_command": [
+    "git",
+    "init",
+    "--initial-branch=codex/goal-91"
+  ],
+  "source_manifest": "source-frozen.json",
+  "original_failure_log": "unit.log",
+  "repeat_full_validation_pending": true,
+  "owned_side_effect_cleanup": {
+    "path": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/examples/realnav/forbidden-rollout-output",
+    "condition": "Read and confirmed an empty directory created by the initial failed boundary test; removed with rmdir only.",
+    "at": "2026-10-12T02:14:44.850315+00:00"
+  }
+}

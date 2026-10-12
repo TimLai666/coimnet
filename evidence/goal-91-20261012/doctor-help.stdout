@@ -1,0 +1,24 @@
+Usage: coimnet doctor
+Report actual runtime, CPU, memory, detected devices and GPU support constraints as JSON.
+
+Legacy host mode uses learning.NewGPUTrainer and learning.RestoreGPUTrainer. Its
+pure scalar, zero-delay continuous model trains independent episodes with
+float32 sparse operations, neural_state=cpu_float64, activation=cpu and the
+cpu_adamw optimizer. Its episode snapshot supports host save/restore.
+
+Opt-in device mode uses learning.NewGPUDeviceTrainer and
+learning.RestoreGPUDeviceTrainer. It uses float32 and a resident optimizer
+(device_adamw), then provides complete_training_bundle save/restore through a
+verified CPU parameter mirror. Host neural state and activations remain on the host;
+sparse transfers are limited to the supported core path. Unsupported options, in
+stable order, are: lif, vector_matrix_edges, delays, recompute,
+persistent_neural_state, ranges, fixed_signs, weight_sharing.
+
+GPU hardware does not imply core execution: execution=not_probed. Full graph
+support is unverified (full_graph=unverified). Insyra encoder/readout
+execution is not measured (not_probed). Insyra execution limits remain, and
+matrix acceleration does not remove them. Device parameter updates and device
+state saving remain not_implemented for the legacy host trainer.
+Missing optional device tools are reported as unknown.
+Example: coimnet doctor
+Errors: invalid arguments, canceled execution or output failure.

@@ -1,0 +1,346 @@
+{
+  "snapshot": {
+    "schema_version": "coimnet-episode-training/v1",
+    "config": {
+      "dynamics": {
+        "nodes": 4,
+        "sources": [
+          0,
+          1,
+          2,
+          3,
+          0
+        ],
+        "targets": [
+          1,
+          2,
+          3,
+          0,
+          2
+        ],
+        "delays": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "dt": 0.4,
+        "activation": "tanh"
+      },
+      "input_size": 2,
+      "output_size": 1,
+      "readout_nodes": [
+        2,
+        3
+      ]
+    },
+    "parameters": {
+      "core": {
+        "weights": [
+          0.32692375779151917,
+          -0.20000000298023224,
+          0.37690868973731995,
+          0.15000000596046448,
+          -0.07697704434394836
+        ],
+        "bias": [
+          0.00699322484433651,
+          -0.019999999552965164,
+          0.032997943460941315,
+          0.03999999910593033
+        ],
+        "log_tau": [
+          0.12297303974628448,
+          -0.05000000074505806,
+          0.042994752526283264,
+          0.07999999821186066
+        ]
+      },
+      "encoder": [
+        0.3769094944000244,
+        -0.17296463251113892,
+        0.27294182777404785,
+        -0.32293063402175903,
+        0.17695575952529907,
+        0.07697765529155731,
+        0.026988456025719643,
+        -0.226942777633667
+      ],
+      "readout": [
+        0.7228381037712097,
+        -0.42689648270606995
+      ]
+    },
+    "options": {
+      "learning_rate": 0.023,
+      "beta1": 0.8999999761581421,
+      "beta2": 0.9990000128746033,
+      "epsilon": 9.99999993922529e-9,
+      "weight_decay": 0.009999999776482582,
+      "clip_norm": 0.01,
+      "truncation": 0,
+      "trainable": {
+        "encoder": true,
+        "weights": true,
+        "bias": true,
+        "tau": true,
+        "readout": true
+      },
+      "masks": {
+        "edges": [
+          true,
+          false,
+          true,
+          false,
+          true
+        ],
+        "nodes": [
+          true,
+          false,
+          true,
+          false
+        ]
+      },
+      "accumulate_steps": 3,
+      "schedule": {
+        "kind": "constant",
+        "warmup_updates": 1
+      }
+    },
+    "optimizer": {
+      "first": [
+        0.000009632657565816771,
+        0,
+        0.00004609839015756734,
+        0,
+        -0.000140060466947034,
+        0.00011175288818776608,
+        0,
+        -0.0018679634667932987,
+        0,
+        -0.000010334561920899432,
+        0,
+        -0.000047967852879082784,
+        0,
+        0.000024765300622675568,
+        0.00003851494693662971,
+        -0.000046206347178667784,
+        0.00006871401274111122,
+        0.00002162987584597431,
+        0.00004744606121676043,
+        0.00019770031212829053,
+        -0.00008018514927243814,
+        -0.000037889243685640395,
+        -0.00015924715262372047
+      ],
+      "second": [
+        5.13797598217236e-12,
+        0,
+        1.1767151142372256e-10,
+        0,
+        1.0862528654342896e-9,
+        6.915399364260111e-10,
+        0,
+        1.9321311128805974e-7,
+        0,
+        5.9140366215348905e-12,
+        0,
+        1.274090832836805e-10,
+        0,
+        3.396151068701947e-11,
+        8.214069702194848e-11,
+        1.1822329226696127e-10,
+        2.6145108300568154e-10,
+        2.5906447126411436e-11,
+        1.2465226073565816e-10,
+        2.1642854175496495e-9,
+        3.560309269623474e-10,
+        7.949349511982007e-11,
+        1.404245830727291e-9
+      ],
+      "steps": [
+        2,
+        0,
+        2,
+        0,
+        2,
+        2,
+        0,
+        2,
+        0,
+        2,
+        0,
+        2,
+        0,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2
+      ]
+    },
+    "updates": 2,
+    "accumulator": {
+      "sum": [
+        0.0011884958657901734,
+        0,
+        0.00875931594055146,
+        0,
+        -0.016667192452587187,
+        0.013511652389194098,
+        0,
+        -0.29128093314983133,
+        0,
+        -0.0009996535374538619,
+        0,
+        -0.0026845869189712386,
+        0,
+        0.003096690634265542,
+        0.006002957699820399,
+        -0.008640348678454757,
+        0.009725425858050585,
+        0.002504310861695558,
+        0.007207577116787434,
+        0.028201275505125523,
+        -0.011393036460503936,
+        -0.019308653194457293,
+        -0.024315637536346912
+      ],
+      "count": 2
+    }
+  },
+  "prediction": [
+    0.006219135131686926
+  ],
+  "adapters": {
+    "Forward": {
+      "Adapter": "Apple M3",
+      "Backend": "Metal",
+      "Vendor": "Apple",
+      "Driver": "Metal",
+      "DeviceType": "DiscreteGPU"
+    },
+    "Backward": {
+      "Adapter": "Apple M3",
+      "Backend": "Metal",
+      "Vendor": "Apple",
+      "Driver": "Metal",
+      "DeviceType": "DiscreteGPU"
+    }
+  },
+  "optimizer": {
+    "Device": {
+      "Adapter": "Apple M3",
+      "Backend": "Metal",
+      "Vendor": "Apple",
+      "Driver": "Metal",
+      "DeviceType": "DiscreteGPU"
+    },
+    "Initialization": 46136916,
+    "Compilation": 3225041,
+    "InitialTransfer": 3292,
+    "Warmup": 11915459,
+    "Transfer": 58333,
+    "Dispatch": 50041,
+    "Readback": 687751,
+    "AllocatedBytes": 1548,
+    "BytesUploaded": 1028,
+    "BytesReadBack": 748,
+    "Values": 23,
+    "Chunks": 1
+  },
+  "step_seconds": [
+    0.004086333,
+    0.007345584,
+    0.004157416,
+    0.005683333,
+    0.006952042,
+    0.004141167,
+    0.00345425
+  ],
+  "steps": [
+    {
+      "loss": 0.03543733060359955,
+      "loss_known": true,
+      "gradient_norm": 0.18624068949990236,
+      "update_norm": 0,
+      "updates": 0,
+      "learning_rate": 0,
+      "applied": false,
+      "accumulated": 2,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.0971892848610878,
+      "loss_known": true,
+      "gradient_norm": 0.3084276272303617,
+      "update_norm": 0,
+      "updates": 1,
+      "learning_rate": 0,
+      "applied": true,
+      "accumulated": 0,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.007787718437612057,
+      "loss_known": true,
+      "gradient_norm": 0.08730702797158779,
+      "update_norm": 0,
+      "updates": 1,
+      "learning_rate": 0,
+      "applied": false,
+      "accumulated": 1,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.3742404878139496,
+      "loss_known": true,
+      "gradient_norm": 0.605228630436196,
+      "update_norm": 0,
+      "updates": 1,
+      "learning_rate": 0,
+      "applied": false,
+      "accumulated": 2,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.15073655545711517,
+      "loss_known": true,
+      "gradient_norm": 0.3841080160092276,
+      "update_norm": 0.0948724660197903,
+      "updates": 2,
+      "learning_rate": 0.023000000044703484,
+      "applied": true,
+      "accumulated": 0,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.03755102679133415,
+      "loss_known": true,
+      "gradient_norm": 0.1993961205074861,
+      "update_norm": 0,
+      "updates": 2,
+      "learning_rate": 0,
+      "applied": false,
+      "accumulated": 1,
+      "gradient_horizon_steps": 4
+    },
+    {
+      "loss": 0.00879485160112381,
+      "loss_known": true,
+      "gradient_norm": 0.09649838658680912,
+      "update_norm": 0,
+      "updates": 2,
+      "learning_rate": 0,
+      "applied": false,
+      "accumulated": 2,
+      "gradient_horizon_steps": 4
+    }
+  ]
+}

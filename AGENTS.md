@@ -57,7 +57,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
-- `tasks/ocr/page.go`：`Stack` 的 background=NaN 會成功並在行距列留下 NaN，`SegmentLines` 的 threshold=NaN 會成功回空區塊；兩個公開入口的範圍比較都沒擋 NaN。補有限值檢查與回歸測試（P2）。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。
 - `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
 - `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。

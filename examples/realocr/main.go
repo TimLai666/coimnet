@@ -19,6 +19,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"runtime/debug"
 	"strconv"
@@ -131,14 +132,17 @@ type RunConfig struct {
 	MaxCompressedBytes   int64   `json:"max_compressed_bytes"`
 	MaxUncompressedBytes int64   `json:"max_uncompressed_bytes"`
 	Selection            string  `json:"selection"`
+	Encoder              string  `json:"encoder,omitempty"`
 }
 
 // EvalResult keeps the two requested before/after metrics compact and
 // deterministic. CER is over Unicode code points, as implemented by tasks/ocr.
 type EvalResult struct {
-	CER     float64 `json:"cer"`
-	Exact   float64 `json:"exact_lines"`
-	Samples int     `json:"samples"`
+	CER              float64 `json:"cer"`
+	Exact            float64 `json:"exact_lines"`
+	Samples          int     `json:"samples"`
+	EmptyOutputs     int     `json:"empty_outputs"`
+	EmptyOutputRatio float64 `json:"empty_output_ratio"`
 }
 
 // SourceFile is a verified source fingerprint included in every report.
@@ -191,18 +195,29 @@ type TrainSummary struct {
 // Report is deterministic JSON. Runtime timing is printed separately to
 // stderr, so two identical runs can be compared byte-for-byte.
 type Report struct {
-	SchemaVersion  string             `json:"schema_version"`
-	Example        string             `json:"example"`
-	DataScope      DataScope          `json:"data_scope"`
-	Source         SourceReport       `json:"source"`
-	Program        ProgramFingerprint `json:"program"`
-	Config         RunConfig          `json:"config"`
-	ConfigHash     string             `json:"config_hash"`
-	Before         EvalResult         `json:"before"`
-	After          EvalResult         `json:"after"`
-	Train          TrainSummary       `json:"train"`
-	ModelPersisted bool               `json:"model_persisted"`
-	Limitations    []string           `json:"limitations"`
+	SchemaVersion  string                `json:"schema_version"`
+	Model          *realOCRModelArtifact `json:"model,omitempty"`
+	Example        string                `json:"example"`
+	DataScope      DataScope             `json:"data_scope"`
+	Source         SourceReport          `json:"source"`
+	Program        ProgramFingerprint    `json:"program"`
+	Config         RunConfig             `json:"config"`
+	ConfigHash     string                `json:"config_hash"`
+	Before         EvalResult            `json:"before"`
+	After          EvalResult            `json:"after"`
+	Train          TrainSummary          `json:"train"`
+	ModelPersisted bool                  `json:"model_persisted"`
+	EncoderProfile EncoderProfile        `json:"encoder_profile"`
+	Limitations    []string              `json:"limitations"`
+}
+
+// EncoderProfile records actual model capacity and which encoder can update.
+type EncoderProfile struct {
+	Mode              string `json:"mode"`
+	EncoderParameters int    `json:"encoder_parameters"`
+	CoreParameters    int    `json:"core_parameters"`
+	ReadoutParameters int    `json:"readout_parameters"`
+	Updates           uint64 `json:"updates"`
 }
 
 // DataScope prevents a one-character benchmark from being mistaken for page
@@ -228,13 +243,18 @@ func main() {
 		epochs          = flag.Int("epochs", defaultEpochs, "training epochs over the selected train split")
 		hidden          = flag.Int("hidden", defaultHidden, "recognizer recurrent hidden nodes")
 		learningRate    = flag.Float64("learning-rate", defaultLearningRate, "positive finite AdamW learning rate")
+		encoder         = flag.String("encoder", "fixed", "--encoder mode: fixed or trainable")
 		seed            = flag.Uint64("seed", 20260924, "deterministic recognizer initialization seed")
 		maxCompressed   = flag.Int64("max-compressed-bytes", defaultMaxCompressedBytes, "maximum compressed bytes per IDX gzip")
 		maxUncompressed = flag.Int64("max-uncompressed-bytes", defaultMaxUncompressedBytes, "maximum uncompressed bytes per IDX gzip")
 		reportPath      = flag.String("report", "", "optional path for the deterministic JSON report")
+		modelInput      = flag.String("model-input", "", "existing task-model bundle to evaluate without training; excludes --model-output")
+		modelOutput     = flag.String("model-output", "", "new task-model bundle directory to save after training; excludes --model-input")
 	)
 	flag.Usage = func() {
 		fmt.Fprintf(flag.CommandLine.Output(), "realocr: EXAMPLE ONLY; run tasks/ocr.Recognizer on single-character KMNIST data, not page OCR\n\n")
+		fmt.Fprintln(flag.CommandLine.Output(), "Usage: go run ./examples/realocr --data-dir PATH [--model-output NEW_DIR | --model-input DIR]")
+		fmt.Fprintln(flag.CommandLine.Output(), "Model flags are exclusive. Output saves complete task configuration and optimizer state in a new directory. Input evaluates a saved model without updates, retaining the declared data selection and model profile. Errors include invalid data or settings, incompatible/corrupt models, existing model output directory and output failure.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -251,12 +271,12 @@ func main() {
 	if err != nil {
 		fatal(err)
 	}
-	report, err := Run(ctx, dataset, RunConfig{
+	report, err := RunWithModel(ctx, dataset, RunConfig{
 		Seed: *seed, TrainCount: *trainCount, TestCount: *testCount, Epochs: *epochs,
 		Hidden: *hidden, LearningRate: *learningRate,
 		MaxCompressedBytes: *maxCompressed, MaxUncompressedBytes: *maxUncompressed,
-		Selection: "balanced_round_robin_by_label_v1",
-	})
+		Selection: "balanced_round_robin_by_label_v1", Encoder: *encoder,
+	}, *modelInput, *modelOutput)
 	if err != nil {
 		fatal(err)
 	}
@@ -677,8 +697,12 @@ func makeSamples(images []glyphs.Image, indices []int, labels []int, mapping []C
 }
 
 // Run uses only dataset.Train for updates and evaluates only dataset.Test.
-// It intentionally never snapshots or writes the recognizer model.
+// Empty model paths keep the original in-memory behavior.
 func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error) {
+	return RunWithModel(ctx, dataset, config, "", "")
+}
+
+func runWithModel(ctx context.Context, dataset Dataset, config RunConfig, modelInput, modelOutput string) (Report, error) {
 	var zero Report
 	if err := validateRunConfig(config, dataset); err != nil {
 		return zero, err
@@ -690,10 +714,21 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 	for i, mapping := range dataset.Metadata.Mapping {
 		alphabet[i] = []rune(mapping.Char)[0]
 	}
-	recognizer, err := ocr.NewRecognizer(ocr.RecognizerConfig{
+	modelConfig := ocr.RecognizerConfig{
 		Height: imageRows, Hidden: config.Hidden, Alphabet: alphabet,
 		LearningRate: config.LearningRate, Seed: config.Seed,
-	})
+		TrainableEncoder: config.Encoder == "trainable",
+	}
+	var recognizer *ocr.Recognizer
+	var err error
+	if modelInput == "" {
+		recognizer, err = ocr.NewRecognizer(modelConfig)
+	} else {
+		recognizer, err = ocr.LoadRecognizer(ctx, modelInput)
+		if err == nil && !reflect.DeepEqual(recognizer.Config(), modelConfig) {
+			return zero, errors.New("realocr: saved model task configuration differs from the requested profile")
+		}
+	}
 	if err != nil {
 		return zero, fmt.Errorf("realocr: create recognizer: %w", err)
 	}
@@ -702,7 +737,11 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 		return zero, fmt.Errorf("realocr: evaluate before training: %w", err)
 	}
 	updates, impossible := 0, 0
-	for epoch := 0; epoch < config.Epochs; epoch++ {
+	epochs := config.Epochs
+	if modelInput != "" {
+		epochs = 0
+	}
+	for epoch := 0; epoch < epochs; epoch++ {
 		for i, sample := range dataset.Train {
 			if err := ctx.Err(); err != nil {
 				return zero, err
@@ -726,7 +765,7 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 	if err != nil {
 		return zero, err
 	}
-	return Report{
+	report := Report{
 		SchemaVersion: reportSchemaVersion,
 		Example:       "realocr: official KMNIST single-character OCR example",
 		DataScope: DataScope{
@@ -734,7 +773,12 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 			Language:       "Japanese hiragana label subset: 10 official KMNIST classes",
 			Resolution:     "28x28 grayscale, IDX unsigned bytes normalized to [0,1]",
 			SequenceLength: "one Unicode character per sample; 28 image columns are read as the CTC time sequence",
-			Periphery:      "identity row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder",
+			Periphery: func() string {
+				if config.Encoder == "trainable" {
+					return "identity-initialized trainable row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+				}
+				return "identity row encoder, recurrent continuous core, per-column linear readout, greedy CTC decoder"
+			}(),
 		},
 		Source: SourceReport{
 			Dataset: dataset.Metadata.Dataset, RepositoryURL: dataset.Metadata.RepositoryURL,
@@ -749,8 +793,9 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 		},
 		Program: programFingerprint(), Config: config, ConfigHash: configHash,
 		Before: evalResult(beforeReport), After: evalResult(afterReport),
+		EncoderProfile: encoderProfile(recognizer),
 		Train: TrainSummary{
-			Samples: len(dataset.Train), Epochs: config.Epochs, Updates: updates,
+			Samples: len(dataset.Train), Epochs: epochs, Updates: updates,
 			ImpossibleAlignments: impossible,
 			IndicesSHA256:        digestIntSlice(dataset.TrainIndices),
 			TestIndicesSHA256:    digestIntSlice(dataset.TestIndices),
@@ -762,7 +807,32 @@ func Run(ctx context.Context, dataset Dataset, config RunConfig) (Report, error)
 			"The report uses bounded balanced subsets rather than the full official train/test sets.",
 			"No trained model or checkpoint is saved by this example; only the deterministic report is emitted.",
 		},
-	}, nil
+	}
+	modelPath, mode := modelInput, "restored"
+	if modelOutput != "" {
+		if err := recognizer.Save(ctx, modelOutput); err != nil {
+			return zero, fmt.Errorf("realocr: save model: %w", err)
+		}
+		modelPath, mode = modelOutput, "saved"
+		report.ModelPersisted = true
+		verified, err := ocr.LoadRecognizer(ctx, modelOutput)
+		if err != nil {
+			return zero, fmt.Errorf("realocr: verify saved model: %w", err)
+		}
+		if !reflect.DeepEqual(verified.Config(), recognizer.Config()) || !reflect.DeepEqual(verified.Snapshot(), recognizer.Snapshot()) {
+			return zero, errors.New("realocr: saved model differs from the evaluated model")
+		}
+		recognizer = verified
+	}
+	if modelPath != "" {
+		artifact, err := realOCRArtifact(ctx, modelPath, mode, recognizer)
+		if err != nil {
+			return zero, err
+		}
+		report.Model = artifact
+		report.Limitations[3] = "Model provenance binds the canonical bundle manifest, task configuration and complete optimizer state."
+	}
+	return report, nil
 }
 
 func validateRunConfig(config RunConfig, dataset Dataset) error {
@@ -775,11 +845,35 @@ func validateRunConfig(config RunConfig, dataset Dataset) error {
 	if config.Selection != "balanced_round_robin_by_label_v1" {
 		return fmt.Errorf("realocr: unknown selection policy %q", config.Selection)
 	}
+	if config.Encoder != "" && config.Encoder != "fixed" && config.Encoder != "trainable" {
+		return fmt.Errorf("realocr: unknown encoder mode %q", config.Encoder)
+	}
 	return nil
 }
 
 func evalResult(report ocr.EvalReport) EvalResult {
-	return EvalResult{CER: report.CER.Rate, Exact: report.ExactLines, Samples: report.Samples}
+	return EvalResult{
+		CER: report.CER.Rate, Exact: report.ExactLines, Samples: report.Samples,
+		EmptyOutputs: report.EmptyOutputs, EmptyOutputRatio: report.EmptyOutputRatio,
+	}
+}
+
+func encoderProfile(model *ocr.Recognizer) EncoderProfile {
+	if model == nil {
+		return EncoderProfile{}
+	}
+	snapshot := model.Snapshot()
+	mode := "fixed"
+	if snapshot.Options.Trainable.Encoder {
+		mode = "trainable"
+	}
+	return EncoderProfile{
+		Mode:              mode,
+		EncoderParameters: len(snapshot.Parameters.Encoder),
+		CoreParameters:    len(snapshot.Parameters.Core.Weights) + len(snapshot.Parameters.Core.Bias) + len(snapshot.Parameters.Core.LogTau) + len(snapshot.Parameters.ThetaRaw),
+		ReadoutParameters: len(snapshot.Parameters.Readout),
+		Updates:           snapshot.Updates,
+	}
 }
 
 func sourceFingerprints(dir string, meta Metadata) ([]SourceFile, error) {

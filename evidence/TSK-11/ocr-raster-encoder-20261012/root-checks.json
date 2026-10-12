@@ -1,0 +1,80 @@
+{
+  "sources": {
+    "tasks/ocr/persistence.go": "7b6a5a7bb44fb0ace654fba45685b6fa2ac8e2ab5c141fddb9a436f0dfb8cecb",
+    "tasks/ocr/metrics.go": "cea7e4e3172cbd101ca175d6d27799817ba659db1db723307b5ce6a969908557",
+    "tasks/ocr/fixture.go": "4ac3fcdee022df8362e508b7729176da1cc2967824e677ae89029e7fdddff6ed",
+    "tasks/ocr/page_recognizer_test.go": "20296984c37384fd44a7ae82088426c96b4da23947b11726b2e7440b58917b29",
+    "tasks/ocr/encoder_mode_test.go": "03e3d3dad5732340c8ffdd8fdc95e2ea0467232a1214b5ddeeaf1b2dc7f77fe4",
+    "tasks/ocr/persistence_test.go": "b7075984c8824d218ba7d09f374409f83c8ccad271e8127d46aa637aaa0bc315",
+    "tasks/ocr/metrics_test.go": "3337b1b14acc780fa1d3099e2d8de161d82beebb5d4dbd4e792d901bc4319180",
+    "tasks/ocr/page.go": "33c73e441a18f9c46f2e0fc6d7c217b1f93886d896cd46c47a1f94e2847c25e0",
+    "tasks/ocr/fixture_test.go": "cd2afe7b810a5e4a1a6d835fba5cdfe3f98bd60121dcf6add170bfd77afe5aa7",
+    "tasks/ocr/raster_test.go": "6d5a6717331d79b62ccb23c2d7cf9cabe748e99a8ef1913a685b5a14a4241c46",
+    "tasks/ocr/recognizer.go": "adb558086aa53d6886c563f7175032e88cd76c1d31d1386d8b58eddebb00f491",
+    "tasks/ocr/page_test.go": "5565c2583ade2aa3eb6ea525fc77e03c9382acad7d8a955b22a696d39360787d",
+    "tasks/ocr/recognizer_test.go": "e7897011a8fa642d12341941e02bcee29c021c83c6ead96677c96fc80d8cb527",
+    "tasks/ocr/persistence_shape_test.go": "01b995bb65ad687c794e17bb7409a659e259eff1b74ee7212971f6a9574acff0",
+    "tasks/ocr/raster.go": "393a6ce3baca7f592b1447f4f46062b4827497cc2ae7e2ae8fcadd60251ef4aa",
+    "tasks/ocr/page_recognizer.go": "aeb194d9e37a782d28729f3559f39dc1b4768ed8c0a9cb7f93cb4b4e380b0eb5",
+    "examples/realocr/model_test.go": "9ad3c78558ca7c82fffcd4c5c4f0d4e15f668e3912d280e78f7fbd78c17dbb12",
+    "examples/realocr/encoder_mode_test.go": "5fbc3135ddd75ac6ee3d179be47ab62c52e5c70cb327c8ff98acfcbfa886ed4d",
+    "examples/realocr/model.go": "1d8349ff9fc4dc68a49ba60ec13af089c4c48eb8ca429ab07b4e568766e506a3",
+    "examples/realocr/main.go": "e823187eb1701c3fe40f97ad8b2d64199fd4ecbb8be0fe59082d598c42946660",
+    "examples/realocr/main_test.go": "5d611b548a77c147a467dd7fb495f76f0920c4e649413e752fe62c1e970f7c83"
+  },
+  "commands": [
+    {
+      "name": "unit",
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-p",
+        "1",
+        "-count=1",
+        "-json",
+        "-timeout=180s",
+        "./tasks/ocr",
+        "./examples/realocr"
+      ],
+      "exit_code": 0,
+      "elapsed": 7.581995010375977,
+      "log": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/root-unit.log",
+      "log_sha256": "86c78e6238ce46a731e9913c1d1996e79781ee5e039a4af6b9a90378bc4b667c"
+    },
+    {
+      "name": "race",
+      "command": [
+        "/usr/local/go/bin/go",
+        "test",
+        "-race",
+        "-p",
+        "1",
+        "-count=1",
+        "-json",
+        "-timeout=180s",
+        "./tasks/ocr",
+        "./examples/realocr"
+      ],
+      "exit_code": 0,
+      "elapsed": 26.51746892929077,
+      "log": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/root-race.log",
+      "log_sha256": "1f24fd5fe95640168b1546a40cdaf10ad4f4f0f3895302f2657813769fa3d4e5"
+    },
+    {
+      "name": "build",
+      "command": [
+        "/usr/local/go/bin/go",
+        "build",
+        "-p",
+        "2",
+        "-o",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/realocr-paired",
+        "./examples/realocr"
+      ],
+      "exit_code": 0,
+      "elapsed": 1.88230299949646,
+      "log": "/Users/timlai/Developer/coimnet/runs/.tmp/goal-91-next/runs/.tmp/62/root-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
-模型達標與完整 GPU 稀疏訓練仍未驗證；Mac Metal 已通過稀疏原語與可選 episode 訓練器的小圖硬體對照。公開授權資料已用於語音、文字、單字元 OCR、文字條件影音與果蠅軌跡的小型範例。軌跡範例提供單步位移預測與另列的自主行走工程評估，保留集單步表現比方向延續基準差，工程命中率不能當作真實回巢能力；TSK-11 與 OPS-05 都未整體通過。按類型混合仍只在人工圖驗過，完整需求以[開發進度](delivery-status.md)追蹤。
+原始 85 項與 NAT 六項工程需求已完成 91／91 驗收。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
 
 ## 能力狀態
 
@@ -59,11 +59,13 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 | 教師工具：離線 JSONL 答案、重播、HTTP 存取與封鎖教師（TCH-01、TCH-02） | 不適用（教師工具） | fixture | 工具輔助（教師） | [TCH-01](evidence/TCH-01/verification.json)・[TCH-02](evidence/TCH-02/verification.json) |
 | 學生獨立評估與外部回應安全：student 模式封鎖教師與網路、teacher_assisted 分開報告、20% 錯標籤穩健性、工具允許清單與參數 schema、回應只當資料不外傳未授權欄位（TCH-05、TCH-06）。這些教師與工具功能不把 CoImNet 擴大成任意電腦操作 agent：回應只當資料，不執行其中的指令 | 不適用（評估與工具） | fixture | 核心能力與工具輔助 | [TCH-05](evidence/TCH-05/verification.json)・[TCH-06](evidence/TCH-06/verification.json) |
 | SDK 與 CLI 介面：八個可執行 SDK 範例、88 個非法輸入不 panic 的案例、五個取消釋放測試，以及 doctor／model inspect／model validate／run --dry-run／benchmark／export／report／examples／checkpoint migrate 的端到端與失敗測試（OPS-01、OPS-02） | 不適用（介面層） | fixture | 工具輔助 | [OPS-01](evidence/OPS-01/verification.json)・[OPS-02](evidence/OPS-02/verification.json) |
+| 五類真實任務流程與模型保存：授權資料匯入、訓練、獨立推論／評估、PNG／JPEG、同模型頁面辨識、固定／可訓練編碼器對照（TSK-11；保留模型品質負面結果） | 已訓練（有限真實資料） | fixture（真實任務小樣本） | 核心能力與範例 | [TSK-11](evidence/TSK-11/verification.json) |
+| 可選 GPU 裝置訓練：稀疏前向／反向、float32 AdamW、候選原子提交、完整 bundle 新程序恢復與 CPU 對照（OPS-05；Apple M3 Metal，未量 GPU 全圖） | 已訓練（人工資料） | fixture | 核心能力 | [OPS-05](evidence/OPS-05/verification.json) |
 | 環境與自動驗證：鎖定版本建置、Insyra 實際參與運算、自動防退步檢查（GOV-02、GOV-03、OPS-09） | 不適用（環境與測試） | 不適用 | 工具輔助 | [GOV-02](evidence/GOV-02/verification.json)・[GOV-03](evidence/GOV-03/verification.json)・[OPS-09](evidence/OPS-09/verification.json) |
 
 以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。
 
-TSK-11 已有語音、文字、單字元 OCR、文字條件影音與果蠅軌跡的真實資料匯入、訓練、獨立推論及評估證據；軌跡的觀測式單步預測與[自主行走工程評估](examples/realnav/README.md#autonomous-engineering-rollout)分開報告，模型自行產生後續位置，虛擬獎勵區座標只供計分。工程場地與決策步不代表動物控制或實驗秒數，真實導航與回巢能力尚未驗收，所以整項維持未通過。影音畫面接近全黑、獨立來源的綜合誤差略升，先前語音與原軌跡 v1 範例的保留集也未改善，不能推成可用模型品質。資料與授權見[真實範例來源](docs/real-data-sources.md)及 [TSK-11 紀錄](evidence/TSK-11/verification.json)。OPS-05 仍未整體通過；Mac Metal 已實測 WebGPU 稀疏前向、局部反向、純量零延遲核心與可選 GPU 訓練器的小圖更新及新程序恢復；完整裝置常駐更新、全圖容量與 Ubuntu 執行仍待驗證，詳見 [OPS-05 紀錄](evidence/OPS-05/verification.json)。
+TSK-11 的五類真實任務已完成匯入、訓練、獨立推論、評估與模型保存流程。PNG／JPEG 與同一模型的頁面辨識介面也已驗證，但真實 OCR 品質樣本限於 KMNIST 單字元。固定與可訓練編碼器都得到 CER 0.9、完整辨識比例 0.1，沒有證明可訓練模式較好。文字仍破碎，影音畫面接近全黑，語音、影音及原軌跡的保留集未改善。自主行走工程評估為 0／13，不支持真實導航或回巢能力。資料、授權及實測見[真實範例來源](docs/real-data-sources.md)與 [TSK-11 紀錄](evidence/TSK-11/verification.json)。OPS-05 已在 Apple M3 Metal 通過宣告的純量零延遲 profile：稀疏前向／反向、裝置 AdamW 更新、完整訓練 bundle 新程序接續及量測。參數、動量與計數留在裝置，神經狀態與活化仍在主機。GPU 全圖容量、速度、實際顯示記憶體及 Linux／Windows GPU 尚未驗證，見 [OPS-05 紀錄](evidence/OPS-05/verification.json)。
 
 [刺激記憶範例](examples/realnavmemory/README.md) 使用完整試次歷史，比較實際送出刺激、無刺激與因果打亂刺激三組模型。它使用八個節點的人工接線，保留原 13 個測試試次，原 26 個訓練試次再分成 20 train／6 validation。位置是明示觀察代理，模型輸出是模仿標籤的位移，神經獎勵到達時間保持未知。新範例的位移預測誤差下降，但所有模型組別均命中 0／13，沒有導航改善證據。凍結模型的刺激清除檢查確認過去刺激會影響後段輸出與行走，但預測誤差改善方向不一致，命中仍為 0／13。範例使用獨立格式，與原 realnav 分開驗收。
 
@@ -280,14 +282,19 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 
 `experiment.RunBioInspired` 的兩種人工生物啟發協定各自保存本次設定。回傳後修改呼叫端設定或另一份報告，不會連動修改既有報告，取消後的部分報告也適用。保留空值、原有錯誤與合法輸出；執行期間請勿並行修改傳入設定。驗收見 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md)。
 
-新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)；兩者都已通過 fixture 驗收，範圍與限制見上表的 LRN-09 與 TSK-02 列。
+新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)；OCR 的影像與頁面入口是 `tasks/ocr.LoadImage` 與 `Recognizer.InferPage`，範圍與限制見 [realocr 範例](examples/realocr/README.md)。PPO 與 ASR 已通過 fixture 驗收，範圍與限制見上表的 LRN-09 與 TSK-02 列。
+
+`tasks/ocr.LoadImage` 只讀有上限的 PNG／JPEG，回傳與同一次讀取綁定的灰階 raster 及來源／尺寸／縮放／方向／座標 metadata；`Recognizer.InferPage` 將單欄水平頁面切行後送入同一個 Recognizer，依 reading order 回填 `Page.Blocks[].Text`，空頁回傳非 nil 的空結果。metadata 固定記錄 stored pixel order 與 horizontal left-to-right，不代表支援 EXIF 自動旋轉或 ICC 轉換。
 
 - `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
 - `dynamics.NewLIF` 用同一套拓撲、延遲與時鐘建立 LIF 放電核心。神經元達到閾值就產生一次事件並把電位重設，對外輸出是會衰減的突觸跡，不應期內保持重設值並忽略當步輸入。`Backward` 依宣告的 `fast_sigmoid` 替代梯度回推，重設分支不傳梯度。
 - `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。`LIFConfig.Homeostasis` 是可選的慢速穩定區塊，開啟後每顆神經元多一個活動估計與一個只會抬高或回落到零的閾值偏移，放電判定用的是 `theta_base + 適應 + 偏移`；不宣告這個區塊的設定，編碼與既有指紋完全不變。
 - `learning.NewNetwork` 將 Insyra 編碼器及讀出接到核心，`LossGradient` 回傳整條路徑的梯度。
 - `learning.NewTrainer` 使用可保存的 AdamW 狀態。凍結參數群組時，權重、動量、步數與衰減一起凍結。
-- `learning.NewGPUTrainer` 是可選的 WebGPU 訓練入口，只支援純量、零延遲連續核心的獨立序列；`Step`／`StepFrom` 的稀疏前向與反向經 GPU 執行，`RestoreGPUTrainer` 可由既有 episode 快照續訓，使用完呼叫 `Close`。不支援的設定會回錯，不在裝置失敗後靜默改跑 CPU；實測範圍與未加速部分見 [OPS-05](evidence/OPS-05/verification.json)。
+- `learning.NewGPUTrainer` 是可選的 WebGPU 訓練入口，只支援純量、零延遲連續核心的獨立序列，仍使用 host AdamW；`Step`／`StepFrom` 的稀疏前向與反向經 GPU 執行，`RestoreGPUTrainer` 可由既有 episode 快照續訓，使用完呼叫 `Close`。不支援的設定會回錯，不在裝置失敗後靜默改跑 CPU；實測範圍與未加速部分見 [OPS-05](evidence/OPS-05/verification.json)。
+- `learning.NewGPUDeviceTrainer`／`RestoreGPUDeviceTrainer` 是另一條 opt-in 的 float32 裝置 AdamW episode 路徑；參數、`p/m/v/count` 在裝置更新，`webgpu.DeviceAdamW.StepChecked` 會以完整候選 readback host mirror 交給獨立 callback，合法零 rate 也走 checked 路徑。神經狀態、activation 與稀疏 weight 仍在 host 傳輸，Insyra 編碼器／讀出裝置執行尚未量測；projection、fixed signs、sharing，以及既有 LIF、vector、delay、recompute、persistent neural state 設定會拒絕。新建構會量化到可表示的 float32，Restore 對不精確的已訓練 state 直接拒絕；搭配 `checkpoint.SaveTrainingBundle`／`LoadTrainingBundle` 保存完整 TrainingBundle。`maxOptimizerBytes` 是 logical budget，不是 allocator VRAM 或 RSS，也沒有速度宣稱。
+- `webgpu.NewDeviceAdamW`／`webgpu.RestoreDeviceAdamW` 建立或恢復 GPU 常駐的 AdamW 原語；`DeviceAdamW.Step` 只上傳本次梯度、mask、設定與狀態旗標並更新裝置狀態，`Snapshot` 明確讀回完整參數、兩個 moment 與更新計數器，使用完呼叫 `Close`。這些是原語，不是完整連續網路或訓練整合。
+- `tasks/asr` 的 `Recognizer.Save`／`LoadRecognizer`、`tasks/ocr` 的 `Recognizer.Save`／`LoadRecognizer`，以及 `tasks/textgen` 的 `Model.Save`／`LoadModel` 可在不同程序間保存與載入完整任務模型與最佳化器狀態。保存時傳入尚未存在的新目錄；另一個程序以對應 `Load...` 載入，載入會驗證任務設定、詞表（textgen）與拓撲。載入後的 `LoadedCheckpointSHA256()` 是已驗證 canonical `manifest.json` 的 SHA-256；新的模型則回傳空字串。
 - `signal` 提供具版本訊號、時鐘驗證與事件排序、觀察／答案／回饋分離及無損外部 ID 映射。`NewStreamingResampler` 支援連續值的因果取樣，`ResampleOffline` 另支援離線線性插值。`NewPulseAligner` 將脈衝對齊至當下或下一個神經步號，逐筆保留事件。`NewIntervalResampler` 依起訖時間取樣固定值區間，詳見[時間對齊與限制](docs/signal-resampling.md)。
 - `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
