@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-原始 85 項與 NAT 六項工程需求已完成 91／91 驗收，最終一般、race、格式、build、vet、相依性與治理檢查通過，708 份程式／模組指紋與主專案相同。tickets 59–63 的本機與 SMB 任務保存、實際 Metal 更新／新程序接續、OCR 圖片／頁面／編碼器對照、真實影音模型還原都有[最終證據](evidence/goal-91-20261012/verification.json)。模型品質負面結果與 GPU 全圖／其他平台未測範圍保留。本輪 26,282 份暫存／副本共 3.45 GB 及 913 個快取連結已清除，25 份 SMB 資料原件保持，見[清理回條](evidence/goal-91-20261012/cleanup.json)。提交交付待完成。
+原始 85 項與 NAT 六項工程需求已完成 91／91 驗收，最終一般、race、格式、build、vet、相依性與治理檢查通過，708 份程式／模組指紋與主專案相同。tickets 59–63 的本機與 SMB 任務保存、實際 Metal 更新／新程序接續、OCR 圖片／頁面／編碼器對照、真實影音模型還原都有[最終證據](evidence/goal-91-20261012/verification.json)。模型品質負面結果與 GPU 全圖／其他平台未測範圍保留。本輪 26,282 份暫存／副本共 3.45 GB 及 913 個快取連結已清除，25 份 SMB 資料原件保持，見[清理回條](evidence/goal-91-20261012/cleanup.json)。主要提交 `a28ce23` 已推送核對並同步原專案，見[交付回條](evidence/goal-91-20261012/delivery.json)。
 
 ### 較早階段交付紀錄
 
@@ -161,11 +161,11 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 59 | OCR／語音／文字模型保存與新程序讀回 | Codex Root／Luna | in_progress | 功能與本機／SMB 比對通過，清理及交付待完成 |
-| 60 | 裝置 AdamW 更新與恢復 | Codex Root／Luna | in_progress | 實際 Metal 與 CPU 對照通過，清理及交付待完成 |
-| 61 | GPU 裝置訓練器及完整 bundle 接續 | Codex Root／Luna | in_progress | 部分累積窗的新程序精確接續通過，清理及交付待完成 |
-| 62 | 圖片／頁面辨識與編碼器對照 | Codex Root／Luna | in_progress | PNG／JPEG、頁面、真實 KMNIST 配對驗證通過，清理及交付待完成 |
-| 63 | 真實影音模型新程序生成 | Codex Root／Luna | in_progress | 120 次更新後 11 份模型／內容相同，清理及交付待完成 |
+| 59 | OCR／語音／文字模型保存與新程序讀回 | Codex Root／Luna | completed | 功能與本機／SMB 比對通過，暫存清理、推送核對及原專案同步完成 |
+| 60 | 裝置 AdamW 更新與恢復 | Codex Root／Luna | completed | 實際 Metal 與 CPU 對照通過，暫存清理、推送核對及原專案同步完成 |
+| 61 | GPU 裝置訓練器及完整 bundle 接續 | Codex Root／Luna | completed | 部分累積窗的新程序精確接續通過，暫存清理、推送核對及原專案同步完成 |
+| 62 | 圖片／頁面辨識與編碼器對照 | Codex Root／Luna | completed | PNG／JPEG、頁面、真實 KMNIST 配對驗證通過，暫存清理、推送核對及原專案同步完成 |
+| 63 | 真實影音模型新程序生成 | Codex Root／Luna | completed | 120 次更新後 11 份模型／內容相同，暫存清理、推送核對及原專案同步完成 |
 
 ### 較早階段紀錄
 
@@ -230,7 +230,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-目前沒有阻擋原始工程驗收的功能缺口。完整檢查在 TimdeAir 的原生 APFS 磁碟執行，SMB 只做小模型保存與新程序讀回。暫存清理已完成，提交交付待完成。NAS 斷線及伺服器故障後耐久性未實測。
+目前沒有阻擋原始工程驗收的功能缺口。完整檢查在 TimdeAir 的原生 APFS 磁碟執行，SMB 只做小模型保存與新程序讀回。暫存清理已完成，主要提交 `a28ce23` 已推送核對並同步原專案，見[交付回條](evidence/goal-91-20261012/delivery.json)。NAS 斷線及伺服器故障後耐久性未實測。
 
 ### 既有環境與研究限制
 
@@ -252,7 +252,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-本輪必要功能、最終完整驗證與暫存清理已完成，下一個可驗證成果是已核對遠端的提交。目前沒有新的必要實作 ticket。
+本輪 91／91 工程驗收、完整驗證、暫存清理與主要提交交付已完成，目前沒有待執行的必要 ticket。模型實用品質、GPU 全圖及其他 GPU 平台依各自研究或擴充驗證處理。
 
 先前 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md) 與 [ticket 55](docs/tickets/55-network-model-bundles.md) 均完成 5／5 驗收。OPS-05 必須有裝置稀疏前向／反向、更新／恢復及實際量測。主規格 §17.4 的常駐狀態是條件性效能方向，全圖驗證另由 OPS-07 驗收，不能直接追加為 OPS-05 的無條件門檻。
 

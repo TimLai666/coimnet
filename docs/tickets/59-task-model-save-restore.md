@@ -6,7 +6,7 @@ User Story：使用者可以保留訓練成果與任務設定，從資料夾模�
 
 Blocked by：29 的三類辨識／文字流程、55 的網路磁碟 bundle 保存已完成。
 
-Status：功能、完整驗證與暫存清理通過，提交交付待完成。
+Status：completed，功能、完整驗證、暫存清理與主要提交交付完成。
 
 原始依據：[主規格 13.1、15.1–15.3](../handoff/CoImNet_Implementation_Plan.zh-TW.md)、[ticket 29](29-real-tasks-ocr-asr-text-and-media-generation.md)。本票補齊保存恢復，不能單獨將 TSK-11 標為通過，也不修改既有負面品質結果。
 
@@ -22,7 +22,7 @@ Status：功能、完整驗證與暫存清理通過，提交交付待完成。
 - [x] 新程序從保存物獨立推論；真實資料範例可明確選擇保存或讀取模型，讀取模式不重新訓練，重建資料與分割。
 - [x] nil／取消、空路徑、既有目標、錯誤或缺失設定、校驗／版本／拓撲不相容都明確失敗。既有成果與呼叫端狀態保持。
 - [x] 沿用 v2 bundle 的網路磁碟發布與完成清單，實際 SMB 小模型保存恢復通過，不把本機單檔測試代替。
-- [ ] 格式、build、完整一般與 race、vet、相依性、格式索引與治理檢查通過；證據保存後清除本輪暫存。
+- [x] 格式、build、完整一般與 race、vet、相依性、格式索引與治理檢查通過；證據保存後清除本輪暫存。
 
 ## 檢查對象
 
@@ -32,4 +32,4 @@ Save／Load 公開入口直接測試，保存使用既有 checkpoint bundle，�
 
 ## 驗收證據
 
-2026-10-12：evidence/TSK-11/task-checkpoint-20261012/native-verification.json、smb-verification.json。最終整合命令、日誌與來源指紋見 [91 項驗收](../../evidence/goal-91-20261012/verification.json)。[清理回條](../../evidence/goal-91-20261012/cleanup.json)已保存，提交交付完成後才勾選最後一項。
+2026-10-12：evidence/TSK-11/task-checkpoint-20261012/native-verification.json、smb-verification.json。最終整合命令、日誌與來源指紋見 [91 項驗收](../../evidence/goal-91-20261012/verification.json)。[清理回條](../../evidence/goal-91-20261012/cleanup.json)與[交付回條](../../evidence/goal-91-20261012/delivery.json)已保存，主要提交 `a28ce23` 已推送核對並同步原專案。

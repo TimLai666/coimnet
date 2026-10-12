@@ -6,7 +6,7 @@ User Story：研究者可以透過既有 Trainer 執行稀疏前向、反向與�
 
 Blocked by：60 的裝置更新與恢復實作。
 
-Status：功能、完整驗證與暫存清理通過，提交交付待完成。
+Status：completed，功能、完整驗證、暫存清理與主要提交交付完成。
 
 原始依據：主規格 §17.4／18.2 與 OPS-05。常駐神經狀態是「可行時」的效能方向，真實全圖 GPU 與其他平台保留未驗證，不另加為本票必要門檻。
 
@@ -25,7 +25,7 @@ Status：功能、完整驗證與暫存清理通過，提交交付待完成。
 - [x] 啟動前拒絕不支援的 LIF／mixed／vector／delay／recompute／persistent-state／projection／sharing profile，不回退 CPU。建構明示 float32 量化，恢復拒絕不可精確表示的狀態、kernel options 與 uint32 計數溢位。
 - [x] 部分累積窗經完整 training bundle 由新程序恢復，後續參數、動量、次數、累積窗與輸出逐位一致。真正子程序不得略過硬體。
 - [x] 實測裝置、初始化、編譯、傳輸、暖機、穩態與完整候選讀回量，所有宣告參數均參與。主機與裝置成本分開，執行前容量可核對。
-- [ ] 完整格式、build、一般、race、vet、相依性、索引與治理檢查通過，保存來源與日誌，清除不再必要的本票暫存後交付。
+- [x] 完整格式、build、一般、race、vet、相依性、索引與治理檢查通過，保存來源與日誌，清除不再必要的本票暫存後交付。
 
 ## 邊界與檢查責任
 
@@ -35,4 +35,4 @@ nil／取消 context、nil callback、錯形狀、負或非有限 rate 返回具
 
 ## 驗收證據
 
-2026-10-12：evidence/OPS-05/device-training-20261012/verification.json。最終整合命令、日誌與來源指紋見 [91 項驗收](../../evidence/goal-91-20261012/verification.json)。[清理回條](../../evidence/goal-91-20261012/cleanup.json)已保存，提交交付完成後才勾選最後一項。
+2026-10-12：evidence/OPS-05/device-training-20261012/verification.json。最終整合命令、日誌與來源指紋見 [91 項驗收](../../evidence/goal-91-20261012/verification.json)。[清理回條](../../evidence/goal-91-20261012/cleanup.json)與[交付回條](../../evidence/goal-91-20261012/delivery.json)已保存，主要提交 `a28ce23` 已推送核對並同步原專案。
