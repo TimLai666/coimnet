@@ -195,8 +195,8 @@ func validatePageImage(img glyphs.Image) error {
 		return errors.New("ocr: pixel count does not match width*height")
 	}
 	for _, pixel := range img.Pixels {
-		if !finitePageFloat(pixel) {
-			return errors.New("ocr: pixel values must be finite")
+		if !finitePageFloat(pixel) || pixel < 0 || pixel > 1 {
+			return errors.New("ocr: pixel values must be finite and in [0,1]")
 		}
 	}
 	return nil

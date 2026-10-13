@@ -41,8 +41,8 @@ func (c FrontEndConfig) Validate(sampleRate int) error {
 	if !(c.FMin >= 0 && c.FMin < c.FMax && c.FMax <= nyquist) {
 		return fmt.Errorf("audio: front end band [%v, %v] Hz must rise inside [0, %v] Hz", c.FMin, c.FMax, nyquist)
 	}
-	if !(c.Floor > 0) {
-		return fmt.Errorf("audio: front end floor %v must be positive", c.Floor)
+	if !(c.Floor > 0) || math.IsInf(c.Floor, 0) {
+		return fmt.Errorf("audio: front end floor %v must be finite and positive", c.Floor)
 	}
 	return nil
 }
@@ -71,6 +71,11 @@ func STFT(x []float64, c FrontEndConfig) ([][]float64, error) {
 	if len(x) < c.Window {
 		return nil, fmt.Errorf("audio: stft input has %d samples, fewer than the %d-sample window", len(x), c.Window)
 	}
+	for n, sample := range x {
+		if math.IsNaN(sample) || math.IsInf(sample, 0) {
+			return nil, fmt.Errorf("audio: stft sample %d is not finite", n)
+		}
+	}
 	w := hann(c.Window)
 	frames := 1 + (len(x)-c.Window)/c.Hop
 	bins := c.Window/2 + 1
@@ -86,6 +91,9 @@ func STFT(x []float64, c FrontEndConfig) ([][]float64, error) {
 		for k := range row {
 			re, im := real(buf[k]), imag(buf[k])
 			row[k] = re*re + im*im
+			if math.IsNaN(row[k]) || math.IsInf(row[k], 0) {
+				return nil, fmt.Errorf("audio: stft power at frame %d bin %d is not finite", f, k)
+			}
 		}
 		out[f] = row
 	}
@@ -169,6 +177,9 @@ func LogMel(x []float64, sampleRate int, c FrontEndConfig) ([][]float64, FrontEn
 				energy += weight * spec[k]
 			}
 			row[m] = math.Log10(energy + c.Floor)
+			if math.IsNaN(row[m]) || math.IsInf(row[m], 0) {
+				return nil, FrontEndReport{}, fmt.Errorf("audio: log-mel feature at frame %d filter %d is not finite", f, m)
+			}
 		}
 		out[f] = row
 	}

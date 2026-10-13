@@ -242,8 +242,8 @@ func (r *Recognizer) Columns(img glyphs.Image) ([][]float64, error) {
 		return nil, fmt.Errorf("ocr: %d pixels for a %dx%d image", len(img.Pixels), img.Width, img.Height)
 	}
 	for i, pixel := range img.Pixels {
-		if math.IsNaN(pixel) || math.IsInf(pixel, 0) {
-			return nil, fmt.Errorf("ocr: image pixel %d is not finite", i)
+		if math.IsNaN(pixel) || math.IsInf(pixel, 0) || pixel < 0 || pixel > 1 {
+			return nil, fmt.Errorf("ocr: image pixel %d must be finite and in [0,1]", i)
 		}
 	}
 	out := make([][]float64, img.Width)

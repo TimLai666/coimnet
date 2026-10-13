@@ -702,7 +702,11 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 			result.chemistry.ClampedBeta += chemical.clamped.Beta
 			result.chemistry.ClampedTheta += chemical.clamped.Theta
 			for k, rate := range chemical.release {
-				result.chemistry.ReleaseTotal[k] += rate
+				total := result.chemistry.ReleaseTotal[k] + rate
+				if !finite(total) {
+					return stepwiseResult{}, fmt.Errorf("individual chemistry: release total for channel %d is not finite", k)
+				}
+				result.chemistry.ReleaseTotal[k] = total
 			}
 		}
 		step := core
@@ -817,7 +821,8 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 }
 
 // TrainEpisode updates only this individual's parameters and optimizer using
-// an independent zero-state episode. Persistent inference state is retained.
+// an independent zero-state episode. Enabled chemistry supplies a copied
+// boundary and source clock; persistent neural and chemical state are retained.
 // This method does not propagate gradients across Advance calls. A completed
 // step advances the episode clock every consolidation write reads, so the
 // "one write per episode" rule sees each training episode once.
@@ -829,6 +834,9 @@ func (i *Individual) TrainEpisode(ctx context.Context, input [][]float64, target
 		return StepResult{}, err
 	}
 	defer i.mu.Unlock()
+	if i.episodes == ^uint64(0) {
+		return StepResult{}, fmt.Errorf("individual episode count overflow")
+	}
 	var result StepResult
 	var err error
 	if i.chemical != nil {
@@ -922,9 +930,16 @@ func (i *Individual) ResetOptimizer(ctx context.Context, o Options) error {
 	i.trainer.options = copyOptions(o)
 	i.trainer.optimizer = state
 	i.trainer.updates = 0
-	// The episode clock belongs to the trainer life this call ends, exactly like
-	// the moments: a fresh optimizer starts its every-write-once-observed episode
-	// count at zero.
+	// Preserve whether the current episode was consolidated when rebasing the
+	// optimizer's episode clock. Memory values and lifetime budget stay intact.
+	if i.plastic != nil && i.plastic.slow != nil {
+		slow := i.plastic.slow
+		if slow.LastEpisode > i.episodes {
+			slow.LastEpisode = 1
+		} else {
+			slow.LastEpisode = 0
+		}
+	}
 	i.episodes = 0
 	// The open accumulation window belongs to the optimizer this call replaces:
 	// keeping it would average gradients taken under the previous options into

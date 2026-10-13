@@ -932,8 +932,8 @@ func validateRunImage(profile string, image glyphs.Image) error {
 		return fmt.Errorf("%d pixels for a %dx%d image", len(image.Pixels), image.Width, image.Height)
 	}
 	for i, pixel := range image.Pixels {
-		if math.IsNaN(pixel) || math.IsInf(pixel, 0) {
-			return fmt.Errorf("image pixel %d is not finite", i)
+		if math.IsNaN(pixel) || math.IsInf(pixel, 0) || pixel < 0 || pixel > 1 {
+			return fmt.Errorf("image pixel %d must be finite and in [0,1]", i)
 		}
 	}
 	return nil

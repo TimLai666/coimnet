@@ -154,13 +154,6 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if err != nil {
 		return nil, err
 	}
-	// Root decision 6 of ticket 25 defines a fixed sign per scalar edge only;
-	// a C*C matrix weight has no declared sign, so a nonzero declaration on a
-	// vector-state model is refused rather than silently ignored. An all-zero
-	// declaration is the same model as no declaration at all and stays legal.
-	if n.core.stateDim() > 1 && hasFixedSigns(c.EdgeSigns) {
-		return nil, fmt.Errorf("fixed edge signs are not defined for vector state edges")
-	}
 	if err := validateTrainable(o.Trainable, n.core.theta()); err != nil {
 		return nil, err
 	}

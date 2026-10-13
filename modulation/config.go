@@ -60,6 +60,11 @@ func (s SourceSpec) Build() (Source, error) {
 		if err := timeline.Validate(); err != nil {
 			return nil, err
 		}
+		for _, entry := range timeline.Entries {
+			if entry.Channel != s.Channel && entry.Rate != 0 {
+				return nil, fmt.Errorf("modulation: source spec feeds channel %d but its timeline releases on channel %d", s.Channel, entry.Channel)
+			}
+		}
 		built = timeline
 	case SourceNeuralActivity:
 		if s.Neural == nil {
@@ -103,6 +108,13 @@ func (s SourceSpec) Build() (Source, error) {
 		replay := Replay{Trace: trace}
 		if err := replay.validate(); err != nil {
 			return nil, err
+		}
+		for _, row := range replay.Trace {
+			for channel, rate := range row {
+				if channel != s.Channel && rate != 0 {
+					return nil, fmt.Errorf("modulation: source spec feeds channel %d but its replay releases on channel %d", s.Channel, channel)
+				}
+			}
 		}
 		built = replay
 	case SourceController:

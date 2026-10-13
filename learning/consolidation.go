@@ -123,6 +123,9 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 	if i.plastic.slow == nil {
 		return report, fmt.Errorf("consolidation layer is not enabled")
 	}
+	if i.episodes == ^uint64(0) {
+		return report, fmt.Errorf("consolidation episode marker overflow")
+	}
 	slow := i.plastic.slow
 	report.Episode = i.episodes
 	report.Occupancy = meanOccupancy(i.chemical.report.Occupancy, trigger.Receptor)
@@ -142,6 +145,24 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 		return report, err
 	}
 	plastic := i.plastic.state.Plastic
+	// Validate the write and its report before mutating either memory layer.
+	// The lock keeps both scans over the same state, without candidate arrays.
+	baseL2 := l2(i.trainer.parameters.Core.Weights)
+	var slowL2, plasticL2 float64
+	for k, value := range slow.Values {
+		candidate := value + trigger.Rate*plastic[k]
+		if !finite(candidate) {
+			return report, fmt.Errorf("consolidation slow value %d is not finite", k)
+		}
+		slowL2 = math.Hypot(slowL2, candidate)
+		plasticL2 = math.Hypot(plasticL2, trigger.Retain*plastic[k])
+	}
+	if !finite(baseL2) || !finite(slowL2) || !finite(plasticL2) {
+		return report, fmt.Errorf("consolidation report norm is not finite")
+	}
+	if err := ctx.Err(); err != nil {
+		return report, err
+	}
 	for k := range slow.Values {
 		slow.Values[k] += trigger.Rate * plastic[k]
 	}
@@ -153,9 +174,9 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 	report.Applied = true
 	report.LastEpisode = slow.LastEpisode
 	report.Used = slow.Used
-	report.BaseL2 = l2(i.trainer.parameters.Core.Weights)
-	report.SlowL2 = l2(slow.Values)
-	report.PlasticL2 = l2(plastic)
+	report.BaseL2 = baseL2
+	report.SlowL2 = slowL2
+	report.PlasticL2 = plasticL2
 	return report, nil
 }
 
@@ -196,9 +217,9 @@ func validateSlowState(s *SlowState, edges int) error {
 // sits in which layer. It is package-private because it belongs to the size
 // accounting, not to a public API.
 func l2(x []float64) float64 {
-	var sum float64
+	var norm float64
 	for _, v := range x {
-		sum += v * v
+		norm = math.Hypot(norm, v)
 	}
-	return math.Sqrt(sum)
+	return norm
 }

@@ -43,7 +43,7 @@ func TestSourceSpecBuildsExactlyTheDeclaredBody(t *testing.T) {
 		"external_timeline": {Kind: SourceExternalTimeline, Channel: 0, Timeline: &ExternalTimeline{ChannelCount: 1, Entries: []TimelineEntry{{Step: 0, Channel: 0, Rate: 2}}}},
 		"neural_activity":   {Kind: SourceNeuralActivity, Channel: 1, Neural: &NeuralActivity{Nodes: []int{1, 2}, Gain: 0.5, Channel: 1}},
 		"internal_resource": {Kind: SourceInternalResource, Channel: 0, Resource: &InternalResource{Resource: "energy", Coefficient: 2, Threshold: 0.25, Channel: 0}},
-		"replay":            {Kind: SourceReplay, Channel: 1, Replay: &Replay{Trace: [][]float64{{0, 1}, {0.5, 0}}}},
+		"replay":            {Kind: SourceReplay, Channel: 1, Replay: &Replay{Trace: [][]float64{{0, 1}, {0, 0.5}}}},
 	} {
 		built, err := spec.Build()
 		if err != nil {

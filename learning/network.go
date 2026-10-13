@@ -139,6 +139,9 @@ func NewNetwork(c Config) (*Network, error) {
 	if err := validateSignConfig(c, core.edges()); err != nil {
 		return nil, err
 	}
+	if core.stateDim() > 1 && hasFixedSigns(c.EdgeSigns) {
+		return nil, fmt.Errorf("fixed edge signs are not defined for vector state edges")
+	}
 	c.ReadoutNodes = append([]int(nil), c.ReadoutNodes...)
 	c.InputNodes = append([]int(nil), c.InputNodes...)
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
