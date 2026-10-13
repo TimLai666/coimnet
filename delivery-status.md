@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-ticket 87 完成 4／5：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。完整一般／race 各 58 套件通過，分別 5186／5185 個通過事件。格式、build、vet、固定相依性、32 組合法模型逐位比較、8 組活動生命週期與 CLI 新程序接續通過。791 份來源及 455 份凍結測試相符。正常化學機制稽核沒有確認設計矛盾，混合連續／脈衝核心完整反向獨立參考缺口已列 Follow-ups。見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)及[Root 審查](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。無外部阻礙，下一成果是本輪暫存清理、提交推送與遠端讀回。尚無零 bug 或真實辨識率提升結論。
+ticket 87 已完成 5／5 驗收與交付：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。完整一般／race 各 58 套件、格式、build、vet、固定相依性、11 項治理、32 組合法模型逐位比較、8 組活動生命週期及 CLI 新程序接續通過。791 份來源與 455 份凍結測試相符，主要提交內的 791 份來源也逐一核對。修正 `9568fa8` 與回歸／證據 `1ea4e50` 已推送且遠端相同。本輪 9,426 個檔案與 20,501 個快取連結、1,404,334,193 bytes 已清除，原有暫存目錄保留。見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)、[清理](evidence/MOD-02/chemical-capacity-20261014/cleanup.json)與[交付](evidence/MOD-02/chemical-capacity-20261014/delivery.json)。正常化學設計未確認矛盾，混合連續／脈衝完整反向的獨立參考缺口已列 Follow-ups，尚無零 bug 或真實辨識率提升結論。
 
 ticket 86 已完成 5／5 驗收與交付。兩個共享狀態缺陷已修正，5 個頂層回歸、31 個測試事件及 20 次 race 共 620 個事件通過。完整一般／race 各 58 套件、build、vet、格式、相依性、11 個治理檢查、32 組合法逐位比較及 CLI 新程序接續通過，788 份來源相符。本輪 1,713,255,539 bytes 暫存已清除，修正 `a008c1e` 與回歸／證據 `d73dc5e` 已推送且遠端相同。模型格式、原算式與混合部分成功契約保持。見[工程驗收](evidence/LRN-06/online-individual-boundary-20261014/verification.json)、[清理](evidence/LRN-06/online-individual-boundary-20261014/cleanup.json)與[交付](evidence/LRN-06/online-individual-boundary-20261014/delivery.json)。尚未證明整體零 bug 或真實辨識率提升。
 
@@ -185,7 +185,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | in_progress | 4／5。完整工程、11 項治理、合法相容性及需求證據通過；清理、推送與遠端讀回待完成 |
+| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | completed | 5／5。完整工程、11 項治理、合法相容性及 791 份提交來源核對通過；本輪暫存清除、主要提交推送與遠端讀回完成 |
 | 85 | 混合線上更新失敗後只接續未完成階段 | Codex Root／Luna max | completed | 5／5。10 個新增回歸、32 組正常逐位相容、完整一般／race 各 58 套件及 11 項治理通過；暫存清除、推送及遠端核對完成 |
 | 86 | 同時操作同一個體時答案版本與回饋加權一致 | Codex Root／Luna max | completed | 5／5。正式 RED／GREEN、20 次 race、完整工程與治理通過；清理、推送及遠端讀回完成 |
 | 78–84 | 化學與線上訓練使用一致狀態，共享快照及失敗回饋安全處理 | Codex Root／Luna max | completed | 22個新回歸、完整一般／race各58套件及最後11項治理通過，合法相容性、782份來源、清理與遠端讀回完成 |
@@ -261,7 +261,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-無外部阻礙。ticket 87 的完整工程與治理驗證通過，清理及交付仍待完成。正常化學設計未重現明確矛盾，但混合連續／脈衝的完整反向組合尚無獨立參考。真實辨識率沒有在本階段重測，先前品質限制保留。
+無外部阻礙。ticket 87 的完整工程、治理、清理及主要交付完成。正常化學設計未重現明確矛盾，但混合連續／脈衝的完整反向組合尚無獨立參考。真實辨識率沒有在本階段重測，先前品質限制保留。
 
 ### 既有環境與研究限制
 
@@ -283,7 +283,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 87](docs/tickets/87-chemical-capacity-validation.md) 已完成 4／5，接續本輪暫存清理、提交推送與遠端讀回。首次神經來源活動的拒絕已排除為既定契約，四類配置容量缺陷已修正。下一項機制稽核成果是混合連續／脈衝完整化學反向的獨立參考，尚未建立或執行新票，見[AGENTS Follow-ups](AGENTS.md#follow-ups)與[正常設計稽核](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。
+[ticket 87](docs/tickets/87-chemical-capacity-validation.md) 已完成 5／5。下一項機制稽核成果是混合連續／脈衝完整化學反向的獨立參考，採同規則反向或 test-only smooth 模式。尚未建立或執行新票，見[AGENTS Follow-ups](AGENTS.md#follow-ups)與[正常設計稽核](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

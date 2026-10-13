@@ -1,0 +1,156 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+root = Path(__file__).resolve().parents[3]
+evidence = root / "evidence/MOD-02/chemical-capacity-20261014"
+primary = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root, text=True).strip()
+fix = subprocess.check_output(["git", "rev-parse", "HEAD^"], cwd=root, text=True).strip()
+assert primary == "1ea4e50266b25d589d3fd2eedbcad2ae5db01b48"
+assert fix == "9568fa89fffc2ba25cc940c7ca626f2acfbb7309"
+remote_command = ["git", "ls-remote", "--heads", "origin", "refs/heads/codex/receptor-chemistry-training"]
+remote = subprocess.run(remote_command, cwd=root, text=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+assert remote.returncode == 0, remote.stderr
+remote_revision = remote.stdout.split()[0]
+assert remote_revision == primary
+sources = json.loads((evidence / "source-final.json").read_text())
+queries = [primary + ":" + path for path in sources]
+assert all("\n" not in query for query in queries)
+result = subprocess.run(["git", "cat-file", "--batch"], cwd=root,
+                        input=("\n".join(queries) + "\n").encode(),
+                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
+position = 0
+for path, fingerprint in sources.items():
+    end = result.stdout.index(b"\n", position)
+    header = result.stdout[position:end].split()
+    assert len(header) == 3 and header[1] == b"blob", path
+    size = int(header[2])
+    position = end + 1
+    data = result.stdout[position:position + size]
+    assert hashlib.sha256(data).hexdigest() == fingerprint, path
+    position += size
+    assert result.stdout[position:position + 1] == b"\n"
+    position += 1
+assert position == len(result.stdout)
+
+
+def create_json(path, value):
+    assert not path.exists(), str(path)
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+
+def replace(path, old, text):
+    assert path.read_bytes() == old, str(path)
+    path.write_text(text)
+
+
+source_receipt = {
+    "revision": primary, "source_files": len(sources), "mismatches": 0,
+    "manifest": "source-final.json",
+    "manifest_sha256": hashlib.sha256((evidence / "source-final.json").read_bytes()).hexdigest(),
+    "method": "git cat-file --batch over every revision:path blob; SHA-256 compared with frozen final source manifest",
+}
+create_json(evidence / "committed-source.json", source_receipt)
+cleanup = json.loads((evidence / "cleanup.json").read_text())
+assert cleanup["removed"] and not Path(cleanup["temporary_root"]).exists()
+delivery = {
+    "captured_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "repository": "https://github.com/TimLai666/coimnet.git",
+    "branch": "codex/receptor-chemistry-training",
+    "primary_commits": {"fix": fix, "regression_and_evidence": primary},
+    "push": {"command": ["git", "push", "origin", "HEAD:refs/heads/codex/receptor-chemistry-training"],
+             "exit_code": 0, "observed": "57cc92d..1ea4e50 HEAD -> codex/receptor-chemistry-training"},
+    "remote_readback": {"command": ["git", "ls-remote", "--heads", "origin", "refs/heads/codex/receptor-chemistry-training"],
+                        "exit_code": remote.returncode, "revision": remote_revision, "equal_to_primary_local_head": remote_revision == primary},
+    "committed_source": source_receipt, "cleanup_receipt": "cleanup.json",
+    "pre_commit_scan": {"command": ["bash", "scripts/scan-commit.sh"],
+                        "fix_exit_code": 0, "regression_and_evidence_exit_code": 0,
+                        "observed": "PASS; staged diff is clean"},
+    "primary_delivery_complete": True,
+    "administrative_closure": "Ticket and status closure are committed and pushed after this primary-delivery receipt; their commit is tracked by Git.",
+}
+create_json(evidence / "delivery.json", delivery)
+path = evidence / "verification.json"
+old = path.read_bytes()
+value = json.loads(old)
+assert value["engineering_passed"] and value["governance"]["state"] == "passed"
+assert value["cleanup"]["state"] == "passed" and value["delivery"]["state"] == "pending"
+value["delivery"] = {"state": "passed", "receipt": "delivery.json",
+                     "primary_remote_revision": primary, "committed_source": "committed-source.json"}
+value["ticket_acceptance"] = {"completed": 5, "total": 5}
+replace(path, old, json.dumps(value, ensure_ascii=False, indent=2) + "\n")
+
+path = root / "docs/tickets/87-chemical-capacity-validation.md"
+old = path.read_bytes()
+text = old.decode()
+expected = "Status：in_progress（2026-10-14，4／5 完成，11 項治理及完整證據同步通過）"
+updated = "Status：completed（2026-10-14，5／5 完成，工程、治理、清理及主要提交遠端讀回通過）"
+line = "- [ ] 本輪暫存清除、提交推送與遠端讀回完成。"
+assert text.count(expected) == text.count(line) == 1
+text = text.replace(expected, updated).replace(line, line.replace("[ ]", "[x]"))
+text += "\n驗收、清理及交付見[完整回條](../../evidence/MOD-02/chemical-capacity-20261014/verification.json)。混合連續／脈衝完整化學梯度的獨立參考缺口另列 AGENTS.md Follow-ups，不屬本票容量拒絕的完成條件。\n"
+replace(path, old, text)
+path = evidence / "plan.md"
+old = path.read_bytes()
+text = old.decode()
+line = "- [ ] 本輪暫存清除、獨立修正／回歸提交、推送及遠端讀回。"
+assert text.count(line) == 1
+replace(path, old, text.replace(line, line.replace("[ ]", "[x]")))
+
+path = root / "delivery-status.md"
+old = path.read_bytes()
+text = old.decode()
+start = text.index("ticket 87 完成 ")
+end = text.index("\n\n", start)
+new = ("ticket 87 已完成 5／5 驗收與交付：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。"
+       "完整一般／race 各 58 套件、格式、build、vet、固定相依性、11 項治理、32 組合法模型逐位比較、8 組活動生命週期及 CLI 新程序接續通過。"
+       "791 份來源與 455 份凍結測試相符，主要提交內的 791 份來源也逐一核對。修正 `9568fa8` 與回歸／證據 `1ea4e50` 已推送且遠端相同。"
+       "本輪 9,426 個檔案與 20,501 個快取連結、1,404,334,193 bytes 已清除，原有暫存目錄保留。"
+       "見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)、[清理](evidence/MOD-02/chemical-capacity-20261014/cleanup.json)與[交付](evidence/MOD-02/chemical-capacity-20261014/delivery.json)。"
+       "正常化學設計未確認矛盾，混合連續／脈衝完整反向的獨立參考缺口已列 Follow-ups，尚無零 bug 或真實辨識率提升結論。")
+text = text[:start] + new + text[end:]
+start = text.index("| 87 |")
+end = text.index("\n", start)
+text = text[:start] + "| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | completed | 5／5。完整工程、11 項治理、合法相容性及 791 份提交來源核對通過；本輪暫存清除、主要提交推送與遠端讀回完成 |" + text[end:]
+text = text.replace("ticket 87 的完整工程與治理驗證通過，清理及交付仍待完成。",
+                    "ticket 87 的完整工程、治理、清理及主要交付完成。", 1)
+start = text.index("\n\n", text.index("## 下一個可驗證成果與 ticket")) + 2
+end = text.index("\n\n", start)
+new = ("[ticket 87](docs/tickets/87-chemical-capacity-validation.md) 已完成 5／5。下一項機制稽核成果是混合連續／脈衝完整化學反向的獨立參考，採同規則反向或 test-only smooth 模式。"
+       "尚未建立或執行新票，見[AGENTS Follow-ups](AGENTS.md#follow-ups)與[正常設計稽核](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。")
+text = text[:start] + new + text[end:]
+replace(path, old, text)
+
+raw = subprocess.check_output(["git", "diff", "--name-only", "-z",
+                               "57cc92d2864bd19f2424a4daa57edad60ad2763d", primary], cwd=root)
+paths = {path.decode() for path in raw.split(b"\0") if path}
+paths.update(str((evidence / name).relative_to(root)) for name in
+             ["committed-source.json", "delivery.json", "changed-files.json", "close_ticket.py.txt"])
+summaries = {
+    "AGENTS.md": "Record the mixed continuous/LIF chemical reverse verification gap.",
+    "ENG.md": "Document portable float64 capacity validation and unchanged normal contracts.",
+    "delivery-status.md": "Record ticket 87 acceptance, cleanup, delivery, and next verifiable audit.",
+    "docs/requirements-status.json": "Append ticket 87 evidence to MOD-01, MOD-02, and OPS-01; existing 91 statuses remain.",
+    "docs/tickets/87-chemical-capacity-validation.md": "Define and close the five ticket acceptance items.",
+    "modulation/capacity.go": "Add private portable vector/grid representability checks.",
+    "modulation/chemistry.go": "Reject unrepresentable chemical concentration/transport declarations before allocation.",
+    "modulation/config.go": "Validate source release vector bytes in SourceSpec.Build.",
+    "modulation/controller.go": "Validate release vector and activity grid before observing state.",
+    "modulation/memory_controller.go": "Validate activity grid before observing state.",
+    "modulation/sources.go": "Validate externally declared source vector byte capacity.",
+    "modulation/effects.go": "Validate effect node vectors before allocation.",
+    "modulation/capacity_validation_test.go": "Add frozen public capacity-refusal, no-op state, and nonzero-control regressions.",
+    "learning/individual_chemistry_capacity_test.go": "Add frozen persistent chemistry replacement refusal regression.",
+}
+items = [{"file": path, "absolute_path": str(root / path),
+          "summary": summaries.get(path, "Retain ticket 87 commands, fingerprints, diagnostic source, reviews, logs, or acceptance receipts.")}
+         for path in sorted(paths)]
+create_json(evidence / "changed-files.json", {
+    "baseline_commit": "57cc92d2864bd19f2424a4daa57edad60ad2763d",
+    "primary_revision": primary, "file_count": len(items), "files": items,
+})
+print(json.dumps({"ticket_completed": 5, "ticket_total": 5,
+                  "primary_remote_revision": primary,
+                  "committed_source_files": len(sources), "all_changed_files": len(items)}))
