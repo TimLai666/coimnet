@@ -25,6 +25,6 @@
 
 Root 核對完整 diff、所有數字與測試、[移動本體逐位比較](extracted-body-equality.json)及[內部函式呼叫清單](locked-helper-caller-inventory.json)。[獨立審查](adversarial-review.md)與[Root 審查](root-review.md)沒有發現本修正範圍內的新確認缺陷。原始分工草稿、測試審查修正理由與凍結來源分開保存。
 
-[清理回條](cleanup.json)記錄僅移除本票 `runs/.tmp/online-individual-boundary-20261014/`，既有兩個暫存目錄、原資料、模型與全域快取保留。提交與遠端核對由交付回條記錄。
+[清理回條](cleanup.json)記錄僅移除本票 `runs/.tmp/online-individual-boundary-20261014/`，既有兩個暫存目錄、原資料、模型與全域快取保留。修正 `a008c1e` 與回歸／證據 `d73dc5e` 已推送且遠端讀回相符，見[交付回條](delivery.json)。
 
 減法審查：作答不再複製完整快照只為取得參數指紋。加權訓練沿用原有算式及已持鎖函式本體，沒有新增公開交易層或整批回滾。

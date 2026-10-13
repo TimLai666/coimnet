@@ -6,9 +6,9 @@ User Story：同一個體同時有線上學習與外部操作時，每筆答案�
 
 Blocked by：85（已完成，同一來源交付已核對遠端）
 
-Status：in_progress（2026-10-14，完整工程驗收完成，4／5 驗收）
+Status：completed（2026-10-14，5／5 驗收與交付完成）
 
-對應需求：LRN-06。正式測試先在舊實作重現 17 個行為 RED，修正後 5 個頂層回歸及 31 個測試事件通過，race 連續 20 次共 620 個事件通過。完整一般／race 各 58 套件、build、vet、格式、相依性、11 個治理檢查及 CLI 新程序接續均通過。788 份來源指紋相符，本輪 1,713,255,539 bytes 暫存已清除，提交推送仍待驗收。
+對應需求：LRN-06。正式測試先在舊實作重現 17 個行為 RED，修正後 5 個頂層回歸及 31 個測試事件通過，race 連續 20 次共 620 個事件通過。完整一般／race 各 58 套件、build、vet、格式、相依性、11 個治理檢查及 CLI 新程序接續均通過。788 份來源指紋相符，本輪 1,713,255,539 bytes 暫存已清除，修正與回歸證據已推送且遠端讀回相符。
 
 ## 已確認問題
 
@@ -27,7 +27,7 @@ Status：in_progress（2026-10-14，完整工程驗收完成，4／5 驗收）
 - [x] Act 的答案與 ModelVersion 取自同一次個體邊界；錯誤不追加答案。
 - [x] 回饋加權預測與訓練共用同一個體邊界，一般／化學／凍結／累積路徑保持，外部操作可安全等待及取消。
 - [x] 正常相容性、完整 build／一般／race／vet／相依性／治理及 Root 審查通過。
-- [ ] 證據、暫存清除、提交推送與遠端讀回完成。
+- [x] 證據、暫存清除、提交推送與遠端讀回完成。
 
 ## 修正前準備（歷史）
 
@@ -38,3 +38,5 @@ Status：in_progress（2026-10-14，完整工程驗收完成，4／5 驗收）
 [凍結測試](../../evidence/LRN-06/online-individual-boundary-20261014/frozen-tests.json)、[正式 RED](../../evidence/LRN-06/online-individual-boundary-20261014/red-summary.json)、[GREEN](../../evidence/LRN-06/online-individual-boundary-20261014/green-boundary-summary.json)、[20 次 race](../../evidence/LRN-06/online-individual-boundary-20261014/green-race-stability-summary.json)及[移動函式本體逐位核對](../../evidence/LRN-06/online-individual-boundary-20261014/extracted-body-equality.json)。本票不宣稱真實辨識率提升、生物定量正確或整個框架零 bug。
 
 [完整工程驗收](../../evidence/LRN-06/online-individual-boundary-20261014/verification.json)包含 32 組合法逐位比較、跨程序接續與完整一般／race 實際日誌。
+
+[清理](../../evidence/LRN-06/online-individual-boundary-20261014/cleanup.json)及[交付](../../evidence/LRN-06/online-individual-boundary-20261014/delivery.json)完成，原始資料、模型及既有兩個暫存保持。修正 `a008c1e`、回歸／證據 `d73dc5e` 與遠端同一來源。
