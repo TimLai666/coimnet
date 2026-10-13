@@ -332,33 +332,35 @@ func (s *chemicalSequence) NewReverse(ctx context.Context, steps, window int) (d
 		seeds[index] = make([]float64, len(row.occupancy))
 	}
 	return &chemicalReverse{
-		config:      s.config.Clone(),
-		kinetics:    kinetics,
-		rows:        rows,
-		rawOutputs:  copyRows(s.rawOutputs),
-		expression:  copyExpression(s.expression),
-		nodes:       s.nodes,
-		window:      window,
-		seeds:       seeds,
-		nextReadout: 0,
-		nextStep:    steps - 1,
-		frozen:      s.frozen,
+		config:                  s.config.Clone(),
+		kinetics:                kinetics,
+		rows:                    rows,
+		rawOutputs:              copyRows(s.rawOutputs),
+		expression:              copyExpression(s.expression),
+		nodes:                   s.nodes,
+		window:                  window,
+		initialActivityExplicit: s.initialActivity != nil,
+		seeds:                   seeds,
+		nextReadout:             0,
+		nextStep:                steps - 1,
+		frozen:                  s.frozen,
 	}, nil
 }
 
 type chemicalReverse struct {
-	config      modulation.ChemistryConfig
-	kinetics    *modulation.Kinetics
-	rows        []chemicalSequenceRow
-	rawOutputs  [][]float64
-	expression  *ExpressionGain
-	nodes       int
-	window      int
-	seeds       [][]float64
-	nextReadout int
-	nextStep    int
-	frozen      bool
-	carry       [][]float64
+	config                  modulation.ChemistryConfig
+	kinetics                *modulation.Kinetics
+	rows                    []chemicalSequenceRow
+	rawOutputs              [][]float64
+	expression              *ExpressionGain
+	nodes                   int
+	window                  int
+	initialActivityExplicit bool
+	seeds                   [][]float64
+	nextReadout             int
+	nextStep                int
+	frozen                  bool
+	carry                   [][]float64
 }
 
 func (r *chemicalReverse) BackwardReadout(ctx context.Context, step int, up []float64) ([]float64, error) {
@@ -496,7 +498,14 @@ func (r *chemicalReverse) BackwardStep(ctx context.Context, step int, gradient d
 		start = step / r.window * r.window
 	}
 	addActivity := func(target int, values []float64) error {
-		if target < start || target < 0 || target >= step {
+		if target < -1 || target >= step {
+			return nil
+		}
+		if target == -1 {
+			if start != 0 || r.initialActivityExplicit {
+				return nil
+			}
+		} else if target < start {
 			return nil
 		}
 		if len(values) != r.nodes {
@@ -585,6 +594,11 @@ func (r *chemicalReverse) BackwardStep(ctx context.Context, step int, gradient d
 	r.carry = nextCarry
 	r.nextStep--
 	result := make([]dynamics.ActivityGradient, 0, len(activity))
+	if !r.initialActivityExplicit && start == 0 {
+		if values, ok := activity[-1]; ok {
+			result = append(result, dynamics.ActivityGradient{Step: -1, Values: append([]float64(nil), values...)})
+		}
+	}
 	for target := start; target < step; target++ {
 		if values, ok := activity[target]; ok {
 			result = append(result, dynamics.ActivityGradient{Step: target, Values: append([]float64(nil), values...)})
