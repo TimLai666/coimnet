@@ -66,6 +66,14 @@ func NewChemistry(c Chemistry) (*Kinetics, error) {
 	if len(c.Tau) != c.Channels {
 		return nil, fmt.Errorf("modulation: tau has %d entries, want %d channels", len(c.Tau), c.Channels)
 	}
+	if err := checkFloat64Grid("chemistry concentration", c.Regions, c.Channels); err != nil {
+		return nil, err
+	}
+	if c.Transport != nil {
+		if err := checkFloat64Grid("chemistry transport", c.Regions, c.Regions); err != nil {
+			return nil, err
+		}
+	}
 	if c.Units == "" {
 		c.Units = UnitNormalized
 	}

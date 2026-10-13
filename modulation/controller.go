@@ -93,6 +93,12 @@ func (c *Controller) Validate() error {
 	case c.Inputs.SummaryWindow < 1 || c.Inputs.SummaryWindow > maxSummaryWindow:
 		return fmt.Errorf("modulation: controller source summarises %d rows, outside [1,%d]", c.Inputs.SummaryWindow, maxSummaryWindow)
 	}
+	if err := checkFloat64Vector("controller release", c.Channels()); err != nil {
+		return err
+	}
+	if err := checkFloat64Grid("controller activity window", c.Inputs.SummaryWindow, c.Nodes); err != nil {
+		return err
+	}
 	named := make(map[string]bool, len(c.Inputs.Resources))
 	for i, name := range c.Inputs.Resources {
 		if strings.TrimSpace(name) == "" {

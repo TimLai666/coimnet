@@ -92,6 +92,9 @@ func ApplyEffects(effects []Effect, occ []OccupancyRecord, mix string, nodes int
 	if nodes < 1 {
 		return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: effects need at least one node, got %d nodes", nodes)
 	}
+	if err := checkFloat64Vector("effects node configuration", nodes); err != nil {
+		return nil, nil, nil, ClampReport{}, err
+	}
 	for i, record := range occ {
 		if record.Cell < 0 || record.Cell >= nodes {
 			return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: occupancy record %d names cell %d, outside [0, %d)", i, record.Cell, nodes)

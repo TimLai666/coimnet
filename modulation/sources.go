@@ -38,6 +38,9 @@ func (t ExternalTimeline) Validate() error {
 	if t.ChannelCount <= 0 {
 		return fmt.Errorf("modulation: external timeline declares %d channels", t.ChannelCount)
 	}
+	if err := checkFloat64Vector("external timeline release", t.ChannelCount); err != nil {
+		return err
+	}
 	for i, e := range t.Entries {
 		if i > 0 && e.Step < t.Entries[i-1].Step {
 			return fmt.Errorf("modulation: external timeline entry %d is at step %d, before entry %d at step %d", i, e.Step, i-1, t.Entries[i-1].Step)
@@ -107,6 +110,9 @@ func (n NeuralActivity) Validate() error {
 	if n.Channel == int(^uint(0)>>1) {
 		return fmt.Errorf("modulation: neural source channel %d cannot form a channel count", n.Channel)
 	}
+	if err := checkFloat64Vector("neural source release", n.Channels()); err != nil {
+		return err
+	}
 	if !finite(n.Gain) {
 		return fmt.Errorf("modulation: neural source declares a non-finite gain")
 	}
@@ -174,6 +180,9 @@ func (r InternalResource) Release(step uint64, c SourceContext) ([]float64, erro
 	}
 	if r.Channel == int(^uint(0)>>1) {
 		return nil, fmt.Errorf("modulation: internal resource source channel %d cannot form a channel count", r.Channel)
+	}
+	if err := checkFloat64Vector("internal resource release", r.Channels()); err != nil {
+		return nil, err
 	}
 	if !finite(r.Coefficient) || r.Coefficient < 0 {
 		return nil, fmt.Errorf("modulation: internal resource source declares coefficient %v", r.Coefficient)

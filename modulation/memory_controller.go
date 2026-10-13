@@ -69,6 +69,9 @@ func (m *MemoryController) Validate() error {
 	case m.Inputs.SummaryWindow < 1 || m.Inputs.SummaryWindow > maxSummaryWindow:
 		return fmt.Errorf("modulation: memory controller summarises %d rows, outside [1,%d]", m.Inputs.SummaryWindow, maxSummaryWindow)
 	}
+	if err := checkFloat64Grid("memory controller activity window", m.Inputs.SummaryWindow, m.Nodes); err != nil {
+		return err
+	}
 	named := make(map[string]bool, len(m.Inputs.Resources))
 	for i, name := range m.Inputs.Resources {
 		if strings.TrimSpace(name) == "" {
