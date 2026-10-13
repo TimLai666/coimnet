@@ -56,7 +56,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
-- `tasks/ocr`：`FixtureConfig.Validate` 沒檢查 Background／Noise 是否在 [0, 0.5]，超出時每個 seed 才各自 Failed；補範圍檢查與測試。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。
 - `experiment/fullgraph/run.go`：`Report` 的文件註解還寫著「the next ticket adds Resume」並夾著給實作者的指示；`Resume` 已在 `resume.go`，註解改成直接說明兩個 digest 由 `Resume` 在新程序重算比對。
 - `learning/constrained.go`：`copyOptions` 的註解說 Options 有「two optional pointers」，實際已是四個（含 `Schedule`、`Recompute`）；改註解即可，行為不變。
@@ -66,4 +65,4 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但預設 GC 下程序峰值足跡會超出這個存活陣列估算；2026-09-24 已提交的 OPS-07 證據中，預設 GC 峰值足跡 12.22 GiB、85 秒，設 `GOMEMLIMIT=8GiB` 時 8.01 GiB、72 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，執行全圖命令時建議明示 `GOMEMLIMIT=8GiB`。OPS-10 腳本本身尚未設定。
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
 - `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
-- `learning/consolidation.go:47、128–143`：`ConsolidationReport` 註解說拒絕寫入仍回報預算計數，但 `Used`／`LastEpisode` 只在成功分支填入，拒絕回報會缺少現有計數。狀態與權重未因此改變，沒有模型品質受影響的證據；後續在閘門／去重／預算判斷前填入現有計數並補三種拒絕回歸，或縮小報告契約（P2）。
+- `modulation/memory_controller.go:104`、`modulation/controller.go:199`：[NEEDS INVESTIGATION] 已有活動歷史後修改公開 Inputs／Nodes 宣告時，MemoryController 可能重建視窗。規格尚未指定應回錯、重設或保留歷史，正常呼叫端也不改宣告。後續先釐清支援契約再補測試，不列為已確認缺陷。

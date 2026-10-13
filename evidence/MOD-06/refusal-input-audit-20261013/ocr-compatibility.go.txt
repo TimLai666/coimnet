@@ -1,0 +1,53 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+type rendered struct {
+	Options glyphs.Options
+	Image   glyphs.Image
+	Boxes   []glyphs.Box
+}
+
+func main() {
+	var images []rendered
+	var reports []ocr.OCRReport
+	for _, background := range []float64{0, 0.1, 0.5} {
+		for _, noise := range []float64{0, 0.05, 0.5} {
+			for _, inverted := range []bool{false, true} {
+				options := glyphs.Options{Background: background, Noise: noise, Seed: 17, Invert: inverted}
+				img, boxes, err := glyphs.Render("aba", glyphs.Family{Seed: 23}, options)
+				if err != nil {
+					panic(err)
+				}
+				images = append(images, rendered{options, img, boxes})
+			}
+			c := ocr.FixtureConfig{Seeds: []uint64{17}, Alphabet: []rune{'a', 'b'}, TrainSamples: 2, TestSamples: 2,
+				MinLen: 1, MaxLen: 2, Epochs: 1, Hidden: 2, LearningRate: 0.05,
+				TrainFamily: 23, TestFamily: 24, Background: background, Noise: noise}
+			report, err := ocr.RunOCRFixture(context.Background(), c)
+			if err != nil {
+				panic(err)
+			}
+			for _, seed := range report.Seeds {
+				if seed.Failed {
+					panic(fmt.Sprintf("seed %d failed: %s", seed.Seed, seed.Error))
+				}
+			}
+			reports = append(reports, report)
+		}
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(struct {
+		Images  []rendered
+		Reports []ocr.OCRReport
+	}{images, reports}); err != nil {
+		panic(err)
+	}
+}

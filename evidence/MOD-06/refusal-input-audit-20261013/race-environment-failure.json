@@ -1,0 +1,20 @@
+{
+  "command_record": "evidence/MOD-06/refusal-input-audit-20261013/full-race.json",
+  "exit_code": 1,
+  "confirmed_no_space_output_count": 10,
+  "affected_runtime_packages": [
+    "github.com/TimLai666/coimnet/download",
+    "github.com/TimLai666/coimnet/internal/fileio"
+  ],
+  "failed_build_dependencies": [
+    "github.com/HazelnutParadise/insyra/accel",
+    "github.com/apache/arrow/go/v17/arrow/internal/dictutils"
+  ],
+  "build_error_text_available": false,
+  "no_space_examples": [
+    "testing.go:1426: TempDir: mkdir /Users/timlai/Developer/coimnet/runs/.tmp/refusal-input-audit-20261013/go-tmp/TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys3457494761: no space left on device",
+    "fileio_test.go:17: open /Users/timlai/Developer/coimnet/runs/.tmp/refusal-input-audit-20261013/go-tmp/TestReadRegularReadsBoundedRegularFile747936125/001/input.json: no space left on device",
+    "testing.go:1426: TempDir: mkdir /Users/timlai/Developer/coimnet/runs/.tmp/refusal-input-audit-20261013/go-tmp/TestReadRegularRejectsUnknownNonregularAndOversizedPaths4073768125: no space left on device"
+  ],
+  "recovery": "Retained the failed run unchanged. After its process ended disk space recovered. Retrying the same source with go test -p=1 -count=1 -race -timeout=60m -json ./...; no production/test change or unrelated cache deletion."
+}

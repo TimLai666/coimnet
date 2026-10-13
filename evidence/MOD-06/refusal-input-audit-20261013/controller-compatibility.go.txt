@@ -1,0 +1,53 @@
+package main
+
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+type row struct {
+	Window int `json:"window"`
+	Step int `json:"step"`
+	Release []float64 `json:"release"`
+	ControllerLoss float64 `json:"controller_loss"`
+	ControllerGradient []float64 `json:"controller_gradient"`
+	ControllerParameters []float64 `json:"controller_parameters"`
+	ActivityGradient [][]float64 `json:"activity_gradient"`
+	State modulation.ControllerState `json:"state"`
+	Offset float64 `json:"offset"`
+	MemoryLoss float64 `json:"memory_loss"`
+	MemoryGradient []float64 `json:"memory_gradient"`
+	MemoryParameters []float64 `json:"memory_parameters"`
+}
+
+func check(err error) { if err != nil { panic(err) } }
+
+func main() {
+	var rows []row
+	for _, window := range []int{1, 2, 4} {
+		c := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: window, Resources: []string{"energy"}}, Nodes: 1, Hidden: 1, Channel: 0, Parameters: []float64{1, .5, .1, 0, 1, .2}}
+		m, err := modulation.NewCapacityMatched(c)
+		check(err)
+		for step := 0; step < 20; step++ {
+			ctx := modulation.SourceContext{Activity: []float64{float64(step%7)/10}, Resources: map[string]float64{"energy": .4}}
+			q, err := c.Release(uint64(step), ctx)
+			check(err)
+			cl, cg, err := c.Gradient(modulation.ControllerObjective{Kind: modulation.ObjectiveActivityTarget, Target: .8})
+			check(err)
+			activity, err := c.BackwardActivity(.5)
+			check(err)
+			cp, err := c.Update(cg, .01)
+			check(err)
+			y, err := m.Offset(uint64(step), ctx)
+			check(err)
+			ml, mg, err := m.Gradient(.2)
+			check(err)
+			mp, err := m.Update(mg, .01)
+			check(err)
+			rows = append(rows, row{window, step, q, cl, cg, cp, activity, c.State(), y, ml, mg, mp})
+		}
+	}
+	check(json.NewEncoder(os.Stdout).Encode(rows))
+}

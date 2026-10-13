@@ -1,0 +1,64 @@
+import datetime, gzip, hashlib, json, os, pathlib, shutil, stat, subprocess
+root = pathlib.Path.cwd().resolve()
+work = root / "runs/.tmp/refusal-input-audit-20261013"
+evidence = root / "evidence/MOD-06/refusal-input-audit-20261013"
+assert work.is_dir() and not work.is_symlink()
+assert work.parent.resolve() == root / "runs/.tmp"
+baseline = json.loads((evidence / "baseline.json").read_text())
+protected = baseline["protected_temporaries"]
+def check_protected():
+    for item in protected:
+        p = root / item["path"]
+        assert p.stat().st_ino == item["stat_inode"], item["path"]
+        assert sorted(q.name for q in p.iterdir()) == item["entries"], item["path"]
+check_protected()
+processes = subprocess.check_output(["ps", "-axo", "pid=,command="], text=True)
+active = [line for line in processes.splitlines() if str(work / "go-tmp") in line or ("check.py " in line and "refusal-input-audit-20261013" in line)]
+assert not active, "validation process still active"
+records = []
+for p in sorted(work.rglob("*")):
+    s = p.lstat()
+    if stat.S_ISDIR(s.st_mode):
+        continue
+    if stat.S_ISLNK(s.st_mode):
+        records.append(dict(path=str(p.relative_to(root)), kind="symlink", target=os.readlink(p), inode=s.st_ino))
+    else:
+        assert stat.S_ISREG(s.st_mode), str(p)
+        raw = p.read_bytes()
+        records.append(dict(path=str(p.relative_to(root)), kind="file", bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest(), inode=s.st_ino))
+# Keep canonical logs and all scripts/probes before removing the owned scratch tree.
+for rec in records:
+    p = root / rec["path"]
+    if rec["kind"] != "file":
+        continue
+    if p.parent == work / "logs":
+        result = json.loads((evidence / (p.stem + ".json")).read_text())
+        archive = root / result["log"]
+        packed = archive.read_bytes()
+        assert hashlib.sha256(packed).hexdigest() == result["log_sha256"]
+        assert hashlib.sha256(gzip.decompress(packed)).hexdigest() == rec["sha256"]
+    if p.parent == work and p.suffix in (".py", ".go"):
+        saved = {"compatibility.go": "ocr-compatibility.go.txt", "controller_compatibility.go": "controller-compatibility.go.txt"}.get(p.name, p.name + ".txt")
+        assert hashlib.sha256((evidence / saved).read_bytes()).hexdigest() == rec["sha256"], saved
+manifest = evidence / "temporary-inventory.json.gz"
+with manifest.open("xb") as f:
+    f.write(gzip.compress(json.dumps(records, sort_keys=True).encode(), mtime=0))
+# Verify each read version immediately before deleting it; do not follow links.
+for rec in records:
+    p = root / rec["path"]
+    assert p.lstat().st_ino == rec["inode"], str(p)
+    if rec["kind"] == "file":
+        assert hashlib.sha256(p.read_bytes()).hexdigest() == rec["sha256"], str(p)
+    else:
+        assert os.readlink(p) == rec["target"], str(p)
+    p.unlink()
+for p in sorted([p for p in work.rglob("*") if p.is_dir()], key=lambda p: len(p.parts), reverse=True):
+    p.rmdir()
+work.rmdir()
+check_protected()
+source = json.loads((evidence / "source-manifest.json").read_text())
+assert all(hashlib.sha256((root / f["path"]).read_bytes()).hexdigest() == f["sha256"] for f in source["files"])
+record = dict(completed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(), removed_path=str(work.relative_to(root)), removed_regular_files=sum(r["kind"]=="file" for r in records), removed_file_bytes=sum(r.get("bytes",0) for r in records), removed_symlinks=sum(r["kind"]=="symlink" for r in records), path_absent=not work.exists(), protected_temporaries=protected, protected_directory_identity_and_top_level_entries_unchanged=True, source_files_unchanged=len(source["files"]), inventory=str(manifest.relative_to(root)), inventory_sha256=hashlib.sha256(manifest.read_bytes()).hexdigest(), scope="Only this stage's owned scratch tree; no data/models/checkpoints, unrelated scratch directories or global caches removed.")
+with (evidence / "cleanup.json").open("x") as f:
+    json.dump(record,f,indent=2);f.write("\n")
+print(json.dumps(record))

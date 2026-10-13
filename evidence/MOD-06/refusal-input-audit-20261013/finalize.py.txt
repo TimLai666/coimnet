@@ -1,0 +1,65 @@
+import datetime, gzip, hashlib, json, pathlib, platform, subprocess
+root = pathlib.Path.cwd()
+b = root / "evidence/MOD-06/refusal-input-audit-20261013"
+def load(name):
+    return json.loads((b / name).read_text())
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+def command(name):
+    rec = load(name + ".json")
+    packed = (root / rec["log"]).read_bytes()
+    raw = gzip.decompress(packed)
+    assert sha(packed) == rec["log_sha256"]
+    assert sha(raw) == rec["raw_log_sha256"] and len(raw) == rec["raw_log_bytes"]
+    assert rec["exit_code"] == 0, name
+    return rec, raw
+source = load("source-manifest.json")
+assert all(sha((root / f["path"]).read_bytes()) == f["sha256"] for f in source["files"])
+checks = []
+raw_tests = {}
+for name in ["final-build", "full-unit", "full-race-recovered", "final-vet", "dependencies"]:
+    rec, raw = command(name)
+    checks.append(dict(name=name, **rec))
+    if name.startswith("full-"):
+        events = [json.loads(line) for line in raw.splitlines()]
+        assert not any(e.get("Action") == "fail" for e in events), name
+        assert b"WARNING: DATA RACE" not in raw, name
+        raw_tests[name] = dict(passed_packages=sorted(e["Package"] for e in events if e.get("Action") == "pass" and not e.get("Test")), passed_test_events=sum(e.get("Action") == "pass" and bool(e.get("Test")) for e in events), passed_top_level_tests=sum(e.get("Action") == "pass" and bool(e.get("Test")) and "/" not in e["Test"] for e in events), fail_events=[], race_warning=False)
+assert raw_tests["full-unit"]["passed_packages"] == raw_tests["full-race-recovered"]["passed_packages"]
+with (b / "race-summary.json").open("x") as f:
+    json.dump(raw_tests["full-race-recovered"], f, indent=2); f.write("\n")
+for name in ["green-consolidation", "green-ocr", "green-memory-atomic", "green-controller-cache"]:
+    command(name)
+unit_summary = load("unit-summary.json")
+assert len(raw_tests["full-unit"]["passed_packages"]) == unit_summary["passed_packages"]
+assert raw_tests["full-unit"]["passed_test_events"] == unit_summary["passed_test_events"]
+assert raw_tests["full-unit"]["passed_top_level_tests"] == unit_summary["passed_top_level_tests"]
+for stem, result_name in [("compatibility", "compatibility-result.json"), ("controller-compatibility", "controller-compatibility-result.json")]:
+    _, before = command(stem + "-before")
+    _, after = command(stem + "-after")
+    result = load(result_name)
+    assert before == after and result["equal_bytes"] and result["raw_bytes"] == len(before)
+    if stem == "compatibility":
+        output = json.loads(before)
+        assert len(output["Images"]) == result["render_cases"]
+        assert len(output["Reports"]) == result["fixture_cases"]
+        assert sha(before) == result["sha256_before"] == result["sha256_after"]
+        assert (b / "ocr-compatibility.go.txt").read_bytes() == (root / "runs/.tmp/refusal-input-audit-20261013/compatibility.go").read_bytes()
+    else:
+        output = json.loads(before)
+        assert len(output) == result["cases"]
+        assert sorted(set(row["window"] for row in output)) == result["windows"]
+        assert all(sum(row["window"] == window for row in output) == result["steps_per_window"] for window in result["windows"])
+        assert sha(before) == result["before_sha256"] == result["after_sha256"]
+        assert sha((b / "controller-compatibility.go.txt").read_bytes()) == result["probe_sha256"]
+        assert (b / "controller-compatibility.go.txt").read_bytes() == (root / "runs/.tmp/refusal-input-audit-20261013/controller_compatibility.go").read_bytes()
+format_result = load("format-final.json")
+assert format_result["passed"] and not format_result["unformatted"]
+base = load("baseline.json")
+for name in ["go.mod", "go.sum"]:
+    assert subprocess.check_output(["git", "show", base["head"] + ":" + name]) == (root / name).read_bytes()
+record = dict(requirement=["MOD-06", "MOD-07", "MOD-10", "TSK-01"], reproduction_command=[rec["command"] for rec in checks], environment=dict(go_version=base["go_version"], os=base["os"], baseline_head=base["head"], variables=checks[0]["environment"], dependencies="Insyra v0.3.4; go.mod and go.sum byte-identical to baseline; cached offline modules", native_storage="local APFS, no SMB/SSH execution"), input_fingerprints=dict(source_manifest="source-manifest.json", source_manifest_sha256=sha((b / "source-manifest.json").read_bytes()), source_count=len(source["files"]), ocr_compatibility=load("compatibility-result.json"), controller_compatibility=load("controller-compatibility-result.json")), observed_result=dict(unit_passed_packages=len(raw_tests["full-unit"]["passed_packages"]), unit_passed_test_events=raw_tests["full-unit"]["passed_test_events"], unit_passed_top_level_tests=raw_tests["full-unit"]["passed_top_level_tests"], race_passed_packages=len(raw_tests["full-race-recovered"]["passed_packages"]), race_passed_test_events=raw_tests["full-race-recovered"]["passed_test_events"], race_passed_top_level_tests=raw_tests["full-race-recovered"]["passed_top_level_tests"], no_failed_test_events=True, no_race_warning=True, changed_source_files_unchanged_since_freeze=True, verified_fix_categories=4), test_log=[rec["log"] for rec in checks], engineering_checks=checks, format=format_result, regressions="targeted-summary.json", review="root-review.md", findings="findings.md", limitations=["No new real-task training or accuracy improvement measured.", "No claim of biological quantitative validity or absolute zero bugs.", "Historical evidence Go programs preserve their original bytes; format-final.json scopes the formatting check.", "Initial race failed with confirmed disk-full runtime errors; its compiler failure text is unavailable. Serial retry was intentionally terminated after disk capacity recovered. Both records retained; final unchanged-source full normal-parallel race passed.", "Build exit 0 includes a sandbox-denied optional main-module stat-cache write warning, retained verbatim in final-build.log.gz.", "Live mutation of public memory-controller declarations remains unspecified; normal callers do not mutate them."], recorded_at=datetime.datetime.now(datetime.timezone.utc).isoformat())
+assert all(sha((root / f["path"]).read_bytes()) == f["sha256"] for f in source["files"])
+with (b / "verification.json").open("x") as f:
+    json.dump(record, f, ensure_ascii=False, indent=2);f.write("\n")
+print(json.dumps(record["observed_result"]))

@@ -227,3 +227,11 @@ ResetOptimizer 保留記憶、預算及當下回合已被禁止重複鞏固的�
 設計仍明示單一神經元整合受體效果，Compartment 是來源部位記錄而不是多區室膜模型。未知受體維持 skipped／assumed 的區別，數值中性不代表實測不反應。ResetNeural 重設神經及來源時鐘，但保留化學濃度、化學更新步數與來源視窗。這些是既有明確假設，不以生物完整性或品質成效宣稱。
 
 本輪 build、完整一般／race 各 58 套件、vet、相依性及最後 11 項治理通過，770 份來源指紋相符。七類公開回歸、合法 OCR／音訊逐位比較與證據限制見 [機制稽核](evidence/MOD-02/mechanism-audit-20261013/README.md)及[最終工程證據](evidence/MOD-02/mechanism-audit-20261013/verification.json)。
+
+## 公開拒絕與控制器快取契約
+
+Consolidate 的閘門關閉、同回合去重及預算用完報告帶呼叫前的 Used／LastEpisode，成功報告帶提交後計數。報告不改寫記憶。OCR FixtureConfig 及 glyph Render／Generate 入口都要求 Background／Noise 為有限 [0,0.5]，合法空批次仍回空集合，非法空批次設定回錯。
+
+MemoryController.Offset 與 Controller.Release 一樣先計算私有候選。摘要、資源輸入、隱藏層及讀出全部成功後才提交活動視窗和梯度快取。數值溢位與非法輸入保留上一筆成功狀態。tanh 飽和不能掩蓋非有限的中間計算。回錯的 nil 控制器入口不得 panic。
+
+Controller／MemoryController 的參數梯度使用最近成功 forward 的固定參數。成功 Update 保留活動視窗並清除舊快取，下一次 Gradient／BackwardActivity 必須先重新 Release／Offset。失敗 Update 保留參數、視窗與快取。現有正常訓練 caller 原本就按此順序執行。直接改公開 Parameters slice 的 caller 須自行保持 forward 與反向參數一致。本契約不增加保存欄位、版本或參數指紋。驗收由 tickets 74–77 與[本階段計畫](evidence/MOD-06/refusal-input-audit-20261013/plan.md)管理。

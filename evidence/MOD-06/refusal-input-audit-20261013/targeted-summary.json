@@ -1,0 +1,184 @@
+[
+  {
+    "name": "red-consolidation",
+    "exit_code": 1,
+    "duration_seconds": 15.767934958000001,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestConsolidationRefusalCounters",
+      "-v",
+      "./learning"
+    ],
+    "passed_top_level_tests": 0,
+    "failed_top_level_tests": 1,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-consolidation.json"
+  },
+  {
+    "name": "green-consolidation",
+    "exit_code": 0,
+    "duration_seconds": 4.029877583,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestConsolidationRefusalCounters|^TestConsolidat|^TestSlowState",
+      "-v",
+      "./learning"
+    ],
+    "passed_top_level_tests": 11,
+    "failed_top_level_tests": 0,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/green-consolidation.json"
+  },
+  {
+    "name": "red-ocr-public-entrypoints",
+    "exit_code": 1,
+    "duration_seconds": 3.019219917,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "TestFixtureRenderOptions|TestRenderOptions|TestGenerateOptions",
+      "-v",
+      "./tasks/ocr",
+      "./tasks/ocr/glyphs"
+    ],
+    "passed_top_level_tests": 4,
+    "failed_top_level_tests": 3,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-ocr-public-entrypoints.json"
+  },
+  {
+    "name": "red-empty-batch",
+    "exit_code": 1,
+    "duration_seconds": 0.923195125,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestGenerateOptionsRejectInvalidEmptyBatch$",
+      "-v",
+      "./tasks/ocr/glyphs"
+    ],
+    "passed_top_level_tests": 0,
+    "failed_top_level_tests": 1,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-empty-batch.json"
+  },
+  {
+    "name": "green-ocr",
+    "exit_code": 0,
+    "duration_seconds": 2.801625625,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "TestFixtureRenderOptions|TestRenderOptions|TestGenerateOptions|TestGenerateIsDeterministic|TestRenderGeometry|TestRenderNoise",
+      "-v",
+      "./tasks/ocr",
+      "./tasks/ocr/glyphs"
+    ],
+    "passed_top_level_tests": 11,
+    "failed_top_level_tests": 0,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/green-ocr.json"
+  },
+  {
+    "name": "red-memory-atomic-distinct-row",
+    "exit_code": 1,
+    "duration_seconds": 2.168749166,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestMemoryControllerAtomicFailureDoesNotPollute$",
+      "-v",
+      "./modulation"
+    ],
+    "passed_top_level_tests": 0,
+    "failed_top_level_tests": 1,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-memory-atomic-distinct-row.json"
+  },
+  {
+    "name": "red-memory-nil",
+    "exit_code": 1,
+    "duration_seconds": 0.8630468330000001,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestMemoryControllerAtomicNilReceiver$",
+      "-v",
+      "./modulation"
+    ],
+    "passed_top_level_tests": 0,
+    "failed_top_level_tests": 1,
+    "panic": true,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-memory-nil.json"
+  },
+  {
+    "name": "green-memory-atomic",
+    "exit_code": 0,
+    "duration_seconds": 8.278327042,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestMemoryControllerAtomic|^TestMemoryControllerRejectsHiddenOverflow|^TestMemoryControllerHandForward$|^TestMemoryControllerGradientMatchesFiniteDifferences$|^TestMemoryControllerValidateRejects$|^TestCapacityMatchedHasEqualParameterCount$",
+      "-v",
+      "./modulation"
+    ],
+    "passed_top_level_tests": 7,
+    "failed_top_level_tests": 0,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/green-memory-atomic.json"
+  },
+  {
+    "name": "red-controller-cache",
+    "exit_code": 1,
+    "duration_seconds": 3.4532315000000002,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestControllerUpdateCache|^TestMemoryControllerUpdateCache|^TestControllerGradientNil",
+      "-v",
+      "./modulation"
+    ],
+    "passed_top_level_tests": 2,
+    "failed_top_level_tests": 3,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/red-controller-cache.json"
+  },
+  {
+    "name": "green-controller-cache",
+    "exit_code": 0,
+    "duration_seconds": 5.081436334,
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "-run",
+      "^TestController|^TestMemoryController|^TestCapacityMatched|^TestSourceSpecBuildsAController",
+      "-v",
+      "./modulation"
+    ],
+    "passed_top_level_tests": 27,
+    "failed_top_level_tests": 0,
+    "panic": false,
+    "record": "evidence/MOD-06/refusal-input-audit-20261013/green-controller-cache.json"
+  }
+]
