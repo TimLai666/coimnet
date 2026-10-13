@@ -1,0 +1,45 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^TestChemicalInitialGradientReference",
+    "./learning"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet",
+  "started_at": "2026-10-13T21:22:38.641285+00:00",
+  "duration_seconds": 2.469485958,
+  "exit_code": 1,
+  "failed_tests": [
+    "TestChemicalInitialGradientReference/mixed_controller_nil_initial_full_history",
+    "TestChemicalInitialGradientReference/controller_softplus_window_0",
+    "TestChemicalInitialGradientReference/controller_softplus_window_1",
+    "TestChemicalInitialGradientReference/neural_softplus_window_0",
+    "TestChemicalInitialGradientReference/neural_softplus_window_1",
+    "TestChemicalInitialGradientReference"
+  ],
+  "assertions": [
+    "chemical_mixed_reference_test.go:416: core.initial[0]: got 0.184239863696, reference 0.184506906139, abs 0.000267 rel 0.000267",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.26021460977066707 want=0.28151327794598668 abs=0.021298668175319613",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.26021460977066707 want=0.28151327794598668 abs=0.021298668175319613",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.25576232681562994 want=0.32291927619076277 abs=0.067156949375132835",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.25576232681562994 want=0.32291927619076277 abs=0.067156949375132835"
+  ],
+  "log_sha256": "590b957ef773bbfc68824a08b540468d83c7fb00e829ba25e0217b3d8eb7f6fb",
+  "source_manifest": "source-before-fix.json",
+  "test_manifest": "frozen-tests-with-initial.json",
+  "temporary_log": null,
+  "log": "initial-red.log.gz",
+  "archive_sha256": "ffd0f8f20bcf9a38f605358e06cc5319cc257ce9a7bf7f45e1b67777fe84e8a8",
+  "summary": {
+    "package_pass_count": 0,
+    "test_pass_events": 0,
+    "top_level_pass_count": 0,
+    "skipped_tests": [],
+    "failure_events": 7,
+    "log_sha256": "590b957ef773bbfc68824a08b540468d83c7fb00e829ba25e0217b3d8eb7f6fb"
+  }
+}

@@ -1,0 +1,66 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+work = Path(__file__).resolve().parent
+root = work.parents[2]
+sources = json.loads((work / "source-final-postfix.json").read_text())["sources"]
+env = {**os.environ, "GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local",
+       "GOMODCACHE": str(work / "go-mod-cache"), "GOCACHE": str(work / "go-cache"),
+       "GOTMPDIR": str(work / "go-tmp"), "TMPDIR": str(work / "go-tmp")}
+cases = [
+    ("activity-disconnected", "learning/chemical_sequence.go",
+     "addActivity := func(target int, values []float64) error {",
+     "addActivity := func(target int, values []float64) error {\n\t\tif true { return nil }"),
+    ("receptor-location-ignored", "modulation/receptor_location.go",
+     "return record.Location.Region, nil", "return regionOf[cell], nil"),
+    ("threshold-sign-reversed", "dynamics/mixed_coupled.go",
+     "g.ThetaRaw[k] -= thetaGradient", "g.ThetaRaw[k] += thetaGradient"),
+    ("expression-seed-disconnected", "learning/chemical_sequence.go",
+     "occupancyGradient[index] = value", "occupancyGradient[index] = value - seed"),
+]
+results = []
+for name, path, before, after in cases:
+    for p, digest in sources.items():
+        assert hashlib.sha256((root / p).read_bytes()).hexdigest() == digest, p
+    original = (root / path).read_text()
+    assert original.count(before) == 1, (name, path)
+    changed = original.replace(before, after)
+    directory = work / "mutations-final" / name
+    directory.mkdir(parents=True, exist_ok=False)
+    overlay_source = directory / Path(path).name
+    overlay_source.write_text(changed)
+    overlay = directory / "overlay.json"
+    overlay.write_text(json.dumps({"Replace": {str(root / path): str(overlay_source)}}, indent=2) + "\n")
+    log = directory / "test.log"
+    command = ["go", "test", "-overlay", str(overlay), "-json", "-count=1", "-timeout=5m",
+               "-run", "^TestMixedChemicalReference", "./learning"]
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    tick = time.monotonic()
+    with log.open("xb") as output:
+        outcome = subprocess.run(command, cwd=root, env=env, stdout=output, stderr=subprocess.STDOUT, timeout=600)
+    events = []
+    for line in log.read_text().splitlines():
+        if line.startswith("{"):
+            events.append(json.loads(line))
+    failed = [event["Test"] for event in events if event.get("Action") == "fail" and event.get("Test")]
+    assertions = [event["Output"].strip() for event in events if "chemical_mixed_reference_test.go:" in event.get("Output", "") and ": got " in event["Output"]]
+    result = {"name": name, "changed_file": path,
+              "original_sha256": sources[path], "mutant_sha256": hashlib.sha256(changed.encode()).hexdigest(),
+              "change": {"before": before, "after": after}, "command": command, "cwd": str(root),
+              "started_at": started, "duration_seconds": time.monotonic() - tick,
+              "exit_code": outcome.returncode, "failed_tests": failed, "assertion_failures": assertions,
+              "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+              "caught_by_test": outcome.returncode != 0 and bool(failed) and bool(assertions)}
+    (directory / "receipt.json").write_text(json.dumps(result, indent=2) + "\n")
+    results.append(result)
+    print(json.dumps({"name": name, "exit_code": outcome.returncode, "failed_tests": failed,
+                      "caught_by_test": result["caught_by_test"]}), flush=True)
+    assert result["caught_by_test"], name
+    for p, digest in sources.items():
+        assert hashlib.sha256((root / p).read_bytes()).hexdigest() == digest, p
+(work / "mutations-final.json").write_text(json.dumps(results, indent=2) + "\n")

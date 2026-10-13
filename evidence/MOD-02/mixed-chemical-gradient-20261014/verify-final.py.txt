@@ -1,0 +1,64 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import time
+
+work = Path(__file__).resolve().parent
+root = work.parents[2]
+evidence = root / "evidence/MOD-02/mixed-chemical-gradient-20261014"
+env = {**os.environ, "GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local",
+       "GOMODCACHE": str(work / "go-mod-cache"), "GOCACHE": str(work / "go-cache"),
+       "GOTMPDIR": str(work / "go-tmp"), "TMPDIR": str(work / "go-tmp")}
+sources = json.loads((work / "source-final-postfix.json").read_text())["sources"]
+go_files = [p for p in sources if p.endswith(".go") and not p.startswith("evidence/")]
+stages = {
+    "targeted": [
+        ("format", ["gofmt", "-l", *go_files], 180),
+        ("targeted", ["go", "test", "-json", "-count=1", "-timeout=5m", "-run", "^Test(MixedChemicalReference|ChemicalInitialGradientReference)", "./learning"], 900),
+        ("targeted-race", ["go", "test", "-race", "-json", "-count=1", "-timeout=5m", "-run", "^Test(MixedChemicalReference|ChemicalInitialGradientReference)", "./learning"], 900),
+    ],
+    "full": [
+        ("build", ["go", "build", "./..."], 900),
+        ("vet", ["go", "vet", "./..."], 900),
+        ("dependencies", ["go", "mod", "verify"], 180),
+        ("modules", ["go", "list", "-m", "-json", "all"], 180),
+        ("unit", ["go", "test", "-json", "-count=1", "-timeout=30m", "./..."], 2400),
+        ("race", ["go", "test", "-race", "-json", "-count=1", "-timeout=60m", "./..."], 3900),
+    ],
+    "governance": [
+        ("governance", ["go", "test", "-json", "-count=1", "-timeout=10m", "-run", "^Test(NoTelemetry.*|FormatIndex.*|Governance.*)$", "."], 660),
+    ],
+}
+stage = sys.argv[1]
+assert stage in stages
+for name, command, timeout in stages[stage]:
+    name = "final-" + name
+    for path, digest in sources.items():
+        assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, path
+    log, receipt = work / (name + ".log"), work / (name + ".json")
+    assert not log.exists() and not receipt.exists(), "refusing overwrite: " + name
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    before = time.monotonic()
+    with log.open("xb") as output:
+        child = subprocess.Popen(command, cwd=root, env=env, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            code = child.wait(timeout=timeout)
+            expired = False
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL)
+            code, expired = child.wait(), True
+    result = {"command": command, "cwd": str(root), "started_at": started,
+              "duration_seconds": time.monotonic() - before, "exit_code": code, "timed_out": expired,
+              "environment": {key: env[key] for key in ("GOPROXY", "GOSUMDB", "GOTOOLCHAIN", "GOMODCACHE", "GOCACHE", "GOTMPDIR", "TMPDIR")},
+              "log": str(log.relative_to(root)), "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest()}
+    receipt.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps({"check": name, "exit_code": code, "timed_out": expired, "duration_seconds": result["duration_seconds"]}), flush=True)
+    for path, digest in sources.items():
+        assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, path
+    if code != 0 or expired or (name == "final-format" and log.stat().st_size):
+        raise SystemExit(1)

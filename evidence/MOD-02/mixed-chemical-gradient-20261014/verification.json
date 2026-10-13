@@ -1,0 +1,549 @@
+{
+  "requirement": [
+    "COR-05",
+    "COR-09",
+    "MOD-01",
+    "MOD-02",
+    "MOD-03",
+    "MOD-04",
+    "MOD-06"
+  ],
+  "ticket": 88,
+  "captured_at": "2026-10-13T22:06:55.568309+00:00",
+  "baseline_commit": "29cbc2408ae5105b10ce8bfd6ada6c8805e06cb7",
+  "reproduction_command": [
+    {
+      "receipt": "final-format.json",
+      "command": [
+        "gofmt",
+        "-l",
+        "all Go files in source-final.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-targeted.json",
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=5m",
+        "-run",
+        "^Test(MixedChemicalReference|ChemicalInitialGradientReference)",
+        "./learning"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-targeted-race.json",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "-timeout=5m",
+        "-run",
+        "^Test(MixedChemicalReference|ChemicalInitialGradientReference)",
+        "./learning"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-build.json",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-vet.json",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-dependencies.json",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-modules.json",
+      "command": [
+        "go",
+        "list",
+        "-m",
+        "-json",
+        "all"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-unit.json",
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=30m",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "final-race.json",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "-timeout=60m",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "legacy-initial.json",
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/legacy-initial/overlay.json",
+        "-json",
+        "-count=1",
+        "-timeout=5m",
+        "-run",
+        "^TestChemicalInitialGradientReference",
+        "./learning"
+      ],
+      "expected_exit_code": 1
+    }
+  ],
+  "environment": {
+    "host": {
+      "captured_at": "2026-10-13T21:06:23.159748+00:00",
+      "cwd": "/Users/timlai/Developer/coimnet",
+      "checks": [
+        {
+          "command": [
+            "go",
+            "version"
+          ],
+          "exit_code": 0,
+          "stdout": "go version go1.26.5 darwin/arm64\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "go",
+            "env",
+            "GOOS",
+            "GOARCH",
+            "CGO_ENABLED"
+          ],
+          "exit_code": 0,
+          "stdout": "darwin\narm64\n1\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "sw_vers"
+          ],
+          "exit_code": 0,
+          "stdout": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434\n",
+          "stderr": ""
+        },
+        {
+          "command": [
+            "df",
+            "-h",
+            "."
+          ],
+          "exit_code": 0,
+          "stdout": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   286Gi   137Gi    68%    3.8M  1.4G    0%   /System/Volumes/Data\n",
+          "stderr": ""
+        }
+      ]
+    },
+    "execution": {
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/go-mod-cache",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/go-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/go-tmp"
+    }
+  },
+  "input_fingerprints": {
+    "sources": "source-final.json",
+    "source_sha256": "c06340882daf12b7244fdaa5be83cd921c538aa39d83752b489efa3d93f4ba02",
+    "frozen_tests": "frozen-tests.json",
+    "frozen_tests_sha256": "c7fbc0b2c0f7db1e219bebf416e7fef1dc56cb00b22a6855d0e52e5a05bf0129",
+    "mixed_reference_test_sha256": "09da8868555df9f45804aa18c4865ce376d0c06d7c66b7e2286ec6d0145b7242",
+    "initial_reference_test_sha256": "36f1889f9cc38933ebfdf009bc00a4f31d1aedc7b51b27a8cd3304c2de4d044f"
+  },
+  "observed_result": {
+    "confirmed_fixed_bug": {
+      "severity": "P2",
+      "trigger": "ChemicalEpisode.InitialActivity == nil, continuous or mixed core, source has nonzero first-row activity derivative",
+      "failure": "first source activity derivative at Step -1 was dropped from public Core.Initial",
+      "pre_fix_failed_numerical_cases": 5,
+      "post_fix_cases_passed": 5,
+      "scalar_controls": [
+        [
+          "controller",
+          "0",
+          "1.2287323474884033",
+          "0.28151327794598668",
+          "0.26021460977066707"
+        ],
+        [
+          "controller",
+          "1",
+          "1.2287323474884033",
+          "0.28151327794598668",
+          "0.26021460977066707"
+        ],
+        [
+          "neural",
+          "0",
+          "1.1882113218307495",
+          "0.32291927619076277",
+          "0.25576232681562994"
+        ],
+        [
+          "neural",
+          "1",
+          "1.1882113218307495",
+          "0.32291927619076277",
+          "0.25576232681562994"
+        ]
+      ],
+      "other_scalar_trainable_and_input_gradients_bit_equal": true
+    },
+    "reference": {
+      "matched_forward_gradient_cases": 8,
+      "max_gradient_abs": 5.55111512e-17,
+      "max_prediction_abs": 0.0,
+      "hard_event_rule": "0/1 forward, declared fast_sigmoid backward; reset stop-gradient; adaptation derivative retained",
+      "smooth_primitives": "hand-derived and centered-difference leak/Hill references only; no ordinary hard-event finite difference"
+    },
+    "mutation": {
+      "cases": 4,
+      "caught_by_numerical_assertions": 4,
+      "details": "mutations.json"
+    },
+    "engineering": {
+      "targeted": {
+        "package_pass_count": 1,
+        "test_pass_events": 14,
+        "top_level_pass_count": 3,
+        "skipped_tests": [],
+        "failure_events": 0,
+        "log_sha256": "31a28b35fe44af90279dd890eccd2fb63942ce4f3c70ee91037fd5e5962cef79"
+      },
+      "targeted-race": {
+        "package_pass_count": 1,
+        "test_pass_events": 14,
+        "top_level_pass_count": 3,
+        "skipped_tests": [],
+        "failure_events": 0,
+        "log_sha256": "7e7eaed6c5a6ead6d77778e3d24bc65c91b48020a127d139456d4d6cedff85ac"
+      },
+      "unit": {
+        "package_pass_count": 58,
+        "test_pass_events": 5200,
+        "top_level_pass_count": 2111,
+        "skipped_tests": [
+          {
+            "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence"
+          }
+        ],
+        "failure_events": 0,
+        "log_sha256": "d9905741516bb8a2c78a1daa0fb62d223309fed5446aaae970e4b4ee52745730"
+      },
+      "race": {
+        "package_pass_count": 58,
+        "test_pass_events": 5199,
+        "top_level_pass_count": 2110,
+        "skipped_tests": [
+          {
+            "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/checkpoint",
+            "test": "TestBundleLargerThanSingleFileLimit"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence"
+          }
+        ],
+        "failure_events": 0,
+        "log_sha256": "fbe98135edd8e3ada42ca6220d3e49b5e16773a74add5dbf36a9a08d793ee554"
+      }
+    },
+    "source_integrity": {
+      "files": 793,
+      "mismatches": 0
+    },
+    "frozen_tests": {
+      "files": 457,
+      "mismatches": 0
+    },
+    "dependencies": {
+      "module_records": 188,
+      "selected_dependencies": 187,
+      "insyra_version": "v0.3.4"
+    },
+    "actual_model_quality_improvement": "not measured"
+  },
+  "test_log": [
+    "final-format.log.gz",
+    "final-targeted.log.gz",
+    "final-targeted-race.log.gz",
+    "final-build.log.gz",
+    "final-vet.log.gz",
+    "final-dependencies.log.gz",
+    "final-modules.log.gz",
+    "final-unit.log.gz",
+    "final-race.log.gz",
+    "initial-red.log.gz",
+    "legacy-initial.log.gz"
+  ],
+  "engineering_passed": true,
+  "governance": {
+    "state": "passed",
+    "receipt": "final-governance.json",
+    "summary": {
+      "package_pass_count": 1,
+      "test_pass_events": 31,
+      "top_level_pass_count": 11,
+      "failure_events": 0
+    }
+  },
+  "cleanup": {
+    "state": "passed",
+    "receipt": "cleanup.json",
+    "removed_regular_bytes": 1942892872
+  },
+  "delivery": {
+    "state": "pending"
+  },
+  "ticket_acceptance": {
+    "completed": 3,
+    "total": 4
+  },
+  "limits": [
+    "Bounded synthetic engineering fixtures on darwin/arm64, not biological calibration or real OCR quality.",
+    "Full chemistry reference is one channel, two asymmetric regions, controller/neural sources, MixSum, explicit receptor locations and sensitivity/threshold/expression effects.",
+    "Zero concentration, unknown/nonresponsive receptor aggregation, MixMax, other source kinds, clearance boost, multi-channel interaction, persistent history and mixed recompute are not newly independently validated here.",
+    "Scalar first-row initial derivatives cover full history and window 1; no claim of exhaustive truncation/history composition coverage.",
+    "Existing evidence/device skips are itemized in engineering-summary.json; full tests do not rerun whole-brain or configured external evidence tasks.",
+    "No public API, save format, trainable parameter group, biological hypothesis, or dependency change; no zero-bug conclusion.",
+    "MOD-01 through MOD-06 entries receive supplementary bounded-path evidence only; prior complete requirement status is unchanged.",
+    "The preliminary race run was deliberately interrupted and is retained separately, not final acceptance."
+  ]
+}

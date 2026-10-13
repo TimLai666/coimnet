@@ -1,0 +1,41 @@
+{
+  "baseline_commit": "29cbc2408ae5105b10ce8bfd6ada6c8805e06cb7",
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/legacy-initial/overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^TestChemicalInitialGradientReference",
+    "./learning"
+  ],
+  "cwd": "/Users/timlai/Developer/coimnet",
+  "started_at": "2026-10-13T21:32:24.693555+00:00",
+  "duration_seconds": 2.440851833,
+  "exit_code": 1,
+  "assertion_failures": [
+    "chemical_mixed_reference_test.go:416: core.initial[0]: got 0.184239863696, reference 0.184506906139, abs 0.000267 rel 0.000267",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.26021460977066707 want=0.28151327794598668 abs=0.021298668175319613",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.26021460977066707 want=0.28151327794598668 abs=0.021298668175319613",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.25576232681562994 want=0.32291927619076277 abs=0.067156949375132835",
+    "chemical_initial_gradient_reference_test.go:33: nil Core.Initial: got=0.25576232681562994 want=0.32291927619076277 abs=0.067156949375132835"
+  ],
+  "failed_tests": [
+    "TestChemicalInitialGradientReference/mixed_controller_nil_initial_full_history",
+    "TestChemicalInitialGradientReference/controller_softplus_window_0",
+    "TestChemicalInitialGradientReference/controller_softplus_window_1",
+    "TestChemicalInitialGradientReference/neural_softplus_window_0",
+    "TestChemicalInitialGradientReference/neural_softplus_window_1",
+    "TestChemicalInitialGradientReference"
+  ],
+  "legacy_source_sha256": "d3cfbcdf06350c96ec36e70661001fc6db23500bfe7fe332b3fbab3b6aeae540",
+  "test_log": "legacy-initial.log.gz",
+  "log_sha256": "f37afe3c84d470daad4f53703601dfcc9239e06b7d21c891028f525cf1c0cb85",
+  "final_sources_unchanged": 793,
+  "temporary_log": "runs/.tmp/mixed-chemical-gradient-20261014/legacy-initial/test.log",
+  "log": "legacy-initial.log.gz",
+  "archive_sha256": "cd9c5efa9b4dbfca7cf8f724ea1b2a5c5e32a3e7e819e59f3ed22f981ee6a215"
+}

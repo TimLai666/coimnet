@@ -1,0 +1,90 @@
+import hashlib, json, shutil
+from pathlib import Path
+
+work = Path(__file__).resolve().parent
+root = work.parents[2]
+evidence = root / 'evidence/MOD-02/mixed-chemical-gradient-20261014'
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+verification = json.loads((evidence / 'verification.json').read_text())
+assert verification['engineering_passed']
+before = json.loads((work / 'docs-before-close.json').read_text())
+for name in ['AGENTS.md', 'docs/requirements-status.json']:
+    assert sha(root / name) == before[name], name
+assert sha(root / 'delivery-status.md') == 'f6ba4814741f87231cb2122bf9625bb567130a2f7526046f00d38fe8b594b63b'
+assert sha(root / 'docs/tickets/88-mixed-chemical-gradient-reference.md') == 'a2b0d6daf62577873d4b6bc1d21810c1e23071cf2c99413de388afffcaafbe8b'
+
+for source, destination in [
+    ('root-review.md', 'root-review.md'),
+    ('history.json', 'history.json'),
+    ('production-diff.patch', 'production-diff.patch'),
+    ('finalize_evidence.py', 'finalize-evidence.py.txt'),
+    ('close_docs.py', 'close-docs.py.txt'),
+    ('cleanup.py', 'cleanup.py.txt'),
+]:
+    target = evidence / destination
+    assert not target.exists(), str(target)
+    shutil.copyfile(work / source, target)
+    assert sha(target) == sha(work / source)
+
+edits = {}
+p = root / 'docs/requirements-status.json'
+raw = p.read_text()
+value = json.loads(raw)
+assert raw == json.dumps(value, ensure_ascii=False, indent=2) + '\n'
+ids = set(verification['requirement'])
+found = set()
+reference = '../evidence/MOD-02/mixed-chemical-gradient-20261014/verification.json'
+for entry in value['requirements']:
+    if entry['id'] in ids:
+        assert entry['status'] == 'passed' and reference not in entry['evidence']
+        entry['evidence'].append(reference)
+        found.add(entry['id'])
+assert found == ids
+assert sum(x['status'] == 'passed' for x in value['requirements']) == 91
+edits[p] = (raw, json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+
+p = root / 'AGENTS.md'
+raw = p.read_text()
+lines = raw.splitlines(keepends=True)
+resolved = [line for line in lines if line.startswith('- `learning/chemical_episode.go:231`')]
+assert len(resolved) == 1
+edits[p] = (raw, raw.replace(resolved[0] + '\n', '', 1))
+
+p = root / 'docs/tickets/88-mixed-chemical-gradient-reference.md'
+raw = p.read_text()
+assert raw.count('- [x]') == 2 and raw.count('- [ ]') == 2
+decision = '''
+## Root decision 2026-10-14
+
+Root 核對公開初始活動契約、獨立前向微分與兩側核心橋接，確認未明示活動時首步 Core.Initial 漏算。五組公開入口回歸先在舊來源失敗，修正後通過。顯式初始活動、持續歷史及截斷視窗外活動保持常數，LIF 初始突觸輸出為零。修正僅在私有 chemical sequence，不變更公開 API、保存格式、相依性或生理假設。
+
+八組混合參考的前向差為零，梯度最大絕對差 5.55111512e-17。四種刻意錯誤均被數值斷言抓到。完整一般與 race 各 58 套件、格式、build、vet 與相依性通過，793 份來源與 457 份凍結測試相符。治理、清理與交付完成後才勾選剩餘驗收。
+
+本票為人工工程驗證。多訊號、其他來源、MixMax、受體未知聚合、清除、持續歷史與混合重算的獨立完整對照不屬本次新增證據，真實辨識率與生物校準沒有重測，不能宣稱整體零 bug。
+
+見[驗證](../../evidence/MOD-02/mixed-chemical-gradient-20261014/verification.json)、[Root 審查](../../evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)與[失敗重現](../../evidence/MOD-02/mixed-chemical-gradient-20261014/legacy-initial.json)。
+'''
+edits[p] = (raw, raw + decision)
+
+p = root / 'delivery-status.md'
+raw = p.read_text()
+first = raw.splitlines()[4]
+assert first.startswith('[ticket 88]')
+updated = '[ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md) 已修正未明示 InitialActivity 時首步來源的 Core.Initial 梯度漏算。五組舊來源失敗案例通過，八組混合參考的前向差為零、梯度最大絕對差 5.55111512e-17，四種刻意錯誤被抓到。完整一般與 race 各 58 套件、格式、build、vet 與相依性通過，793 份來源及 457 份凍結測試相符。治理、清理與交付待完成，驗收 2／4。見[驗證](evidence/MOD-02/mixed-chemical-gradient-20261014/verification.json)與[Root 審查](evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)。'
+new = raw.replace(first, updated, 1)
+blocker = '無外部阻礙。ticket 88 的修正與專項已通過，最後完整 race、治理與交付待完成。前次 race 因補失敗測試而主動中止，紀錄保留，不算最後驗收。OpenCode models 回報 FileSystem.open，依專案規則使用 Luna max。真實辨識率沒有在本階段重測，先前品質限制保留。'
+assert new.count(blocker) == 1
+new = new.replace(blocker, '無外部阻礙。ticket 88 的完整工程檢查通過，治理、暫存清理與交付待完成。前次 race 的主動中止紀錄另存。OpenCode models 回報 FileSystem.open，依專案規則使用 Luna max。真實辨識率沒有在本階段重測，先前品質限制保留。', 1)
+heading = '## 決策紀錄\n\n'
+assert new.count(heading) == 1
+new = new.replace(heading, heading + '2026-10-14：ticket 88 以測試私有前向微分核對既有硬事件及替代導數，沒有新增公開 smooth 模式。初始來源漏算先重現，再以核心原有橋接修正。顯式常數、持續歷史與截斷規則保持，補充證據不變更既有 91／91 工程狀態。見[Root 審查](evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)。\n\n', 1)
+edits[p] = (raw, new)
+
+for path, (old, new) in edits.items():
+    assert path.read_text() == old, str(path)
+    assert old != new
+    path.write_text(new)
+print(json.dumps({'updated': [str(p.relative_to(root)) for p in edits], 'acceptance': '2/4; governance and delivery pending'}))

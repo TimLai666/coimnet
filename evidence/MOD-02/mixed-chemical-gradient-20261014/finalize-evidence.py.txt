@@ -1,0 +1,95 @@
+import collections, datetime, gzip, hashlib, json, re, shutil
+from pathlib import Path
+work=Path(__file__).resolve().parent
+root=work.parents[2]
+evidence=root/"evidence/MOD-02/mixed-chemical-gradient-20261014"
+def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+def save(name,value):
+    p=evidence/name
+    assert not p.exists(),str(p)
+    p.write_text(json.dumps(value,ensure_ascii=False,indent=2)+"\n")
+def archive(path,name):
+    out=evidence/(name+".gz")
+    assert not out.exists()
+    raw=path.read_bytes()
+    out.write_bytes(gzip.compress(raw,mtime=0))
+    assert gzip.decompress(out.read_bytes())==raw
+    return {"log":out.name,"log_sha256":hashlib.sha256(raw).hexdigest(),"archive_sha256":sha(out)}
+def summary(path):
+    events=[]
+    for line in path.read_text().splitlines():
+        if line.startswith("{"): events.append(json.loads(line))
+    passes=[x for x in events if x.get("Action")=="pass"]
+    return {"package_pass_count":sum(not x.get("Test") for x in passes),"test_pass_events":sum(bool(x.get("Test")) for x in passes),"top_level_pass_count":sum(bool(x.get("Test")) and "/" not in x["Test"] for x in passes),"skipped_tests":[{"package":x["Package"],"test":x.get("Test")} for x in events if x.get("Action")=="skip"],"failure_events":sum(x.get("Action")=="fail" for x in events),"log_sha256":sha(path)}
+sources=json.loads((work/"source-final-postfix.json").read_text())["sources"]
+frozen=json.loads((work/"frozen-tests-with-initial.json").read_text())["files"]
+for path,digest in {**sources,**frozen}.items(): assert sha(root/path)==digest,path
+assert len(sources)==793 and len(frozen)==457
+for src,dest in [("source-final-postfix.json","source-final.json"),("frozen-tests-with-initial.json","frozen-tests.json"),("verify_final.py","verify-final.py.txt"),("mutate_final.py","mutate-final.py.txt"),("legacy_initial.py","legacy-initial.py.txt")]:
+    target=evidence/dest
+    assert not target.exists()
+    shutil.copyfile(work/src,target)
+    assert sha(target)==sha(work/src)
+names=["format","targeted","targeted-race","build","vet","dependencies","modules","unit","race"]
+receipts=[]
+test_summaries={}
+for name in names:
+    receipt=json.loads((work/("final-"+name+".json")).read_text())
+    assert receipt["exit_code"]==0 and not receipt["timed_out"],name
+    log=work/("final-"+name+".log")
+    assert sha(log)==receipt["log_sha256"],name
+    receipt["temporary_log"]=receipt["log"]
+    receipt.update(archive(log,"final-"+name+".log"))
+    save("final-"+name+".json",receipt)
+    receipts.append({"receipt":"final-"+name+".json","command":receipt["command"] if name!="format" else ["gofmt","-l","all Go files in source-final.json"],"exit_code":0})
+    if name in ["targeted","targeted-race","unit","race"]:
+        test_summaries[name]=summary(log)
+        assert test_summaries[name]["failure_events"]==0,name
+assert (work/"final-format.log").stat().st_size==0
+save("engineering-summary.json",test_summaries)
+red=json.loads((work/"initial-red.json").read_text())
+assert red["exit_code"]==1
+red["temporary_log"]=red.get("log")
+red.update(archive(work/"initial-red.log","initial-red.log"))
+red["summary"]=summary(work/"initial-red.log")
+save("initial-red.json",red)
+legacy=json.loads((work/"legacy-initial/receipt.json").read_text())
+assert legacy["exit_code"]==1 and len(legacy["assertion_failures"])==5
+legacy["temporary_log"]=legacy["test_log"]
+legacy.update(archive(work/"legacy-initial/test.log","legacy-initial.log"))
+legacy["test_log"]=legacy["log"]
+save("legacy-initial.json",legacy)
+mutations=json.loads((work/"mutations-final.json").read_text())
+for case in mutations:
+    assert case["exit_code"]==1 and case["caught_by_test"] and case["assertion_failures"]
+    case.update(archive(work/("mutations-final/"+case["name"]+"/test.log"),"mutation-"+case["name"]+".log"))
+save("mutations.json",mutations)
+interrupted=json.loads((work/"race.json").read_text())
+interrupted["state"]="intentionally interrupted before final source freeze to reproduce newly identified initial gradient bug"
+interrupted.update(archive(work/"race.log","preliminary-interrupted-race.log"))
+save("preliminary-interrupted-race.json",interrupted)
+probe=json.loads((work/"server-probe.json").read_text())
+probe["classification"]="sandbox rejects existing httptest loopback listener; final full checks ran with approved local-loopback capability"
+probe.update(archive(work/"server-probe.log","server-probe.log"))
+save("server-probe.json",probe)
+text=(work/"final-targeted.log").read_text()
+gradients=[float(x) for x in re.findall(r"reference=\S+ max_gradient_abs=([0-9.e+-]+)",text)]
+predictions=[float(x) for x in re.findall(r"reference=\S+ max_prediction_abs=([0-9.e+-]+)",text)]
+controls=re.findall(r"source=(\w+) window=(\d+) output=([0-9.e+-]+) implicit_initial=([0-9.e+-]+) explicit_initial=([0-9.e+-]+)",text)
+assert len(gradients)==8 and len(predictions)==8 and len(controls)==4
+passing_initial=[]
+for line in text.splitlines():
+    if line.startswith("{"):
+        event=json.loads(line)
+        if event.get("Action")=="pass" and event.get("Test","").startswith("TestChemicalInitialGradientReference/"):
+            passing_initial.append(event["Test"])
+assert set(passing_initial)==set(legacy["failed_tests"])-{"TestChemicalInitialGradientReference"}
+
+raw=(work/"final-modules.log").read_text();decoder=json.JSONDecoder();records=[]
+while raw.strip():
+    obj,end=decoder.raw_decode(raw.lstrip());records.append(obj);raw=raw.lstrip()[end:]
+insyra=[x for x in records if x.get("Path")=="github.com/HazelnutParadise/insyra"]
+assert len(insyra)==1 and insyra[0].get("Version")=="v0.3.4"
+result={"requirement":["COR-05","COR-09","MOD-01","MOD-02","MOD-03","MOD-04","MOD-06"],"ticket":88,"captured_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"baseline_commit":json.loads((work/"baseline.json").read_text())["head"],"reproduction_command":receipts+[{'receipt':'legacy-initial.json','command':legacy['command'],'expected_exit_code':1}],"environment":{"host":json.loads((evidence/"environment.json").read_text()),"execution":json.loads((evidence/"final-build.json").read_text())["environment"]},"input_fingerprints":{"sources":"source-final.json","source_sha256":sha(evidence/"source-final.json"),"frozen_tests":"frozen-tests.json","frozen_tests_sha256":sha(evidence/"frozen-tests.json"),"mixed_reference_test_sha256":sources["learning/chemical_mixed_reference_test.go"],"initial_reference_test_sha256":sources["learning/chemical_initial_gradient_reference_test.go"]},"observed_result":{"confirmed_fixed_bug":{"severity":"P2","trigger":"ChemicalEpisode.InitialActivity == nil, continuous or mixed core, source has nonzero first-row activity derivative","failure":"first source activity derivative at Step -1 was dropped from public Core.Initial","pre_fix_failed_numerical_cases":len(legacy['assertion_failures']),"post_fix_cases_passed":len(passing_initial),"scalar_controls":controls,"other_scalar_trainable_and_input_gradients_bit_equal":True},"reference":{"matched_forward_gradient_cases":len(gradients),"max_gradient_abs":max(gradients),"max_prediction_abs":max(predictions),"hard_event_rule":"0/1 forward, declared fast_sigmoid backward; reset stop-gradient; adaptation derivative retained","smooth_primitives":"hand-derived and centered-difference leak/Hill references only; no ordinary hard-event finite difference"},"mutation":{"cases":len(mutations),"caught_by_numerical_assertions":sum(x['caught_by_test'] for x in mutations),"details":"mutations.json"},"engineering":test_summaries,"source_integrity":{"files":len(sources),"mismatches":0},"frozen_tests":{"files":len(frozen),"mismatches":0},"dependencies":{"module_records":len(records),"selected_dependencies":len(records)-1,"insyra_version":insyra[0]['Version']},"actual_model_quality_improvement":"not measured"},"test_log":["final-"+n+".log.gz" for n in names]+["initial-red.log.gz","legacy-initial.log.gz"],"engineering_passed":True,"governance":{"state":"pending"},"cleanup":{"state":"pending"},"delivery":{"state":"pending"},"ticket_acceptance":{"completed":2,"total":4},"limits":["Bounded synthetic engineering fixtures on darwin/arm64, not biological calibration or real OCR quality.","Full chemistry reference is one channel, two asymmetric regions, controller/neural sources, MixSum, explicit receptor locations and sensitivity/threshold/expression effects.","Zero concentration, unknown/nonresponsive receptor aggregation, MixMax, other source kinds, clearance boost, multi-channel interaction, persistent history and mixed recompute are not newly independently validated here.","Scalar first-row initial derivatives cover full history and window 1; no claim of exhaustive truncation/history composition coverage.","Existing evidence/device skips are itemized in engineering-summary.json; full tests do not rerun whole-brain or configured external evidence tasks.","No public API, save format, trainable parameter group, biological hypothesis, or dependency change; no zero-bug conclusion.","MOD-01 through MOD-06 entries receive supplementary bounded-path evidence only; prior complete requirement status is unchanged.","The preliminary race run was deliberately interrupted and is retained separately, not final acceptance."]}
+save("verification.json",result)
+print(json.dumps({"engineering":test_summaries,"max_gradient_abs":max(gradients),"max_prediction_abs":max(predictions),"controls":controls},ensure_ascii=False),flush=True)

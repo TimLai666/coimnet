@@ -1,0 +1,59 @@
+import datetime, gzip, hashlib, json, os, shutil, stat, subprocess
+from pathlib import Path
+work=Path(__file__).resolve().parent
+root=work.parents[2]
+evidence=root/"evidence/MOD-02/mixed-chemical-gradient-20261014"
+assert work==root/"runs/.tmp/mixed-chemical-gradient-20261014" and not work.is_symlink()
+assert shutil.rmtree.avoids_symlink_attacks
+verification=json.loads((evidence/"verification.json").read_text())
+assert verification["engineering_passed"] and verification["governance"]["state"]=="passed"
+for name in ["final-race","final-governance"]:
+    receipt=json.loads((work/(name+".json")).read_text())
+    assert receipt["exit_code"]==0 and not receipt["timed_out"]
+protected={"62":49680181,"real-task-quality-20261012":50419696}
+def protected_state():
+    result={}
+    for name,inode in protected.items():
+        p=root/"runs/.tmp"/name
+        s=p.lstat();assert stat.S_ISDIR(s.st_mode) and s.st_ino==inode,name
+        result[name]={"inode":s.st_ino,"entries":sorted(os.listdir(p))}
+    return result
+before_protected=protected_state()
+processes=subprocess.check_output(["ps","-axo","pid=,args="],text=True)
+active=[line for line in processes.splitlines() if str(work/"go-tmp") in line and (".test" in line or "/exe/" in line)]
+assert not active,active
+files=[];links=[];directories=[]
+for directory,ds,fs in os.walk(work,followlinks=False):
+    p=Path(directory);s=p.lstat();assert stat.S_ISDIR(s.st_mode)
+    directories.append({"path":str(p.relative_to(work)),"inode":s.st_ino})
+    for name in list(ds)+fs:
+        q=p/name;s=q.lstat();relative=str(q.relative_to(work))
+        if stat.S_ISLNK(s.st_mode):
+            links.append({"path":relative,"inode":s.st_ino,"target":os.readlink(q)})
+            if name in ds:ds.remove(name)
+        elif stat.S_ISREG(s.st_mode):
+            files.append({"path":relative,"inode":s.st_ino,"bytes":s.st_size,"sha256":hashlib.sha256(q.read_bytes()).hexdigest()})
+        elif not stat.S_ISDIR(s.st_mode):raise AssertionError(relative)
+inventory={"root":str(work),"root_inode":work.lstat().st_ino,"regular_files":sorted(files,key=lambda x:x["path"]),"symlinks":sorted(links,key=lambda x:x["path"]),"directories":sorted(directories,key=lambda x:x["path"]),"protected_before":before_protected}
+raw=(json.dumps(inventory,indent=2)+"\n").encode()
+out=evidence/"cleanup-inventory.json.gz";assert not out.exists()
+out.write_bytes(gzip.compress(raw,mtime=0));assert gzip.decompress(out.read_bytes())==raw
+for entry in files:
+    q=work/entry["path"];s=q.lstat()
+    assert stat.S_ISREG(s.st_mode) and s.st_ino==entry["inode"] and s.st_size==entry["bytes"] and hashlib.sha256(q.read_bytes()).hexdigest()==entry["sha256"],str(q)
+for entry in links:
+    q=work/entry["path"];s=q.lstat()
+    assert stat.S_ISLNK(s.st_mode) and s.st_ino==entry["inode"] and os.readlink(q)==entry["target"],str(q)
+for entry in directories:
+    q=work/entry["path"];s=q.lstat()
+    assert stat.S_ISDIR(s.st_mode) and s.st_ino==entry["inode"],str(q)
+assert protected_state()==before_protected
+shutil.rmtree(work)
+assert not work.exists()
+after_protected=protected_state();assert after_protected==before_protected
+sources=json.loads((evidence/"source-final.json").read_text())["sources"]
+frozen=json.loads((evidence/"frozen-tests.json").read_text())["files"]
+for path,digest in {**sources,**frozen}.items():assert hashlib.sha256((root/path).read_bytes()).hexdigest()==digest,path
+result={"captured_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"removed_root":str(work),"removed_root_inode":inventory["root_inode"],"removed_regular_files":len(files),"removed_symlinks":len(links),"removed_directories":len(directories),"removed_regular_bytes":sum(x["bytes"] for x in files),"inspection":"regular file bytes hashed before deletion; symlink targets read without following; tree rechecked before fd-protected rmtree","inventory":out.name,"inventory_sha256":hashlib.sha256(out.read_bytes()).hexdigest(),"protected_before":before_protected,"protected_after":after_protected,"remaining_tmp_entries":sorted(os.listdir(root/"runs/.tmp")),"native_cache_targets_deleted":False,"source_files_verified_after":len(sources),"frozen_tests_verified_after":len(frozen),"state":"passed"}
+p=evidence/"cleanup.json";assert not p.exists();p.write_text(json.dumps(result,indent=2)+"\n")
+print(json.dumps(result),flush=True)

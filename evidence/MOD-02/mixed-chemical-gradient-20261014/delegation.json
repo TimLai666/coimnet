@@ -1,0 +1,35 @@
+{
+  "captured_at": "2026-10-13T21:53:30.581466+00:00",
+  "host": "Codex desktop",
+  "opencode_inventory": {
+    "command": [
+      "opencode",
+      "models"
+    ],
+    "receipt": "opencode-models.json",
+    "log": "opencode-models.log",
+    "model_selected": null,
+    "error": "FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "fallback_reason": "project AGENTS.md explicitly selects native gpt-5.6-luna at max after unavailable OpenCode free models",
+  "agents": [
+    {
+      "name": "mixed_chemical_reference_tests_88",
+      "tool": "collaboration.spawn_agent",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "scope": "two new reference tests only; source implementation forbidden; final test hashes frozen"
+    },
+    {
+      "name": "mixed_chemical_contract_audit_88",
+      "tool": "collaboration.spawn_agent and followup_task",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "fork_turns": "none",
+      "scope": "read-only contract audit; later one-file implementation; interrupted incomplete candidate; Root final implementation; final read-only review",
+      "implementation_test_edits": false
+    }
+  ],
+  "root_responsibility": "specification, test review and source freeze, independent hand/reference and mutation checks, final source repair, all actual acceptance tests, evidence, cleanup, commit and push"
+}

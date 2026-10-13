@@ -1,0 +1,14 @@
+{
+  "command": [
+    "git",
+    "blame",
+    "-L",
+    "493,503",
+    "29cbc2408ae5105b10ce8bfd6ada6c8805e06cb7",
+    "--",
+    "learning/chemical_sequence.go"
+  ],
+  "exit_code": 0,
+  "stdout": "9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 493) \tactivity := make(map[int][]float64)\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 494) \tstart := 0\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 495) \tif r.window > 0 {\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 496) \t\tstart = step / r.window * r.window\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 497) \t}\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 498) \taddActivity := func(target int, values []float64) error {\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 499) \t\tif target < start || target < 0 || target >= step {\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 500) \t\t\treturn nil\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 501) \t\t}\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 502) \t\tif len(values) != r.nodes {\n9ed31a5d (TimLai666 2026-10-13 03:31:26 +0800 503) \t\t\treturn fmt.Errorf(\"activity gradient target %d has %d values, want %d\", target, len(values), r.nodes)\n",
+  "stderr": ""
+}

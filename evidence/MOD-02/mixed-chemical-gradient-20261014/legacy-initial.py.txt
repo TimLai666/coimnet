@@ -1,0 +1,33 @@
+import datetime, hashlib, json, os, subprocess, time
+from pathlib import Path
+work=Path(__file__).resolve().parent
+root=work.parents[2]
+sources=json.loads((work/"source-final-postfix.json").read_text())["sources"]
+for path,digest in sources.items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest()==digest,path
+base=json.loads((work/"baseline.json").read_text())["head"]
+directory=work/"legacy-initial"
+directory.mkdir(exist_ok=False)
+path="learning/chemical_sequence.go"
+old=subprocess.check_output(["git","show",base+":"+path],cwd=root)
+assert hashlib.sha256(old).hexdigest()==json.loads((work/"baseline.json").read_text())["sources"][path]
+source=directory/"chemical_sequence.go"
+source.write_bytes(old)
+overlay=directory/"overlay.json"
+overlay.write_text(json.dumps({"Replace":{str(root/path):str(source)}},indent=2)+"\n")
+env={**os.environ,"GOPROXY":"off","GOSUMDB":"off","GOTOOLCHAIN":"local", "GOMODCACHE":str(work/"go-mod-cache"),"GOCACHE":str(work/"go-cache"),"GOTMPDIR":str(work/"go-tmp"),"TMPDIR":str(work/"go-tmp")}
+command=["go","test","-overlay",str(overlay),"-json","-count=1","-timeout=5m","-run","^TestChemicalInitialGradientReference","./learning"]
+started=datetime.datetime.now(datetime.timezone.utc).isoformat()
+tick=time.monotonic()
+log=directory/"test.log"
+with log.open("xb") as f:
+    outcome=subprocess.run(command,cwd=root,env=env,stdout=f,stderr=subprocess.STDOUT,timeout=600)
+events=[json.loads(l) for l in log.read_text().splitlines() if l.startswith("{")]
+failed=[e["Test"] for e in events if e.get("Action")=="fail" and e.get("Test")]
+assertions=[e["Output"].strip() for e in events if ("nil Core.Initial: got=" in e.get("Output","") or "core.initial[0]: got " in e.get("Output",""))]
+assert outcome.returncode==1 and len(assertions)==5 and len(failed)==6
+for path,digest in sources.items():
+    assert hashlib.sha256((root/path).read_bytes()).hexdigest()==digest,path
+result={"baseline_commit":base,"command":command,"cwd":str(root),"started_at":started,"duration_seconds":time.monotonic()-tick,"exit_code":outcome.returncode,"assertion_failures":assertions,"failed_tests":failed,"legacy_source_sha256":hashlib.sha256(old).hexdigest(),"test_log":str(log.relative_to(root)),"log_sha256":hashlib.sha256(log.read_bytes()).hexdigest(),"final_sources_unchanged":len(sources)}
+(directory/"receipt.json").write_text(json.dumps(result,indent=2)+"\n")
+print(json.dumps(result),flush=True)

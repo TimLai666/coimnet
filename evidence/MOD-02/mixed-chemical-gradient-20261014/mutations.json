@@ -1,0 +1,174 @@
+[
+  {
+    "name": "activity-disconnected",
+    "changed_file": "learning/chemical_sequence.go",
+    "original_sha256": "c73b9c655e451ac5dd882547a260c69e48ea5379b4b08c53c4dd2cf3b5ac9305",
+    "mutant_sha256": "ef6f3d6c4a0829d47aa3912edb2d7a5567a4ca95bc0dded870ac82642f959d02",
+    "change": {
+      "before": "addActivity := func(target int, values []float64) error {",
+      "after": "addActivity := func(target int, values []float64) error {\n\t\tif true { return nil }"
+    },
+    "command": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/mutations-final/activity-disconnected/overlay.json",
+      "-json",
+      "-count=1",
+      "-timeout=5m",
+      "-run",
+      "^TestMixedChemicalReference",
+      "./learning"
+    ],
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "started_at": "2026-10-13T21:31:16.592488+00:00",
+    "duration_seconds": 4.405742334,
+    "exit_code": 1,
+    "failed_tests": [
+      "TestMixedChemicalReference/controller-normal",
+      "TestMixedChemicalReference/controller-floor",
+      "TestMixedChemicalReference/neural-normal",
+      "TestMixedChemicalReference/neural-floor",
+      "TestMixedChemicalReference"
+    ],
+    "assertion_failures": [
+      "chemical_mixed_reference_test.go:416: core.weights[2]: got -0.125338947445, reference -0.125295825109, abs 4.312e-05 rel 4.312e-05",
+      "chemical_mixed_reference_test.go:416: core.bias[0]: got -0.120862177836, reference -0.120948744666, abs 8.657e-05 rel 8.657e-05",
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.0135988487423, reference 0.0136741583229, abs 7.531e-05 rel 7.531e-05",
+      "chemical_mixed_reference_test.go:416: core.weights[1]: got -0.127236315197, reference -0.127344727329, abs 0.0001084 rel 0.0001084"
+    ],
+    "log_sha256": "b01ce4aa0c5d070efe395735c9ed8a51f2de5c3cf4205af6677492c0e44824f8",
+    "caught_by_test": true,
+    "log": "mutation-activity-disconnected.log.gz",
+    "archive_sha256": "09f3a50afe856c0ca5e35f78da5f967cfeee5f189bb26ae8fa5e6b5b75991f68"
+  },
+  {
+    "name": "receptor-location-ignored",
+    "changed_file": "modulation/receptor_location.go",
+    "original_sha256": "79bd05c0e34dd913502ee41fa44324719db3836436470e34c9d456d22bc467b1",
+    "mutant_sha256": "b2e9077b3fcd74f55918c8b6fe6729e100a37e3dd6c2bc7b45b1ffb1d96e7031",
+    "change": {
+      "before": "return record.Location.Region, nil",
+      "after": "return regionOf[cell], nil"
+    },
+    "command": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/mutations-final/receptor-location-ignored/overlay.json",
+      "-json",
+      "-count=1",
+      "-timeout=5m",
+      "-run",
+      "^TestMixedChemicalReference",
+      "./learning"
+    ],
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "started_at": "2026-10-13T21:31:21.064345+00:00",
+    "duration_seconds": 5.177893417000001,
+    "exit_code": 1,
+    "failed_tests": [
+      "TestMixedChemicalReference/controller-normal",
+      "TestMixedChemicalReference/controller-floor",
+      "TestMixedChemicalReference/neural-normal",
+      "TestMixedChemicalReference/neural-floor",
+      "TestMixedChemicalReference"
+    ],
+    "assertion_failures": [
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.0165722969635, reference 0.0167548675633, abs 0.0001826 rel 0.0001826",
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.00342666116009, reference 0.00327863636898, abs 0.000148 rel 0.000148",
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.0134211630594, reference 0.0136741583229, abs 0.000253 rel 0.000253",
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.00300382639148, reference 0.00286087992177, abs 0.0001429 rel 0.0001429"
+    ],
+    "log_sha256": "1b555357e92d6a38151365657921ab059a75d7b0c2712846125abeb69dfc8334",
+    "caught_by_test": true,
+    "log": "mutation-receptor-location-ignored.log.gz",
+    "archive_sha256": "a8977f426fb79151337fcac8a9ead916758b92b0cfc221beea63d185b1f73705"
+  },
+  {
+    "name": "threshold-sign-reversed",
+    "changed_file": "dynamics/mixed_coupled.go",
+    "original_sha256": "5270fe679bf20d64b1e8ad7928a40ab81b45e7646d48f0c280bb3087674462c2",
+    "mutant_sha256": "bf5f28b4a229874b5c6fe0d428f9ca39152211e447687f2df481622ed56f9b00",
+    "change": {
+      "before": "g.ThetaRaw[k] -= thetaGradient",
+      "after": "g.ThetaRaw[k] += thetaGradient"
+    },
+    "command": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/mutations-final/threshold-sign-reversed/overlay.json",
+      "-json",
+      "-count=1",
+      "-timeout=5m",
+      "-run",
+      "^TestMixedChemicalReference",
+      "./learning"
+    ],
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "started_at": "2026-10-13T21:31:26.308606+00:00",
+    "duration_seconds": 5.085806207999999,
+    "exit_code": 1,
+    "failed_tests": [
+      "TestMixedChemicalReference/controller-normal",
+      "TestMixedChemicalReference/controller-saturation",
+      "TestMixedChemicalReference/neural-normal",
+      "TestMixedChemicalReference/neural-saturation",
+      "TestMixedChemicalReference"
+    ],
+    "assertion_failures": [
+      "chemical_mixed_reference_test.go:416: theta_raw[0]: got 0.0280351554501, reference -0.0280351554501, abs 0.05607 rel 0.05607",
+      "chemical_mixed_reference_test.go:416: theta_raw[0]: got 0.0290681327729, reference -0.0290681327729, abs 0.05814 rel 0.05814",
+      "chemical_mixed_reference_test.go:416: theta_raw[0]: got 0.0303708404652, reference -0.0303708404652, abs 0.06074 rel 0.06074",
+      "chemical_mixed_reference_test.go:416: theta_raw[0]: got 0.0290681327729, reference -0.0290681327729, abs 0.05814 rel 0.05814"
+    ],
+    "log_sha256": "e159ab760abadccb7a2bbab5ff1ea888366c61a8bcc903cd8e9a14b2874ec627",
+    "caught_by_test": true,
+    "log": "mutation-threshold-sign-reversed.log.gz",
+    "archive_sha256": "3b206ae43d3cd6568eef4495b8a5e83851348044b24d5367460efa3fb2eb9256"
+  },
+  {
+    "name": "expression-seed-disconnected",
+    "changed_file": "learning/chemical_sequence.go",
+    "original_sha256": "c73b9c655e451ac5dd882547a260c69e48ea5379b4b08c53c4dd2cf3b5ac9305",
+    "mutant_sha256": "8d2e3dcdf3ef97bc3f7336196af77f264ffa566e8cd99913ae8bc816f2ba22bc",
+    "change": {
+      "before": "occupancyGradient[index] = value",
+      "after": "occupancyGradient[index] = value - seed"
+    },
+    "command": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/mixed-chemical-gradient-20261014/mutations-final/expression-seed-disconnected/overlay.json",
+      "-json",
+      "-count=1",
+      "-timeout=5m",
+      "-run",
+      "^TestMixedChemicalReference",
+      "./learning"
+    ],
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "started_at": "2026-10-13T21:31:31.457185+00:00",
+    "duration_seconds": 3.4736432500000003,
+    "exit_code": 1,
+    "failed_tests": [
+      "TestMixedChemicalReference/controller-normal",
+      "TestMixedChemicalReference/controller-floor",
+      "TestMixedChemicalReference/neural-normal",
+      "TestMixedChemicalReference/neural-floor",
+      "TestMixedChemicalReference"
+    ],
+    "assertion_failures": [
+      "chemical_mixed_reference_test.go:416: core.bias[0]: got -0.12631824006, reference -0.126221667402, abs 9.657e-05 rel 9.657e-05",
+      "chemical_mixed_reference_test.go:416: core.weights[1]: got -0.127996484097, reference -0.128026268445, abs 2.978e-05 rel 2.978e-05",
+      "chemical_mixed_reference_test.go:416: core.weights[0]: got 0.0136187670172, reference 0.0136741583229, abs 5.539e-05 rel 5.539e-05",
+      "chemical_mixed_reference_test.go:416: core.weights[1]: got -0.127135543925, reference -0.127344727329, abs 0.0002092 rel 0.0002092"
+    ],
+    "log_sha256": "d3e2428919dd702dce4d11090b03a9090a1c3502c3dd716bbf282157b1213413",
+    "caught_by_test": true,
+    "log": "mutation-expression-seed-disconnected.log.gz",
+    "archive_sha256": "212494ff1007fbd833fa2c7a8f29cf985495d2a4ae488b81c878e6454343aca2"
+  }
+]

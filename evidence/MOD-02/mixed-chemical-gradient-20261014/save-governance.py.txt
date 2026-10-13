@@ -1,0 +1,57 @@
+import datetime, gzip, hashlib, json
+from pathlib import Path
+work = Path(__file__).resolve().parent
+root = work.parents[2]
+evidence = root / 'evidence/MOD-02/mixed-chemical-gradient-20261014'
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+receipt = json.loads((work / 'final-governance.json').read_text())
+assert receipt['exit_code'] == 0 and not receipt['timed_out']
+log = work / 'final-governance.log'
+assert sha(log) == receipt['log_sha256']
+events = [json.loads(line) for line in log.read_text().splitlines() if line.startswith('{')]
+passes = [x for x in events if x.get('Action') == 'pass']
+assert not any(x.get('Action') == 'fail' for x in events)
+summary = {'package_pass_count': sum(not x.get('Test') for x in passes), 'test_pass_events': sum(bool(x.get('Test')) for x in passes), 'top_level_pass_count': sum(bool(x.get('Test')) and '/' not in x['Test'] for x in passes), 'failure_events': 0}
+assert summary['package_pass_count'] == 1 and summary['top_level_pass_count'] > 0
+out = evidence / 'final-governance.log.gz'
+assert not out.exists()
+out.write_bytes(gzip.compress(log.read_bytes(), mtime=0))
+assert gzip.decompress(out.read_bytes()) == log.read_bytes()
+receipt['temporary_log'] = receipt['log']
+receipt['log'] = out.name
+receipt['archive_sha256'] = sha(out)
+receipt['summary'] = summary
+p = evidence / 'final-governance.json'; assert not p.exists()
+p.write_text(json.dumps(receipt, indent=2) + '\n')
+p = evidence / 'verification.json'; raw = p.read_text(); value = json.loads(raw)
+assert value['engineering_passed'] and value['governance']['state'] == 'pending'
+value['governance'] = {'state': 'passed', 'receipt': 'final-governance.json', 'summary': summary}
+value['ticket_acceptance']['completed'] = 3
+assert p.read_text() == raw
+p.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+p = root / 'docs/tickets/88-mixed-chemical-gradient-reference.md'; raw = p.read_text()
+old = '- [ ] 專項及完整工程驗證通過，來源與測試指紋相符，明示人工數值驗證的限制。'
+assert raw.count(old) == 1 and raw.count('- [x]') == 2
+new = raw.replace(old, old.replace('[ ]', '[x]'), 1)
+assert p.read_text() == raw
+p.write_text(new)
+p = root / 'delivery-status.md'; raw = p.read_text(); first = raw.splitlines()[4]
+assert first.startswith('[ticket 88]') and '治理、清理與交付待完成，驗收 2／4。' in first
+updated = first.replace('治理、清理與交付待完成，驗收 2／4。', '最後 ' + str(summary['top_level_pass_count']) + ' 項治理檢查通過，清理與交付待完成，驗收 3／4。')
+new = raw.replace(first, updated, 1)
+old = 'ticket 88 的完整工程檢查通過，治理、暫存清理與交付待完成。'
+assert new.count(old) == 1
+new = new.replace(old, 'ticket 88 的完整工程與治理檢查通過，暫存清理與交付待完成。', 1)
+lines = new.splitlines(keepends=True)
+rows = [i for i,line in enumerate(lines) if line.startswith('| 88 |')]
+assert len(rows) == 1
+lines[rows[0]] = '| 88 | 研究者可以核對混合神經元的完整化學訓練計算 | Codex Root / Luna max 測試與契約稽核 | in_progress | 3／4。初始來源漏算修正、獨立參考、錯誤注入、完整工程與治理通過，清理及交付待完成 |\n'
+new = ''.join(lines)
+assert p.read_text() == raw
+p.write_text(new)
+for manifest,key in [('source-final.json','sources'),('frozen-tests.json','files')]:
+    entries = json.loads((evidence / manifest).read_text())[key]
+    for name,digest in entries.items(): assert sha(root / name) == digest, name
+script = evidence / 'save-governance.py.txt'; assert not script.exists()
+script.write_bytes(Path(__file__).read_bytes())
+print(json.dumps(summary), flush=True)
