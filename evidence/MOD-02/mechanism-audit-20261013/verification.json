@@ -1,0 +1,173 @@
+{
+  "requirement": [
+    "MOD-02",
+    "MOD-05",
+    "MOD-06",
+    "LRN-05",
+    "STA-01",
+    "TSK-01",
+    "TSK-02"
+  ],
+  "reproduction_command": [
+    "go build ./...",
+    "go test -count=1 -timeout=60m -json ./...",
+    "go test -count=1 -race -timeout=60m -json ./...",
+    "go vet ./...",
+    "go mod verify",
+    "gofmt -l <changed Go files>",
+    "git diff --check",
+    "go test -count=1 -v -run '^Test(NoTelemetry.*|FormatIndex.*|Governance.*)$' ."
+  ],
+  "environment": {
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "variables": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/go-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/tmp",
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local"
+    },
+    "baseline_head": "3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1",
+    "dependencies": "go.mod / go.sum unchanged, Insyra v0.3.4, cached offline modules"
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-manifest.json",
+    "source_manifest_sha256": "57e8535e49403a77c15d52806b3f9fba13feec0ce02addc45208732842b00c96",
+    "source_count": 770,
+    "regression_test_files": {
+      "learning/chemistry_report_finite_test.go": "2c7e16d1cdab257f9e40733cec15a0133d08bd9930289756cd6d188bb19caf94",
+      "learning/consolidation_finite_test.go": "73a10e65113c5e68a5421829cf7dd823011c9ed6864a1c9f9f5025f4e7f9537d",
+      "learning/consolidation_reset_test.go": "d4540c21000f054766c00353e722974e6dc15a01131861efb60e78c7f8317e59",
+      "learning/episode_clock_test.go": "2cdd495bf95d89094e866d928ce381f0b5c86be291444851ee9cf30c8f58aba6",
+      "learning/vector_sign_validation_test.go": "443a0ec1ee325e4a7bb4581201813690c3284ec0e958a0ec34c8ca6cc0ce2d1e",
+      "modulation/config_test.go": "9eea2c4175719e9a635328c7a39c1f7e2faf39d54b8a76210c6c1921151aebad",
+      "modulation/source_channel_validation_test.go": "8e1ee27fd1af8f046ec6d86148c9a62e5c65674cbe73df1264faf8ef199fc281",
+      "tasks/asr/audio/frontend_finite_test.go": "7816da85887df534958248ccdf4cb829111920036134bedecb486de5cf14236c",
+      "tasks/ocr/input_range_test.go": "dcc72015bf306204a6fb90ea14c2f65860e313fc1ec67482fd7ebf39e020579a"
+    },
+    "compatibility_probe_sha256": "1d667cf7f36ff0228823fa78716fbd8660e3c5ebffdfff0c344e726648427ab0",
+    "compatibility_bytes": 29662,
+    "compatibility_output_sha256": "bcfe9b6fa8785cbec299fca872974c1e95633cfbc458164d618c17e7975e48fa",
+    "handoff": "handoff-check.json"
+  },
+  "observed_result": {
+    "engineering_checks_passed": true,
+    "unit_passed_packages": 58,
+    "race_passed_packages": 58,
+    "source_fingerprints_match": true,
+    "format_and_diff_check_passed": true,
+    "confirmed_repair_categories": 7,
+    "compatibility_probe_identical": true,
+    "snapshot_schema_changed": false,
+    "recognition_quality_gain_measured": false,
+    "biological_quantitative_validation": false,
+    "absolute_no_bugs_proven": false,
+    "final_governance_passed_top_level_tests": 11
+  },
+  "test_log": [
+    "logs/release-build.log.gz",
+    "logs/release-unit.log.gz",
+    "logs/release-race.log.gz",
+    "logs/release-vet.log.gz",
+    "logs/release-dependencies.log.gz",
+    "logs/governance-final.log.gz"
+  ],
+  "engineering_checks": [
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.886820077896118,
+      "log": "logs/release-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "archived_log": "logs/release-build.log.gz",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "name": "unit",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 174.63909196853638,
+      "log": "logs/release-unit.log",
+      "log_sha256": "16082d0a85c974aca5024322bf0b9cfbaada2ca04631ed19579480dd25480f9e",
+      "log_bytes": 4556327,
+      "archived_log": "logs/release-unit.log.gz",
+      "gzip_sha256": "c99e1c525dbe15409d353283874079bc3735feafacc3779d6ce6b6a0db34ab87"
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2988.26881980896,
+      "log": "logs/release-race.log",
+      "log_sha256": "ac8d8716c53b11457e36be4c739999edf95e51768e3ab7a5bd124d915bc65801",
+      "log_bytes": 4558104,
+      "archived_log": "logs/release-race.log.gz",
+      "gzip_sha256": "8bb698567b26454e7389758e8888fda0c6374c18a35be7013d271f974dddcc69"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 13.227559804916382,
+      "log": "logs/release-vet.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "archived_log": "logs/release-vet.log.gz",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 14.57963490486145,
+      "log": "logs/release-dependencies.log",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "log_bytes": 21,
+      "archived_log": "logs/release-dependencies.log.gz",
+      "gzip_sha256": "4699dce40a065353f016ef7eb2c309ee9dee73281263a6b29287016349618a1b"
+    }
+  ],
+  "regressions": "regression-log-manifest.json",
+  "review": "review.json",
+  "limitations": [
+    "Artificial small graphs and numeric/input/lifecycle boundaries; no new real-task training",
+    "Normal comparison only covers declared OCR and audio probe, excludes consolidation norm rounding and reset lifecycle",
+    "Full-brain and unconfigured external evidence tests skipped as explicitly listed",
+    "Existing consolidation refused-report budget counters differ from documentation; tracked as P2 in AGENTS.md",
+    "No theorem or exhaustive proof of bug absence"
+  ],
+  "cleanup_receipt": "cleanup.json",
+  "delivery_receipt": "delivery.json",
+  "final_governance": "governance-final.json"
+}

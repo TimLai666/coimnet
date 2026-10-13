@@ -64,7 +64,7 @@
 - 所有可失敗更新先驗證輸入並計算候選結果，再提交狀態；取消、NaN、Inf 或形狀錯誤不得留半次更新。
 - 初期手動稀疏反向計算屬主規格允許方案。Insyra 必須實際參與張量與可用數值/學習操作，不能只是檔案讀取。若其 tape 無公開接合方法，使用明示且測過的完整向量梯度契約，禁止 unsafe/反射或假裝 detach 後仍可微。
 - Insyra v0.3.4 的 `Tape.BackwardFrom` 用於兩段 tape 的外部梯度：讀出 tape 接收與 prediction 同形狀的種子，核心 float64 時間回推後，編碼器 tape 接收與 encoded 同形狀的種子。保留原有 float32 轉換、輸入節點順序與核心反向契約。驗收見 [ticket 31](docs/tickets/31-direct-upstream-gradient.md)。`Tape.Custom` 尚未採用。最佳化器保存由 CoImNet 的 AdamW 負責，追蹤 [#376](https://github.com/HazelnutParadise/insyra/issues/376)。`nn.EdgeSum` 的精確加總後一次捨入，與 CoImNet float64／WebGPU 依邊順序加總的數值契約不同，不直接替換核心。CoImNet 目前沒有呼叫 Insyra `Tape.Tanh`，該 API 的 float32 捨入變更不影響現有活化路徑。若之後採用，須另驗證數值與舊模型接續相容性。
-- 第一版快照明確命名為 `episode-training/v1`，每個訓練步驟重設神經狀態。資料由固定版本、seed 與樣本索引決定。此格式不表示已保存持續個體、延遲歷史、快速權重或化學狀態，後續完整狀態須用不同 schema。
+- 第一版快照明確命名為 `episode-training/v1`，每個訓練步驟重設神經狀態。資料由固定版本、seed 與樣本索引決定。此格式不保存持續個體的神經歷史或快速權重；若 `Config.Chemistry` 宣告 `ChemicalEpisode`，則保存獨立回合的化學起點、來源時鐘與來源視窗、資源、回饋及讀出表現調節。完整持續個體另用個體 schema。
 - 接線圖建構器只消費 manifest 明示的內容：官方欄位名稱、來源指紋、端點身份假設（含 evidence）、選取 predicate 與重複語意。未宣告身份時拒絕 annotated view；未宣告可加總分割時拒絕聚合。節點 canonical 順序為同一 namespace 內的數值遞增，索引寬度依節點數選 32／64 位元。endpoint、raw pair 與 annotated edge 三條統計都走 `internal/extsort` 的有界 run＋k-way merge，重複只計數不合併；raw view 不在記憶體保存 151M 列，改以重新讀取原件並前後比對指紋。manifest hash 排除本機路徑，結果識別以來源 SHA-256、predicate hash、converter version 與 node index／edge order hash 為準。
 - 圖儲存（`coimnet-graph-store/v1`）用自訂固定寬度區段加 JSON footer：`node_ids`、`node_meta`、`edges`、`batch_starts`、`report` 各有 offset／length／SHA-256，footer 另有 SHA-256 與 magic 尾記；檔案不含時間戳，同一張圖位元組相同。發布沿用 checkpoint 的暫存檔＋hardlink＋目錄同步語意（實作各自保有）。讀回逐段校驗並重算三個結果 hash，結構不合法（順序、索引、列號、非有限值）即使 hash 一致也拒絕。store 不複製 weights 原件，只保存路徑、指紋與掃描設定。
 - `LoadWithReceipt` 從同一個已開啟檔案取得通過校驗的位元組並計算整檔 SHA-256，CLI 不重新開啟路徑取 hash。載入回條不宣告寫入耐久性。圖陣列、metadata、字串暫存、footer／report 輸入長度及 strict decoder 輸入副本、五段讀取緩衝在配置前計入限制；乘積先檢查溢位，各項分開保留以避免加總溢位。此帳面限制不含 Go 配置餘量、解碼後 JSON 物件與執行環境，不能當成 RSS 上限。未知 converter 版本拒絕讀取。
@@ -215,3 +215,15 @@ CPU 純量連續、LIF 與混合核心沿用自己的動態規則。電流效果
 活動控制器的視窗以可選 SourceStates 保存，舊檔缺省表示重新建立來源記憶。新檔保存完整邊界並嚴格核對來源種類、數量、視窗形狀與已填列數。每次操作先複製可變來源，神經、濃度、來源記憶與報告在整次成功後共同提交。一般訓練也先驗證候選參數再提交最佳化器，取消與數值錯誤保留原狀。
 
 反向使用全新工作階段，來源多列回授相加且遵守既有固定截斷邊界。連續／LIF 分段重算保存來源視窗、化學狀態與時鐘，重播不提交持續狀態。逐位對照及新程序接續已通過，包含部分累積梯度、最佳化器與化學起點。完整一般與 race 各 58 個套件、格式、build、vet、相依性及 CLI 接續比對通過，見 [最終工程證據](evidence/MOD-02/receptor-chemistry-20261012/verification.json)。原始驗收條件及 RED／GREEN、有限差分、存檔接續與關閉對照由 ticket 65 管理。生物定量正確性與 OCR 品質改善未由本票驗證。
+
+## 機制與品質缺陷稽核（2026-10-13）
+
+持續化學的釋放總量也須有限。每列可合法而整段總量溢位時，整次 Advance／AdvanceGated 回錯，保留神經、化學、來源、可塑性及上一份報告。鞏固先在同一把鎖內驗證 slow 與 plastic 候選及三層範數，再提交；範數使用 Hypot 避免平方中間值溢位，不可表示的實際範數仍回錯。兩次掃描不配置新的邊陣列。
+
+ResetOptimizer 保留記憶、預算及當下回合已被禁止重複鞏固的事實，把 LastEpisode 重映射到新 Episodes=0 的時鐘：原 LastEpisode>Episodes 時為 1，其他為 0。舊版可能保存較大的標記，仍允許載入而不改寫，明確重設後下一個成功 TrainEpisode 可再次鞏固。TrainEpisode 與 Consolidate 在各自的回合計數或標記將溢位時，先拒絕而不更新模型或消耗預算。沒有增加快照欄位或版本。
+
+向量核心的非零固定符號在共用 NewNetwork 入口拒絕。單通道 SourceSpec 的 timeline／replay 不得對其他管道非零釋放，Standalone 多管道來源保持原契約。OCR 的所有圖片入口與範例驗證有限 [0,1] 像素；ASR 的 STFT／LogMel 成功只回有限特徵，Floor 必須有限且正。這些修正不變更合法輸入的活化、頻譜或訓練算式，既有合法模型與保存格式保留。範數報告的捨入可能改變，記憶寫入算式不變。
+
+設計仍明示單一神經元整合受體效果，Compartment 是來源部位記錄而不是多區室膜模型。未知受體維持 skipped／assumed 的區別，數值中性不代表實測不反應。ResetNeural 重設神經及來源時鐘，但保留化學濃度、化學更新步數與來源視窗。這些是既有明確假設，不以生物完整性或品質成效宣稱。
+
+本輪 build、完整一般／race 各 58 套件、vet、相依性及最後 11 項治理通過，770 份來源指紋相符。七類公開回歸、合法 OCR／音訊逐位比較與證據限制見 [機制稽核](evidence/MOD-02/mechanism-audit-20261013/README.md)及[最終工程證據](evidence/MOD-02/mechanism-audit-20261013/verification.json)。

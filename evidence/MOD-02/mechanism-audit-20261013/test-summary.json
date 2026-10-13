@@ -1,0 +1,601 @@
+{
+  "unit": {
+    "passed_packages": 58,
+    "package_names": [
+      "github.com/TimLai666/coimnet",
+      "github.com/TimLai666/coimnet/backend",
+      "github.com/TimLai666/coimnet/backend/webgpu",
+      "github.com/TimLai666/coimnet/checkpoint",
+      "github.com/TimLai666/coimnet/config",
+      "github.com/TimLai666/coimnet/connectome",
+      "github.com/TimLai666/coimnet/connectome/flywire",
+      "github.com/TimLai666/coimnet/distill",
+      "github.com/TimLai666/coimnet/download",
+      "github.com/TimLai666/coimnet/dynamics",
+      "github.com/TimLai666/coimnet/examples/lifthreshold",
+      "github.com/TimLai666/coimnet/examples/multichannel",
+      "github.com/TimLai666/coimnet/examples/realasr",
+      "github.com/TimLai666/coimnet/examples/realmedia",
+      "github.com/TimLai666/coimnet/examples/realnav",
+      "github.com/TimLai666/coimnet/examples/realnavmemory",
+      "github.com/TimLai666/coimnet/examples/realocr",
+      "github.com/TimLai666/coimnet/examples/realsubgraph",
+      "github.com/TimLai666/coimnet/examples/realtext",
+      "github.com/TimLai666/coimnet/examples/receptorlocation",
+      "github.com/TimLai666/coimnet/experiment",
+      "github.com/TimLai666/coimnet/experiment/fullgraph",
+      "github.com/TimLai666/coimnet/experiment/gridnav",
+      "github.com/TimLai666/coimnet/experiment/multimodaleval",
+      "github.com/TimLai666/coimnet/experiment/nav2d",
+      "github.com/TimLai666/coimnet/experiment/studenteval",
+      "github.com/TimLai666/coimnet/feather",
+      "github.com/TimLai666/coimnet/internal/cli",
+      "github.com/TimLai666/coimnet/internal/delayedfixture",
+      "github.com/TimLai666/coimnet/internal/extsort",
+      "github.com/TimLai666/coimnet/internal/fileio",
+      "github.com/TimLai666/coimnet/internal/jsonkey",
+      "github.com/TimLai666/coimnet/internal/redact",
+      "github.com/TimLai666/coimnet/internal/sparse",
+      "github.com/TimLai666/coimnet/internal/strictjson",
+      "github.com/TimLai666/coimnet/learning",
+      "github.com/TimLai666/coimnet/learning/rl",
+      "github.com/TimLai666/coimnet/modulation",
+      "github.com/TimLai666/coimnet/multimodal",
+      "github.com/TimLai666/coimnet/multimodal/synthetic",
+      "github.com/TimLai666/coimnet/params",
+      "github.com/TimLai666/coimnet/plasticity",
+      "github.com/TimLai666/coimnet/replay",
+      "github.com/TimLai666/coimnet/resources",
+      "github.com/TimLai666/coimnet/signal",
+      "github.com/TimLai666/coimnet/simulate",
+      "github.com/TimLai666/coimnet/tasks/asr",
+      "github.com/TimLai666/coimnet/tasks/asr/audio",
+      "github.com/TimLai666/coimnet/tasks/media",
+      "github.com/TimLai666/coimnet/tasks/media/realdata",
+      "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+      "github.com/TimLai666/coimnet/tasks/ocr",
+      "github.com/TimLai666/coimnet/tasks/ocr/ctc",
+      "github.com/TimLai666/coimnet/tasks/ocr/glyphs",
+      "github.com/TimLai666/coimnet/tasks/textgen",
+      "github.com/TimLai666/coimnet/tasks/textgen/tokenizer",
+      "github.com/TimLai666/coimnet/teacher",
+      "github.com/TimLai666/coimnet/teacher/tool"
+    ],
+    "passed_test_events_including_subtests": 4930,
+    "skipped_test_events": 22,
+    "skipped": [
+      {
+        "package": "github.com/TimLai666/coimnet/backend/webgpu",
+        "test": "TestDeviceAdamWChildProcess",
+        "output": "=== RUN   TestDeviceAdamWChildProcess\n    device_adam_hardware_test.go:125: independent process helper\n--- SKIP: TestDeviceAdamWChildProcess (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/examples/realnav",
+        "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+        "output": "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory\n    main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression\n--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/examples/realmedia",
+        "test": "TestRealMediaModelChildLoad",
+        "output": "=== RUN   TestRealMediaModelChildLoad\n    model_run_test.go:49: helper test only; parent test enables the real child process\n--- SKIP: TestRealMediaModelChildLoad (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+        "test": "TestFullGraphEvidence",
+        "output": "=== RUN   TestFullGraphEvidence\n    evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set\n--- SKIP: TestFullGraphEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+        "test": "TestFullGraphResumeEvidence",
+        "output": "=== RUN   TestFullGraphResumeEvidence\n    evidence_test.go:88: COIMNET_OPS07_RESUME is not set\n--- SKIP: TestFullGraphResumeEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestAttributionEvidence",
+        "output": "=== RUN   TestAttributionEvidence\n    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set\n--- SKIP: TestAttributionEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+        "test": "TestMultimodalEvidence",
+        "output": "=== RUN   TestMultimodalEvidence\n    evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence\n--- SKIP: TestMultimodalEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestGPUDeviceTrainerChildProcess",
+        "output": "=== RUN   TestGPUDeviceTrainerChildProcess\n    gpu_device_trainer_test.go:532: intentional subprocess restore helper\n--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestMediaEvidence/image",
+        "output": "=== RUN   TestMediaEvidence/image\n    evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/image (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestMediaEvidence/audio",
+        "output": "=== RUN   TestMediaEvidence/audio\n    evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/audio (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+        "test": "TestReadTitovaSourceWhenConfigured",
+        "output": "=== RUN   TestReadTitovaSourceWhenConfigured\n    trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check\n--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenEvidence",
+        "output": "=== RUN   TestTextgenEvidence\n    evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set\n--- SKIP: TestTextgenEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestRecomputeRSSHelper",
+        "output": "=== RUN   TestRecomputeRSSHelper\n    recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper\n--- SKIP: TestRecomputeRSSHelper (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRolesEvidence",
+        "output": "=== RUN   TestRolesEvidence\n    roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set\n--- SKIP: TestRolesEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestVideoEvidence",
+        "output": "=== RUN   TestVideoEvidence\n    video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set\n--- SKIP: TestVideoEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestMultiTaskEvidence",
+        "output": "=== RUN   TestMultiTaskEvidence\n    multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set\n--- SKIP: TestMultiTaskEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestNav2DSuiteEvidence",
+        "output": "=== RUN   TestNav2DSuiteEvidence\n    nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set\n--- SKIP: TestNav2DSuiteEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOGoalCueEvidence",
+        "output": "=== RUN   TestPPOGoalCueEvidence\n    ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOGoalCueEvidence (0.01s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOGradientEvidence",
+        "output": "=== RUN   TestPPOGradientEvidence\n    ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set\n--- SKIP: TestPPOGradientEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOHorizonEvidence",
+        "output": "=== RUN   TestPPOHorizonEvidence\n    ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set\n--- SKIP: TestPPOHorizonEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOShortGoalCueEvidence",
+        "output": "=== RUN   TestPPOShortGoalCueEvidence\n    ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOShortGoalCueEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOTrainingFeedbackEvidence",
+        "output": "=== RUN   TestPPOTrainingFeedbackEvidence\n    ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set\n--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)\n"
+      }
+    ],
+    "fail_events": 0,
+    "cross_process_resume_pass_events": [
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestRestoreGPUDeviceTrainerContinuesPartialAccumulationAcrossProcess"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/asr",
+        "test": "TestRecognizerPersistenceRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/asr",
+        "test": "TestStreamFileAcrossProcess"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestSubprocessResumeMatchesUninterruptedTraining"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalEpisodeCheckpointRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume/continuous"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume/lif"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/ocr",
+        "test": "TestRecognizerPersistenceRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestIndividualCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestLIFIndividualCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestLIFIndividualFromPackageSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestSelectedProjectionSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupted/WrongCursorReplaysAnEpisode"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupted"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestModelPersistenceRoundTripAndSubprocessResume"
+      }
+    ],
+    "asr_stream_pass_events": [
+      "TestEvaluateStreaming",
+      "TestEvaluateStreamingEmpty",
+      "TestEvaluateStreamingErrors",
+      "TestEvaluateStreamingReproducible",
+      "TestMeasureStreaming/short_tail",
+      "TestMeasureStreaming/single_chunk",
+      "TestMeasureStreaming/multiple_chunks",
+      "TestMeasureStreaming",
+      "TestMeasureStreamingErrors/nil_recognizer",
+      "TestMeasureStreamingErrors/empty_samples",
+      "TestMeasureStreamingErrors/zero_chunk",
+      "TestMeasureStreamingErrors/negative_chunk",
+      "TestMeasureStreamingErrors",
+      "TestStreamFileResumesExactlyAndDoesNotOverwrite",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_sample_rate",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_sample_rate",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_pending_element",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_flushed_flag",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_alphabet_element",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/unknown_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/pending_count_checked_before_decode",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_front_end_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_front_end_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum",
+      "TestStreamFileRejectsCanceledAndOversizeRead",
+      "TestStreamFileRejectsWrongSchemaAndChecksum/schema_version",
+      "TestStreamFileRejectsWrongSchemaAndChecksum/checksum",
+      "TestStreamFileRejectsWrongSchemaAndChecksum",
+      "TestStreamFileAcrossProcess",
+      "TestStreamFileChild",
+      "TestStreamMatchesWholeFile",
+      "TestStreamUsesOnlyArrivedAudio",
+      "TestStreamResumesFromSnapshot",
+      "TestStreamTailAndFlush",
+      "TestStreamRejectsNonFinite",
+      "TestStreamFlushesAnInitialShortTail",
+      "TestStreamCanceledFeedDoesNotConsumeAnInsufficientFrame",
+      "TestStreamCanceledFlushPreservesItsTail",
+      "TestStreamRollsBackAChunkWhenAWindowFails",
+      "TestStreamRollsBackWhenCanceledMidChunk",
+      "TestRestoreStreamRequiresRecognizerSemantics/sample_rate",
+      "TestRestoreStreamRequiresRecognizerSemantics/front_end",
+      "TestRestoreStreamRequiresRecognizerSemantics/alphabet",
+      "TestRestoreStreamRequiresRecognizerSemantics",
+      "TestStreamSnapshotOwnsItsAlphabet",
+      "TestRestoreStreamRejectsInvalidStateEncoding",
+      "TestRestoreStreamValidatesCTCFrameMinimum",
+      "TestNewStreamRejectsInvalidAlphabetRune",
+      "TestStreamSnapshotUsesCurrentFrontEndVersion",
+      "TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion",
+      "TestTranscribeStreamingAcceptsLargestChunk"
+    ]
+  },
+  "race": {
+    "passed_packages": 58,
+    "package_names": [
+      "github.com/TimLai666/coimnet",
+      "github.com/TimLai666/coimnet/backend",
+      "github.com/TimLai666/coimnet/backend/webgpu",
+      "github.com/TimLai666/coimnet/checkpoint",
+      "github.com/TimLai666/coimnet/config",
+      "github.com/TimLai666/coimnet/connectome",
+      "github.com/TimLai666/coimnet/connectome/flywire",
+      "github.com/TimLai666/coimnet/distill",
+      "github.com/TimLai666/coimnet/download",
+      "github.com/TimLai666/coimnet/dynamics",
+      "github.com/TimLai666/coimnet/examples/lifthreshold",
+      "github.com/TimLai666/coimnet/examples/multichannel",
+      "github.com/TimLai666/coimnet/examples/realasr",
+      "github.com/TimLai666/coimnet/examples/realmedia",
+      "github.com/TimLai666/coimnet/examples/realnav",
+      "github.com/TimLai666/coimnet/examples/realnavmemory",
+      "github.com/TimLai666/coimnet/examples/realocr",
+      "github.com/TimLai666/coimnet/examples/realsubgraph",
+      "github.com/TimLai666/coimnet/examples/realtext",
+      "github.com/TimLai666/coimnet/examples/receptorlocation",
+      "github.com/TimLai666/coimnet/experiment",
+      "github.com/TimLai666/coimnet/experiment/fullgraph",
+      "github.com/TimLai666/coimnet/experiment/gridnav",
+      "github.com/TimLai666/coimnet/experiment/multimodaleval",
+      "github.com/TimLai666/coimnet/experiment/nav2d",
+      "github.com/TimLai666/coimnet/experiment/studenteval",
+      "github.com/TimLai666/coimnet/feather",
+      "github.com/TimLai666/coimnet/internal/cli",
+      "github.com/TimLai666/coimnet/internal/delayedfixture",
+      "github.com/TimLai666/coimnet/internal/extsort",
+      "github.com/TimLai666/coimnet/internal/fileio",
+      "github.com/TimLai666/coimnet/internal/jsonkey",
+      "github.com/TimLai666/coimnet/internal/redact",
+      "github.com/TimLai666/coimnet/internal/sparse",
+      "github.com/TimLai666/coimnet/internal/strictjson",
+      "github.com/TimLai666/coimnet/learning",
+      "github.com/TimLai666/coimnet/learning/rl",
+      "github.com/TimLai666/coimnet/modulation",
+      "github.com/TimLai666/coimnet/multimodal",
+      "github.com/TimLai666/coimnet/multimodal/synthetic",
+      "github.com/TimLai666/coimnet/params",
+      "github.com/TimLai666/coimnet/plasticity",
+      "github.com/TimLai666/coimnet/replay",
+      "github.com/TimLai666/coimnet/resources",
+      "github.com/TimLai666/coimnet/signal",
+      "github.com/TimLai666/coimnet/simulate",
+      "github.com/TimLai666/coimnet/tasks/asr",
+      "github.com/TimLai666/coimnet/tasks/asr/audio",
+      "github.com/TimLai666/coimnet/tasks/media",
+      "github.com/TimLai666/coimnet/tasks/media/realdata",
+      "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+      "github.com/TimLai666/coimnet/tasks/ocr",
+      "github.com/TimLai666/coimnet/tasks/ocr/ctc",
+      "github.com/TimLai666/coimnet/tasks/ocr/glyphs",
+      "github.com/TimLai666/coimnet/tasks/textgen",
+      "github.com/TimLai666/coimnet/tasks/textgen/tokenizer",
+      "github.com/TimLai666/coimnet/teacher",
+      "github.com/TimLai666/coimnet/teacher/tool"
+    ],
+    "passed_test_events_including_subtests": 4929,
+    "skipped_test_events": 23,
+    "skipped": [
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestBundleLargerThanSingleFileLimit",
+        "output": "=== RUN   TestBundleLargerThanSingleFileLimit\n    bundle_kinds_test.go:276: race instrumentation makes the large bundle fixture too memory intensive\n--- SKIP: TestBundleLargerThanSingleFileLimit (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/backend/webgpu",
+        "test": "TestDeviceAdamWChildProcess",
+        "output": "=== RUN   TestDeviceAdamWChildProcess\n    device_adam_hardware_test.go:125: independent process helper\n--- SKIP: TestDeviceAdamWChildProcess (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/examples/realnav",
+        "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+        "output": "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory\n    main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression\n--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/examples/realmedia",
+        "test": "TestRealMediaModelChildLoad",
+        "output": "=== RUN   TestRealMediaModelChildLoad\n    model_run_test.go:49: helper test only; parent test enables the real child process\n--- SKIP: TestRealMediaModelChildLoad (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+        "test": "TestFullGraphEvidence",
+        "output": "=== RUN   TestFullGraphEvidence\n    evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set\n--- SKIP: TestFullGraphEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+        "test": "TestFullGraphResumeEvidence",
+        "output": "=== RUN   TestFullGraphResumeEvidence\n    evidence_test.go:88: COIMNET_OPS07_RESUME is not set\n--- SKIP: TestFullGraphResumeEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+        "test": "TestMultimodalEvidence",
+        "output": "=== RUN   TestMultimodalEvidence\n    evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence\n--- SKIP: TestMultimodalEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestAttributionEvidence",
+        "output": "=== RUN   TestAttributionEvidence\n    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set\n--- SKIP: TestAttributionEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestGPUDeviceTrainerChildProcess",
+        "output": "=== RUN   TestGPUDeviceTrainerChildProcess\n    gpu_device_trainer_test.go:532: intentional subprocess restore helper\n--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+        "test": "TestReadTitovaSourceWhenConfigured",
+        "output": "=== RUN   TestReadTitovaSourceWhenConfigured\n    trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check\n--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestMediaEvidence/image",
+        "output": "=== RUN   TestMediaEvidence/image\n    evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/image (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestMediaEvidence/audio",
+        "output": "=== RUN   TestMediaEvidence/audio\n    evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/audio (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenEvidence",
+        "output": "=== RUN   TestTextgenEvidence\n    evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set\n--- SKIP: TestTextgenEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestRecomputeRSSHelper",
+        "output": "=== RUN   TestRecomputeRSSHelper\n    recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper\n--- SKIP: TestRecomputeRSSHelper (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRolesEvidence",
+        "output": "=== RUN   TestRolesEvidence\n    roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set\n--- SKIP: TestRolesEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestVideoEvidence",
+        "output": "=== RUN   TestVideoEvidence\n    video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set\n--- SKIP: TestVideoEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestMultiTaskEvidence",
+        "output": "=== RUN   TestMultiTaskEvidence\n    multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set\n--- SKIP: TestMultiTaskEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestNav2DSuiteEvidence",
+        "output": "=== RUN   TestNav2DSuiteEvidence\n    nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set\n--- SKIP: TestNav2DSuiteEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOGoalCueEvidence",
+        "output": "=== RUN   TestPPOGoalCueEvidence\n    ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOGoalCueEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOGradientEvidence",
+        "output": "=== RUN   TestPPOGradientEvidence\n    ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set\n--- SKIP: TestPPOGradientEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOHorizonEvidence",
+        "output": "=== RUN   TestPPOHorizonEvidence\n    ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set\n--- SKIP: TestPPOHorizonEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOShortGoalCueEvidence",
+        "output": "=== RUN   TestPPOShortGoalCueEvidence\n    ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOShortGoalCueEvidence (0.00s)\n"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/experiment",
+        "test": "TestPPOTrainingFeedbackEvidence",
+        "output": "=== RUN   TestPPOTrainingFeedbackEvidence\n    ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set\n--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)\n"
+      }
+    ],
+    "fail_events": 0,
+    "cross_process_resume_pass_events": [
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestSubprocessResumeMatchesUninterruptedTraining"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalEpisodeCheckpointRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume/continuous"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume/lif"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestChemicalRecomputeCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestIndividualCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestLIFIndividualCheckpointSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestLIFIndividualFromPackageSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestSelectedProjectionSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupted/WrongCursorReplaysAnEpisode"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/checkpoint",
+        "test": "TestPlasticChemicalIndividualSubprocessResumeMatchesUninterrupted"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/learning",
+        "test": "TestRestoreGPUDeviceTrainerContinuesPartialAccumulationAcrossProcess"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/asr",
+        "test": "TestRecognizerPersistenceRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/ocr",
+        "test": "TestRecognizerPersistenceRoundTripAndSubprocessResume"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/asr",
+        "test": "TestStreamFileAcrossProcess"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestModelPersistenceRoundTripAndSubprocessResume"
+      }
+    ],
+    "asr_stream_pass_events": [
+      "TestEvaluateStreaming",
+      "TestEvaluateStreamingEmpty",
+      "TestEvaluateStreamingErrors",
+      "TestEvaluateStreamingReproducible",
+      "TestMeasureStreaming/short_tail",
+      "TestMeasureStreaming/single_chunk",
+      "TestMeasureStreaming/multiple_chunks",
+      "TestMeasureStreaming",
+      "TestMeasureStreamingErrors/nil_recognizer",
+      "TestMeasureStreamingErrors/empty_samples",
+      "TestMeasureStreamingErrors/zero_chunk",
+      "TestMeasureStreamingErrors/negative_chunk",
+      "TestMeasureStreamingErrors",
+      "TestStreamFileResumesExactlyAndDoesNotOverwrite",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_sample_rate",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_sample_rate",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_pending_element",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_flushed_flag",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_alphabet_element",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/unknown_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/pending_count_checked_before_decode",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/missing_front_end_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum/null_front_end_field",
+      "TestStreamFileRejectsTamperingEvenWithFreshChecksum",
+      "TestStreamFileRejectsCanceledAndOversizeRead",
+      "TestStreamFileRejectsWrongSchemaAndChecksum/schema_version",
+      "TestStreamFileRejectsWrongSchemaAndChecksum/checksum",
+      "TestStreamFileRejectsWrongSchemaAndChecksum",
+      "TestStreamFileAcrossProcess",
+      "TestStreamFileChild",
+      "TestStreamMatchesWholeFile",
+      "TestStreamUsesOnlyArrivedAudio",
+      "TestStreamResumesFromSnapshot",
+      "TestStreamTailAndFlush",
+      "TestStreamRejectsNonFinite",
+      "TestStreamFlushesAnInitialShortTail",
+      "TestStreamCanceledFeedDoesNotConsumeAnInsufficientFrame",
+      "TestStreamCanceledFlushPreservesItsTail",
+      "TestStreamRollsBackAChunkWhenAWindowFails",
+      "TestStreamRollsBackWhenCanceledMidChunk",
+      "TestRestoreStreamRequiresRecognizerSemantics/sample_rate",
+      "TestRestoreStreamRequiresRecognizerSemantics/front_end",
+      "TestRestoreStreamRequiresRecognizerSemantics/alphabet",
+      "TestRestoreStreamRequiresRecognizerSemantics",
+      "TestStreamSnapshotOwnsItsAlphabet",
+      "TestRestoreStreamRejectsInvalidStateEncoding",
+      "TestRestoreStreamValidatesCTCFrameMinimum",
+      "TestNewStreamRejectsInvalidAlphabetRune",
+      "TestStreamSnapshotUsesCurrentFrontEndVersion",
+      "TestRestoreStreamRejectsImpossibleTextWithoutRuneArrayExpansion",
+      "TestTranscribeStreamingAcceptsLargestChunk"
+    ]
+  }
+}

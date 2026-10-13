@@ -9,7 +9,7 @@
 以 `NewIndividual(config, parameters, options, initialVoltage)` 建立個體，`config` 選 `Dynamics` 或 `LIF` 其中一種核心。`config`、`parameters` 與初始電位會複製，建立另一個個體時可再次使用相同資料。也可以用 `checkpoint.NewIndividualFromPackage(pkg, options, initialVoltage)` 由模型包建立，結果與用模型包裡的設定、參數直接呼叫 `NewIndividual` 相同。
 
 - `Advance(ctx, observations)` 接續持續神經狀態，回傳所有步的讀出，參數與最佳化器保持不變。空序列、錯誤形狀、非有限值及取消都會返回錯誤，整次操作不更新任何步數。
-- `TrainEpisode(ctx, observations, target)` 沿用既有 `Trainer.Step`，每次從零電位開始獨立訓練序列。它只更新此個體的參數與最佳化器，保留持續推論的神經狀態。下一次 `Advance` 使用更新後的參數及保留下來的歷史。
+- `TrainEpisode(ctx, observations, target)` 每次從零核心神經狀態開始獨立訓練序列。開啟化學調節時，複製目前化學、來源、回饋與讀出表現調節的邊界，來源時鐘從持續神經步數起算，第一列讀取原持續活動，尚無活動時用零邊界，後續讀取此回合自己的輸出。成功只提交參數、最佳化器及回合計數，持續神經、化學、控制器、報告及回饋保持。沒有化學時沿用 `Trainer.Step`。
 - `Snapshot()` 等候目前操作完成，再複製完整狀態。快照與輸出陣列可由呼叫者修改，不影響個體。呼叫期間不要同時修改傳入的陣列。
 
 `TrainEpisode` 的梯度不跨越 `Advance` 呼叫。LIF 個體多一組可訓練的基礎閾值參數 `ThetaRaw`，由 `Trainable.Theta` 決定是否訓練；慢速穩定與短期適應是狀態不是參數，反向視為常數。此確定性模式沒有內部隨機產生器、教師或重播資料；快速可塑性與化學調節是要各自明示開啟的可選機制，未開啟時前向路徑與從未宣告逐位相同。資料提供者的游標與隨機來源由呼叫者另外管理，完整訓練工作恢復依 STA-03 後續實作。
@@ -22,6 +22,8 @@
 | 基礎參數 | `snapshot.Parameters` | `ResetParameters(ctx, parameters)` 只換參數，保留神經狀態與最佳化器 |
 | 個體神經狀態 | `snapshot.Neural`（聯集：`core` 指名核心，`continuous` 或 `lif` 只出現宣告的那一半） | `ResetNeural(ctx, initialVoltage)` 清除步數與舊歷史，建立新的初始狀態 |
 | 訓練器狀態 | `snapshot.Optimizer` 中的 Options、AdamState、Updates | `ResetOptimizer(ctx, options)` 更換設定並清除動量與更新步數，保留參數與神經狀態 |
+
+`ResetOptimizer` 會清除回合計數，但保留慢速記憶的 Values／Budget／Used，並把當下已被鞏固的標記重新對齊新時鐘。同一經驗仍不能靠重設再寫一次，下一個成功訓練回合可鞏固。舊快照保留載入相容性，較大的舊標記在明確重設時才重映射。回合計數或鞏固標記無法再遞增時，操作回錯且狀態不變。
 
 各部分可用 Go JSON 分開保存。若要接續同一個體，使用下述完整個體快照，由框架一併檢查各部分。重設參數後是否清除舊動量，由呼叫者明確選擇 `ResetOptimizer`。
 
@@ -68,7 +70,7 @@
 
 未開啟時整個鍵不存在，這就是「這一層從未啟用」的表示；`checkpoint` 視它為可選區塊，出現時四個欄位都必填，形狀或值不合法一律拒絕。**來源讀的「上一步活動」不另外保存**：它就是持續神經狀態的延遲歷史裡最新的那一列，所以中途保存再接續，與不中斷執行的濃度、佔用率與輸出逐位相同。
 
-暫時效果不進 `Parameters`。增益、偏移與閾值是單次核心呼叫的引數，跑一百步之後基礎參數（含 `theta_raw`）逐位不變。`TrainEpisode` 的前向與反向目前不接調節，所以獨立 episode 訓練看不到化學層。
+暫時效果不進 `Parameters`。增益、偏移與閾值是單次核心呼叫的引數，純推論不改基礎參數（含 `theta_raw`）。`TrainEpisode` 已把化學前向、濃度的時間關係、來源活動回授及讀出表現調節接入反向，控制器參數與受體反應係數在這條路徑固定。見 [ticket 65](tickets/65-receptor-location-and-chemical-training.md)。
 
 記憶表現與較慢狀態在快照的位置：`snapshot.Chemical` 可選區塊的 `expression` 是讀出增益（`ExpressionGain{nodes, receptor, scale, min, max}`），只對指定讀出節點在讀出前乘 `clamp(1 + scale*occ, min, max)`，統計入報告的 `expression_gain_applied`；它不進 `Parameters`、`plastic` 或 `eligibility`，增益回到 1 後輸出逐位恢復，這是被抑制的表現而不是遺忘。`snapshot.Plastic` 可選區塊的 `slow`（`SlowState{values, last_episode, budget, used}`）是穩定化寫入的較慢一層，只在 `EnableConsolidation` 宣告時存在，有效權重為 `base + slow + plastic`；`Consolidate` 由受體佔用率閘門、每 episode 一次的去重與 `budget` 上限約束，同 episode 第二次呼叫回 `ErrAlreadyConsolidated` 且狀態不變。兩者是可選狀態，未開啟時其鍵不存在，關閉後前向與從未宣告逐位相同。證據見 [ticket 22](tickets/22-modulated-learning-memory-controller-and-interventions.md) 與 `evidence/MOD-05/`、`evidence/MOD-06/`。
 
@@ -77,6 +79,8 @@
 `checkpoint.SaveIndividual(ctx, path, individual.Snapshot())` 保存新格式 `coimnet-individual-checkpoint/v1`。`LoadIndividual` 讀回後，以 `learning.RestoreIndividual` 建立隔離個體，再呼叫 `Advance` 即可接續。
 
 保存使用同目錄的 0600 暫存檔，寫入並同步後以排他 hardlink 發布，再同步目錄。目的檔已存在時拒絕覆寫。檔案系統須支援 hardlink 與目錄同步；發布之後才發生錯誤時，錯誤訊息會說明檔案已發布或耐久性未確認。
+
+網路磁碟使用 `SaveIndividualBundle`／`LoadIndividualBundle` 的資料夾格式。單檔 `SaveIndividual` 仍需 hardlink 與目錄同步，不提供網路磁碟 fallback。兩者都拒絕覆寫既有目的地，完整契約見 [網路模型保存](../evidence/STA-01/network-model-20261010/contract.md)。
 
 載入檢查 SHA-256、版本、profile、完整設定指紋、參數／最佳化器形狀及神經歷史。既有 `Save`／`Load` 與 CLI `train delayed`／`resume` 繼續使用獨立 episode 格式。新個體格式另拒絕缺失的必填欄位與 `null`。
 

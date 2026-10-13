@@ -1,0 +1,33 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func main() {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 1, DT: 1, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{0}}
+	p := learning.Parameters{Core: dynamics.Parameters{Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+	i, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0})
+	if err != nil { panic(err) }
+	chem := modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{1e-308}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0}},
+		Sources: []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 0, Channel: 0, Rate: 1e308}, {Step: 1, Channel: 0, Rate: 1e308}}}}},
+	}
+	if err := i.EnableChemistry(chem); err != nil { panic(err) }
+	before, _ := json.Marshal(i.Snapshot())
+	out, err := i.Advance(context.Background(), [][]float64{{0.25}, {0.5}})
+	report := i.ChemistryReport()
+	_, marshalErr := json.Marshal(report)
+	after, snapshotErr := json.Marshal(i.Snapshot())
+	fmt.Printf("advance_error=%v outputs=%v\n", err, out)
+	fmt.Printf("concentration=%v release_total=%v overflow=%t report_json_error=%v\n", report.Concentration, report.ReleaseTotal, len(report.ReleaseTotal)>0 && math.IsInf(report.ReleaseTotal[0], 0), marshalErr)
+	fmt.Printf("snapshot_json_error=%v state_changed=%t\n", snapshotErr, string(before)!=string(after))
+}

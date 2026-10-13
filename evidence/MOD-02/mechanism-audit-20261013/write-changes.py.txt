@@ -1,0 +1,54 @@
+from pathlib import Path
+import subprocess, json, hashlib
+
+root = Path.cwd()
+d = root / 'evidence/MOD-02/mechanism-audit-20261013'
+baseline = '3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1'
+paths = sorted(set(subprocess.check_output(['git', 'diff', '--name-only', baseline], text=True).splitlines()) | set(subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'], text=True).splitlines()))
+descriptions = {
+    'AGENTS.md': '移除兩項已解決提醒，記錄鞏固拒絕報告的 P2 計數缺口',
+    'ENG.md': '保存有限候選、時鐘生命週期、前置契約與相容性決策',
+    'delivery-status.md': '更新本輪進度、限制及交付證據',
+    'docs/individual-state.md': '校正化學訓練、重設與網路資料夾保存入口',
+    'docs/model-and-mechanisms.md': '依 CPU 小圖證據修正局部機制狀態',
+    'docs/requirements-status.json': '附加七項相關需求的實際稽核證據，不改需求定義',
+    'learning/individual.go': '拒絕化學報告與回合溢位，重設時保留鞏固去重語意',
+    'learning/consolidation.go': '先檢查有限候選及穩定範數，再原子提交記憶',
+    'learning/network.go': '共用建構入口拒絕向量非零固定符號',
+    'learning/trainer.go': '移除共用入口已負責的重複固定符號判斷',
+    'modulation/config.go': '拒絕來源宣告通道以外的非零 timeline／replay',
+    'modulation/config_test.go': '修正成功 fixture 到既有單通道契約，不放寬斷言',
+    'tasks/asr/audio/frontend.go': '拒絕非法 Floor、非有限樣本與溢位特徵',
+    'tasks/ocr/input_profile.go': '三種圖片模式驗證有限 [0,1] 像素',
+    'tasks/ocr/page.go': '頁面分行驗證有限 [0,1] 像素',
+    'tasks/ocr/recognizer.go': 'Columns 入口驗證有限 [0,1] 像素',
+    'examples/realocr/main.go': '範例輸入驗證沿用有限 [0,1] 契約',
+    'learning/chemistry_report_finite_test.go': '化學報告溢位、八種核心／來源／閘門組合與失敗原子性回歸',
+    'learning/consolidation_finite_test.go': '鞏固大值、穩定範數與拒絕後完整狀態回歸',
+    'learning/consolidation_reset_test.go': '已／未寫入重設、新回合、取消與保存恢復回歸',
+    'learning/episode_clock_test.go': '最大回合拒絕、合法邊界與舊標記快照相容回歸',
+    'learning/vector_sign_validation_test.go': '向量固定符號拒絕與純量／全零／缺省合法回歸',
+    'modulation/source_channel_validation_test.go': '錯位 timeline／replay 在 Build／Validate 拒絕及合法來源回歸',
+    'tasks/asr/audio/frontend_finite_test.go': '非有限音訊、運算溢位、Floor 及合法特徵回歸',
+    'tasks/ocr/input_range_test.go': '所有公開圖片入口的非法像素拒絕、0／1 邊界與訓練快照不變回歸',
+}
+lines = ['# 本輪逐檔變更', '', '| 檔案 | 變更摘要 |', '| --- | --- |']
+for name in paths:
+    if name.startswith('evidence/MOD-02/mechanism-audit-20261013/'):
+        continue
+    if name.startswith('docs/tickets/'):
+        description = Path(name).read_text().splitlines()[0].lstrip('# ')
+    else:
+        description = descriptions[name]
+    lines.append('| [' + name + '](../../../' + name + ') | ' + description + ' |')
+lines += ['', '新增證據的逐檔清單與 SHA-256 見 [artifact-manifest.json](artifact-manifest.json)。該索引排除自身，避免循環指紋。刪除的暫存逐檔清單見 [cleanup-inventory.json.gz](cleanup-inventory.json.gz)。', '']
+p = d / 'changed-files.md'
+raw = p.read_bytes() if p.exists() else None
+assert (p.read_bytes() if p.exists() else None) == raw
+p.write_text('\n'.join(lines))
+manifest = {str(p.relative_to(d)): {'bytes': p.stat().st_size, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(d.rglob('*')) if p.is_file() and p.name != 'artifact-manifest.json'}
+p = d / 'artifact-manifest.json'
+raw = p.read_bytes() if p.exists() else None
+assert (p.read_bytes() if p.exists() else None) == raw
+p.write_text(json.dumps(manifest, indent=2) + '\n')
+print(json.dumps({'changed_workspace_files': len(paths), 'evidence_artifacts': len(manifest)}))

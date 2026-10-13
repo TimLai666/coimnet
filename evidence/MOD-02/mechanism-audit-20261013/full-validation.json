@@ -1,0 +1,98 @@
+{
+  "baseline_head": "3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "environment": {
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/go-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/tmp",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local"
+  },
+  "source_manifest": "release-source-manifest.json",
+  "checks": [
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 8.886820077896118,
+      "log": "logs/release-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "archived_log": "logs/release-build.log.gz",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "name": "unit",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 174.63909196853638,
+      "log": "logs/release-unit.log",
+      "log_sha256": "16082d0a85c974aca5024322bf0b9cfbaada2ca04631ed19579480dd25480f9e",
+      "log_bytes": 4556327,
+      "archived_log": "logs/release-unit.log.gz",
+      "gzip_sha256": "c99e1c525dbe15409d353283874079bc3735feafacc3779d6ce6b6a0db34ab87"
+    },
+    {
+      "name": "race",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 2988.26881980896,
+      "log": "logs/release-race.log",
+      "log_sha256": "ac8d8716c53b11457e36be4c739999edf95e51768e3ab7a5bd124d915bc65801",
+      "log_bytes": 4558104,
+      "archived_log": "logs/release-race.log.gz",
+      "gzip_sha256": "8bb698567b26454e7389758e8888fda0c6374c18a35be7013d271f974dddcc69"
+    },
+    {
+      "name": "vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 13.227559804916382,
+      "log": "logs/release-vet.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log_bytes": 0,
+      "archived_log": "logs/release-vet.log.gz",
+      "gzip_sha256": "9ceffb7310338057cfe71a4ae1e2c98d2c485d81cdef906532a801f457a38d64"
+    },
+    {
+      "name": "dependencies",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 14.57963490486145,
+      "log": "logs/release-dependencies.log",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "log_bytes": 21,
+      "archived_log": "logs/release-dependencies.log.gz",
+      "gzip_sha256": "4699dce40a065353f016ef7eb2c309ee9dee73281263a6b29287016349618a1b"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "baseline_head": "3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "environment": {
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/go-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mechanism-audit-20261013/tmp",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local"
+  },
+  "source_manifest": "validation-source-manifest.json",
+  "checks": [
+    {
+      "name": "build",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "elapsed_seconds": 32.837668895721436,
+      "log": "logs/build.log",
+      "log_sha256": "794c4c48225528610497c66f70cc58e05757ea86c490f8ff0773689c2d904d9d",
+      "log_bytes": 181
+    },
+    {
+      "name": "unit",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 1,
+      "elapsed_seconds": 166.296884059906,
+      "log": "logs/unit.log",
+      "log_sha256": "4475f63218e2df77fad4d310bf2f7bf17d6102108e6b98aa93dfe602a76b6f07",
+      "log_bytes": 4244775
+    }
+  ]
+}

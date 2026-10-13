@@ -1,0 +1,47 @@
+import json,hashlib,gzip,subprocess
+from pathlib import Path
+root=Path.cwd(); w=root/'runs/.tmp/mechanism-audit-20261013'; d=root/'evidence/MOD-02/mechanism-audit-20261013'
+def create(name,data):
+ p=d/name
+ with p.open('xb') as f:f.write(data)
+def jcreate(name,obj):create(name,(json.dumps(obj,indent=2,ensure_ascii=False)+'\n').encode())
+r=json.loads((w/'release-validation.json').read_text())
+assert [x['name'] for x in r['checks']]==['build','unit','race','vet','dependencies']
+assert all(x['exit_code']==0 for x in r['checks'])
+manifest=json.loads((w/'release-source-manifest.json').read_text())
+assert all(hashlib.sha256((root/p).read_bytes()).hexdigest()==h for p,h in manifest.items())
+changed=set(subprocess.check_output(['git','diff','--name-only'],text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],text=True).splitlines())
+files=sorted(p for p in changed if p.endswith('.go'))
+fmt=subprocess.run(['gofmt','-l']+files,capture_output=True,text=True);assert fmt.returncode==0 and not fmt.stdout,fmt.stdout
+check=subprocess.run(['git','diff','--check'],capture_output=True,text=True);assert check.returncode==0,check.stdout
+stats={}
+for item in r['checks']:
+ src=w/item['log'];raw=src.read_bytes();assert hashlib.sha256(raw).hexdigest()==item['log_sha256']
+ target='logs/'+src.name+'.gz';create(target,gzip.compress(raw,mtime=0))
+ item['archived_log']=target
+ item['gzip_sha256']=hashlib.sha256((d/target).read_bytes()).hexdigest()
+ if item['name'] not in ['unit','race']:continue
+ passed=[];skipped=[];packages=[];output={};failures=[];resume=[];stream=[]
+ for line in raw.decode().splitlines():
+  try:e=json.loads(line)
+  except ValueError:continue
+  name=e.get('Test');key=(e.get('Package'),name)
+  if e.get('Action')=='output' and name:output.setdefault(key,[]).append(e.get('Output',''))
+  if e.get('Action')=='pass':
+   if name:
+    passed.append({'package':key[0],'test':name})
+    if any(s in name for s in ['SubprocessResume','AcrossProcess','CheckpointSubprocess']):resume.append({'package':key[0],'test':name})
+    if key[0].endswith('/tasks/asr') and any(s in name for s in ['Stream','Chunk']):stream.append(name)
+   else:packages.append(key[0])
+  if e.get('Action')=='skip' and name:skipped.append({'package':key[0],'test':name,'output':''.join(output.get(key,[]))})
+  if e.get('Action')=='fail':failures.append(e)
+ assert not failures
+ stats[item['name']]={'passed_packages':len(set(packages)),'package_names':sorted(set(packages)),'passed_test_events_including_subtests':len(passed),'skipped_test_events':len(skipped),'skipped':skipped,'fail_events':0,'cross_process_resume_pass_events':resume,'asr_stream_pass_events':stream}
+jcreate('test-summary.json',stats)
+jcreate('full-validation.json',r)
+create('source-manifest.json',(w/'release-source-manifest.json').read_bytes())
+probe=d/'compatibility_probe.go.txt';before=d/'compatibility-before.json';after=d/'compatibility-final.json'
+assert before.read_bytes()==after.read_bytes()
+verification={'requirement':['MOD-02','MOD-05','MOD-06','LRN-05','STA-01','TSK-01','TSK-02'],'reproduction_command':['go build ./...','go test -count=1 -timeout=60m -json ./...','go test -count=1 -race -timeout=60m -json ./...','go vet ./...','go mod verify','gofmt -l <changed Go files>','git diff --check'],'environment':{'go_version':r['go_version'],'platform':r['platform'],'variables':r['environment'],'baseline_head':r['baseline_head'],'dependencies':'go.mod / go.sum unchanged, Insyra v0.3.4, cached offline modules'},'input_fingerprints':{'source_manifest':'source-manifest.json','source_manifest_sha256':hashlib.sha256((d/'source-manifest.json').read_bytes()).hexdigest(),'source_count':len(manifest),'regression_test_files':{p:manifest[p] for p in files if p.endswith('_test.go')},'compatibility_probe_sha256':hashlib.sha256(probe.read_bytes()).hexdigest(),'compatibility_bytes':before.stat().st_size,'compatibility_output_sha256':hashlib.sha256(before.read_bytes()).hexdigest(),'handoff':'handoff-check.json'},'observed_result':{'engineering_checks_passed':True,'unit_passed_packages':stats['unit']['passed_packages'],'race_passed_packages':stats['race']['passed_packages'],'source_fingerprints_match':True,'format_and_diff_check_passed':True,'confirmed_repair_categories':7,'compatibility_probe_identical':True,'snapshot_schema_changed':False,'recognition_quality_gain_measured':False,'biological_quantitative_validation':False,'absolute_no_bugs_proven':False},'test_log':[x['archived_log'] for x in r['checks']],'engineering_checks':r['checks'],'regressions':'regression-log-manifest.json','review':'review.json','limitations':['Artificial small graphs and numeric/input/lifecycle boundaries; no new real-task training','Normal comparison only covers declared OCR and audio probe, excludes consolidation norm rounding and reset lifecycle','Full-brain and unconfigured external evidence tests skipped as explicitly listed','Existing consolidation refused-report budget counters differ from documentation; tracked as P2 in AGENTS.md','No theorem or exhaustive proof of bug absence'],'cleanup_receipt':'cleanup.json','delivery_receipt':'delivery.json'}
+jcreate('verification.json',verification)
+print(json.dumps({'checks':'passed','unit':stats['unit']['passed_packages'],'race':stats['race']['passed_packages'],'sources':len(manifest),'unit_events':stats['unit']['passed_test_events_including_subtests'],'race_events':stats['race']['passed_test_events_including_subtests']}))

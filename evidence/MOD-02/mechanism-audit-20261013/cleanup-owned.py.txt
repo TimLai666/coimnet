@@ -1,0 +1,51 @@
+from pathlib import Path
+import json, os, hashlib, gzip, shutil, stat
+
+root = Path.cwd().resolve()
+target = root / 'runs/.tmp/mechanism-audit-20261013'
+d = root / 'evidence/MOD-02/mechanism-audit-20261013'
+assert target.resolve() == target and target.is_dir()
+assert json.loads((d / 'verification.json').read_text())['observed_result']['engineering_checks_passed']
+preexisting = json.loads((target / 'baseline.json').read_text())['existing_temp_dirs']
+protected = {name: (root / 'runs/.tmp' / name).exists() for name in preexisting}
+
+def inventory():
+    items = []
+    for base, dirs, files in os.walk(target, followlinks=False):
+        for name in dirs + files:
+            p = Path(base) / name
+            s = p.lstat()
+            item = {'path': str(p.relative_to(target)), 'mode': s.st_mode, 'bytes': s.st_size}
+            if stat.S_ISLNK(s.st_mode):
+                item.update(type='symlink', target=os.readlink(p))
+            elif stat.S_ISREG(s.st_mode):
+                item.update(type='file', sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+            elif stat.S_ISDIR(s.st_mode):
+                item.update(type='directory')
+            else:
+                raise AssertionError('Unexpected owned temporary type: ' + str(p))
+            items.append(item)
+    return sorted(items, key=lambda x: x['path'])
+
+items = inventory()
+assert inventory() == items, 'Owned temporary content changed before cleanup'
+payload = (json.dumps(items, ensure_ascii=False, separators=(',', ':')) + '\n').encode()
+with (d / 'cleanup-inventory.json.gz').open('xb') as f:
+    f.write(gzip.compress(payload, mtime=0))
+shutil.rmtree(target)
+assert not target.exists()
+assert all((root / 'runs/.tmp' / name).exists() == existed for name, existed in protected.items())
+report = {
+    'removed_directory': str(target), 'removed': not target.exists(),
+    'regular_files': sum(x['type'] == 'file' for x in items),
+    'logical_bytes': sum(x['bytes'] for x in items if x['type'] == 'file'),
+    'symlinks': sum(x['type'] == 'symlink' for x in items),
+    'protected_preexisting_directories': protected,
+    'inventory': 'cleanup-inventory.json.gz',
+    'inventory_sha256': hashlib.sha256((d / 'cleanup-inventory.json.gz').read_bytes()).hexdigest(),
+    'scope': 'Only this audit temporary tree. No data/, models/, checkpoints/ or preexisting runs were deleted.'
+}
+with (d / 'cleanup.json').open('x') as f:
+    json.dump(report, f, indent=2)
+    f.write('\n')
+print(json.dumps(report))

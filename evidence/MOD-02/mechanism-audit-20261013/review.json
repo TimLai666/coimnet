@@ -1,0 +1,38 @@
+{
+  "host": "Codex desktop",
+  "opencode_attempt": {
+    "command": [
+      "opencode",
+      "models"
+    ],
+    "exit_code": 1,
+    "error": "Error: Unexpected error\nUnknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "fallback": {
+    "tool": "collaboration",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "basis": "Project AGENTS.md explicitly specifies this fallback"
+  },
+  "workers": [
+    "audit_neural_learning",
+    "audit_chemistry_plasticity",
+    "audit_task_quality"
+  ],
+  "main_agent": "read complete diffs, evaluated test corrections, ran RED/GREEN, final full verification",
+  "final_adversarial_review": {
+    "scope": "CLEAN",
+    "baseline_head": "3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1",
+    "confirmed_findings": [],
+    "checked": [
+      "episode max guard before training mutations",
+      "consolidation candidate finite checks and atomic commit",
+      "ResetOptimizer marker rebasing and Used==2 lifecycle",
+      "SourceSpec channel contract and corrected success fixture"
+    ],
+    "limitations": [
+      "Final static review git diff only covers tracked Go files; new test contents had been reviewed earlier and final executable evidence is supplied by root",
+      "No static review proves absolute absence of bugs"
+    ]
+  }
+}

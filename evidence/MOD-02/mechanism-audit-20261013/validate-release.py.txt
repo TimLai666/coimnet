@@ -1,0 +1,21 @@
+import os,sys,json,time,hashlib,subprocess,platform
+from pathlib import Path
+root=Path.cwd(); work=root/'runs/.tmp/mechanism-audit-20261013'
+env=os.environ.copy(); overrides={'GOCACHE':str(work/'go-cache'),'GOTMPDIR':str(work/'tmp'),'TMPDIR':str(work/'tmp'),'GOPROXY':'off','GOSUMDB':'off','GOTOOLCHAIN':'local'};env.update(overrides)
+paths=subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard','*.go','go.mod','go.sum'],text=True).splitlines()
+paths=sorted(set(p for p in paths if not p.startswith('runs/')))
+manifest={p:hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in paths}
+(work/'release-source-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
+report={'baseline_head':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),'platform':platform.platform(),'go_version':subprocess.check_output(['go','version'],env=env,text=True).strip(),'environment':overrides,'source_manifest':'release-source-manifest.json','checks':[]}
+checks=[('build',['go','build','./...']),('unit',['go','test','-count=1','-timeout=60m','-json','./...']),('race',['go','test','-count=1','-race','-timeout=60m','-json','./...']),('vet',['go','vet','./...']),('dependencies',['go','mod','verify'])]
+for label,cmd in checks:
+ print('Started '+label,flush=True);start=time.time(); path=work/'logs'/('release-'+label+'.log')
+ with path.open('xb') as f: result=subprocess.run(cmd,env=env,stdout=f,stderr=subprocess.STDOUT)
+ item={'name':label,'command':cmd,'exit_code':result.returncode,'elapsed_seconds':time.time()-start,'log':str(path.relative_to(work)),'log_sha256':hashlib.sha256(path.read_bytes()).hexdigest(),'log_bytes':path.stat().st_size}
+ report['checks'].append(item)
+ p=work/'release-validation.json'; prior=p.read_bytes() if p.exists() else None
+ assert (p.read_bytes() if p.exists() else None)==prior
+ p.write_text(json.dumps(report,indent=2)+'\n')
+ print(json.dumps(item),flush=True)
+ if result.returncode: sys.exit(result.returncode)
+print('All required Go checks completed',flush=True)

@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+機制與設計稽核的 tickets 67–73 已用公開入口重現並修正七類缺陷。build、完整一般與 race 各 58 套件、vet、相依性及最後 11 項治理全部通過，770 份來源指紋相符。合法 OCR／音訊的指定對照與基準逐位相同，舊版較大鞏固標記保持載入相容。獨立審查與證據保存完成，暫存清理及 Git 交付待完成。鞏固拒絕報告的計數缺口記為 P2，未確認模型品質受到影響。受體部位不建立多區室膜模型，沒有生物定量正確性、辨識率改善或絕對零 bug 的結論。見[機制稽核](evidence/MOD-02/mechanism-audit-20261013/README.md)與[最終驗收](evidence/MOD-02/mechanism-audit-20261013/verification.json)。
+
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 完成 5／5 驗收與交付。三組 KMNIST 化學配對的主要平均辨識率由 72.07% 到 72.35%，增加 0.28 個百分點。確認分割增加 0.22 個百分點，兩批都有一個種子退步，六組都低於 80% 品質門檻。六個模型新程序恢復、三個 OFF 舊快照重現、五項 driver 與 race、十張真實圖片 SDK 比對通過。完整一般與 race 各 58 套件、格式、build、vet、相依性、CLI 接續及治理 11 項通過，772 份來源及兩份 evidence Go 指紋一致。比較工具已補強來源與歷史評分算式核對，沒有修改化學數值核心。主要證據 `a37d569` 已推送並讀回一致，本輪 28,011 個暫存檔共 1.69 GB 邏輯大小已清除，33 個原始資料及模型檔案保留。見[最終驗收](evidence/TSK-11/chemical-quality-20261013/verification.json)、[清理](evidence/TSK-11/chemical-quality-20261013/cleanup.json)與[交付回條](evidence/TSK-11/chemical-quality-20261013/delivery.json)。
 
 [ticket 65](docs/tickets/65-receptor-location-and-chemical-training.md) 已完成 5／5 驗收與交付。有來源的受體位置、一般化學回授訓練、新程序接續、失敗原子性及分段重算／關閉對照通過。完整一般與 race 各 58 套件、格式、build、vet、相依性、CLI 新程序接續與最後治理 11 項通過，772 份來源及兩份 evidence Go 程式指紋相符。本輪 62,032 個暫存檔共 6.15 GB 與 1,323 個連結已清除。實作 `9ed31a5` 推送至 `codex/receptor-chemistry-training` 並讀回一致，見[最終驗收](evidence/MOD-02/receptor-chemistry-20261012/verification.json)、[清理](evidence/MOD-02/receptor-chemistry-20261012/cleanup.json)與[交付回條](evidence/MOD-02/receptor-chemistry-20261012/delivery.json)。實測定位只有細胞類型／樹突觀察，細胞內位置不建立獨立膜電位，反應係數採工程設定。生物定量正確性與 OCR 品質改善沒有由本票驗證。
@@ -241,7 +243,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-本輪沒有剩餘工程或清理阻礙。完整檢查在 TimdeAir 的原生 APFS 磁碟執行，主要證據 `a37d569` 已推送核對。化學效益不穩定，六組模型的辨識率都未達 80% 品質門檻，見[比較證據](evidence/TSK-11/chemical-quality-20261013/README.md)。既有 NAS 故障後耐久性仍未實測。
+本輪完整工程檢查與暫存清理已完成，Git 交付待核對。另有鞏固拒絕報告的 Used／LastEpisode 缺漏，記為 P2，尚無模型品質受影響的證據。真實任務辨識率沒有在本輪重測，前一階段六組化學對照都低於 80% 品質門檻，見[比較證據](evidence/TSK-11/chemical-quality-20261013/README.md)。既有 NAS 故障後耐久性沒有新增實測。
 
 ### 既有環境與研究限制
 
@@ -262,6 +264,8 @@ Tickets 54、55 的實作、回歸與本機完整驗收已完成。先前 OpenCo
 Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 GB，但 2026-09-23 重試本階段 SSH 時收到 `Permission denied (publickey,password)`，因此本階段沒有 Ubuntu 執行證據。PC 的 App 主機連線存在，但沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
 
 ## 下一個可驗證成果與 ticket
+
+tickets 67–73 的七類修復已驗證，剩餘交付項是 Git 提交、推送與遠端讀回。清理與最終工程證據已保存，沒有等待使用者決策。後續可修正鞏固拒絕報告計數，再用同一真實辨識任務量測品質影響，尚未建立或執行新票。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
