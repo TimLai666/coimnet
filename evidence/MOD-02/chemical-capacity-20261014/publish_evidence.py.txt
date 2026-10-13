@@ -1,0 +1,165 @@
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import sys
+
+root = Path(__file__).resolve().parents[3]
+evidence = root / "evidence/MOD-02/chemical-capacity-20261014"
+phase = sys.argv[1]
+assert phase in ("initial", "governance")
+summary = json.loads((evidence / "engineering-summary.json").read_text())
+assert summary["unit"]["package_pass_count"] == summary["race"]["package_pass_count"] == 58
+
+
+def replace(path, old, new):
+    assert path.read_bytes() == old, str(path)
+    path.write_bytes(new)
+
+
+def encode(value):
+    return (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode()
+
+
+verification = evidence / "verification.json"
+if phase == "initial":
+    assert not verification.exists()
+    receipts = []
+    for name in summary["commands"]:
+        value = json.loads((evidence / (name + ".json")).read_text())
+        receipts.append({"receipt": name + ".json", "command": value["command"],
+                         "exit_code": value["exit_code"]})
+    value = {
+        "requirement": ["MOD-01", "MOD-02", "OPS-01"], "ticket": 87,
+        "captured_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "baseline_commit": summary["baseline_commit"],
+        "reproduction_command": receipts,
+        "environment": json.loads((evidence / "environment.json").read_text()),
+        "input_fingerprints": {
+            "source": "source-final.json", "source_sha256": summary["source_integrity"]["manifest_sha256"],
+            "frozen_tests": "frozen-tests.json", "frozen_tests_sha256": summary["frozen_tests"]["manifest_sha256"],
+            "capacity_diagnostic_sha256": hashlib.sha256((evidence / "capacity-diagnostic.go.txt").read_bytes()).hexdigest(),
+            "activity_diagnostic_sha256": hashlib.sha256((evidence / "activity-diagnostic.go.txt").read_bytes()).hexdigest(),
+            "compatibility_diagnostic_sha256": hashlib.sha256((evidence / "compatibility.go.txt").read_bytes()).hexdigest(),
+        },
+        "observed_result": {
+            "repaired_classes": ["source release vector", "controller activity grid", "chemical concentration grid", "effect node vectors"],
+            "capacity": summary["capacity"], "capacity_green": summary["capacity_green"],
+            "full_unit": summary["unit"], "full_race": summary["race"],
+            "activity": summary["activity"], "compatibility": summary["compatibility"], "cli": summary["cli"],
+            "source_integrity": summary["source_integrity"], "frozen_tests": summary["frozen_tests"],
+            "dependencies": summary["dependencies"],
+            "normal_mechanism_confirmed_design_mismatches": 0,
+            "normal_mechanism_audit_scope": "declared small chemical fixtures and current design; complete mixed continuous/LIF reverse composition not independently verified",
+            "normal_model_quality_improvement": "not measured",
+        },
+        "test_log": [receipt["log"] for receipt in summary["commands"].values()],
+        "reviews": ["root-review.md", "adversarial-review.md", "mechanism-design-review.md"],
+        "engineering_passed": True, "governance": {"state": "pending"},
+        "cleanup": {"state": "pending"}, "delivery": {"state": "pending"},
+        "ticket_acceptance": {"completed": 3, "total": 5},
+        "limits": [
+            "Only darwin/arm64 runtime; 32-bit arithmetic inspected, no 32-bit runtime acceptance.",
+            "Representability checks do not guarantee enough physical memory for every large legal declaration.",
+            "Unit/race skipped evidence and device cases are itemized in engineering-summary.json.",
+            "No new whole-brain training, biological quantitative calibration, real OCR quality measurement, or zero-bug conclusion.",
+            "Mixed continuous/LIF complete chemical reverse composition remains an explicit investigation item.",
+            "Initial sandbox unit and offline metadata failures are retained; final reruns passed without weakening tests.",
+        ],
+    }
+    with verification.open("xb") as output:
+        output.write(encode(value))
+    status = root / "docs/requirements-status.json"
+    old = status.read_bytes()
+    assert hashlib.sha256(old).hexdigest() == "a379fa5a452000d63cb6229e45e7eb8f5fb78a46813cf4ad36f0aadc2986d2a5"
+    registry = json.loads(old)
+    reference = "../evidence/MOD-02/chemical-capacity-20261014/verification.json"
+    affected = 0
+    for requirement in registry["requirements"]:
+        if requirement["id"] in value["requirement"]:
+            assert requirement["status"] == "passed" and reference not in requirement["evidence"]
+            requirement["evidence"].append(reference)
+            affected += 1
+    assert affected == 3 and len(registry["requirements"]) == 91
+    replace(status, old, encode(registry))
+    completed = 3
+else:
+    old = verification.read_bytes()
+    value = json.loads(old)
+    governance = json.loads((evidence / "governance-summary.json").read_text())
+    assert governance["failure_events"] == 0
+    assert governance["top_level_pass_count"] == 11 and governance["test_pass_events"] == 31
+    value["governance"] = {"state": "passed", "summary": "governance-summary.json", **governance}
+    value["test_log"].append("governance.log.gz")
+    receipt = json.loads((evidence / "governance.json").read_text())
+    value["reproduction_command"].append({"receipt": "governance.json", "command": receipt["command"], "exit_code": receipt["exit_code"]})
+    value["ticket_acceptance"] = {"completed": 4, "total": 5}
+    replace(verification, old, encode(value))
+    completed = 4
+
+ticket = root / "docs/tickets/87-chemical-capacity-validation.md"
+old = ticket.read_bytes()
+text = old.decode()
+if completed == 3:
+    expected = "Status：in_progress（2026-10-14，2／5 完成，34 個 GREEN 測試事件及拒絕原子性通過）"
+    updated = "Status：in_progress（2026-10-14，3／5 完成，完整一般／race 各 58 套件及 Root 審查通過）"
+    line = "- [ ] 合法輸入逐位相容、完整工程驗證及 Root 審查通過。"
+else:
+    expected = "Status：in_progress（2026-10-14，3／5 完成，完整一般／race 各 58 套件及 Root 審查通過）"
+    updated = "Status：in_progress（2026-10-14，4／5 完成，11 項治理及完整證據同步通過）"
+    line = "- [ ] 需求追蹤、治理及完整證據同步，限制明示。"
+assert text.count(expected) == 1 and text.count(line) == 1
+text = text.replace(expected, updated).replace(line, line.replace("[ ]", "[x]"))
+if completed == 3:
+    assert text.count("## 決策與驗收") == 1
+    text = text.replace("## 決策與驗收", "## Root 決策（2026-10-14）")
+replace(ticket, old, text.encode())
+
+plan = evidence / "plan.md"
+old = plan.read_bytes()
+text = old.decode()
+line = ("- [ ] 正常逐位對照、完整 gofmt／build／unit／race／vet／相依性與 Root 審查。" if completed == 3
+        else "- [ ] 證據、需求追蹤與治理同步，限制與略過明示。")
+assert text.count(line) == 1
+replace(plan, old, text.replace(line, line.replace("[ ]", "[x]")).encode())
+
+delivery = root / "delivery-status.md"
+old = delivery.read_bytes()
+text = old.decode()
+start = text.index("ticket 87 完成 ")
+end = text.index("\n\n", start)
+next_step = "治理驗收及暫存清理／交付" if completed == 3 else "本輪暫存清理、提交推送與遠端讀回"
+new = (f"ticket 87 完成 {completed}／5：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。"
+       f"完整一般／race 各 58 套件通過，分別 {summary['unit']['test_pass_events']}／{summary['race']['test_pass_events']} 個通過事件。"
+       "格式、build、vet、固定相依性、32 組合法模型逐位比較、8 組活動生命週期與 CLI 新程序接續通過。"
+       "791 份來源及 455 份凍結測試相符。正常化學機制稽核沒有確認設計矛盾，混合連續／脈衝核心完整反向獨立參考缺口已列 Follow-ups。"
+       f"見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)及[Root 審查](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。"
+       f"無外部阻礙，下一成果是{next_step}。尚無零 bug 或真實辨識率提升結論。")
+text = text[:start] + new + text[end:]
+if completed == 3:
+    stage_old = "本輪目標是核對實際機制與既定設計，修復有公開重現的缺陷，保留合法相容性並完成工程驗證、清理及交付。tickets 78–86 已交付，接續查驗尚未確認的來源初始化與宣告容量疑點。尚未證明所有bug已排除或模型品質提高。"
+    stage_new = "本輪核對實際化學機制與既定設計，ticket 87 修復四類有公開重現的不可表示配置。正常輸出與保存格式保持，初始神經來源的拒絕已確認符合契約。完整混合連續／脈衝化學反向獨立參考仍有缺口，整個框架零 bug 與模型品質改善尚未證明。"
+    assert text.count(stage_old) == 1
+    text = text.replace(stage_old, stage_new)
+    table_header = "| id | 目標 | 負責者 | 狀態 | 驗證訊號 |\n| --- | --- | --- | --- | --- |\n"
+    assert table_header in text
+    row = f"| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | in_progress | {completed}／5。34 個回歸事件、合法逐位相容、完整一般／race 各 58 套件與 Root 審查通過；治理、清理及交付待完成 |\n"
+    text = text.replace(table_header, table_header + row, 1)
+    blocker_start = text.index("無外部阻礙。", text.index("## 目前阻礙"))
+    blocker_end = text.index("\n\n", blocker_start)
+    blocker_new = "無外部阻礙。ticket 87 的完整工程驗證通過，治理、清理及交付仍待完成。正常化學設計未重現明確矛盾，但混合連續／脈衝的完整反向組合尚無獨立參考。真實辨識率沒有在本階段重測，先前品質限制保留。"
+    text = text[:blocker_start] + blocker_new + text[blocker_end:]
+    decision = "2026-10-14：ticket 87 只增加私人 float64 向量／網格可表示大小檢查，錯誤早於配置與狀態提交，不增加任意容量上限或改變生理公式。初始神經來源缺乏活動的拒絕符合契約。正常設計疑點及混合核心驗證限制見[Root 審查](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。\n\n"
+    text = text.replace("## 決策紀錄\n\n", "## 決策紀錄\n\n" + decision, 1)
+else:
+    row_start = text.index("| 87 |")
+    row_end = text.index("\n", row_start)
+    row = "| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | in_progress | 4／5。完整工程、11 項治理、合法相容性及需求證據通過；清理、推送與遠端讀回待完成 |"
+    text = text[:row_start] + row + text[row_end:]
+    text = text.replace("ticket 87 的完整工程驗證通過，治理、清理及交付仍待完成。", "ticket 87 的完整工程與治理驗證通過，清理及交付仍待完成。", 1)
+next_start = text.index("\n\n", text.index("## 下一個可驗證成果與 ticket")) + 2
+next_end = text.index("\n\n", next_start)
+next_paragraph = (f"[ticket 87](docs/tickets/87-chemical-capacity-validation.md) 已完成 {completed}／5，接續{next_step}。首次神經來源活動的拒絕已排除為既定契約，四類配置容量缺陷已修正。下一項機制稽核成果是混合連續／脈衝完整化學反向的獨立參考，尚未建立或執行新票，見[AGENTS Follow-ups](AGENTS.md#follow-ups)與[正常設計稽核](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。")
+text = text[:next_start] + next_paragraph + text[next_end:]
+replace(delivery, old, text.encode())
+print(json.dumps({"phase": phase, "ticket_completed": completed, "ticket_total": 5}))

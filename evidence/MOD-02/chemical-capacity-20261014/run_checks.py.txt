@@ -1,0 +1,76 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import signal
+import sys
+import time
+
+root = Path(__file__).resolve().parents[3]
+work = Path(__file__).resolve().parent
+env = {**os.environ, "GOPROXY": "off", "GOSUMDB": "off", "GOTOOLCHAIN": "local",
+       "GOMODCACHE": str(work / "go-mod-cache"), "GOCACHE": str(work / "go-cache"),
+       "GOTMPDIR": str(work / "go-tmp"), "TMPDIR": str(work / "go-tmp")}
+keys = ("GOPROXY", "GOSUMDB", "GOTOOLCHAIN", "GOMODCACHE", "GOCACHE", "GOTMPDIR", "TMPDIR")
+stage = sys.argv[1]
+go_sources = sorted(p for p in json.loads((work / "baseline.json").read_text())["sources"] if p.endswith(".go") and not p.startswith("evidence/"))
+go_sources += ["modulation/capacity.go", "modulation/capacity_validation_test.go", "learning/individual_chemistry_capacity_test.go"]
+stages = {
+    "targeted": [
+        ("gofmt-module", ["gofmt", "-l", *go_sources], 180),
+        ("green", ["go", "test", "-count=1", "-json", "-timeout=3m", "-run",
+                   "^(TestChemicalCapacity|TestIndividualChemicalCapacity)", "./modulation", "./learning"], 240),
+        ("capacity-build-after", ["go", "build", "-o", str(work / "capacity-after"), str(work / "capacity/main.go")], 180),
+        ("capacity-after", [str(work / "capacity-after")], 240),
+        ("activity-after", ["go", "run", "./" + str(work.relative_to(root) / "activity")], 180),
+        ("compatibility-build-after", ["go", "build", "-o", str(work / "compatibility-after"), str(work / "compatibility/main.go")], 180),
+        ("compatibility-after", [str(work / "compatibility-after")], 180),
+    ],
+    "full": [
+        ("build", ["go", "build", "./..."], 600),
+        ("vet", ["go", "vet", "./..."], 600),
+        ("dependencies", ["go", "mod", "verify"], 180),
+        ("modules", ["go", "list", "-m", "-json", "all"], 180),
+        ("unit", ["go", "test", "-count=1", "-json", "-timeout=30m", "./..."], 2400),
+        ("race", ["go", "test", "-race", "-count=1", "-json", "-timeout=60m", "./..."], 3900),
+    ],
+    "governance": [("governance", ["go", "test", "-json", "-count=1", "-run",
+                    "^Test(NoTelemetry.*|FormatIndex.*|Governance.*)$", "-timeout=10m", "."], 660)],
+    "cli": [
+        ("cli-build", ["go", "build", "-o", str(work / "coimnet"), "./cmd/coimnet"], 180),
+        ("cli-first", [str(work / "coimnet"), "train", "delayed", "--steps", "80", "--checkpoint", str(work / "first.json")], 180),
+        ("cli-resumed", [str(work / "coimnet"), "resume", "--checkpoint", str(work / "first.json"), "--steps", "40", "--out", str(work / "resumed.json")], 180),
+        ("cli-continuous", [str(work / "coimnet"), "train", "delayed", "--steps", "120", "--checkpoint", str(work / "continuous.json")], 180),
+    ],
+}
+stages["tests"] = stages["full"][-2:]
+stages["tests-final"] = [("unit-final", stages["full"][-2][1], stages["full"][-2][2]), ("race-final", stages["full"][-1][1], stages["full"][-1][2])]
+stages["dependency-retry"] = [("dependencies-final", ["go", "mod", "verify"], 180), ("modules", ["go", "list", "-m", "-json", "all"], 180)]
+if stage not in stages:
+    raise SystemExit("unknown verification stage")
+for name, command, timeout in stages[stage]:
+    log = work / (name + ".log")
+    receipt = work / (name + ".json")
+    if log.exists() or receipt.exists():
+        raise SystemExit("refusing to overwrite prior verification: " + name)
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    before = time.monotonic()
+    with log.open("wb") as output:
+        child = subprocess.Popen(command, cwd=root, env=env, stdout=output, stderr=subprocess.STDOUT, start_new_session=True)
+        try:
+            code = child.wait(timeout=timeout)
+            expired = False
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGKILL)
+            code = child.wait()
+            expired = True
+    result = {"command": command, "cwd": str(root), "started_at": started,
+              "duration_seconds": time.monotonic() - before, "exit_code": code,
+              "timed_out": expired, "environment": {key: env[key] for key in keys},
+              "log": str(log.relative_to(root)), "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest()}
+    receipt.write_text(json.dumps(result, indent=2) + "\n")
+    print(json.dumps({"check": name, "exit_code": code, "timed_out": expired, "duration_seconds": result["duration_seconds"], "log_sha256": result["log_sha256"]}), flush=True)
+    if code != 0 or expired or (name.startswith("gofmt") and log.stat().st_size != 0):
+        raise SystemExit(1)

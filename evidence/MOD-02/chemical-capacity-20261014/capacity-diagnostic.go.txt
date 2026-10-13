@@ -1,0 +1,216 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
+	"strings"
+	"time"
+
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+const childTimeout = 10 * time.Second
+
+func maxInt() int { return int(^uint(0) >> 1) }
+
+func main() {
+	if len(os.Args) >= 3 && os.Args[1] == "--case" {
+		runCase(os.Args[2])
+		return
+	}
+
+	fmt.Printf("capacity-audit go=%s/%s max_int=%d max_int_minus_one=%d\n", runtime.GOOS, runtime.GOARCH, maxInt(), maxInt()-1)
+	cases := []string{
+		"control-neural",
+		"control-resource",
+		"control-external",
+		"control-controller",
+		"control-memory-controller",
+		"control-replay",
+		"source-spec-neural-maxint-minus-one",
+		"source-spec-resource-maxint-minus-one",
+		"source-spec-external-maxint",
+		"source-spec-controller-maxint-minus-one",
+		"neural-channel-maxint-minus-one",
+		"resource-channel-maxint-minus-one",
+		"external-channel-maxint",
+		"external-channel-maxint-minus-one",
+		"controller-channel-maxint-minus-one",
+		"controller-nodes-maxint",
+		"memory-controller-nodes-maxint",
+		"effects-nodes-maxint",
+		"chemistry-channels-maxint",
+		"chemistry-regions-maxint",
+		"chemistry-config-regions-maxint",
+	}
+	for _, name := range cases {
+		ctx, cancel := context.WithTimeout(context.Background(), childTimeout)
+		cmd := exec.CommandContext(ctx, os.Args[0], "--case", name)
+		output, err := cmd.CombinedOutput()
+		timedOut := ctx.Err() == context.DeadlineExceeded
+		cancel()
+		status := "ok"
+		if timedOut {
+			status = "timeout"
+		} else if err != nil {
+			status = "exit-error"
+			if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 42 {
+				status = "recovered-panic"
+			}
+		}
+		text := strings.TrimSpace(string(output))
+		fmt.Printf("case=%s status=%s err=%v output=%q\n", name, status, err, text)
+	}
+}
+
+func runCase(name string) {
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			fmt.Printf("case=%s outcome=recovered-panic type=%T panic=%v\n", name, recovered, recovered)
+			os.Exit(42)
+		}
+	}()
+
+	max := maxInt()
+	minusOne := max - 1
+	var err error
+
+	switch name {
+	case "control-neural":
+		source := modulation.NeuralActivity{Nodes: []int{0}, Gain: 1, Channel: 0}
+		var rates []float64
+		rates, err = source.Release(0, modulation.SourceContext{Activity: []float64{0}})
+		fmt.Printf("case=%s channels=%d rates=%v err=%v\n", name, source.Channels(), rates, err)
+	case "control-resource":
+		source := modulation.InternalResource{Resource: "energy", Coefficient: 1, Channel: 0}
+		var rates []float64
+		rates, err = source.Release(0, modulation.SourceContext{Resources: map[string]float64{"energy": 0}})
+		fmt.Printf("case=%s channels=%d rates=%v err=%v\n", name, source.Channels(), rates, err)
+	case "control-external":
+		source := modulation.ExternalTimeline{ChannelCount: 1}
+		var rates []float64
+		rates, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s channels=%d rates=%v err=%v\n", name, source.Channels(), rates, err)
+	case "control-controller":
+		source := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: 1, Hidden: 1, Channel: 0, Parameters: []float64{0, 0, 0, 0, 0}}
+		var rates []float64
+		rates, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s channels=%d rates=%v err=%v\n", name, source.Channels(), rates, err)
+	case "control-memory-controller":
+		source := &modulation.MemoryController{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: 1, Hidden: 1, Parameters: []float64{0, 0, 0, 0, 0}}
+		var offset float64
+		offset, err = source.Offset(0, modulation.SourceContext{})
+		fmt.Printf("case=%s offset=%v err=%v\n", name, offset, err)
+	case "control-replay":
+		source := modulation.Replay{Trace: [][]float64{{0}}}
+		var rates []float64
+		rates, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s channels=%d rates=%v err=%v\n", name, source.Channels(), rates, err)
+	case "source-spec-neural-maxint-minus-one":
+		body := modulation.NeuralActivity{Nodes: []int{0}, Gain: 1, Channel: minusOne}
+		spec := modulation.SourceSpec{Kind: modulation.SourceNeuralActivity, Channel: minusOne, Neural: &body}
+		built, buildErr := spec.Build()
+		fmt.Printf("case=%s build_type=%T build_channels=%d build_err=%v\n", name, built, builtChannels(built), buildErr)
+		if buildErr == nil {
+			_, err = built.Release(0, modulation.SourceContext{Activity: []float64{0}})
+		}
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "source-spec-resource-maxint-minus-one":
+		body := modulation.InternalResource{Resource: "energy", Coefficient: 1, Channel: minusOne}
+		spec := modulation.SourceSpec{Kind: modulation.SourceInternalResource, Channel: minusOne, Resource: &body}
+		built, buildErr := spec.Build()
+		fmt.Printf("case=%s build_type=%T build_channels=%d build_err=%v\n", name, built, builtChannels(built), buildErr)
+		if buildErr == nil {
+			_, err = built.Release(0, modulation.SourceContext{Resources: map[string]float64{"energy": 0}})
+		}
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "source-spec-external-maxint":
+		body := modulation.ExternalTimeline{ChannelCount: max}
+		spec := modulation.SourceSpec{Kind: modulation.SourceExternalTimeline, Channel: minusOne, Timeline: &body}
+		built, buildErr := spec.Build()
+		fmt.Printf("case=%s build_type=%T build_channels=%d build_err=%v\n", name, built, builtChannels(built), buildErr)
+		if buildErr == nil {
+			_, err = built.Release(0, modulation.SourceContext{})
+		}
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "source-spec-controller-maxint-minus-one":
+		body := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: 1, Hidden: 1, Channel: minusOne, Parameters: []float64{0, 0, 0, 0, 0}}
+		spec := modulation.SourceSpec{Kind: modulation.SourceController, Channel: minusOne, Controller: body}
+		built, buildErr := spec.Build()
+		fmt.Printf("case=%s build_type=%T build_channels=%d build_err=%v\n", name, built, builtChannels(built), buildErr)
+		if buildErr == nil {
+			_, err = built.Release(0, modulation.SourceContext{})
+		}
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "neural-channel-maxint-minus-one":
+		source := modulation.NeuralActivity{Nodes: []int{0}, Gain: 1, Channel: minusOne}
+		fmt.Printf("case=%s channels=%d validate_err=%v\n", name, source.Channels(), source.Validate())
+		_, err = source.Release(0, modulation.SourceContext{Activity: []float64{0}})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "resource-channel-maxint-minus-one":
+		source := modulation.InternalResource{Resource: "energy", Coefficient: 1, Channel: minusOne}
+		fmt.Printf("case=%s channels=%d\n", name, source.Channels())
+		_, err = source.Release(0, modulation.SourceContext{Resources: map[string]float64{"energy": 0}})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "external-channel-maxint-minus-one":
+		source := modulation.ExternalTimeline{ChannelCount: minusOne}
+		fmt.Printf("case=%s channels=%d validate_err=%v\n", name, source.Channels(), source.Validate())
+		_, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "external-channel-maxint":
+		source := modulation.ExternalTimeline{ChannelCount: max}
+		fmt.Printf("case=%s channels=%d validate_err=%v\n", name, source.Channels(), source.Validate())
+		_, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "controller-channel-maxint-minus-one":
+		source := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: 1, Hidden: 1, Channel: minusOne, Parameters: []float64{0, 0, 0, 0, 0}}
+		fmt.Printf("case=%s channels=%d validate_err=%v\n", name, source.Channels(), source.Validate())
+		_, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "controller-nodes-maxint":
+		source := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: max, Hidden: 1, Channel: 0, Parameters: []float64{0, 0, 0, 0, 0}}
+		fmt.Printf("case=%s validate_err=%v\n", name, source.Validate())
+		_, err = source.Release(0, modulation.SourceContext{})
+		fmt.Printf("case=%s release_err=%v\n", name, err)
+	case "memory-controller-nodes-maxint":
+		source := &modulation.MemoryController{Inputs: modulation.ControllerInputs{SummaryWindow: 1}, Nodes: max, Hidden: 1, Parameters: []float64{0, 0, 0, 0, 0}}
+		fmt.Printf("case=%s validate_err=%v\n", name, source.Validate())
+		_, err = source.Offset(0, modulation.SourceContext{})
+		fmt.Printf("case=%s offset_err=%v\n", name, err)
+	case "effects-nodes-maxint":
+		gain, offset, threshold, _, applyErr := modulation.ApplyEffects(nil, nil, modulation.MixSum, max)
+		fmt.Printf("case=%s gain_nil=%t offset_nil=%t threshold_nil=%t apply_err=%v\n", name, gain == nil, offset == nil, threshold == nil, applyErr)
+	case "chemistry-channels-maxint":
+		k, newErr := modulation.NewChemistry(modulation.Chemistry{Regions: 1, Channels: max, DT: 1, Tau: []float64{1}})
+		fmt.Printf("case=%s kinetics_nil=%t new_err=%v\n", name, k == nil, newErr)
+	case "chemistry-regions-maxint":
+		k, newErr := modulation.NewChemistry(modulation.Chemistry{Regions: max, Channels: 1, DT: 1, Tau: []float64{1}})
+		fmt.Printf("case=%s kinetics_nil=%t new_err=%v\n", name, k == nil, newErr)
+		if newErr == nil {
+			state := k.NewState()
+			fmt.Printf("case=%s state_regions=%d\n", name, len(state.Concentration))
+		}
+	case "chemistry-config-regions-maxint":
+		config := modulation.ChemistryConfig{
+			Chemistry: modulation.Chemistry{Regions: max, Channels: 1, DT: 1, Tau: []float64{1}},
+			Sources:   []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1}}},
+			Receptors: modulation.Receptors{},
+			Regions:   modulation.RegionAssignment{NodeRegion: []int{0}},
+		}
+		err = config.Validate(1)
+		fmt.Printf("case=%s validate_err=%v\n", name, err)
+	default:
+		fmt.Printf("case=%s unknown\n", name)
+		os.Exit(2)
+	}
+}
+
+func builtChannels(source modulation.Source) int {
+	if source == nil {
+		return 0
+	}
+	return source.Channels()
+}

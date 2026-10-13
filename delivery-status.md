@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+ticket 87 完成 4／5：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。完整一般／race 各 58 套件通過，分別 5186／5185 個通過事件。格式、build、vet、固定相依性、32 組合法模型逐位比較、8 組活動生命週期與 CLI 新程序接續通過。791 份來源及 455 份凍結測試相符。正常化學機制稽核沒有確認設計矛盾，混合連續／脈衝核心完整反向獨立參考缺口已列 Follow-ups。見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)及[Root 審查](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。無外部阻礙，下一成果是本輪暫存清理、提交推送與遠端讀回。尚無零 bug 或真實辨識率提升結論。
+
 ticket 86 已完成 5／5 驗收與交付。兩個共享狀態缺陷已修正，5 個頂層回歸、31 個測試事件及 20 次 race 共 620 個事件通過。完整一般／race 各 58 套件、build、vet、格式、相依性、11 個治理檢查、32 組合法逐位比較及 CLI 新程序接續通過，788 份來源相符。本輪 1,713,255,539 bytes 暫存已清除，修正 `a008c1e` 與回歸／證據 `d73dc5e` 已推送且遠端相同。模型格式、原算式與混合部分成功契約保持。見[工程驗收](evidence/LRN-06/online-individual-boundary-20261014/verification.json)、[清理](evidence/LRN-06/online-individual-boundary-20261014/cleanup.json)與[交付](evidence/LRN-06/online-individual-boundary-20261014/delivery.json)。尚未證明整體零 bug 或真實辨識率提升。
 
 ticket 85 的混合重試修正已完成 5／5 驗收與交付：10 個新增頂層回歸、32 組正常逐位相容、完整一般／race 各 58 套件、build、vet、相依性與最後 11 項治理通過，785 份來源指紋相符。本輪 2,345,848,209 bytes 暫存已清除，修正 5d8d506、回歸／證據 89fa5a0 及原件保存校正 fa5ac1f 已推送且遠端相同。部分成功不回滾。獨立診斷另確認作答版本錯接及零分回饋非零梯度，已列[ticket 86](docs/tickets/86-online-individual-boundary.md)待修，尚未證明整體零 bug 或真實辨識率提升。見[工程驗收](evidence/LRN-06/online-boundaries-20261014/verification.json)、[清理](evidence/LRN-06/online-boundaries-20261014/cleanup.json)與[交付](evidence/LRN-06/online-boundaries-20261014/delivery.json)。
@@ -162,7 +164,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本輪目標是核對實際機制與既定設計，修復有公開重現的缺陷，保留合法相容性並完成工程驗證、清理及交付。tickets 78–86 已交付，接續查驗尚未確認的來源初始化與宣告容量疑點。尚未證明所有bug已排除或模型品質提高。
+本輪核對實際化學機制與既定設計，ticket 87 修復四類有公開重現的不可表示配置。正常輸出與保存格式保持，初始神經來源的拒絕已確認符合契約。完整混合連續／脈衝化學反向獨立參考仍有缺口，整個框架零 bug 與模型品質改善尚未證明。
 
 前一階段 ticket 66 的同一真實單字元化學開關比較已完成五項驗收，固定設定沒有顯示穩定改善。
 
@@ -183,6 +185,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | in_progress | 4／5。完整工程、11 項治理、合法相容性及需求證據通過；清理、推送與遠端讀回待完成 |
 | 85 | 混合線上更新失敗後只接續未完成階段 | Codex Root／Luna max | completed | 5／5。10 個新增回歸、32 組正常逐位相容、完整一般／race 各 58 套件及 11 項治理通過；暫存清除、推送及遠端核對完成 |
 | 86 | 同時操作同一個體時答案版本與回饋加權一致 | Codex Root／Luna max | completed | 5／5。正式 RED／GREEN、20 次 race、完整工程與治理通過；清理、推送及遠端讀回完成 |
 | 78–84 | 化學與線上訓練使用一致狀態，共享快照及失敗回饋安全處理 | Codex Root／Luna max | completed | 22個新回歸、完整一般／race各58套件及最後11項治理通過，合法相容性、782份來源、清理與遠端讀回完成 |
@@ -258,7 +261,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-無外部阻礙。tickets 78–84的工程檢查、清理與交付已完成。真實辨識率未在本階段重測，先前化學開關結果不穩定且都低於80%門檻，見[品質比較](evidence/TSK-11/chemical-quality-20261013/README.md)。既有NAS故障耐久性沒有新增實測。
+無外部阻礙。ticket 87 的完整工程與治理驗證通過，清理及交付仍待完成。正常化學設計未重現明確矛盾，但混合連續／脈衝的完整反向組合尚無獨立參考。真實辨識率沒有在本階段重測，先前品質限制保留。
 
 ### 既有環境與研究限制
 
@@ -280,7 +283,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[tickets 85](docs/tickets/85-online-mixed-phase-retry.md)與[86](docs/tickets/86-online-individual-boundary.md)均已交付。下一個可驗證成果是查明首次來源活動與極端通道宣告是否偏離既定契約，先取得小型公開重現或排除證據；尚未確認為缺陷，沒有新增實作票。診斷與限制見[本輪查驗計畫](evidence/LRN-06/online-boundaries-20261014/plan.md)。
+[ticket 87](docs/tickets/87-chemical-capacity-validation.md) 已完成 4／5，接續本輪暫存清理、提交推送與遠端讀回。首次神經來源活動的拒絕已排除為既定契約，四類配置容量缺陷已修正。下一項機制稽核成果是混合連續／脈衝完整化學反向的獨立參考，尚未建立或執行新票，見[AGENTS Follow-ups](AGENTS.md#follow-ups)與[正常設計稽核](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
@@ -293,6 +296,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-14：ticket 87 只增加私人 float64 向量／網格可表示大小檢查，錯誤早於配置與狀態提交，不增加任意容量上限或改變生理公式。初始神經來源缺乏活動的拒絕符合契約。正常設計疑點及混合核心驗證限制見[Root 審查](evidence/MOD-02/chemical-capacity-20261014/root-review.md)。
 
 2026-10-14：tickets 78–84沿用有限值、化學私有episode、共享參數與回饋間隔契約。新增回歸先在未修實作失敗，Root凍結後才修正，最終來源重新完整驗證。正常公式、公開簽名、保存格式與相依性保持，不追加跨入口整體回滾或生物身分保證。詳見ENG.md及[兩階段計畫](evidence/MOD-02/chemical-boundaries-20261013/online-sharing-plan.md)。
 

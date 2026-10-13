@@ -1,0 +1,491 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"reflect"
+	"strings"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+type caseResult struct {
+	Name    string         `json:"name"`
+	Outcome string         `json:"outcome"`
+	Error   string         `json:"error,omitempty"`
+	Details map[string]any `json:"details,omitempty"`
+}
+
+type audit struct {
+	Results []caseResult
+	Failed  bool
+}
+
+func (a *audit) run(name string, fn func() (map[string]any, error)) {
+	details, err := fn()
+	r := caseResult{Name: name, Details: details}
+	if err != nil {
+		r.Outcome = "fail"
+		r.Error = err.Error()
+		a.Failed = true
+	} else {
+		r.Outcome = "pass"
+	}
+	a.Results = append(a.Results, r)
+}
+
+func main() {
+	a := &audit{}
+	a.run("fresh-neural-source-refuses-without-prehistory", freshNeuralRefusal)
+	a.run("fresh-controller-source-accepts-zero-prehistory", freshControllerSuccess)
+	a.run("later-enable-neural-source-reads-previous-output", laterEnableNeural)
+	a.run("reset-neural-recreates-no-prehistory-boundary", resetNeuralRefusal)
+	a.run("fresh-neural-snapshot-restore-preserves-refusal", freshNeuralRestoreRefusal)
+	a.run("warm-neural-snapshot-restore-preserves-success", warmNeuralRestoreSuccess)
+	a.run("ordinary-chemical-episode-uses-explicit-initial-activity-contract", ordinaryEpisodeInitialActivity)
+	a.run("neural-activity-general-nil-check-remains", neuralActivityNilControl)
+
+	data, err := json.MarshalIndent(a.Results, "", "  ")
+	if err != nil {
+		fmt.Printf("{\"audit_error\":%q}\n", err)
+		return
+	}
+	fmt.Println(string(data))
+	if a.Failed {
+		// Keep all cases in the output so a failed assertion remains useful to
+		// the independent reviewer, while still making the command fail closed.
+		returnWithFailure()
+	}
+}
+
+func returnWithFailure() {
+	os.Exit(1)
+}
+
+func baseConfig() learning.Config {
+	return learning.Config{
+		Dynamics: dynamics.Config{
+			Nodes: 2, Sources: []int{}, Targets: []int{}, Delays: []int{}, DT: 1, Activation: "tanh",
+		},
+		InputSize:    2,
+		OutputSize:   1,
+		ReadoutNodes: []int{0},
+		InputNodes:   []int{0, 1},
+	}
+}
+
+func baseParameters() learning.Parameters {
+	return learning.Parameters{
+		Core:    dynamics.Parameters{Weights: []float64{}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}},
+		Encoder: []float64{1, 0, 0, 1},
+		Readout: []float64{1},
+	}
+}
+
+func newIndividual() (*learning.Individual, error) {
+	return learning.NewIndividual(baseConfig(), baseParameters(), learning.DefaultOptions(), []float64{0, 0})
+}
+
+func chemistryFor(source modulation.SourceSpec) modulation.ChemistryConfig {
+	return modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 2, Channels: 1, DT: 1, Tau: []float64{2}},
+		Sources:   []modulation.SourceSpec{source},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{
+			{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: 0.5, N: 1,
+				Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "chemical-entry-audit/v1"},
+			{Cells: []int{1}, Signal: "fixture", Channel: 0, Status: modulation.StatusUnresponsive,
+				Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "chemical-entry-audit/v1"},
+		}},
+		Effects: []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 1}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0, 1}},
+	}
+}
+
+func neuralChemistry() modulation.ChemistryConfig {
+	return chemistryFor(modulation.SourceSpec{
+		Kind:    modulation.SourceNeuralActivity,
+		Channel: 0,
+		Neural:  &modulation.NeuralActivity{Nodes: []int{0}, SetName: "audit-neural", Gain: 1, Channel: 0},
+	})
+}
+
+func controllerChemistry() modulation.ChemistryConfig {
+	return chemistryFor(modulation.SourceSpec{
+		Kind:    modulation.SourceController,
+		Channel: 0,
+		Controller: &modulation.Controller{
+			Inputs:     modulation.ControllerInputs{SummaryWindow: 2},
+			Nodes:      2,
+			Hidden:     1,
+			Channel:    0,
+			Parameters: []float64{2, 0, 0, 1, 0},
+		},
+	})
+}
+
+func advanceOne(i *learning.Individual) ([][]float64, error) {
+	return i.Advance(context.Background(), [][]float64{{1, 0}})
+}
+
+func snapshotDigest(s learning.IndividualSnapshot) string {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return "marshal-error:" + err.Error()
+	}
+	h := sha256.Sum256(b)
+	return hex.EncodeToString(h[:])
+}
+
+func snapshotSummary(s learning.IndividualSnapshot) map[string]any {
+	result := map[string]any{
+		"digest":           snapshotDigest(s),
+		"profile":          s.Profile,
+		"config_hash":      s.ConfigHash,
+		"chemical_present": s.Chemical != nil,
+	}
+	if s.Neural.Continuous != nil {
+		result["neural_steps"] = s.Neural.Continuous.Steps
+		result["neural_history_rows"] = len(s.Neural.Continuous.History)
+		result["neural_voltage"] = s.Neural.Continuous.Voltage
+	}
+	if s.Neural.LIF != nil {
+		result["neural_steps"] = s.Neural.LIF.Steps
+		result["neural_history_rows"] = len(s.Neural.LIF.History)
+		result["neural_voltage"] = s.Neural.LIF.Voltage
+	}
+	if s.Chemical != nil {
+		result["chemical_steps"] = s.Chemical.State.Steps
+		result["chemical_source_states"] = len(s.Chemical.SourceStates)
+		result["chemical_concentration"] = s.Chemical.State.Concentration
+	}
+	return result
+}
+
+func reportSummary(r learning.ChemistryReport) map[string]any {
+	return map[string]any{
+		"steps":         r.Steps,
+		"concentration": r.Concentration,
+		"release_total": r.ReleaseTotal,
+		"occupancy":     r.Occupancy,
+	}
+}
+
+func freshNeuralRefusal() (map[string]any, error) {
+	i, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	if err := i.EnableChemistry(neuralChemistry()); err != nil {
+		return nil, err
+	}
+	before := i.Snapshot()
+	beforeReport := i.ChemistryReport()
+	out, advanceErr := advanceOne(i)
+	after := i.Snapshot()
+	afterReport := i.ChemistryReport()
+	if advanceErr == nil {
+		return map[string]any{"output": out, "before": snapshotSummary(before), "after": snapshotSummary(after)}, fmt.Errorf("expected first neural-source Advance to refuse, but it succeeded")
+	}
+	if !reflect.DeepEqual(before, after) {
+		return map[string]any{"error": advanceErr.Error(), "before": snapshotSummary(before), "after": snapshotSummary(after)}, fmt.Errorf("refused first advance changed the individual snapshot")
+	}
+	if !reflect.DeepEqual(beforeReport, afterReport) {
+		return map[string]any{"error": advanceErr.Error(), "before_report": reportSummary(beforeReport), "after_report": reportSummary(afterReport)}, fmt.Errorf("refused first advance changed ChemistryReport")
+	}
+	return map[string]any{
+		"expected_refusal": true,
+		"error":            advanceErr.Error(),
+		"before":           snapshotSummary(before),
+		"after":            snapshotSummary(after),
+		"output_is_nil":    out == nil,
+	}, nil
+}
+
+func freshControllerSuccess() (map[string]any, error) {
+	i, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	if err := i.EnableChemistry(controllerChemistry()); err != nil {
+		return nil, err
+	}
+	before := i.Snapshot()
+	out, err := advanceOne(i)
+	if err != nil {
+		return map[string]any{"before": snapshotSummary(before)}, err
+	}
+	after := i.Snapshot()
+	report := i.ChemistryReport()
+	if after.Neural.Continuous == nil || after.Neural.Continuous.Steps != 1 {
+		return map[string]any{"before": snapshotSummary(before), "after": snapshotSummary(after)}, fmt.Errorf("controller first advance neural steps = %v, want 1", after.Neural.Continuous)
+	}
+	if after.Chemical == nil || after.Chemical.State.Steps != 1 || report.Steps != 1 {
+		return map[string]any{"after": snapshotSummary(after), "report": reportSummary(report)}, fmt.Errorf("controller first advance did not commit one chemical row")
+	}
+	return map[string]any{
+		"expected_success":    true,
+		"output":              out,
+		"after":               snapshotSummary(after),
+		"report":              reportSummary(report),
+		"nil_activity_policy": "controller observes nil as a zero row",
+	}, nil
+}
+
+func laterEnableNeural() (map[string]any, error) {
+	i, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	warm, err := advanceOne(i)
+	if err != nil {
+		return nil, err
+	}
+	beforeEnable := i.Snapshot()
+	if err := i.EnableChemistry(neuralChemistry()); err != nil {
+		return nil, err
+	}
+	out, err := advanceOne(i)
+	if err != nil {
+		return map[string]any{"warm_output": warm, "before_enable": snapshotSummary(beforeEnable)}, err
+	}
+	after := i.Snapshot()
+	report := i.ChemistryReport()
+	if len(beforeEnable.Neural.Continuous.History) == 0 || len(beforeEnable.Neural.Continuous.History[len(beforeEnable.Neural.Continuous.History)-1]) == 0 {
+		return map[string]any{"warm_output": warm, "before_enable": snapshotSummary(beforeEnable)}, fmt.Errorf("warm snapshot has no previous neural activity row")
+	}
+	wantActivity := beforeEnable.Neural.Continuous.History[len(beforeEnable.Neural.Continuous.History)-1][0]
+	if len(report.ReleaseTotal) != 1 || math.Abs(report.ReleaseTotal[0]-wantActivity) > 1e-12 {
+		return map[string]any{"warm_output": warm, "previous_activity": wantActivity, "output": out, "report": reportSummary(report)}, fmt.Errorf("later-enable release = %v, want previous neural activity %v", report.ReleaseTotal, wantActivity)
+	}
+	if after.Neural.Continuous == nil || after.Neural.Continuous.Steps != beforeEnable.Neural.Continuous.Steps+1 {
+		return map[string]any{"before_enable": snapshotSummary(beforeEnable), "after": snapshotSummary(after)}, fmt.Errorf("later-enable did not advance exactly one neural step")
+	}
+	return map[string]any{
+		"warm_output":            warm,
+		"chemical_output":        out,
+		"previous_activity_used": wantActivity,
+		"report":                 reportSummary(report),
+		"before_enable":          snapshotSummary(beforeEnable),
+		"after":                  snapshotSummary(after),
+	}, nil
+}
+
+func resetNeuralRefusal() (map[string]any, error) {
+	i, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := advanceOne(i); err != nil {
+		return nil, err
+	}
+	if err := i.EnableChemistry(neuralChemistry()); err != nil {
+		return nil, err
+	}
+	if _, err := advanceOne(i); err != nil {
+		return nil, err
+	}
+	beforeReset := i.Snapshot()
+	beforeReport := i.ChemistryReport()
+	if err := i.ResetNeural(context.Background(), []float64{0, 0}); err != nil {
+		return nil, err
+	}
+	afterReset := i.Snapshot()
+	if afterReset.Neural.Continuous == nil || afterReset.Neural.Continuous.Steps != 0 {
+		return map[string]any{"before_reset": snapshotSummary(beforeReset), "after_reset": snapshotSummary(afterReset)}, fmt.Errorf("ResetNeural did not create Steps=0")
+	}
+	if !reflect.DeepEqual(beforeReset.Chemical, afterReset.Chemical) {
+		return map[string]any{"before_reset": snapshotSummary(beforeReset), "after_reset": snapshotSummary(afterReset)}, fmt.Errorf("ResetNeural changed chemical state")
+	}
+	if !reflect.DeepEqual(beforeReport, i.ChemistryReport()) {
+		return nil, fmt.Errorf("ResetNeural changed ChemistryReport")
+	}
+	refusalBefore := afterReset
+	_, advanceErr := advanceOne(i)
+	refusalAfter := i.Snapshot()
+	if advanceErr == nil {
+		return map[string]any{"after_reset": snapshotSummary(afterReset), "after_refusal": snapshotSummary(refusalAfter)}, fmt.Errorf("expected first post-ResetNeural neural-source Advance to refuse")
+	}
+	if !reflect.DeepEqual(refusalBefore, refusalAfter) || !reflect.DeepEqual(beforeReport, i.ChemistryReport()) {
+		return map[string]any{"error": advanceErr.Error(), "after_reset": snapshotSummary(refusalBefore), "after_refusal": snapshotSummary(refusalAfter)}, fmt.Errorf("refused post-ResetNeural advance changed state or report")
+	}
+	return map[string]any{
+		"expected_refusal": true,
+		"error":            advanceErr.Error(),
+		"before_reset":     snapshotSummary(beforeReset),
+		"after_reset":      snapshotSummary(afterReset),
+		"after_refusal":    snapshotSummary(refusalAfter),
+	}, nil
+}
+
+func jsonRoundTrip(s learning.IndividualSnapshot) (learning.IndividualSnapshot, error) {
+	b, err := json.Marshal(s)
+	if err != nil {
+		return learning.IndividualSnapshot{}, err
+	}
+	var decoded learning.IndividualSnapshot
+	if err := json.Unmarshal(b, &decoded); err != nil {
+		return learning.IndividualSnapshot{}, err
+	}
+	return decoded, nil
+}
+
+func freshNeuralRestoreRefusal() (map[string]any, error) {
+	original, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	if err := original.EnableChemistry(neuralChemistry()); err != nil {
+		return nil, err
+	}
+	fresh := original.Snapshot()
+	decoded, err := jsonRoundTrip(fresh)
+	if err != nil {
+		return nil, err
+	}
+	restored, err := learning.RestoreIndividual(decoded)
+	if err != nil {
+		return nil, err
+	}
+	restoredBefore := restored.Snapshot()
+	_, advanceErr := advanceOne(restored)
+	restoredAfter := restored.Snapshot()
+	if advanceErr == nil {
+		return map[string]any{"before": snapshotSummary(restoredBefore), "after": snapshotSummary(restoredAfter)}, fmt.Errorf("expected restored fresh neural-source Advance to refuse")
+	}
+	if !reflect.DeepEqual(fresh, restoredBefore) || !reflect.DeepEqual(restoredBefore, restoredAfter) {
+		return map[string]any{"error": advanceErr.Error(), "fresh": snapshotSummary(fresh), "before": snapshotSummary(restoredBefore), "after": snapshotSummary(restoredAfter)}, fmt.Errorf("fresh restore or its refused first advance changed state")
+	}
+	return map[string]any{
+		"expected_refusal": true,
+		"error":            advanceErr.Error(),
+		"fresh":            snapshotSummary(fresh),
+		"restored_before":  snapshotSummary(restoredBefore),
+		"restored_after":   snapshotSummary(restoredAfter),
+	}, nil
+}
+
+func warmNeuralRestoreSuccess() (map[string]any, error) {
+	original, err := newIndividual()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := advanceOne(original); err != nil {
+		return nil, err
+	}
+	if err := original.EnableChemistry(neuralChemistry()); err != nil {
+		return nil, err
+	}
+	if _, err := advanceOne(original); err != nil {
+		return nil, err
+	}
+	decoded, err := jsonRoundTrip(original.Snapshot())
+	if err != nil {
+		return nil, err
+	}
+	restored, err := learning.RestoreIndividual(decoded)
+	if err != nil {
+		return nil, err
+	}
+	want, err := advanceOne(original)
+	if err != nil {
+		return nil, err
+	}
+	got, err := advanceOne(restored)
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(want, got) || !reflect.DeepEqual(original.Snapshot(), restored.Snapshot()) {
+		return map[string]any{"original_output": want, "restored_output": got, "original": snapshotSummary(original.Snapshot()), "restored": snapshotSummary(restored.Snapshot())}, fmt.Errorf("warm neural restore diverged from uninterrupted continuation")
+	}
+	return map[string]any{
+		"expected_success": true,
+		"output":           got,
+		"restored":         snapshotSummary(restored.Snapshot()),
+	}, nil
+}
+
+func episodePart(c modulation.ChemistryConfig) learning.ChemicalPart {
+	return learning.ChemicalPart{
+		Config: c,
+		State:  modulation.ChemistryState{Concentration: [][]float64{{0}, {0}}},
+	}
+}
+
+func episodeOutput(c modulation.ChemistryConfig, initial []float64) ([][]float64, error) {
+	config := baseConfig()
+	config.ReadoutEveryStep = true
+	config.Chemistry = &learning.ChemicalEpisode{
+		Part:            episodePart(c),
+		SourceStep:      0,
+		InitialActivity: append([]float64(nil), initial...),
+	}
+	network, err := learning.NewNetwork(config)
+	if err != nil {
+		return nil, err
+	}
+	return network.PredictAll(context.Background(), baseParameters(), [][]float64{{1, 0}})
+}
+
+func ordinaryEpisodeInitialActivity() (map[string]any, error) {
+	neural := neuralChemistry()
+	nilOutput, err := episodeOutput(neural, nil)
+	if err != nil {
+		return nil, err
+	}
+	zeroOutput, err := episodeOutput(neural, []float64{0, 0})
+	if err != nil {
+		return nil, err
+	}
+	activeOutput, err := episodeOutput(neural, []float64{0.75, 0})
+	if err != nil {
+		return nil, err
+	}
+	if !reflect.DeepEqual(nilOutput, zeroOutput) {
+		return map[string]any{"nil_output": nilOutput, "zero_output": zeroOutput}, fmt.Errorf("ordinary nil InitialActivity differs from explicit core initial output")
+	}
+	if reflect.DeepEqual(nilOutput, activeOutput) {
+		return map[string]any{"nil_output": nilOutput, "active_output": activeOutput}, fmt.Errorf("ordinary InitialActivity did not affect the declared neural source")
+	}
+	controllerOutput, err := episodeOutput(controllerChemistry(), nil)
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{
+		"neural_nil_output":     nilOutput,
+		"neural_zero_output":    zeroOutput,
+		"neural_active_output":  activeOutput,
+		"controller_nil_output": controllerOutput,
+		"contract":              "ChemicalEpisode nil InitialActivity uses the fresh core's activated initial output; Forward receives a node-width vector",
+	}, nil
+}
+
+func neuralActivityNilControl() (map[string]any, error) {
+	source := modulation.NeuralActivity{Nodes: []int{0}, SetName: "audit-neural", Gain: 1, Channel: 0}
+	_, nilErr := source.Release(0, modulation.SourceContext{})
+	if nilErr == nil || !strings.Contains(nilErr.Error(), "no activity") {
+		return map[string]any{"nil_error": errorString(nilErr)}, fmt.Errorf("NeuralActivity.Release(nil activity) did not preserve the general nil rejection")
+	}
+	rates, err := source.Release(0, modulation.SourceContext{Activity: []float64{0}})
+	if err != nil {
+		return map[string]any{"nil_error": nilErr.Error()}, err
+	}
+	return map[string]any{
+		"nil_error":           nilErr.Error(),
+		"zero_activity_rates": rates,
+		"contract":            "NeuralActivity itself still rejects nil; callers must establish the activity boundary explicitly",
+	}, nil
+}
+
+func errorString(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}

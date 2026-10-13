@@ -238,9 +238,11 @@ Controller／MemoryController 的參數梯度使用最近成功 forward 的固�
 
 ## 化學清除、來源寬度與宣告更換
 
-Kinetics.Step 拒絕有限基礎清除速率與有限 boost 相加後的溢位，Backward 經同一正向驗證入口一致拒絕。有限速率的指數飽和保留既有算法，零 boost 分支的運算順序保持。SourceSpec.Build、NeuralActivity.Validate 及 InternalResource.Release 要求 Channel+1 能以 int 表示，沿用 Controller 的同一限制。
+Kinetics.Step 拒絕有限基礎清除速率與有限 boost 相加後的溢位，Backward 經同一正向驗證入口一致拒絕。有限速率的指數飽和保留既有算法，零 boost 分支的運算順序保持。SourceSpec.Build、NeuralActivity.Validate、InternalResource.Release 及 Controller 要求 Channel+1 能以 int 表示，且 float64 釋放向量的位元組大小可表示。ExternalTimeline 採相同的向量限制。
 
 EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部學習規則的受體引用檢查一致。不相容更換回錯，完整舊狀態及報告保持，必須由呼叫者明確清除讀出調節才能移除其受體。合法更換依原契約歸零濃度，保留資源及回饋。公開簽名、保存格式、正常來源與動態算式保持，驗收由 tickets 78–80 與[階段計畫](evidence/MOD-02/chemical-boundaries-20261013/plan.md)管理。
+
+控制器活動視窗、濃度區域及有區域運輸時的完整網格，須先確認 float64 資料與外層 slice header 的總位元組大小可表示，再配置或觀察活動。ApplyEffects 也先檢查節點向量。這是宣告算術驗證，不保證可表示的大型配置有足夠實體記憶體。正常算式、公開簽名及保存格式保持，拒絕與相容性驗收見[ticket 87](docs/tickets/87-chemical-capacity-validation.md)。
 
 ## 線上回饋與共享訓練狀態一致性
 

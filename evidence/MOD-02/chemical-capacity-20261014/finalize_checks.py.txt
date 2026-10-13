@@ -1,0 +1,192 @@
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import re
+import sys
+
+root = Path(__file__).resolve().parents[3]
+work = Path(__file__).resolve().parent
+evidence = root / "evidence/MOD-02/chemical-capacity-20261014"
+
+
+def sha(data):
+    return hashlib.sha256(data).hexdigest()
+
+
+def fresh(path, value):
+    data = (json.dumps(value, ensure_ascii=False, indent=2) + "\n").encode()
+    if path.exists():
+        assert path.read_bytes() == data, str(path)
+    else:
+        with path.open("xb") as output:
+            output.write(data)
+
+
+def events(name):
+    result = []
+    for line in (work / (name + ".log")).read_text().splitlines():
+        try:
+            result.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return result
+
+
+def tests(name):
+    receipt = json.loads((work / (name + ".json")).read_text())
+    assert receipt["exit_code"] == 0 and not receipt.get("timed_out"), name
+    rows = events(name)
+    assert not any(row.get("Action") == "fail" for row in rows), name
+    passed = [row for row in rows if row.get("Action") == "pass"]
+    return {
+        "package_pass_count": sum(not row.get("Test") for row in passed),
+        "test_pass_events": sum(bool(row.get("Test")) for row in passed),
+        "top_level_pass_count": sum(bool(row.get("Test")) and "/" not in row["Test"] for row in passed),
+        "skipped_tests": [{"package": row["Package"], "test": row["Test"]}
+                          for row in rows if row.get("Action") == "skip" and row.get("Test")],
+        "failure_events": 0,
+        "log_sha256": sha((work / (name + ".log")).read_bytes()),
+    }
+
+
+def retain(name):
+    receipt_path = work / (name + ".json")
+    receipt = json.loads(receipt_path.read_text())
+    raw = (work / (name + ".log")).read_bytes()
+    assert sha(raw) == receipt["log_sha256"], name
+    archive = evidence / (name + ".log.gz")
+    if archive.exists():
+        assert gzip.decompress(archive.read_bytes()) == raw, name
+    else:
+        with archive.open("xb") as output:
+            output.write(gzip.compress(raw, mtime=0))
+    receipt["retained_log"] = archive.name
+    receipt["retained_log_sha256"] = sha(archive.read_bytes())
+    fresh(evidence / (name + ".json"), receipt)
+    return {"receipt": name + ".json", "exit_code": receipt["exit_code"],
+            "duration_seconds": receipt["duration_seconds"],
+            "log": archive.name, "log_sha256": sha(raw),
+            "archive_sha256": sha(archive.read_bytes())}
+
+
+def cases(name):
+    rows = {}
+    for line in (work / name).read_text().splitlines():
+        match = re.fullmatch(r"case=(\S+) status=(\S+) err=(.*?) output=(.*)", line)
+        if match:
+            case, status, error, output = match.groups()
+            rows[case] = {"status": status, "error": error,
+                          "output": json.loads(output), "line": line}
+    return rows
+
+
+phase = sys.argv[1]
+assert phase in ("full", "governance")
+unit = tests("unit-final")
+race = tests("race-final")
+green = tests("green")
+assert unit["package_pass_count"] == race["package_pass_count"] == 58
+assert green["top_level_pass_count"] == 5 and green["test_pass_events"] == 34
+
+commands = ["gofmt-module", "green", "capacity-build-after", "capacity-after",
+            "activity-after", "compatibility-build-after", "compatibility-after",
+            "build", "vet", "dependencies-final", "modules", "unit-final", "race-final",
+            "cli-build", "cli-first", "cli-resumed", "cli-continuous"]
+receipts = {name: retain(name) for name in commands}
+assert all(value["exit_code"] == 0 for value in receipts.values())
+assert not (work / "gofmt-module.log").read_bytes()
+
+before = cases("root-capacity-red.log")
+after = cases("capacity-after.log")
+assert len(before) == len(after) == 21 and set(before) == set(after)
+controls = [key for key in before if key.startswith("control-")]
+invalid = [key for key in before if key not in controls]
+assert len(controls) == 6 and len(invalid) == 15
+assert all(before[key]["line"] == after[key]["line"] for key in controls)
+assert all(after[key]["status"] == "ok" and after[key]["error"] == "<nil>"
+           and "err=modulation:" in after[key]["output"] for key in invalid)
+assert sum(value["status"] == "recovered-panic" for value in before.values()) == 13
+
+activity_before = (work / "root-activity-before.log").read_bytes()
+activity_after = (work / "activity-after.log").read_bytes()
+assert activity_before == activity_after
+activity_rows = json.loads(activity_after)
+assert len(activity_rows) == 8 and all(row["outcome"] == "pass" for row in activity_rows)
+compat_before = (work / "compatibility-before.log").read_bytes()
+compat_after = (work / "compatibility-after.log").read_bytes()
+assert compat_before == compat_after
+compat_rows = json.loads(compat_after)
+assert len(compat_rows) == 32
+cli_resumed = (work / "resumed.json").read_bytes()
+cli_continuous = (work / "continuous.json").read_bytes()
+assert cli_resumed == cli_continuous
+
+sources = json.loads((work / "source-final.json").read_text())
+frozen = json.loads((work / "frozen-tests.json").read_text())
+assert len(sources) == 791 and len(frozen) == 455
+for manifest in (sources, frozen):
+    for path, fingerprint in manifest.items():
+        assert sha((root / path).read_bytes()) == fingerprint, path
+
+allowed = {"AGENTS.md", "ENG.md", "delivery-status.md", "docs/requirements-status.json",
+           "modulation/chemistry.go", "modulation/config.go", "modulation/controller.go",
+           "modulation/effects.go", "modulation/memory_controller.go", "modulation/sources.go"}
+tracked = json.loads((work / "tracked-before.json").read_text())
+changed = []
+for path, fingerprint in tracked.items():
+    if sha((root / path).read_bytes()) != fingerprint:
+        assert path in allowed, "unrelated tracked modification: " + path
+        changed.append(path)
+baseline = json.loads((work / "baseline.json").read_text())
+for name, expected in baseline["protected_temps"].items():
+    path = work.parent / name
+    assert path.stat().st_ino == expected["inode"]
+    assert sorted(child.name for child in path.iterdir()) == sorted(expected["entries"])
+
+decoder = json.JSONDecoder()
+text = (work / "modules.log").read_text()
+modules = []
+while text.strip():
+    text = text.lstrip()
+    value, end = decoder.raw_decode(text)
+    modules.append(value)
+    text = text[end:]
+insyra = [value for value in modules if value["Path"] == "github.com/HazelnutParadise/insyra"]
+assert len(insyra) == 1 and insyra[0]["Version"] == "v0.3.4"
+summary = {
+    "baseline_commit": baseline["commit"], "unit": unit, "race": race, "capacity_green": green,
+    "capacity": {"public_cases": len(after), "invalid_cases_refused": len(invalid),
+                 "before_panic_cases": 13, "after_panic_cases": 0, "normal_controls_equal": len(controls)},
+    "activity": {"cases": len(activity_rows), "byte_equal": True, "bytes": len(activity_after),
+                 "sha256": sha(activity_after)},
+    "compatibility": {"cases": len(compat_rows), "byte_equal": True, "bytes": len(compat_after),
+                      "sha256": sha(compat_after), "mixed_means": "gradient plus plasticity learning mode"},
+    "cli": {"independent_processes": 3, "resumed_steps": [80, 40], "continuous_steps": 120,
+            "byte_equal": True, "bytes": len(cli_resumed), "sha256": sha(cli_resumed)},
+    "source_integrity": {"files": len(sources), "mismatches": 0,
+                         "manifest_sha256": sha((work / "source-final.json").read_bytes())},
+    "frozen_tests": {"files": len(frozen), "mismatches": 0,
+                     "manifest_sha256": sha((work / "frozen-tests.json").read_bytes())},
+    "dependencies": {"module_records": len(modules), "selected_dependencies": len(modules) - 1,
+                     "insyra_version": insyra[0]["Version"]},
+    "commands": receipts,
+}
+fresh(evidence / "engineering-summary.json", summary)
+if phase == "full":
+    fresh(evidence / "scope-before-governance.json", {
+        "tracked_files_compared": len(tracked), "changed": sorted(changed),
+        "unrelated_changes": [], "protected_temps": baseline["protected_temps"],
+        "source_files": len(sources), "frozen_test_files": len(frozen), "mismatches": 0,
+    })
+else:
+    governance = tests("governance")
+    governance["command"] = retain("governance")
+    fresh(evidence / "governance-summary.json", governance)
+
+print(json.dumps({"phase": phase, "unit_packages": unit["package_pass_count"],
+                  "race_packages": race["package_pass_count"],
+                  "unit_pass_events": unit["test_pass_events"],
+                  "race_pass_events": race["test_pass_events"],
+                  "unit_skips": len(unit["skipped_tests"]), "race_skips": len(race["skipped_tests"]),
+                  "source_files": len(sources), "frozen_tests": len(frozen)}, ensure_ascii=False))
