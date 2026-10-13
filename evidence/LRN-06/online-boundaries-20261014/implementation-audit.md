@@ -1,6 +1,6 @@
 # Ticket 85 混合線上更新重試修正草稿
 
-日期：2026-10-14  
+日期：2026-10-14
 範圍：只產出 `implementation/online.go.txt` 與本報告；未修改正式來源、測試、docs 或 evidence。
 
 ## Problem

@@ -58,3 +58,5 @@ OpenCode 已核對免費模型，但執行探針回報 `Unknown: FileSystem.open
 `cleanup.json` 與 `cleanup-inventory.json.gz` 保存刪除前兩次讀取一致的檔案指紋及刪除後檢查。本輪工作目錄已不存在，清除 13,024 個檔案及 15,046 個唯讀連結，檔案邏輯大小為 2,345,848,209 bytes。兩個既有暫存資料夾、原生 module cache、資料與模型均保留，785 份正式來源指紋保持。
 
 `next-boundary86-preparation.json` 登錄下一票的骨架、測試草稿及 Root 審查。草稿尚未編譯或執行，尚未納入正式測試；失敗時的 goroutine 等候清理與化學、凍結、累積及取消情境需補驗。它不算 ticket 86 的正式 RED 或修復驗收。
+
+派工報告與下一票草稿的原始位元組另以 `*.raw.gz` 保存，可閱讀版本只校正行尾空白。`evidence-normalization.json` 同時記錄原始與校正後指紋；派工報告中的歷史指紋以原始回條核對。

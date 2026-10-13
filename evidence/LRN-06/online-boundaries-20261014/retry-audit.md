@@ -1,7 +1,7 @@
 # 混合線上更新重試查驗
 
-日期：2026-10-14  
-基準：`5f26c932981319627e3b76a3e8d47a5ae741c05e`  
+日期：2026-10-14
+基準：`5f26c932981319627e3b76a3e8d47a5ae741c05e`
 範圍：只讀來源／契約與 SHA-256；未執行 Go、build、cache、正式測試、外部索引或 repo 傳送。
 
 ## Problem
@@ -112,7 +112,7 @@ rm learning/online_mixed_retry_tmp_test.go
 
 草稿指紋：
 
-`online_mixed_retry_test.go.txt`  
+`online_mixed_retry_test.go.txt`
 `d059091c56108e9a0d89926a395cb215559700823fa4770a6342bb3f71a49560`
 
 ## Changed
@@ -137,4 +137,3 @@ rm learning/online_mixed_retry_tmp_test.go
 ## Next
 
 Root 執行上述三個 exact tests，保存失敗／控制 log 與 exit code；若數值相符，再建立 implementation ticket，先寫正式失敗測試並另行決定「每筆回饋階段完成狀態」的最小保存方式。
-
