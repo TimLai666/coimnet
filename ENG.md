@@ -244,7 +244,9 @@ EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部�
 
 ## 線上回饋與共享訓練狀態一致性
 
-線上損失權重以同一個體 TrainEpisode 的零神經狀態 episode 預測計算。開啟化學時，預測和訓練共用 chemicalEpisodeNetwork，複製目前濃度、來源視窗、資源、可用回饋、expression、來源時鐘與原始活動，並保留 frozen 設定。兩個入口依 Individual → Trainer 同一鎖順序取得私有 boundary，不交換共用 Network 指標，也不推進持續狀態。一般路徑保持 Trainer.Predict。
+線上 Act 在同一次個體鎖定中先取得參數版本，再推進神經狀態，答案與 ActionRecord.ModelVersion 使用同一份參數。線上損失權重的零神經狀態 episode 預測、target 加權及 TrainEpisode 也共用同一次個體鎖定，外部操作可等候或取消。私人已持鎖 helper 沿用 Individual → Trainer 的鎖順序，公開 Advance／TrainEpisode 保留原有入口。
+
+開啟化學時，預測和訓練共用 chemicalEpisodeNetwork，複製目前濃度、來源視窗、資源、可用回饋、expression、來源時鐘與原始活動，並保留 frozen 設定。不交換共用 Network 指標，也不推進持續狀態。一般路徑保持 Trainer.Predict。score=0 表示新回饋的損失殘差為零，既有 Adam 動量、weight decay、計數及部分累積仍按原算式處理。並行與錯誤控制由[ticket 86](docs/tickets/86-online-individual-boundary.md)管理。
 
 RestoreTrainer 在既有形狀、有限值與累積窗驗證後，要求同一共享群組的 First、Second、Steps 及 partial Sum 相同。singleton 與 -1 保持獨立，錯誤不重寫呼叫者快照。正常框架寫出的保存格式不變，RestoreIndividual 沿用同一拒絕。
 

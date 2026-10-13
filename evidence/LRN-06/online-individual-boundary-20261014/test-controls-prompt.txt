@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：資深 Go 錯誤與取消契約測試工程師，只交公開行為證據，不臆測。
+可改：runs/.tmp/online-individual-boundary-20261014/tests/boundary_controls.go.txt、同目錄 controls_report.md。不可改其他檔案、正式程式、docs、evidence、cache、Git、另一 worker 的 boundary_draft.go.txt。
+任務：讀 Root skeleton.md、learning/online.go、individual.go、existing online cancellation/error tests、trainer_cancel_test.go 與 tests/boundary_draft.go.txt 作 helper 介面參考但不能依賴 worker 未凍結新增介面。只寫自足精簡 tests，prefix TestOnlineIndividualBoundaryControl。涵蓋 invalid input/target、nil/canceled context、外部 TrainEpisode 等待 online-held 個體鎖時取消與 snapshot 不提交，以及 Update 失敗後 pending/interval/report 保留，修正 target 或 context 後 retry 一次成功。實際錯誤比較使用 errors.Is/明確 error，完整 snapshot/log/pending evidence。若需鎖同步使用現有 cancellableMutex 與 cancellation context acknowledgement 或 bounded channels，禁止 sleep、固定 Err 次數、正式程式 hooks、manual ActionRecord oracle。每個 started goroutine 必須在所有 Fatal 路徑 release/join，獨立 completion channel。不要重複另一 worker 的 score matrix 並行 fixtures；保持公開契約 oracle。可用既有 helper 只有在 baseline 真的已存在才用。normal/error controls 可以 baseline PASS，缺 helper 編譯失敗不算回歸。只寫測試，不寫實作。
+驗證指令（Root 專責，不執行 Go 避免 cache 競爭）：python3 runs/.tmp/online-individual-boundary-20261014/check.py red-controls go test -json -overlay runs/.tmp/online-individual-boundary-20261014/tests/overlay.json -run TestOnlineIndividualBoundaryControl -count=1 -timeout=120s ./learning。可 gofmt -w 唯一草稿。
+回報：修改檔與 SHA256、案例/依據、不確定項目及未驗證，明示未執行 Go；寫 controls_report.md。
+不要 commit，也不要 stash 或 reset

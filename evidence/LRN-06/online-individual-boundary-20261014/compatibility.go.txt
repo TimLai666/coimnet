@@ -1,0 +1,95 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func main() {
+	ctx := context.Background()
+	results := []any{}
+	for _, mode := range []string{"gradient", "plastic", "mixed", "evaluate"} {
+		for _, chemical := range []bool{false, true} {
+			for _, every := range []uint64{1, 2} {
+				for _, accumulate := range []int{1, 2} {
+					c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, DT: .5, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1}}
+					p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.1}, LogTau: []float64{.1, .2}}, Encoder: []float64{.5, .1}, Readout: []float64{.8}}
+					options := learning.DefaultOptions()
+					options.AccumulateSteps = accumulate
+					ind, err := learning.NewIndividual(c, p, options, []float64{0, 0})
+					must(err)
+					if chemical {
+						must(ind.EnableChemistry(modulation.ChemistryConfig{
+							Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{2}},
+							Sources:   []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 1, Channel: 0, Rate: 1}}}}},
+							Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "online-compatibility/v1"}}},
+							Effects:   []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 1}},
+							Regions:   modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+						}))
+					}
+					policy := learning.OnlinePolicy{AllowGradient: mode != "plastic", AllowPlastic: mode == "plastic" || mode == "mixed", Evaluate: mode == "evaluate", UpdateEvery: every, ClockUnit: signal.TimeUnitModelStep}
+					var gate learning.RewardGate
+					if policy.AllowPlastic {
+						must(ind.EnablePlasticity(plasticity.Config{Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625}, Edges: []int{0, 1}}))
+						gate = learning.RewardGateFunc(func(score float64) ([]float64, error) {
+							if score < 0 {
+								score = 0
+							}
+							return []float64{score}, nil
+						})
+					}
+					learner, err := learning.NewOnlineLearner(ind, policy, gate)
+					must(err)
+					obs, err := signal.NewObservation(signal.CurrentSchemaVersion(), "exp-1", "stream-1", nil)
+					must(err)
+					version, err := signal.NewVersion(1, 0)
+					must(err)
+					rows := []any{}
+					for index, score := range []float64{0, .5, 1, -1, 2} {
+						input := [][]float64{{.7}, {0}, {.2}}
+						action, err := learner.Act(ctx, obs, input)
+						must(err)
+						must(learner.SetTargets(map[string][]float64{action.ActionID: {.4}}))
+						fb, err := signal.NewFeedback(signal.FeedbackSpec{SchemaVersion: signal.CurrentSchemaVersion(), ExperienceID: "exp-1", ActionID: action.ActionID, ProducedAt: signal.Timestamp{Value: int64(action.Step), Unit: signal.TimeUnitModelStep}, AvailableAt: signal.Timestamp{Value: int64(action.Step + 1), Unit: signal.TimeUnitModelStep}, Source: fmt.Sprintf("teacher-%d", index), Score: score, ModelVersion: version})
+						must(err)
+						must(learner.Receive(ctx, fb))
+						deferred, de := learner.Update(ctx, signal.Timestamp{Value: int64(action.Step), Unit: signal.TimeUnitModelStep})
+						arrived, ae := learner.Update(ctx, signal.Timestamp{Value: int64(action.Step + 1), Unit: signal.TimeUnitModelStep})
+						if mode == "evaluate" {
+							if !errors.Is(ae, learning.ErrEvaluateMode) {
+								panic(fmt.Sprintf("evaluate arrival: %v", ae))
+							}
+							if de != nil && !errors.Is(de, learning.ErrEvaluateMode) {
+								panic(de)
+							}
+						} else {
+							must(de)
+							must(ae)
+						}
+						errorName := ""
+						if ae != nil {
+							errorName = ae.Error()
+						}
+						rows = append(rows, []any{action, deferred, arrived, errorName, learner.Log(), ind.Snapshot()})
+					}
+					results = append(results, []any{mode, chemical, every, accumulate, rows})
+				}
+			}
+		}
+	}
+	data, err := json.Marshal(results)
+	must(err)
+	fmt.Println(string(data))
+}

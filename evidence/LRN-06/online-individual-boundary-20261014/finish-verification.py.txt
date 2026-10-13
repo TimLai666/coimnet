@@ -1,0 +1,67 @@
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+root = Path('/Users/timlai/Developer/coimnet')
+evidence = root / 'evidence/LRN-06/online-individual-boundary-20261014'
+assert Path.cwd() == root
+assert not (evidence / 'verification.json').exists()
+slugs = ['build', 'vet', 'dependencies', 'full-final-unit', 'full-final-race', 'green-boundary', 'green-race-stability', 'green-related', 'compatibility-before', 'compatibility-after', 'cli-build', 'cli-doctor', 'cli-data-sources', 'cli-delayed', 'cli-lif-threshold', 'cli-train-first', 'cli-resume', 'cli-train-continuous', 'cli-compare']
+commands = []
+for slug in slugs:
+    d = json.loads((evidence / (slug + '.json')).read_text())
+    assert d['exit_code'] == 0, slug
+    packed = (root / d['log']).read_bytes()
+    raw = gzip.decompress(packed)
+    assert hashlib.sha256(packed).hexdigest() == d['log_sha256']
+    assert hashlib.sha256(raw).hexdigest() == d['raw_log_sha256']
+    assert len(raw) == d['raw_log_bytes']
+    commands.append(dict(receipt=slug + '.json', command=d['command'], exit_code=d['exit_code']))
+source = json.loads((evidence / 'source-final.json').read_text())
+assert len(source) == 788
+for f, expected in source.items():
+    assert hashlib.sha256((root / f).read_bytes()).hexdigest() == expected, f
+freeze = json.loads((evidence / 'frozen-tests.json').read_text())
+for f, v in freeze['added'].items():
+    assert hashlib.sha256((root / f).read_bytes()).hexdigest() == v['sha256']
+for f, v in freeze['existing_tests'].items():
+    assert hashlib.sha256((root / f).read_bytes()).hexdigest() == v
+assert json.loads((evidence / 'compatibility-comparison.json').read_text())['byte_equal']
+assert json.loads((evidence / 'cli-continuation.json').read_text())['byte_equal']
+assert json.loads((evidence / 'format.json').read_text())['unformatted'] == []
+
+def summarize(slug):
+    d = json.loads((evidence / (slug + '.json')).read_text())
+    raw = gzip.decompress((root / d['log']).read_bytes())
+    events = [json.loads(line) for line in raw.splitlines()]
+    failed = [v for v in events if v.get('Action') == 'fail']
+    assert not failed
+    assert b'WARNING: DATA RACE' not in raw
+    result = dict(top_pass_events=sum(v.get('Action') == 'pass' and bool(v.get('Test')) and '/' not in v['Test'] for v in events), all_test_pass_events=sum(v.get('Action') == 'pass' and bool(v.get('Test')) for v in events), packages_pass=sum(v.get('Action') == 'pass' and not v.get('Test') for v in events), failure_events=failed, skipped_test_events=[v for v in events if v.get('Action') == 'skip' and v.get('Test')], race_warnings=0)
+    assert result['packages_pass'] == 58
+    summary = evidence / (slug + '-summary.json')
+    if summary.exists():
+        assert json.loads(summary.read_text()) == result
+    else:
+        with summary.open('x') as out:
+            json.dump(result, out, indent=2)
+            out.write('\n')
+    return result
+
+unit = summarize('full-final-unit')
+race = summarize('full-final-race')
+doctor = json.loads(gzip.decompress((evidence / 'cli-doctor.log.gz').read_bytes()))
+assert doctor['insyra']['probe']['status'] == 'passed'
+for slug in ['cli-delayed', 'cli-lif-threshold']:
+    report = json.loads(gzip.decompress((evidence / (slug + '.log.gz')).read_bytes()))
+    assert report['passed'], slug
+platform = subprocess.check_output(['sw_vers'], text=True)
+mount = subprocess.check_output(['df', '-h', '.'], text=True)
+record = dict(requirement='LRN-06', ticket=86, captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat(), baseline_commit=json.loads((evidence / 'baseline.json').read_text())['commit'], reproduction_command=commands, environment=dict(cwd=str(root), runtime=doctor['runtime'], platform=platform, mount=mount, insyra=doctor['build_info']['insyra'], caches='ticket-local caches; native GOMODCACHE read only for go mod verify'), input_fingerprints=dict(source_manifest='source-final.json', source_count=len(source), frozen_tests='frozen-tests.json', before_manifest='source-before.json', tests_unchanged=True), observed_result=dict(repaired=['Act answer and ModelVersion share one individual operation', 'weighted episode prediction/target/training share one individual operation'], red_behavioral_leaves=17, green_top_tests=5, green_pass_events=31, race_repetitions=20, race_repeat_pass_events=620, full_unit=unit, full_race=race, compatibility_cases=32, compatibility_byte_equal=True, separate_process_continuation_byte_equal=True, format_go_files=784, build_vet_dependencies_passed=True, source_matches=True, public_api_schema_formula_preserved=True), test_log=[str(Path(d['log']).relative_to(evidence.relative_to(root))) for d in [json.loads((evidence / (s + '.json')).read_text()) for s in slugs]], reviews=['root-review.md', 'adversarial-review.md', 'locked-helper-caller-inventory.json'], acceptance_state='Engineering checks complete; final governance, cleanup and pushed delivery are separately recorded prerequisites', limits=['Bounded concurrency repair, not a zero-bug proof.', 'Full-suite skips are retained in the summaries; no new whole-brain, RSS or real-dataset evidence run.', 'No real OCR accuracy or quantitative biological result was measured.', 'Initial source activity and large declared channel configuration remain existing investigation leads, not confirmed defects.', 'The preliminary full test commands were interrupted after an evidence helper accidentally had a .go extension; the final full commands started only after the helper was preserved as .go.txt and the 788-source gate passed.'])
+with (evidence / 'verification.json').open('x') as out:
+    json.dump(record, out, ensure_ascii=False, indent=2)
+    out.write('\n')
+print(json.dumps(dict(unit_top=unit['top_pass_events'], unit_events=unit['all_test_pass_events'], race_top=race['top_pass_events'], race_events=race['all_test_pass_events'], unit_skips=len(unit['skipped_test_events']), race_skips=len(race['skipped_test_events']), source_count=len(source))))

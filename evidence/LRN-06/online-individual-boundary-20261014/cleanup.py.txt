@@ -1,0 +1,81 @@
+import gzip
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import stat
+import time
+
+root = Path('/Users/timlai/Developer/coimnet')
+evidence = root / 'evidence/LRN-06/online-individual-boundary-20261014'
+work = root / 'runs/.tmp/online-individual-boundary-20261014'
+assert Path.cwd() == root
+assert work.is_dir() and not work.is_symlink()
+assert work.parent == root / 'runs/.tmp'
+for p in [root, root / 'runs', work.parent]:
+    assert p.is_dir() and not p.is_symlink(), p
+for slug in ['full-final-unit', 'full-final-race', 'governance', 'build', 'vet', 'dependencies', 'cli-compare']:
+    record = json.loads((evidence / (slug + '.json')).read_text())
+    assert record['exit_code'] == 0, slug
+assert not (evidence / 'cleanup.json').exists()
+source = json.loads((evidence / 'source-final.json').read_text())
+for f, expected in source.items():
+    assert hashlib.sha256((root / f).read_bytes()).hexdigest() == expected, f
+base = json.loads((evidence / 'baseline.json').read_text())
+
+def protected_state():
+    result = []
+    for item in base['protected_temporaries']:
+        p = root / item['path']
+        assert p.is_dir() and not p.is_symlink()
+        assert p.stat().st_ino == item['inode']
+        entries = sorted(v.name for v in p.iterdir())
+        assert entries == item['entries']
+        result.append(dict(path=item['path'], inode=p.stat().st_ino, entries=entries))
+    return result
+
+def inventory():
+    rows = []
+    for directory, dirs, files in os.walk(work, followlinks=False):
+        for name in sorted(dirs + files):
+            p = Path(directory) / name
+            s = p.lstat()
+            row = dict(path=str(p.relative_to(work)), inode=s.st_ino, mtime_ns=s.st_mtime_ns, mode=s.st_mode)
+            if stat.S_ISLNK(s.st_mode):
+                row.update(kind='symlink', target=os.readlink(p))
+            elif stat.S_ISREG(s.st_mode):
+                h = hashlib.sha256()
+                with p.open('rb') as data:
+                    for chunk in iter(lambda: data.read(1048576), b''):
+                        h.update(chunk)
+                assert p.lstat().st_ino == s.st_ino and p.lstat().st_mtime_ns == s.st_mtime_ns
+                row.update(kind='file', bytes=s.st_size, sha256=h.hexdigest())
+            elif stat.S_ISDIR(s.st_mode):
+                row['kind'] = 'directory'
+            else:
+                raise RuntimeError('unexpected temporary entry: ' + str(p))
+            rows.append(row)
+    return sorted(rows, key=lambda v:v['path'])
+
+start = time.time()
+protected = protected_state()
+first = inventory()
+second = inventory()
+assert first == second, 'temporary contents changed between reads'
+assert protected_state() == protected
+raw = (json.dumps(first, sort_keys=True, separators=(',', ':')) + '\n').encode()
+with (evidence / 'cleanup-inventory.json.gz').open('xb') as out:
+    out.write(gzip.compress(raw, mtime=0))
+files = sum(row['kind'] == 'file' for row in first)
+links = sum(row['kind'] == 'symlink' for row in first)
+size = sum(row.get('bytes', 0) for row in first)
+# Every regular file was read twice; symlink targets are never followed or deleted.
+shutil.rmtree(work)
+assert not work.exists()
+assert protected_state() == protected
+record = dict(target=str(work.relative_to(root)), removed=True, regular_files=files, symlinks=links, regular_bytes_removed=size, inventory_entries=len(first), inventory_sha256=hashlib.sha256(raw).hexdigest(), double_content_fingerprint_equal=True, symlink_targets_followed=False, protected_temporaries=protected, protected_unchanged=True, elapsed_seconds=time.time()-start, scope='only this ticket temporary directory; evidence, original data/models/checkpoints and global caches retained')
+with (evidence / 'cleanup.json').open('x') as out:
+    json.dump(record, out, indent=2)
+    out.write('\n')
+print(json.dumps(record))

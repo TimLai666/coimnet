@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：敵對資深 Go reviewer，找可重現的 production failure，禁止把臆測或風格偏好當 bug。
+可改仅 runs/.tmp/online-individual-boundary-20261014/review/report.md。其他檔案、production、測試、docs、evidence、cache、Git 一律不可改。
+任務：Root 已完成 baseline RED、安裝 private combined operation 修正。讀 skeleton.md、git diff 5f82637a2c308c19f0278cefc305f93dbe6b01a2 -- learning/online.go learning/individual.go 與新增 learning/individual_online.go，讀兩份凍結 formal boundary tests、existing online mixed retry/chemical/interval tests 與 chemicalEpisodeNetwork、TrainEpisode/advanceRows/Intervene callers。獨立審查 Act hash/output/state commit 一致、weighted prediction-target-training 鎖區間、i→tr 順序、nil/cancel/error/overflow候選保留、fresh/warm Adam/weightdecay/partialaccum、chemistry/frozen資料隔離、mixed marker契約、公開 API/save schema、新增 private helper misuse與效能。完整看 diff 和新檔，不只摘要。不要要求改 frozen tests 去迎合 production。每項具體 failure 附 file:line、trigger、evidence、impact、P0/P1/P2 CONFIRMED；資訊不夠放 NEEDS INVESTIGATION 寫缺失事實與下一個驗證。若無 confirmed defect 明說。
+驗證指令由 Root 專責執行，你勿跑 Go 避免資源競爭：python3 runs/.tmp/online-individual-boundary-20261014/check.py green-boundary go test -json -run TestOnlineIndividualBoundary -count=1 -timeout=120s ./learning；Root另跑full unit/race、32 byte comparison、CLI separate-process。你只做來源/證據 readback 靜態 review，未執行命令須明示。
+回報：Scope CLEAN/DRIFT/MISSING、已審查檔案及 SHA、CONFIRMED findings、NEEDS INVESTIGATION、未驗證。僅寫 review/report.md，另回傳 SHA 與短摘要。
+不要 commit，也不要 stash 或 reset

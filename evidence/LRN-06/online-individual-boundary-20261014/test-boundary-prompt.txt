@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：資深 Go 並行回歸測試工程師，只交能證明公開契約與清理可靠性的測試，不以私有結果當 oracle。
+可改：runs/.tmp/online-individual-boundary-20261014/tests/boundary_draft.go.txt、同目錄 boundary_report.md。不可改：其他任何檔案、正式 learning/*.go、docs、evidence、Go cache、Git、其他 worker 檔案。
+任務：先讀 Root 骨架 runs/.tmp/online-individual-boundary-20261014/skeleton.md 與既有 boundary_draft.go.txt。修復草稿所有 started goroutine 在 Fatal 路徑也 release 並 join 的清理缺口，使用獨立 completion channel，不重讀 result channel。保留已有公開 Act/Update/TrainEpisode 和完整 Snapshot oracle、runtime bounded queue 訊號、noinline wrappers、禁止 sleep／固定 Err 次數／新增正式程式 hook。擴充並行測試表涵蓋 ordinary、enabled chemistry、frozen masks、Accumulate=2、warmed Adam momentum 與分數 0/.5/1；Act 至少 ordinary/chemistry。化學預測 oracle 可用 public serial Update control 與完整 snapshot equality，不能拿普通 network prediction 當化學預測。score0 只有全新 optimizer 斷言零 norm，暖動量不能要求參數不動。對既有根因 tests 應在 baseline 行為 RED，不可缺 helper 編譯 RED。普通控制可以 PASS。Test names prefix TestOnlineIndividualBoundary。只寫測試，絕不寫實作；另有 worker 負責錯誤/取消 controls，不要搶它的檔案。務必控制測試尺寸，避免複製整套 helper。
+驗證指令（Root 專責執行，你僅做靜態檢查，不執行 Go，避免 cache 競爭）：python3 runs/.tmp/online-individual-boundary-20261014/check.py red-boundary go test -json -overlay runs/.tmp/online-individual-boundary-20261014/tests/overlay.json -run TestOnlineIndividualBoundary -count=1 -timeout=120s ./learning。你可執行 gofmt -w 在唯一草稿上。
+回報：列修改檔案與 SHA256、各案例如何證明契約、同步與 cleanup 的依據、未驗證/不確定項目，明示未執行 Go。寫 boundary_report.md 並送最精簡摘要。
+不要 commit，也不要 stash 或 reset

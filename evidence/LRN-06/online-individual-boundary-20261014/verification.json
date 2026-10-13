@@ -1,0 +1,659 @@
+{
+  "requirement": "LRN-06",
+  "ticket": 86,
+  "captured_at": "2026-10-13T19:10:53.823655+00:00",
+  "baseline_commit": "5f82637a2c308c19f0278cefc305f93dbe6b01a2",
+  "reproduction_command": [
+    {
+      "receipt": "build.json",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "vet.json",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "dependencies.json",
+      "command": [
+        "env",
+        "GOMODCACHE=/Users/timlai/go/pkg/mod",
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "full-final-unit.json",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "full-final-race.json",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "-race",
+        "-timeout=60m",
+        "-json",
+        "./..."
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "green-boundary.json",
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-run",
+        "TestOnlineIndividualBoundary",
+        "-count=1",
+        "-timeout=120s",
+        "./learning"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "green-race-stability.json",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-count=20",
+        "-json",
+        "-run",
+        "TestOnlineIndividualBoundary",
+        "-timeout=120s",
+        "./learning"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "green-related.json",
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-run",
+        "TestOnline|TestIndividualTrain|TestChemicalOnline",
+        "-count=1",
+        "-timeout=10m",
+        "./learning"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "compatibility-before.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/compatibility-baseline"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "compatibility-after.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/compatibility-after"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-build.json",
+      "command": [
+        "go",
+        "build",
+        "-o",
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "./cmd/coimnet"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-doctor.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "doctor"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-data-sources.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "data",
+        "sources"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-delayed.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "examples",
+        "run",
+        "delayed"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-lif-threshold.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "examples",
+        "run",
+        "lif-threshold"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-train-first.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "80",
+        "--checkpoint",
+        "runs/.tmp/online-individual-boundary-20261014/first.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-resume.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "resume",
+        "--checkpoint",
+        "runs/.tmp/online-individual-boundary-20261014/first.json",
+        "--steps",
+        "40",
+        "--out",
+        "runs/.tmp/online-individual-boundary-20261014/resumed.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-train-continuous.json",
+      "command": [
+        "runs/.tmp/online-individual-boundary-20261014/coimnet",
+        "train",
+        "delayed",
+        "--steps",
+        "120",
+        "--checkpoint",
+        "runs/.tmp/online-individual-boundary-20261014/continuous.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "cli-compare.json",
+      "command": [
+        "cmp",
+        "runs/.tmp/online-individual-boundary-20261014/resumed.json",
+        "runs/.tmp/online-individual-boundary-20261014/continuous.json"
+      ],
+      "exit_code": 0
+    },
+    {
+      "receipt": "governance.json",
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-run",
+        "^Test(NoTelemetry.*|FormatIndex.*|Governance.*)$",
+        "-timeout=10m",
+        "."
+      ],
+      "exit_code": 0
+    }
+  ],
+  "environment": {
+    "cwd": "/Users/timlai/Developer/coimnet",
+    "runtime": {
+      "go_version": "go1.26.5",
+      "goos": "darwin",
+      "goarch": "arm64"
+    },
+    "platform": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434\n",
+    "mount": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   288Gi   132Gi    69%    3.8M  1.4G    0%   /System/Volumes/Data\n",
+    "insyra": {
+      "path": "github.com/HazelnutParadise/insyra",
+      "version": "v0.3.4",
+      "sum": "h1:E9Z8XnDWgzMpIZvkD+nKkjYKMnY0J6glGP7IuumBud0=",
+      "replace": null
+    },
+    "caches": "ticket-local caches; native GOMODCACHE read only for go mod verify"
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-final.json",
+    "source_count": 788,
+    "frozen_tests": "frozen-tests.json",
+    "before_manifest": "source-before.json",
+    "tests_unchanged": true
+  },
+  "observed_result": {
+    "repaired": [
+      "Act answer and ModelVersion share one individual operation",
+      "weighted episode prediction/target/training share one individual operation"
+    ],
+    "red_behavioral_leaves": 17,
+    "green_top_tests": 5,
+    "green_pass_events": 31,
+    "race_repetitions": 20,
+    "race_repeat_pass_events": 620,
+    "full_unit": {
+      "top_pass_events": 2103,
+      "all_test_pass_events": 5152,
+      "packages_pass": 58,
+      "failure_events": [],
+      "skipped_test_events": [
+        {
+          "Time": "2026-10-14T02:43:37.796098+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "Test": "TestDeviceAdamWChildProcess",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:38.91252+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/examples/realnav",
+          "Test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:38.932278+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "Test": "TestRealMediaModelChildLoad",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:42.604741+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "Test": "TestFullGraphEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:42.604787+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "Test": "TestFullGraphResumeEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:42.725604+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "Test": "TestMultimodalEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:42.876646+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestAttributionEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:54.927702+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/learning",
+          "Test": "TestGPUDeviceTrainerChildProcess",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:14.233986+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestMediaEvidence/image",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:14.234026+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestMediaEvidence/audio",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:25.934955+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "Test": "TestReadTitovaSourceWhenConfigured",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:41.159939+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "Test": "TestTextgenEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:57.511344+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/learning",
+          "Test": "TestRecomputeRSSHelper",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:59.648737+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestRolesEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:45:42.948056+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestVideoEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:46:04.188944+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestMultiTaskEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:46:10.390448+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestNav2DSuiteEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:00.558038+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOGoalCueEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:00.773963+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOGradientEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:00.806353+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOHorizonEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:00.816791+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOShortGoalCueEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:04.946339+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOTrainingFeedbackEvidence",
+          "Elapsed": 0
+        }
+      ],
+      "race_warnings": 0
+    },
+    "full_race": {
+      "top_pass_events": 2102,
+      "all_test_pass_events": 5151,
+      "packages_pass": 58,
+      "failure_events": [],
+      "skipped_test_events": [
+        {
+          "Time": "2026-10-14T02:43:36.309651+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/checkpoint",
+          "Test": "TestBundleLargerThanSingleFileLimit",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:37.572191+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "Test": "TestDeviceAdamWChildProcess",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:40.000763+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/examples/realnav",
+          "Test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:54.25177+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "Test": "TestFullGraphEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:54.251817+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "Test": "TestFullGraphResumeEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:43:58.9161+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestAttributionEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:00.230734+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "Test": "TestMultimodalEvidence",
+          "Elapsed": 0.09
+        },
+        {
+          "Time": "2026-10-14T02:44:00.879141+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "Test": "TestRealMediaModelChildLoad",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:44:45.44721+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/learning",
+          "Test": "TestGPUDeviceTrainerChildProcess",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:45:04.272698+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "Test": "TestReadTitovaSourceWhenConfigured",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:45:06.756989+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestMediaEvidence/image",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:45:06.757037+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestMediaEvidence/audio",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:47:06.175854+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "Test": "TestTextgenEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:49:15.852348+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/learning",
+          "Test": "TestRecomputeRSSHelper",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:50:52.682999+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestRolesEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T02:57:13.380169+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/tasks/media",
+          "Test": "TestVideoEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:03:02.277139+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestMultiTaskEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:03:45.442501+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestNav2DSuiteEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:09:08.436897+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOGoalCueEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:09:09.161706+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOGradientEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:09:09.200744+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOHorizonEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:09:09.240986+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOShortGoalCueEvidence",
+          "Elapsed": 0
+        },
+        {
+          "Time": "2026-10-14T03:09:33.125404+08:00",
+          "Action": "skip",
+          "Package": "github.com/TimLai666/coimnet/experiment",
+          "Test": "TestPPOTrainingFeedbackEvidence",
+          "Elapsed": 0
+        }
+      ],
+      "race_warnings": 0
+    },
+    "compatibility_cases": 32,
+    "compatibility_byte_equal": true,
+    "separate_process_continuation_byte_equal": true,
+    "format_go_files": 784,
+    "build_vet_dependencies_passed": true,
+    "source_matches": true,
+    "public_api_schema_formula_preserved": true
+  },
+  "test_log": [
+    "build.log.gz",
+    "vet.log.gz",
+    "dependencies.log.gz",
+    "full-final-unit.log.gz",
+    "full-final-race.log.gz",
+    "green-boundary.log.gz",
+    "green-race-stability.log.gz",
+    "green-related.log.gz",
+    "compatibility-before.log.gz",
+    "compatibility-after.log.gz",
+    "cli-build.log.gz",
+    "cli-doctor.log.gz",
+    "cli-data-sources.log.gz",
+    "cli-delayed.log.gz",
+    "cli-lif-threshold.log.gz",
+    "cli-train-first.log.gz",
+    "cli-resume.log.gz",
+    "cli-train-continuous.log.gz",
+    "cli-compare.log.gz",
+    "governance.log.gz"
+  ],
+  "reviews": [
+    "root-review.md",
+    "adversarial-review.md",
+    "locked-helper-caller-inventory.json"
+  ],
+  "acceptance_state": "Engineering and final governance complete; cleanup and pushed delivery are separately recorded prerequisites",
+  "limits": [
+    "Bounded concurrency repair, not a zero-bug proof.",
+    "Full-suite skips are retained in the summaries; no new whole-brain, RSS or real-dataset evidence run.",
+    "No real OCR accuracy or quantitative biological result was measured.",
+    "Initial source activity and large declared channel configuration remain existing investigation leads, not confirmed defects.",
+    "The preliminary full test commands were interrupted after an evidence helper accidentally had a .go extension; the final full commands started only after the helper was preserved as .go.txt and the 788-source gate passed."
+  ],
+  "engineering_passed": true,
+  "governance": {
+    "passed_top_tests": [
+      "TestNoTelemetry",
+      "TestNoTelemetryProjectTempBoundary",
+      "TestNoTelemetrySourceErrorsRemainVisible",
+      "TestFormatIndex",
+      "TestFormatIndexControls",
+      "TestFormatIndexGoLiteralsAndScopes",
+      "TestFormatIndexNoGitAndReadErrors",
+      "TestGovernanceRequirementIDsMatchHandoff",
+      "TestGovernanceStatusValuesAreDeclared",
+      "TestGovernancePassedRequirementsHaveEvidence",
+      "TestGovernanceTicketsHaveDatedRootDecisions"
+    ],
+    "top_count": 11,
+    "all_test_pass_events": 31,
+    "failure_events": []
+  }
+}

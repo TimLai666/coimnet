@@ -1,0 +1,28 @@
+{
+  "separate_processes": true,
+  "train_steps": 80,
+  "resume_steps": 40,
+  "continuous_steps": 120,
+  "byte_equal": true,
+  "checkpoints": {
+    "first.json": {
+      "bytes": 1164,
+      "sha256": "e3a180544810dce3f0b54be51eec1f2be3bc9ff3d36e3524cd555aaf4bef9a3a"
+    },
+    "resumed.json": {
+      "bytes": 1179,
+      "sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c"
+    },
+    "continuous.json": {
+      "bytes": 1179,
+      "sha256": "c67c151b023a84cf374764e3460fa34aa05012d0fa5637fc97aea5ddafffff9c"
+    }
+  },
+  "compare": "cli-compare.json",
+  "commands": [
+    "cli-train-first.json",
+    "cli-resume.json",
+    "cli-train-continuous.json"
+  ],
+  "scope": "small artificial delayed fixture; not a real OCR task or cross-platform claim"
+}
