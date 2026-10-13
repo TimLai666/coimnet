@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 目前完成 1／4。公開入口 15 個零作用案例確認 9 個偏離中性增益，MOD-04 標為 failed，最新工程需求狀態為 90 項 passed、1 項 failed。120 個歷史／分段組合、來源 Replay 時鐘及 96 個初始梯度斷言通過一般與 race 檢查。候選化學模組的一般／race 各 375 個事件通過，但正式程式沒有套用。要求增益範圍包含 1 會拒絕部分舊模型，使用者相容性決策 pending。見[驗證](evidence/MOD-02/chemical-composition-20261014/verification.json)與[Root 審查](evidence/MOD-02/chemical-composition-20261014/root-review.md)。本票尚未完成修正與完整工程驗收，沒有整體零 bug 或真實品質提升結論。
+[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 目前完成 2／4。公開入口 15 個零作用案例確認 9 個偏離中性增益，MOD-04 標為 failed，最新工程需求狀態為 90 項 passed、1 項 failed。120 個歷史／分段組合、來源 Replay 時鐘及 96 個初始梯度斷言通過一般與 race 檢查。候選化學模組的一般／race 各 375 個事件通過，但正式程式沒有套用。要求增益範圍包含 1 會拒絕部分舊模型，使用者相容性決策 pending。見[驗證](evidence/MOD-02/chemical-composition-20261014/verification.json)與[Root 審查](evidence/MOD-02/chemical-composition-20261014/root-review.md)。本輪 872,621,783 bytes 暫存已清除，793 份提交來源相符，主要稽核 d8b013e 已推送並讀回一致，見[交付](evidence/MOD-02/chemical-composition-20261014/delivery.json)。本票尚未完成修正與完整工程驗收，沒有整體零 bug 或真實品質提升結論。
 
 [ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md) 已完成 4／4。未明示 InitialActivity 時首步來源的 Core.Initial 漏算已修正，五組舊來源失敗案例通過。八組混合參考的前向差為零、梯度最大絕對差 5.55111512e-17，四種刻意錯誤均被抓到。完整一般與 race 各 58 套件、格式、build、vet、相依性及最後 11 項治理通過，793 份提交來源與 457 份凍結測試相符。修正 f4dc57f 與主要回歸／證據 5a85737 已推送且遠端相同。本輪 1,942,892,872 bytes 暫存與 10,177 個快取連結已清除，原有暫存保留。見[驗證](evidence/MOD-02/mixed-chemical-gradient-20261014/verification.json)、[Root 審查](evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)、[清理](evidence/MOD-02/mixed-chemical-gradient-20261014/cleanup.json)與[交付](evidence/MOD-02/mixed-chemical-gradient-20261014/delivery.json)。整體零 bug 與真實辨識率提升尚未證明。
 
@@ -189,7 +189,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 89 | 研究者可以核對多通道化學與來源歷史符合宣告機制 | Codex Root／Luna max 唯讀稽核 | pending_decision | 1／4。中性增益缺陷已確認，來源歷史／分段與初始梯度檢查通過；相容性修正尚未採用，MOD-04 failed |
+| 89 | 研究者可以核對多通道化學與來源歷史符合宣告機制 | Codex Root／Luna max 唯讀稽核 | pending_decision | 2／4。中性增益缺陷已確認，來源歷史／分段與初始梯度檢查通過；相容性修正尚未採用，MOD-04 failed |
 | 88 | 研究者可以核對混合神經元的完整化學訓練計算 | Codex Root / Luna max 測試與契約稽核 | completed | 4／4。獨立參考、初始來源漏算修正、完整工程、11 項治理、來源核對、暫存清理與主要推送讀回完成 |
 | 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | completed | 5／5。完整工程、11 項治理、合法相容性及 791 份提交來源核對通過；本輪暫存清除、主要提交推送與遠端讀回完成 |
 | 85 | 混合線上更新失敗後只接續未完成階段 | Codex Root／Luna max | completed | 5／5。10 個新增回歸、32 組正常逐位相容、完整一般／race 各 58 套件及 11 項治理通過；暫存清除、推送及遠端核對完成 |
@@ -267,7 +267,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-ticket 89 的相容性修正等待使用者回答，正式程式沒有改動。已確認增益範圍排除 1 時，零化學作用會改變神經訊號尺度。完整框架、真實品質及生物校準沒有由本階段重新驗收；混合重算是既有明示不支援的組合。
+ticket 89 的相容性修正等待使用者回答，正式程式沒有改動。已確認增益範圍排除 1 時，零化學作用會改變神經訊號尺度。完整框架、真實品質及生物校準沒有由本階段重新驗收。混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 

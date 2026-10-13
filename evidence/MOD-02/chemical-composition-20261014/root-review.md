@@ -29,7 +29,7 @@
 
 宿主：Codex。OpenCode `models` 實際失敗：`Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)`，見 [log](opencode-models.log)。依專案規則改用原生 subagent `gpt-5.6-luna`、`max`，分別只讀多通道與歷史契約，報告已審查；沒有宣稱 OpenCode 已執行稽核。Root 保管測試、獨立公式及所有實際執行結果。
 
-本輪只驗證人工工程算式，不證明全部生理設計與實際生物相同，不證明辨識率提升或整體零 bug。修正決策 pending，固定計畫目前完成 1／4。
+本輪只驗證人工工程算式，不證明全部生理設計與實際生物相同，不證明辨識率提升或整體零 bug。修正決策 pending，固定計畫目前完成 2／4，稽核與證據交付已完成，正式修正及完整工程驗收待決策。
 
 【減法審查】
 ▸ Won't List：不改控制器平均規則、不新增公開 smooth 模式、不用測試分數挑參數。
@@ -40,3 +40,5 @@
 ## 本輪暫存
 
 已檢查並清除 6,344 個暫存檔、24,037 個快取連結與 75,959 個目錄，暫存檔共 872,621,783 bytes。24,037 個外部快取目標的身分及大小等資訊保持，兩個原有暫存目錄的 inode／內容清單保持。本輪第一次清理因本機 Python 不支援 dir_fd 參數，在刪除前停止；改用該版本內建的檔案描述符保護清理後完成。見[清理](cleanup.json)與[診斷失敗](cleanup-attempt.json)。
+
+主要稽核提交 d8b013e 已推送並讀回一致，793 份提交來源與驗收指紋相符。見[交付回條](delivery.json)及[提交來源](committed-source.json)。

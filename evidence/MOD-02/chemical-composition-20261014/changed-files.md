@@ -15,6 +15,9 @@
 | [evidence/MOD-02/chemical-composition-20261014/changed-files.md](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/changed-files.md) | 列出本輪實際變更的每個檔案 |
 | [evidence/MOD-02/chemical-composition-20261014/cleanup-attempt.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/cleanup-attempt.json) | 保存 cleanup-attempt 的實際回條、指紋或限定範圍 |
 | [evidence/MOD-02/chemical-composition-20261014/cleanup.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/cleanup.json) | 保存 cleanup 的實際回條、指紋或限定範圍 |
+| [evidence/MOD-02/chemical-composition-20261014/closing-validation.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/closing-validation.json) | 記錄兩項完成、需求失敗狀態、清理及最後文件檢查 |
+| [evidence/MOD-02/chemical-composition-20261014/committed-source.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/committed-source.json) | 核對主要提交內 793 份來源與實際驗證相符 |
+| [evidence/MOD-02/chemical-composition-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/delivery.json) | 記錄已交付的稽核證據與尚未採用的正式修正 |
 | [evidence/MOD-02/chemical-composition-20261014/final-governance.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/final-governance.json) | 保存 final-governance 的實際回條、指紋或限定範圍 |
 | [evidence/MOD-02/chemical-composition-20261014/final-governance.log](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/final-governance.log) | 保存 final-governance 的實際原始輸出 |
 | [evidence/MOD-02/chemical-composition-20261014/history-probe-final-test.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/history-probe-final-test.go.txt) | 保存診斷或未採用候選的來源原件 |
@@ -54,6 +57,7 @@
 | [evidence/MOD-02/chemical-composition-20261014/opencode-models.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/opencode-models.json) | 保存 opencode-models 的實際回條、指紋或限定範圍 |
 | [evidence/MOD-02/chemical-composition-20261014/opencode-models.log](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/opencode-models.log) | 保存 opencode-models 的實際原始輸出 |
 | [evidence/MOD-02/chemical-composition-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/plan.md) | 保留固定四項驗收及目前待決策狀態 |
+| [evidence/MOD-02/chemical-composition-20261014/primary-push.log](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/primary-push.log) | 保存主要證據推送與遠端讀回原始結果 |
 | [evidence/MOD-02/chemical-composition-20261014/report-preservation.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/report-preservation.json) | 記錄原件壓縮保存及閱讀版 EOF 格式調整 |
 | [evidence/MOD-02/chemical-composition-20261014/reproduce.py](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/reproduce.py) | 新增只在專案暫存目錄重現的診斷工具 |
 | [evidence/MOD-02/chemical-composition-20261014/reproducer-neutral.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-composition-20261014/reproducer-neutral.json) | 保存 reproducer-neutral 的實際回條、指紋或限定範圍 |

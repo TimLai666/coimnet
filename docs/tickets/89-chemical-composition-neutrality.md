@@ -10,7 +10,7 @@
 - [x] Root 與獨立稽核核對多通道、MixSum／MixMax、零作用及來源歷史契約，區分確認缺陷與待調查。
 - [ ] 對實際差異先建立公開入口失敗測試，Root 審查凍結後才修正；無差異則保存有非零控制的獨立驗證。
 - [ ] 修改適用工程檢查通過，保留來源／測試指紋及實測範圍，相容性規則按 AGENTS.md 處理。
-- [ ] 同步需求證據、清除本輪暫存，完成已授權提交／推送及遠端讀回。
+- [x] 同步需求證據、清除本輪暫存，完成已授權提交／推送及遠端讀回。
 
 ## Root decision 2026-10-14
 
@@ -20,4 +20,6 @@
 
 120 個完整／分段歷史組合、手算 Replay 時鐘，以及 96 個初始梯度斷言通過一般與 race。部分 neural filled 案例屬重複控制，沒有推論生物校準或任務辨識率。
 
-見[Root 審查](../../evidence/MOD-02/chemical-composition-20261014/root-review.md)及[實際驗證](../../evidence/MOD-02/chemical-composition-20261014/verification.json)。目前完成 1／4，正式修正與完整工程驗收待決策後接續。
+見[Root 審查](../../evidence/MOD-02/chemical-composition-20261014/root-review.md)及[實際驗證](../../evidence/MOD-02/chemical-composition-20261014/verification.json)。目前完成 2／4，正式修正與完整工程驗收待決策後接續。
+
+稽核證據 d8b013e 已推送並核對遠端，本輪 872,621,783 bytes 暫存已清除，793 份提交來源指紋相符。正式修正及完整工程驗收待相容性決策。見[交付](../../evidence/MOD-02/chemical-composition-20261014/delivery.json)與[清理](../../evidence/MOD-02/chemical-composition-20261014/cleanup.json)。
