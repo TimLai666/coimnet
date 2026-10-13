@@ -1,0 +1,35 @@
+package main
+
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func main() {
+	for _, mix := range []string{"", modulation.MixSum, modulation.MixMax} {
+		for _, bounds := range []struct {
+			Name     string
+			Min, Max float64
+		}{
+			{"default", 0, 0},
+			{"contains_neutral", 0.25, 1.5},
+			{"excludes_neutral_below", 1.25, 0},
+			{"excludes_neutral_above", 0, 0.75},
+			{"fixed_non_neutral", 1.5, 1.5},
+		} {
+			effects := []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 0.5, GammaMin: bounds.Min, GammaMax: bounds.Max}}
+			zero := []modulation.OccupancyRecord{{Receptor: 0, Cell: 0, Status: modulation.StatusHypothesized}}
+			gain, _, _, clamp, err := modulation.ApplyEffects(effects, zero, mix, 1)
+			bare, _, _, _, bareErr := modulation.ApplyEffects(nil, nil, mix, 1)
+			result := map[string]any{"mix": mix, "bounds": bounds.Name, "gamma_min": bounds.Min, "gamma_max": bounds.Max, "zero_occupancy_gain": gain, "bare_gain": bare, "clamp": clamp, "error": err, "bare_error": bareErr}
+			if err == nil && bareErr == nil {
+				result["matches_declared_neutral"] = gain[0] == bare[0] && gain[0] == 1
+			}
+			if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+				panic(err)
+			}
+		}
+	}
+}

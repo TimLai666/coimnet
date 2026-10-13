@@ -1,0 +1,114 @@
+package learning_test
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func TestCompositionNilHistoryRecompute(t *testing.T) {
+	for _, core := range []string{"continuous", "lif"} {
+		for _, filled := range []bool{false, true} {
+			for _, mix := range []string{modulation.MixSum, modulation.MixMax} {
+				for _, window := range []int{0, 3, 5} {
+					for _, segment := range []int{1, 4, 7} {
+						t.Run(fmt.Sprintf("%s/filled=%t/mix=%s/window=%d/segment=%d", core, filled, mix, window, segment), func(t *testing.T) {
+							config, parameters, inputs, _, upstream := chemicalRecomputeFixture(t)
+							options := chemicalRecomputeOptions(segment, window, 2)
+							if core == "lif" {
+								fixture := newChemicalRecomputeLIFFixture(t, 9, 0.8)
+								config, parameters, inputs, upstream = fixture.config, fixture.parameters, fixture.inputs, fixture.upstream
+								options = chemicalRecomputeLIFOptions(segment, window)
+							} else {
+								config.Dynamics.Activation = "softplus"
+							}
+							config.Chemistry.InitialActivity = nil
+							config.Chemistry.Part.Config.Receptors.Mix = mix
+							if !filled {
+								config.Chemistry.Part.SourceStates = nil
+							}
+							fullOptions := options
+							fullOptions.Recompute = nil
+							full, err := learning.NewTrainer(config, parameters, fullOptions)
+							if err != nil {
+								t.Fatal(err)
+							}
+							defer full.Close()
+							recomputed, err := learning.NewTrainer(config, parameters, options)
+							if err != nil {
+								t.Fatal(err)
+							}
+							defer recomputed.Close()
+							before := full.Snapshot()
+							for operation := 0; operation < 2; operation++ {
+								want, err := full.StepFrom(context.Background(), inputs, upstream)
+								if err != nil {
+									t.Fatal(err)
+								}
+								got, err := recomputed.StepFrom(context.Background(), inputs, upstream)
+								if err != nil {
+									t.Fatal(err)
+								}
+								assertRecomputeResult(t, "nil history result", got, want)
+								assertChemicalRecomputeSnapshot(t, "nil history snapshot", recomputed.Snapshot(), full.Snapshot())
+							}
+							if reflect.DeepEqual(before.Parameters, full.Snapshot().Parameters) {
+								t.Fatal("comparison never applied a nonzero parameter update")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestCompositionReplayUsesAbsoluteSourceClock(t *testing.T) {
+	episode := chemicalEpisodePulse(7, nil, nil, nil)
+	trace := make([][]float64, 12)
+	for step := range trace {
+		trace[step] = []float64{float64(step+1) / 10}
+	}
+	episode.Part.Config.Sources[0] = modulation.SourceSpec{Kind: modulation.SourceReplay, Channel: 0, Replay: &modulation.Replay{Trace: trace}}
+	episode.Part.State.Concentration[0][0] = 0.1
+	episode.Part.State.Steps = 3
+	config := chemicalEpisodeScalarConfig(episode, true)
+	parameters := chemicalEpisodeScalarParameters()
+	input := [][]float64{{0.2}, {0.3}, {0.4}}
+	network, err := learning.NewNetwork(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, err := network.PredictAll(context.Background(), parameters, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	concentration, voltage := 0.1, 0.0
+	chemicalLeak, coreLeak := math.Exp(-0.5), math.Exp(-1)
+	for step := range input {
+		concentration = chemicalLeak*concentration + 2*(1-chemicalLeak)*trace[7+step][0]
+		occupancy := concentration / (0.5 + concentration)
+		voltage = coreLeak*voltage + (1-coreLeak)*(1+occupancy)*float64(float32(input[step][0]))
+		expected := float64(float32(math.Tanh(voltage)))
+		if len(actual[step]) != 1 || math.Float64bits(actual[step][0]) != math.Float64bits(expected) {
+			t.Fatalf("absolute replay row %d: got=%v want=%.17g", step, actual[step], expected)
+		}
+	}
+	options := learning.DefaultOptions()
+	options.Recompute = &learning.Recompute{SegmentSteps: 1}
+	trainer, err := learning.NewTrainer(config, parameters, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer trainer.Close()
+	got, err := trainer.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertRecomputeRows(t, "absolute replay segmented", got, actual)
+}

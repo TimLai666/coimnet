@@ -1,0 +1,119 @@
+package learning
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+// Independent scalar forward-mode derivative. It includes the source window,
+// chemical recurrence and core state, and explicitly stops old derivatives at
+// the declared truncation boundaries. No production arithmetic helper is used.
+func compositionInitialHand(source string, filled bool, input [][]float64, window int) (float64, []float64) {
+	v, dv, c, dc := 0.0, 1.0, 0.13, 0.0
+	leak := math.Exp(-1)
+	var activity, derivative []float64
+	if filled {
+		activity, derivative = []float64{0.1, 0.2, 0.3, 0.4}, []float64{0, 0, 0, 0}
+	}
+	gradient := 0.0
+	outputs := make([]float64, len(input))
+	for step := range input {
+		if window > 0 && step > 0 && step%window == 0 {
+			dv, dc = 0, 0
+			for i := range derivative {
+				derivative[i] = 0
+			}
+		}
+		y, dy := math.Log1p(math.Exp(v)), dv/(1+math.Exp(-v))
+		q, dq := y, dy
+		if source == "controller" {
+			activity, derivative = append(activity, y), append(derivative, dy)
+			if len(activity) > 4 {
+				activity, derivative = activity[1:], derivative[1:]
+			}
+			mean, dmean := 0.0, 0.0
+			for i := range activity {
+				mean += activity[i]
+				dmean += derivative[i]
+			}
+			mean, dmean = mean/float64(len(activity)), dmean/float64(len(activity))
+			hidden := math.Tanh(mean)
+			q = math.Log1p(math.Exp(hidden))
+			dq = dmean * (1 - hidden*hidden) / (1 + math.Exp(-hidden))
+		}
+		c, dc = leak*c+(1-leak)*q, leak*dc+(1-leak)*dq
+		occupancy := c / (1 + c)
+		gain, dgain := 1+0.6*occupancy, 0.6*dc/((1+c)*(1+c))
+		v, dv = leak*v+(1-leak)*gain*input[step][0], leak*dv+(1-leak)*dgain*input[step][0]
+		outputs[step] = math.Log1p(math.Exp(v))
+		gradient += dv / (1 + math.Exp(-v))
+	}
+	return gradient, outputs
+}
+
+func TestCompositionInitialRecomputeHand(t *testing.T) {
+	for _, source := range []string{"controller", "neural"} {
+		for _, filled := range []bool{false, true} {
+			for _, steps := range []int{1, 5} {
+				for _, window := range []int{0, 1, 3} {
+					for _, segment := range []int{0, 1, 2, 4} {
+						t.Run(fmt.Sprintf("%s/filled=%t/steps=%d/window=%d/segment=%d", source, filled, steps, window, segment), func(t *testing.T) {
+							declaration := modulation.SourceSpec{Kind: modulation.SourceController, Channel: 0, Controller: &modulation.Controller{
+								Nodes: 1, Hidden: 1, Channel: 0, Inputs: modulation.ControllerInputs{SummaryWindow: 4}, Parameters: []float64{1, 0, 0, 1, 0},
+							}}
+							if source == "neural" {
+								declaration = modulation.SourceSpec{Kind: modulation.SourceNeuralActivity, Channel: 0, Neural: &modulation.NeuralActivity{Nodes: []int{0}, SetName: "hand", Gain: 1, Channel: 0}}
+							}
+							episode := &ChemicalEpisode{SourceStep: 7, Part: ChemicalPart{
+								Config: modulation.ChemistryConfig{
+									Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{1}}, Sources: []modulation.SourceSpec{declaration},
+									Regions:   modulation.RegionAssignment{NodeRegion: []int{0}},
+									Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "hand", Channel: 0, Status: modulation.StatusHypothesized, Kd: 1, N: 1, Evidence: "hand", MeasurementKind: "declared", MappingVersion: "initial-hand/v1"}}},
+									Effects:   []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 0.6}},
+								}, State: modulation.ChemistryState{Concentration: [][]float64{{0.13}}, Steps: 3},
+							}}
+							if filled && source == "controller" {
+								episode.Part.SourceStates = []ChemicalSourceState{{Controller: &modulation.ControllerState{Window: [][]float64{{0.1}, {0.2}, {0.3}, {0.4}}, Filled: 4}}}
+							}
+							cfg := Config{Dynamics: dynamics.Config{Nodes: 1, DT: 1, Activation: "softplus"}, Chemistry: episode, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{0}}
+							network, err := NewNetwork(cfg)
+							if err != nil {
+								t.Fatal(err)
+							}
+							parameters := Parameters{Core: dynamics.Parameters{Weights: []float64{}, Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+							input, upstream := make([][]float64, steps), make([][]float64, steps)
+							for step := range input {
+								input[step], upstream[step] = []float64{0.8 + 0.1*float64(step)}, []float64{1}
+							}
+							trace, output, err := network.forwardChemical(context.Background(), parameters, input, segment, nil)
+							if err != nil {
+								t.Fatal(err)
+							}
+							gradient, err := network.core.backward(context.Background(), trace, upstream, window)
+							if err != nil {
+								t.Fatal(err)
+							}
+							expected, reference := compositionInitialHand(source, filled, input, window)
+							if len(gradient.core.Initial) != 1 || math.Abs(gradient.core.Initial[0]-expected) > 1e-11 {
+								t.Fatalf("initial gradient got=%v want=%.17g", gradient.core.Initial, expected)
+							}
+							for step := range reference {
+								if len(output[step]) != 1 || math.Abs(output[step][0]-reference[step]) > 1e-12 {
+									t.Fatalf("forward row %d got=%v want=%.17g", step, output[step], reference[step])
+								}
+							}
+							if expected <= 0 {
+								t.Fatal("initial reference has no nonzero signal")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}

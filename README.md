@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
-原始 85 項與 NAT 六項工程需求已完成 91／91 驗收。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
+原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，最新狀態為 90 項 passed、1 項 failed，修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
 
 ## 能力狀態
 
@@ -28,7 +28,7 @@ CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新�
 | 訊號、時間對齊與映射：具名訊號、因果／離線取樣、輸入輸出映射保存與替換（SIG-01、SIG-02、SIG-04、SIG-05、SIG-06） | 初始化模型（資料層） | fixture | 核心能力 | [SIG-01](evidence/SIG-01/verification.json)・[SIG-02](evidence/SIG-02/verification.json)・[SIG-04](evidence/SIG-04/verification.json)・[SIG-05](evidence/SIG-05/verification.json)・[SIG-06](evidence/SIG-06/verification.json) |
 | 個體與保存：解剖／參數／個體／訓練器狀態分離、三種保存物、安全快照與隔離個體（COR-01、STA-01、STA-02、STA-04） | 已訓練（人工資料） | fixture | 核心能力 | [COR-01](evidence/COR-01/verification.json)・[STA-01](evidence/STA-01/verification.json)・[STA-02](evidence/STA-02/verification.json)・[STA-04](evidence/STA-04/verification.json) |
 | 精確中斷接續：連續執行對照下同時恢復參數、最佳化器、快速權重、化學與資料游標（STA-03） | 已訓練（人工資料） | fixture | 核心能力 | [STA-03](evidence/STA-03/verification.json) |
-| 調節來源與化學：觀察／目標／回饋分離、四種調節來源、獎懲映射、時間衰退的濃度、選擇性受體與效果（SIG-03、MOD-01、MOD-02、MOD-03、MOD-04、MOD-08） | 初始化模型（未訓練） | fixture | 核心能力 | [SIG-03](evidence/SIG-03/verification.json)・[MOD-01](evidence/MOD-01/verification.json)・[MOD-02](evidence/MOD-02/verification.json)・[MOD-03](evidence/MOD-03/verification.json)・[MOD-04](evidence/MOD-04/verification.json)・[MOD-08](evidence/MOD-08/verification.json) |
+| 調節來源與化學：觀察／目標／回饋分離、四種調節來源、獎懲映射、時間衰退的濃度、選擇性受體（SIG-03、MOD-01、MOD-02、MOD-03、MOD-08） | 初始化模型（未訓練） | fixture | 核心能力 | [SIG-03](evidence/SIG-03/verification.json)・[MOD-01](evidence/MOD-01/verification.json)・[MOD-02](evidence/MOD-02/verification.json)・[MOD-03](evidence/MOD-03/verification.json)・[MOD-08](evidence/MOD-08/verification.json) |
 | 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
 | 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
 | 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |

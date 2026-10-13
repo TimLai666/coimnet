@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 目前完成 1／4。公開入口 15 個零作用案例確認 9 個偏離中性增益，MOD-04 標為 failed，最新工程需求狀態為 90 項 passed、1 項 failed。120 個歷史／分段組合、來源 Replay 時鐘及 96 個初始梯度斷言通過一般與 race 檢查。候選化學模組的一般／race 各 375 個事件通過，但正式程式沒有套用。要求增益範圍包含 1 會拒絕部分舊模型，使用者相容性決策 pending。見[驗證](evidence/MOD-02/chemical-composition-20261014/verification.json)與[Root 審查](evidence/MOD-02/chemical-composition-20261014/root-review.md)。本票尚未完成修正與完整工程驗收，沒有整體零 bug 或真實品質提升結論。
+
 [ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md) 已完成 4／4。未明示 InitialActivity 時首步來源的 Core.Initial 漏算已修正，五組舊來源失敗案例通過。八組混合參考的前向差為零、梯度最大絕對差 5.55111512e-17，四種刻意錯誤均被抓到。完整一般與 race 各 58 套件、格式、build、vet、相依性及最後 11 項治理通過，793 份提交來源與 457 份凍結測試相符。修正 f4dc57f 與主要回歸／證據 5a85737 已推送且遠端相同。本輪 1,942,892,872 bytes 暫存與 10,177 個快取連結已清除，原有暫存保留。見[驗證](evidence/MOD-02/mixed-chemical-gradient-20261014/verification.json)、[Root 審查](evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)、[清理](evidence/MOD-02/mixed-chemical-gradient-20261014/cleanup.json)與[交付](evidence/MOD-02/mixed-chemical-gradient-20261014/delivery.json)。整體零 bug 與真實辨識率提升尚未證明。
 
 ticket 87 已完成 5／5 驗收與交付：四類不可表示配置已回錯，34 個回歸事件與 15 個非法公開診斷案例通過。完整一般／race 各 58 套件、格式、build、vet、固定相依性、11 項治理、32 組合法模型逐位比較、8 組活動生命週期及 CLI 新程序接續通過。791 份來源與 455 份凍結測試相符，主要提交內的 791 份來源也逐一核對。修正 `9568fa8` 與回歸／證據 `1ea4e50` 已推送且遠端相同。本輪 9,426 個檔案與 20,501 個快取連結、1,404,334,193 bytes 已清除，原有暫存目錄保留。見[本票](docs/tickets/87-chemical-capacity-validation.md)、[工程驗收](evidence/MOD-02/chemical-capacity-20261014/verification.json)、[清理](evidence/MOD-02/chemical-capacity-20261014/cleanup.json)與[交付](evidence/MOD-02/chemical-capacity-20261014/delivery.json)。正常化學設計未確認矛盾，混合連續／脈衝完整反向的獨立參考缺口已列 Follow-ups，尚無零 bug 或真實辨識率提升結論。
@@ -187,6 +189,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 89 | 研究者可以核對多通道化學與來源歷史符合宣告機制 | Codex Root／Luna max 唯讀稽核 | pending_decision | 1／4。中性增益缺陷已確認，來源歷史／分段與初始梯度檢查通過；相容性修正尚未採用，MOD-04 failed |
 | 88 | 研究者可以核對混合神經元的完整化學訓練計算 | Codex Root / Luna max 測試與契約稽核 | completed | 4／4。獨立參考、初始來源漏算修正、完整工程、11 項治理、來源核對、暫存清理與主要推送讀回完成 |
 | 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | completed | 5／5。完整工程、11 項治理、合法相容性及 791 份提交來源核對通過；本輪暫存清除、主要提交推送與遠端讀回完成 |
 | 85 | 混合線上更新失敗後只接續未完成階段 | Codex Root／Luna max | completed | 5／5。10 個新增回歸、32 組正常逐位相容、完整一般／race 各 58 套件及 11 項治理通過；暫存清除、推送及遠端核對完成 |
@@ -264,7 +267,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-無外部阻礙。ticket 88 的完整工程、治理、清理與主要交付完成。多訊號、其他來源、MixMax、持續歷史與混合重算的完整獨立對照尚未新增。真實辨識率沒有在本階段重測，先前品質限制保留。
+ticket 89 的相容性修正等待使用者回答，正式程式沒有改動。已確認增益範圍排除 1 時，零化學作用會改變神經訊號尺度。完整框架、真實品質及生物校準沒有由本階段重新驗收；混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 
@@ -286,7 +289,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md) 已完成 4／4。下一項建議成果是擴大多訊號及持續歷史的獨立組合對照，只有重現差異才判定缺陷。尚未建立或執行新票。本輪正常機制對照與限制見[Root 審查](evidence/MOD-02/mixed-chemical-gradient-20261014/root-review.md)。
+[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的公開缺陷已重現，候選限制增益範圍須包含 1。取得相容性決策後，才能套用正式修正、補永久回歸並執行完整工程驗收。候選尚未採用，不以化學套件通過當成框架修正完成。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

@@ -1,0 +1,216 @@
+package learning_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func TestCompositionNilHistoryRecompute(t *testing.T) {
+	for _, core := range []string{"continuous", "lif"} {
+		for _, filled := range []bool{false, true} {
+			for _, mix := range []string{modulation.MixSum, modulation.MixMax} {
+				for _, window := range []int{0, 3, 5} {
+					for _, segment := range []int{1, 4, 7} {
+						t.Run(fmt.Sprintf("%s/filled=%t/mix=%s/window=%d/segment=%d", core, filled, mix, window, segment), func(t *testing.T) {
+							config, parameters, inputs, _, upstream := chemicalRecomputeFixture(t)
+							options := chemicalRecomputeOptions(segment, window, 2)
+							if core == "lif" {
+								fixture := newChemicalRecomputeLIFFixture(t, 9, 0.8)
+								config, parameters, inputs, upstream = fixture.config, fixture.parameters, fixture.inputs, fixture.upstream
+								options = chemicalRecomputeLIFOptions(segment, window)
+							} else {
+								config.Dynamics.Activation = "softplus"
+							}
+							config.Chemistry.InitialActivity = nil
+							config.Chemistry.Part.Config.Receptors.Mix = mix
+							if !filled {
+								config.Chemistry.Part.SourceStates = nil
+							}
+							fullOptions := options
+							fullOptions.Recompute = nil
+							full, err := learning.NewTrainer(config, parameters, fullOptions)
+							if err != nil {
+								t.Fatal(err)
+							}
+							defer full.Close()
+							recomputed, err := learning.NewTrainer(config, parameters, options)
+							if err != nil {
+								t.Fatal(err)
+							}
+							defer recomputed.Close()
+							before := full.Snapshot()
+							for operation := 0; operation < 2; operation++ {
+								want, err := full.StepFrom(context.Background(), inputs, upstream)
+								if err != nil {
+									t.Fatal(err)
+								}
+								got, err := recomputed.StepFrom(context.Background(), inputs, upstream)
+								if err != nil {
+									t.Fatal(err)
+								}
+								assertRecomputeResult(t, "nil history result", got, want)
+								assertChemicalRecomputeSnapshot(t, "nil history snapshot", recomputed.Snapshot(), full.Snapshot())
+							}
+							if reflect.DeepEqual(before.Parameters, full.Snapshot().Parameters) {
+								t.Fatal("comparison never applied a nonzero parameter update")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}
+
+func TestCompositionReplayUsesAbsoluteSourceClock(t *testing.T) {
+	episode := chemicalEpisodePulse(7, nil, nil, nil)
+	trace := make([][]float64, 12)
+	for step := range trace {
+		trace[step] = []float64{float64(step+1) / 10}
+	}
+	episode.Part.Config.Sources[0] = modulation.SourceSpec{Kind: modulation.SourceReplay, Channel: 0, Replay: &modulation.Replay{Trace: trace}}
+	episode.Part.State.Concentration[0][0] = 0.1
+	episode.Part.State.Steps = 3
+	config := chemicalEpisodeScalarConfig(episode, true)
+	parameters := chemicalEpisodeScalarParameters()
+	input := [][]float64{{0.2}, {0.3}, {0.4}}
+	network, err := learning.NewNetwork(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	actual, err := network.PredictAll(context.Background(), parameters, input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	concentration, voltage := 0.1, 0.0
+	chemicalLeak, coreLeak := math.Exp(-0.5), math.Exp(-1)
+	for step := range input {
+		concentration = chemicalLeak*concentration + 2*(1-chemicalLeak)*trace[7+step][0]
+		occupancy := concentration / (0.5 + concentration)
+		voltage = coreLeak*voltage + (1-coreLeak)*(1+occupancy)*float64(float32(input[step][0]))
+		expected := float64(float32(math.Tanh(voltage)))
+		if len(actual[step]) != 1 || math.Float64bits(actual[step][0]) != math.Float64bits(expected) {
+			t.Fatalf("absolute replay row %d: got=%v want=%.17g", step, actual[step], expected)
+		}
+	}
+	options := learning.DefaultOptions()
+	options.Recompute = &learning.Recompute{SegmentSteps: 1}
+	trainer, err := learning.NewTrainer(config, parameters, options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer trainer.Close()
+	fullOptions := options
+	fullOptions.Recompute = nil
+	full, err := learning.NewTrainer(config, parameters, fullOptions)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer full.Close()
+	upstream := [][]float64{{0.1}, {0.2}, {0.3}}
+	got, err := trainer.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := full.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertRecomputeResult(t, "absolute replay segmented training", got, want)
+	assertChemicalRecomputeSnapshot(t, "absolute replay segmented snapshot", trainer.Snapshot(), full.Snapshot())
+}
+
+func TestCompositionPersistentChemicalRecompute(t *testing.T) {
+	for _, core := range []string{"continuous", "lif"} {
+		for _, warmRows := range []int{1, 5} {
+			for _, reset := range []bool{false, true} {
+				for _, window := range []int{0, 3, 5} {
+					for _, segment := range []int{1, 4} {
+						t.Run(fmt.Sprintf("%s/warm=%d/reset=%t/window=%d/segment=%d", core, warmRows, reset, window, segment), func(t *testing.T) {
+							config, parameters, inputs, target, _ := chemicalRecomputeFixture(t)
+							options := chemicalRecomputeOptions(segment, window, 2)
+							if core == "lif" {
+								fixture := newChemicalRecomputeLIFFixture(t, 9, 0.8)
+								config, parameters, inputs, target = fixture.config, fixture.parameters, fixture.inputs, fixture.target
+								options = chemicalRecomputeLIFOptions(segment, window)
+							}
+							chemical := config.Chemistry.Part.Config
+							config.Chemistry = nil
+							fullOptions := options
+							fullOptions.Recompute = nil
+							base, err := learning.NewIndividual(config, parameters, fullOptions, []float64{0, 0})
+							if err != nil {
+								t.Fatal(err)
+							}
+							if _, err := base.Advance(context.Background(), inputs[:1]); err != nil {
+								t.Fatal(err)
+							}
+							if err := base.EnableChemistry(chemical); err != nil {
+								t.Fatal(err)
+							}
+							if err := base.SetResource("energy", 0.8); err != nil {
+								t.Fatal(err)
+							}
+							if _, err := base.Advance(context.Background(), inputs[:warmRows]); err != nil {
+								t.Fatal(err)
+							}
+							if reset {
+								if err := base.ResetNeural(context.Background(), []float64{0, 0}); err != nil {
+									t.Fatal(err)
+								}
+							}
+							fullState, recomputedState := base.Snapshot(), base.Snapshot()
+							recomputedState.Optimizer.Options.Recompute = &learning.Recompute{SegmentSteps: segment}
+							full, err := learning.RestoreIndividual(fullState)
+							if err != nil {
+								t.Fatal(err)
+							}
+							recomputed, err := learning.RestoreIndividual(recomputedState)
+							if err != nil {
+								t.Fatal(err)
+							}
+							before := full.Snapshot()
+							for operation := 0; operation < 2; operation++ {
+								want, err := full.TrainEpisode(context.Background(), inputs, target)
+								if err != nil {
+									t.Fatal(err)
+								}
+								got, err := recomputed.TrainEpisode(context.Background(), inputs, target)
+								if err != nil {
+									t.Fatal(err)
+								}
+								assertRecomputeResult(t, "persistent chemical result", got, want)
+								a, b := full.Snapshot(), recomputed.Snapshot()
+								if !reflect.DeepEqual(a.Neural, before.Neural) || !reflect.DeepEqual(a.Chemical, before.Chemical) {
+									t.Fatal("private chemical training changed persistent neural/source state")
+								}
+								a.Optimizer.Options.Recompute, b.Optimizer.Options.Recompute = nil, nil
+								aBytes, err := json.Marshal(a)
+								if err != nil {
+									t.Fatal(err)
+								}
+								bBytes, err := json.Marshal(b)
+								if err != nil {
+									t.Fatal(err)
+								}
+								if string(aBytes) != string(bBytes) {
+									t.Fatal("persistent full/recompute snapshot bytes differ")
+								}
+							}
+							if reflect.DeepEqual(before.Parameters, full.Snapshot().Parameters) {
+								t.Fatal("persistent comparison did not apply a nonzero update")
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+}

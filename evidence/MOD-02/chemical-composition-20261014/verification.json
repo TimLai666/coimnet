@@ -1,0 +1,110 @@
+{
+  "requirement": "MOD-04",
+  "status": "failed",
+  "captured_at": "2026-10-13T22:56:42.486722+00:00",
+  "reproduction_command": "python3 evidence/MOD-02/chemical-composition-20261014/reproduce.py neutral --work runs/.tmp/chemical-composition-replay",
+  "environment": {
+    "go": "go1.26.5",
+    "GOOS": "darwin",
+    "GOARCH": "arm64",
+    "CGO_ENABLED": "1",
+    "macOS": "27.0.1",
+    "filesystem": "local APFS",
+    "base_commit": "c43ff4051ed3e80b3988ee37335353579f0c82d5",
+    "source_count": 793
+  },
+  "input_fingerprints": {
+    "source_manifest": "baseline.json",
+    "probe_sha256": "3914be7972db8fd64e639cdd73a9f45f26080ed424b306935ae856b0aa243aaa",
+    "effects_source_sha256": "8cfaa586fd6ad6b85b2adb16604c93b6850a1b67a2a82cd51ad5f96b816ae7b7"
+  },
+  "observed_result": {
+    "public_zero_occupancy_cases": 15,
+    "non_neutral_cases": 9,
+    "neutral_controls": 6,
+    "observed_bad_gains": [
+      1.25,
+      0.75,
+      1.5
+    ],
+    "expected_gain": 1,
+    "mixes": [
+      "",
+      "sum",
+      "max"
+    ],
+    "all_public_calls_returned_success": true,
+    "confirmed_severity": "P2",
+    "cause": "checkedEffect permits positive ordered gain intervals excluding 1; ApplyEffects clamps neutral gain into these intervals",
+    "model_quality": "output/activation scale is wrong under the triggering bounds; task accuracy impact was not measured",
+    "production_sources_changed": false,
+    "candidate_adopted": false,
+    "compatibility_decision": "pending human answer; exclusion would reject existing models using these bounds",
+    "checks": {
+      "neutral-candidate-unit": {
+        "receipt": "neutral-candidate-unit.json",
+        "pass_events": 375,
+        "top_level_tests": 110,
+        "scope": "candidate overlay, not adopted"
+      },
+      "neutral-candidate-race": {
+        "receipt": "neutral-candidate-race.json",
+        "pass_events": 375,
+        "top_level_tests": 110,
+        "scope": "candidate overlay, not adopted"
+      },
+      "history-probe-v3": {
+        "receipt": "history-probe-v3.json",
+        "pass_events": 123,
+        "top_level_tests": 3,
+        "scope": "unchanged production with diagnostic overlay"
+      },
+      "history-probe-race": {
+        "receipt": "history-probe-race.json",
+        "pass_events": 123,
+        "top_level_tests": 3,
+        "scope": "unchanged production with diagnostic overlay"
+      },
+      "initial-bridge-hand-v2": {
+        "receipt": "initial-bridge-hand-v2.json",
+        "pass_events": 97,
+        "top_level_tests": 1,
+        "scope": "unchanged production with diagnostic overlay"
+      },
+      "initial-bridge-hand-race": {
+        "receipt": "initial-bridge-hand-race.json",
+        "pass_events": 97,
+        "top_level_tests": 1,
+        "scope": "unchanged production with diagnostic overlay"
+      }
+    },
+    "full_framework_acceptance": "not executed for unadopted candidate; preceding c43ff40 full acceptance remains historical",
+    "plan_completed_items": 1,
+    "plan_total_items": 4,
+    "documentation_governance": {
+      "pass_events": 31,
+      "top_level_tests": 11,
+      "receipt": "final-governance.json"
+    }
+  },
+  "test_log": "neutral-probe.log",
+  "supporting_receipts": [
+    "neutral-probe.json",
+    "neutral-proposal-red.json",
+    "neutral-candidate-unit.json",
+    "neutral-candidate-race.json",
+    "history-probe-v3.json",
+    "history-probe-race.json",
+    "initial-bridge-hand-v2.json",
+    "initial-bridge-hand-race.json",
+    "reproducer-neutral.json",
+    "final-governance.json"
+  ],
+  "diagnostic_failures": {
+    "history-probe-v2": "probe compilation failure from incorrect diagnostic API calls, corrected in v3; not a framework defect",
+    "initial-bridge-hand": "independent reference initially omitted documented zero padding of controller ring; corrected reference v2 retains tolerances and production source",
+    "history-probe": "v1 Replay PredictAll does not exercise Recompute; v3 StepFrom supplies actual recompute evidence"
+  },
+  "cleanup": "cleanup.json",
+  "source_final": "source-final.json"
+}
