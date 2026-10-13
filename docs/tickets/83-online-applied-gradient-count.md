@@ -3,7 +3,7 @@
 **Epic:** 機制與訓練狀態一致性
 **User Story:** 累積中間步不可冒充模型已更新
 **Blocked by:** 無
-**Status:** verifying
+**Status:** completed
 
 ## Root 決策與驗收（2026-10-14）
 
@@ -13,6 +13,8 @@
 - [x] 前 k-1 次 GradientSteps 為0，optimizer update 不變。
 - [x] 第 k 次回報1且實際更新，累積狀態清空。
 - [x] AccumulateSteps 1控制及 partial restore 後接續均通過。
-- [ ] 完整工程驗證、證據、清理、提交及遠端讀回完成。
+- [x] 完整工程驗證、證據、清理、提交及遠端讀回完成。
 
 減法審查：重用化學 episode 建構與共享索引，直接補正既有回報與間隔提交，不增加平行訓練路徑或保存欄位。
+
+驗收與交付：[verification.json](../../evidence/MOD-02/chemical-boundaries-20261013/verification.json)、[cleanup.json](../../evidence/MOD-02/chemical-boundaries-20261013/cleanup.json)、[delivery.json](../../evidence/MOD-02/chemical-boundaries-20261013/delivery.json)。

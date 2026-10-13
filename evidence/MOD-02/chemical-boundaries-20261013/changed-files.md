@@ -176,3 +176,5 @@
 | [modulation/config.go](/Users/timlai/Developer/coimnet/modulation/config.go) | 修正化學、來源、線上更新或共享恢復契約 |
 | [modulation/source_channel_overflow_test.go](/Users/timlai/Developer/coimnet/modulation/source_channel_overflow_test.go) | 公開反例、拒絕後保持與正常控制回歸 |
 | [modulation/sources.go](/Users/timlai/Developer/coimnet/modulation/sources.go) | 修正化學、來源、線上更新或共享恢復契約 |
+| [evidence/MOD-02/chemical-boundaries-20261013/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-boundaries-20261013/delivery.json) | 實際修正／回歸提交、推送與遠端讀回 |
+| [evidence/MOD-02/chemical-boundaries-20261013/closure-validation.json](/Users/timlai/Developer/coimnet/evidence/MOD-02/chemical-boundaries-20261013/closure-validation.json) | 交付後七張票5／5、91項狀態與782份來源核對 |

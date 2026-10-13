@@ -3,7 +3,7 @@
 **Epic:** 機制與訓練狀態一致性
 **User Story:** UpdateEvery 不得讓失敗回饋在重試時變成 skip 被消耗
 **Blocked by:** 無
-**Status:** verifying
+**Status:** completed
 
 ## Root 決策與驗收（2026-10-14）
 
@@ -13,6 +13,8 @@
 - [x] 連續三次重試保持同一錯誤，Consumed／GradientSteps為0。
 - [x] 完整個體快照在拒絕後保持。
 - [x] UpdateEvery 1／2 正常 skip／套用控制保持。
-- [ ] 完整工程驗證、證據、清理、提交及遠端讀回完成。
+- [x] 完整工程驗證、證據、清理、提交及遠端讀回完成。
 
 減法審查：重用化學 episode 建構與共享索引，直接補正既有回報與間隔提交，不增加平行訓練路徑或保存欄位。
+
+驗收與交付：[verification.json](../../evidence/MOD-02/chemical-boundaries-20261013/verification.json)、[cleanup.json](../../evidence/MOD-02/chemical-boundaries-20261013/cleanup.json)、[delivery.json](../../evidence/MOD-02/chemical-boundaries-20261013/delivery.json)。
