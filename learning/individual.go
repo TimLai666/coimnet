@@ -467,6 +467,10 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		return nil, PlasticReport{}, err
 	}
 	defer i.mu.Unlock()
+	return i.advanceRowsLocked(ctx, input, gate)
+}
+
+func (i *Individual) advanceRowsLocked(ctx context.Context, input [][]float64, gate []float64) ([][]float64, PlasticReport, error) {
 	n, p := i.trainer.network, i.trainer.parameters
 	if len(input) == 0 {
 		return nil, PlasticReport{}, fmt.Errorf("empty input sequence")
@@ -834,6 +838,10 @@ func (i *Individual) TrainEpisode(ctx context.Context, input [][]float64, target
 		return StepResult{}, err
 	}
 	defer i.mu.Unlock()
+	return i.trainEpisodeLocked(ctx, input, target)
+}
+
+func (i *Individual) trainEpisodeLocked(ctx context.Context, input [][]float64, target []float64) (StepResult, error) {
 	if i.episodes == ^uint64(0) {
 		return StepResult{}, fmt.Errorf("individual episode count overflow")
 	}

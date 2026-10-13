@@ -264,11 +264,7 @@ func (l *OnlineLearner) Act(ctx context.Context, obs signal.Observation, input [
 	if uint64(len(input)) > math.MaxUint64-l.step {
 		return ActionRecord{}, fmt.Errorf("learning: online step counter overflow")
 	}
-	output, err := l.individual.Advance(ctx, input)
-	if err != nil {
-		return ActionRecord{}, err
-	}
-	version, err := parameterVersion(l.individual.Snapshot().Parameters)
+	output, version, err := l.individual.advanceVersioned(ctx, input)
 	if err != nil {
 		return ActionRecord{}, err
 	}
@@ -403,15 +399,7 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 			// gradient phase, so a failed feedback stays due on retry.
 			nextEligible := (l.eligible%every + 1) % every
 			if nextEligible == 0 {
-				prediction, err := l.individual.episodePredict(ctx, entry.input)
-				if err != nil {
-					return err
-				}
-				effective, err := weightedTarget(prediction, target, fb.Score())
-				if err != nil {
-					return err
-				}
-				result, err := l.individual.TrainEpisode(ctx, entry.input, effective)
+				result, err := l.individual.trainWeightedEpisode(ctx, entry.input, target, fb.Score())
 				if err != nil {
 					return err
 				}
@@ -481,8 +469,9 @@ func (l *OnlineLearner) remainingFeedback(consumed []signal.Feedback) []signal.F
 // The trainer's squared-error gradient is proportional to the residual, so the
 // residual this leaves is exactly w times the declared one and the gradient is
 // exactly the w-weighted gradient. w = 1 is the unweighted update; w = 0 leaves
-// a zero residual, so the step still runs the optimizer but moves no parameter
-// that weight decay does not move.
+// a zero residual, so the new residual is zero. Existing Adam momentum, weight
+// decay, update counters and partial accumulation may still change parameters
+// or optimizer state when a zero-score step runs.
 func weightedTarget(prediction, target []float64, score float64) ([]float64, error) {
 	if len(prediction) != len(target) {
 		return nil, fmt.Errorf("learning: the model produced %d values, the target has %d", len(prediction), len(target))
@@ -502,34 +491,6 @@ func weightedTarget(prediction, target []float64, score float64) ([]float64, err
 		}
 	}
 	return effective, nil
-}
-
-// episodePredict is the independent zero-state prediction a weighted target is
-// built from: the same episode TrainEpisode would run, without changing
-// anything. It takes the individual's own lock in the same order TrainEpisode
-// does. The ordinary path uses Trainer.Predict; enabled chemistry uses the
-// same private episode boundary and predicts without advancing persistent state.
-func (i *Individual) episodePredict(ctx context.Context, input [][]float64) ([]float64, error) {
-	if i == nil || i.trainer == nil {
-		return nil, fmt.Errorf("uninitialized individual")
-	}
-	if err := i.mu.LockContext(ctx); err != nil {
-		return nil, err
-	}
-	defer i.mu.Unlock()
-	tr := i.trainer
-	if i.chemical == nil {
-		return tr.Predict(ctx, input)
-	}
-	if err := tr.mu.LockContext(ctx); err != nil {
-		return nil, err
-	}
-	defer tr.mu.Unlock()
-	network, err := i.chemicalEpisodeNetwork()
-	if err != nil {
-		return nil, err
-	}
-	return network.Predict(ctx, tr.parameters, input)
 }
 
 // plasticityEnabled reports whether the local mechanism is on, so an online
