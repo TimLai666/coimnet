@@ -1,0 +1,129 @@
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+import pathlib
+import re
+import subprocess
+
+root = pathlib.Path.cwd()
+evidence = root / 'evidence/MOD-02/chemical-boundaries-20261013'
+
+def read(name):
+    return json.loads((evidence / (name + '.json')).read_text())
+
+def write(name, value):
+    with (evidence / (name + '.json')).open('x') as out:
+        json.dump(value, out, indent=2, ensure_ascii=False)
+        out.write('\n')
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+def raw_log(receipt):
+    packed = (root / receipt['log']).read_bytes()
+    assert sha(packed) == receipt['log_sha256'], receipt['log']
+    raw = gzip.decompress(packed)
+    assert sha(raw) == receipt['raw_log_sha256'], receipt['log']
+    assert len(raw) == receipt['raw_log_bytes'], receipt['log']
+    return raw
+
+source = read('source-final')
+assert len(source) == 782
+assert all(sha((root / path).read_bytes()) == digest for path, digest in source.items())
+frozen = read('frozen-tests-final')
+assert len(frozen) == 7
+assert all(source[path] == digest for path, digest in frozen.items())
+baseline = read('baseline')
+for path in ('go.mod', 'go.sum'):
+    old = subprocess.check_output(['git', 'show', baseline['head'] + ':' + path])
+    assert old == (root / path).read_bytes(), path
+
+passed_commands = ['final-build', 'final-vet', 'dependencies-native-cache',
+                   'green-targeted', 'green-next-all', 'compatibility-before',
+                   'compatibility-after', 'compatibility-final', 'cli-build-final',
+                   'full-final-unit', 'full-final-race', 'target-flow']
+expected_red = ['red-chemistry-source', 'red-expression', 'red-next-chemical',
+                'red-next-partial', 'red-next-retry-fixed']
+for name in passed_commands:
+    assert read(name)['exit_code'] == 0, name
+for name in expected_red:
+    receipt = read(name)
+    assert receipt['exit_code'] != 0 and b'--- FAIL: Test' in raw_log(receipt), name
+# Retain, but do not use as defect evidence, the first retry-test compile error.
+assert read('red-next-retry')['exit_code'] != 0
+assert b'imported and not used' in raw_log(read('red-next-retry'))
+assert read('full-race')['exit_code'] != 0  # superseded, interrupted run
+
+tests = sorted(name for path in frozen for name in re.findall(
+    r'^func (Test\w+)\(t \*testing\.T\)', (root / path).read_text(), re.M))
+assert len(tests) == 22
+summary = {}
+for kind in ('unit', 'race'):
+    receipt = read('full-final-' + kind)
+    raw = raw_log(receipt)
+    assert b'WARNING: DATA RACE' not in raw
+    events = [json.loads(line) for line in raw.splitlines() if line.startswith(b'{')]
+    counts = collections.Counter((e['Action'], 'test' if 'Test' in e else 'package') for e in events)
+    assert counts['fail', 'test'] == counts['fail', 'package'] == 0
+    assert counts['pass', 'package'] == 58
+    passed = {e['Test'] for e in events if e['Action'] == 'pass' and 'Test' in e}
+    assert all(name in passed for name in tests)
+    skips = [e for e in events if e['Action'] == 'skip']
+    for skipped in skips:
+        skipped['output'] = [e['Output'].strip() for e in events
+                             if e['Action'] == 'output'
+                             and e.get('Package') == skipped.get('Package')
+                             and e.get('Test') == skipped.get('Test')]
+    summary[kind] = dict(passed_packages=counts['pass', 'package'],
+                         passed_test_events=counts['pass', 'test'],
+                         skipped_test_events=counts['skip', 'test'],
+                         skipped_packages=counts['skip', 'package'],
+                         skips=skips, log=receipt['log'])
+write('suite-summary-final', summary)
+
+compatible = [raw_log(read(name)) for name in ('compatibility-before', 'compatibility-after', 'compatibility-final')]
+assert compatible[0] == compatible[1] == compatible[2]
+rows = len(json.loads(compatible[0]))
+assert rows == 22
+write('compatibility-final-result', dict(equal_bytes=True, rows=rows,
+      sha256=sha(compatible[0]), receipts=['compatibility-before.json', 'compatibility-after.json', 'compatibility-final.json']))
+cli_before, cli_final = read('cli-acceptance'), read('cli-acceptance-final')
+assert cli_before['checkpoint_sha256'] == cli_final['checkpoint_sha256']
+assert cli_final['checkpoint_equal_bytes'] and len(cli_final['receipts']) == 8
+for name in cli_final['receipts']:
+    assert json.loads((evidence / name).read_text())['exit_code'] == 0
+format_result = read('format-final')
+assert format_result['exit_code'] == 0 and format_result['file_count'] == 778
+
+receipts = []
+for path in sorted(evidence.glob('*.json')):
+    data = json.loads(path.read_text())
+    if isinstance(data, dict) and 'raw_log_sha256' in data:
+        raw_log(data)
+        receipts.append(str(path.relative_to(root)))
+write('verification', dict(
+    requirement=['MOD-01', 'MOD-02', 'MOD-06', 'LRN-06', 'STA-03'],
+    reproduction_command='Restore the retained helpers into runs/.tmp/chemical-boundaries-20261013, provide the fixed dependencies, then execute the exact commands in the referenced receipts; overlay maps need their recorded input paths restored.',
+    environment=dict(go=baseline['go'], os=baseline['os'], filesystem='native APFS',
+                     dependency='Insyra v0.3.4; go.mod/go.sum byte-identical to baseline',
+                     cache='All new build/test cache and temporary files under this stage runs/.tmp; dependency verification read the existing immutable module cache.'),
+    input_fingerprints=dict(source_manifest='source-final.json', source_manifest_sha256=sha((evidence/'source-final.json').read_bytes()),
+                            frozen_tests='frozen-tests-final.json', source_count=len(source), baseline_head=baseline['head']),
+    observed_result=dict(confirmed_defect_classes_fixed=7, new_top_level_regressions_passed=22,
+                         suites=summary, build=True, vet=True, dependencies=True, format=format_result,
+                         legal_public_api_records_equal=22, cli_resume_80_plus_40_equals_continuous_120=True,
+                         legal_cli_checkpoint_equals_earlier_build=True),
+    test_log=receipts,
+    limitations=['Bounded CPU engineering audit, not proof of zero bugs or complete physiology.',
+                 'No new real OCR accuracy experiment, full-graph performance benchmark, other-platform execution, GPU or NAS durability acceptance.',
+                 'Earlier full-race run was interrupted after new confirmed defects superseded its frozen source; only full-final-race is final acceptance.',
+                 'Existing environment/helper skips retained; see suite-summary-final.json.',
+                 'Direct mutation of caller inputs and cross-entry Online/Individual atomicity are not newly guaranteed.',
+                 'Huge representable channel counts were not allocated; existing resource-limit questions remain.',
+                 'Updating the framework does not undo prior model updates produced by affected training paths.'],
+    completed_at=datetime.datetime.now(datetime.timezone.utc).isoformat()))
+print(json.dumps({'source_count':len(source),'regression_count':len(tests),
+                  'unit':{k:v for k,v in summary['unit'].items() if k!='skips'},
+                  'race':{k:v for k,v in summary['race'].items() if k!='skips'}}, ensure_ascii=False))

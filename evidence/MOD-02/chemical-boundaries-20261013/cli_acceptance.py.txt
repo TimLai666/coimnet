@@ -1,0 +1,13 @@
+import pathlib,subprocess,json,hashlib
+root=pathlib.Path.cwd()
+work=root/'runs/.tmp/chemical-boundaries-20261013'
+evidence=root/'evidence/MOD-02/chemical-boundaries-20261013'
+check=work/'check.py'
+binary=str(work/'coimnet')
+commands=[('cli-doctor',[binary,'doctor']),('cli-data-sources',[binary,'data','sources']),('cli-delayed',[binary,'examples','run','delayed']),('cli-lif-threshold',[binary,'examples','run','lif-threshold']),('cli-train-first',[binary,'train','delayed','--steps','80','--checkpoint',str(work/'first.json')]),('cli-resume',[binary,'resume','--checkpoint',str(work/'first.json'),'--steps','40','--out',str(work/'resumed.json')]),('cli-train-continuous',[binary,'train','delayed','--steps','120','--checkpoint',str(work/'continuous.json')]),('cli-compare',['cmp',str(work/'resumed.json'),str(work/'continuous.json')])]
+for slug,command in commands:
+ subprocess.run(['python3',str(check),slug,*command],check=True)
+a=(work/'resumed.json').read_bytes(); b=(work/'continuous.json').read_bytes()
+assert a==b
+with (evidence/'cli-acceptance.json').open('x') as out:
+ json.dump({'scripts_verify_cli_commands':'all eight passed','checkpoint_equal_bytes':True,'checkpoint_bytes':len(a),'checkpoint_sha256':hashlib.sha256(a).hexdigest(),'saved_model_format':json.loads(a).get('schema_version'),'receipts':[slug+'.json' for slug,_ in commands]},out,indent=2);out.write('\n')

@@ -1,0 +1,91 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func declaration() modulation.ChemistryConfig {
+	return modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{2}},
+		Sources:   []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 1, Channel: 0, Rate: 1}}}}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "chemical-boundaries/v1"}}},
+		Effects:   []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 1}},
+		Regions:   modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+	}
+}
+func main() {
+	rows := []any{}
+	for _, tau := range []float64{2, 1e-200} {
+		k, err := modulation.NewChemistry(modulation.Chemistry{Regions: 2, Channels: 1, DT: 1, Tau: []float64{tau}, Transport: &modulation.Transport{Fraction: [][]float64{{0, .25}, {.5, 0}}}})
+		must(err)
+		state := k.NewState()
+		state.Concentration = [][]float64{{3}, {1}}
+		for _, boost := range [][][]float64{nil, {{0}, {0}}, {{.5}, {.25}}} {
+			q := [][]float64{{1}, {2}}
+			s, err := k.Step(state, q, boost)
+			must(err)
+			g, err := k.Backward(state, q, boost, [][]float64{{2}, {-1}})
+			must(err)
+			rows = append(rows, []any{tau, boost, s, g})
+		}
+	}
+	for _, channel := range []int{0, 2} {
+		n := modulation.NeuralActivity{Nodes: []int{0, 1}, Gain: 2, Channel: channel}
+		r := modulation.InternalResource{Resource: "energy", Coefficient: 2, Threshold: 1, Channel: channel}
+		context := modulation.SourceContext{Activity: []float64{.5, 2}, Resources: map[string]float64{"energy": 3}}
+		for _, spec := range []modulation.SourceSpec{{Kind: modulation.SourceNeuralActivity, Channel: channel, Neural: &n}, {Kind: modulation.SourceInternalResource, Channel: channel, Resource: &r}} {
+			s, err := spec.Build()
+			must(err)
+			q, err := s.Release(0, context)
+			must(err)
+			rows = append(rows, []any{spec.Kind, channel, q})
+		}
+	}
+	for _, lif := range []bool{false, true} {
+		c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{}, Targets: []int{}, DT: 1, Activation: "tanh"}, InputSize: 2, OutputSize: 1, InputNodes: []int{0, 1}, ReadoutNodes: []int{0}}
+		p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}, Encoder: []float64{1, 0, 0, 1}, Readout: []float64{1}}
+		if lif {
+			c.Dynamics = dynamics.Config{}
+			c.LIF = &dynamics.LIFConfig{Nodes: 2, Sources: []int{}, Targets: []int{}, DT: 1, TauSyn: 1, ThetaMin: .1, ThetaMax: 2, VReset: -.5, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+			p.ThetaRaw = []float64{0, 0}
+		}
+		for _, expression := range []bool{false, true} {
+			a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0, 0})
+			must(err)
+			chem := declaration()
+			must(a.EnableChemistry(chem))
+			if expression {
+				must(a.SetExpressionGain(learning.ExpressionGain{Nodes: []int{0}, Receptor: 0, Scale: -.5, Min: .5, Max: 1}))
+			}
+			input := [][]float64{{2, .5}, {1, 1}, {.5, 2}, {0, 1}}
+			output, err := a.Advance(context.Background(), input)
+			must(err)
+			rows = append(rows, []any{lif, expression, output, a.Snapshot(), a.ChemistryReport()})
+			chem.Chemistry.Tau[0] = 3
+			chem.Effects[0].GammaScale = .5
+			must(a.EnableChemistry(chem))
+			restored, err := learning.RestoreIndividual(a.Snapshot())
+			must(err)
+			for iteration := 0; iteration < 2; iteration++ {
+				step, err := restored.TrainEpisode(context.Background(), input, []float64{.4})
+				must(err)
+				output, err = restored.Advance(context.Background(), input)
+				must(err)
+				rows = append(rows, []any{lif, expression, iteration, step, output, restored.Snapshot(), restored.ChemistryReport()})
+			}
+		}
+	}
+	result, err := json.Marshal(rows)
+	must(err)
+	fmt.Println(string(result))
+}

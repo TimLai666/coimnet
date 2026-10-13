@@ -1,0 +1,97 @@
+import datetime
+import gzip
+import hashlib
+import json
+import os
+import pathlib
+import stat
+import subprocess
+
+root = pathlib.Path.cwd().resolve()
+work = root / 'runs/.tmp/chemical-boundaries-20261013'
+evidence = root / 'evidence/MOD-02/chemical-boundaries-20261013'
+assert work.is_dir() and not work.is_symlink()
+assert work.parent.resolve() == root / 'runs/.tmp'
+assert not (evidence / 'cleanup.json').exists()
+verification = json.loads((evidence / 'verification.json').read_text())
+assert verification['observed_result']['suites']['race']['passed_packages'] == 58
+assert json.loads((evidence / 'governance-final.json').read_text())['exit_code'] == 0
+protected = json.loads((evidence / 'protected-temporaries.json').read_text())
+source = json.loads((evidence / 'source-final.json').read_text())
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+def check_boundaries():
+    for item in protected:
+        path = root / item['path']
+        assert path.stat().st_ino == item['inode'], item['path']
+        assert sorted(p.name for p in path.iterdir()) == item['entries'], item['path']
+    assert all(digest((root / path).read_bytes()) == expected for path, expected in source.items())
+
+check_boundaries()
+processes = subprocess.check_output(['ps', '-axo', 'pid=,command='], text=True)
+active = [line for line in processes.splitlines()
+          if str(work / 'go-tmp') in line
+          or ('check.py ' in line and 'chemical-boundaries-20261013' in line)
+          or ('cli_acceptance' in line and 'chemical-boundaries-20261013' in line)]
+assert not active, 'validation process still active'
+records, directories = [], []
+for current, names, files in os.walk(work, followlinks=False):
+    parent = pathlib.Path(current)
+    for name in names + files:
+        path = parent / name
+        info = path.lstat()
+        relative = str(path.relative_to(root))
+        if stat.S_ISDIR(info.st_mode):
+            directories.append(path)
+        elif stat.S_ISLNK(info.st_mode):
+            records.append(dict(path=relative, kind='symlink', target=os.readlink(path), inode=info.st_ino))
+        else:
+            assert stat.S_ISREG(info.st_mode), relative
+            raw = path.read_bytes()
+            records.append(dict(path=relative, kind='file', bytes=len(raw), sha256=digest(raw), inode=info.st_ino))
+records.sort(key=lambda item:item['path'])
+# Verify canonical logs and scripts before deleting any scratch file.
+for item in records:
+    path = root / item['path']
+    if item['kind'] != 'file':
+        continue
+    if path.parent == work / 'logs':
+        receipt = json.loads((evidence / (path.stem + '.json')).read_text())
+        packed = (root / receipt['log']).read_bytes()
+        assert digest(packed) == receipt['log_sha256'], path.name
+        assert digest(gzip.decompress(packed)) == item['sha256'], path.name
+    if path.parent == work and path.suffix in ('.py', '.go'):
+        saved = evidence / (path.name + '.txt')
+        assert digest(saved.read_bytes()) == item['sha256'], saved.name
+manifest = evidence / 'temporary-inventory.json.gz'
+with manifest.open('xb') as out:
+    out.write(gzip.compress(json.dumps(records, sort_keys=True).encode(), mtime=0))
+for item in records:
+    path = root / item['path']
+    assert path.lstat().st_ino == item['inode'], item['path']
+    if item['kind'] == 'file':
+        assert digest(path.read_bytes()) == item['sha256'], item['path']
+    else:
+        assert os.readlink(path) == item['target'], item['path']
+    path.unlink()
+for path in sorted(directories, key=lambda p:len(p.parts), reverse=True):
+    path.rmdir()
+work.rmdir()
+check_boundaries()
+result = dict(completed_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              removed_path=str(work.relative_to(root)),
+              removed_regular_files=sum(item['kind']=='file' for item in records),
+              removed_file_bytes=sum(item.get('bytes',0) for item in records),
+              removed_symlinks=sum(item['kind']=='symlink' for item in records),
+              path_absent=not work.exists(),
+              protected_temporaries=protected,
+              protected_directory_identity_and_top_level_entries_unchanged=True,
+              source_files_unchanged=len(source),
+              inventory=str(manifest.relative_to(root)), inventory_sha256=digest(manifest.read_bytes()),
+              scope='Only this stage owned scratch tree; symlink targets, global caches, data, models, checkpoints and unrelated scratch trees preserved.')
+with (evidence / 'cleanup.json').open('x') as out:
+    json.dump(result, out, indent=2)
+    out.write('\n')
+print(json.dumps(result))

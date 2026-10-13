@@ -1,0 +1,717 @@
+{
+  "requirement": [
+    "MOD-01",
+    "MOD-02",
+    "MOD-06",
+    "LRN-06",
+    "STA-03"
+  ],
+  "reproduction_command": "Restore the retained helpers into runs/.tmp/chemical-boundaries-20261013, provide the fixed dependencies, then execute the exact commands in the referenced receipts; overlay maps need their recorded input paths restored.",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "os": "Darwin 27.0.0 arm64",
+    "filesystem": "native APFS",
+    "dependency": "Insyra v0.3.4; go.mod/go.sum byte-identical to baseline",
+    "cache": "All new build/test cache and temporary files under this stage runs/.tmp; dependency verification read the existing immutable module cache."
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-final.json",
+    "source_manifest_sha256": "fbda61d1b6801101a7a64647ec4f73d3a910fada09b35ecdb8c293cf1f42f899",
+    "frozen_tests": "frozen-tests-final.json",
+    "source_count": 782,
+    "baseline_head": "dd75a62d152e0066ff04c3c917adbd66e4ebb0d8"
+  },
+  "observed_result": {
+    "confirmed_defect_classes_fixed": 7,
+    "new_top_level_regressions_passed": 22,
+    "suites": {
+      "unit": {
+        "passed_packages": 58,
+        "passed_test_events": 5087,
+        "skipped_test_events": 22,
+        "skipped_packages": 3,
+        "skips": [
+          {
+            "Time": "2026-10-14T00:09:57.144509+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/cmd/coimnet\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:09:57.511563+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "Test": "TestDeviceAdamWChildProcess",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestDeviceAdamWChildProcess",
+              "device_adam_hardware_test.go:125: independent process helper",
+              "--- SKIP: TestDeviceAdamWChildProcess (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:09:57.850555+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:09:57.850604+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:09:59.284907+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/examples/realnav",
+            "Test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+              "main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression",
+              "--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:09:59.600194+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "Test": "TestRealMediaModelChildLoad",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRealMediaModelChildLoad",
+              "model_run_test.go:49: helper test only; parent test enables the real child process",
+              "--- SKIP: TestRealMediaModelChildLoad (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:02.2636+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestAttributionEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestAttributionEvidence",
+              "attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set",
+              "--- SKIP: TestAttributionEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:02.72244+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "Test": "TestFullGraphEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestFullGraphEvidence",
+              "evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set",
+              "--- SKIP: TestFullGraphEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:02.72248+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "Test": "TestFullGraphResumeEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestFullGraphResumeEvidence",
+              "evidence_test.go:88: COIMNET_OPS07_RESUME is not set",
+              "--- SKIP: TestFullGraphResumeEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:02.995749+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "Test": "TestMultimodalEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMultimodalEvidence",
+              "evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence",
+              "--- SKIP: TestMultimodalEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:08.362248+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/learning",
+            "Test": "TestGPUDeviceTrainerChildProcess",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestGPUDeviceTrainerChildProcess",
+              "gpu_device_trainer_test.go:532: intentional subprocess restore helper",
+              "--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:16.657252+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestMediaEvidence/image",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMediaEvidence/image",
+              "evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set",
+              "--- SKIP: TestMediaEvidence/image (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:16.657294+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestMediaEvidence/audio",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMediaEvidence/audio",
+              "evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set",
+              "--- SKIP: TestMediaEvidence/audio (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:19.150523+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "Test": "TestReadTitovaSourceWhenConfigured",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestReadTitovaSourceWhenConfigured",
+              "trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check",
+              "--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:24.247302+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "Test": "TestTextgenEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestTextgenEvidence",
+              "evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set",
+              "--- SKIP: TestTextgenEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:29.564813+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/learning",
+            "Test": "TestRecomputeRSSHelper",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRecomputeRSSHelper",
+              "recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper",
+              "--- SKIP: TestRecomputeRSSHelper (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:34.788095+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestRolesEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRolesEvidence",
+              "roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set",
+              "--- SKIP: TestRolesEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:04.544079+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestVideoEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestVideoEvidence",
+              "video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set",
+              "--- SKIP: TestVideoEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:16.067517+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestMultiTaskEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMultiTaskEvidence",
+              "multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set",
+              "--- SKIP: TestMultiTaskEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:19.788854+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestNav2DSuiteEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestNav2DSuiteEvidence",
+              "nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set",
+              "--- SKIP: TestNav2DSuiteEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:54.35087+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOGoalCueEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOGoalCueEvidence",
+              "ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set",
+              "--- SKIP: TestPPOGoalCueEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:54.415307+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOGradientEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOGradientEvidence",
+              "ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set",
+              "--- SKIP: TestPPOGradientEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:54.421485+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOHorizonEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOHorizonEvidence",
+              "ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set",
+              "--- SKIP: TestPPOHorizonEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:54.425777+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOShortGoalCueEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOShortGoalCueEvidence",
+              "ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set",
+              "--- SKIP: TestPPOShortGoalCueEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:11:57.967317+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOTrainingFeedbackEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOTrainingFeedbackEvidence",
+              "ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set",
+              "--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)"
+            ]
+          }
+        ],
+        "log": "evidence/MOD-02/chemical-boundaries-20261013/full-final-unit.log.gz"
+      },
+      "race": {
+        "passed_packages": 58,
+        "passed_test_events": 5086,
+        "skipped_test_events": 23,
+        "skipped_packages": 3,
+        "skips": [
+          {
+            "Time": "2026-10-14T00:10:04.465739+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/cmd/coimnet\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:04.521287+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/checkpoint",
+            "Test": "TestBundleLargerThanSingleFileLimit",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestBundleLargerThanSingleFileLimit",
+              "bundle_kinds_test.go:276: race instrumentation makes the large bundle fixture too memory intensive",
+              "--- SKIP: TestBundleLargerThanSingleFileLimit (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:05.767493+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "Test": "TestDeviceAdamWChildProcess",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestDeviceAdamWChildProcess",
+              "device_adam_hardware_test.go:125: independent process helper",
+              "--- SKIP: TestDeviceAdamWChildProcess (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:07.324981+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:07.325036+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "Elapsed": 0,
+            "output": [
+              "?   \tgithub.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review\t[no test files]"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:10.147809+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/examples/realnav",
+            "Test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+              "main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression",
+              "--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:17.556546+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "Test": "TestRealMediaModelChildLoad",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRealMediaModelChildLoad",
+              "model_run_test.go:49: helper test only; parent test enables the real child process",
+              "--- SKIP: TestRealMediaModelChildLoad (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:18.869424+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "Test": "TestFullGraphEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestFullGraphEvidence",
+              "evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set",
+              "--- SKIP: TestFullGraphEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:18.869467+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "Test": "TestFullGraphResumeEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestFullGraphResumeEvidence",
+              "evidence_test.go:88: COIMNET_OPS07_RESUME is not set",
+              "--- SKIP: TestFullGraphResumeEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:19.191514+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestAttributionEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestAttributionEvidence",
+              "attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set",
+              "--- SKIP: TestAttributionEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:24.244923+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "Test": "TestMultimodalEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMultimodalEvidence",
+              "evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence",
+              "--- SKIP: TestMultimodalEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:38.024067+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/learning",
+            "Test": "TestGPUDeviceTrainerChildProcess",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestGPUDeviceTrainerChildProcess",
+              "gpu_device_trainer_test.go:532: intentional subprocess restore helper",
+              "--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:51.005678+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "Test": "TestReadTitovaSourceWhenConfigured",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestReadTitovaSourceWhenConfigured",
+              "trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check",
+              "--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:53.962273+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestMediaEvidence/image",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMediaEvidence/image",
+              "evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set",
+              "--- SKIP: TestMediaEvidence/image (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:10:53.962319+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestMediaEvidence/audio",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMediaEvidence/audio",
+              "evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set",
+              "--- SKIP: TestMediaEvidence/audio (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:12:08.900572+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "Test": "TestTextgenEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestTextgenEvidence",
+              "evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set",
+              "--- SKIP: TestTextgenEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:13:51.99556+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/learning",
+            "Test": "TestRecomputeRSSHelper",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRecomputeRSSHelper",
+              "recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper",
+              "--- SKIP: TestRecomputeRSSHelper (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:15:36.468937+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestRolesEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestRolesEvidence",
+              "roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set",
+              "--- SKIP: TestRolesEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:27:42.771634+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/tasks/media",
+            "Test": "TestVideoEvidence",
+            "Elapsed": 0.01,
+            "output": [
+              "=== RUN   TestVideoEvidence",
+              "video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set",
+              "--- SKIP: TestVideoEvidence (0.01s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:33:13.319256+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestMultiTaskEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestMultiTaskEvidence",
+              "multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set",
+              "--- SKIP: TestMultiTaskEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:33:57.668761+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestNav2DSuiteEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestNav2DSuiteEvidence",
+              "nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set",
+              "--- SKIP: TestNav2DSuiteEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:40:05.376305+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOGoalCueEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOGoalCueEvidence",
+              "ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set",
+              "--- SKIP: TestPPOGoalCueEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:40:06.109203+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOGradientEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOGradientEvidence",
+              "ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set",
+              "--- SKIP: TestPPOGradientEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:40:06.145596+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOHorizonEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOHorizonEvidence",
+              "ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set",
+              "--- SKIP: TestPPOHorizonEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:40:06.190124+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOShortGoalCueEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOShortGoalCueEvidence",
+              "ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set",
+              "--- SKIP: TestPPOShortGoalCueEvidence (0.00s)"
+            ]
+          },
+          {
+            "Time": "2026-10-14T00:40:30.741516+08:00",
+            "Action": "skip",
+            "Package": "github.com/TimLai666/coimnet/experiment",
+            "Test": "TestPPOTrainingFeedbackEvidence",
+            "Elapsed": 0,
+            "output": [
+              "=== RUN   TestPPOTrainingFeedbackEvidence",
+              "ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set",
+              "--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)"
+            ]
+          }
+        ],
+        "log": "evidence/MOD-02/chemical-boundaries-20261013/full-final-race.log.gz"
+      }
+    },
+    "build": true,
+    "vet": true,
+    "dependencies": true,
+    "format": {
+      "file_count": 778,
+      "exit_code": 0,
+      "scope": "same module Go scope as scripts/verify.sh; historical evidence excluded",
+      "unformatted": []
+    },
+    "legal_public_api_records_equal": 22,
+    "cli_resume_80_plus_40_equals_continuous_120": true,
+    "legal_cli_checkpoint_equals_earlier_build": true,
+    "governance_top_level_passed": 11,
+    "governance_receipt": "governance-final.json",
+    "staged_whitespace_check_passed": true
+  },
+  "test_log": [
+    "evidence/MOD-02/chemical-boundaries-20261013/baseline-build.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/build.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-build-final.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-build.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-compare.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-data-sources.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-delayed.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-doctor.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-final-console.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-lif-threshold.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-resume.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-train-continuous.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/cli-train-first.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/compatibility-after.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/compatibility-before.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/compatibility-final.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/dependencies-native-cache.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/dependencies.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-build.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-compare.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-data-sources.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-delayed.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-doctor.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-lif-threshold.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-resume.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-train-continuous.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-cli-train-first.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/final-vet.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/full-final-race.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/full-final-unit.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/full-race.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/full-unit.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/governance-preclosure.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/green-next-81-82.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/green-next-all.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/green-targeted.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/opencode-next-models.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-chemistry-source.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-expression.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-next-chemical.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-next-partial.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-next-retry-fixed.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/red-next-retry.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/target-flow.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/vet.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/governance-final.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/git-evidence-whitespace-before.json",
+    "evidence/MOD-02/chemical-boundaries-20261013/git-evidence-whitespace-after.json"
+  ],
+  "limitations": [
+    "Bounded CPU engineering audit, not proof of zero bugs or complete physiology.",
+    "No new real OCR accuracy experiment, full-graph performance benchmark, other-platform execution, GPU or NAS durability acceptance.",
+    "Earlier full-race run was interrupted after new confirmed defects superseded its frozen source; only full-final-race is final acceptance.",
+    "Existing environment/helper skips retained; see suite-summary-final.json.",
+    "Direct mutation of caller inputs and cross-entry Online/Individual atomicity are not newly guaranteed.",
+    "Huge representable channel counts were not allocated; existing resource-limit questions remain.",
+    "Updating the framework does not undo prior model updates produced by affected training paths."
+  ],
+  "completed_at": "2026-10-13T16:41:09.985768+00:00"
+}

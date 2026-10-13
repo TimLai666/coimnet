@@ -235,3 +235,17 @@ Consolidate 的閘門關閉、同回合去重及預算用完報告帶呼叫前�
 MemoryController.Offset 與 Controller.Release 一樣先計算私有候選。摘要、資源輸入、隱藏層及讀出全部成功後才提交活動視窗和梯度快取。數值溢位與非法輸入保留上一筆成功狀態。tanh 飽和不能掩蓋非有限的中間計算。回錯的 nil 控制器入口不得 panic。
 
 Controller／MemoryController 的參數梯度使用最近成功 forward 的固定參數。成功 Update 保留活動視窗並清除舊快取，下一次 Gradient／BackwardActivity 必須先重新 Release／Offset。失敗 Update 保留參數、視窗與快取。現有正常訓練 caller 原本就按此順序執行。直接改公開 Parameters slice 的 caller 須自行保持 forward 與反向參數一致。本契約不增加保存欄位、版本或參數指紋。驗收由 tickets 74–77 與[本階段計畫](evidence/MOD-06/refusal-input-audit-20261013/plan.md)管理。
+
+## 化學清除、來源寬度與宣告更換
+
+Kinetics.Step 拒絕有限基礎清除速率與有限 boost 相加後的溢位，Backward 經同一正向驗證入口一致拒絕。有限速率的指數飽和保留既有算法，零 boost 分支的運算順序保持。SourceSpec.Build、NeuralActivity.Validate 及 InternalResource.Release 要求 Channel+1 能以 int 表示，沿用 Controller 的同一限制。
+
+EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部學習規則的受體引用檢查一致。不相容更換回錯，完整舊狀態及報告保持，必須由呼叫者明確清除讀出調節才能移除其受體。合法更換依原契約歸零濃度，保留資源及回饋。公開簽名、保存格式、正常來源與動態算式保持，驗收由 tickets 78–80 與[階段計畫](evidence/MOD-02/chemical-boundaries-20261013/plan.md)管理。
+
+## 線上回饋與共享訓練狀態一致性
+
+線上損失權重以同一個體 TrainEpisode 的零神經狀態 episode 預測計算。開啟化學時，預測和訓練共用 chemicalEpisodeNetwork，複製目前濃度、來源視窗、資源、可用回饋、expression、來源時鐘與原始活動，並保留 frozen 設定。兩個入口依 Individual → Trainer 同一鎖順序取得私有 boundary，不交換共用 Network 指標，也不推進持續狀態。一般路徑保持 Trainer.Predict。
+
+RestoreTrainer 在既有形狀、有限值與累積窗驗證後，要求同一共享群組的 First、Second、Steps 及 partial Sum 相同。singleton 與 -1 保持獨立，錯誤不重寫呼叫者快照。正常框架寫出的保存格式不變，RestoreIndividual 沿用同一拒絕。
+
+Online UpdateReport.GradientSteps 只計 StepResult.Applied 的套用次數，成功但尚在累積的訓練仍消耗已處理回饋。UpdateEvery 只保存有界的間隔位置，梯度失敗不提交位置，重試仍維持該次到期更新。混合梯度／局部可塑性的部分成功行為未在本票變成整體回滾。完整流程、控制及相容性由 tickets 81–84 與[階段計畫](evidence/MOD-02/chemical-boundaries-20261013/online-sharing-plan.md)管理。
