@@ -224,6 +224,38 @@ func validateSharingParameters(s *ParameterSharing, p Parameters, c Config, core
 	return nil
 }
 
+// validateSharedTrainingState rejects a restored optimizer or partial gradient
+// window whose members no longer carry the same state as their declared group.
+// Sharing is applied only to groups with two or more members; singleton groups
+// and -1 entries remain independent even when the declaration is present.
+func validateSharedTrainingState(s TrainingSnapshot) error {
+	if s.Config.Sharing == nil {
+		return nil
+	}
+	plan := newSharePlan(s.Config.Sharing, len(s.Parameters.Core.Weights), len(s.Parameters.Core.Bias), len(s.Parameters.Core.LogTau))
+	for group, members := range plan.groups {
+		if len(members) < 2 {
+			continue
+		}
+		first := members[0]
+		for _, member := range members[1:] {
+			if s.Optimizer.First[member] != s.Optimizer.First[first] {
+				return fmt.Errorf("shared optimizer first differs in group %d at parameter %d", group, member)
+			}
+			if s.Optimizer.Second[member] != s.Optimizer.Second[first] {
+				return fmt.Errorf("shared optimizer second differs in group %d at parameter %d", group, member)
+			}
+			if s.Optimizer.Steps[member] != s.Optimizer.Steps[first] {
+				return fmt.Errorf("shared optimizer steps differ in group %d at parameter %d", group, member)
+			}
+			if s.Accumulator != nil && s.Accumulator.Sum[member] != s.Accumulator.Sum[first] {
+				return fmt.Errorf("shared gradient accumulator differs in group %d at parameter %d", group, member)
+			}
+		}
+	}
+	return nil
+}
+
 // copySharing deep copies a sharing declaration so a network never aliases
 // caller-owned slices.
 func copySharing(s *ParameterSharing) *ParameterSharing {

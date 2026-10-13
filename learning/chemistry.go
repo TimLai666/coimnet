@@ -281,7 +281,9 @@ func (r *chemicalRuntime) finishRow(row *chemicalRow, nodes int, step uint64) (c
 // concentration accumulated under different regions, channels or time constants
 // does not describe the new declaration. The resources the task declared and
 // the feedback still queued are kept: they are inputs of the task, not chemical
-// state.
+// state. A replacement must still serve every receptor referenced by the
+// existing plasticity rule or expression gain; otherwise it is refused and
+// the previous declaration and state remain unchanged.
 //
 // TrainEpisode uses a private copy of this boundary without advancing the
 // persistent chemical state. An ordinary Network declares its independent
@@ -298,6 +300,11 @@ func (i *Individual) EnableChemistry(c modulation.ChemistryConfig) error {
 	}
 	if i.plastic != nil {
 		if err := checkReceptorRule(i.plastic.model.Config().Rule, runtime); err != nil {
+			return err
+		}
+	}
+	if i.expression != nil {
+		if err := i.expression.Validate(i.trainer.network.config.ReadoutNodes, len(runtime.config.Receptors.Records)); err != nil {
 			return err
 		}
 	}

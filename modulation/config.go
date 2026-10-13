@@ -23,7 +23,7 @@ const (
 // their release vector by channel and declare a zero on every channel below the
 // one they release on, so a spec's source must declare exactly Channel+1
 // channels: a narrower one could not reach the channel, and a wider one would
-// carry rates this layer never reads.
+// carry rates this layer never reads. Channel+1 must be representable as an int.
 type SourceSpec struct {
 	Kind       string            `json:"kind"`
 	Channel    int               `json:"channel"`
@@ -40,6 +40,9 @@ type SourceSpec struct {
 func (s SourceSpec) Build() (Source, error) {
 	if s.Channel < 0 {
 		return nil, fmt.Errorf("modulation: source spec declares channel %d", s.Channel)
+	}
+	if s.Channel == int(^uint(0)>>1) {
+		return nil, fmt.Errorf("modulation: source spec channel %d cannot form a channel count", s.Channel)
 	}
 	bodies := 0
 	for _, present := range []bool{s.Timeline != nil, s.Neural != nil, s.Resource != nil, s.Replay != nil, s.Controller != nil} {

@@ -199,7 +199,8 @@ func (k *Kinetics) NewState() ChemistryState {
 // A nil clearanceBoost is the same as an all-zero one. A release that is
 // negative, non-finite or the wrong shape, and a state whose concentration is
 // negative, non-finite or the wrong shape, are refused before anything is
-// computed.
+// computed. An overflowing derived clearance rate is also refused, with no
+// state or input changes.
 func (k *Kinetics) Step(s ChemistryState, release, clearanceBoost [][]float64) (ChemistryState, error) {
 	if k == nil || k.config.Regions < 1 {
 		return ChemistryState{}, fmt.Errorf("modulation: uninitialized chemistry")
@@ -230,6 +231,9 @@ func (k *Kinetics) Step(s ChemistryState, release, clearanceBoost [][]float64) (
 				row[ch] = k.lambda[ch]*s.Concentration[r][ch] + k.config.Tau[ch]*k.alpha[ch]*release[r][ch]
 			} else {
 				rate := k.rate[ch] + boost
+				if !finite(rate) {
+					return ChemistryState{}, fmt.Errorf("modulation: region %d channel %d reached a non-finite clearance rate", r, ch)
+				}
 				lambda := math.Exp(-k.config.DT * rate)
 				row[ch] = lambda*s.Concentration[r][ch] + (1-lambda)*(release[r][ch]/rate)
 			}

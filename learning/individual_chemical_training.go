@@ -7,29 +7,17 @@ import (
 	"github.com/TimLai666/coimnet/signal"
 )
 
-// trainChemicalEpisode trains an independent zero-neural-state episode from
-// the individual's current chemical/source/feedback/expression boundary and
-// neural source clock. Its first source reads the current persistent raw
-// activity as a constant; later sources read the private episode's raw output.
-// The candidate update must be validated on that same isolated boundary.
-// Success changes parameters, optimizer and the caller's episode counter only.
-// Persistent neural/chemical/controller state, reports and queued feedback
-// remain unchanged. Errors/cancellation publish no partial update. The caller
-// owns the individual lock; this method owns the trainer lock and never swaps
-// its shared network pointer. nil chemistry retains the existing Trainer.Step.
-func (i *Individual) trainChemicalEpisode(ctx context.Context, input [][]float64, target []float64) (StepResult, error) {
-	tr := i.trainer
+// chemicalEpisodeNetwork builds the same private zero-state episode boundary
+// used by TrainEpisode. The caller owns the individual's lock and trainer lock;
+// this helper never acquires either lock or changes persistent state.
+func (i *Individual) chemicalEpisodeNetwork() (*Network, error) {
+	if i == nil || i.trainer == nil || i.trainer.network == nil {
+		return nil, fmt.Errorf("uninitialized individual")
+	}
 	if i.chemical == nil {
-		return tr.Step(ctx, input, target)
+		return nil, fmt.Errorf("chemistry is not enabled")
 	}
-	if err := tr.mu.LockContext(ctx); err != nil {
-		return StepResult{}, err
-	}
-	defer tr.mu.Unlock()
-	if tr.deviceAdam != nil {
-		return StepResult{}, fmt.Errorf("individual chemical training does not support device AdamW")
-	}
-
+	tr := i.trainer
 	chemical := i.chemical
 	var resources map[string]float64
 	if chemical.resources != nil {
@@ -67,9 +55,39 @@ func (i *Individual) trainChemicalEpisode(ctx context.Context, input [][]float64
 	config.Chemistry = episode
 	network, err := NewNetwork(config)
 	if err != nil {
-		return StepResult{}, err
+		return nil, err
 	}
 	network.chemicalFrozen = chemical.frozen
+	return network, nil
+}
+
+// trainChemicalEpisode trains an independent zero-neural-state episode from
+// the individual's current chemical/source/feedback/expression boundary and
+// neural source clock. Its first source reads the current persistent raw
+// activity as a constant; later sources read the private episode's raw output.
+// The candidate update must be validated on that same isolated boundary.
+// Success changes parameters, optimizer and the caller's episode counter only.
+// Persistent neural/chemical/controller state, reports and queued feedback
+// remain unchanged. Errors/cancellation publish no partial update. The caller
+// owns the individual lock; this method owns the trainer lock and never swaps
+// its shared network pointer. nil chemistry retains the existing Trainer.Step.
+func (i *Individual) trainChemicalEpisode(ctx context.Context, input [][]float64, target []float64) (StepResult, error) {
+	tr := i.trainer
+	if i.chemical == nil {
+		return tr.Step(ctx, input, target)
+	}
+	if err := tr.mu.LockContext(ctx); err != nil {
+		return StepResult{}, err
+	}
+	defer tr.mu.Unlock()
+	if tr.deviceAdam != nil {
+		return StepResult{}, fmt.Errorf("individual chemical training does not support device AdamW")
+	}
+
+	network, err := i.chemicalEpisodeNetwork()
+	if err != nil {
+		return StepResult{}, err
+	}
 	candidate := &Trainer{
 		network:     network,
 		parameters:  tr.parameters,

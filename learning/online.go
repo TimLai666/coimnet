@@ -389,8 +389,11 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 	entry := &l.log[l.index[fb.ActionID()]]
 	if l.policy.AllowGradient {
 		if target, ok := l.targets[fb.ActionID()]; ok {
-			l.eligible++
-			if l.eligible%l.policy.updateEvery() == 0 {
+			every := l.policy.updateEvery()
+			// Keep only the interval position and commit it after a successful
+			// gradient attempt, so a failed feedback stays due on retry.
+			nextEligible := (l.eligible%every + 1) % every
+			if nextEligible == 0 {
 				prediction, err := l.individual.episodePredict(ctx, entry.input)
 				if err != nil {
 					return err
@@ -399,11 +402,15 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 				if err != nil {
 					return err
 				}
-				if _, err = l.individual.TrainEpisode(ctx, entry.input, effective); err != nil {
+				result, err := l.individual.TrainEpisode(ctx, entry.input, effective)
+				if err != nil {
 					return err
 				}
-				report.GradientSteps++
+				if result.Applied {
+					report.GradientSteps++
+				}
 			}
+			l.eligible = nextEligible
 		}
 	}
 	if !l.policy.AllowPlastic {
@@ -482,7 +489,8 @@ func weightedTarget(prediction, target []float64, score float64) ([]float64, err
 // episodePredict is the independent zero-state prediction a weighted target is
 // built from: the same episode TrainEpisode would run, without changing
 // anything. It takes the individual's own lock in the same order TrainEpisode
-// does.
+// does. The ordinary path uses Trainer.Predict; enabled chemistry uses the
+// same private episode boundary and predicts without advancing persistent state.
 func (i *Individual) episodePredict(ctx context.Context, input [][]float64) ([]float64, error) {
 	if i == nil || i.trainer == nil {
 		return nil, fmt.Errorf("uninitialized individual")
@@ -491,7 +499,19 @@ func (i *Individual) episodePredict(ctx context.Context, input [][]float64) ([]f
 		return nil, err
 	}
 	defer i.mu.Unlock()
-	return i.trainer.Predict(ctx, input)
+	tr := i.trainer
+	if i.chemical == nil {
+		return tr.Predict(ctx, input)
+	}
+	if err := tr.mu.LockContext(ctx); err != nil {
+		return nil, err
+	}
+	defer tr.mu.Unlock()
+	network, err := i.chemicalEpisodeNetwork()
+	if err != nil {
+		return nil, err
+	}
+	return network.Predict(ctx, tr.parameters, input)
 }
 
 // plasticityEnabled reports whether the local mechanism is on, so an online

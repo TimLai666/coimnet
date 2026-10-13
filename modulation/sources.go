@@ -99,10 +99,13 @@ type NeuralActivity struct {
 func (n NeuralActivity) Channels() int { return n.Channel + 1 }
 
 // Validate checks the declaration itself: a non-empty, strictly ascending,
-// non-negative node list, a finite gain and a declared channel.
+// non-negative node list, a finite gain and a channel whose count fits an int.
 func (n NeuralActivity) Validate() error {
 	if n.Channel < 0 {
 		return fmt.Errorf("modulation: neural source declares channel %d", n.Channel)
+	}
+	if n.Channel == int(^uint(0)>>1) {
+		return fmt.Errorf("modulation: neural source channel %d cannot form a channel count", n.Channel)
 	}
 	if !finite(n.Gain) {
 		return fmt.Errorf("modulation: neural source declares a non-finite gain")
@@ -168,6 +171,9 @@ func (r InternalResource) Release(step uint64, c SourceContext) ([]float64, erro
 	}
 	if r.Channel < 0 {
 		return nil, fmt.Errorf("modulation: internal resource source declares channel %d", r.Channel)
+	}
+	if r.Channel == int(^uint(0)>>1) {
+		return nil, fmt.Errorf("modulation: internal resource source channel %d cannot form a channel count", r.Channel)
 	}
 	if !finite(r.Coefficient) || r.Coefficient < 0 {
 		return nil, fmt.Errorf("modulation: internal resource source declares coefficient %v", r.Coefficient)

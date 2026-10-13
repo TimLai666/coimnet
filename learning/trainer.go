@@ -215,6 +215,9 @@ func RestoreTrainer(s TrainingSnapshot) (*Trainer, error) {
 	if err := validateAccumulator(s.Accumulator, count, s.Options); err != nil {
 		return nil, err
 	}
+	if err := validateSharedTrainingState(s); err != nil {
+		return nil, err
+	}
 	tr.optimizer = copyAdam(s.Optimizer)
 	tr.updates = s.Updates
 	tr.accumulator = copyAccumulator(s.Accumulator)
