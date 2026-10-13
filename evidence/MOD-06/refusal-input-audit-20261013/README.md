@@ -6,7 +6,7 @@
 
 ## 檢查結果
 
-16 個新增頂層回歸測試涵蓋四類問題。RED 日誌保留修正前失敗，GREEN 日誌保留修正後通過。完整一般測試通過 58 個套件、5,006 個測試事件，其中 2,066 個頂層測試。build、vet、相依性與模組內 771 份 Go 格式檢查通過。完整 race 也通過 58 個套件、5,005 個測試事件，其中 2,065 個頂層測試。兩輪都沒有失敗或資料競爭警告。最後 11 項治理檢查也通過。已清除本輪暫存，Git 交付尚在驗收。
+16 個新增頂層回歸測試涵蓋四類問題。RED 日誌保留修正前失敗，GREEN 日誌保留修正後通過。完整一般測試通過 58 個套件、5,006 個測試事件，其中 2,066 個頂層測試。build、vet、相依性與模組內 771 份 Go 格式檢查通過。完整 race 也通過 58 個套件、5,005 個測試事件，其中 2,065 個頂層測試。兩輪都沒有失敗或資料競爭警告。最後 11 項治理檢查也通過。已清除本輪暫存，修正與回歸／證據提交已推送並讀回一致。
 
 完整來源指紋包括 773 份 Go 與 go.mod／go.sum，共 775 份。兩份歷史 evidence Go 原件保持，不列入目前模組程式的格式驗收。Insyra 固定 v0.3.4，go.mod／go.sum 與基準相同。
 
@@ -21,6 +21,10 @@
 - [OCR 合法案例相容性](compatibility-result.json)
 - [控制器正常更新相容性](controller-compatibility-result.json)
 - [清理工具修正與保存檢查](helper-review.md)
+
+## Git 交付
+
+修正 `23582a2` 與回歸／證據 `dd185a3` 已推送至 `codex/receptor-chemistry-training`，遠端提交讀回相符。見 [交付回條](delivery.json)。逐檔變更見 [changed-files.md](changed-files.md)，全部證據指紋見 [artifact-manifest.json](artifact-manifest.json)。
 
 ## 暫存清理
 

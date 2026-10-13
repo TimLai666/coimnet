@@ -3,7 +3,7 @@
 **Epic:** 化學對照機制的狀態安全
 **User Story:** 使用者可在 Offset 失敗後以合法輸入接續，得到與未發生失敗的個體相同結果
 **Blocked by:** 無
-**Status:** in progress
+**Status:** done
 
 ## Root 決策與驗收（2026-10-13）
 
@@ -12,7 +12,7 @@
 - [x] 公開 Offset／Gradient 的 RED 重現摘要溢位、非法資源及輸出溢位會消耗活動歷史。
 - [x] 修正後失敗回零與錯誤，保留上一筆成功梯度；合法接續的輸出、損失與梯度和未呼叫失敗輸入的對照相同。
 - [x] 隱藏層有限乘積或加總溢位明確回錯，不以飽和後有限值回成功。
-- [ ] 合法多步 Offset、Gradient 與既有手算／有限差分通過，完整工程驗證、證據、清理及交付完成。
+- [x] 合法多步 Offset、Gradient 與既有手算／有限差分通過，完整工程驗證、證據、清理及交付完成。
 
 Root 修改 `modulation/memory_controller.go`；獨立測試只新增 `modulation/memory_controller_atomic_test.go`。公開參數更新後的快取有效性另行查證，不在本票順手更改。
 

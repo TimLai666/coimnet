@@ -106,3 +106,4 @@
 | [tasks/ocr/fixture_validation_test.go](../../../tasks/ocr/fixture_validation_test.go) | 新增公開回歸，涵蓋失敗、接續或合法邊界 |
 | [tasks/ocr/glyphs/options_validation_test.go](../../../tasks/ocr/glyphs/options_validation_test.go) | 新增公開回歸，涵蓋失敗、接續或合法邊界 |
 | [tasks/ocr/glyphs/render.go](../../../tasks/ocr/glyphs/render.go) | 入口拒絕非有限或超界背景與雜訊 |
+| [evidence/MOD-06/refusal-input-audit-20261013/delivery.json](../../../evidence/MOD-06/refusal-input-audit-20261013/delivery.json) | 修正與證據提交的推送、遠端讀回與清理回條 |

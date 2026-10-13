@@ -3,7 +3,7 @@
 **Epic:** 機制契約稽核
 **User Story:** 使用者可從被拒絕的鞏固報告判斷目前寫入次數與最近寫入回合
 **Blocked by:** 無
-**Status:** in progress
+**Status:** done
 
 ## Root 決策與驗收（2026-10-13）
 
@@ -11,7 +11,7 @@
 
 - [x] 獨立測試重現 gate closed、already consolidated、budget exhausted 三種報告漏計數。
 - [x] 修正後三種拒絕保留非零計數、正確旗標與錯誤，完整快照不變；成功仍回更新後計數。
-- [ ] 完整工程驗證、證據保存、暫存清理與提交交付完成。
+- [x] 完整工程驗證、證據保存、暫存清理與提交交付完成。
 
 Root 修改 `learning/consolidation.go`；測試執行者只新增 `learning/consolidation_report_test.go`。驗收由 Root 執行。
 
