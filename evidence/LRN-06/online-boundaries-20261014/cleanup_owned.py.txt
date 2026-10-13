@@ -1,0 +1,94 @@
+import datetime
+import gzip
+import hashlib
+import json
+import os
+import pathlib
+import shutil
+import stat
+
+root = pathlib.Path.cwd().resolve()
+owned = root / 'runs/.tmp/online-boundary-audit-20261014'
+evidence = root / 'evidence/LRN-06/online-boundaries-20261014'
+baseline = json.loads((evidence / 'baseline.json').read_text())
+assert owned.is_dir() and not owned.is_symlink()
+assert owned.parent == root / 'runs/.tmp'
+assert json.loads((evidence / 'verification.json').read_text())['passed']
+
+
+def protected():
+    observed = []
+    for value in baseline['protected_temporaries']:
+        path = root / value['path']
+        current = dict(path=value['path'], inode=path.lstat().st_ino,
+                       entries=sorted(p.name for p in path.iterdir()))
+        assert current == value, current
+        observed.append(current)
+    return observed
+
+
+def inventory():
+    result = {}
+    for directory, names, files in os.walk(owned, followlinks=False):
+        for name in sorted(names + files):
+            path = pathlib.Path(directory) / name
+            info = path.lstat()
+            value = dict(inode=info.st_ino, mode=info.st_mode, size=info.st_size)
+            if stat.S_ISLNK(info.st_mode):
+                value.update(kind='symlink', target=os.readlink(path))
+            elif stat.S_ISREG(info.st_mode):
+                sha = hashlib.sha256()
+                with path.open('rb') as inp:
+                    while data := inp.read(1024 * 1024):
+                        sha.update(data)
+                value.update(kind='file', sha256=sha.hexdigest())
+            elif stat.S_ISDIR(info.st_mode):
+                value.update(kind='directory')
+            else:
+                raise AssertionError('unexpected file type: ' + str(path))
+            result[str(path.relative_to(owned))] = value
+    return result
+
+
+before_protected = protected()
+source = json.loads((evidence / 'source-final.json').read_text())
+assert all(hashlib.sha256((root / path).read_bytes()).hexdigest() == sha
+           for path, sha in source.items())
+for receipt in evidence.glob('*.json'):
+    value = json.loads(receipt.read_text())
+    if not isinstance(value, dict) or 'raw_log_sha256' not in value:
+        continue
+    compressed = (root / value['log']).read_bytes()
+    raw = gzip.decompress(compressed)
+    assert hashlib.sha256(compressed).hexdigest() == value['log_sha256']
+    assert hashlib.sha256(raw).hexdigest() == value['raw_log_sha256']
+
+owned_inode = owned.lstat().st_ino
+initial = inventory()
+assert initial == inventory(), 'owned files changed during final read'
+files = sum(v['kind'] == 'file' for v in initial.values())
+symlinks = sum(v['kind'] == 'symlink' for v in initial.values())
+size = sum(v['size'] for v in initial.values() if v['kind'] == 'file')
+archive = evidence / 'cleanup-inventory.json.gz'
+with archive.open('xb') as out:
+    out.write(gzip.compress(json.dumps(initial, sort_keys=True).encode(), mtime=0))
+assert owned.lstat().st_ino == owned_inode
+assert protected() == before_protected
+shutil.rmtree(owned)
+assert not owned.exists()
+after_protected = protected()
+assert all(hashlib.sha256((root / path).read_bytes()).hexdigest() == sha
+           for path, sha in source.items())
+result = dict(passed=True, captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              removed_path=str(owned.relative_to(root)), files=files, symlinks=symlinks,
+              logical_file_bytes=size, inventory=archive.name,
+              inventory_sha256=hashlib.sha256(archive.read_bytes()).hexdigest(),
+              owned_inode=owned_inode, path_absent=True,
+              protected_before=before_protected, protected_after=after_protected,
+              immutable_symlink_targets_not_followed=True,
+              data_models_checkpoints_and_global_caches_outside_deletion_scope=True,
+              source_manifest_count=len(source), source_unchanged=True)
+with (evidence / 'cleanup.json').open('x') as out:
+    json.dump(result, out, indent=2)
+    out.write('\n')
+print(json.dumps(result))

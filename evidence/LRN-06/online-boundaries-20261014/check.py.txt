@@ -1,0 +1,45 @@
+import datetime
+import gzip
+import hashlib
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import time
+
+root = pathlib.Path.cwd()
+work = root / 'runs/.tmp/online-boundary-audit-20261014'
+evidence = root / 'evidence/LRN-06/online-boundaries-20261014'
+slug, *command = sys.argv[1:]
+if not command or '/' in slug or '..' in slug:
+    raise SystemExit('expected a slug and command')
+log = work / 'logs' / (slug + '.log')
+result = evidence / (slug + '.json')
+if log.exists() or result.exists():
+    raise SystemExit('check output already exists')
+env = os.environ.copy()
+env.update(GOPROXY='off', GOSUMDB='off', GOTOOLCHAIN='local',
+           GOMODCACHE=str(work / 'go-mod-cache'), GOCACHE=str(work / 'go-cache'), GOTMPDIR=str(work / 'go-tmp'),
+           TMPDIR=str(work / 'go-tmp'))
+start = datetime.datetime.now(datetime.timezone.utc).isoformat()
+t0 = time.monotonic()
+with log.open('xb') as out:
+    process = subprocess.run(command, cwd=root, env=env, stdout=out, stderr=subprocess.STDOUT)
+raw = log.read_bytes()
+archive = evidence / (slug + '.log.gz')
+with archive.open('xb') as out:
+    out.write(gzip.compress(raw, mtime=0))
+record = dict(command=command, cwd=str(root), started_at=start,
+              duration_seconds=time.monotonic()-t0, exit_code=process.returncode,
+              environment={k: env[k] for k in ('GOPROXY','GOSUMDB','GOTOOLCHAIN','GOMODCACHE','GOCACHE','GOTMPDIR','TMPDIR')},
+              log=str(archive.relative_to(root)), log_encoding='gzip',
+              log_sha256=hashlib.sha256(archive.read_bytes()).hexdigest(),
+              raw_log_sha256=hashlib.sha256(raw).hexdigest(), raw_log_bytes=len(raw))
+with result.open('x') as out:
+    json.dump(record, out, indent=2)
+    out.write('\n')
+print(json.dumps(record))
+if '-json' not in command and (len(raw) < 9000 or process.returncode != 0):
+    print(raw.decode('utf-8', errors='replace')[-18000:])
+raise SystemExit(process.returncode)

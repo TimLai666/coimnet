@@ -1,0 +1,151 @@
+import datetime
+import gzip
+import hashlib
+import json
+import pathlib
+import platform
+
+root = pathlib.Path.cwd()
+evidence = root / 'evidence/LRN-06/online-boundaries-20261014'
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def read(name):
+    return json.loads((evidence / name).read_text())
+
+
+def create(name, value):
+    with (evidence / name).open('x') as out:
+        json.dump(value, out, indent=2, ensure_ascii=False)
+        out.write('\n')
+
+
+def receipt(slug):
+    value = read(slug + '.json')
+    assert value['exit_code'] == 0, slug
+    archive = root / value['log']
+    compressed = archive.read_bytes()
+    raw = gzip.decompress(compressed)
+    assert digest(compressed) == value['log_sha256'], slug
+    assert digest(raw) == value['raw_log_sha256'], slug
+    assert len(raw) == value['raw_log_bytes'], slug
+    assert b'WARNING: DATA RACE' not in raw, slug
+    return value, raw.decode()
+
+
+def suite(slug):
+    record, raw = receipt(slug)
+    events = []
+    for line in raw.splitlines():
+        try:
+            events.append(json.loads(line))
+        except ValueError:
+            pass
+    assert not [v for v in events if v.get('Action') == 'fail'], slug
+    passed = [v for v in events if v.get('Action') == 'pass']
+    packages = sorted(v['Package'] for v in passed if not v.get('Test'))
+    tests = [v for v in passed if v.get('Test')]
+    tops = [v for v in tests if '/' not in v['Test']]
+    skips = [v for v in events if v.get('Action') == 'skip']
+    skip_records = []
+    for skipped in skips:
+        outputs = [v['Output'] for v in events if v.get('Action') == 'output'
+                   and v.get('Package') == skipped['Package']
+                   and v.get('Test') == skipped.get('Test')]
+        skip_records.append(dict(package=skipped['Package'], test=skipped.get('Test'),
+                                 output=''.join(outputs)))
+    return dict(receipt=slug + '.json', packages=packages,
+                passed_packages=len(packages), passed_test_events=len(tests),
+                passed_top_level_tests=len(tops), skips=skip_records,
+                failed_events=0), tops
+
+
+required = ['build', 'full-final-unit', 'full-final-race', 'vet', 'dependencies',
+            'governance-final', 'mixed-retry-green', 'compatibility-baseline',
+            'compatibility-after', 'cli-build', 'cli-doctor', 'cli-data-sources',
+            'cli-delayed', 'cli-lif-threshold', 'cli-train-first', 'cli-resume',
+            'cli-train-continuous', 'cli-compare']
+commands = {}
+for slug in required:
+    commands[slug] = receipt(slug)[0]
+
+unit, unit_tops = suite('full-final-unit')
+race, race_tops = suite('full-final-race')
+assert unit['packages'] == race['packages'], 'full suite package coverage differs'
+green, green_tops = suite('mixed-retry-green')
+new_names = sorted(v['Test'] for v in green_tops if v['Test'].startswith('TestOnlineMixedRetry'))
+assert len(new_names) == 10, new_names
+for tops in (unit_tops, race_tops):
+    actual = {v['Test'] for v in tops if v['Package'].endswith('/learning')}
+    assert set(new_names) <= actual, 'full suite omitted new regression'
+
+source = read('source-final.json')
+assert all(digest((root / path).read_bytes()) == sha for path, sha in source.items())
+frozen = read('frozen-tests.json')
+assert all(digest((root / path).read_bytes()) == sha
+           for path, sha in frozen.items() if path.endswith('.go'))
+before = read('source-before.json')
+changed = sorted(path for path in before if before[path] != source[path])
+assert changed == ['learning/online.go'], changed
+added = sorted(set(source) - set(before))
+assert added == sorted(path for path in frozen if path.endswith('.go'))
+format_check = read('format.json')
+assert format_check['exit_code'] == 0 and not format_check['unformatted']
+assert format_check['file_count'] == len(source) - 4
+
+compatibility = read('compatibility-comparison.json')
+assert compatibility['equal_bytes'] and compatibility['records'] == 32
+_, baseline_raw = receipt('compatibility-baseline')
+_, after_raw = receipt('compatibility-after')
+assert baseline_raw == after_raw
+assert digest(baseline_raw.encode()) == compatibility['baseline_sha256'] == compatibility['after_sha256']
+continuation = read('cli-resume-comparison.json')
+resumed = (evidence / 'cli-resumed.json').read_bytes()
+continuous = (evidence / 'cli-continuous.json').read_bytes()
+assert resumed == continuous and continuation['equal_bytes']
+assert digest(resumed) == continuation['sha256']
+
+_, governance_raw = receipt('governance-final')
+governance_tops = [line for line in governance_raw.splitlines() if line.startswith('--- PASS: Test')]
+assert len(governance_tops) == 11, governance_tops
+for slug in ['mixed-retry-formal-red', 'lifecycle-red']:
+    assert read(slug + '.json')['exit_code'] == 1, 'missing original RED'
+
+create('suite-summary-final.json', dict(unit=unit, race=race, related=green,
+                                      new_regression_tests=new_names,
+                                      governance_top_level=len(governance_tops)))
+verification = dict(
+    passed=True, scope='ticket 85: mixed online update retry only',
+    requirement=['LRN-06'],
+    reproduction_command='Restore check.py.txt and the preserved input helpers into the recorded project-local runs/.tmp directory, prepare isolated caches, then run the exact commands in commands; baseline RED uses the recorded baseline commit and frozen tests.',
+    environment=dict(go=read('baseline.json')['go'], platform=platform.platform(),
+                     dependency='Insyra v0.3.4; go.mod/go.sum unchanged',
+                     caches='project-local temporary caches; native module cache read-only for verification'),
+    observed_result=dict(unit_packages=unit['passed_packages'], race_packages=race['passed_packages'],
+                         new_regression_tests=len(new_names), normal_cases_equal=compatibility['records'],
+                         governance_top_level=len(governance_tops), cli_resume_equal=continuation['equal_bytes']),
+    test_log=[commands[slug]['log'] for slug in required],
+    captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    baseline=read('baseline.json')['head'], platform=platform.platform(),
+    go=read('baseline.json')['go'], insyra='v0.3.4', commands=commands,
+    source_manifest='source-final.json', source_count=len(source),
+    production_changed=changed, added_tests=added, frozen_tests='frozen-tests.json',
+    format=format_check, suite_summary='suite-summary-final.json',
+    new_regression_tests=new_names, compatibility=compatibility,
+    separate_process_continuation=continuation,
+    root_review=dict(path='root-review.md', sha256=digest((evidence / 'root-review.md').read_bytes())),
+    adversarial_review=dict(path='adversarial-review.md', sha256=digest((evidence / 'adversarial-review.md').read_bytes())),
+    partial_success_preserved=True, public_api_and_save_format_preserved=True,
+    unresolved=[dict(ticket=86, confirmed=True, description='Act parameter version may name a different update from its output'),
+                dict(ticket=86, confirmed=True, description='Externally interleaved update can produce stale weighted-target gradient')],
+    diagnostic_pass_means_old_bug_observed=True,
+    model_quality_assessed=False, biological_validation=False,
+    whole_framework_bug_free=False, cleanup_receipt='cleanup.json',
+    delivery_receipt='delivery.json')
+create('verification.json', verification)
+print(json.dumps(dict(passed=True, source_count=len(source),
+                     unit_packages=unit['passed_packages'], race_packages=race['passed_packages'],
+                     new_regressions=len(new_names), governance=len(governance_tops))))

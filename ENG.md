@@ -249,3 +249,5 @@ EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部�
 RestoreTrainer 在既有形狀、有限值與累積窗驗證後，要求同一共享群組的 First、Second、Steps 及 partial Sum 相同。singleton 與 -1 保持獨立，錯誤不重寫呼叫者快照。正常框架寫出的保存格式不變，RestoreIndividual 沿用同一拒絕。
 
 Online UpdateReport.GradientSteps 只計 StepResult.Applied 的套用次數，成功但尚在累積的訓練仍消耗已處理回饋。UpdateEvery 只保存有界的間隔位置，梯度失敗不提交位置，重試仍維持該次到期更新。混合梯度／局部可塑性的部分成功行為未在本票變成整體回滾。完整流程、控制及相容性由 tickets 81–84 與[階段計畫](evidence/MOD-02/chemical-boundaries-20261013/online-sharing-plan.md)管理。
+
+混合更新按 action／source 保存梯度階段已完成的事實，涵蓋沒有 target、合法間隔 skip、部分累積及已套用更新。塑性階段失敗後只重試塑性，成功前半保留；梯度失敗不標為完成。整筆回饋成功後移除私人階段記錄，與既有 pending 佇列同生命週期，不新增公開 API 或快照格式。now 倒退時也須保留各筆尚未完成的階段，驗收由[ticket 85](docs/tickets/85-online-mixed-phase-retry.md)管理。

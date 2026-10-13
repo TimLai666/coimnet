@@ -1,0 +1,635 @@
+//go:build online_boundary_diagnostic
+
+// This is a complete temporary diagnostic test.  It is intentionally kept as
+// .go.txt under runs/.tmp and must not be copied into the repository's formal
+// tests without a contract decision.  It adds no production hook.
+//
+// The two tests use only public operations on Individual/OnlineLearner.  The
+// custom contexts are test synchronization: holdContext pauses at a known
+// context.Err call while the Individual lock is held; queueContext's Done method
+// only acknowledges evaluation of the LockContext select case.  A runtime.Stack
+// probe then confirms that the named TrainEpisode caller is actually parked in
+// that select before the hold is released.  The probe uses no sleep or
+// production hook.
+package learning
+
+import (
+	"context"
+	"reflect"
+	"runtime"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+const (
+	diagnosticExperience = "exp-1"
+	diagnosticInputRows = 3
+
+	// Count for OnlineLearner.Act with the continuous fixture below.  The
+	// hold point is the final ctx.Err in dynamics.Continuous.AdvanceModulated,
+	// after all output values have been calculated but before Individual commits
+	// its persistent state.  Calls are counted in this order:
+	//
+	//   OnlineLearner lock                 2
+	//   Individual lock                    2
+	//   Individual input validation        3
+	//   Continuous state initial/input/steps 11
+	//   Total                               18
+	//   Individual final commit check        1 (hold point = 19)
+	//
+	diagnosticActHoldCall = 19
+
+	// Count for OnlineLearner.Update's ordinary episodePredict.  The hold point
+	// is Network.forwardSegmentState's final ctx.Err, after P0 exists and while
+	// Individual.mu and Trainer.mu are still held.  Calls are:
+	//
+	//   OnlineLearner lock                 2
+	//   Individual lock                    2
+	//   Trainer lock                       2
+	//   Network forwardSegmentState entry/final  2
+	//   Continuous.forward entry/input/rows    10
+	//   Total                             18
+	//
+	diagnosticUpdateHoldCall = 18
+)
+
+var diagnosticInput = [][]float64{{.7}, {0}, {.2}}
+
+// holdContext returns nil from every Err call, except one known call at which
+// it announces that the owning operation has reached the lock-held point and
+// waits for the test to release it.  Done is nil, so this synchronization never
+// cancels the operation.  A timeout in the test is only a deadlock guard when a
+// source call count changes; it is not used to choose the interleaving.
+type holdContext struct {
+	context.Context
+	holdAt   int32
+	calls    atomic.Int32
+	entered  chan struct{}
+	release  chan struct{}
+	once     sync.Once
+	openOnce sync.Once
+}
+
+func newHoldContext(holdAt int) *holdContext {
+	return &holdContext{
+		Context:  context.Background(),
+		holdAt:   int32(holdAt),
+		entered:  make(chan struct{}),
+		release:  make(chan struct{}),
+	}
+}
+
+func (c *holdContext) Done() <-chan struct{} { return nil }
+
+func (c *holdContext) Err() error {
+	call := c.calls.Add(1)
+	if call == c.holdAt {
+		c.once.Do(func() { close(c.entered) })
+		<-c.release
+	}
+	return nil
+}
+
+func (c *holdContext) open() {
+	c.openOnce.Do(func() { close(c.release) })
+}
+
+// queueContext only acknowledges that LockContext evaluated ctx.Done.  It does
+// not claim that the receiver is parked.  The caller must use
+// waitParkedTrainEpisode, which inspects runtime.Stack for the unique wrapper and
+// the LockContext/TrainEpisode frames while the first operation still owns the
+// Individual lock.
+type queueContext struct {
+	context.Context
+	queued      chan struct{}
+	acquired    chan struct{}
+	release     chan struct{}
+	doneOnce    sync.Once
+	acquireOnce sync.Once
+	openOnce    sync.Once
+	calls       atomic.Int32
+}
+
+func newQueueContext() *queueContext {
+	return &queueContext{
+		Context:  context.Background(),
+		queued:   make(chan struct{}, 1),
+		acquired: make(chan struct{}),
+		release:  make(chan struct{}),
+	}
+}
+
+func (c *queueContext) Done() <-chan struct{} {
+	c.doneOnce.Do(func() { c.queued <- struct{}{} })
+	return nil
+}
+
+func (c *queueContext) Err() error {
+	if c.calls.Add(1) == 2 {
+		c.acquireOnce.Do(func() { close(c.acquired) })
+		<-c.release
+	}
+	return nil
+}
+
+// openAcquired releases the external operation only after the first operation
+// has been observed past its handoff point.  The second Err call is after the
+// mutex token has been received, so blocking here keeps Individual.mu owned by
+// the external public operation while the diagnostic observes the other public
+// call waiting.  It does not assert channel fairness.
+func (c *queueContext) openAcquired() {
+	c.openOnce.Do(func() { close(c.release) })
+}
+
+func waitDiagnostic(t *testing.T, name string, ch <-chan struct{}) {
+	t.Helper()
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+	select {
+	case <-ch:
+	case <-timer.C:
+		t.Fatalf("timeout waiting for %s; source context.Err call count may have changed", name)
+	}
+}
+
+// waitParkedTrainEpisode waits for direct evidence that the named public
+// TrainEpisode caller is currently blocked in cancellableMutex.LockContext.
+// The stack header's [select] state plus all three unique frames are required.
+// This is a bounded diagnostic probe, not a FIFO or fairness guarantee.
+func waitParkedTrainEpisode(t *testing.T, wrapper string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		buf := make([]byte, 1<<20)
+		n := runtime.Stack(buf, true)
+		if diagnosticParkedTrainEpisodeStack(string(buf[:n]), wrapper) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timeout waiting for %s to be parked in LockContext; Done acknowledgement did not prove receiver state", wrapper)
+		}
+		runtime.Gosched()
+	}
+}
+
+func diagnosticParkedTrainEpisodeStack(dump, wrapper string) bool {
+	for _, block := range strings.Split(dump, "\n\n") {
+		lines := strings.SplitN(block, "\n", 2)
+		if len(lines) < 2 || !strings.HasPrefix(lines[0], "goroutine ") || !strings.Contains(lines[0], " [select]") {
+			continue
+		}
+		if strings.Contains(block, wrapper) &&
+			strings.Contains(block, "(*cancellableMutex).LockContext") &&
+			strings.Contains(block, "(*Individual).TrainEpisode") {
+			return true
+		}
+	}
+	return false
+}
+
+func waitActSnapshotBlocked(t *testing.T, wrapper string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		buf := make([]byte, 1<<20)
+		n := runtime.Stack(buf, true)
+		if diagnosticActSnapshotStack(string(buf[:n]), wrapper) {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timeout waiting for %s to block in Individual.Snapshot", wrapper)
+		}
+		runtime.Gosched()
+	}
+}
+
+func diagnosticActSnapshotStack(dump, wrapper string) bool {
+	for _, block := range strings.Split(dump, "\n\n") {
+		lines := strings.SplitN(block, "\n", 2)
+		if len(lines) < 2 || !strings.HasPrefix(lines[0], "goroutine ") || !strings.Contains(lines[0], " [chan receive]") {
+			continue
+		}
+		if strings.Contains(block, wrapper) &&
+			strings.Contains(block, "(*OnlineLearner).Act") &&
+			strings.Contains(block, "(*Individual).Snapshot") {
+			return true
+		}
+	}
+	return false
+}
+
+type actionOutcome struct {
+	record ActionRecord
+	err    error
+}
+
+type stepOutcome struct {
+	result StepResult
+	err    error
+}
+
+type updateOutcome struct {
+	report UpdateReport
+	err    error
+}
+
+func diagnosticExternalTrainEpisodeAct(ind *Individual, ctx context.Context, input [][]float64, out chan<- stepOutcome) {
+	result, err := ind.TrainEpisode(ctx, input, []float64{.4})
+	out <- stepOutcome{result: result, err: err}
+}
+
+func diagnosticExternalTrainEpisodeUpdate(ind *Individual, ctx context.Context, input [][]float64, out chan<- stepOutcome) {
+	result, err := ind.TrainEpisode(ctx, input, []float64{.4})
+	out <- stepOutcome{result: result, err: err}
+}
+
+func diagnosticOnlineAct(learner *OnlineLearner, ctx context.Context, obs signal.Observation, input [][]float64, out chan<- actionOutcome) {
+	record, err := learner.Act(ctx, obs, input)
+	out <- actionOutcome{record: record, err: err}
+}
+
+func diagnosticOnlineUpdate(learner *OnlineLearner, ctx context.Context, now signal.Timestamp, out chan<- updateOutcome) {
+	report, err := learner.Update(ctx, now)
+	out <- updateOutcome{report: report, err: err}
+}
+
+func diagnosticConfig() Config {
+	return Config{
+		Dynamics: dynamics.Config{
+			Nodes:      2,
+			Sources:    []int{0, 1},
+			Targets:    []int{1, 0},
+			DT:         .5,
+			Activation: "tanh",
+		},
+		InputSize:   1,
+		OutputSize:  1,
+		ReadoutNodes: []int{1},
+	}
+}
+
+func diagnosticParameters() Parameters {
+	return Parameters{
+		Core: dynamics.Parameters{
+			Weights: []float64{.3, -.2},
+			Bias:    []float64{.1, -.1},
+			LogTau:  []float64{.1, .2},
+		},
+		Encoder: []float64{.5, .1},
+		Readout: []float64{.8},
+	}
+}
+
+func diagnosticIndividual(t *testing.T) *Individual {
+	t.Helper()
+	ind, err := NewIndividual(diagnosticConfig(), diagnosticParameters(), DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ind
+}
+
+func diagnosticLearner(t *testing.T, ind *Individual) *OnlineLearner {
+	t.Helper()
+	learner, err := NewOnlineLearner(ind, OnlinePolicy{
+		AllowGradient: true,
+		ClockUnit:     signal.TimeUnitModelStep,
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return learner
+}
+
+func diagnosticObservation(t *testing.T) signal.Observation {
+	t.Helper()
+	obs, err := signal.NewObservation(signal.CurrentSchemaVersion(), diagnosticExperience, "stream-1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return obs
+}
+
+func diagnosticFeedback(t *testing.T, actionID string, score float64) signal.Feedback {
+	t.Helper()
+	version, err := signal.NewVersion(1, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	feedback, err := signal.NewFeedback(signal.FeedbackSpec{
+		SchemaVersion: signal.CurrentSchemaVersion(),
+		ExperienceID:  diagnosticExperience,
+		ActionID:      actionID,
+		ProducedAt:    signal.Timestamp{Value: diagnosticInputRows, Unit: signal.TimeUnitModelStep},
+		AvailableAt:   signal.Timestamp{Value: diagnosticInputRows, Unit: signal.TimeUnitModelStep},
+		Source:        "diagnostic",
+		Score:         score,
+		ModelVersion:  version,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return feedback
+}
+
+func diagnosticTrainingEqual(a, b IndividualSnapshot) bool {
+	return reflect.DeepEqual(a.Parameters, b.Parameters) &&
+		reflect.DeepEqual(a.Optimizer.Options, b.Optimizer.Options) &&
+		reflect.DeepEqual(a.Optimizer.State, b.Optimizer.State) &&
+		a.Optimizer.Updates == b.Optimizer.Updates &&
+		reflect.DeepEqual(a.Optimizer.Accumulator, b.Optimizer.Accumulator)
+}
+
+func diagnosticActionHash(t *testing.T, p Parameters) string {
+	t.Helper()
+	hash, err := parameterVersion(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return hash
+}
+
+// TestPublicInterleaveActAdvanceSnapshotVersion uses only public Act and
+// Individual.TrainEpisode.  The external operation is acknowledged by
+// queueContext and then proven parked by runtime.Stack while Advance owns i.mu.
+// After Advance is released, queueContext holds the external operation after
+// its token receive; runtime.Stack then proves Act is waiting in Snapshot.
+// Releasing queueContext makes the ordering explicit without assuming FIFO.
+func TestPublicInterleaveActAdvanceSnapshotVersion(t *testing.T) {
+	ctx := context.Background()
+	ind := diagnosticIndividual(t)
+	learner := diagnosticLearner(t, ind)
+	before := ind.Snapshot()
+	oldVersion := diagnosticActionHash(t, before.Parameters)
+
+	oldTwin, err := RestoreIndividual(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldOutput, err := oldTwin.Advance(ctx, diagnosticInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	actCtx := newHoldContext(diagnosticActHoldCall)
+	defer actCtx.open()
+	queueCtx := newQueueContext()
+	defer queueCtx.openAcquired()
+	actDone := make(chan actionOutcome, 1)
+	externalDone := make(chan stepOutcome, 1)
+
+	go diagnosticOnlineAct(learner, actCtx, diagnosticObservation(t), diagnosticInput, actDone)
+	waitDiagnostic(t, "Act's lock-held Advance point", actCtx.entered)
+
+	go diagnosticExternalTrainEpisodeAct(ind, queueCtx, diagnosticInput, externalDone)
+	waitDiagnostic(t, "external TrainEpisode LockContext Done evaluation", queueCtx.queued)
+	waitParkedTrainEpisode(t, "diagnosticExternalTrainEpisodeAct")
+	t.Logf("act queueProof wrapper=diagnosticExternalTrainEpisodeAct state=select lockContext=true trainEpisode=true")
+	actCtx.open()
+	waitDiagnostic(t, "external TrainEpisode token receive", queueCtx.acquired)
+	waitActSnapshotBlocked(t, "diagnosticOnlineAct")
+	t.Logf("act handoffProof external=token-received external-holds-individual=true act=Snapshot-blocked")
+	queueCtx.openAcquired()
+
+	external := <-externalDone
+	act := <-actDone
+	if external.err != nil {
+		t.Fatalf("external TrainEpisode: %v", external.err)
+	}
+	if act.err != nil {
+		t.Fatalf("Act: %v", act.err)
+	}
+	if !external.result.Applied || external.result.UpdateNorm <= 0 {
+		t.Fatalf("external TrainEpisode did not change parameters: %+v", external.result)
+	}
+	newVersion := diagnosticActionHash(t, ind.Snapshot().Parameters)
+
+	if !reflect.DeepEqual(act.record.Output, oldOutput) {
+		t.Fatalf("Act output changed across the interleave: got %#v want old-model output %#v", act.record.Output, oldOutput)
+	}
+	if newVersion == oldVersion {
+		t.Fatalf("external TrainEpisode did not change ModelVersion: %s", oldVersion)
+	}
+	if act.record.ModelVersion != newVersion {
+		t.Fatalf("diagnostic did not observe current source behavior: record=%s current=%s", act.record.ModelVersion, newVersion)
+	}
+	if act.record.ModelVersion == oldVersion {
+		t.Fatalf("record unexpectedly names the parameters that produced its output")
+	}
+	t.Logf("act interleave V0=%s V1=%s output=%v oldOutput=%v external={applied:%t gradient_norm:%.17g update_norm:%.17g updates:%d} recordModelVersion=%s", oldVersion, newVersion, act.record.Output, oldOutput, external.result.Applied, external.result.GradientNorm, external.result.UpdateNorm, external.result.Updates, act.record.ModelVersion)
+}
+
+// TestPublicInterleaveOnlineScoreZeroAfterEpisodePredict drives the public
+// Act -> SetTargets -> Receive -> Update sequence.  The Update context pauses
+// after P0 is computed, while an external public TrainEpisode is proven parked
+// by runtime.Stack.  Unlock lets that external operation commit theta1 before
+// weightedTarget and the online TrainEpisode continue.  The external-first
+// control replays the exact full optimizer state, while the atomic control runs
+// fresh score-zero P0 before the external .4 step.  A score-zero step has zero
+// parameter gradient and zero parameter update norm, but it still commits
+// Adam counters/state and an Individual episode count.
+func TestPublicInterleaveOnlineScoreZeroAfterEpisodePredict(t *testing.T) {
+	ctx := context.Background()
+	victim := diagnosticIndividual(t)
+	learner := diagnosticLearner(t, victim)
+
+	record, err := learner.Act(ctx, diagnosticObservation(t), diagnosticInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := learner.SetTargets(map[string][]float64{record.ActionID: {.4}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := learner.Receive(ctx, diagnosticFeedback(t, record.ActionID, 0)); err != nil {
+		t.Fatal(err)
+	}
+
+	before := victim.Snapshot()
+	v0 := diagnosticActionHash(t, before.Parameters)
+	network, err := NewNetwork(before.Config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	prediction, err := network.Predict(ctx, before.Parameters, diagnosticInput)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Fresh-optimizer score-zero baseline.  This is not the interleaved case;
+	// it proves the target is exactly the same P0 and records the optimizer
+	// counters that a zero-gradient Step still advances.  Parameters and both
+	// result norms must stay unchanged/zero; Adam state, Updates and Episodes
+	// are deliberately compared and logged separately.
+	zeroTwin, err := RestoreIndividual(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zeroResult, err := zeroTwin.TrainEpisode(ctx, diagnosticInput, prediction)
+	if err != nil {
+		t.Fatal(err)
+	}
+	zeroAfter := zeroTwin.Snapshot()
+	if !zeroResult.Applied || zeroResult.GradientNorm != 0 || zeroResult.UpdateNorm != 0 {
+		t.Fatalf("fresh score-zero baseline was not zero: result=%+v", zeroResult)
+	}
+	zeroParametersEqual := reflect.DeepEqual(before.Parameters, zeroAfter.Parameters)
+	zeroAdamStateEqual := reflect.DeepEqual(before.Optimizer.State, zeroAfter.Optimizer.State)
+	zeroUpdatesChanged := zeroAfter.Optimizer.Updates != before.Optimizer.Updates
+	zeroEpisodesChanged := zeroAfter.Optimizer.Episodes != before.Optimizer.Episodes
+	if !zeroParametersEqual {
+		t.Fatal("fresh score-zero baseline changed parameters")
+	}
+	if !zeroEpisodesChanged || zeroAfter.Optimizer.Episodes != before.Optimizer.Episodes+1 {
+		t.Fatalf("fresh score-zero episode count=%d want %d", zeroAfter.Optimizer.Episodes, before.Optimizer.Episodes+1)
+	}
+	if !zeroUpdatesChanged || zeroAfter.Optimizer.Updates != before.Optimizer.Updates+1 {
+		t.Fatalf("fresh score-zero update count=%d want %d", zeroAfter.Optimizer.Updates, before.Optimizer.Updates+1)
+	}
+
+	// Atomic correctness control: the score-zero step must happen before an
+	// external .4 episode when both are serialized at the public Individual
+	// boundary.  This distinguishes the optimizer counter/state change above
+	// from the stale-P0 parameter gradient observed in the interleave.
+	atomicControl, err := RestoreIndividual(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	atomicFreshZero, err := atomicControl.TrainEpisode(ctx, diagnosticInput, prediction)
+	if err != nil {
+		t.Fatal(err)
+	}
+	atomicFreshAfter := atomicControl.Snapshot()
+	atomicExternalAfterFresh, err := atomicControl.TrainEpisode(ctx, diagnosticInput, []float64{.4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	atomicAfter := atomicControl.Snapshot()
+	if !atomicFreshZero.Applied || atomicFreshZero.GradientNorm != 0 || atomicFreshZero.UpdateNorm != 0 {
+		t.Fatalf("atomic fresh score-zero control was not zero: result=%+v", atomicFreshZero)
+	}
+	if !reflect.DeepEqual(before.Parameters, atomicFreshAfter.Parameters) {
+		t.Fatal("atomic fresh score-zero control changed parameters")
+	}
+	if !atomicExternalAfterFresh.Applied || atomicExternalAfterFresh.UpdateNorm <= 0 {
+		t.Fatalf("atomic external update did not apply: %+v", atomicExternalAfterFresh)
+	}
+
+	// Complete control for the actual interleave: external update only, then
+	// the same online target P0 from the pre-interleave parameters.
+	externalControl, err := RestoreIndividual(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controlExternal, err := externalControl.TrainEpisode(ctx, diagnosticInput, []float64{.4})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !controlExternal.Applied || controlExternal.UpdateNorm <= 0 {
+		t.Fatalf("control external update did not apply: %+v", controlExternal)
+	}
+	controlAfterExternal := externalControl.Snapshot()
+	v1 := diagnosticActionHash(t, controlAfterExternal.Parameters)
+
+	// Replay the online step from the complete post-external snapshot.  Its
+	// result is the expected extra step, including Adam moments and update
+	// count, rather than a comparison against parameters alone.
+	expectedAfterExternal, err := RestoreIndividual(controlAfterExternal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedExtra, err := expectedAfterExternal.TrainEpisode(ctx, diagnosticInput, prediction)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !expectedExtra.Applied || expectedExtra.GradientNorm <= 0 || expectedExtra.UpdateNorm <= 0 {
+		t.Fatalf("expected extra score-zero step was not nonzero: %+v", expectedExtra)
+	}
+	expectedAfter := expectedAfterExternal.Snapshot()
+
+	updateCtx := newHoldContext(diagnosticUpdateHoldCall)
+	defer updateCtx.open()
+	queueCtx := newQueueContext()
+	defer queueCtx.openAcquired()
+	updateDone := make(chan updateOutcome, 1)
+	externalDone := make(chan stepOutcome, 1)
+
+	go diagnosticOnlineUpdate(learner, updateCtx, signal.Timestamp{Value: diagnosticInputRows, Unit: signal.TimeUnitModelStep}, updateDone)
+	waitDiagnostic(t, "Update's episodePredict lock-held point", updateCtx.entered)
+
+	go diagnosticExternalTrainEpisodeUpdate(victim, queueCtx, diagnosticInput, externalDone)
+	waitDiagnostic(t, "external TrainEpisode LockContext Done evaluation", queueCtx.queued)
+	waitParkedTrainEpisode(t, "diagnosticExternalTrainEpisodeUpdate")
+	t.Logf("score0 queueProof wrapper=diagnosticExternalTrainEpisodeUpdate state=select lockContext=true trainEpisode=true")
+	updateCtx.open()
+	waitDiagnostic(t, "external TrainEpisode token receive", queueCtx.acquired)
+	waitParkedTrainEpisode(t, "diagnosticOnlineUpdate")
+	t.Logf("score0 handoffProof external=token-received external-holds-individual=true update=TrainEpisode-parked")
+	queueCtx.openAcquired()
+
+	external := <-externalDone
+	update := <-updateDone
+	if external.err != nil {
+		t.Fatalf("external TrainEpisode: %v", external.err)
+	}
+	if update.err != nil {
+		t.Fatalf("Update: %v", update.err)
+	}
+	if !external.result.Applied || external.result.UpdateNorm <= 0 {
+		t.Fatalf("interleaved external update did not apply: %+v", external.result)
+	}
+	if update.report.Consumed != 1 || update.report.GradientSteps != 1 {
+		t.Fatalf("Update report=%+v", update.report)
+	}
+
+	actualAfter := victim.Snapshot()
+	actualExpectedEqual := diagnosticTrainingEqual(actualAfter, expectedAfter)
+	actualExternalEqual := diagnosticTrainingEqual(actualAfter, controlAfterExternal)
+	actualAtomicEqual := diagnosticTrainingEqual(actualAfter, atomicAfter)
+	actualFullExpectedEqual := reflect.DeepEqual(actualAfter, expectedAfter)
+	actualFullExternalEqual := reflect.DeepEqual(actualAfter, controlAfterExternal)
+	actualFullAtomicEqual := reflect.DeepEqual(actualAfter, atomicAfter)
+	episodesEqual := actualAfter.Optimizer.Episodes == expectedAfter.Optimizer.Episodes
+	atomicEpisodesEqual := actualAfter.Optimizer.Episodes == atomicAfter.Optimizer.Episodes
+	atomicFreshParametersEqual := reflect.DeepEqual(before.Parameters, atomicFreshAfter.Parameters)
+	atomicFreshAdamStateEqual := reflect.DeepEqual(before.Optimizer.State, atomicFreshAfter.Optimizer.State)
+	actualVersion := diagnosticActionHash(t, actualAfter.Parameters)
+	t.Logf("score0 interleave V0=%s V1=%s V2=%s output=%v prediction=%v freshzero={gradient_norm:%.17g update_norm:%.17g applied:%t parameters_equal:%t adam_state_equal:%t updates:%d->%d episodes:%d->%d} externalFirst={gradient_norm:%.17g update_norm:%.17g applied:%t updates:%d episodes:%d} staleP0Extra={gradient_norm:%.17g update_norm:%.17g applied:%t updates:%d episodes:%d} atomicFreshZero={gradient_norm:%.17g update_norm:%.17g applied:%t parameters_equal:%t adam_state_equal:%t updates:%d->%d episodes:%d->%d} atomicExternalAfterFresh={gradient_norm:%.17g update_norm:%.17g applied:%t updates:%d episodes:%d} actualExternal={gradient_norm:%.17g update_norm:%.17g applied:%t updates:%d episodes:%d} updateReport={consumed:%d gradient_steps:%d} trainingStateEqualActualExpected=%t trainingStateEqualActualExternal=%t trainingStateEqualActualAtomic=%t fullStateEqualActualExpected=%t fullStateEqualActualExternal=%t fullStateEqualActualAtomic=%t episodesEqualExpected=%t episodesEqualAtomic=%t adamSteps={before:%v freshzero:%v atomicFreshZero:%v externalFirst:%v expected:%v atomic:%v actual:%v}", v0, v1, actualVersion, record.Output, prediction, zeroResult.GradientNorm, zeroResult.UpdateNorm, zeroResult.Applied, zeroParametersEqual, zeroAdamStateEqual, before.Optimizer.Updates, zeroAfter.Optimizer.Updates, before.Optimizer.Episodes, zeroAfter.Optimizer.Episodes, controlExternal.GradientNorm, controlExternal.UpdateNorm, controlExternal.Applied, controlExternal.Updates, controlAfterExternal.Optimizer.Episodes, expectedExtra.GradientNorm, expectedExtra.UpdateNorm, expectedExtra.Applied, expectedExtra.Updates, expectedAfter.Optimizer.Episodes, atomicFreshZero.GradientNorm, atomicFreshZero.UpdateNorm, atomicFreshZero.Applied, atomicFreshParametersEqual, atomicFreshAdamStateEqual, before.Optimizer.Updates, atomicFreshAfter.Optimizer.Updates, before.Optimizer.Episodes, atomicFreshAfter.Optimizer.Episodes, atomicExternalAfterFresh.GradientNorm, atomicExternalAfterFresh.UpdateNorm, atomicExternalAfterFresh.Applied, atomicAfter.Optimizer.Updates, atomicAfter.Optimizer.Episodes, external.result.GradientNorm, external.result.UpdateNorm, external.result.Applied, external.result.Updates, actualAfter.Optimizer.Episodes, update.report.Consumed, update.report.GradientSteps, actualExpectedEqual, actualExternalEqual, actualAtomicEqual, actualFullExpectedEqual, actualFullExternalEqual, actualFullAtomicEqual, episodesEqual, atomicEpisodesEqual, before.Optimizer.State.Steps, zeroAfter.Optimizer.State.Steps, atomicFreshAfter.Optimizer.State.Steps, controlAfterExternal.Optimizer.State.Steps, expectedAfter.Optimizer.State.Steps, atomicAfter.Optimizer.State.Steps, actualAfter.Optimizer.State.Steps)
+	if !actualExpectedEqual || !actualFullExpectedEqual {
+		t.Fatalf("interleaved state differs from external-first control: training_equal=%t full_equal=%t actual_updates=%d expected_updates=%d actual_episodes=%d expected_episodes=%d", actualExpectedEqual, actualFullExpectedEqual, actualAfter.Optimizer.Updates, expectedAfter.Optimizer.Updates, actualAfter.Optimizer.Episodes, expectedAfter.Optimizer.Episodes)
+	}
+	if !episodesEqual {
+		t.Fatalf("episode count actual=%d expected=%d", actualAfter.Optimizer.Episodes, expectedAfter.Optimizer.Episodes)
+	}
+	if actualExternalEqual || actualFullExternalEqual {
+		t.Fatal("interleaved score-zero update was indistinguishable from external-only control")
+	}
+	if actualAtomicEqual || actualFullAtomicEqual {
+		t.Fatal("interleaved score-zero update matched atomic fresh-zero-then-external control")
+	}
+	if !atomicEpisodesEqual {
+		t.Fatalf("atomic control episode count=%d actual=%d", atomicAfter.Optimizer.Episodes, actualAfter.Optimizer.Episodes)
+	}
+}
+
+// Suggested -run selections for Root's overlay command after materializing this
+// file in a temporary learning test workspace:
+//
+//   -run '^TestPublicInterleaveActAdvanceSnapshotVersion$'
+//   -run '^TestPublicInterleaveOnlineScoreZeroAfterEpisodePredict$'
+//   -run '^TestPublicInterleave(ActAdvanceSnapshotVersion|OnlineScoreZeroAfterEpisodePredict)$'
+//
+// Root's exact check.py plus overlay invocation is recorded in v3-notes.md.
+//
+// Expected diagnostic observations to record are old/new model hashes, the
+// unchanged old-model output, runtime.Stack queue proof, external StepResult,
+// fresh score-zero zero-gradient result with counter/state deltas, the
+// external-first stale-P0 control, the atomic fresh-zero-then-external control,
+// and full-state equality against each control.  The diagnostic must not be
+// called a formal RED regression until the project explicitly permits sharing
+// one Individual between OnlineLearner and external mutators.
