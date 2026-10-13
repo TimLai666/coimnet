@@ -1,0 +1,64 @@
+from pathlib import Path
+import hashlib, json, sys, tempfile
+
+ROOT = Path.cwd()
+WORK = ROOT / 'runs/.tmp/chemical-ocr-20261013'
+EV = ROOT / 'evidence/TSK-11/chemical-quality-20261013'
+LOCK_SHA = '5d10a1671393a33fb7f2895bdc0f9087c1f6f08dd5c3ff852fcf2f59f107fe26'
+
+def fingerprint(path, expected):
+    actual = hashlib.sha256(path.read_bytes()).hexdigest()
+    if actual != expected:
+        raise ValueError('frozen source mismatch: ' + str(path))
+    return actual
+
+if len(sys.argv) > 1:
+    assert sys.argv[1:] == ['negative-control']
+    with tempfile.TemporaryDirectory(dir=WORK / 'go-tmp') as directory:
+        p = Path(directory) / 'source.txt'
+        p.write_bytes(b'original')
+        original = p.read_bytes()
+        expected = hashlib.sha256(original).hexdigest()
+        fingerprint(p, expected)
+        assert p.read_bytes() == original
+        p.write_bytes(b'changed')
+        try:
+            fingerprint(p, expected)
+        except ValueError:
+            changed_rejected = True
+        else:
+            raise AssertionError('changed source accepted')
+        p.unlink()
+        try:
+            fingerprint(p, expected)
+        except FileNotFoundError:
+            missing_rejected = True
+        else:
+            raise AssertionError('missing source accepted')
+    print(json.dumps({'changed_source_rejected': changed_rejected, 'missing_source_rejected': missing_rejected}))
+    sys.exit(0)
+
+fingerprint(EV / 'source-lock.json', LOCK_SHA)
+lock = json.loads((EV / 'source-lock.json').read_text())
+for name, expected in lock['files'].items():
+    fingerprint(EV / name, expected)
+initial = json.loads((EV / 'protocol-initial.json').read_text())
+protocol = json.loads((EV / 'protocol.json').read_text())
+confirmation = protocol.pop('confirmation')
+assert protocol == initial, 'settings changed beyond predeclared confirmation metadata'
+assert confirmation['index_sha256_expected'] == json.loads((EV / 'preflight.json').read_text())['selection']['confirmation_indices_sha256']
+framework = json.loads((EV / 'framework-source.json').read_text())
+assert framework['source_commit'] == initial['source_commit'] == '44943f5aae4d157cd3a22e2858607066784ee382'
+for row in framework['files']:
+    fingerprint(ROOT / row['path'], row['sha256'])
+driver = json.loads((EV / 'driver-source.json').read_text())
+for row in driver:
+    fingerprint(ROOT / row['path'], row['sha256'])
+    fingerprint(ROOT / row['artifact'], row['sha256'])
+for name in ['run_command.py', 'run_pairs.py', 'analyze.py']:
+    fingerprint(WORK / name, lock['files']['sources/' + name + '.txt'])
+fingerprint(WORK / 'comparison', lock['binary_sha256'])
+data = json.loads((EV / 'data-copy.json').read_text())
+for row in data:
+    fingerprint(Path(row['path']), row['sha256'])
+print(json.dumps({'source_lock_sha256': LOCK_SHA, 'framework_files_verified': len(framework['files']), 'driver_files_verified': len(driver), 'wrapper_and_analyzer_files_verified': 3, 'binary_sha256': lock['binary_sha256'], 'data_files_verified': len(data), 'protocol_confirmation_matches_preflight': True, 'scope': lock['scope']}))

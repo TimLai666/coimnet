@@ -1,0 +1,39 @@
+from pathlib import Path
+import gzip, hashlib, json, sys
+
+WORK = Path('runs/.tmp/chemical-ocr-20261013')
+EV = Path('evidence/TSK-11/chemical-quality-20261013')
+OUT = EV / 'logs'
+OUT.mkdir(exist_ok=True)
+rows = []
+
+def sha(b):
+    return hashlib.sha256(b).hexdigest()
+
+def save(path, data):
+    if path.exists():
+        assert path.read_bytes() == data, 'retained log changed: ' + str(path)
+    else:
+        with path.open('xb') as f:
+            f.write(data)
+
+receipts = sorted((WORK / 'logs').glob('*.command.json'))
+for p in receipts:
+    b = p.read_bytes()
+    receipt = json.loads(b)
+    label = p.name.removesuffix('.command.json')
+    save(OUT / p.name, b)
+    for channel in ['stdout', 'stderr']:
+        raw = (WORK / 'logs' / (label + '.' + channel)).read_bytes()
+        assert sha(raw) == receipt[channel + '_sha256'], (label, channel)
+        data = gzip.compress(raw, mtime=0)
+        target = OUT / (label + '.' + channel + '.gz')
+        save(target, data)
+        assert gzip.decompress(target.read_bytes()) == raw
+        rows.append({'path': str(target.relative_to(EV)), 'raw_bytes': len(raw),
+                     'raw_sha256': sha(raw), 'gzip_bytes': len(data), 'gzip_sha256': sha(data)})
+if sys.argv[1:] == ['final']:
+    save(OUT / 'index.json', (json.dumps({'commands': len(receipts), 'channels': rows}, indent=2) + '\n').encode())
+else:
+    assert not sys.argv[1:]
+print(json.dumps({'commands_archived': len(receipts), 'channels_archived': len(rows), 'all_raw_hashes_match_receipts': True}))

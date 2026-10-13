@@ -1,0 +1,12 @@
+from pathlib import Path
+import os,sys,subprocess,time,json,hashlib,platform
+w=Path(__file__).resolve().parent
+label=sys.argv[1]; command=sys.argv[2:]; assert command
+logs=w/'logs'; out=logs/(label+'.stdout'); err=logs/(label+'.stderr'); receipt=logs/(label+'.command.json')
+assert not any(p.exists() for p in [out,err,receipt])
+env=os.environ.copy(); env.update({'GOTOOLCHAIN':'local','GOPROXY':'off','GOSUMDB':'off','GOMAXPROCS':'2','GOCACHE':str(w/'go-build'),'GOMODCACHE':str(w/'go-mod'),'GOTMPDIR':str(w/'go-tmp'),'GOPATH':str(w/'go-path'),'GOFLAGS':'-p=2 -timeout=60m'})
+start=time.monotonic(); wall=time.time(); load=os.getloadavg()
+with out.open('wb') as a,err.open('wb') as b:
+ p=subprocess.Popen(command,cwd=w.parents[2],env=env,stdout=a,stderr=b); code=p.wait()
+r={'command':command,'exit_code':code,'elapsed_seconds':time.monotonic()-start,'start_unix_seconds':wall,'initial_load_average':load,'final_load_average':os.getloadavg(),'platform':platform.platform(),'environment':{k:env[k] for k in ['GOTOOLCHAIN','GOPROXY','GOSUMDB','GOMAXPROCS','GOCACHE','GOMODCACHE','GOTMPDIR','GOPATH','GOFLAGS']},'stdout_sha256':hashlib.sha256(out.read_bytes()).hexdigest(),'stderr_sha256':hashlib.sha256(err.read_bytes()).hexdigest()}
+receipt.write_text(json.dumps(r,indent=2)+'\n'); print(json.dumps(r),flush=True);sys.exit(code)

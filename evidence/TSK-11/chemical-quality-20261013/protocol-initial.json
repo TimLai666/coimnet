@@ -1,0 +1,59 @@
+{
+  "date": "2026-10-13",
+  "source_commit": "44943f5aae4d157cd3a22e2858607066784ee382",
+  "task": "paired KMNIST single-character chemical feedback ON/OFF; same artificial CPU continuous model as ticket64",
+  "groups": [
+    "off",
+    "on"
+  ],
+  "training": 6000,
+  "epochs": 20,
+  "learning_rate": 0.002,
+  "hidden": 24,
+  "height": 28,
+  "seed_list": [
+    20260924,
+    20260925,
+    20260926
+  ],
+  "training_order": "PCG(seed,37); shuffle previous epoch permutation each epoch; identical per pair",
+  "input_profile": "single-character: full image plus zero propagation row; final nonblank softmax only",
+  "held_out": {
+    "count": 2000,
+    "selection": "same balanced official test indices as ticket64, per-class offset20",
+    "status": "fixed follow-on comparison on previously observed test split; no blind-test claim; no hyperparameter selection in this task"
+  },
+  "chemistry": {
+    "source": "fixed activity-summary Controller; SummaryWindow3,Hidden1,parameters[0.6,0.2,0.05,0.8,-0.1],no target/feedback/resources",
+    "regions": 1,
+    "channels": 1,
+    "dt": 1,
+    "tau": [
+      2
+    ],
+    "initial_concentration": [
+      [
+        0
+      ]
+    ],
+    "receptor_cells": "hidden nodes28..51",
+    "engineering_kd": 0.5,
+    "engineering_n": 1,
+    "gamma_scale": 0.8,
+    "beta_scale": 0.1,
+    "gamma_min": 0.5,
+    "gamma_max": 2,
+    "beta_abs_max": 1,
+    "scope": "engineering coefficients from ticket65 public fixture; no biological hormone or measured receptor attribution",
+    "trainable_chemistry_parameters": 0
+  },
+  "selection_policy": "settings fixed before quality scores; no search, no early stopping, no selecting best epochs; preserve all seeds and failures",
+  "comparison": "paired accuracy difference per seed plus same-image discordance, training cross-entropy and accuracy, evaluation cross-entropy, train wall seconds. No population confidence from only three seeds. Historical off snapshot must reproduce exactly.",
+  "completion": [
+    "fixed protocol, data fingerprints and split verified",
+    "public SDK equivalence, neutral/active checks and fresh-process restore verified",
+    "three complete paired real-task runs analyzed",
+    "confirmed framework defects fixed if any, appropriate full checks passed",
+    "evidence delivered and owned temp cleared"
+  ]
+}

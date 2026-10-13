@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 完成 4／5 驗收。三組 KMNIST 化學配對的主要平均辨識率由 72.07% 到 72.35%，增加 0.28 個百分點。確認分割增加 0.22 個百分點，兩批都有一個種子退步，六組都低於 80% 品質門檻。六個模型新程序恢復、三個 OFF 舊快照重現、五項 driver 與 race、十張真實圖片 SDK 比對通過。完整一般與 race 各 58 套件、格式、build、vet、相依性、CLI 接續及治理 11 項通過，772 份來源及兩份 evidence Go 指紋一致。已補強來源與歷史評分算式核對，沒有修改化學數值核心。證據封存、清理及推送待完成，見[最終驗收](evidence/TSK-11/chemical-quality-20261013/verification.json)。
+
 [ticket 65](docs/tickets/65-receptor-location-and-chemical-training.md) 已完成 5／5 驗收與交付。有來源的受體位置、一般化學回授訓練、新程序接續、失敗原子性及分段重算／關閉對照通過。完整一般與 race 各 58 套件、格式、build、vet、相依性、CLI 新程序接續與最後治理 11 項通過，772 份來源及兩份 evidence Go 程式指紋相符。本輪 62,032 個暫存檔共 6.15 GB 與 1,323 個連結已清除。實作 `9ed31a5` 推送至 `codex/receptor-chemistry-training` 並讀回一致，見[最終驗收](evidence/MOD-02/receptor-chemistry-20261012/verification.json)、[清理](evidence/MOD-02/receptor-chemistry-20261012/cleanup.json)與[交付回條](evidence/MOD-02/receptor-chemistry-20261012/delivery.json)。實測定位只有細胞類型／樹突觀察，細胞內位置不建立獨立膜電位，反應係數採工程設定。生物定量正確性與 OCR 品質改善沒有由本票驗證。
 
 [ticket 64](docs/tickets/64-real-task-quality.md) 的單字元模式修正、品質驗證與交付已完成。新模式、169 個相關測試、實際 CLI、舊模型逐位元組相容、完整一般／race 各 57 套件、格式、build、vet、相依性及 13 個治理專項通過。三個種子的正式測試為 73.25%、71.45%、71.50%，低於 80% 門檻及四個最近鄰的 81.85%，模型品質沒有達標。已清除 57,028 個暫存檔與 1,585 個快取連結，保留三個模型及六份原始資料。原 91／91 工程驗收保持，詳見[品質證據](evidence/TSK-11/quality-20261012/verification.json)。實作 `3cf5bd6` 已推送並同步原專案，詳見[交付回條](evidence/TSK-11/quality-20261012/delivery.json)。

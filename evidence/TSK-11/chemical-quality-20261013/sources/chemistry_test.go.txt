@@ -1,0 +1,460 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+)
+
+const (
+	comparisonHeight     = 28
+	comparisonHidden     = 24
+	comparisonInputWidth = comparisonHeight * comparisonHeight
+)
+
+// publicSnapshot deliberately goes through the task's public recognizer API.
+// It keeps this driver test tied to the same single-character model shape as
+// the real OCR run, rather than manufacturing a smaller private fixture.
+func publicSnapshot(t *testing.T) learning.TrainingSnapshot {
+	t.Helper()
+	recognizer, err := ocr.NewRecognizer(ocr.RecognizerConfig{
+		Height:           comparisonHeight,
+		Hidden:           comparisonHidden,
+		Alphabet:         []rune("abcdefghij"),
+		LearningRate:     0.002,
+		Seed:             20260924,
+		TrainableEncoder: true,
+		InputProfile:     "single-character",
+		CharacterWidth:   comparisonHeight,
+	})
+	if err != nil {
+		t.Fatalf("NewRecognizer: %v", err)
+	}
+	snapshot := recognizer.Snapshot()
+	if snapshot.Config.InputSize != comparisonInputWidth || snapshot.Config.OutputSize != 11 {
+		t.Fatalf("public OCR snapshot shape = input %d/output %d, want 784/11", snapshot.Config.InputSize, snapshot.Config.OutputSize)
+	}
+	return snapshot
+}
+
+// comparisonProbe uses the exact two neural rows of the single-character
+// profile, while making the first row an explicit positive/negative pattern.
+// The upstream is zero for that first row and fixed, nonzero for the final row.
+func comparisonProbe(outputSize int) ([][]float64, [][]float64) {
+	image := make([]float64, comparisonInputWidth)
+	for y := 0; y < comparisonHeight; y++ {
+		for x := 0; x < comparisonHeight; x++ {
+			if (x+y)%2 == 0 {
+				image[y*comparisonHeight+x] = 0.75
+			} else {
+				image[y*comparisonHeight+x] = -0.25
+			}
+		}
+	}
+	inputs := [][]float64{image, make([]float64, comparisonInputWidth)}
+	upstream := [][]float64{make([]float64, outputSize), make([]float64, outputSize)}
+	for class := 1; class < outputSize; class++ {
+		upstream[1][class] = float64(class) * 0.03125
+	}
+	return inputs, upstream
+}
+
+func snapshotJSON(t *testing.T, snapshot learning.TrainingSnapshot) []byte {
+	t.Helper()
+	encoded, err := json.Marshal(snapshot)
+	if err != nil {
+		t.Fatalf("marshal training snapshot: %v", err)
+	}
+	return encoded
+}
+
+func floatBitsEqual(a, b []float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if math.Float64bits(a[i]) != math.Float64bits(b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func rowsBitsEqual(a, b [][]float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !floatBitsEqual(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func parametersBitsEqual(a, b learning.Parameters) bool {
+	return floatBitsEqual(a.Core.Weights, b.Core.Weights) &&
+		floatBitsEqual(a.Core.Bias, b.Core.Bias) &&
+		floatBitsEqual(a.Core.LogTau, b.Core.LogTau) &&
+		floatBitsEqual(a.ThetaRaw, b.ThetaRaw) &&
+		floatBitsEqual(a.Encoder, b.Encoder) &&
+		floatBitsEqual(a.Readout, b.Readout)
+}
+
+func adamBitsEqual(a, b learning.AdamState) bool {
+	return floatBitsEqual(a.First, b.First) &&
+		floatBitsEqual(a.Second, b.Second) &&
+		reflect.DeepEqual(a.Steps, b.Steps)
+}
+
+// Neutral comparisons intentionally omit Config.Chemistry. The protocol
+// declaration must differ even though the learned state and update path do
+// not, because this is the requested neutral-on control.
+func trainingStateBitsEqual(a, b learning.TrainingSnapshot) bool {
+	return parametersBitsEqual(a.Parameters, b.Parameters) &&
+		adamBitsEqual(a.Optimizer, b.Optimizer) &&
+		a.Updates == b.Updates
+}
+
+func gradientsBitsEqual(a, b learning.Gradient) bool {
+	if !floatBitsEqual(a.Core.Weights, b.Core.Weights) ||
+		!floatBitsEqual(a.Core.Bias, b.Core.Bias) ||
+		!floatBitsEqual(a.Core.LogTau, b.Core.LogTau) ||
+		!floatBitsEqual(a.Core.Initial, b.Core.Initial) ||
+		!floatBitsEqual(a.ThetaRaw, b.ThetaRaw) ||
+		!floatBitsEqual(a.Encoder, b.Encoder) ||
+		!floatBitsEqual(a.Readout, b.Readout) {
+		return false
+	}
+	return rowsBitsEqual(a.Core.Inputs, b.Core.Inputs) && rowsBitsEqual(a.Inputs, b.Inputs)
+}
+
+func stepResultsBitsEqual(a, b learning.StepResult) bool {
+	return math.Float64bits(a.Loss) == math.Float64bits(b.Loss) &&
+		a.LossKnown == b.LossKnown &&
+		math.Float64bits(a.GradientNorm) == math.Float64bits(b.GradientNorm) &&
+		math.Float64bits(a.UpdateNorm) == math.Float64bits(b.UpdateNorm) &&
+		a.Updates == b.Updates &&
+		reflect.DeepEqual(a.Projected, b.Projected) &&
+		math.Float64bits(a.LearningRate) == math.Float64bits(b.LearningRate) &&
+		a.Applied == b.Applied &&
+		a.Accumulated == b.Accumulated &&
+		a.GradientHorizonSteps == b.GradientHorizonSteps
+}
+
+func finiteValues(values []float64) bool {
+	for _, value := range values {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return false
+		}
+	}
+	return true
+}
+
+func finiteRows(rows [][]float64) bool {
+	for _, row := range rows {
+		if !finiteValues(row) {
+			return false
+		}
+	}
+	return true
+}
+
+func assertFiniteParameters(t *testing.T, label string, parameters learning.Parameters) {
+	t.Helper()
+	if !finiteValues(parameters.Core.Weights) || !finiteValues(parameters.Core.Bias) || !finiteValues(parameters.Core.LogTau) || !finiteValues(parameters.ThetaRaw) || !finiteValues(parameters.Encoder) || !finiteValues(parameters.Readout) {
+		t.Fatalf("%s parameters contain a non-finite value", label)
+	}
+}
+
+func assertFiniteSnapshot(t *testing.T, label string, snapshot learning.TrainingSnapshot) {
+	t.Helper()
+	assertFiniteParameters(t, label, snapshot.Parameters)
+	if !finiteValues(snapshot.Optimizer.First) || !finiteValues(snapshot.Optimizer.Second) {
+		t.Fatalf("%s optimizer contains a non-finite value", label)
+	}
+}
+
+func assertFiniteGradient(t *testing.T, label string, gradient learning.Gradient) {
+	t.Helper()
+	if !finiteValues(gradient.Core.Weights) || !finiteValues(gradient.Core.Bias) || !finiteValues(gradient.Core.LogTau) || !finiteValues(gradient.Core.Initial) || !finiteValues(gradient.ThetaRaw) || !finiteValues(gradient.Encoder) || !finiteValues(gradient.Readout) || !finiteRows(gradient.Core.Inputs) || !finiteRows(gradient.Inputs) {
+		t.Fatalf("%s gradient contains a non-finite value", label)
+	}
+}
+
+func assertFiniteRows(t *testing.T, label string, rows [][]float64) {
+	t.Helper()
+	if !finiteRows(rows) {
+		t.Fatalf("%s output contains a non-finite value: %v", label, rows)
+	}
+}
+
+func comparisonGradient(t *testing.T, snapshot learning.TrainingSnapshot, input, upstream [][]float64) learning.Gradient {
+	t.Helper()
+	network, err := learning.NewNetwork(snapshot.Config)
+	if err != nil {
+		t.Fatalf("NewNetwork for LossGradientFrom: %v", err)
+	}
+	gradient, err := network.LossGradientFrom(context.Background(), snapshot.Parameters, input, upstream, 0)
+	if err != nil {
+		t.Fatalf("LossGradientFrom: %v", err)
+	}
+	return gradient
+}
+
+func requireProtocolChemistry(t *testing.T, base, snapshot learning.TrainingSnapshot) {
+	t.Helper()
+	chemistry := snapshot.Config.Chemistry
+	if chemistry == nil {
+		t.Fatal("on comparison has no chemistry declaration")
+	}
+	if chemistry.Part.Config.Chemistry.Regions != 1 || chemistry.Part.Config.Chemistry.Channels != 1 || chemistry.Part.Config.Chemistry.DT != 1 || !floatBitsEqual(chemistry.Part.Config.Chemistry.Tau, []float64{2}) {
+		t.Fatalf("chemistry kinetics = %+v, want one region/channel, dt=1, tau=2", chemistry.Part.Config.Chemistry)
+	}
+	if len(chemistry.Part.State.Concentration) != 1 || len(chemistry.Part.State.Concentration[0]) != 1 || math.Float64bits(chemistry.Part.State.Concentration[0][0]) != math.Float64bits(0) {
+		t.Fatalf("initial concentration = %v, want [[0]]", chemistry.Part.State.Concentration)
+	}
+	if len(chemistry.Part.Config.Regions.NodeRegion) != base.Config.Dynamics.Nodes {
+		t.Fatalf("region map length = %d, want %d", len(chemistry.Part.Config.Regions.NodeRegion), base.Config.Dynamics.Nodes)
+	}
+	for node, region := range chemistry.Part.Config.Regions.NodeRegion {
+		if region != 0 {
+			t.Fatalf("node %d mapped to region %d, want region 0", node, region)
+		}
+	}
+	if len(chemistry.Part.Config.Sources) != 1 {
+		t.Fatalf("chemistry sources = %d, want one controller source", len(chemistry.Part.Config.Sources))
+	}
+	source := chemistry.Part.Config.Sources[0]
+	if source.Kind != modulation.SourceController || source.Channel != 0 || source.Controller == nil {
+		t.Fatalf("source = %+v, want controller on channel 0", source)
+	}
+	controller := source.Controller
+	if controller.Inputs.SummaryWindow != 3 || controller.Inputs.UseFeedback || len(controller.Inputs.Resources) != 0 || controller.Nodes != base.Config.Dynamics.Nodes || controller.Hidden != 1 || controller.Channel != 0 || !floatBitsEqual(controller.Parameters, []float64{0.6, 0.2, 0.05, 0.8, -0.1}) {
+		t.Fatalf("controller = %+v, want fixed activity-summary protocol", controller)
+	}
+	if len(chemistry.Part.Config.Receptors.Records) != 1 {
+		t.Fatalf("receptor records = %d, want one", len(chemistry.Part.Config.Receptors.Records))
+	}
+	receptor := chemistry.Part.Config.Receptors.Records[0]
+	wantCells := make([]int, comparisonHidden)
+	for i := range wantCells {
+		wantCells[i] = comparisonHeight + i
+	}
+	if !reflect.DeepEqual(receptor.Cells, wantCells) || receptor.Channel != 0 || receptor.Status != modulation.StatusHypothesized || math.Float64bits(receptor.Kd) != math.Float64bits(0.5) || math.Float64bits(receptor.N) != math.Float64bits(1) {
+		t.Fatalf("receptor = %+v, want hidden cells 28..51 with engineering Kd=0.5, n=1", receptor)
+	}
+	if len(chemistry.Part.Config.Effects) != 1 {
+		t.Fatalf("effects = %d, want one sensitivity effect", len(chemistry.Part.Config.Effects))
+	}
+	effect := chemistry.Part.Config.Effects[0]
+	if effect.Kind != modulation.EffectSensitivity || effect.Receptor != 0 || math.Float64bits(effect.GammaScale) != math.Float64bits(0.8) || math.Float64bits(effect.BetaScale) != math.Float64bits(0.1) || math.Float64bits(effect.GammaMin) != math.Float64bits(0.5) || math.Float64bits(effect.GammaMax) != math.Float64bits(2) || math.Float64bits(effect.BetaAbsMax) != math.Float64bits(1) {
+		t.Fatalf("effect = %+v, want sensitivity gamma=0.8 beta=0.1 with fixed bounds", effect)
+	}
+}
+
+func TestComparisonTrainerRejectsUnknownGroup(t *testing.T) {
+	base := publicSnapshot(t)
+	trainer, err := comparisonTrainer(base, "not-a-comparison-group")
+	if err == nil {
+		t.Fatal("comparisonTrainer accepted an unknown group")
+	}
+	if trainer != nil {
+		t.Fatalf("comparisonTrainer returned a trainer for an unknown group: %#v", trainer)
+	}
+}
+
+func TestComparisonTrainerOffRestoresIndependentSnapshot(t *testing.T) {
+	base := publicSnapshot(t)
+	trainer, err := comparisonTrainer(base, "off")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(off): %v", err)
+	}
+	got := trainer.Snapshot()
+	if !reflect.DeepEqual(got, base) {
+		t.Fatal("off trainer did not restore the caller snapshot exactly")
+	}
+
+	// RestoreTrainer must own both caller arrays and the network's copied
+	// topology. Mutating either source snapshot after construction cannot alter
+	// the trainer that was already returned.
+	want := trainer.Snapshot()
+	originalWeight := base.Parameters.Encoder[0]
+	base.Parameters.Encoder[0] = originalWeight + 1
+	originalSource := base.Config.Dynamics.Sources[0]
+	base.Config.Dynamics.Sources[0] = originalSource + 1
+	if !reflect.DeepEqual(trainer.Snapshot(), want) {
+		t.Fatal("off trainer shares parameter or topology storage with base snapshot")
+	}
+	base.Parameters.Encoder[0] = originalWeight
+	base.Config.Dynamics.Sources[0] = originalSource
+
+	owned := trainer.Snapshot()
+	owned.Parameters.Encoder[0] = owned.Parameters.Encoder[0] + 1
+	owned.Config.Dynamics.Sources[0]++
+	if !reflect.DeepEqual(trainer.Snapshot(), want) {
+		t.Fatal("off trainer snapshot exposed mutable internal storage")
+	}
+}
+
+func TestComparisonTrainerOnUsesProtocolAndChangesOutputAndGradient(t *testing.T) {
+	base := publicSnapshot(t)
+	off, err := comparisonTrainer(base, "off")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(off): %v", err)
+	}
+	on, err := comparisonTrainer(base, "on")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(on): %v", err)
+	}
+	offSnapshot := off.Snapshot()
+	onSnapshot := on.Snapshot()
+	requireProtocolChemistry(t, base, onSnapshot)
+	assertFiniteSnapshot(t, "off", offSnapshot)
+	assertFiniteSnapshot(t, "on", onSnapshot)
+
+	input, upstream := comparisonProbe(base.Config.OutputSize)
+	offOutput, err := off.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatalf("off PredictAll: %v", err)
+	}
+	onOutput, err := on.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatalf("on PredictAll: %v", err)
+	}
+	assertFiniteRows(t, "off output", offOutput)
+	assertFiniteRows(t, "on output", onOutput)
+	if rowsBitsEqual(offOutput, onOutput) {
+		t.Fatalf("on chemistry output is bit-identical to off: %v", onOutput)
+	}
+
+	offGradient := comparisonGradient(t, offSnapshot, input, upstream)
+	onGradient := comparisonGradient(t, onSnapshot, input, upstream)
+	assertFiniteGradient(t, "off", offGradient)
+	assertFiniteGradient(t, "on", onGradient)
+	if gradientsBitsEqual(offGradient, onGradient) {
+		t.Fatal("on chemistry complete LossGradientFrom result is bit-identical to off")
+	}
+
+	offStepTrainer, err := comparisonTrainer(base, "off")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(off) for StepFrom: %v", err)
+	}
+	onStepTrainer, err := comparisonTrainer(base, "on")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(on) for StepFrom: %v", err)
+	}
+	offResult, err := offStepTrainer.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatalf("off StepFrom: %v", err)
+	}
+	onResult, err := onStepTrainer.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatalf("on StepFrom: %v", err)
+	}
+	if stepResultsBitsEqual(offResult, onResult) || trainingStateBitsEqual(offStepTrainer.Snapshot(), onStepTrainer.Snapshot()) {
+		t.Fatal("on StepFrom committed the same update as off")
+	}
+	if math.IsNaN(onResult.UpdateNorm) || math.IsInf(onResult.UpdateNorm, 0) || math.IsNaN(onResult.GradientNorm) || math.IsInf(onResult.GradientNorm, 0) {
+		t.Fatalf("on StepFrom result is not finite: %+v", onResult)
+	}
+	assertFiniteSnapshot(t, "on after StepFrom", onStepTrainer.Snapshot())
+}
+
+func TestComparisonTrainerNeutralMatchesOffExceptChemistry(t *testing.T) {
+	base := publicSnapshot(t)
+	off, err := comparisonTrainer(base, "off")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(off): %v", err)
+	}
+	neutral, err := comparisonTrainer(base, "neutral")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(neutral): %v", err)
+	}
+	offSnapshot := off.Snapshot()
+	neutralSnapshot := neutral.Snapshot()
+	if neutralSnapshot.Config.Chemistry == nil || reflect.DeepEqual(offSnapshot.Config.Chemistry, neutralSnapshot.Config.Chemistry) {
+		t.Fatal("neutral must retain an on chemistry declaration distinct from off")
+	}
+	if len(neutralSnapshot.Config.Chemistry.Part.Config.Effects) != 1 {
+		t.Fatalf("neutral effects = %d, want one sensitivity effect", len(neutralSnapshot.Config.Chemistry.Part.Config.Effects))
+	}
+	neutralEffect := neutralSnapshot.Config.Chemistry.Part.Config.Effects[0]
+	if math.Float64bits(neutralEffect.GammaScale) != math.Float64bits(0) || math.Float64bits(neutralEffect.BetaScale) != math.Float64bits(0) {
+		t.Fatalf("neutral sensitivity scales = (%g,%g), want (0,0)", neutralEffect.GammaScale, neutralEffect.BetaScale)
+	}
+
+	input, upstream := comparisonProbe(base.Config.OutputSize)
+	offOutput, err := off.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatalf("off PredictAll: %v", err)
+	}
+	neutralOutput, err := neutral.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatalf("neutral PredictAll: %v", err)
+	}
+	if !rowsBitsEqual(offOutput, neutralOutput) {
+		t.Fatalf("neutral output differs from off: off=%v neutral=%v", offOutput, neutralOutput)
+	}
+
+	offGradient := comparisonGradient(t, offSnapshot, input, upstream)
+	neutralGradient := comparisonGradient(t, neutralSnapshot, input, upstream)
+	if !gradientsBitsEqual(offGradient, neutralGradient) {
+		t.Fatal("neutral LossGradientFrom differs from off")
+	}
+	offStep, err := comparisonTrainer(base, "off")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(off) for neutral StepFrom: %v", err)
+	}
+	neutralStep, err := comparisonTrainer(base, "neutral")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(neutral) for StepFrom: %v", err)
+	}
+	offResult, err := offStep.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatalf("off StepFrom: %v", err)
+	}
+	neutralResult, err := neutralStep.StepFrom(context.Background(), input, upstream)
+	if err != nil {
+		t.Fatalf("neutral StepFrom: %v", err)
+	}
+	if !stepResultsBitsEqual(offResult, neutralResult) {
+		t.Fatalf("neutral StepFrom result differs from off: off=%+v neutral=%+v", offResult, neutralResult)
+	}
+	if !trainingStateBitsEqual(offStep.Snapshot(), neutralStep.Snapshot()) {
+		t.Fatal("neutral StepFrom parameter/optimizer/update state differs from off")
+	}
+	assertFiniteGradient(t, "neutral", neutralGradient)
+	assertFiniteRows(t, "neutral output", neutralOutput)
+	assertFiniteSnapshot(t, "neutral after StepFrom", neutralStep.Snapshot())
+}
+
+func TestComparisonTrainerCancellationLeavesCallerSnapshotUnchanged(t *testing.T) {
+	base := publicSnapshot(t)
+	before := snapshotJSON(t, base)
+	trainer, err := comparisonTrainer(base, "on")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(on): %v", err)
+	}
+	trainerBefore := trainer.Snapshot()
+	input, upstream := comparisonProbe(base.Config.OutputSize)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := trainer.StepFrom(ctx, input, upstream); !errors.Is(err, context.Canceled) {
+		t.Fatalf("cancelled StepFrom error = %v, want context.Canceled", err)
+	}
+	if !reflect.DeepEqual(trainer.Snapshot(), trainerBefore) {
+		t.Fatal("cancelled StepFrom changed the returned trainer")
+	}
+	if after := snapshotJSON(t, base); !bytes.Equal(before, after) {
+		t.Fatal("comparisonTrainer or cancelled StepFrom changed the caller base snapshot")
+	}
+}

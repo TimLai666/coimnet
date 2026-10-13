@@ -1,0 +1,15 @@
+from pathlib import Path
+import json,hashlib,subprocess,sys
+r=Path.cwd();w=r/'runs/.tmp/chemical-ocr-20261013';ev=r/'evidence/TSK-11/chemical-quality-20261013';models=r/'models/TSK-11/chemical-quality-20261013';models.mkdir(parents=True,exist_ok=False)
+manifest=json.loads((ev/'driver-source.json').read_text());protocol_hash=hashlib.sha256((ev/'protocol.json').read_bytes()).hexdigest()
+for seed,groups in [(20260924,['off','on']),(20260925,['on','off']),(20260926,['off','on'])]:
+ for group in groups:
+  for x in manifest: assert hashlib.sha256(Path(x['path']).read_bytes()).hexdigest()==x['sha256']
+  assert hashlib.sha256((ev/'protocol.json').read_bytes()).hexdigest()==protocol_hash
+  path=models/(str(seed)+'-'+group)
+  common=[str(w/'comparison'),'--data-dir',str(w/'data/kmnist'),'--group',group,'--seed',str(seed),'--model',str(path)]
+  for mode in ['train','restore']:
+   label='quality-'+mode+'-'+str(seed)+'-'+group
+   print('START '+label,flush=True);p=subprocess.run([sys.executable,str(w/'run_command.py'),label,*common,'--mode',mode]);assert p.returncode==0,label
+   print('DONE '+label,flush=True)
+print('ALL SIX PAIRED TRAININGS AND RESTORES COMPLETED',flush=True)

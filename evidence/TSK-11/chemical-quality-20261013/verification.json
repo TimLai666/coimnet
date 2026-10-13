@@ -1,0 +1,168 @@
+{
+  "requirement": [
+    "TSK-11",
+    "MOD-02"
+  ],
+  "reproduction_command": "Restore sources/*.go.txt and *.py.txt into a new project-local runs/.tmp directory. Follow README.md and protocol.json; command arrays and environments are preserved in logs/*.command.json.",
+  "environment": {
+    "source_commit": "44943f5aae4d157cd3a22e2858607066784ee382",
+    "go": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "cgo_enabled": 1,
+    "gomaxprocs": 2,
+    "go_environment": {
+      "GOTOOLCHAIN": "local",
+      "GOPROXY": "off",
+      "GOSUMDB": "off",
+      "GOMAXPROCS": "2",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-ocr-20261013/go-build",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-ocr-20261013/go-mod",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-ocr-20261013/go-tmp",
+      "GOPATH": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-ocr-20261013/go-path",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "storage": "Native project-local APFS; official source data read only from the existing path."
+  },
+  "input_fingerprints": {
+    "protocol_sha256": "e5d38aaaf90a939ba0e5e3da126769f6c2f6a0872ef677fe817a48633dbeade5",
+    "comparison_binary_sha256": "1909b34e8284c42ece17e8a81812993219f7988feff9ff39adfa456b53d470af",
+    "source_lock_sha256": "449f7ba19f67f344327a30fdd885385e1938041cd2e0b65e3cf23ee9b089aab9",
+    "data": "data-copy.json",
+    "split_hashes": {
+      "after": "a25ee4d0b8c80fa5dc347e8fa821d90f67eec5e8365dc06fcd20ff83eb734f43",
+      "confirmation": "9500a51eff8ec4e5ef522459730caae6dd0b3463898ecc86430c4849875937a5"
+    },
+    "source_manifests": [
+      "framework-source.json",
+      "driver-source.json",
+      "full-verification-extra-source.json"
+    ]
+  },
+  "observed_result": {
+    "comparison_completed": true,
+    "stable_chemical_benefit_demonstrated": false,
+    "primary_mean_difference_percentage_points": 0.2833333333333333,
+    "confirmation_mean_difference_percentage_points": 0.21666666666666667,
+    "positive_pairs_per_split": 2,
+    "negative_pairs_per_split": 1,
+    "task_quality_gate_passed": false,
+    "full_framework_verification": "passed"
+  },
+  "test_log": [
+    "logs/index.json",
+    "comparison-results.json",
+    "historical-score-rounding.json",
+    "review.md"
+  ],
+  "engineering_checks": {
+    "driver_tests_passed": 5,
+    "driver_race_tests_passed": 5,
+    "sdk_real_images_compared_exact": 10,
+    "sdk_logits_objective_optimizer_and_updates_exact": true,
+    "neutral_chemical_exact": true,
+    "active_chemical_outputs_differ": true,
+    "six_independent_process_restores_exact": true,
+    "three_historical_off_snapshots_and_classification_exact": true,
+    "historical_score_probe_scope": "Six OFF rows: three seeds times primary/training splits; each legacy and SDK expression reproduced exactly on identical frozen logits. No tolerance used.",
+    "historical_score_expressions_exact": true,
+    "source_change_and_missing_negative_controls_passed": true,
+    "target_flow_check_passed": true,
+    "full_suite_passed": true,
+    "governance_final": {
+      "passed_top_level_tests": 11,
+      "tests": [
+        "TestNoTelemetry",
+        "TestNoTelemetryProjectTempBoundary",
+        "TestNoTelemetrySourceErrorsRemainVisible",
+        "TestFormatIndex",
+        "TestFormatIndexControls",
+        "TestFormatIndexGoLiteralsAndScopes",
+        "TestFormatIndexNoGitAndReadErrors",
+        "TestGovernanceRequirementIDsMatchHandoff",
+        "TestGovernanceStatusValuesAreDeclared",
+        "TestGovernancePassedRequirementsHaveEvidence",
+        "TestGovernanceTicketsHaveDatedRootDecisions"
+      ],
+      "receipt": "logs/governance-final.command.json",
+      "stdout_sha256": "b16cd7edecbd8688dd106754dd257e1f11766cd2e9120f4ae3f23164c5fe942e"
+    },
+    "production_go_files_changed": false,
+    "normal_passed_packages": 58,
+    "race_passed_packages": 58,
+    "format_build_vet_module_verify_passed": true,
+    "cli_resume_bytes_equal": true,
+    "source_manifest_entries_verified": 772,
+    "framework_entries_verified": 760,
+    "additional_evidence_go_files_verified": 2,
+    "full_verification_artifacts": "full-verification/index.json"
+  },
+  "task_quality": {
+    "dataset": "KMNIST real single-character handwriting",
+    "model": "Artificial CPU continuous graph, 52 nodes, 1248 edges, 24 hidden nodes",
+    "seeds": [
+      20260924,
+      20260925,
+      20260926
+    ],
+    "train_images_per_run": 6000,
+    "epochs_per_run": 20,
+    "updates_per_run": 120000,
+    "trainable_parameters_per_group": 23516,
+    "primary_images_per_run": 2000,
+    "confirmation_images_per_run": 2000,
+    "summary": {
+      "after": {
+        "mean_accuracy_off": 0.7206666666666667,
+        "mean_accuracy_on": 0.7235,
+        "mean_difference_percentage_points": 0.2833333333333333,
+        "minimum_difference_percentage_points": -0.1,
+        "maximum_difference_percentage_points": 0.8,
+        "positive_pairs": 2,
+        "negative_pairs": 1,
+        "zero_pairs": 0
+      },
+      "confirmation": {
+        "mean_accuracy_off": 0.726,
+        "mean_accuracy_on": 0.7281666666666666,
+        "mean_difference_percentage_points": 0.21666666666666667,
+        "minimum_difference_percentage_points": -0.7,
+        "maximum_difference_percentage_points": 0.85,
+        "positive_pairs": 2,
+        "negative_pairs": 1,
+        "zero_pairs": 0
+      }
+    },
+    "primary_cross_entropy_on_worse_in_all_three_pairs": true,
+    "all_six_primary_accuracies_below_80_percent": true,
+    "existing_four_nearest_neighbor_primary_accuracy": 0.8185,
+    "training_accuracy_range": [
+      0.984,
+      0.994
+    ],
+    "primary_accuracy_range": [
+      0.7145,
+      0.7325
+    ],
+    "inference": "Small mixed gains in this fixed setting do not establish stable training benefit. The generalization gap persists; this comparison does not isolate its cause."
+  },
+  "limits": [
+    "Three seeds, with an already-observed primary split; no population significance or blind-test claim.",
+    "Fixed engineering chemical coefficients and per-image two-step state reset; long-lived individual chemistry and biological quantitative fidelity unverified.",
+    "Real handwriting data, artificial graph; no whole-brain or multi-character word/page claim.",
+    "Timing is observational under varying system load, not a causal cost estimate.",
+    "Final broad source audit was added after formal training started; initial runner checked protocol and driver only."
+  ],
+  "confirmed_repairs": [
+    "Final provenance audit now checks framework, wrappers, analyzer, binary and local data, with changed/missing source rejection.",
+    "Historical score analyzer now compares both independently reproduced arithmetic expressions exactly, retaining original analyzer and failure logs. No training change."
+  ],
+  "delivery": {
+    "status": "engineering_verified_cleanup_and_push_pending",
+    "cleanup_receipt": "cleanup.json",
+    "delivery_receipt": "delivery.json",
+    "model_files": "comparison-results.json runs[].model_files",
+    "protected_files": "33 original-data and old/new model files; preservation-preflight.json"
+  }
+}

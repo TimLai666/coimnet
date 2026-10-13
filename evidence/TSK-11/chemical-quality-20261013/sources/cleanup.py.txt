@@ -1,0 +1,106 @@
+from pathlib import Path
+import collections, gzip, hashlib, json, os, shutil, stat, sys
+
+ROOT = Path.cwd().resolve()
+assert ROOT == Path('/Users/timlai/Developer/coimnet')
+TARGET = ROOT / 'runs/.tmp/chemical-ocr-20261013'
+EV = ROOT / 'evidence/TSK-11/chemical-quality-20261013'
+INVENTORY = ROOT / 'runs/audit/chemical-ocr-cleanup-20261013.json.gz'
+assert not TARGET.is_symlink() and TARGET.resolve() == TARGET
+TARGET_DEVICE = TARGET.stat().st_dev
+assert TARGET_DEVICE == ROOT.stat().st_dev
+assert json.loads((EV / 'verification.json').read_text())['engineering_checks']['full_suite_passed']
+
+def sha(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        while b := f.read(1024 * 1024):
+            h.update(b)
+    return h.hexdigest()
+
+def protected():
+    rows = json.loads((EV / 'original-models.json').read_text())
+    results = json.loads((EV / 'comparison-results.json').read_text())
+    rows += [x for run in results['runs'] for x in run['model_files']]
+    rows += [{'path': x['source'], 'sha256': x['sha256'], 'bytes': x['bytes']}
+             for x in json.loads((EV / 'data-copy.json').read_text())]
+    assert len(rows) == 33
+    for row in rows:
+        p = Path(row['path'])
+        if not p.is_absolute():
+            p = ROOT / p
+        assert p.stat().st_size == row['bytes'] and sha(p) == row['sha256'], str(p)
+    return rows
+
+def inventory():
+    rows, pending = [], [TARGET]
+    while pending:
+        p = pending.pop()
+        s = p.lstat()
+        assert s.st_dev == TARGET_DEVICE, 'unexpected mount beneath temporary directory'
+        row = {'path': str(p.relative_to(TARGET)), 'device': s.st_dev,
+               'inode': s.st_ino, 'mode': stat.S_IMODE(s.st_mode),
+               'mtime_ns': s.st_mtime_ns, 'bytes': s.st_size}
+        if stat.S_ISLNK(s.st_mode):
+            row.update(kind='link', target=os.readlink(p))
+        elif stat.S_ISDIR(s.st_mode):
+            row['kind'] = 'directory'
+            pending.extend(sorted(p.iterdir(), reverse=True))
+        elif stat.S_ISREG(s.st_mode):
+            row.update(kind='file', sha256=sha(p))
+            current = p.lstat()
+            assert (s.st_dev, s.st_ino, s.st_size, s.st_mtime_ns) == (current.st_dev, current.st_ino, current.st_size, current.st_mtime_ns)
+        else:
+            raise ValueError('unexpected temporary object: ' + str(p))
+        rows.append(row)
+    return sorted(rows, key=lambda x: x['path'])
+
+if sys.argv[1:] == ['inventory']:
+    retained = protected()
+    rows = inventory()
+    categories = collections.Counter((x['path'].split('/')[0], x['kind']) for x in rows)
+    payload = {'target': str(TARGET), 'rows': rows, 'protected_files': retained}
+    data = gzip.compress(json.dumps(payload, separators=(',', ':')).encode(), mtime=0)
+    INVENTORY.parent.mkdir(parents=True, exist_ok=True)
+    with INVENTORY.open('xb') as f:
+        f.write(data)
+    summary = {'inventory_path': str(INVENTORY.relative_to(ROOT)), 'inventory_sha256': sha(INVENTORY), 'files': sum(x['kind'] == 'file' for x in rows), 'links': sum(x['kind'] == 'link' for x in rows), 'logical_file_bytes': sum(x['bytes'] for x in rows if x['kind'] == 'file'), 'categories': {str(k): v for k, v in sorted(categories.items())}}
+    with (EV / 'cleanup-inventory-summary.json').open('x') as f:
+        json.dump(summary, f, indent=2)
+        f.write('\n')
+    print(json.dumps(summary))
+elif len(sys.argv) == 3 and sys.argv[1] == 'apply':
+    assert sha(INVENTORY) == sys.argv[2], 'inventory fingerprint changed'
+    payload = json.loads(gzip.decompress(INVENTORY.read_bytes()))
+    assert payload['target'] == str(TARGET)
+    assert protected() == payload['protected_files']
+    assert inventory() == payload['rows'], 'temporary contents changed after inspection'
+    assert shutil.rmtree.avoids_symlink_attacks
+    # Only inspected owned directories gain owner access. Symlink targets and
+    # file permissions are never modified.
+    for row in payload['rows']:
+        if row['kind'] != 'directory':
+            continue
+        p = TARGET / row['path']
+        s = p.lstat()
+        assert stat.S_ISDIR(s.st_mode) and (s.st_dev, s.st_ino) == (row['device'], row['inode'])
+        os.chmod(p, row['mode'] | 0o700)
+    shutil.rmtree(TARGET)
+    assert not TARGET.exists()
+    assert protected() == payload['protected_files']
+    rows = payload['rows']
+    receipt = {'target': str(TARGET), 'target_absent': True, 'inventory_sha256': sys.argv[2], 'inventory_path': str(INVENTORY.relative_to(ROOT)), 'inventory_ignored_by_git': True,
+               'inventory_revalidated_before_delete': True, 'symlink_targets_followed': False,
+               'deleted_regular_files': sum(x['kind'] == 'file' for x in rows),
+               'deleted_links': sum(x['kind'] == 'link' for x in rows),
+               'deleted_directories': sum(x['kind'] == 'directory' for x in rows),
+               'logical_file_bytes': sum(x['bytes'] for x in rows if x['kind'] == 'file'),
+               'protected_files_verified_before_after': 33, 'original_models_preserved': 3,
+               'new_models_preserved': 6, 'original_data_files_preserved': 6,
+               'scope': 'Only the owned project-local temporary directory; logical sizes do not measure reclaimed physical APFS space.'}
+    with (EV / 'cleanup.json').open('x') as f:
+        json.dump(receipt, f, indent=2)
+        f.write('\n')
+    print(json.dumps(receipt))
+else:
+    raise SystemExit('usage: cleanup.py inventory | cleanup.py apply INSPECTED_INVENTORY_SHA256')

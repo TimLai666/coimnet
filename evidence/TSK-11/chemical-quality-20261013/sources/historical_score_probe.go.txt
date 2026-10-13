@@ -1,0 +1,61 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"math"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+// Evaluate the same frozen logits with both published arithmetic expressions.
+func main() {
+	ctx := context.Background()
+	ds, err := LoadDataset("runs/.tmp/chemical-ocr-20261013/data/kmnist", DatasetLimits{TrainCount: 6000, TestCount: 10000})
+	must(err)
+	alphabet := make([]rune, len(ds.Metadata.Mapping))
+	for i, m := range ds.Metadata.Mapping {
+		alphabet[i] = []rune(m.Char)[0]
+	}
+	for _, seed := range []uint64{20260924, 20260925, 20260926} {
+		mapper, err := ocr.NewRecognizer(ocr.RecognizerConfig{Height: 28, Hidden: 24, Alphabet: alphabet, LearningRate: 0.002, Seed: seed, TrainableEncoder: true, InputProfile: "single-character", CharacterWidth: 28})
+		must(err)
+		sn, err := checkpoint.LoadTrainingBundle(ctx, fmt.Sprintf("models/TSK-11/chemical-quality-20261013/%d-off", seed))
+		must(err)
+		tr, err := learning.RestoreTrainer(sn)
+		must(err)
+		before := digest(tr.Snapshot())
+		for _, split := range []struct {
+			name string
+			data []glyphs.Sample
+		}{{"after", ds.Test[200:2200]}, {"train", ds.Train}} {
+			legacy, objective := 0.0, 0.0
+			for _, sample := range split.data {
+				_, logits := sampleLogits(ctx, tr, mapper, sample)
+				last := logits[len(logits)-1]
+				want := classID(sample.Text, alphabet)
+				mx := last[1]
+				for _, v := range last[2:] {
+					if v > mx {
+						mx = v
+					}
+				}
+				sum := 0.0
+				for _, v := range last[1:] {
+					sum += math.Exp(v - mx)
+				}
+				legacy += math.Log(sum) + mx - last[want]
+				loss, _, err := comparisonLoss(last, want)
+				must(err)
+				objective += loss
+			}
+			if digest(tr.Snapshot()) != before {
+				panic("score probe advanced frozen model")
+			}
+			emit(map[string]any{"seed": seed, "split": split.name, "samples": len(split.data), "historical_expression_mean": legacy / float64(len(split.data)), "sdk_objective_expression_mean": objective / float64(len(split.data)), "snapshot_sha256": before, "model_unchanged": true})
+		}
+	}
+}
