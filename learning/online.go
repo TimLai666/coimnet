@@ -155,6 +155,11 @@ type OnlineLearner struct {
 	actions    uint64
 	eligible   uint64
 	outputSize int
+
+	// gradientDone keeps the completed gradient half of a mixed feedback
+	// while its plastic half is still pending. The pair key keeps distinct
+	// action/source names distinct without constructing a delimiter string.
+	gradientDone map[[2]string]bool
 }
 
 // NewOnlineLearner validates the whole loop before it can run once. The reward
@@ -190,7 +195,8 @@ func NewOnlineLearner(ind *Individual, p OnlinePolicy, gate RewardGate) (*Online
 	return &OnlineLearner{
 		individual: ind, policy: p, gate: gate,
 		index: map[string]int{}, targets: map[string][]float64{},
-		outputSize: ind.trainer.network.config.OutputSize,
+		gradientDone: map[[2]string]bool{},
+		outputSize:   ind.trainer.network.config.OutputSize,
 	}, nil
 }
 
@@ -387,11 +393,14 @@ func (l *OnlineLearner) Update(ctx context.Context, now signal.Timestamp) (Updat
 // apply runs one feedback through the policy.
 func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *UpdateReport) error {
 	entry := &l.log[l.index[fb.ActionID()]]
-	if l.policy.AllowGradient {
+	key := [2]string{fb.ActionID(), fb.Source()}
+	mixed := l.policy.AllowGradient && l.policy.AllowPlastic
+	gradientDone := mixed && l.gradientDone[key]
+	if l.policy.AllowGradient && !gradientDone {
 		if target, ok := l.targets[fb.ActionID()]; ok {
 			every := l.policy.updateEvery()
 			// Keep only the interval position and commit it after a successful
-			// gradient attempt, so a failed feedback stays due on retry.
+			// gradient phase, so a failed feedback stays due on retry.
 			nextEligible := (l.eligible%every + 1) % every
 			if nextEligible == 0 {
 				prediction, err := l.individual.episodePredict(ctx, entry.input)
@@ -412,6 +421,12 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 			}
 			l.eligible = nextEligible
 		}
+		// A missing target, a legal interval skip, a partial accumulation, and
+		// an applied update all complete the gradient half. Commit this marker
+		// only after the gradient work above returned without error.
+		if mixed {
+			l.gradientDone[key] = true
+		}
 	}
 	if !l.policy.AllowPlastic {
 		return nil
@@ -431,6 +446,9 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 		return err
 	}
 	report.PlasticSteps++
+	if mixed {
+		delete(l.gradientDone, key)
+	}
 	return nil
 }
 
