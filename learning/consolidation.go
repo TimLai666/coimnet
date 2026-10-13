@@ -128,6 +128,8 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 	}
 	slow := i.plastic.slow
 	report.Episode = i.episodes
+	report.LastEpisode = slow.LastEpisode
+	report.Used = slow.Used
 	report.Occupancy = meanOccupancy(i.chemical.report.Occupancy, trigger.Receptor)
 	if report.Occupancy < trigger.Threshold {
 		report.GateClosed = true

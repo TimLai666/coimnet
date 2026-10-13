@@ -12,11 +12,8 @@ func Render(text string, f Family, o Options) (Image, []Box, error) {
 	if text == "" {
 		return Image{}, nil, errors.New("glyphs: empty text")
 	}
-	if o.Background < 0 || o.Background > 0.5 {
-		return Image{}, nil, errors.New("glyphs: Background outside [0, 0.5]")
-	}
-	if o.Noise < 0 || o.Noise > 0.5 {
-		return Image{}, nil, errors.New("glyphs: Noise outside [0, 0.5]")
+	if err := validateOptions(o); err != nil {
+		return Image{}, nil, err
 	}
 	runes := []rune(text)
 	width := 9*len(runes) - 1
@@ -68,6 +65,9 @@ func Generate(alphabet []rune, n, minLen, maxLen int, f Family, o Options, seed 
 	if n < 0 || minLen < 0 || maxLen < minLen {
 		return nil, errors.New("glyphs: invalid generate parameters")
 	}
+	if err := validateOptions(o); err != nil {
+		return nil, err
+	}
 	textRng := rand.New(rand.NewPCG(seed, 1))
 	samples := make([]Sample, 0, n)
 	for i := 0; i < n; i++ {
@@ -85,6 +85,16 @@ func Generate(alphabet []rune, n, minLen, maxLen int, f Family, o Options, seed 
 		samples = append(samples, Sample{Text: string(rs), Image: img, Boxes: boxes})
 	}
 	return samples, nil
+}
+
+func validateOptions(o Options) error {
+	if !(o.Background >= 0 && o.Background <= 0.5) {
+		return errors.New("glyphs: Background outside finite [0, 0.5]")
+	}
+	if !(o.Noise >= 0 && o.Noise <= 0.5) {
+		return errors.New("glyphs: Noise outside finite [0, 0.5]")
+	}
+	return nil
 }
 
 // UnseenCombinations returns the samples of candidates whose text does not appear in seen.

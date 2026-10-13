@@ -46,7 +46,8 @@ type FixtureConfig struct {
 // Validate reports the first field that cannot run a fixture: no seed, an
 // alphabet below two runes or with a repeat, an empty split, a line length
 // below 1 or inverted, no epoch, Hidden below 2, a learning rate that is not a
-// positive finite number, or one glyph family used for both splits.
+// positive finite number, one glyph family used for both splits, or rendering
+// values outside finite [0, 0.5].
 func (c FixtureConfig) Validate() error {
 	if len(c.Seeds) < 1 {
 		return errors.New("ocr: fixture has no seed")
@@ -81,6 +82,12 @@ func (c FixtureConfig) Validate() error {
 	}
 	if !(c.LearningRate > 0) || math.IsInf(c.LearningRate, 1) {
 		return fmt.Errorf("ocr: learning rate %v must be positive and finite", c.LearningRate)
+	}
+	if !(c.Background >= 0 && c.Background <= 0.5) {
+		return fmt.Errorf("ocr: background %v must be finite and in [0, 0.5]", c.Background)
+	}
+	if !(c.Noise >= 0 && c.Noise <= 0.5) {
+		return fmt.Errorf("ocr: noise %v must be finite and in [0, 0.5]", c.Noise)
 	}
 	if c.TrainFamily == c.TestFamily {
 		return fmt.Errorf("ocr: both splits use glyph family %d, so the shapes would leak", c.TrainFamily)

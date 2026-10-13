@@ -79,8 +79,12 @@ func (o ControllerObjective) proxy(x []float64) (float64, error) {
 // Gradient evaluates loss = (q − proxy)² at the inputs of the most recent
 // Release and returns dloss/dParameters in the parameter order: row-major W1,
 // then b1, then w2, then b2. It reads the cached x, h and q of that release and
-// pushes nothing: no release happens here, and no state moves.
+// pushes nothing: no release happens here, and no state moves. Parameters must
+// remain fixed since that Release; a successful Update requires a new Release.
 func (c *Controller) Gradient(o ControllerObjective) (float64, []float64, error) {
+	if c == nil {
+		return 0, nil, fmt.Errorf("modulation: cannot take a gradient through a nil controller")
+	}
 	if err := o.Validate(c.Inputs); err != nil {
 		return 0, nil, err
 	}
@@ -138,7 +142,8 @@ func (c *Controller) Gradient(o ControllerObjective) (float64, []float64, error)
 // parameters. The whole step lands or none of it does: a gradient of another
 // length, a rate that is not a finite number above zero, or a parameter that
 // would leave the finite numbers is an error, and the controller keeps the
-// parameters it had.
+// parameters it had. A successful update keeps the activity window but clears
+// the release cache; Gradient and BackwardActivity require a new Release.
 func (c *Controller) Update(grad []float64, rate float64) ([]float64, error) {
 	if err := c.Validate(); err != nil {
 		return nil, err
@@ -160,6 +165,7 @@ func (c *Controller) Update(grad []float64, rate float64) ([]float64, error) {
 		}
 	}
 	copy(c.Parameters, updated)
+	c.lastX, c.lastH, c.lastQ, c.released = nil, nil, 0, false
 	// The caller holds a slice of its own: writing into it moves no parameter.
 	return updated, nil
 }
