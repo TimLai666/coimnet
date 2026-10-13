@@ -1,0 +1,31 @@
+from pathlib import Path
+import gzip, hashlib, json
+
+d = Path('evidence/MOD-02/mechanism-audit-20261013')
+w = Path('runs/.tmp/mechanism-audit-20261013')
+for name, checks_key in [('full-validation.json', 'checks'), ('verification.json', 'engineering_checks')]:
+    p = d / name
+    original = p.read_bytes()
+    report = json.loads(original)
+    if name == 'full-validation.json':
+        assert report['source_manifest'] == 'release-source-manifest.json'
+        report['original_runtime_source_manifest'] = str(w / report['source_manifest'])
+        report['source_manifest'] = 'source-manifest.json'
+        assert (d / report['source_manifest']).is_file()
+    for check in report[checks_key]:
+        encoded = (d / check['archived_log']).read_bytes()
+        raw = gzip.decompress(encoded)
+        assert hashlib.sha256(raw).hexdigest() == check['log_sha256']
+        assert len(raw) == check['log_bytes']
+        assert hashlib.sha256(encoded).hexdigest() == check['gzip_sha256']
+        check['original_runtime_log'] = str(w / check['log'])
+        check['raw_log_sha256'] = check['log_sha256']
+        check['raw_log_bytes'] = check['log_bytes']
+        check['log'] = check['archived_log']
+        check['log_sha256'] = check['gzip_sha256']
+        check['log_bytes'] = len(encoded)
+        check['log_encoding'] = 'gzip'
+    report['metadata_note'] = 'Current paths identify retained artifacts. Original runtime paths refer to temporary files archived and removed after verification. Log hash/bytes describe gzip bytes; raw_log fields describe decompressed bytes. Command results, timing and log contents are unchanged.'
+    assert p.read_bytes() == original
+    p.write_text(json.dumps(report, indent=2, ensure_ascii=False) + '\n')
+print(json.dumps({'normalized_reports': 2, 'verified_logs_per_report': 5, 'source_manifest_exists': True}))

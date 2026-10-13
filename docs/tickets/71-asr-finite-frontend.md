@@ -3,7 +3,7 @@
 **Epic:** ASR 輸入契約
 **User Story:** 公開 STFT／LogMel 成功時只回傳有限特徵，無效輸入或無法表示的計算回錯
 **Blocked by:** 無
-**Status:** in_progress
+**Status:** done
 
 ## Root 決策（2026-10-13）與驗收
 
@@ -11,8 +11,8 @@
 
 - [x] 非有限樣本及有限大值的 RED 回歸重現。
 - [x] STFT／LogMel 回錯且結果為 nil，合法輸入與既有整檔／串流測試通過。
-- [ ] 完整工程驗證、證據、清理與交付完成。
+- [x] 完整工程驗證、證據、清理與交付完成。
 
 減法審查：共用 STFT 的輸入檢查，LogMel 不重複掃描音訊，不新增前處理版本。
 
-驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項待本輪清理、推送與遠端讀回。
+驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項已完成，暫存清理及提交 `768ab10`／`354b2be` 的推送與遠端核對見[清理回條](../../evidence/MOD-02/mechanism-audit-20261013/cleanup.json)與[交付回條](../../evidence/MOD-02/mechanism-audit-20261013/delivery.json)。

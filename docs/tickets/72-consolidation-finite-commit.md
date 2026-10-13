@@ -3,7 +3,7 @@
 **Epic:** 持續記憶的數值安全
 **User Story:** 鞏固不因累加或報告計算溢位而污染慢速記憶、快速記憶或寫入預算
 **Blocked by:** 無
-**Status:** in_progress
+**Status:** done
 
 ## Root 決策（2026-10-13）與驗收
 
@@ -11,8 +11,8 @@
 
 - [x] 公開 Snapshot／Restore／Consolidate 的 RED 證明累加溢位、可表示範數錯誤及不可表示範數仍提交。
 - [x] 修正後有效大值回有限報告，失敗不改 slow、plastic、Used、LastEpisode 或其他狀態。
-- [ ] 完整工程驗證、證據、清理與交付完成。
+- [x] 完整工程驗證、證據、清理與交付完成。
 
 減法審查：兩次掃描取代新增候選陣列，持有同一把鎖確保驗證與提交使用同一份狀態。
 
-驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項待本輪清理、推送與遠端讀回。
+驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項已完成，暫存清理及提交 `768ab10`／`354b2be` 的推送與遠端核對見[清理回條](../../evidence/MOD-02/mechanism-audit-20261013/cleanup.json)與[交付回條](../../evidence/MOD-02/mechanism-audit-20261013/delivery.json)。

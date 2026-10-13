@@ -1,6 +1,49 @@
 {
-  "status": "pending",
+  "status": "passed",
+  "recorded_at_utc": "2026-10-13T12:57:54.475805+00:00",
   "branch": "codex/receptor-chemistry-training",
+  "remote": "origin",
   "baseline_head": "3cf1f623b8031cc5f3e2041f9cbef9a8f7f60ce1",
-  "note": "Validated changes and cleanup are complete. Git delivery receipt will be replaced only after commit, push and remote readback."
+  "commits": [
+    {
+      "subject": "fix: reject invalid numerics and preserve memory lifecycle",
+      "commit": "768ab10e0be1bf17e539b80936d8239b5def4781",
+      "exit_code": 0
+    },
+    {
+      "subject": "test: verify mechanism contracts and numerical failures",
+      "commit": "354b2be8eaf6628a615407f9491d40198fcc6c6a",
+      "exit_code": 0
+    }
+  ],
+  "delivered_head": "354b2be8eaf6628a615407f9491d40198fcc6c6a",
+  "remote_head": "354b2be8eaf6628a615407f9491d40198fcc6c6a",
+  "remote_readback_matches": true,
+  "operations": [
+    {
+      "command": [
+        "git",
+        "push",
+        "origin",
+        "HEAD:refs/heads/codex/receptor-chemistry-training"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "To https://github.com/TimLai666/coimnet.git\n   3cf1f62..354b2be  HEAD -> codex/receptor-chemistry-training\n"
+    },
+    {
+      "command": [
+        "git",
+        "ls-remote",
+        "--exit-code",
+        "origin",
+        "refs/heads/codex/receptor-chemistry-training"
+      ],
+      "exit_code": 0,
+      "stdout": "354b2be8eaf6628a615407f9491d40198fcc6c6a\trefs/heads/codex/receptor-chemistry-training\n",
+      "stderr": ""
+    }
+  ],
+  "cleanup_receipt": "cleanup.json",
+  "note": "This receipt verifies the implementation and regression/evidence commits. The subsequent documentation closure is checked separately at turn completion."
 }

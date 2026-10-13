@@ -51,7 +51,7 @@ Scope: CLEAN。Root 讀取完整 production／test／文件差異，執行公開
 
 ## Actions
 
-本輪只清除自行建立的 `runs/.tmp/mechanism-audit-20261013`，原本 `runs/.tmp/62`、`runs/.tmp/real-task-quality-20261012` 保留。實際結果見 [cleanup.json](cleanup.json)。Git 提交、推送與遠端讀回見 [delivery.json](delivery.json)。
+本輪只清除自行建立的 `runs/.tmp/mechanism-audit-20261013`：9,859 個暫存檔、1,469,925,640 bytes，沒有符號連結。原本 `runs/.tmp/62`、`runs/.tmp/real-task-quality-20261012` 保留，見 [cleanup.json](cleanup.json)。修正 `768ab10` 與回歸／證據 `354b2be` 已推送到 `codex/receptor-chemistry-training`，遠端讀回相符，見 [delivery.json](delivery.json)。
 
 ## Notes
 

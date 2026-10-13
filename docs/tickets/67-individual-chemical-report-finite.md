@@ -3,7 +3,7 @@
 **Epic:** 持續個體的機制正確性
 **User Story:** 合法逐步釋放的累計若無法表示，整次推進回錯且不提交部分狀態
 **Blocked by:** 無
-**Status:** in_progress
+**Status:** done
 
 ## Root 決策（2026-10-13）與驗收
 
@@ -13,10 +13,10 @@
 - [x] Advance／AdvanceGated 共用修正，兩種核心、來源記憶與可塑性狀態均受保護。
 - [x] 有限邊界、每次呼叫重新累計、凍結化學及 JSON 報告通過。
 - [x] gofmt、build、完整一般與 race、vet、相依性及相關治理通過。
-- [ ] Root 審查、證據保存、暫存清理、提交推送與遠端核對完成。
+- [x] Root 審查、證據保存、暫存清理、提交推送與遠端核對完成。
 
 ## 減法審查
 
 沿用既有候選與提交流程補一處數值檢查，不新增報告格式、儲存層或化學機制。全面機制稽核另保存已確認、待重現及證據限制，有限值回歸不當作整個框架無 bug 或模型品質改善的證明。
 
-驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項待本輪清理、推送與遠端讀回。
+驗證證據：[機制稽核](../../evidence/MOD-02/mechanism-audit-20261013/README.md)與[完整檢查](../../evidence/MOD-02/mechanism-audit-20261013/verification.json)。最後交付項已完成，暫存清理及提交 `768ab10`／`354b2be` 的推送與遠端核對見[清理回條](../../evidence/MOD-02/mechanism-audit-20261013/cleanup.json)與[交付回條](../../evidence/MOD-02/mechanism-audit-20261013/delivery.json)。
