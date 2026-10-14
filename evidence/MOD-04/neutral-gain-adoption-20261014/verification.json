@@ -3,7 +3,7 @@
     "MOD-04"
   ],
   "engineering_passed": true,
-  "acceptance_complete": false,
+  "acceptance_complete": true,
   "reproduction_command": "run-go.py.txt and engineering.py.txt; compatibility-v2.py.txt and persistence-endpoints.py.txt create actual old-source checkpoints then compare complete Go JSON and current rejection in new processes",
   "environment": {
     "go": "go version go1.26.5 darwin/arm64",
@@ -262,7 +262,13 @@
       "receipt": "cleanup.json",
       "removed_regular_bytes": 1304068945
     },
-    "delivery": "pending"
+    "delivery": {
+      "receipt": "delivery.json",
+      "fix_commit": "90914c37798ac75078811cc784bfc0de8ca0f6fc",
+      "primary_commit": "831158fda59a2904a1d844352eb48d9d576b75cf",
+      "remote_readback": "831158fda59a2904a1d844352eb48d9d576b75cf",
+      "source_count": 806
+    }
   },
   "engineering_receipts": [
     "format.json",
@@ -307,5 +313,6 @@
     "persist-current-reject.log",
     "governance.log"
   ],
-  "limitation": "Authorized compatibility change: old effective ranges excluding 1 are rejected; no automatic migration. Artificial fixtures do not establish real OCR improvement, new whole-brain performance, biological calibration or absolute zero bugs."
+  "limitation": "Authorized compatibility change: old effective ranges excluding 1 are rejected; no automatic migration. Artificial fixtures do not establish real OCR improvement, new whole-brain performance, biological calibration or absolute zero bugs.",
+  "completed_at": "2026-10-14T11:27:33.459135+00:00"
 }

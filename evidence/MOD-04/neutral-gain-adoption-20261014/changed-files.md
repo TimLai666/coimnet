@@ -46,6 +46,7 @@
 | [evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-first.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-resumed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/cli-train-resumed.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/MOD-04/neutral-gain-adoption-20261014/committed-source.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/committed-source.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-fixture-adjudication.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-fixture-adjudication.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-v2.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-v2.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-v2.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/compatibility-v2.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -53,6 +54,7 @@
 | [evidence/MOD-04/neutral-gain-adoption-20261014/compatibility.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/compatibility.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/compatibility.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/compatibility.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/contract-docs-update.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/contract-docs-update.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/MOD-04/neutral-gain-adoption-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/delivery.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/dispatch.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/dispatch.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/effects-before.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/effects-before.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/engineering-environment.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -157,6 +159,7 @@
 | [evidence/MOD-04/neutral-gain-adoption-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/plan.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/pre-delivery-remote.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/pre-delivery-remote.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/prepare-artifacts.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/MOD-04/neutral-gain-adoption-20261014/primary-commit.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/primary-commit.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/race-summary.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/race-summary.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/race.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/race.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/race.log.gz](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/race.log.gz) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -166,6 +169,7 @@
 | [evidence/MOD-04/neutral-gain-adoption-20261014/red.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/red.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/root-review.md](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/root-review.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/run-go.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/run-go.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/MOD-04/neutral-gain-adoption-20261014/scan-evidence.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/scan-evidence.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/scan-fix.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/scan-fix.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/source-fixed.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/source-fixed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/MOD-04/neutral-gain-adoption-20261014/source-red-v2.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/neutral-gain-adoption-20261014/source-red-v2.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
