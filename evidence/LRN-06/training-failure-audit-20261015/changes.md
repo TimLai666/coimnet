@@ -47,6 +47,8 @@
 | [evidence/LRN-06/training-failure-audit-20261015/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/cli-train-first.log) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/LRN-06/training-failure-audit-20261015/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/cli-train-resumed.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/LRN-06/training-failure-audit-20261015/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/cli-train-resumed.log) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/LRN-06/training-failure-audit-20261015/committed-source.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/committed-source.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/LRN-06/training-failure-audit-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/delivery.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/LRN-06/training-failure-audit-20261015/diagnostic-correction.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/diagnostic-correction.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/LRN-06/training-failure-audit-20261015/engineering-environment-correction.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/engineering-environment-correction.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/LRN-06/training-failure-audit-20261015/engineering-source-final-environment.json](/Users/timlai/Developer/coimnet/evidence/LRN-06/training-failure-audit-20261015/engineering-source-final-environment.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
