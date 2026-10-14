@@ -1,0 +1,239 @@
+{
+  "checked_at": "2026-10-14T20:10:59.594866+00:00",
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "scope": "training cancellation preservation audit, not a proof that all framework bugs are absent",
+  "requirement": "STA-03",
+  "base_commit": "2ff6864f854cd3129ac0ac17065bdf54f73047c3",
+  "source_manifest": "source-before.json",
+  "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+  "source_count": 810,
+  "go_files": 808,
+  "formal_source_unchanged": true,
+  "new_checks": {
+    "existing-cancel-controls": {
+      "pass": 42,
+      "fail": 0,
+      "skip": 0
+    },
+    "existing-cancel-controls-race": {
+      "pass": 42,
+      "fail": 0,
+      "skip": 0
+    },
+    "governance-final": {
+      "pass": 31,
+      "fail": 0,
+      "skip": 0
+    },
+    "governance-final-full-window": {
+      "pass": 31,
+      "fail": 0,
+      "skip": 0
+    }
+  },
+  "observed_result": {
+    "supported_scenarios": 40,
+    "cancellation_points_per_build": 4698,
+    "ordinary_and_race_all_cancellation_snapshots_and_reports_preserved": true,
+    "live_and_restored_retries_equal_control": true,
+    "child_process_resumes": 80,
+    "same_build_child_snapshot_and_result_json_equal": true,
+    "unsupported_combinations_refused": 8,
+    "new_confirmed_cancellation_bug": false,
+    "cross_build_float_difference": "one representable float64 step in Adam second[7], recorded separately; exact cause unconfirmed",
+    "quality_measured": false,
+    "gpu_each_candidate_stage_runtime_tested": false,
+    "unsupported_refusal_scope": "8 matrix labels verify one unsupported rule, Mixed plus Recompute; not eight independent refusal mechanisms.",
+    "combined_cancel_points_per_build": 7408,
+    "total_child_process_resumes": 120
+  },
+  "reused_full_engineering": {
+    "evidence": "../../LRN-06/training-failure-audit-20261015/verification.json",
+    "condition": "all 810 source bytes equal to the prior fully tested source manifest",
+    "unit_pass_events": 5778,
+    "race_pass_events": 5777,
+    "packages": 58,
+    "unit_skips": 22,
+    "race_skips": 23,
+    "new_full_suite_run": false
+  },
+  "commands": [
+    "repo-build.json",
+    "repo-vet.json",
+    "module-verify.json",
+    "format-final.json",
+    "existing-cancel-controls.json",
+    "existing-cancel-controls-race.json",
+    "governance-final.json",
+    "cancel-probe-v2.json",
+    "cancel-probe-v2-race.json",
+    "governance-final-validated.json",
+    "full-window-build.json",
+    "full-window-race-build.json",
+    "full-window-cancel.json",
+    "full-window-cancel-race.json",
+    "governance-final-full-window.json"
+  ],
+  "test_log": [
+    "cancel-probe-v2.log",
+    "cancel-probe-v2-race.log",
+    "existing-cancel-controls.log",
+    "existing-cancel-controls-race.log",
+    "governance-final.log",
+    "governance-final-after-status.log",
+    "governance-final-validated.log",
+    "full-window-cancel.log",
+    "full-window-cancel-race.log",
+    "governance-final-full-window.log"
+  ],
+  "new_process_proof": "new-process-resume.json",
+  "cleanup": {
+    "completed_at": "2026-10-14T19:50:07.160973+00:00",
+    "removed_path": "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015",
+    "removed_path_inode": 54384009,
+    "counts": {
+      "regular_files": 7837,
+      "symlinks": 41797,
+      "directories_including_root": 9236,
+      "regular_bytes": 935314082
+    },
+    "inventory_archive": "cleanup-inventory.json.gz",
+    "inventory_raw_sha256": "ac3edbce0d914324e5585ec4408afd72fc1708e23b449d130741de2159c2640f",
+    "inventory_archive_sha256": "ba06974ae6197e85c08e85be4567a63d87d76b92ce7632a7667e2fadb05471c4",
+    "content_and_stat_checked_twice": true,
+    "handles_before": [
+      {
+        "command": [
+          "lsof",
+          "-nP",
+          "-Fpn",
+          "+D",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015"
+        ],
+        "exit_code": 1,
+        "open_handles": 0,
+        "stderr": ""
+      },
+      {
+        "command": [
+          "lsof",
+          "-nP",
+          "-Fpn",
+          "+D",
+          "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015"
+        ],
+        "exit_code": 1,
+        "open_handles": 0,
+        "stderr": ""
+      }
+    ],
+    "protected_before": {
+      "real-task-quality-20261012": {
+        "inode": 50419696,
+        "entries": [
+          "input-profile-tests"
+        ]
+      },
+      "62": {
+        "inode": 49680181,
+        "entries": [
+          "buffer-tests"
+        ]
+      }
+    },
+    "protected_after": {
+      "real-task-quality-20261012": {
+        "inode": 50419696,
+        "entries": [
+          "input-profile-tests"
+        ]
+      },
+      "62": {
+        "inode": 49680181,
+        "entries": [
+          "buffer-tests"
+        ]
+      }
+    },
+    "linked_native_targets_survived_unchanged_during_cleanup": 41797,
+    "native_comparison_scope": "same inode/size/mtime between the final pre-cleanup observation and post-cleanup; not a historical write audit",
+    "safe_rmtree_implementation": true,
+    "protected_real_example_model_files_unchanged": 18,
+    "protected_model_fingerprints": {
+      "models/TSK-11/chemical-quality-20261013/20260924-off/arrays.bin": "4c1c528ca830c11e4fcd02ecc51ae23612d798bc2fd916a9b661693ce2b98991",
+      "models/TSK-11/chemical-quality-20261013/20260924-off/document.json": "5559316f68c22afe169d60ab556b1c236b029358ba0649057bd500cfcfccd44b",
+      "models/TSK-11/chemical-quality-20261013/20260924-off/manifest.json": "e710a1218874b390e749e2061007d057b7e110e1bc2e25a8539d799e1ff9b9c1",
+      "models/TSK-11/chemical-quality-20261013/20260924-on/arrays.bin": "763e8aa7c83b413c6cae6844625b565fd0e92984d50c24281c351ff109596173",
+      "models/TSK-11/chemical-quality-20261013/20260924-on/document.json": "2a9a84d2a04bab38be7c21809dda825fb692f88d07be68384fbdc506782db960",
+      "models/TSK-11/chemical-quality-20261013/20260924-on/manifest.json": "b1fdc69c1ffbd55458abbafd01f0d27d088161b230c619e946b05411243f0365",
+      "models/TSK-11/chemical-quality-20261013/20260925-off/arrays.bin": "23d403a25ee800db6c552a92eeb5d00e01861db653301d6444979c70dcdf3dff",
+      "models/TSK-11/chemical-quality-20261013/20260925-off/document.json": "0571e85306a90590b0a8e997b141fbeadf1b4ad0fa0b774f72483566c2f11242",
+      "models/TSK-11/chemical-quality-20261013/20260925-off/manifest.json": "5cebcff0ec1a3bc763fa6a71938778b7fcf79ac472b276c39aeefce92a10da21",
+      "models/TSK-11/chemical-quality-20261013/20260925-on/arrays.bin": "0cce5257377433e9e7e1d3231e2d832d80c5e6197425b4190dee850e8b9a21d9",
+      "models/TSK-11/chemical-quality-20261013/20260925-on/document.json": "7ddc4ac81978ef95fd2d4b4667306135b693c194f569bf793ade4dd4a342a9ff",
+      "models/TSK-11/chemical-quality-20261013/20260925-on/manifest.json": "abe244499f314acc91776ccf3391bf34451485ca47895b62602061bbd950e95d",
+      "models/TSK-11/chemical-quality-20261013/20260926-off/arrays.bin": "f5f60ee376918d535eb9aad6a874e5240bd8d0efd947d8eee1974ece22649806",
+      "models/TSK-11/chemical-quality-20261013/20260926-off/document.json": "36b10d16aea3e61b6bf3c82ed74766b0974555652cd17c6f41182aa28d1a83ac",
+      "models/TSK-11/chemical-quality-20261013/20260926-off/manifest.json": "3cc9355094e354c720e142b9c715babf7f3036781fe9326f491751eb674bb46f",
+      "models/TSK-11/chemical-quality-20261013/20260926-on/arrays.bin": "7a18833e745733e40462c81df014b7ad157d6520316860f7df00370d861c00ef",
+      "models/TSK-11/chemical-quality-20261013/20260926-on/document.json": "16811042d556b551553db272cb52b543b9d92d33ad2acb3e5426e7aac3b36304",
+      "models/TSK-11/chemical-quality-20261013/20260926-on/manifest.json": "805a11b4575a50fac51c9ea6001e12c2075603bc095164b7d01bd9d27e4b60b0"
+    }
+  },
+  "delivery": "pending",
+  "reproduction_command": [
+    [
+      "go",
+      "build",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2.go"
+    ],
+    [
+      "runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/v2"
+    ],
+    [
+      "go",
+      "build",
+      "-race",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2-race",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2.go"
+    ],
+    [
+      "runs/.tmp/training-cancel-audit-20261015/cancel-probe-v2-race",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-audit-20261015/race"
+    ]
+  ],
+  "environment": "environment.json",
+  "source_reviews": [
+    "individual-cancel.md",
+    "trainer-device-cancel.md",
+    "float-build-review.md"
+  ],
+  "input_fingerprints": {
+    "formal_source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "probe_source_sha256": "77fef72267d9d8dbf74575ddebe3f26565c9f4466a2272e52818bb9d62046328",
+    "fixtures_sha256": "8c485471083422fe71263046151caf64400ad86b1f69c20efd29899cb3a79a61",
+    "cleanup_inventory_sha256": "ac3edbce0d914324e5585ec4408afd72fc1708e23b449d130741de2159c2640f"
+  },
+  "additional_full_window_acceptance": {
+    "cases_per_build": 20,
+    "initial_accumulator_count": 2,
+    "next_step_applied": true,
+    "cancel_points_per_build": 2710,
+    "child_resumes": 40,
+    "proof": "full-window-new-process-resume.json"
+  },
+  "cleanup_full_window": {
+    "receipt": "cleanup-full-window.json",
+    "removed_path": "/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-full-window-20261015",
+    "removed_regular_bytes": 694136375,
+    "protected_real_example_model_files_unchanged": 18
+  },
+  "total_removed_regular_bytes": 1629450457,
+  "root_assembly_proof": "root-assembly-verification.json",
+  "full_window_new_process_proof": "full-window-new-process-resume.json"
+}

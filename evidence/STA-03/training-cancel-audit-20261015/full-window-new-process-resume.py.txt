@@ -1,0 +1,18 @@
+from pathlib import Path
+import os,json,subprocess,hashlib,tarfile,io,gzip
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/training-cancel-full-window-20261015';e=r/'evidence/STA-03/training-cancel-audit-20261015';rows=[];members={}
+for label,binary,log in [('unit','full-window-cancel','full-window-cancel.log'),('race','full-window-cancel-race','full-window-cancel-race.log')]:
+ v=json.loads((e/log).read_text());assert len(v['cases'])==20 and v['full_window_cancellation_checks']==2710 and v['all_passed']
+ for case in v['cases']:
+  expected=(w/label/case['expected']).read_bytes();cmd=[str(w/binary),'resume',str(w/label/case['before'])];env=os.environ.copy();env['GOMAXPROCS']='2';p=subprocess.run(cmd,cwd=r,env=env,capture_output=True);assert p.returncode==0,p.stderr.decode();assert p.stdout.strip()==expected,(label,case['id']);rows.append({'case':case['id'],'build':label,'command':cmd,'exit_code':0,'snapshot_and_result_json_bytes_equal':True,'expected_sha256':hashlib.sha256(expected).hexdigest()})
+  for name in [case['before'],case['expected']]:members[label+'/'+name]=(w/label/name).read_bytes()
+out=io.BytesIO()
+with tarfile.open(fileobj=out,mode='w')as t:
+ for name,b in sorted(members.items()):
+  info=tarfile.TarInfo(name);info.size=len(b);info.mtime=0;info.mode=0o600;t.addfile(info,io.BytesIO(b))
+packed=gzip.compress(out.getvalue(),mtime=0)
+with(e/'full-window-resume-fixtures.tar.gz').open('xb')as f:f.write(packed)
+with tarfile.open(fileobj=io.BytesIO(packed),mode='r:gz')as t:assert {x.name:t.extractfile(x).read()for x in t.getmembers()}==members
+proof={'full_window_cases_per_build':20,'full_window_cancel_points_per_build':2710,'combined_cancel_points_per_build':7408,'child_process_resumes':len(rows),'child_results':rows,'fixture_archive':'full-window-resume-fixtures.tar.gz','archive_sha256':hashlib.sha256(packed).hexdigest(),'roundtrip_exact':True,'members':{name:{'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}for name,b in members.items()}}
+with(e/'full-window-new-process-resume.json').open('x')as f:json.dump(proof,f,indent=2);f.write('\n')
+print(json.dumps({k:proof[k]for k in ['full_window_cases_per_build','full_window_cancel_points_per_build','combined_cancel_points_per_build','child_process_resumes','roundtrip_exact']}))

@@ -1,0 +1,21 @@
+package main
+import("context";"encoding/json";"errors";"fmt";"os";"path/filepath";"reflect";"sync";"github.com/TimLai666/coimnet/learning")
+type counted struct{context.Context;cancel context.CancelFunc;mu sync.Mutex;count,at int}
+func(c *counted)Err()error{c.mu.Lock();c.count++;if c.count==c.at{c.cancel()};c.mu.Unlock();return c.Context.Err()}
+func must(e error){if e!=nil{panic(e)}}
+func req(b bool,m string){if !b{panic(m)}}
+func enc(v any)[]byte{b,e:=json.Marshal(v);must(e);return b}
+func restore(b []byte)*learning.Individual{var s learning.IndividualSnapshot;must(json.Unmarshal(b,&s));i,e:=learning.RestoreIndividual(s);must(e);return i}
+var input=[][]float64{{.7},{.8},{.7},{.8},{.7},{.8}}
+var target=[]float64{.35}
+func main(){
+ if os.Args[1]=="resume"{b,e:=os.ReadFile(os.Args[2]);must(e);i:=restore(b);s,e:=i.TrainEpisode(context.Background(),input,target);must(e);fmt.Println(string(enc(map[string]any{"snapshot":i.Snapshot(),"snapshot_json":string(enc(i.Snapshot())),"result":s})));return}
+ files,e:=filepath.Glob(filepath.Join(os.Args[1],"*-before.json"));must(e);req(len(files)==20,"need twenty window-3 scenarios");out:=os.Args[2];rows:=[]any{};total:=0
+ for _,p:=range files{
+  b,e:=os.ReadFile(p);must(e);i:=restore(b);req(i.Snapshot().Optimizer.Accumulator!=nil&&i.Snapshot().Optimizer.Accumulator.Count==1,"need initial count one");part,e:=i.TrainEpisode(context.Background(),input,target);must(e);req(!part.Applied&&part.Accumulated==2,"second gradient should be partial");before:=enc(i.Snapshot());ctx,cancel:=context.WithCancel(context.Background());cc:=&counted{Context:ctx,cancel:cancel};result,e:=i.TrainEpisode(cc,input,target);must(e);cancel();req(result.Applied,"full window did not apply");after:=enc(i.Snapshot());req(i.Snapshot().Optimizer.Accumulator==nil,"full window not cleared");polls:=cc.count;req(polls>0,"no polls")
+  name:=filepath.Base(p);must(os.WriteFile(filepath.Join(out,name),before,0600));expectedName:=name[:len(name)-len("-before.json")]+"-expected.json";must(os.WriteFile(filepath.Join(out,expectedName),enc(map[string]any{"snapshot":i.Snapshot(),"snapshot_json":string(after),"result":result}),0600))
+  for at:=1;at<=polls;at++{a:=restore(before);report:=a.ChemistryReport();ctx,cancel:=context.WithCancel(context.Background());cc:=&counted{Context:ctx,cancel:cancel,at:at};got,e:=a.TrainEpisode(cc,input,target);cancel();req(errors.Is(e,context.Canceled),fmt.Sprintf("%s %d error %v",name,at,e));req(reflect.DeepEqual(got,learning.StepResult{}),"partial result on cancel");req(reflect.DeepEqual(before,enc(a.Snapshot())),"full window cancel changed snapshot");req(reflect.DeepEqual(report,a.ChemistryReport()),"full window cancel changed report");restored:=restore(enc(a.Snapshot()));retry,e:=restored.TrainEpisode(context.Background(),input,target);must(e);req(reflect.DeepEqual(after,enc(restored.Snapshot()))&&reflect.DeepEqual(result,retry),"restored full-window retry differs");retry,e=a.TrainEpisode(context.Background(),input,target);must(e);req(reflect.DeepEqual(after,enc(a.Snapshot()))&&reflect.DeepEqual(result,retry),"live full-window retry differs");total++}
+  rows=append(rows,map[string]any{"id":name,"context_checks":polls,"initial_accumulator_count":2,"next_step_applied":true,"snapshot_and_report_preserved_on_every_cancel":true,"live_and_restored_retry_equal_control":true,"before":name,"expected":expectedName})
+ }
+ fmt.Println(string(enc(map[string]any{"cases":rows,"full_window_cancellation_checks":total,"all_passed":true})))
+}

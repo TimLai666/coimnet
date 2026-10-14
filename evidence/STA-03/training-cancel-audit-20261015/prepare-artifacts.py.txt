@@ -1,0 +1,13 @@
+from pathlib import Path
+import json,hashlib,subprocess,re
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/STA-03/training-cancel-audit-20261015';base='2ff6864f854cd3129ac0ac17065bdf54f73047c3'
+p=e/'changes.md';prior=p.read_bytes();text=prior.decode();descriptions={m.group(1):m.group(2) for m in re.finditer(r'\| \[([^\]]+)\]\([^\n]+?\) \| ([^\n]+) \|',text)}
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines());paths.update(str((e/name).relative_to(r)) for name in ['artifact-index.json','changes.md'])
+header='# \u672c\u8f2a\u5be6\u969b\u8b8a\u66f4\u6a94\u6848\n\n| \u6a94\u6848 | \u8b8a\u66f4\u6458\u8981 |\n| --- | --- |\n'
+fallback='\u4fdd\u5b58\u672c\u8f2a\u547d\u4ee4\u3001\u4f86\u6e90\u6307\u7d0b\u3001\u5be9\u67e5\u3001\u6e05\u7406\u6216\u4ea4\u4ed8\u8b49\u64da\u3002'
+content=header+'\n'.join('| ['+name+']('+str(r/name)+') | '+descriptions.get(name,fallback)+' |' for name in sorted(paths))+'\n';assert p.read_bytes()==prior;p.write_text(content)
+index={str(p.relative_to(e)):{'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(e.rglob('*')) if p.is_file() and p.name!='artifact-index.json'}
+p=e/'artifact-index.json'
+if p.exists():prior=p.read_bytes();assert p.read_bytes()==prior
+p.write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_paths':len(paths),'indexed_artifacts':len(index),'artifact_index_excludes_itself':True}))

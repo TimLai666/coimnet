@@ -1,0 +1,8 @@
+from pathlib import Path
+import os,subprocess,json,datetime
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/training-cancel-audit-20261015';e=r/'evidence/STA-03/training-cancel-audit-20261015'
+env=os.environ.copy();env.update(XDG_DATA_HOME=str(w/'opencode-data'),XDG_CACHE_HOME=str(w/'opencode-cache'))
+cmd=['opencode','run','--model','opencode/big-pickle','--agent','plan','--format','json','你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成。你是唯讀可用性檢查員。任何檔案不可修改。只回覆 OK，不讀程式或秘密。不得執行任何 Git 寫入。不要 commit，也不要 stash 或 reset。回報格式只輸出 OK。']
+with(e/'opencode-availability.log').open('xb')as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT,timeout=60)
+(e/'opencode-availability.json').write_text(json.dumps({'command':cmd,'exit_code':p.returncode,'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'log':'opencode-availability.log'},indent=2)+'\n')
+print((e/'opencode-availability.log').read_text())

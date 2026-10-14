@@ -54,6 +54,8 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
+- `learning/trainer.go` 的 CPU Adam 第二動量在一般與 `-race` 建置之間觀察到一個 float64 可表示間距的差異（LIF fixture 的 index 7）。兩種建置各自的新程序恢復均逐位相同，取消前後完整狀態也保持。尚未確認跨建置逐位相同是否屬支援契約，也未找到差異的精確來源，先比對編譯浮點運算與跨平台決定性要求，不改正常模型或放寬同建置接續測試。證據見 `evidence/STA-03/training-cancel-audit-20261015/child-resume-environment-diagnostic.json` 與 `child-resume-same-build-diagnostic.json`。
+
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。

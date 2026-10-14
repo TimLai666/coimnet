@@ -1,0 +1,23 @@
+from pathlib import Path
+import os,json,subprocess,hashlib,tarfile,io,gzip,datetime
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/training-cancel-audit-20261015';e=r/'evidence/STA-03/training-cancel-audit-20261015'
+unit=json.loads((e/'cancel-probe-v2.log').read_text());race=json.loads((e/'cancel-probe-v2-race.log').read_text());assert unit==race;assert len(unit['cases'])==40 and unit['cancellation_checks']==4698 and len(unit['unsupported_combinations_refused'])==8
+source=json.loads((e/'source-before.json').read_text())
+for p,h in source.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+cases=[];members={}
+for c in unit['cases']:
+ for label,binary in [('unit','cancel-probe-v2'),('race','cancel-probe-v2-race')]:
+  before=w/'v2'/c['saved_before'];expected=(w/'v2'/c['expected_after']).read_bytes();cmd=[str(w/binary),'resume',str(before)];p=subprocess.run(cmd,cwd=r,capture_output=True);assert p.returncode==0,p.stderr.decode();assert p.stdout.strip()==expected,(c['id'],label)
+  cases.append({'id':c['id'],'build':label,'command':cmd,'exit_code':p.returncode,'snapshot_and_step_go_json_bytes_equal':True,'expected_sha256':hashlib.sha256(expected).hexdigest(),'stdout_sha256':hashlib.sha256(p.stdout.strip()).hexdigest()})
+ for name in [c['saved_before'],c['expected_after']]:members[name]=(w/'v2'/name).read_bytes()
+raw=io.BytesIO()
+with tarfile.open(fileobj=raw,mode='w')as t:
+ for name,b in sorted(members.items()):
+  i=tarfile.TarInfo(name);i.size=len(b);i.mtime=0;i.mode=0o600;t.addfile(i,io.BytesIO(b))
+packed=gzip.compress(raw.getvalue(),mtime=0)
+with(e/'cancellation-resume-fixtures.tar.gz').open('xb')as f:f.write(packed)
+with tarfile.open(fileobj=io.BytesIO(packed),mode='r:gz')as t:
+ assert {x.name:t.extractfile(x).read()for x in t.getmembers()}==members
+v={'completed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_count':len(source),'normal_and_race_probe_json_equal':True,'supported_scenarios':40,'cancellation_points_per_build':4698,'uncanceled_controls_per_build':40,'unsupported_refusals_per_build':8,'child_process_resumes':len(cases),'child_results':cases,'fixture_archive':'cancellation-resume-fixtures.tar.gz','fixture_archive_sha256':hashlib.sha256(packed).hexdigest(),'fixture_members':{n:{'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}for n,b in members.items()},'fixture_archive_roundtrip_exact':True,'quality_measured':False}
+with(e/'new-process-resume.json').open('x')as f:json.dump(v,f,indent=2);f.write('\n')
+print(json.dumps({k:v[k]for k in ['supported_scenarios','cancellation_points_per_build','child_process_resumes','normal_and_race_probe_json_equal','fixture_archive_roundtrip_exact']}))

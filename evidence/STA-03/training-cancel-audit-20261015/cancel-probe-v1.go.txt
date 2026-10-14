@@ -1,0 +1,183 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+	"math"
+	"os"
+	"path/filepath"
+	"reflect"
+	"sync"
+)
+
+type scenario struct {
+	Core                         string
+	Window                       int
+	Recompute, Sharing, Chemical bool
+}
+type counted struct {
+	context.Context
+	cancel    context.CancelFunc
+	mu        sync.Mutex
+	count, at int
+}
+
+func (c *counted) Err() error {
+	c.mu.Lock()
+	c.count++
+	if c.count == c.at {
+		c.cancel()
+	}
+	c.mu.Unlock()
+	return c.Context.Err()
+}
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func require(b bool, m string) {
+	if !b {
+		panic(m)
+	}
+}
+func encode(v any) []byte { b, err := json.Marshal(v); must(err); return b }
+func config(s scenario) (learning.Config, learning.Parameters) {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, Delays: []int{1, 0}, DT: .5, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.1}, LogTau: []float64{.1, .2}}, Encoder: []float64{.5, .1}, Readout: []float64{.8}}
+	if s.Core == "lif" {
+		core := dynamics.LIFConfig{Nodes: 3, Sources: []int{0, 1, 1}, Targets: []int{1, 1, 2}, Delays: []int{0, 1, 0}, DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+		c = learning.Config{LIF: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+		p = learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.65, .25, .7}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}}, ThetaRaw: []float64{-1, -1, -1}, Encoder: []float64{1, 0, 0}, Readout: []float64{1}}
+	}
+	if s.Core == "mixed" {
+		core := dynamics.MixedConfig{Nodes: 3, Sources: []int{0, 1}, Targets: []int{1, 2}, Delays: []int{0, 1}, DT: math.Ln2, NodeRule: []uint8{0, 1, 0}, Continuous: dynamics.ContinuousRule{Activation: "tanh"}, LIF: dynamics.LIFRule{TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}}}
+		c = learning.Config{Mixed: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+		p = learning.Parameters{Core: dynamics.Parameters{Weights: []float64{4, 2}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}}, ThetaRaw: []float64{0}, Encoder: []float64{4, 0, 0}, Readout: []float64{1}}
+	}
+	if s.Sharing {
+		c.Sharing = &learning.ParameterSharing{Groups: 1, Bias: make([]int32, len(p.Core.Bias))}
+		for j := range p.Core.Bias {
+			p.Core.Bias[j] = .1
+		}
+	}
+	return c, p
+}
+
+var input = [][]float64{{.7}, {.8}, {.7}, {.8}, {.7}, {.8}}
+var target = []float64{.35}
+
+func makeIndividual(s scenario) *learning.Individual {
+	c, p := config(s)
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = s.Window
+	o.Epsilon = .1
+	o.LearningRate = .01
+	if s.Core != "continuous" {
+		o.Trainable.Theta = true
+	}
+	if s.Recompute {
+		o.Recompute = &learning.Recompute{SegmentSteps: 2}
+	}
+	i, err := learning.NewIndividual(c, p, o, make([]float64, len(p.Core.Bias)))
+	must(err)
+	must(i.EnablePlasticity(plasticity.Config{Edges: []int{0}, Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .8, DecayP: .9, PlasticMax: .2, WMin: .01}}))
+	must(i.EnableConsolidation(4))
+	if s.Chemical {
+		chem := modulation.ChemistryConfig{Chemistry: modulation.Chemistry{Regions: 2, Channels: 1, DT: 1, Tau: []float64{2}, Transport: &modulation.Transport{Fraction: [][]float64{{0, .25}, {.1, 0}}}}, Sources: []modulation.SourceSpec{{Kind: modulation.SourceController, Channel: 0, Controller: &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 3}, Nodes: len(p.Core.Bias), Hidden: 1, Channel: 0, Parameters: []float64{.6, .2, .05, .8, -.1}}}}, Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "test/v1"}}}, Effects: []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, GammaScale: 1.5}}, Regions: modulation.RegionAssignment{NodeRegion: make([]int, len(p.Core.Bias))}}
+		must(i.EnableChemistry(chem))
+		must(i.SetExpressionGain(learning.ExpressionGain{Nodes: c.ReadoutNodes, Receptor: 0, Scale: -.2, Min: .5, Max: 1}))
+	}
+	_, _, err = i.AdvanceGated(context.Background(), input, []float64{.25, .25, .25, .25, .25, .25})
+	must(err)
+	_, err = i.TrainEpisode(context.Background(), input, target)
+	must(err)
+	if s.Chemical {
+		_, err = i.Consolidate(context.Background(), learning.ConsolidationTrigger{Receptor: 0, Threshold: 0, Rate: .25, Retain: .5})
+		must(err)
+	}
+	return i
+}
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == "resume" {
+		raw, err := os.ReadFile(os.Args[2])
+		must(err)
+		var snap learning.IndividualSnapshot
+		must(json.Unmarshal(raw, &snap))
+		i, err := learning.RestoreIndividual(snap)
+		must(err)
+		res, err := i.TrainEpisode(context.Background(), input, target)
+		must(err)
+		fmt.Println(string(encode(map[string]any{"snapshot": i.Snapshot(), "snapshot_json": string(encode(i.Snapshot())), "result": res})))
+		return
+	}
+	dir := os.Args[1]
+	cases := []any{}
+	checks := 0
+	successControls := 0
+	for _, core := range []string{"continuous", "lif", "mixed"} {
+		for _, window := range []int{1, 3} {
+			for _, recomp := range []bool{false, true} {
+				for _, sharing := range []bool{false, true} {
+					for _, chemical := range []bool{false, true} {
+						s := scenario{core, window, recomp, sharing, chemical}
+						id := fmt.Sprintf("%s-w%d-r%t-s%t-c%t", core, window, recomp, sharing, chemical)
+						i := makeIndividual(s)
+						before := encode(i.Snapshot())
+						beforeReport := i.ChemistryReport()
+						ctx, cancel := context.WithCancel(context.Background())
+						cc := &counted{Context: ctx, cancel: cancel}
+						result, err := i.TrainEpisode(cc, input, target)
+						must(err)
+						cancel()
+						polls := cc.count
+						require(polls > 0, "no context checks")
+						after := encode(i.Snapshot())
+						must(os.WriteFile(filepath.Join(dir, id+"-before.json"), before, 0600))
+						must(os.WriteFile(filepath.Join(dir, id+"-expected.json"), encode(map[string]any{"snapshot": i.Snapshot(), "snapshot_json": string(after), "result": result}), 0600))
+						require(!reflect.DeepEqual(before, after), "success did not change snapshot")
+						require(reflect.DeepEqual(beforeReport, i.ChemistryReport()), "success changed persistent chemistry report")
+						for at := 1; at <= polls+1; at++ {
+							a := makeIndividual(s)
+							require(reflect.DeepEqual(before, encode(a.Snapshot())), "fixture not deterministic")
+							reportBefore := a.ChemistryReport()
+							ctx, cancel := context.WithCancel(context.Background())
+							cut := &counted{Context: ctx, cancel: cancel, at: at}
+							got, err := a.TrainEpisode(cut, input, target)
+							cancel()
+							if at > polls {
+								must(err)
+								require(reflect.DeepEqual(after, encode(a.Snapshot())) && reflect.DeepEqual(result, got), "uncanceled control differs")
+								successControls++
+								continue
+							}
+							require(errors.Is(err, context.Canceled), fmt.Sprintf("%s at %d err=%v", id, at, err))
+							require(reflect.DeepEqual(got, learning.StepResult{}), "canceled partial result")
+							require(reflect.DeepEqual(before, encode(a.Snapshot())), fmt.Sprintf("%s at %d state mutated", id, at))
+							require(reflect.DeepEqual(reportBefore, a.ChemistryReport()), "canceled report changed")
+							var snap learning.IndividualSnapshot
+							must(json.Unmarshal(encode(a.Snapshot()), &snap))
+							restored, err := learning.RestoreIndividual(snap)
+							must(err)
+							resumed, err := restored.TrainEpisode(context.Background(), input, target)
+							must(err)
+							require(reflect.DeepEqual(after, encode(restored.Snapshot())) && reflect.DeepEqual(result, resumed), "restored retry differs")
+							retry, err := a.TrainEpisode(context.Background(), input, target)
+							must(err)
+							require(reflect.DeepEqual(after, encode(a.Snapshot())) && reflect.DeepEqual(result, retry), "live retry differs")
+							checks++
+						}
+						cases = append(cases, map[string]any{"scenario": s, "id": id, "context_checks": polls, "cancelled_checks": polls, "saved_before": id + "-before.json", "expected_after": id + "-expected.json", "full_snapshot_and_report_preserved": true, "live_and_restored_retry_equal_control": true})
+					}
+				}
+			}
+		}
+	}
+	fmt.Println(string(encode(map[string]any{"cases": cases, "cancellation_checks": checks, "success_controls": successControls, "all_passed": true, "biological_quality_measured": false})))
+}

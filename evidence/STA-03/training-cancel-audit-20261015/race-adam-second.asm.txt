@@ -1,0 +1,27 @@
+
+/Users/timlai/Developer/coimnet/runs/.tmp/training-cancel-full-window-20261015/full-window-cancel-race:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+000000010096f290 <_github.com/TimLai666/coimnet/learning.(*Trainer).stepWithGradient>:
+100971318:     	ldr	d0, [x3, #0xc0]
+10097131c:     	fmov	d1, #1.00000000
+100971320:     	fsub	d0, d1, d0
+100971324:     	ldr	d1, [sp, #0x3d0]
+100971328:     	fmul	d0, d0, d1
+10097132c:     	fmul	d0, d0, d1
+100971330:     	ldr	d1, [sp, #0x430]
+100971334:     	ldr	d2, [sp, #0x438]
+100971338:     	fmadd	d0, d2, d1, d0
+10097133c:     	ldr	x4, [sp, #0x330]
+100971340:     	cmp	x4, x2
+100971344:     	b.hs	0x1009722b4 <_github.com/TimLai666/coimnet/learning.(*Trainer).stepWithGradient+0x3024>
+100971348:     	str	d0, [sp, #0x438]
+10097134c:     	str	x1, [sp, #0x648]
+100971350:     	add	x0, x1, x4, lsl #3
+100971354:     	bl	0x1000cdba0 <_runtime.racewrite>
+100971358:     	ldr	x1, [sp, #0x330]
+10097135c:     	ldr	x2, [sp, #0x648]
+100971360:     	ldr	d0, [sp, #0x438]
+100971364:     	str	d0, [x2, x1, lsl #3]
+100971368:     	ldr	x0, [sp, #0x680]
