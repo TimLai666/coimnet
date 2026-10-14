@@ -34,6 +34,8 @@
 | [evidence/STA-03/training-cancel-audit-20261015/cleanup-inventory.json.gz](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/cleanup-inventory.json.gz) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/cleanup.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/cleanup.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/cleanup.py.txt](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/cleanup.py.txt) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/STA-03/training-cancel-audit-20261015/committed-source.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/committed-source.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/STA-03/training-cancel-audit-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/delivery.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/environment.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/environment.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/existing-cancel-controls-race.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/existing-cancel-controls-race.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/existing-cancel-controls-race.log](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/existing-cancel-controls-race.log) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
@@ -78,6 +80,7 @@
 | [evidence/STA-03/training-cancel-audit-20261015/opencode-availability.log](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/opencode-availability.log) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/opencode-availability.py.txt](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/opencode-availability.py.txt) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/ordinary-adam-second.asm.txt](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/ordinary-adam-second.asm.txt) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/STA-03/training-cancel-audit-20261015/payload-review.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/payload-review.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/plan.md](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/plan.md) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/prepare-artifacts.py.txt) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/training-cancel-audit-20261015/probe-build.json](/Users/timlai/Developer/coimnet/evidence/STA-03/training-cancel-audit-20261015/probe-build.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
