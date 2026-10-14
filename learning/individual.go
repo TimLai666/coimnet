@@ -280,6 +280,11 @@ func RestoreIndividual(s IndividualSnapshot) (*Individual, error) {
 		}
 		restored.chemical = runtime
 	}
+	if restored.plastic != nil {
+		if err := checkReceptorRule(restored.plastic.model.Config().Rule, restored.chemical); err != nil {
+			return nil, fmt.Errorf("individual plastic part: %w", err)
+		}
+	}
 	return restored, nil
 }
 

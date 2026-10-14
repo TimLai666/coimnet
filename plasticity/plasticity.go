@@ -122,11 +122,12 @@ type Model struct {
 }
 
 // New validates the whole declaration against a core with the given edge count
-// and takes an independent copy of the edge selection.
+// and takes an independent copy of the rule and edge selection.
 func New(c Config, edges int) (*Model, error) {
 	if edges < 0 {
 		return nil, fmt.Errorf("the core declares %d edges", edges)
 	}
+	c.Rule = copyRule(c.Rule)
 	if err := validateRule(c.Rule); err != nil {
 		return nil, err
 	}
@@ -224,12 +225,24 @@ func validateRule(r Rule) error {
 	return nil
 }
 
+func copyRule(rule Rule) Rule {
+	if rule.GateReceptor != nil {
+		index := *rule.GateReceptor
+		rule.GateReceptor = &index
+	}
+	if rule.DecayEReceptor != nil {
+		index := *rule.DecayEReceptor
+		rule.DecayEReceptor = &index
+	}
+	return rule
+}
+
 // Config returns an independent copy of the declaration this model enforces.
 func (m *Model) Config() Config {
 	if m == nil {
 		return Config{}
 	}
-	return Config{Rule: m.rule, Edges: append([]int(nil), m.edges...)}
+	return Config{Rule: copyRule(m.rule), Edges: append([]int(nil), m.edges...)}
 }
 
 // Edges reports how many edges carry fast changes.
