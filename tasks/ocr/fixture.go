@@ -92,6 +92,12 @@ func (c FixtureConfig) Validate() error {
 	if c.TrainFamily == c.TestFamily {
 		return fmt.Errorf("ocr: both splits use glyph family %d, so the shapes would leak", c.TrainFamily)
 	}
+	if err := glyphs.ValidateGenerateDimensions(c.TrainSamples, c.MinLen, c.MaxLen); err != nil {
+		return fmt.Errorf("ocr: training dimensions: %w", err)
+	}
+	if err := glyphs.ValidateGenerateDimensions(c.TestSamples, c.MinLen, c.MaxLen); err != nil {
+		return fmt.Errorf("ocr: test dimensions: %w", err)
+	}
 	return nil
 }
 
