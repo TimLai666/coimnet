@@ -1,0 +1,40 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func must(e error) {if e!=nil {panic(e)}}
+func bits(v float64) string {return fmt.Sprintf("%016x",math.Float64bits(v))}
+func flatGradient(g learning.Gradient) []float64 {
+	x:=append([]float64(nil),g.Core.Weights...);x=append(x,g.Core.Bias...);x=append(x,g.Core.LogTau...);x=append(x,g.ThetaRaw...);x=append(x,g.Encoder...);return append(x,g.Readout...)
+}
+func main() {
+	core:=dynamics.LIFConfig{Nodes:3,Sources:[]int{0,1,1},Targets:[]int{1,1,2},Delays:[]int{0,1,0},DT:1,TauSyn:1,ThetaMin:.05,ThetaMax:1,VReset:-.5,RefractorySteps:1,Surrogate:dynamics.LIFSurrogate{Kind:"fast_sigmoid",Scale:2}}
+	c:=learning.Config{LIF:&core,InputSize:1,OutputSize:1,ReadoutNodes:[]int{2}}
+	p:=learning.Parameters{Core:dynamics.Parameters{Weights:[]float64{.65,.25,.7},Bias:[]float64{0,0,0},LogTau:[]float64{0,0,0}},ThetaRaw:[]float64{-1,-1,-1},Encoder:[]float64{1,0,0},Readout:[]float64{1}}
+	o:=learning.DefaultOptions();o.AccumulateSteps=1;o.Epsilon=.1;o.LearningRate=.01;o.Trainable.Theta=true
+	tr,err:=learning.NewTrainer(c,p,o);must(err);n,err:=learning.NewNetwork(c);must(err)
+	input:=[][]float64{{.7},{.8},{.7},{.8},{.7},{.8}};target:=[]float64{.35}
+	initial:=tr.Snapshot();rows:=[]any{}
+	for step:=0;step<2;step++ {
+		before:=tr.Snapshot();loss,g,err:=n.LossGradient(context.Background(),before.Parameters,input,target,o.Truncation);must(err)
+		v:=flatGradient(g);rawBits:=make([]string,len(v));norm:=0.0
+		for i,x:=range v {rawBits[i]=bits(x);norm=math.Hypot(norm,x)}
+		scale:=1.0;if o.ClipNorm>0&&norm>o.ClipNorm {scale=o.ClipNorm/norm}
+		result,err:=tr.Step(context.Background(),input,target);must(err);after:=tr.Snapshot();scalars:=[]any{}
+		for _,i:=range []int{5,7} {
+			d:=v[i]*scale;product1:=float64((1-o.Beta2)*d);product2:=float64(product1*d);oldSecond:=before.Optimizer.Second[i]
+			fused:=math.FMA(o.Beta2,oldSecond,product2);separate:=float64(float64(o.Beta2*oldSecond)+product2)
+			scalars=append(scalars,map[string]any{"index":i,"raw_gradient":v[i],"raw_gradient_bits":bits(v[i]),"scale":scale,"scale_bits":bits(scale),"d":d,"d_bits":bits(d),"old_first_bits":bits(before.Optimizer.First[i]),"old_second_bits":bits(oldSecond),"beta2_bits":bits(o.Beta2),"product1_bits":bits(product1),"product2_bits":bits(product2),"fma_reference_bits":bits(fused),"separate_reference_bits":bits(separate),"actual_first_bits":bits(after.Optimizer.First[i]),"actual_second_bits":bits(after.Optimizer.Second[i]),"actual_second_equals_fma_reference":after.Optimizer.Second[i]==fused})
+		}
+		rows=append(rows,map[string]any{"step":step+1,"before":before,"loss":loss,"raw_gradient":v,"raw_gradient_bits":rawBits,"public_recomputed_norm_bits":bits(norm),"actual_report_norm_bits":bits(result.GradientNorm),"scalar_references":scalars,"result":result,"after":after})
+	}
+	b,err:=json.Marshal(map[string]any{"initial":initial,"steps":rows,"formal_source_instrumented":false,"gradient_source":"public Network.LossGradient from identical episode parameters","optimizer_reference_scope":"external scalar reconstruction; explicit conversion controls intermediate rounding; does not instrument original optimizer"});must(err);fmt.Println(string(b))
+}

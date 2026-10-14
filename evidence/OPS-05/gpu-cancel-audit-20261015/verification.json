@@ -1,0 +1,237 @@
+{
+  "checked_at": "2026-10-14T21:31:53.606610+00:00",
+  "engineering_passed": true,
+  "go_engineering_passed": true,
+  "governance_final_pending": false,
+  "acceptance_complete": false,
+  "acceptance_scope": "ticket 100 only; global zero-bug goal remains active",
+  "requirement": "OPS-05",
+  "supporting_requirements": [
+    "STA-03"
+  ],
+  "base_commit": "52044729ad1922dcab1a88bbff05764e7658b0e0",
+  "source_manifest": "source-before.json",
+  "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+  "source_count": 810,
+  "go_files": 808,
+  "formal_source_unchanged": true,
+  "fresh_full_engineering": {
+    "full-unit": {
+      "pass_events": 5778,
+      "fail_events": 0,
+      "skip_events": 22,
+      "passed_packages": 58,
+      "scope": "fresh complete unoverlaid production/test suite",
+      "command_receipt": "full-unit.json"
+    },
+    "full-race": {
+      "pass_events": 5777,
+      "fail_events": 0,
+      "skip_events": 23,
+      "passed_packages": 58,
+      "scope": "fresh complete unoverlaid production/test suite",
+      "command_receipt": "full-race.json"
+    }
+  },
+  "new_full_suite_run": true,
+  "observed_result": {
+    "supported_scenarios_per_build": 26,
+    "cancellation_points_per_build": 1916,
+    "ordinary_and_race_all_passed": true,
+    "host_snapshots_preserved": true,
+    "actual_selected_device_snapshots_preserved": true,
+    "resident_observer_repeated_scenarios_per_build": 16,
+    "resident_observer_repeated_points_per_build": 1624,
+    "resident_points_not_double_counted": true,
+    "same_object_retry_equal_control": true,
+    "same_build_child_resumes": 50,
+    "child_complete_json_bytes_equal": true,
+    "native_hardware": "Apple M3 Metal",
+    "multichunk_fixture_scope": "130 values, three hardware-dispatched chunks via existing reduced logical limits; not a native capacity measurement",
+    "map_poll_scope": "first iteration of both polling checks per mapped buffer; scheduler-dependent repeats excluded",
+    "new_confirmed_gpu_cancellation_bug": false,
+    "cross_build_earliest_observed_float_difference": "first update public Core.Inputs[4][2], before Bias accumulation and Adam; root machine-operation and quality effects unconfirmed",
+    "real_task_quality_measured": false,
+    "biological_quantitative_correctness_measured": false,
+    "all_framework_bugs_absent_proven": false
+  },
+  "reproduction_command": [
+    [
+      "go",
+      "build",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/gpu-probe-v2",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/gpu_cancel_probe.go"
+    ],
+    [
+      "go",
+      "build",
+      "-race",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/gpu-probe-v2-race",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/gpu_cancel_probe.go"
+    ],
+    [
+      "runs/.tmp/gpu-cancel-audit-20261015/gpu-probe-v2",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/v2-hardware-fixtures"
+    ],
+    [
+      "runs/.tmp/gpu-cancel-audit-20261015/gpu-probe-v2-race",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/v2-race-fixtures"
+    ],
+    [
+      "go",
+      "test",
+      "-c",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/multichunk-overlay.json",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/multichunk-test",
+      "./backend/webgpu"
+    ],
+    [
+      "go",
+      "test",
+      "-c",
+      "-race",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/multichunk-overlay.json",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/multichunk-test-race",
+      "./backend/webgpu"
+    ],
+    [
+      "go",
+      "test",
+      "-c",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/resident-overlay.json",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/resident-test",
+      "./learning"
+    ],
+    [
+      "go",
+      "test",
+      "-c",
+      "-race",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/resident-overlay.json",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015/resident-test-race",
+      "./learning"
+    ],
+    [
+      "python3",
+      "evidence/OPS-05/gpu-cancel-audit-20261015/new-process-resume.py.txt"
+    ]
+  ],
+  "reproduction_guidance": "reproduction.md",
+  "environment": "environment.json",
+  "input_fingerprints": {
+    "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "probe_sources": {
+      "probes": {
+        "gpu_cancel_probe.go": {
+          "archive": "gpu-cancel-probe-v2.go.txt",
+          "sha256": "dbcc9038709403cee79c4240b62ec066ee63f2bcbf2e480f9d0efd837e6edad0"
+        },
+        "audit_gpu_cancel_test.go": {
+          "archive": "multichunk-probe.go.txt",
+          "sha256": "b85cf3bb0c83d81ed7c36b582f1913314d4f280f92ac7898d2cc34091a186124"
+        },
+        "audit_gpu_resident_test.go": {
+          "archive": "resident-probe.go.txt",
+          "sha256": "29a995894d6ae2492624b68c8d3db29d70c7f51d4b32e22f723d643a28b9d534"
+        },
+        "float_probe.go": {
+          "archive": "float-probe-v2.go.txt",
+          "sha256": "302d0c5e26584daa85d0109631a7c50ec5bdc426979a5681a4768a929e649d2e"
+        }
+      },
+      "formal_test_overlays_only_new_files": true,
+      "formal_methods_unchanged": true
+    },
+    "artificial_resume_archive_sha256": "ece574e35fb86211389e9b7fdd24abe6fcddce373fc846b3e94a7593d83e226d",
+    "cleanup_inventory_sha256": "b8d87e4377c10e2bd195ea950f621f20b250637c85f913b7df61d9c4bc2264ad"
+  },
+  "commands": [
+    "gpu-probe-v2-build.json",
+    "gpu-probe-v2-race-build.json",
+    "gpu-probe-v2-normal-hardware.json",
+    "gpu-probe-v2-race-hardware.json",
+    "multichunk-test-build.json",
+    "multichunk-race-build.json",
+    "multichunk-normal-hardware.json",
+    "multichunk-race-hardware.json",
+    "resident-test-build.json",
+    "resident-race-build.json",
+    "resident-normal-hardware.json",
+    "resident-race-hardware.json",
+    "new-process-hardware.json",
+    "float-probe-v2-build.json",
+    "float-probe-v2-race-build.json",
+    "float-probe-v2-normal.json",
+    "float-probe-v2-race.json",
+    "full-unit.json",
+    "full-race.json",
+    "build.json",
+    "vet.json",
+    "mod-verify.json",
+    "modules.json",
+    "format.json",
+    "governance-final-validated.json"
+  ],
+  "test_log": [
+    "gpu-probe-v2-build.log",
+    "gpu-probe-v2-race-build.log",
+    "gpu-probe-v2-normal-hardware.log",
+    "gpu-probe-v2-race-hardware.log",
+    "multichunk-test-build.log",
+    "multichunk-race-build.log",
+    "multichunk-normal-hardware.log",
+    "multichunk-race-hardware.log",
+    "resident-test-build.log",
+    "resident-race-build.log",
+    "resident-normal-hardware.log",
+    "resident-race-hardware.log",
+    "new-process-hardware.log",
+    "float-probe-v2-build.log",
+    "float-probe-v2-race-build.log",
+    "float-probe-v2-normal.log",
+    "float-probe-v2-race.log",
+    "full-unit.log",
+    "full-race.log",
+    "build.log",
+    "vet.log",
+    "mod-verify.log",
+    "modules.log",
+    "governance-final-validated.log"
+  ],
+  "source_reviews": [
+    "gpu-cancel-review.md",
+    "resident-review.md",
+    "float-first-divergence-review.md",
+    "root-review.md"
+  ],
+  "fixture_nonzero_history_proof": "nonzero-prefix-proof.json",
+  "real_model_preservation": "real-model-preservation.json",
+  "float_diagnostic": "core-input-gradient-comparison.json",
+  "retained_failed_probe_diagnostics": "retained-diagnostics.json",
+  "governance": {
+    "top_level_tests": 11,
+    "pass_events": 31,
+    "fail_events": 0,
+    "skip_events": 0,
+    "receipt": "governance-final-validated.json"
+  },
+  "cleanup": {
+    "receipt": "cleanup.json",
+    "removed_path": "/Users/timlai/Developer/coimnet/runs/.tmp/gpu-cancel-audit-20261015",
+    "regular_bytes": 1497331491,
+    "protected_real_model_files": 18,
+    "protected_existing_temp_directories": 2,
+    "linked_native_targets_preserved": 41797
+  },
+  "delivery_pending": true
+}

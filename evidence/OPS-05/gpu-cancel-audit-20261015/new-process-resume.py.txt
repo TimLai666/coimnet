@@ -1,0 +1,26 @@
+from pathlib import Path
+import json, subprocess, hashlib, datetime, tarfile, io, os
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/gpu-cancel-audit-20261015';e=r/'evidence/OPS-05/gpu-cancel-audit-20261015'
+source=json.loads((e/'source-before.json').read_text())
+for name,digest in source.items():assert hashlib.sha256((r/name).read_bytes()).hexdigest()==digest,name
+cases=[('ordinary','gpu-probe-v2','v2-hardware-fixtures',22),('race','gpu-probe-v2-race','v2-race-fixtures',22),('ordinary-multichunk','gpu-probe-v2','multichunk-normal-fixtures',3),('race-multichunk','gpu-probe-v2-race','multichunk-race-fixtures',3)]
+results=[];members={}
+for mode,binary,folder,count in cases:
+ files=sorted((w/folder).glob('*-before.json'));assert len(files)==count,(folder,len(files))
+ for before in files:
+  expected=before.with_name(before.name.replace('-before.json','-expected.json'));want=expected.read_bytes();cmd=[str(w/binary),'resume',str(before)]
+  p=subprocess.run(cmd,cwd=r,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=60);assert p.returncode==0,(cmd,p.stderr.decode(errors='replace'))
+  assert json.loads(p.stdout)==json.loads(want),(mode,before.name)
+  assert p.stdout.strip()==want,(mode,before.name,'exact Go JSON bytes differ')
+  results.append({'mode':mode,'case':before.name,'command':cmd,'exit_code':p.returncode,'snapshot_result_prediction_json_bytes_equal':True,'expected_sha256':hashlib.sha256(want).hexdigest(),'stderr':p.stderr.decode(errors='replace')})
+  for path in [before,expected]:members[mode+'/'+path.name]=path.read_bytes()
+  print('RESUME_EXACT',mode,before.name,flush=True)
+archive=e/'gpu-resume-fixtures.tar.gz'
+with tarfile.open(archive,'x:gz')as t:
+ for name,b in sorted(members.items()):
+  info=tarfile.TarInfo(name);info.size=len(b);info.mode=0o600;info.mtime=0;t.addfile(info,io.BytesIO(b))
+with tarfile.open(archive,'r:gz')as t:assert {x.name:t.extractfile(x).read()for x in t.getmembers()}==members
+report={'completed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'same_build_child_resumes':len(results),'results':results,'fixture_archive':archive.name,'fixture_archive_sha256':hashlib.sha256(archive.read_bytes()).hexdigest(),'fixture_members':{n:{'bytes':len(b),'sha256':hashlib.sha256(b).hexdigest()}for n,b in members.items()},'archive_roundtrip_exact':True,'multichunk_resume_scope':'Three-chunk source state resumes through the public constructor using native device limits. Logical parameter/moment/counter equality is verified; reduced test-only capacity is not a saved product setting.'}
+with(e/'new-process-resume.json').open('x')as f:json.dump(report,f,indent=2);f.write('\n')
+for name,digest in source.items():assert hashlib.sha256((r/name).read_bytes()).hexdigest()==digest,name
+print('CHILD_RESUMES_EXACT',len(results),flush=True)

@@ -1,0 +1,37 @@
+from pathlib import Path
+import json,hashlib,collections,datetime
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/OPS-05/gpu-cancel-audit-20261015'
+def digest(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def load(name):return json.loads((e/name).read_text())
+def fresh(name,obj):
+ p=e/name;assert not p.exists(),name;p.write_text(json.dumps(obj,indent=2)+'\n')
+source=load('source-before.json')
+for rel,h in source.items():assert digest(r/rel)==h,rel
+summary={}
+for name in ['full-unit','full-race']:
+ rec=load(name+'.json');assert rec['exit_code']==0
+ ev=[json.loads(s)for s in(e/(name+'.log')).read_text().splitlines()if s.startswith('{')]
+ c=collections.Counter(x['Action']for x in ev if 'Test'in x);pk=[x for x in ev if x['Action']=='pass'and 'Test'not in x];assert c['fail']==0 and len(pk)==58
+ outputs={}
+ for x in ev:
+  if x['Action']=='output'and'Test'in x:outputs.setdefault((x['Package'],x['Test']),[]).append(x.get('Output',''))
+ skips=[{'package':x['Package'],'test':x['Test'],'actual_output':''.join(outputs[(x['Package'],x['Test'])]).strip()}for x in ev if x['Action']=='skip'and'Test'in x]
+ j={'pass_events':c['pass'],'fail_events':c['fail'],'skip_events':c['skip'],'passed_packages':len(pk),'skips':skips,'scope':'fresh complete unoverlaid production/test suite','command_receipt':name+'.json'}
+ if name=='full-race':fresh(name+'-summary.json',j)
+ else:assert load(name+'-summary.json')==j
+ summary[name]={k:v for k,v in j.items()if k!='skips'}
+for name in ['build','vet','mod-verify','modules']:assert load(name+'.json')['exit_code']==0
+assert load('format.json')['exit_code']==0 and load('format.json')['output_empty']
+for name in ['normal','race']:
+ assert load(name+'-hardware-summary.json')['all_passed']
+ assert load('multichunk-'+name+'-summary.json')['all_passed']
+ assert load('resident-'+name+'-summary.json')['all_passed']
+child=load('new-process-resume.json');assert child['same_build_child_resumes']==50 and child['archive_roundtrip_exact']
+counts=load('acceptance-counts.json');assert counts['distinct_cancel_points_per_build']==1916
+commands=['gpu-probe-v2-build','gpu-probe-v2-race-build','gpu-probe-v2-normal-hardware','gpu-probe-v2-race-hardware','multichunk-test-build','multichunk-race-build','multichunk-normal-hardware','multichunk-race-hardware','resident-test-build','resident-race-build','resident-normal-hardware','resident-race-hardware','new-process-hardware','float-probe-v2-build','float-probe-v2-race-build','float-probe-v2-normal','float-probe-v2-race','full-unit','full-race','build','vet','mod-verify','modules']
+for name in commands:
+ rec=load(name+'.json');assert rec['exit_code']==0 and rec['log_sha256']==digest(e/rec['log']),name
+observed={'supported_scenarios_per_build':26,'cancellation_points_per_build':1916,'ordinary_and_race_all_passed':True,'host_snapshots_preserved':True,'actual_selected_device_snapshots_preserved':True,'resident_observer_repeated_scenarios_per_build':16,'resident_observer_repeated_points_per_build':1624,'resident_points_not_double_counted':True,'same_object_retry_equal_control':True,'same_build_child_resumes':50,'child_complete_json_bytes_equal':True,'native_hardware':'Apple M3 Metal','multichunk_fixture_scope':'130 values, three hardware-dispatched chunks via existing reduced logical limits; not a native capacity measurement','map_poll_scope':'first iteration of both polling checks per mapped buffer; scheduler-dependent repeats excluded','new_confirmed_gpu_cancellation_bug':False,'cross_build_earliest_observed_float_difference':'first update public Core.Inputs[4][2], before Bias accumulation and Adam; root machine-operation and quality effects unconfirmed','real_task_quality_measured':False,'biological_quantitative_correctness_measured':False,'all_framework_bugs_absent_proven':False}
+j={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'engineering_passed':False,'go_engineering_passed':True,'governance_final_pending':True,'acceptance_complete':False,'acceptance_scope':'ticket 100 only; global zero-bug goal remains active','requirement':'OPS-05','supporting_requirements':['STA-03'],'base_commit':'52044729ad1922dcab1a88bbff05764e7658b0e0','source_manifest':'source-before.json','source_manifest_sha256':digest(e/'source-before.json'),'source_count':len(source),'go_files':len(source)-2,'formal_source_unchanged':True,'fresh_full_engineering':summary,'new_full_suite_run':True,'observed_result':observed,'reproduction_command':[load(x+'.json')['command']for x in ['gpu-probe-v2-build','gpu-probe-v2-race-build','gpu-probe-v2-normal-hardware','gpu-probe-v2-race-hardware','multichunk-test-build','multichunk-race-build','resident-test-build','resident-race-build','new-process-hardware']],'reproduction_guidance':'reproduction.md','environment':'environment.json','input_fingerprints':{'source_manifest_sha256':digest(e/'source-before.json'),'probe_sources':load('probe-source-proof.json'),'artificial_resume_archive_sha256':digest(e/'gpu-resume-fixtures.tar.gz')},'commands':[x+'.json'for x in commands]+['format.json'],'test_log':[load(x+'.json')['log']for x in commands],'source_reviews':['gpu-cancel-review.md','resident-review.md','float-first-divergence-review.md','root-review.md'],'fixture_nonzero_history_proof':'nonzero-prefix-proof.json','real_model_preservation':'real-model-preservation.json','float_diagnostic':'core-input-gradient-comparison.json','retained_failed_probe_diagnostics':'retained-diagnostics.json'}
+fresh('verification.json',j)
+print(json.dumps({'go_engineering_passed':True,'summary':summary,'governance_pending':True}))

@@ -1,0 +1,346 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sort"
+	"strings"
+	"sync"
+
+	"github.com/TimLai666/coimnet/backend/webgpu"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+type point struct {
+	Key        string `json:"key"`
+	Occurrence int    `json:"occurrence"`
+}
+type observed struct {
+	Point   point    `json:"point"`
+	Frames  []string `json:"frames"`
+	Mapping bool     `json:"mapping"`
+}
+type cancelContext struct {
+	context.Context
+	cancel       context.CancelFunc
+	mu           sync.Mutex
+	target       point
+	counts       map[string]int
+	mapCounts    map[string]int
+	observations []observed
+	fired        bool
+}
+
+func traced(target point) *cancelContext {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &cancelContext{Context: ctx, cancel: cancel, target: target, counts: map[string]int{}, mapCounts: map[string]int{}}
+}
+func (c *cancelContext) Err() error {
+	pcs := make([]uintptr, 24)
+	n := runtime.Callers(2, pcs)
+	frames := runtime.CallersFrames(pcs[:n])
+	var list []runtime.Frame
+	var names []string
+	for {
+		f, more := frames.Next()
+		list = append(list, f)
+		names = append(names, fmt.Sprintf("%s:%d %s", f.File, f.Line, f.Function))
+		if !more {
+			break
+		}
+	}
+	if len(list) == 0 {
+		return c.Context.Err()
+	}
+	f := list[0]
+	if !strings.Contains(f.File, "/coimnet/") {
+		return c.Context.Err()
+	}
+	file := strings.SplitN(f.File, "/coimnet/", 2)[1]
+	phase := "operation"
+	for _, f := range list {
+		for _, name := range []string{"writeAdamUpload", "readAdamStatus", "snapshotChunk"} {
+			if strings.HasSuffix(f.Function, "."+name) {
+				phase = name
+			}
+		}
+	}
+	mapping := strings.HasSuffix(f.Function, ".mapAdamBuffer")
+	c.mu.Lock()
+	if mapping && f.Line == 187 {
+		c.mapCounts[phase]++
+	}
+	key := fmt.Sprintf("%s:%d@%s", file, f.Line, phase)
+	if mapping {
+		key += fmt.Sprintf("#map%d", c.mapCounts[phase])
+	}
+	c.counts[key]++
+	p := point{Key: key, Occurrence: c.counts[key]}
+	c.observations = append(c.observations, observed{Point: p, Frames: names, Mapping: mapping})
+	if p == c.target {
+		c.fired = true
+		c.cancel()
+	}
+	c.mu.Unlock()
+	return c.Context.Err()
+}
+func (c *cancelContext) targets() []point {
+	var result []point
+	for _, x := range c.observations {
+		// Poll-loop repetitions are timing dependent. Cover both polling
+		// checks on the first iteration of every distinct mapped buffer.
+		if !x.Mapping || x.Point.Occurrence == 1 {
+			result = append(result, x.Point)
+		}
+	}
+	return result
+}
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func require(ok bool, msg string) {
+	if !ok {
+		panic(msg)
+	}
+}
+func encoded(v any) []byte          { b, err := json.Marshal(v); must(err); return b }
+func same(a, b any) bool            { return string(encoded(a)) == string(encoded(b)) }
+func write(dir, name string, v any) { must(os.WriteFile(filepath.Join(dir, name), encoded(v), 0600)) }
+
+type payload struct {
+	Kind    string                     `json:"kind"`
+	Trainer *learning.TrainingSnapshot `json:"trainer,omitempty"`
+	Adam    *webgpu.AdamWSnapshot      `json:"adam,omitempty"`
+	Entry   string                     `json:"entry"`
+	Rate    float32                    `json:"rate,omitempty"`
+	Masked  bool                       `json:"masked"`
+}
+
+var input = [][]float64{{.7, -.2}, {-.3, .5}, {.2, .4}, {-.1, -.6}}
+var target = []float64{.27}
+var upstream = [][]float64{{0}, {0}, {0}, {.5}}
+
+func trainerStep(tr *learning.Trainer, ctx context.Context, entry string) (learning.StepResult, error) {
+	if entry == "from" {
+		return tr.StepFrom(ctx, input, upstream)
+	}
+	return tr.Step(ctx, input, target)
+}
+func fixture(window int, masked, zero bool) (*learning.Trainer, error) {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 4, Sources: []int{0, 1, 2, 3, 0}, Targets: []int{1, 2, 3, 0, 2}, DT: .4, Activation: "tanh"}, InputSize: 2, OutputSize: 1, ReadoutNodes: []int{2, 3}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.35, -.2, .4, .15, -.1}, Bias: []float64{.03, -.02, .01, .04}, LogTau: []float64{.1, -.05, .02, .08}}, Encoder: []float64{.4, -.15, .25, -.3, .2, .1, .05, -.25}, Readout: []float64{.7, -.45}}
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = window
+	o.LearningRate = .031
+	o.ClipNorm = .017
+	o.WeightDecay = .01
+	if masked {
+		o.Masks = &learning.UpdateMasks{Edges: []bool{true, false, true, false, true}, Nodes: []bool{true, false, true, false}}
+	}
+	if zero {
+		o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, DecayUpdates: 1, FinalFactor: 0}
+	}
+	return learning.NewGPUDeviceTrainer(context.Background(), c, p, o, 1<<20)
+}
+func restoredTrainer(s learning.TrainingSnapshot) *learning.Trainer {
+	var copied learning.TrainingSnapshot
+	must(json.Unmarshal(encoded(s), &copied))
+	tr, err := learning.RestoreGPUDeviceTrainer(context.Background(), copied, 1<<20)
+	must(err)
+	return tr
+}
+func adamInputs(masked bool) ([]float32, []bool) {
+	g := make([]float32, 130)
+	m := make([]bool, 130)
+	for i := range g {
+		g[i] = float32(i%11-5) / 13
+		m[i] = !masked || i%3 != 1
+	}
+	return g, m
+}
+func adamStep(o *webgpu.DeviceAdamW, ctx context.Context, p payload) (webgpu.AdamWMetrics, error) {
+	g, m := adamInputs(p.Masked)
+	if p.Entry == "checked" {
+		return o.StepChecked(ctx, g, m, p.Rate, func(webgpu.AdamWSnapshot) error { return nil })
+	}
+	return o.Step(ctx, g, m, p.Rate)
+}
+func restoredAdam(s webgpu.AdamWSnapshot) *webgpu.DeviceAdamW {
+	var copied webgpu.AdamWSnapshot
+	must(json.Unmarshal(encoded(s), &copied))
+	o, err := webgpu.RestoreDeviceAdamW(context.Background(), copied)
+	must(err)
+	return o
+}
+func resume(p payload) any {
+	if p.Kind == "trainer" {
+		tr := restoredTrainer(*p.Trainer)
+		defer tr.Close()
+		s, err := trainerStep(tr, context.Background(), p.Entry)
+		must(err)
+		pred, err := tr.Predict(context.Background(), input)
+		must(err)
+		return map[string]any{"snapshot": tr.Snapshot(), "result": s, "prediction": pred}
+	}
+	o := restoredAdam(*p.Adam)
+	defer o.Close()
+	_, err := adamStep(o, context.Background(), p)
+	must(err)
+	s, err := o.Snapshot(context.Background())
+	must(err)
+	return map[string]any{"snapshot": s}
+}
+func main() {
+	if os.Args[1] == "resume" {
+		b, err := os.ReadFile(os.Args[2])
+		must(err)
+		var p payload
+		must(json.Unmarshal(b, &p))
+		fmt.Println(string(encoded(resume(p))))
+		return
+	}
+	dir := os.Args[1]
+	must(os.MkdirAll(dir, 0700))
+	if os.Args[1] == "-" {
+		panic("output directory required")
+	}
+	var rows []any
+	total := 0
+	for _, entry := range []string{"mse", "from"} {
+		for _, mode := range []string{"direct", "partial", "full", "zero-full"} {
+			for _, masked := range []bool{false, true} {
+				id := fmt.Sprintf("trainer-%s-%s-mask%t", entry, mode, masked)
+				window := 3
+				if mode == "direct" {
+					window = 1
+				}
+				tr, err := fixture(window, masked, mode == "zero-full")
+				must(err)
+				for i := 0; i < window; i++ {
+					_, err = trainerStep(tr, context.Background(), entry)
+					must(err)
+				}
+				pending := 0
+				if mode == "partial" {
+					pending = 1
+				}
+				if mode == "full" || mode == "zero-full" {
+					pending = 2
+				}
+				for i := 0; i < pending; i++ {
+					_, err = trainerStep(tr, context.Background(), entry)
+					must(err)
+				}
+				before := tr.Snapshot()
+				require(before.Updates == 1, "prefix missing committed history")
+				metrics, ok := tr.GPUAdamWMetrics()
+				require(ok && metrics.Device.Adapter != "" && metrics.Device.Backend != "", "hardware identity missing")
+				cc := traced(point{})
+				control, err := trainerStep(tr, cc, entry)
+				must(err)
+				cc.cancel()
+				after := tr.Snapshot()
+				prediction, err := tr.Predict(context.Background(), input)
+				must(err)
+				must(tr.Close())
+				require(control.GradientNorm > 0, "zero control gradient")
+				if mode == "partial" {
+					require(!control.Applied && control.Accumulated == 2, "partial did not accumulate")
+				} else {
+					require(control.Applied && after.Updates == 2 && after.Accumulator == nil, "full update missing")
+				}
+				if mode == "zero-full" {
+					require(control.LearningRate == 0 && same(before.Parameters, after.Parameters), "zero rate changed parameters")
+				} else if mode != "partial" {
+					require(!same(before.Parameters, after.Parameters), "nonzero update did not change parameters")
+				}
+				expected := map[string]any{"snapshot": after, "result": control, "prediction": prediction}
+				p := payload{Kind: "trainer", Trainer: &before, Entry: entry, Masked: masked}
+				write(dir, id+"-before.json", p)
+				write(dir, id+"-expected.json", expected)
+				for _, at := range cc.targets() {
+					live := restoredTrainer(before)
+					c := traced(at)
+					got, err := trainerStep(live, c, entry)
+					c.cancel()
+					require(c.fired, "target not reached: "+at.Key)
+					require(errors.Is(err, context.Canceled), fmt.Sprintf("%s %v cancel error: %v", id, at, err))
+					require(same(got, learning.StepResult{}), "nonzero failure result")
+					require(same(before, live.Snapshot()), "trainer state changed on cancel")
+					retry, err := trainerStep(live, context.Background(), entry)
+					must(err)
+					pred, err := live.Predict(context.Background(), input)
+					must(err)
+					require(same(expected, map[string]any{"snapshot": live.Snapshot(), "result": retry, "prediction": pred}), "live trainer retry differs")
+					must(live.Close())
+					total++
+				}
+				rows = append(rows, map[string]any{"id": id, "cancel_points": len(cc.targets()), "observed_checks": cc.observations, "device": metrics.Device, "control_applied": control.Applied, "control_rate": control.LearningRate, "saved_payload": id + "-before.json", "saved_expected": id + "-expected.json"})
+				fmt.Fprintln(os.Stderr, "PASS", id, len(cc.targets()))
+			}
+		}
+	}
+	for _, entry := range []string{"legacy", "checked", "checked-zero"} {
+		for _, masked := range []bool{false, true} {
+			id := fmt.Sprintf("adam-%s-mask%t", entry, masked)
+			parameters := make([]float32, 130)
+			for i := range parameters {
+				parameters[i] = float32(i%7) / 5
+			}
+			o, err := webgpu.NewDeviceAdamW(context.Background(), parameters, webgpu.AdamWConfig{Beta1: .8, Beta2: .97, Epsilon: .001, WeightDecay: .02, MaxBytes: 1 << 20})
+			must(err)
+			p := payload{Kind: "adam", Entry: entry, Rate: .037, Masked: masked}
+			if entry == "checked-zero" {
+				p.Entry = "checked"
+				p.Rate = 0
+			}
+			prefix := p
+			prefix.Rate = .019
+			_, err = adamStep(o, context.Background(), prefix)
+			must(err)
+			before, err := o.Snapshot(context.Background())
+			must(err)
+			p.Adam = &before
+			cc := traced(point{})
+			metrics, err := adamStep(o, cc, p)
+			must(err)
+			cc.cancel()
+			after, err := o.Snapshot(context.Background())
+			must(err)
+			must(o.Close())
+			require(metrics.Device.Adapter != "", "missing backend hardware")
+			write(dir, id+"-before.json", p)
+			write(dir, id+"-expected.json", map[string]any{"snapshot": after})
+			for _, at := range cc.targets() {
+				live := restoredAdam(before)
+				c := traced(at)
+				_, err := adamStep(live, c, p)
+				c.cancel()
+				require(c.fired, "adam target not reached: "+at.Key)
+				require(errors.Is(err, context.Canceled), fmt.Sprintf("%s %v error %v", id, at, err))
+				got, err := live.Snapshot(context.Background())
+				must(err)
+				require(same(before, got), "resident bank changed on cancel")
+				_, err = adamStep(live, context.Background(), p)
+				must(err)
+				got, err = live.Snapshot(context.Background())
+				must(err)
+				require(same(after, got), "live adam retry differs")
+				must(live.Close())
+				total++
+			}
+			rows = append(rows, map[string]any{"id": id, "cancel_points": len(cc.targets()), "observed_checks": cc.observations, "device": metrics.Device, "chunks": metrics.Chunks, "saved_payload": id + "-before.json", "saved_expected": id + "-expected.json"})
+			fmt.Fprintln(os.Stderr, "PASS", id, len(cc.targets()))
+		}
+	}
+	sort.Slice(rows, func(i, j int) bool { return fmt.Sprint(rows[i]) < fmt.Sprint(rows[j]) })
+	fmt.Println(string(encoded(map[string]any{"scenarios": rows, "cancel_points": total, "all_passed": true, "map_poll_scope": "first iteration of each mapped buffer; unbounded scheduler-dependent loop repetitions excluded"})))
+}

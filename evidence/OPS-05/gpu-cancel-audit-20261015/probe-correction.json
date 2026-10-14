@@ -1,0 +1,12 @@
+{
+  "original_failure": "zero rate changed parameters",
+  "confirmed_probe_assumption_error": "With WarmupUpdates=3 and one completed update, LearningRateAt is base/3 rather than zero. The candidate correctly changed parameters at a nonzero rate.",
+  "source": "learning/schedule.go:41-47",
+  "correction": "Use cosine DecayUpdates=1 FinalFactor=0; prefix update is nonzero and the next full update has exactly zero rate. Original zero-rate and snapshot assertions retained.",
+  "formal_source_changed": false,
+  "original_evidence_preserved": [
+    "gpu-cancel-probe.go.txt",
+    "gpu-probe-normal-hardware.log"
+  ],
+  "corrected_probe_sha256": "dbcc9038709403cee79c4240b62ec066ee63f2bcbf2e480f9d0efd837e6edad0"
+}

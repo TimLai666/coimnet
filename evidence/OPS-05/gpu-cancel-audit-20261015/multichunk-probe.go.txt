@@ -1,0 +1,221 @@
+package webgpu
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+)
+
+type auditPoint struct {
+	Key        string `json:"key"`
+	Occurrence int    `json:"occurrence"`
+}
+type auditObserved struct {
+	Point   auditPoint `json:"auditPoint"`
+	Frames  []string   `json:"frames"`
+	Mapping bool       `json:"mapping"`
+}
+type auditContext struct {
+	context.Context
+	cancel       context.CancelFunc
+	mu           sync.Mutex
+	target       auditPoint
+	counts       map[string]int
+	mapCounts    map[string]int
+	observations []auditObserved
+	fired        bool
+}
+
+func auditTraced(target auditPoint) *auditContext {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &auditContext{Context: ctx, cancel: cancel, target: target, counts: map[string]int{}, mapCounts: map[string]int{}}
+}
+func (c *auditContext) Err() error {
+	pcs := make([]uintptr, 24)
+	n := runtime.Callers(2, pcs)
+	frames := runtime.CallersFrames(pcs[:n])
+	var list []runtime.Frame
+	var names []string
+	for {
+		f, more := frames.Next()
+		list = append(list, f)
+		names = append(names, fmt.Sprintf("%s:%d %s", f.File, f.Line, f.Function))
+		if !more {
+			break
+		}
+	}
+	if len(list) == 0 {
+		return c.Context.Err()
+	}
+	f := list[0]
+	if !strings.Contains(f.File, "/coimnet/") {
+		return c.Context.Err()
+	}
+	file := strings.SplitN(f.File, "/coimnet/", 2)[1]
+	phase := "operation"
+	for _, f := range list {
+		for _, name := range []string{"writeAdamUpload", "readAdamStatus", "snapshotChunk"} {
+			if strings.HasSuffix(f.Function, "."+name) {
+				phase = name
+			}
+		}
+	}
+	mapping := strings.HasSuffix(f.Function, ".mapAdamBuffer")
+	c.mu.Lock()
+	if mapping && f.Line == 187 {
+		c.mapCounts[phase]++
+	}
+	key := fmt.Sprintf("%s:%d@%s", file, f.Line, phase)
+	if mapping {
+		key += fmt.Sprintf("#map%d", c.mapCounts[phase])
+	}
+	c.counts[key]++
+	p := auditPoint{Key: key, Occurrence: c.counts[key]}
+	c.observations = append(c.observations, auditObserved{Point: p, Frames: names, Mapping: mapping})
+	if p == c.target {
+		c.fired = true
+		c.cancel()
+	}
+	c.mu.Unlock()
+	return c.Context.Err()
+}
+func (c *auditContext) targets() []auditPoint {
+	var result []auditPoint
+	for _, x := range c.observations {
+		// Poll-loop repetitions are timing dependent. Cover both polling
+		// checks on the first iteration of every distinct mapped buffer.
+		if !x.Mapping || x.Point.Occurrence == 1 {
+			result = append(result, x.Point)
+		}
+	}
+	return result
+}
+
+func auditJSON(t *testing.T, v any) []byte {
+	t.Helper()
+	b, e := json.Marshal(v)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return b
+}
+func auditInputs() ([]float32, []bool) {
+	g := make([]float32, 130)
+	m := make([]bool, 130)
+	for i := range g {
+		g[i] = float32(i%11-5) / 13
+		m[i] = i%3 != 1
+	}
+	return g, m
+}
+func auditStep(o *DeviceAdamW, c context.Context, entry string, rate float32) (AdamWMetrics, error) {
+	g, m := auditInputs()
+	if entry == "legacy" {
+		return o.Step(c, g, m, rate)
+	}
+	return o.StepChecked(c, g, m, rate, func(AdamWSnapshot) error { return nil })
+}
+func auditPrefix(t *testing.T, c context.Context) *DeviceAdamW {
+	t.Helper()
+	o := newChunkedHardwareAdam(t, c, 130)
+	if len(o.chunks) != 3 {
+		t.Fatal("need three actual hardware chunks")
+	}
+	if _, e := auditStep(o, c, "legacy", .019); e != nil {
+		t.Fatal(e)
+	}
+	return o
+}
+func TestAuditGPUCancellationThreeChunks(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	var report []any
+	total := 0
+	for _, entry := range []string{"legacy", "checked", "checked-zero", "snapshot"} {
+		t.Run(entry, func(t *testing.T) {
+			control := auditPrefix(t, ctx)
+			before := mustDeviceAdamSnapshot(t, control, ctx)
+			rate := float32(.037)
+			mode := entry
+			if entry == "checked-zero" {
+				mode = "checked"
+				rate = 0
+			}
+			cc := auditTraced(auditPoint{})
+			var expected AdamWSnapshot
+			if entry == "snapshot" {
+				var e error
+				expected, e = control.Snapshot(cc)
+				if e != nil {
+					t.Fatal(e)
+				}
+			} else {
+				if _, e := auditStep(control, cc, mode, rate); e != nil {
+					t.Fatal(e)
+				}
+				expected = mustDeviceAdamSnapshot(t, control, ctx)
+			}
+			cc.cancel()
+			if entry != "snapshot" && expected.Steps[0] != before.Steps[0]+1 {
+				t.Fatal("normal control did not advance Adam")
+			}
+			for _, at := range cc.targets() {
+				t.Run(fmt.Sprintf("%s-%d", strings.ReplaceAll(at.Key, "/", "_"), at.Occurrence), func(t *testing.T) {
+					live := auditPrefix(t, ctx)
+					assertAdamSnapshotsEqual(t, mustDeviceAdamSnapshot(t, live, ctx), before)
+					c := auditTraced(at)
+					var got AdamWSnapshot
+					var e error
+					if entry == "snapshot" {
+						got, e = live.Snapshot(c)
+					} else {
+						_, e = auditStep(live, c, mode, rate)
+					}
+					c.cancel()
+					if !c.fired {
+						t.Fatal("target not reached", at)
+					}
+					if !errors.Is(e, context.Canceled) {
+						t.Fatal("cancellation identity lost", at, e)
+					}
+					if entry == "snapshot" && string(auditJSON(t, got)) != string(auditJSON(t, AdamWSnapshot{})) {
+						t.Fatal("partial cancelled snapshot returned")
+					}
+					assertAdamSnapshotsEqual(t, mustDeviceAdamSnapshot(t, live, ctx), before)
+					if entry != "snapshot" {
+						if _, e = auditStep(live, ctx, mode, rate); e != nil {
+							t.Fatal(e)
+						}
+					}
+					assertAdamSnapshotsEqual(t, mustDeviceAdamSnapshot(t, live, ctx), expected)
+					total++
+				})
+			}
+			report = append(report, map[string]any{"entry": entry, "rate": rate, "cancel_points": len(cc.targets()), "observed_checks": cc.observations, "chunks": 3, "values": 130, "device": control.info, "logical_limits_reduced_to_64_values_for_existing_fixture": true, "native_capacity_limit_measured": false})
+			if entry != "snapshot" {
+				dir := os.Getenv("COIMNET_GPU_CANCEL_FIXTURES")
+				if dir == "" {
+					t.Fatal("missing fixture destination")
+				}
+				if e := os.MkdirAll(dir, 0700); e != nil {
+					t.Fatal(e)
+				}
+				p := map[string]any{"kind": "adam", "adam": before, "entry": mode, "rate": rate, "masked": true}
+				for name, v := range map[string]any{entry + "-before.json": p, entry + "-expected.json": map[string]any{"snapshot": expected}} {
+					if e := os.WriteFile(filepath.Join(dir, name), auditJSON(t, v), 0600); e != nil {
+						t.Fatal(e)
+					}
+				}
+			}
+		})
+	}
+	t.Logf("AUDIT_REPORT %s", auditJSON(t, map[string]any{"cases": report, "cancellation_points": total, "all_passed": !t.Failed(), "hardware_capacity_scope": "130 values in three hardware-dispatched chunks using the existing reduced-limit fixture"}))
+}

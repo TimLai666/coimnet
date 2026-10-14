@@ -1,0 +1,255 @@
+package learning
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"runtime"
+	"strings"
+	"sync"
+	"testing"
+	"time"
+)
+
+type auditPoint struct {
+	Key        string `json:"key"`
+	Occurrence int    `json:"occurrence"`
+}
+type auditObserved struct {
+	Point   auditPoint `json:"auditPoint"`
+	Frames  []string   `json:"frames"`
+	Mapping bool       `json:"mapping"`
+}
+type auditContext struct {
+	context.Context
+	cancel       context.CancelFunc
+	mu           sync.Mutex
+	target       auditPoint
+	counts       map[string]int
+	mapCounts    map[string]int
+	observations []auditObserved
+	fired        bool
+}
+
+func auditTraced(target auditPoint) *auditContext {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &auditContext{Context: ctx, cancel: cancel, target: target, counts: map[string]int{}, mapCounts: map[string]int{}}
+}
+func (c *auditContext) Err() error {
+	pcs := make([]uintptr, 24)
+	n := runtime.Callers(2, pcs)
+	frames := runtime.CallersFrames(pcs[:n])
+	var list []runtime.Frame
+	var names []string
+	for {
+		f, more := frames.Next()
+		list = append(list, f)
+		names = append(names, fmt.Sprintf("%s:%d %s", f.File, f.Line, f.Function))
+		if !more {
+			break
+		}
+	}
+	if len(list) == 0 {
+		return c.Context.Err()
+	}
+	f := list[0]
+	if !strings.Contains(f.File, "/coimnet/") {
+		return c.Context.Err()
+	}
+	file := strings.SplitN(f.File, "/coimnet/", 2)[1]
+	phase := "operation"
+	for _, f := range list {
+		for _, name := range []string{"writeAdamUpload", "readAdamStatus", "snapshotChunk"} {
+			if strings.HasSuffix(f.Function, "."+name) {
+				phase = name
+			}
+		}
+	}
+	mapping := strings.HasSuffix(f.Function, ".mapAdamBuffer")
+	c.mu.Lock()
+	if mapping && f.Line == 187 {
+		c.mapCounts[phase]++
+	}
+	key := fmt.Sprintf("%s:%d@%s", file, f.Line, phase)
+	if mapping {
+		key += fmt.Sprintf("#map%d", c.mapCounts[phase])
+	}
+	c.counts[key]++
+	p := auditPoint{Key: key, Occurrence: c.counts[key]}
+	c.observations = append(c.observations, auditObserved{Point: p, Frames: names, Mapping: mapping})
+	if p == c.target {
+		c.fired = true
+		c.cancel()
+	}
+	c.mu.Unlock()
+	return c.Context.Err()
+}
+func (c *auditContext) targets() []auditPoint {
+	var result []auditPoint
+	for _, x := range c.observations {
+		// Poll-loop repetitions are timing dependent. Cover both polling
+		// checks on the first iteration of every distinct mapped buffer.
+		if !x.Mapping || x.Point.Occurrence == 1 {
+			result = append(result, x.Point)
+		}
+	}
+	return result
+}
+func auditFixture(window int, masked, zero bool) (*Trainer, error) {
+	c := Config{Dynamics: dynamics.Config{Nodes: 4, Sources: []int{0, 1, 2, 3, 0}, Targets: []int{1, 2, 3, 0, 2}, DT: .4, Activation: "tanh"}, InputSize: 2, OutputSize: 1, ReadoutNodes: []int{2, 3}}
+	p := Parameters{Core: dynamics.Parameters{Weights: []float64{.35, -.2, .4, .15, -.1}, Bias: []float64{.03, -.02, .01, .04}, LogTau: []float64{.1, -.05, .02, .08}}, Encoder: []float64{.4, -.15, .25, -.3, .2, .1, .05, -.25}, Readout: []float64{.7, -.45}}
+	o := DefaultOptions()
+	o.AccumulateSteps = window
+	o.LearningRate = .031
+	o.ClipNorm = .017
+	o.WeightDecay = .01
+	if masked {
+		o.Masks = &UpdateMasks{Edges: []bool{true, false, true, false, true}, Nodes: []bool{true, false, true, false}}
+	}
+	if zero {
+		o.Schedule = &Schedule{Kind: ScheduleCosine, DecayUpdates: 1, FinalFactor: 0}
+	}
+	return NewGPUDeviceTrainer(context.Background(), c, p, o, 1<<20)
+}
+
+var auditInput = [][]float64{{.7, -.2}, {-.3, .5}, {.2, .4}, {-.1, -.6}}
+var auditUpstream = [][]float64{{0}, {0}, {0}, {.5}}
+
+func auditEncode(t *testing.T, v any) string {
+	t.Helper()
+	b, e := json.Marshal(v)
+	if e != nil {
+		t.Fatal(e)
+	}
+	return string(b)
+}
+func auditUpdate(tr *Trainer, c context.Context, entry string) (StepResult, error) {
+	if entry == "from" {
+		return tr.StepFrom(c, auditInput, auditUpstream)
+	}
+	return tr.Step(c, auditInput, []float64{.27})
+}
+func auditRestored(t *testing.T, s TrainingSnapshot) *Trainer {
+	t.Helper()
+	tr, e := RestoreGPUDeviceTrainer(context.Background(), s, 1<<20)
+	if e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		if e := tr.Close(); e != nil {
+			t.Error(e)
+		}
+	})
+	return tr
+}
+func TestAuditGPUTrainerResidentBankOnCancel(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	var report []any
+	total := 0
+	for _, entry := range []string{"mse", "from"} {
+		for _, mode := range []string{"direct", "partial", "full", "zero-full"} {
+			for _, masked := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s-%s-mask%t", entry, mode, masked), func(t *testing.T) {
+					window := 3
+					if mode == "direct" {
+						window = 1
+					}
+					control, e := auditFixture(window, masked, mode == "zero-full")
+					if e != nil {
+						t.Fatal(e)
+					}
+					t.Cleanup(func() {
+						if e := control.Close(); e != nil {
+							t.Error(e)
+						}
+					})
+					for i := 0; i < window; i++ {
+						if _, e = auditUpdate(control, ctx, entry); e != nil {
+							t.Fatal(e)
+						}
+					}
+					pending := 0
+					if mode == "partial" {
+						pending = 1
+					}
+					if mode == "full" || mode == "zero-full" {
+						pending = 2
+					}
+					for i := 0; i < pending; i++ {
+						if _, e = auditUpdate(control, ctx, entry); e != nil {
+							t.Fatal(e)
+						}
+					}
+					before := control.Snapshot()
+					residentBefore, e := control.deviceAdam.Snapshot(ctx)
+					if e != nil {
+						t.Fatal(e)
+					}
+					cc := auditTraced(auditPoint{})
+					wantResult, e := auditUpdate(control, cc, entry)
+					if e != nil {
+						t.Fatal(e)
+					}
+					cc.cancel()
+					wantHost := control.Snapshot()
+					wantResident, e := control.deviceAdam.Snapshot(ctx)
+					if e != nil {
+						t.Fatal(e)
+					}
+					for _, at := range cc.targets() {
+						t.Run(fmt.Sprintf("%s-%d", strings.ReplaceAll(at.Key, "/", "_"), at.Occurrence), func(t *testing.T) {
+							live := auditRestored(t, before)
+							initialResident, e := live.deviceAdam.Snapshot(ctx)
+							if e != nil {
+								t.Fatal(e)
+							}
+							if auditEncode(t, initialResident) != auditEncode(t, residentBefore) {
+								t.Fatal("resident restore mismatch")
+							}
+							c := auditTraced(at)
+							got, e := auditUpdate(live, c, entry)
+							c.cancel()
+							if !c.fired {
+								t.Fatal("target not reached", at)
+							}
+							if !errors.Is(e, context.Canceled) {
+								t.Fatal("cancellation lost", at, e)
+							}
+							if auditEncode(t, got) != auditEncode(t, StepResult{}) {
+								t.Fatal("partial result")
+							}
+							if auditEncode(t, live.Snapshot()) != auditEncode(t, before) {
+								t.Fatal("host state changed on cancel")
+							}
+							residentAfter, e := live.deviceAdam.Snapshot(ctx)
+							if e != nil {
+								t.Fatal(e)
+							}
+							if auditEncode(t, residentAfter) != auditEncode(t, residentBefore) {
+								t.Fatal("resident bank changed on cancel")
+							}
+							retry, e := auditUpdate(live, ctx, entry)
+							if e != nil {
+								t.Fatal(e)
+							}
+							finalResident, e := live.deviceAdam.Snapshot(ctx)
+							if e != nil {
+								t.Fatal(e)
+							}
+							if auditEncode(t, retry) != auditEncode(t, wantResult) || auditEncode(t, live.Snapshot()) != auditEncode(t, wantHost) || auditEncode(t, finalResident) != auditEncode(t, wantResident) {
+								t.Fatal("live host/resident retry differs")
+							}
+							total++
+						})
+					}
+					info, _ := control.GPUAdamWMetrics()
+					report = append(report, map[string]any{"entry": entry, "mode": mode, "masked": masked, "cancel_points": len(cc.targets()), "host_and_actual_resident_snapshot_equal_before_after_cancel": true, "retry_host_and_actual_resident_equal_control": true, "device": info.Device})
+				})
+			}
+		}
+	}
+	t.Logf("AUDIT_RESIDENT_REPORT %s", auditEncode(t, map[string]any{"cases": report, "cancel_points": total, "all_passed": !t.Failed(), "observer_scope": "test-only read access to existing private deviceAdam; production methods and sources unchanged"}))
+}

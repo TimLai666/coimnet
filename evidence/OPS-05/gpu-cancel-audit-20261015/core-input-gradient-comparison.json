@@ -1,0 +1,37 @@
+{
+  "common_initial_snapshot_equal": true,
+  "diagnostic_outputs_match_previous_uninstrumented_probe": true,
+  "steps": [
+    {
+      "step": 1,
+      "input_gradients_equal": false,
+      "ordinary_bias_bits": "3fee65bc866308b6",
+      "race_bias_bits": "3fee65bc866308b7",
+      "ordinary_rounded_input_sum_bits": "3fee65bc866308b6",
+      "race_rounded_input_sum_bits": "3fee65bc866308b7",
+      "input_gradient_differences": [
+        {
+          "row": 4,
+          "node": 2,
+          "ordinary_bits": "3fd3de0b7fb2bee0",
+          "race_bits": "3fd3de0b7fb2bee1"
+        }
+      ],
+      "earliest_observed_stage": "public core input gradient before bias accumulation and Adam, not the causal first machine operation"
+    },
+    {
+      "step": 2,
+      "input_gradients_equal": true,
+      "ordinary_bias_bits": "3fef7d2d1b370c31",
+      "race_bias_bits": "3fef7d2d1b370c31",
+      "ordinary_rounded_input_sum_bits": "3fef7d2d1b370c31",
+      "race_rounded_input_sum_bits": "3fef7d2d1b370c31",
+      "input_gradient_differences": []
+    }
+  ],
+  "root_cause_confirmed": false,
+  "full_bits_logs": [
+    "float-probe-v2-normal.log",
+    "float-probe-v2-race.log"
+  ]
+}
