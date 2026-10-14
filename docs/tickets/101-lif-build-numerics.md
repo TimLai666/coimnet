@@ -3,14 +3,14 @@
 **Epic:** 機制與模型品質稽核
 **User Story:** 使用者可以從相同輸入追查 LIF 的數值差異，分辨計算缺陷與建置差異。
 **Blocked by:** 100（已完成）
-**Status:** in_progress
+**Status:** completed
 
 Root 固定驗收見[計畫](../../evidence/LRN-01/lif-float-audit-20261015/plan.md)。
 
 - [x] 公開 Network／LIF、同輸入與同上游的完整梯度對照。
 - [x] 唯讀 trace／獨立算術與最早分歧證據。
 - [x] 契約與實際影響裁決，確認缺陷才修正並驗收。
-- [ ] 保存證據、清理本輪暫存、提交及遠端讀回。
+- [x] 保存證據、清理本輪暫存、提交及遠端讀回。
 
 ## Root 決策 2026-10-15
 
@@ -19,3 +19,5 @@ Root 固定驗收見[計畫](../../evidence/LRN-01/lif-float-audit-20261015/plan
 ## Root 裁決 2026-10-15
 
 本人工案例的第一個儲存值分歧在 cand[1][0]，不應期捨棄；第一個傳到梯度的是 cand[4][2]。普通與競態建置融合不同乘法項，原執行檔指令、共同 operands 與獨立完整前向／反向參考一致。這是 Go 允許的取整差異，沒有確認正常公式缺陷，因此保持正式公式及既有模型不變。同建置重跑逐位相同。預測、損失與放電紀錄相同只適用於本案例，長期訓練品質沒有量測。靜態 PC 對應與來源層因果已查證，沒有宣稱已捕獲每次動態 CPU 指令。證據及限制見[Root 審查](../../evidence/LRN-01/lif-float-audit-20261015/root-review.json)。
+
+完整一般／race、格式、build、vet、相依性及最後治理通過，1,319,867,403 bytes 本輪暫存已清除。原模型與原有目錄保持。提交 `6b7bea6` 正常推送且遠端讀回相同，本票完成 4／4。完整零 bug 與長期任務品質目標沒有以本票完成替代，見[驗收](../../evidence/LRN-01/lif-float-audit-20261015/verification.json)及[交付](../../evidence/LRN-01/lif-float-audit-20261015/delivery.json)。

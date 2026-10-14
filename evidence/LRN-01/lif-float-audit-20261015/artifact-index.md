@@ -1,6 +1,6 @@
 # 本輪實際變更檔案
 
-共 119 個檔案，正式 Go／模組來源 810 份不變。
+共 120 個檔案，正式 Go／模組來源 810 份不變。
 保留的執行資料均為人工案例或工程證據，沒有提交真實訓練資料或模型。
 
 | 檔案 | 變更摘要 |
@@ -124,3 +124,4 @@
 | [evidence/LRN-01/lif-float-audit-20261015/artifact-index.md](artifact-index.md) | 逐檔列出本輪實際新增／修改檔案 |
 | [evidence/LRN-01/lif-float-audit-20261015/payload-review.json](payload-review.json) | 提交範圍、逐檔指紋與授權核對 |
 | [.gitattributes](../../../.gitattributes) | 保留三份原始工具／規格輸出的必要空白，沿用既有逐檔慣例 |
+| [evidence/LRN-01/lif-float-audit-20261015/delivery.json](delivery.json) | 已推送提交、遠端讀回與來源／清理核對 |
