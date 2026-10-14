@@ -740,10 +740,8 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 	}
 	if plastic != nil {
 		plastic.PlasticL2After = l2Norm(fast.Plastic)
-		// A norm that left the finite range would make the report
-		// unencodable; refuse the run instead, exactly as a non-finite probe
-		// value does. It needs a plastic_max above 1e150 on a whole-brain
-		// graph, but the report must never be the place that finds out.
+		// Refuse a genuinely unrepresentable norm before committing either
+		// state; every value in a successful report must remain encodable.
 		if err := checkFinite([]float64{plastic.PlasticL2Before, plastic.PlasticL2After}, "plastic l2"); err != nil {
 			return empty, err
 		}

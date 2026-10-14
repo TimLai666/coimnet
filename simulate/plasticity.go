@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/big"
 
 	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/plasticity"
@@ -257,12 +258,68 @@ func (r *Runner) plasticAssumption() string {
 	return line
 }
 
-// l2Norm is the Euclidean norm of one fast change array, summed in index order
-// so two identical runs report the same bits.
+// l2Norm reports the Euclidean norm of validated finite fast changes.
+// Reliable ordinary reductions keep their historical index-order bits.
 func l2Norm(values []float64) float64 {
+	const smallestNormal = 0x1p-1022
 	sum := 0.0
+	tinySquares := 0
 	for _, v := range values {
-		sum += v * v
+		square := v * v
+		sum += square
+		if v != 0 && square < smallestNormal {
+			tinySquares++
+		}
 	}
-	return math.Sqrt(sum)
+	// Each subnormal square loses at most half a subnormal ulp. When the
+	// total is at least this bound, that loss is below float64 precision.
+	if !math.IsInf(sum, 1) && (tinySquares == 0 || sum >= float64(tinySquares)*smallestNormal) {
+		return math.Sqrt(sum)
+	}
+	scale := 0.0
+	for _, v := range values {
+		scale = math.Max(scale, math.Abs(v))
+	}
+	if math.IsInf(scale, 1) {
+		return scale
+	}
+	scaled, correction := 0.0, 0.0
+	for _, v := range values {
+		ratio := v / scale
+		term := ratio*ratio - correction
+		next := scaled + term
+		correction = (next - scaled) - term
+		scaled = next
+	}
+	norm := scale * math.Sqrt(scaled)
+	if norm < math.MaxFloat64/2 {
+		return norm
+	}
+	// At the upper rounding limit, sqrt followed by multiplication can
+	// wrongly round an overflowing norm down to MaxFloat64. Accumulate
+	// exact squares here, including every binary64 exponent and at most
+	// 64 bits of slice-length carry; this rare path avoids double rounding.
+	const precision = 2*(1024+1074) + 64
+	var exact, term, limit big.Float
+	exact.SetPrec(precision)
+	term.SetPrec(precision)
+	limit.SetPrec(precision)
+	for _, v := range values {
+		term.SetFloat64(v)
+		term.Mul(&term, &term)
+		exact.Add(&exact, &term)
+	}
+	// Nearest-even overflows at 2^1024 - 2^970, including the tie.
+	limit.SetInt64(1)
+	limit.SetMantExp(&limit, 1024)
+	term.SetInt64(1)
+	term.SetMantExp(&term, 970)
+	limit.Sub(&limit, &term)
+	limit.Mul(&limit, &limit)
+	if exact.Cmp(&limit) >= 0 {
+		return math.Inf(1)
+	}
+	exact.Sqrt(&exact)
+	norm, _ = exact.Float64()
+	return norm
 }
