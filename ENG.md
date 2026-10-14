@@ -263,3 +263,5 @@ Online UpdateReport.GradientSteps 只計 StepResult.Applied 的套用次數，�
 原生可塑性幅度報告保留可靠正常範圍的索引順序位元。中間平方溢位或有實質下溢誤差時才使用縮放與補償加總；接近 float64 上界時，以標準函式庫高精度平方和判定 nearest-even 捨入上限，避免再次雙重捨入。真正不能編碼的幅度仍由 Run 在提交神經與快速狀態前拒絕。合法塑性上限、學習算式、報告結構及模型格式保持。驗收由 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 管理。
 
 原生探針的平均輸出在既有加總為有限值時保留索引順序與除法位元。中間加總溢位時才先縮放，再以補償加總計算平均，並維持平均值落在所選有限輸出的上下界。真正不能表示的 sum_output 沿用拒絕。集合量測的 OutputSum 與 MetricResult.Numerator 保留原始總和，Run 在提交神經、快速狀態及最近成功量測前檢查其有限性。模型格式、核心動態及學習算式保持，驗收由 [ticket 94](docs/tickets/94-native-mean-representability.md) 管理。
+
+OCR 人工樣本共用 glyphs.ValidateGenerateDimensions，在 Generate、Render 的衍生影像配置與 FixtureConfig.Validate 的訓練入口確認樣本容器及每列影像的位元組大小可由 int 表示。樣本元素大小依平台型別，影像沿用寬度 9L−1、8 列 float64 像素。零樣本的未使用寬字長範圍保持合法，基本負值／倒置範圍及有限選項規則保持。這是算術可表示性，不保證 Go runtime 的 maxAlloc 或可用記憶體。正常亂數、字形、模型與最佳化器格式保持，驗收由 [ticket 95](docs/tickets/95-ocr-generate-representability.md) 管理。

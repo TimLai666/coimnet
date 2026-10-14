@@ -1,0 +1,30 @@
+import os,json,hashlib,subprocess,time,datetime
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet'); w=r/'runs/.tmp/glyph-contract-20261014'; e=r/'evidence/TSK-01/glyph-contract-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+frozen=json.loads((e/'source-final.json').read_text())
+def check():
+ for p,h in frozen.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+def run(name,cmd):
+ check();start=datetime.datetime.now(datetime.timezone.utc).isoformat();t=time.monotonic();print('START',name,flush=True)
+ out=e/(name+'.log')
+ with out.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ raw=out.read_bytes();receipt={'command':cmd,'exit_code':p.returncode,'started_at':start,'duration_seconds':round(time.monotonic()-t,6),'log':out.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':'source-final.json','source_manifest_sha256':hashlib.sha256((e/'source-final.json').read_bytes()).hexdigest(),'program':'compatibility.go.txt','program_sha256':hashlib.sha256((e/'compatibility.go.txt').read_bytes()).hexdigest()}
+ (e/(name+'.json')).write_text(json.dumps(receipt,indent=2)+'\n');check();assert p.returncode==0,(name,p.returncode);print('PASS',name,flush=True);return raw
+base=['go','run'];legacy=['-overlay',str(e/'legacy-overlay.json')];program=str(w/'compatibility.go')
+a=run('legacy-samples',base+legacy+[program,'samples']);b=run('current-samples',base+[program,'samples']);assert a==b
+assert len(a.splitlines())==29 and json.loads(a.splitlines()[-1])=={'case_count':28}
+modeldir=w/'legacy-ocr-models';modeldir.mkdir()
+a=run('legacy-model-save',base+legacy+[program,'save',str(modeldir)]);b=run('current-model-load',base+[program,'load',str(modeldir)]);c=run('legacy-model-load',base+legacy+[program,'load',str(modeldir)]);assert a==b==c
+assert len(a.splitlines())==3
+files={}
+for p in sorted(modeldir.rglob('*')):
+ if p.is_file():files[str(p.relative_to(modeldir))]=hashlib.sha256(p.read_bytes()).hexdigest()
+assert len(files)==6,files
+copy=e/'legacy-ocr-checkpoints';copy.mkdir()
+import shutil
+for path in files:
+ dest=copy/path;dest.parent.mkdir(exist_ok=True);shutil.copyfile(modeldir/path,dest);assert hashlib.sha256(dest.read_bytes()).hexdigest()==files[path]
+doc=run('public-api-doc',['go','doc','github.com/TimLai666/coimnet/tasks/ocr/glyphs.ValidateGenerateDimensions']);assert b'not guarantee that memory is available' in doc
+receipt={'normal_case_count':28,'render_cases':18,'generate_cases':8,'fixture_cases':2,'normal_full_json_bytes_equal':True,'old_serialized_checkpoints_new_process_restore_cases':3,'full_snapshot_inference_next_training_json_bytes_equal':True,'checkpoint_files':files,'legacy_overlay':'legacy-overlay.json','legacy_overlay_sha256':hashlib.sha256((e/'legacy-overlay.json').read_bytes()).hexdigest(),'comparison':'Exact complete Go JSON stdout bytes; no fields excluded. Legacy builds replace only the two production files with baseline 25fbc296 blobs. Save and each Load run in separate processes.'}
+(e/'compatibility.json').write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps(receipt),flush=True)

@@ -1,0 +1,196 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色設定：你是嚴格的公開 API 與數值契約稽核者，區分已確認缺陷、設計矛盾與未知，不臆測。
+可改與不可改的檔案：所有檔案都不可讀寫。只能分析下方已發布公開 Git 提交的完整兩份程式，禁止使用工具、網路、Go、shell 或 git，直接回傳文字。
+任務與驗收：核對 glyphs Render 的 Invert 是否連字距一起交換背景，指出 doc 與 code 的矛盾，不把未選定語意當成已確認。另核對 Generate 的 n/minLen/maxLen 在 64-bit int 邊界是否有實際可重現的 panic：maxLen=MaxInt,minLen=0,n=1；n=MaxInt,minLen=1,maxLen=1。只提出不需大記憶體的可驗證 arithmetic-before-allocation case。檢查 caller-controlled values 導出的樣本容器、隨機長度基數、影像寬高與 rune allocation 是否可表示。建議最小算術拒絕，不新增任意硬上限，不改亂數流、正常資料或模型格式。不要寫實作或測試。
+要跑的驗證指令：不得執行命令，逐段提供純來源與數學依據及供 Root 執行的公開案例。
+回報格式：CONFIRMED 每項觸發/確切述句/影響；NEEDS INVESTIGATION 語意矛盾與缺什麼證據；最小修正邊界與保留的控制案例；未實測的項目。不貼無關來源。
+不要 commit，也不要 stash 或 reset。不得執行任何 Git 寫入指令。
+公開基準：25fbc2960cb1aaee3af2ad2182f137af78ff45af
+FILE tasks/ocr/glyphs/render.go
+package glyphs
+
+import (
+	"errors"
+	"math/rand/v2"
+)
+
+// Render draws text left to right: glyph i occupies columns [9i, 9i+8) with one blank column between glyphs, height 8,
+// width 9*len(runes)-1. The blank column carries Options.Background in every row, without noise, so the gap is the
+// declared background rather than an unwritten zero. Empty text or an option outside its range is an error.
+func Render(text string, f Family, o Options) (Image, []Box, error) {
+	if text == "" {
+		return Image{}, nil, errors.New("glyphs: empty text")
+	}
+	if err := validateOptions(o); err != nil {
+		return Image{}, nil, err
+	}
+	runes := []rune(text)
+	width := 9*len(runes) - 1
+	img := Image{Width: width, Height: 8, Pixels: make([]float64, width*8)}
+	boxes := make([]Box, 0, len(runes))
+	// The blank column after every glyph but the last is background, drawn
+	// before the glyphs so it never consumes the noise generator.
+	for i := 0; i < len(runes)-1; i++ {
+		for y := 0; y < 8; y++ {
+			img.Pixels[y*width+9*i+8] = o.Background
+		}
+	}
+	rng := rand.New(rand.NewPCG(o.Seed, 0))
+	for i, r := range runes {
+		x0 := 9 * i
+		g := f.Glyph(r)
+		for y := 0; y < 8; y++ {
+			for x := 0; x < 8; x++ {
+				v := o.Background
+				if g[y][x] == 1 {
+					if !o.Invert {
+						v = 1
+					}
+				} else if o.Invert {
+					v = 1
+				}
+				if o.Noise != 0 {
+					v += (rng.Float64()*2 - 1) * o.Noise
+					if v < 0 {
+						v = 0
+					} else if v > 1 {
+						v = 1
+					}
+				}
+				img.Pixels[y*width+x0+x] = v
+			}
+		}
+		boxes = append(boxes, Box{Rune: r, X0: x0, X1: x0 + 8})
+	}
+	return img, boxes, nil
+}
+
+// Generate draws n samples of length in [minLen, maxLen] from alphabet with rand.NewPCG(seed, 1) for the text and
+// Options.Seed = seed + index for the noise, all rendered in family f. Deterministic for equal arguments.
+func Generate(alphabet []rune, n, minLen, maxLen int, f Family, o Options, seed uint64) ([]Sample, error) {
+	if len(alphabet) == 0 {
+		return nil, errors.New("glyphs: empty alphabet")
+	}
+	if n < 0 || minLen < 0 || maxLen < minLen {
+		return nil, errors.New("glyphs: invalid generate parameters")
+	}
+	if err := validateOptions(o); err != nil {
+		return nil, err
+	}
+	textRng := rand.New(rand.NewPCG(seed, 1))
+	samples := make([]Sample, 0, n)
+	for i := 0; i < n; i++ {
+		length := minLen + textRng.IntN(maxLen-minLen+1)
+		rs := make([]rune, length)
+		for j := range rs {
+			rs[j] = alphabet[textRng.IntN(len(alphabet))]
+		}
+		oi := o
+		oi.Seed = seed + uint64(i)
+		img, boxes, err := Render(string(rs), f, oi)
+		if err != nil {
+			return nil, err
+		}
+		samples = append(samples, Sample{Text: string(rs), Image: img, Boxes: boxes})
+	}
+	return samples, nil
+}
+
+func validateOptions(o Options) error {
+	if !(o.Background >= 0 && o.Background <= 0.5) {
+		return errors.New("glyphs: Background outside finite [0, 0.5]")
+	}
+	if !(o.Noise >= 0 && o.Noise <= 0.5) {
+		return errors.New("glyphs: Noise outside finite [0, 0.5]")
+	}
+	return nil
+}
+
+// UnseenCombinations returns the samples of candidates whose text does not appear in seen.
+func UnseenCombinations(seen, candidates []Sample) []Sample {
+	seenTexts := make(map[string]bool, len(seen))
+	for _, s := range seen {
+		seenTexts[s.Text] = true
+	}
+	out := make([]Sample, 0, len(candidates))
+	for _, c := range candidates {
+		if !seenTexts[c.Text] {
+			out = append(out, c)
+		}
+	}
+	return out
+}
+
+FILE tasks/ocr/glyphs/glyphs.go
+// Package glyphs renders deterministic pseudo-font fixtures for OCR tasks: a
+// Family turns each rune into a fixed 8x8 bitmap drawn from a seeded random
+// generator, with no font files anywhere. Render places the bitmaps on a
+// grayscale raster with optional noise and inversion, and Generate builds
+// labeled samples for training and evaluation.
+//
+// The bitmaps are fixtures, not characters: they exist to exercise the
+// pipeline and to support the ticket's train/test split of one family per
+// split. Nothing here claims to recognize or reproduce real glyphs.
+package glyphs
+
+import (
+	"math/rand/v2"
+)
+
+// Family is a deterministic pseudo-font: every rune renders to an 8x8 bitmap drawn from rand.NewPCG(Seed, uint64(r)).
+// Shapes are stable per (Seed, rune), differ between families and carry no font file. The bitmaps do not look like the
+// characters; they are fixtures that prove the pipeline, and the ticket's train/test split is "one family per split".
+type Family struct {
+	Seed uint64 `json:"seed"`
+}
+
+// Glyph returns the 8x8 bitmap (row-major, 1 = ink) of r. It is rejection-sampled until the ink count is in [12, 40], so
+// no glyph is empty or full; each pixel is ink with probability 0.4 before rejection.
+func (f Family) Glyph(r rune) [8][8]uint8 {
+	rng := rand.New(rand.NewPCG(f.Seed, uint64(r)))
+	for {
+		var g [8][8]uint8
+		ink := 0
+		for y := range g {
+			for x := range g[y] {
+				if rng.Float64() < 0.4 {
+					g[y][x] = 1
+					ink++
+				}
+			}
+		}
+		if ink >= 12 && ink <= 40 {
+			return g
+		}
+	}
+}
+
+// Image is a grayscale raster in [0, 1], row-major, 1 = ink.
+type Image struct {
+	Width  int       `json:"width"`
+	Height int       `json:"height"`
+	Pixels []float64 `json:"pixels"`
+}
+
+// Box is the horizontal span of one rune in a rendered line, inclusive-exclusive.
+type Box struct {
+	Rune rune `json:"rune"`
+	X0   int  `json:"x0"`
+	X1   int  `json:"x1"`
+}
+
+// Options controls the rendering: Background in [0, 0.5] is the value of non-ink pixels, Noise in [0, 0.5] is the amplitude of
+// uniform noise added to every pixel from rand.NewPCG(Seed, 0) then clamped to [0, 1], Invert swaps ink and background.
+type Options struct {
+	Background float64 `json:"background"`
+	Noise      float64 `json:"noise"`
+	Seed       uint64  `json:"seed"`
+	Invert     bool    `json:"invert"`
+}
+
+// Sample is one rendered line with its label.
+type Sample struct {
+	Text  string `json:"text"`
+	Image Image  `json:"image"`
+	Boxes []Box  `json:"boxes"`
+}

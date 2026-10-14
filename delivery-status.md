@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 95](docs/tickets/95-ocr-generate-representability.md) 完成 4／5。OCR 不可表示的樣本／字長宣告已在訓練前回傳錯誤，原始 11 個失敗事件與修正後 46 個回歸事件有實跑證據。28 組正常完整 JSON 及三種舊 OCR 模式的新程序載入、辨識與下一次參數更新相同。完整一般／race 各 58 套件通過，5,681／5,680 pass，22／23 skip，沒有 fail，build、vet、固定相依性、公開 API 文件及 CLI 接續通過，見[驗收](evidence/TSK-01/glyph-contract-20261014/verification.json)。最後 11 項治理通過，1,225,230,613 bytes 本輪暫存已清除，原有目錄保留，見[清理](evidence/TSK-01/glyph-contract-20261014/cleanup.json)。提交、推送及遠端讀回待驗收。ticket 89 的相容性決策 pending，反相字距語意尚待釐清，最新 90 項 passed、1 項 failed（MOD-04），沒有整體零 bug 或真實辨識率提升結論。
+
 [ticket 94](docs/tickets/94-native-mean-representability.md) 已完成 5／5。有限平均與量測總和發布缺陷已修正，13 個永久回歸事件及 LIF 補驗一般／race 各 3 個事件通過。16 組正常模型的全部 Go JSON 位元組與舊狀態新程序接續相同。完整一般／race 各 58 套件、其餘工程、CLI 接續及最後 11 項治理通過。1,211,375,287 bytes 本輪暫存已清除，原有目錄保留。修正 37cca36 與回歸／證據 ea5d0ec 已推送並讀回一致，802 份提交來源相符，見[驗收](evidence/NAT-01/native-mean-20261014/verification.json)與[交付](evidence/NAT-01/native-mean-20261014/delivery.json)。NAT-01 恢復 passed，最新 90 項 passed、1 項 failed（MOD-04）。ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。
 
 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 已完成 5／5。68 個舊來源失敗事件、97 個修正後通過事件，20 組合法配置在舊／新來源與新程序重跑完全相同。完整一般／race 各 58 套件、其餘工程、CLI 新程序保存接續與最後 11 項治理通過。NAT-06 恢復 passed，1,203,188,028 bytes 本輪暫存已清除，原有目錄保留。修正 7240ad3 與回歸／證據 d5a1a51 已推送並讀回一致，801 份提交來源相符，見[驗收](evidence/NAT-06/native-plastic-norm-20261014/verification.json)與[交付](evidence/NAT-06/native-plastic-norm-20261014/delivery.json)。另確認 NAT-01 合法平均值被錯誤拒絕，接續由 [ticket 94](docs/tickets/94-native-mean-representability.md) 修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-01）。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。

@@ -1,0 +1,25 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "evidence/TSK-01/glyph-contract-20261014/reference-red-overlay.json",
+    "-json",
+    "-count=1",
+    "./tasks/ocr/...",
+    "-run",
+    "^(TestGenerateRejectsUnrepresentableStorage|TestGenerateCapacityControls|TestFixtureRejectsUnrepresentableStorageBeforeTraining|TestGenerateDimensionsIndependentByteReference)$"
+  ],
+  "exit_code": 1,
+  "expected_exit_code": 1,
+  "started_at": "2026-10-14T08:10:21.030321+00:00",
+  "duration_seconds": 3.233846,
+  "log": "reference-red.log",
+  "log_sha256": "c8101ee9bbcb280fd253a29cdc2286923dbe5ec9759f6d9f2e09f7cb3a306fa6",
+  "source_manifest": "source-final.json",
+  "source_manifest_sha256": "22ee19aab98cafb8c385b400be12eee2cf6a287fbc1ec08b2496ed6db570ad84",
+  "test_pass_events": 20,
+  "test_fail_events": 26,
+  "test_skip_events": 0,
+  "package_pass_events": 1
+}

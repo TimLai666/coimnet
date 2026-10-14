@@ -1,0 +1,21 @@
+package glyphs // import "github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+
+Package glyphs renders deterministic pseudo-font fixtures for OCR tasks:
+a Family turns each rune into a fixed 8x8 bitmap drawn from a seeded random
+generator, with no font files anywhere. Render places the bitmaps on a grayscale
+raster with optional noise and inversion, and Generate builds labeled samples
+for training and evaluation.
+
+The bitmaps are fixtures, not characters: they exist to exercise the pipeline
+and to support the ticket's train/test split of one family per split. Nothing
+here claims to recognize or reproduce real glyphs.
+
+func Render(text string, f Family, o Options) (Image, []Box, error)
+func ValidateGenerateDimensions(n, minLen, maxLen int) error
+type Box struct{ ... }
+type Family struct{ ... }
+type Image struct{ ... }
+type Options struct{ ... }
+type Sample struct{ ... }
+    func Generate(alphabet []rune, n, minLen, maxLen int, f Family, o Options, seed uint64) ([]Sample, error)
+    func UnseenCombinations(seen, candidates []Sample) []Sample

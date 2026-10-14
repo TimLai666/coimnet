@@ -1,0 +1,45 @@
+from pathlib import Path
+import json,gzip,hashlib,collections
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/TSK-01/glyph-contract-20261014'
+def sha(raw):return hashlib.sha256(raw).hexdigest()
+def read(n):return json.loads((e/n).read_text())
+commands=['format','module-verify','build','unit','race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality','public-api-doc','public-package-doc']
+for name in commands:
+ rec=read(name+'.json');assert rec['exit_code']==0,name;assert sha((e/rec['log']).read_bytes())==rec['log_sha256'],name
+ assert sha((e/rec['source_manifest']).read_bytes())==rec['source_manifest_sha256'],name
+for name in ['red','reference-red','green','green-final','green-current']:
+ rec=read(name+'.json');assert rec['exit_code']==rec['expected_exit_code'],name;assert sha((e/rec['log']).read_bytes())==rec['log_sha256'],name;assert sha((e/rec['source_manifest']).read_bytes())==rec['source_manifest_sha256'],name
+source=read('source-final.json');tests=read('tests-frozen-v2.json')
+for p,h in source.items():assert sha((r/p).read_bytes())==h,p
+for p,h in tests.items():assert source[p]==h,p
+assert len(source)==804 and len(tests)==468
+assert source['modulation/effects.go']=='8cfaa586fd6ad6b85b2adb16604c93b6850a1b67a2a82cd51ad5f96b816ae7b7'
+red=read('red.json');green=read('green-current.json');compat=read('compatibility-v3.json')
+assert red['test_fail_events']==11 and read('reference-red.json')['test_fail_events']==26
+assert green['exit_code']==0 and green['test_pass_events']==46 and green['test_fail_events']==0
+assert compat['normal_case_count']==28 and compat['normal_full_json_bytes_equal'] and compat['old_serialized_checkpoints_new_process_restore_cases']==3 and compat['full_snapshot_inference_next_training_json_bytes_equal']
+for name in ['legacy-samples','current-samples','legacy-model-save','current-model-load','legacy-model-load','public-api-doc']:
+ rec=read('compat-v3-'+name+'.json');assert rec['exit_code']==0;assert sha((e/rec['log']).read_bytes())==rec['log_sha256'];assert sha((e/rec['program']).read_bytes())==rec['program_sha256']
+ assert sha((e/rec['source_manifest']).read_bytes())==rec['source_manifest_sha256']
+for p,h in compat['checkpoint_files'].items():assert sha((e/'legacy-ocr-checkpoints'/p).read_bytes())==h,p
+summaries={}
+for name in ['unit','race']:
+ rec=read(name+'.json');events=[json.loads(l) for l in (e/rec['log']).read_text().splitlines() if l.startswith('{')]
+ result={'test_events':dict(collections.Counter(x['Action'] for x in events if 'Test' in x and x.get('Action') in ['pass','fail','skip'])),'package_pass_count':sum(x.get('Action')=='pass' and 'Test' not in x for x in events),'skipped_tests':[{'package':x['Package'],'test':x['Test']} for x in events if 'Test' in x and x.get('Action')=='skip']}
+ assert result['package_pass_count']==58 and result['test_events'].get('fail',0)==0
+ with (e/(name+'-summary.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ summaries[name]=result
+archives=[]
+for p in list(e.glob('*.log')):
+ raw=p.read_bytes()
+ if len(raw)<=200000:continue
+ dest=p.with_name(p.name+'.gz');assert not dest.exists();dest.write_bytes(gzip.compress(raw,mtime=0));assert gzip.decompress(dest.read_bytes())==raw
+ entry={'raw_path':p.name,'archive':dest.name,'raw_sha256':sha(raw),'archive_sha256':sha(dest.read_bytes()),'raw_bytes':len(raw),'archive_bytes':dest.stat().st_size};archives.append(entry)
+ receipt=e/(p.stem+'.json')
+ if receipt.exists():
+  before=receipt.read_bytes();x=json.loads(before);assert x['log']==p.name and x['log_sha256']==entry['raw_sha256'];x.update(log=dest.name,log_compression='gzip',compressed_log_sha256=entry['archive_sha256']);assert receipt.read_bytes()==before;receipt.write_text(json.dumps(x,indent=2)+'\n')
+ assert p.read_bytes()==raw;p.unlink()
+with (e/'archive-terminal.json').open('x') as f:json.dump(archives,f,indent=2);f.write('\n')
+verification={'requirement':['TSK-01'],'engineering_passed':True,'acceptance_complete':False,'reproduction_command':'run-go.py.txt and engineering.py.txt; compatibility-v3.py.txt for old-source complete-JSON comparison and real serialized OCR checkpoint recovery','environment':read('engineering-environment.json'),'input_fingerprints':{'source_manifest':'source-final.json','source_manifest_sha256':sha((e/'source-final.json').read_bytes()),'frozen_tests':'tests-frozen-v2.json','frozen_tests_sha256':sha((e/'tests-frozen-v2.json').read_bytes()),'frozen_test_count':len(tests),'baseline_overlay_proof':'baseline-overlay-proof.json','compatibility_program':'compatibility-v2.go.txt','fixture':'artificial seeded 8-row glyphs; no new real task or whole-brain run'},'observed_result':{'int_unrepresentable_declarations_rejected_before_sampling_and_fixture_training':True,'original_source_regression_fail_events':red['test_fail_events'],'proposed_validator_skeleton_fail_events':26,'final_regression_pass_events':green['test_pass_events'],'regression_fail_events':green['test_fail_events'],'normal_case_count':28,'old_fixed_original_go_json_bytes_equal':True,'actual_old_serialized_ocr_models_new_process_restore_and_next_training_cases':3,'excluded_compatibility_fields':[],'source_count':len(source),'normal_test_summary':summaries['unit'],'race_test_summary':summaries['race'],'cli_new_process_resume_bytes_equal':True,'gain_policy_ticket89':'pending; formal source unchanged','final_governance':'pending','own_cleanup':'pending','delivery':'pending'},'engineering_receipts':[x+'.json' for x in commands],'regression_receipts':['red.json','reference-red.json','green-current.json'],'normal_and_serialized_compatibility':'compatibility-v3.json','root_review':'root-review.md','test_log':[read(n+'.json')['log'] for n in ['red','reference-red','green-current','unit','race','compat-v3-legacy-samples','compat-v3-current-samples','compat-v3-legacy-model-save','compat-v3-current-model-load']],'limitation':'Arithmetic int representability only, not runtime maxAlloc or physical RAM. No zero-bug, real accuracy improvement, new whole-brain, GPU or biological validation conclusion. Inversion spacing semantics remain unresolved.'}
+with (e/'verification.json').open('x') as f:json.dump(verification,f,indent=2);f.write('\n')
+print('ENGINEERING_ACCEPTANCE_RECORDED',{n:{'packages':v['package_pass_count'],'events':v['test_events']} for n,v in summaries.items()})

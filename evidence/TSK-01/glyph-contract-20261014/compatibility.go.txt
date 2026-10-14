@@ -1,0 +1,46 @@
+package main
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "os"
+ "path/filepath"
+ "github.com/TimLai666/coimnet/tasks/ocr"
+ "github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+func must(err error) { if err != nil { panic(err) } }
+func emit(v any) { must(json.NewEncoder(os.Stdout).Encode(v)) }
+func samples() {
+ count:=0
+ for _,text:=range []string{"ab","あb",""} { for _,family:=range []uint64{1,23} { for _,opt:=range []glyphs.Options{{},{Background:.25,Noise:.1},{Background:.25,Noise:.1,Invert:true}} {
+  img,boxes,err:=glyphs.Render(text,glyphs.Family{Seed:family},opt); msg:=""; if err!=nil {msg=err.Error()}
+  emit(map[string]any{"kind":"render","text":text,"family":family,"options":opt,"image":img,"boxes":boxes,"error":msg});count++
+ } } }
+ maxInt:=int(^uint(0)>>1)
+ for _,c:=range []struct{N,Min,Max int; Seed uint64; Opt glyphs.Options}{{3,1,3,17,glyphs.Options{}},{3,1,3,17,glyphs.Options{Background:.25,Noise:.1}},{3,1,3,17,glyphs.Options{Background:.25,Noise:.1,Invert:true}},{2,2,2,99,glyphs.Options{}},{0,1,3,17,glyphs.Options{}},{0,0,maxInt,17,glyphs.Options{}},{0,maxInt,maxInt,17,glyphs.Options{}},{1,0,0,17,glyphs.Options{}}} {
+  got,err:=glyphs.Generate([]rune{'a','あ','b'},glyphs.Family{Seed:23},c.Seed,c.N,c.Min,c.Max,c.Opt);msg:="";if err!=nil {msg=err.Error()}
+  emit(map[string]any{"kind":"generate","config":c,"samples":got,"error":msg});count++
+ }
+ for _,seed:=range []uint64{1,17} {
+  report,err:=ocr.RunOCRFixture(context.Background(),ocr.FixtureConfig{Seeds:[]uint64{seed},Alphabet:[]rune{'a','b'},TrainSamples:4,TestSamples:3,MinLen:1,MaxLen:2,Epochs:1,Hidden:6,LearningRate:.02,TrainFamily:1,TestFamily:2,Background:.1,Noise:.05});must(err)
+  emit(map[string]any{"kind":"fixture","report":report});count++
+ }
+ emit(map[string]any{"case_count":count})
+}
+func models(mode,dir string) {
+ ctx:=context.Background()
+ for _,profile:=range []string{"","aligned-columns","single-character"} {
+  text:="ab"; width:=0;if profile=="single-character" {text="a";width=8}
+  img,_,err:=glyphs.Render(text,glyphs.Family{Seed:23},glyphs.Options{Background:.1});must(err)
+  path:=filepath.Join(dir,"model-"+profile)
+  var model *ocr.Recognizer
+  if mode=="save" {
+   model,err=ocr.NewRecognizer(ocr.RecognizerConfig{Height:8,Hidden:6,Alphabet:[]rune{'a','b'},LearningRate:.02,Seed:17,InputProfile:profile,CharacterWidth:width});must(err)
+   for i:=0;i<3;i++ { _,err=model.TrainLine(ctx,img,text);must(err) };must(model.Save(ctx,path))
+  } else { model,err=ocr.LoadRecognizer(ctx,path);must(err); if model.LoadedCheckpointSHA256()=="" {panic("missing verified loaded checkpoint fingerprint")} }
+  before:=model.Snapshot(); inference,err:=model.Infer(ctx,img);must(err)
+  train,err:=model.TrainLine(ctx,img,text);must(err); after:=model.Snapshot();next,err:=model.Infer(ctx,img);must(err)
+  emit(map[string]any{"profile":profile,"config":model.Config(),"inference":inference,"before":before,"train":train,"after":after,"next_inference":next})
+ }
+}
+func main(){if len(os.Args)<2 {panic("mode required")};switch os.Args[1] {case "samples":samples();case "save","load":if len(os.Args)!=3 {panic("checkpoint directory required")};models(os.Args[1],os.Args[2]);default:panic(fmt.Sprintf("unknown mode %q",os.Args[1]))}}

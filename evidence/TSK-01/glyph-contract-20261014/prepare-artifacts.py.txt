@@ -1,0 +1,19 @@
+from pathlib import Path
+import json,hashlib,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/TSK-01/glyph-contract-20261014';base='25fbc2960cb1aaee3af2ad2182f137af78ff45af'
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines())
+paths.update(str((e/n).relative_to(r)) for n in ['changed-files.md','artifact-index.json'])
+specific={'tasks/ocr/glyphs/render.go':'新增共用樣本／影像 int 位元組驗證，保留正常渲染與亂數。','tasks/ocr/fixture.go':'在訓練之前拒絕同一類不可表示宣告。','tasks/ocr/glyphs/generate_capacity_test.go':'公開拒絕、正常／空集合及獨立大整數參考回歸。','tasks/ocr/fixture_capacity_test.go':'驗證 fixture 拒絕前不建立報告且保留呼叫者設定。','ENG.md':'記錄共用尺寸契約與記憶體限制。','README.md':'同步目前狀態與 OCR 修正證據。','delivery-status.md':'記錄本票驗收、清理、交付與待決策事項。','docs/requirements-status.json':'補 TSK-01 的實際回歸及完整驗收證據。','docs/tickets/95-ocr-generate-representability.md':'記錄五項驗收與證據。'}
+lines=['# 本輪實際變更檔案','','| 檔案 | 變更摘要 |','| --- | --- |']
+for name in sorted(paths):
+ description=specific.get(name,'保存本輪命令、來源指紋、觀察、審查、清理或交付證據。')
+ lines.append('| ['+name+']('+str(r/name)+') | '+description+' |')
+for name,content in [('changed-files.md','\n'.join(lines)+'\n')]:
+ target=e/name
+ if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+ target.write_text(content)
+index={str(p.relative_to(e)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted(e.rglob('*')) if p.is_file() and p.name!='artifact-index.json'}
+target=e/'artifact-index.json'
+if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+target.write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_files':len(paths),'indexed_artifacts':len(index)}))

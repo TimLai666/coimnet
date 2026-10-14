@@ -1,0 +1,306 @@
+{
+  "requirement": [
+    "TSK-01"
+  ],
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "reproduction_command": "run-go.py.txt and engineering.py.txt; compatibility-v3.py.txt for old-source complete-JSON comparison and real serialized OCR checkpoint recovery",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/glyph-contract-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/glyph-contract-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/glyph-contract-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/glyph-contract-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-final.json",
+    "source_manifest_sha256": "9217c926d1edb59900c0101cbaccffc8c22662de42532a545c761d51382f6622",
+    "frozen_tests": "tests-frozen-v2.json",
+    "frozen_tests_sha256": "9e1ef8c69d2ba3a3993212f3eff559c1ef90453cd7f87d2f1acab4d8cbe0cfc5",
+    "frozen_test_count": 468,
+    "baseline_overlay_proof": "baseline-overlay-proof.json",
+    "compatibility_program": "compatibility-v2.go.txt",
+    "fixture": "artificial seeded 8-row glyphs; no new real task or whole-brain run"
+  },
+  "observed_result": {
+    "int_unrepresentable_declarations_rejected_before_sampling_and_fixture_training": true,
+    "original_source_regression_fail_events": 11,
+    "proposed_validator_skeleton_fail_events": 26,
+    "final_regression_pass_events": 46,
+    "regression_fail_events": 0,
+    "normal_case_count": 28,
+    "old_fixed_original_go_json_bytes_equal": true,
+    "actual_old_serialized_ocr_models_new_process_restore_and_next_training_cases": 3,
+    "excluded_compatibility_fields": [],
+    "source_count": 804,
+    "normal_test_summary": {
+      "test_events": {
+        "pass": 5681,
+        "skip": 22
+      },
+      "package_pass_count": 58,
+      "skipped_tests": [
+        {
+          "package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "test": "TestDeviceAdamWChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "test": "TestRealMediaModelChildLoad"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realnav",
+          "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestAttributionEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphResumeEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "test": "TestMultimodalEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestMultiTaskEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestNav2DSuiteEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGradientEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOHorizonEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOShortGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOTrainingFeedbackEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestGPUDeviceTrainerChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestRecomputeRSSHelper"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/image"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/audio"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "test": "TestReadTitovaSourceWhenConfigured"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestRolesEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "test": "TestTextgenEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestVideoEvidence"
+        }
+      ]
+    },
+    "race_test_summary": {
+      "test_events": {
+        "pass": 5680,
+        "skip": 23
+      },
+      "package_pass_count": 58,
+      "skipped_tests": [
+        {
+          "package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "test": "TestDeviceAdamWChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/checkpoint",
+          "test": "TestBundleLargerThanSingleFileLimit"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realnav",
+          "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "test": "TestRealMediaModelChildLoad"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestAttributionEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphResumeEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "test": "TestMultimodalEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestMultiTaskEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestNav2DSuiteEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGradientEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOHorizonEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOShortGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOTrainingFeedbackEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestGPUDeviceTrainerChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestRecomputeRSSHelper"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/image"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/audio"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestRolesEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "test": "TestReadTitovaSourceWhenConfigured"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "test": "TestTextgenEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestVideoEvidence"
+        }
+      ]
+    },
+    "cli_new_process_resume_bytes_equal": true,
+    "gain_policy_ticket89": "pending; formal source unchanged",
+    "final_governance": {
+      "top_level_pass": 11,
+      "test_pass_events": 31,
+      "test_fail_events": 0,
+      "receipt": "governance.json"
+    },
+    "own_cleanup": {
+      "complete": true,
+      "receipt": "cleanup.json",
+      "removed_bytes": 1225230613
+    },
+    "delivery": "pending"
+  },
+  "engineering_receipts": [
+    "format.json",
+    "module-verify.json",
+    "build.json",
+    "unit.json",
+    "race.json",
+    "vet.json",
+    "module-list.json",
+    "target-flow.json",
+    "cli-build.json",
+    "cli-doctor.json",
+    "cli-data-sources.json",
+    "cli-delayed.json",
+    "cli-lif-threshold.json",
+    "cli-train-first.json",
+    "cli-train-resumed.json",
+    "cli-train-continuous.json",
+    "cli-resume-equality.json",
+    "public-api-doc.json",
+    "public-package-doc.json"
+  ],
+  "regression_receipts": [
+    "red.json",
+    "reference-red.json",
+    "green-current.json"
+  ],
+  "normal_and_serialized_compatibility": "compatibility-v3.json",
+  "root_review": "root-review.md",
+  "test_log": [
+    "red.log",
+    "reference-red.log",
+    "green-current.log",
+    "unit.log.gz",
+    "race.log.gz",
+    "compat-v3-legacy-samples.log",
+    "compat-v3-current-samples.log",
+    "compat-v3-legacy-model-save.log",
+    "compat-v3-current-model-load.log",
+    "governance.log"
+  ],
+  "limitation": "Arithmetic int representability only, not runtime maxAlloc or physical RAM. No zero-bug, real accuracy improvement, new whole-brain, GPU or biological validation conclusion. Inversion spacing semantics remain unresolved."
+}
