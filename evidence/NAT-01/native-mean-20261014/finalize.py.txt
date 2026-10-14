@@ -1,0 +1,44 @@
+from pathlib import Path
+import json,gzip,hashlib,collections
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/NAT-01/native-mean-20261014'
+def sha(raw):return hashlib.sha256(raw).hexdigest()
+def read(n):return json.loads((e/n).read_text())
+commands=['format','module-verify','build','unit','race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality']
+for name in commands:
+ rec=read(name+'.json');assert rec['exit_code']==0,name
+ assert sha((e/rec['log']).read_bytes())==rec['log_sha256'],name
+source=read('source-final.json');tests=read('tests-frozen-v2.json')
+for p,h in source.items():assert sha((r/p).read_bytes())==h,p
+for p,h in tests.items():assert source[p]==h,p
+assert len(source)==802 and len(tests)==466
+assert source['modulation/effects.go']=='8cfaa586fd6ad6b85b2adb16604c93b6850a1b67a2a82cd51ad5f96b816ae7b7'
+red=read('red-v2.json');green=read('green.json');compat=read('compatibility-comparison.json');resume=read('serialized-resume.json')
+assert red['exit_code']==1 and red['test_fail_events']==8
+assert green['exit_code']==0 and green['test_pass_events']==13 and green['test_fail_events']==0
+assert compat['case_count']==16 and compat['all_fields_equal'] and compat['serialized_case_bytes_equal']
+for name in ['lif-range-fixed','lif-range-race']:
+ rec=read(name+'.json');assert rec['exit_code']==0 and rec['test_pass_events']==3
+assert read('lif-range-old.json')['test_fail_events']==3
+assert resume['exit_code']==0 and resume['test_pass_events']==1
+assert 'SERIALIZED_RESUME_CASES 16' in (e/resume['log']).read_text()
+summaries={}
+for name in ['unit','race']:
+ rec=read(name+'.json');events=[json.loads(l) for l in (e/rec['log']).read_text().splitlines() if l.startswith('{')]
+ result={'test_events':dict(collections.Counter(x['Action'] for x in events if 'Test' in x and x.get('Action') in ['pass','fail','skip'])),'package_pass_count':sum(x.get('Action')=='pass' and 'Test' not in x for x in events),'skipped_tests':[{'package':x['Package'],'test':x['Test']} for x in events if 'Test' in x and x.get('Action')=='skip']}
+ assert result['package_pass_count']==58 and result['test_events'].get('fail',0)==0
+ with (e/(name+'-summary.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ summaries[name]=result
+archives=[]
+for p in list(e.glob('*.log')):
+ raw=p.read_bytes()
+ if len(raw)<=200000:continue
+ dest=p.with_name(p.name+'.gz');assert not dest.exists();dest.write_bytes(gzip.compress(raw,mtime=0));assert gzip.decompress(dest.read_bytes())==raw
+ entry={'raw_path':p.name,'archive':dest.name,'raw_sha256':sha(raw),'archive_sha256':sha(dest.read_bytes()),'raw_bytes':len(raw),'archive_bytes':dest.stat().st_size};archives.append(entry)
+ receipt=e/(p.stem+'.json')
+ if receipt.exists():
+  before=receipt.read_bytes();x=json.loads(before);assert x['log']==p.name and x['log_sha256']==entry['raw_sha256'];x.update(log=dest.name,log_compression='gzip',compressed_log_sha256=entry['archive_sha256']);assert receipt.read_bytes()==before;receipt.write_text(json.dumps(x,indent=2)+'\n')
+ assert p.read_bytes()==raw;p.unlink()
+with (e/'archive-terminal.json').open('x') as f:json.dump(archives,f,indent=2);f.write('\n')
+verification={'requirement':['NAT-01'],'engineering_passed':True,'acceptance_complete':False,'reproduction_command':'run-go.py.txt; engineering.py.txt; immutable original and fixed command receipts','environment':read('engineering-environment.json'),'input_fingerprint':{'source_manifest':'source-final.json','source_manifest_sha256':sha((e/'source-final.json').read_bytes()),'frozen_tests':'tests-frozen-v2.json','frozen_tests_sha256':sha((e/'tests-frozen-v2.json').read_bytes()),'frozen_test_count':len(tests),'compatibility_audit':'compatibility-audit.go.txt','fixture':'artificial three-node two-edge native CPU graph; no new real task or whole-brain run'},'observed_result':{'native_finite_mean_fixed':True,'unencodable_tracked_sum_rejected_before_commit':True,'original_source_regression_fail_events':red['test_fail_events'],'final_regression_pass_events':green['test_pass_events'],'regression_fail_events':green['test_fail_events'],'legal_models_per_phase':compat['case_count'],'old_fixed_all_fields_equal':compat['all_fields_equal'],'old_fixed_original_go_json_bytes_equal':True,'lif_public_range_general_and_race_pass_events':3,'actual_old_serialized_state_new_process_resume_equal':True,'excluded_compatibility_fields':[],'source_count':len(source),'normal_test_summary':summaries['unit'],'race_test_summary':summaries['race'],'cli_new_process_resume_bytes_equal':True,'gain_policy_ticket89':'pending; formal source unchanged','final_governance':'pending','own_cleanup':'pending','delivery':'pending'},'engineering_receipts':[x+'.json' for x in commands],'regression_receipts':['red-v2.json','green.json','lif-range-old.json','lif-range-fixed.json','lif-range-race.json'],'normal_compatibility':'compatibility-comparison.json','serialized_resume':'serialized-resume.json','root_review':'root-review.md','test_log':[read(n+'.json')['log'] for n in ['red-v2','green','normal-old-v2','normal-fixed','serialized-resume','unit','race','tracked-sum-observed','lif-range-old','lif-range-fixed','lif-range-race']],'limitation':'No zero-bug, real task accuracy improvement, new whole-brain, GPU, biological validation or globally correctly rounded ordinary reduction conclusion.'}
+with (e/'verification.json').open('x') as f:json.dump(verification,f,indent=2);f.write('\n')
+print('ENGINEERING_ACCEPTANCE_RECORDED', {n:{'packages':v['package_pass_count'],'events':v['test_events']} for n,v in summaries.items()})

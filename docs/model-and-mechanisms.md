@@ -66,6 +66,8 @@ Shiu 等人的全腦 LIF 模型，已能在味覺與理毛等研究情境產生�
 | 人工調節與有證據支持的生物調節 | 已有 CPU 實作（fixture，兩種假說協定） | 人工設定使用功能名稱。生物設定附來源、單位、接收端與未知欄位，不能只改名冒充荷爾蒙。目前落地的是兩個登錄過來源的假說協定（`experiment.RunBioInspired`）：`ecdysone_inspired`（登錄 S14，在同一個學習 episode 內移動 `ExternalTimeline` 脈衝的時機，量測慢速層 L2 幅度與重測分數隨時機變化的曲線）與 `npf_memory_expression_hypothesis`（登錄 S15，受體驅動的讀出增益抑制後再切回中性重評，分數下降又回到與抑制前逐位相同，而 `Parameters`、`slow`、`plastic` 三層逐位不變，所以是表現不是遺忘）。**協定名稱只有這兩個**：要標成 `ecdysone`／`npf` 定量模型必須 `QuantitativeEvidence` 的 Method、Data、Fit、HeldOutIntervention 四項齊全，缺項回 `ErrQuantitativeNaming`，四項補齊也只是通過驗證而不會跑出數字（定量協定未實作）；報告的 `assumptions` 明寫這些是允許假設名稱下的工程數值，不是定量生物重現。見 [ticket 26](tickets/26-continual-matrix-imitation-ppo-and-bio-inspired-protocols.md) 與 `evidence/MOD-09/`。 |
 | 更細的形態、電突觸、離子通道等模型 | 未納入已實作能力，未承諾全部納入 | 先確認研究用途與可用資料，再決定是否值得新增獨立實驗機制。 |
 
+原生探針可讀取合法有限輸出的平均值，即使直接加總會溢位。具名集合量測保留原始總和，真正無法表示時回錯且不提交神經、快速狀態及最近成功量測，正常結果與模型格式保持，見 [ticket 94](tickets/94-native-mean-representability.md)。這項工程修正沒有驗證真實任務品質提升。
+
 使用者選取規則與可選機制後，框架應先驗證資料、參數、裝置能力與資源，再建立可訓練狀態。執行報告和快照保存同一組機制版本。關閉機制應還原參考行為，而缺少生物資料須保持未知，或由使用者明確選用有記錄的工程假設。
 
 不支援的模式、未知版本、缺少必要欄位與超出容量都應在開始更新前返回錯誤。中途取消或數值錯誤不能留下半次更新，重新載入時也必須核對機制狀態與版本。這些行為依原有核心、可塑性、調節及保存需求驗收，尚未完成的項目不因寫入文件而判定通過。

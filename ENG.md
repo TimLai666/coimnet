@@ -261,3 +261,5 @@ Online UpdateReport.GradientSteps 只計 StepResult.Applied 的套用次數，�
 混合更新按 action／source 保存梯度階段已完成的事實，涵蓋沒有 target、合法間隔 skip、部分累積及已套用更新。塑性階段失敗後只重試塑性，成功前半保留；梯度失敗不標為完成。整筆回饋成功後移除私人階段記錄，與既有 pending 佇列同生命週期，不新增公開 API 或快照格式。now 倒退時也須保留各筆尚未完成的階段，驗收由[ticket 85](docs/tickets/85-online-mixed-phase-retry.md)管理。
 
 原生可塑性幅度報告保留可靠正常範圍的索引順序位元。中間平方溢位或有實質下溢誤差時才使用縮放與補償加總；接近 float64 上界時，以標準函式庫高精度平方和判定 nearest-even 捨入上限，避免再次雙重捨入。真正不能編碼的幅度仍由 Run 在提交神經與快速狀態前拒絕。合法塑性上限、學習算式、報告結構及模型格式保持。驗收由 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 管理。
+
+原生探針的平均輸出在既有加總為有限值時保留索引順序與除法位元。中間加總溢位時才先縮放，再以補償加總計算平均，並維持平均值落在所選有限輸出的上下界。真正不能表示的 sum_output 沿用拒絕。集合量測的 OutputSum 與 MetricResult.Numerator 保留原始總和，Run 在提交神經、快速狀態及最近成功量測前檢查其有限性。模型格式、核心動態及學習算式保持，驗收由 [ticket 94](docs/tickets/94-native-mean-representability.md) 管理。

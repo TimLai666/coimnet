@@ -1,0 +1,161 @@
+You are the dispatched worker. Do not delegate to any agent or CLI.
+Role: rigorous public-source numerical contract reviewer; classify only evidence-backed findings.
+Files: no local file reads or writes allowed. Use only the public snippets provided below. Return JSON/text on stdout.
+Task/acceptance: analyze mean-output intermediate overflow versus real sum overflow; tracked OutputSum publication and required raw Numerator semantics; propose minimal finite-report guards preserving index-order ordinary bits, schema and atomic Run refusal. Separate confirmed arithmetic from unexecuted public-runtime hypotheses. Do not modify tests. No gain-policy or general precision redesign.
+Verification: reason from the supplied exact published Go code; no local tools, Go, networking, services or Git operations.
+Report: findings with file/line/trigger/evidence; missing evidence and independently checkable counterexamples; no zero-bug claim.
+Do not commit, stash or reset, and do not execute any Git write command.
+Public repository visibility was verified through GitHub: isPrivate=false, TimLai666/coimnet. The exact commit was also read back on the remote before dispatch. Only the already published snippets below are sent; no uncommitted source, private dataset, credentials or local instructions are included.
+simulate/runner.go (published commit abcd2f2bf73d8fba679cc8de03643a5757c1d41a)
+func (r *Runner) Measurements() Measurements {
+	return Measurements{Windows: append([]WindowMeasurement(nil), r.measurements.Windows...)}
+}
+
+// tracker holds the counters of one Run while it is in progress.
+type tracker struct {
+	counts [][][]uint32
+	first  [][]int
+	sums   [][]float64
+}
+
+func (r *Runner) newTracker(steps int) (*tracker, error) {
+	if len(r.tracked) == 0 {
+		return nil, nil
+	}
+	for _, window := range r.trackWindows {
+		if window[1] > steps {
+			return nil, fmt.Errorf("simulate: tracked window %v leaves the %d steps of this run", window, steps)
+		}
+	}
+	t := &tracker{
+		counts: make([][][]uint32, len(r.tracked)),
+		first:  make([][]int, len(r.tracked)),
+		sums:   make([][]float64, len(r.tracked)),
+	}
+	for s, set := range r.tracked {
+		t.counts[s] = make([][]uint32, len(r.trackWindows))
+		t.first[s] = make([]int, len(r.trackWindows))
+		t.sums[s] = make([]float64, len(r.trackWindows))
+		for w := range r.trackWindows {
+			t.counts[s][w] = make([]uint32, len(set.nodes))
+			t.first[s][w] = -1
+		}
+	}
+	return t, nil
+}
+
+// observe records one step of one chunk. step is the absolute step index
+// inside this Run call, which is what a window range refers to.
+func (r *Runner) observe(t *tracker, step int, outputs, spikes []float64) {
+	for w, window := range r.trackWindows {
+		if step < window[0] || step >= window[1] {
+			continue
+		}
+		for s, set := range r.tracked {
+			for i, node := range set.nodes {
+				t.sums[s][w] += outputs[node]
+				if spikes == nil || spikes[node] == 0 {
+					continue
+				}
+				t.counts[s][w][i]++
+				if t.first[s][w] < 0 {
+					t.first[s][w] = step
+				}
+			}
+		}
+	}
+}
+
+// measurements turns the counters into the per set, per window records a
+// metric is evaluated from.
+func (r *Runner) trackedMeasurements(t *tracker) Measurements {
+	if t == nil {
+		return Measurements{}
+	}
+	windows := make([]WindowMeasurement, 0, len(r.tracked)*len(r.trackWindows))
+	for s, set := range r.tracked {
+		for w, window := range r.trackWindows {
+			measurement := WindowMeasurement{
+				Set: set.name, Window: window, Nodes: len(set.nodes),
+				Steps: window[1] - window[0], Spiking: r.core.spiking(),
+				FirstSpikeStep: t.first[s][w], OutputSum: t.sums[s][w],
+			}
+			for _, count := range t.counts[s][w] {
+				if count > 0 {
+					measurement.SpikedNodes++
+				}
+				measurement.Spikes += uint64(count)
+			}
+			windows = append(windows, measurement)
+		}
+	}
+	return Measurements{Windows: windows}
+
+simulate/runner.go (published commit abcd2f2bf73d8fba679cc8de03643a5757c1d41a)
+func reduce(probe resolvedProbe, outputs, spikes []float64) (float64, error) {
+	if len(probe.nodes) == 0 {
+		// An allow_empty probe reports zero rather than an undefined mean.
+		return 0, nil
+	}
+	sum := 0.0
+	switch probe.reduce {
+	case ReduceMeanOutput, ReduceSumOutput:
+		for _, node := range probe.nodes {
+			sum += outputs[node]
+		}
+	case ReduceSpikeCount, ReduceSpikeFraction:
+		if spikes == nil {
+			return 0, fmt.Errorf("simulate: probe %q needs events from a spiking core", probe.name)
+		}
+		for _, node := range probe.nodes {
+			if spikes[node] != 0 {
+				sum++
+			}
+		}
+	default:
+		return 0, fmt.Errorf("simulate: probe %q has unsupported reduction %q", probe.name, probe.reduce)
+	}
+	if probe.scaleByOne {
+		sum /= float64(len(probe.nodes))
+	}
+	if !finite(sum) {
+		return 0, fmt.Errorf("simulate: probe %q produced a non-finite value", probe.name)
+	}
+	return sum, nil
+}
+
+
+simulate/metrics.go (published commit abcd2f2bf73d8fba679cc8de03643a5757c1d41a)
+			}
+			results = append(results, result)
+			continue
+		case MetricActivityRatioVsBaseline:
+			if !window.Spiking {
+				return nil, spikingMetricError(metric)
+			}
+			baseline, known := m.lookup(metric.Set, metric.Baseline)
+			if !known {
+				return nil, fmt.Errorf("simulate: metric %q needs set %q tracked over its baseline %v, which this run did not measure", metric.Name, metric.Set, metric.Baseline)
+			}
+			result.Basis = fmt.Sprintf("mean_rate of %q in steps [%d,%d) over its mean_rate in the baseline steps [%d,%d); undefined when the baseline rate is zero",
+				metric.Set, metric.Window[0], metric.Window[1], metric.Baseline[0], metric.Baseline[1])
+			windowRate, windowKnown := rate(window)
+			baselineRate, baselineKnown := rate(baseline)
+			if !windowKnown || !baselineKnown {
+				results = append(results, result)
+				continue
+			}
+			result.Numerator, result.Denominator = windowRate, baselineRate
+		default:
+			return nil, fmt.Errorf("simulate: metric %q has unsupported kind %q", metric.Name, metric.Kind)
+		}
+		if result.Denominator != 0 {
+			result.Value, result.Defined = result.Numerator/result.Denominator, true
+			if !finite(result.Value) {
+				return nil, fmt.Errorf("simulate: metric %q produced a non-finite value", metric.Name)
+			}
+		}
+		results = append(results, result)
+	}
+	return results, nil
+}

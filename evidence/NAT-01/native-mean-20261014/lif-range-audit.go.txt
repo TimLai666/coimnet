@@ -1,0 +1,64 @@
+package simulate
+
+import (
+	"bytes"
+	"context"
+	"math"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+func TestNativeLIFRangePublicAudit(t *testing.T) {
+	for _, mode := range []string{"finite_mean", "raw_sum_refusal"} {
+		t.Run(mode, func(t *testing.T) {
+			g := fixtureGraph(t)
+			p := lifProtocol(1)
+			p.LIF.DT = 1e-308
+			p.LIF.TauSyn = 1
+			p.Uniform = &UniformParameters{Gain: 0, Bias: 0, LogTau: 0}
+			p.Probes = []Probe{{Name: "mean", Nodes: []int{0, 1, 2}, Reduce: ReduceMeanOutput}}
+			if mode == "raw_sum_refusal" {
+				p.Probes[0].Nodes = []int{0}
+			}
+			runner, params := meanRangeBuild(t, g, p, nil)
+			snap := runner.State()
+			for _, row := range snap.LIF.History {
+				for i := range row {
+					row[i] = math.MaxFloat64
+				}
+			}
+			if err := runner.RestoreState(snap); err != nil {
+				t.Fatal(err)
+			}
+			if mode == "raw_sum_refusal" {
+				sets, err := ResolveSets(context.Background(), g, metricSets())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := runner.TrackSets(sets, [][2]int{{0, 1}}); err != nil {
+					t.Fatal(err)
+				}
+			}
+			before := nativeReceptorJSON(t, []any{runner.State(), runner.PlasticState(), runner.Measurements(), p, params})
+			report, err := runner.Run(context.Background(), runner.Stimulus())
+			if mode == "finite_mean" {
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got := report.Probes[0].Series[0]; got != math.MaxFloat64 {
+					t.Fatalf("mean %g", got)
+				}
+				t.Log("LIF_FINITE_MEAN_MAXFLOAT_SUCCESS")
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), "output sum") || !reflect.DeepEqual(report, RunReport{}) {
+				t.Fatalf("unencodable tracked sum was not refused: %v", err)
+			}
+			if !bytes.Equal(before, nativeReceptorJSON(t, []any{runner.State(), runner.PlasticState(), runner.Measurements(), p, params})) {
+				t.Fatal("failed LIF run committed results")
+			}
+			t.Log("LIF_RAW_SUM_REFUSAL_NO_COMMIT")
+		})
+	}
+}

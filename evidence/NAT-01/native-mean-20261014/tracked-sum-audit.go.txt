@@ -1,0 +1,14 @@
+package simulate
+import("bytes";"context";"encoding/json";"math";"testing";"github.com/TimLai666/coimnet/dynamics")
+func TestTrackedSumPublicationAudit(t *testing.T){
+ g:=fixtureGraph(t)
+ p:=Protocol{SchemaVersion:ProtocolSchemaVersion,Core:CoreContinuous,Continuous:&dynamics.Config{DT:1,Activation:"softplus"},Injections:[]Injection{{Channel:0,Node:0,Gain:0}},Probes:[]Probe{{Name:"one",Nodes:[]int{0},Reduce:ReduceMeanOutput}},Stimulus:StimulusSpec{Pulse:&Pulse{Channels:1,Steps:1,Channel:0,Onset:0,Duration:1,Amplitude:0}},ParameterSource:ParameterSourceUniform,Uniform:&UniformParameters{Gain:0,Bias:math.MaxFloat64,LogTau:0}}
+ params:=mustParameters(t,g,*p.Uniform);runner,err:=Build(context.Background(),g,params,p,testLimits());if err!=nil{t.Fatal(err)}
+ sets,err:=ResolveSets(context.Background(),g,metricSets());if err!=nil{t.Fatal(err)}
+ if err:=runner.TrackSets(sets,[][2]int{{0,1}});err!=nil{t.Fatal(err)}
+ before:=nativeReceptorJSON(t,runner.State());report,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+ if report.Probes[0].Series[0]!=1.1363587890114286e308 {t.Fatalf("finite control output=%g",report.Probes[0].Series[0])}
+ m:=runner.Measurements();nonfinite:=0;for _,x:=range m.Windows{if math.IsInf(x.OutputSum,0){nonfinite++}}
+ _,jsonErr:=json.Marshal(m);if nonfinite==0 || jsonErr==nil{t.Fatalf("expected existing publication defect: count=%d error=%v",nonfinite,jsonErr)}
+ raw,err:=json.Marshal(map[string]any{"known_defect_diagnostic":true,"run_succeeded":true,"finite_probe":report.Probes[0].Series[0],"nonfinite_measurement_count":nonfinite,"measurement_json_error":jsonErr.Error(),"neural_state_was_committed":!bytes.Equal(before,nativeReceptorJSON(t,runner.State())),"graph_nodes":g.NodeCount(),"protocol":p,"parameters":params});if err!=nil{t.Fatal(err)};t.Log("TRACKED_CASE "+string(raw))
+}

@@ -1,0 +1,59 @@
+from pathlib import Path
+import os, json, hashlib, subprocess
+
+r = Path('/Users/timlai/Developer/coimnet')
+w = r/'runs/.tmp/native-mean-20261014'
+e = r/'evidence/NAT-01/native-mean-20261014'
+native = Path('/Users/timlai/go/pkg/mod')
+previous = json.loads((r/'evidence/MOD-05/native-receptor-refusal-20261014/cache-preparation.json').read_text())
+env = os.environ.copy()
+for key, name in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items():
+    p = w/name
+    p.mkdir(exist_ok=True)
+    env[key] = str(p)
+env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download', GOSUMDB='off', GOTOOLCHAIN='local', GOMAXPROCS='2', GOFLAGS='-p=2 -timeout=60m')
+cache = w/'go-mod-cache'
+links = 0
+for record in previous['selected_source_versions']:
+    source = Path(record['source'])
+    assert source.is_dir() and source.is_relative_to(native), str(source)
+    for here, dirs, files in os.walk(source):
+        base = Path(here)
+        dest = cache/base.relative_to(native)
+        dest.mkdir(parents=True, exist_ok=True)
+        for name in files:
+            target = base/name
+            p = dest/name
+            assert not p.exists() and target.is_file()
+            p.symlink_to(target)
+            links += 1
+    encoded = source.relative_to(native).as_posix().split('@',1)[0]
+    metadata = native/'cache/download'/encoded/'@v'
+    dest = cache/'cache/download'/encoded/'@v'
+    dest.mkdir(parents=True, exist_ok=True)
+    for suffix in ['info','mod','zip','ziphash']:
+        target = metadata/(record['version']+'.'+suffix)
+        if target.exists():
+            p = dest/target.name
+            if not p.exists():
+                if suffix == 'zip':
+                    p.symlink_to(target)
+                    links += 1
+                else:
+                    p.write_bytes(target.read_bytes())
+p = subprocess.run(['go','list','-m','-json','all'], cwd=r, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+(e/'module-selection.log').write_bytes(p.stderr)
+assert p.returncode == 0, p.stderr.decode(errors='replace')
+decoder = json.JSONDecoder()
+text = p.stdout.decode()
+records = []
+while text.strip():
+    text = text.lstrip()
+    value, end = decoder.raw_decode(text)
+    records.append(value)
+    text = text[end:]
+assert len(records) == 188
+assert {(x['Path'],x['Version']) for x in records if x.get('Version')} == {(x['path'],x['version']) for x in previous['selected_source_versions']}
+report = {'command':['go','list','-m','-json','all'], 'exit_code':p.returncode, 'selected_module_records':len(records), 'selected_source_versions':previous['selected_source_versions'], 'symlinks':links, 'native_cache_read_only_source':str(native), 'own_cache':str(cache), 'go_environment':{k:env[k] for k in ['GOCACHE','GOMODCACHE','GOTMPDIR','TMPDIR','GOPROXY','GOSUMDB','GOTOOLCHAIN','GOMAXPROCS','GOFLAGS']}, 'module_selection_sha256':hashlib.sha256(p.stdout).hexdigest()}
+(e/'cache-preparation.json').write_text(json.dumps(report,indent=2)+'\n')
+print(json.dumps({'selected_modules':len(records),'source_versions':len(previous['selected_source_versions']),'owned_symlinks':links}))

@@ -1,0 +1,47 @@
+package simulate
+import("context";"encoding/json";"fmt";"os";"testing")
+
+type meanCompatibility struct {
+ Name string `json:"case"`
+ Protocol Protocol `json:"protocol"`
+ Parameters ParameterSet `json:"parameters"`
+ Tracking bool `json:"tracking"`
+ Report RunReport `json:"report"`
+ State StateSnapshot `json:"state"`
+ Measurements Measurements `json:"measurements"`
+ NextReport RunReport `json:"next_report"`
+ NextState StateSnapshot `json:"next_state"`
+ NextMeasurements Measurements `json:"next_measurements"`
+}
+func meanCompatTrack(t *testing.T,r *Runner){t.Helper();sets,err:=ResolveSets(context.Background(),fixtureGraph(t),metricSets());if err!=nil{t.Fatal(err)};if err:=r.TrackSets(sets,[][2]int{{0,1}});err!=nil{t.Fatal(err)}}
+func TestMeanCompatibilityAudit(t *testing.T){
+ g:=fixtureGraph(t)
+ for _,core:=range []string{CoreContinuous,CoreLIF}{
+  activations:=[]string{"tanh","softplus"};reductions:=[]string{ReduceMeanOutput,ReduceSumOutput}
+  if core==CoreLIF{activations=[]string{"events"};reductions=append(reductions,ReduceSpikeCount,ReduceSpikeFraction)}
+  for _,activation:=range activations{for _,reduction:=range reductions{for _,tracking:=range []bool{false,true}{
+   p:=meanRangeProtocol(1,.25,[]Probe{{Name:"all",Nodes:[]int{0,1,2},Reduce:reduction}})
+   if core==CoreLIF{p=lifProtocol(1);p.Probes=[]Probe{{Name:"all",Nodes:[]int{0,1,2},Reduce:reduction}}else{p.Continuous.Activation=activation}
+   runner,params:=meanRangeBuild(t,g,p,nil);if tracking{meanCompatTrack(t,runner)}
+   report,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+   state,measurements:=runner.State(),runner.Measurements()
+   next,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+   data:=meanCompatibility{fmt.Sprintf("%s/%s/%s/tracking_%t",core,activation,reduction,tracking),p,params,tracking,report,state,measurements,next,runner.State(),runner.Measurements()}
+   raw,err:=json.Marshal(data);if err!=nil{t.Fatal(err)};t.Log("MEAN_COMPAT "+string(raw))
+  }}}
+ }
+}
+func TestMeanSerializedResumeAudit(t *testing.T){
+ raw,err:=os.ReadFile(os.Getenv("COIMNET_MEAN_COMPAT_INPUT"));if err!=nil{t.Fatal(err)}
+ var cases map[string]meanCompatibility;if err:=json.Unmarshal(raw,&cases);err!=nil{t.Fatal(err)}
+ g:=fixtureGraph(t)
+ for name,saved:=range cases{
+  runner,err:=Build(context.Background(),g,saved.Parameters,saved.Protocol,testLimits());if err!=nil{t.Fatal(err)}
+  if saved.Tracking{meanCompatTrack(t,runner)}
+  if err:=runner.RestoreState(saved.State);err!=nil{t.Fatal(err)}
+  report,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+  got,_:=json.Marshal([]any{report,runner.State(),runner.Measurements()});want,_:=json.Marshal([]any{saved.NextReport,saved.NextState,saved.NextMeasurements})
+  if string(got)!=string(want){t.Fatalf("serialized old model resume differs: %s",name)}
+ }
+ t.Logf("SERIALIZED_RESUME_CASES %d",len(cases))
+}

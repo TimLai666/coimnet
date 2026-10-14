@@ -1,0 +1,85 @@
+{
+  "status": "confirmed defect, not repaired",
+  "severity": "P2",
+  "public_case": {
+    "finite_probe": 1.1363587890114286e+308,
+    "graph_nodes": 3,
+    "known_defect_diagnostic": true,
+    "measurement_json_error": "json: unsupported value: +Inf",
+    "neural_state_was_committed": true,
+    "nonfinite_measurement_count": 1,
+    "parameters": {
+      "source": "engineering_uniform_positive",
+      "weights": [
+        0,
+        0
+      ],
+      "bias": [
+        1.7976931348623157e+308,
+        1.7976931348623157e+308,
+        1.7976931348623157e+308
+      ],
+      "log_tau": [
+        0,
+        0,
+        0
+      ],
+      "theta_raw": [
+        0,
+        0,
+        0
+      ],
+      "hash": "3267900fa9e4f89c0cfb88cbe0924017a6cef305755586d00def23bbcbe8dd37"
+    },
+    "protocol": {
+      "schema_version": "coimnet-simulate-protocol/v1",
+      "core": "continuous",
+      "continuous": {
+        "nodes": 0,
+        "sources": null,
+        "targets": null,
+        "dt": 1,
+        "activation": "softplus"
+      },
+      "injections": [
+        {
+          "channel": 0,
+          "node": 0,
+          "gain": 0
+        }
+      ],
+      "probes": [
+        {
+          "name": "one",
+          "nodes": [
+            0
+          ],
+          "reduce": "mean_output"
+        }
+      ],
+      "stimulus": {
+        "pulse": {
+          "channels": 1,
+          "steps": 1,
+          "channel": 0,
+          "onset": 0,
+          "duration": 1,
+          "amplitude": 0
+        }
+      },
+      "thresholds": {},
+      "parameter_source": "engineering_uniform_positive",
+      "uniform": {
+        "gain": 0,
+        "bias": 1.7976931348623157e+308,
+        "log_tau": 0,
+        "theta_raw": 0
+      }
+    },
+    "run_succeeded": true
+  },
+  "source_manifest": "source-before.json",
+  "command_receipt": "tracked-sum-observed.json",
+  "test_log": "tracked-sum-observed.log",
+  "observation": "Run succeeded and committed neural state, then exposed unencodable OutputSum; explicit raw numerator must remain a sum."
+}

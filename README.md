@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
-原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生入口的 MOD-05 受體宣告拒絕修正已通過本機工程驗證，見 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)。NAT-06 原生幅度報告的中間平方溢位／下溢已修正並通過本機工程驗證，見 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md)。另確認 NAT-01 合法連續輸出的平均值被中間加總溢位錯誤拒絕，接續由 [ticket 94](docs/tickets/94-native-mean-representability.md) 修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-01）。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
+原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生入口的 MOD-05 受體宣告拒絕修正已通過本機工程驗證，見 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)。NAT-06 原生幅度報告的中間平方溢位／下溢已修正並通過本機工程驗證，見 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md)。NAT-01 的有限平均與集合量測成功發布缺陷已修正，正常模型與舊狀態的新程序接續保持，見 [ticket 94](docs/tickets/94-native-mean-representability.md)。最新狀態為 90 項 passed、1 項 failed（MOD-04）。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
 
 ## 能力狀態
 
@@ -199,7 +199,7 @@ data_dir=$(mktemp -d)
   > run-derived.json
 ```
 
-`simulate run` 把 store 的節點與邊直接接上連續核心或 LIF 核心，用固定注入把刺激送進指定神經元，再以具名探針讀出指定神經元的活動。過程不經 encoder、readout、最佳化器或任何訓練步驟，也沒有可訓練矩陣。protocol 是嚴格 JSON，宣告核心設定（不含拓撲，節點與邊一律由圖提供）、注入、探針、刺激、門檻與參數來源。探針的 `reduce` 可選 `mean_output`、`sum_output`，LIF 另有 `spike_count` 與 `spike_fraction`；節點可直接給索引，也可用 `class`、`type`、`superclass`、`subclass`、`instance`、`soma_side` 的選擇器解析，解析結果寫進報告。報告含核心設定、圖、參數與 protocol 四個指紋、每步探針時序、沉默比例、每步全群放電比例、放電率分位數與穩定旗標。相同輸入兩次執行的 JSON 位元組相同；`--state-out` 保存狀態，`--state-in` 接續，分兩段跑的結果與一次跑完相同。
+`simulate run` 把 store 的節點與邊直接接上連續核心或 LIF 核心，用固定注入把刺激送進指定神經元，再以具名探針讀出指定神經元的活動。過程不經 encoder、readout、最佳化器或任何訓練步驟，也沒有可訓練矩陣。protocol 是嚴格 JSON，宣告核心設定（不含拓撲，節點與邊一律由圖提供）、注入、探針、刺激、門檻與參數來源。探針的 `reduce` 可選 `mean_output`、`sum_output`，LIF 另有 `spike_count` 與 `spike_fraction`；節點可直接給索引，也可用 `class`、`type`、`superclass`、`subclass`、`instance`、`soma_side` 的選擇器解析，解析結果寫進報告。報告含核心設定、圖、參數與 protocol 四個指紋、每步探針時序、沉默比例、每步全群放電比例、放電率分位數與穩定旗標。平均輸出在中間加總溢位時使用穩定計算。真正不可表示的探針總和或具名集合原始總和會拒絕執行，保留上一次成功的神經狀態與量測。相同輸入兩次執行的 JSON 位元組相同；`--state-out` 保存狀態，`--state-in` 接續，分兩段跑的結果與一次跑完相同。
 
 參數必須明示來源，目前有兩種。`engineering_uniform_positive` 不需要 `--params`：每條邊的權重是 `gain × 原始 weight`（因此全部是興奮性），每顆神經元共用同一組 bias、log_tau 與 theta_raw，延遲一律為零。`derived_release/v1` 必須加 `--params`，讀 `data derive` 產生的參數集，權重為 `weight_scale × 推導 sign × 推導強度`；protocol 要多一個 `derived` 區塊宣告 `unknown_sign`（`exclude` 權重為 0、`excitatory` 取 +|w|、`inhibitory` 取 −|w|）與大於零的 `weight_scale`，兩個欄位都沒有預設值，unknown 的邊數寫進報告。這個來源的節點純量仍由 protocol 的 `uniform` 區塊提供，所以該區塊的 `gain` 必須不寫或為零；命令會先比對參數集與 store 的 node index／edge order hash，不符就拒絕。
 

@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 94](docs/tickets/94-native-mean-representability.md) 目前完成 4／5。原來源 8 個永久回歸失敗事件，修正後 13 個事件通過；LIF 補驗原來源 3 個失敗，修正後一般／race 各 3 個通過。16 組正常模型的全部 Go JSON 位元組與舊狀態新程序接續相同。完整一般／race 各 58 套件及其餘工程、CLI 接續通過。NAT-01 恢復 passed，最新 90 項 passed、1 項 failed（MOD-04）。最後 11 項治理與本輪 1,211,375,287 bytes 暫存清理已完成，原有目錄保留，交付尚未完成，ticket 89 的相容性決策 pending。見[本輪工程驗收](evidence/NAT-01/native-mean-20261014/verification.json)。
+
 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 已完成 5／5。68 個舊來源失敗事件、97 個修正後通過事件，20 組合法配置在舊／新來源與新程序重跑完全相同。完整一般／race 各 58 套件、其餘工程、CLI 新程序保存接續與最後 11 項治理通過。NAT-06 恢復 passed，1,203,188,028 bytes 本輪暫存已清除，原有目錄保留。修正 7240ad3 與回歸／證據 d5a1a51 已推送並讀回一致，801 份提交來源相符，見[驗收](evidence/NAT-06/native-plastic-norm-20261014/verification.json)與[交付](evidence/NAT-06/native-plastic-norm-20261014/delivery.json)。另確認 NAT-01 合法平均值被錯誤拒絕，接續由 [ticket 94](docs/tickets/94-native-mean-representability.md) 修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-01）。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
 
 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 已完成 5／5。144 個受體宣告案例在舊來源失敗，修正後 168 個測試事件通過。14 組合法模型在舊來源、修正來源與新程序完全相同。完整一般／race 各 58 套件、build、vet、相依性、CLI 接續與最後 11 項治理通過，MOD-05 恢復 passed。本輪 1,187,300,480 bytes 暫存已清除，原有目錄保留。修正 1fb539b 與回歸／證據 5c95f11 已推送並核對遠端，799 份提交來源相符，見[驗收](evidence/MOD-05/native-receptor-refusal-20261014/verification.json)與[交付](evidence/MOD-05/native-receptor-refusal-20261014/delivery.json)。另確認 NAT-06 原生幅度報告的中間平方溢位／下溢，下一個可驗證成果是 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 的公開失敗回歸與最小數值修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-06）。ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。

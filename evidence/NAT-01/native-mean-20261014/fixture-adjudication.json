@@ -1,0 +1,12 @@
+{
+  "initial_red_receipt": "red.json",
+  "invalid_fixtures": [
+    "restored voltage changed without matching latest activated history",
+    "node indices reordered although public contract requires ascending distinct nodes"
+  ],
+  "source_evidence": [
+    "dynamics/state.go validates latest history against voltage activation",
+    "simulate/runner.go checkNodes rejects nonascending indices"
+  ],
+  "correction": "Restore a consistent public snapshot; use an ascending explicit subset. No expected result or production source changed. Preserve frozen v1 test and original failures."
+}

@@ -1,0 +1,19 @@
+from pathlib import Path
+import json,hashlib,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/NAT-01/native-mean-20261014';base='abcd2f2bf73d8fba679cc8de03643a5757c1d41a'
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines())
+paths.update(str((e/n).relative_to(r)) for n in ['changed-files.md','artifact-index.json'])
+specific={'simulate/runner.go':'穩定有限平均，只在中間加總溢位時縮放；拒絕無法編碼的追蹤總和後才提交。','simulate/mean_range_test.go':'新增公開大數值平均、真正總和溢位、空集合與失敗不提交回歸。','AGENTS.md':'移除已驗收的平均值缺陷提醒。','ENG.md':'同步原生平均與原始集合量測的數值契約。','README.md':'同步原生量測修正與目前需求狀態。','delivery-status.md':'更新驗收、清理、交付與待決策事項。','docs/model-and-mechanisms.md':'補原生平均與真正量測總和溢位的保證與限制。','docs/requirements-status.json':'NAT-01 恢復 passed，保留 MOD-04 的 failed 與歷史證據。','docs/tickets/94-native-mean-representability.md':'記錄五項驗收與實際證據。'}
+lines=['# 本輪實際變更檔案','','| 檔案 | 變更摘要 |','| --- | --- |']
+for name in sorted(paths):
+ description=specific.get(name,'保存本輪命令、來源指紋、觀察、審查、清理或交付證據。')
+ lines.append('| ['+name+']('+str(r/name)+') | '+description+' |')
+for name,content in [('changed-files.md','\n'.join(lines)+'\n')]:
+ target=e/name
+ if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+ target.write_text(content)
+index={str(p.relative_to(e)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted(e.rglob('*')) if p.is_file() and p.name!='artifact-index.json'}
+target=e/'artifact-index.json'
+if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+target.write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_files':len(paths),'indexed_artifacts':len(index)}))
