@@ -460,6 +460,9 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 		for i, v := range grad {
 			if mask[i] {
 				accumulator.Sum[i] += v
+				if !finite(accumulator.Sum[i]) {
+					return zero, fmt.Errorf("non-finite gradient accumulator value at parameter %d", i)
+				}
 			}
 		}
 		accumulator.Count++
