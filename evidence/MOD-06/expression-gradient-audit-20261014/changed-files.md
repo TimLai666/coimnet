@@ -3,7 +3,7 @@
 | 檔案 | 變更摘要 |
 | --- | --- |
 | [delivery-status.md](/Users/timlai/Developer/coimnet/delivery-status.md) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
-| [docs/requirements-status.json](/Users/timlai/Developer/coimnet/docs/requirements-status.json) | 追加本輪已驗證需求證據，原始需求 ID 與狀態保持。 |
+| [docs/requirements-status.json](/Users/timlai/Developer/coimnet/docs/requirements-status.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [docs/tickets/96-expression-gradient-composition.md](/Users/timlai/Developer/coimnet/docs/tickets/96-expression-gradient-composition.md) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/README.md](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/README.md) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/archive-provenance.json](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/archive-provenance.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
@@ -36,6 +36,7 @@
 | [evidence/MOD-06/expression-gradient-audit-20261014/control-missing-expression-seed.log](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/control-missing-expression-seed.log) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/control-missing-second-node-seed.json](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/control-missing-second-node-seed.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/control-missing-second-node-seed.log](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/control-missing-second-node-seed.log) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
+| [evidence/MOD-06/expression-gradient-audit-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/delivery.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/dispatch.json](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/dispatch.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/environment.json](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/environment.json) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
 | [evidence/MOD-06/expression-gradient-audit-20261014/expression-review.md](/Users/timlai/Developer/coimnet/evidence/MOD-06/expression-gradient-audit-20261014/expression-review.md) | 保存本輪梯度稽核、驗證、暫存清理或交付狀態。 |
