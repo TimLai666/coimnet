@@ -26,9 +26,12 @@ const (
 const wallClockPenaltyNote = "Local plasticity forces chunk_size 1: the fast changes of a step decide the weights of the next one, so the run advances one step per core call instead of the chunk the core would accept. The step count, the graph and the parameters are unchanged; only the wall clock is, and the cost grows with the step count, not with the enabled edge count."
 
 // Plasticity declares local fast changes on top of a run. It is the protocol
-// form of the plasticity package: Rule is the complete update law, exactly one
+// form of the plasticity package: Rule declares the update law, exactly one
 // of Edges and All selects the connections that follow it, and the learning
 // gate is read from the stimulus itself, so a run needs no second input.
+// Native simulation uses fixed Rule.DecayE and has no chemistry binding, so
+// Rule.GateReceptor and Rule.DecayEReceptor must both be nil, including when
+// Frozen is true.
 //
 //	gate(t) = GateScale * stimulus[t][GateChannel]
 //
@@ -112,6 +115,9 @@ func (p Protocol) validatePlasticity(channels int) error {
 	}
 	if _, err := plasticity.New(plasticity.Config{Rule: block.Rule, Edges: []int{0}}, 1); err != nil {
 		return fmt.Errorf("simulate: plasticity rule: %w", err)
+	}
+	if block.Rule.GateReceptor != nil || block.Rule.DecayEReceptor != nil {
+		return fmt.Errorf("simulate: receptor-driven plasticity requires chemistry; gate_receptor and decay_e_receptor are not supported by native simulation")
 	}
 	return nil
 }
