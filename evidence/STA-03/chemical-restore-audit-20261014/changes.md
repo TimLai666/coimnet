@@ -61,7 +61,10 @@
 | [evidence/STA-03/chemical-restore-audit-20261014/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/cli-train-first.log) | 保存本輪實際命令、結果或修正證據。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/cli-train-resumed.json) | 保存本輪實際命令、結果或修正證據。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/cli-train-resumed.log) | 保存本輪實際命令、結果或修正證據。 |
+| [evidence/STA-03/chemical-restore-audit-20261014/committed-source.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/committed-source.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/confirmed-findings.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/confirmed-findings.json) | 記錄輸入、命令結果、來源指紋或目前驗收狀態。 |
+| [evidence/STA-03/chemical-restore-audit-20261014/delivery-command-results.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/delivery-command-results.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
+| [evidence/STA-03/chemical-restore-audit-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/delivery.json) | 保存本輪命令、來源指紋、審查、清理或交付證據。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/diagnostic-v2-provenance.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/diagnostic-v2-provenance.json) | 記錄輸入、命令結果、來源指紋或目前驗收狀態。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/dispatch.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/dispatch.json) | 記錄輸入、命令結果、來源指紋或目前驗收狀態。 |
 | [evidence/STA-03/chemical-restore-audit-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/STA-03/chemical-restore-audit-20261014/engineering-environment.json) | 記錄輸入、命令結果、來源指紋或目前驗收狀態。 |
