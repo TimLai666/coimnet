@@ -1,0 +1,50 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func main() {
+	c := learning.Config{
+		Dynamics: dynamics.Config{Nodes: 3, Sources: []int{1}, Targets: []int{2}, DT: 1, Activation: "tanh"},
+		InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{2},
+	}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{1e308}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}}, Encoder: []float64{0}, Readout: []float64{1}}
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	o.Trainable = learning.Trainable{Bias: true}
+	o.Masks = &learning.UpdateMasks{Nodes: []bool{false, true, false}}
+	tr, err := learning.NewTrainer(c, p, o)
+	if err != nil { panic(err) }
+	n, err := learning.NewNetwork(c)
+	if err != nil { panic(err) }
+	input, upstream := [][]float64{{0}, {0}}, [][]float64{{0}, {2.5}}
+	g, err := n.LossGradientFrom(context.Background(), p, input, upstream, 0)
+	if err != nil { panic(err) }
+	gradient := g.Core.Bias[1]
+	if math.IsInf(gradient, 0) || math.IsNaN(gradient) { panic("probe did not obtain finite gradient") }
+	first, err := tr.StepFrom(context.Background(), input, upstream)
+	if err != nil { panic(err) }
+	before := tr.Snapshot()
+	second, secondErr := tr.StepFrom(context.Background(), input, upstream)
+	after := tr.Snapshot()
+	_, restoreErr := learning.RestoreTrainer(after)
+	_, marshalErr := json.Marshal(after)
+	var inf, nan int
+	if after.Accumulator != nil { for _, v := range after.Accumulator.Sum { if math.IsInf(v, 0) { inf++ }; if math.IsNaN(v) { nan++ } } }
+	var errText, restoreText, marshalText string
+	if secondErr != nil { errText = secondErr.Error() }; if restoreErr != nil { restoreText = restoreErr.Error() }; if marshalErr != nil { marshalText = marshalErr.Error() }
+	result := map[string]any{"public_gradient": gradient, "finite_gradient": true, "first_step": first, "first_accumulator_count": before.Accumulator.Count,
+		"second_step": second, "second_error": errText, "snapshot_equal": reflect.DeepEqual(before, after), "accumulator_inf_count": inf, "accumulator_nan_count": nan,
+		"restore_error": restoreText, "json_marshal_error": marshalText, "parameters_equal": reflect.DeepEqual(before.Parameters, after.Parameters), "optimizer_equal": reflect.DeepEqual(before.Optimizer, after.Optimizer)}
+	b, err := json.MarshalIndent(result, "", "  ")
+	if err != nil { panic(err) }
+	fmt.Println(string(b))
+}

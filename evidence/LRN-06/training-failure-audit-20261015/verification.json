@@ -1,0 +1,340 @@
+{
+  "requirement": "LRN-03",
+  "reproduction_command": "env GOCACHE=/Users/timlai/Developer/coimnet/runs/.tmp/training-failure-audit-20261015/go-cache GOMODCACHE=/Users/timlai/Developer/coimnet/runs/.tmp/training-failure-audit-20261015/go-mod-cache GOTMPDIR=/Users/timlai/Developer/coimnet/runs/.tmp/training-failure-audit-20261015/go-tmp TMPDIR=/Users/timlai/Developer/coimnet/runs/.tmp/training-failure-audit-20261015/go-tmp GOPROXY=file:///Users/timlai/go/pkg/mod/cache/download GOSUMDB=off GOTOOLCHAIN=local GOMAXPROCS=2 GOFLAGS='-p=2 -timeout=60m' go run runs/.tmp/training-failure-audit-20261015/accumulator-public-probe.go",
+  "environment": "environment.json",
+  "input_fingerprints": {
+    "source_manifest": "source-before.json",
+    "source_manifest_sha256": "00655aafc348ddeae3567b3fc04dac58a086eb9b291b509f1851e7a6694ec2bd",
+    "public_probe_source_sha256": "d3d4d3a6ebf2a3429591cbf8246ba2592f4b882be8d13cf665dac7b1f4ceb7b6",
+    "frozen_tests": "tests-frozen-v3.json",
+    "fixed_source_manifest": "source-final.json",
+    "fixed_source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "fixed_source_count": 810
+  },
+  "observed_result": {
+    "confirmed_defect": "Finite public gradients can overflow candidate sum and commit an invalid partial accumulator as a successful step.",
+    "public_gradient": 9.9894100223432e+307,
+    "invalid_partial_success": true,
+    "json_and_restore_refused": true,
+    "behavioral_red_pass_events": 15,
+    "behavioral_red_fail_events": 15,
+    "red_receipt": "red-v3.json",
+    "root_fixture_corrections": "test-correction.json",
+    "engineering_state": "Full unit and scoped normal/race passed. Full race and remaining engineering running; cleanup and Git delivery pending.",
+    "root_green_pass_events": 30,
+    "root_green_fail_events": 0,
+    "green_receipt": "green.json",
+    "root_scoped_race_pass_events": 30,
+    "root_scoped_race_fail_events": 0,
+    "scoped_race_receipt": "scoped-race.json",
+    "legal_old_new_scenarios_equal": 32,
+    "independent_restore_processes_equal_to_continuous": 64,
+    "normal_compatibility_receipt": "normal-accumulation-compatibility.json",
+    "existing_real_example_models_equal": 6,
+    "original_model_files_unchanged": 18,
+    "real_model_receipt": "real-example-model-compatibility-final.json",
+    "full_unit_passed_packages": 58,
+    "full_unit_pass_events": 5778,
+    "full_unit_skip_events": 22,
+    "full_unit_fail_events": 0,
+    "full_unit_receipt": "source-final-unit-unrestricted.json",
+    "full_unit_original_environment_failure": "engineering-environment-correction.json",
+    "original_public_probe_now_rejects_and_preserves_snapshot": true,
+    "final_engineering_summaries": {
+      "source-final-unit-unrestricted": {
+        "event_counts": {
+          "pass": 5778,
+          "fail": 0,
+          "skip": 22
+        },
+        "passed_packages": 58,
+        "skipped_cases": [
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess",
+            "output": "=== RUN   TestDeviceAdamWChildProcess\n    device_adam_hardware_test.go:125: independent process helper\n--- SKIP: TestDeviceAdamWChildProcess (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad",
+            "output": "=== RUN   TestRealMediaModelChildLoad\n    model_run_test.go:49: helper test only; parent test enables the real child process\n--- SKIP: TestRealMediaModelChildLoad (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+            "output": "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory\n    main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression\n--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence",
+            "output": "=== RUN   TestAttributionEvidence\n    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set\n--- SKIP: TestAttributionEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence",
+            "output": "=== RUN   TestFullGraphEvidence\n    evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set\n--- SKIP: TestFullGraphEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence",
+            "output": "=== RUN   TestFullGraphResumeEvidence\n    evidence_test.go:88: COIMNET_OPS07_RESUME is not set\n--- SKIP: TestFullGraphResumeEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence",
+            "output": "=== RUN   TestMultimodalEvidence\n    evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence\n--- SKIP: TestMultimodalEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence",
+            "output": "=== RUN   TestMultiTaskEvidence\n    multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set\n--- SKIP: TestMultiTaskEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence",
+            "output": "=== RUN   TestNav2DSuiteEvidence\n    nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set\n--- SKIP: TestNav2DSuiteEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence",
+            "output": "=== RUN   TestPPOGoalCueEvidence\n    ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOGoalCueEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence",
+            "output": "=== RUN   TestPPOGradientEvidence\n    ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set\n--- SKIP: TestPPOGradientEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence",
+            "output": "=== RUN   TestPPOHorizonEvidence\n    ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set\n--- SKIP: TestPPOHorizonEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence",
+            "output": "=== RUN   TestPPOShortGoalCueEvidence\n    ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOShortGoalCueEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence",
+            "output": "=== RUN   TestPPOTrainingFeedbackEvidence\n    ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set\n--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess",
+            "output": "=== RUN   TestGPUDeviceTrainerChildProcess\n    gpu_device_trainer_test.go:532: intentional subprocess restore helper\n--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper",
+            "output": "=== RUN   TestRecomputeRSSHelper\n    recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper\n--- SKIP: TestRecomputeRSSHelper (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image",
+            "output": "=== RUN   TestMediaEvidence/image\n    evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/image (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio",
+            "output": "=== RUN   TestMediaEvidence/audio\n    evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/audio (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence",
+            "output": "=== RUN   TestRolesEvidence\n    roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set\n--- SKIP: TestRolesEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured",
+            "output": "=== RUN   TestReadTitovaSourceWhenConfigured\n    trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check\n--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence",
+            "output": "=== RUN   TestVideoEvidence\n    video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set\n--- SKIP: TestVideoEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence",
+            "output": "=== RUN   TestTextgenEvidence\n    evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set\n--- SKIP: TestTextgenEvidence (0.00s)\n"
+          }
+        ]
+      },
+      "source-final-race-unrestricted": {
+        "event_counts": {
+          "pass": 5777,
+          "fail": 0,
+          "skip": 23
+        },
+        "passed_packages": 58,
+        "skipped_cases": [
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess",
+            "output": "=== RUN   TestDeviceAdamWChildProcess\n    device_adam_hardware_test.go:125: independent process helper\n--- SKIP: TestDeviceAdamWChildProcess (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/checkpoint",
+            "test": "TestBundleLargerThanSingleFileLimit",
+            "output": "=== RUN   TestBundleLargerThanSingleFileLimit\n    bundle_kinds_test.go:276: race instrumentation makes the large bundle fixture too memory intensive\n--- SKIP: TestBundleLargerThanSingleFileLimit (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory",
+            "output": "=== RUN   TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory\n    main_test.go:130: set COIMNET_TSK11_TRAJECTORY and COIMNET_TSK11_SNAPSHOT to run the real inference CLI regression\n--- SKIP: TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad",
+            "output": "=== RUN   TestRealMediaModelChildLoad\n    model_run_test.go:49: helper test only; parent test enables the real child process\n--- SKIP: TestRealMediaModelChildLoad (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence",
+            "output": "=== RUN   TestAttributionEvidence\n    attribution_evidence_test.go:22: COIMNET_TSK12_EVIDENCE is not set\n--- SKIP: TestAttributionEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence",
+            "output": "=== RUN   TestFullGraphEvidence\n    evidence_test.go:36: COIMNET_OPS07_EVIDENCE is not set\n--- SKIP: TestFullGraphEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence",
+            "output": "=== RUN   TestFullGraphResumeEvidence\n    evidence_test.go:88: COIMNET_OPS07_RESUME is not set\n--- SKIP: TestFullGraphResumeEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence",
+            "output": "=== RUN   TestMultimodalEvidence\n    evidence_test.go:25: set COIMNET_TSK10_EVIDENCE to an absolute directory to write the TSK-10 evidence\n--- SKIP: TestMultimodalEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence",
+            "output": "=== RUN   TestMultiTaskEvidence\n    multitask_evidence_test.go:21: COIMNET_TSK09_EVIDENCE is not set\n--- SKIP: TestMultiTaskEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence",
+            "output": "=== RUN   TestNav2DSuiteEvidence\n    nav2d_evidence_test.go:22: COIMNET_TSK08_EVIDENCE is not set\n--- SKIP: TestNav2DSuiteEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence",
+            "output": "=== RUN   TestPPOGoalCueEvidence\n    ppo_goal_memory_evidence_test.go:282: COIMNET_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOGoalCueEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence",
+            "output": "=== RUN   TestPPOGradientEvidence\n    ppo_gradient_diagnostic_test.go:251: COIMNET_PPO_GRADIENT_EVIDENCE is not set\n--- SKIP: TestPPOGradientEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence",
+            "output": "=== RUN   TestPPOHorizonEvidence\n    ppo_horizon_evidence_test.go:100: COIMNET_PPO_HORIZON_EVIDENCE is not set\n--- SKIP: TestPPOHorizonEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence",
+            "output": "=== RUN   TestPPOShortGoalCueEvidence\n    ppo_short_goal_evidence_test.go:81: COIMNET_SHORT_GOAL_CUE_EVIDENCE is not set\n--- SKIP: TestPPOShortGoalCueEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence",
+            "output": "=== RUN   TestPPOTrainingFeedbackEvidence\n    ppo_training_feedback_evidence_test.go:124: COIMNET_PPO_TRAINING_FEEDBACK_EVIDENCE is not set\n--- SKIP: TestPPOTrainingFeedbackEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess",
+            "output": "=== RUN   TestGPUDeviceTrainerChildProcess\n    gpu_device_trainer_test.go:532: intentional subprocess restore helper\n--- SKIP: TestGPUDeviceTrainerChildProcess (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper",
+            "output": "=== RUN   TestRecomputeRSSHelper\n    recompute_rss_test.go:58: COIMNET_RECOMPUTE_RSS is not set; scripts/recompute-evidence.sh runs this helper\n--- SKIP: TestRecomputeRSSHelper (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image",
+            "output": "=== RUN   TestMediaEvidence/image\n    evidence_test.go:87: COIMNET_TSK04_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/image (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio",
+            "output": "=== RUN   TestMediaEvidence/audio\n    evidence_test.go:87: COIMNET_TSK05_EVIDENCE is not set\n--- SKIP: TestMediaEvidence/audio (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence",
+            "output": "=== RUN   TestRolesEvidence\n    roles_evidence_test.go:18: COIMNET_TSK07_EVIDENCE is not set\n--- SKIP: TestRolesEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured",
+            "output": "=== RUN   TestReadTitovaSourceWhenConfigured\n    trajectory_test.go:409: set COIMNET_TSK11_TRAJECTORY to run the Git-out real-data check\n--- SKIP: TestReadTitovaSourceWhenConfigured (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence",
+            "output": "=== RUN   TestTextgenEvidence\n    evidence_test.go:21: COIMNET_TSK03_EVIDENCE is not set\n--- SKIP: TestTextgenEvidence (0.00s)\n"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence",
+            "output": "=== RUN   TestVideoEvidence\n    video_evidence_test.go:27: COIMNET_TSK06_EVIDENCE is not set\n--- SKIP: TestVideoEvidence (0.00s)\n"
+          }
+        ]
+      }
+    },
+    "cli_new_process_resume_bytes_equal": true,
+    "final_governance": {
+      "receipt": "governance-final.json",
+      "top_level_tests": 11,
+      "pass_events": 31,
+      "fail_events": 0,
+      "skip_events": 0
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_path": "/Users/timlai/Developer/coimnet/runs/.tmp/training-failure-audit-20261015",
+      "regular_bytes": 1396734821,
+      "protected_original_models": 18,
+      "protected_siblings_unchanged": true
+    },
+    "delivery": "pending"
+  },
+  "test_log": [
+    "accumulator-public-probe-v2.log",
+    "red-v3.log",
+    "green.log",
+    "scoped-race.log",
+    "public-probe-fixed.log",
+    "source-final-unit.log.gz",
+    "source-final-unit-unrestricted.log.gz",
+    "source-final-race-unrestricted.log.gz"
+  ],
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "limitation": "The bounded numerical defect is confirmed via public CPU APIs. No task-quality gain, GPU failure reproduction or universal zero-bugs result is claimed.",
+  "engineering_status": "Final engineering, governance and own cleanup passed. Git delivery pending.",
+  "engineering_receipts": [
+    "source-final-format.json",
+    "source-final-module-verify.json",
+    "source-final-build.json",
+    "source-final-unit-unrestricted.json",
+    "source-final-race-unrestricted.json",
+    "vet.json",
+    "module-list.json",
+    "target-flow.json",
+    "cli-build.json",
+    "cli-doctor.json",
+    "cli-data-sources.json",
+    "cli-delayed.json",
+    "cli-lif-threshold.json",
+    "cli-train-first.json",
+    "cli-train-resumed.json",
+    "cli-train-continuous.json",
+    "cli-resume-equality.json"
+  ]
+}

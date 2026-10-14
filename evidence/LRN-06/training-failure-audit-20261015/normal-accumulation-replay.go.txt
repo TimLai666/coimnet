@@ -1,0 +1,106 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+type scenario struct {
+	Core      string  `json:"core"`
+	Window    int     `json:"window"`
+	Scale     float64 `json:"scale"`
+	Recompute bool    `json:"recompute"`
+	Sharing   bool    `json:"sharing"`
+}
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func makeTrainer(s scenario) *learning.Trainer {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0, 1}, Targets: []int{1, 0}, DT: .5, Activation: "tanh"}, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{1}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.3, -.2}, Bias: []float64{.1, -.1}, LogTau: []float64{.1, .2}}, Encoder: []float64{.5, .1}, Readout: []float64{.8}}
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = s.Window
+	o.LossScale = s.Scale
+	o.LearningRate = .1
+	o.Epsilon = .1
+	if s.Core == "lif" {
+		core := dynamics.LIFConfig{Nodes: 3, Sources: []int{0, 1, 1}, Targets: []int{1, 1, 2}, Delays: []int{0, 1, 0}, DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+		c = learning.Config{LIF: &core, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}}
+		p = learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.65, .25, .7}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}}, ThetaRaw: []float64{-1, -1, -1}, Encoder: []float64{1, 0, 0}, Readout: []float64{1}}
+		o.Trainable.Theta = true
+	}
+	if s.Sharing {
+		groups := make([]int32, len(p.Core.Bias))
+		c.Sharing = &learning.ParameterSharing{Groups: 1, Bias: groups}
+		for i := range p.Core.Bias {
+			p.Core.Bias[i] = .1
+		}
+	}
+	if s.Recompute {
+		o.Recompute = &learning.Recompute{SegmentSteps: 2}
+	}
+	tr, err := learning.NewTrainer(c, p, o)
+	must(err)
+	return tr
+}
+
+func batch(s scenario, k int) ([][]float64, []float64) {
+	input := [][][]float64{{{.7}, {-.2}, {.1}}, {{.1}, {.5}, {-.3}}, {{-.4}, {.2}, {.6}}}[k]
+	if s.Core == "lif" {
+		input = [][]float64{{.7 + .1*float64(k)}, {0}, {0}, {0}, {0}}
+	}
+	return input, []float64{[]float64{.4, -.2, .9}[k]}
+}
+
+func main() {
+	mode := os.Args[1]
+	var s scenario
+	must(json.Unmarshal([]byte(os.Args[2]), &s))
+	ctx := context.Background()
+	var tr *learning.Trainer
+	start := 0
+	if mode == "continue" {
+		b, err := os.ReadFile(os.Args[3])
+		must(err)
+		var saved struct {
+			Snapshot learning.TrainingSnapshot `json:"snapshot"`
+		}
+		must(json.Unmarshal(b, &saved))
+		tr, err = learning.RestoreTrainer(saved.Snapshot)
+		must(err)
+		start = 1
+	} else {
+		tr = makeTrainer(s)
+	}
+	end := 3
+	if mode == "begin" {
+		end = 1
+	}
+	steps := []learning.StepResult{}
+	for k := start; k < end; k++ {
+		input, target := batch(s, k)
+		result, err := tr.Step(ctx, input, target)
+		must(err)
+		steps = append(steps, result)
+	}
+	snapshot := tr.Snapshot()
+	stateJSON, err := json.Marshal(snapshot)
+	must(err)
+	n, err := learning.NewNetwork(snapshot.Config)
+	must(err)
+	input, _ := batch(s, 2)
+	prediction, err := n.Predict(ctx, snapshot.Parameters, input)
+	must(err)
+	b, err := json.Marshal(map[string]any{"snapshot": snapshot, "snapshot_json": string(stateJSON), "steps": steps, "prediction": prediction})
+	must(err)
+	fmt.Println(string(b))
+}

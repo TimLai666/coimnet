@@ -1,0 +1,182 @@
+package learning_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+// Two zero-activity hidden cells keep the enormous free edge's forward drive
+// exactly zero. An isolated input cell keeps the encoder gradient at zero.
+// The public reverse pass still gives hidden bias 1 the finite sensitivity
+// upstream * (1-exp(-1))^2 * 1e308, without exceeding a float32 tape boundary.
+func accumulationOverflowModel() (learning.Config, learning.Parameters) {
+	c := learning.Config{
+		Dynamics:  dynamics.Config{Nodes: 3, Sources: []int{1}, Targets: []int{2}, DT: 1, Activation: "tanh"},
+		InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{2},
+	}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{1e308}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}}, Encoder: []float64{0}, Readout: []float64{1}}
+	return c, p
+}
+
+func TestAccumulationOverflowRejectsPublicStepWithoutChangingState(t *testing.T) {
+	ctx := context.Background()
+	input := [][]float64{{0}, {0}}
+	for _, mode := range []string{"step", "from", "stateful", "individual", "chemical_individual", "recompute_step", "recompute_from"} {
+		for _, sign := range []float64{1, -1} {
+			for _, window := range []int{2, 3} {
+				t.Run(fmt.Sprintf("%s/sign_%g/window_%d", mode, sign, window), func(t *testing.T) {
+					c, p := accumulationOverflowModel()
+					o := learning.DefaultOptions()
+					o.AccumulateSteps = window
+					o.Trainable = learning.Trainable{Bias: true}
+					o.Masks = &learning.UpdateMasks{Nodes: []bool{false, true, false}}
+					if mode == "recompute_step" || mode == "recompute_from" {
+						o.Recompute = &learning.Recompute{SegmentSteps: 1}
+					}
+					n, err := learning.NewNetwork(c)
+					if err != nil {
+						t.Fatal(err)
+					}
+					g, err := n.LossGradientFrom(ctx, p, input, [][]float64{{0}, {sign * 2.5}}, 0)
+					if err != nil {
+						t.Fatal(err)
+					}
+					alpha := -math.Expm1(-1)
+					want := sign * 2.5 * alpha * 1e308 * alpha
+					got := g.Core.Bias[1]
+					if math.IsInf(got, 0) || math.IsNaN(got) || math.Abs((got-want)/want) > 1e-14 {
+						t.Fatalf("public gradient %g, hand reference %g", got, want)
+					}
+					if !math.IsInf(got+got, 0) {
+						t.Fatal("fixture gradient sum does not overflow")
+					}
+
+					tr, err := learning.NewTrainer(c, p, o)
+					if err != nil {
+						t.Fatal(err)
+					}
+					individual, err := learning.NewIndividual(c, p, o)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if mode == "chemical_individual" {
+						chem := chemistryDeclaration()
+						chem.Regions.NodeRegion = []int{0, 1, 1}
+						if err := individual.EnableChemistry(chem); err != nil {
+							t.Fatal(err)
+						}
+					}
+					if _, err := individual.Advance(ctx, [][]float64{{0}, {0}, {0}}); err != nil {
+						t.Fatal(err)
+					}
+					initial := individual.Snapshot().Neural
+					call := func(s float64) (learning.StepResult, error) {
+						switch mode {
+						case "step", "recompute_step":
+							return tr.Step(ctx, input, []float64{-s * 1.25})
+						case "from", "recompute_from":
+							return tr.StepFrom(ctx, input, [][]float64{{0}, {s * 2.5}})
+						case "stateful":
+							return tr.StepFromState(ctx, initial, input, [][]float64{{0}, {s * 2.5}})
+						default:
+							return individual.TrainEpisode(ctx, input, []float64{-s * 1.25})
+						}
+					}
+					isIndividual := mode == "individual" || mode == "chemical_individual"
+					snapshot := func() any {
+						if isIndividual {
+							return individual.Snapshot()
+						}
+						return tr.Snapshot()
+					}
+					restore := func(s any) error {
+						if isIndividual {
+							_, err := learning.RestoreIndividual(s.(learning.IndividualSnapshot))
+							return err
+						}
+						_, err := learning.RestoreTrainer(s.(learning.TrainingSnapshot))
+						return err
+					}
+					first, err := call(sign)
+					if err != nil || first.Applied || first.Accumulated != 1 {
+						t.Fatalf("first finite partial step: %+v, %v", first, err)
+					}
+					before := snapshot()
+					if err := restore(before); err != nil {
+						t.Fatalf("first snapshot not restorable: %v", err)
+					}
+					if _, err := json.Marshal(before); err != nil {
+						t.Fatalf("first snapshot not serializable: %v", err)
+					}
+					rejected, err := call(sign)
+					if err == nil {
+						t.Fatal("accepted a non-finite accumulator sum")
+					}
+					if !reflect.DeepEqual(rejected, learning.StepResult{}) {
+						t.Fatalf("error returned partial result: %+v", rejected)
+					}
+					after := snapshot()
+					if !reflect.DeepEqual(before, after) {
+						t.Fatal("rejected sum changed the full training/individual snapshot")
+					}
+					if err := restore(after); err != nil {
+						t.Fatalf("rejected step left unrestorable snapshot: %v", err)
+					}
+					if _, err := json.Marshal(after); err != nil {
+						t.Fatalf("rejected step left unserializable snapshot: %v", err)
+					}
+					retry, err := call(-sign)
+					if err != nil {
+						t.Fatalf("opposite-gradient retry failed: %v", err)
+					}
+					if retry.Applied != (window == 2) {
+						t.Fatalf("retry changed window semantics: %+v", retry)
+					}
+					if err := restore(snapshot()); err != nil {
+						t.Fatalf("retry snapshot not restorable: %v", err)
+					}
+					if _, err := json.Marshal(snapshot()); err != nil {
+						t.Fatalf("retry snapshot not serializable: %v", err)
+					}
+				})
+			}
+		}
+	}
+}
+
+func TestAccumulationIgnoresFrozenFiniteOverflowGradient(t *testing.T) {
+	c, p := accumulationOverflowModel()
+	o := learning.DefaultOptions()
+	o.AccumulateSteps = 3
+	o.Trainable = learning.Trainable{}
+	tr, err := learning.NewTrainer(c, p, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := tr.Snapshot()
+	for step := 1; step <= 2; step++ {
+		result, err := tr.StepFrom(context.Background(), [][]float64{{0}, {0}}, [][]float64{{0}, {2.5}})
+		if err != nil || result.Applied || result.GradientNorm != 0 || result.Accumulated != step {
+			t.Fatalf("frozen step %d: %+v, %v", step, result, err)
+		}
+	}
+	after := tr.Snapshot()
+	if !reflect.DeepEqual(before.Parameters, after.Parameters) || !reflect.DeepEqual(before.Optimizer, after.Optimizer) || before.Updates != after.Updates {
+		t.Fatal("frozen partial changed model or optimizer")
+	}
+	for _, sum := range after.Accumulator.Sum {
+		if sum != 0 {
+			t.Fatal("frozen gradient entered accumulator")
+		}
+	}
+	if _, err := learning.RestoreTrainer(after); err != nil {
+		t.Fatal(err)
+	}
+}

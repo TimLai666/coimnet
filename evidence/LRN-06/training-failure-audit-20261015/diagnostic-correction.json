@@ -1,0 +1,7 @@
+{
+  "original_diagnostic_sha256": "cec524c66b80835702d6e0ad873d295db97c8337612934651121e18e687e39d2",
+  "original_error": "panic: upstream has 1 rows, want 2",
+  "root_cause": "Root diagnostic supplied one upstream row for a two-row StepFrom sequence. The public API correctly refused the shape.",
+  "correction": "Provide two upstream rows, zero on the first and 2.5 on the last. No framework sources or assertions changed.",
+  "original_source": "accumulator-public-probe-v1.go.txt"
+}

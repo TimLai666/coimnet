@@ -109,6 +109,8 @@
   決策、驗收與證據見 [ticket 17](docs/tickets/17-constrained-updates-and-optimizer.md)、
   `evidence/COR-10/` 與 `evidence/LRN-03/`。
 
+梯度累積的候選 Sum 在每項有效遮罩的加總後檢查有限性。不可表示的總和在部分視窗提交或完整平均之前回錯，保留原參數、最佳化器、累積器與個體回合計數。正常加總順序、平均、裁切與保存格式保持。公開入口與相容性由[ticket 98](docs/tickets/98-training-failure-composition.md)驗證。
+
 ## 功能流程、錯誤與驗證責任
 
 ### 六步任務期限的訓練對照

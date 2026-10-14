@@ -1,0 +1,39 @@
+from pathlib import Path
+import subprocess,json,hashlib,datetime,os,time
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/training-failure-audit-20261015';e=r/'evidence/LRN-06/training-failure-audit-20261015'
+lock=json.loads((e/'source-final.json').read_text())
+def check():
+ for p,h in lock.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check();source=r/'evidence/TSK-11/chemical-quality-20261013/comparison-results.json';raw=source.read_bytes();data=json.loads(raw)
+models=[]
+for row in data['runs']:
+ for f in row['model_files']:
+  p=r/f['path'];assert p.is_file() and not p.is_symlink() and hashlib.sha256(p.read_bytes()).hexdigest()==f['sha256'],str(p)
+ models.append(row)
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+for label in ['baseline','fixed']:
+ cmd=['go','build']
+ if label=='baseline':cmd+=['-overlay',str(e/'old-source-overlay.json')]
+ cmd+=['-o',str(w/('real-model-baseline' if label=='baseline' else 'real-model-fixed-final')),str(w/'real-model-replay.go')]
+ log=e/('real-model-final-'+label+'-build.log')
+ with log.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ assert p.returncode==0;check()
+results=[]
+for row in models:
+ name=str(row['seed'])+'-'+row['group'];directory=str((r/row['model_files'][0]['path']).parent);outputs=[];commands=[]
+ for label in ['baseline','fixed']:
+  cmd=[str(w/('real-model-baseline' if label=='baseline' else 'real-model-fixed-final')),'training',directory];dest=w/('real-example-final-'+name+'-'+label+'.json');start=time.monotonic()
+  with dest.open('xb') as f:p=subprocess.run(cmd,cwd=r,stdout=f,stderr=subprocess.STDOUT)
+  assert p.returncode==0,(name,label,p.returncode);body=dest.read_bytes();lines=[]
+  for line in body.splitlines():
+   try:v=json.loads(line)
+   except ValueError:continue
+   if isinstance(v,dict) and all(k in v for k in ['before','prediction','step','after']):lines.append(line)
+  assert len(lines)==1,(name,label);v=json.loads(lines[0]);assert v['step']['applied'] is True;outputs.append(lines[0]);commands.append({'command':cmd,'exit_code':p.returncode,'duration_seconds':round(time.monotonic()-start,6),'temporary_output_sha256':hashlib.sha256(body).hexdigest()})
+ assert outputs[0]==outputs[1],name
+ results.append({'seed':row['seed'],'chemical_group':row['group'],'input_files':row['model_files'],'loaded_snapshot_prediction_next_update_and_after_bytes_equal':True,'comparison_json_sha256':hashlib.sha256(outputs[0]).hexdigest(),'comparison_json_bytes':len(outputs[0]),'commands':commands})
+for row in models:
+ for f in row['model_files']:assert hashlib.sha256((r/f['path']).read_bytes()).hexdigest()==f['sha256']
+assert source.read_bytes()==raw;check();out={'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_manifest':'source-final.json','historical_model_registry':str(source.relative_to(r)),'historical_registry_sha256':hashlib.sha256(raw).hexdigest(),'models':results,'protected_original_models_unchanged':True,'quality_measured':False,'update_api':'learning.Trainer.Step with its original MSE final-row target contract, not the OCR custom classification objective','scope':'Six existing KMNIST example training bundles, three OFF and three ON. Two synthetic feature rows check deterministic load/predict/next update. No retraining run or handwriting accuracy claim. Full parameter outputs retained only in the cleanup-scoped temporary directory; published receipt contains hashes only.'}
+with (e/'real-example-model-compatibility-final.json').open('x') as f:json.dump(out,f,indent=2);f.write('\n')
+print(json.dumps({'actual_existing_models_equal':len(results),'protected_original_model_files_unchanged':sum(len(x['model_files']) for x in models),'quality_measured':False}))

@@ -1,0 +1,85 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"os"
+	"path/filepath"
+)
+
+func fail(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func main() {
+	ctx := context.Background()
+	kind, dir := os.Args[1], os.Args[2]
+	var tr *learning.Trainer
+	var before any
+	switch kind {
+	case "training":
+		s, e := checkpoint.LoadTrainingBundle(ctx, dir)
+		fail(e)
+		before = s
+		tr, e = learning.RestoreTrainer(s)
+		fail(e)
+	case "model":
+		s, e := checkpoint.LoadModelPackageBundle(ctx, dir)
+		fail(e)
+		before = s
+		tr, e = learning.NewTrainer(s.Config, s.Parameters, learning.DefaultOptions())
+		fail(e)
+	case "task":
+		s, e := checkpoint.LoadTaskTrainingBundle(ctx, dir, "coimnet-test-task/v1")
+		fail(e)
+		tr, e = learning.RestoreTrainer(s.Training)
+		fail(e)
+		before = tr.Snapshot()
+	case "task-reference":
+		b, e := os.ReadFile(filepath.Join(dir, "arrays.bin"))
+		fail(e)
+		if len(b) != 0 {
+			panic("reference requires no extracted numeric arrays")
+		}
+		b, e = os.ReadFile(filepath.Join(dir, "document.json"))
+		fail(e)
+		var s struct {
+			Training learning.TrainingSnapshot `json:"training"`
+		}
+		fail(json.Unmarshal(b, &s))
+		tr, e = learning.RestoreTrainer(s.Training)
+		fail(e)
+		before = tr.Snapshot()
+	default:
+		panic("unsupported kind")
+	}
+	s := tr.Snapshot()
+	input := make([][]float64, 2)
+	for t := range input {
+		input[t] = make([]float64, s.Config.InputSize)
+		for c := range input[t] {
+			input[t][c] = .15 + .1*float64(t) + .01*float64(c%50)
+		}
+	}
+	size := s.Config.OutputSize
+	target := make([]float64, size)
+	for i := range target {
+		target[i] = .25
+	}
+	n, e := learning.NewNetwork(s.Config)
+	fail(e)
+	pred, e := n.Predict(ctx, s.Parameters, input)
+	fail(e)
+	result, e := tr.Step(ctx, input, target)
+	fail(e)
+	if !result.Applied {
+		panic("expected parameter update")
+	}
+	b, e := json.Marshal(map[string]any{"before": before, "prediction": pred, "step": result, "after": tr.Snapshot()})
+	fail(e)
+	fmt.Println(string(b))
+}

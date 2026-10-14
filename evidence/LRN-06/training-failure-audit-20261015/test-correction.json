@@ -1,0 +1,18 @@
+{
+  "attempts": [
+    {
+      "original_frozen_sha256": "6083454c36c8e98caeacfd3b3e51c24192e3d8475538aab8142eac3686058b38",
+      "original_log": "red.log",
+      "original_result": "build failed, no behavioral red events",
+      "cause": "Root omitted NewIndividual fourth argument initial []float64. Public signature requires it.",
+      "correction": "Pass nil for the documented zero initial state. No behavioral rejection assertion changed. No worker has been dispatched to implement."
+    },
+    {
+      "original_frozen_sha256": "9d7361620bc4a18f2fb233710e5911953b83bed2836621e9b7348ad6c9f66c3c",
+      "original_log": "red-v2.log",
+      "original_result": "28 fixture initialization failures, not behavioral red",
+      "cause": "Initial state must have three declared node values; nil is not a valid Individual initial voltage.",
+      "correction": "Supply three explicit zero voltages, matching the independent episode boundary. No behavioral assertion changed."
+    }
+  ]
+}

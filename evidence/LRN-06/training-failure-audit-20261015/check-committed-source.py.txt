@@ -1,0 +1,15 @@
+from pathlib import Path
+import subprocess,json,hashlib,sys
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/LRN-06/training-failure-audit-20261015';rev=sys.argv[1]
+source=json.loads((e/'source-final.json').read_text());assert len(source)==810
+request=''.join(rev+':'+p+'\n' for p in source).encode()
+result=subprocess.run(['git','cat-file','--batch'],cwd=r,input=request,stdout=subprocess.PIPE,stderr=subprocess.PIPE);assert result.returncode==0,result.stderr
+raw=result.stdout;pos=0;actual={}
+for p,h in source.items():
+ end=raw.index(b'\n',pos);header=raw[pos:end].split();assert len(header)==3 and header[1]==b'blob',p
+ size=int(header[2]);pos=end+1;data=raw[pos:pos+size];assert len(data)==size and raw[pos+size:pos+size+1]==b'\n',p;pos+=size+1
+ digest=hashlib.sha256(data).hexdigest();assert digest==h,p;assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p;actual[p]=digest
+assert pos==len(raw)
+proof={'commit':rev,'source_count':len(actual),'source_manifest':'source-final.json','source_manifest_sha256':hashlib.sha256((e/'source-final.json').read_bytes()).hexdigest(),'all_committed_source_bytes_match_manifest_and_worktree':True,'command':['git','cat-file','--batch'],'committed_source_sha256':actual}
+with(e/'committed-source.json').open('x')as f:json.dump(proof,f,indent=2);f.write('\n')
+print('COMMITTED_SOURCE_EXACT',rev,len(actual))
