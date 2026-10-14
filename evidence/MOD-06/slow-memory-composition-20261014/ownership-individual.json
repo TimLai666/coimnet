@@ -1,0 +1,24 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/ownership-individual-overlay.json",
+    "-json",
+    "-count=1",
+    "-run",
+    "^TestIndividualRuleOwnershipDiagnosticReceipt$",
+    "./learning"
+  ],
+  "exit_code": 0,
+  "source": "ownership-individual-probe.go.txt",
+  "source_sha256": "0780d88072838846648830412fdf6d455895c3040f66ccd565a77415c3e43487",
+  "log": "ownership-individual.log",
+  "log_sha256": "4a4c81b9ea9134eea05811198dc517f84d8471611926ec6d23d11dc64ad60227",
+  "observed_result": {
+    "diagnostic_cases": 4,
+    "panic_observed_after_external_mutation": 4,
+    "pre_advance_success": 4,
+    "interpretation": "The diagnostic catches the original defect and expects the panic. This is not a passing permanent no-panic regression or a repaired mechanism."
+  }
+}

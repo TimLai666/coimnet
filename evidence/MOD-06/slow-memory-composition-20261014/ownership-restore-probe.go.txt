@@ -1,0 +1,57 @@
+package learning_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/learning"
+	"testing"
+)
+
+func TestRestoreRuleBoundsDiagnosticReceipt(t *testing.T) {
+	for _, field := range []string{"GateReceptor", "DecayEReceptor"} {
+		for _, chemAbsent := range []bool{false, true} {
+			seed := compositionIndividual(t, "continuous", 0, true, .75, .125, .25).Snapshot()
+			index := 1
+			if chemAbsent {
+				index = 0
+				seed.Chemical = nil
+			}
+			if field == "GateReceptor" {
+				seed.Plastic.Config.Rule.GateReceptor = &index
+				seed.Plastic.Config.Rule.GateScale = 1
+			} else {
+				seed.Plastic.Config.Rule.DecayEReceptor = &index
+				seed.Plastic.Config.Rule.DecayEBase = .5
+				seed.Plastic.Config.Rule.DecayESpan = .25
+				seed.Plastic.Config.Rule.DecayEMin = .25
+				seed.Plastic.Config.Rule.DecayEMax = .75
+			}
+			a, err := learning.RestoreIndividual(seed)
+			row := map[string]any{"field": field, "chemical_absent": chemAbsent, "index": index, "restore_accepted": err == nil}
+			if err != nil {
+				t.Fatalf("diagnostic expected observed restore acceptance: %v", err)
+			}
+			func() {
+				defer func() {
+					if x := recover(); x != nil {
+						row["panic"] = fmt.Sprint(x)
+					}
+				}()
+				_, err := a.Advance(context.Background(), [][]float64{{1.25}})
+				row["advance_success"] = err == nil
+				if err != nil {
+					row["advance_error"] = err.Error()
+				}
+			}()
+			if !chemAbsent && row["panic"] == nil {
+				t.Fatalf("expected out-of-range panic: %v", row)
+			}
+			raw, err := json.Marshal(row)
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Printf("RESTORE_RULE_DIAGNOSTIC %s\n", raw)
+		}
+	}
+}

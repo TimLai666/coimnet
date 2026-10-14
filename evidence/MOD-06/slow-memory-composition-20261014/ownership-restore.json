@@ -1,0 +1,23 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/ownership-restore-overlay.json",
+    "-json",
+    "-count=1",
+    "-run",
+    "^TestRestoreRuleBoundsDiagnosticReceipt$",
+    "./learning"
+  ],
+  "exit_code": 0,
+  "source": "ownership-restore-probe.go.txt",
+  "source_sha256": "026728739a6ecd6c451b6bb68199b3474c0309a514d1bfae41fd1202d92d0611",
+  "log": "ownership-restore.log",
+  "log_sha256": "2caf0f002cea9afba825ef6546e793ef4e093c6c772ded17c12ff210a38f23b6",
+  "observed_result": {
+    "accepted_out_of_range_then_panicked": 2,
+    "accepted_missing_chemistry_and_ran_without_declared_receptor_effect": 2,
+    "interpretation": "Original defect observed by a diagnostic that expects the buggy behavior, not a repaired regression."
+  }
+}

@@ -1,0 +1,465 @@
+{
+  "requirement": [
+    "MOD-06"
+  ],
+  "reproduction_command": {
+    "public_before": "public-probe-v4.json",
+    "public_fixed": "public-probe-fixed.json",
+    "regression_before": [
+      "composition-red.json",
+      "sparse-red.json"
+    ],
+    "regression_fixed": [
+      "composition-green.json",
+      "sparse-green.json"
+    ],
+    "compatibility": [
+      "compatibility-old.json",
+      "compatibility-fixed.json",
+      "compatibility-fresh.json"
+    ]
+  },
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/slow-memory-composition-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprints": {
+    "baseline_head": "f69be0f82b27b327add5faae4388e25f409ea44c",
+    "source_manifest": "source-final.json",
+    "source_count": 796,
+    "frozen_tests": "frozen-tests.json",
+    "test_files": 460,
+    "source_manifest_sha256": "ac815c699c23d5061d00c158fbf4b431d31f67d601333377b7c77154441cf44b",
+    "frozen_tests_sha256": "41dbccde19e502aa1f06ed43daf3fd4d8691871318361a51243504d23a11b49f"
+  },
+  "observed_result": {
+    "status": "passed",
+    "public_pre_usable": 6,
+    "original_newly_unusable": 3,
+    "fixed_rejected_without_state_change": 3,
+    "fixed_controls_usable": 3,
+    "normal_bitwise_compatibility_cases": 54,
+    "full_engineering": "passed",
+    "suites": {
+      "unit-v2": {
+        "package_pass_count": 58,
+        "test_pass_events": 5281,
+        "top_level_pass_count": 2116,
+        "skipped_test_events": 22,
+        "failure_events": 0,
+        "passed_packages": [
+          "github.com/TimLai666/coimnet/backend",
+          "github.com/TimLai666/coimnet/backend/webgpu",
+          "github.com/TimLai666/coimnet",
+          "github.com/TimLai666/coimnet/config",
+          "github.com/TimLai666/coimnet/connectome",
+          "github.com/TimLai666/coimnet/connectome/flywire",
+          "github.com/TimLai666/coimnet/distill",
+          "github.com/TimLai666/coimnet/download",
+          "github.com/TimLai666/coimnet/checkpoint",
+          "github.com/TimLai666/coimnet/dynamics",
+          "github.com/TimLai666/coimnet/examples/lifthreshold",
+          "github.com/TimLai666/coimnet/examples/multichannel",
+          "github.com/TimLai666/coimnet/examples/realasr",
+          "github.com/TimLai666/coimnet/examples/realmedia",
+          "github.com/TimLai666/coimnet/examples/realnav",
+          "github.com/TimLai666/coimnet/examples/realnavmemory",
+          "github.com/TimLai666/coimnet/examples/realocr",
+          "github.com/TimLai666/coimnet/examples/realsubgraph",
+          "github.com/TimLai666/coimnet/examples/receptorlocation",
+          "github.com/TimLai666/coimnet/examples/realtext",
+          "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "github.com/TimLai666/coimnet/experiment/gridnav",
+          "github.com/TimLai666/coimnet/experiment",
+          "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "github.com/TimLai666/coimnet/experiment/nav2d",
+          "github.com/TimLai666/coimnet/feather",
+          "github.com/TimLai666/coimnet/experiment/studenteval",
+          "github.com/TimLai666/coimnet/internal/delayedfixture",
+          "github.com/TimLai666/coimnet/internal/extsort",
+          "github.com/TimLai666/coimnet/internal/fileio",
+          "github.com/TimLai666/coimnet/internal/jsonkey",
+          "github.com/TimLai666/coimnet/internal/redact",
+          "github.com/TimLai666/coimnet/internal/sparse",
+          "github.com/TimLai666/coimnet/internal/strictjson",
+          "github.com/TimLai666/coimnet/learning",
+          "github.com/TimLai666/coimnet/learning/rl",
+          "github.com/TimLai666/coimnet/modulation",
+          "github.com/TimLai666/coimnet/multimodal",
+          "github.com/TimLai666/coimnet/multimodal/synthetic",
+          "github.com/TimLai666/coimnet/params",
+          "github.com/TimLai666/coimnet/plasticity",
+          "github.com/TimLai666/coimnet/replay",
+          "github.com/TimLai666/coimnet/resources",
+          "github.com/TimLai666/coimnet/signal",
+          "github.com/TimLai666/coimnet/simulate",
+          "github.com/TimLai666/coimnet/tasks/asr",
+          "github.com/TimLai666/coimnet/tasks/asr/audio",
+          "github.com/TimLai666/coimnet/internal/cli",
+          "github.com/TimLai666/coimnet/tasks/media/realdata",
+          "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "github.com/TimLai666/coimnet/tasks/ocr",
+          "github.com/TimLai666/coimnet/tasks/ocr/ctc",
+          "github.com/TimLai666/coimnet/tasks/ocr/glyphs",
+          "github.com/TimLai666/coimnet/tasks/media",
+          "github.com/TimLai666/coimnet/tasks/textgen/tokenizer",
+          "github.com/TimLai666/coimnet/teacher",
+          "github.com/TimLai666/coimnet/teacher/tool",
+          "github.com/TimLai666/coimnet/tasks/textgen"
+        ],
+        "skips": [
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence"
+          }
+        ]
+      },
+      "race": {
+        "package_pass_count": 58,
+        "test_pass_events": 5280,
+        "top_level_pass_count": 2115,
+        "skipped_test_events": 23,
+        "failure_events": 0,
+        "passed_packages": [
+          "github.com/TimLai666/coimnet/backend",
+          "github.com/TimLai666/coimnet/backend/webgpu",
+          "github.com/TimLai666/coimnet",
+          "github.com/TimLai666/coimnet/config",
+          "github.com/TimLai666/coimnet/connectome",
+          "github.com/TimLai666/coimnet/connectome/flywire",
+          "github.com/TimLai666/coimnet/distill",
+          "github.com/TimLai666/coimnet/checkpoint",
+          "github.com/TimLai666/coimnet/download",
+          "github.com/TimLai666/coimnet/examples/lifthreshold",
+          "github.com/TimLai666/coimnet/dynamics",
+          "github.com/TimLai666/coimnet/examples/multichannel",
+          "github.com/TimLai666/coimnet/examples/realasr",
+          "github.com/TimLai666/coimnet/examples/realnav",
+          "github.com/TimLai666/coimnet/examples/realnavmemory",
+          "github.com/TimLai666/coimnet/examples/realmedia",
+          "github.com/TimLai666/coimnet/examples/realsubgraph",
+          "github.com/TimLai666/coimnet/examples/realocr",
+          "github.com/TimLai666/coimnet/examples/receptorlocation",
+          "github.com/TimLai666/coimnet/examples/realtext",
+          "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "github.com/TimLai666/coimnet/experiment/gridnav",
+          "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "github.com/TimLai666/coimnet/experiment/nav2d",
+          "github.com/TimLai666/coimnet/experiment/studenteval",
+          "github.com/TimLai666/coimnet/feather",
+          "github.com/TimLai666/coimnet/experiment",
+          "github.com/TimLai666/coimnet/internal/delayedfixture",
+          "github.com/TimLai666/coimnet/internal/extsort",
+          "github.com/TimLai666/coimnet/internal/fileio",
+          "github.com/TimLai666/coimnet/internal/jsonkey",
+          "github.com/TimLai666/coimnet/internal/redact",
+          "github.com/TimLai666/coimnet/internal/sparse",
+          "github.com/TimLai666/coimnet/internal/strictjson",
+          "github.com/TimLai666/coimnet/learning",
+          "github.com/TimLai666/coimnet/learning/rl",
+          "github.com/TimLai666/coimnet/modulation",
+          "github.com/TimLai666/coimnet/multimodal",
+          "github.com/TimLai666/coimnet/multimodal/synthetic",
+          "github.com/TimLai666/coimnet/params",
+          "github.com/TimLai666/coimnet/plasticity",
+          "github.com/TimLai666/coimnet/replay",
+          "github.com/TimLai666/coimnet/resources",
+          "github.com/TimLai666/coimnet/signal",
+          "github.com/TimLai666/coimnet/simulate",
+          "github.com/TimLai666/coimnet/tasks/asr",
+          "github.com/TimLai666/coimnet/tasks/asr/audio",
+          "github.com/TimLai666/coimnet/internal/cli",
+          "github.com/TimLai666/coimnet/tasks/media/realdata",
+          "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "github.com/TimLai666/coimnet/tasks/ocr",
+          "github.com/TimLai666/coimnet/tasks/ocr/ctc",
+          "github.com/TimLai666/coimnet/tasks/ocr/glyphs",
+          "github.com/TimLai666/coimnet/tasks/media",
+          "github.com/TimLai666/coimnet/tasks/textgen/tokenizer",
+          "github.com/TimLai666/coimnet/teacher",
+          "github.com/TimLai666/coimnet/teacher/tool",
+          "github.com/TimLai666/coimnet/tasks/textgen"
+        ],
+        "skips": [
+          {
+            "package": "github.com/TimLai666/coimnet/backend/webgpu",
+            "test": "TestDeviceAdamWChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/checkpoint",
+            "test": "TestBundleLargerThanSingleFileLimit"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/cmd/coimnet",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/OPS-05/device-training-20261012",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/evidence/TSK-11/ocr-raster-encoder-20261012/review",
+            "test": null
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realnav",
+            "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/examples/realmedia",
+            "test": "TestRealMediaModelChildLoad"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestAttributionEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+            "test": "TestFullGraphResumeEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+            "test": "TestMultimodalEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestMultiTaskEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestNav2DSuiteEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOGradientEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOHorizonEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOShortGoalCueEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/experiment",
+            "test": "TestPPOTrainingFeedbackEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestGPUDeviceTrainerChildProcess"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/learning",
+            "test": "TestRecomputeRSSHelper"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/image"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestMediaEvidence/audio"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestRolesEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+            "test": "TestReadTitovaSourceWhenConfigured"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/textgen",
+            "test": "TestTextgenEvidence"
+          },
+          {
+            "package": "github.com/TimLai666/coimnet/tasks/media",
+            "test": "TestVideoEvidence"
+          }
+        ]
+      }
+    },
+    "required_engineering_receipts": [
+      "format-production.json",
+      "module-verify-v2.json",
+      "build.json",
+      "unit-v2.json",
+      "race.json",
+      "vet.json",
+      "module-list.json",
+      "target-flow.json",
+      "cli-build.json",
+      "cli-doctor.json",
+      "cli-data-sources.json",
+      "cli-delayed.json",
+      "cli-lif-threshold.json",
+      "cli-train-first.json",
+      "cli-train-resumed.json",
+      "cli-train-continuous.json",
+      "cli-resume-equality.json"
+    ],
+    "normal_new_top_level_regressions": 5,
+    "normal_new_test_events": 81,
+    "cli_fresh_process_resume_equal": true,
+    "actual_model_quality_improvement": false,
+    "remaining_confirmed_defects": [
+      "ticket89 neutral gain compatibility decision pending",
+      "Rule pointer ownership shared across input and snapshots",
+      "Restore omits receptor-to-chemistry cross validation"
+    ],
+    "final_governance": {
+      "test_pass_events": 31,
+      "top_level_pass_count": 11,
+      "failure_events": 0
+    },
+    "cleanup": {
+      "regular_files": 9203,
+      "symlinks": 24465,
+      "directories_including_root": 4197,
+      "regular_bytes": 1331266511
+    }
+  },
+  "test_log": [
+    "public-probe-v4.log",
+    "public-probe-fixed.log",
+    "composition-red.log",
+    "composition-green.log",
+    "sparse-red.log",
+    "sparse-green.log",
+    "compatibility-old.log",
+    "compatibility-fixed.log",
+    "compatibility-fresh.log",
+    "unit.log.gz",
+    "unit-v2.log.gz",
+    "race.log.gz",
+    "vet.log",
+    "target-flow.log",
+    "cli-resume-equality.log",
+    "final-governance.log"
+  ],
+  "cleanup_evidence": "cleanup.json"
+}

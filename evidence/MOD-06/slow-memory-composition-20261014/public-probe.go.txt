@@ -1,0 +1,71 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func message(err error) any {
+	if err == nil {
+		return nil
+	}
+	return err.Error()
+}
+
+func main() {
+	ctx := context.Background()
+	for _, sign := range []int8{0, 1, -1} {
+		for _, retain := range []float64{0, 1} {
+			cfg := learning.Config{
+				Dynamics:  dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{0}, DT: 1, Activation: "tanh"},
+				InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{1}, EdgeSigns: []int8{sign},
+			}
+			base := 1e308
+			if sign != 0 {
+				base = math.Log(base)
+			}
+			params := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{base}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}, Encoder: []float64{1}, Readout: []float64{1}}
+			a, err := learning.NewIndividual(cfg, params, learning.DefaultOptions(), nil)
+			must(err)
+			pc := plasticity.Config{Edges: []int{0}, Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: 1, PlasticMax: 1e308, WMin: 0}}
+			must(a.EnablePlasticity(pc))
+			must(a.EnableConsolidation(1))
+			cc := modulation.ChemistryConfig{
+				Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{1}},
+				Sources:   []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1}}},
+				Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: 1, N: 1, Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "slow-composition/v1"}}},
+				Regions:   modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+			}
+			must(a.EnableChemistry(cc))
+			s := a.Snapshot()
+			s.Plastic.Slow.Values[0] = -1e308
+			s.Plastic.State.Plastic[0] = 1e308
+			a, err = learning.RestoreIndividual(s)
+			must(err)
+			_, beforeAdvance := a.Advance(ctx, [][]float64{{0}})
+			before := a.Snapshot()
+			report, err := a.Consolidate(ctx, learning.ConsolidationTrigger{Receptor: 0, Threshold: 0, Rate: 1, Retain: retain})
+			after := a.Snapshot()
+			_, marshalErr := json.Marshal(after)
+			_, nextAdvance := a.Advance(ctx, [][]float64{{0}})
+			row := map[string]any{"sign": sign, "retain": retain, "pre_advance_error": message(beforeAdvance), "consolidate_error": message(err), "applied": report.Applied, "state_unchanged": reflect.DeepEqual(before, after), "snapshot_json_error": message(marshalErr), "next_advance_error": message(nextAdvance), "slow_after": after.Plastic.Slow.Values[0], "plastic_after": after.Plastic.State.Plastic[0]}
+			must(json.NewEncoder(os.Stdout).Encode(row))
+		}
+	}
+	fmt.Fprintln(os.Stderr, "completed public consolidation probe")
+}

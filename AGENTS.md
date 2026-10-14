@@ -66,3 +66,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
 - `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
 - `modulation/memory_controller.go:104`、`modulation/controller.go:199`：[NEEDS INVESTIGATION] 已有活動歷史後修改公開 Inputs／Nodes 宣告時，MemoryController 可能重建視窗。規格尚未指定應回錯、重設或保留歷史，正常呼叫端也不改宣告。後續先釐清支援契約再補測試，不列為已確認缺陷。
+
+- `plasticity/plasticity.go`：`Model` 宣告 immutable、`Config()` 宣告 independent copy，但 `New` 輸入與 `Config` 輸出的 `Rule.GateReceptor`／`DecayEReceptor` 共用指標。公開四個宣告案例與四個持續個體案例實測，修改輸入或快照中的受體編號會改到原模型，負編號使 Advance 越界 panic（P2）。接續獨立補 deep copy 與輸入／輸出隔離回歸，不混入 ticket 90。證據見 `evidence/MOD-06/slow-memory-composition-20261014/ownership-probe.log`。
+
+- `learning/individual.go`：`RestoreIndividual` 沒有沿用 `checkReceptorRule` 的受體／化學層交叉驗證。公開兩個正編號越界案例讀入成功後 Advance panic，兩個缺少 Chemical 的案例接受後停用受體作用（P2）。與受體指標隔離一起獨立處理，保留正常快照格式及既有啟用契約。證據見 `evidence/MOD-06/slow-memory-composition-20261014/ownership-restore.json`。

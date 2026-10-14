@@ -1,0 +1,29 @@
+import os,json,hashlib,subprocess,time,re
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/slow-memory-composition-20261014';e=r/'evidence/MOD-06/slow-memory-composition-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+def run(n,c):
+ t=time.monotonic()
+ with (e/(n+'.log')).open('xb') as out:p=subprocess.run(c,cwd=r,env=env,stdout=out,stderr=subprocess.STDOUT)
+ raw=(e/(n+'.log')).read_bytes();d={'command':c,'exit_code':p.returncode,'duration_seconds':round(time.monotonic()-t,6),'log':n+'.log','log_sha256':hashlib.sha256(raw).hexdigest()}
+ with (e/(n+'.json')).open('x') as out:json.dump(d,out,indent=2);out.write('\n')
+ print(json.dumps(d),flush=True);assert p.returncode==0,n
+ return raw.decode()
+rows=[]
+for n,overlay in [('compatibility-old','compatibility-old.json'),('compatibility-fixed','compatibility-final.json'),('compatibility-fresh','compatibility-final.json')]:
+ raw=run(n,['go','test','-overlay',str(w/overlay),'-json','-count=1','-run','^TestCompositionCompatibilityReceipt$','./learning']);ds={}
+ for line in raw.splitlines():
+  try:d=json.loads(line)
+  except ValueError:continue
+  m=re.match(r'COMPOSITION_COMPAT (\S+) ([a-f0-9]{64})\n$',d.get('Output',''))
+  if m:assert m[1] not in ds;ds[m[1]]=m[2]
+ assert len(ds)==54,len(ds);rows.append(ds)
+assert rows[0]==rows[1]==rows[2]
+(e/'compatibility-equality.json').write_text(json.dumps({'cases':54,'old_equals_fixed':True,'fixed_equals_fresh':True,'digests':rows[0],'baseline_consolidation_sha256':hashlib.sha256((w/'baseline_consolidation.go').read_bytes()).hexdigest(),'probe_sha256':hashlib.sha256((w/'compatibility_test.go').read_bytes()).hexdigest()},indent=2)+'\n')
+raw=run('public-probe-fixed',['go','run',str(w/'probe.go')]);cases=[]
+for line in raw.splitlines():
+ try:d=json.loads(line)
+ except ValueError:continue
+ if 'retain' in d:cases.append(d)
+print('PUBLIC_FIXED_ROWS',len(cases),flush=True)
+print('LEGAL_COMPATIBILITY54_BITWISE_EQUAL',flush=True)

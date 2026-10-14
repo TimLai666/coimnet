@@ -1,0 +1,15 @@
+package main
+import("encoding/json";"fmt";"os";"github.com/TimLai666/coimnet/plasticity")
+func main(){
+ for _,boundary:=range []string{"input","Config"}{for _,field:=range []string{"GateReceptor","DecayEReceptor"}{
+  gate,decay:=0,0
+  c:=plasticity.Config{Edges:[]int{0},Rule:plasticity.Rule{Kind:plasticity.RuleHebbianRate,DecayE:.5,DecayP:.5,PlasticMax:1,WMin:.1,GateReceptor:&gate,GateScale:1,DecayEReceptor:&decay,DecayEBase:.5,DecayESpan:.25,DecayEMin:.25,DecayEMax:.75}}
+  m,err:=plasticity.New(c,1);if err!=nil{panic(err)}
+  mutation:=c;if boundary=="Config"{mutation=m.Config()}
+  if field=="GateReceptor"{*mutation.Rule.GateReceptor=-1}else{*mutation.Rule.DecayEReceptor=-1}
+  current:=m.Config();got:=*current.Rule.GateReceptor;if field=="DecayEReceptor"{got=*current.Rule.DecayEReceptor}
+  _,validation:=plasticity.New(current,1);if validation==nil{panic("unexpected accepted negative index")}
+  row:=map[string]any{"boundary":boundary,"field":field,"original_index":0,"model_index_after_external_mutation":got,"revalidation_error":validation.Error()}
+  if err:=json.NewEncoder(os.Stdout).Encode(row);err!=nil{panic(err)};if got!=-1{panic(fmt.Sprintf("alias not observed: %d",got))}
+ }}
+}

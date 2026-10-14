@@ -1,0 +1,16 @@
+package learning_test
+import("context";"encoding/json";"fmt";"testing";"github.com/TimLai666/coimnet/learning")
+func TestIndividualRuleOwnershipDiagnosticReceipt(t *testing.T){
+ for _,boundary:=range []string{"input","Snapshot"}{for _,field:=range []string{"GateReceptor","DecayEReceptor"}{
+  seed:=compositionIndividual(t,"continuous",0,true,.75,.125,.25).Snapshot();index:=0
+  if field=="GateReceptor"{seed.Plastic.Config.Rule.GateReceptor=&index;seed.Plastic.Config.Rule.GateScale=1}else{seed.Plastic.Config.Rule.DecayEReceptor=&index;seed.Plastic.Config.Rule.DecayEBase=.5;seed.Plastic.Config.Rule.DecayESpan=.25;seed.Plastic.Config.Rule.DecayEMin=.25;seed.Plastic.Config.Rule.DecayEMax=.75}
+  a,err:=learning.RestoreIndividual(seed);if err!=nil{t.Fatal(err)}
+  control,err:=learning.RestoreIndividual(a.Snapshot());if err!=nil{t.Fatal(err)}
+  if _,err:=control.Advance(context.Background(),[][]float64{{1.25}});err!=nil{t.Fatal(err)}
+  if boundary=="input"{index=-1}else{snap:=a.Snapshot();if field=="GateReceptor"{*snap.Plastic.Config.Rule.GateReceptor=-1}else{*snap.Plastic.Config.Rule.DecayEReceptor=-1}}
+  row:=map[string]any{"boundary":boundary,"field":field,"pre_advance_success":true}
+  func(){defer func(){if x:=recover();x!=nil{row["panic"]=fmt.Sprint(x)}}();_,err:=a.Advance(context.Background(),[][]float64{{1.25}});if err!=nil{row["error"]=err.Error()}}()
+  if row["panic"]==nil{t.Fatalf("expected observed alias panic, row=%v",row)}
+  raw,err:=json.Marshal(row);if err!=nil{t.Fatal(err)};fmt.Printf("OWNERSHIP_DIAGNOSTIC %s\n",raw)
+ }}
+}
