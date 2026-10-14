@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 94](docs/tickets/94-native-mean-representability.md) 目前完成 4／5。原來源 8 個永久回歸失敗事件，修正後 13 個事件通過；LIF 補驗原來源 3 個失敗，修正後一般／race 各 3 個通過。16 組正常模型的全部 Go JSON 位元組與舊狀態新程序接續相同。完整一般／race 各 58 套件及其餘工程、CLI 接續通過。NAT-01 恢復 passed，最新 90 項 passed、1 項 failed（MOD-04）。最後 11 項治理與本輪 1,211,375,287 bytes 暫存清理已完成，原有目錄保留，交付尚未完成，ticket 89 的相容性決策 pending。見[本輪工程驗收](evidence/NAT-01/native-mean-20261014/verification.json)。
+[ticket 94](docs/tickets/94-native-mean-representability.md) 已完成 5／5。有限平均與量測總和發布缺陷已修正，13 個永久回歸事件及 LIF 補驗一般／race 各 3 個事件通過。16 組正常模型的全部 Go JSON 位元組與舊狀態新程序接續相同。完整一般／race 各 58 套件、其餘工程、CLI 接續及最後 11 項治理通過。1,211,375,287 bytes 本輪暫存已清除，原有目錄保留。修正 37cca36 與回歸／證據 ea5d0ec 已推送並讀回一致，802 份提交來源相符，見[驗收](evidence/NAT-01/native-mean-20261014/verification.json)與[交付](evidence/NAT-01/native-mean-20261014/delivery.json)。NAT-01 恢復 passed，最新 90 項 passed、1 項 failed（MOD-04）。ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。
 
 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 已完成 5／5。68 個舊來源失敗事件、97 個修正後通過事件，20 組合法配置在舊／新來源與新程序重跑完全相同。完整一般／race 各 58 套件、其餘工程、CLI 新程序保存接續與最後 11 項治理通過。NAT-06 恢復 passed，1,203,188,028 bytes 本輪暫存已清除，原有目錄保留。修正 7240ad3 與回歸／證據 d5a1a51 已推送並讀回一致，801 份提交來源相符，見[驗收](evidence/NAT-06/native-plastic-norm-20261014/verification.json)與[交付](evidence/NAT-06/native-plastic-norm-20261014/delivery.json)。另確認 NAT-01 合法平均值被錯誤拒絕，接續由 [ticket 94](docs/tickets/94-native-mean-representability.md) 修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-01）。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
 
@@ -300,8 +300,6 @@ Tickets 54、55 的實作、回歸與本機完整驗收已完成。先前 OpenCo
 Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 GB，但 2026-09-23 重試本階段 SSH 時收到 `Permission denied (publickey,password)`，因此本階段沒有 Ubuntu 執行證據。PC 的 App 主機連線存在，但沒有可用的遠端指令工具，SSH 22 逾時，App UI 操作被工具限制拒絕。Windows 實機驗證尚未執行。GPU 硬體存在不等於稀疏訓練後端完成。
 
 ## 下一個可驗證成果與 ticket
-
-[ticket 94](docs/tickets/94-native-mean-representability.md) 接續有限平均值的公開失敗回歸與最小穩定計算。NAT-01 的四個公開診斷已保留，先凍結測試，正常模型、真正 sum_output 溢位拒絕與格式保持。
 
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的公開缺陷已重現，候選限制增益範圍須包含 1。取得相容性決策後，才能套用正式修正、補永久回歸並執行完整工程驗收。候選尚未採用，不以化學套件通過當成框架修正完成。
 

@@ -42,10 +42,12 @@
 | [evidence/NAT-01/native-mean-20261014/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/cli-train-first.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/cli-train-resumed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/cli-train-resumed.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-01/native-mean-20261014/committed-source.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/committed-source.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/compatibility-audit-v1.go.txt](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/compatibility-audit-v1.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/compatibility-audit.go.txt](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/compatibility-audit.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/compatibility-comparison.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/compatibility-comparison.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/compatibility-overlay.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/compatibility-overlay.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-01/native-mean-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/delivery.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/dispatch-marker-adjudication.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/dispatch-marker-adjudication.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/engineering-environment.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/engineering.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/engineering.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -98,6 +100,8 @@
 | [evidence/NAT-01/native-mean-20261014/original-runner.go.txt](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/original-runner.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/plan.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/prepare-artifacts.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-01/native-mean-20261014/primary-push.log](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/primary-push.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-01/native-mean-20261014/primary-scan.log](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/primary-scan.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/race-summary.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/race-summary.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/race.json](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/race.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-01/native-mean-20261014/race.log.gz](/Users/timlai/Developer/coimnet/evidence/NAT-01/native-mean-20261014/race.log.gz) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |

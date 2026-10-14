@@ -32,3 +32,7 @@ OpenCode 免費 `opencode/big-pickle --agent plan` 只取得與公開 Git 提交
 完整工程、最後治理、清理與交付結果由 `verification.json`、`cleanup.json`、`delivery.json` 的實際回條判定，本段不提前宣稱通過。
 
 Skills：software-engineering-guidelines、agent-delegation、investigate、eng-architect、test-and-fix、diff-inspector、subtraction-thinking、human-writing、project-memory（唯讀）
+
+## 完成驗收
+
+完整一般／race 各 58 套件，5,635／5,634 個通過事件、22／23 個既有跳過，沒有失敗。CLI 80+40 新程序接續與 120 步連續快照位元組相同，最後 11 項治理通過。本輪暫存清理完成，802 份提交來源與驗證相同，兩個主要提交已推送並讀回一致。本票完成 5／5，整體需求為 90／91，MOD-04 相容性決策 pending。
