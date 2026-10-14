@@ -3,13 +3,13 @@
 **Epic:** 機制與模型品質稽核
 **User Story:** 合法的有限快速狀態不會因報告的中間平方溢位而中止執行，非零幅度不會被報告成零。
 **Blocked by:** 無，不依賴 ticket 89 增益決策
-**Status:** in_progress
+**Status:** done
 
 - [x] Root 固定幅度可表示、真正不可表示、正常位元相容與失敗不提交的契約。
 - [x] 公開失敗回歸先凍結，以獨立參考確認大／小有限狀態，再審查既有錯誤期望。
 - [x] 最小共用數值修正、連續／LIF、正常舊模型與新程序相等、完整工程驗證。
 - [x] 同步 NAT-06 與證據，清除本輪暫存並保留原件。
-- [ ] 提交、推送及遠端讀回，提交來源與驗證指紋相符。
+- [x] 提交、推送及遠端讀回，提交來源與驗證指紋相符。
 
 Root 公開 `Build` → `RestorePlasticState` → `Run` 在連續與 LIF 共六個案例確認：快速狀態 `[1e200, 0]` 的真實幅度是 `1e200`，但 `sum(v*v)` 的中間平方溢位，合法執行被回報 `plastic l2[0] is non-finite` 並拒絕；`[1e-200, 0]` 的真實幅度是 `1e-200`，執行卻報告前後都是 0；`[1, 0]` 控制正確報告 1。兩種核心的凍結快速狀態都保持，沒有確認真實任務辨識率影響。原始診斷預期 bug，不是修正通過，見[觀察](../../evidence/MOD-05/native-receptor-refusal-20261014/native-l2-observed.json)與[命令](../../evidence/MOD-05/native-receptor-refusal-20261014/native-l2-audit-v2.json)。上述為修正前的已確認診斷。最終修正、正常控制與完整工程驗證見 [本票驗收](../../evidence/NAT-06/native-plastic-norm-20261014/verification.json)。
 

@@ -50,6 +50,7 @@
 | [evidence/NAT-06/native-plastic-norm-20261014/compatibility-parse.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/compatibility-parse.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/corrected-overflow-before.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/corrected-overflow-before.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/corrected-overflow-before.log](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/corrected-overflow-before.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-06/native-plastic-norm-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/delivery.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/engineering-environment.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/engineering.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/engineering.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/filesystem.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/filesystem.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -107,6 +108,7 @@
 | [evidence/NAT-06/native-plastic-norm-20261014/original-source-overlay.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/original-source-overlay.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/plan.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/prepare-artifacts.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-06/native-plastic-norm-20261014/push-primary.log](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/push-primary.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/race-summary.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/race-summary.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/race.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/race.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/race.log.gz](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/race.log.gz) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -122,6 +124,7 @@
 | [evidence/NAT-06/native-plastic-norm-20261014/root-review.md](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/root-review.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/run-go.py.txt](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/run-go.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/source-before.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/source-before.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/NAT-06/native-plastic-norm-20261014/source-committed.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/source-committed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/source-final-v2.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/source-final-v2.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/source-final.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/source-final.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/NAT-06/native-plastic-norm-20261014/source-red-v2.json](/Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/source-red-v2.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
