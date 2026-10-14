@@ -750,9 +750,17 @@ func (r *Runner) Run(ctx context.Context, stimulus [][]float64) (RunReport, erro
 	if r.interventions != nil {
 		report.Interventions = r.interventionReport(steps)
 	}
+	measurements := r.trackedMeasurements(tracking)
+	for _, window := range measurements.Windows {
+		// OutputSum is the required raw metric numerator, not a mean.
+		// Refuse a truly unrepresentable sum before committing any result.
+		if !finite(window.OutputSum) {
+			return empty, fmt.Errorf("simulate: tracked set %q window %v produced a non-finite output sum", window.Set, window.Window)
+		}
+	}
 	r.state = state
 	r.plasticState = fast
-	r.measurements = r.trackedMeasurements(tracking)
+	r.measurements = measurements
 	return report, nil
 }
 
@@ -828,7 +836,28 @@ func reduce(probe resolvedProbe, outputs, spikes []float64) (float64, error) {
 		return 0, fmt.Errorf("simulate: probe %q has unsupported reduction %q", probe.name, probe.reduce)
 	}
 	if probe.scaleByOne {
-		sum /= float64(len(probe.nodes))
+		if math.IsInf(sum, 0) {
+			// A finite mean can have an overflowing intermediate sum.
+			// Scale before reducing only this failed range; ordinary bits
+			// retain the existing index-order sum and division.
+			scale := 0.0
+			for _, node := range probe.nodes {
+				scale = math.Max(scale, math.Abs(outputs[node]))
+			}
+			scaled, correction := 0.0, 0.0
+			for _, node := range probe.nodes {
+				term := outputs[node]/scale - correction
+				next := scaled + term
+				correction = (next - scaled) - term
+				scaled = next
+			}
+			// The mean of inputs in [-scale, scale] is in the same interval.
+			// Keep rounding at that bound from overflowing on scale-back.
+			mean := scaled / float64(len(probe.nodes))
+			sum = scale * math.Max(-1, math.Min(1, mean))
+		} else {
+			sum /= float64(len(probe.nodes))
+		}
 	}
 	if !finite(sum) {
 		return 0, fmt.Errorf("simulate: probe %q produced a non-finite value", probe.name)
