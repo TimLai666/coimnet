@@ -1,0 +1,60 @@
+{
+  "requirement": "NAT-01",
+  "status": "failed",
+  "severity": "P2",
+  "known_defect_confirmed": true,
+  "repair_verified": false,
+  "reproduction_command": [
+    "go",
+    "test",
+    "-overlay",
+    "evidence/NAT-06/native-plastic-norm-20261014/mean-audit-overlay.json",
+    "-json",
+    "-count=1",
+    "./simulate",
+    "-run",
+    "^TestNativeMeanAudit$"
+  ],
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprint": {
+    "source_manifest": "../NAT-06/native-plastic-norm-20261014/source-final-v2.json",
+    "source_manifest_sha256": "5191c0e6c58dd8943a40d139d1a6fdc22ae36fd38652cd5c0b57a23a34f25378",
+    "audit_code_sha256": "7f6ae70c6cc1f2354a1147b850dca1323ea7435f2fa59a4ec9219dbff17cc995",
+    "cases_archive": "../NAT-06/native-plastic-norm-20261014/mean-observed-cases.json.gz",
+    "cases_sha256": "b4ba96c82c4123e1f218f3ae868241d7cd90e646aac0778985f7c2fa6bf8e2b0",
+    "fixture": "artificial three-node two-edge graph; zero gain, zero injection, finite softplus bias"
+  },
+  "observed_result": {
+    "finite_true_mean": 1.1363587890114286e+308,
+    "error": "simulate: probe \"mean\" produced a non-finite value",
+    "failure_preserved_neural_state_and_inputs": true,
+    "one_node_same_bias_succeeded": true,
+    "three_nodes_lower_bias_succeeded": true,
+    "tanh_same_bias_succeeded": true
+  },
+  "test_log": "../NAT-06/native-plastic-norm-20261014/mean-observed.log",
+  "command_receipt": "../NAT-06/native-plastic-norm-20261014/mean-observed.json",
+  "limitation": "Diagnostic intentionally expects a confirmed bug, not a repair pass. No real-task quality effect demonstrated; native mean repair is separate ticket 94."
+}

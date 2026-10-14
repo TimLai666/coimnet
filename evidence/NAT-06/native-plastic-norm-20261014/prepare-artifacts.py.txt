@@ -1,0 +1,14 @@
+from pathlib import Path
+import json,hashlib,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/NAT-06/native-plastic-norm-20261014';base='9dbc7aeda009c173c56dfd4b9e3446a402733bb7'
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines())
+paths.update(str((e/n).relative_to(r)) for n in ['changed-files.md','artifact-index.json'])
+specific={'simulate/plasticity.go':'穩定原生幅度計算，保留正常位元與真正溢位拒絕。','simulate/runner.go':'更正晚期幅度拒絕的數值註解。','simulate/plasticity_test.go':'依獨立數值證據修正錯誤的溢位測試案例。','simulate/plastic_norm_test.go':'新增公開純量、向量、學習與失敗不提交回歸。','simulate/plastic_norm_boundary_test.go':'新增部分下溢、最高端捨入與正常位元回歸。','AGENTS.md':'移除已修幅度提醒，記錄已確認平均值缺陷。','ENG.md':'同步原生幅度數值契約。','README.md':'同步已修與剩餘確認缺陷。','delivery-status.md':'更新驗收、清理、交付與下一個可驗證成果。','docs/model-and-mechanisms.md':'同步原生幅度報告保證與限制。','docs/requirements-status.json':'NAT-06 恢復 passed，NAT-01 依公開平均值缺陷改 failed。','docs/tickets/93-native-plastic-norm-representability.md':'記錄五項驗收與實際證據。','docs/tickets/94-native-mean-representability.md':'固定下一個原生平均值修正的範圍與驗收。','evidence/NAT-01/native-mean-audit-20261014.json':'保存公開平均值診斷，明示尚未修正。'}
+lines=['# 本輪實際變更檔案','','| \u6a94\u6848 | \u8b8a\u66f4\u6458\u8981 |','| --- | --- |']
+for name in sorted(paths):
+ description=specific.get(name,'保存本輪命令、來源指紋、觀察、審查、清理或交付證據。')
+ lines.append('| ['+name+']('+str(r/name)+') | '+description+' |')
+(e/'changed-files.md').write_text('\n'.join(lines)+'\n')
+index={str(p.relative_to(e)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted(e.rglob('*')) if p.is_file() and p.name!='artifact-index.json'}
+(e/'artifact-index.json').write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_files':len(paths),'indexed_artifacts':len(index)}))

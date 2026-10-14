@@ -1,0 +1,41 @@
+from pathlib import Path
+import json,gzip,hashlib,collections
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/NAT-06/native-plastic-norm-20261014'
+commands=['format','module-verify','build','unit','race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality']
+for name in commands:
+ rec=json.loads((e/(name+'.json')).read_text());assert rec['exit_code']==0,name
+ raw=(e/rec['log']).read_bytes();assert hashlib.sha256(raw).hexdigest()==rec['log_sha256'],name
+source=json.loads((e/'source-final-v2.json').read_text());tests=json.loads((e/'tests-frozen-final-v2.json').read_text())
+for p,h in source.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+for p,h in tests.items():assert source[p]==h,p
+assert len(source)==801 and len(tests)==465
+assert source['modulation/effects.go']=='8cfaa586fd6ad6b85b2adb16604c93b6850a1b67a2a82cd51ad5f96b816ae7b7'
+assert json.loads((e/'green-v2.json').read_text())['test_pass_events']==97
+assert json.loads((e/'green-v2.json').read_text())['test_fail_events']==0
+compat=json.loads((e/'normal-compatibility.json').read_text());assert compat['cases']==20 and compat['old_fixed_equal'] and compat['fixed_fresh_equal'] and compat['excluded_fields']==[]
+summaries={}
+for name in ['unit','race']:
+ rec=json.loads((e/(name+'.json')).read_text());events=[json.loads(l) for l in (e/rec['log']).read_text().splitlines() if l.startswith('{')]
+ result={'test_events':dict(collections.Counter(x['Action'] for x in events if 'Test' in x and x.get('Action') in ['pass','fail','skip'])),'package_pass_count':sum(x.get('Action')=='pass' and 'Test' not in x for x in events),'skipped_tests':[{'package':x['Package'],'test':x['Test']} for x in events if 'Test' in x and x.get('Action')=='skip']}
+ assert result['package_pass_count']==58 and result['test_events'].get('fail',0)==0
+ with (e/(name+'-summary.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ summaries[name]=result
+archives=[]
+for p in list(e.glob('*.log')):
+ raw=p.read_bytes()
+ if len(raw)<=200000:continue
+ dest=p.with_name(p.name+'.gz');assert not dest.exists();dest.write_bytes(gzip.compress(raw,mtime=0));assert gzip.decompress(dest.read_bytes())==raw
+ entry={'raw_path':p.name,'archive':dest.name,'raw_sha256':hashlib.sha256(raw).hexdigest(),'archive_sha256':hashlib.sha256(dest.read_bytes()).hexdigest(),'raw_bytes':len(raw),'archive_bytes':dest.stat().st_size};archives.append(entry)
+ receipt=e/(p.stem+'.json')
+ if receipt.exists():
+  before=receipt.read_bytes();x=json.loads(before);assert x['log']==p.name and x['log_sha256']==entry['raw_sha256'];x.update(log=dest.name,log_compression='gzip',compressed_log_sha256=entry['archive_sha256']);assert receipt.read_bytes()==before;receipt.write_text(json.dumps(x,indent=2)+'\n')
+ assert p.read_bytes()==raw;p.unlink()
+with (e/'archive-terminal.json').open('x') as f:json.dump(archives,f,indent=2);f.write('\n')
+verification={'requirement':['NAT-06'],'engineering_passed':True,'acceptance_complete':False,'reproduction_command':'run-go.py.txt, engineering.py.txt, immutable command receipts and original-source overlays','environment':json.loads((e/'engineering-environment.json').read_text()),'input_fingerprint':{'source_manifest':'source-final-v2.json','source_manifest_sha256':hashlib.sha256((e/'source-final-v2.json').read_bytes()).hexdigest(),'frozen_tests':'tests-frozen-final-v2.json','frozen_tests_sha256':hashlib.sha256((e/'tests-frozen-final-v2.json').read_bytes()).hexdigest(),'frozen_test_count':len(tests),'compatibility_audit':'compatibility-audit.go.txt','fixture':'artificial three-node two-edge native CPU graph; no new real task or whole-brain run'},'observed_result':{'native_plastic_norm_fixed':True,'original_source_regression_fail_events':68,'final_regression_pass_events':97,'regression_fail_events':0,'legal_models_per_phase':20,'old_fixed_fresh_process_equal':True,'excluded_compatibility_fields':[],'source_count':len(source),'normal_test_summary':summaries['unit'],'race_test_summary':summaries['race'],'cli_new_process_resume_bytes_equal':True,'gain_policy_ticket89':'pending; formal source unchanged','separate_mean_defect':'confirmed; NAT-01 failed; ticket 94','final_governance':'pending','own_cleanup':'pending','delivery':'pending'},'engineering_receipts':[x+'.json' for x in commands],'regression_receipts':['red-v3.json','green-v2.json','corrected-overflow-before.json'],'normal_compatibility':'normal-compatibility.json','root_review':'root-review.md','limitation':'No zero-bug, real task accuracy improvement, new whole-brain, GPU, biological validation, globally correctly rounded ordinary reduction or high-frequency upper-range performance conclusion.'}
+with (e/'verification.json').open('x') as f:json.dump(verification,f,indent=2);f.write('\n')
+p=r/'docs/requirements-status.json';before=p.read_bytes();j=json.loads(before)
+for item in j['requirements']:
+ if item['id']=='NAT-06':
+  assert item['status']=='failed';item['status']='passed';item['evidence'].append('../evidence/NAT-06/native-plastic-norm-20261014/verification.json')
+assert p.read_bytes()==before;p.write_text(json.dumps(j,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+print('ENGINEERING_ACCEPTANCE_RECORDED',dict(collections.Counter(x['status'] for x in j['requirements'])))

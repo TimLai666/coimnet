@@ -1,0 +1,24 @@
+package simulate
+import("bytes";"context";"encoding/json";"math";"strings";"testing";"github.com/TimLai666/coimnet/dynamics")
+func TestNativeMeanAudit(t *testing.T){
+ g:=fixtureGraph(t)
+ for _,tc:=range []struct{name string; bias float64; nodes []int; activation string; failure bool}{
+  {"softplus_mean_three_max",math.MaxFloat64,[]int{0,1,2},"softplus",true},
+  {"softplus_mean_one_max",math.MaxFloat64,[]int{0},"softplus",false},
+  {"softplus_mean_three_lower",1e307,[]int{0,1,2},"softplus",false},
+  {"tanh_mean_three_max",math.MaxFloat64,[]int{0,1,2},"tanh",false},
+ }{t.Run(tc.name,func(t *testing.T){
+  p:=Protocol{SchemaVersion:ProtocolSchemaVersion,Core:CoreContinuous,Continuous:&dynamics.Config{DT:1,Activation:tc.activation},Injections:[]Injection{{Channel:0,Node:0,Gain:0}},Probes:[]Probe{{Name:"mean",Nodes:tc.nodes,Reduce:ReduceMeanOutput}},Stimulus:StimulusSpec{Pulse:&Pulse{Channels:1,Steps:1,Channel:0,Onset:0,Duration:1,Amplitude:0}},ParameterSource:ParameterSourceUniform,Uniform:&UniformParameters{Gain:0,Bias:tc.bias,LogTau:0,ThetaRaw:0}}
+  params:=mustParameters(t,g,*p.Uniform)
+  first,err:=Build(context.Background(),g,params,p,testLimits());if err!=nil{t.Fatal(err)}
+  snapshot:=first.State()
+  runner,err:=Build(context.Background(),g,params,p,testLimits());if err!=nil{t.Fatal(err)}
+  if err:=runner.RestoreState(snapshot);err!=nil{t.Fatal(err)}
+  before:=nativeReceptorJSON(t,[]any{runner.State(),p,params})
+  report,err:=runner.Run(context.Background(),runner.Stimulus())
+  errText:="";if err!=nil{errText=err.Error()}
+  if tc.failure {if err==nil || !strings.Contains(errText,"probe \"mean\" produced a non-finite value"){t.Fatalf("expected diagnostic defect, error=%v",err)};if !bytes.Equal(before,nativeReceptorJSON(t,[]any{runner.State(),p,params})){t.Fatal("refusal changed state or inputs")}}else if err!=nil{t.Fatal(err)}
+  raw,e:=json.Marshal(map[string]any{"case":tc.name,"known_defect_diagnostic":true,"protocol":p,"parameters":params,"error":errText,"report":report,"before_state":snapshot,"after_state":runner.State(),"state_unchanged_on_refusal":bytes.Equal(before,nativeReceptorJSON(t,[]any{runner.State(),p,params}))});if e!=nil{t.Fatal(e)}
+  t.Log("MEAN_CASE "+string(raw))
+ })}
+}

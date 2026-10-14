@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 已完成 4／5。舊來源 68 個失敗事件、修正後 97 個事件通過。20 組合法配置在舊來源、修正來源與新程序重跑的完整狀態及報告一致。完整一般／race 各 58 套件、build、vet、相依性、CLI 新程序保存接續與最後 11 項治理通過，NAT-06 恢復 passed。本輪 1,203,188,028 bytes 暫存已清除，原有目錄保留。正式修正已提交 7240ad3，回歸／證據與遠端交付待完成。另確認 NAT-01 合法平均值被錯誤拒絕，由 [ticket 94](docs/tickets/94-native-mean-representability.md) 接續；最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-01）。ticket 89 相容性決策維持 pending。見[驗證](evidence/NAT-06/native-plastic-norm-20261014/verification.json)與[清理](evidence/NAT-06/native-plastic-norm-20261014/cleanup.json)。
+
 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 已完成 5／5。144 個受體宣告案例在舊來源失敗，修正後 168 個測試事件通過。14 組合法模型在舊來源、修正來源與新程序完全相同。完整一般／race 各 58 套件、build、vet、相依性、CLI 接續與最後 11 項治理通過，MOD-05 恢復 passed。本輪 1,187,300,480 bytes 暫存已清除，原有目錄保留。修正 1fb539b 與回歸／證據 5c95f11 已推送並核對遠端，799 份提交來源相符，見[驗收](evidence/MOD-05/native-receptor-refusal-20261014/verification.json)與[交付](evidence/MOD-05/native-receptor-refusal-20261014/delivery.json)。另確認 NAT-06 原生幅度報告的中間平方溢位／下溢，下一個可驗證成果是 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 的公開失敗回歸與最小數值修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-06）。ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。
 
 [ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 已完成 5／5。69 個 RED 失敗事件確認受體指標別名及恢復交叉驗證缺口，原有缺省控制 8 個事件通過。Root 先凍結測試再補獨立複製與共用綁定檢查，修正後 77 個事件通過。32 組合法模型與新程序接續相同，完整一般／race 各 58 套件及其餘工程／CLI 驗證通過，最後 11 項治理通過，本輪 1,251,214,520 bytes 暫存已清除，原有目錄保留，修正 4a3edcf 與回歸／證據 21441c0 已推送並核對遠端，798 份提交來源相符，見[本輪驗證](evidence/MOD-05/receptor-rule-ownership-20261014/verification.json)及[交付](evidence/MOD-05/receptor-rule-ownership-20261014/delivery.json)。全樹追蹤另以 6 個公開案例確認原生模擬忽略受體宣告，MOD-05 標 failed，最新需求狀態為 89 項 passed、2 項 failed，下一個可驗證成果是[ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)拒絕原生入口未綁定的受體宣告，並保留正常模型。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
@@ -297,7 +299,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 接續受體編號的指標隔離與恢復交叉驗證，原始公開診斷已保留。先建立公開失敗回歸，正常模型格式與數值保持。
+[ticket 94](docs/tickets/94-native-mean-representability.md) 接續有限平均值的公開失敗回歸與最小穩定計算。NAT-01 的四個公開診斷已保留，先凍結測試，正常模型、真正 sum_output 溢位拒絕與格式保持。
 
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的公開缺陷已重現，候選限制增益範圍須包含 1。取得相容性決策後，才能套用正式修正、補永久回歸並執行完整工程驗收。候選尚未採用，不以化學套件通過當成框架修正完成。
 

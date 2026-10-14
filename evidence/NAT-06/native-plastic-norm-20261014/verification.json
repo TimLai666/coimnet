@@ -1,0 +1,299 @@
+{
+  "requirement": [
+    "NAT-06"
+  ],
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "reproduction_command": "run-go.py.txt, engineering.py.txt, immutable command receipts and original-source overlays",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-plastic-norm-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprint": {
+    "source_manifest": "source-final-v2.json",
+    "source_manifest_sha256": "5191c0e6c58dd8943a40d139d1a6fdc22ae36fd38652cd5c0b57a23a34f25378",
+    "frozen_tests": "tests-frozen-final-v2.json",
+    "frozen_tests_sha256": "af2500e71342dd6ada8a4d0df2f208d864d0e05c0a827a968c1d2f45460b97db",
+    "frozen_test_count": 465,
+    "compatibility_audit": "compatibility-audit.go.txt",
+    "fixture": "artificial three-node two-edge native CPU graph; no new real task or whole-brain run"
+  },
+  "observed_result": {
+    "native_plastic_norm_fixed": true,
+    "original_source_regression_fail_events": 68,
+    "final_regression_pass_events": 97,
+    "regression_fail_events": 0,
+    "legal_models_per_phase": 20,
+    "old_fixed_fresh_process_equal": true,
+    "excluded_compatibility_fields": [],
+    "source_count": 801,
+    "normal_test_summary": {
+      "test_events": {
+        "pass": 5622,
+        "skip": 22
+      },
+      "package_pass_count": 58,
+      "skipped_tests": [
+        {
+          "package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "test": "TestDeviceAdamWChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "test": "TestRealMediaModelChildLoad"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realnav",
+          "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestAttributionEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphResumeEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "test": "TestMultimodalEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestMultiTaskEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestNav2DSuiteEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGradientEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOHorizonEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOShortGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOTrainingFeedbackEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestGPUDeviceTrainerChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestRecomputeRSSHelper"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/image"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/audio"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestRolesEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "test": "TestReadTitovaSourceWhenConfigured"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestVideoEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "test": "TestTextgenEvidence"
+        }
+      ]
+    },
+    "race_test_summary": {
+      "test_events": {
+        "pass": 5621,
+        "skip": 23
+      },
+      "package_pass_count": 58,
+      "skipped_tests": [
+        {
+          "package": "github.com/TimLai666/coimnet/backend/webgpu",
+          "test": "TestDeviceAdamWChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/checkpoint",
+          "test": "TestBundleLargerThanSingleFileLimit"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realnav",
+          "test": "TestRunInferRejectsInvalidSnapshotsWithoutOutputDirectory"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/examples/realmedia",
+          "test": "TestRealMediaModelChildLoad"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestAttributionEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/fullgraph",
+          "test": "TestFullGraphResumeEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+          "test": "TestMultimodalEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestMultiTaskEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestNav2DSuiteEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOGradientEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOHorizonEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOShortGoalCueEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/experiment",
+          "test": "TestPPOTrainingFeedbackEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestGPUDeviceTrainerChildProcess"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/learning",
+          "test": "TestRecomputeRSSHelper"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/image"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestMediaEvidence/audio"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestRolesEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/nav2d/trajectory",
+          "test": "TestReadTitovaSourceWhenConfigured"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/textgen",
+          "test": "TestTextgenEvidence"
+        },
+        {
+          "package": "github.com/TimLai666/coimnet/tasks/media",
+          "test": "TestVideoEvidence"
+        }
+      ]
+    },
+    "cli_new_process_resume_bytes_equal": true,
+    "gain_policy_ticket89": "pending; formal source unchanged",
+    "separate_mean_defect": "confirmed; NAT-01 failed; ticket 94",
+    "final_governance": {
+      "receipt": "final-governance-v2.json",
+      "test_pass_events": 31,
+      "exit_code": 0
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "regular_bytes": 1203188028,
+      "protected_directories_preserved": true
+    },
+    "delivery": "pending"
+  },
+  "engineering_receipts": [
+    "format.json",
+    "module-verify.json",
+    "build.json",
+    "unit.json",
+    "race.json",
+    "vet.json",
+    "module-list.json",
+    "target-flow.json",
+    "cli-build.json",
+    "cli-doctor.json",
+    "cli-data-sources.json",
+    "cli-delayed.json",
+    "cli-lif-threshold.json",
+    "cli-train-first.json",
+    "cli-train-resumed.json",
+    "cli-train-continuous.json",
+    "cli-resume-equality.json"
+  ],
+  "regression_receipts": [
+    "red-v3.json",
+    "green-v2.json",
+    "corrected-overflow-before.json"
+  ],
+  "normal_compatibility": "normal-compatibility.json",
+  "root_review": "root-review.md",
+  "limitation": "No zero-bug, real task accuracy improvement, new whole-brain, GPU, biological validation, globally correctly rounded ordinary reduction or high-frequency upper-range performance conclusion.",
+  "test_log": [
+    "red-v3.log",
+    "green-v2.log",
+    "normal-old.log.gz",
+    "normal-fixed.log.gz",
+    "normal-fresh.log.gz",
+    "unit.log.gz",
+    "race.log.gz",
+    "mean-observed.log"
+  ]
+}

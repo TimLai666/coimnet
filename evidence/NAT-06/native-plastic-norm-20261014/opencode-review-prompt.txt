@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：嚴格的數值與契約唯讀審查者，只指出可證明的缺陷，按實際資料判斷，不臆測。
+檔案責任：禁止寫任何檔案。只讀 /Users/timlai/Developer/coimnet/evidence/NAT-06/native-plastic-norm-20261014/plan.md、該目錄 original-plasticity.go.txt／original-plasticity_test.go.txt／original-runner.go.txt、docs/tickets/93-native-plastic-norm-representability.md、必要的 simulate／plasticity 與 ENG.md 段落。不得讀 data、models、checkpoints、私人憑證、其他 repo。回報只輸出 stdout。
+任務與驗收：確認原 l2Norm 中間平方溢位及下溢根因，確認原 TestPlasticL2OverflowIsRefused 的兩條邊／plastic_max 1e200 不可能真正幅度溢位。審查 Root plan 的正常位元保留與真正不可表示時原子性拒絕。提出能抓到部分 subnormal 非零平方誤差、許多微小項、普通值加極小尾項、接近 float64 上界捨入的反例與獨立參考。不得決定 ticket89 增益或 pre/post 時點政策，不擴充功能。
+驗證：禁止 Go、網路、服務或 Git 寫入。只可讀檔、git diff --stat、git status --short、sha256sum／shasum。必要時可用不寫檔的 Python stdlib math／decimal 小型計算；不用原函式當預期。未執行要標明。提公式時說明前提、數字誤差與不確定。只做本任務，不處理附近其他 bug。
+回報格式：CONFIRMED（P2 等級、檔名行號、觸發與影響、依據）、NEEDS INVESTIGATION（缺的證據）、Root 建議測試、讀取 SHA256／HEAD、未驗證項目。沒有具體問題就寫無，不把猜測列為缺陷。
+不要 commit，也不要 stash 或 reset。不得執行任何 git 寫入指令。

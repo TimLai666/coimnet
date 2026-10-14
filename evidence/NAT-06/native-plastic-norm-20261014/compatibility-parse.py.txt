@@ -1,0 +1,21 @@
+from pathlib import Path
+import json,hashlib,gzip
+e=Path(__file__).parent
+results={}
+for label in ['old','fixed','fresh']:
+ log=e/('normal-'+label+'.log')
+ events=[json.loads(l) for l in log.read_text().splitlines()]
+ output=''.join(x.get('Output','') for x in events)
+ cases={}
+ for line in output.splitlines():
+  if 'NORM_CASE ' not in line:continue
+  case=json.loads(line.split('NORM_CASE ',1)[1]);name=case['case'];assert name not in cases;cases[name]=case
+ assert len(cases)==20,(label,len(cases))
+ raw=(json.dumps(cases,sort_keys=True,indent=2)+'\n').encode()
+ with (e/('normal-'+label+'-cases.json.gz')).open('xb') as f:
+  with gzip.GzipFile(fileobj=f,mode='wb',mtime=0) as z:z.write(raw)
+ results[label]=cases
+assert results['old']==results['fixed']==results['fresh']
+receipt={'cases':20,'old_fixed_equal':True,'fixed_fresh_equal':True,'excluded_fields':[], 'fields':['protocol','protocol_hash','parameters','before full neural and plastic state','report','after full neural and plastic state','next_report','next full neural and plastic state'],'cases_json_sha256':hashlib.sha256((json.dumps(results['old'],sort_keys=True,indent=2)+'\n').encode()).hexdigest(),'logs':{label:hashlib.sha256((e/('normal-'+label+'.log')).read_bytes()).hexdigest() for label in results}}
+(e/'normal-compatibility.json').write_text(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps(receipt))

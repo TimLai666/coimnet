@@ -1,0 +1,22 @@
+package simulate
+import("context";"encoding/json";"fmt";"testing";"github.com/TimLai666/coimnet/plasticity")
+func TestNormCompatibilityAudit(t *testing.T){
+ g:=fixtureGraph(t)
+ emit:=func(name string,p Protocol,initial []float64){
+  params:=mustParameters(t,g,*p.Uniform)
+  runner,err:=Build(context.Background(),g,params,p,testLimits());if err!=nil {t.Fatal(err)}
+  if initial!=nil {state:=runner.PlasticState();copy(state.Plastic,initial);if err:=runner.RestorePlasticState(state);err!=nil{t.Fatal(err)}}
+  before:=[]any{runner.State(),runner.PlasticState()}
+  report,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+  after:=[]any{runner.State(),runner.PlasticState()}
+  next,err:=runner.Run(context.Background(),runner.Stimulus());if err!=nil{t.Fatal(err)}
+  hash,err:=p.Hash();if err!=nil{t.Fatal(err)}
+  raw,err:=json.Marshal(map[string]any{"case":name,"protocol":p,"protocol_hash":hash,"parameters":params,"before":before,"report":report,"after":after,"next_report":next,"next_state":[]any{runner.State(),runner.PlasticState()}});if err!=nil{t.Fatal(err)}
+  t.Log("NORM_CASE "+string(raw))
+ }
+ for _,pair:=range nativeReceptorCores {
+  for _,frozen:=range []bool{false,true} {for _,gate:=range []float64{0,.3}{p:=nativeReceptorProtocol(pair[0],pair[1],"",0,frozen);p.Stimulus.Inline=plasticStimulus(5,gate);emit(fmt.Sprintf("%s/%s/frozen_%t/gate_%g",pair[0],pair[1],frozen,gate),p,nil)}}
+  for _,initial:=range [][]float64{{.1,.2},{0,0}}{p:=nativeReceptorProtocol(pair[0],pair[1],"",0,true);p.Stimulus.Inline=plasticStimulus(5,0);emit(fmt.Sprintf("%s/%s/restored_%v",pair[0],pair[1],initial),p,initial)}
+ }
+ for _,core:=range []string{CoreContinuous,CoreLIF}{p:=nativeReceptorProtocol(core,plasticity.RuleHebbianRate,"",0,false);p.Plasticity=nil;emit(core+"/absent",p,nil)}
+}

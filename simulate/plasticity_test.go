@@ -711,27 +711,22 @@ func continuousFixtureConfig() *dynamics.Config {
 	return &dynamics.Config{DT: 1, Activation: "tanh"}
 }
 
-// TestPlasticL2OverflowIsRefused covers the one place a bounded rule can still
-// produce a value the report cannot carry: the Euclidean norm squares every
-// fast change, so a plastic_max above 1e150 overflows the sum even though every
-// individual value is finite. The run must fail with an error rather than
-// publish a report JSON that cannot be encoded.
+// TestPlasticL2OverflowIsRefused covers a genuinely unrepresentable report
+// norm. Finite individual changes may still have a norm above float64's
+// rounding limit; refusing that report must not commit either state.
 func TestPlasticL2OverflowIsRefused(t *testing.T) {
 	g := fixtureGraph(t)
-	protocol := plasticLIFProtocol(3, 1, 1e200, true)
-	protocol.Plasticity.Rule.PlasticMax = 1e200
-
-	params := mustParameters(t, g, *protocol.Uniform)
-	runner, err := Build(context.Background(), g, params, protocol, testLimits())
-	if err != nil {
-		t.Fatalf("build: %v", err)
-	}
-	before := mustJSON(t, runner.PlasticState())
-	_, err = runner.Run(context.Background(), runner.Stimulus())
+	runner, protocol, params := plasticNormRunner(t, g,
+		[2]string{CoreLIF, plasticity.RuleHebbianRate}, []float64{1.3e308, 1.3e308}, true, 3, true)
+	before := mustJSON(t, []any{runner.State(), runner.PlasticState(), protocol, params})
+	report, err := runner.Run(context.Background(), runner.Stimulus())
 	if err == nil || !strings.Contains(err.Error(), "plastic l2") {
 		t.Fatalf("Run() = %v, want a refusal naming the norm", err)
 	}
-	if after := mustJSON(t, runner.PlasticState()); after != before {
-		t.Fatalf("the refused run moved the fast state to %s", after)
+	if mustJSON(t, report) != mustJSON(t, RunReport{}) {
+		t.Fatal("the refused run returned a partial report")
+	}
+	if after := mustJSON(t, []any{runner.State(), runner.PlasticState(), protocol, params}); after != before {
+		t.Fatal("the refused run changed state or caller inputs")
 	}
 }

@@ -1,0 +1,87 @@
+package simulate
+
+import (
+	"context"
+	"math"
+	"math/big"
+	"strings"
+	"testing"
+)
+
+func TestNativePlasticNormAdditionalBoundaries(t *testing.T) {
+	g := fixtureGraph(t)
+	cases := []struct {
+		name     string
+		values   []float64
+		overflow bool
+	}{
+		{"partial_underflow", []float64{math.Ldexp(1, -537), math.Ldexp(1, -538)}, false},
+		{"upper_insignificant_tail", []float64{math.MaxFloat64, 1}, false},
+		{"upper_equal_pair", []float64{math.MaxFloat64, math.MaxFloat64}, true},
+	}
+	for _, pair := range nativeReceptorCores {
+		for _, tc := range cases {
+			t.Run(pair[0]+"/"+pair[1]+"/"+tc.name, func(t *testing.T) {
+				runner, _, _ := plasticNormRunner(t, g, pair, tc.values, true, 3, false)
+				report, err := runner.Run(context.Background(), runner.Stimulus())
+				if tc.overflow {
+					if err == nil || !strings.Contains(err.Error(), "plastic l2") {
+						t.Fatalf("overflow error=%v", err)
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				checkPlasticNorm(t, report.Plasticity.PlasticL2Before, precisePlasticNorm(tc.values))
+				checkPlasticNorm(t, report.Plasticity.PlasticL2After, precisePlasticNorm(tc.values))
+			})
+		}
+	}
+}
+
+func TestPlasticNormLegacyNormalReduction(t *testing.T) {
+	values := make([]float64, 1025)
+	values[0] = 1
+	for i := 1; i < len(values); i++ {
+		values[i] = math.Ldexp(1, -27)
+	}
+	if precisePlasticNorm(values) != math.Float64frombits(0x3ff0000000000080) {
+		t.Fatal("independent fixture drift")
+	}
+	if got := l2Norm(values); got != 1 {
+		t.Fatalf("normal legacy bits changed: %.17g", got)
+	}
+}
+
+func TestPlasticNormRoundingThreshold(t *testing.T) {
+	// The round-to-nearest-even overflow midpoint is 2^1024 - 2^970.
+	// Its tie rounds to infinity; values above MaxFloat64 but below it can
+	// still round to the finite MaxFloat64.
+	threshold := new(big.Float).SetPrec(256).SetInt64(1)
+	threshold.SetMantExp(threshold, 1024)
+	halfULP := new(big.Float).SetPrec(256).SetInt64(1)
+	halfULP.SetMantExp(halfULP, 970)
+	threshold.Sub(threshold, halfULP)
+	threshold.Mul(threshold, threshold)
+	for _, exponent := range []int{-27, -26} {
+		values := []float64{math.MaxFloat64, math.Ldexp(math.MaxFloat64, exponent)}
+		sum := new(big.Float).SetPrec(256)
+		for _, v := range values {
+			term := new(big.Float).SetPrec(256).SetFloat64(v)
+			term.Mul(term, term)
+			sum.Add(sum, term)
+		}
+		overflow := sum.Cmp(threshold) >= 0
+		if overflow != (exponent == -26) {
+			t.Fatalf("fixture rounding threshold exponent=%d, overflow=%t", exponent, overflow)
+		}
+		if overflow {
+			if !math.IsInf(l2Norm(values), 1) {
+				t.Fatal("rounded overflow norm was accepted")
+			}
+		} else if got := l2Norm(values); got != math.MaxFloat64 {
+			t.Fatalf("finite upper norm=%g", got)
+		}
+	}
+}
