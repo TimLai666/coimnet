@@ -1,0 +1,28 @@
+import os,json,hashlib,subprocess,time,datetime
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet'); w=r/'runs/.tmp/neutral-gain-adoption-20261014'; e=r/'evidence/MOD-04/neutral-gain-adoption-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+frozen=json.loads((e/'source-fixed.json').read_text())
+def check():
+ for p,h in frozen.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+def run(name,cmd):
+ check();start=datetime.datetime.now(datetime.timezone.utc).isoformat();t=time.monotonic();print('START',name,flush=True)
+ name='persist-'+name;out=e/(name+'.log')
+ with out.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ raw=out.read_bytes();receipt={'command':cmd,'exit_code':p.returncode,'started_at':start,'duration_seconds':round(time.monotonic()-t,6),'log':out.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':'source-fixed.json','source_manifest_sha256':hashlib.sha256((e/'source-fixed.json').read_bytes()).hexdigest(),'program':'persistence-endpoints.go.txt','program_sha256':hashlib.sha256((e/'persistence-endpoints.go.txt').read_bytes()).hexdigest()}
+ (e/(name+'.json')).write_text(json.dumps(receipt,indent=2)+'\n');check();assert p.returncode==0,(name,p.returncode);print('PASS',name,flush=True);return raw
+
+base=['go','run'];legacy=['-overlay',str(e/'legacy-overlay.json')];program=str(w/'persistence-endpoints.go');modeldir=w/'legacy-training';modeldir.mkdir()
+run('legacy-save',base+legacy+[program,'save',str(modeldir)])
+a=run('legacy-load',base+legacy+[program,'load',str(modeldir)]);b=run('current-load',base+[program,'load',str(modeldir)]);assert a==b and len(a.splitlines())==10
+files={str(p.relative_to(modeldir)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(modeldir.rglob('*')) if p.is_file()}
+run('current-reject',base+[program,'reject',str(modeldir)]);run('individual-decode-reject',base+[program,'decode',str(w/'legacy-models-v2')])
+assert files=={str(p.relative_to(modeldir)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(modeldir.rglob('*')) if p.is_file()}
+import gzip
+copy=e/'legacy-training-checkpoints';copy.mkdir()
+for name,h in files.items():
+ dest=copy/(name+'.gz');dest.parent.mkdir(parents=True,exist_ok=True);raw=(modeldir/name).read_bytes();dest.write_bytes(gzip.compress(raw,mtime=0));assert hashlib.sha256(gzip.decompress(dest.read_bytes())).hexdigest()==h
+cases=[json.loads(x) for x in a.splitlines()];assert all(x['loaded']['parameters']!=x['after']['parameters'] for x in cases)
+obj={'legal_old_checkpoint_cases':10,'complete_original_go_json_bytes_equal':True,'all_legal_cases_have_actual_parameter_updates':True,'excluded_old_checkpoints_rejected':10,'old_input_files_unchanged':True,'actual_old_individual_decode_rejections':3,'boundary_cases':'three representative exclusions plus Nextafter above and below 1','source_scope':'old-source Save and SaveTrainingBundle; two Load entry points, separate old and fixed processes','excluded_comparison_fields':[],'checkpoint_raw_sha256':files,'archival_encoding':'each original file losslessly gzip-compressed; no field editing'}
+with(e/'persistence-endpoints.json').open('x') as f:json.dump(obj,f,indent=2);f.write('\n')
+print(json.dumps({k:v for k,v in obj.items() if k!='checkpoint_raw_sha256'}),flush=True)

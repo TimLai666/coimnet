@@ -12,6 +12,8 @@ Blocked by：20 調節來源（釋放率 q）、16 LIF 個體（持續路徑與�
 Status：兩階段皆完成（2026-09-16）。第一階段 `modulation` 濃度／受體／效果與 `dynamics.Modulation`，
 證據見下方「第一階段證據」；第二階段個體整合、每步順序、`ChemistryReport` 與快照，證據見「第二階段證據」
 
+目前敏感度範圍先套用零值預設，再驗證有限且滿足 `0 < GammaMin <= 1 <= GammaMax`，`[1,1]` 合法。不符合的舊宣告與存檔會拒絕，這項相容性變更已由使用者核准，正式修正與驗收見 [ticket 89](89-chemical-composition-neutrality.md)。下方兩階段紀錄保留原始實作時的結果。
+
 對應需求：MOD-02（非負濃度、穩態、清除、單位、中性狀態）、MOD-03（未知／無反應／假設分離，
 飽和與極端數值穩定）、MOD-04（中性值與未啟用相同；基礎參數不被暫時效果永久覆寫）。主規格 5.5
 （`ReceptorRecord` 欄位）、8.2（`theta_effective = bounded(theta_base + adaptation + homeostasis +

@@ -1,0 +1,39 @@
+from pathlib import Path
+import json,hashlib
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/MOD-04/neutral-gain-adoption-20261014'
+verification=json.loads((e/'verification.json').read_text());assert verification['engineering_passed']
+fp=json.loads((e/'metadata-read-fingerprints.json').read_text());changes={}
+def update(name,transform):
+ p=r/name;before=p.read_bytes();assert hashlib.sha256(before).hexdigest()==fp[name],name
+ after=transform(before.decode());assert p.read_bytes()==before;p.write_text(after)
+ changes[name]={'before':fp[name],'after':hashlib.sha256(p.read_bytes()).hexdigest()}
+def tracker(text):
+ d=json.loads(text);item=next(x for x in d['requirements'] if x['id']=='MOD-04');assert item['status']=='failed'
+ item['status']='passed';path='../evidence/MOD-04/neutral-gain-adoption-20261014/verification.json';assert path not in item['evidence'];item['evidence'].append(path)
+ assert len(d['requirements'])==91 and all(x['status']=='passed' for x in d['requirements'])
+ return json.dumps(d,ensure_ascii=False,indent=2)+'\n'
+update('docs/requirements-status.json',tracker)
+def readme(text):
+ old='最新狀態為 90 項 passed、1 項 failed（MOD-04）。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。'
+ new='MOD-04 的中性增益修正已核准並通過完整工程驗收，範圍套用零值預設後必須包含 1，不符合的舊模型會拒絕載入。合法舊模型的後續模擬、預測與訓練保持，見 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md)及[本輪驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。最新工程狀態為 91 項 passed。'
+ assert text.count(old)==1;text=text.replace(old,new)
+ anchor='| 調節來源與化學：';lines=text.splitlines();idx=next(i for i,x in enumerate(lines) if x.startswith(anchor))
+ lines.insert(idx+1,'| 當下敏感度與有效閾值：中性作用與未啟用相同，暫時效果不覆寫基礎參數，敏感度範圍包含 1，不合法舊存檔明確拒絕（MOD-04） | 初始化模型（未訓練） | fixture | 核心能力 | [MOD-04](evidence/MOD-04/verification.json)・[中性增益驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json) |')
+ return '\n'.join(lines)+'\n'
+update('README.md',readme)
+unit=verification['observed_result']['normal_test_summary']['test_events'];race=verification['observed_result']['race_test_summary']['test_events']
+def delivery(text):
+ sections=text.split('\n\n');assert sections[2].startswith('[ticket 89]')
+ sections[2]=f'[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的正式中性增益修正已通過工程驗收。20 個原始失敗事件改為 21 個通過事件，15 組合法舊個體及 10 組合法舊訓練存檔／模型包的後續結果完全相同，3 組舊個體及 10 組舊訓練存檔／模型包明確拒絕且原檔不變。完整一般／race 各 58 套件通過，{unit["pass"]}／{race["pass"]} pass，{unit["skip"]}／{race["skip"]} skip，沒有 fail，其餘工程與 CLI 接續通過。最新工程需求為 91 項 passed，見[本輪驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。最後治理、暫存清理及提交／推送尚待完成。整體零 bug 與真實品質提升尚未證明。'
+ sections.insert(3,'以下為歷史階段紀錄，目前狀態以首段及需求追蹤檔為準。')
+ return '\n\n'.join(sections)
+update('delivery-status.md',delivery)
+def ticket(text):
+ text=text.replace('- [ ] 對實際差異先建立','- [x] 對實際差異先建立').replace('- [ ] 修改適用工程檢查通過','- [x] 修改適用工程檢查通過').replace('- [x] 同步需求證據、清除本輪暫存','- [ ] 同步需求證據、清除本輪暫存')
+ text=text.replace('## Root decision 2026-10-14','## Root decision 2026-10-14（採用前紀錄）')
+ old='原有稽核與候選證據保留；上述歷史結果的 pending 是當時狀態。新回歸、正式修正、合法／不合法舊快照、完整工程檢查、清理與交付尚待本輪驗收。'
+ new=f'原有稽核與候選證據保留，上述 pending 是當時狀態。共用敏感度驗證已正式收緊，零值預設、合法算式與保存欄位保持。20 個原始失敗事件改為 21 個通過事件。15 組合法舊個體及 10 組合法舊訓練保存物的新程序後續結果完全相同，3 組不合法舊個體與 10 組不合法舊訓練保存物拒絕且原檔不變。完整一般／race 各 58 套件通過，{unit["pass"]}／{race["pass"]} pass，{unit["skip"]}／{race["skip"]} skip，沒有 fail。見[本輪驗收](../../evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。正式採用目前完成 3／4，最後一項重新驗收本輪清理與交付。'
+ assert text.count(old)==1;return text.replace(old,new)
+update('docs/tickets/89-chemical-composition-neutrality.md',ticket)
+with(e/'status-update.json').open('x')as f:json.dump(changes,f,indent=2);f.write('\n')
+print('STATUS_UPDATED: MOD-04 passed; engineering 91/91; adoption delivery pending')

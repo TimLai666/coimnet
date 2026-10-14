@@ -1,0 +1,25 @@
+import os,json,hashlib,subprocess,time,datetime
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet'); w=r/'runs/.tmp/neutral-gain-adoption-20261014'; e=r/'evidence/MOD-04/neutral-gain-adoption-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+frozen=json.loads((e/'source-fixed.json').read_text())
+def check():
+ for p,h in frozen.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+def run(name,cmd):
+ check();start=datetime.datetime.now(datetime.timezone.utc).isoformat();t=time.monotonic();print('START',name,flush=True)
+ out=e/(name+'.log')
+ with out.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ raw=out.read_bytes();receipt={'command':cmd,'exit_code':p.returncode,'started_at':start,'duration_seconds':round(time.monotonic()-t,6),'log':out.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':'source-fixed.json','source_manifest_sha256':hashlib.sha256((e/'source-fixed.json').read_bytes()).hexdigest(),'program':'compatibility.go.txt','program_sha256':hashlib.sha256((e/'compatibility.go.txt').read_bytes()).hexdigest()}
+ (e/(name+'.json')).write_text(json.dumps(receipt,indent=2)+'\n');check();assert p.returncode==0,(name,p.returncode);print('PASS',name,flush=True);return raw
+base=['go','run'];legacy=['-overlay',str(e/'legacy-overlay.json')];program=str(w/'compatibility.go');modeldir=w/'legacy-models';modeldir.mkdir()
+run('legacy-save',base+legacy+[program,'save',str(modeldir)])
+a=run('legacy-load',base+legacy+[program,'load',str(modeldir)]);b=run('current-load',base+[program,'load',str(modeldir)]);assert a==b and len(a.splitlines())==15
+run('current-reject',base+[program,'reject',str(modeldir)])
+files={str(p.relative_to(modeldir)):hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(modeldir.iterdir())};assert len(files)==18
+copy=e/'legacy-artificial-checkpoints';copy.mkdir()
+import shutil
+for name,h in files.items():shutil.copyfile(modeldir/name,copy/name);assert hashlib.sha256((copy/name).read_bytes()).hexdigest()==h
+cases=[json.loads(x) for x in a.splitlines()];assert all(x['before']['parameters']!=x['after']['parameters'] for x in cases)
+run('public-effect-doc',['go','doc','github.com/TimLai666/coimnet/modulation.Effect'])
+obj={'normal_old_checkpoint_cases':15,'old_new_complete_go_json_bytes_equal':True,'excluded_legacy_checkpoints_rejected':3,'excluded_original_files_unchanged':True,'all_normal_cases_have_actual_parameter_updates':True,'excluded_comparison_fields':[],'checkpoint_files':files,'baseline_commit':'1735474b8dd09cbad872ccec42413503ecec1059','old_source_overlay':'legacy-overlay.json','scope':'Actual old-source SaveIndividual files read by old and fixed binaries in separate processes; full loaded snapshot, next Advance, next TrainEpisode and final snapshot compared. Artificial one-node fixtures only.'}
+(e/'compatibility.json').write_text(json.dumps(obj,indent=2)+'\n');print(json.dumps(obj),flush=True)

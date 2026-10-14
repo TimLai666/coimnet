@@ -1,0 +1,25 @@
+package main
+import("context";"encoding/json";"fmt";"os";"path/filepath";"reflect";"strings";"math";
+ "github.com/TimLai666/coimnet/checkpoint";"github.com/TimLai666/coimnet/dynamics";"github.com/TimLai666/coimnet/learning";"github.com/TimLai666/coimnet/modulation")
+func must(e error){if e!=nil{panic(e)}}
+func emit(v any){must(json.NewEncoder(os.Stdout).Encode(v))}
+func fresh(min,max float64,mix string)*learning.Individual {
+ c:=learning.Config{Dynamics:dynamics.Config{Nodes:1,Sources:[]int{},Targets:[]int{},Delays:[]int{},DT:1,Activation:"tanh"},InputSize:1,OutputSize:1,InputNodes:[]int{0},ReadoutNodes:[]int{0},ReadoutEveryStep:true}
+ p:=learning.Parameters{Core:dynamics.Parameters{Weights:[]float64{},Bias:[]float64{0},LogTau:[]float64{0}},Encoder:[]float64{1},Readout:[]float64{1}}
+ i,err:=learning.NewIndividual(c,p,learning.DefaultOptions(),[]float64{0});must(err)
+ chem:=modulation.ChemistryConfig{Chemistry:modulation.Chemistry{Regions:1,Channels:1,DT:1,Tau:[]float64{2},Units:modulation.UnitNormalized},Sources:[]modulation.SourceSpec{{Kind:modulation.SourceExternalTimeline,Channel:0,Timeline:&modulation.ExternalTimeline{ChannelCount:1,Entries:[]modulation.TimelineEntry{{Step:0,Channel:0,Rate:1}}}}},Receptors:modulation.Receptors{Records:[]modulation.Receptor{{Cells:[]int{0},Signal:"fixture",Channel:0,Status:modulation.StatusHypothesized,Kd:.5,N:1,Evidence:"artificial persistence test",MeasurementKind:"declared",MappingVersion:"fixture/v1"}},Mix:mix},Effects:[]modulation.Effect{{Kind:modulation.EffectSensitivity,Receptor:0,GammaScale:.5,GammaMin:min,GammaMax:max}},Regions:modulation.RegionAssignment{NodeRegion:[]int{0}}}
+ must(i.EnableChemistry(chem));_,err=i.Advance(context.Background(),[][]float64{{.4},{.7},{.2}});must(err);_,err=i.TrainEpisode(context.Background(),[][]float64{{.4},{.7}},[]float64{.3});must(err);return i
+}
+
+func trainer(min,max float64)*learning.Trainer {s:=fresh(min,max,modulation.MixSum).Snapshot();c:=s.Config;c.ReadoutEveryStep=false;c.Chemistry=&learning.ChemicalEpisode{Part:*s.Chemical,SourceStep:3};t,err:=learning.NewTrainer(c,s.Parameters,learning.DefaultOptions());must(err);_,err=t.Step(context.Background(),[][]float64{{.4},{.7}},[]float64{.3});must(err);return t}
+func bounds()[][2]float64{return [][2]float64{{0,0},{.25,1.5},{1,1},{1,2},{.5,1},{1.25,0},{0,.75},{1.5,1.5},{math.Nextafter(1,math.Inf(1)),2},{.5,math.Nextafter(1,0)}}}
+func main(){mode,dir:=os.Args[1],os.Args[2];ctx:=context.Background()
+ if mode=="decode" {for j:=0;j<3;j++{raw,err:=os.ReadFile(filepath.Join(dir,fmt.Sprintf("excluded-%d.json",j)));must(err);s,err:=checkpoint.DecodeIndividual(raw);if err==nil||!strings.Contains(err.Error(),"gamma_min")||!reflect.DeepEqual(s,learning.IndividualSnapshot{}){panic(fmt.Sprintf("invalid decode accepted: %v",err))};emit(map[string]any{"case":j,"decode_error":err.Error()})};return}
+ for j,b:=range bounds(){episode:=filepath.Join(dir,fmt.Sprintf("episode-%02d.json",j));bundle:=filepath.Join(dir,fmt.Sprintf("bundle-%02d",j))
+  if mode=="save"{t:=trainer(b[0],b[1]);s:=t.Snapshot();state,err:=checkpoint.NewState(s,7,s.Updates);must(err);must(checkpoint.Save(ctx,episode,state));must(checkpoint.SaveTrainingBundle(ctx,bundle,s));continue}
+  if mode=="reject"{if j<5{continue};state,err:=checkpoint.Load(ctx,episode);if err==nil||!strings.Contains(err.Error(),"gamma_min")||!reflect.DeepEqual(state,checkpoint.State{}){panic(fmt.Sprintf("episode accepted: %v",err))};emit(map[string]any{"case":j,"kind":"episode","error":err.Error()});s,err:=checkpoint.LoadTrainingBundle(ctx,bundle);if err==nil||!strings.Contains(err.Error(),"gamma_min")||!reflect.DeepEqual(s,learning.TrainingSnapshot{}){panic(fmt.Sprintf("bundle accepted: %v",err))};emit(map[string]any{"case":j,"kind":"bundle","error":err.Error()});continue}
+  if j>=5{continue};state,err:=checkpoint.Load(ctx,episode);must(err);s,err:=checkpoint.LoadTrainingBundle(ctx,bundle);must(err)
+  for k,saved:=range []learning.TrainingSnapshot{state.Training,s}{t,err:=learning.RestoreTrainer(saved);must(err);prediction,err:=t.Predict(ctx,[][]float64{{.6},{.1}});must(err);result,err:=t.Step(ctx,[][]float64{{.3},{.8}},[]float64{.4});must(err);emit(map[string]any{"case":j,"kind":k,"loaded":saved,"prediction":prediction,"train":result,"after":t.Snapshot()})}
+ }
+ if mode=="save"{emit(map[string]any{"saved_legal":10,"saved_excluded":10,"scope":"artificial episode checkpoints and training bundles"})}
+}

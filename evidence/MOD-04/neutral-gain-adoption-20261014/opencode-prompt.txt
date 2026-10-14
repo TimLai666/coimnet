@@ -1,0 +1,1129 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色設定：你是嚴格的神經模型數值與公開契約審查員，只提出有原始碼依據的缺陷，未知須標明。
+可改與不可改的檔案：不得讀寫任何檔案或使用工具。只分析下方已發布公開 Git 提交的完整原始碼與已發布候選，禁止網路、shell、Go、git。
+任務與驗收：使用者已授權拒絕不包含 1 的敏感度增益範圍。核對候選在既有零值預設之後要求 finite 且 0 < GammaMin <= 1 <= GammaMax 是否完整、最小，是否保留正常公式、預設、[1,1]、端點 1、閾值效果及原有反向約定。核對 ApplyEffects、BackwardEffects、ChemistryConfig.Validate 的共用入口。指出仍需要 Root 實跑的建構／恢復／失敗不提交與合法旧模型對照，不要從來源推論真實辨識率。
+要跑的驗證指令：禁止執行命令。以提供的完整公開原始碼、具體案例和數學判斷提出 Root 的驗證清單。
+回報格式：CONFIRMED 每項觸發、公開檔名行號與影響；NEEDS INVESTIGATION 缺少的事實；最小修正及驗收建議；未執行項目。沒有確認缺陷就明說，禁止把風格建議列為 bug。
+不要 commit，也不要 stash 或 reset。不得执行 Git 寫入。
+公開基準：1735474b8dd09cbad872ccec42413503ecec1059
+PUBLISHED FILE modulation/effects.go
+package modulation
+
+import "fmt"
+
+// The two effect kinds. A sensitivity effect changes the input current of a
+// cell for one step; a threshold effect changes its effective threshold for one
+// step. Neither ever writes back into a learnable parameter.
+const (
+	EffectSensitivity = "sensitivity"
+	EffectThreshold   = "threshold"
+)
+
+// The bounds an effect gets when it declares none. A zero bound means "use the
+// default", so the defaults cannot be declared away by accident; ThetaAbsMax
+// has no default and a threshold effect must declare it.
+const (
+	DefaultGammaMin   = 0.5
+	DefaultGammaMax   = 2
+	DefaultBetaAbsMax = 1
+)
+
+// Effect maps the occupancy of one receptor onto a bounded per-step quantity.
+// A sensitivity effect reads GammaScale, BetaScale and the gamma and beta
+// bounds; a threshold effect reads ThetaScale and ThetaAbsMax. Declaring a
+// field the kind never reads is refused rather than ignored.
+type Effect struct {
+	Kind        string  `json:"kind"`
+	Receptor    int     `json:"receptor"`
+	GammaScale  float64 `json:"gamma_scale,omitempty"`
+	BetaScale   float64 `json:"beta_scale,omitempty"`
+	GammaMin    float64 `json:"gamma_min,omitempty"`
+	GammaMax    float64 `json:"gamma_max,omitempty"`
+	BetaAbsMax  float64 `json:"beta_abs_max,omitempty"`
+	ThetaScale  float64 `json:"theta_scale,omitempty"`
+	ThetaAbsMax float64 `json:"theta_abs_max,omitempty"`
+}
+
+// ClampReport counts how many per-node values each bound had to hold back in
+// one call, so saturation is reported rather than silent.
+type ClampReport struct {
+	Gamma int `json:"gamma"`
+	Beta  int `json:"beta"`
+	Theta int `json:"theta"`
+}
+
+// effectGroup accumulates the occupancy that reaches each cell through one kind
+// of effect, and remembers which effect first reached that cell so that two
+// effects of the same kind cannot quietly disagree about the coefficients.
+type effectGroup struct {
+	occupancy []float64
+	owner     []int
+}
+
+func newEffectGroup(nodes int) *effectGroup {
+	g := &effectGroup{occupancy: make([]float64, nodes), owner: make([]int, nodes)}
+	for i := range g.owner {
+		g.owner[i] = -1
+	}
+	return g
+}
+
+// ApplyEffects turns one step of occupancies into the per-node gain, offset and
+// threshold arrays a core reads. It starts from the neutral arrays (gain 1,
+// offset 0, threshold 0) and touches only the cells an effect reaches.
+//
+// Every occupancy record of the receptor an effect names contributes to that
+// cell's total for that kind of effect, mixed by mix: MixSum adds them, MixMax
+// keeps the largest. An empty mix means MixSum. The totals then become
+//
+//	gamma = clamp(1 + GammaScale*occ, GammaMin, GammaMax)
+//	beta  = clamp(BetaScale*occ, -BetaAbsMax, BetaAbsMax)
+//	m     = clamp(ThetaScale*occ, -ThetaAbsMax, ThetaAbsMax)
+//
+// and each bound that held a value back is counted in the ClampReport.
+//
+// With every occupancy at zero the result is exactly the neutral arrays, so a
+// declared effect with no chemical present is bit for bit the same as declaring
+// no effect at all.
+//
+// The formulas name one set of coefficients per cell, so two effects of the
+// same kind that reach the same cell must declare the same coefficients;
+// disagreeing declarations are refused rather than resolved by an invented
+// rule. Effects of the same kind on cells that never meet are unaffected.
+func ApplyEffects(effects []Effect, occ []OccupancyRecord, mix string, nodes int) (gain, offset, threshold []float64, clamped ClampReport, err error) {
+	switch mix {
+	case "":
+		mix = MixSum
+	case MixSum, MixMax:
+	default:
+		return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: unsupported effect mix %q", mix)
+	}
+	if nodes < 1 {
+		return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: effects need at least one node, got %d nodes", nodes)
+	}
+	if err := checkFloat64Vector("effects node configuration", nodes); err != nil {
+		return nil, nil, nil, ClampReport{}, err
+	}
+	for i, record := range occ {
+		if record.Cell < 0 || record.Cell >= nodes {
+			return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: occupancy record %d names cell %d, outside [0, %d)", i, record.Cell, nodes)
+		}
+		if !finite(record.Occupancy) || record.Occupancy < 0 || record.Occupancy > 1 {
+			return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: occupancy record %d has occupancy %v, outside [0, 1]", i, record.Occupancy)
+		}
+	}
+	declared := make([]Effect, len(effects))
+	var sensitivity, threshholds *effectGroup
+	for i, effect := range effects {
+		if declared[i], err = checkedEffect(i, effect); err != nil {
+			return nil, nil, nil, ClampReport{}, err
+		}
+		switch declared[i].Kind {
+		case EffectSensitivity:
+			if sensitivity == nil {
+				sensitivity = newEffectGroup(nodes)
+			}
+		case EffectThreshold:
+			if threshholds == nil {
+				threshholds = newEffectGroup(nodes)
+			}
+		}
+	}
+	for i, effect := range declared {
+		group := sensitivity
+		if effect.Kind == EffectThreshold {
+			group = threshholds
+		}
+		for _, record := range occ {
+			if record.Receptor != effect.Receptor {
+				continue
+			}
+			owner := group.owner[record.Cell]
+			if owner < 0 {
+				group.owner[record.Cell] = i
+			} else if !sameCoefficients(declared[owner], effect) {
+				return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: effects %d and %d are both %s effects on cell %d and must declare the same coefficients", owner, i, effect.Kind, record.Cell)
+			}
+			if mix == MixMax {
+				if record.Occupancy > group.occupancy[record.Cell] {
+					group.occupancy[record.Cell] = record.Occupancy
+				}
+				continue
+			}
+			group.occupancy[record.Cell] += record.Occupancy
+		}
+	}
+
+	gain, offset, threshold = make([]float64, nodes), make([]float64, nodes), make([]float64, nodes)
+	for i := range gain {
+		gain[i] = 1
+	}
+	if sensitivity != nil {
+		for cell, owner := range sensitivity.owner {
+			if owner < 0 {
+				continue
+			}
+			effect, total := declared[owner], sensitivity.occupancy[cell]
+			gamma, held := clamped64(1+effect.GammaScale*total, effect.GammaMin, effect.GammaMax)
+			if held {
+				clamped.Gamma++
+			}
+			gain[cell] = gamma
+			beta, held := clamped64(effect.BetaScale*total, -effect.BetaAbsMax, effect.BetaAbsMax)
+			if held {
+				clamped.Beta++
+			}
+			offset[cell] = positiveZero(beta)
+		}
+	}
+	if threshholds != nil {
+		for cell, owner := range threshholds.owner {
+			if owner < 0 {
+				continue
+			}
+			effect, total := declared[owner], threshholds.occupancy[cell]
+			m, held := clamped64(effect.ThetaScale*total, -effect.ThetaAbsMax, effect.ThetaAbsMax)
+			if held {
+				clamped.Theta++
+			}
+			threshold[cell] = positiveZero(m)
+		}
+	}
+	return gain, offset, threshold, clamped, nil
+}
+
+// checkedEffect validates one declaration and fills in the bounds it left at
+// zero. A field the kind never reads would be a knob with no effect, so it is
+// refused rather than ignored.
+func checkedEffect(i int, e Effect) (Effect, error) {
+	switch e.Kind {
+	case EffectSensitivity:
+		if e.ThetaScale != 0 || e.ThetaAbsMax != 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d is a %s effect and never reads theta_scale or theta_abs_max", i, e.Kind)
+		}
+		if e.GammaMin == 0 {
+			e.GammaMin = DefaultGammaMin
+		}
+		if e.GammaMax == 0 {
+			e.GammaMax = DefaultGammaMax
+		}
+		if e.BetaAbsMax == 0 {
+			e.BetaAbsMax = DefaultBetaAbsMax
+		}
+		if !finite(e.GammaScale) || !finite(e.BetaScale) {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_scale and beta_scale", i)
+		}
+		if !finite(e.GammaMin) || !finite(e.GammaMax) || e.GammaMin <= 0 || e.GammaMin > e.GammaMax {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_min and gamma_max with 0 < gamma_min <= gamma_max, got %v and %v", i, e.GammaMin, e.GammaMax)
+		}
+		if !finite(e.BetaAbsMax) || e.BetaAbsMax < 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite non-negative beta_abs_max, got %v", i, e.BetaAbsMax)
+		}
+	case EffectThreshold:
+		if e.GammaScale != 0 || e.BetaScale != 0 || e.GammaMin != 0 || e.GammaMax != 0 || e.BetaAbsMax != 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d is a %s effect and never reads gamma_scale, beta_scale, gamma_min, gamma_max or beta_abs_max", i, e.Kind)
+		}
+		if !finite(e.ThetaScale) {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite theta_scale", i)
+		}
+		if !finite(e.ThetaAbsMax) || e.ThetaAbsMax <= 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d must declare a finite positive theta_abs_max, got %v", i, e.ThetaAbsMax)
+		}
+	default:
+		return Effect{}, fmt.Errorf("modulation: unsupported effect kind %q", e.Kind)
+	}
+	if e.Receptor < 0 {
+		return Effect{}, fmt.Errorf("modulation: effect %d names receptor %d, which is negative", i, e.Receptor)
+	}
+	return e, nil
+}
+
+// sameCoefficients compares two validated effects on everything but which
+// receptor drives them.
+func sameCoefficients(a, b Effect) bool {
+	a.Receptor, b.Receptor = 0, 0
+	return a == b
+}
+
+// clamped64 holds a value inside a closed interval and says whether it had to.
+func clamped64(v, low, high float64) (float64, bool) {
+	if v < low {
+		return low, true
+	}
+	if v > high {
+		return high, true
+	}
+	return v, false
+}
+
+// positiveZero keeps a zero positive so that a neutral result cannot differ
+// from an unmodulated one in the sign of a zero.
+func positiveZero(v float64) float64 {
+	if v == 0 {
+		return 0
+	}
+	return v
+}
+
+PUBLISHED FILE modulation/config.go
+package modulation
+
+import (
+	"fmt"
+	"strings"
+)
+
+// The source kinds a SourceSpec may declare. The trainable controller of
+// MOD-07 is the fifth and is declared in controller.go, next to the source it
+// names.
+const (
+	SourceExternalTimeline = "external_timeline"
+	SourceNeuralActivity   = "neural_activity"
+	SourceInternalResource = "internal_resource"
+	SourceReplay           = "replay"
+)
+
+// SourceSpec is one serializable source declaration. Kind names which body is
+// present and exactly one body must be, so a document cannot describe two
+// sources at once or none at all.
+//
+// Channel is the chemistry channel this source feeds. The kinds all index
+// their release vector by channel and declare a zero on every channel below the
+// one they release on, so a spec's source must declare exactly Channel+1
+// channels: a narrower one could not reach the channel, and a wider one would
+// carry rates this layer never reads. Channel+1 must be representable as an int
+// and its float64 vector byte size must be representable as well.
+type SourceSpec struct {
+	Kind       string            `json:"kind"`
+	Channel    int               `json:"channel"`
+	Timeline   *ExternalTimeline `json:"timeline,omitempty"`
+	Neural     *NeuralActivity   `json:"neural,omitempty"`
+	Resource   *InternalResource `json:"resource,omitempty"`
+	Replay     *Replay           `json:"replay,omitempty"`
+	Controller *Controller       `json:"controller,omitempty"`
+}
+
+// Build validates the declaration and returns the source it names. The result
+// owns its own copy of the body, so writing into the spec afterwards changes
+// nothing the caller already built.
+func (s SourceSpec) Build() (Source, error) {
+	if s.Channel < 0 {
+		return nil, fmt.Errorf("modulation: source spec declares channel %d", s.Channel)
+	}
+	if s.Channel == int(^uint(0)>>1) {
+		return nil, fmt.Errorf("modulation: source spec channel %d cannot form a channel count", s.Channel)
+	}
+	if err := checkFloat64Vector("source release", s.Channel+1); err != nil {
+		return nil, err
+	}
+	bodies := 0
+	for _, present := range []bool{s.Timeline != nil, s.Neural != nil, s.Resource != nil, s.Replay != nil, s.Controller != nil} {
+		if present {
+			bodies++
+		}
+	}
+	if bodies != 1 {
+		return nil, fmt.Errorf("modulation: a source spec carries exactly one body, got %d", bodies)
+	}
+	var built Source
+	switch s.Kind {
+	case SourceExternalTimeline:
+		if s.Timeline == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no timeline", s.Kind)
+		}
+		timeline := ExternalTimeline{ChannelCount: s.Timeline.ChannelCount, Entries: append([]TimelineEntry(nil), s.Timeline.Entries...)}
+		if err := timeline.Validate(); err != nil {
+			return nil, err
+		}
+		for _, entry := range timeline.Entries {
+			if entry.Channel != s.Channel && entry.Rate != 0 {
+				return nil, fmt.Errorf("modulation: source spec feeds channel %d but its timeline releases on channel %d", s.Channel, entry.Channel)
+			}
+		}
+		built = timeline
+	case SourceNeuralActivity:
+		if s.Neural == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no neural body", s.Kind)
+		}
+		neural := *s.Neural
+		neural.Nodes = append([]int(nil), s.Neural.Nodes...)
+		if err := neural.Validate(); err != nil {
+			return nil, err
+		}
+		if neural.Channel != s.Channel {
+			return nil, fmt.Errorf("modulation: source spec feeds channel %d but its neural body releases on channel %d", s.Channel, neural.Channel)
+		}
+		built = neural
+	case SourceInternalResource:
+		if s.Resource == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no resource body", s.Kind)
+		}
+		resource := *s.Resource
+		if strings.TrimSpace(resource.Resource) == "" {
+			return nil, fmt.Errorf("modulation: internal resource source names no resource")
+		}
+		if resource.Channel != s.Channel {
+			return nil, fmt.Errorf("modulation: source spec feeds channel %d but its resource body releases on channel %d", s.Channel, resource.Channel)
+		}
+		if !finite(resource.Coefficient) || resource.Coefficient < 0 {
+			return nil, fmt.Errorf("modulation: internal resource source declares coefficient %v", resource.Coefficient)
+		}
+		if !finite(resource.Threshold) {
+			return nil, fmt.Errorf("modulation: internal resource source declares a non-finite threshold")
+		}
+		built = resource
+	case SourceReplay:
+		if s.Replay == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no replay body", s.Kind)
+		}
+		trace := make([][]float64, len(s.Replay.Trace))
+		for i, row := range s.Replay.Trace {
+			trace[i] = append([]float64(nil), row...)
+		}
+		replay := Replay{Trace: trace}
+		if err := replay.validate(); err != nil {
+			return nil, err
+		}
+		for _, row := range replay.Trace {
+			for channel, rate := range row {
+				if channel != s.Channel && rate != 0 {
+					return nil, fmt.Errorf("modulation: source spec feeds channel %d but its replay releases on channel %d", s.Channel, channel)
+				}
+			}
+		}
+		built = replay
+	case SourceController:
+		if s.Controller == nil {
+			return nil, fmt.Errorf("modulation: source spec of kind %q carries no controller body", s.Kind)
+		}
+		// The controller keeps an activity window across steps, so the build
+		// hands back a pointer to a freshly declared body rather than a value:
+		// two sources built from one spec must not share that window.
+		controller := s.Controller.declaration()
+		if err := controller.Validate(); err != nil {
+			return nil, err
+		}
+		if controller.Channel != s.Channel {
+			return nil, fmt.Errorf("modulation: source spec feeds channel %d but its controller body releases on channel %d", s.Channel, controller.Channel)
+		}
+		built = controller
+	default:
+		return nil, fmt.Errorf("modulation: unsupported source kind %q", s.Kind)
+	}
+	if built.Channels() != s.Channel+1 {
+		return nil, fmt.Errorf("modulation: source spec feeds channel %d, so its body must declare %d channels, got %d", s.Channel, s.Channel+1, built.Channels())
+	}
+	return built, nil
+}
+
+// clone returns a spec that shares no buffer with the receiver.
+func (s SourceSpec) clone() SourceSpec {
+	owned := SourceSpec{Kind: s.Kind, Channel: s.Channel}
+	if s.Timeline != nil {
+		owned.Timeline = &ExternalTimeline{ChannelCount: s.Timeline.ChannelCount, Entries: append([]TimelineEntry(nil), s.Timeline.Entries...)}
+	}
+	if s.Neural != nil {
+		neural := *s.Neural
+		neural.Nodes = append([]int(nil), s.Neural.Nodes...)
+		owned.Neural = &neural
+	}
+	if s.Resource != nil {
+		resource := *s.Resource
+		owned.Resource = &resource
+	}
+	if s.Replay != nil {
+		trace := make([][]float64, len(s.Replay.Trace))
+		for i, row := range s.Replay.Trace {
+			trace[i] = append([]float64(nil), row...)
+		}
+		owned.Replay = &Replay{Trace: trace}
+	}
+	if s.Controller != nil {
+		owned.Controller = s.Controller.declaration()
+	}
+	return owned
+}
+
+// RegionAssignment names the region every node sits in, one entry per node in
+// node order. It is chemical data declared by the researcher, exactly like the
+// transport matrix, and is never derived from the wiring.
+type RegionAssignment struct {
+	NodeRegion []int `json:"node_region"`
+}
+
+// ChemistryConfig is the whole declaration a persistent individual runs its
+// chemical layer from: the concentration kinetics, one source per channel in
+// channel order, the receptor set, the effects those receptors drive and the
+// region every node belongs to. Every field is serializable, because the
+// individual snapshot carries the declaration next to the state it produced.
+type ChemistryConfig struct {
+	Chemistry Chemistry        `json:"chemistry"`
+	Sources   []SourceSpec     `json:"sources"`
+	Receptors Receptors        `json:"receptors"`
+	Effects   []Effect         `json:"effects"`
+	Regions   RegionAssignment `json:"regions"`
+}
+
+// Validate checks the whole declaration against the node count of the model it
+// is about to run on: the kinetics build, there is exactly one source per
+// channel and it sits at its own index, every node has a region inside the
+// declared region count, the receptor set is valid for these nodes and
+// channels, and every effect names a receptor that exists and declares only the
+// knobs its kind reads.
+func (c ChemistryConfig) Validate(nodes int) error {
+	if nodes < 1 {
+		return fmt.Errorf("modulation: a chemistry needs at least one node, got %d", nodes)
+	}
+	if _, err := NewChemistry(c.Chemistry); err != nil {
+		return err
+	}
+	if len(c.Sources) != c.Chemistry.Channels {
+		return fmt.Errorf("modulation: %d sources for %d channels, want exactly one per channel", len(c.Sources), c.Chemistry.Channels)
+	}
+	for k, spec := range c.Sources {
+		if spec.Channel != k {
+			return fmt.Errorf("modulation: source %d feeds channel %d, want the sources in channel order", k, spec.Channel)
+		}
+		if _, err := spec.Build(); err != nil {
+			return fmt.Errorf("modulation: source %d: %w", k, err)
+		}
+		if spec.Neural != nil {
+			for _, node := range spec.Neural.Nodes {
+				if node >= nodes {
+					return fmt.Errorf("modulation: source %d names node %d, outside the %d nodes of this model", k, node, nodes)
+				}
+			}
+		}
+	}
+	if len(c.Regions.NodeRegion) != nodes {
+		return fmt.Errorf("modulation: the region map names %d nodes, want %d", len(c.Regions.NodeRegion), nodes)
+	}
+	for node, region := range c.Regions.NodeRegion {
+		if region < 0 || region >= c.Chemistry.Regions {
+			return fmt.Errorf("modulation: node %d is mapped to region %d, outside [0, %d)", node, region, c.Chemistry.Regions)
+		}
+	}
+	receptors := c.Receptors
+	if err := receptors.Validate(nodes, c.Chemistry.Channels); err != nil {
+		return err
+	}
+	for i, record := range c.Receptors.Records {
+		if err := validateReceptorLocation(record.Location, c.Chemistry.Regions); err != nil {
+			return fmt.Errorf("modulation: receptor %d location: %w", i, err)
+		}
+	}
+	for i, effect := range c.Effects {
+		if effect.Receptor < 0 || effect.Receptor >= len(c.Receptors.Records) {
+			return fmt.Errorf("modulation: effect %d names receptor %d, outside the %d declared receptors", i, effect.Receptor, len(c.Receptors.Records))
+		}
+	}
+	// ApplyEffects owns the per-declaration rules (known kind, declared bounds,
+	// no knob the kind never reads, a supported mix). Calling it with no
+	// occupancy record validates the declarations without computing anything.
+	if _, _, _, _, err := ApplyEffects(c.Effects, nil, c.Receptors.Mix, nodes); err != nil {
+		return err
+	}
+	return nil
+}
+
+// ValidateState checks a chemical state against this declaration: one row per
+// declared region, one column per declared channel, every entry finite and
+// non-negative. It is the gate a restored snapshot passes before it becomes a
+// running state.
+func (c ChemistryConfig) ValidateState(s ChemistryState) error {
+	regions, channels, err := concentrationShape(s.Concentration)
+	if err != nil {
+		return err
+	}
+	if regions != c.Chemistry.Regions {
+		return fmt.Errorf("modulation: the state has %d regions, the declaration has %d", regions, c.Chemistry.Regions)
+	}
+	if channels != c.Chemistry.Channels {
+		return fmt.Errorf("modulation: the state has %d channels, the declaration has %d", channels, c.Chemistry.Channels)
+	}
+	return nil
+}
+
+// Clone returns a declaration that shares no buffer with the receiver.
+func (c ChemistryConfig) Clone() ChemistryConfig {
+	owned := ChemistryConfig{
+		Chemistry: c.Chemistry,
+		Receptors: Receptors{Mix: c.Receptors.Mix, AllowAssumedCoefficients: c.Receptors.AllowAssumedCoefficients},
+		Effects:   append([]Effect(nil), c.Effects...),
+		Regions:   RegionAssignment{NodeRegion: append([]int(nil), c.Regions.NodeRegion...)},
+	}
+	owned.Chemistry.Tau = append([]float64(nil), c.Chemistry.Tau...)
+	if c.Chemistry.Transport != nil {
+		fraction := make([][]float64, len(c.Chemistry.Transport.Fraction))
+		for r, row := range c.Chemistry.Transport.Fraction {
+			fraction[r] = append([]float64(nil), row...)
+		}
+		owned.Chemistry.Transport = &Transport{Fraction: fraction}
+	}
+	if c.Sources != nil {
+		owned.Sources = make([]SourceSpec, len(c.Sources))
+		for i, spec := range c.Sources {
+			owned.Sources[i] = spec.clone()
+		}
+	}
+	if c.Receptors.Records != nil {
+		owned.Receptors.Records = make([]Receptor, len(c.Receptors.Records))
+		for i, record := range c.Receptors.Records {
+			owned.Receptors.Records[i] = record
+			owned.Receptors.Records[i].Cells = append([]int(nil), record.Cells...)
+			if record.Location != nil {
+				location := *record.Location
+				owned.Receptors.Records[i].Location = &location
+			}
+		}
+	}
+	return owned
+}
+
+PUBLISHED FILE modulation/receptor_gradient.go
+package modulation
+
+import (
+	"fmt"
+	"math"
+)
+
+// BackwardOccupancies differentiates Occupancies with fixed receptor curves
+// and location mapping. Upstream has one signed finite value per occupancy
+// record in the same declaration order. Skipped/unresponsive records have
+// zero derivatives; a zero concentration has slope 1/Kd when N=1 and zero
+// when N>1. Region/channel contributions add. Errors publish no partial grid.
+func (r *Receptors) BackwardOccupancies(state ChemistryState, regionOf []int, upstream []float64) ([][]float64, error) {
+	records, _, err := r.Occupancies(state, regionOf)
+	if err != nil {
+		return nil, err
+	}
+	if len(upstream) != len(records) {
+		return nil, fmt.Errorf("modulation: upstream has %d values, want %d occupancy records", len(upstream), len(records))
+	}
+	for i, value := range upstream {
+		if !finite(value) {
+			return nil, fmt.Errorf("modulation: upstream occupancy record %d is not finite", i)
+		}
+	}
+
+	gradient := make([][]float64, len(state.Concentration))
+	channels := len(state.Concentration[0])
+	for region := range gradient {
+		gradient[region] = make([]float64, channels)
+	}
+
+	for i, record := range records {
+		if record.Skipped || record.Status == StatusUnresponsive ||
+			(record.Status == StatusUnknown && !record.Assumed) {
+			continue
+		}
+		receptor := r.Records[record.Receptor]
+		concentration := state.Concentration[record.Region][record.Channel]
+		var contribution float64
+		if concentration == 0 {
+			var slope float64
+			if receptor.N == 1 {
+				slope = 1 / receptor.Kd
+			}
+			if !finite(slope) {
+				return nil, fmt.Errorf("modulation: occupancy record %d Hill slope is not finite", i)
+			}
+			contribution = upstream[i] * slope
+		} else {
+			// d(c^N/(Kd^N+c^N))/dc = N*o*(1-o)/c. Keep the
+			// upstream multiplication in the checked chain so an overflowing
+			// intermediate is refused rather than silently relying on later
+			// factors to bring it back into range.
+			contribution = upstream[i] * receptor.N
+			if !finite(contribution) {
+				return nil, fmt.Errorf("modulation: occupancy record %d Hill gradient numerator is not finite", i)
+			}
+			contribution *= record.Occupancy
+			if !finite(contribution) {
+				return nil, fmt.Errorf("modulation: occupancy record %d Hill gradient numerator is not finite", i)
+			}
+			contribution *= 1 - record.Occupancy
+			if !finite(contribution) {
+				return nil, fmt.Errorf("modulation: occupancy record %d Hill gradient numerator is not finite", i)
+			}
+			contribution /= concentration
+			if contribution == 0 && upstream[i] != 0 {
+				// The occupancy or its product can round to zero even when
+				// the Hill derivative is representable. Evaluate that lost
+				// magnitude in the log domain; keep ordinary arithmetic above.
+				distance := math.Abs(receptor.N * (math.Log(receptor.Kd) - math.Log(concentration)))
+				logMagnitude := math.Log(math.Abs(upstream[i])) + math.Log(receptor.N) -
+					math.Log(concentration) - distance - 2*math.Log1p(math.Exp(-distance))
+				contribution = math.Copysign(math.Exp(logMagnitude), upstream[i])
+			}
+		}
+		if !finite(contribution) {
+			return nil, fmt.Errorf("modulation: occupancy record %d gradient contribution is not finite", i)
+		}
+		value := gradient[record.Region][record.Channel] + contribution
+		if !finite(value) {
+			return nil, fmt.Errorf("modulation: region %d channel %d gradient is not finite", record.Region, record.Channel)
+		}
+		gradient[record.Region][record.Channel] = value
+	}
+	return gradient, nil
+}
+
+// BackwardEffects differentiates ApplyEffects with fixed declarations. Every
+// upstream array has one signed finite value per node. Results have one value
+// per occupancy record; sum mixing adds all contributions, while max mixing
+// sends them to the first positive maximum in declaration/record order.
+// Clamped values (including a bound itself) have zero derivatives. Invalid
+// declarations, shape, nonfinite inputs or gradients return nil and an error.
+func BackwardEffects(effects []Effect, occ []OccupancyRecord, mix string, nodes int, gain, offset, threshold []float64) ([]float64, error) {
+	forwardGain, forwardOffset, forwardThreshold, _, err := ApplyEffects(effects, occ, mix, nodes)
+	if err != nil {
+		return nil, err
+	}
+	if len(gain) != nodes {
+		return nil, fmt.Errorf("modulation: gain upstream has %d values, want %d nodes", len(gain), nodes)
+	}
+	if len(offset) != nodes {
+		return nil, fmt.Errorf("modulation: offset upstream has %d values, want %d nodes", len(offset), nodes)
+	}
+	if len(threshold) != nodes {
+		return nil, fmt.Errorf("modulation: threshold upstream has %d values, want %d nodes", len(threshold), nodes)
+	}
+	for node := 0; node < nodes; node++ {
+		if !finite(gain[node]) {
+			return nil, fmt.Errorf("modulation: gain upstream at node %d is not finite", node)
+		}
+		if !finite(offset[node]) {
+			return nil, fmt.Errorf("modulation: offset upstream at node %d is not finite", node)
+		}
+		if !finite(threshold[node]) {
+			return nil, fmt.Errorf("modulation: threshold upstream at node %d is not finite", node)
+		}
+		if !finite(forwardGain[node]) {
+			return nil, fmt.Errorf("modulation: gain at node %d is not finite", node)
+		}
+		if !finite(forwardOffset[node]) {
+			return nil, fmt.Errorf("modulation: offset at node %d is not finite", node)
+		}
+		if !finite(forwardThreshold[node]) {
+			return nil, fmt.Errorf("modulation: threshold at node %d is not finite", node)
+		}
+	}
+
+	declared := make([]Effect, len(effects))
+	for i, effect := range effects {
+		declared[i], err = checkedEffect(i, effect)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if mix == "" {
+		mix = MixSum
+	}
+
+	// These totals and owners are built in the same declaration/record order as
+	// ApplyEffects. For MixMax, the winner pair is kept so only the first
+	// positive maximum receives a VJP.
+	sensitivityTotal := make([]float64, nodes)
+	sensitivityOwner := make([]int, nodes)
+	sensitivityWinnerEffect := make([]int, nodes)
+	sensitivityWinnerRecord := make([]int, nodes)
+	thresholdTotal := make([]float64, nodes)
+	thresholdOwner := make([]int, nodes)
+	thresholdWinnerEffect := make([]int, nodes)
+	thresholdWinnerRecord := make([]int, nodes)
+	for node := 0; node < nodes; node++ {
+		sensitivityOwner[node] = -1
+		sensitivityWinnerEffect[node] = -1
+		sensitivityWinnerRecord[node] = -1
+		thresholdOwner[node] = -1
+		thresholdWinnerEffect[node] = -1
+		thresholdWinnerRecord[node] = -1
+	}
+
+	for effectIndex, effect := range declared {
+		for recordIndex, record := range occ {
+			if record.Receptor != effect.Receptor {
+				continue
+			}
+			var total []float64
+			var owner []int
+			var winnerEffect []int
+			var winnerRecord []int
+			if effect.Kind == EffectSensitivity {
+				total, owner = sensitivityTotal, sensitivityOwner
+				winnerEffect, winnerRecord = sensitivityWinnerEffect, sensitivityWinnerRecord
+			} else {
+				total, owner = thresholdTotal, thresholdOwner
+				winnerEffect, winnerRecord = thresholdWinnerEffect, thresholdWinnerRecord
+			}
+			cell := record.Cell
+			if owner[cell] < 0 {
+				owner[cell] = effectIndex
+			} else if !sameCoefficients(declared[owner[cell]], effect) {
+				return nil, fmt.Errorf("modulation: effects %d and %d are both %s effects on cell %d and must declare the same coefficients", owner[cell], effectIndex, effect.Kind, cell)
+			}
+			if mix == MixMax {
+				if record.Occupancy > total[cell] {
+					total[cell] = record.Occupancy
+					winnerEffect[cell] = effectIndex
+					winnerRecord[cell] = recordIndex
+				}
+				continue
+			}
+			total[cell] += record.Occupancy
+			if !finite(total[cell]) {
+				return nil, fmt.Errorf("modulation: %s occupancy total at node %d is not finite", effect.Kind, cell)
+			}
+		}
+	}
+
+	gradient := make([]float64, len(occ))
+	add := func(recordIndex int, upstreamValue, slope float64, kind string) error {
+		contribution := upstreamValue * slope
+		if !finite(contribution) {
+			return fmt.Errorf("modulation: occupancy record %d %s gradient contribution is not finite", recordIndex, kind)
+		}
+		value := gradient[recordIndex] + contribution
+		if !finite(value) {
+			return fmt.Errorf("modulation: occupancy record %d gradient is not finite", recordIndex)
+		}
+		gradient[recordIndex] = value
+		return nil
+	}
+
+	if mix == MixSum {
+		for _, effect := range declared {
+			for recordIndex, record := range occ {
+				if record.Receptor != effect.Receptor {
+					continue
+				}
+				cell := record.Cell
+				if effect.Kind == EffectSensitivity {
+					total := sensitivityTotal[cell]
+					gamma := 1 + effect.GammaScale*total
+					if interiorBound(gamma, effect.GammaMin, effect.GammaMax) {
+						if err := add(recordIndex, gain[cell], effect.GammaScale, "gain"); err != nil {
+							return nil, err
+						}
+					}
+					beta := effect.BetaScale * total
+					if interiorBound(beta, -effect.BetaAbsMax, effect.BetaAbsMax) {
+						if err := add(recordIndex, offset[cell], effect.BetaScale, "offset"); err != nil {
+							return nil, err
+						}
+					}
+					continue
+				}
+				total := thresholdTotal[cell]
+				theta := effect.ThetaScale * total
+				if interiorBound(theta, -effect.ThetaAbsMax, effect.ThetaAbsMax) {
+					if err := add(recordIndex, threshold[cell], effect.ThetaScale, "threshold"); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+		return gradient, nil
+	}
+
+	for cell, effectIndex := range sensitivityWinnerEffect {
+		recordIndex := sensitivityWinnerRecord[cell]
+		if effectIndex < 0 || recordIndex < 0 {
+			continue
+		}
+		effect := declared[effectIndex]
+		total := sensitivityTotal[cell]
+		gamma := 1 + effect.GammaScale*total
+		if interiorBound(gamma, effect.GammaMin, effect.GammaMax) {
+			if err := add(recordIndex, gain[cell], effect.GammaScale, "gain"); err != nil {
+				return nil, err
+			}
+		}
+		beta := effect.BetaScale * total
+		if interiorBound(beta, -effect.BetaAbsMax, effect.BetaAbsMax) {
+			if err := add(recordIndex, offset[cell], effect.BetaScale, "offset"); err != nil {
+				return nil, err
+			}
+		}
+	}
+	for cell, effectIndex := range thresholdWinnerEffect {
+		recordIndex := thresholdWinnerRecord[cell]
+		if effectIndex < 0 || recordIndex < 0 {
+			continue
+		}
+		effect := declared[effectIndex]
+		total := thresholdTotal[cell]
+		theta := effect.ThetaScale * total
+		if interiorBound(theta, -effect.ThetaAbsMax, effect.ThetaAbsMax) {
+			if err := add(recordIndex, threshold[cell], effect.ThetaScale, "threshold"); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return gradient, nil
+}
+
+func interiorBound(value, low, high float64) bool {
+	return finite(value) && value > low && value < high
+}
+
+PUBLISHED FILE evidence/MOD-02/chemical-composition-20261014/neutral-validation-candidate.go.txt
+package modulation
+
+import "fmt"
+
+// The two effect kinds. A sensitivity effect changes the input current of a
+// cell for one step; a threshold effect changes its effective threshold for one
+// step. Neither ever writes back into a learnable parameter.
+const (
+	EffectSensitivity = "sensitivity"
+	EffectThreshold   = "threshold"
+)
+
+// The bounds an effect gets when it declares none. A zero bound means "use the
+// default", so the defaults cannot be declared away by accident; ThetaAbsMax
+// has no default and a threshold effect must declare it.
+const (
+	DefaultGammaMin   = 0.5
+	DefaultGammaMax   = 2
+	DefaultBetaAbsMax = 1
+)
+
+// Effect maps the occupancy of one receptor onto a bounded per-step quantity.
+// A sensitivity effect reads GammaScale, BetaScale and the gamma and beta
+// bounds; a threshold effect reads ThetaScale and ThetaAbsMax. Declaring a
+// field the kind never reads is refused rather than ignored.
+type Effect struct {
+	Kind        string  `json:"kind"`
+	Receptor    int     `json:"receptor"`
+	GammaScale  float64 `json:"gamma_scale,omitempty"`
+	BetaScale   float64 `json:"beta_scale,omitempty"`
+	GammaMin    float64 `json:"gamma_min,omitempty"`
+	GammaMax    float64 `json:"gamma_max,omitempty"`
+	BetaAbsMax  float64 `json:"beta_abs_max,omitempty"`
+	ThetaScale  float64 `json:"theta_scale,omitempty"`
+	ThetaAbsMax float64 `json:"theta_abs_max,omitempty"`
+}
+
+// ClampReport counts how many per-node values each bound had to hold back in
+// one call, so saturation is reported rather than silent.
+type ClampReport struct {
+	Gamma int `json:"gamma"`
+	Beta  int `json:"beta"`
+	Theta int `json:"theta"`
+}
+
+// effectGroup accumulates the occupancy that reaches each cell through one kind
+// of effect, and remembers which effect first reached that cell so that two
+// effects of the same kind cannot quietly disagree about the coefficients.
+type effectGroup struct {
+	occupancy []float64
+	owner     []int
+}
+
+func newEffectGroup(nodes int) *effectGroup {
+	g := &effectGroup{occupancy: make([]float64, nodes), owner: make([]int, nodes)}
+	for i := range g.owner {
+		g.owner[i] = -1
+	}
+	return g
+}
+
+// ApplyEffects turns one step of occupancies into the per-node gain, offset and
+// threshold arrays a core reads. It starts from the neutral arrays (gain 1,
+// offset 0, threshold 0) and touches only the cells an effect reaches.
+//
+// Every occupancy record of the receptor an effect names contributes to that
+// cell's total for that kind of effect, mixed by mix: MixSum adds them, MixMax
+// keeps the largest. An empty mix means MixSum. The totals then become
+//
+//	gamma = clamp(1 + GammaScale*occ, GammaMin, GammaMax)
+//	beta  = clamp(BetaScale*occ, -BetaAbsMax, BetaAbsMax)
+//	m     = clamp(ThetaScale*occ, -ThetaAbsMax, ThetaAbsMax)
+//
+// and each bound that held a value back is counted in the ClampReport.
+//
+// With every occupancy at zero the result is exactly the neutral arrays, so a
+// declared effect with no chemical present is bit for bit the same as declaring
+// no effect at all.
+//
+// The formulas name one set of coefficients per cell, so two effects of the
+// same kind that reach the same cell must declare the same coefficients;
+// disagreeing declarations are refused rather than resolved by an invented
+// rule. Effects of the same kind on cells that never meet are unaffected.
+func ApplyEffects(effects []Effect, occ []OccupancyRecord, mix string, nodes int) (gain, offset, threshold []float64, clamped ClampReport, err error) {
+	switch mix {
+	case "":
+		mix = MixSum
+	case MixSum, MixMax:
+	default:
+		return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: unsupported effect mix %q", mix)
+	}
+	if nodes < 1 {
+		return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: effects need at least one node, got %d nodes", nodes)
+	}
+	if err := checkFloat64Vector("effects node configuration", nodes); err != nil {
+		return nil, nil, nil, ClampReport{}, err
+	}
+	for i, record := range occ {
+		if record.Cell < 0 || record.Cell >= nodes {
+			return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: occupancy record %d names cell %d, outside [0, %d)", i, record.Cell, nodes)
+		}
+		if !finite(record.Occupancy) || record.Occupancy < 0 || record.Occupancy > 1 {
+			return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: occupancy record %d has occupancy %v, outside [0, 1]", i, record.Occupancy)
+		}
+	}
+	declared := make([]Effect, len(effects))
+	var sensitivity, threshholds *effectGroup
+	for i, effect := range effects {
+		if declared[i], err = checkedEffect(i, effect); err != nil {
+			return nil, nil, nil, ClampReport{}, err
+		}
+		switch declared[i].Kind {
+		case EffectSensitivity:
+			if sensitivity == nil {
+				sensitivity = newEffectGroup(nodes)
+			}
+		case EffectThreshold:
+			if threshholds == nil {
+				threshholds = newEffectGroup(nodes)
+			}
+		}
+	}
+	for i, effect := range declared {
+		group := sensitivity
+		if effect.Kind == EffectThreshold {
+			group = threshholds
+		}
+		for _, record := range occ {
+			if record.Receptor != effect.Receptor {
+				continue
+			}
+			owner := group.owner[record.Cell]
+			if owner < 0 {
+				group.owner[record.Cell] = i
+			} else if !sameCoefficients(declared[owner], effect) {
+				return nil, nil, nil, ClampReport{}, fmt.Errorf("modulation: effects %d and %d are both %s effects on cell %d and must declare the same coefficients", owner, i, effect.Kind, record.Cell)
+			}
+			if mix == MixMax {
+				if record.Occupancy > group.occupancy[record.Cell] {
+					group.occupancy[record.Cell] = record.Occupancy
+				}
+				continue
+			}
+			group.occupancy[record.Cell] += record.Occupancy
+		}
+	}
+
+	gain, offset, threshold = make([]float64, nodes), make([]float64, nodes), make([]float64, nodes)
+	for i := range gain {
+		gain[i] = 1
+	}
+	if sensitivity != nil {
+		for cell, owner := range sensitivity.owner {
+			if owner < 0 {
+				continue
+			}
+			effect, total := declared[owner], sensitivity.occupancy[cell]
+			gamma, held := clamped64(1+effect.GammaScale*total, effect.GammaMin, effect.GammaMax)
+			if held {
+				clamped.Gamma++
+			}
+			gain[cell] = gamma
+			beta, held := clamped64(effect.BetaScale*total, -effect.BetaAbsMax, effect.BetaAbsMax)
+			if held {
+				clamped.Beta++
+			}
+			offset[cell] = positiveZero(beta)
+		}
+	}
+	if threshholds != nil {
+		for cell, owner := range threshholds.owner {
+			if owner < 0 {
+				continue
+			}
+			effect, total := declared[owner], threshholds.occupancy[cell]
+			m, held := clamped64(effect.ThetaScale*total, -effect.ThetaAbsMax, effect.ThetaAbsMax)
+			if held {
+				clamped.Theta++
+			}
+			threshold[cell] = positiveZero(m)
+		}
+	}
+	return gain, offset, threshold, clamped, nil
+}
+
+// checkedEffect validates one declaration and fills in the bounds it left at
+// zero. A field the kind never reads would be a knob with no effect, so it is
+// refused rather than ignored.
+func checkedEffect(i int, e Effect) (Effect, error) {
+	switch e.Kind {
+	case EffectSensitivity:
+		if e.ThetaScale != 0 || e.ThetaAbsMax != 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d is a %s effect and never reads theta_scale or theta_abs_max", i, e.Kind)
+		}
+		if e.GammaMin == 0 {
+			e.GammaMin = DefaultGammaMin
+		}
+		if e.GammaMax == 0 {
+			e.GammaMax = DefaultGammaMax
+		}
+		if e.BetaAbsMax == 0 {
+			e.BetaAbsMax = DefaultBetaAbsMax
+		}
+		if !finite(e.GammaScale) || !finite(e.BetaScale) {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_scale and beta_scale", i)
+		}
+		if !finite(e.GammaMin) || !finite(e.GammaMax) || e.GammaMin <= 0 || e.GammaMin > 1 || e.GammaMax < 1 || e.GammaMin > e.GammaMax {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_min and gamma_max with 0 < gamma_min <= 1 <= gamma_max, got %v and %v", i, e.GammaMin, e.GammaMax)
+		}
+		if !finite(e.BetaAbsMax) || e.BetaAbsMax < 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite non-negative beta_abs_max, got %v", i, e.BetaAbsMax)
+		}
+	case EffectThreshold:
+		if e.GammaScale != 0 || e.BetaScale != 0 || e.GammaMin != 0 || e.GammaMax != 0 || e.BetaAbsMax != 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d is a %s effect and never reads gamma_scale, beta_scale, gamma_min, gamma_max or beta_abs_max", i, e.Kind)
+		}
+		if !finite(e.ThetaScale) {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite theta_scale", i)
+		}
+		if !finite(e.ThetaAbsMax) || e.ThetaAbsMax <= 0 {
+			return Effect{}, fmt.Errorf("modulation: effect %d must declare a finite positive theta_abs_max, got %v", i, e.ThetaAbsMax)
+		}
+	default:
+		return Effect{}, fmt.Errorf("modulation: unsupported effect kind %q", e.Kind)
+	}
+	if e.Receptor < 0 {
+		return Effect{}, fmt.Errorf("modulation: effect %d names receptor %d, which is negative", i, e.Receptor)
+	}
+	return e, nil
+}
+
+// sameCoefficients compares two validated effects on everything but which
+// receptor drives them.
+func sameCoefficients(a, b Effect) bool {
+	a.Receptor, b.Receptor = 0, 0
+	return a == b
+}
+
+// clamped64 holds a value inside a closed interval and says whether it had to.
+func clamped64(v, low, high float64) (float64, bool) {
+	if v < low {
+		return low, true
+	}
+	if v > high {
+		return high, true
+	}
+	return v, false
+}
+
+// positiveZero keeps a zero positive so that a neutral result cannot differ
+// from an unmodulated one in the sign of a zero.
+func positiveZero(v float64) float64 {
+	if v == 0 {
+		return 0
+	}
+	return v
+}

@@ -242,6 +242,8 @@ Controller／MemoryController 的參數梯度使用最近成功 forward 的固�
 
 ## 化學清除、來源寬度與宣告更換
 
+敏感度效果沿用零值預設後，範圍必須有限且滿足 `0 < GammaMin <= 1 <= GammaMax`，`[1,1]` 合法。共用 `checkedEffect` 在前向、反向、化學建構、個體宣告更換及恢復之前驗證，拒絕時不提交狀態。合法設定的計算與保存欄位保持。使用者已核准拒絕不包含 1 的舊設定與存檔；若需要繼續使用，研究者須明確調整原始宣告再建立模型，框架不會自動改寫存檔。公開拒絕與實際舊存檔的驗收由[ticket 89](docs/tickets/89-chemical-composition-neutrality.md)管理。
+
 Kinetics.Step 拒絕有限基礎清除速率與有限 boost 相加後的溢位，Backward 經同一正向驗證入口一致拒絕。有限速率的指數飽和保留既有算法，零 boost 分支的運算順序保持。SourceSpec.Build、NeuralActivity.Validate、InternalResource.Release 及 Controller 要求 Channel+1 能以 int 表示，且 float64 釋放向量的位元組大小可表示。ExternalTimeline 採相同的向量限制。
 
 EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部學習規則的受體引用檢查一致。不相容更換回錯，完整舊狀態及報告保持，必須由呼叫者明確清除讀出調節才能移除其受體。合法更換依原契約歸零濃度，保留資源及回饋。公開簽名、保存格式、正常來源與動態算式保持，驗收由 tickets 78–80 與[階段計畫](evidence/MOD-02/chemical-boundaries-20261013/plan.md)管理。

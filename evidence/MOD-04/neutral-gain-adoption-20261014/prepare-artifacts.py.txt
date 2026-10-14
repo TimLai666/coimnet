@@ -1,0 +1,19 @@
+from pathlib import Path
+import json,hashlib,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/MOD-04/neutral-gain-adoption-20261014';base='1735474b8dd09cbad872ccec42413503ecec1059'
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines())
+paths.update(str((e/n).relative_to(r)) for n in ['changed-files.md','artifact-index.json'])
+specific={'modulation/effects.go':'共用敏感度增益範圍必須包含 1，保留零值預設並更新公開說明。','modulation/neutral_gain_range_test.go':'公開前向／反向拒絕、相鄰浮點數與合法中性控制。','learning/chemical_gain_range_test.go':'建構、更換、快照恢復與拒絕時保留原狀態的回歸。','ENG.md':'保存已核准契約與舊模型調整責任。','README.md':'同步 MOD-04 狀態、能力及修正證據。','delivery-status.md':'記錄本票驗收、清理及交付。','docs/model-and-mechanisms.md':'明示中性增益條件及相容性變更。','docs/requirements-status.json':'補 MOD-04 實際回歸、存檔及完整工程驗收證據。','docs/tickets/89-chemical-composition-neutrality.md':'記錄四項驗收及已核准採用結果。'}
+specific['docs/tickets/21-chemical-state-receptors-and-effects.md']='同步既有化學票面的現行範圍契約，保留原始實作證據。'
+lines=['# 本輪實際變更檔案','','| 檔案 | 變更摘要 |','| --- | --- |']
+for name in sorted(paths):
+ description=specific.get(name,'保存本輪命令、來源指紋、觀察、審查、清理或交付證據。')
+ lines.append('| ['+name+']('+str(r/name)+') | '+description+' |')
+target=e/'changed-files.md';content='\n'.join(lines)+'\n'
+if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+target.write_text(content)
+index={str(p.relative_to(e)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size} for p in sorted(e.rglob('*')) if p.is_file() and p.name!='artifact-index.json'}
+target=e/'artifact-index.json'
+if target.exists():before=target.read_bytes();assert target.read_bytes()==before
+target.write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_files':len(paths),'indexed_artifacts':len(index)}))

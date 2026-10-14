@@ -1,0 +1,46 @@
+from pathlib import Path
+import json,gzip,hashlib,collections,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/MOD-04/neutral-gain-adoption-20261014'
+def sha(raw):return hashlib.sha256(raw).hexdigest()
+def read(n):return json.loads((e/n).read_text())
+commands=['format','module-verify','build','unit','race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality']
+compat_commands=['v2-legacy-save','v2-legacy-load','v2-current-load','v2-current-reject','v2-public-effect-doc','persist-legacy-save','persist-legacy-load','persist-current-load','persist-current-reject','persist-individual-decode-reject']
+for name in commands+compat_commands+['red','red-v2','green','legacy-save']:
+ rec=read(name+'.json');assert rec['exit_code']==(1 if name in ['red','red-v2','legacy-save'] else 0),name
+ assert sha((e/rec['log']).read_bytes())==rec['log_sha256'],name
+ assert sha((e/rec['source_manifest']).read_bytes())==rec['source_manifest_sha256'],name
+ if 'program' in rec:assert sha((e/rec['program']).read_bytes())==rec['program_sha256'],name
+source=read('source-fixed.json');tests=read('tests-frozen-v2.json')
+assert len(source)==806 and len(tests)==470
+for p,h in source.items():assert sha((r/p).read_bytes())==h,p
+for p,h in tests.items():assert source[p]==h,p
+old=sha((e/'effects-before.go.txt').read_bytes())
+assert old==sha(subprocess.check_output(['git','show','1735474b8dd09cbad872ccec42413503ecec1059:modulation/effects.go'],cwd=r))
+assert source['modulation/effects.go']!=old
+red=read('red-v2.json');green=read('green.json');compat=read('compatibility.json');endpoints=read('persistence-endpoints.json')
+assert red['test_fail_events']==20 and green['test_pass_events']==21 and green['test_fail_events']==0
+assert compat['normal_old_checkpoint_cases']==15 and compat['old_new_complete_go_json_bytes_equal'] and compat['excluded_legacy_checkpoints_rejected']==3 and compat['excluded_original_files_unchanged']
+assert endpoints['legal_old_checkpoint_cases']==10 and endpoints['complete_original_go_json_bytes_equal'] and endpoints['excluded_old_checkpoints_rejected']==10 and endpoints['old_input_files_unchanged'] and endpoints['actual_old_individual_decode_rejections']==3
+for p,h in compat['checkpoint_files'].items():assert sha((e/'legacy-artificial-checkpoints'/p).read_bytes())==h,p
+for p,h in endpoints['checkpoint_raw_sha256'].items():assert sha(gzip.decompress((e/'legacy-training-checkpoints'/(p+'.gz')).read_bytes()))==h,p
+summaries={}
+for name in ['unit','race']:
+ rec=read(name+'.json');events=[json.loads(l) for l in (e/rec['log']).read_text().splitlines() if l.startswith('{')]
+ result={'test_events':dict(collections.Counter(x['Action'] for x in events if 'Test' in x and x.get('Action') in ['pass','fail','skip'])),'package_pass_count':sum(x.get('Action')=='pass' and 'Test' not in x for x in events),'skipped_tests':[{'package':x['Package'],'test':x['Test']} for x in events if 'Test' in x and x.get('Action')=='skip']}
+ assert result['package_pass_count']==58 and result['test_events'].get('fail',0)==0
+ with(e/(name+'-summary.json')).open('x')as f:json.dump(result,f,indent=2);f.write('\n')
+ summaries[name]=result
+archives=[]
+for p in list(e.glob('*.log')):
+ raw=p.read_bytes()
+ if len(raw)<=200000 and not raw.endswith(b'\n\n'):continue
+ dest=p.with_name(p.name+'.gz');assert not dest.exists();dest.write_bytes(gzip.compress(raw,mtime=0));assert gzip.decompress(dest.read_bytes())==raw
+ entry={'raw_path':p.name,'archive':dest.name,'raw_sha256':sha(raw),'archive_sha256':sha(dest.read_bytes()),'raw_bytes':len(raw),'archive_bytes':dest.stat().st_size};archives.append(entry)
+ receipt=e/(p.stem+'.json')
+ if receipt.exists():
+  before=receipt.read_bytes();x=json.loads(before);assert x['log']==p.name and x['log_sha256']==entry['raw_sha256'];x.update(log=dest.name,log_compression='gzip',compressed_log_sha256=entry['archive_sha256']);assert receipt.read_bytes()==before;receipt.write_text(json.dumps(x,indent=2)+'\n')
+ assert p.read_bytes()==raw;p.unlink()
+with(e/'archive-terminal.json').open('x')as f:json.dump(archives,f,indent=2);f.write('\n')
+verification={'requirement':['MOD-04'],'engineering_passed':True,'acceptance_complete':False,'reproduction_command':'run-go.py.txt and engineering.py.txt; compatibility-v2.py.txt and persistence-endpoints.py.txt create actual old-source checkpoints then compare complete Go JSON and current rejection in new processes','environment':read('engineering-environment.json'),'input_fingerprints':{'source_manifest':'source-fixed.json','source_manifest_sha256':sha((e/'source-fixed.json').read_bytes()),'frozen_tests':'tests-frozen-v2.json','frozen_tests_sha256':sha((e/'tests-frozen-v2.json').read_bytes()),'frozen_test_count':len(tests),'baseline_commit':'1735474b8dd09cbad872ccec42413503ecec1059','old_effects_sha256':old,'authorization':'authorization.json','fixture':'artificial one-node models and CLI delayed controls; no new real-task or whole-brain run'},'observed_result':{'effective_sensitivity_bounds_must_include_neutral_one':True,'zero_defaults_and_inclusive_one_bounds_retained':True,'original_source_regression_fail_events':20,'final_regression_pass_events':21,'regression_fail_events':0,'actual_old_individual_cases_equal':15,'actual_old_training_checkpoint_or_bundle_cases_equal':10,'invalid_old_individual_load_cases_rejected':3,'invalid_old_training_checkpoint_or_bundle_cases_rejected':10,'actual_old_individual_decode_cases_rejected':3,'all_normal_cases_have_parameter_updates':True,'excluded_compatibility_fields':[],'original_checkpoint_files_unchanged':True,'source_count':len(source),'normal_test_summary':summaries['unit'],'race_test_summary':summaries['race'],'cli_new_process_resume_bytes_equal':True,'final_governance':'pending','own_cleanup':'pending','delivery':'pending'},'engineering_receipts':[x+'.json' for x in commands+['v2-public-effect-doc']],'regression_receipts':['red-v2.json','green.json'],'normal_and_serialized_compatibility':['compatibility.json','persistence-endpoints.json'],'root_review':'root-review.md','native_review':'native-review.md','test_log':[read(n+'.json')['log'] for n in ['red-v2','green','unit','race','v2-legacy-load','v2-current-load','v2-current-reject','persist-legacy-load','persist-current-load','persist-current-reject']],'limitation':'Authorized compatibility change: old effective ranges excluding 1 are rejected; no automatic migration. Artificial fixtures do not establish real OCR improvement, new whole-brain performance, biological calibration or absolute zero bugs.'}
+with(e/'verification.json').open('x')as f:json.dump(verification,f,indent=2);f.write('\n')
+print('ENGINEERING_ACCEPTANCE_RECORDED',{n:{'packages':v['package_pass_count'],'events':v['test_events']} for n,v in summaries.items()})

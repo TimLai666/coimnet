@@ -2,6 +2,10 @@
 
 ## 目前階段
 
+[ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的正式中性增益修正已通過工程驗收。20 個原始失敗事件改為 21 個通過事件，15 組合法舊個體及 10 組合法舊訓練存檔／模型包的後續結果完全相同，3 組舊個體及 10 組舊訓練存檔／模型包明確拒絕且原檔不變。完整一般／race 各 58 套件通過，5702／5701 pass，22／23 skip，沒有 fail，其餘工程與 CLI 接續通過。最新工程需求為 91 項 passed，見[本輪驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。最後 11 項治理通過，本輪 1,304,068,945 bytes 暫存已清除，原有暫存目錄保留，見[清理](evidence/MOD-04/neutral-gain-adoption-20261014/cleanup.json)。提交／推送及遠端讀回尚待完成。整體零 bug 與真實品質提升尚未證明。
+
+以下為歷史階段紀錄，目前狀態以首段及需求追蹤檔為準。
+
 [ticket 95](docs/tickets/95-ocr-generate-representability.md) 已完成 5／5。OCR 不可表示的樣本／字長宣告已在訓練前回傳錯誤，原始 11 個失敗事件與修正後 46 個回歸事件有實跑證據。28 組正常完整 JSON 及三種舊 OCR 模式的新程序載入、辨識與下一次參數更新相同。完整一般／race 各 58 套件通過，5,681／5,680 pass，22／23 skip，沒有 fail，build、vet、固定相依性、公開 API 文件及 CLI 接續通過，見[驗收](evidence/TSK-01/glyph-contract-20261014/verification.json)。最後 11 項治理通過，1,225,230,613 bytes 本輪暫存已清除，原有目錄保留，見[清理](evidence/TSK-01/glyph-contract-20261014/cleanup.json)。修正 `0ac2565` 與回歸／證據 `e492041` 已正常推送，遠端讀回相同，804 份提交來源相符，見[交付](evidence/TSK-01/glyph-contract-20261014/delivery.json)。下一個需要決策的成果是 ticket 89 的中性化學增益修正；未獲相容性決策前不套用候選。ticket 89 的相容性決策 pending，反相字距語意尚待釐清，最新 90 項 passed、1 項 failed（MOD-04），沒有整體零 bug 或真實辨識率提升結論。
 
 [ticket 94](docs/tickets/94-native-mean-representability.md) 已完成 5／5。有限平均與量測總和發布缺陷已修正，13 個永久回歸事件及 LIF 補驗一般／race 各 3 個事件通過。16 組正常模型的全部 Go JSON 位元組與舊狀態新程序接續相同。完整一般／race 各 58 套件、其餘工程、CLI 接續及最後 11 項治理通過。1,211,375,287 bytes 本輪暫存已清除，原有目錄保留。修正 37cca36 與回歸／證據 ea5d0ec 已推送並讀回一致，802 份提交來源相符，見[驗收](evidence/NAT-01/native-mean-20261014/verification.json)與[交付](evidence/NAT-01/native-mean-20261014/delivery.json)。NAT-01 恢復 passed，最新 90 項 passed、1 項 failed（MOD-04）。ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。

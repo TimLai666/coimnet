@@ -1,0 +1,21 @@
+package main
+import("context";"encoding/json";"fmt";"os";"path/filepath";"reflect";"strings";
+ "github.com/TimLai666/coimnet/checkpoint";"github.com/TimLai666/coimnet/dynamics";"github.com/TimLai666/coimnet/learning";"github.com/TimLai666/coimnet/modulation")
+func must(e error){if e!=nil{panic(e)}}
+func emit(v any){must(json.NewEncoder(os.Stdout).Encode(v))}
+func fresh(min,max float64,mix string)*learning.Individual {
+ c:=learning.Config{Dynamics:dynamics.Config{Nodes:1,Sources:[]int{},Targets:[]int{},Delays:[]int{},DT:1,Activation:"tanh"},InputSize:1,OutputSize:1,InputNodes:[]int{0},ReadoutNodes:[]int{0},ReadoutEveryStep:true}
+ p:=learning.Parameters{Core:dynamics.Parameters{Weights:[]float64{},Bias:[]float64{0},LogTau:[]float64{0}},Encoder:[]float64{1},Readout:[]float64{1}}
+ i,err:=learning.NewIndividual(c,p,learning.DefaultOptions(),[]float64{0});must(err)
+ chem:=modulation.ChemistryConfig{Chemistry:modulation.Chemistry{Regions:1,Channels:1,DT:1,Tau:[]float64{2},Units:modulation.UnitNormalized},Sources:[]modulation.SourceSpec{{Kind:modulation.SourceExternalTimeline,Channel:0,Timeline:&modulation.ExternalTimeline{ChannelCount:1,Entries:[]modulation.TimelineEntry{{Step:0,Channel:0,Rate:1}}}}},Receptors:modulation.Receptors{Records:[]modulation.Receptor{{Cells:[]int{0},Signal:"fixture",Channel:0,Status:modulation.StatusHypothesized,Kd:.5,N:1,Evidence:"artificial persistence test",MeasurementKind:"declared",MappingVersion:"fixture/v1"}},Mix:mix},Effects:[]modulation.Effect{{Kind:modulation.EffectSensitivity,Receptor:0,GammaScale:.5,GammaMin:min,GammaMax:max}},Regions:modulation.RegionAssignment{NodeRegion:[]int{0}}}
+ must(i.EnableChemistry(chem));_,err=i.Advance(context.Background(),[][]float64{{.4},{.7},{.2}});must(err);_,err=i.TrainEpisode(context.Background(),[][]float64{{.4},{.7}},[]float64{.3});must(err);return i
+}
+func main(){mode,dir:=os.Args[1],os.Args[2];ctx:=context.Background();count:=0
+ if mode=="reject" {for j:=0;j<3;j++{path:=filepath.Join(dir,fmt.Sprintf("excluded-%d.json",j));before,err:=os.ReadFile(path);must(err);s,err:=checkpoint.LoadIndividual(ctx,path);if err==nil||!strings.Contains(err.Error(),"gamma_min")||!reflect.DeepEqual(s,learning.IndividualSnapshot{}) {panic(fmt.Sprintf("invalid old checkpoint accepted: %v",err))};after,e:=os.ReadFile(path);must(e);if !reflect.DeepEqual(before,after){panic("old checkpoint was modified")};emit(map[string]any{"case":j,"error":err.Error(),"old_file_unchanged":true})};return}
+ for _,mix:=range []string{"",modulation.MixSum,modulation.MixMax}{for _,b:=range [][2]float64{{0,0},{.25,1.5},{1,1},{1,2},{.5,1}} {
+  path:=filepath.Join(dir,fmt.Sprintf("legal-%02d.json",count));if mode=="save"{i:=fresh(b[0],b[1],mix);must(checkpoint.SaveIndividual(ctx,path,i.Snapshot()))}else{
+   s,err:=checkpoint.LoadIndividual(ctx,path);must(err);i,err:=learning.RestoreIndividual(s);must(err);before:=i.Snapshot();output,err:=i.Advance(ctx,[][]float64{{.6},{.1}});must(err);train,err:=i.TrainEpisode(ctx,[][]float64{{.3},{.8}},[]float64{.4});must(err);after:=i.Snapshot();emit(map[string]any{"case":count,"before":before,"output":output,"train":train,"after":after})
+  };count++
+ }}
+ if mode=="save"{for j,b:=range [][2]float64{{1.25,0},{0,.75},{1.5,1.5}}{i:=fresh(b[0],b[1],modulation.MixSum);must(checkpoint.SaveIndividual(ctx,filepath.Join(dir,fmt.Sprintf("excluded-%d.json",j)),i.Snapshot()))};emit(map[string]any{"saved_legal_cases":count,"saved_excluded_cases":3,"data":"artificial one-node fixtures, not model products"})}
+}
