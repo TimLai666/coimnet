@@ -21,8 +21,9 @@ const (
 
 // Effect maps the occupancy of one receptor onto a bounded per-step quantity.
 // A sensitivity effect reads GammaScale, BetaScale and the gamma and beta
-// bounds; a threshold effect reads ThetaScale and ThetaAbsMax. Declaring a
-// field the kind never reads is refused rather than ignored.
+// bounds; a threshold effect reads ThetaScale and ThetaAbsMax. Zero bounds use
+// the defaults; sensitivity bounds must satisfy 0 < GammaMin <= 1 <= GammaMax.
+// A field the kind never reads is refused rather than ignored.
 type Effect struct {
 	Kind        string  `json:"kind"`
 	Receptor    int     `json:"receptor"`
@@ -204,8 +205,8 @@ func checkedEffect(i int, e Effect) (Effect, error) {
 		if !finite(e.GammaScale) || !finite(e.BetaScale) {
 			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_scale and beta_scale", i)
 		}
-		if !finite(e.GammaMin) || !finite(e.GammaMax) || e.GammaMin <= 0 || e.GammaMin > e.GammaMax {
-			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_min and gamma_max with 0 < gamma_min <= gamma_max, got %v and %v", i, e.GammaMin, e.GammaMax)
+		if !finite(e.GammaMin) || !finite(e.GammaMax) || e.GammaMin <= 0 || e.GammaMin > 1 || e.GammaMax < 1 || e.GammaMin > e.GammaMax {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_min and gamma_max with 0 < gamma_min <= 1 <= gamma_max, got %v and %v", i, e.GammaMin, e.GammaMax)
 		}
 		if !finite(e.BetaAbsMax) || e.BetaAbsMax < 0 {
 			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite non-negative beta_abs_max, got %v", i, e.BetaAbsMax)
