@@ -40,6 +40,7 @@
 | [evidence/TSK-01/glyph-contract-20261014/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/cli-train-first.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/cli-train-resumed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/cli-train-resumed.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/TSK-01/glyph-contract-20261014/committed-source.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/committed-source.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/compat-v2-current-model-load.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compat-v2-current-model-load.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/compat-v2-current-model-load.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compat-v2-current-model-load.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/compat-v2-current-samples.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compat-v2-current-samples.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -69,6 +70,7 @@
 | [evidence/TSK-01/glyph-contract-20261014/compatibility.go.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compatibility.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/compatibility.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compatibility.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/compatibility.py.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/compatibility.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/TSK-01/glyph-contract-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/delivery.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/dispatch.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/dispatch.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/engineering-environment.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/engineering.py.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/engineering.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -117,6 +119,7 @@
 | [evidence/TSK-01/glyph-contract-20261014/opencode-review.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/opencode-review.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/plan.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/prepare-artifacts.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/TSK-01/glyph-contract-20261014/primary-commit.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/primary-commit.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/probe-observed.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/probe-observed.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/probe-receipt.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/probe-receipt.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/probe.go.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/probe.go.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
@@ -141,6 +144,7 @@
 | [evidence/TSK-01/glyph-contract-20261014/resume-nonzero-controls.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/resume-nonzero-controls.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/root-review.md](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/root-review.md) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/run-go.py.txt](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/run-go.py.txt) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
+| [evidence/TSK-01/glyph-contract-20261014/scan-evidence.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/scan-evidence.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/scan-fix.log](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/scan-fix.log) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/source-before.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/source-before.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
 | [evidence/TSK-01/glyph-contract-20261014/source-final-v1.json](/Users/timlai/Developer/coimnet/evidence/TSK-01/glyph-contract-20261014/source-final-v1.json) | 保存本輪命令、來源指紋、觀察、審查、清理或交付證據。 |
