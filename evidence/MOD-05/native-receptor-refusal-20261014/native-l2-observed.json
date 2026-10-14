@@ -1,0 +1,61 @@
+{
+  "diagnostic_expects_original_bug_not_repaired_behavior": true,
+  "cases": [
+    {
+      "core": "continuous",
+      "magnitude": 1e+200,
+      "reference_l2": 1e+200,
+      "run_error": "simulate: plastic l2[0] is non-finite",
+      "state_unchanged": true
+    },
+    {
+      "core": "continuous",
+      "magnitude": 1e-200,
+      "norm_after": 0,
+      "norm_before": 0,
+      "reference_l2": 1e-200,
+      "run_error": "",
+      "state_unchanged": true
+    },
+    {
+      "core": "continuous",
+      "magnitude": 1,
+      "norm_after": 1,
+      "norm_before": 1,
+      "reference_l2": 1,
+      "run_error": "",
+      "state_unchanged": true
+    },
+    {
+      "core": "lif",
+      "magnitude": 1e+200,
+      "reference_l2": 1e+200,
+      "run_error": "simulate: plastic l2[0] is non-finite",
+      "state_unchanged": true
+    },
+    {
+      "core": "lif",
+      "magnitude": 1e-200,
+      "norm_after": 0,
+      "norm_before": 0,
+      "reference_l2": 1e-200,
+      "run_error": "",
+      "state_unchanged": true
+    },
+    {
+      "core": "lif",
+      "magnitude": 1,
+      "norm_after": 1,
+      "norm_before": 1,
+      "reference_l2": 1,
+      "run_error": "",
+      "state_unchanged": true
+    }
+  ],
+  "root_judgment": "P2 confirmed: sum(v*v) overflows or underflows although the mathematical norm is representable; native Run falsely refuses large legal plastic state or reports zero for tiny nonzero state",
+  "source_formal_l2_unchanged": true,
+  "not_a_ticket92_repair": true,
+  "normalization_note": "The formatted v2 diagnostic omits norm fields on refused runs. Original v1 source and raw log remain preserved; expectations and observed outcomes are unchanged.",
+  "primary_receipt": "native-l2-audit-v2.json",
+  "primary_virtual_test": "native-l2-audit-v2.go.txt"
+}

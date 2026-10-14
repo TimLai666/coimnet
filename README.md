@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
-原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生模擬另確認 MOD-05 受體宣告被忽略，最新狀態為 89 項 passed、2 項 failed，原生入口修正由 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 接續，見[原生受體診斷](evidence/MOD-05/receptor-rule-ownership-20261014/native-receptor-audit.json)。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
+原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生入口的 MOD-05 受體宣告拒絕修正已通過本機工程驗證，見 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)。NAT-06 原生幅度報告的中間平方溢位／下溢仍待修正，最新狀態為 89 項 passed、2 項 failed。幅度問題由 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 接續，見[公開診斷](evidence/NAT-06/native-l2-audit-20261014.json)。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
 
 ## 能力狀態
 
@@ -304,7 +304,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 - `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
 - `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
 - `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。
-- `simulate.Build` 以 `connectome.Graph`、`ParameterSet` 與 `Protocol` 建立核心無關的 `Runner`，`Run` 推進持續狀態並回傳 `RunReport`，`State`／`RestoreState` 保存與接續。`simulate.UniformPositive` 由原始 weight 產生 `engineering_uniform_positive` 參數集。套件不使用 Insyra，也不碰 `learning`。
+- `simulate.Build` 以 `connectome.Graph`、`ParameterSet` 與 `Protocol` 建立核心無關的 `Runner`，`Run` 推進持續狀態並回傳 `RunReport`，`State`／`RestoreState` 保存與接續。`simulate.UniformPositive` 由原始 weight 產生 `engineering_uniform_positive` 參數集。套件不使用 Insyra，也不碰 `learning`。原生可塑性使用刺激通道閘門與固定衰退，沒有化學受體綁定；`Protocol.Validate`、`DecodeProtocol`、`Build` 與 `BuildVariant` 都會拒絕非 nil 的 `GateReceptor`／`DecayEReceptor`，凍結設定也一樣。合法缺省的格式與 hash 保持。
 - `connectome.Save`、`Load` 以固定區段格式落盤與讀回同一個 `Graph`：每段與 footer 都有 SHA-256，讀回時重算 node index／edge order／report hash 並檢查順序與索引範圍，不符即 `ErrStoreCorrupt`。`LoadWithReceipt` 另回傳實際驗證位元組的 SHA-256，供 CLI 報告使用。檔案、footer 與記憶體受 `StoreLimits` 限制。
 - `params.DecodeRules` 讀取 `coimnet-derivation-rules/v1`，`params.Derive` 依規則由四份發布原件推導每條邊的正負號、信心度與強度，`Save`／`Load`／`LoadWithReceipt` 以區段加 footer 加 SHA-256 的格式落盤與讀回，`Set.CheckGraph` 比對 node index／edge order hash。套件不使用 Insyra，也不碰 `learning` 與 `simulate`。
 

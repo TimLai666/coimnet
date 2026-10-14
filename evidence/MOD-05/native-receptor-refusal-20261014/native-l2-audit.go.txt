@@ -1,0 +1,26 @@
+package simulate
+import("testing";"math";"encoding/json";"context";"strings";"github.com/TimLai666/coimnet/plasticity")
+func TestNativeL2RepresentabilityAudit(t *testing.T){
+ g:=fixtureGraph(t)
+ for _,core:=range []string{CoreContinuous,CoreLIF}{for _,magnitude:=range []float64{1e200,1e-200,1}{
+  p:=nativeReceptorProtocol(core,plasticity.RuleHebbianRate,"",0,true)
+  p.Plasticity.Rule.PlasticMax=1e300
+  p.Stimulus.Inline=[][]float64{{0,0}}
+  params:=mustParameters(t,g,*p.Uniform)
+  runner,err:=Build(context.Background(),g,params,p,testLimits());if err!=nil{t.Fatal(err)}
+  state:=plasticity.State{Eligibility:[]float64{0,0},Plastic:[]float64{magnitude,0}}
+  if err:=runner.RestorePlasticState(state);err!=nil{t.Fatal(err)}
+  before:=mustJSON(t,runner.PlasticState())
+  reference:=math.Hypot(magnitude,0);if math.IsInf(reference,0)||math.IsNaN(reference)||reference!=magnitude{t.Fatal("invalid independent norm reference")}
+  report,runErr:=runner.Run(context.Background(),runner.Stimulus())
+  text:="";if runErr!=nil{text=runErr.Error()}
+  data:=map[string]any{"core":core,"magnitude":magnitude,"reference_l2":reference,"run_error":text,"state_unchanged":before==mustJSON(t,runner.PlasticState()),"norm_before":0.0,"norm_after":0.0}
+  if magnitude==1e200{if runErr==nil||!strings.Contains(text,"plastic l2"){t.Fatalf("not reproduced: %v",runErr)}}else{
+   if runErr!=nil{t.Fatal(runErr)}
+   data["norm_before"]=report.Plasticity.PlasticL2Before;data["norm_after"]=report.Plasticity.PlasticL2After
+   if magnitude==1e-200 && (report.Plasticity.PlasticL2Before!=0||report.Plasticity.PlasticL2After!=0){t.Fatal("tiny norm bug not reproduced")}
+   if magnitude==1 && (report.Plasticity.PlasticL2Before!=reference||report.Plasticity.PlasticL2After!=reference){t.Fatal("normal control failed")}
+  }
+  raw,err:=json.Marshal(data);if err!=nil{t.Fatal(err)};t.Log("L2_CASE "+string(raw))
+ }}
+}

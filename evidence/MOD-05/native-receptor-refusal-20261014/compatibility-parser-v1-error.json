@@ -1,0 +1,7 @@
+{
+  "error": "json.decoder.JSONDecodeError: Unterminated string starting at: line 1 column 959 (char 958)",
+  "cause": "go test -json splits long t.Log lines across multiple Output events; parsing one event did not contain a complete JSON record",
+  "scope": "evidence parser only; all three diagnostic Go commands already completed successfully; source and permanent tests unchanged",
+  "repair": "join Output events before splitting complete log lines",
+  "engineering_not_started": true
+}

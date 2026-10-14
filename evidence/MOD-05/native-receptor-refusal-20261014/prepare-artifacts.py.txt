@@ -1,0 +1,25 @@
+from pathlib import Path
+import json,hashlib,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/MOD-05/native-receptor-refusal-20261014';base='e2dabd1f5f1c296ccbb1983564dcefbfc3368a5b'
+paths=set(subprocess.check_output(['git','diff','--name-only',base],cwd=r,text=True).splitlines())|set(subprocess.check_output(['git','ls-files','--others','--exclude-standard'],cwd=r,text=True).splitlines())
+paths.add(str((e/'changed-files.md').relative_to(r)));paths.add(str((e/'artifact-index.json').relative_to(r)))
+summaries={'simulate/plasticity.go':'原生入口拒絕没有化學綁定的受體宣告，保留正常公式。','simulate/receptor_binding_test.go':'144 公開拒絕、14 合法控制與 7 錯誤優先序永久回歸。','AGENTS.md':'移除已修受體宣告提醒，記錄已確認幅度缺陷。','ENG.md':'同步原生固定閘門／衰退與受體引用拒絕契約。','README.md':'同步原生 API 支援範圍與最新未通過項目。','delivery-status.md':'目前驗收、清理、交付與下一個可驗證成果。','docs/model-and-mechanisms.md':'區分有化學綁定的持續個體與原生入口。','docs/requirements-status.json':'MOD-05 恢復 passed；NAT-06 依公開幅度缺陷改 failed。','docs/tickets/92-native-receptor-declaration-refusal.md':'原生受體宣告拒絕的五項驗收狀態與證據。','docs/tickets/93-native-plastic-norm-representability.md':'下一项合法幅度計算修正的範圍與驗收。','evidence/NAT-06/native-l2-audit-20261014.json':'六個公開幅度案例的來源、環境、輸入、日誌與已確認缺陷。'}
+lines=['# 本輪實際變更檔案','','| 檔案 | 變更摘要 |','| --- | --- |']
+for name in sorted(paths):
+ desc=summaries.get(name)
+ if not desc:
+  f=Path(name).name
+  if f.endswith('.log') or f.endswith('.log.gz'):desc='命令原始輸出與可核對結果。'
+  elif f.startswith('normal-'):desc='14 組合法模型的舊／新／新程序相等性與指紋。'
+  elif f.startswith('source-') or f=='tests-frozen.json':desc='已讀來源、凍結測試或提交的指紋與核對。'
+  elif f.startswith('cleanup'):desc='本輪暫存的內容清冊、清理保護與實際結果。'
+  elif f.startswith('native-l2'):desc='原生幅度缺陷的獨立公開診斷與原始證據，尚未修正。'
+  elif f.startswith('worker-'):desc='唯讀契約審查原件，Root 已核對依據。'
+  elif f=='artifact-index.json':desc='保存證據的 SHA-256 與大小清冊，排除自身。'
+  elif f=='changed-files.md':desc='逐檔實際變更盤點。'
+  else:desc='本輪驗收的命令、環境、觀察結果、程序或交付證據。'
+ lines.append('| ['+name+']('+str(r/name)+') | '+desc+' |')
+(e/'changed-files.md').write_text('\n'.join(lines).replace('没有','沒有').replace('下一项','下一項')+'\n')
+index={str(p.relative_to(e)):{'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size}for p in sorted(e.rglob('*'))if p.is_file() and p.name!='artifact-index.json'}
+(e/'artifact-index.json').write_text(json.dumps(index,indent=2)+'\n')
+print(json.dumps({'changed_files':len(paths),'indexed_artifacts':len(index)}))

@@ -1,0 +1,97 @@
+from pathlib import Path
+import json, gzip, hashlib, collections
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r/'evidence/MOD-05/native-receptor-refusal-20261014'
+archives = []
+for p in list(e.glob('*.log')) + list(e.glob('normal-*-cases.json')):
+    raw = p.read_bytes()
+    if len(raw) <= 200000 and not p.name.endswith('-cases.json'):
+        continue
+    dest = p.with_name(p.name + '.gz')
+    assert not dest.exists()
+    dest.write_bytes(gzip.compress(raw, mtime=0))
+    assert gzip.decompress(dest.read_bytes()) == raw
+    entry = {'raw_path':p.name, 'archive':dest.name, 'raw_sha256':hashlib.sha256(raw).hexdigest(), 'archive_sha256':hashlib.sha256(dest.read_bytes()).hexdigest(), 'raw_bytes':len(raw), 'archive_bytes':dest.stat().st_size}
+    archives.append(entry)
+    receipt = e/(p.stem+'.json')
+    if p.suffix == '.log' and receipt.exists():
+        b = receipt.read_bytes()
+        x = json.loads(b)
+        assert x['log'] == p.name and x['log_sha256'] == entry['raw_sha256']
+        x.update(log=dest.name, log_compression='gzip', compressed_log_sha256=entry['archive_sha256'])
+        assert receipt.read_bytes() == b
+        receipt.write_text(json.dumps(x, indent=2)+'\n')
+    assert p.read_bytes() == raw
+    p.unlink()
+(e/'archive-terminal.json').write_text(json.dumps(archives, indent=2)+'\n')
+p = e/'normal-compatibility.json'
+b = p.read_bytes()
+x = json.loads(b)
+x['comparison_artifacts'] = [a for a in archives if a['raw_path'].endswith('-cases.json')]
+assert p.read_bytes() == b
+p.write_text(json.dumps(x, indent=2)+'\n')
+for name in ['unit','race']:
+    rec = json.loads((e/(name+'.json')).read_text())
+    log = e/rec['log']
+    raw = gzip.decompress(log.read_bytes()) if log.suffix == '.gz' else log.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == rec['log_sha256']
+    events = [json.loads(line) for line in raw.decode().splitlines() if line.startswith('{')]
+    summary = {'test_events':dict(collections.Counter(a['Action'] for a in events if 'Test' in a and a.get('Action') in ['pass','fail','skip'])), 'package_pass_count':sum(a.get('Action') == 'pass' and 'Test' not in a for a in events), 'skipped_tests':[{'package':a['Package'], 'test':a['Test']} for a in events if 'Test' in a and a.get('Action') == 'skip']}
+    (e/(name+'-summary.json')).write_text(json.dumps(summary, indent=2)+'\n')
+commands = ['format','module-verify','build','unit','race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality']
+for n in commands:
+    assert json.loads((e/(n+'.json')).read_text())['exit_code'] == 0, n
+source = json.loads((e/'source-final.json').read_text())
+tests = json.loads((e/'tests-frozen.json').read_text())
+assert all(hashlib.sha256((r/p).read_bytes()).hexdigest() == h for p,h in source.items())
+assert all(hashlib.sha256((r/p).read_bytes()).hexdigest() == h for p,h in tests.items())
+verification = {'requirement':['MOD-05'], 'reproduction_command':'Immutable command receipts; run-go.py.txt and engineering.py.txt contain exact commands and controlled environments. Native l2 audit is a separate known-defect diagnostic, not a repaired test.', 'environment':json.loads((e/'engineering-environment.json').read_text()), 'input_fingerprint':{'source_manifest':'source-final.json', 'source_manifest_sha256':hashlib.sha256((e/'source-final.json').read_bytes()).hexdigest(), 'frozen_tests':'tests-frozen.json', 'frozen_test_count':len(tests), 'compatibility_audit':'compatibility-audit.go.txt', 'models':'14 artificial native CPU fixture configurations, three-node/two-edge graph; no new real-task run'}, 'observed_result':{'native_receptor_refusal_fixed':True, 'refusal_leaf_cases':144, 'permanent_regression_pass_events':168, 'legal_models_per_phase':14, 'old_fixed_fresh_process_equal':True, 'error_priority_leaf_controls':7, 'normal_packages_passed':58, 'race_packages_passed':58, 'normal_test_events':{'pass':5526,'skip':22}, 'race_test_events':{'pass':5525,'skip':23}, 'cli_new_process_resume_bytes_equal':True, 'source_count':len(source), 'separate_native_l2_defect_confirmed':True, 'native_l2_repair_ticket':93, 'gain_policy_ticket89':'pending; formal gain source unchanged', 'final_governance':'pending', 'own_cleanup':'pending', 'delivery':'pending'}, 'test_log':['red.log','green.log','normal-old.log','normal-fixed.log','normal-fresh.log',json.loads((e/'unit.json').read_text())['log'],json.loads((e/'race.json').read_text())['log'],'native-l2-audit.log'], 'engineering_receipts':[n+'.json' for n in commands], 'normal_compatibility':'normal-compatibility.json', 'root_review':'root-review.md', 'limitation':'No zero-bug, real task accuracy improvement, new whole-brain, GPU or biological effect conclusion. The native norm defect remains confirmed and unresolved.'}
+(e/'verification.json').write_text(json.dumps(verification, indent=2)+'\n')
+p = r/'docs/requirements-status.json'
+b = p.read_bytes()
+x = json.loads(b)
+for a in x['requirements']:
+    if a['id'] == 'MOD-05':
+        assert a['status'] == 'failed'
+        a['status'] = 'passed'
+        a['evidence'].append('../evidence/MOD-05/native-receptor-refusal-20261014/verification.json')
+assert p.read_bytes() == b
+p.write_text(json.dumps(x, ensure_ascii=False, indent=2)+'\n')
+print('status', dict(collections.Counter(a['status'] for a in x['requirements'])))
+for file in [r/'docs/tickets/92-native-receptor-declaration-refusal.md', e/'plan.md']:
+    b = file.read_bytes()
+    lines = b.decode().splitlines()
+    checked = 0
+    for i,line in enumerate(lines):
+        if line.startswith('- ['):
+            checked += 1
+            if checked <= 3:
+                lines[i] = line.replace('- [ ]','- [x]',1)
+    assert checked == 5 and file.read_bytes() == b
+    file.write_text('\n'.join(lines)+'\n')
+def replace(file, old, new):
+    p = r/file
+    b = p.read_bytes()
+    s = b.decode()
+    assert s.count(old) == 1 and p.read_bytes() == b
+    p.write_text(s.replace(old,new))
+replace('README.md', '原生入口的 MOD-05 受體宣告拒絕修正正在由 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 驗收，另確認 NAT-06 原生幅度報告的中間平方溢位／下溢，最新狀態為 88 項 passed、3 項 failed。', '原生入口的 MOD-05 受體宣告拒絕修正已通過本機工程驗證，見 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)；NAT-06 原生幅度報告的中間平方溢位／下溢仍待修正，最新狀態為 89 項 passed、2 項 failed。')
+p = r/'AGENTS.md'
+b = p.read_bytes()
+lines = b.decode().splitlines()
+targets = [i for i,line in enumerate(lines) if line.startswith('- `simulate/plasticity.go`：原生 Protocol.Validate')]
+assert len(targets) == 1
+lines.pop(targets[0])
+assert p.read_bytes() == b
+p.write_text('\n'.join(lines)+'\n')
+replace('evidence/MOD-05/native-receptor-refusal-20261014/root-review.md', '完整 race、其餘工程、CLI 接續與最後治理等待命令終止，不由局部通過推論整體完成。', '完整 race 58 套件通過，5,525 個事件通過、23 個既有條件跳過。格式、build、vet、相依性、目標流程與 CLI 新程序接續全部通過。最後治理與清理待完成。')
+p = r/'delivery-status.md'
+b = p.read_bytes()
+s = b.decode()
+start = s.index('[ticket 92]')
+end = s.index('\n\n',start)
+s = s[:start]+'''[ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 已完成 3／5。144 個受體宣告案例在舊來源失敗，修正後 168 個測試事件通過。14 組合法模型在舊來源、修正來源與新程序完全相同。完整一般／race 各 58 套件、build、vet、相依性與 CLI 接續通過，MOD-05 恢復 passed。另確認 NAT-06 原生幅度報告的中間平方溢位／下溢，接續由 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md) 修正。最新狀態為 89 項 passed、2 項 failed（MOD-04／NAT-06）。最後治理、本輪暫存清理與提交仍待完成，ticket 89 的相容性決策 pending，整體零 bug 與真實品質提升尚未證明。'''+s[end:]
+assert p.read_bytes() == b
+p.write_text(s)
+print('ENGINEERING_ACCEPTANCE_AND_STATUS_RECORDED')

@@ -1,0 +1,71 @@
+{
+  "requirement": "NAT-06",
+  "reproduction_command": [
+    "go",
+    "test",
+    "-json",
+    "-count=1",
+    "-overlay",
+    "runs/.tmp/native-receptor-refusal-20261014/l2-overlay-v2.json",
+    "./simulate",
+    "-run",
+    "^TestNativeL2RepresentabilityAudit$"
+  ],
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-receptor-refusal-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/native-receptor-refusal-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-receptor-refusal-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/native-receptor-refusal-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprint": {
+    "source_manifest": "../MOD-05/native-receptor-refusal-20261014/source-final.json",
+    "source_manifest_sha256": "881c46454b5422a14c7d69abc75802e7183c520cb4e014118f8bd7f4ea73fe6d",
+    "virtual_test": "../MOD-05/native-receptor-refusal-20261014/native-l2-audit-v2.go.txt",
+    "virtual_test_sha256": "8597b538fbe8248729f17290ac2679c6ddb6f93b38f4872bdaea3277e319cdd1",
+    "fixture_nodes": 3,
+    "fixture_edges": 2,
+    "declared_plastic_max": 1e+300,
+    "frozen": true,
+    "stimulus": [
+      [
+        0,
+        0
+      ]
+    ],
+    "magnitudes": [
+      1e+200,
+      1e-200,
+      1
+    ]
+  },
+  "observed_result": {
+    "native_l2_bug_confirmed": true,
+    "large_false_refusals": 2,
+    "tiny_false_zero_reports": 2,
+    "normal_controls": 2,
+    "source_l2_not_modified_by_ticket92": true,
+    "diagnostic_expects_original_bug_not_repaired_behavior": true,
+    "normalized_observations": "../MOD-05/native-receptor-refusal-20261014/native-l2-observed.json"
+  },
+  "test_log": [
+    "../MOD-05/native-receptor-refusal-20261014/native-l2-audit-v2.log"
+  ],
+  "limitation": "Artificial native CPU fixture only; no task accuracy, biological or whole-brain quality conclusion. Repair and full acceptance belong to ticket 93."
+}

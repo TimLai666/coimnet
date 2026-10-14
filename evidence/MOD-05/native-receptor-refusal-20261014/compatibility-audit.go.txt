@@ -1,0 +1,39 @@
+package simulate
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/plasticity"
+	"testing"
+)
+
+func TestNativeCompatibilityAudit(t *testing.T) {
+	g := fixtureGraph(t)
+	emit := func(name string, p Protocol) {
+		params := mustParameters(t, g, *p.Uniform)
+		runner, report := mustRun(t, g, p)
+		hash, err := p.Hash()
+		if err != nil {
+			t.Fatal(err)
+		}
+		raw, err := json.Marshal(map[string]any{"case": name, "protocol": p, "protocol_hash": hash, "parameters": params, "report": report, "plastic_state": runner.PlasticState()})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Log("NATIVE_CASE " + string(raw))
+	}
+	for _, pair := range nativeReceptorCores {
+		for _, frozen := range []bool{false, true} {
+			for _, gate := range []float64{0, .3} {
+				p := nativeReceptorProtocol(pair[0], pair[1], "", 0, frozen)
+				p.Stimulus.Inline = plasticStimulus(5, gate)
+				emit(fmt.Sprintf("%s/%s/frozen_%t/gate_%g", pair[0], pair[1], frozen, gate), p)
+			}
+		}
+	}
+	for _, core := range []string{CoreContinuous, CoreLIF} {
+		p := nativeReceptorProtocol(core, plasticity.RuleHebbianRate, "", 0, false)
+		p.Plasticity = nil
+		emit(core+"/absent", p)
+	}
+}

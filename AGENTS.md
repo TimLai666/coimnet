@@ -67,6 +67,5 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
 - `modulation/memory_controller.go:104`、`modulation/controller.go:199`：[NEEDS INVESTIGATION] 已有活動歷史後修改公開 Inputs／Nodes 宣告時，MemoryController 可能重建視窗。規格尚未指定應回錯、重設或保留歷史，正常呼叫端也不改宣告。後續先釐清支援契約再補測試，不列為已確認缺陷。
 
-- `simulate/plasticity.go`：原生 Protocol.Validate／Build／Run 接受 GateReceptor／DecayEReceptor，但沒有化學受體綁定，執行仍使用刺激閘門與固定衰退。Root 六個公開案例確認不存在的受體 100 被接受且實際局部變化完全相同（P2）。由 ticket 92 補公開拒絕與正常原生模型相容性，不在 ticket 91 增加來源修正。證據見 `evidence/MOD-05/receptor-rule-ownership-20261014/native-receptor-audit.json`。
-
 - `docs/tickets/18-local-plasticity.md:21`：[NEEDS INVESTIGATION] 公式寫 pre(t)×post(t+1)，但同票 121–137 手算表、套件註解與 consumer 使用核心步驟後的 pre。Root 兩列 LIF 實測 eligibility／plastic 為 exp(-1)，與既有手算表一致；若把 pre 當本步開始的突觸跡，該案例為 1。主規格 10.3 只寫 pre_activity×post_activity，沒有指定兩側時點。需先釐清時點定義，不把 worker 的演算法錯誤判定當成已確認，不先改正常模型。證據見 `evidence/MOD-05/receptor-rule-ownership-20261014/timing-audit.json`。
+- `simulate/plasticity.go` 的 `l2Norm`：Root 連續／LIF 六個公開 `Build` → `RestorePlasticState` → `Run` 案例確認中間平方溢位／下溢。合法 `[1e200,0]` 的幅度可表示卻被拒絕，`[1e-200,0]` 的幅度被回報成零，`[1,0]` 控制正確（P2）。NAT-06 接續由 ticket 93 修正；正常位元結果與真正不可表示時的拒絕保留，先以獨立證據判斷既有 `TestPlasticL2OverflowIsRefused` 的期望，不為過測試放寬檢查。見 `evidence/NAT-06/native-l2-audit-20261014.json`。
