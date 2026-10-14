@@ -127,5 +127,7 @@
 | [evidence/OPS-05/gpu-cancel-audit-20261015/verification.json](/Users/timlai/Developer/coimnet/evidence/OPS-05/gpu-cancel-audit-20261015/verification.json) | 命令回條、數值比較、指紋或驗收紀錄 |
 | [evidence/OPS-05/gpu-cancel-audit-20261015/vet.json](/Users/timlai/Developer/coimnet/evidence/OPS-05/gpu-cancel-audit-20261015/vet.json) | 命令回條、數值比較、指紋或驗收紀錄 |
 | [evidence/OPS-05/gpu-cancel-audit-20261015/vet.log](/Users/timlai/Developer/coimnet/evidence/OPS-05/gpu-cancel-audit-20261015/vet.log) | 實際命令或測試輸出 |
+| [evidence/OPS-05/gpu-cancel-audit-20261015/committed-source.json](/Users/timlai/Developer/coimnet/evidence/OPS-05/gpu-cancel-audit-20261015/committed-source.json) | 核對 810 份提交來源與驗收指紋 |
+| [evidence/OPS-05/gpu-cancel-audit-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/OPS-05/gpu-cancel-audit-20261015/delivery.json) | 已推送提交與實際遠端讀回回條 |
 
 本清單本身新增於 artifact-index.md。移除本輪 runs/.tmp/gpu-cancel-audit-20261015，逐檔記錄見 cleanup-inventory.json.gz。正式 Go、go.mod、go.sum 及原模型未修改。
