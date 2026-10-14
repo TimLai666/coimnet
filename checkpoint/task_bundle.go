@@ -117,20 +117,7 @@ func (s *TaskTrainingSnapshot) UnmarshalJSON(data []byte) error {
 	if err := checkUniqueJSON(data); err != nil {
 		return err
 	}
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(data, &fields); err != nil {
-		return err
-	}
-	for _, name := range []string{"task_schema", "config", "training"} {
-		raw, present := fields[name]
-		if !present || isJSONNull(raw) {
-			return fmt.Errorf("task document.%s is missing or null", name)
-		}
-	}
-	if err := validateTaskConfigJSON(fields["config"]); err != nil {
-		return err
-	}
-	if err := checkRequiredFields(fields["training"], reflect.TypeOf(learning.TrainingSnapshot{}), "training"); err != nil {
+	if err := checkTaskTrainingDocumentFields(data); err != nil {
 		return err
 	}
 	type plain TaskTrainingSnapshot
@@ -143,6 +130,33 @@ func (s *TaskTrainingSnapshot) UnmarshalJSON(data []byte) error {
 	}
 	*s = TaskTrainingSnapshot(decoded)
 	return nil
+}
+
+// checkTaskTrainingDocumentFields checks the task boundary and delegates the
+// nested training payload to the same chemistry-aware walker used by training
+// bundles. The config remains opaque task data, but it must still be a complete
+// non-null JSON object under the task contract.
+func checkTaskTrainingDocumentFields(data []byte) error {
+	var rawFields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &rawFields); err != nil {
+		return err
+	}
+	fields, err := presenceObject(rawFields)
+	if err != nil {
+		return err
+	}
+	for _, name := range []string{"task_schema", "config", "training"} {
+		raw, present := jsonField(fields, name)
+		if !present || isJSONNull(raw) {
+			return fmt.Errorf("task document.%s is missing or null", name)
+		}
+	}
+	config, _ := jsonField(fields, "config")
+	if err := validateTaskConfigJSON(config); err != nil {
+		return err
+	}
+	training, _ := jsonField(fields, "training")
+	return checkTrainingSnapshotRequiredFields(training)
 }
 
 func validateTaskSchema(schema string) error {

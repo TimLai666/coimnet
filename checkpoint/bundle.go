@@ -323,6 +323,11 @@ func readBundle(ctx context.Context, dir, kind string, value any) (BundleManifes
 	if err := checkUniqueJSON(document); err != nil {
 		return empty, fmt.Errorf("invalid bundle document %q: %w", documentPath, err)
 	}
+	if bundleDocumentPresenceApplies(kind, manifest.DocumentSchema, value) {
+		if err := checkBundleDocumentPresence(kind, document); err != nil {
+			return empty, fmt.Errorf("invalid %s bundle document %q: %w", kind, documentPath, err)
+		}
+	}
 	if err := decodeStrict(document, value); err != nil {
 		return empty, fmt.Errorf("decode bundle document %q: %w", documentPath, err)
 	}

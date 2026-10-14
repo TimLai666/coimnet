@@ -60,42 +60,12 @@ func checkEpisodeRequiredFields(data json.RawMessage) error {
 	if !ok {
 		return checkRequiredFields(data, reflect.TypeOf(State{}), "payload")
 	}
-	var trainingRawObject map[string]json.RawMessage
-	if err := json.Unmarshal(trainingRaw, &trainingRawObject); err != nil || trainingRawObject == nil {
-		return checkRequiredFields(data, reflect.TypeOf(State{}), "payload")
-	}
-	training, err := presenceObject(trainingRawObject)
+	validatedTraining, err := trainingPresenceValidationCopy(trainingRaw, "$.payload.training", false)
 	if err != nil {
 		return err
 	}
-	configRaw, ok := jsonField(training, "config")
-	if !ok {
-		return checkRequiredFields(data, reflect.TypeOf(State{}), "payload")
-	}
-	var configRawObject map[string]json.RawMessage
-	if err := json.Unmarshal(configRaw, &configRawObject); err != nil || configRawObject == nil {
-		return checkRequiredFields(data, reflect.TypeOf(State{}), "payload")
-	}
-	config, err := presenceObject(configRawObject)
-	if err != nil {
-		return err
-	}
-	chemistryRaw, ok := jsonField(config, "chemistry")
-	if !ok || isJSONNull(chemistryRaw) {
-		return checkRequiredFields(data, reflect.TypeOf(State{}), "payload")
-	}
-	if err := checkEpisodeChemistry(chemistryRaw); err != nil {
-		return err
-	}
-	delete(config, "chemistry")
-	configRaw, err = json.Marshal(config)
-	if err != nil {
-		return fmt.Errorf("checkpoint chemistry validation copy: %w", err)
-	}
-	training["config"] = configRaw
-	payload["training"], err = json.Marshal(training)
-	if err != nil {
-		return fmt.Errorf("checkpoint chemistry validation copy: %w", err)
+	if validatedTraining != nil {
+		payload["training"] = validatedTraining
 	}
 	validation, err := json.Marshal(payload)
 	if err != nil {
@@ -104,8 +74,73 @@ func checkEpisodeRequiredFields(data json.RawMessage) error {
 	return checkRequiredFields(validation, reflect.TypeOf(State{}), "payload")
 }
 
-func checkEpisodeChemistry(data json.RawMessage) error {
-	const path = "$.payload.training.config.chemistry"
+// checkTrainingSnapshotRequiredFields checks a direct TrainingSnapshot payload.
+// The ordinary required-field walker handles every struct and array, while the
+// chemical boundary is checked separately because ChemicalPart.Resources is a
+// map. This keeps nil slices and legacy omitempty fields legal on the wire.
+func checkTrainingSnapshotRequiredFields(data json.RawMessage) error {
+	return checkTrainingSnapshotRequiredFieldsAt(data, "training")
+}
+
+func checkTrainingSnapshotRequiredFieldsAt(data json.RawMessage, path string) error {
+	validated, err := trainingPresenceValidationCopy(data, path, true)
+	if err != nil {
+		return err
+	}
+	if validated == nil {
+		validated = data
+	}
+	return checkRequiredFields(validated, reflect.TypeOf(learning.TrainingSnapshot{}), path)
+}
+
+// trainingPresenceValidationCopy removes chemistry from a validation-only
+// copy, because the generic walker cannot inspect ChemicalPart.Resources. A
+// direct training bundle permits the two legacy nil collection encodings in
+// the chemical part; a standalone episode keeps the stricter single-file
+// null contract. A nil result means there is no present chemistry boundary, or
+// that the generic walker should report the malformed training shape itself.
+func trainingPresenceValidationCopy(data json.RawMessage, path string, allowNilCollections bool) (json.RawMessage, error) {
+	var trainingRawObject map[string]json.RawMessage
+	if err := json.Unmarshal(data, &trainingRawObject); err != nil || trainingRawObject == nil {
+		return nil, nil
+	}
+	training, err := presenceObject(trainingRawObject)
+	if err != nil {
+		return nil, err
+	}
+	configRaw, ok := jsonField(training, "config")
+	if !ok {
+		return nil, nil
+	}
+	var configRawObject map[string]json.RawMessage
+	if err := json.Unmarshal(configRaw, &configRawObject); err != nil || configRawObject == nil {
+		return nil, nil
+	}
+	config, err := presenceObject(configRawObject)
+	if err != nil {
+		return nil, err
+	}
+	chemistryRaw, ok := jsonField(config, "chemistry")
+	if !ok || isJSONNull(chemistryRaw) {
+		return nil, nil
+	}
+	if err := checkEpisodeChemistryAt(chemistryRaw, path+".config.chemistry", allowNilCollections); err != nil {
+		return nil, err
+	}
+	delete(config, "chemistry")
+	configRaw, err = json.Marshal(config)
+	if err != nil {
+		return nil, fmt.Errorf("checkpoint chemistry validation copy: %w", err)
+	}
+	training["config"] = configRaw
+	validation, err := json.Marshal(training)
+	if err != nil {
+		return nil, fmt.Errorf("checkpoint chemistry validation copy: %w", err)
+	}
+	return validation, nil
+}
+
+func checkEpisodeChemistryAt(data json.RawMessage, path string, allowNilCollections bool) error {
 	chemistry, err := requiredObject(data, path, "part", "source_step")
 	if err != nil {
 		return err
@@ -122,7 +157,14 @@ func checkEpisodeChemistry(data json.RawMessage) error {
 	if err != nil {
 		return err
 	}
-	if err := requireIndividualChemical(map[string]json.RawMessage{"chemical": chemistry["part"]}); err != nil {
+	chemicalPart := chemistry["part"]
+	if allowNilCollections {
+		chemicalPart, err = chemicalPartValidationCopy(part)
+		if err != nil {
+			return err
+		}
+	}
+	if err := requireIndividualChemical(map[string]json.RawMessage{"chemical": chemicalPart}); err != nil {
 		return err
 	}
 	if raw, present := part["source_states"]; present && !isJSONNull(raw) {
@@ -158,4 +200,25 @@ func checkEpisodeChemistry(data json.RawMessage) error {
 		}
 	}
 	return nil
+}
+
+// chemicalPartValidationCopy replaces only the two legal nil collection
+// encodings in a direct training validation view. The original raw document
+// remains untouched, so decoding still restores nil map/slice semantics.
+func chemicalPartValidationCopy(part map[string]json.RawMessage) (json.RawMessage, error) {
+	view := make(map[string]json.RawMessage, len(part))
+	for key, raw := range part {
+		view[key] = raw
+	}
+	if raw, present := jsonField(view, "resources"); present && isJSONNull(raw) {
+		view["resources"] = json.RawMessage(`{}`)
+	}
+	if raw, present := jsonField(view, "pending_feedback"); present && isJSONNull(raw) {
+		view["pending_feedback"] = json.RawMessage(`[]`)
+	}
+	validated, err := json.Marshal(view)
+	if err != nil {
+		return nil, fmt.Errorf("checkpoint chemistry validation copy: %w", err)
+	}
+	return validated, nil
 }
