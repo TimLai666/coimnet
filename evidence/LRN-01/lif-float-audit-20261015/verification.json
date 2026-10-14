@@ -1,0 +1,222 @@
+{
+  "checked_at": "2026-10-14T22:42:31.222549+00:00",
+  "engineering_passed": true,
+  "go_engineering_passed": true,
+  "governance_final_pending": false,
+  "acceptance_complete": false,
+  "cleanup_pending": false,
+  "delivery_pending": true,
+  "acceptance_scope": "ticket 101 only; global zero-bug goal remains active",
+  "requirement": "LRN-01",
+  "base_commit": "96285f445ae429a51341c39443e2aefaf55958c0",
+  "source_manifest": "source-before.json",
+  "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+  "source_count": 810,
+  "formal_source_unchanged": true,
+  "fresh_full_engineering": {
+    "full-unit": {
+      "pass_events": 5778,
+      "skip_events": 22,
+      "fail_events": 0,
+      "passed_packages": 58,
+      "skipped_packages": 3,
+      "scope": "fresh complete unoverlaid production/test suite",
+      "command_receipt": "full-unit.json"
+    },
+    "full-race": {
+      "pass_events": 5777,
+      "skip_events": 23,
+      "fail_events": 0,
+      "passed_packages": 58,
+      "skipped_packages": 3,
+      "scope": "fresh complete unoverlaid production/test suite",
+      "command_receipt": "full-race.json"
+    }
+  },
+  "new_full_suite_run": true,
+  "observed_result": {
+    "checked_at": "2026-10-14T22:26:46.499646+00:00",
+    "classification": "allowed Go compiler floating-point fusion difference in this artificial fixture; no confirmed normal-formula defect",
+    "root_cause_confirmed": true,
+    "root_cause_scope": "different fused multiplication term in source-level candidate expression dynamics/lif.go:383; earliest stored trace divergence and causal propagation to public gradient",
+    "ordinary_expression": "FMA(alpha, drive, round(lambda * voltage))",
+    "race_expression": "FMA(lambda, voltage, round(alpha * drive))",
+    "first_stored_trace_divergence": {
+      "t_zero_based": 1,
+      "node_zero_based": 0,
+      "ordinary_bits": "3fd497a98e768493",
+      "race_bits": "3fd497a98e768492",
+      "refractory_discards": true
+    },
+    "first_gradient_causing_candidate_divergence": {
+      "t_zero_based": 4,
+      "node_zero_based": 2,
+      "ordinary_bits": "bfbfc221cec94cf7",
+      "race_bits": "bfbfc221cec94cf6",
+      "refractory_discards": false
+    },
+    "complete_shared_initial_config_parameters_encoded_inputs_upstream_equal": true,
+    "both_complete_public_core_gradients_equal_network": true,
+    "both_observed_complete_traces_equal_original_public_controls": true,
+    "both_complete_forward_trace_bits_and_gradients_equal_independent_reference": true,
+    "same_build_new_process_replays_exact": 4,
+    "same_fixture_outputs_spikes_prediction_loss_equal_across_builds": true,
+    "formal_source_unchanged": true,
+    "model_quality_measured": false,
+    "all_framework_bugs_absent_proven": false,
+    "dynamic_instruction_PC_node_trace_collected": false,
+    "all_dynamic_machine_instruction_order_proven": false,
+    "formal_formula_fix_required_for_this_case": false,
+    "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "probe_input_sha256": {
+      "normal": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83",
+      "race": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83"
+    },
+    "evidence": [
+      "public-comparison.json",
+      "trace-comparison.json",
+      "complete-reference-bits.json",
+      "forward-source-assembly-normal.txt",
+      "forward-source-assembly-race.txt",
+      "root-review.json",
+      "replay-comparison.json"
+    ],
+    "stateful_consumer_control": "state-parity.json",
+    "stateful_whole_sequence_and_six_single_steps_equal_full_forward_per_build": true
+  },
+  "input_fingerprints": {
+    "probe_source_sha256": {
+      "public-core-min.go.txt": "de6cd718953d265c7589d9bb0a846046bcd726d2c18e2de75d0de1126e7fc8ee",
+      "public-core-state.go.txt": "3a758ffba25957fe9a62841225a32fba961db8336220c94b9c3fa86c56a14fd2",
+      "audit_lif_trace_test.go.txt": "00798509c5784c219c9b8024736f7c4e89d7c4c59bd992c9032a5be1fadd6d7e",
+      "pc_lines.go.txt": "e1bffda83ff679b0d1706c604b8d5673b1ee9816bc6a18c2ac06ed758ef4cb27",
+      "complete-reference-bits.py.txt": "e7c3493342aa5cccb7ca77f1b9d6cf0b254eba2c93651b41f0619687b56c4ac3"
+    },
+    "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "artificial_input_sha256": {
+      "normal": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83",
+      "race": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83"
+    },
+    "cleanup_inventory_sha256": "8ee307290d0a0e2ff19633390c0ba7e781939bceb1060bb802792a0d865c0db8"
+  },
+  "reproduction_command": [
+    [
+      "go",
+      "build",
+      "-o",
+      "runs/.tmp/lif-float-audit-20261015/public-core-min",
+      "runs/.tmp/lif-float-audit-20261015/public_core_min.go"
+    ],
+    [
+      "go",
+      "build",
+      "-race",
+      "-o",
+      "runs/.tmp/lif-float-audit-20261015/public-core-min-race",
+      "runs/.tmp/lif-float-audit-20261015/public_core_min.go"
+    ],
+    [
+      "/usr/bin/env",
+      "COIMNET_AUDIT_FIXTURE=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/boundary-normal.json",
+      "COIMNET_AUDIT_OUTPUT=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/trace-normal.json",
+      "go",
+      "test",
+      "-overlay=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/trace-overlay.json",
+      "-run",
+      "^TestAuditLIFTrace$",
+      "-count=1",
+      "-v",
+      "./dynamics"
+    ],
+    [
+      "/usr/bin/env",
+      "COIMNET_AUDIT_FIXTURE=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/boundary-race.json",
+      "COIMNET_AUDIT_OUTPUT=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/trace-race.json",
+      "go",
+      "test",
+      "-race",
+      "-overlay=/Users/timlai/Developer/coimnet/runs/.tmp/lif-float-audit-20261015/trace-overlay.json",
+      "-run",
+      "^TestAuditLIFTrace$",
+      "-count=1",
+      "-v",
+      "./dynamics"
+    ]
+  ],
+  "environment": "environment.json",
+  "reproduction_guidance": "reproduction.md",
+  "commands": [
+    "build.json",
+    "format.json",
+    "full-race.json",
+    "full-unit.json",
+    "go-env.json",
+    "governance-precleanup.json",
+    "mod-verify.json",
+    "module-list.json",
+    "pc-lines-build.json",
+    "public-build.json",
+    "public-min-build.json",
+    "public-min-race-build.json",
+    "public-normal.json",
+    "public-race-build.json",
+    "public-race.json",
+    "public-state-build.json",
+    "public-state-race-build.json",
+    "replay-normal-1.json",
+    "replay-normal-2.json",
+    "replay-race-1.json",
+    "replay-race-2.json",
+    "state-normal.json",
+    "state-race.json",
+    "trace-normal.json",
+    "trace-race.json",
+    "vet.json",
+    "governance-final-validated.json"
+  ],
+  "test_log": [
+    "build.log",
+    "format.log",
+    "full-race.log",
+    "full-unit.log",
+    "go-env.log",
+    "governance-precleanup.log",
+    "mod-verify.log",
+    "module-list.log",
+    "pc-lines-build.log",
+    "public-build.log",
+    "public-min-build.log",
+    "public-min-race-build.log",
+    "public-normal.log",
+    "public-race-build.log",
+    "public-race.log",
+    "public-state-build.log",
+    "public-state-race-build.log",
+    "replay-normal-1.log",
+    "replay-normal-2.log",
+    "replay-race-1.log",
+    "replay-race-2.log",
+    "state-normal.log",
+    "state-race.log",
+    "trace-normal.log",
+    "trace-race.log",
+    "vet.log",
+    "governance-final-validated.log"
+  ],
+  "software_task_biology_scopes_separate": true,
+  "real_task_quality_measured": false,
+  "biological_quantitative_correctness_measured": false,
+  "all_framework_bugs_absent_proven": false,
+  "governance_final": {
+    "top_level_passes": 11,
+    "events": {
+      "pass": 31,
+      "skip": 0,
+      "fail": 0
+    },
+    "receipt": "governance-final-validated.json"
+  },
+  "cleanup": "cleanup.json",
+  "temporary_files_removed": true,
+  "protected_real_example_model_files_unchanged": 18
+}

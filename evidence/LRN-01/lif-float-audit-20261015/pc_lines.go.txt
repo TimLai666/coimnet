@@ -1,0 +1,68 @@
+package main
+
+import (
+	"bufio"
+	"debug/gosym"
+	"debug/macho"
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
+)
+
+func main() {
+	if len(os.Args) != 3 {
+		panic("usage: pc-lines BINARY ASSEMBLY")
+	}
+	f, err := macho.Open(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	s := f.Section("__gopclntab")
+	if s == nil {
+		panic("missing __gopclntab")
+	}
+	data, err := s.Data()
+	if err != nil {
+		panic(err)
+	}
+	text := f.Section("__text")
+	if text == nil {
+		panic("missing __text")
+	}
+	table, err := gosym.NewTable(nil, gosym.NewLineTable(data, text.Addr))
+	if err != nil {
+		panic(err)
+	}
+	input, err := os.Open(os.Args[2])
+	if err != nil {
+		panic(err)
+	}
+	defer input.Close()
+	scanner := bufio.NewScanner(input)
+	pattern := regexp.MustCompile(`^([0-9a-f]+):`)
+	previous := ""
+	for scanner.Scan() {
+		line := scanner.Text()
+		if match := pattern.FindStringSubmatch(line); match != nil {
+			pc, err := strconv.ParseUint(match[1], 16, 64)
+			if err != nil {
+				panic(err)
+			}
+			file, number, function := table.PCToLine(pc)
+			if function == nil {
+				panic("missing PC mapping")
+			}
+			location := fmt.Sprintf("%s:%d", file, number)
+			if location != previous {
+				fmt.Println("; " + location)
+				previous = location
+			}
+		}
+		fmt.Println(line)
+	}
+	if err := scanner.Err(); err != nil {
+		panic(err)
+	}
+}

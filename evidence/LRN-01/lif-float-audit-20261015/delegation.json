@@ -1,0 +1,36 @@
+{
+  "host": "Codex",
+  "opencode_attempt": {
+    "model": "opencode/big-pickle",
+    "flags": [
+      "--agent",
+      "plan",
+      "--format",
+      "json"
+    ],
+    "availability_receipt": "opencode-availability.json",
+    "actual_error": "error: Error starting FSEvents stream",
+    "timeout_seconds": 60,
+    "source_transmitted": false
+  },
+  "fallback": [
+    {
+      "agent": "lif_numeric_contract_101",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "allowed_output": "contract-review.md"
+    },
+    {
+      "agent": "lif_arithmetic_review_101",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "allowed_outputs": [
+        "arithmetic-review.md",
+        "causal-review.md"
+      ]
+    }
+  ],
+  "project_instruction_priority": "AGENTS.md Sub-agent explicitly selects gpt-5.6-luna/max after actual free-model call failure",
+  "root_review": "root-review.json",
+  "workers_did_not_build_test_modify_production_or_commit": true
+}

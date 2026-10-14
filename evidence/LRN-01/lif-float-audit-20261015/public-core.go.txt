@@ -1,0 +1,105 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/HazelnutParadise/insyra/nn"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"math"
+	"os"
+	"reflect"
+)
+
+func must(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func bits(x float64) string { return fmt.Sprintf("%016x", math.Float64bits(x)) }
+func vb(x []float64) []string {
+	r := make([]string, len(x))
+	for i, v := range x {
+		r[i] = bits(v)
+	}
+	return r
+}
+func mb(x [][]float64) [][]string {
+	r := make([][]string, len(x))
+	for i, v := range x {
+		r[i] = vb(v)
+	}
+	return r
+}
+func gb(g dynamics.LIFGradient) any {
+	return map[string]any{"weights": vb(g.Weights), "bias": vb(g.Bias), "log_tau": vb(g.LogTau), "theta_raw": vb(g.ThetaRaw), "inputs": mb(g.Inputs), "initial": vb(g.Initial)}
+}
+func main() {
+	ctx := context.Background()
+	cfg := dynamics.LIFConfig{Nodes: 3, Sources: []int{0, 1, 1}, Targets: []int{1, 1, 2}, Delays: []int{0, 1, 0}, DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+	params := dynamics.LIFParameters{Weights: []float64{.65, .25, .7}, Bias: []float64{0, 0, 0}, LogTau: []float64{0, 0, 0}, ThetaRaw: []float64{-1, -1, -1}}
+	raw := []float32{.7, .8, .7, .8, .7, .8}
+	x, err := nn.NewTensor([]int{6, 1}, raw)
+	must(err)
+	enc, err := nn.NewTensor([]int{1, 3}, []float32{1, 0, 0})
+	must(err)
+	z, err := nn.MatMul(x, enc)
+	must(err)
+	input := make([][]float64, 6)
+	plain := make([][]float64, 6)
+	encoded32 := z.Data()
+	for t := range input {
+		input[t] = make([]float64, 3)
+		for i := range input[t] {
+			input[t][i] = float64(encoded32[t*3+i])
+		}
+		plain[t] = []float64{float64(raw[t])}
+	}
+	// Network accepts the original float64 literals and crosses the same float32 encoder boundary.
+	original := [][]float64{{.7}, {.8}, {.7}, {.8}, {.7}, {.8}}
+	model, err := dynamics.NewLIF(cfg)
+	must(err)
+	trace, err := model.Forward(ctx, params, []float64{0, 0, 0}, input)
+	must(err)
+	outputs := trace.Outputs()
+	h, err := nn.NewTensor([]int{1, 1}, []float32{float32(outputs[5][2])})
+	must(err)
+	read, err := nn.NewTensor([]int{1, 1}, []float32{1})
+	must(err)
+	pred, err := nn.MatMul(h, read)
+	must(err)
+	pred32 := pred.Data()[0]
+	target32 := float32(.35)
+	delta := float32(pred32 - target32)
+	mseUp := float32(float32(2) * delta)
+	coreUp := float32(mseUp * float32(1))
+	up := make([][]float64, 6)
+	for t := range up {
+		up[t] = make([]float64, 3)
+	}
+	up[5][2] = float64(coreUp)
+	g, err := model.Backward(ctx, trace, up, 0)
+	must(err)
+	network, err := learning.NewNetwork(learning.Config{LIF: &cfg, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{2}})
+	must(err)
+	np := learning.Parameters{Core: dynamics.Parameters{Weights: params.Weights, Bias: params.Bias, LogTau: params.LogTau}, ThetaRaw: params.ThetaRaw, Encoder: []float64{1, 0, 0}, Readout: []float64{1}}
+	loss, ng, err := network.LossGradient(ctx, np, original, []float64{.35}, 0)
+	must(err)
+	networkCore := dynamics.LIFGradient{Weights: ng.Core.Weights, Bias: ng.Core.Bias, LogTau: ng.Core.LogTau, ThetaRaw: ng.ThetaRaw, Inputs: ng.Core.Inputs, Initial: ng.Core.Initial}
+	if !reflect.DeepEqual(gb(g), gb(networkCore)) {
+		panic("public LIF gradient does not exactly match public Network gradient")
+	}
+	expectedLoss := float64(float32(delta * delta))
+	if math.Float64bits(loss) != math.Float64bits(expectedLoss) {
+		panic("float32 loss boundary differs")
+	}
+	report := map[string]any{"config": cfg, "parameters": params, "original_inputs": original, "encoded_inputs": input, "encoded_input_bits": mb(input), "upstream": up, "upstream_bits": mb(up), "prediction_f32_bits": fmt.Sprintf("%08x", math.Float32bits(pred32)), "target_f32_bits": fmt.Sprintf("%08x", math.Float32bits(target32)), "readout_mse_upstream_f32_bits": fmt.Sprintf("%08x", math.Float32bits(mseUp)), "core_upstream_f32_bits": fmt.Sprintf("%08x", math.Float32bits(coreUp)), "loss_bits": bits(loss), "outputs_bits": mb(outputs), "spikes_bits": mb(trace.Spikes()), "voltages_bits": mb(trace.Voltages()), "gradient": g, "gradient_bits": gb(g), "network_gradient_bits": gb(networkCore), "all_public_core_gradient_bits_equal_network": true, "formal_methods_changed": false, "scope": "first update from the identical shared initial state; actual Insyra encoder/readout MatMul, explicit scalar MSE/readout VJP verified by full Network core-gradient equality"}
+	b, err := json.Marshal(report)
+	must(err)
+	fmt.Println(string(b))
+	_ = plain
+	if len(os.Args) > 1 {
+		must(os.WriteFile(os.Args[1], b, 0600))
+	}
+}

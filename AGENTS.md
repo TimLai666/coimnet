@@ -54,7 +54,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
-- `dynamics/lif.go`／`learning/network.go`：[NEEDS INVESTIGATION] 一般與 `-race` 建置的 LIF 人工案例有一個 float64 間距差異。從共同初始快照重現，第一次更新的 raw Core.Bias[2] 已不同，進一步觀察到 Core.Inputs[4][2] 不同，兩種建置各自反向累加都得到其 Bias[2]，差異先於 Adam。編碼器／讀出 float32、LIF Forward trace 與反向運算的更早值尚未逐一比對，精確運算根因、跨建置逐位契約與品質影響未確認。同建置新程序接續及取消狀態保持通過。先用相同邊界值的公開 LIF Forward／Backward 做最小對照，不改正常公式或放寬接續測試。證據見 `evidence/OPS-05/gpu-cancel-audit-20261015/core-input-gradient-comparison.json` 與 `public-gradient-comparison.json`。
+- `dynamics/lif.go`／`learning/network.go`：[NEEDS INVESTIGATION] 普通／`-race` 的人工 LIF 一個間距梯度差異已確認來自 candidate 融合不同乘法項，是 Go 允許的取整結果。最早儲存分歧 cand[1][0] 被不應期捨棄，第一個傳到梯度的是 cand[4][2]。公開 Network／LIF、唯讀 trace、獨立完整前向／反向與同建置新程序重跑保持一致，正常公式不改。長期訓練／真實任務品質影響尚未量測；後續用固定資料、預算與建置做成對任務比較，不以此人工案例外推。證據見 `evidence/LRN-01/lif-float-audit-20261015/complete-reference-bits.json` 與 `root-review.json`。
 
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。

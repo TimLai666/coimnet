@@ -1,0 +1,94 @@
+package dynamics
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"reflect"
+	"testing"
+)
+
+func auditBits(x float64) string { return fmt.Sprintf("%016x", math.Float64bits(x)) }
+func auditVector(x []float64) []string {
+	r := make([]string, len(x))
+	for i, v := range x {
+		r[i] = auditBits(v)
+	}
+	return r
+}
+func auditMatrix(x [][]float64) [][]string {
+	r := make([][]string, len(x))
+	for i, v := range x {
+		r[i] = auditVector(v)
+	}
+	return r
+}
+
+// TestAuditLIFTrace only reads the completed trace. Forward and Backward are unchanged.
+func TestAuditLIFTrace(t *testing.T) {
+	var fixture struct {
+		Config     LIFConfig     `json:"config"`
+		Parameters LIFParameters `json:"parameters"`
+		Inputs     [][]float64   `json:"encoded_inputs"`
+		Upstream   [][]float64   `json:"upstream"`
+		Gradient   LIFGradient   `json:"gradient"`
+		Outputs    [][]string    `json:"outputs_bits"`
+		Spikes     [][]string    `json:"spikes_bits"`
+		Voltages   [][]string    `json:"voltages_bits"`
+	}
+	raw, err := os.ReadFile(os.Getenv("COIMNET_AUDIT_FIXTURE"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &fixture); err != nil {
+		t.Fatal(err)
+	}
+	model, err := NewLIF(fixture.Config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	trace, err := model.Forward(context.Background(), fixture.Parameters, make([]float64, fixture.Config.Nodes), fixture.Inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	g, err := model.Backward(context.Background(), trace, fixture.Upstream, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(g, fixture.Gradient) {
+		t.Fatal("observer gradient differs from the unobserved public control")
+	}
+	for _, c := range []struct {
+		name      string
+		got, want [][]string
+	}{
+		{"outputs", auditMatrix(trace.Outputs()), fixture.Outputs},
+		{"spikes", auditMatrix(trace.Spikes()), fixture.Spikes},
+		{"voltages", auditMatrix(trace.Voltages()), fixture.Voltages},
+	} {
+		if !reflect.DeepEqual(c.got, c.want) {
+			t.Fatalf("%s differs from public control", c.name)
+		}
+	}
+	values := map[string]any{"drive": trace.drive, "cand": trace.cand, "voltage": trace.voltage, "syn": trace.syn, "spike": trace.spike, "reset": trace.reset, "dspike": trace.dspike, "refract": trace.refract, "lambda": trace.lambda, "alpha": trace.alpha, "theta_slope": trace.thetaSlope}
+	bits := map[string]any{"drive": auditMatrix(trace.drive), "cand": auditMatrix(trace.cand), "voltage": auditMatrix(trace.voltage), "syn": auditMatrix(trace.syn), "spike": auditMatrix(trace.spike), "reset": auditMatrix(trace.reset), "dspike": auditMatrix(trace.dspike), "lambda": auditVector(trace.lambda), "alpha": auditVector(trace.alpha), "theta_slope": auditVector(trace.thetaSlope)}
+	report := map[string]any{"values": values, "bits": bits, "all_public_control_values_equal": true, "formal_methods_changed": false}
+	data, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.OpenFile(os.Getenv("COIMNET_AUDIT_OUTPUT"), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, writeErr := f.Write(append(data, '\n'))
+	closeErr := f.Close()
+	if writeErr != nil {
+		t.Fatal(writeErr)
+	}
+	if closeErr != nil {
+		t.Fatal(closeErr)
+	}
+}

@@ -1,0 +1,12 @@
+from pathlib import Path
+import os,subprocess,json,hashlib,datetime,sys
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/lif-float-audit-20261015';e=r/'evidence/LRN-01/lif-float-audit-20261015'
+env=os.environ.copy();env.update({k:str(w/v)for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+name=sys.argv[1];cmd=sys.argv[2:];source=json.loads((e/'source-before.json').read_text())
+def check():
+ for p,h in source.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check();now=datetime.datetime.now(datetime.timezone.utc);print('START '+name,flush=True)
+with(e/(name+'.log')).open('xb')as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+raw=(e/(name+'.log')).read_bytes();rec={'command':cmd,'started_at':now.isoformat(),'duration_seconds':(datetime.datetime.now(datetime.timezone.utc)-now).total_seconds(),'exit_code':p.returncode,'log':name+'.log','log_sha256':hashlib.sha256(raw).hexdigest(),'formal_source_manifest':'source-before.json','formal_sources_checked':len(source)}
+with(e/(name+'.json')).open('x')as f:json.dump(rec,f,indent=2);f.write('\n')
+check();print(json.dumps(rec),flush=True);assert p.returncode==0

@@ -1,0 +1,125 @@
+from pathlib import Path
+from fractions import Fraction
+import json, struct, math
+
+E = Path('/Users/timlai/Developer/coimnet/evidence/LRN-01/lif-float-audit-20261015')
+
+def bits(x):
+    return struct.pack('>d', x).hex()
+
+def fma(x, y, z):
+    # Exact rational product/addition, then Python's nearest-even binary64 conversion.
+    return float(Fraction.from_float(x) * Fraction.from_float(y) + Fraction.from_float(z))
+
+def vector(x):
+    return [bits(v) for v in x]
+
+def matrix(x):
+    return [vector(v) for v in x]
+
+def forward(mode, fixture, constants):
+    cfg = fixture['config']; params = fixture['parameters']
+    steps = len(fixture['encoded_inputs']); nodes = cfg['nodes']
+    assert nodes == 3 and cfg['refractory_steps'] == 1
+    assert cfg['surrogate'] == {'kind': 'fast_sigmoid', 'scale': 2}
+    assert params['theta_raw'] == [-1, -1, -1]
+    assert not cfg['adaptation']['enabled']
+    la, al = constants['lambda'], constants['alpha']
+    kappa = la[0]
+    # logistic(-1)=exp(-1)/(1+exp(-1)); exp(-1) was captured from the formal trace.
+    s = kappa / (1.0 + kappa)
+    theta = fma(cfg['theta_max'] - cfg['theta_min'], s, cfg['theta_min'])
+    v = {k: [[0.0] * nodes for _ in range(steps+1)] for k in ['voltage', 'syn', 'spike']}
+    v.update({k: [[0.0] * nodes for _ in range(steps)] for k in ['drive', 'cand', 'reset', 'dspike']})
+    v['refract'] = [[0] * nodes for _ in range(steps+1)]
+    v.update(lambda_=la, alpha=al, theta_slope=constants['theta_slope'])
+    v['lambda'] = v.pop('lambda_')
+    for t in range(steps):
+        drive = fixture['encoded_inputs'][t][:]
+        for edge, source in enumerate(cfg['sources']):
+            delay = cfg['delays'][edge]; past = t - delay if delay < t else 0
+            target = cfg['targets'][edge]
+            drive[target] = fma(params['weights'][edge], v['syn'][past][source], drive[target])
+        for i in range(nodes):
+            drive[i] += params['bias'][i]
+            candidate = fma(al[i], drive[i], la[i] * v['voltage'][t][i]) if mode == 'normal' else fma(la[i], v['voltage'][t][i], al[i] * drive[i])
+            v['cand'][t][i] = candidate
+            if v['refract'][t][i] > 0:
+                v['voltage'][t+1][i] = cfg['v_reset']
+                v['refract'][t+1][i] = v['refract'][t][i] - 1
+            else:
+                spike = float(candidate >= theta)
+                denominator = fma(float(cfg['surrogate']['scale']), abs(candidate - theta), 1.0)
+                v['dspike'][t][i] = 1.0 / (denominator * denominator)
+                v['spike'][t+1][i] = spike
+                v['reset'][t][i] = 1.0 - spike
+                v['voltage'][t+1][i] = fma(v['reset'][t][i], candidate, spike * cfg['v_reset'])
+                if spike:
+                    v['refract'][t+1][i] = cfg['refractory_steps']
+            v['syn'][t+1][i] = fma(kappa, v['syn'][t][i], v['spike'][t+1][i])
+        v['drive'][t] = drive
+    return v, bits(theta)
+
+def reverse(v, fixture):
+    cfg = fixture['config']; params = fixture['parameters']
+    steps = len(v['cand']); nodes = len(v['lambda'])
+    gx = [[0.0] * nodes] + [row[:] for row in fixture['upstream']]
+    gv = [0.0] * nodes
+    result = {k: [0.0] * n for k, n in [('weights', len(params['weights'])), ('bias', nodes), ('log_tau', nodes), ('theta_raw', nodes)]}
+    inputs = [[0.0] * nodes for _ in range(steps)]
+    records = []
+    # DT=tauSyn=1, so captured exp(-1) lambda is also kappa. No independent libm assumption.
+    assert cfg['dt'] == 1 and cfg['tau_syn'] == 1 and all(x == 0 for x in params['log_tau'])
+    kappa = v['lambda'][0]
+    for t in reversed(range(steps)):
+        prev = [0.0] * nodes
+        for i in range(nodes):
+            dspike = gx[t+1][i]
+            gx[t][i] = fma(kappa, gx[t+1][i], gx[t][i])
+            du = dspike * v['dspike'][t][i]
+            # Original binaries fuse the event derivative product into the sum,
+            # while the separate rounded du is retained for theta_raw.
+            dcand = fma(dspike, v['dspike'][t][i], gv[i] * v['reset'][t][i])
+            result['theta_raw'][i] = -fma(du, v['theta_slope'][i], -result['theta_raw'][i])
+            inputs[t][i] = v['alpha'][i] * dcand
+            result['bias'][i] += inputs[t][i]
+            dlambda = v['lambda'][i]  # DT/exp(0)=1 exactly.
+            product = dcand * (v['voltage'][t][i] - v['drive'][t][i])
+            result['log_tau'][i] = fma(product, dlambda, result['log_tau'][i])
+            prev[i] = v['lambda'][i] * dcand
+            records.append({'t':t,'node':i,'dspike_bits':bits(dspike),'du_bits':bits(du),'gv_bits':bits(gv[i]),'dcand_bits':bits(dcand),'input_bits':bits(inputs[t][i]),'bias_bits':bits(result['bias'][i])})
+        for edge, source in enumerate(cfg['sources']):
+            delay = cfg['delays'][edge]
+            past = t - delay if delay < t else 0
+            drive_gradient = inputs[t][cfg['targets'][edge]]
+            result['weights'][edge] = fma(drive_gradient, v['syn'][past][source], result['weights'][edge])
+            gx[past][source] = fma(drive_gradient, params['weights'][edge], gx[past][source])
+        gv = prev
+    result = {k:vector(a) for k,a in result.items()}
+    result.update(inputs=matrix(inputs), initial=vector(gv))
+    return result, records
+
+report = {'arithmetic': 'Fraction exact product and addition followed by nearest-even binary64 conversion', 'cases': {}, 'formal_methods_changed': False}
+for mode in ['normal', 'race']:
+    trace = json.loads((E / ('trace-values-' + mode + '.json')).read_text())
+    fixture = json.loads((E / ('public-' + mode + '.log')).read_text())
+    v = trace['values']; candidates = []
+    rebuilt, theta = forward(mode, fixture, v)
+    assert rebuilt == v, (mode, 'independent forward differs from captured trace')
+    rebuilt_bits = {k: matrix(value) if value and isinstance(value[0], list) else vector(value) for k, value in rebuilt.items() if k != 'refract'}
+    assert rebuilt_bits == trace['bits'], (mode, 'independent forward bit patterns differ')
+    for t in range(len(v['cand'])):
+        for i in range(len(v['lambda'])):
+            la, al = v['lambda'][i], v['alpha'][i]
+            previous, drive = v['voltage'][t][i], v['drive'][t][i]
+            separated = la * previous + al * drive
+            fused_alpha = fma(al, drive, la * previous)
+            fused_lambda = fma(la, previous, al * drive)
+            expected = fused_alpha if mode == 'normal' else fused_lambda
+            assert bits(expected) == bits(v['cand'][t][i]), (mode, t, i)
+            candidates.append({'t': t, 'node': i, 'lambda_bits': bits(la), 'previous_voltage_bits': bits(previous), 'alpha_bits': bits(al), 'drive_bits': bits(drive), 'actual_candidate_bits': bits(v['cand'][t][i]), 'separated_bits': bits(separated), 'fused_alpha_bits': bits(fused_alpha), 'fused_lambda_bits': bits(fused_lambda), 'refractory_before': v['refract'][t][i]})
+    expected, reverse_records = reverse(rebuilt, fixture)
+    differences = {k: {'expected': expected[k], 'actual': fixture['gradient_bits'][k]} for k in expected if expected[k] != fixture['gradient_bits'][k]}
+    report['cases'][mode] = {'candidates': candidates, 'all_18_candidates_match': True, 'all_forward_trace_values_match': True, 'theta_bits': theta, 'reference_gradient_bits': expected, 'gradient_differences': differences, 'reverse_records': reverse_records}
+
+print(json.dumps(report, indent=2))

@@ -1,0 +1,50 @@
+{
+  "checked_at": "2026-10-14T22:26:46.499646+00:00",
+  "classification": "allowed Go compiler floating-point fusion difference in this artificial fixture; no confirmed normal-formula defect",
+  "root_cause_confirmed": true,
+  "root_cause_scope": "different fused multiplication term in source-level candidate expression dynamics/lif.go:383; earliest stored trace divergence and causal propagation to public gradient",
+  "ordinary_expression": "FMA(alpha, drive, round(lambda * voltage))",
+  "race_expression": "FMA(lambda, voltage, round(alpha * drive))",
+  "first_stored_trace_divergence": {
+    "t_zero_based": 1,
+    "node_zero_based": 0,
+    "ordinary_bits": "3fd497a98e768493",
+    "race_bits": "3fd497a98e768492",
+    "refractory_discards": true
+  },
+  "first_gradient_causing_candidate_divergence": {
+    "t_zero_based": 4,
+    "node_zero_based": 2,
+    "ordinary_bits": "bfbfc221cec94cf7",
+    "race_bits": "bfbfc221cec94cf6",
+    "refractory_discards": false
+  },
+  "complete_shared_initial_config_parameters_encoded_inputs_upstream_equal": true,
+  "both_complete_public_core_gradients_equal_network": true,
+  "both_observed_complete_traces_equal_original_public_controls": true,
+  "both_complete_forward_trace_bits_and_gradients_equal_independent_reference": true,
+  "same_build_new_process_replays_exact": 4,
+  "same_fixture_outputs_spikes_prediction_loss_equal_across_builds": true,
+  "formal_source_unchanged": true,
+  "model_quality_measured": false,
+  "all_framework_bugs_absent_proven": false,
+  "dynamic_instruction_PC_node_trace_collected": false,
+  "all_dynamic_machine_instruction_order_proven": false,
+  "formal_formula_fix_required_for_this_case": false,
+  "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+  "probe_input_sha256": {
+    "normal": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83",
+    "race": "3128f7b41e0e1b3edd6ca8e2749305e72195c00f9ba89d426ef2fe3613ba2f83"
+  },
+  "evidence": [
+    "public-comparison.json",
+    "trace-comparison.json",
+    "complete-reference-bits.json",
+    "forward-source-assembly-normal.txt",
+    "forward-source-assembly-race.txt",
+    "root-review.json",
+    "replay-comparison.json"
+  ],
+  "stateful_consumer_control": "state-parity.json",
+  "stateful_whole_sequence_and_six_single_steps_equal_full_forward_per_build": true
+}

@@ -1,0 +1,3441 @@
+
+runs/.tmp/lif-float-audit-20261015/public-core-race:	file format mach-o arm64
+
+Disassembly of section __TEXT,__text:
+
+00000001008b62c0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward>:
+; github.com/TimLai666/coimnet/dynamics.(*LIF).Forward():
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:280
+1008b62c0: f9400b90    	ldr	x16, [x28, #0x10]
+1008b62c4: d11703f1    	sub	x17, sp, #0x5c0
+1008b62c8: eb10023f    	cmp	x17, x16
+1008b62cc: 540180c9    	b.ls	0x1008b92e4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3024>
+1008b62d0: d11903f4    	sub	x20, sp, #0x640
+1008b62d4: a93ffa9d    	stp	x29, x30, [x20, #-0x8]
+1008b62d8: 9100029f    	mov	sp, x20
+1008b62dc: d10023fd    	sub	x29, sp, #0x8
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:281
+1008b62e0: f9033fe0    	str	x0, [sp, #0x678]
+1008b62e4: f90343e1    	str	x1, [sp, #0x680]
+1008b62e8: f90347e2    	str	x2, [sp, #0x688]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:280
+1008b62ec: 911a43fb    	add	x27, sp, #0x690
+1008b62f0: a9001363    	stp	x3, x4, [x27]
+1008b62f4: 911a83fb    	add	x27, sp, #0x6a0
+1008b62f8: a9001b65    	stp	x5, x6, [x27]
+1008b62fc: 911ac3fb    	add	x27, sp, #0x6b0
+1008b6300: a9002367    	stp	x7, x8, [x27]
+1008b6304: 911b03fb    	add	x27, sp, #0x6c0
+1008b6308: a9002b69    	stp	x9, x10, [x27]
+1008b630c: 911b43fb    	add	x27, sp, #0x6d0
+1008b6310: a900336b    	stp	x11, x12, [x27]
+1008b6314: 911b83fb    	add	x27, sp, #0x6e0
+1008b6318: a9003b6d    	stp	x13, x14, [x27]
+1008b631c: f94003e0    	ldr	x0, [sp]
+1008b6320: 97e05e30    	bl	0x1000cdbe0 <_runtime.racefuncenter>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:281
+1008b6324: f94343e0    	ldr	x0, [sp, #0x680]
+1008b6328: b40024e0    	cbz	x0, 0x1008b67c4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x504>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:284
+1008b632c: f9401401    	ldr	x1, [x0, #0x28]
+1008b6330: f94347e0    	ldr	x0, [sp, #0x688]
+1008b6334: d63f0020    	blr	x1
+1008b6338: b5002340    	cbnz	x0, 0x1008b67a0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x4e0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:287
+1008b633c: f9433fe0    	ldr	x0, [sp, #0x678]
+1008b6340: b4001e40    	cbz	x0, 0x1008b6708 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x448>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:290
+1008b6344: 97e05dd7    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6348: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b634c: f9400023    	ldr	x3, [x1]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:291
+1008b6350: f100007f    	cmp	x3, #0x0
+1008b6354: 540018ed    	b.le	0x1008b6670 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3b0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:294
+1008b6358: f94337e0    	ldr	x0, [sp, #0x668]
+1008b635c: b50004e0    	cbnz	x0, 0x1008b63f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x138>
+; /usr/local/go/src/fmt/errors.go:26
+1008b6360: b00005e0    	adrp	x0, 0x100973000 <_runtime.rodata+0xe260>
+1008b6364: 9108a000    	add	x0, x0, #0x228
+1008b6368: b27f0be1    	orr	x1, xzr, #0xe
+1008b636c: aa1f03e2    	mov	x2, xzr
+1008b6370: aa1f03e3    	mov	x3, xzr
+1008b6374: aa1f03e4    	mov	x4, xzr
+1008b6378: 97e30242    	bl	0x100176c80 <_fmt.errorf>
+1008b637c: b50002c0    	cbnz	x0, 0x1008b63d4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x114>
+; /usr/local/go/src/fmt/errors.go:31
+1008b6380: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b6384: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b6388: 91148000    	add	x0, x0, #0x520
+1008b638c: 97debbd1    	bl	0x1000652d0 <_runtime.newobject>
+1008b6390: f902b7e0    	str	x0, [sp, #0x568]
+1008b6394: 97e05dd7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6398: b27f0be1    	orr	x1, xzr, #0xe
+1008b639c: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b63a0: f9000441    	str	x1, [x2, #0x8]
+1008b63a4: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b63a8: b9451361    	ldr	w1, [x27, #0x510]
+1008b63ac: 34000081    	cbz	w1, 0x1008b63bc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xfc>
+1008b63b0: f9400040    	ldr	x0, [x2]
+1008b63b4: 97e05b2b    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b63b8: f9000320    	str	x0, [x25]
+1008b63bc: b00005e3    	adrp	x3, 0x100973000 <_runtime.rodata+0xe260>
+1008b63c0: 9108a063    	add	x3, x3, #0x228
+1008b63c4: f9000043    	str	x3, [x2]
+1008b63c8: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b63cc: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:295
+1008b63d0: aa0203e1    	mov	x1, x2
+1008b63d4: f901dbe1    	str	x1, [sp, #0x3b0]
+1008b63d8: f900e7e0    	str	x0, [sp, #0x1c8]
+1008b63dc: 97e05e05    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b63e0: aa1f03e0    	mov	x0, xzr
+1008b63e4: f940e7e1    	ldr	x1, [sp, #0x1c8]
+1008b63e8: f941dbe2    	ldr	x2, [sp, #0x3b0]
+1008b63ec: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b63f0: 911903ff    	add	sp, sp, #0x640
+1008b63f4: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:290
+1008b63f8: f90097e3    	str	x3, [sp, #0x128]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:297
+1008b63fc: f94327e0    	ldr	x0, [sp, #0x648]
+1008b6400: f9432be1    	ldr	x1, [sp, #0x650]
+1008b6404: f9432fe2    	ldr	x2, [sp, #0x658]
+1008b6408: d00005e4    	adrp	x4, 0x100974000 <_runtime.rodata+0xf260>
+1008b640c: 91107484    	add	x4, x4, #0x41d
+1008b6410: b2400fe5    	orr	x5, xzr, #0xf
+1008b6414: 97ff95db    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b6418: b50011a0    	cbnz	x0, 0x1008b664c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x38c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:300
+1008b641c: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6420: 91002020    	add	x0, x1, #0x8
+1008b6424: f902b3e0    	str	x0, [sp, #0x560]
+1008b6428: 97e05d9e    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b642c: 911a43fb    	add	x27, sp, #0x690
+1008b6430: a9400760    	ldp	x0, x1, [x27]
+1008b6434: f94353e2    	ldr	x2, [sp, #0x6a0]
+1008b6438: f9433fe3    	ldr	x3, [sp, #0x678]
+1008b643c: f9400863    	ldr	x3, [x3, #0x10]
+1008b6440: f0000584    	adrp	x4, 0x100969000 <_runtime.rodata+0x4260>
+1008b6444: 91331084    	add	x4, x4, #0xcc4
+1008b6448: b2400be5    	orr	x5, xzr, #0x7
+1008b644c: 97ff95cd    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b6450: b5000ec0    	cbnz	x0, 0x1008b6628 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x368>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:303
+1008b6454: 911aa3fb    	add	x27, sp, #0x6a8
+1008b6458: a9400760    	ldp	x0, x1, [x27]
+1008b645c: f9435fe2    	ldr	x2, [sp, #0x6b8]
+1008b6460: f94097e3    	ldr	x3, [sp, #0x128]
+1008b6464: f0000564    	adrp	x4, 0x100965000 <_runtime.rodata+0x260>
+1008b6468: 9136ec84    	add	x4, x4, #0xdbb
+1008b646c: b27e03e5    	orr	x5, xzr, #0x4
+1008b6470: 97ff95c4    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b6474: b5000c80    	cbnz	x0, 0x1008b6604 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x344>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:306
+1008b6478: 911b03fb    	add	x27, sp, #0x6c0
+1008b647c: a9400760    	ldp	x0, x1, [x27]
+1008b6480: f9436be2    	ldr	x2, [sp, #0x6d0]
+1008b6484: f94097e3    	ldr	x3, [sp, #0x128]
+1008b6488: f0000584    	adrp	x4, 0x100969000 <_runtime.rodata+0x4260>
+1008b648c: 91332c84    	add	x4, x4, #0xccb
+1008b6490: b2400be5    	orr	x5, xzr, #0x7
+1008b6494: 97ff95bb    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b6498: b5000a40    	cbnz	x0, 0x1008b65e0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x320>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:309
+1008b649c: 911b63fb    	add	x27, sp, #0x6d8
+1008b64a0: a9400760    	ldp	x0, x1, [x27]
+1008b64a4: f94377e2    	ldr	x2, [sp, #0x6e8]
+1008b64a8: f94097e3    	ldr	x3, [sp, #0x128]
+1008b64ac: d00005a4    	adrp	x4, 0x10096c000 <_runtime.rodata+0x7260>
+1008b64b0: 9126cc84    	add	x4, x4, #0x9b3
+1008b64b4: d2800125    	mov	x5, #0x9                ; =9
+1008b64b8: 97ff95b2    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b64bc: b5000800    	cbnz	x0, 0x1008b65bc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2fc>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:312
+1008b64c0: 92f00005    	mov	x5, #0x7fffffffffffffff ; =9223372036854775807
+1008b64c4: f94097e2    	ldr	x2, [sp, #0x128]
+1008b64c8: 9ac208a5    	udiv	x5, x5, x2
+1008b64cc: d343fca5    	lsr	x5, x5, #3
+1008b64d0: d10004a5    	sub	x5, x5, #0x1
+1008b64d4: f94337e6    	ldr	x6, [sp, #0x668]
+1008b64d8: eb0500df    	cmp	x6, x5
+1008b64dc: 5400024c    	b.gt	0x1008b6524 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x264>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:315
+1008b64e0: 90004060    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b64e4: 91090000    	add	x0, x0, #0x240
+1008b64e8: aa0203e1    	mov	x1, x2
+1008b64ec: 97e04659    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b64f0: f902afe0    	str	x0, [sp, #0x558]
+1008b64f4: 90004060    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b64f8: 91090000    	add	x0, x0, #0x240
+1008b64fc: f94097e1    	ldr	x1, [sp, #0x128]
+1008b6500: aa0103e2    	mov	x2, x1
+1008b6504: 97e04653    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b6508: f902abe0    	str	x0, [sp, #0x550]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:316
+1008b650c: 911b03fb    	add	x27, sp, #0x6c0
+1008b6510: a9401363    	ldp	x3, x4, [x27]
+1008b6514: f902a7e3    	str	x3, [sp, #0x548]
+1008b6518: f9013be4    	str	x4, [sp, #0x270]
+1008b651c: aa1f03e1    	mov	x1, xzr
+1008b6520: 140000ee    	b	0x1008b68d8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x618>
+; /usr/local/go/src/fmt/errors.go:26
+1008b6524: 90000640    	adrp	x0, 0x10097e000 <_runtime.rodata+0x19260>
+1008b6528: 910a5400    	add	x0, x0, #0x295
+1008b652c: b27d07e1    	orr	x1, xzr, #0x18
+1008b6530: aa1f03e2    	mov	x2, xzr
+1008b6534: aa1f03e3    	mov	x3, xzr
+1008b6538: aa1f03e4    	mov	x4, xzr
+1008b653c: 97e301d1    	bl	0x100176c80 <_fmt.errorf>
+1008b6540: b50002c0    	cbnz	x0, 0x1008b6598 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2d8>
+; /usr/local/go/src/fmt/errors.go:31
+1008b6544: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b6548: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b654c: 91148000    	add	x0, x0, #0x520
+1008b6550: 97debb60    	bl	0x1000652d0 <_runtime.newobject>
+1008b6554: f902b7e0    	str	x0, [sp, #0x568]
+1008b6558: 97e05d66    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b655c: b27d07e1    	orr	x1, xzr, #0x18
+1008b6560: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b6564: f9000441    	str	x1, [x2, #0x8]
+1008b6568: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b656c: b9451361    	ldr	w1, [x27, #0x510]
+1008b6570: 34000081    	cbz	w1, 0x1008b6580 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2c0>
+1008b6574: f9400040    	ldr	x0, [x2]
+1008b6578: 97e05aba    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b657c: f9000320    	str	x0, [x25]
+1008b6580: 90000643    	adrp	x3, 0x10097e000 <_runtime.rodata+0x19260>
+1008b6584: 910a5463    	add	x3, x3, #0x295
+1008b6588: f9000043    	str	x3, [x2]
+1008b658c: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b6590: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:313
+1008b6594: aa0203e1    	mov	x1, x2
+1008b6598: f901c3e1    	str	x1, [sp, #0x380]
+1008b659c: f900cfe0    	str	x0, [sp, #0x198]
+1008b65a0: 97e05d94    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b65a4: aa1f03e0    	mov	x0, xzr
+1008b65a8: f940cfe1    	ldr	x1, [sp, #0x198]
+1008b65ac: f941c3e2    	ldr	x2, [sp, #0x380]
+1008b65b0: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b65b4: 911903ff    	add	sp, sp, #0x640
+1008b65b8: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:309
+1008b65bc: f901c7e1    	str	x1, [sp, #0x388]
+1008b65c0: f900d3e0    	str	x0, [sp, #0x1a0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:310
+1008b65c4: 97e05d8b    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b65c8: aa1f03e0    	mov	x0, xzr
+1008b65cc: f940d3e1    	ldr	x1, [sp, #0x1a0]
+1008b65d0: f941c7e2    	ldr	x2, [sp, #0x388]
+1008b65d4: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b65d8: 911903ff    	add	sp, sp, #0x640
+1008b65dc: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:306
+1008b65e0: f901cbe1    	str	x1, [sp, #0x390]
+1008b65e4: f900d7e0    	str	x0, [sp, #0x1a8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:307
+1008b65e8: 97e05d82    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b65ec: aa1f03e0    	mov	x0, xzr
+1008b65f0: f940d7e1    	ldr	x1, [sp, #0x1a8]
+1008b65f4: f941cbe2    	ldr	x2, [sp, #0x390]
+1008b65f8: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b65fc: 911903ff    	add	sp, sp, #0x640
+1008b6600: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:303
+1008b6604: f900dbe0    	str	x0, [sp, #0x1b0]
+1008b6608: f901cfe1    	str	x1, [sp, #0x398]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:304
+1008b660c: 97e05d79    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6610: aa1f03e0    	mov	x0, xzr
+1008b6614: f940dbe1    	ldr	x1, [sp, #0x1b0]
+1008b6618: f941cfe2    	ldr	x2, [sp, #0x398]
+1008b661c: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6620: 911903ff    	add	sp, sp, #0x640
+1008b6624: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:300
+1008b6628: f901d3e1    	str	x1, [sp, #0x3a0]
+1008b662c: f900dfe0    	str	x0, [sp, #0x1b8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:301
+1008b6630: 97e05d70    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6634: aa1f03e0    	mov	x0, xzr
+1008b6638: f940dfe1    	ldr	x1, [sp, #0x1b8]
+1008b663c: f941d3e2    	ldr	x2, [sp, #0x3a0]
+1008b6640: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6644: 911903ff    	add	sp, sp, #0x640
+1008b6648: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:297
+1008b664c: f900e3e0    	str	x0, [sp, #0x1c0]
+1008b6650: f901d7e1    	str	x1, [sp, #0x3a8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:298
+1008b6654: 97e05d67    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6658: aa1f03e0    	mov	x0, xzr
+1008b665c: f940e3e1    	ldr	x1, [sp, #0x1c0]
+1008b6660: f941d7e2    	ldr	x2, [sp, #0x3a8]
+1008b6664: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6668: 911903ff    	add	sp, sp, #0x640
+1008b666c: d65f03c0    	ret
+; /usr/local/go/src/fmt/errors.go:26
+1008b6670: d0000600    	adrp	x0, 0x100978000 <_runtime.rodata+0x13260>
+1008b6674: 913ee000    	add	x0, x0, #0xfb8
+1008b6678: d2800261    	mov	x1, #0x13               ; =19
+1008b667c: aa1f03e2    	mov	x2, xzr
+1008b6680: aa1f03e3    	mov	x3, xzr
+1008b6684: aa1f03e4    	mov	x4, xzr
+1008b6688: 97e3017e    	bl	0x100176c80 <_fmt.errorf>
+1008b668c: b50002c0    	cbnz	x0, 0x1008b66e4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x424>
+; /usr/local/go/src/fmt/errors.go:31
+1008b6690: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b6694: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b6698: 91148000    	add	x0, x0, #0x520
+1008b669c: 97debb0d    	bl	0x1000652d0 <_runtime.newobject>
+1008b66a0: f902b7e0    	str	x0, [sp, #0x568]
+1008b66a4: 97e05d13    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b66a8: d2800261    	mov	x1, #0x13               ; =19
+1008b66ac: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b66b0: f9000441    	str	x1, [x2, #0x8]
+1008b66b4: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b66b8: b9451361    	ldr	w1, [x27, #0x510]
+1008b66bc: 34000081    	cbz	w1, 0x1008b66cc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x40c>
+1008b66c0: f9400040    	ldr	x0, [x2]
+1008b66c4: 97e05a67    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b66c8: f9000320    	str	x0, [x25]
+1008b66cc: d0000603    	adrp	x3, 0x100978000 <_runtime.rodata+0x13260>
+1008b66d0: 913ee063    	add	x3, x3, #0xfb8
+1008b66d4: f9000043    	str	x3, [x2]
+1008b66d8: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b66dc: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:292
+1008b66e0: aa0203e1    	mov	x1, x2
+1008b66e4: f901dfe1    	str	x1, [sp, #0x3b8]
+1008b66e8: f900ebe0    	str	x0, [sp, #0x1d0]
+1008b66ec: 97e05d41    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b66f0: aa1f03e0    	mov	x0, xzr
+1008b66f4: f940ebe1    	ldr	x1, [sp, #0x1d0]
+1008b66f8: f941dfe2    	ldr	x2, [sp, #0x3b8]
+1008b66fc: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6700: 911903ff    	add	sp, sp, #0x640
+1008b6704: d65f03c0    	ret
+; /usr/local/go/src/fmt/errors.go:26
+1008b6708: d00005a0    	adrp	x0, 0x10096c000 <_runtime.rodata+0x7260>
+1008b670c: 91285800    	add	x0, x0, #0xa16
+1008b6710: d2800121    	mov	x1, #0x9                ; =9
+1008b6714: aa1f03e2    	mov	x2, xzr
+1008b6718: aa1f03e3    	mov	x3, xzr
+1008b671c: aa1f03e4    	mov	x4, xzr
+1008b6720: 97e30158    	bl	0x100176c80 <_fmt.errorf>
+1008b6724: b50002c0    	cbnz	x0, 0x1008b677c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x4bc>
+; /usr/local/go/src/fmt/errors.go:31
+1008b6728: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b672c: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b6730: 91148000    	add	x0, x0, #0x520
+1008b6734: 97debae7    	bl	0x1000652d0 <_runtime.newobject>
+1008b6738: f902b7e0    	str	x0, [sp, #0x568]
+1008b673c: 97e05ced    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6740: d2800121    	mov	x1, #0x9                ; =9
+1008b6744: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b6748: f9000441    	str	x1, [x2, #0x8]
+1008b674c: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b6750: b9451361    	ldr	w1, [x27, #0x510]
+1008b6754: 34000081    	cbz	w1, 0x1008b6764 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x4a4>
+1008b6758: f9400040    	ldr	x0, [x2]
+1008b675c: 97e05a41    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b6760: f9000320    	str	x0, [x25]
+1008b6764: d00005a3    	adrp	x3, 0x10096c000 <_runtime.rodata+0x7260>
+1008b6768: 91285863    	add	x3, x3, #0xa16
+1008b676c: f9000043    	str	x3, [x2]
+1008b6770: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b6774: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:288
+1008b6778: aa0203e1    	mov	x1, x2
+1008b677c: f901e3e1    	str	x1, [sp, #0x3c0]
+1008b6780: f900efe0    	str	x0, [sp, #0x1d8]
+1008b6784: 97e05d1b    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6788: aa1f03e0    	mov	x0, xzr
+1008b678c: f940efe1    	ldr	x1, [sp, #0x1d8]
+1008b6790: f941e3e2    	ldr	x2, [sp, #0x3c0]
+1008b6794: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6798: 911903ff    	add	sp, sp, #0x640
+1008b679c: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:284
+1008b67a0: f901e7e1    	str	x1, [sp, #0x3c8]
+1008b67a4: f900f3e0    	str	x0, [sp, #0x1e0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:285
+1008b67a8: 97e05d12    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b67ac: aa1f03e0    	mov	x0, xzr
+1008b67b0: f940f3e1    	ldr	x1, [sp, #0x1e0]
+1008b67b4: f941e7e2    	ldr	x2, [sp, #0x3c8]
+1008b67b8: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b67bc: 911903ff    	add	sp, sp, #0x640
+1008b67c0: d65f03c0    	ret
+; /usr/local/go/src/fmt/errors.go:26
+1008b67c4: b00005c0    	adrp	x0, 0x10096f000 <_runtime.rodata+0xa260>
+1008b67c8: 911f2000    	add	x0, x0, #0x7c8
+1008b67cc: d2800161    	mov	x1, #0xb                ; =11
+1008b67d0: aa1f03e2    	mov	x2, xzr
+1008b67d4: aa1f03e3    	mov	x3, xzr
+1008b67d8: aa1f03e4    	mov	x4, xzr
+1008b67dc: 97e30129    	bl	0x100176c80 <_fmt.errorf>
+1008b67e0: b50002c0    	cbnz	x0, 0x1008b6838 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x578>
+; /usr/local/go/src/fmt/errors.go:31
+1008b67e4: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b67e8: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b67ec: 91148000    	add	x0, x0, #0x520
+1008b67f0: 97debab8    	bl	0x1000652d0 <_runtime.newobject>
+1008b67f4: f902b7e0    	str	x0, [sp, #0x568]
+1008b67f8: 97e05cbe    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b67fc: d2800161    	mov	x1, #0xb                ; =11
+1008b6800: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b6804: f9000441    	str	x1, [x2, #0x8]
+1008b6808: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b680c: b9451361    	ldr	w1, [x27, #0x510]
+1008b6810: 34000081    	cbz	w1, 0x1008b6820 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x560>
+1008b6814: f9400040    	ldr	x0, [x2]
+1008b6818: 97e05a12    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b681c: f9000320    	str	x0, [x25]
+1008b6820: b00005c3    	adrp	x3, 0x10096f000 <_runtime.rodata+0xa260>
+1008b6824: 911f2063    	add	x3, x3, #0x7c8
+1008b6828: f9000043    	str	x3, [x2]
+1008b682c: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b6830: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:282
+1008b6834: aa0203e1    	mov	x1, x2
+1008b6838: f900f7e0    	str	x0, [sp, #0x1e8]
+1008b683c: f901ebe1    	str	x1, [sp, #0x3d0]
+1008b6840: 97e05cec    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6844: aa1f03e0    	mov	x0, xzr
+1008b6848: f940f7e1    	ldr	x1, [sp, #0x1e8]
+1008b684c: f941ebe2    	ldr	x2, [sp, #0x3d0]
+1008b6850: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6854: 911903ff    	add	sp, sp, #0x640
+1008b6858: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:321
+1008b685c: f942afe2    	ldr	x2, [sp, #0x558]
+1008b6860: 8b010c40    	add	x0, x2, x1, lsl #3
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:323
+1008b6864: f942abe2    	ldr	x2, [sp, #0x550]
+1008b6868: 8b010c41    	add	x1, x2, x1, lsl #3
+1008b686c: f9029fe1    	str	x1, [sp, #0x538]
+; /usr/local/go/src/math/exp.go:18
+1008b6870: fd400be0    	ldr	d0, [sp, #0x10]
+1008b6874: fd004fe0    	str	d0, [sp, #0x98]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:321
+1008b6878: 97e05c9e    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b687c: f940afe1    	ldr	x1, [sp, #0x158]
+1008b6880: f942afe2    	ldr	x2, [sp, #0x558]
+1008b6884: fd404fe0    	ldr	d0, [sp, #0x98]
+1008b6888: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:323
+1008b688c: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b6890: 97e05c84    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6894: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6898: fd402820    	ldr	d0, [x1, #0x50]
+1008b689c: 1e614000    	fneg	d0, d0
+1008b68a0: fd4053e1    	ldr	d1, [sp, #0xa0]
+1008b68a4: 1e611800    	fdiv	d0, d0, d1
+; /usr/local/go/src/math/expm1.go:130
+1008b68a8: 97e1ae46    	bl	0x1001221c0 <_math.expm1>
+1008b68ac: fd004be0    	str	d0, [sp, #0x90]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:323
+1008b68b0: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b68b4: 97e05c8f    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b68b8: fd404be0    	ldr	d0, [sp, #0x90]
+1008b68bc: 1e614000    	fneg	d0, d0
+1008b68c0: f940afe1    	ldr	x1, [sp, #0x158]
+1008b68c4: f942abe0    	ldr	x0, [sp, #0x550]
+1008b68c8: fc217800    	str	d0, [x0, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:316
+1008b68cc: 91000421    	add	x1, x1, #0x1
+1008b68d0: f942a7e3    	ldr	x3, [sp, #0x548]
+1008b68d4: f9413be4    	ldr	x4, [sp, #0x270]
+1008b68d8: eb04003f    	cmp	x1, x4
+1008b68dc: 54000aca    	b.ge	0x1008b6a34 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x774>
+1008b68e0: f900afe1    	str	x1, [sp, #0x158]
+1008b68e4: 8b010c60    	add	x0, x3, x1, lsl #3
+1008b68e8: 97e05c6e    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b68ec: f940afe1    	ldr	x1, [sp, #0x158]
+1008b68f0: f942a7e2    	ldr	x2, [sp, #0x548]
+1008b68f4: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:317
+1008b68f8: d503201f    	nop
+; /usr/local/go/src/math/exp.go:18
+1008b68fc: fd0007e0    	str	d0, [sp, #0x8]
+1008b6900: 97e1bb6c    	bl	0x1001256b0 <_math.archExp.abi0>
+1008b6904: fd400be0    	ldr	d0, [sp, #0x10]
+; /usr/local/go/src/math/bits.go:52
+1008b6908: 1e60c001    	fabs	d1, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b690c: d503201f    	nop
+; /usr/local/go/src/math/bits.go:56
+1008b6910: d00007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b6914: fd405762    	ldr	d2, [x27, #0xa8]
+1008b6918: 1e622020    	fcmp	d1, d2
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:318
+1008b691c: 54000288    	b.hi	0x1008b696c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x6ac>
+1008b6920: 1e602008    	fcmp	d0, #0.0
+1008b6924: 54000249    	b.ls	0x1008b696c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x6ac>
+; /usr/local/go/src/math/exp.go:18
+1008b6928: fd0053e0    	str	d0, [sp, #0xa0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:321
+1008b692c: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6930: 91014020    	add	x0, x1, #0x50
+1008b6934: f902a3e0    	str	x0, [sp, #0x540]
+1008b6938: 97e05c5a    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b693c: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6940: fd402820    	ldr	d0, [x1, #0x50]
+1008b6944: 1e614000    	fneg	d0, d0
+1008b6948: fd4053e1    	ldr	d1, [sp, #0xa0]
+1008b694c: 1e611800    	fdiv	d0, d0, d1
+; /usr/local/go/src/math/exp.go:18
+1008b6950: fd0007e0    	str	d0, [sp, #0x8]
+1008b6954: 97e1bb57    	bl	0x1001256b0 <_math.archExp.abi0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:321
+1008b6958: f940afe1    	ldr	x1, [sp, #0x158]
+1008b695c: f94097e2    	ldr	x2, [sp, #0x128]
+1008b6960: eb02003f    	cmp	x1, x2
+1008b6964: 54fff7c3    	b.lo	0x1008b685c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x59c>
+1008b6968: 14000a5d    	b	0x1008b92dc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x301c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:319
+1008b696c: 911843fb    	add	x27, sp, #0x610
+1008b6970: a9007f7f    	stp	xzr, xzr, [x27]
+1008b6974: f940afe0    	ldr	x0, [sp, #0x158]
+1008b6978: 97e0314e    	bl	0x1000c2eb0 <_runtime.convT64>
+1008b697c: f902afe0    	str	x0, [sp, #0x558]
+1008b6980: 911843e0    	add	x0, sp, #0x610
+1008b6984: 97e05c5b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6988: 90004061    	adrp	x1, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b698c: 91030021    	add	x1, x1, #0xc0
+1008b6990: f942afe2    	ldr	x2, [sp, #0x558]
+1008b6994: 911843fb    	add	x27, sp, #0x610
+1008b6998: a9000b61    	stp	x1, x2, [x27]
+; /usr/local/go/src/fmt/errors.go:26
+1008b699c: f00006c0    	adrp	x0, 0x100991000 <_runtime.rodata+0x2c260>
+1008b69a0: 911a0000    	add	x0, x0, #0x680
+1008b69a4: d2800521    	mov	x1, #0x29               ; =41
+1008b69a8: 911843e2    	add	x2, sp, #0x610
+1008b69ac: b24003e3    	orr	x3, xzr, #0x1
+1008b69b0: aa0303e4    	mov	x4, x3
+1008b69b4: 97e300b3    	bl	0x100176c80 <_fmt.errorf>
+1008b69b8: b50002c0    	cbnz	x0, 0x1008b6a10 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x750>
+; /usr/local/go/src/fmt/errors.go:31
+1008b69bc: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b69c0: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b69c4: 91148000    	add	x0, x0, #0x520
+1008b69c8: 97deba42    	bl	0x1000652d0 <_runtime.newobject>
+1008b69cc: f902b7e0    	str	x0, [sp, #0x568]
+1008b69d0: 97e05c48    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b69d4: d2800521    	mov	x1, #0x29               ; =41
+1008b69d8: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b69dc: f9000441    	str	x1, [x2, #0x8]
+1008b69e0: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b69e4: b9451361    	ldr	w1, [x27, #0x510]
+1008b69e8: 34000081    	cbz	w1, 0x1008b69f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x738>
+1008b69ec: f9400040    	ldr	x0, [x2]
+1008b69f0: 97e0599c    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b69f4: f9000320    	str	x0, [x25]
+1008b69f8: f00006c3    	adrp	x3, 0x100991000 <_runtime.rodata+0x2c260>
+1008b69fc: 911a0063    	add	x3, x3, #0x680
+1008b6a00: f9000043    	str	x3, [x2]
+1008b6a04: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b6a08: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:319
+1008b6a0c: aa0203e1    	mov	x1, x2
+1008b6a10: f901bfe1    	str	x1, [sp, #0x378]
+1008b6a14: f900cbe0    	str	x0, [sp, #0x190]
+1008b6a18: 97e05c76    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6a1c: aa1f03e0    	mov	x0, xzr
+1008b6a20: f940cbe1    	ldr	x1, [sp, #0x190]
+1008b6a24: f941bfe2    	ldr	x2, [sp, #0x378]
+1008b6a28: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6a2c: 911903ff    	add	sp, sp, #0x640
+1008b6a30: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:325
+1008b6a34: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6a38: 9101a020    	add	x0, x1, #0x68
+1008b6a3c: 97e05c19    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6a40: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6a44: fd403420    	ldr	d0, [x1, #0x68]
+1008b6a48: fd0137e0    	str	d0, [sp, #0x268]
+1008b6a4c: 91018020    	add	x0, x1, #0x60
+1008b6a50: f902a7e0    	str	x0, [sp, #0x548]
+1008b6a54: 97e05c13    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6a58: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6a5c: fd403020    	ldr	d0, [x1, #0x60]
+1008b6a60: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b6a64: 1e603820    	fsub	d0, d1, d0
+1008b6a68: fd007be0    	str	d0, [sp, #0xf0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:326
+1008b6a6c: f94097e2    	ldr	x2, [sp, #0x128]
+1008b6a70: f100105f    	cmp	x2, #0x4
+1008b6a74: 540000c8    	b.hi	0x1008b6a8c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x7cc>
+1008b6a78: 9109e3e3    	add	x3, sp, #0x278
+1008b6a7c: a9007c7f    	stp	xzr, xzr, [x3]
+1008b6a80: a9017c7f    	stp	xzr, xzr, [x3, #0x10]
+1008b6a84: 9109e3e0    	add	x0, sp, #0x278
+1008b6a88: 14000006    	b	0x1008b6aa0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x7e0>
+1008b6a8c: 90004060    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6a90: 91090000    	add	x0, x0, #0x240
+1008b6a94: aa0203e1    	mov	x1, x2
+1008b6a98: 97e044ee    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b6a9c: f94097e2    	ldr	x2, [sp, #0x128]
+1008b6aa0: f901f3e0    	str	x0, [sp, #0x3e0]
+1008b6aa4: 90004060    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6aa8: 91090000    	add	x0, x0, #0x240
+1008b6aac: aa0203e1    	mov	x1, x2
+1008b6ab0: 97e044e8    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b6ab4: f9029be0    	str	x0, [sp, #0x530]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:327
+1008b6ab8: 911b63fb    	add	x27, sp, #0x6d8
+1008b6abc: a9401363    	ldp	x3, x4, [x27]
+1008b6ac0: f902a3e3    	str	x3, [sp, #0x540]
+1008b6ac4: f9013be4    	str	x4, [sp, #0x270]
+1008b6ac8: aa1f03e1    	mov	x1, xzr
+1008b6acc: 14000006    	b	0x1008b6ae4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x824>
+1008b6ad0: 91000405    	add	x5, x0, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:330
+1008b6ad4: f9429be0    	ldr	x0, [sp, #0x530]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:327
+1008b6ad8: f942a3e3    	ldr	x3, [sp, #0x540]
+1008b6adc: f9413be4    	ldr	x4, [sp, #0x270]
+1008b6ae0: aa0503e1    	mov	x1, x5
+1008b6ae4: eb04003f    	cmp	x1, x4
+1008b6ae8: 5400100a    	b.ge	0x1008b6ce8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xa28>
+1008b6aec: f900abe1    	str	x1, [sp, #0x150]
+1008b6af0: 8b010c60    	add	x0, x3, x1, lsl #3
+1008b6af4: 97e05beb    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6af8: f940abe1    	ldr	x1, [sp, #0x150]
+1008b6afc: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b6b00: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:328
+1008b6b04: 94001327    	bl	0x1008bb7a0 <_github.com/TimLai666/coimnet/dynamics.logistic>
+1008b6b08: fd0087e0    	str	d0, [sp, #0x108]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:329
+1008b6b0c: f942a7e0    	ldr	x0, [sp, #0x548]
+1008b6b10: 97e05be4    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6b14: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b6b18: fd403020    	ldr	d0, [x1, #0x60]
+1008b6b1c: fd4087e1    	ldr	d1, [sp, #0x108]
+1008b6b20: fd407be2    	ldr	d2, [sp, #0xf0]
+1008b6b24: 1f410040    	fmadd	d0, d2, d1, d0
+1008b6b28: 1e620823    	fmul	d3, d1, d2
+1008b6b2c: f940abe2    	ldr	x2, [sp, #0x150]
+1008b6b30: f94097e3    	ldr	x3, [sp, #0x128]
+1008b6b34: eb03005f    	cmp	x2, x3
+1008b6b38: 54013d02    	b.hs	0x1008b92d8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3018>
+1008b6b3c: fd0137e3    	str	d3, [sp, #0x268]
+1008b6b40: fd0133e0    	str	d0, [sp, #0x260]
+1008b6b44: f941f3e1    	ldr	x1, [sp, #0x3e0]
+1008b6b48: 8b020c20    	add	x0, x1, x2, lsl #3
+1008b6b4c: f9029fe0    	str	x0, [sp, #0x538]
+1008b6b50: 97e05be8    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6b54: f940abe1    	ldr	x1, [sp, #0x150]
+1008b6b58: f941f3e2    	ldr	x2, [sp, #0x3e0]
+1008b6b5c: fd4133e0    	ldr	d0, [sp, #0x260]
+1008b6b60: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:330
+1008b6b64: 1e6e1000    	fmov	d0, #1.00000000
+1008b6b68: fd4087e1    	ldr	d1, [sp, #0x108]
+1008b6b6c: 1e613800    	fsub	d0, d0, d1
+1008b6b70: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b6b74: 1e610800    	fmul	d0, d0, d1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:329
+1008b6b78: f94097e3    	ldr	x3, [sp, #0x128]
+1008b6b7c: eb03003f    	cmp	x1, x3
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:330
+1008b6b80: 54013aa2    	b.hs	0x1008b92d4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3014>
+1008b6b84: fd0137e0    	str	d0, [sp, #0x268]
+1008b6b88: f9429be2    	ldr	x2, [sp, #0x530]
+1008b6b8c: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b6b90: f90297e0    	str	x0, [sp, #0x528]
+1008b6b94: 97e05bd7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6b98: f940abe1    	ldr	x1, [sp, #0x150]
+1008b6b9c: f9429be2    	ldr	x2, [sp, #0x530]
+1008b6ba0: fd4137e0    	ldr	d0, [sp, #0x268]
+1008b6ba4: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:331
+1008b6ba8: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b6bac: 97e05bbd    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6bb0: f940abe0    	ldr	x0, [sp, #0x150]
+1008b6bb4: f941f3e1    	ldr	x1, [sp, #0x3e0]
+1008b6bb8: fc607820    	ldr	d0, [x1, x0, lsl #3]
+; /usr/local/go/src/math/bits.go:52
+1008b6bbc: 1e60c000    	fabs	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b6bc0: d503201f    	nop
+; /usr/local/go/src/math/bits.go:56
+1008b6bc4: d00007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b6bc8: fd405761    	ldr	d1, [x27, #0xa8]
+1008b6bcc: 1e612000    	fcmp	d0, d1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:331
+1008b6bd0: 54000069    	b.ls	0x1008b6bdc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x91c>
+1008b6bd4: b24003e5    	orr	x5, xzr, #0x1
+1008b6bd8: 14000012    	b	0x1008b6c20 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x960>
+1008b6bdc: f94297e0    	ldr	x0, [sp, #0x528]
+1008b6be0: 97e05bb0    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6be4: f940abe0    	ldr	x0, [sp, #0x150]
+1008b6be8: f9429be1    	ldr	x1, [sp, #0x530]
+1008b6bec: fc607820    	ldr	d0, [x1, x0, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b6bf0: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b6bf4: 54000060    	b.eq	0x1008b6c00 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x940>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:331
+1008b6bf8: aa1f03e5    	mov	x5, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b6bfc: 14000007    	b	0x1008b6c18 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x958>
+; /usr/local/go/src/math/bits.go:52
+1008b6c00: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b6c04: d00007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b6c08: fd405761    	ldr	d1, [x27, #0xa8]
+1008b6c0c: 1e602020    	fcmp	d1, d0
+1008b6c10: 9a9f57e5    	cset	x5, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b6c14: d24000a5    	eor	x5, x5, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:331
+1008b6c18: d24000a5    	eor	x5, x5, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:329
+1008b6c1c: f941f3e1    	ldr	x1, [sp, #0x3e0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:331
+1008b6c20: 3607f585    	tbz	w5, #0x0, 0x1008b6ad0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x810>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:332
+1008b6c24: 911803fb    	add	x27, sp, #0x600
+1008b6c28: a9007f7f    	stp	xzr, xzr, [x27]
+1008b6c2c: 97e030a1    	bl	0x1000c2eb0 <_runtime.convT64>
+1008b6c30: f902afe0    	str	x0, [sp, #0x558]
+1008b6c34: 911803e0    	add	x0, sp, #0x600
+1008b6c38: 97e05bae    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6c3c: 90004061    	adrp	x1, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6c40: 91030021    	add	x1, x1, #0xc0
+1008b6c44: f942afe2    	ldr	x2, [sp, #0x558]
+1008b6c48: 911803fb    	add	x27, sp, #0x600
+1008b6c4c: a9000b61    	stp	x1, x2, [x27]
+; /usr/local/go/src/fmt/errors.go:26
+1008b6c50: b00006a0    	adrp	x0, 0x10098b000 <_runtime.rodata+0x26260>
+1008b6c54: 9106d800    	add	x0, x0, #0x1b6
+1008b6c58: d2800461    	mov	x1, #0x23               ; =35
+1008b6c5c: 911803e2    	add	x2, sp, #0x600
+1008b6c60: b24003e3    	orr	x3, xzr, #0x1
+1008b6c64: aa0303e4    	mov	x4, x3
+1008b6c68: 97e30006    	bl	0x100176c80 <_fmt.errorf>
+1008b6c6c: b50002c0    	cbnz	x0, 0x1008b6cc4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xa04>
+; /usr/local/go/src/fmt/errors.go:31
+1008b6c70: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b6c74: 90004440    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b6c78: 91148000    	add	x0, x0, #0x520
+1008b6c7c: 97deb995    	bl	0x1000652d0 <_runtime.newobject>
+1008b6c80: f902b7e0    	str	x0, [sp, #0x568]
+1008b6c84: 97e05b9b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6c88: d2800461    	mov	x1, #0x23               ; =35
+1008b6c8c: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b6c90: f9000441    	str	x1, [x2, #0x8]
+1008b6c94: f000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b6c98: b9451361    	ldr	w1, [x27, #0x510]
+1008b6c9c: 34000081    	cbz	w1, 0x1008b6cac <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x9ec>
+1008b6ca0: f9400040    	ldr	x0, [x2]
+1008b6ca4: 97e058ef    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b6ca8: f9000320    	str	x0, [x25]
+1008b6cac: b00006a3    	adrp	x3, 0x10098b000 <_runtime.rodata+0x26260>
+1008b6cb0: 9106d863    	add	x3, x3, #0x1b6
+1008b6cb4: f9000043    	str	x3, [x2]
+1008b6cb8: d0004ba0    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b6cbc: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:332
+1008b6cc0: aa0203e1    	mov	x1, x2
+1008b6cc4: f901bbe1    	str	x1, [sp, #0x370]
+1008b6cc8: f900c7e0    	str	x0, [sp, #0x188]
+1008b6ccc: 97e05bc9    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6cd0: aa1f03e0    	mov	x0, xzr
+1008b6cd4: f940c7e1    	ldr	x1, [sp, #0x188]
+1008b6cd8: f941bbe2    	ldr	x2, [sp, #0x370]
+1008b6cdc: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6ce0: 911903ff    	add	sp, sp, #0x640
+1008b6ce4: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:335
+1008b6ce8: f94333e5    	ldr	x5, [sp, #0x660]
+1008b6cec: aa0503e6    	mov	x6, x5
+1008b6cf0: aa1f03e1    	mov	x1, xzr
+1008b6cf4: 14000007    	b	0x1008b6d10 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xa50>
+1008b6cf8: f94293e7    	ldr	x7, [sp, #0x520]
+1008b6cfc: 910060e5    	add	x5, x7, #0x18
+1008b6d00: f94073e7    	ldr	x7, [sp, #0xe0]
+1008b6d04: 910004e1    	add	x1, x7, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:351
+1008b6d08: f9429be0    	ldr	x0, [sp, #0x530]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:359
+1008b6d0c: f94333e6    	ldr	x6, [sp, #0x660]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:335
+1008b6d10: f94337e7    	ldr	x7, [sp, #0x668]
+1008b6d14: eb0100ff    	cmp	x7, x1
+1008b6d18: 5400084d    	b.le	0x1008b6e20 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xb60>
+1008b6d1c: f90073e1    	str	x1, [sp, #0xe0]
+1008b6d20: f90293e5    	str	x5, [sp, #0x520]
+1008b6d24: aa0503e0    	mov	x0, x5
+1008b6d28: d0003fa1    	adrp	x1, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b6d2c: 911b8021    	add	x1, x1, #0x6e0
+1008b6d30: b24003e2    	orr	x2, xzr, #0x1
+1008b6d34: 97de98a3    	bl	0x10005cfc0 <_runtime.checkptrAlignment>
+1008b6d38: f94293e0    	ldr	x0, [sp, #0x520]
+1008b6d3c: 97e05b59    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b6d40: f94293e3    	ldr	x3, [sp, #0x520]
+1008b6d44: a9401464    	ldp	x4, x5, [x3]
+1008b6d48: f9009fe5    	str	x5, [sp, #0x138]
+1008b6d4c: f9019fe4    	str	x4, [sp, #0x338]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:336
+1008b6d50: f94343e4    	ldr	x4, [sp, #0x680]
+1008b6d54: f9401484    	ldr	x4, [x4, #0x28]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:335
+1008b6d58: f9400863    	ldr	x3, [x3, #0x10]
+1008b6d5c: f900a3e3    	str	x3, [sp, #0x140]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:336
+1008b6d60: f94347e0    	ldr	x0, [sp, #0x688]
+1008b6d64: d63f0080    	blr	x4
+1008b6d68: b50004a0    	cbnz	x0, 0x1008b6dfc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xb3c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:339
+1008b6d6c: 911883fb    	add	x27, sp, #0x620
+1008b6d70: a9007f7f    	stp	xzr, xzr, [x27]
+1008b6d74: f94073e0    	ldr	x0, [sp, #0xe0]
+1008b6d78: 97e0304e    	bl	0x1000c2eb0 <_runtime.convT64>
+1008b6d7c: f9028fe0    	str	x0, [sp, #0x518]
+1008b6d80: 911883e0    	add	x0, sp, #0x620
+1008b6d84: 97e05b5b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b6d88: 90004061    	adrp	x1, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6d8c: 91030021    	add	x1, x1, #0xc0
+1008b6d90: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b6d94: 911883fb    	add	x27, sp, #0x620
+1008b6d98: a9000b61    	stp	x1, x2, [x27]
+1008b6d9c: d00005a0    	adrp	x0, 0x10096c000 <_runtime.rodata+0x7260>
+1008b6da0: 91283400    	add	x0, x0, #0xa0d
+1008b6da4: d2800121    	mov	x1, #0x9                ; =9
+1008b6da8: 911883e2    	add	x2, sp, #0x620
+1008b6dac: b24003e3    	orr	x3, xzr, #0x1
+1008b6db0: aa0303e4    	mov	x4, x3
+1008b6db4: 97e31053    	bl	0x10017af00 <_fmt.Sprintf>
+1008b6db8: f940a3e2    	ldr	x2, [sp, #0x140]
+1008b6dbc: f94097e3    	ldr	x3, [sp, #0x128]
+1008b6dc0: aa0003e4    	mov	x4, x0
+1008b6dc4: aa0103e5    	mov	x5, x1
+1008b6dc8: f9419fe0    	ldr	x0, [sp, #0x338]
+1008b6dcc: f9409fe1    	ldr	x1, [sp, #0x138]
+1008b6dd0: 97ff936c    	bl	0x10089bb80 <_github.com/TimLai666/coimnet/dynamics.vector>
+1008b6dd4: b4fff920    	cbz	x0, 0x1008b6cf8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xa38>
+1008b6dd8: f901b3e1    	str	x1, [sp, #0x360]
+1008b6ddc: f900bfe0    	str	x0, [sp, #0x178]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:340
+1008b6de0: 97e05b84    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6de4: aa1f03e0    	mov	x0, xzr
+1008b6de8: f940bfe1    	ldr	x1, [sp, #0x178]
+1008b6dec: f941b3e2    	ldr	x2, [sp, #0x360]
+1008b6df0: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6df4: 911903ff    	add	sp, sp, #0x640
+1008b6df8: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:336
+1008b6dfc: f901b7e1    	str	x1, [sp, #0x368]
+1008b6e00: f900c3e0    	str	x0, [sp, #0x180]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:337
+1008b6e04: 97e05b7b    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b6e08: aa1f03e0    	mov	x0, xzr
+1008b6e0c: f940c3e1    	ldr	x1, [sp, #0x180]
+1008b6e10: f941b7e2    	ldr	x2, [sp, #0x368]
+1008b6e14: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b6e18: 911903ff    	add	sp, sp, #0x640
+1008b6e1c: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:345
+1008b6e20: 911643e5    	add	x5, sp, #0x590
+1008b6e24: 911a43e8    	add	x8, sp, #0x690
+1008b6e28: ad404510    	ldp	q16, q17, [x8]
+1008b6e2c: ad0044b0    	stp	q16, q17, [x5]
+1008b6e30: ad414510    	ldp	q16, q17, [x8, #0x20]
+1008b6e34: ad0144b0    	stp	q16, q17, [x5, #0x20]
+1008b6e38: ad424510    	ldp	q16, q17, [x8, #0x40]
+1008b6e3c: ad0244b0    	stp	q16, q17, [x5, #0x40]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:633
+1008b6e40: 911643fb    	add	x27, sp, #0x590
+1008b6e44: a9400f62    	ldp	x2, x3, [x27]
+1008b6e48: b50000a3    	cbnz	x3, 0x1008b6e5c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xb9c>
+1008b6e4c: aa1f03e1    	mov	x1, xzr
+1008b6e50: aa1f03e4    	mov	x4, xzr
+1008b6e54: aa1f03e5    	mov	x5, xzr
+1008b6e58: 1400000d    	b	0x1008b6e8c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xbcc>
+1008b6e5c: f902a7e2    	str	x2, [sp, #0x548]
+1008b6e60: f9013be3    	str	x3, [sp, #0x270]
+1008b6e64: aa1f03e0    	mov	x0, xzr
+1008b6e68: aa0303e1    	mov	x1, x3
+1008b6e6c: aa1f03e2    	mov	x2, xzr
+1008b6e70: 90004064    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6e74: 91090084    	add	x4, x4, #0x240
+1008b6e78: 97e0442a    	bl	0x1000c7f20 <_runtime.growslice>
+1008b6e7c: f9413be3    	ldr	x3, [sp, #0x270]
+1008b6e80: aa0003e4    	mov	x4, x0
+1008b6e84: aa0203e5    	mov	x5, x2
+1008b6e88: f942a7e2    	ldr	x2, [sp, #0x548]
+1008b6e8c: f9013be5    	str	x5, [sp, #0x270]
+1008b6e90: f9012fe1    	str	x1, [sp, #0x258]
+1008b6e94: f902a7e4    	str	x4, [sp, #0x548]
+1008b6e98: aa0403e0    	mov	x0, x4
+1008b6e9c: b27d03e4    	orr	x4, xzr, #0x8
+1008b6ea0: 97dfccac    	bl	0x1000aa150 <_runtime.slicecopy>
+1008b6ea4: 9116a3fb    	add	x27, sp, #0x5a8
+1008b6ea8: a9400f62    	ldp	x2, x3, [x27]
+1008b6eac: b50000a3    	cbnz	x3, 0x1008b6ec0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xc00>
+1008b6eb0: aa1f03e1    	mov	x1, xzr
+1008b6eb4: aa1f03e0    	mov	x0, xzr
+1008b6eb8: aa1f03e4    	mov	x4, xzr
+1008b6ebc: 1400000c    	b	0x1008b6eec <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xc2c>
+1008b6ec0: f9012be3    	str	x3, [sp, #0x250]
+1008b6ec4: f902a3e2    	str	x2, [sp, #0x540]
+1008b6ec8: aa1f03e0    	mov	x0, xzr
+1008b6ecc: aa0303e1    	mov	x1, x3
+1008b6ed0: aa1f03e2    	mov	x2, xzr
+1008b6ed4: 90004064    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6ed8: 91090084    	add	x4, x4, #0x240
+1008b6edc: 97e04411    	bl	0x1000c7f20 <_runtime.growslice>
+1008b6ee0: f9412be3    	ldr	x3, [sp, #0x250]
+1008b6ee4: aa0203e4    	mov	x4, x2
+1008b6ee8: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b6eec: f9012be4    	str	x4, [sp, #0x250]
+1008b6ef0: f90127e1    	str	x1, [sp, #0x248]
+1008b6ef4: f902a3e0    	str	x0, [sp, #0x540]
+1008b6ef8: b27d03e4    	orr	x4, xzr, #0x8
+1008b6efc: 97dfcc95    	bl	0x1000aa150 <_runtime.slicecopy>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:634
+1008b6f00: 911703fb    	add	x27, sp, #0x5c0
+1008b6f04: a9400f62    	ldp	x2, x3, [x27]
+1008b6f08: b50000a3    	cbnz	x3, 0x1008b6f1c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xc5c>
+1008b6f0c: aa1f03e1    	mov	x1, xzr
+1008b6f10: aa1f03e0    	mov	x0, xzr
+1008b6f14: aa1f03e4    	mov	x4, xzr
+1008b6f18: 1400000c    	b	0x1008b6f48 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xc88>
+1008b6f1c: f90123e3    	str	x3, [sp, #0x240]
+1008b6f20: f9029fe2    	str	x2, [sp, #0x538]
+1008b6f24: aa1f03e0    	mov	x0, xzr
+1008b6f28: aa0303e1    	mov	x1, x3
+1008b6f2c: aa1f03e2    	mov	x2, xzr
+1008b6f30: 90004064    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6f34: 91090084    	add	x4, x4, #0x240
+1008b6f38: 97e043fa    	bl	0x1000c7f20 <_runtime.growslice>
+1008b6f3c: f94123e3    	ldr	x3, [sp, #0x240]
+1008b6f40: aa0203e4    	mov	x4, x2
+1008b6f44: f9429fe2    	ldr	x2, [sp, #0x538]
+1008b6f48: f90123e4    	str	x4, [sp, #0x240]
+1008b6f4c: f9011fe1    	str	x1, [sp, #0x238]
+1008b6f50: f9029fe0    	str	x0, [sp, #0x538]
+1008b6f54: b27d03e4    	orr	x4, xzr, #0x8
+1008b6f58: 97dfcc7e    	bl	0x1000aa150 <_runtime.slicecopy>
+1008b6f5c: 911763fb    	add	x27, sp, #0x5d8
+1008b6f60: a9400f62    	ldp	x2, x3, [x27]
+1008b6f64: b50000a3    	cbnz	x3, 0x1008b6f78 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xcb8>
+1008b6f68: aa1f03e1    	mov	x1, xzr
+1008b6f6c: aa1f03e0    	mov	x0, xzr
+1008b6f70: aa1f03e4    	mov	x4, xzr
+1008b6f74: 1400000c    	b	0x1008b6fa4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xce4>
+1008b6f78: f9011be3    	str	x3, [sp, #0x230]
+1008b6f7c: f90297e2    	str	x2, [sp, #0x528]
+1008b6f80: aa1f03e0    	mov	x0, xzr
+1008b6f84: aa0303e1    	mov	x1, x3
+1008b6f88: aa1f03e2    	mov	x2, xzr
+1008b6f8c: 90004064    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b6f90: 91090084    	add	x4, x4, #0x240
+1008b6f94: 97e043e3    	bl	0x1000c7f20 <_runtime.growslice>
+1008b6f98: f9411be3    	ldr	x3, [sp, #0x230]
+1008b6f9c: aa0203e4    	mov	x4, x2
+1008b6fa0: f94297e2    	ldr	x2, [sp, #0x528]
+1008b6fa4: f9011be4    	str	x4, [sp, #0x230]
+1008b6fa8: f90117e1    	str	x1, [sp, #0x228]
+1008b6fac: f90297e0    	str	x0, [sp, #0x528]
+1008b6fb0: b27d03e4    	orr	x4, xzr, #0x8
+1008b6fb4: 97dfcc67    	bl	0x1000aa150 <_runtime.slicecopy>
+1008b6fb8: f942a7e5    	ldr	x5, [sp, #0x548]
+1008b6fbc: f9412fe6    	ldr	x6, [sp, #0x258]
+1008b6fc0: 911643fb    	add	x27, sp, #0x590
+1008b6fc4: a9001b65    	stp	x5, x6, [x27]
+1008b6fc8: f9413be5    	ldr	x5, [sp, #0x270]
+1008b6fcc: f942a3e6    	ldr	x6, [sp, #0x540]
+1008b6fd0: 911683fb    	add	x27, sp, #0x5a0
+1008b6fd4: a9001b65    	stp	x5, x6, [x27]
+1008b6fd8: f94127e5    	ldr	x5, [sp, #0x248]
+1008b6fdc: f9412be6    	ldr	x6, [sp, #0x250]
+1008b6fe0: 9116c3fb    	add	x27, sp, #0x5b0
+1008b6fe4: a9001b65    	stp	x5, x6, [x27]
+1008b6fe8: f9429fe5    	ldr	x5, [sp, #0x538]
+1008b6fec: f9411fe6    	ldr	x6, [sp, #0x238]
+1008b6ff0: 911703fb    	add	x27, sp, #0x5c0
+1008b6ff4: a9001b65    	stp	x5, x6, [x27]
+1008b6ff8: f94123e5    	ldr	x5, [sp, #0x240]
+1008b6ffc: f94297e6    	ldr	x6, [sp, #0x528]
+1008b7000: 911743fb    	add	x27, sp, #0x5d0
+1008b7004: a9001b65    	stp	x5, x6, [x27]
+1008b7008: f94117e5    	ldr	x5, [sp, #0x228]
+1008b700c: f9411be6    	ldr	x6, [sp, #0x230]
+1008b7010: 911783fb    	add	x27, sp, #0x5e0
+1008b7014: a9001b65    	stp	x5, x6, [x27]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:349
+1008b7018: f94337e5    	ldr	x5, [sp, #0x668]
+1008b701c: 910004a2    	add	x2, x5, #0x1
+1008b7020: f9013be2    	str	x2, [sp, #0x270]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:346
+1008b7024: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b7028: 911b8000    	add	x0, x0, #0x6e0
+1008b702c: aa0203e1    	mov	x1, x2
+1008b7030: 97e04388    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7034: f90293e0    	str	x0, [sp, #0x520]
+1008b7038: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b703c: 911b8000    	add	x0, x0, #0x6e0
+1008b7040: f94337e1    	ldr	x1, [sp, #0x668]
+1008b7044: aa0103e2    	mov	x2, x1
+1008b7048: 97e04382    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b704c: f9028fe0    	str	x0, [sp, #0x518]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:347
+1008b7050: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b7054: 911b8000    	add	x0, x0, #0x6e0
+1008b7058: f94337e1    	ldr	x1, [sp, #0x668]
+1008b705c: aa0103e2    	mov	x2, x1
+1008b7060: 97e0437c    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7064: f9028be0    	str	x0, [sp, #0x510]
+1008b7068: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b706c: 911b8000    	add	x0, x0, #0x6e0
+1008b7070: f9413be1    	ldr	x1, [sp, #0x270]
+1008b7074: aa0103e2    	mov	x2, x1
+1008b7078: 97e04376    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b707c: f90287e0    	str	x0, [sp, #0x508]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:348
+1008b7080: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b7084: 911b8000    	add	x0, x0, #0x6e0
+1008b7088: f9413be1    	ldr	x1, [sp, #0x270]
+1008b708c: aa0103e2    	mov	x2, x1
+1008b7090: 97e04370    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7094: f90283e0    	str	x0, [sp, #0x500]
+1008b7098: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b709c: 911b8000    	add	x0, x0, #0x6e0
+1008b70a0: f9413be1    	ldr	x1, [sp, #0x270]
+1008b70a4: aa0103e2    	mov	x2, x1
+1008b70a8: 97e0436a    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b70ac: f9027fe0    	str	x0, [sp, #0x4f8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:349
+1008b70b0: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b70b4: 911b8000    	add	x0, x0, #0x6e0
+1008b70b8: f9413be1    	ldr	x1, [sp, #0x270]
+1008b70bc: aa0103e2    	mov	x2, x1
+1008b70c0: 97e04364    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b70c4: f9027be0    	str	x0, [sp, #0x4f0]
+1008b70c8: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b70cc: 911b8000    	add	x0, x0, #0x6e0
+1008b70d0: f9413be1    	ldr	x1, [sp, #0x270]
+1008b70d4: aa0103e2    	mov	x2, x1
+1008b70d8: 97e0435e    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b70dc: f90277e0    	str	x0, [sp, #0x4e8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:350
+1008b70e0: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b70e4: 91118000    	add	x0, x0, #0x460
+1008b70e8: f9413be1    	ldr	x1, [sp, #0x270]
+1008b70ec: aa0103e2    	mov	x2, x1
+1008b70f0: 97e04358    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b70f4: f90273e0    	str	x0, [sp, #0x4e0]
+1008b70f8: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b70fc: 911b8000    	add	x0, x0, #0x6e0
+1008b7100: f94337e1    	ldr	x1, [sp, #0x668]
+1008b7104: aa0103e2    	mov	x2, x1
+1008b7108: 97e04352    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b710c: f9026fe0    	str	x0, [sp, #0x4d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:351
+1008b7110: b0003fa0    	adrp	x0, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b7114: 911b8000    	add	x0, x0, #0x6e0
+1008b7118: f94337e1    	ldr	x1, [sp, #0x668]
+1008b711c: aa0103e2    	mov	x2, x1
+1008b7120: 97e0434c    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7124: f9026be0    	str	x0, [sp, #0x4d0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:344
+1008b7128: b0004a80    	adrp	x0, 0x101208000 <_typerel.*+0x1dfff8>
+1008b712c: 91058000    	add	x0, x0, #0x160
+1008b7130: 97deb868    	bl	0x1000652d0 <_runtime.newobject>
+1008b7134: f9015be0    	str	x0, [sp, #0x2b0]
+1008b7138: b27a0be1    	orr	x1, xzr, #0x1c0
+1008b713c: 97e05a95    	bl	0x1000cdb90 <_runtime.racewriterange>
+1008b7140: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7144: b9451365    	ldr	w5, [x27, #0x510]
+1008b7148: 340000a5    	cbz	w5, 0x1008b715c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xe9c>
+1008b714c: b0004a80    	adrp	x0, 0x101208000 <_typerel.*+0x1dfff8>
+1008b7150: 91058000    	add	x0, x0, #0x160
+1008b7154: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b7158: 97deba86    	bl	0x100065b70 <_runtime.wbZero>
+1008b715c: f9415be0    	ldr	x0, [sp, #0x2b0]
+1008b7160: aa0003e1    	mov	x1, x0
+1008b7164: b2400be2    	orr	x2, xzr, #0x7
+1008b7168: a8817c1f    	stp	xzr, xzr, [x0], #0x10
+1008b716c: a8817c1f    	stp	xzr, xzr, [x0], #0x10
+1008b7170: a8817c1f    	stp	xzr, xzr, [x0], #0x10
+1008b7174: a8817c1f    	stp	xzr, xzr, [x0], #0x10
+1008b7178: d1000442    	sub	x2, x2, #0x1
+1008b717c: b5ffff62    	cbnz	x2, 0x1008b7168 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xea8>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:345
+1008b7180: aa0103e0    	mov	x0, x1
+1008b7184: 97e05a5b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7188: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b718c: b9451361    	ldr	w1, [x27, #0x510]
+1008b7190: 35000081    	cbnz	w1, 0x1008b71a0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xee0>
+1008b7194: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7198: f9433fe4    	ldr	x4, [sp, #0x678]
+1008b719c: 14000006    	b	0x1008b71b4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xef4>
+1008b71a0: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b71a4: f9400043    	ldr	x3, [x2]
+1008b71a8: 97e057b2    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b71ac: f9433fe4    	ldr	x4, [sp, #0x678]
+1008b71b0: a9000f24    	stp	x4, x3, [x25]
+1008b71b4: f9000044    	str	x4, [x2]
+1008b71b8: 91002040    	add	x0, x2, #0x8
+1008b71bc: f90267e0    	str	x0, [sp, #0x4c8]
+1008b71c0: b27b07e1    	orr	x1, xzr, #0x60
+1008b71c4: 97e05a73    	bl	0x1000cdb90 <_runtime.racewriterange>
+1008b71c8: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b71cc: b9451362    	ldr	w2, [x27, #0x510]
+1008b71d0: 340000c2    	cbz	w2, 0x1008b71e8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xf28>
+1008b71d4: b0004760    	adrp	x0, 0x1011a4000 <_typerel.*+0x17bff8>
+1008b71d8: 91320000    	add	x0, x0, #0xc80
+1008b71dc: f94267e1    	ldr	x1, [sp, #0x4c8]
+1008b71e0: 911643e2    	add	x2, sp, #0x590
+1008b71e4: 97deba6f    	bl	0x100065ba0 <_runtime.wbMove>
+1008b71e8: f94267e1    	ldr	x1, [sp, #0x4c8]
+1008b71ec: 911643e2    	add	x2, sp, #0x590
+1008b71f0: ad404450    	ldp	q16, q17, [x2]
+1008b71f4: ad004430    	stp	q16, q17, [x1]
+1008b71f8: ad414450    	ldp	q16, q17, [x2, #0x20]
+1008b71fc: ad014430    	stp	q16, q17, [x1, #0x20]
+1008b7200: ad424450    	ldp	q16, q17, [x2, #0x40]
+1008b7204: ad024430    	stp	q16, q17, [x1, #0x40]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:346
+1008b7208: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b720c: 91028020    	add	x0, x1, #0xa0
+1008b7210: f90263e0    	str	x0, [sp, #0x4c0]
+1008b7214: 97e05a37    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7218: f9413be1    	ldr	x1, [sp, #0x270]
+1008b721c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7220: a90a8441    	stp	x1, x1, [x2, #0xa8]
+1008b7224: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7228: b9451363    	ldr	w3, [x27, #0x510]
+1008b722c: 35000063    	cbnz	w3, 0x1008b7238 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xf78>
+1008b7230: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7234: 14000005    	b	0x1008b7248 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xf88>
+1008b7238: f9405043    	ldr	x3, [x2, #0xa0]
+1008b723c: 97e0578d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7240: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7244: a9000f24    	stp	x4, x3, [x25]
+1008b7248: f9005044    	str	x4, [x2, #0xa0]
+1008b724c: 9102e040    	add	x0, x2, #0xb8
+1008b7250: f9025fe0    	str	x0, [sp, #0x4b8]
+1008b7254: 97e05a27    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7258: f94337e1    	ldr	x1, [sp, #0x668]
+1008b725c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7260: a90c0441    	stp	x1, x1, [x2, #0xc0]
+1008b7264: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7268: b9451363    	ldr	w3, [x27, #0x510]
+1008b726c: 35000063    	cbnz	w3, 0x1008b7278 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xfb8>
+1008b7270: f9428fe4    	ldr	x4, [sp, #0x518]
+1008b7274: 14000005    	b	0x1008b7288 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xfc8>
+1008b7278: f9405c43    	ldr	x3, [x2, #0xb8]
+1008b727c: 97e0577d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7280: f9428fe4    	ldr	x4, [sp, #0x518]
+1008b7284: a9000f24    	stp	x4, x3, [x25]
+1008b7288: f9005c44    	str	x4, [x2, #0xb8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:347
+1008b728c: 91034040    	add	x0, x2, #0xd0
+1008b7290: f9025be0    	str	x0, [sp, #0x4b0]
+1008b7294: 97e05a17    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7298: f94337e1    	ldr	x1, [sp, #0x668]
+1008b729c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b72a0: a90d8441    	stp	x1, x1, [x2, #0xd8]
+1008b72a4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b72a8: b9451363    	ldr	w3, [x27, #0x510]
+1008b72ac: 35000063    	cbnz	w3, 0x1008b72b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0xff8>
+1008b72b0: f9428be4    	ldr	x4, [sp, #0x510]
+1008b72b4: 14000005    	b	0x1008b72c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1008>
+1008b72b8: f9406843    	ldr	x3, [x2, #0xd0]
+1008b72bc: 97e0576d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b72c0: f9428be4    	ldr	x4, [sp, #0x510]
+1008b72c4: a9000f24    	stp	x4, x3, [x25]
+1008b72c8: f9006844    	str	x4, [x2, #0xd0]
+1008b72cc: 9103a040    	add	x0, x2, #0xe8
+1008b72d0: f90257e0    	str	x0, [sp, #0x4a8]
+1008b72d4: 97e05a07    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b72d8: f9413be1    	ldr	x1, [sp, #0x270]
+1008b72dc: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b72e0: a90f0441    	stp	x1, x1, [x2, #0xf0]
+1008b72e4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b72e8: b9451363    	ldr	w3, [x27, #0x510]
+1008b72ec: 35000063    	cbnz	w3, 0x1008b72f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1038>
+1008b72f0: f94287e4    	ldr	x4, [sp, #0x508]
+1008b72f4: 14000005    	b	0x1008b7308 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1048>
+1008b72f8: f9407443    	ldr	x3, [x2, #0xe8]
+1008b72fc: 97e0575d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7300: f94287e4    	ldr	x4, [sp, #0x508]
+1008b7304: a9000f24    	stp	x4, x3, [x25]
+1008b7308: f9007444    	str	x4, [x2, #0xe8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:348
+1008b730c: 91040040    	add	x0, x2, #0x100
+1008b7310: f90253e0    	str	x0, [sp, #0x4a0]
+1008b7314: 97e059f7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7318: f9413be1    	ldr	x1, [sp, #0x270]
+1008b731c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7320: a9108441    	stp	x1, x1, [x2, #0x108]
+1008b7324: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7328: b9451363    	ldr	w3, [x27, #0x510]
+1008b732c: 35000063    	cbnz	w3, 0x1008b7338 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1078>
+1008b7330: f94283e4    	ldr	x4, [sp, #0x500]
+1008b7334: 14000005    	b	0x1008b7348 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1088>
+1008b7338: f9408043    	ldr	x3, [x2, #0x100]
+1008b733c: 97e0574d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7340: f94283e4    	ldr	x4, [sp, #0x500]
+1008b7344: a9000f24    	stp	x4, x3, [x25]
+1008b7348: f9008044    	str	x4, [x2, #0x100]
+1008b734c: 91046040    	add	x0, x2, #0x118
+1008b7350: f9024fe0    	str	x0, [sp, #0x498]
+1008b7354: 97e059e7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7358: f9413be1    	ldr	x1, [sp, #0x270]
+1008b735c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7360: a9120441    	stp	x1, x1, [x2, #0x120]
+1008b7364: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7368: b9451363    	ldr	w3, [x27, #0x510]
+1008b736c: 35000063    	cbnz	w3, 0x1008b7378 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x10b8>
+1008b7370: f9427fe4    	ldr	x4, [sp, #0x4f8]
+1008b7374: 14000005    	b	0x1008b7388 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x10c8>
+1008b7378: f9408c43    	ldr	x3, [x2, #0x118]
+1008b737c: 97e0573d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7380: f9427fe4    	ldr	x4, [sp, #0x4f8]
+1008b7384: a9000f24    	stp	x4, x3, [x25]
+1008b7388: f9008c44    	str	x4, [x2, #0x118]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:349
+1008b738c: 9101c040    	add	x0, x2, #0x70
+1008b7390: f9024be0    	str	x0, [sp, #0x490]
+1008b7394: 97e059d7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7398: f9413be1    	ldr	x1, [sp, #0x270]
+1008b739c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b73a0: a9078441    	stp	x1, x1, [x2, #0x78]
+1008b73a4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b73a8: b9451363    	ldr	w3, [x27, #0x510]
+1008b73ac: 35000063    	cbnz	w3, 0x1008b73b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x10f8>
+1008b73b0: f9427be4    	ldr	x4, [sp, #0x4f0]
+1008b73b4: 14000005    	b	0x1008b73c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1108>
+1008b73b8: f9403843    	ldr	x3, [x2, #0x70]
+1008b73bc: 97e0572d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b73c0: f9427be4    	ldr	x4, [sp, #0x4f0]
+1008b73c4: a9000f24    	stp	x4, x3, [x25]
+1008b73c8: f9003844    	str	x4, [x2, #0x70]
+1008b73cc: 91022040    	add	x0, x2, #0x88
+1008b73d0: f90247e0    	str	x0, [sp, #0x488]
+1008b73d4: 97e059c7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b73d8: f9413be1    	ldr	x1, [sp, #0x270]
+1008b73dc: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b73e0: a9090441    	stp	x1, x1, [x2, #0x90]
+1008b73e4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b73e8: b9451363    	ldr	w3, [x27, #0x510]
+1008b73ec: 35000063    	cbnz	w3, 0x1008b73f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1138>
+1008b73f0: f94277e4    	ldr	x4, [sp, #0x4e8]
+1008b73f4: 14000005    	b	0x1008b7408 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1148>
+1008b73f8: f9404443    	ldr	x3, [x2, #0x88]
+1008b73fc: 97e0571d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7400: f94277e4    	ldr	x4, [sp, #0x4e8]
+1008b7404: a9000f24    	stp	x4, x3, [x25]
+1008b7408: f9004444    	str	x4, [x2, #0x88]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:350
+1008b740c: 9104c040    	add	x0, x2, #0x130
+1008b7410: f90243e0    	str	x0, [sp, #0x480]
+1008b7414: 97e059b7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7418: f9413be1    	ldr	x1, [sp, #0x270]
+1008b741c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7420: a9138441    	stp	x1, x1, [x2, #0x138]
+1008b7424: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7428: b9451361    	ldr	w1, [x27, #0x510]
+1008b742c: 35000061    	cbnz	w1, 0x1008b7438 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1178>
+1008b7430: f94273e3    	ldr	x3, [sp, #0x4e0]
+1008b7434: 14000005    	b	0x1008b7448 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1188>
+1008b7438: f9409841    	ldr	x1, [x2, #0x130]
+1008b743c: 97e0570d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7440: f94273e3    	ldr	x3, [sp, #0x4e0]
+1008b7444: a9000723    	stp	x3, x1, [x25]
+1008b7448: f9009843    	str	x3, [x2, #0x130]
+1008b744c: 91052040    	add	x0, x2, #0x148
+1008b7450: f9023fe0    	str	x0, [sp, #0x478]
+1008b7454: 97e059a7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7458: f94337e1    	ldr	x1, [sp, #0x668]
+1008b745c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7460: a9150441    	stp	x1, x1, [x2, #0x150]
+1008b7464: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7468: b9451363    	ldr	w3, [x27, #0x510]
+1008b746c: 35000063    	cbnz	w3, 0x1008b7478 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x11b8>
+1008b7470: f9426fe4    	ldr	x4, [sp, #0x4d8]
+1008b7474: 14000005    	b	0x1008b7488 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x11c8>
+1008b7478: f940a443    	ldr	x3, [x2, #0x148]
+1008b747c: 97e056fd    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7480: f9426fe4    	ldr	x4, [sp, #0x4d8]
+1008b7484: a9000f24    	stp	x4, x3, [x25]
+1008b7488: f900a444    	str	x4, [x2, #0x148]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:351
+1008b748c: 91058040    	add	x0, x2, #0x160
+1008b7490: f9023be0    	str	x0, [sp, #0x470]
+1008b7494: 97e05997    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7498: f94337e1    	ldr	x1, [sp, #0x668]
+1008b749c: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b74a0: a9168441    	stp	x1, x1, [x2, #0x168]
+1008b74a4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b74a8: b9451363    	ldr	w3, [x27, #0x510]
+1008b74ac: 35000063    	cbnz	w3, 0x1008b74b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x11f8>
+1008b74b0: f9426be4    	ldr	x4, [sp, #0x4d0]
+1008b74b4: 14000005    	b	0x1008b74c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1208>
+1008b74b8: f940b043    	ldr	x3, [x2, #0x160]
+1008b74bc: 97e056ed    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b74c0: f9426be4    	ldr	x4, [sp, #0x4d0]
+1008b74c4: a9000f24    	stp	x4, x3, [x25]
+1008b74c8: f900b044    	str	x4, [x2, #0x160]
+1008b74cc: 9105e040    	add	x0, x2, #0x178
+1008b74d0: 97e05988    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b74d4: f94097e1    	ldr	x1, [sp, #0x128]
+1008b74d8: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b74dc: a9180441    	stp	x1, x1, [x2, #0x180]
+1008b74e0: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b74e4: b9451363    	ldr	w3, [x27, #0x510]
+1008b74e8: 35000063    	cbnz	w3, 0x1008b74f4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1234>
+1008b74ec: f9429be4    	ldr	x4, [sp, #0x530]
+1008b74f0: 14000005    	b	0x1008b7504 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1244>
+1008b74f4: f940bc43    	ldr	x3, [x2, #0x178]
+1008b74f8: 97e056de    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b74fc: f9429be4    	ldr	x4, [sp, #0x530]
+1008b7500: a9000f24    	stp	x4, x3, [x25]
+1008b7504: f900bc44    	str	x4, [x2, #0x178]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:352
+1008b7508: 91064040    	add	x0, x2, #0x190
+1008b750c: 97e05979    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7510: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7514: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7518: a9198441    	stp	x1, x1, [x2, #0x198]
+1008b751c: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7520: b9451363    	ldr	w3, [x27, #0x510]
+1008b7524: 35000063    	cbnz	w3, 0x1008b7530 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1270>
+1008b7528: f942afe4    	ldr	x4, [sp, #0x558]
+1008b752c: 14000005    	b	0x1008b7540 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1280>
+1008b7530: f940c843    	ldr	x3, [x2, #0x190]
+1008b7534: 97e056cf    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7538: f942afe4    	ldr	x4, [sp, #0x558]
+1008b753c: a9000f24    	stp	x4, x3, [x25]
+1008b7540: f900c844    	str	x4, [x2, #0x190]
+1008b7544: 9106a040    	add	x0, x2, #0x1a8
+1008b7548: 97e0596a    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b754c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7550: f9415be2    	ldr	x2, [sp, #0x2b0]
+1008b7554: a91b0441    	stp	x1, x1, [x2, #0x1b0]
+1008b7558: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b755c: b9451363    	ldr	w3, [x27, #0x510]
+1008b7560: 35000063    	cbnz	w3, 0x1008b756c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x12ac>
+1008b7564: f942abe6    	ldr	x6, [sp, #0x550]
+1008b7568: 14000005    	b	0x1008b757c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x12bc>
+1008b756c: f940d445    	ldr	x5, [x2, #0x1a8]
+1008b7570: 97e056c0    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7574: f942abe6    	ldr	x6, [sp, #0x550]
+1008b7578: a9001726    	stp	x6, x5, [x25]
+1008b757c: f900d446    	str	x6, [x2, #0x1a8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:354
+1008b7580: f9432be0    	ldr	x0, [sp, #0x650]
+1008b7584: b50000a0    	cbnz	x0, 0x1008b7598 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x12d8>
+1008b7588: aa1f03e3    	mov	x3, xzr
+1008b758c: aa1f03e4    	mov	x4, xzr
+1008b7590: aa1f03e5    	mov	x5, xzr
+1008b7594: 1400000c    	b	0x1008b75c4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1304>
+1008b7598: aa0003e1    	mov	x1, x0
+1008b759c: aa1f03e2    	mov	x2, xzr
+1008b75a0: aa0103e3    	mov	x3, x1
+1008b75a4: f0004044    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b75a8: 91090084    	add	x4, x4, #0x240
+1008b75ac: aa1f03e0    	mov	x0, xzr
+1008b75b0: 97e0425c    	bl	0x1000c7f20 <_runtime.growslice>
+1008b75b4: aa0003e3    	mov	x3, x0
+1008b75b8: aa0103e4    	mov	x4, x1
+1008b75bc: aa0203e5    	mov	x5, x2
+1008b75c0: f9432be0    	ldr	x0, [sp, #0x650]
+1008b75c4: f9013be5    	str	x5, [sp, #0x270]
+1008b75c8: f9012fe4    	str	x4, [sp, #0x258]
+1008b75cc: f902a7e3    	str	x3, [sp, #0x548]
+1008b75d0: aa0403e1    	mov	x1, x4
+1008b75d4: f94327e2    	ldr	x2, [sp, #0x648]
+1008b75d8: b27d03e4    	orr	x4, xzr, #0x8
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:280
+1008b75dc: aa0003e5    	mov	x5, x0
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:354
+1008b75e0: aa0303e0    	mov	x0, x3
+1008b75e4: aa0503e3    	mov	x3, x5
+1008b75e8: 97dfcada    	bl	0x1000aa150 <_runtime.slicecopy>
+1008b75ec: f94263e0    	ldr	x0, [sp, #0x4c0]
+1008b75f0: 97e0592c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b75f4: f9415be5    	ldr	x5, [sp, #0x2b0]
+1008b75f8: a94a18a0    	ldp	x0, x6, [x5, #0xa0]
+1008b75fc: b400e6a6    	cbz	x6, 0x1008b92d0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3010>
+1008b7600: f90237e0    	str	x0, [sp, #0x468]
+1008b7604: 97e0593b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7608: f9412fe1    	ldr	x1, [sp, #0x258]
+1008b760c: f9413be2    	ldr	x2, [sp, #0x270]
+1008b7610: f94237e3    	ldr	x3, [sp, #0x468]
+1008b7614: a9008861    	stp	x1, x2, [x3, #0x8]
+1008b7618: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b761c: b9451361    	ldr	w1, [x27, #0x510]
+1008b7620: 35000061    	cbnz	w1, 0x1008b762c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x136c>
+1008b7624: f942a7e5    	ldr	x5, [sp, #0x548]
+1008b7628: 14000005    	b	0x1008b763c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x137c>
+1008b762c: f9400064    	ldr	x4, [x3]
+1008b7630: 97e05690    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7634: f942a7e5    	ldr	x5, [sp, #0x548]
+1008b7638: a9001325    	stp	x5, x4, [x25]
+1008b763c: f9000065    	str	x5, [x3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:355
+1008b7640: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7644: 91090000    	add	x0, x0, #0x240
+1008b7648: f94097e1    	ldr	x1, [sp, #0x128]
+1008b764c: aa0103e2    	mov	x2, x1
+1008b7650: 97e04200    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7654: f9029be0    	str	x0, [sp, #0x530]
+1008b7658: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b765c: 91090000    	add	x0, x0, #0x240
+1008b7660: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7664: aa0103e2    	mov	x2, x1
+1008b7668: 97e041fa    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b766c: f90293e0    	str	x0, [sp, #0x520]
+1008b7670: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7674: 91090000    	add	x0, x0, #0x240
+1008b7678: f94097e1    	ldr	x1, [sp, #0x128]
+1008b767c: aa0103e2    	mov	x2, x1
+1008b7680: 97e041f4    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7684: f9028fe0    	str	x0, [sp, #0x518]
+1008b7688: f94253e0    	ldr	x0, [sp, #0x4a0]
+1008b768c: 97e05905    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7690: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b7694: a9501063    	ldp	x3, x4, [x3, #0x100]
+1008b7698: f90237e3    	str	x3, [sp, #0x468]
+1008b769c: f9013be4    	str	x4, [sp, #0x270]
+1008b76a0: f9424fe0    	ldr	x0, [sp, #0x498]
+1008b76a4: 97e058ff    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b76a8: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b76ac: a9519063    	ldp	x3, x4, [x3, #0x118]
+1008b76b0: f90233e3    	str	x3, [sp, #0x460]
+1008b76b4: f9012fe4    	str	x4, [sp, #0x258]
+1008b76b8: f94257e0    	ldr	x0, [sp, #0x4a8]
+1008b76bc: 97e058f9    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b76c0: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b76c4: a94e9060    	ldp	x0, x4, [x3, #0xe8]
+1008b76c8: b400e024    	cbz	x4, 0x1008b92cc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x300c>
+1008b76cc: f9022fe0    	str	x0, [sp, #0x458]
+1008b76d0: 97e05908    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b76d4: f94097e1    	ldr	x1, [sp, #0x128]
+1008b76d8: f9422fe2    	ldr	x2, [sp, #0x458]
+1008b76dc: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b76e0: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b76e4: b9451363    	ldr	w3, [x27, #0x510]
+1008b76e8: 35000063    	cbnz	w3, 0x1008b76f4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1434>
+1008b76ec: f9429be4    	ldr	x4, [sp, #0x530]
+1008b76f0: 14000005    	b	0x1008b7704 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1444>
+1008b76f4: f9400043    	ldr	x3, [x2]
+1008b76f8: 97e0565e    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b76fc: f9429be4    	ldr	x4, [sp, #0x530]
+1008b7700: a9000f24    	stp	x4, x3, [x25]
+1008b7704: f9000044    	str	x4, [x2]
+1008b7708: f9413be0    	ldr	x0, [sp, #0x270]
+1008b770c: b400dde0    	cbz	x0, 0x1008b92c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3008>
+1008b7710: f94237e0    	ldr	x0, [sp, #0x468]
+1008b7714: 97e058f7    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7718: f94097e1    	ldr	x1, [sp, #0x128]
+1008b771c: f94237e2    	ldr	x2, [sp, #0x468]
+1008b7720: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b7724: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7728: b9451363    	ldr	w3, [x27, #0x510]
+1008b772c: 35000063    	cbnz	w3, 0x1008b7738 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1478>
+1008b7730: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7734: 14000005    	b	0x1008b7748 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1488>
+1008b7738: f9400043    	ldr	x3, [x2]
+1008b773c: 97e0564d    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7740: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7744: a9000f24    	stp	x4, x3, [x25]
+1008b7748: f9000044    	str	x4, [x2]
+1008b774c: f9412fe0    	ldr	x0, [sp, #0x258]
+1008b7750: b400dba0    	cbz	x0, 0x1008b92c4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3004>
+1008b7754: f94233e0    	ldr	x0, [sp, #0x460]
+1008b7758: 97e058e6    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b775c: f94097e2    	ldr	x2, [sp, #0x128]
+1008b7760: f94233e1    	ldr	x1, [sp, #0x460]
+1008b7764: a9008822    	stp	x2, x2, [x1, #0x8]
+1008b7768: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b776c: b9451363    	ldr	w3, [x27, #0x510]
+1008b7770: 35000063    	cbnz	w3, 0x1008b777c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x14bc>
+1008b7774: f9428fe4    	ldr	x4, [sp, #0x518]
+1008b7778: 14000005    	b	0x1008b778c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x14cc>
+1008b777c: f9400023    	ldr	x3, [x1]
+1008b7780: 97e0563c    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7784: f9428fe4    	ldr	x4, [sp, #0x518]
+1008b7788: a9000f24    	stp	x4, x3, [x25]
+1008b778c: f9000024    	str	x4, [x1]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:356
+1008b7790: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7794: 91090000    	add	x0, x0, #0x240
+1008b7798: aa0203e1    	mov	x1, x2
+1008b779c: 97e041ad    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b77a0: f9029be0    	str	x0, [sp, #0x530]
+1008b77a4: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b77a8: 91090000    	add	x0, x0, #0x240
+1008b77ac: f94097e1    	ldr	x1, [sp, #0x128]
+1008b77b0: aa0103e2    	mov	x2, x1
+1008b77b4: 97e041a7    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b77b8: f90293e0    	str	x0, [sp, #0x520]
+1008b77bc: f94247e0    	ldr	x0, [sp, #0x488]
+1008b77c0: 97e058b8    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b77c4: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b77c8: a9489063    	ldp	x3, x4, [x3, #0x88]
+1008b77cc: f90237e3    	str	x3, [sp, #0x468]
+1008b77d0: f9013be4    	str	x4, [sp, #0x270]
+1008b77d4: f9424be0    	ldr	x0, [sp, #0x490]
+1008b77d8: 97e058b2    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b77dc: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b77e0: a9471060    	ldp	x0, x4, [x3, #0x70]
+1008b77e4: b400d6e4    	cbz	x4, 0x1008b92c0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x3000>
+1008b77e8: f90233e0    	str	x0, [sp, #0x460]
+1008b77ec: 97e058c1    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b77f0: f94097e1    	ldr	x1, [sp, #0x128]
+1008b77f4: f94233e2    	ldr	x2, [sp, #0x460]
+1008b77f8: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b77fc: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7800: b9451363    	ldr	w3, [x27, #0x510]
+1008b7804: 35000063    	cbnz	w3, 0x1008b7810 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1550>
+1008b7808: f9429be4    	ldr	x4, [sp, #0x530]
+1008b780c: 14000005    	b	0x1008b7820 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1560>
+1008b7810: f9400043    	ldr	x3, [x2]
+1008b7814: 97e05617    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7818: f9429be4    	ldr	x4, [sp, #0x530]
+1008b781c: a9000f24    	stp	x4, x3, [x25]
+1008b7820: f9000044    	str	x4, [x2]
+1008b7824: f9413be0    	ldr	x0, [sp, #0x270]
+1008b7828: b400d4a0    	cbz	x0, 0x1008b92bc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ffc>
+1008b782c: f94237e0    	ldr	x0, [sp, #0x468]
+1008b7830: 97e058b0    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7834: f94097e2    	ldr	x2, [sp, #0x128]
+1008b7838: f94237e1    	ldr	x1, [sp, #0x468]
+1008b783c: a9008822    	stp	x2, x2, [x1, #0x8]
+1008b7840: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7844: b9451363    	ldr	w3, [x27, #0x510]
+1008b7848: 35000063    	cbnz	w3, 0x1008b7854 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1594>
+1008b784c: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7850: 14000005    	b	0x1008b7864 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x15a4>
+1008b7854: f9400023    	ldr	x3, [x1]
+1008b7858: 97e05606    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b785c: f94293e4    	ldr	x4, [sp, #0x520]
+1008b7860: a9000f24    	stp	x4, x3, [x25]
+1008b7864: f9000024    	str	x4, [x1]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:357
+1008b7868: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b786c: 91030000    	add	x0, x0, #0xc0
+1008b7870: aa0203e1    	mov	x1, x2
+1008b7874: 97e04177    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7878: f9029be0    	str	x0, [sp, #0x530]
+1008b787c: f94243e0    	ldr	x0, [sp, #0x480]
+1008b7880: 97e05888    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7884: f9415be3    	ldr	x3, [sp, #0x2b0]
+1008b7888: a9531060    	ldp	x0, x4, [x3, #0x130]
+1008b788c: b400d164    	cbz	x4, 0x1008b92b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ff8>
+1008b7890: f9022be0    	str	x0, [sp, #0x450]
+1008b7894: 97e05897    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7898: f94097e1    	ldr	x1, [sp, #0x128]
+1008b789c: f9422be2    	ldr	x2, [sp, #0x450]
+1008b78a0: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b78a4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b78a8: b9451363    	ldr	w3, [x27, #0x510]
+1008b78ac: 35000063    	cbnz	w3, 0x1008b78b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x15f8>
+1008b78b0: f9429be4    	ldr	x4, [sp, #0x530]
+1008b78b4: 14000005    	b	0x1008b78c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1608>
+1008b78b8: f9400043    	ldr	x3, [x2]
+1008b78bc: 97e055ed    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b78c0: f9429be4    	ldr	x4, [sp, #0x530]
+1008b78c4: a9000f24    	stp	x4, x3, [x25]
+1008b78c8: f9000044    	str	x4, [x2]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:239
+1008b78cc: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b78d0: 91026020    	add	x0, x1, #0x98
+1008b78d4: f90227e0    	str	x0, [sp, #0x448]
+1008b78d8: 97e05872    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b78dc: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b78e0: f9404c22    	ldr	x2, [x1, #0x98]
+1008b78e4: b5000062    	cbnz	x2, 0x1008b78f0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1630>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:358
+1008b78e8: aa1f03e0    	mov	x0, xzr
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:239
+1008b78ec: 1400000c    	b	0x1008b791c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x165c>
+1008b78f0: f94227e0    	ldr	x0, [sp, #0x448]
+1008b78f4: 97e0586b    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b78f8: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b78fc: f9404c20    	ldr	x0, [x1, #0x98]
+1008b7900: f90223e0    	str	x0, [sp, #0x440]
+1008b7904: 3980001b    	ldrsb	x27, [x0]
+1008b7908: 97e05866    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b790c: f94223e1    	ldr	x1, [sp, #0x440]
+1008b7910: 39400021    	ldrb	w1, [x1]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:358
+1008b7914: aa0103e0    	mov	x0, x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:364
+1008b7918: f9433fe1    	ldr	x1, [sp, #0x678]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:358
+1008b791c: 39021fe0    	strb	w0, [sp, #0x87]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:359
+1008b7920: f94333e3    	ldr	x3, [sp, #0x660]
+1008b7924: aa1f03e2    	mov	x2, xzr
+1008b7928: 14000007    	b	0x1008b7944 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1684>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:419
+1008b792c: f8236886    	str	x6, [x4, x3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:359
+1008b7930: f9429be4    	ldr	x4, [sp, #0x530]
+1008b7934: 91006083    	add	x3, x4, #0x18
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:388
+1008b7938: 39421fe0    	ldrb	w0, [sp, #0x87]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:364
+1008b793c: f9433fe1    	ldr	x1, [sp, #0x678]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:359
+1008b7940: f9413be2    	ldr	x2, [sp, #0x270]
+1008b7944: f94337e4    	ldr	x4, [sp, #0x668]
+1008b7948: eb02009f    	cmp	x4, x2
+1008b794c: 5400b3ed    	b.le	0x1008b8fc8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2d08>
+1008b7950: f9006fe2    	str	x2, [sp, #0xd8]
+1008b7954: f9029be3    	str	x3, [sp, #0x530]
+1008b7958: aa0303e0    	mov	x0, x3
+1008b795c: b0003fa1    	adrp	x1, 0x1010ac000 <_typerel.*+0x83ff8>
+1008b7960: 911b8021    	add	x1, x1, #0x6e0
+1008b7964: b24003e2    	orr	x2, xzr, #0x1
+1008b7968: 97de9596    	bl	0x10005cfc0 <_runtime.checkptrAlignment>
+1008b796c: f9429be0    	ldr	x0, [sp, #0x530]
+1008b7970: 97e0584c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7974: f9429be3    	ldr	x3, [sp, #0x530]
+1008b7978: a9401063    	ldp	x3, x4, [x3]
+1008b797c: f9009be4    	str	x4, [sp, #0x130]
+1008b7980: f9019be3    	str	x3, [sp, #0x330]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:360
+1008b7984: f94343e3    	ldr	x3, [sp, #0x680]
+1008b7988: f9401463    	ldr	x3, [x3, #0x28]
+1008b798c: f94347e0    	ldr	x0, [sp, #0x688]
+1008b7990: d63f0060    	blr	x3
+1008b7994: b500b080    	cbnz	x0, 0x1008b8fa4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ce4>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:363
+1008b7998: f9409be0    	ldr	x0, [sp, #0x130]
+1008b799c: b50000a0    	cbnz	x0, 0x1008b79b0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x16f0>
+1008b79a0: aa1f03e1    	mov	x1, xzr
+1008b79a4: aa1f03e2    	mov	x2, xzr
+1008b79a8: aa1f03e3    	mov	x3, xzr
+1008b79ac: 1400000c    	b	0x1008b79dc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x171c>
+1008b79b0: aa0003e1    	mov	x1, x0
+1008b79b4: aa1f03e2    	mov	x2, xzr
+1008b79b8: aa0103e3    	mov	x3, x1
+1008b79bc: f0004044    	adrp	x4, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b79c0: 91090084    	add	x4, x4, #0x240
+1008b79c4: aa1f03e0    	mov	x0, xzr
+1008b79c8: 97e04156    	bl	0x1000c7f20 <_runtime.growslice>
+1008b79cc: aa0203e3    	mov	x3, x2
+1008b79d0: aa0103e2    	mov	x2, x1
+1008b79d4: aa0003e1    	mov	x1, x0
+1008b79d8: f9409be0    	ldr	x0, [sp, #0x130]
+1008b79dc: f90103e3    	str	x3, [sp, #0x200]
+1008b79e0: f900ffe2    	str	x2, [sp, #0x1f8]
+1008b79e4: f901efe1    	str	x1, [sp, #0x3d8]
+1008b79e8: aa0003e3    	mov	x3, x0
+1008b79ec: b27d03e4    	orr	x4, xzr, #0x8
+1008b79f0: aa0103e0    	mov	x0, x1
+1008b79f4: aa0203e1    	mov	x1, x2
+1008b79f8: f9419be2    	ldr	x2, [sp, #0x330]
+1008b79fc: 97dfc9d5    	bl	0x1000aa150 <_runtime.slicecopy>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:364
+1008b7a00: f0004900    	adrp	x0, 0x1011da000 <_typerel.*+0x1b1ff8>
+1008b7a04: 911b8000    	add	x0, x0, #0x6e0
+1008b7a08: 97deb632    	bl	0x1000652d0 <_runtime.newobject>
+1008b7a0c: f9031be0    	str	x0, [sp, #0x630]
+1008b7a10: 911643e5    	add	x5, sp, #0x590
+1008b7a14: a9007cbf    	stp	xzr, xzr, [x5]
+1008b7a18: a9017cbf    	stp	xzr, xzr, [x5, #0x10]
+1008b7a1c: a9027cbf    	stp	xzr, xzr, [x5, #0x20]
+1008b7a20: a9037cbf    	stp	xzr, xzr, [x5, #0x30]
+1008b7a24: a9047cbf    	stp	xzr, xzr, [x5, #0x40]
+1008b7a28: a9057cbf    	stp	xzr, xzr, [x5, #0x50]
+1008b7a2c: a9067cbf    	stp	xzr, xzr, [x5, #0x60]
+1008b7a30: f94257e0    	ldr	x0, [sp, #0x4a8]
+1008b7a34: 97e0581b    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7a38: f9415be5    	ldr	x5, [sp, #0x2b0]
+1008b7a3c: a94e9ca6    	ldp	x6, x7, [x5, #0xe8]
+1008b7a40: f9407ca5    	ldr	x5, [x5, #0xf8]
+1008b7a44: f902cbe6    	str	x6, [sp, #0x590]
+1008b7a48: 911663fb    	add	x27, sp, #0x598
+1008b7a4c: a9001767    	stp	x7, x5, [x27]
+1008b7a50: f942b3e0    	ldr	x0, [sp, #0x560]
+1008b7a54: 97e05813    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7a58: f9433fe5    	ldr	x5, [sp, #0x678]
+1008b7a5c: a9409ca6    	ldp	x6, x7, [x5, #0x8]
+1008b7a60: f9400ca8    	ldr	x8, [x5, #0x18]
+1008b7a64: f902d7e6    	str	x6, [sp, #0x5a8]
+1008b7a68: 9116c3fb    	add	x27, sp, #0x5b0
+1008b7a6c: a9002367    	stp	x7, x8, [x27]
+1008b7a70: 9100e0a0    	add	x0, x5, #0x38
+1008b7a74: 97e0580b    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7a78: f9433fe5    	ldr	x5, [sp, #0x678]
+1008b7a7c: a9439ca6    	ldp	x6, x7, [x5, #0x38]
+1008b7a80: f94024a5    	ldr	x5, [x5, #0x48]
+1008b7a84: 911703fb    	add	x27, sp, #0x5c0
+1008b7a88: a9001f66    	stp	x6, x7, [x27]
+1008b7a8c: f9406fe6    	ldr	x6, [sp, #0xd8]
+1008b7a90: 911743fb    	add	x27, sp, #0x5d0
+1008b7a94: a9001b65    	stp	x5, x6, [x27]
+1008b7a98: f9431be0    	ldr	x0, [sp, #0x630]
+1008b7a9c: b27c0be1    	orr	x1, xzr, #0x70
+1008b7aa0: 97e0583c    	bl	0x1000cdb90 <_runtime.racewriterange>
+1008b7aa4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7aa8: b9451365    	ldr	w5, [x27, #0x510]
+1008b7aac: 340000c5    	cbz	w5, 0x1008b7ac4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1804>
+1008b7ab0: f0004900    	adrp	x0, 0x1011da000 <_typerel.*+0x1b1ff8>
+1008b7ab4: 911b8000    	add	x0, x0, #0x6e0
+1008b7ab8: f9431be1    	ldr	x1, [sp, #0x630]
+1008b7abc: 911643e2    	add	x2, sp, #0x590
+1008b7ac0: 97deb838    	bl	0x100065ba0 <_runtime.wbMove>
+1008b7ac4: f9431be1    	ldr	x1, [sp, #0x630]
+1008b7ac8: 911643e2    	add	x2, sp, #0x590
+1008b7acc: ad404450    	ldp	q16, q17, [x2]
+1008b7ad0: ad004430    	stp	q16, q17, [x1]
+1008b7ad4: ad414450    	ldp	q16, q17, [x2, #0x20]
+1008b7ad8: ad014430    	stp	q16, q17, [x1, #0x20]
+1008b7adc: ad424450    	ldp	q16, q17, [x2, #0x40]
+1008b7ae0: ad024430    	stp	q16, q17, [x1, #0x40]
+1008b7ae4: 3dc01850    	ldr	q16, [x2, #0x60]
+1008b7ae8: 3d801830    	str	q16, [x1, #0x60]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:365
+1008b7aec: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b7af0: 91030020    	add	x0, x1, #0xc0
+1008b7af4: f9021fe0    	str	x0, [sp, #0x438]
+1008b7af8: 97e057ea    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7afc: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b7b00: f9406022    	ldr	x2, [x1, #0xc0]
+1008b7b04: b5000362    	cbnz	x2, 0x1008b7b70 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x18b0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:370
+1008b7b08: f9431be0    	ldr	x0, [sp, #0x630]
+1008b7b0c: b27c0be1    	orr	x1, xzr, #0x70
+1008b7b10: 97e0580c    	bl	0x1000cdb40 <_runtime.racereadrange>
+1008b7b14: 910b03e2    	add	x2, sp, #0x2c0
+1008b7b18: f9431be3    	ldr	x3, [sp, #0x630]
+1008b7b1c: ad404470    	ldp	q16, q17, [x3]
+1008b7b20: ad004450    	stp	q16, q17, [x2]
+1008b7b24: ad414470    	ldp	q16, q17, [x3, #0x20]
+1008b7b28: ad014450    	stp	q16, q17, [x2, #0x20]
+1008b7b2c: ad424470    	ldp	q16, q17, [x3, #0x40]
+1008b7b30: ad024450    	stp	q16, q17, [x2, #0x40]
+1008b7b34: 3dc01870    	ldr	q16, [x3, #0x60]
+1008b7b38: 3d801850    	str	q16, [x2, #0x60]
+1008b7b3c: 911a43fb    	add	x27, sp, #0x690
+1008b7b40: a9400f62    	ldp	x2, x3, [x27]
+1008b7b44: f90153e2    	str	x2, [sp, #0x2a0]
+1008b7b48: f90057e3    	str	x3, [sp, #0xa8]
+1008b7b4c: f9433fe2    	ldr	x2, [sp, #0x678]
+1008b7b50: 91008040    	add	x0, x2, #0x20
+1008b7b54: 97e057d3    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7b58: f9433fe2    	ldr	x2, [sp, #0x678]
+1008b7b5c: a9421043    	ldp	x3, x4, [x2, #0x20]
+1008b7b60: f9006be4    	str	x4, [sp, #0xd0]
+1008b7b64: f9015fe3    	str	x3, [sp, #0x2b8]
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:211
+1008b7b68: aa1f03e0    	mov	x0, xzr
+1008b7b6c: 140005a3    	b	0x1008b91f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2f38>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:366
+1008b7b70: 911a43fb    	add	x27, sp, #0x690
+1008b7b74: a9400b61    	ldp	x1, x2, [x27]
+1008b7b78: f90157e1    	str	x1, [sp, #0x2a8]
+1008b7b7c: f9005be2    	str	x2, [sp, #0xb0]
+1008b7b80: f94353e1    	ldr	x1, [sp, #0x6a0]
+1008b7b84: f9005fe1    	str	x1, [sp, #0xb8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:428
+1008b7b88: b0004740    	adrp	x0, 0x1011a0000 <_typerel.*+0x177ff8>
+1008b7b8c: 91310000    	add	x0, x0, #0xc40
+1008b7b90: 97deb5d0    	bl	0x1000652d0 <_runtime.newobject>
+1008b7b94: f9021be0    	str	x0, [sp, #0x430]
+1008b7b98: 97e057d6    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7b9c: d0000001    	adrp	x1, 0x1008b9000 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2d40>
+1008b7ba0: 910cc021    	add	x1, x1, #0x330
+1008b7ba4: f9421be2    	ldr	x2, [sp, #0x430]
+1008b7ba8: f9000041    	str	x1, [x2]
+1008b7bac: 91002040    	add	x0, x2, #0x8
+1008b7bb0: 97e057d0    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7bb4: f940ffe1    	ldr	x1, [sp, #0x1f8]
+1008b7bb8: f94103e2    	ldr	x2, [sp, #0x200]
+1008b7bbc: f9421be3    	ldr	x3, [sp, #0x430]
+1008b7bc0: a9010861    	stp	x1, x2, [x3, #0x10]
+1008b7bc4: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7bc8: b9451364    	ldr	w4, [x27, #0x510]
+1008b7bcc: 35000064    	cbnz	w4, 0x1008b7bd8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1918>
+1008b7bd0: f941efe5    	ldr	x5, [sp, #0x3d8]
+1008b7bd4: 14000005    	b	0x1008b7be8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1928>
+1008b7bd8: f9400464    	ldr	x4, [x3, #0x8]
+1008b7bdc: 97e05525    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7be0: f941efe5    	ldr	x5, [sp, #0x3d8]
+1008b7be4: a9001325    	stp	x5, x4, [x25]
+1008b7be8: f9000465    	str	x5, [x3, #0x8]
+1008b7bec: 91008060    	add	x0, x3, #0x20
+1008b7bf0: 97e057c0    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7bf4: f9405be1    	ldr	x1, [sp, #0xb0]
+1008b7bf8: f9405fe2    	ldr	x2, [sp, #0xb8]
+1008b7bfc: f9421be3    	ldr	x3, [sp, #0x430]
+1008b7c00: a9028861    	stp	x1, x2, [x3, #0x28]
+1008b7c04: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7c08: b9451361    	ldr	w1, [x27, #0x510]
+1008b7c0c: 35000061    	cbnz	w1, 0x1008b7c18 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1958>
+1008b7c10: f94157e2    	ldr	x2, [sp, #0x2a8]
+1008b7c14: 14000005    	b	0x1008b7c28 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1968>
+1008b7c18: f9401061    	ldr	x1, [x3, #0x20]
+1008b7c1c: 97e05515    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7c20: f94157e2    	ldr	x2, [sp, #0x2a8]
+1008b7c24: a9000722    	stp	x2, x1, [x25]
+1008b7c28: f9001062    	str	x2, [x3, #0x20]
+1008b7c2c: 9100e060    	add	x0, x3, #0x38
+1008b7c30: 97e057b0    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7c34: b0004ba1    	adrp	x1, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b7c38: 91350021    	add	x1, x1, #0xd40
+1008b7c3c: f9421be2    	ldr	x2, [sp, #0x430]
+1008b7c40: f9001c41    	str	x1, [x2, #0x38]
+1008b7c44: d000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b7c48: b9451361    	ldr	w1, [x27, #0x510]
+1008b7c4c: 35000061    	cbnz	w1, 0x1008b7c58 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1998>
+1008b7c50: f9431be3    	ldr	x3, [sp, #0x630]
+1008b7c54: 14000005    	b	0x1008b7c68 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x19a8>
+1008b7c58: f9402041    	ldr	x1, [x2, #0x40]
+1008b7c5c: 97e05505    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b7c60: f9431be3    	ldr	x3, [sp, #0x630]
+1008b7c64: a9000723    	stp	x3, x1, [x25]
+1008b7c68: f9002043    	str	x3, [x2, #0x40]
+1008b7c6c: f9421fe0    	ldr	x0, [sp, #0x438]
+1008b7c70: 97e0578c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7c74: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b7c78: f9406020    	ldr	x0, [x1, #0xc0]
+1008b7c7c: f9421be1    	ldr	x1, [sp, #0x430]
+1008b7c80: 9401093c    	bl	0x1008fa170 <_github.com/TimLai666/coimnet/dynamics.(*targetPartition).Run>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:366
+1008b7c84: b50097e0    	cbnz	x0, 0x1008b8f80 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2cc0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:372
+1008b7c88: f94343e1    	ldr	x1, [sp, #0x680]
+1008b7c8c: f9401421    	ldr	x1, [x1, #0x28]
+1008b7c90: f94347e0    	ldr	x0, [sp, #0x688]
+1008b7c94: d63f0020    	blr	x1
+1008b7c98: b5009a60    	cbnz	x0, 0x1008b8fe4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2d24>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:375
+1008b7c9c: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7ca0: 91090000    	add	x0, x0, #0x240
+1008b7ca4: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7ca8: aa0103e2    	mov	x2, x1
+1008b7cac: 97e04069    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7cb0: f90293e0    	str	x0, [sp, #0x520]
+1008b7cb4: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7cb8: 91090000    	add	x0, x0, #0x240
+1008b7cbc: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7cc0: aa0103e2    	mov	x2, x1
+1008b7cc4: 97e04063    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7cc8: f9028fe0    	str	x0, [sp, #0x518]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:376
+1008b7ccc: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7cd0: 91090000    	add	x0, x0, #0x240
+1008b7cd4: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7cd8: aa0103e2    	mov	x2, x1
+1008b7cdc: 97e0405d    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7ce0: f9028be0    	str	x0, [sp, #0x510]
+1008b7ce4: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7ce8: 91090000    	add	x0, x0, #0x240
+1008b7cec: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7cf0: aa0103e2    	mov	x2, x1
+1008b7cf4: 97e04057    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7cf8: f90287e0    	str	x0, [sp, #0x508]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:377
+1008b7cfc: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d00: 91090000    	add	x0, x0, #0x240
+1008b7d04: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d08: aa0103e2    	mov	x2, x1
+1008b7d0c: 97e04051    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d10: f90283e0    	str	x0, [sp, #0x500]
+1008b7d14: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d18: 91090000    	add	x0, x0, #0x240
+1008b7d1c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d20: aa0103e2    	mov	x2, x1
+1008b7d24: 97e0404b    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d28: f9027fe0    	str	x0, [sp, #0x4f8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:378
+1008b7d2c: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d30: 91090000    	add	x0, x0, #0x240
+1008b7d34: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d38: aa0103e2    	mov	x2, x1
+1008b7d3c: 97e04045    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d40: f9027be0    	str	x0, [sp, #0x4f0]
+1008b7d44: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d48: 91090000    	add	x0, x0, #0x240
+1008b7d4c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d50: aa0103e2    	mov	x2, x1
+1008b7d54: 97e0403f    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d58: f90277e0    	str	x0, [sp, #0x4e8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:379
+1008b7d5c: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d60: 91090000    	add	x0, x0, #0x240
+1008b7d64: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d68: aa0103e2    	mov	x2, x1
+1008b7d6c: 97e04039    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d70: f90273e0    	str	x0, [sp, #0x4e0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:380
+1008b7d74: f0004040    	adrp	x0, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b7d78: 91030000    	add	x0, x0, #0xc0
+1008b7d7c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b7d80: aa0103e2    	mov	x2, x1
+1008b7d84: 97e04033    	bl	0x1000c7e50 <_runtime.makeslice>
+1008b7d88: f9026fe0    	str	x0, [sp, #0x4d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:381
+1008b7d8c: aa1f03e1    	mov	x1, xzr
+1008b7d90: 14000003    	b	0x1008b7d9c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1adc>
+1008b7d94: 91000421    	add	x1, x1, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:396
+1008b7d98: f9426fe0    	ldr	x0, [sp, #0x4d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:381
+1008b7d9c: f940ffe2    	ldr	x2, [sp, #0x1f8]
+1008b7da0: eb02003f    	cmp	x1, x2
+1008b7da4: 5400644a    	b.ge	0x1008b8a2c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x276c>
+1008b7da8: f900a7e1    	str	x1, [sp, #0x148]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b7dac: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b7db0: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b7db4: f902a7e0    	str	x0, [sp, #0x548]
+1008b7db8: 97e0573a    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7dbc: 911aa3fb    	add	x27, sp, #0x6a8
+1008b7dc0: a9400b61    	ldp	x1, x2, [x27]
+1008b7dc4: f940a7e3    	ldr	x3, [sp, #0x148]
+1008b7dc8: f941efe4    	ldr	x4, [sp, #0x3d8]
+1008b7dcc: fc637880    	ldr	d0, [x4, x3, lsl #3]
+1008b7dd0: eb02007f    	cmp	x3, x2
+1008b7dd4: 54009d22    	b.hs	0x1008b9178 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2eb8>
+1008b7dd8: f902a3e1    	str	x1, [sp, #0x540]
+1008b7ddc: fd0137e0    	str	d0, [sp, #0x268]
+1008b7de0: 8b030c20    	add	x0, x1, x3, lsl #3
+1008b7de4: 97e0572f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7de8: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7dec: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b7df0: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7df4: fd0133e0    	str	d0, [sp, #0x260]
+1008b7df8: f942a7e0    	ldr	x0, [sp, #0x548]
+1008b7dfc: 97e0573d    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7e00: fd4133e0    	ldr	d0, [sp, #0x260]
+1008b7e04: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b7e08: 1e612800    	fadd	d0, d0, d1
+1008b7e0c: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7e10: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b7e14: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:383
+1008b7e18: f94097e3    	ldr	x3, [sp, #0x128]
+1008b7e1c: eb03003f    	cmp	x1, x3
+1008b7e20: 54009aa2    	b.hs	0x1008b9174 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2eb4>
+1008b7e24: f942afe2    	ldr	x2, [sp, #0x558]
+1008b7e28: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b7e2c: 97e0571d    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7e30: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7e34: f942afe2    	ldr	x2, [sp, #0x558]
+1008b7e38: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7e3c: fd0137e0    	str	d0, [sp, #0x268]
+1008b7e40: f94263e0    	ldr	x0, [sp, #0x4c0]
+1008b7e44: 97e05717    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7e48: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b7e4c: a94a0c22    	ldp	x2, x3, [x1, #0xa0]
+1008b7e50: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b7e54: eb03009f    	cmp	x4, x3
+1008b7e58: 540098c2    	b.hs	0x1008b9170 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2eb0>
+1008b7e5c: f90237e2    	str	x2, [sp, #0x468]
+1008b7e60: d37df081    	lsl	x1, x4, #3
+1008b7e64: 8b010421    	add	x1, x1, x1, lsl #1
+1008b7e68: f9013be1    	str	x1, [sp, #0x270]
+1008b7e6c: 8b020020    	add	x0, x1, x2
+1008b7e70: f90233e0    	str	x0, [sp, #0x460]
+1008b7e74: 97e0570b    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7e78: f94233e1    	ldr	x1, [sp, #0x460]
+1008b7e7c: f9400421    	ldr	x1, [x1, #0x8]
+1008b7e80: f9413be2    	ldr	x2, [sp, #0x270]
+1008b7e84: f94237e3    	ldr	x3, [sp, #0x468]
+1008b7e88: f8626863    	ldr	x3, [x3, x2]
+1008b7e8c: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b7e90: eb01009f    	cmp	x4, x1
+1008b7e94: 540096c2    	b.hs	0x1008b916c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2eac>
+1008b7e98: f902a3e3    	str	x3, [sp, #0x540]
+1008b7e9c: f94293e1    	ldr	x1, [sp, #0x520]
+1008b7ea0: 8b040c21    	add	x1, x1, x4, lsl #3
+1008b7ea4: f9029fe1    	str	x1, [sp, #0x538]
+1008b7ea8: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b7eac: 97e056fd    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7eb0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7eb4: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b7eb8: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7ebc: fd0133e0    	str	d0, [sp, #0x260]
+1008b7ec0: f942abe2    	ldr	x2, [sp, #0x550]
+1008b7ec4: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b7ec8: 97e056f6    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7ecc: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7ed0: f942abe2    	ldr	x2, [sp, #0x550]
+1008b7ed4: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7ed8: fd0113e0    	str	d0, [sp, #0x220]
+1008b7edc: f942a7e0    	ldr	x0, [sp, #0x548]
+1008b7ee0: 97e056f0    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7ee4: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7ee8: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b7eec: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7ef0: fd010fe0    	str	d0, [sp, #0x218]
+1008b7ef4: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b7ef8: 97e056fe    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b7efc: fd410fe0    	ldr	d0, [sp, #0x218]
+1008b7f00: fd4113e1    	ldr	d1, [sp, #0x220]
+1008b7f04: 1e610800    	fmul	d0, d0, d1
+1008b7f08: fd4133e1    	ldr	d1, [sp, #0x260]
+1008b7f0c: fd4137e2    	ldr	d2, [sp, #0x268]
+1008b7f10: 1f410040    	fmadd	d0, d2, d1, d0
+1008b7f14: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7f18: f94293e2    	ldr	x2, [sp, #0x520]
+1008b7f1c: fc217840    	str	d0, [x2, x1, lsl #3]
+1008b7f20: f94097e3    	ldr	x3, [sp, #0x128]
+1008b7f24: eb03003f    	cmp	x1, x3
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:384
+1008b7f28: 54009202    	b.hs	0x1008b9168 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ea8>
+1008b7f2c: f941f3e2    	ldr	x2, [sp, #0x3e0]
+1008b7f30: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b7f34: 97e056db    	bl	0x1000cdaa0 <_runtime.raceread>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:385
+1008b7f38: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b7f3c: 91020020    	add	x0, x1, #0x80
+1008b7f40: f90217e0    	str	x0, [sp, #0x428]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:384
+1008b7f44: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7f48: f941f3e2    	ldr	x2, [sp, #0x3e0]
+1008b7f4c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7f50: fd0067e0    	str	d0, [sp, #0xc8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:385
+1008b7f54: 97e056d3    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7f58: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b7f5c: 39420022    	ldrb	w2, [x1, #0x80]
+1008b7f60: 37000082    	tbnz	w2, #0x0, 0x1008b7f70 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1cb0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:395
+1008b7f64: f940a7e1    	ldr	x1, [sp, #0x148]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:388
+1008b7f68: fd4067e0    	ldr	d0, [sp, #0xc8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:385
+1008b7f6c: 1400001d    	b	0x1008b7fe0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1d20>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:386
+1008b7f70: f9424fe0    	ldr	x0, [sp, #0x498]
+1008b7f74: 97e056cb    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7f78: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b7f7c: a9518c22    	ldp	x2, x3, [x1, #0x118]
+1008b7f80: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b7f84: eb03009f    	cmp	x4, x3
+1008b7f88: 54008ee2    	b.hs	0x1008b9164 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ea4>
+1008b7f8c: f90237e2    	str	x2, [sp, #0x468]
+1008b7f90: f9413be1    	ldr	x1, [sp, #0x270]
+1008b7f94: 8b010040    	add	x0, x2, x1
+1008b7f98: f90233e0    	str	x0, [sp, #0x460]
+1008b7f9c: 97e056c1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7fa0: f94233e1    	ldr	x1, [sp, #0x460]
+1008b7fa4: f9400421    	ldr	x1, [x1, #0x8]
+1008b7fa8: f9413be2    	ldr	x2, [sp, #0x270]
+1008b7fac: f94237e3    	ldr	x3, [sp, #0x468]
+1008b7fb0: f8626863    	ldr	x3, [x3, x2]
+1008b7fb4: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b7fb8: eb01009f    	cmp	x4, x1
+1008b7fbc: 54008d22    	b.hs	0x1008b9160 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ea0>
+1008b7fc0: f902a3e3    	str	x3, [sp, #0x540]
+1008b7fc4: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b7fc8: 97e056b6    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7fcc: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b7fd0: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b7fd4: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b7fd8: fd4067e1    	ldr	d1, [sp, #0xc8]
+1008b7fdc: 1e612800    	fadd	d0, d0, d1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:388
+1008b7fe0: 39421fe0    	ldrb	w0, [sp, #0x87]
+1008b7fe4: 360003c0    	tbz	w0, #0x0, 0x1008b805c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1d9c>
+1008b7fe8: fd010be0    	str	d0, [sp, #0x210]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:389
+1008b7fec: f94247e0    	ldr	x0, [sp, #0x488]
+1008b7ff0: 97e056ac    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b7ff4: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b7ff8: a9488c22    	ldp	x2, x3, [x1, #0x88]
+1008b7ffc: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8000: eb03009f    	cmp	x4, x3
+1008b8004: 54008ac2    	b.hs	0x1008b915c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e9c>
+1008b8008: f90237e2    	str	x2, [sp, #0x468]
+1008b800c: f9413be1    	ldr	x1, [sp, #0x270]
+1008b8010: 8b010040    	add	x0, x2, x1
+1008b8014: f90233e0    	str	x0, [sp, #0x460]
+1008b8018: 97e056a2    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b801c: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8020: f9400421    	ldr	x1, [x1, #0x8]
+1008b8024: f9413be2    	ldr	x2, [sp, #0x270]
+1008b8028: f94237e3    	ldr	x3, [sp, #0x468]
+1008b802c: f8626863    	ldr	x3, [x3, x2]
+1008b8030: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b8034: eb01009f    	cmp	x4, x1
+1008b8038: 54008902    	b.hs	0x1008b9158 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e98>
+1008b803c: f902a3e3    	str	x3, [sp, #0x540]
+1008b8040: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b8044: 97e05697    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8048: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b804c: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b8050: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b8054: fd410be1    	ldr	d1, [sp, #0x210]
+1008b8058: 1e602820    	fadd	d0, d1, d0
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:391
+1008b805c: fd0067e0    	str	d0, [sp, #0xc8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:392
+1008b8060: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8064: 9103a020    	add	x0, x1, #0xe8
+1008b8068: f90213e0    	str	x0, [sp, #0x420]
+1008b806c: 97e0568d    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8070: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8074: 3943a022    	ldrb	w2, [x1, #0xe8]
+1008b8078: 36000062    	tbz	w2, #0x0, 0x1008b8084 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1dc4>
+1008b807c: aa1f03e2    	mov	x2, xzr
+1008b8080: 1400001e    	b	0x1008b80f8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1e38>
+1008b8084: f94243e0    	ldr	x0, [sp, #0x480]
+1008b8088: 97e05686    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b808c: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8090: a9530c22    	ldp	x2, x3, [x1, #0x130]
+1008b8094: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8098: eb03009f    	cmp	x4, x3
+1008b809c: 540085c2    	b.hs	0x1008b9154 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e94>
+1008b80a0: f9022be2    	str	x2, [sp, #0x450]
+1008b80a4: f9413be1    	ldr	x1, [sp, #0x270]
+1008b80a8: 8b010040    	add	x0, x2, x1
+1008b80ac: f9020fe0    	str	x0, [sp, #0x418]
+1008b80b0: 97e0567c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b80b4: f9420fe1    	ldr	x1, [sp, #0x418]
+1008b80b8: f9400421    	ldr	x1, [x1, #0x8]
+1008b80bc: f9413be2    	ldr	x2, [sp, #0x270]
+1008b80c0: f9422be3    	ldr	x3, [sp, #0x450]
+1008b80c4: f8626863    	ldr	x3, [x3, x2]
+1008b80c8: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b80cc: eb01009f    	cmp	x4, x1
+1008b80d0: 54008402    	b.hs	0x1008b9150 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e90>
+1008b80d4: f9020be3    	str	x3, [sp, #0x410]
+1008b80d8: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b80dc: 97e05671    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b80e0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b80e4: f9420be2    	ldr	x2, [sp, #0x410]
+1008b80e8: f8617842    	ldr	x2, [x2, x1, lsl #3]
+1008b80ec: f100005f    	cmp	x2, #0x0
+1008b80f0: 9a9fd7e2    	cset	x2, gt
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:395
+1008b80f4: f9433fe1    	ldr	x1, [sp, #0x678]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:392
+1008b80f8: 360006c2    	tbz	w2, #0x0, 0x1008b81d0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1f10>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:395
+1008b80fc: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b8100: f940a7e3    	ldr	x3, [sp, #0x148]
+1008b8104: 8b030c42    	add	x2, x2, x3, lsl #3
+1008b8108: f902a3e2    	str	x2, [sp, #0x540]
+1008b810c: 9101c020    	add	x0, x1, #0x70
+1008b8110: 97e05664    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8114: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8118: fd403820    	ldr	d0, [x1, #0x70]
+1008b811c: fd0137e0    	str	d0, [sp, #0x268]
+1008b8120: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b8124: 97e05673    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8128: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b812c: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b8130: fd4137e0    	ldr	d0, [sp, #0x268]
+1008b8134: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:396
+1008b8138: f94243e0    	ldr	x0, [sp, #0x480]
+1008b813c: 97e05659    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8140: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8144: a9530c22    	ldp	x2, x3, [x1, #0x130]
+1008b8148: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b814c: eb03009f    	cmp	x4, x3
+1008b8150: 54007fe2    	b.hs	0x1008b914c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e8c>
+1008b8154: f9022be2    	str	x2, [sp, #0x450]
+1008b8158: f9413be1    	ldr	x1, [sp, #0x270]
+1008b815c: 8b010040    	add	x0, x2, x1
+1008b8160: f9020fe0    	str	x0, [sp, #0x418]
+1008b8164: 97e0564f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8168: f9420fe1    	ldr	x1, [sp, #0x418]
+1008b816c: f9400421    	ldr	x1, [x1, #0x8]
+1008b8170: f9413be2    	ldr	x2, [sp, #0x270]
+1008b8174: f9422be3    	ldr	x3, [sp, #0x450]
+1008b8178: f8626863    	ldr	x3, [x3, x2]
+1008b817c: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b8180: eb01009f    	cmp	x4, x1
+1008b8184: 54007e22    	b.hs	0x1008b9148 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e88>
+1008b8188: f9020be3    	str	x3, [sp, #0x410]
+1008b818c: f9426fe1    	ldr	x1, [sp, #0x4d8]
+1008b8190: 8b040c21    	add	x1, x1, x4, lsl #3
+1008b8194: f90207e1    	str	x1, [sp, #0x408]
+1008b8198: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b819c: 97e05641    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b81a0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b81a4: f9420be2    	ldr	x2, [sp, #0x410]
+1008b81a8: f8617841    	ldr	x1, [x2, x1, lsl #3]
+1008b81ac: f9012fe1    	str	x1, [sp, #0x258]
+1008b81b0: f94207e0    	ldr	x0, [sp, #0x408]
+1008b81b4: 97e0564f    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b81b8: f9412fe1    	ldr	x1, [sp, #0x258]
+1008b81bc: d1000421    	sub	x1, x1, #0x1
+1008b81c0: f940a7e2    	ldr	x2, [sp, #0x148]
+1008b81c4: f9426fe3    	ldr	x3, [sp, #0x4d8]
+1008b81c8: f8227861    	str	x1, [x3, x2, lsl #3]
+1008b81cc: 14000092    	b	0x1008b8414 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2154>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:398
+1008b81d0: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b81d4: 97e05633    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b81d8: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b81dc: f94293e2    	ldr	x2, [sp, #0x520]
+1008b81e0: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b81e4: fd4067e1    	ldr	d1, [sp, #0xc8]
+1008b81e8: 1e613800    	fsub	d0, d0, d1
+1008b81ec: fd0063e0    	str	d0, [sp, #0xc0]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:443
+1008b81f0: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b81f4: 9102c020    	add	x0, x1, #0xb0
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:444
+1008b81f8: 1e60c000    	fabs	d0, d0
+1008b81fc: fd0137e0    	str	d0, [sp, #0x268]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:443
+1008b8200: 97e05628    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8204: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8208: fd405820    	ldr	d0, [x1, #0xb0]
+1008b820c: fd0083e0    	str	d0, [sp, #0x100]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:446
+1008b8210: f94213e0    	ldr	x0, [sp, #0x420]
+1008b8214: 97e05623    	bl	0x1000cdaa0 <_runtime.raceread>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:444
+1008b8218: 1e6e1000    	fmov	d0, #1.00000000
+1008b821c: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b8220: fd4083e2    	ldr	d2, [sp, #0x100]
+1008b8224: 1f410041    	fmadd	d1, d2, d1, d0
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:445
+1008b8228: 1e610823    	fmul	d3, d1, d1
+1008b822c: 1e631803    	fdiv	d3, d0, d3
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:446
+1008b8230: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8234: 3943a022    	ldrb	w2, [x1, #0xe8]
+1008b8238: 36000142    	tbz	w2, #0x0, 0x1008b8260 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1fa0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:447
+1008b823c: fd4063e4    	ldr	d4, [sp, #0xc0]
+1008b8240: 1e640844    	fmul	d4, d2, d4
+1008b8244: 1e611881    	fdiv	d1, d4, d1
+1008b8248: 1e612800    	fadd	d0, d0, d1
+1008b824c: 1e6c1001    	fmov	d1, #0.50000000
+1008b8250: 1e620822    	fmul	d2, d1, d2
+1008b8254: 1e610800    	fmul	d0, d0, d1
+1008b8258: 1e630843    	fmul	d3, d2, d3
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:398
+1008b825c: 14000007    	b	0x1008b8278 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1fb8>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:449
+1008b8260: fd4063e0    	ldr	d0, [sp, #0xc0]
+1008b8264: 1e602008    	fcmp	d0, #0.0
+1008b8268: 5400006b    	b.lt	0x1008b8274 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1fb4>
+1008b826c: 1e6e1000    	fmov	d0, #1.00000000
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:398
+1008b8270: 14000002    	b	0x1008b8278 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1fb8>
+1008b8274: 9e6703e0    	fmov	d0, xzr
+1008b8278: fd0077e0    	str	d0, [sp, #0xe8]
+1008b827c: fd0107e3    	str	d3, [sp, #0x208]
+1008b8280: f9428be1    	ldr	x1, [sp, #0x510]
+1008b8284: f940a7e2    	ldr	x2, [sp, #0x148]
+1008b8288: 8b020c20    	add	x0, x1, x2, lsl #3
+1008b828c: f902a3e0    	str	x0, [sp, #0x540]
+1008b8290: 97e05618    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8294: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8298: f9428be2    	ldr	x2, [sp, #0x510]
+1008b829c: fd4077e0    	ldr	d0, [sp, #0xe8]
+1008b82a0: fc217840    	str	d0, [x2, x1, lsl #3]
+1008b82a4: f94273e2    	ldr	x2, [sp, #0x4e0]
+1008b82a8: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b82ac: 97e05611    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b82b0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b82b4: f94273e2    	ldr	x2, [sp, #0x4e0]
+1008b82b8: fd4107e0    	ldr	d0, [sp, #0x208]
+1008b82bc: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:399
+1008b82c0: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b82c4: 97e055f7    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b82c8: f9427fe1    	ldr	x1, [sp, #0x4f8]
+1008b82cc: f940a7e2    	ldr	x2, [sp, #0x148]
+1008b82d0: 8b020c20    	add	x0, x1, x2, lsl #3
+1008b82d4: f90297e0    	str	x0, [sp, #0x528]
+1008b82d8: f9428be1    	ldr	x1, [sp, #0x510]
+1008b82dc: fc627820    	ldr	d0, [x1, x2, lsl #3]
+1008b82e0: fd0137e0    	str	d0, [sp, #0x268]
+1008b82e4: 97e05603    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b82e8: 1e6e1000    	fmov	d0, #1.00000000
+1008b82ec: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b82f0: 1e613800    	fsub	d0, d0, d1
+1008b82f4: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b82f8: f9427fe2    	ldr	x2, [sp, #0x4f8]
+1008b82fc: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:400
+1008b8300: f94297e0    	ldr	x0, [sp, #0x528]
+1008b8304: 97e055e7    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8308: f9428fe1    	ldr	x1, [sp, #0x518]
+1008b830c: f940a7e2    	ldr	x2, [sp, #0x148]
+1008b8310: 8b020c21    	add	x1, x1, x2, lsl #3
+1008b8314: f90297e1    	str	x1, [sp, #0x528]
+1008b8318: f9427fe1    	ldr	x1, [sp, #0x4f8]
+1008b831c: fc627820    	ldr	d0, [x1, x2, lsl #3]
+1008b8320: fd0137e0    	str	d0, [sp, #0x268]
+1008b8324: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b8328: 97e055de    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b832c: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8330: f94293e2    	ldr	x2, [sp, #0x520]
+1008b8334: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b8338: fd0133e0    	str	d0, [sp, #0x260]
+1008b833c: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b8340: 97e055d8    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8344: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8348: f9428be2    	ldr	x2, [sp, #0x510]
+1008b834c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b8350: fd0113e0    	str	d0, [sp, #0x220]
+1008b8354: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8358: 9101c020    	add	x0, x1, #0x70
+1008b835c: 97e055d1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8360: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8364: fd403820    	ldr	d0, [x1, #0x70]
+1008b8368: fd010fe0    	str	d0, [sp, #0x218]
+1008b836c: f94297e0    	ldr	x0, [sp, #0x528]
+1008b8370: 97e055e0    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8374: fd410fe0    	ldr	d0, [sp, #0x218]
+1008b8378: fd4113e1    	ldr	d1, [sp, #0x220]
+1008b837c: 1e610800    	fmul	d0, d0, d1
+1008b8380: fd4133e1    	ldr	d1, [sp, #0x260]
+1008b8384: fd4137e2    	ldr	d2, [sp, #0x268]
+1008b8388: 1f410040    	fmadd	d0, d2, d1, d0
+1008b838c: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8390: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b8394: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:401
+1008b8398: f94213e0    	ldr	x0, [sp, #0x420]
+1008b839c: 97e055c1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b83a0: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b83a4: 3943a022    	ldrb	w2, [x1, #0xe8]
+1008b83a8: 36000082    	tbz	w2, #0x0, 0x1008b83b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x20f8>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:405
+1008b83ac: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b83b0: f9428be2    	ldr	x2, [sp, #0x510]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:401
+1008b83b4: 14000018    	b	0x1008b8414 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2154>
+1008b83b8: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b83bc: 97e055b9    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b83c0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b83c4: f9428be2    	ldr	x2, [sp, #0x510]
+1008b83c8: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b83cc: 1e602008    	fcmp	d0, #0.0
+1008b83d0: 54000220    	b.eq	0x1008b8414 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2154>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:402
+1008b83d4: f9426fe2    	ldr	x2, [sp, #0x4d8]
+1008b83d8: 8b010c41    	add	x1, x2, x1, lsl #3
+1008b83dc: f9020be1    	str	x1, [sp, #0x410]
+1008b83e0: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b83e4: 9101e020    	add	x0, x1, #0x78
+1008b83e8: 97e055ae    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b83ec: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b83f0: f9403c21    	ldr	x1, [x1, #0x78]
+1008b83f4: f9012fe1    	str	x1, [sp, #0x258]
+1008b83f8: f9420be0    	ldr	x0, [sp, #0x410]
+1008b83fc: 97e055bd    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8400: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8404: f9412fe2    	ldr	x2, [sp, #0x258]
+1008b8408: f9426fe3    	ldr	x3, [sp, #0x4d8]
+1008b840c: f8217862    	str	x2, [x3, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:405
+1008b8410: f9428be2    	ldr	x2, [sp, #0x510]
+1008b8414: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8418: 91032020    	add	x0, x1, #0xc8
+1008b841c: 97e055a1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8420: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8424: fd406420    	ldr	d0, [x1, #0xc8]
+1008b8428: fd0137e0    	str	d0, [sp, #0x268]
+1008b842c: f94257e0    	ldr	x0, [sp, #0x4a8]
+1008b8430: 97e0559c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8434: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8438: a94e8c22    	ldp	x2, x3, [x1, #0xe8]
+1008b843c: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8440: eb03009f    	cmp	x4, x3
+1008b8444: 54006802    	b.hs	0x1008b9144 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e84>
+1008b8448: f90237e2    	str	x2, [sp, #0x468]
+1008b844c: f9413be1    	ldr	x1, [sp, #0x270]
+1008b8450: 8b020020    	add	x0, x1, x2
+1008b8454: f90233e0    	str	x0, [sp, #0x460]
+1008b8458: 97e05592    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b845c: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8460: f9400421    	ldr	x1, [x1, #0x8]
+1008b8464: f9413be2    	ldr	x2, [sp, #0x270]
+1008b8468: f94237e3    	ldr	x3, [sp, #0x468]
+1008b846c: f8626863    	ldr	x3, [x3, x2]
+1008b8470: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b8474: eb01009f    	cmp	x4, x1
+1008b8478: 54006642    	b.hs	0x1008b9140 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e80>
+1008b847c: f902a3e3    	str	x3, [sp, #0x540]
+1008b8480: f94287e1    	ldr	x1, [sp, #0x508]
+1008b8484: 8b040c21    	add	x1, x1, x4, lsl #3
+1008b8488: f90297e1    	str	x1, [sp, #0x528]
+1008b848c: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b8490: 97e05584    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8494: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8498: f942a3e2    	ldr	x2, [sp, #0x540]
+1008b849c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b84a0: fd0133e0    	str	d0, [sp, #0x260]
+1008b84a4: f9428be2    	ldr	x2, [sp, #0x510]
+1008b84a8: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b84ac: f902a3e0    	str	x0, [sp, #0x540]
+1008b84b0: 97e0557c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b84b4: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b84b8: f9428be2    	ldr	x2, [sp, #0x510]
+1008b84bc: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b84c0: fd0113e0    	str	d0, [sp, #0x220]
+1008b84c4: f94297e0    	ldr	x0, [sp, #0x528]
+1008b84c8: 97e0558a    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b84cc: fd4113e0    	ldr	d0, [sp, #0x220]
+1008b84d0: fd4133e1    	ldr	d1, [sp, #0x260]
+1008b84d4: fd4137e2    	ldr	d2, [sp, #0x268]
+1008b84d8: 1f410040    	fmadd	d0, d2, d1, d0
+1008b84dc: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b84e0: f94287e2    	ldr	x2, [sp, #0x508]
+1008b84e4: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:406
+1008b84e8: f94217e0    	ldr	x0, [sp, #0x428]
+1008b84ec: 97e0556d    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b84f0: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b84f4: 39420022    	ldrb	w2, [x1, #0x80]
+1008b84f8: 37000082    	tbnz	w2, #0x0, 0x1008b8508 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2248>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b84fc: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8500: f94283e2    	ldr	x2, [sp, #0x500]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:406
+1008b8504: 1400003b    	b	0x1008b85f0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2330>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:407
+1008b8508: 91034020    	add	x0, x1, #0xd0
+1008b850c: 97e05565    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8510: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8514: fd406820    	ldr	d0, [x1, #0xd0]
+1008b8518: fd0137e0    	str	d0, [sp, #0x268]
+1008b851c: f9424fe0    	ldr	x0, [sp, #0x498]
+1008b8520: 97e05560    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8524: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8528: a9518c22    	ldp	x2, x3, [x1, #0x118]
+1008b852c: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8530: eb03009f    	cmp	x4, x3
+1008b8534: 54006042    	b.hs	0x1008b913c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e7c>
+1008b8538: f90237e2    	str	x2, [sp, #0x468]
+1008b853c: f9413be1    	ldr	x1, [sp, #0x270]
+1008b8540: 8b010040    	add	x0, x2, x1
+1008b8544: f90233e0    	str	x0, [sp, #0x460]
+1008b8548: 97e05556    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b854c: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8550: f9400421    	ldr	x1, [x1, #0x8]
+1008b8554: f9413be2    	ldr	x2, [sp, #0x270]
+1008b8558: f94237e3    	ldr	x3, [sp, #0x468]
+1008b855c: f8626863    	ldr	x3, [x3, x2]
+1008b8560: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b8564: eb01009f    	cmp	x4, x1
+1008b8568: 54005e82    	b.hs	0x1008b9138 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e78>
+1008b856c: f90203e3    	str	x3, [sp, #0x400]
+1008b8570: f94283e1    	ldr	x1, [sp, #0x500]
+1008b8574: 8b040c21    	add	x1, x1, x4, lsl #3
+1008b8578: f901ffe1    	str	x1, [sp, #0x3f8]
+1008b857c: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b8580: 97e05548    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8584: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8588: f94203e2    	ldr	x2, [sp, #0x400]
+1008b858c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b8590: fd0133e0    	str	d0, [sp, #0x260]
+1008b8594: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8598: 91024020    	add	x0, x1, #0x90
+1008b859c: 97e05541    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b85a0: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b85a4: fd404820    	ldr	d0, [x1, #0x90]
+1008b85a8: fd0113e0    	str	d0, [sp, #0x220]
+1008b85ac: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b85b0: 97e0553c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b85b4: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b85b8: f9428be2    	ldr	x2, [sp, #0x510]
+1008b85bc: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b85c0: fd010fe0    	str	d0, [sp, #0x218]
+1008b85c4: f941ffe0    	ldr	x0, [sp, #0x3f8]
+1008b85c8: 97e0554a    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b85cc: fd4113e0    	ldr	d0, [sp, #0x220]
+1008b85d0: fd410fe1    	ldr	d1, [sp, #0x218]
+1008b85d4: 1e610800    	fmul	d0, d0, d1
+1008b85d8: fd4133e1    	ldr	d1, [sp, #0x260]
+1008b85dc: fd4137e2    	ldr	d2, [sp, #0x268]
+1008b85e0: 1f410040    	fmadd	d0, d2, d1, d0
+1008b85e4: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b85e8: f94283e2    	ldr	x2, [sp, #0x500]
+1008b85ec: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:409
+1008b85f0: 39421fe0    	ldrb	w0, [sp, #0x87]
+1008b85f4: 360010c0    	tbz	w0, #0x0, 0x1008b880c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x254c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:410
+1008b85f8: f9424be0    	ldr	x0, [sp, #0x490]
+1008b85fc: 97e05529    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8600: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8604: a9470c22    	ldp	x2, x3, [x1, #0x70]
+1008b8608: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b860c: eb03009f    	cmp	x4, x3
+1008b8610: 54005922    	b.hs	0x1008b9134 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e74>
+1008b8614: f90237e2    	str	x2, [sp, #0x468]
+1008b8618: f9413be1    	ldr	x1, [sp, #0x270]
+1008b861c: 8b020020    	add	x0, x1, x2
+1008b8620: f90233e0    	str	x0, [sp, #0x460]
+1008b8624: 97e0551f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8628: f94233e1    	ldr	x1, [sp, #0x460]
+1008b862c: f9400421    	ldr	x1, [x1, #0x8]
+1008b8630: f9413be2    	ldr	x2, [sp, #0x270]
+1008b8634: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8638: f8626863    	ldr	x3, [x3, x2]
+1008b863c: f940a7e4    	ldr	x4, [sp, #0x148]
+1008b8640: eb01009f    	cmp	x4, x1
+1008b8644: 54005762    	b.hs	0x1008b9130 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e70>
+1008b8648: f90203e3    	str	x3, [sp, #0x400]
+1008b864c: 8b040c60    	add	x0, x3, x4, lsl #3
+1008b8650: 97e05514    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8654: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8658: f94203e2    	ldr	x2, [sp, #0x400]
+1008b865c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b8660: fd008be0    	str	d0, [sp, #0x110]
+1008b8664: f94247e0    	ldr	x0, [sp, #0x488]
+1008b8668: 97e0550e    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b866c: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8670: a9488c22    	ldp	x2, x3, [x1, #0x88]
+1008b8674: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8678: eb03009f    	cmp	x4, x3
+1008b867c: 54005582    	b.hs	0x1008b912c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e6c>
+1008b8680: f90237e2    	str	x2, [sp, #0x468]
+1008b8684: f9413be1    	ldr	x1, [sp, #0x270]
+1008b8688: 8b010040    	add	x0, x2, x1
+1008b868c: f90233e0    	str	x0, [sp, #0x460]
+1008b8690: 97e05504    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8694: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8698: f9400421    	ldr	x1, [x1, #0x8]
+1008b869c: f9413be2    	ldr	x2, [sp, #0x270]
+1008b86a0: f94237e3    	ldr	x3, [sp, #0x468]
+1008b86a4: f8626862    	ldr	x2, [x3, x2]
+1008b86a8: f940a7e3    	ldr	x3, [sp, #0x148]
+1008b86ac: eb01007f    	cmp	x3, x1
+1008b86b0: 540053c2    	b.hs	0x1008b9128 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e68>
+1008b86b4: f90203e2    	str	x2, [sp, #0x400]
+1008b86b8: 8b030c40    	add	x0, x2, x3, lsl #3
+1008b86bc: 97e054f9    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b86c0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b86c4: f94203e2    	ldr	x2, [sp, #0x400]
+1008b86c8: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b86cc: fd008fe0    	str	d0, [sp, #0x118]
+1008b86d0: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b86d4: 97e054f3    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b86d8: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b86dc: f9428be2    	ldr	x2, [sp, #0x510]
+1008b86e0: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:246
+1008b86e4: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b86e8: 91036022    	add	x2, x1, #0xd8
+1008b86ec: f902a3e2    	str	x2, [sp, #0x540]
+1008b86f0: fd408be1    	ldr	d1, [sp, #0x110]
+1008b86f4: 1e613800    	fsub	d0, d0, d1
+1008b86f8: fd0137e0    	str	d0, [sp, #0x268]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:247
+1008b86fc: 91038021    	add	x1, x1, #0xe0
+1008b8700: f90203e1    	str	x1, [sp, #0x400]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:245
+1008b8704: f94227e0    	ldr	x0, [sp, #0x448]
+1008b8708: 97e054e6    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b870c: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8710: f9404c21    	ldr	x1, [x1, #0x98]
+1008b8714: f901a3e1    	str	x1, [sp, #0x340]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:246
+1008b8718: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b871c: 97e054e1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8720: f9433fe1    	ldr	x1, [sp, #0x678]
+1008b8724: fd406c20    	ldr	d0, [x1, #0xd8]
+1008b8728: fd0133e0    	str	d0, [sp, #0x260]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:247
+1008b872c: f94203e0    	ldr	x0, [sp, #0x400]
+1008b8730: 97e054dc    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8734: f941a3e1    	ldr	x1, [sp, #0x340]
+1008b8738: 3980003b    	ldrsb	x27, [x1]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:246
+1008b873c: fd408be0    	ldr	d0, [sp, #0x110]
+1008b8740: fd4133e1    	ldr	d1, [sp, #0x260]
+1008b8744: fd4137e2    	ldr	d2, [sp, #0x268]
+1008b8748: 1f410040    	fmadd	d0, d2, d1, d0
+1008b874c: fd0093e0    	str	d0, [sp, #0x120]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:247
+1008b8750: f9433fe2    	ldr	x2, [sp, #0x678]
+1008b8754: fd407040    	ldr	d0, [x2, #0xe0]
+1008b8758: fd0137e0    	str	d0, [sp, #0x268]
+1008b875c: 91004020    	add	x0, x1, #0x10
+1008b8760: 97e054d0    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8764: f941a3e1    	ldr	x1, [sp, #0x340]
+1008b8768: fd400820    	ldr	d0, [x1, #0x10]
+1008b876c: fd4093e1    	ldr	d1, [sp, #0x120]
+1008b8770: 1e603820    	fsub	d0, d1, d0
+1008b8774: fd408fe2    	ldr	d2, [sp, #0x118]
+1008b8778: fd4137e3    	ldr	d3, [sp, #0x268]
+1008b877c: 1f400860    	fmadd	d0, d3, d0, d2
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:250
+1008b8780: 1e602008    	fcmp	d0, #0.0
+1008b8784: 54000065    	b.pl	0x1008b8790 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x24d0>
+1008b8788: 9e6703e0    	fmov	d0, xzr
+1008b878c: 14000010    	b	0x1008b87cc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x250c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:247
+1008b8790: fd007fe0    	str	d0, [sp, #0xf8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:252
+1008b8794: 91008020    	add	x0, x1, #0x20
+1008b8798: f902a3e0    	str	x0, [sp, #0x540]
+1008b879c: 97e054c1    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b87a0: f941a3e1    	ldr	x1, [sp, #0x340]
+1008b87a4: fd401020    	ldr	d0, [x1, #0x20]
+1008b87a8: fd407fe1    	ldr	d1, [sp, #0xf8]
+1008b87ac: 1e612000    	fcmp	d0, d1
+1008b87b0: 540000c5    	b.pl	0x1008b87c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2508>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:253
+1008b87b4: f942a3e0    	ldr	x0, [sp, #0x540]
+1008b87b8: 97e054ba    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b87bc: f941a3e1    	ldr	x1, [sp, #0x340]
+1008b87c0: fd401020    	ldr	d0, [x1, #0x20]
+1008b87c4: 1e604001    	fmov	d1, d0
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:410
+1008b87c8: 1e604020    	fmov	d0, d1
+1008b87cc: fd007fe0    	str	d0, [sp, #0xf8]
+1008b87d0: f9427be1    	ldr	x1, [sp, #0x4f0]
+1008b87d4: f940a7e2    	ldr	x2, [sp, #0x148]
+1008b87d8: 8b020c20    	add	x0, x1, x2, lsl #3
+1008b87dc: 97e054c5    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b87e0: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b87e4: f9427be2    	ldr	x2, [sp, #0x4f0]
+1008b87e8: fd4093e0    	ldr	d0, [sp, #0x120]
+1008b87ec: fc217840    	str	d0, [x2, x1, lsl #3]
+1008b87f0: f94277e2    	ldr	x2, [sp, #0x4e8]
+1008b87f4: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b87f8: 97e054be    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b87fc: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8800: f94277e2    	ldr	x2, [sp, #0x4e8]
+1008b8804: fd407fe0    	ldr	d0, [sp, #0xf8]
+1008b8808: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b880c: f942a7e0    	ldr	x0, [sp, #0x548]
+1008b8810: 97e054a4    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8814: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8818: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b881c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:52
+1008b8820: 1e60c000    	fabs	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8824: d503201f    	nop
+; /usr/local/go/src/math/bits.go:56
+1008b8828: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b882c: fd405761    	ldr	d1, [x27, #0xa8]
+1008b8830: 1e612000    	fcmp	d0, d1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8834: 54000069    	b.ls	0x1008b8840 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2580>
+1008b8838: b24003e3    	orr	x3, xzr, #0x1
+1008b883c: 14000012    	b	0x1008b8884 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x25c4>
+1008b8840: f9429fe0    	ldr	x0, [sp, #0x538]
+1008b8844: 97e05497    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8848: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b884c: f94293e2    	ldr	x2, [sp, #0x520]
+1008b8850: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b8854: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8858: 54000060    	b.eq	0x1008b8864 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x25a4>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b885c: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8860: 14000007    	b	0x1008b887c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x25bc>
+; /usr/local/go/src/math/bits.go:52
+1008b8864: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b8868: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b886c: fd405761    	ldr	d1, [x27, #0xa8]
+1008b8870: 1e602020    	fcmp	d1, d0
+1008b8874: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8878: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b887c: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b8880: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8884: 36000063    	tbz	w3, #0x0, 0x1008b8890 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x25d0>
+1008b8888: b24003e3    	orr	x3, xzr, #0x1
+1008b888c: 14000013    	b	0x1008b88d8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2618>
+1008b8890: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b8894: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b8898: 97e05482    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b889c: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b88a0: f9428fe2    	ldr	x2, [sp, #0x518]
+1008b88a4: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b88a8: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b88ac: 54000060    	b.eq	0x1008b88b8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x25f8>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b88b0: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b88b4: 14000007    	b	0x1008b88d0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2610>
+; /usr/local/go/src/math/bits.go:52
+1008b88b8: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b88bc: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b88c0: fd405761    	ldr	d1, [x27, #0xa8]
+1008b88c4: 1e602020    	fcmp	d1, d0
+1008b88c8: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b88cc: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b88d0: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b88d4: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b88d8: 36000063    	tbz	w3, #0x0, 0x1008b88e4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2624>
+1008b88dc: b24003e3    	orr	x3, xzr, #0x1
+1008b88e0: 14000012    	b	0x1008b8928 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2668>
+1008b88e4: f94297e0    	ldr	x0, [sp, #0x528]
+1008b88e8: 97e0546e    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b88ec: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b88f0: f94287e2    	ldr	x2, [sp, #0x508]
+1008b88f4: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b88f8: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b88fc: 54000060    	b.eq	0x1008b8908 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2648>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8900: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8904: 14000007    	b	0x1008b8920 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2660>
+; /usr/local/go/src/math/bits.go:52
+1008b8908: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b890c: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b8910: fd405761    	ldr	d1, [x27, #0xa8]
+1008b8914: 1e602020    	fcmp	d1, d0
+1008b8918: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b891c: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8920: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b8924: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8928: 36000063    	tbz	w3, #0x0, 0x1008b8934 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2674>
+1008b892c: b24003e3    	orr	x3, xzr, #0x1
+1008b8930: 14000013    	b	0x1008b897c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x26bc>
+1008b8934: f94283e2    	ldr	x2, [sp, #0x500]
+1008b8938: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b893c: 97e05459    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8940: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8944: f94283e2    	ldr	x2, [sp, #0x500]
+1008b8948: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b894c: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8950: 54000060    	b.eq	0x1008b895c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x269c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8954: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8958: 14000007    	b	0x1008b8974 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x26b4>
+; /usr/local/go/src/math/bits.go:52
+1008b895c: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b8960: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b8964: fd405761    	ldr	d1, [x27, #0xa8]
+1008b8968: 1e602020    	fcmp	d1, d0
+1008b896c: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8970: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8974: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b8978: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b897c: 36000063    	tbz	w3, #0x0, 0x1008b8988 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x26c8>
+1008b8980: b24003e3    	orr	x3, xzr, #0x1
+1008b8984: 14000013    	b	0x1008b89d0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2710>
+1008b8988: f9427be2    	ldr	x2, [sp, #0x4f0]
+1008b898c: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b8990: 97e05444    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8994: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b8998: f9427be2    	ldr	x2, [sp, #0x4f0]
+1008b899c: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b89a0: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b89a4: 54000060    	b.eq	0x1008b89b0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x26f0>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b89a8: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b89ac: 14000007    	b	0x1008b89c8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2708>
+; /usr/local/go/src/math/bits.go:52
+1008b89b0: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b89b4: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b89b8: fd405761    	ldr	d1, [x27, #0xa8]
+1008b89bc: 1e602020    	fcmp	d1, d0
+1008b89c0: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b89c4: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b89c8: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b89cc: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b89d0: 36000063    	tbz	w3, #0x0, 0x1008b89dc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x271c>
+1008b89d4: b24003e3    	orr	x3, xzr, #0x1
+1008b89d8: 14000013    	b	0x1008b8a24 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2764>
+1008b89dc: f94277e2    	ldr	x2, [sp, #0x4e8]
+1008b89e0: 8b010c40    	add	x0, x2, x1, lsl #3
+1008b89e4: 97e0542f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b89e8: f940a7e1    	ldr	x1, [sp, #0x148]
+1008b89ec: f94277e2    	ldr	x2, [sp, #0x4e8]
+1008b89f0: fc617840    	ldr	d0, [x2, x1, lsl #3]
+; /usr/local/go/src/math/bits.go:39
+1008b89f4: 1e602000    	fcmp	d0, d0
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b89f8: 54000060    	b.eq	0x1008b8a04 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2744>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b89fc: aa1f03e3    	mov	x3, xzr
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8a00: 14000007    	b	0x1008b8a1c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x275c>
+; /usr/local/go/src/math/bits.go:52
+1008b8a04: 1e60c000    	fabs	d0, d0
+; /usr/local/go/src/math/bits.go:56
+1008b8a08: 900007fb    	adrp	x27, 0x1009b4000 <_$f32.3f4ccccd+0x4>
+1008b8a0c: fd405761    	ldr	d1, [x27, #0xa8]
+1008b8a10: 1e602020    	fcmp	d1, d0
+1008b8a14: 9a9f57e3    	cset	x3, mi
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:505
+1008b8a18: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8a1c: d2400063    	eor	x3, x3, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b8a20: f941efe2    	ldr	x2, [sp, #0x3d8]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:412
+1008b8a24: 36079b83    	tbz	w3, #0x0, 0x1008b7d94 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x1ad4>
+1008b8a28: 14000178    	b	0x1008b9008 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2d48>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:416
+1008b8a2c: f9425fe0    	ldr	x0, [sp, #0x4b8]
+1008b8a30: 97e0541c    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8a34: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8a38: a94b8821    	ldp	x1, x2, [x1, #0xb8]
+1008b8a3c: f90237e1    	str	x1, [sp, #0x468]
+1008b8a40: f9013be2    	str	x2, [sp, #0x270]
+1008b8a44: f9423fe0    	ldr	x0, [sp, #0x478]
+1008b8a48: 97e05416    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8a4c: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8a50: a9548821    	ldp	x1, x2, [x1, #0x148]
+1008b8a54: f90233e1    	str	x1, [sp, #0x460]
+1008b8a58: f9012fe2    	str	x2, [sp, #0x258]
+1008b8a5c: f9423be0    	ldr	x0, [sp, #0x470]
+1008b8a60: 97e05410    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8a64: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8a68: a9560821    	ldp	x1, x2, [x1, #0x160]
+1008b8a6c: f9022fe1    	str	x1, [sp, #0x458]
+1008b8a70: f9012be2    	str	x2, [sp, #0x250]
+1008b8a74: f9425be0    	ldr	x0, [sp, #0x4b0]
+1008b8a78: 97e0540a    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8a7c: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8a80: a94d0c22    	ldp	x2, x3, [x1, #0xd0]
+1008b8a84: f9406fe4    	ldr	x4, [sp, #0xd8]
+1008b8a88: eb03009f    	cmp	x4, x3
+1008b8a8c: 540034c2    	b.hs	0x1008b9124 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e64>
+1008b8a90: f901fbe2    	str	x2, [sp, #0x3f0]
+1008b8a94: d37df081    	lsl	x1, x4, #3
+1008b8a98: 8b010421    	add	x1, x1, x1, lsl #1
+1008b8a9c: f90127e1    	str	x1, [sp, #0x248]
+1008b8aa0: 8b010040    	add	x0, x2, x1
+1008b8aa4: f901f7e0    	str	x0, [sp, #0x3e8]
+1008b8aa8: 97e05412    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8aac: f940ffe1    	ldr	x1, [sp, #0x1f8]
+1008b8ab0: f94103e2    	ldr	x2, [sp, #0x200]
+1008b8ab4: f941f7e3    	ldr	x3, [sp, #0x3e8]
+1008b8ab8: a9008861    	stp	x1, x2, [x3, #0x8]
+1008b8abc: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8ac0: b9451361    	ldr	w1, [x27, #0x510]
+1008b8ac4: 350000a1    	cbnz	w1, 0x1008b8ad8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2818>
+1008b8ac8: f94127e1    	ldr	x1, [sp, #0x248]
+1008b8acc: f941fbe2    	ldr	x2, [sp, #0x3f0]
+1008b8ad0: f941efe4    	ldr	x4, [sp, #0x3d8]
+1008b8ad4: 14000007    	b	0x1008b8af0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2830>
+1008b8ad8: f94127e1    	ldr	x1, [sp, #0x248]
+1008b8adc: f941fbe2    	ldr	x2, [sp, #0x3f0]
+1008b8ae0: f8616843    	ldr	x3, [x2, x1]
+1008b8ae4: 97e05163    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8ae8: f941efe4    	ldr	x4, [sp, #0x3d8]
+1008b8aec: a9000f24    	stp	x4, x3, [x25]
+1008b8af0: f8216844    	str	x4, [x2, x1]
+1008b8af4: f9406fe2    	ldr	x2, [sp, #0xd8]
+1008b8af8: f9413be3    	ldr	x3, [sp, #0x270]
+1008b8afc: eb03005f    	cmp	x2, x3
+1008b8b00: 54003102    	b.hs	0x1008b9120 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e60>
+1008b8b04: f94237e2    	ldr	x2, [sp, #0x468]
+1008b8b08: 8b010040    	add	x0, x2, x1
+1008b8b0c: f901fbe0    	str	x0, [sp, #0x3f0]
+1008b8b10: 97e053f8    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8b14: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8b18: f941fbe2    	ldr	x2, [sp, #0x3f0]
+1008b8b1c: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8b20: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8b24: b9451362    	ldr	w2, [x27, #0x510]
+1008b8b28: 350000a2    	cbnz	w2, 0x1008b8b3c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x287c>
+1008b8b2c: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8b30: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8b34: f94293e5    	ldr	x5, [sp, #0x520]
+1008b8b38: 14000007    	b	0x1008b8b54 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2894>
+1008b8b3c: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8b40: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8b44: f8626864    	ldr	x4, [x3, x2]
+1008b8b48: 97e0514a    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8b4c: f94293e5    	ldr	x5, [sp, #0x520]
+1008b8b50: a9001325    	stp	x5, x4, [x25]
+1008b8b54: f8226865    	str	x5, [x3, x2]
+1008b8b58: f9406fe3    	ldr	x3, [sp, #0xd8]
+1008b8b5c: f9412fe4    	ldr	x4, [sp, #0x258]
+1008b8b60: eb04007f    	cmp	x3, x4
+1008b8b64: 54002dc2    	b.hs	0x1008b911c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e5c>
+1008b8b68: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8b6c: 8b020020    	add	x0, x1, x2
+1008b8b70: f90237e0    	str	x0, [sp, #0x468]
+1008b8b74: 97e053df    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8b78: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8b7c: f94237e2    	ldr	x2, [sp, #0x468]
+1008b8b80: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8b84: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8b88: b9451362    	ldr	w2, [x27, #0x510]
+1008b8b8c: 350000a2    	cbnz	w2, 0x1008b8ba0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x28e0>
+1008b8b90: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8b94: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8b98: f9427fe5    	ldr	x5, [sp, #0x4f8]
+1008b8b9c: 14000007    	b	0x1008b8bb8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x28f8>
+1008b8ba0: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8ba4: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8ba8: f8626864    	ldr	x4, [x3, x2]
+1008b8bac: 97e05131    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8bb0: f9427fe5    	ldr	x5, [sp, #0x4f8]
+1008b8bb4: a9001325    	stp	x5, x4, [x25]
+1008b8bb8: f8226865    	str	x5, [x3, x2]
+1008b8bbc: f9406fe3    	ldr	x3, [sp, #0xd8]
+1008b8bc0: f9412be4    	ldr	x4, [sp, #0x250]
+1008b8bc4: eb04007f    	cmp	x3, x4
+1008b8bc8: 54002a82    	b.hs	0x1008b9118 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e58>
+1008b8bcc: f9422fe1    	ldr	x1, [sp, #0x458]
+1008b8bd0: 8b020020    	add	x0, x1, x2
+1008b8bd4: f90237e0    	str	x0, [sp, #0x468]
+1008b8bd8: 97e053c6    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8bdc: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8be0: f94237e2    	ldr	x2, [sp, #0x468]
+1008b8be4: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8be8: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8bec: b9451362    	ldr	w2, [x27, #0x510]
+1008b8bf0: 350000a2    	cbnz	w2, 0x1008b8c04 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2944>
+1008b8bf4: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8bf8: f9422fe3    	ldr	x3, [sp, #0x458]
+1008b8bfc: f94273e5    	ldr	x5, [sp, #0x4e0]
+1008b8c00: 14000007    	b	0x1008b8c1c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x295c>
+1008b8c04: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8c08: f9422fe3    	ldr	x3, [sp, #0x458]
+1008b8c0c: f8626864    	ldr	x4, [x3, x2]
+1008b8c10: 97e05118    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8c14: f94273e5    	ldr	x5, [sp, #0x4e0]
+1008b8c18: a9001325    	stp	x5, x4, [x25]
+1008b8c1c: f8226865    	str	x5, [x3, x2]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:417
+1008b8c20: f94253e0    	ldr	x0, [sp, #0x4a0]
+1008b8c24: 97e0539f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8c28: f9406fe1    	ldr	x1, [sp, #0xd8]
+1008b8c2c: 91000421    	add	x1, x1, #0x1
+1008b8c30: f9013be1    	str	x1, [sp, #0x270]
+1008b8c34: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8c38: a9500821    	ldp	x1, x2, [x1, #0x100]
+1008b8c3c: f90237e1    	str	x1, [sp, #0x468]
+1008b8c40: f9012fe2    	str	x2, [sp, #0x258]
+1008b8c44: f94257e0    	ldr	x0, [sp, #0x4a8]
+1008b8c48: 97e05396    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8c4c: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8c50: a94e8821    	ldp	x1, x2, [x1, #0xe8]
+1008b8c54: f90233e1    	str	x1, [sp, #0x460]
+1008b8c58: f9012be2    	str	x2, [sp, #0x250]
+1008b8c5c: f94263e0    	ldr	x0, [sp, #0x4c0]
+1008b8c60: 97e05390    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8c64: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8c68: a94a0c22    	ldp	x2, x3, [x1, #0xa0]
+1008b8c6c: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8c70: eb04007f    	cmp	x3, x4
+1008b8c74: 54002509    	b.ls	0x1008b9114 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e54>
+1008b8c78: f9022fe2    	str	x2, [sp, #0x458]
+1008b8c7c: f94127e1    	ldr	x1, [sp, #0x248]
+1008b8c80: 91006021    	add	x1, x1, #0x18
+1008b8c84: f90127e1    	str	x1, [sp, #0x248]
+1008b8c88: 8b020020    	add	x0, x1, x2
+1008b8c8c: f901fbe0    	str	x0, [sp, #0x3f0]
+1008b8c90: 97e05398    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8c94: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8c98: f941fbe2    	ldr	x2, [sp, #0x3f0]
+1008b8c9c: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8ca0: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8ca4: b9451362    	ldr	w2, [x27, #0x510]
+1008b8ca8: 350000a2    	cbnz	w2, 0x1008b8cbc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x29fc>
+1008b8cac: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8cb0: f9422fe3    	ldr	x3, [sp, #0x458]
+1008b8cb4: f9428fe5    	ldr	x5, [sp, #0x518]
+1008b8cb8: 14000007    	b	0x1008b8cd4 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2a14>
+1008b8cbc: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8cc0: f9422fe3    	ldr	x3, [sp, #0x458]
+1008b8cc4: f8626864    	ldr	x4, [x3, x2]
+1008b8cc8: 97e050ea    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8ccc: f9428fe5    	ldr	x5, [sp, #0x518]
+1008b8cd0: a9001325    	stp	x5, x4, [x25]
+1008b8cd4: f8226865    	str	x5, [x3, x2]
+1008b8cd8: f9412fe3    	ldr	x3, [sp, #0x258]
+1008b8cdc: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8ce0: eb04007f    	cmp	x3, x4
+1008b8ce4: 54002169    	b.ls	0x1008b9110 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e50>
+1008b8ce8: f94237e1    	ldr	x1, [sp, #0x468]
+1008b8cec: 8b010040    	add	x0, x2, x1
+1008b8cf0: f9022fe0    	str	x0, [sp, #0x458]
+1008b8cf4: 97e0537f    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8cf8: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8cfc: f9422fe2    	ldr	x2, [sp, #0x458]
+1008b8d00: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8d04: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8d08: b9451362    	ldr	w2, [x27, #0x510]
+1008b8d0c: 350000a2    	cbnz	w2, 0x1008b8d20 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2a60>
+1008b8d10: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8d14: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8d18: f9428be5    	ldr	x5, [sp, #0x510]
+1008b8d1c: 14000007    	b	0x1008b8d38 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2a78>
+1008b8d20: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8d24: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8d28: f8626864    	ldr	x4, [x3, x2]
+1008b8d2c: 97e050d1    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8d30: f9428be5    	ldr	x5, [sp, #0x510]
+1008b8d34: a9001325    	stp	x5, x4, [x25]
+1008b8d38: f8226865    	str	x5, [x3, x2]
+1008b8d3c: f9412be3    	ldr	x3, [sp, #0x250]
+1008b8d40: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8d44: eb04007f    	cmp	x3, x4
+1008b8d48: 54001e29    	b.ls	0x1008b910c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e4c>
+1008b8d4c: f94233e1    	ldr	x1, [sp, #0x460]
+1008b8d50: 8b010040    	add	x0, x2, x1
+1008b8d54: f90237e0    	str	x0, [sp, #0x468]
+1008b8d58: 97e05366    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8d5c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8d60: f94237e2    	ldr	x2, [sp, #0x468]
+1008b8d64: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8d68: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8d6c: b9451362    	ldr	w2, [x27, #0x510]
+1008b8d70: 350000a2    	cbnz	w2, 0x1008b8d84 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ac4>
+1008b8d74: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8d78: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8d7c: f94287e5    	ldr	x5, [sp, #0x508]
+1008b8d80: 14000007    	b	0x1008b8d9c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2adc>
+1008b8d84: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8d88: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8d8c: f8626864    	ldr	x4, [x3, x2]
+1008b8d90: 97e050b8    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8d94: f94287e5    	ldr	x5, [sp, #0x508]
+1008b8d98: a9001325    	stp	x5, x4, [x25]
+1008b8d9c: f8226865    	str	x5, [x3, x2]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:418
+1008b8da0: f94243e0    	ldr	x0, [sp, #0x480]
+1008b8da4: 97e0533f    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8da8: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8dac: a9530821    	ldp	x1, x2, [x1, #0x130]
+1008b8db0: f9022be1    	str	x1, [sp, #0x450]
+1008b8db4: f9012fe2    	str	x2, [sp, #0x258]
+1008b8db8: f9424fe0    	ldr	x0, [sp, #0x498]
+1008b8dbc: 97e05339    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8dc0: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8dc4: a9518c22    	ldp	x2, x3, [x1, #0x118]
+1008b8dc8: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8dcc: eb04007f    	cmp	x3, x4
+1008b8dd0: 540019c9    	b.ls	0x1008b9108 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e48>
+1008b8dd4: f90237e2    	str	x2, [sp, #0x468]
+1008b8dd8: f94127e1    	ldr	x1, [sp, #0x248]
+1008b8ddc: 8b020020    	add	x0, x1, x2
+1008b8de0: f90233e0    	str	x0, [sp, #0x460]
+1008b8de4: 97e05343    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8de8: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8dec: f94233e2    	ldr	x2, [sp, #0x460]
+1008b8df0: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8df4: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8df8: b9451362    	ldr	w2, [x27, #0x510]
+1008b8dfc: 350000a2    	cbnz	w2, 0x1008b8e10 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2b50>
+1008b8e00: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8e04: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8e08: f94283e5    	ldr	x5, [sp, #0x500]
+1008b8e0c: 14000007    	b	0x1008b8e28 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2b68>
+1008b8e10: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8e14: f94237e3    	ldr	x3, [sp, #0x468]
+1008b8e18: f8626864    	ldr	x4, [x3, x2]
+1008b8e1c: 97e05095    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8e20: f94283e5    	ldr	x5, [sp, #0x500]
+1008b8e24: a9001325    	stp	x5, x4, [x25]
+1008b8e28: f8226865    	str	x5, [x3, x2]
+1008b8e2c: f9412fe3    	ldr	x3, [sp, #0x258]
+1008b8e30: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8e34: eb04007f    	cmp	x3, x4
+1008b8e38: 54001669    	b.ls	0x1008b9104 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e44>
+1008b8e3c: f9422be1    	ldr	x1, [sp, #0x450]
+1008b8e40: 8b010040    	add	x0, x2, x1
+1008b8e44: f9020fe0    	str	x0, [sp, #0x418]
+1008b8e48: 97e0532a    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8e4c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8e50: f9420fe2    	ldr	x2, [sp, #0x418]
+1008b8e54: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8e58: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8e5c: b9451362    	ldr	w2, [x27, #0x510]
+1008b8e60: 350000a2    	cbnz	w2, 0x1008b8e74 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2bb4>
+1008b8e64: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8e68: f9422be3    	ldr	x3, [sp, #0x450]
+1008b8e6c: f9426fe5    	ldr	x5, [sp, #0x4d8]
+1008b8e70: 14000007    	b	0x1008b8e8c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2bcc>
+1008b8e74: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8e78: f9422be3    	ldr	x3, [sp, #0x450]
+1008b8e7c: f8626864    	ldr	x4, [x3, x2]
+1008b8e80: 97e0507c    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8e84: f9426fe5    	ldr	x5, [sp, #0x4d8]
+1008b8e88: a9001325    	stp	x5, x4, [x25]
+1008b8e8c: f8226865    	str	x5, [x3, x2]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:419
+1008b8e90: f94247e0    	ldr	x0, [sp, #0x488]
+1008b8e94: 97e05303    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8e98: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8e9c: a9488821    	ldp	x1, x2, [x1, #0x88]
+1008b8ea0: f9012fe2    	str	x2, [sp, #0x258]
+1008b8ea4: f90237e1    	str	x1, [sp, #0x468]
+1008b8ea8: f9424be0    	ldr	x0, [sp, #0x490]
+1008b8eac: 97e052fd    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b8eb0: f9415be1    	ldr	x1, [sp, #0x2b0]
+1008b8eb4: a9470c22    	ldp	x2, x3, [x1, #0x70]
+1008b8eb8: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8ebc: eb04007f    	cmp	x3, x4
+1008b8ec0: 54001209    	b.ls	0x1008b9100 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e40>
+1008b8ec4: f90233e2    	str	x2, [sp, #0x460]
+1008b8ec8: f94127e1    	ldr	x1, [sp, #0x248]
+1008b8ecc: 8b020020    	add	x0, x1, x2
+1008b8ed0: f9022fe0    	str	x0, [sp, #0x458]
+1008b8ed4: 97e05307    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8ed8: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8edc: f9422fe2    	ldr	x2, [sp, #0x458]
+1008b8ee0: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8ee4: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8ee8: b9451362    	ldr	w2, [x27, #0x510]
+1008b8eec: 350000a2    	cbnz	w2, 0x1008b8f00 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2c40>
+1008b8ef0: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8ef4: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8ef8: f9427be5    	ldr	x5, [sp, #0x4f0]
+1008b8efc: 14000007    	b	0x1008b8f18 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2c58>
+1008b8f00: f94127e2    	ldr	x2, [sp, #0x248]
+1008b8f04: f94233e3    	ldr	x3, [sp, #0x460]
+1008b8f08: f8626864    	ldr	x4, [x3, x2]
+1008b8f0c: 97e05059    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8f10: f9427be5    	ldr	x5, [sp, #0x4f0]
+1008b8f14: a9001325    	stp	x5, x4, [x25]
+1008b8f18: f8226865    	str	x5, [x3, x2]
+1008b8f1c: f9412fe3    	ldr	x3, [sp, #0x258]
+1008b8f20: f9413be4    	ldr	x4, [sp, #0x270]
+1008b8f24: eb04007f    	cmp	x3, x4
+1008b8f28: 54000ea9    	b.ls	0x1008b90fc <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e3c>
+1008b8f2c: f94237e1    	ldr	x1, [sp, #0x468]
+1008b8f30: 8b010040    	add	x0, x2, x1
+1008b8f34: f90233e0    	str	x0, [sp, #0x460]
+1008b8f38: 97e052ee    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b8f3c: f94097e1    	ldr	x1, [sp, #0x128]
+1008b8f40: f94233e2    	ldr	x2, [sp, #0x460]
+1008b8f44: a9008441    	stp	x1, x1, [x2, #0x8]
+1008b8f48: b000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b8f4c: b9451362    	ldr	w2, [x27, #0x510]
+1008b8f50: 350000a2    	cbnz	w2, 0x1008b8f64 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ca4>
+1008b8f54: f94127e3    	ldr	x3, [sp, #0x248]
+1008b8f58: f94237e4    	ldr	x4, [sp, #0x468]
+1008b8f5c: f94277e6    	ldr	x6, [sp, #0x4e8]
+1008b8f60: 17fffa73    	b	0x1008b792c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x166c>
+1008b8f64: f94127e3    	ldr	x3, [sp, #0x248]
+1008b8f68: f94237e4    	ldr	x4, [sp, #0x468]
+1008b8f6c: f8636885    	ldr	x5, [x4, x3]
+1008b8f70: 97e05040    	bl	0x1000cd070 <_runtime.gcWriteBarrier2>
+1008b8f74: f94277e6    	ldr	x6, [sp, #0x4e8]
+1008b8f78: a9001726    	stp	x6, x5, [x25]
+1008b8f7c: 17fffa6c    	b	0x1008b792c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x166c>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:428
+1008b8f80: f9014fe1    	str	x1, [sp, #0x298]
+1008b8f84: f90047e0    	str	x0, [sp, #0x88]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:367
+1008b8f88: 97e0531a    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b8f8c: aa1f03e0    	mov	x0, xzr
+1008b8f90: f94047e1    	ldr	x1, [sp, #0x88]
+1008b8f94: f9414fe2    	ldr	x2, [sp, #0x298]
+1008b8f98: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b8f9c: 911903ff    	add	sp, sp, #0x640
+1008b8fa0: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:360
+1008b8fa4: f901afe1    	str	x1, [sp, #0x358]
+1008b8fa8: f900bbe0    	str	x0, [sp, #0x170]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:361
+1008b8fac: 97e05311    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b8fb0: aa1f03e0    	mov	x0, xzr
+1008b8fb4: f940bbe1    	ldr	x1, [sp, #0x170]
+1008b8fb8: f941afe2    	ldr	x2, [sp, #0x358]
+1008b8fbc: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b8fc0: 911903ff    	add	sp, sp, #0x640
+1008b8fc4: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:421
+1008b8fc8: 97e0530a    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b8fcc: f9415be0    	ldr	x0, [sp, #0x2b0]
+1008b8fd0: aa1f03e1    	mov	x1, xzr
+1008b8fd4: aa1f03e2    	mov	x2, xzr
+1008b8fd8: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b8fdc: 911903ff    	add	sp, sp, #0x640
+1008b8fe0: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:372
+1008b8fe4: f901abe1    	str	x1, [sp, #0x350]
+1008b8fe8: f900b7e0    	str	x0, [sp, #0x168]
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:373
+1008b8fec: 97e05301    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b8ff0: aa1f03e0    	mov	x0, xzr
+1008b8ff4: f940b7e1    	ldr	x1, [sp, #0x168]
+1008b8ff8: f941abe2    	ldr	x2, [sp, #0x350]
+1008b8ffc: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b9000: 911903ff    	add	sp, sp, #0x640
+1008b9004: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:413
+1008b9008: 9115c3e1    	add	x1, sp, #0x570
+1008b900c: a9007c3f    	stp	xzr, xzr, [x1]
+1008b9010: a9017c3f    	stp	xzr, xzr, [x1, #0x10]
+1008b9014: f9406fe0    	ldr	x0, [sp, #0xd8]
+1008b9018: 97e027a6    	bl	0x1000c2eb0 <_runtime.convT64>
+1008b901c: f902afe0    	str	x0, [sp, #0x558]
+1008b9020: 9115c3e0    	add	x0, sp, #0x570
+1008b9024: 97e052b3    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b9028: b0004041    	adrp	x1, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b902c: 91030021    	add	x1, x1, #0xc0
+1008b9030: f942afe2    	ldr	x2, [sp, #0x558]
+1008b9034: 9115c3fb    	add	x27, sp, #0x570
+1008b9038: a9000b61    	stp	x1, x2, [x27]
+1008b903c: f940a7e0    	ldr	x0, [sp, #0x148]
+1008b9040: 97e0279c    	bl	0x1000c2eb0 <_runtime.convT64>
+1008b9044: f902afe0    	str	x0, [sp, #0x558]
+1008b9048: 911603e0    	add	x0, sp, #0x580
+1008b904c: 97e052a9    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b9050: b0004041    	adrp	x1, 0x1010c2000 <_typerel.*+0x99ff8>
+1008b9054: 91030021    	add	x1, x1, #0xc0
+1008b9058: f942afe2    	ldr	x2, [sp, #0x558]
+1008b905c: 911603fb    	add	x27, sp, #0x580
+1008b9060: a9000b61    	stp	x1, x2, [x27]
+; /usr/local/go/src/fmt/errors.go:26
+1008b9064: 900006a0    	adrp	x0, 0x10098d000 <_runtime.rodata+0x28260>
+1008b9068: 910f0000    	add	x0, x0, #0x3c0
+1008b906c: d28004a1    	mov	x1, #0x25               ; =37
+1008b9070: 9115c3e2    	add	x2, sp, #0x570
+1008b9074: b27f03e3    	orr	x3, xzr, #0x2
+1008b9078: aa0303e4    	mov	x4, x3
+1008b907c: 97e2f701    	bl	0x100176c80 <_fmt.errorf>
+1008b9080: b50002c0    	cbnz	x0, 0x1008b90d8 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e18>
+; /usr/local/go/src/fmt/errors.go:31
+1008b9084: d503201f    	nop
+; /usr/local/go/src/errors/errors.go:65
+1008b9088: b0004420    	adrp	x0, 0x10113e000 <_typerel.*+0x115ff8>
+1008b908c: 91148000    	add	x0, x0, #0x520
+1008b9090: 97deb090    	bl	0x1000652d0 <_runtime.newobject>
+1008b9094: f902b7e0    	str	x0, [sp, #0x568]
+1008b9098: 97e05296    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b909c: d28004a1    	mov	x1, #0x25               ; =37
+1008b90a0: f942b7e2    	ldr	x2, [sp, #0x568]
+1008b90a4: f9000441    	str	x1, [x2, #0x8]
+1008b90a8: 9000577b    	adrp	x27, 0x1013a5000 <_runtime.fingStatus>
+1008b90ac: b9451361    	ldr	w1, [x27, #0x510]
+1008b90b0: 34000081    	cbz	w1, 0x1008b90c0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2e00>
+1008b90b4: f9400040    	ldr	x0, [x2]
+1008b90b8: 97e04fea    	bl	0x1000cd060 <_runtime.gcWriteBarrier1>
+1008b90bc: f9000320    	str	x0, [x25]
+1008b90c0: 900006a3    	adrp	x3, 0x10098d000 <_runtime.rodata+0x28260>
+1008b90c4: 910f0063    	add	x3, x3, #0x3c0
+1008b90c8: f9000043    	str	x3, [x2]
+1008b90cc: f0004b80    	adrp	x0, 0x10122c000 <_internal/abi..dict.TypeFor[encoding/xml.Unmarshaler]>
+1008b90d0: 912a6000    	add	x0, x0, #0xa98
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:413
+1008b90d4: aa0203e1    	mov	x1, x2
+1008b90d8: f900b3e0    	str	x0, [sp, #0x160]
+1008b90dc: f901a7e1    	str	x1, [sp, #0x348]
+1008b90e0: 97e052c4    	bl	0x1000cdbf0 <_runtime.racefuncexit>
+1008b90e4: aa1f03e0    	mov	x0, xzr
+1008b90e8: f940b3e1    	ldr	x1, [sp, #0x160]
+1008b90ec: f941a7e2    	ldr	x2, [sp, #0x348]
+1008b90f0: a97ffbfd    	ldp	x29, x30, [sp, #-0x8]
+1008b90f4: 911903ff    	add	sp, sp, #0x640
+1008b90f8: d65f03c0    	ret
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:419
+1008b90fc: 97e05091    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9100: 97e05090    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:418
+1008b9104: 97e0508f    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9108: 97e0508e    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:417
+1008b910c: 97e0508d    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9110: 97e0508c    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9114: 97e0508b    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:416
+1008b9118: 97e0508a    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b911c: 97e05089    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9120: 97e05088    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9124: 97e05087    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:410
+1008b9128: 97e05086    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b912c: 97e05085    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9130: 97e05084    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9134: 97e05083    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:407
+1008b9138: 97e05082    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b913c: 97e05081    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:405
+1008b9140: 97e05080    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9144: 97e0507f    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:396
+1008b9148: 97e0507e    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b914c: 97e0507d    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:392
+1008b9150: 97e0507c    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9154: 97e0507b    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:389
+1008b9158: 97e0507a    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b915c: 97e05079    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:386
+1008b9160: 97e05078    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9164: 97e05077    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:384
+1008b9168: 97e05076    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:383
+1008b916c: 97e05075    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9170: 97e05074    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b9174: 97e05073    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:382
+1008b9178: 97e05072    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:212
+1008b917c: f9013be3    	str	x3, [sp, #0x270]
+1008b9180: f941efe1    	ldr	x1, [sp, #0x3d8]
+1008b9184: 8b030c20    	add	x0, x1, x3, lsl #3
+1008b9188: f902a7e0    	str	x0, [sp, #0x548]
+1008b918c: 97e05245    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b9190: f9413be1    	ldr	x1, [sp, #0x270]
+1008b9194: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b9198: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b919c: fd0133e0    	str	d0, [sp, #0x260]
+1008b91a0: f94153e1    	ldr	x1, [sp, #0x2a0]
+1008b91a4: f940fbe2    	ldr	x2, [sp, #0x1f0]
+1008b91a8: 8b020c20    	add	x0, x1, x2, lsl #3
+1008b91ac: 97e0523d    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b91b0: f940fbe1    	ldr	x1, [sp, #0x1f0]
+1008b91b4: f94153e2    	ldr	x2, [sp, #0x2a0]
+1008b91b8: fc617840    	ldr	d0, [x2, x1, lsl #3]
+1008b91bc: fd0113e0    	str	d0, [sp, #0x220]
+1008b91c0: f942a7e0    	ldr	x0, [sp, #0x548]
+1008b91c4: 97e0524b    	bl	0x1000cdaf0 <_runtime.racewrite>
+1008b91c8: fd4133e0    	ldr	d0, [sp, #0x260]
+1008b91cc: fd4137e1    	ldr	d1, [sp, #0x268]
+1008b91d0: fd4113e2    	ldr	d2, [sp, #0x220]
+1008b91d4: 1f410040    	fmadd	d0, d2, d1, d0
+1008b91d8: f9413be1    	ldr	x1, [sp, #0x270]
+1008b91dc: f941efe2    	ldr	x2, [sp, #0x3d8]
+1008b91e0: fc217840    	str	d0, [x2, x1, lsl #3]
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:211
+1008b91e4: f940fbe1    	ldr	x1, [sp, #0x1f0]
+1008b91e8: 91000420    	add	x0, x1, #0x1
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:385
+1008b91ec: f9433fe2    	ldr	x2, [sp, #0x678]
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:212
+1008b91f0: f9415fe3    	ldr	x3, [sp, #0x2b8]
+1008b91f4: f9406be4    	ldr	x4, [sp, #0xd0]
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:211
+1008b91f8: f94057ef    	ldr	x15, [sp, #0xa8]
+1008b91fc: eb0f001f    	cmp	x0, x15
+1008b9200: 54ff544a    	b.ge	0x1008b7c88 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x19c8>
+1008b9204: f900fbe0    	str	x0, [sp, #0x1f0]
+; /Users/timlai/Developer/coimnet/dynamics/continuous.go:212
+1008b9208: 911643ef    	add	x15, sp, #0x590
+1008b920c: 910b03f0    	add	x16, sp, #0x2c0
+1008b9210: ad404610    	ldp	q16, q17, [x16]
+1008b9214: ad0045f0    	stp	q16, q17, [x15]
+1008b9218: ad414610    	ldp	q16, q17, [x16, #0x20]
+1008b921c: ad0145f0    	stp	q16, q17, [x15, #0x20]
+1008b9220: ad424610    	ldp	q16, q17, [x16, #0x40]
+1008b9224: ad0245f0    	stp	q16, q17, [x15, #0x40]
+1008b9228: 3dc01a10    	ldr	q16, [x16, #0x60]
+1008b922c: 3d8019f0    	str	q16, [x15, #0x60]
+1008b9230: 911643fb    	add	x27, sp, #0x590
+1008b9234: a940076f    	ldp	x15, x1, [x27]
+1008b9238: 911683fb    	add	x27, sp, #0x5a0
+1008b923c: a9400f62    	ldp	x2, x3, [x27]
+1008b9240: 9116c3fb    	add	x27, sp, #0x5b0
+1008b9244: a9401764    	ldp	x4, x5, [x27]
+1008b9248: 911703fb    	add	x27, sp, #0x5c0
+1008b924c: a9401f66    	ldp	x6, x7, [x27]
+1008b9250: 911743fb    	add	x27, sp, #0x5d0
+1008b9254: a9402768    	ldp	x8, x9, [x27]
+1008b9258: 911783fb    	add	x27, sp, #0x5e0
+1008b925c: a9402f6a    	ldp	x10, x11, [x27]
+1008b9260: 9117c3fb    	add	x27, sp, #0x5f0
+1008b9264: a940376c    	ldp	x12, x13, [x27]
+1008b9268: aa0003ee    	mov	x14, x0
+1008b926c: aa0f03e0    	mov	x0, x15
+1008b9270: 97ff768c    	bl	0x100896ca0 <_github.com/TimLai666/coimnet/dynamics.forwardReader.at>
+1008b9274: f940fbef    	ldr	x15, [sp, #0x1f0]
+1008b9278: f9406bf0    	ldr	x16, [sp, #0xd0]
+1008b927c: eb1001ff    	cmp	x15, x16
+1008b9280: 54000182    	b.hs	0x1008b92b0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ff0>
+1008b9284: fd0137e0    	str	d0, [sp, #0x268]
+1008b9288: f9415fe1    	ldr	x1, [sp, #0x2b8]
+1008b928c: 8b0f0c20    	add	x0, x1, x15, lsl #3
+1008b9290: 97e05204    	bl	0x1000cdaa0 <_runtime.raceread>
+1008b9294: f940fbe1    	ldr	x1, [sp, #0x1f0]
+1008b9298: f9415fe2    	ldr	x2, [sp, #0x2b8]
+1008b929c: f8617843    	ldr	x3, [x2, x1, lsl #3]
+1008b92a0: f940ffe4    	ldr	x4, [sp, #0x1f8]
+1008b92a4: eb03009f    	cmp	x4, x3
+1008b92a8: 54fff6a8    	b.hi	0x1008b917c <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward+0x2ebc>
+1008b92ac: 97e05025    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b92b0: aa1003e0    	mov	x0, x16
+1008b92b4: 97e05023    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:357
+1008b92b8: 97e05022    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:356
+1008b92bc: 97e05021    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b92c0: 97e05020    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:355
+1008b92c4: 97e0501f    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b92c8: 97e0501e    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b92cc: 97e0501d    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:354
+1008b92d0: 97e0501c    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:330
+1008b92d4: 97e0501b    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:329
+1008b92d8: 97e0501a    	bl	0x1000cd340 <_runtime.panicBounds>
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:321
+1008b92dc: 97e05019    	bl	0x1000cd340 <_runtime.panicBounds>
+1008b92e0: d503201f    	nop
+; /Users/timlai/Developer/coimnet/dynamics/lif.go:280
+1008b92e4: a90387e0    	stp	x0, x1, [sp, #0x38]
+1008b92e8: a9048fe2    	stp	x2, x3, [sp, #0x48]
+1008b92ec: a90597e4    	stp	x4, x5, [sp, #0x58]
+1008b92f0: a9069fe6    	stp	x6, x7, [sp, #0x68]
+1008b92f4: a907a7e8    	stp	x8, x9, [sp, #0x78]
+1008b92f8: a908afea    	stp	x10, x11, [sp, #0x88]
+1008b92fc: a909b7ec    	stp	x12, x13, [sp, #0x98]
+1008b9300: f90057ee    	str	x14, [sp, #0xa8]
+1008b9304: aa1e03e3    	mov	x3, x30
+1008b9308: 97e04736    	bl	0x1000cafe0 <_runtime.morestack_noctxt.abi0>
+1008b930c: a94387e0    	ldp	x0, x1, [sp, #0x38]
+1008b9310: a9448fe2    	ldp	x2, x3, [sp, #0x48]
+1008b9314: a94597e4    	ldp	x4, x5, [sp, #0x58]
+1008b9318: a9469fe6    	ldp	x6, x7, [sp, #0x68]
+1008b931c: a947a7e8    	ldp	x8, x9, [sp, #0x78]
+1008b9320: a948afea    	ldp	x10, x11, [sp, #0x88]
+1008b9324: a949b7ec    	ldp	x12, x13, [sp, #0x98]
+1008b9328: f94057ee    	ldr	x14, [sp, #0xa8]
+1008b932c: 17fff3e5    	b	0x1008b62c0 <_github.com/TimLai666/coimnet/dynamics.(*LIF).Forward>
