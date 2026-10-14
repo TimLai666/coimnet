@@ -240,6 +240,20 @@ func (m *Model) Edges() int {
 	return len(m.edges)
 }
 
+// Edge returns the core edge index and fixed-sign magnitude floor at one
+// enabled position, in the same order as State.Plastic and State.Eligibility.
+// It does not allocate or expose the owned selection. A nil model or a
+// position outside [0, Edges()) returns an error.
+func (m *Model) Edge(position int) (edge int, wMin float64, err error) {
+	if m == nil {
+		return 0, 0, fmt.Errorf("uninitialized plasticity model")
+	}
+	if position < 0 || position >= len(m.edges) {
+		return 0, 0, fmt.Errorf("enabled edge position %d is out of range [0, %d)", position, len(m.edges))
+	}
+	return m.edges[position], m.rule.WMin, nil
+}
+
 // NewState starts every enabled edge at zero eligibility and zero fast change.
 func (m *Model) NewState() State {
 	if m == nil {

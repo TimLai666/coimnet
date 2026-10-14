@@ -151,19 +151,42 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 	// The lock keeps both scans over the same state, without candidate arrays.
 	baseL2 := l2(i.trainer.parameters.Core.Weights)
 	var slowL2, plasticL2 float64
+	var effectiveErr error
 	for k, value := range slow.Values {
 		candidate := value + trigger.Rate*plastic[k]
 		if !finite(candidate) {
 			return report, fmt.Errorf("consolidation slow value %d is not finite", k)
 		}
+		retained := trigger.Retain * plastic[k]
 		slowL2 = math.Hypot(slowL2, candidate)
-		plasticL2 = math.Hypot(plasticL2, trigger.Retain*plastic[k])
+		plasticL2 = math.Hypot(plasticL2, retained)
+		edge, wMin, err := i.plastic.model.Edge(k)
+		if err != nil {
+			return report, err
+		}
+		base := i.trainer.parameters.Core.Weights[edge]
+		fixed := len(i.trainer.network.config.EdgeSigns) != 0 && i.trainer.network.config.EdgeSigns[edge] != 0
+		if fixed {
+			base = math.Exp(base)
+		}
+		// Match EffectiveWith after the fixed-sign base parametrization.
+		// The floor can bound a negative magnitude overflow to a finite weight.
+		weight := (base + candidate) + retained
+		if fixed && weight < wMin {
+			weight = wMin
+		}
+		if !finite(weight) && effectiveErr == nil {
+			effectiveErr = fmt.Errorf("consolidation edge %d produced a non-finite effective weight", edge)
+		}
 	}
 	if !finite(baseL2) || !finite(slowL2) || !finite(plasticL2) {
 		return report, fmt.Errorf("consolidation report norm is not finite")
 	}
 	if err := ctx.Err(); err != nil {
 		return report, err
+	}
+	if effectiveErr != nil {
+		return report, effectiveErr
 	}
 	for k := range slow.Values {
 		slow.Values[k] += trigger.Rate * plastic[k]
