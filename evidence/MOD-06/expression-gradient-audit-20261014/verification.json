@@ -1,0 +1,121 @@
+{
+  "requirement": [
+    "MOD-06"
+  ],
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "reproduction_command": "run-go.py.txt with reference-v2-overlay.json and retained expression_reference_v2_test.go.txt; see README.md for temporary-path reconstruction and cleanup",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "ProductName:\t\tmacOS\nProductVersion:\t\t27.0.1\nBuildVersion:\t\t26A434",
+    "machine": "arm64",
+    "filesystem": "local APFS",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go_environment": {
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/expression-gradient-audit-20261014/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/expression-gradient-audit-20261014/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/expression-gradient-audit-20261014/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/expression-gradient-audit-20261014/go-tmp",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+      "GOSUMDB": "off",
+      "GOTOOLCHAIN": "local",
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-p=2 -timeout=60m"
+    }
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-before.json",
+    "sha256": "d6efa8ebe203be8d9355f4a161f9be8cfb7d1641fb06cf78263633e00279d08b",
+    "source_count": 806,
+    "baseline_commit": "318b7518eddef07c9925f7a8b97a3513123786c4",
+    "artificial_fixture": "two nodes / four steps / four edges / two regions / one channel; no real task data"
+  },
+  "observed_result": {
+    "correct_checks": {
+      "composition-v2-normal": {
+        "pass_events": 161,
+        "matrix_cases": 160,
+        "observed_distinct_regional_cases": 80,
+        "maximum_gradient_absolute_error": 1.11022302e-16
+      },
+      "composition-v2-race": {
+        "pass_events": 161,
+        "matrix_cases": 160,
+        "observed_distinct_regional_cases": 80,
+        "maximum_gradient_absolute_error": 1.11022302e-16
+      },
+      "chemical-regression-normal": {
+        "pass_events": 100,
+        "matrix_cases": 0,
+        "observed_distinct_regional_cases": 0,
+        "maximum_gradient_absolute_error": null,
+        "note": "Existing suite prints chemistry-versus-nil control differences; those are not production gradient errors."
+      },
+      "chemical-regression-race": {
+        "pass_events": 100,
+        "matrix_cases": 0,
+        "observed_distinct_regional_cases": 0,
+        "maximum_gradient_absolute_error": null,
+        "note": "Existing suite prints chemistry-versus-nil control differences; those are not production gradient errors."
+      }
+    },
+    "negative_controls": {
+      "missing-average": {
+        "expected_failure_observed": true,
+        "numeric_mismatch": "chemical_mixed_reference_test.go:418: core.weights[0]: got 0.0216787523386, reference 0.0236597489083, abs 0.001981 rel 0.001981",
+        "compile_failure": false
+      },
+      "missing-expression-seed": {
+        "expected_failure_observed": true,
+        "numeric_mismatch": "chemical_mixed_reference_test.go:418: core.weights[0]: got 0.0216787523386, reference 0.0213495975129, abs 0.0003292 rel 0.0003292",
+        "compile_failure": false
+      },
+      "missing-second-node-seed": {
+        "expected_failure_observed": true,
+        "numeric_mismatch": "chemical_mixed_reference_test.go:418: core.weights[0]: got 0.0216787523386, reference 0.0213997767304, abs 0.000279 rel 0.000279",
+        "compile_failure": false
+      },
+      "missing-clamp-guard": {
+        "expected_failure_observed": true,
+        "numeric_mismatch": "chemical_mixed_reference_test.go:418: core.weights[0]: got 0.0139797629772, reference 0.0143089178029, abs 0.0003292 rel 0.0003292",
+        "compile_failure": false
+      }
+    },
+    "previous_full_suite_same_source": {
+      "unit": {
+        "receipt": "evidence/MOD-04/neutral-gain-adoption-20261014/unit.json",
+        "receipt_sha256": "f06b6c05460484312ad404b7d6e332754629f4d2a5737055a2ce380eb426ad79",
+        "full_packages_passed": 58,
+        "source_manifest_equal": true,
+        "rerun_in_this_audit": false
+      },
+      "race": {
+        "receipt": "evidence/MOD-04/neutral-gain-adoption-20261014/race.json",
+        "receipt_sha256": "9ce008c4ec59948d46a298bcb01540d343179945f6d79e95449b7768ab6a7dfd",
+        "full_packages_passed": 58,
+        "source_manifest_equal": true,
+        "rerun_in_this_audit": false
+      }
+    },
+    "governance": {
+      "receipt": "governance.json",
+      "pass_events": 31,
+      "fail_events": 0
+    }
+  },
+  "test_log": [
+    "composition-v2-normal.log.gz",
+    "composition-v2-race.log.gz",
+    "chemical-regression-normal.log",
+    "chemical-regression-race.log",
+    "control-missing-average.log",
+    "control-missing-expression-seed.log",
+    "control-missing-second-node-seed.log",
+    "control-missing-clamp-guard.log"
+  ],
+  "confirmed_defects": [],
+  "root_review": "root-review.md",
+  "cleanup": "cleanup.json",
+  "delivery": "pending",
+  "limitation": "No new production changes, real-task result, biological calibration, whole-brain timing or universal zero-bug proof."
+}

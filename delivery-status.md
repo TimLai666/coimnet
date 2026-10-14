@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 96](docs/tickets/96-expression-gradient-composition.md) 的有限範圍梯度稽核已通過：160 組一般／race 案例一致，80 組觀察到不同區域受體反應，四種錯誤參考均抓到數值差異，原有化學回歸各 100 個事件通過。正式 806 份來源及既有測試不變，沒有新確認缺陷。build、vet、固定相依性及治理 31 個事件通過，本輪 891,799,195 bytes 暫存已清除，原有資料與暫存保留，見[驗證](evidence/MOD-06/expression-gradient-audit-20261014/verification.json)及[清理](evidence/MOD-06/expression-gradient-audit-20261014/cleanup.json)。目前 3／4，提交與遠端讀回尚待完成。工程需求保持 91 項 passed，完整零 bug 與真實品質提升尚未證明。
+
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的正式中性增益修正已通過工程驗收。20 個原始失敗事件改為 21 個通過事件，15 組合法舊個體及 10 組合法舊訓練存檔／模型包的後續結果完全相同，3 組舊個體及 10 組舊訓練存檔／模型包明確拒絕且原檔不變。完整一般／race 各 58 套件通過，5702／5701 pass，22／23 skip，沒有 fail，其餘工程與 CLI 接續通過。最新工程需求為 91 項 passed，見[本輪驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。最後 11 項治理通過，本輪 1,304,068,945 bytes 暫存已清除，原有暫存目錄保留，見[清理](evidence/MOD-04/neutral-gain-adoption-20261014/cleanup.json)。修正 `90914c3` 與回歸／證據 `831158f` 已正常推送，遠端讀回相同，806 份提交來源相符，見[交付](evidence/MOD-04/neutral-gain-adoption-20261014/delivery.json)。本票已完成 4／4。整體零 bug 與真實品質提升尚未證明。
 
 以下為歷史階段紀錄，目前狀態以首段及需求追蹤檔為準。

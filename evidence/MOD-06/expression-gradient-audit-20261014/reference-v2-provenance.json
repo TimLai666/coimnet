@@ -1,0 +1,51 @@
+{
+  "v1_sha256": "63b4c9cc938c091b698518b2166d48b8597643b9556c568411d5c0ca617c0ed1",
+  "v2_sha256": "2b9bad5546ed28d3e37b0ac9c15013711a35eb72d6b22e9d249db5db5a478ea5",
+  "change": "assert observed distinct regional occupancies; no formal source changes",
+  "variants": [
+    {
+      "name": "missing-average",
+      "sha256": "5c0f170b4a0064b93a007115b8cccb0ecab3c75a34fea01ec458481ca4db7a17",
+      "mutations": [
+        [
+          "expression.Scale / float64(count)",
+          "expression.Scale"
+        ],
+        [
+          "expression.Scale*sum/float64(count)",
+          "expression.Scale*sum"
+        ]
+      ]
+    },
+    {
+      "name": "missing-expression-seed",
+      "sha256": "c06c74e66435c82d0fbb6432999b4f172838bd9bf2f8b72e695ad2753cfa9c81",
+      "mutations": [
+        [
+          "ref.expressionSeeds[t][index] = seed",
+          "ref.expressionSeeds[t][index] = 0"
+        ]
+      ]
+    },
+    {
+      "name": "missing-second-node-seed",
+      "sha256": "15e551ce25e60e02c70d6a82d9b690b3af01de82c0e510ff900ff0298a13c879",
+      "mutations": [
+        [
+          "for _, node := range expression.Nodes {\n\t\t\tseed +=",
+          "for _, node := range expression.Nodes[:1] {\n\t\t\tseed +="
+        ]
+      ]
+    },
+    {
+      "name": "missing-clamp-guard",
+      "sha256": "d4ce46eb4b36c815d7985ac42778c7192461e05c4c302b69e86ef5a0d61d2049",
+      "mutations": [
+        [
+          "if ref.expressionGain[t] <= expression.Min || ref.expressionGain[t] >= expression.Max {",
+          "if false {"
+        ]
+      ]
+    }
+  ]
+}

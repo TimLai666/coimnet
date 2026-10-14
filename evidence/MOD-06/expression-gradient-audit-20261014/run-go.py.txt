@@ -1,0 +1,17 @@
+import os,json,hashlib,subprocess,time,datetime,sys
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet'); w=r/'runs/.tmp/expression-gradient-audit-20261014'; e=r/'evidence/MOD-06/expression-gradient-audit-20261014'
+env=os.environ.copy(); env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()}); env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+name,manifest,expected=sys.argv[1:4];cmd=sys.argv[4:];expected=int(expected)
+def check():
+ for p,h in json.loads((e/manifest).read_text()).items():
+  assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check(); start=datetime.datetime.now(datetime.timezone.utc).isoformat(); t=time.monotonic();print('START '+name,flush=True)
+log=e/(name+'.log')
+with log.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+raw=log.read_bytes();events=[]
+for line in raw.decode(errors='replace').splitlines():
+ try:events.append(json.loads(line))
+ except json.JSONDecodeError:pass
+receipt={'command':cmd,'exit_code':p.returncode,'expected_exit_code':expected,'started_at':start,'duration_seconds':round(time.monotonic()-t,6),'log':log.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':manifest,'source_manifest_sha256':hashlib.sha256((e/manifest).read_bytes()).hexdigest(),'test_pass_events':sum(x.get('Action')=='pass' and 'Test' in x for x in events),'test_fail_events':sum(x.get('Action')=='fail' and 'Test' in x for x in events),'test_skip_events':sum(x.get('Action')=='skip' and 'Test' in x for x in events),'package_pass_events':sum(x.get('Action')=='pass' and 'Test' not in x for x in events)}
+(e/(name+'.json')).write_text(json.dumps(receipt,indent=2)+'\n');print(json.dumps(receipt),flush=True);check();assert p.returncode==expected,name
