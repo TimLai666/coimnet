@@ -41,8 +41,10 @@
 | [evidence/MOD-05/native-receptor-refusal-20261014/cli-train-first.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/cli-train-first.log) | 命令原始輸出與可核對結果。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/cli-train-resumed.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/cli-train-resumed.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/cli-train-resumed.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/cli-train-resumed.log) | 命令原始輸出與可核對結果。 |
+| [evidence/MOD-05/native-receptor-refusal-20261014/committed-source-check.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/committed-source-check.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/compatibility-audit.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/compatibility-audit.go.txt) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/compatibility-parser-v1-error.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/compatibility-parser-v1-error.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
+| [evidence/MOD-05/native-receptor-refusal-20261014/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/delivery.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/diagnostic-file.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/diagnostic-file.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/engineering-environment.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/engineering-environment.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/engineering.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/engineering.py.txt) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
@@ -88,6 +90,9 @@
 | [evidence/MOD-05/native-receptor-refusal-20261014/original-plasticity.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/original-plasticity.go.txt) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/plan.md](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/plan.md) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/prepare-artifacts.py.txt](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/prepare-artifacts.py.txt) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
+| [evidence/MOD-05/native-receptor-refusal-20261014/primary-commit.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/primary-commit.log) | 命令原始輸出與可核對結果。 |
+| [evidence/MOD-05/native-receptor-refusal-20261014/primary-push.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/primary-push.log) | 命令原始輸出與可核對結果。 |
+| [evidence/MOD-05/native-receptor-refusal-20261014/primary-scan.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/primary-scan.log) | 命令原始輸出與可核對結果。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/race-summary.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/race-summary.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/race.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/race.json) | 本輪驗收的命令、環境、觀察結果、程序或交付證據。 |
 | [evidence/MOD-05/native-receptor-refusal-20261014/race.log.gz](/Users/timlai/Developer/coimnet/evidence/MOD-05/native-receptor-refusal-20261014/race.log.gz) | 命令原始輸出與可核對結果。 |
