@@ -145,3 +145,4 @@
 | [learning/consolidation_sparse_composition_test.go](/Users/timlai/Developer/coimnet/learning/consolidation_sparse_composition_test.go) | 新增公開失敗回歸、獨立正常參考或稀疏選取檢查。 |
 | [plasticity/edge_test.go](/Users/timlai/Developer/coimnet/plasticity/edge_test.go) | 新增公開失敗回歸、獨立正常參考或稀疏選取檢查。 |
 | [plasticity/plasticity.go](/Users/timlai/Developer/coimnet/plasticity/plasticity.go) | 新增不複製邊陣列的唯讀啟用邊 metadata 查詢。 |
+| [docs/tickets/91-receptor-rule-ownership-and-restore.md](/Users/timlai/Developer/coimnet/docs/tickets/91-receptor-rule-ownership-and-restore.md) | 登記已重現的受體隔離與恢復缺陷，永久修正尚未開始。 |

@@ -3,7 +3,7 @@
 **Epic:** 機制與模型品質稽核
 **User Story:** 研究者可以鞏固快速變化，而不讓個體進入下一次推進無法使用的狀態。
 **Blocked by:** 22（已完成），不依賴 ticket 89 的增益決策
-**Status:** in_progress
+**Status:** completed
 
 固定範圍與 Root 責任見[計畫](../../evidence/MOD-06/slow-memory-composition-20261014/plan.md)。只修正已重現的共同有效權重缺口，正常生理方程式、模型格式及既有錯誤優先序保持。
 
@@ -11,7 +11,7 @@
 - [x] 公開入口先重現，再凍結獨立參考及永久失敗回歸，才修正確認根因。
 - [x] 專項、完整工程與合法模型相容性驗證通過，來源及測試指紋相符。
 - [x] 同步需求及證據，清除本輪暫存並保留原有目錄。
-- [ ] 已驗證階段完成提交、推送及遠端讀回。
+- [x] 已驗證階段完成提交、推送及遠端讀回。
 
 ## 驗收與失敗路徑
 
@@ -29,4 +29,4 @@ P2 缺陷已由公開 Restore／Advance／Consolidate 路徑重現。原本可�
 
 受體指標共用另列 Follow-ups。BaseL2 的 raw rho／有效幅度單位缺少明定，保持既有行為，未判為已確認缺陷。
 
-目前完成 4／5，完整一般／race 各 58 套件、最後 11 項治理及 CLI 新程序接續通過。已清除本輪 1,331,266,511 bytes 暫存，原有目錄保留。提交與遠端核對尚未完成。見[驗證](../../evidence/MOD-06/slow-memory-composition-20261014/verification.json)。
+目前完成 5／5，完整一般／race 各 58 套件、最後 11 項治理及 CLI 新程序接續通過。已清除本輪 1,331,266,511 bytes 暫存，原有目錄保留。修正 ccab7e0 與回歸／證據 10ca882 已推送並核對遠端，796 份提交來源相符。見[驗證](../../evidence/MOD-06/slow-memory-composition-20261014/verification.json)。

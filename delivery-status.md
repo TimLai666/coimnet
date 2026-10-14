@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 90](docs/tickets/90-slow-memory-composition.md) 目前完成 4／5。已重現各記憶層有限、鞏固成功後共同有效權重才溢位的 P2 缺陷。正式修正與永久回歸已完成，正常 54 組輸出／記憶／報告在舊來源、修正來源及新程序逐位一致。完整一般／race 各 58 套件與 CLI 接續通過，MOD-06 恢復 passed，最後 11 項治理通過，本輪 1,331,266,511 bytes 暫存已清除，原有目錄保留。提交與遠端核對尚未完成。另有受體指標所有權 P2 已由四個公開案例確認，列入 Follow-ups，不混入本票來源。ticket 89 的相容性決策保持 pending，尚無整體零 bug 或真實品質提升結論。
+[ticket 90](docs/tickets/90-slow-memory-composition.md) 已完成 5／5。已重現各記憶層有限、鞏固成功後共同有效權重才溢位的 P2 缺陷。正式修正與永久回歸已完成，正常 54 組輸出／記憶／報告在舊來源、修正來源及新程序逐位一致。完整一般／race 各 58 套件與 CLI 接續通過，MOD-06 恢復 passed，最後 11 項治理通過，本輪 1,331,266,511 bytes 暫存已清除，原有目錄保留。修正 ccab7e0、回歸／證據 10ca882 已推送並讀回相同，796 份提交來源相符。另有受體指標所有權 P2 已由四個公開案例確認，列入 Follow-ups，不混入本票來源。ticket 89 的相容性決策保持 pending，尚無整體零 bug 或真實品質提升結論。
 
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 目前完成 2／4。公開入口 15 個零作用案例確認 9 個偏離中性增益，MOD-04 標為 failed，最新工程需求狀態為 90 項 passed、1 項 failed。120 個歷史／分段組合、來源 Replay 時鐘及 96 個初始梯度斷言通過一般與 race 檢查。候選化學模組的一般／race 各 375 個事件通過，但正式程式沒有套用。要求增益範圍包含 1 會拒絕部分舊模型，使用者相容性決策 pending。見[驗證](evidence/MOD-02/chemical-composition-20261014/verification.json)與[Root 審查](evidence/MOD-02/chemical-composition-20261014/root-review.md)。本輪 872,621,783 bytes 暫存已清除，793 份提交來源相符，主要稽核 d8b013e 已推送並讀回一致，見[交付](evidence/MOD-02/chemical-composition-20261014/delivery.json)。本票尚未完成修正與完整工程驗收，沒有整體零 bug 或真實品質提升結論。
 
@@ -191,7 +191,8 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 90 | 研究者可以寫入慢速記憶後繼續運算 | Codex Root／Luna max 唯讀稽核 | in_progress | 4／5。組合溢位修正、完整工程、11 項治理、合法對照與暫存清理通過；提交讀回尚未完成 |
+| 91 | 研究者可以隔離並恢復受體驅動的個體宣告 | Codex Root／最低可用派工配置 | not_started | 公開輸入／快照共用與恢復越界／缺化學案例已重現，永久回歸與修正尚未開始 |
+| 90 | 研究者可以寫入慢速記憶後繼續運算 | Codex Root／Luna max 唯讀稽核 | completed | 5／5。完整工程、11 項治理、合法對照、暫存清理、提交推送及 796 份提交來源核對通過 |
 | 89 | 研究者可以核對多通道化學與來源歷史符合宣告機制 | Codex Root／Luna max 唯讀稽核 | pending_decision | 2／4。中性增益缺陷已確認，來源歷史／分段與初始梯度檢查通過；相容性修正尚未採用，MOD-04 failed |
 | 88 | 研究者可以核對混合神經元的完整化學訓練計算 | Codex Root / Luna max 測試與契約稽核 | completed | 4／4。獨立參考、初始來源漏算修正、完整工程、11 項治理、來源核對、暫存清理與主要推送讀回完成 |
 | 87 | 使用者可安全拒絕不可表示的化學配置 | Codex Root／Luna max | completed | 5／5。完整工程、11 項治理、合法相容性及 791 份提交來源核對通過；本輪暫存清除、主要提交推送與遠端讀回完成 |
@@ -292,7 +293,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 90](docs/tickets/90-slow-memory-composition.md) 僅剩提交與遠端讀回。接著獨立修正受體編號的指標隔離與恢復交叉驗證缺陷，原始公開診斷已保留。
+[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 接續受體編號的指標隔離與恢復交叉驗證，原始公開診斷已保留。先建立公開失敗回歸，正常模型格式與數值保持。
 
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 的公開缺陷已重現，候選限制增益範圍須包含 1。取得相容性決策後，才能套用正式修正、補永久回歸並執行完整工程驗收。候選尚未採用，不以化學套件通過當成框架修正完成。
 
