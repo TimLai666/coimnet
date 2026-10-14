@@ -126,3 +126,7 @@
 | [evidence/MOD-05/receptor-rule-ownership-20261014/source-commit.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/source-commit.json) | 本票實際驗證、指紋、交付或證據索引 |
 | [evidence/MOD-05/receptor-rule-ownership-20261014/worker-plasticity-next-original.md.gz](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/worker-plasticity-next-original.md.gz) | 本票原始報告、格式說明或證據 |
 | [evidence/MOD-05/receptor-rule-ownership-20261014/worker-report-format.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/worker-report-format.json) | 本票原始報告、格式說明或證據 |
+| [evidence/MOD-05/receptor-rule-ownership-20261014/committed-source-check.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/committed-source-check.json) | 本票實際提交、遠端讀回與來源核對 |
+| [evidence/MOD-05/receptor-rule-ownership-20261014/primary-push.json](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/primary-push.json) | 本票實際提交、遠端讀回與來源核對 |
+| [evidence/MOD-05/receptor-rule-ownership-20261014/primary-push.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/primary-push.log) | 本票實際提交、遠端讀回與來源核對 |
+| [evidence/MOD-05/receptor-rule-ownership-20261014/regression-commit-scan.log](/Users/timlai/Developer/coimnet/evidence/MOD-05/receptor-rule-ownership-20261014/regression-commit-scan.log) | 本票實際提交、遠端讀回與來源核對 |

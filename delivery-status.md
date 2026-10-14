@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 目前完成 4／5。69 個 RED 失敗事件確認受體指標別名及恢復交叉驗證缺口，原有缺省控制 8 個事件通過。Root 先凍結測試再補獨立複製與共用綁定檢查，修正後 77 個事件通過。32 組合法模型與新程序接續相同，完整一般／race 各 58 套件及其餘工程／CLI 驗證通過，最後 11 項治理通過，本輪 1,251,214,520 bytes 暫存已清除，原有目錄保留，Git 交付仍待完成。全樹追蹤另以 6 個公開案例確認原生模擬忽略受體宣告，MOD-05 標 failed，最新需求狀態為 89 項 passed、2 項 failed，ticket 92 接續處理。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
+[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 已完成 5／5。69 個 RED 失敗事件確認受體指標別名及恢復交叉驗證缺口，原有缺省控制 8 個事件通過。Root 先凍結測試再補獨立複製與共用綁定檢查，修正後 77 個事件通過。32 組合法模型與新程序接續相同，完整一般／race 各 58 套件及其餘工程／CLI 驗證通過，最後 11 項治理通過，本輪 1,251,214,520 bytes 暫存已清除，原有目錄保留，修正 4a3edcf 與回歸／證據 21441c0 已推送並核對遠端，798 份提交來源相符，見[本輪驗證](evidence/MOD-05/receptor-rule-ownership-20261014/verification.json)及[交付](evidence/MOD-05/receptor-rule-ownership-20261014/delivery.json)。全樹追蹤另以 6 個公開案例確認原生模擬忽略受體宣告，MOD-05 標 failed，最新需求狀態為 89 項 passed、2 項 failed，下一個可驗證成果是[ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)拒絕原生入口未綁定的受體宣告，並保留正常模型。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
 
 [ticket 90](docs/tickets/90-slow-memory-composition.md) 已完成 5／5。已重現各記憶層有限、鞏固成功後共同有效權重才溢位的 P2 缺陷。正式修正與永久回歸已完成，正常 54 組輸出／記憶／報告在舊來源、修正來源及新程序逐位一致。完整一般／race 各 58 套件與 CLI 接續通過，MOD-06 恢復 passed，最後 11 項治理通過，本輪 1,331,266,511 bytes 暫存已清除，原有目錄保留。修正 ccab7e0、回歸／證據 10ca882 已推送並讀回相同，796 份提交來源相符。另有受體指標所有權 P2 已由四個公開案例確認，列入 Follow-ups，不混入本票來源。ticket 89 的相容性決策保持 pending，尚無整體零 bug 或真實品質提升結論。
 

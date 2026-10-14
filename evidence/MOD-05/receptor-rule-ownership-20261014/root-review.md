@@ -21,7 +21,7 @@ Adversarial review: RUN。持續個體快照與恢復會影響後續學習，因
 - 三核心的 gate／window／both，各覆蓋 Enable 輸入、Restore 輸入與 Snapshot 輸出。控制組用 JSON 深複製隔離，且近期參與與快變化均正，不能因共用同一別名或零活動而空泛通過。
 - 32 組合法輸出／報告／完整快照，在舊來源、修正來源與新程序讀回舊公開存檔後一致。包含三核心 Hebbian、LIF stdp_pair、nil 化學缺省及合法受體 0／1，所有 8 組 stdp_pair 皆有非零事件跡及實際局部變化。
 - 18 個額外葉案例在舊／新來源都通過：兩個受體欄位的負值拒絕及 continuous／mixed 拒絕 stdp_pair。兩個版本各 19 個含父測試事件。拒絕不改快照。
-- 完整一般測試：58 套件、5358 個通過事件、22 個依既有條件跳過事件，3 個無測試套件。完整 race：58 套件、5357 個通過與 23 個跳過事件，最後交付仍待完成。相較一般的 22 個 skip，多出既有 checkpoint 大型存檔測試在 instrumentation 下的條件跳過。build、vet、相依性與 CLI 接續通過。
+- 完整一般測試：58 套件、5358 個通過事件、22 個依既有條件跳過事件，3 個無測試套件。完整 race：58 套件、5357 個通過與 23 個跳過事件，修正與回歸／證據已推送並讀回，798 份提交來源與驗證相同，本票 5／5。相較一般的 22 個 skip，多出既有 checkpoint 大型存檔測試在 instrumentation 下的條件跳過。build、vet、相依性與 CLI 接續通過。
 
 ## 診斷限度
 
@@ -44,3 +44,9 @@ ticket 89 的正式增益修正尚未核准，本輪未改 modulation/effects.go
 [worker 後續報告](worker-plasticity-next.md)的 C2 已由 Root 公開 Validate／Build／Run 的 6 個案例重現：連續／LIF 各 gate／window／both，受體 100 沒有綁定仍被接受，局部變化與沒有受體欄位的控制完全相同且非零。這是另一個 P2 缺陷，由 ticket 92 處理；本票正式來源維持兩個修正，MOD-05 已標 failed，最新工程需求 89 passed／2 failed。診斷 exit 0 表示成功觀察既有 bug，不是修正通過。
 
 Root 不接受 worker C1 的「已確認 pre 時點錯誤」分類。主規格 10.3 只有 pre_activity×post_activity，沒有指定 pre(t) 與 post(t+1) 的相對時點；ticket 18 的公式與同票手算表互相矛盾。套件註解、現行 consumer 與已驗證手算表一致。Root 兩列 LIF 實測 eligibility／plastic 為 exp(-1)，若把 pre 定義成該步開始的突觸跡，則會是 1。這確認不同定義會改變數值，尚未決定哪個定義才是要求。分類保留 NEEDS INVESTIGATION，不更改正常學習公式，不把文件矛盾當作已確認模型演算法錯誤。
+
+## 清理與交付
+
+[清理](cleanup.json)記錄刪除本輪 9675 個一般檔案、42107 個連結、9213 個含根目錄與 1,251,214,520 bytes。兩次 lsof 無開啟檔案、兩次內容／stat 盤點一致，原有兩個暫存目錄的 inode 與 entries 保留。原生快取目標在清理前後存續，該比較不是整段歷史寫入稽核。
+
+[交付](delivery.json)與[提交來源核對](committed-source-check.json)證明正常推送及遠端讀回；沒有 force push。提交前 Git 檔尾檢查發現 worker 報告的額外空行，原始位元組原樣保存在 gzip，可讀副本只移除末尾空行，見[格式紀錄](worker-report-format.json)。
