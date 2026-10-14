@@ -1,0 +1,11 @@
+{
+  "original_diagnostic": "old-scope-replay.go.txt",
+  "failure_log": "real-model-probe-invalid-target.log",
+  "failure_log_sha256": "ae0cf9daeef9e72875439b61cbf0731e881042341434481f2b1a1e352606fbb0",
+  "reason": "Root diagnostic incorrectly multiplied the Trainer.Step target width by the input rows for ReadoutEveryStep. learning.Network.lossGradient always requires exactly OutputSize target values and scores the final row. This is a diagnostic error, not a checkpoint or numerical defect.",
+  "source_reference": "learning/network.go lossGradient",
+  "corrected_source": "real-model-replay.go.txt",
+  "corrected_source_sha256": "0bbf582fa6db74855ecc76a8aa0a3912d8121df5746dfad8e44a36c4fb74a168",
+  "production_and_frozen_tests_unchanged": true,
+  "comparison_scope": "SDK Network.Predict and Trainer.Step (MSE last-row update), no new OCR accuracy or classifier training protocol claim."
+}

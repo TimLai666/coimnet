@@ -1,0 +1,55 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"os"
+	"path/filepath"
+)
+
+func main() {
+	ctx := context.Background()
+	dir := os.Args[1]
+	s, err := checkpoint.LoadIndividualBundle(ctx, os.Args[2])
+	if err != nil {
+		panic(err)
+	}
+	opts := learning.DefaultOptions()
+	opts.WeightDecay = .2
+	opts.ClipNorm = 1
+	opts.Truncation = 1
+	t, err := learning.NewTrainer(s.Config, s.Parameters, opts)
+	if err != nil {
+		panic(err)
+	}
+	if err = checkpoint.SaveTrainingBundle(ctx, filepath.Join(dir, "training"), t.Snapshot()); err != nil {
+		panic(err)
+	}
+	pkg, err := checkpoint.NewModelPackage(s.Config, s.Parameters, checkpoint.Units{TimeStep: "model_step", TimeConstant: "model_step"}, []string{"evidence/fixture.json"})
+	if err != nil {
+		panic(err)
+	}
+	if err = checkpoint.SaveModelPackageBundle(ctx, filepath.Join(dir, "model"), pkg); err != nil {
+		panic(err)
+	}
+	c := s.Config
+	c.Chemistry = &learning.ChemicalEpisode{Part: *s.Chemical, SourceStep: s.Neural.Continuous.Steps}
+	ct, err := learning.NewTrainer(c, s.Parameters, opts)
+	if err != nil {
+		panic(err)
+	}
+	config := json.RawMessage(`{"mode":"fixture"}`)
+	if err = checkpoint.SaveTaskTrainingBundle(ctx, filepath.Join(dir, "task"), "coimnet-test-task/v1", config, ct.Snapshot()); err != nil {
+		panic(err)
+	}
+	_, err = checkpoint.LoadTaskTrainingBundle(ctx, filepath.Join(dir, "task"), "coimnet-test-task/v1")
+	row := map[string]any{"task_chemical_roundtrip_accepted": err == nil}
+	if err != nil {
+		row["error"] = err.Error()
+	}
+	b, _ := json.Marshal(row)
+	fmt.Println(string(b))
+}

@@ -1,0 +1,16 @@
+from pathlib import Path
+import json,hashlib,os,subprocess,datetime
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/chemical-restore-audit-20261014';e=r/'evidence/STA-03/chemical-restore-audit-20261014'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+def check():
+ for p,h in json.loads((e/'source-final.json').read_bytes()).items():assert sha((r/p).read_bytes())==h,p
+check();env=os.environ.copy();env.update({k:str(w/v)for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+exe=w/'old-artifact-replay-final.test';assert not exe.exists();cmd=['go','test','-c','-overlay',str(e/'restore-v2-overlay.json'),'-o',str(exe),'./learning'];subprocess.run(cmd,cwd=r,env=env,check=True);rows=[]
+for item in json.loads((e/'actual-old-artifacts.json').read_bytes())['cases']:
+ for p,h in item['files'].items():assert sha(Path(p).read_bytes())==h,p
+ expected=Path(item['expected_result']).read_bytes();assert sha(expected)==item['expected_result_sha256']
+ output=Path(item['path']+'.final-result.json');assert not output.exists();local=env.copy();local.update(COIMNET_RESTORE_CHILD_KIND=item['kind'],COIMNET_RESTORE_CHILD_INPUT=item['path'],COIMNET_RESTORE_CHILD_OUTPUT=str(output),COIMNET_RESTORE_CHILD_PROFILE=item['profile'])
+ log=subprocess.check_output([str(exe),'-test.run=^TestRestoreCompositionChild$','-test.count=1'],cwd=r,env=local,stderr=subprocess.STDOUT);got=output.read_bytes();assert got==expected,item['path']
+ for p,h in item['files'].items():assert sha(Path(p).read_bytes())==h,p
+ rows.append({'path':item['path'],'new_process':True,'complete_result_bytes_equal':True,'result_sha256':sha(got),'original_files_unchanged':True,'child_log_sha256':sha(log)})
+check();report={'command':cmd,'cases':rows,'actual_old_checkpoints':len(rows),'same_source_count':len(json.loads((e/'source-final.json').read_bytes())),'completed_at':datetime.datetime.now(datetime.timezone.utc).isoformat()};(e/'old-artifact-compatibility-final.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps({'actual_old_checkpoints':len(rows),'new_process_results_equal':True,'files_unchanged':True}))

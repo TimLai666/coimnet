@@ -1,0 +1,24 @@
+from pathlib import Path
+import io,tarfile,gzip,hashlib,json,datetime
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/chemical-restore-audit-20261014';e=r/'evidence/STA-03/chemical-restore-audit-20261014'
+paths=sorted([p for name in ['cases-v2-normal','scope-inputs','malformed-bundles'] for p in (w/name).rglob('*') if p.is_file()])
+for p in paths:assert not p.is_symlink()
+contents={str(p.relative_to(w)):p.read_bytes() for p in paths}
+old=json.loads((e/'actual-old-artifacts.json').read_text())
+for case in old['cases']:
+ for p,h in case['files'].items():assert hashlib.sha256(Path(p).read_bytes()).hexdigest()==h,p
+ assert hashlib.sha256(Path(case['expected_result']).read_bytes()).hexdigest()==case['expected_result_sha256']
+for p,data in contents.items():assert (w/p).read_bytes()==data,p
+buf=io.BytesIO()
+with tarfile.open(fileobj=buf,mode='w',format=tarfile.USTAR_FORMAT) as tar:
+ for name,data in sorted(contents.items()):
+  info=tarfile.TarInfo(name);info.size=len(data);info.mode=0o600;info.mtime=0;tar.addfile(info,io.BytesIO(data))
+raw=buf.getvalue();packed=gzip.compress(raw,mtime=0)
+with (e/'actual-fixture-artifacts.tar.gz').open('xb') as f:f.write(packed)
+with tarfile.open(fileobj=io.BytesIO(gzip.decompress(packed)),mode='r:') as tar:
+ actual={item.name:tar.extractfile(item).read() for item in tar.getmembers()}
+assert actual==contents
+for p,data in contents.items():assert (w/p).read_bytes()==data,p
+out={'created_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'archive':'actual-fixture-artifacts.tar.gz','archive_sha256':hashlib.sha256(packed).hexdigest(),'files':{p:hashlib.sha256(b).hexdigest() for p,b in contents.items()},'regular_files':len(contents),'original_bytes':sum(map(len,contents.values())),'archive_bytes':len(packed),'roundtrip_byte_equality':True,'scope':'Synthetic restore fixtures, original malformed probes, old and fixed child outputs. Not a published trained model or real-task quality result.'}
+with (e/'actual-fixture-archive.json').open('x') as f:json.dump(out,f,indent=2);f.write('\n')
+print(json.dumps({k:v for k,v in out.items() if k!='files'}))

@@ -1,0 +1,3 @@
+package main
+import("context";"encoding/json";"fmt";"os";"github.com/TimLai666/coimnet/checkpoint")
+func main(){for _,p:=range os.Args[1:]{s,err:=checkpoint.LoadIndividualBundle(context.Background(),p);row:=map[string]any{"path":p,"accepted":err==nil};if err!=nil{row["error"]=err.Error()}else{row["steps"]=s.Chemical.State.Steps;row["resources"]=s.Chemical.Resources;row["pending_feedback_count"]=len(s.Chemical.PendingFeedback)};b,e:=json.Marshal(row);if e!=nil{panic(e)};fmt.Println(string(b))}}

@@ -1,0 +1,47 @@
+import os,json,hashlib,subprocess,datetime,time
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/chemical-restore-audit-20261014';e=r/'evidence/STA-03/chemical-restore-audit-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+manifest=json.loads((e/'source-fixed.json').read_text())
+def check():
+ for p,h in manifest.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check()
+inputs=[w/'scope-inputs'/x for x in ['training','model','task','missing-decay','missing-clip','missing-window','missing-trainable','missing-evidence']]+[w/'malformed-bundles'/x for x in ['steps','resources','pending_feedback']]
+frozen={str(p.relative_to(r)):hashlib.sha256(p.read_bytes()).hexdigest() for d in inputs for p in d.iterdir() if p.is_file()}
+results=[]
+def run(name,cmd):
+ check();start=time.monotonic();log=e/(name+'.log')
+ with log.open('xb') as f:p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ raw=log.read_bytes();results.append({'name':name,'command':cmd,'exit_code':p.returncode,'duration_seconds':round(time.monotonic()-start,6),'log':log.name,'log_sha256':hashlib.sha256(raw).hexdigest()});assert p.returncode==0,name;check();return raw
+old=w/'old-scope-baseline';new=w/'old-scope-fixed';source=w/'old-scope-replay.go'
+run('old-scope-baseline-build',['go','build','-overlay',str(e/'old-source-overlay.json'),'-o',str(old),str(source)])
+run('old-scope-fixed-build',['go','build','-o',str(new),str(source)])
+pairs=[]
+for kind in ['training','model','task']:
+ d=w/'scope-inputs'/kind
+ a=run('old-scope-'+kind+'-reference',[str(old),'task-reference' if kind=='task' else kind,str(d)])
+ b=run('old-scope-'+kind+'-fixed',[str(new),kind,str(d)])
+ # Go runtime may emit informational lines; compare the complete JSON output.
+ def record(raw):
+  matches=[]
+  for line in raw.splitlines():
+   try:
+    v=json.loads(line)
+    if isinstance(v,dict) and all(k in v for k in ['before','prediction','step','after']):matches.append(line)
+   except ValueError:pass
+  assert len(matches)==1;return matches[0]
+ assert record(a)==record(b),kind
+ pairs.append({'kind':kind,'before_prediction_next_update_and_after_identical':True,'reference':'old public loader' if kind!='task' else 'old trainer restored from original saved task payload; arrays.bin verified empty'})
+a=run('original-individual-mutations-fixed',['go','run',str(w/'bundle_probe.go')]+[str(w/'malformed-bundles'/x) for x in ['steps','resources','pending_feedback']])
+b=run('original-training-model-mutations-fixed',['go','run',str(w/'scope_missing_probe.go')]+[str(w/'scope-inputs'/x) for x in ['missing-decay','missing-clip','missing-window','missing-trainable','missing-evidence']])
+refusals=[]
+for raw in [a,b]:
+ for line in raw.splitlines():
+  try:v=json.loads(line)
+  except ValueError:continue
+  if isinstance(v,dict) and 'accepted' in v:assert v['accepted'] is False and v.get('error');refusals.append(v)
+assert len(refusals)==8
+for p,h in frozen.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check();out={'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_manifest':'source-fixed.json','actual_old_artifact_fingerprints':frozen,'pairs':pairs,'original_malformed_artifact_refusals':refusals,'original_files_unchanged':True,'commands':results,'limitations':'Synthetic fixtures; task uses the old trainer reference because the old task loader is the confirmed defect.'}
+with (e/'old-scope-compatibility.json').open('x') as f:json.dump(out,f,indent=2);f.write('\n')
+print(json.dumps({'old_training_model_task_equal':len(pairs),'original_bad_artifacts_rejected':len(refusals),'original_files_unchanged':True}))

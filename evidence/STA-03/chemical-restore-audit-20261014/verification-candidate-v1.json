@@ -1,0 +1,113 @@
+{
+  "requirement": [
+    "STA-02",
+    "STA-03"
+  ],
+  "reproduction_command": "malformed-probe.json, scope-missing-probe.json, scope-probe.json; restore-v2-normal.json and restore-v2-race.json",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "machine": "darwin/arm64",
+    "filesystem": "local APFS",
+    "baseline_commit": "00bc7016c9380c23ab2154caac10666d798581a5",
+    "isolated_run_directory": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-restore-audit-20261014"
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-before.json",
+    "source_manifest_sha256": "d6efa8ebe203be8d9355f4a161f9be8cfb7d1641fb06cf78263633e00279d08b",
+    "source_count": 806,
+    "synthetic_mutations": [
+      "malformed-inputs.json",
+      "scope-malformed-inputs.json"
+    ],
+    "fixed_source_manifest": "source-fixed.json",
+    "fixed_source_manifest_sha256": "51cc738b46c3b2c6c5fc4e705473dc81d861df7e4a19c2b1edd66f80f09048f9",
+    "fixed_source_count": 808
+  },
+  "observed_result": {
+    "bundle_field_contract_failed": true,
+    "valid_task_chemistry_roundtrip_failed": true,
+    "ordinary_restore_matrix": {
+      "normal": {
+        "continuations": 96,
+        "new_processes": 48,
+        "rejections": 216,
+        "legacy_sensitivity": 24
+      },
+      "race": {
+        "continuations": 96,
+        "new_processes": 48,
+        "rejections": 216,
+        "legacy_sensitivity": 24
+      }
+    },
+    "root_findings": "confirmed-findings.json",
+    "formal_fix_applied": true,
+    "root_frozen_regression": {
+      "red-v2": {
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-count=1",
+          "-run",
+          "^TestBundle(RejectsIncomplete|TaskChemicalTraining|PresencePreserves)",
+          "./checkpoint"
+        ],
+        "exit_code": 1,
+        "expected_exit_code": 1,
+        "started_at": "2026-10-14T16:02:08.887802+00:00",
+        "duration_seconds": 3.393378,
+        "log": "red-v2.log",
+        "log_sha256": "c48a8dbb7e1bc503fc503022f317e285c812a6a4512b02c501c01ba1f39d3227",
+        "source_manifest": "source-with-tests-v2.json",
+        "source_manifest_sha256": "9321719f517f9cfb641e43d90ee672adf66cd71ced1ebc9a75792c3fade3800f",
+        "test_pass_events": 7,
+        "test_fail_events": 22,
+        "test_skip_events": 0,
+        "package_pass_events": 0
+      },
+      "green": {
+        "command": [
+          "go",
+          "test",
+          "-json",
+          "-count=1",
+          "-run",
+          "^TestBundle(RejectsIncomplete|TaskChemicalTraining|PresencePreserves)",
+          "./checkpoint"
+        ],
+        "exit_code": 0,
+        "expected_exit_code": 0,
+        "started_at": "2026-10-14T16:16:47.736522+00:00",
+        "duration_seconds": 3.186837,
+        "log": "green.log",
+        "log_sha256": "9c7582f5ae0de0322a7e5a3f8d18c7b8a61507c975e41f865fa9f65a9b005de1",
+        "source_manifest": "source-fixed.json",
+        "source_manifest_sha256": "51cc738b46c3b2c6c5fc4e705473dc81d861df7e4a19c2b1edd66f80f09048f9",
+        "test_pass_events": 29,
+        "test_fail_events": 0,
+        "test_skip_events": 0,
+        "package_pass_events": 1
+      }
+    },
+    "actual_old_individual_checkpoints": "old-artifact-compatibility.json",
+    "actual_old_training_model_task_and_original_refusals": "old-scope-compatibility.json",
+    "adversarial_source_review": "adversarial-review.md"
+  },
+  "test_log": [
+    "malformed-probe.log",
+    "scope-missing-probe.log",
+    "scope-probe.log",
+    "restore-v2-normal.log",
+    "restore-v2-race.log",
+    "red-v2.log",
+    "green.log",
+    "original-individual-mutations-fixed.log",
+    "original-training-model-mutations-fixed.log",
+    "unit.log"
+  ],
+  "engineering_passed": false,
+  "acceptance_complete": false,
+  "limitation": "Artificial state fixtures do not prove real-task quality or absence of all bugs.",
+  "engineering_status": "format, module-verify and build passed. First full unit found missing fixture rows in docs/INDEX.md; rows added without source/test changes. Full unit retry and remaining checks running."
+}

@@ -1,0 +1,29 @@
+import os,json,hashlib,subprocess,time,datetime
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet'); w=r/'runs/.tmp/chemical-restore-audit-20261014'; e=r/'evidence/STA-03/chemical-restore-audit-20261014'
+env=os.environ.copy(); env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()}); env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+frozen=json.loads((e/'source-fixed.json').read_text())
+def check():
+ for p,h in frozen.items():
+  assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check()
+info={'go':subprocess.check_output(['go','version'],env=env,text=True).strip(),'system':subprocess.check_output(['sw_vers'],text=True).strip(),'machine':subprocess.check_output(['uname','-m'],text=True).strip(),'filesystem':'local APFS','working_directory':str(r),'go_environment':{k:env[k] for k in ['GOCACHE','GOMODCACHE','GOTMPDIR','TMPDIR','GOPROXY','GOSUMDB','GOTOOLCHAIN','GOMAXPROCS','GOFLAGS']},'go_platform':subprocess.check_output(['go','env','GOOS','GOARCH','CGO_ENABLED'],env=env,text=True).splitlines()}
+(e/'engineering-environment.json').write_text(json.dumps(info,indent=2)+'\n')
+def run(name,cmd,format_empty=False):
+ check(); start=datetime.datetime.now(datetime.timezone.utc).isoformat(); t=time.monotonic(); print('START '+name,flush=True)
+ log=e/(name+'.log')
+ with log.open('xb') as f: p=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT)
+ raw=log.read_bytes(); receipt={'command':cmd,'exit_code':p.returncode,'started_at':start,'duration_seconds':round(time.monotonic()-t,6),'log':log.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':'source-fixed.json','source_manifest_sha256':hashlib.sha256((e/'source-fixed.json').read_bytes()).hexdigest()}
+ with (e/(name+'.json')).open('x') as out: json.dump(receipt,out,indent=2);out.write('\n')
+ print(json.dumps({'name':name,'exit_code':receipt['exit_code'],'duration_seconds':receipt['duration_seconds']}),flush=True); check(); assert p.returncode==0,name
+ if format_empty: assert not raw.strip(),raw.decode()
+run('unit-final',['go','test','-json','-count=1','./...'])
+run('race',['go','test','-race','-json','-count=1','./...'])
+run('vet',['go','vet','./...'])
+run('module-list',['go','list','-m','all'])
+run('target-flow',['bash','scripts/check-target-flow.sh'])
+run('cli-build',['go','build','-o',str(w/'coimnet'),'./cmd/coimnet'])
+for n,args in [('doctor',['doctor']),('data-sources',['data','sources']),('delayed',['examples','run','delayed']),('lif-threshold',['examples','run','lif-threshold']),('train-first',['train','delayed','--steps','80','--checkpoint',str(w/'first.json')]),('train-resumed',['resume','--checkpoint',str(w/'first.json'),'--steps','40','--out',str(w/'resumed.json')]),('train-continuous',['train','delayed','--steps','120','--checkpoint',str(w/'continuous.json')])]:run('cli-'+n,[str(w/'coimnet')]+args)
+run('cli-resume-equality',['cmp',str(w/'resumed.json'),str(w/'continuous.json')])
+for n in ['first','resumed','continuous']:(e/('cli-'+n+'-checkpoint.json')).write_bytes((w/(n+'.json')).read_bytes())
+print('ALL_ENGINEERING_COMMANDS_PASSED',flush=True)

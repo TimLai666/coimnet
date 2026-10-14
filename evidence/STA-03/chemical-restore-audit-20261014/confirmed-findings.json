@@ -1,0 +1,137 @@
+{
+  "verified_at": "2026-10-14T15:54:41.696294+00:00",
+  "bounded_restore_matrix": {
+    "normal": {
+      "continuations": 96,
+      "new_processes": 48,
+      "rejections": 216,
+      "legacy_sensitivity": 24
+    },
+    "race": {
+      "continuations": 96,
+      "new_processes": 48,
+      "rejections": 216,
+      "legacy_sensitivity": 24
+    }
+  },
+  "bundle_missing_required_fields": [
+    {
+      "accepted": true,
+      "path": "runs/.tmp/chemical-restore-audit-20261014/malformed-bundles/steps",
+      "pending_feedback_count": 1,
+      "resources": {
+        "energy": 1.25
+      },
+      "steps": 0
+    },
+    {
+      "accepted": true,
+      "path": "runs/.tmp/chemical-restore-audit-20261014/malformed-bundles/resources",
+      "pending_feedback_count": 1,
+      "resources": {},
+      "steps": 7
+    },
+    {
+      "accepted": true,
+      "path": "runs/.tmp/chemical-restore-audit-20261014/malformed-bundles/pending_feedback",
+      "pending_feedback_count": 0,
+      "resources": {
+        "energy": 1.25
+      },
+      "steps": 7
+    }
+  ],
+  "training_and_model_missing_required_fields": [
+    {
+      "accepted": true,
+      "options": {
+        "learning_rate": 0.01,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-08,
+        "weight_decay": 0,
+        "clip_norm": 1,
+        "truncation": 1,
+        "trainable": {
+          "encoder": true,
+          "weights": true,
+          "bias": true,
+          "tau": true,
+          "readout": true
+        }
+      },
+      "path": "runs/.tmp/chemical-restore-audit-20261014/scope-inputs/missing-decay"
+    },
+    {
+      "accepted": true,
+      "options": {
+        "learning_rate": 0.01,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-08,
+        "weight_decay": 0.2,
+        "clip_norm": 0,
+        "truncation": 1,
+        "trainable": {
+          "encoder": true,
+          "weights": true,
+          "bias": true,
+          "tau": true,
+          "readout": true
+        }
+      },
+      "path": "runs/.tmp/chemical-restore-audit-20261014/scope-inputs/missing-clip"
+    },
+    {
+      "accepted": true,
+      "options": {
+        "learning_rate": 0.01,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-08,
+        "weight_decay": 0.2,
+        "clip_norm": 1,
+        "truncation": 0,
+        "trainable": {
+          "encoder": true,
+          "weights": true,
+          "bias": true,
+          "tau": true,
+          "readout": true
+        }
+      },
+      "path": "runs/.tmp/chemical-restore-audit-20261014/scope-inputs/missing-window"
+    },
+    {
+      "accepted": true,
+      "options": {
+        "learning_rate": 0.01,
+        "beta1": 0.9,
+        "beta2": 0.999,
+        "epsilon": 1e-08,
+        "weight_decay": 0.2,
+        "clip_norm": 1,
+        "truncation": 1,
+        "trainable": {
+          "encoder": false,
+          "weights": false,
+          "bias": false,
+          "tau": false,
+          "readout": false
+        }
+      },
+      "path": "runs/.tmp/chemical-restore-audit-20261014/scope-inputs/missing-trainable"
+    },
+    {
+      "accepted": true,
+      "evidence_registry": [],
+      "path": "runs/.tmp/chemical-restore-audit-20261014/scope-inputs/missing-evidence"
+    }
+  ],
+  "valid_task_chemistry_refusal": {
+    "error": "decode bundle document \"runs/.tmp/chemical-restore-audit-20261014/scope-inputs/task/document.json\": training.config.chemistry.part.resources has unsupported field kind map",
+    "task_chemical_roundtrip_accepted": false
+  },
+  "normalization_hides_missing_fields": true,
+  "formal_fix_applied": false
+}

@@ -209,11 +209,13 @@
 
 | 版本 | 套件/用途範圍 | 用途說明 | 來源 |
 | --- | --- | --- | --- |
+| `coimnet-chemical-task-fixture/v1` | `checkpoint` | 含化學機制的任務 bundle 保存與接續測試 | [checkpoint/bundle_presence_test.go:162](../checkpoint/bundle_presence_test.go#L162) |
 | `coimnet-connectome-builder/v999` | `connectome` | 接線建構器未知版本拒絕反例 | [connectome/store_receipt_test.go:82](../connectome/store_receipt_test.go#L82) |
 | `coimnet-dataset-manifest/v9` | `connectome` | 接線資料集未知版本拒絕反例 | [connectome/build_test.go:278](../connectome/build_test.go#L278) |
 | `coimnet-device-adamw/v2` | `backend/webgpu` | AdamW 快照未知版本拒絕反例 | [backend/webgpu/device_adam_test.go:293](../backend/webgpu/device_adam_test.go#L293) |
 | `coimnet-graph-store/v9` | `connectome` | 圖儲存未知版本拒絕反例 | [connectome/store_test.go:246](../connectome/store_test.go#L246) |
 | `coimnet-individual-checkpoint/v9` | `checkpoint` | 個體快照未知版本拒絕反例 | [checkpoint/package_test.go:281](../checkpoint/package_test.go#L281) |
+| `coimnet-large-task-fixture/v1` | `checkpoint` | 任務 bundle 大型二進位陣列保存測試 | [checkpoint/bundle_presence_test.go:221](../checkpoint/bundle_presence_test.go#L221) |
 | `coimnet-lif-state/v0` | `dynamics` | LIF 狀態不支援版本的拒絕反例 | [dynamics/lif_state_test.go:358](../dynamics/lif_state_test.go#L358) |
 | `coimnet-model-package/v2` | `checkpoint` | 模型包未來版本拒絕反例 | [checkpoint/package_test.go:254](../checkpoint/package_test.go#L254) |
 | `coimnet-other-task/v1` | `checkpoint` | 任務 bundle schema 不符拒絕反例 | [checkpoint/task_bundle_test.go:501](../checkpoint/task_bundle_test.go#L501) |

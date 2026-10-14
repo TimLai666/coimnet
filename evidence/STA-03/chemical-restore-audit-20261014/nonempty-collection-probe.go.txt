@@ -1,0 +1,128 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"os"
+	"path/filepath"
+	"reflect"
+)
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func main() {
+	ctx := context.Background()
+	root := os.Args[1]
+	base := os.Args[2]
+	schema := "coimnet-test-task/v1"
+	var rows []map[string]any
+	for _, kind := range []string{"training", "task"} {
+		for _, bad := range []string{"resource-element-null", "resources-array", "feedback-element-null", "feedback-object", "feedback-time-null", "state-steps-null", "source-step-null"} {
+			original, err := checkpoint.LoadTaskTrainingBundle(ctx, base, schema)
+			check(err)
+			dir := filepath.Join(root, kind, bad)
+			if kind == "training" {
+				check(checkpoint.SaveTrainingBundle(ctx, dir, original.Training))
+			} else {
+				check(checkpoint.SaveTaskTrainingBundle(ctx, dir, schema, original.Config, original.Training))
+			}
+			path := filepath.Join(dir, "document.json")
+			raw, err := os.ReadFile(path)
+			check(err)
+			var doc map[string]any
+			check(json.Unmarshal(raw, &doc))
+			training := doc
+			if kind == "task" {
+				training = doc["training"].(map[string]any)
+			}
+			chem := training["config"].(map[string]any)["chemistry"].(map[string]any)
+			part := chem["part"].(map[string]any)
+			switch bad {
+			case "resource-element-null":
+				part["resources"] = map[string]any{"energy": nil}
+			case "resources-array":
+				part["resources"] = []any{}
+			case "feedback-element-null":
+				part["pending_feedback"] = []any{nil}
+			case "feedback-object":
+				part["pending_feedback"] = map[string]any{}
+			case "feedback-time-null":
+				feedback := part["pending_feedback"].([]any)
+				if len(feedback) == 0 {
+					panic("fixture has no feedback")
+				}
+				feedback[0].(map[string]any)["available_at"] = nil
+			case "state-steps-null":
+				part["state"].(map[string]any)["steps"] = nil
+			case "source-step-null":
+				chem["source_step"] = nil
+			}
+			mutated, err := json.Marshal(doc)
+			check(err)
+			current, err := os.ReadFile(path)
+			check(err)
+			if !bytes.Equal(current, raw) {
+				panic("document changed concurrently")
+			}
+			check(os.WriteFile(path, mutated, 0600))
+			manifestPath := filepath.Join(dir, "manifest.json")
+			before, err := os.ReadFile(manifestPath)
+			check(err)
+			var manifest checkpoint.BundleManifest
+			check(json.Unmarshal(before, &manifest))
+			digest := sha256.Sum256(mutated)
+			manifest.Document.SHA256 = fmt.Sprintf("%x", digest)
+			manifest.Document.Bytes = int64(len(mutated))
+			encoded, err := json.Marshal(manifest)
+			check(err)
+			current, err = os.ReadFile(manifestPath)
+			check(err)
+			if !bytes.Equal(current, before) {
+				panic("manifest changed concurrently")
+			}
+			check(os.WriteFile(manifestPath, encoded, 0600))
+			files := map[string][]byte{}
+			for _, name := range []string{"document.json", "manifest.json", "arrays.bin"} {
+				files[name], err = os.ReadFile(filepath.Join(dir, name))
+				check(err)
+			}
+			if kind == "training" {
+				got, loadErr := checkpoint.LoadTrainingBundle(ctx, dir)
+				err = loadErr
+				if err == nil || !reflect.DeepEqual(got, learning.TrainingSnapshot{}) {
+					panic("malformed training accepted or partial result")
+				}
+			} else {
+				got, loadErr := checkpoint.LoadTaskTrainingBundle(ctx, dir, schema)
+				err = loadErr
+				if err == nil || !reflect.DeepEqual(got, checkpoint.TaskTrainingSnapshot{}) {
+					panic("malformed task accepted or partial result")
+				}
+			}
+			for name, expected := range files {
+				now, readErr := os.ReadFile(filepath.Join(dir, name))
+				check(readErr)
+				if !bytes.Equal(now, expected) {
+					panic("load changed artifact")
+				}
+			}
+			hashes := map[string]string{}
+			for name, data := range files {
+				h := sha256.Sum256(data)
+				hashes[name] = fmt.Sprintf("%x", h)
+			}
+			rows = append(rows, map[string]any{"kind": kind, "case": bad, "error": err.Error(), "empty_result": true, "original_files_unchanged": true, "artifact_sha256": hashes})
+		}
+	}
+	b, err := json.Marshal(rows)
+	check(err)
+	fmt.Println(string(b))
+}

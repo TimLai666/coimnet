@@ -1,0 +1,63 @@
+from pathlib import Path
+import json,gzip,hashlib,collections,datetime,subprocess
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/STA-03/chemical-restore-audit-20261014'
+sha=lambda raw:hashlib.sha256(raw).hexdigest()
+def read(name):return json.loads((e/name).read_bytes())
+source=read('source-final.json');assert len(source)==809
+for p,h in source.items():assert sha((r/p).read_bytes())==h,p
+before=read('source-before.json')
+changed={p for p,h in before.items() if source[p]!=h};assert changed=={'checkpoint/bundle.go','checkpoint/chemical_episode.go','checkpoint/task_bundle.go'},changed
+added=set(source)-set(before);assert added=={'checkpoint/bundle_presence.go','checkpoint/bundle_presence_test.go','checkpoint/bundle_chemical_nil_test.go'},added
+for name in ['tests-frozen-v2.json','tests-frozen-nil.json']:
+ for p,h in read(name).items():assert source[p]==h,p
+commands=['source-final-format','source-final-module-verify','source-final-build','source-final-unit','source-final-race','vet','module-list','target-flow','cli-build','cli-doctor','cli-data-sources','cli-delayed','cli-lif-threshold','cli-train-first','cli-train-resumed','cli-train-continuous','cli-resume-equality']
+for name in commands:
+ rec=read(name+'.json');assert rec['exit_code']==0,name;assert rec['source_manifest']=='source-final.json',name;assert rec['source_manifest_sha256']==sha((e/'source-final.json').read_bytes()),name;assert sha((e/rec['log']).read_bytes())==rec['log_sha256'],name
+for name,fail,passed in [('red-v2',22,7),('nil-collections-red',7,10),('source-final-scoped',0,46)]:
+ rec=read(name+'.json');assert rec['test_fail_events']==fail and rec['test_pass_events']==passed,name;assert sha((e/rec['log']).read_bytes())==rec['log_sha256']
+models=read('real-example-model-compatibility-final.json');assert len(models['models'])==6 and models['protected_original_models_unchanged'] and not models['quality_measured'];assert models['source_manifest']=='source-final.json'
+for row in models['models']:
+ assert row['loaded_snapshot_prediction_next_update_and_after_bytes_equal']
+ for f in row['input_files']:assert sha((r/f['path']).read_bytes())==f['sha256'],f['path']
+individual=read('old-artifact-compatibility-final.json');assert individual['actual_old_checkpoints']==48 and individual['same_source_count']==809;assert all(x['complete_result_bytes_equal'] and x['new_process'] and x['original_files_unchanged'] for x in individual['cases'])
+scope=read('old-scope-compatibility-final.json');assert scope['source_manifest']=='source-final.json' and len(scope['pairs'])==3 and len(scope['original_malformed_artifact_refusals'])==8 and scope['original_files_unchanged']
+assert all(x['before_prediction_next_update_and_after_identical'] for x in scope['pairs']);assert all(not x['accepted'] and x['error'] for x in scope['original_malformed_artifact_refusals'])
+for p,h in scope['actual_old_artifact_fingerprints'].items():assert sha((r/p).read_bytes())==h,p
+negative=read('nonempty-collection-results-final.json');assert negative['public_negative_cases']==14 and negative['source_manifest']=='source-final.json';assert all(x['empty_result'] and x['original_files_unchanged'] and x['error'] for x in negative['results']);assert read('nonempty-collection-probe-v3.json')['exit_code']==0
+archive=read('actual-fixture-archive.json');assert archive['roundtrip_byte_equality'] and sha((e/archive['archive']).read_bytes())==archive['archive_sha256']
+summaries={}
+for name in ['source-final-unit','source-final-race']:
+ rec=read(name+'.json');events=[]
+ for line in (e/rec['log']).read_bytes().splitlines():
+  try:events.append(json.loads(line))
+  except ValueError:pass
+ counts={a:sum(x.get('Action')==a and 'Test' in x for x in events) for a in ['pass','fail','skip']};packages=sum(x.get('Action')=='pass' and 'Test' not in x for x in events);assert packages==58 and counts['fail']==0
+ skips=[{'package':x['Package'],'test':x['Test'],'output':''.join(y.get('Output','') for y in events if y.get('Test')==x['Test'] and y.get('Package')==x['Package'])} for x in events if x.get('Action')=='skip' and 'Test' in x]
+ summaries[name]={'event_counts':counts,'passed_packages':packages,'skipped_cases':skips}
+ with (e/(name+'-summary.json')).open('x') as f:json.dump(summaries[name],f,indent=2);f.write('\n')
+assert (e/'cli-resumed-checkpoint.json').read_bytes()==(e/'cli-continuous-checkpoint.json').read_bytes()
+# Compression is lossless; original hash always identifies decompressed bytes.
+compressed=[]
+for p in sorted(e.glob('*.log')):
+ raw=p.read_bytes()
+ if len(raw)<=200000 and not raw.endswith(b'\n\n'):continue
+ dest=p.with_name(p.name+'.gz');assert not dest.exists();packed=gzip.compress(raw,mtime=0)
+ with dest.open('xb') as f:f.write(packed)
+ assert gzip.decompress(dest.read_bytes())==raw
+ entry={'raw_path':p.name,'archive':dest.name,'raw_sha256':sha(raw),'archive_sha256':sha(packed),'raw_bytes':len(raw),'archive_bytes':len(packed)};compressed.append(entry)
+ receipt=e/(p.stem+'.json')
+ if receipt.exists():
+  before_bytes=receipt.read_bytes();rec=json.loads(before_bytes)
+  if isinstance(rec,dict) and rec.get('log')==p.name:
+   assert rec['log_sha256']==sha(raw);rec.update(log=dest.name,log_compression='gzip',compressed_log_sha256=sha(packed));assert receipt.read_bytes()==before_bytes;receipt.write_text(json.dumps(rec,indent=2)+'\n')
+ assert p.read_bytes()==raw;p.unlink()
+with (e/'archive-terminal.json').open('x') as f:json.dump(compressed,f,indent=2);f.write('\n')
+lookup={x['raw_path']:x['archive'] for x in compressed}
+p=e/'verification.json';prior=p.read_bytes();v=json.loads(prior)
+v['engineering_passed']=True;v['acceptance_complete']=False;v['engineering_status']='All final-source engineering commands passed. Final governance, cleanup and delivery pending.'
+v['input_fingerprints']['fixed_source_manifest']='source-final.json';v['input_fingerprints']['fixed_source_manifest_sha256']=sha((e/'source-final.json').read_bytes());v['input_fingerprints']['fixed_source_count']=809
+v['observed_result']['actual_old_individual_checkpoints']='old-artifact-compatibility-final.json';v['observed_result']['actual_old_training_model_task_and_original_refusals']='old-scope-compatibility-final.json';v['observed_result']['six_existing_handwriting_example_models']='real-example-model-compatibility-final.json';v['observed_result']['final_regression']=read('source-final-scoped.json');v['observed_result']['final_engineering_summaries']=summaries;v['observed_result']['cli_new_process_resume_bytes_equal']=True;v['observed_result']['removed_unused_wrapper']='unused-wrapper-removal.json';v['observed_result']['final_governance']='pending';v['observed_result']['own_cleanup']='pending';v['observed_result']['delivery']='pending'
+v['engineering_receipts']=[n+'.json' for n in commands]
+v['test_log']=list(dict.fromkeys(lookup.get(n,n) for n in v['test_log']+[read(n+'.json')['log'] for n in ['source-final-scoped','source-final-unit','source-final-race']]))
+assert p.read_bytes()==prior;p.write_text(json.dumps(v,indent=2)+'\n')
+print(json.dumps({'final_engineering_passed':True,'summaries':{k:{'event_counts':x['event_counts'],'passed_packages':x['passed_packages']} for k,x in summaries.items()},'archived_logs':len(compressed),'cleanup_and_delivery_pending':True}))

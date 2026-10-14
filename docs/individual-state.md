@@ -88,6 +88,8 @@
 
 載入檢查 SHA-256、版本、profile、完整設定指紋、參數／最佳化器形狀及神經歷史。既有 `Save`／`Load` 與 CLI `train delayed`／`resume` 繼續使用獨立 episode 格式。新個體格式另拒絕缺失的必填欄位與 `null`。
 
+單檔與 bundle 都在正規化前檢查必填欄位。已宣告的化學區塊缺少 `state.steps`、`resources` 或 `pending_feedback` 時會回傳錯誤，不會以零值恢復個體。選用來源視窗 `source_states` 的舊檔省略規則保持。
+
 ## 遷移
 
 `checkpoint.Migrate(ctx, src, dst, target)` 把快照文件的位元組讀出、以該 schema 的嚴格解碼器驗證後，重寫成目標 schema 並以原子發布寫到 `dst`。`dst` 不得等於 `src`、不得已存在（任何檔案都不會被覆寫），`src` 的位元組永遠不變，失敗時 `dst` 不會被建立。

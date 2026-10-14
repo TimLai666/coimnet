@@ -1,0 +1,9 @@
+{
+  "old_script_sha256": "4c2ce7aeef84034f25b6736028185943c34962730767b07fe69eaaca42bdafce",
+  "new_script_sha256": "b8d6ccc8b0d4e6460708c7fe2806384ad1d648bafcc1020f596778d98ed8a7da",
+  "actual_error": "AttributeError: list object has no attribute get",
+  "trigger": "The public negative probe prints a JSON array. The diagnostic wrapper incorrectly treated all parsed JSON as go test object events.",
+  "fix": "Count test events only from parsed JSON objects. Preserve stdout bytes and subprocess exit handling. No framework source changes.",
+  "original_probe_results": "nonempty-collection-results.json",
+  "wrapper_attempt": "nonempty-collection-probe-v2.log"
+}

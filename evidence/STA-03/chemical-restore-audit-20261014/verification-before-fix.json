@@ -1,0 +1,53 @@
+{
+  "requirement": [
+    "STA-02",
+    "STA-03"
+  ],
+  "reproduction_command": "malformed-probe.json, scope-missing-probe.json, scope-probe.json; restore-v2-normal.json and restore-v2-race.json",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "machine": "darwin/arm64",
+    "filesystem": "local APFS",
+    "baseline_commit": "00bc7016c9380c23ab2154caac10666d798581a5",
+    "isolated_run_directory": "/Users/timlai/Developer/coimnet/runs/.tmp/chemical-restore-audit-20261014"
+  },
+  "input_fingerprints": {
+    "source_manifest": "source-before.json",
+    "source_manifest_sha256": "d6efa8ebe203be8d9355f4a161f9be8cfb7d1641fb06cf78263633e00279d08b",
+    "source_count": 806,
+    "synthetic_mutations": [
+      "malformed-inputs.json",
+      "scope-malformed-inputs.json"
+    ]
+  },
+  "observed_result": {
+    "bundle_field_contract_failed": true,
+    "valid_task_chemistry_roundtrip_failed": true,
+    "ordinary_restore_matrix": {
+      "normal": {
+        "continuations": 96,
+        "new_processes": 48,
+        "rejections": 216,
+        "legacy_sensitivity": 24
+      },
+      "race": {
+        "continuations": 96,
+        "new_processes": 48,
+        "rejections": 216,
+        "legacy_sensitivity": 24
+      }
+    },
+    "root_findings": "confirmed-findings.json",
+    "formal_fix_applied": false
+  },
+  "test_log": [
+    "malformed-probe.log",
+    "scope-missing-probe.log",
+    "scope-probe.log",
+    "restore-v2-normal.log",
+    "restore-v2-race.log"
+  ],
+  "engineering_passed": false,
+  "acceptance_complete": false,
+  "limitation": "Artificial state fixtures do not prove real-task quality or absence of all bugs."
+}
