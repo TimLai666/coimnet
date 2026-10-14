@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md) 目前完成 4／5。69 個 RED 失敗事件確認受體指標別名及恢復交叉驗證缺口，原有缺省控制 8 個事件通過。Root 先凍結測試再補獨立複製與共用綁定檢查，修正後 77 個事件通過。32 組合法模型與新程序接續相同，完整一般／race 各 58 套件及其餘工程／CLI 驗證通過，最後 11 項治理通過，本輪 1,251,214,520 bytes 暫存已清除，原有目錄保留，Git 交付仍待完成。全樹追蹤另以 6 個公開案例確認原生模擬忽略受體宣告，MOD-05 標 failed，最新需求狀態為 89 項 passed、2 項 failed，ticket 92 接續處理。ticket 89 的相容性決策維持 pending，整體零 bug 與真實品質提升尚未證明。
+
 [ticket 90](docs/tickets/90-slow-memory-composition.md) 已完成 5／5。已重現各記憶層有限、鞏固成功後共同有效權重才溢位的 P2 缺陷。正式修正與永久回歸已完成，正常 54 組輸出／記憶／報告在舊來源、修正來源及新程序逐位一致。完整一般／race 各 58 套件與 CLI 接續通過，MOD-06 恢復 passed，最後 11 項治理通過，本輪 1,331,266,511 bytes 暫存已清除，原有目錄保留。修正 ccab7e0、回歸／證據 10ca882 已推送並讀回相同，796 份提交來源相符。另有受體指標所有權 P2 已由四個公開案例確認，列入 Follow-ups，不混入本票來源。ticket 89 的相容性決策保持 pending，尚無整體零 bug 或真實品質提升結論。
 
 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md) 目前完成 2／4。公開入口 15 個零作用案例確認 9 個偏離中性增益，MOD-04 標為 failed，最新工程需求狀態為 90 項 passed、1 項 failed。120 個歷史／分段組合、來源 Replay 時鐘及 96 個初始梯度斷言通過一般與 race 檢查。候選化學模組的一般／race 各 375 個事件通過，但正式程式沒有套用。要求增益範圍包含 1 會拒絕部分舊模型，使用者相容性決策 pending。見[驗證](evidence/MOD-02/chemical-composition-20261014/verification.json)與[Root 審查](evidence/MOD-02/chemical-composition-20261014/root-review.md)。本輪 872,621,783 bytes 暫存已清除，793 份提交來源相符，主要稽核 d8b013e 已推送並讀回一致，見[交付](evidence/MOD-02/chemical-composition-20261014/delivery.json)。本票尚未完成修正與完整工程驗收，沒有整體零 bug 或真實品質提升結論。

@@ -1,0 +1,367 @@
+package learning_test
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
+	"os"
+	"path/filepath"
+	"reflect"
+	"strings"
+	"testing"
+)
+
+func receptorOwnershipSeed(t *testing.T, profile, refs string) learning.IndividualSnapshot {
+	t.Helper()
+	s := compositionIndividual(t, profile, 0, true, .75, 0, 0).Snapshot()
+	s.Plastic.Slow = nil
+	s.Chemical.State.Concentration = [][]float64{{1}}
+	other := s.Chemical.Config.Receptors.Records[0]
+	other.Cells = append([]int(nil), other.Cells...)
+	other.Signal = "fixture-alternate"
+	other.Kd = 100
+	s.Chemical.Config.Receptors.Records = append(s.Chemical.Config.Receptors.Records, other)
+	idx := 0
+	if refs == "gate" || refs == "both" {
+		s.Plastic.Config.Rule.GateReceptor = &idx
+		s.Plastic.Config.Rule.GateScale = 1
+	}
+	if refs == "window" || refs == "both" {
+		s.Plastic.Config.Rule.DecayEReceptor = &idx
+		s.Plastic.Config.Rule.DecayEBase = .5
+		s.Plastic.Config.Rule.DecayESpan = .25
+		s.Plastic.Config.Rule.DecayEMin = .25
+		s.Plastic.Config.Rule.DecayEMax = .75
+	}
+	return s
+}
+func receptorOwnershipCopy(t *testing.T, s learning.IndividualSnapshot) learning.IndividualSnapshot {
+	t.Helper()
+	raw, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result learning.IndividualSnapshot
+	if err := json.Unmarshal(raw, &result); err != nil {
+		t.Fatal(err)
+	}
+	return result
+}
+func TestReceptorCopyMutationPreservesLearning(t *testing.T) {
+	for _, profile := range []string{"continuous", "lif", "mixed"} {
+		for _, refs := range []string{"gate", "window", "both"} {
+			for _, boundary := range []string{"enable-input", "restore-input", "Snapshot"} {
+				t.Run(profile+"/"+refs+"/"+boundary, func(t *testing.T) {
+					seed := receptorOwnershipSeed(t, profile, refs)
+					control, err := learning.RestoreIndividual(receptorOwnershipCopy(t, seed))
+					if err != nil {
+						t.Fatal(err)
+					}
+					var a *learning.Individual
+					if boundary == "enable-input" {
+						base := receptorOwnershipCopy(t, seed)
+						base.Plastic = nil
+						a, err = learning.RestoreIndividual(base)
+						if err == nil {
+							err = a.EnablePlasticity(seed.Plastic.Config)
+						}
+					} else {
+						a, err = learning.RestoreIndividual(seed)
+					}
+					if err != nil {
+						t.Fatal(err)
+					}
+					outside := seed
+					if boundary == "Snapshot" {
+						outside = a.Snapshot()
+					}
+					if outside.Plastic.Config.Rule.GateReceptor != nil {
+						*outside.Plastic.Config.Rule.GateReceptor = 1
+					}
+					if outside.Plastic.Config.Rule.DecayEReceptor != nil {
+						*outside.Plastic.Config.Rule.DecayEReceptor = 1
+					}
+					rows := [][]float64{{1.25}, {1.25}, {1.25}, {1.25}, {1.25}}
+					gates := make([]float64, len(rows))
+					if refs == "window" {
+						for k := range gates {
+							gates[k] = .3
+						}
+					}
+					want, wr, err := control.AdvanceGated(context.Background(), rows, gates)
+					if err != nil {
+						t.Fatal(err)
+					}
+					got, gr, err := a.AdvanceGated(context.Background(), rows, gates)
+					if err != nil {
+						t.Fatal(err)
+					}
+					ws, gs := control.Snapshot(), a.Snapshot()
+					if ws.Plastic.State.Eligibility[0] <= 0 || ws.Plastic.State.Plastic[0] <= 0 {
+						t.Fatal("learning control produced no positive change")
+					}
+					if !reflect.DeepEqual(got, want) || !reflect.DeepEqual(gr, wr) || !reflect.DeepEqual(gs, ws) {
+						t.Fatalf("external %s changed selected receptor or learning: got fast=%v eligibility=%v rule=%+v; want fast=%v eligibility=%v rule=%+v", boundary, gs.Plastic.State.Plastic, gs.Plastic.State.Eligibility, gs.Plastic.Config.Rule, ws.Plastic.State.Plastic, ws.Plastic.State.Eligibility, ws.Plastic.Config.Rule)
+					}
+				})
+			}
+		}
+	}
+}
+func TestRestoreReceptorBindingMatchesEnable(t *testing.T) {
+	for _, profile := range []string{"continuous", "lif", "mixed"} {
+		for _, refs := range []string{"gate", "window", "both"} {
+			for _, problem := range []string{"missing-chemical", "no-records", "out-of-range"} {
+				t.Run(profile+"/"+refs+"/"+problem, func(t *testing.T) {
+					seed := receptorOwnershipSeed(t, profile, refs)
+					switch problem {
+					case "missing-chemical":
+						seed.Chemical = nil
+					case "no-records":
+						seed.Chemical.Config.Receptors.Records = nil
+					case "out-of-range":
+						if seed.Plastic.Config.Rule.GateReceptor != nil {
+							*seed.Plastic.Config.Rule.GateReceptor = 2
+						}
+						if seed.Plastic.Config.Rule.DecayEReceptor != nil {
+							*seed.Plastic.Config.Rule.DecayEReceptor = 2
+						}
+					}
+					before, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					base := receptorOwnershipCopy(t, seed)
+					base.Plastic = nil
+					reference, err := learning.RestoreIndividual(base)
+					if err != nil {
+						t.Fatal(err)
+					}
+					enableErr := reference.EnablePlasticity(seed.Plastic.Config)
+					if enableErr == nil {
+						t.Fatal("Enable accepted the invalid receptor declaration")
+					}
+					got, restoreErr := learning.RestoreIndividual(seed)
+					if restoreErr == nil || got != nil || !strings.Contains(restoreErr.Error(), enableErr.Error()) {
+						t.Fatalf("Restore = %v, %v; want nil and Enable refusal %v", got != nil, restoreErr, enableErr)
+					}
+					after, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if string(before) != string(after) {
+						t.Fatal("refused Restore mutated input snapshot")
+					}
+				})
+			}
+		}
+	}
+}
+func TestRestoreReceptorDefaultsRemainLegal(t *testing.T) {
+	for _, profile := range []string{"continuous", "lif", "mixed"} {
+		for _, chemical := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/chemistry%v", profile, chemical), func(t *testing.T) {
+				seed := receptorOwnershipSeed(t, profile, "none")
+				if !chemical {
+					seed.Chemical = nil
+				}
+				a, err := learning.RestoreIndividual(seed)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if _, _, err := a.AdvanceGated(context.Background(), [][]float64{{1.25}, {1.25}, {1.25}}, []float64{.3, .3, .3}); err != nil {
+					t.Fatal(err)
+				}
+				got := a.Snapshot().Plastic.Config.Rule
+				if got.GateReceptor != nil || got.DecayEReceptor != nil {
+					t.Fatal("legacy absent receptor fields became declared")
+				}
+			})
+		}
+	}
+}
+
+// TestReceptorLegalCompatibilityProbe exercises public checkpoints across processes.
+// Its JSON results are compared by the driver against the old source, not a mirrored formula.
+func TestReceptorLegalCompatibilityProbe(t *testing.T) {
+	phase, dir := os.Getenv("COIMNET_RECEPTOR_PHASE"), os.Getenv("COIMNET_RECEPTOR_DIR")
+	t.Log("PROBE_PID", os.Getpid())
+	if phase == "" || dir == "" {
+		t.Fatal("probe phase and directory required")
+	}
+	for _, profile := range []string{"continuous", "lif", "mixed"} {
+		kinds := []string{plasticity.RuleHebbianRate}
+		if profile == "lif" {
+			kinds = append(kinds, plasticity.RuleSTDPPair)
+		}
+		for _, kind := range kinds {
+			for _, refs := range []string{"none", "gate", "window", "both"} {
+				for variant := 0; variant < 2; variant++ {
+					name := fmt.Sprintf("%s-%s-%s-%d", profile, kind, refs, variant)
+					t.Run(name, func(t *testing.T) {
+						seed := receptorOwnershipSeed(t, profile, refs)
+						if refs == "none" && variant == 0 {
+							seed.Chemical = nil
+						}
+						if refs != "none" {
+							if p := seed.Plastic.Config.Rule.GateReceptor; p != nil {
+								*p = variant
+							}
+							if p := seed.Plastic.Config.Rule.DecayEReceptor; p != nil {
+								*p = variant
+							}
+						}
+						if kind == plasticity.RuleSTDPPair {
+							rule := &seed.Plastic.Config.Rule
+							rule.Kind = kind
+							rule.DecayPre = .5
+							rule.DecayPost = .25
+							rule.APlus = 1
+							rule.AMinus = .5
+							m, stateErr := plasticity.New(seed.Plastic.Config, 1)
+							if stateErr != nil {
+								t.Fatal(stateErr)
+							}
+							seed.Plastic.State = m.NewState()
+						}
+						checkpointPath := filepath.Join(dir, name+".json")
+						var a *learning.Individual
+						var err error
+						if phase == "resume" {
+							seed, err = checkpoint.LoadIndividual(context.Background(), checkpointPath)
+							if err != nil {
+								t.Fatal(err)
+							}
+						}
+						a, err = learning.RestoreIndividual(seed)
+						if err != nil {
+							t.Fatal(err)
+						}
+						gate := 0.
+						if refs == "none" || refs == "window" {
+							gate = .3
+						}
+						if phase != "resume" {
+							if _, _, err = a.AdvanceGated(context.Background(), [][]float64{{1.25}, {.8}}, []float64{gate, gate}); err != nil {
+								t.Fatal(err)
+							}
+							if err = checkpoint.SaveIndividual(context.Background(), checkpointPath, a.Snapshot()); err != nil {
+								t.Fatal(err)
+							}
+						}
+						out, report, err := a.AdvanceGated(context.Background(), [][]float64{{1.25}, {.5}, {1.5}}, []float64{gate, gate, gate})
+						if err != nil {
+							t.Fatal(err)
+						}
+						result := map[string]any{"name": name, "output": out, "report": report, "snapshot": a.Snapshot()}
+						raw, err := json.Marshal(result)
+						if err != nil {
+							t.Fatal(err)
+						}
+						resultPath := filepath.Join(os.Getenv("COIMNET_RECEPTOR_RESULTS"), name+".json")
+						f, err := os.OpenFile(resultPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+						if err != nil {
+							t.Fatal(err)
+						}
+						if _, err = f.Write(raw); err != nil {
+							t.Fatal(err)
+						}
+						if err = f.Close(); err != nil {
+							t.Fatal(err)
+						}
+						t.Log("COMPAT_CASE " + name)
+					})
+				}
+			}
+		}
+	}
+}
+
+func TestReceptorNegativeAndPairBoundaryProbe(t *testing.T) {
+	for _, profile := range []string{"continuous", "lif", "mixed"} {
+		kinds := []string{plasticity.RuleHebbianRate}
+		if profile == "lif" {
+			kinds = append(kinds, plasticity.RuleSTDPPair)
+		}
+		for _, kind := range kinds {
+			for _, refs := range []string{"gate", "window", "both"} {
+				t.Run(profile+"/"+kind+"/"+refs+"/negative", func(t *testing.T) {
+					seed := receptorOwnershipSeed(t, profile, refs)
+					if kind == plasticity.RuleSTDPPair {
+						rule := &seed.Plastic.Config.Rule
+						rule.Kind = kind
+						rule.DecayPre = .5
+						rule.DecayPost = .25
+						rule.APlus = 1
+						rule.AMinus = .5
+						m, err := plasticity.New(seed.Plastic.Config, 1)
+						if err != nil {
+							t.Fatal(err)
+						}
+						seed.Plastic.State = m.NewState()
+					}
+					if p := seed.Plastic.Config.Rule.GateReceptor; p != nil {
+						*p = -1
+					}
+					if p := seed.Plastic.Config.Rule.DecayEReceptor; p != nil {
+						*p = -1
+					}
+					before, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err := plasticity.New(seed.Plastic.Config, 1); err == nil {
+						t.Fatal("New accepted negative index")
+					}
+					a, err := learning.RestoreIndividual(seed)
+					if err == nil || a != nil {
+						t.Fatal("Restore accepted negative index")
+					}
+					after, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if string(before) != string(after) {
+						t.Fatal("refusal mutated snapshot")
+					}
+				})
+			}
+		}
+		if profile != "lif" {
+			for _, refs := range []string{"gate", "window", "both"} {
+				t.Run(profile+"/stdp_pair/"+refs+"/unsupported-core", func(t *testing.T) {
+					seed := receptorOwnershipSeed(t, profile, refs)
+					rule := &seed.Plastic.Config.Rule
+					rule.Kind = plasticity.RuleSTDPPair
+					rule.DecayPre = .5
+					rule.DecayPost = .25
+					rule.APlus = 1
+					rule.AMinus = .5
+					m, err := plasticity.New(seed.Plastic.Config, 1)
+					if err != nil {
+						t.Fatal(err)
+					}
+					seed.Plastic.State = m.NewState()
+					before, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					a, err := learning.RestoreIndividual(seed)
+					if err == nil || a != nil || !strings.Contains(err.Error(), "needs the 0/1 events") {
+						t.Fatalf("unsupported pair Restore = %v, %v", a != nil, err)
+					}
+					after, err := json.Marshal(seed)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if string(before) != string(after) {
+						t.Fatal("refusal mutated snapshot")
+					}
+				})
+			}
+		}
+	}
+}

@@ -1,0 +1,33 @@
+import os,json,hashlib,subprocess,time,datetime
+from pathlib import Path
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/receptor-rule-ownership-20261014';e=r/'evidence/MOD-05/receptor-rule-ownership-20261014'
+env=os.environ.copy();env.update({k:str(w/v) for k,v in {'GOCACHE':'go-cache','GOMODCACHE':'go-mod-cache','GOTMPDIR':'go-tmp','TMPDIR':'go-tmp'}.items()});env.update(GOPROXY='file:///Users/timlai/go/pkg/mod/cache/download',GOSUMDB='off',GOTOOLCHAIN='local',GOMAXPROCS='2',GOFLAGS='-p=2 -timeout=60m')
+frozen=json.loads((e/'source-final.json').read_text())
+def check():
+ for p,h in frozen.items():assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+check(); records={};pids={}
+for phase in ['old','fixed','resume']:
+ check();directory=w/('legal-v2-'+('old' if phase=='resume' else phase));directory.mkdir(exist_ok=True)
+ resultdir=w/('results-v2-'+phase);resultdir.mkdir(exist_ok=False)
+ local=dict(env,COIMNET_RECEPTOR_PHASE=phase,COIMNET_RECEPTOR_DIR=str(directory),COIMNET_RECEPTOR_RESULTS=str(resultdir))
+ cmd=['go','test','-json','-count=1','-run','^TestReceptorLegalCompatibilityProbe$','-overlay',str(w/('old-overlay-v2.json' if phase=='old' else 'fixed-overlay-v2.json')),'./learning']
+ log=e/('compatibility-v2-'+phase+'.log');t=time.monotonic()
+ with log.open('xb') as f:
+  p=subprocess.Popen(cmd,cwd=r,env=local,stdout=f,stderr=subprocess.STDOUT);pids[phase]=p.pid;rc=p.wait()
+ raw=log.read_bytes();(e/('compatibility-v2-'+phase+'.json')).write_text(json.dumps({'command':cmd,'exit_code':rc,'pid':p.pid,'duration_seconds':time.monotonic()-t,'log':log.name,'log_sha256':hashlib.sha256(raw).hexdigest(),'source_manifest':'source-final.json'},indent=2)+'\n')
+ assert rc==0,(phase,rc)
+ results={path.stem:json.loads(path.read_text()) for path in resultdir.glob('*.json')}
+ for line in raw.decode().splitlines():
+  try:x=json.loads(line)
+  except ValueError:continue
+  out=x.get('Output','')
+  if 'PROBE_PID ' in out:pids[phase]=int(out.split('PROBE_PID ',1)[1])
+ assert len(results)==32,(phase,len(results))
+ records[phase]=results;(e/('compatibility-v2-'+phase+'-results.json')).write_text(json.dumps(results,indent=2,sort_keys=True)+'\n')
+ print(phase,'32 cases exit',rc,flush=True);check()
+assert len(set(pids.values()))==3
+assert records['old']==records['fixed']==records['resume']
+for path in (w/'legal-v2-old').glob('*.json'):
+ assert path.read_bytes()==(w/'legal-v2-fixed'/path.name).read_bytes(),path.name
+(e/'compatibility-v2.json').write_text(json.dumps({'cases_per_phase':32,'phases':['old','fixed','resume'],'process_ids':pids,'outputs_reports_snapshots_exact_equal':True,'old_and_fixed_public_checkpoint_bytes_equal':True,'new_process_resumed_old_public_checkpoints':True,'source_manifest':'source-final.json','limitation':'CPU artificial small models; no task accuracy or biological validation'},indent=2)+'\n')
+print('ALL_LEGAL_MODELS_BITWISE_AND_FRESH_PROCESS_RESUME_EQUAL',flush=True)

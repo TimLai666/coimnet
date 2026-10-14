@@ -230,6 +230,8 @@ ResetOptimizer 保留記憶、預算及當下回合已被禁止重複鞏固的�
 
 本輪 build、完整一般／race 各 58 套件、vet、相依性及最後 11 項治理通過，770 份來源指紋相符。七類公開回歸、合法 OCR／音訊逐位比較與證據限制見 [機制稽核](evidence/MOD-02/mechanism-audit-20261013/README.md)及[最終工程證據](evidence/MOD-02/mechanism-audit-20261013/verification.json)。
 
+plasticity.Model 擁有 Rule 的 GateReceptor／DecayEReceptor 指標值，New 與 Config 各自提供獨立副本。EnablePlasticity、Snapshot 及 RestoreIndividual 沿用此所有權。RestoreIndividual 在所有部件驗證完成後，以 checkReceptorRule 檢查可塑性宣告與化學受體綁定。沒有受體參照的舊快照可缺省 Chemical，有參照但缺少化學層或索引越界則回錯且回傳 nil。合法值、正常算式與保存格式保持，驗收由[ticket 91](docs/tickets/91-receptor-rule-ownership-and-restore.md)管理。
+
 ## 公開拒絕與控制器快取契約
 
 Consolidate 的閘門關閉、同回合去重及預算用完報告帶呼叫前的 Used／LastEpisode，成功報告帶提交後計數。報告不改寫記憶。OCR FixtureConfig 及 glyph Render／Generate 入口都要求 Background／Noise 為有限 [0,0.5]，合法空批次仍回空集合，非法空批次設定回錯。

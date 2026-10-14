@@ -12,7 +12,7 @@
 
 CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
 
-原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，最新狀態為 90 項 passed、1 項 failed，化學修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
+原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生模擬另確認 MOD-05 受體宣告被忽略，最新狀態為 89 項 passed、2 項 failed，原生入口修正由 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md) 接續，見[原生受體診斷](evidence/MOD-05/receptor-rule-ownership-20261014/native-receptor-audit.json)。化學增益修正決策待確認，見[本次稽核](evidence/MOD-02/chemical-composition-20261014/root-review.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
 
 ## 能力狀態
 
@@ -299,6 +299,7 @@ protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，
 - `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
 - `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
 - `learning.NewIndividual` 對連續與 LIF 兩種核心建立隔離的持續個體，`ResetNeural`／`ResetParameters`／`ResetOptimizer` 各自只重設指定資料。`checkpoint.SaveIndividual`／`LoadIndividual` 保存持續神經狀態，LIF 個體另外保存突觸跡、適應、不應期與慢速穩定狀態，詳見[個體狀態與保存](docs/individual-state.md)。
+- `plasticity.New`／`Model.Config` 的受體設定與 `Individual.Snapshot` 都提供獨立指標值副本。`RestoreIndividual` 沿用啟用入口的受體綁定檢查，拒絕引用缺失化學層或不存在受體的快照。沒有受體參照的舊缺省可恢復。
 - `checkpoint.NewModelPackage`、`SaveModelPackage`、`LoadModelPackage` 保存模型包，`NewIndividualFromPackage` 由模型包建立新個體，結果與用同一份設定、參數直接呼叫 `learning.NewIndividual` 相同。模型包不接受獨立回合的 `Config.Chemistry`；保存這類訓練器請使用訓練快照或 `SaveTrainingBundle`。
 - `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
 - `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
