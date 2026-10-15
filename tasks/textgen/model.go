@@ -88,6 +88,10 @@ func NewModel(vocab tokenizer.Vocabulary, c ModelConfig) (*Model, error) {
 	}
 	inputs, hidden := c.Embed, c.Hidden
 	nodes := inputs + hidden
+	encoderLength, readoutLength, err := modelParameterLengths(vocabSize, inputs, hidden)
+	if err != nil {
+		return nil, err
+	}
 	sources := make([]int, 0, inputs*hidden+hidden*hidden)
 	targets := make([]int, 0, cap(sources))
 	appendBlock := func(fromStart, fromCount, toStart, toCount int) {
@@ -120,8 +124,8 @@ func NewModel(vocab tokenizer.Vocabulary, c ModelConfig) (*Model, error) {
 		ReadoutEveryStep: true,
 	}
 	weights := uniform(rand.NewPCG(c.Seed, 0), len(sources), 1/math.Sqrt(float64(nodes)))
-	encoder := uniform(rand.NewPCG(c.Seed, 1), vocabSize*inputs, 0.5)
-	readout := uniform(rand.NewPCG(c.Seed, 2), hidden*vocabSize, 0.1)
+	encoder := uniform(rand.NewPCG(c.Seed, 1), encoderLength, 0.5)
+	readout := uniform(rand.NewPCG(c.Seed, 2), readoutLength, 0.1)
 	logTau := make([]float64, nodes)
 	for i := range logTau {
 		logTau[i] = math.Log(2)
