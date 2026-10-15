@@ -85,6 +85,7 @@
 | [evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume-race.log](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume-race.log) | 保留 core-old-state-resume-race.log 的原始命令輸出。 |
 | [evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume.json](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume.json) | 記錄 core-old-state-resume.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume.log](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/core-old-state-resume.log) | 保留 core-old-state-resume.log 的原始命令輸出。 |
+| [evidence/COR-04/zero-tau-adjoint-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/delivery.json) | 記錄 delivery.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-04/zero-tau-adjoint-20261015/engineering-build.json](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/engineering-build.json) | 記錄 engineering-build.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-04/zero-tau-adjoint-20261015/engineering-build.log](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/engineering-build.log) | 保留 engineering-build.log 的原始命令輸出。 |
 | [evidence/COR-04/zero-tau-adjoint-20261015/engineering-closure-binary.json](/Users/timlai/Developer/coimnet/evidence/COR-04/zero-tau-adjoint-20261015/engineering-closure-binary.json) | 記錄 engineering-closure-binary.json 的計畫、審查、指紋或驗證結果。 |
