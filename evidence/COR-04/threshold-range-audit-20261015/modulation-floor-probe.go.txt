@@ -1,0 +1,7 @@
+package main
+import("context";"encoding/json";"fmt";"math";"github.com/TimLai666/coimnet/dynamics")
+type seq struct{}
+func(seq)Forward(context.Context,int,[]float64)(*dynamics.Modulation,error){return &dynamics.Modulation{Threshold:[][]float64{{-math.MaxFloat64}}},nil}
+func(seq)NewReverse(context.Context,int,int)(dynamics.ModulationReverse,error){return seq{},nil}
+func(seq)BackwardStep(context.Context,int,dynamics.ModulationGradient)([]dynamics.ActivityGradient,error){return nil,nil}
+func main(){ctx:=context.Background();a:=math.Ldexp(1,1023);m,err:=dynamics.NewLIF(dynamics.LIFConfig{Nodes:1,DT:math.Ln2,TauSyn:1,ThetaMin:-a,ThetaMax:0,VReset:-math.MaxFloat64,Surrogate:dynamics.LIFSurrogate{Kind:"fast_sigmoid",Scale:2}});if err!=nil{panic(err)};p:=dynamics.LIFParameters{Bias:[]float64{0},LogTau:[]float64{0},ThetaRaw:[]float64{-1000}};s,err:=m.NewState([]float64{0});if err!=nil{panic(err)};_,out,_,ordinary:=m.AdvanceModulated(ctx,p,s,[][]float64{{0}},&dynamics.Modulation{Threshold:[][]float64{{-math.MaxFloat64}}});_,coupled:=m.ForwardCoupled(ctx,p,[]float64{0},[][]float64{{0}},seq{});b,_:=json.Marshal(map[string]any{"span_finite":true,"ordinary_error":fmt.Sprint(ordinary),"ordinary_outputs":out,"coupled_error":fmt.Sprint(coupled)});fmt.Println(string(b))}

@@ -1,0 +1,148 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+type sequence struct{ mixed bool }
+
+func (s sequence) Forward(context.Context, int, []float64) (*dynamics.Modulation, error) {
+	threshold := []float64{.03, .03, .03}
+	if s.mixed {
+		threshold[1] = 0
+	}
+	return &dynamics.Modulation{Gain: [][]float64{{1.1, .9, 1.2}}, Offset: [][]float64{{.02, -.01, .03}}, Threshold: [][]float64{threshold}}, nil
+}
+func (sequence) NewReverse(context.Context, int, int) (dynamics.ModulationReverse, error) {
+	return sequence{}, nil
+}
+func (sequence) BackwardStep(context.Context, int, dynamics.ModulationGradient) ([]dynamics.ActivityGradient, error) {
+	return nil, nil
+}
+func (s sequence) Checkpoint(context.Context, int) (dynamics.ModulationRestart, error) {
+	return func(context.Context) (dynamics.ModulationSequence, error) { return s, nil }, nil
+}
+
+type saved struct {
+	ID              string
+	Config          dynamics.LIFConfig
+	Parameters      dynamics.LIFParameters
+	State           dynamics.LIFState
+	MixedConfig     dynamics.MixedConfig
+	MixedParameters dynamics.MixedParameters
+	MixedState      dynamics.MixedState
+}
+type record struct {
+	Saved     saved
+	Values    map[string]any
+	Continued map[string]any
+}
+
+var input = [][]float64{{.7, .2, -.1}, {-.2, .8, .1}, {1.1, -.3, .7}, {.1, .2, .9}, {0, -.1, .4}, {.3, .5, -.2}}
+var upstream = [][]float64{{.3, -.2, .1}, {.1, .4, -.2}, {-.4, .7, .3}, {.5, -.3, .8}, {.1, .9, -.7}, {-.2, .3, .5}}
+
+func continuation(s saved) map[string]any {
+	ctx := context.Background()
+	m, err := dynamics.NewLIF(s.Config)
+	must(err)
+	must(m.ValidateState(s.State))
+	next, out, spikes, err := m.Advance(ctx, s.Parameters, s.State, input[3:])
+	must(err)
+	mm, err := dynamics.NewMixed(s.MixedConfig)
+	must(err)
+	must(mm.ValidateState(s.MixedState))
+	mnext, mout, mspikes, err := mm.Advance(ctx, s.MixedParameters, s.MixedState, input[3:])
+	must(err)
+	return map[string]any{"lif_state": next, "lif_outputs": out, "lif_spikes": spikes, "mixed_state": mnext, "mixed_outputs": mout, "mixed_spikes": mspikes}
+}
+func run() []record {
+	ctx := context.Background()
+	result := []record{}
+	for flags := 0; flags < 4; flags++ {
+		for _, workers := range []int{0, 2} {
+			for _, bounds := range [][3]float64{{.05, 1, -.5}, {-2, 2, -3}} {
+				cfg := dynamics.LIFConfig{Nodes: 3, Sources: []int{0, 1, 1, 2}, Targets: []int{1, 1, 2, 0}, Delays: []int{0, 1, 2, 0}, DT: .4, TauSyn: .9, ThetaMin: bounds[0], ThetaMax: bounds[1], VReset: bounds[2], RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1.7}, Workers: workers}
+				if flags&1 != 0 {
+					cfg.Adaptation = dynamics.LIFAdaptation{Enabled: true, TauAdapt: 1.3, Beta: .2}
+				}
+				if flags&2 != 0 {
+					cfg.Homeostasis = &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2, TargetRate: .2, Eta: .1, HMax: .4}
+				}
+				p := dynamics.LIFParameters{Weights: []float64{.65, .25, .7, -.15}, Bias: []float64{.1, -.07, .03}, LogTau: []float64{.1, .2, -.3}, ThetaRaw: []float64{-1, .7, 2}}
+				m, err := dynamics.NewLIF(cfg)
+				must(err)
+				initial := []float64{.1, -.2, .3}
+				tr, err := m.Forward(ctx, p, initial, input)
+				must(err)
+				g, err := m.Backward(ctx, tr, upstream, 0)
+				must(err)
+				coupled, err := m.ForwardCoupled(ctx, p, initial, input, sequence{})
+				must(err)
+				cg, err := m.Backward(ctx, coupled, upstream, 0)
+				must(err)
+				recomputed, err := m.ForwardRecompute(ctx, p, initial, input, 2)
+				must(err)
+				rg, err := m.BackwardRecompute(ctx, p, initial, input, upstream, 0, 2)
+				must(err)
+				cr, err := m.ForwardCoupledRecompute(ctx, p, initial, input, sequence{}, 2)
+				must(err)
+				crg, err := m.BackwardCoupledRecompute(ctx, cr, upstream, 0)
+				must(err)
+				st, err := m.NewState(initial)
+				must(err)
+				st, _, _, err = m.Advance(ctx, p, st, input[:3])
+				must(err)
+				mc := dynamics.MixedConfig{Nodes: 3, Sources: cfg.Sources, Targets: cfg.Targets, Delays: cfg.Delays, DT: cfg.DT, NodeRule: []uint8{dynamics.RuleLIF, dynamics.RuleContinuous, dynamics.RuleLIF}, Continuous: dynamics.ContinuousRule{Activation: "tanh"}, LIF: dynamics.LIFRule{TauSyn: cfg.TauSyn, ThetaMin: cfg.ThetaMin, ThetaMax: cfg.ThetaMax, VReset: cfg.VReset, RefractorySteps: cfg.RefractorySteps, Adaptation: cfg.Adaptation, Homeostasis: cfg.Homeostasis, Surrogate: cfg.Surrogate}, Workers: workers}
+				mp := dynamics.MixedParameters{Weights: p.Weights, Bias: p.Bias, LogTau: p.LogTau, ThetaRaw: []float64{p.ThetaRaw[0], p.ThetaRaw[2]}}
+				mm, err := dynamics.NewMixed(mc)
+				must(err)
+				mt, err := mm.Forward(ctx, mp, initial, input)
+				must(err)
+				mg, err := mm.Backward(ctx, mt, upstream, 0)
+				must(err)
+				mct, err := mm.ForwardCoupled(ctx, mp, initial, input, sequence{mixed: true})
+				must(err)
+				mcg, err := mm.Backward(ctx, mct, upstream, 0)
+				must(err)
+				ms, err := mm.NewState(initial)
+				must(err)
+				ms, _, _, err = mm.Advance(ctx, mp, ms, input[:3])
+				must(err)
+				s := saved{fmt.Sprintf("flags=%d/workers=%d/min=%g", flags, workers, bounds[0]), cfg, p, st, mc, mp, ms}
+				values := map[string]any{"lif_outputs": tr.Outputs(), "lif_spikes": tr.Spikes(), "lif_voltages": tr.Voltages(), "lif_gradient": g, "coupled_outputs": coupled.Outputs(), "coupled_spikes": coupled.Spikes(), "coupled_voltages": coupled.Voltages(), "coupled_gradient": cg, "recomputed_outputs": recomputed, "recomputed_gradient": rg, "coupled_recomputed_outputs": cr.Outputs(), "coupled_recomputed_gradient": crg, "mixed_outputs": mt.Outputs(), "mixed_spikes": mt.Spikes(), "mixed_voltages": mt.Voltages(), "mixed_gradient": mg, "mixed_coupled_outputs": mct.Outputs(), "mixed_coupled_gradient": mcg}
+				result = append(result, record{s, values, continuation(s)})
+			}
+		}
+	}
+	return result
+}
+func main() {
+	var value any
+	if len(os.Args) > 1 && os.Args[1] == "resume" {
+		b, err := os.ReadFile(os.Args[2])
+		must(err)
+		var records []record
+		must(json.Unmarshal(b, &records))
+		rows := []map[string]any{}
+		for _, r := range records {
+			rows = append(rows, continuation(r.Saved))
+		}
+		value = rows
+	} else {
+		value = run()
+	}
+	b, err := json.Marshal(value)
+	must(err)
+	fmt.Println(string(b))
+}

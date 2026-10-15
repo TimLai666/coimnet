@@ -1,0 +1,98 @@
+{
+  "search_scope": "all non-test formal Go sources in source-fixed.json, after graph discovery",
+  "matches": [
+    {
+      "path": "dynamics/lif.go",
+      "line": 325,
+      "source": "span := m.config.ThetaMax - m.config.ThetaMin"
+    },
+    {
+      "path": "dynamics/lif.go",
+      "line": 333,
+      "source": "base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s"
+    },
+    {
+      "path": "dynamics/lif.go",
+      "line": 335,
+      "source": "slope[i] = m.config.ThetaMax*q - m.config.ThetaMin*q"
+    },
+    {
+      "path": "dynamics/lif_coupled.go",
+      "line": 85,
+      "source": "span := m.config.ThetaMax - m.config.ThetaMin"
+    },
+    {
+      "path": "dynamics/lif_coupled.go",
+      "line": 93,
+      "source": "base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s"
+    },
+    {
+      "path": "dynamics/lif_coupled.go",
+      "line": 95,
+      "source": "slope[i] = m.config.ThetaMax*q - m.config.ThetaMin*q"
+    },
+    {
+      "path": "dynamics/lif_segment.go",
+      "line": 91,
+      "source": "span := m.config.ThetaMax - m.config.ThetaMin"
+    },
+    {
+      "path": "dynamics/lif_segment.go",
+      "line": 99,
+      "source": "base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s"
+    },
+    {
+      "path": "dynamics/lif_segment.go",
+      "line": 101,
+      "source": "slope[i] = m.config.ThetaMax*q - m.config.ThetaMin*q"
+    },
+    {
+      "path": "dynamics/lif_state.go",
+      "line": 378,
+      "source": "span := m.config.ThetaMax - m.config.ThetaMin"
+    },
+    {
+      "path": "dynamics/lif_state.go",
+      "line": 384,
+      "source": "base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s"
+    },
+    {
+      "path": "dynamics/mixed.go",
+      "line": 326,
+      "source": "span := m.config.LIF.ThetaMax - m.config.LIF.ThetaMin"
+    },
+    {
+      "path": "dynamics/mixed.go",
+      "line": 335,
+      "source": "base[k] = m.config.LIF.ThetaMin*(1-s) + m.config.LIF.ThetaMax*s"
+    },
+    {
+      "path": "dynamics/mixed.go",
+      "line": 344,
+      "source": "slope[k] = m.config.LIF.ThetaMax*q - m.config.LIF.ThetaMin*q"
+    },
+    {
+      "path": "experiment/lif_threshold.go",
+      "line": 263,
+      "source": "out[i] = core.ThetaMin + (core.ThetaMax-core.ThetaMin)*logistic(value)"
+    },
+    {
+      "path": "internal/delayedfixture/delayedfixture.go",
+      "line": 66,
+      "source": "//   - ThetaMin = 0.05 and ThetaMax = 1: the whole trainable threshold range"
+    },
+    {
+      "path": "internal/delayedfixture/delayedfixture.go",
+      "line": 81,
+      "source": "DT: 1, TauSyn: 1, ThetaMin: .05, ThetaMax: 1, VReset: -.5, RefractorySteps: 1,"
+    }
+  ],
+  "fixed_sites": [
+    "dynamics/lif.go",
+    "dynamics/lif_coupled.go",
+    "dynamics/lif_segment.go",
+    "dynamics/lif_state.go",
+    "dynamics/mixed.go"
+  ],
+  "excluded_internal_fixture": "experiment/lif_threshold.go uses fixed .05..1 bounds; no public configurable range; unchanged"
+}

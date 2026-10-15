@@ -1,0 +1,33 @@
+from pathlib import Path
+import datetime, hashlib, json, os, re, subprocess
+
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/COR-04/threshold-range-audit-20261015'
+f=e/'final-validation'
+w=r/'runs/.tmp/lif-threshold-range-governance-20261015'
+assert not (r/'runs/.tmp/lif-threshold-range-20261015').exists()
+base=json.loads((e/'smoke-baseline.json').read_text())
+assert w.stat().st_ino==base['inode'] and not w.is_symlink()
+lock=json.loads((e/'governance-binary-lock.json').read_text())
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+assert sha(w/'governance.test')==lock['sha256']
+source=json.loads((e/'source-final.json').read_text())
+for p,h in source.items():assert sha(r/p)==h,p
+for p,h in json.loads((e/'protected-models.json').read_text()).items():assert sha(r/p)==h,p
+pattern='^Test('+'|'.join(lock['governance_cases'])+')$'
+cmd=[str(w/'governance.test'),'-test.v','-test.timeout=2m','-test.run',pattern]
+env=os.environ.copy();env.update(TMPDIR=str(w/'go-tmp'),GOTMPDIR=str(w/'go-tmp'),GOCACHE=str(w/'unused-go-cache'),GOMODCACHE=str(w/'unused-go-mod-cache'),GOPROXY='off',GOTOOLCHAIN='local',GOMAXPROCS='2')
+start=datetime.datetime.now(datetime.timezone.utc)
+with(f/'governance-post-cleanup.log').open('xb')as out:
+    p=subprocess.run(cmd,cwd=r,env=env,stdout=out,stderr=subprocess.STDOUT)
+raw=(f/'governance-post-cleanup.log').read_bytes()
+text=raw.decode();passes=re.findall(r'^\s*--- PASS: (\S+)',text,re.M)
+top=[name for name in passes if '/' not in name]
+assert p.returncode==0 and len(top)==11 and len(passes)==31,(p.returncode,top,passes)
+assert '--- FAIL:' not in text and text.rstrip().endswith('PASS')
+assert not (r/'runs/.tmp/lif-threshold-range-20261015').exists()
+assert not (w/'unused-go-cache').exists() and not (w/'unused-go-mod-cache').exists()
+for path,h in source.items():assert sha(r/path)==h,path
+record={'command':cmd,'started_at':start.isoformat(),'duration_seconds':(datetime.datetime.now(datetime.timezone.utc)-start).total_seconds(),'exit_code':p.returncode,'top_level_passed':len(top),'test_events_passed':len(passes),'log':'governance-post-cleanup.log','log_sha256':sha(f/'governance-post-cleanup.log'),'formal_sources_checked':len(source),'main_temp_absent':True,'no_Go_build_cache_recreated':True,'runtime_tmpdir':env['TMPDIR']}
+with(f/'governance-post-cleanup.json').open('x')as out:json.dump(record,out,indent=2);out.write('\n')
+print(json.dumps(record),flush=True)

@@ -70,3 +70,5 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `modulation/memory_controller.go:104`、`modulation/controller.go:199`：[NEEDS INVESTIGATION] 已有活動歷史後修改公開 Inputs／Nodes 宣告時，MemoryController 可能重建視窗。規格尚未指定應回錯、重設或保留歷史，正常呼叫端也不改宣告。後續先釐清支援契約再補測試，不列為已確認缺陷。
 
 - `docs/tickets/18-local-plasticity.md:21`：[NEEDS INVESTIGATION] 公式寫 pre(t)×post(t+1)，但同票 121–137 手算表、套件註解與 consumer 使用核心步驟後的 pre。Root 兩列 LIF 實測 eligibility／plastic 為 exp(-1)，與既有手算表一致；若把 pre 當本步開始的突觸跡，該案例為 1。主規格 10.3 只寫 pre_activity×post_activity，沒有指定兩側時點。需先釐清時點定義，不把 worker 的演算法錯誤判定當成已確認，不先改正常模型。證據見 `evidence/MOD-05/receptor-rule-ownership-20261014/timing-audit.json`。
+
+- `dynamics/modulation.go:95`、`dynamics/lif_coupled.go:249`：[NEEDS INVESTIGATION] 有限負向閾值位移造成 floor 前的和為 −Inf 時，普通 `AdvanceModulated` 會取回 `ThetaMin`，非 nil 耦合前向會拒絕。Root 用有限跨度 `[-2^1023, 0]`、raw −1000、shift −MaxFloat64 在原來源及最終來源重現相同差異，並非 ticket 103 引入。先釐清 floor 前不可表示值應拒絕或允許取下界的共用契約，再決定修改，不列為已確認缺陷、不先改正常模型。證據見 `evidence/COR-04/threshold-range-audit-20261015/modulation-floor-follow-up.json`。

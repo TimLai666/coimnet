@@ -1,0 +1,37 @@
+{
+  "requirement": [
+    "COR-04"
+  ],
+  "reproduction_command": "project-local Go environment from cache-preparation.json; go run runs/.tmp/lif-threshold-range-20261015/probe.go; immutable source probe.go.txt",
+  "environment": {
+    "base_commit": "2f34aec4822059857fae3a5748a0eaeff6eaee9c",
+    "go": "go1.26.5",
+    "goos": "darwin",
+    "goarch": "arm64",
+    "cgo_enabled": 1,
+    "cache_environment": "cache-preparation.json"
+  },
+  "input_fingerprints": {
+    "probe_source_sha256": "d6bc0982c06a709cdb7632035cf5080a9cf311497b21d89acf8d34fe34b304a2",
+    "framework_source_manifest": "source-before.json"
+  },
+  "observed_result": {
+    "constructor_accepted": true,
+    "forward_rejected_representable_threshold": true,
+    "error": "theta_base[0] is not representable",
+    "independent_reference": "exact Fraction arithmetic with sigmoid(0)=1/2; base=0 and slope=2^1022",
+    "base": 0,
+    "slope": 4.49423283715579e+307,
+    "all_finite": true,
+    "normal_model_quality_impact_not_demonstrated": true,
+    "independent_expected_theta_raw_gradient": -4.49423283715579e+307,
+    "gradient_reference_scope": "one step, upstream to synaptic output=1, candidate-base=0, declared fast_sigmoid=1, reset detached; no hard-event finite differences"
+  },
+  "test_log": [
+    "probe-red.json",
+    "probe.go.txt"
+  ],
+  "root_cause": "ThetaMax-ThetaMin overflows before a mathematically representable bounded interpolation and slope",
+  "checked_at": "2026-10-15T02:53:08.038736+00:00",
+  "production_source_unchanged": true
+}

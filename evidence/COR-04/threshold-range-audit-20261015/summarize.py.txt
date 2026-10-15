@@ -1,0 +1,51 @@
+from pathlib import Path
+import collections, datetime, hashlib, json
+
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/COR-04/threshold-range-audit-20261015'
+f=e/'final-validation'
+def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+def result(name):
+    receipt=json.loads((f/(name+'.json')).read_text())
+    assert receipt['exit_code']==0,name
+    assert sha(f/receipt['log'])==receipt['log_sha256'],name
+    return receipt
+def counts(name):
+    result(name)
+    rows=[json.loads(x)for x in(f/(name+'.log')).read_text().splitlines()]
+    tests=collections.Counter(x['Action']for x in rows if x.get('Test')and x.get('Action')in['pass','fail','skip'])
+    packages=collections.Counter(x['Action']for x in rows if not x.get('Test')and x.get('Action')in['pass','fail'])
+    assert not tests['fail']and not packages['fail']
+    assert packages['pass']==58,(name,packages)
+    return {'test_events':dict(tests),'package_events':dict(packages)}
+
+source=json.loads((e/'source-final.json').read_text())
+for p,h in source.items(): assert sha(r/p)==h,p
+for name in ['tests-frozen-final.json','effective-tests-frozen.json']:
+    lock=json.loads((e/name).read_text());assert sha(r/lock['path'])==lock['sha256']
+models=json.loads((e/'protected-models.json').read_text())
+for p,h in models.items():assert sha(r/p)==h,p
+assert len(source)==812 and len(models)==18
+unit=counts('full-unit');race=counts('full-race')
+for name in ['build','vet','mod-verify','module-list','root-green-race','cli-build','cli-lif-threshold','wide-build','wide-begin','wide-continue','wide-continue-previous-candidate']:
+    result(name)
+assert (f/'mod-verify.log').read_text().strip()=='all modules verified'
+assert 'github.com/HazelnutParadise/insyra v0.3.4' in(f/'module-list.log').read_text()
+assert json.loads((f/'format.json').read_text())['checked_files']==808
+compat=json.loads((f/'normal-compatibility.json').read_text())
+assert compat['training_scenarios']==32 and compat['lif_training_scenarios']==16
+assert len(compat['core_comparisons'])==2
+assert json.loads((f/'compatibility-archive.json').read_text())['successful_receipts']==206
+assert (f/'wide-begin.log').read_bytes()==(f/'wide-continue.log').read_bytes()==(f/'wide-continue-previous-candidate.log').read_bytes()
+v={'requirement':['COR-04'],'reproduction_command':{'initial_red':json.loads((e/'root-red-final.json').read_text())['command'],'effective_red':json.loads((e/'root-effective-red.json').read_text())['command'],'final_green':json.loads((e/'root-final-green.json').read_text())['command'],'final_engineering':[json.loads((f/(n+'.json')).read_text())['command']for n in ['build','full-unit','full-race','vet','mod-verify']],'cache_environment':'cache-preparation.json','immutable_driver_sources':['core-compat-reviewed.go.txt','trainer-compat.go.txt','wide-restore.go.txt','final-validation/compatibility.py.txt','final-validation/run-command.py.txt']},
+   'environment':json.loads((e/'go-env.log').read_text()),
+   'input_fingerprints':{'original_commit':json.loads((e/'baseline.json').read_text())['base_commit'],'source_before_sha256':sha(e/'source-before.json'),'source_final_sha256':sha(e/'source-final.json'),'source_entries':len(source),'protected_model_manifest':'protected-models.json','permanent_tests':['tests-frozen-final.json','effective-tests-frozen.json'],'old_source_overlay':'final-validation/overlay.json'},
+   'observed_result':{'bugs_fixed':['finite endpoint span overflow rejected a representable threshold and gradient','nonfinite effective threshold after adaptation or homeostasis was accepted by ordinary paths'],'targeted_normal_and_race_pass_events_each':40,'full_unit':unit,'full_race':race,'normal_training_old_new_byte_pairs':32,'training_old_snapshot_resume_processes':64,'core_old_new_build_pairs':2,'core_LIF_configurations_per_build':16,'core_Mixed_unique_configurations_per_build':8,'normal_result_serialization_and_continuation_unchanged':True,'wide_legal_training_save_fresh_restore_equal':True,'protected_original_model_files_unchanged':len(models),'pinned_dependency':'Insyra v0.3.4','model_format_or_public_API_changed':False},
+   'engineering_passed':True,
+   'test_log':['root-red-final.log','root-effective-red.log','root-final-green.log','final-validation/root-green-race.log','final-validation/full-unit.log','final-validation/full-race.log','final-validation/compatibility-artifacts.tar.gz','final-validation/compatibility-archive.json','final-validation/wide-continue.log','adversarial-review-final.md'],
+   'limitations':['macOS arm64 runtime validation only','numerical and persistence correctness does not establish real-task accuracy improvement or biological validity','global zero-bug objective remains unproven','pre-existing ordinary/coupled lower-floor contract difference recorded in modulation-floor-follow-up.json; behavior unchanged'],
+   'first_candidate_not_final_evidence':{'source':'source-fixed.json','full_unit_passed_but_superseded':True,'full_race_interrupted':'full-race-interrupted.json'},
+   'cleanup_and_delivery':'separately recorded in cleanup.json and delivery.json after final governance',
+   'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+with(e/'verification.json').open('x')as out:json.dump(v,out,indent=2);out.write('\n')
+print(json.dumps({'engineering_passed':True,'unit':unit,'race':race,'source_entries':len(source),'original_models':len(models)}),flush=True)

@@ -1,0 +1,70 @@
+from pathlib import Path
+import hashlib, itertools, json, os, subprocess
+
+r=Path('/Users/timlai/Developer/coimnet')
+w=r/'runs/.tmp/lif-threshold-range-20261015'
+e=r/'evidence/COR-04/threshold-range-audit-20261015/final-validation'
+locks=json.loads((e/'compat-driver-lock-reviewed.json').read_text())
+for p,h in locks.items():
+    assert hashlib.sha256((r/p).read_bytes()).hexdigest()==h,p
+for p,h in json.loads((e/'source-before.json').read_text()).items():
+    if p in json.loads((w/'old-source-overlay-final.json').read_text())['Replace']:
+        raise AssertionError('manifest keys unexpectedly absolute')
+overlay=json.loads((w/'old-source-overlay-final.json').read_text())['Replace']
+for original,copy in overlay.items():
+    key=str(Path(original).relative_to(r))
+    assert hashlib.sha256(Path(copy).read_bytes()).hexdigest()==json.loads((e/'source-before.json').read_text())[key]
+
+def record(name,cmd):
+    subprocess.run(['python3',str(w/'run-command-final.py'),name,'source-fixed.json','0',*map(str,cmd)],cwd=r,check=True)
+    return (e/(name+'.log')).read_bytes()
+
+reports=[]
+for race in [False,True]:
+    mode='race' if race else 'normal'
+    for side in ['old','new']:
+        binary=w/('final-core-'+side+'-'+mode)
+        args=['go','build']+(['-race'] if race else [])
+        if side=='old': args+=['-overlay',str(w/'old-source-overlay-final.json')]
+        record('compat-core-'+side+'-'+mode+'-build',args+['-o',binary,w/'core-compat.go'])
+    old=record('compat-core-old-'+mode,[w/('core-old-'+mode)])
+    new=record('compat-core-new-'+mode,[w/('core-new-'+mode)])
+    assert old==new,mode+' core old/new byte difference'
+    rows=json.loads(old);assert len(rows)==16
+    expected=json.dumps([x['Continued']for x in rows],sort_keys=True,separators=(',',':'))
+    for side in ['old','new']:
+        resumed=record('compat-core-resume-'+side+'-'+mode,[w/('final-core-'+side+'-'+mode),'resume',e/('compat-core-old-'+mode+'.log')])
+        got=json.loads(resumed)
+        assert json.dumps(got,sort_keys=True,separators=(',',':'))==expected
+    reports.append({'build':mode,'lif_configurations':16,'mixed_unique_configurations':8,'paired_records':16,'complete_json_bytes_equal':True,'old_state_new_process_continuation_equal':True,'sha256':hashlib.sha256(old).hexdigest()})
+
+for side in ['old','new']:
+    args=['go','build']
+    if side=='old': args+=['-overlay',str(w/'old-source-overlay-final.json')]
+    record('compat-trainer-'+side+'-build',args+['-o',w/('final-trainer-'+side),w/'trainer-compat.go'])
+
+training=[]
+for idx,values in enumerate(itertools.product(['continuous','lif'],[1,3],[1,7],[False,True],[False,True])):
+    core,window,scale,recompute,sharing=values
+    s=dict(core=core,window=window,scale=scale,recompute=recompute,sharing=sharing)
+    arg=json.dumps(s,separators=(',',':'));prefix='compat-trainer-%02d'%idx
+    payload={}
+    for side in ['old','new']:
+        for stage in ['full','begin']:
+            name=prefix+'-'+side+'-'+stage
+            payload[side,stage]=record(name,[w/('final-trainer-'+side),stage,arg])
+    assert payload['old','full']==payload['new','full'],prefix+' complete old/new differs'
+    assert payload['old','begin']==payload['new','begin'],prefix+' begin old/new differs'
+    full=json.loads(payload['old','full'])
+    for side in ['old','new']:
+        resumed=json.loads(record(prefix+'-'+side+'-resume',[w/('final-trainer-'+side),'continue',arg,e/(prefix+'-old-begin.log')]))
+        assert resumed['snapshot_json']==full['snapshot_json']
+        assert resumed['snapshot']==full['snapshot']
+        assert resumed['steps']==full['steps'][1:]
+        assert resumed['prediction']==full['prediction']
+    training.append({'scenario':s,'complete_old_new_bytes_equal':True,'old_snapshot_both_processes_resume_equal':True,'sha256':hashlib.sha256(payload['old','full']).hexdigest()})
+
+result={'core_comparisons':reports,'training_comparisons':training,'training_scenarios':len(training),'lif_training_scenarios':sum(x['scenario']['core']=='lif'for x in training),'source_overlay':overlay,'note':'Mixed has no Workers option; its eight unique settings are repeated across the LIF worker factor. Normal and race are compared only to their same-build old-source counterpart.'}
+with (e/'normal-compatibility.json').open('x')as f:
+    json.dump(result,f,indent=2);f.write('\n')
+print('NORMAL_COMPATIBILITY_COMPLETE',flush=True)

@@ -1,0 +1,380 @@
+package dynamics
+
+import (
+	"context"
+	"math"
+	"reflect"
+	"testing"
+)
+
+// thresholdRangeExtremeConfig is the smallest public LIF fixture that keeps
+// the threshold transform's midpoint and slope finite while making the raw
+// span itself unrepresentable.  Let a = 2^1023.  The declared bounds are
+// -a < a, while VReset remains below the lower bound.
+func thresholdRangeExtremeConfig() LIFConfig {
+	a := math.Ldexp(1, 1023)
+	return LIFConfig{
+		Nodes: 1, DT: math.Ln2, TauSyn: 1,
+		ThetaMin: -a, ThetaMax: a, VReset: -math.MaxFloat64,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+}
+
+func thresholdRangeExtremeParameters() LIFParameters {
+	return LIFParameters{
+		Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0},
+	}
+}
+
+func thresholdRangeZeroInputs(steps int) [][]float64 {
+	inputs := make([][]float64, steps)
+	for step := range inputs {
+		inputs[step] = []float64{0}
+	}
+	return inputs
+}
+
+func thresholdRangeRowsBitsEqual(t *testing.T, name string, got, want [][]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s has %d rows, want %d", name, len(got), len(want))
+	}
+	for row := range want {
+		if len(got[row]) != len(want[row]) {
+			t.Fatalf("%s[%d] has %d values, want %d", name, row, len(got[row]), len(want[row]))
+		}
+		for col := range want[row] {
+			if math.Float64bits(got[row][col]) != math.Float64bits(want[row][col]) {
+				t.Fatalf("%s[%d][%d] = %v, want %v", name, row, col, got[row][col], want[row][col])
+			}
+		}
+	}
+}
+
+func thresholdRangeVectorBitsEqual(t *testing.T, name string, got, want []float64) {
+	t.Helper()
+	thresholdRangeRowsBitsEqual(t, name, [][]float64{got}, [][]float64{want})
+}
+
+func thresholdRangeExtremeThetaGradient(t *testing.T, got []float64) {
+	t.Helper()
+	// At raw = 0, sigmoid(raw) = 1/2.  For symmetric bounds the transform is
+	// theta = 0, while dtheta/draw = (2^1023 - (-2^1023)) * 1/4 = 2^1022.
+	thresholdRangeVectorBitsEqual(t, "theta_raw gradient", got, []float64{-math.Ldexp(1, 1022)})
+}
+
+func TestThresholdRangeLIFForwardBackward(t *testing.T) {
+	model, err := NewLIF(thresholdRangeExtremeConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := thresholdRangeExtremeParameters()
+	initial := []float64{0}
+	inputs := thresholdRangeZeroInputs(2)
+	trace, err := model.Forward(context.Background(), parameters, initial, inputs)
+	if err != nil {
+		t.Fatalf("Forward: %v", err)
+	}
+
+	a := math.Ldexp(1, 1023)
+	thresholdRangeRowsBitsEqual(t, "outputs", trace.Outputs(), [][]float64{{1}, {.5}})
+	thresholdRangeRowsBitsEqual(t, "spikes", trace.Spikes(), [][]float64{{1}, {0}})
+	thresholdRangeRowsBitsEqual(t, "voltages", trace.Voltages(), [][]float64{{-math.MaxFloat64}, {-a}})
+
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}, {0}}, 0)
+	if err != nil {
+		t.Fatalf("Backward: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+	thresholdRangeVectorBitsEqual(t, "input gradient", gradient.Inputs[0], []float64{.5})
+}
+
+func TestThresholdRangeLIFCoupledForwardBackward(t *testing.T) {
+	model, err := NewLIF(thresholdRangeExtremeConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	sequence := &lifCoupledSequence{
+		mods:         lifCoupledNeutralMods(1, 1),
+		reverseErrAt: -1,
+	}
+	trace, err := model.ForwardCoupled(context.Background(), thresholdRangeExtremeParameters(), []float64{0}, [][]float64{{0}}, sequence)
+	if err != nil {
+		t.Fatalf("ForwardCoupled: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "coupled outputs", trace.Outputs(), [][]float64{{1}})
+	thresholdRangeRowsBitsEqual(t, "coupled spikes", trace.Spikes(), [][]float64{{1}})
+
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}}, 0)
+	if err != nil {
+		t.Fatalf("coupled Backward: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+	if len(sequence.reverses) != 1 || len(sequence.reverses[0].calls) != 1 || sequence.reverses[0].calls[0] != 0 {
+		t.Fatalf("reverse calls = %#v, want one call at step 0", sequence.reverses)
+	}
+}
+
+func TestThresholdRangeLIFRecomputeForwardBackward(t *testing.T) {
+	model, err := NewLIF(thresholdRangeExtremeConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := thresholdRangeExtremeParameters()
+	initial := []float64{0}
+	inputs := thresholdRangeZeroInputs(2)
+	outputs, err := model.ForwardRecompute(context.Background(), parameters, initial, inputs, 1)
+	if err != nil {
+		t.Fatalf("ForwardRecompute: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "recomputed outputs", outputs, [][]float64{{1}, {.5}})
+
+	gradient, err := model.BackwardRecompute(context.Background(), parameters, initial, inputs, [][]float64{{1}, {0}}, 0, 1)
+	if err != nil {
+		t.Fatalf("BackwardRecompute: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+}
+
+func TestThresholdRangeLIFPersistentState(t *testing.T) {
+	model, err := NewLIF(thresholdRangeExtremeConfig())
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := thresholdRangeExtremeParameters()
+	state, err := model.NewState([]float64{0})
+	if err != nil {
+		t.Fatalf("NewState: %v", err)
+	}
+	first, outputs, spikes, err := model.Advance(context.Background(), parameters, state, [][]float64{{0}})
+	if err != nil {
+		t.Fatalf("first Advance: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "first outputs", outputs, [][]float64{{1}})
+	thresholdRangeRowsBitsEqual(t, "first spikes", spikes, [][]float64{{1}})
+	if first.Steps != 1 {
+		t.Fatalf("first state steps = %d, want 1", first.Steps)
+	}
+	second, outputs, spikes, err := model.Advance(context.Background(), parameters, first, [][]float64{{0}})
+	if err != nil {
+		t.Fatalf("second Advance: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "second outputs", outputs, [][]float64{{.5}})
+	thresholdRangeRowsBitsEqual(t, "second spikes", spikes, [][]float64{{0}})
+	if second.Steps != 2 {
+		t.Fatalf("second state steps = %d, want 2", second.Steps)
+	}
+	if err := model.ValidateState(second); err != nil {
+		t.Fatalf("ValidateState after continuation: %v", err)
+	}
+}
+
+func TestThresholdRangeMixedForwardBackwardAllLIF(t *testing.T) {
+	config := MixedConfig{
+		Nodes: 1, DT: math.Ln2, NodeRule: []uint8{RuleLIF},
+		LIF: LIFRule{
+			TauSyn: 1, ThetaMin: thresholdRangeExtremeConfig().ThetaMin,
+			ThetaMax: thresholdRangeExtremeConfig().ThetaMax, VReset: -math.MaxFloat64,
+			Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+		},
+	}
+	model, err := NewMixed(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := MixedParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	trace, err := model.Forward(context.Background(), parameters, []float64{0}, [][]float64{{0}})
+	if err != nil {
+		t.Fatalf("Mixed Forward: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "mixed outputs", trace.Outputs(), [][]float64{{1}})
+	thresholdRangeRowsBitsEqual(t, "mixed spikes", trace.Spikes(), [][]float64{{1}})
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}}, 0)
+	if err != nil {
+		t.Fatalf("Mixed Backward: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+}
+
+func TestThresholdRangeMixedForwardBackwardWithContinuousNode(t *testing.T) {
+	extreme := thresholdRangeExtremeConfig()
+	model, err := NewMixed(MixedConfig{
+		Nodes: 2, DT: math.Ln2, NodeRule: []uint8{RuleContinuous, RuleLIF},
+		Continuous: ContinuousRule{Activation: "tanh"},
+		LIF: LIFRule{
+			TauSyn: 1, ThetaMin: extreme.ThetaMin, ThetaMax: extreme.ThetaMax,
+			VReset: extreme.VReset, Surrogate: extreme.Surrogate,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := MixedParameters{Bias: []float64{0, 0}, LogTau: []float64{0, 0}, ThetaRaw: []float64{0}}
+	trace, err := model.Forward(context.Background(), parameters, []float64{0, 0}, [][]float64{{0, 0}})
+	if err != nil {
+		t.Fatalf("Mixed Forward: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "mixed cross-type outputs", trace.Outputs(), [][]float64{{0, 1}})
+	thresholdRangeRowsBitsEqual(t, "mixed cross-type spikes", trace.Spikes(), [][]float64{{0, 1}})
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{0, 1}}, 0)
+	if err != nil {
+		t.Fatalf("Mixed Backward: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+}
+
+func TestThresholdRangeMixedCoupledForwardBackward(t *testing.T) {
+	extreme := thresholdRangeExtremeConfig()
+	model, err := NewMixed(MixedConfig{
+		Nodes: 1, DT: math.Ln2, NodeRule: []uint8{RuleLIF},
+		LIF: LIFRule{
+			TauSyn: 1, ThetaMin: extreme.ThetaMin, ThetaMax: extreme.ThetaMax,
+			VReset: extreme.VReset, Surrogate: extreme.Surrogate,
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sequence := &mixedCoupledSequence{
+		mods:         mixedCoupledNeutralMods(1, 1),
+		reverseErrAt: -1,
+	}
+	parameters := MixedParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	trace, err := model.ForwardCoupled(context.Background(), parameters, []float64{0}, [][]float64{{0}}, sequence)
+	if err != nil {
+		t.Fatalf("Mixed ForwardCoupled: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "mixed coupled outputs", trace.Outputs(), [][]float64{{1}})
+	thresholdRangeRowsBitsEqual(t, "mixed coupled spikes", trace.Spikes(), [][]float64{{1}})
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}}, 0)
+	if err != nil {
+		t.Fatalf("Mixed coupled Backward: %v", err)
+	}
+	thresholdRangeExtremeThetaGradient(t, gradient.ThetaRaw)
+	if len(sequence.reverses) != 1 || len(sequence.reverses[0].calls) != 1 || sequence.reverses[0].calls[0] != 0 {
+		t.Fatalf("mixed reverse calls = %#v, want one call at step 0", sequence.reverses)
+	}
+}
+
+func TestThresholdRangeSaturationAndNormalControls(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		raw       float64
+		wantSpike float64
+		wantVolt  float64
+	}{
+		{name: "lower saturation", raw: -1000, wantSpike: 1, wantVolt: -3},
+		{name: "upper saturation", raw: 1000, wantSpike: 0, wantVolt: 0},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model, err := NewLIF(LIFConfig{
+				Nodes: 1, DT: math.Ln2, TauSyn: 1,
+				ThetaMin: -2, ThetaMax: 2, VReset: -3,
+				Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			parameters := LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{test.raw}}
+			trace, err := model.Forward(context.Background(), parameters, []float64{0}, [][]float64{{0}})
+			if err != nil {
+				t.Fatalf("Forward: %v", err)
+			}
+			thresholdRangeRowsBitsEqual(t, "spikes", trace.Spikes(), [][]float64{{test.wantSpike}})
+			thresholdRangeRowsBitsEqual(t, "voltages", trace.Voltages(), [][]float64{{test.wantVolt}})
+			gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}}, 0)
+			if err != nil {
+				t.Fatalf("Backward: %v", err)
+			}
+			thresholdRangeVectorBitsEqual(t, "saturated theta_raw gradient", gradient.ThetaRaw, []float64{0})
+		})
+	}
+
+	model, err := NewLIF(LIFConfig{
+		Nodes: 1, DT: math.Ln2, TauSyn: 1,
+		ThetaMin: 0, ThetaMax: 2, VReset: -1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	trace, err := model.Forward(context.Background(), LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}, []float64{0}, [][]float64{{0}})
+	if err != nil {
+		t.Fatalf("normal Forward: %v", err)
+	}
+	thresholdRangeRowsBitsEqual(t, "normal outputs", trace.Outputs(), [][]float64{{0}})
+	gradient, err := model.Backward(context.Background(), trace, [][]float64{{1}}, 0)
+	if err != nil {
+		t.Fatalf("normal Backward: %v", err)
+	}
+	// For [0, 2] and raw 0, theta = 1 and dtheta/draw = 1/2.  At
+	// candidate 0 the fast-sigmoid derivative is 1/9, hence dtheta_raw is
+	// -(1/9)*(1/2) = -1/18 and dinput is (1/2)*(1/9) = 1/18.
+	thresholdRangeVectorBitsEqual(t, "normal theta_raw gradient", gradient.ThetaRaw, []float64{-1.0 / 18})
+	thresholdRangeVectorBitsEqual(t, "normal input gradient", gradient.Inputs[0], []float64{1.0 / 18})
+}
+
+func TestThresholdRangeRejectsInvalidBoundsAndUnrepresentableOutputs(t *testing.T) {
+	base := LIFConfig{
+		Nodes: 1, DT: math.Ln2, TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1,
+		Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2},
+	}
+	for _, test := range []struct {
+		name     string
+		vReset   float64
+		thetaMin float64
+		thetaMax float64
+	}{
+		{name: "reset equals lower", vReset: 0, thetaMin: 0, thetaMax: 2},
+		{name: "lower equals upper", vReset: -1, thetaMin: 1, thetaMax: 1},
+		{name: "lower above upper", vReset: -1, thetaMin: 2, thetaMax: 1},
+		{name: "nonfinite lower", vReset: -1, thetaMin: math.Inf(-1), thetaMax: 2},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			config := base
+			config.VReset, config.ThetaMin, config.ThetaMax = test.vReset, test.thetaMin, test.thetaMax
+			model, err := NewLIF(config)
+			if err == nil || model != nil {
+				t.Fatalf("NewLIF(%s) = model %v, err %v; want rejection", test.name, model, err)
+			}
+		})
+	}
+
+	invalidMixed, err := NewMixed(MixedConfig{
+		Nodes: 1, DT: math.Ln2, NodeRule: []uint8{RuleLIF},
+		LIF: LIFRule{TauSyn: 1, ThetaMin: 1, ThetaMax: 1, VReset: 0, Surrogate: LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}},
+	})
+	if err == nil || invalidMixed != nil {
+		t.Fatalf("NewMixed invalid LIF bounds = model %v, err %v; want rejection", invalidMixed, err)
+	}
+
+	model, err := NewLIF(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := LIFParameters{Bias: []float64{math.MaxFloat64}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	inputs := [][]float64{{math.MaxFloat64}}
+	inputCopy := [][]float64{{math.MaxFloat64}}
+	if trace, err := model.Forward(context.Background(), parameters, []float64{0}, inputs); err == nil || trace != nil {
+		t.Fatalf("Forward overflow = trace %v, err %v; want nil trace and error", trace, err)
+	}
+	if !reflect.DeepEqual(inputs, inputCopy) {
+		t.Fatal("Forward changed inputs after rejecting an unrepresentable state")
+	}
+	if outputs, err := model.ForwardRecompute(context.Background(), parameters, []float64{0}, inputs, 1); err == nil || outputs != nil {
+		t.Fatalf("ForwardRecompute overflow = outputs %v, err %v; want nil outputs and error", outputs, err)
+	}
+
+	state, err := model.NewState([]float64{0})
+	if err != nil {
+		t.Fatalf("NewState for overflow control: %v", err)
+	}
+	before := state
+	next, outputs, spikes, err := model.Advance(context.Background(), parameters, state, inputs)
+	if err == nil || outputs != nil || spikes != nil || !reflect.DeepEqual(next, LIFState{}) {
+		t.Fatalf("Advance overflow = state %#v outputs %v spikes %v err %v; want zero result and error", next, outputs, spikes, err)
+	}
+	if !reflect.DeepEqual(state, before) {
+		t.Fatal("Advance changed persistent state after rejecting an unrepresentable state")
+	}
+}

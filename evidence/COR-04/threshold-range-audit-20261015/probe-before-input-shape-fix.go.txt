@@ -1,0 +1,35 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"math"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+func main() {
+	a := math.Ldexp(1, 1023)
+	c := dynamics.LIFConfig{Nodes: 1, DT: math.Ln2, TauSyn: 1,
+		ThetaMin: -a, ThetaMax: a, VReset: -math.MaxFloat64,
+		Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}}
+	p := dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	result := map[string]any{"all_inputs_finite": true, "theta_min": c.ThetaMin, "theta_max": c.ThetaMax,
+		"expected_base": 0, "expected_slope": math.Ldexp(1, 1022), "span_overflows": math.IsInf(c.ThetaMax-c.ThetaMin, 1)}
+	m, err := dynamics.NewLIF(c)
+	if err != nil {
+		result["constructor_error"] = err.Error()
+	} else {
+		result["constructor_error"] = ""
+		_, err = m.Forward(context.Background(), p, nil, [][]float64{{0}})
+		if err != nil {
+			result["forward_error"] = err.Error()
+		} else {
+			result["forward_error"] = ""
+		}
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+		panic(err)
+	}
+}

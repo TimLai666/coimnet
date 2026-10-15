@@ -1,0 +1,7 @@
+from pathlib import Path
+import subprocess
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/lif-threshold-range-20261015'
+commands=[('root-green-race',['go','test','-race','-json','-count=1','./dynamics','-run','^Test(ThresholdRange|EffectiveThresholdRange)']),('build',['go','build','./...']),('full-unit',['go','test','-json','-count=1','./...']),('vet',['go','vet','./...']),('mod-verify',['go','mod','verify']),('module-list',['go','list','-m','all'])]
+for name,cmd in commands:
+ subprocess.run(['python3',str(w/'run-command-final.py'),name,'source-fixed.json','0',*cmd],cwd=r,check=True)
+print('PRE_RACE_ENGINEERING_COMPLETE',flush=True)

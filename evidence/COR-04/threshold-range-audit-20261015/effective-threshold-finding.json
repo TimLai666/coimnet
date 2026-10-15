@@ -1,0 +1,19 @@
+{
+  "requirement": [
+    "COR-04"
+  ],
+  "public_probe": "effective-threshold-probe.log",
+  "confirmed_by_root": true,
+  "severity": "P1",
+  "cause": "effective threshold is not checked after finite base and adaptation/homeostasis are added",
+  "affected_ordinary_sites": [
+    "dynamics/lif.go",
+    "dynamics/lif_segment.go",
+    "dynamics/lif_state.go",
+    "dynamics/mixed.go",
+    "dynamics/mixed_state.go"
+  ],
+  "coupled_paths_already_reject": true,
+  "permanent_red_tests": "pending worker",
+  "compatibility_scope": "reject unrepresentable effective threshold; finite normal results and model format must remain unchanged"
+}

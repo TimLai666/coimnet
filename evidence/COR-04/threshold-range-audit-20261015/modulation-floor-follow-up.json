@@ -1,0 +1,21 @@
+{
+  "status": "NEEDS INVESTIGATION: contract choice, not classified as confirmed bug",
+  "original_and_final_public_results_byte_equal": true,
+  "source_overlay": "final-validation/overlay.json",
+  "finite_span_fixture": "ThetaMin=-2^1023, ThetaMax=0, raw=-1000, shift=-MaxFloat64",
+  "observed_result": {
+    "coupled_error": "non-finite threshold at step 0 neuron 0",
+    "ordinary_error": "<nil>",
+    "ordinary_outputs": [
+      [
+        1
+      ]
+    ],
+    "span_finite": true
+  },
+  "reason_not_changed": "difference exists on the original source and requires a common decision about rejecting or flooring a nonrepresentable pre-floor value; not caused by ticket 103",
+  "logs": [
+    "final-validation/modulation-floor-original.log",
+    "final-validation/modulation-floor-current.log"
+  ]
+}

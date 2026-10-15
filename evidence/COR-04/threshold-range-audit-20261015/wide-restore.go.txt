@@ -1,0 +1,117 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"path/filepath"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+type saved struct {
+	Config      dynamics.LIFConfig
+	State       dynamics.LIFState
+	MixedConfig dynamics.MixedConfig
+	MixedState  dynamics.MixedState
+}
+
+func config() dynamics.LIFConfig {
+	a := math.Ldexp(1, 1023)
+	return dynamics.LIFConfig{Nodes: 1, DT: math.Ln2, TauSyn: 1, ThetaMin: -a, ThetaMax: a, VReset: -math.MaxFloat64, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+}
+func parameters() dynamics.LIFParameters {
+	return dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+}
+func initialState() saved {
+	ctx := context.Background()
+	c := config()
+	m, err := dynamics.NewLIF(c)
+	must(err)
+	s, err := m.NewState([]float64{0})
+	must(err)
+	s, _, _, err = m.Advance(ctx, parameters(), s, [][]float64{{0}})
+	must(err)
+	mc := dynamics.MixedConfig{Nodes: 1, DT: c.DT, NodeRule: []uint8{dynamics.RuleLIF}, LIF: dynamics.LIFRule{TauSyn: c.TauSyn, ThetaMin: c.ThetaMin, ThetaMax: c.ThetaMax, VReset: c.VReset, Surrogate: c.Surrogate}}
+	mm, err := dynamics.NewMixed(mc)
+	must(err)
+	ms, err := mm.NewState([]float64{0})
+	must(err)
+	p := parameters()
+	ms, _, _, err = mm.Advance(ctx, dynamics.MixedParameters{Bias: p.Bias, LogTau: p.LogTau, ThetaRaw: p.ThetaRaw}, ms, [][]float64{{0}})
+	must(err)
+	return saved{c, s, mc, ms}
+}
+func continueState(s saved) any {
+	ctx := context.Background()
+	m, err := dynamics.NewLIF(s.Config)
+	must(err)
+	must(m.ValidateState(s.State))
+	next, out, spikes, err := m.Advance(ctx, parameters(), s.State, [][]float64{{0}})
+	must(err)
+	mm, err := dynamics.NewMixed(s.MixedConfig)
+	must(err)
+	must(mm.ValidateState(s.MixedState))
+	p := parameters()
+	mn, mo, me, err := mm.Advance(ctx, dynamics.MixedParameters{Bias: p.Bias, LogTau: p.LogTau, ThetaRaw: p.ThetaRaw}, s.MixedState, [][]float64{{0}})
+	must(err)
+	if len(out) != 1 || out[0][0] != .5 || spikes[0][0] != 0 || mo[0][0] != .5 || me[0][0] != 0 {
+		panic("restored wide state continuation differs from independent half-decay reference")
+	}
+	return map[string]any{"lif": next, "lif_outputs": out, "lif_spikes": spikes, "mixed": mn, "mixed_outputs": mo, "mixed_spikes": me}
+}
+func main() {
+	ctx := context.Background()
+	mode, dir := os.Args[1], os.Args[2]
+	var tr *learning.Trainer
+	var state saved
+	if mode == "begin" {
+		c := config()
+		o := learning.DefaultOptions()
+		o.Trainable = learning.Trainable{Theta: true}
+		o.ClipNorm = 1
+		var err error
+		tr, err = learning.NewTrainer(learning.Config{LIF: &c, InputSize: 1, OutputSize: 1, ReadoutNodes: []int{0}}, learning.Parameters{Core: dynamics.Parameters{Bias: []float64{0}, LogTau: []float64{0}}, ThetaRaw: []float64{0}, Encoder: []float64{1}, Readout: []float64{1}}, o)
+		must(err)
+		first, err := tr.Step(ctx, [][]float64{{0}}, []float64{0})
+		must(err)
+		if first.GradientNorm != math.Ldexp(1, 1023) || first.Updates != 1 || tr.Snapshot().Parameters.ThetaRaw[0] <= 0 {
+			panic("wide first update failed finite-gradient clipping reference")
+		}
+		must(checkpoint.SaveTrainingBundle(ctx, filepath.Join(dir, "training"), tr.Snapshot()))
+		state = initialState()
+		b, err := json.Marshal(state)
+		must(err)
+		must(checkpoint.SavePayload(ctx, filepath.Join(dir, "state.json"), "coimnet-threshold-audit-state/v1", b))
+	} else if mode == "continue" {
+		s, err := checkpoint.LoadTrainingBundle(ctx, filepath.Join(dir, "training"))
+		must(err)
+		tr, err = learning.RestoreTrainer(s)
+		must(err)
+		b, err := checkpoint.LoadPayload(ctx, filepath.Join(dir, "state.json"), "coimnet-threshold-audit-state/v1")
+		must(err)
+		must(json.Unmarshal(b, &state))
+	} else {
+		panic("expected begin or continue")
+	}
+	steps := []learning.StepResult{}
+	for k := 0; k < 2; k++ {
+		step, err := tr.Step(ctx, [][]float64{{0}}, []float64{0})
+		must(err)
+		steps = append(steps, step)
+	}
+	result := map[string]any{"snapshot": tr.Snapshot(), "next_steps": steps, "state_continuation": continueState(state)}
+	b, err := json.Marshal(result)
+	must(err)
+	fmt.Println(string(b))
+}

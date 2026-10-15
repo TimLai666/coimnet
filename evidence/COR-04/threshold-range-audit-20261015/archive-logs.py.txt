@@ -1,0 +1,46 @@
+from pathlib import Path
+import gzip, hashlib, json
+
+root = Path('/Users/timlai/Developer/coimnet')
+evidence = root / 'evidence/COR-04/threshold-range-audit-20261015'
+proof_path = evidence / 'verification.json'
+proof_before = proof_path.read_bytes()
+proof = json.loads(proof_before)
+assert proof['engineering_passed']
+records = []
+for receipt_name in ['full-unit.json', 'full-race-interrupted.json',
+                     'final-validation/full-unit.json', 'final-validation/full-race.json']:
+    receipt_path = evidence / receipt_name
+    receipt_before = receipt_path.read_bytes()
+    receipt = json.loads(receipt_before)
+    log_path = receipt_path.parent / receipt['log']
+    before = log_path.read_bytes()
+    digest = hashlib.sha256(before).hexdigest()
+    assert digest == receipt['log_sha256'], receipt_name
+    archive_path = log_path.with_suffix(log_path.suffix + '.gz')
+    archive_bytes = gzip.compress(before, mtime=0)
+    with archive_path.open('xb') as out:
+        out.write(archive_bytes)
+    assert gzip.decompress(archive_path.read_bytes()) == before
+    assert receipt_path.read_bytes() == receipt_before
+    assert log_path.read_bytes() == before
+    log_path.unlink()
+    records.append({'original_log': str(log_path.relative_to(evidence)),
+                    'archive': str(archive_path.relative_to(evidence)),
+                    'raw_sha256': digest, 'raw_bytes': len(before),
+                    'archive_sha256': hashlib.sha256(archive_bytes).hexdigest(),
+                    'archive_bytes': len(archive_bytes),
+                    'receipt_preserved': receipt_name,
+                    'decompressed_bytes_verified_equal': True})
+mapping = {row['original_log']: row['archive'] for row in records}
+proof['test_log'] = [mapping.get(name, name) for name in proof['test_log']]
+proof['engineering_log_archive_map'] = 'engineering-log-archives.json'
+assert proof_path.read_bytes() == proof_before
+proof_path.write_text(json.dumps(proof, indent=2) + '\n')
+with (evidence / 'engineering-log-archives.json').open('x') as out:
+    json.dump({'archives': records,
+               'receipt_log_paths_resolve_through_this_mapping': True}, out, indent=2)
+    out.write('\n')
+print(json.dumps({'archives': len(records),
+                  'raw_bytes': sum(row['raw_bytes'] for row in records),
+                  'archive_bytes': sum(row['archive_bytes'] for row in records)}))

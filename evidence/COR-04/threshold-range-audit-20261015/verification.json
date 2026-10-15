@@ -1,0 +1,168 @@
+{
+  "requirement": [
+    "COR-04"
+  ],
+  "reproduction_command": {
+    "initial_red": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./dynamics",
+      "-run",
+      "^TestThresholdRange"
+    ],
+    "effective_red": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./dynamics",
+      "-run",
+      "^TestEffectiveThresholdRange"
+    ],
+    "final_green": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./dynamics",
+      "-run",
+      "^Test(ThresholdRange|EffectiveThresholdRange)"
+    ],
+    "final_engineering": [
+      [
+        "go",
+        "build",
+        "./..."
+      ],
+      [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "./..."
+      ],
+      [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "./..."
+      ],
+      [
+        "go",
+        "vet",
+        "./..."
+      ],
+      [
+        "go",
+        "mod",
+        "verify"
+      ]
+    ],
+    "cache_environment": "cache-preparation.json",
+    "immutable_driver_sources": [
+      "core-compat-reviewed.go.txt",
+      "trainer-compat.go.txt",
+      "wide-restore.go.txt",
+      "final-validation/compatibility.py.txt",
+      "final-validation/run-command.py.txt"
+    ]
+  },
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-range-20261015/go-cache",
+    "GOMOD": "/Users/timlai/Developer/coimnet/go.mod",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-range-20261015/go-mod-cache",
+    "GOOS": "darwin",
+    "GOTOOLCHAIN": "local",
+    "GOVERSION": "go1.26.5"
+  },
+  "input_fingerprints": {
+    "original_commit": "2f34aec4822059857fae3a5748a0eaeff6eaee9c",
+    "source_before_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+    "source_final_sha256": "be4dd53a28c64684014263c25d02353d8a1eff52713e35a6bc5b78d0305193a9",
+    "source_entries": 812,
+    "protected_model_manifest": "protected-models.json",
+    "permanent_tests": [
+      "tests-frozen-final.json",
+      "effective-tests-frozen.json"
+    ],
+    "old_source_overlay": "final-validation/overlay.json"
+  },
+  "observed_result": {
+    "bugs_fixed": [
+      "finite endpoint span overflow rejected a representable threshold and gradient",
+      "nonfinite effective threshold after adaptation or homeostasis was accepted by ordinary paths"
+    ],
+    "targeted_normal_and_race_pass_events_each": 40,
+    "full_unit": {
+      "test_events": {
+        "pass": 5818,
+        "skip": 22
+      },
+      "package_events": {
+        "pass": 58
+      }
+    },
+    "full_race": {
+      "test_events": {
+        "pass": 5817,
+        "skip": 23
+      },
+      "package_events": {
+        "pass": 58
+      }
+    },
+    "normal_training_old_new_byte_pairs": 32,
+    "training_old_snapshot_resume_processes": 64,
+    "core_old_new_build_pairs": 2,
+    "core_LIF_configurations_per_build": 16,
+    "core_Mixed_unique_configurations_per_build": 8,
+    "normal_result_serialization_and_continuation_unchanged": true,
+    "wide_legal_training_save_fresh_restore_equal": true,
+    "protected_original_model_files_unchanged": 18,
+    "pinned_dependency": "Insyra v0.3.4",
+    "model_format_or_public_API_changed": false
+  },
+  "engineering_passed": true,
+  "test_log": [
+    "root-red-final.log",
+    "root-effective-red.log",
+    "root-final-green.log",
+    "final-validation/root-green-race.log",
+    "final-validation/full-unit.log.gz",
+    "final-validation/full-race.log.gz",
+    "final-validation/compatibility-artifacts.tar.gz",
+    "final-validation/compatibility-archive.json",
+    "final-validation/wide-continue.log",
+    "adversarial-review-final.md"
+  ],
+  "limitations": [
+    "macOS arm64 runtime validation only",
+    "numerical and persistence correctness does not establish real-task accuracy improvement or biological validity",
+    "global zero-bug objective remains unproven",
+    "pre-existing ordinary/coupled lower-floor contract difference recorded in modulation-floor-follow-up.json; behavior unchanged"
+  ],
+  "first_candidate_not_final_evidence": {
+    "source": "source-fixed.json",
+    "full_unit_passed_but_superseded": true,
+    "full_race_interrupted": "full-race-interrupted.json"
+  },
+  "cleanup_and_delivery": "separately recorded in cleanup.json and delivery.json after final governance",
+  "checked_at": "2026-10-15T04:00:08.737625+00:00",
+  "engineering_log_archive_map": "engineering-log-archives.json",
+  "final_governance": {
+    "before_main_cleanup": "final-validation/governance-final-validated.json",
+    "after_main_cleanup": "final-validation/governance-post-cleanup.json",
+    "top_level_passed_each": 11,
+    "test_events_passed_each": 31
+  },
+  "cleanup_evidence": [
+    "cleanup.json",
+    "smoke-cleanup.json"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "staged_files": [
+    "dynamics/lif.go",
+    "dynamics/lif_coupled.go",
+    "dynamics/lif_segment.go",
+    "dynamics/lif_state.go",
+    "dynamics/mixed.go",
+    "dynamics/mixed_state.go"
+  ],
+  "source_hashes_match_final_manifest": true,
+  "checks": [
+    {
+      "command": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/scan-commit.sh",
+        "."
+      ],
+      "exit_code": 0,
+      "output": "PASS\nscan-commit: .: staged diff is clean\n"
+    }
+  ]
+}

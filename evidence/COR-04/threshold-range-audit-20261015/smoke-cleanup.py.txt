@@ -1,0 +1,68 @@
+from pathlib import Path
+import datetime, hashlib, json, os, shutil, stat, subprocess
+
+root = Path('/Users/timlai/Developer/coimnet')
+evidence = root / 'evidence/COR-04/threshold-range-audit-20261015'
+work = root / 'runs/.tmp/lif-threshold-range-governance-20261015'
+baseline = json.loads((evidence / 'smoke-baseline.json').read_text())
+assert str(work) == baseline['path'] and work.stat().st_ino == baseline['inode']
+assert not work.is_symlink() and shutil.rmtree.avoids_symlink_attacks
+assert not (work.parent / 'lif-threshold-range-20261015').exists()
+proof = json.loads((evidence / 'final-validation/governance-post-cleanup.json').read_text())
+assert proof['exit_code'] == 0 and proof['test_events_passed'] == 31
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+def check_protected():
+    for manifest in ['source-final.json', 'protected-models.json']:
+        for path, digest in json.loads((evidence / manifest).read_text()).items():
+            assert sha(root / path) == digest, path
+    main = json.loads((evidence / 'baseline.json').read_text())
+    for name, old in main['protected_temporary_directories'].items():
+        path = work.parent / name
+        assert {'inode': path.stat().st_ino,
+                'entries': sorted(child.name for child in path.iterdir())} == old
+def inventory():
+    result = {}
+    for here, dirs, files in os.walk(work, followlinks=False):
+        for name in dirs + files:
+            path = Path(here) / name
+            info = path.lstat()
+            assert stat.S_ISDIR(info.st_mode) or stat.S_ISREG(info.st_mode), str(path)
+            row = {'inode': info.st_ino, 'mode': info.st_mode,
+                   'size': info.st_size, 'mtime_ns': info.st_mtime_ns}
+            if stat.S_ISREG(info.st_mode):
+                row['sha256'] = sha(path)
+            result[str(path.relative_to(work))] = row
+    return result
+def check_handles():
+    command = ['lsof', '-nP', '-Fpn', '+D', str(work)]
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    assert result.returncode in [0, 1] and not result.stdout.strip(), result.stdout
+    return {'command': command, 'exit_code': result.returncode,
+            'open_handles': 0, 'stderr': result.stderr}
+check_protected()
+handle_before = check_handles()
+before = inventory()
+assert before == inventory()
+assert sha(work / 'governance.test') == json.loads((evidence / 'governance-binary-lock.json').read_text())['sha256']
+assert work.stat().st_ino == baseline['inode'] and not work.is_symlink()
+handle_final = check_handles()
+check_protected()
+regular = [row for row in before.values() if stat.S_ISREG(row['mode'])]
+shutil.rmtree(str(work))
+assert not work.exists()
+check_protected()
+record = {'completed_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'removed_path': str(work), 'removed_path_inode': baseline['inode'],
+          'counts': {'regular_files': len(regular),
+                     'regular_bytes': sum(row['size'] for row in regular),
+                     'directories_including_root': 1 + len(before) - len(regular)},
+          'inventory': before, 'content_and_stat_checked_twice': True,
+          'handles_before': [handle_before, handle_final],
+          'formal_sources_unchanged': 812, 'original_models_unchanged': 18,
+          'protected_original_temp_directories_unchanged': True,
+          'both_ticket_103_temp_directories_absent': True}
+with (evidence / 'smoke-cleanup.json').open('x') as out:
+    json.dump(record, out, indent=2)
+    out.write('\n')
+print(json.dumps(record))
