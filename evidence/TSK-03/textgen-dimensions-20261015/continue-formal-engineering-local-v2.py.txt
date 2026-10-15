@@ -1,0 +1,15 @@
+from pathlib import Path
+import hashlib, json
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-03/textgen-dimensions-20261015'
+w = r / 'runs/.tmp/textgen-dimensions-20261015'
+p = w / 'verify-formal-engineering.py'
+assert hashlib.sha256(p.read_bytes()).hexdigest() == json.loads((e / 'engineering-check-freeze.json').read_text())['runner_sha256']
+s = p.read_text()
+for name in ['format', 'build']:
+    assert json.loads((e / ('engineering-' + name + '.json')).read_text())['exit_code'] == 0
+s = s.replace("'engineering-' + name", "'engineering-local-' + name")
+s = s.replace("results = []\nfor name, command in steps:", "steps = [(name, command) for name, command in steps if name not in ['format', 'build']]\nresults = [json.loads((e / ('engineering-' + name + '.json')).read_text()) for name in ['format', 'build']]\nfor name, command in steps:", 1)
+s = s.replace("['command', 'added_events']", "['command', 'added_events', 'changed_events']")
+s = s.replace("assert code == 0 and not errors, result", "assert code == 0 and not errors, {'name': name, 'exit_code': code, 'errors': errors}")
+exec(compile(s, str(p), 'exec'))

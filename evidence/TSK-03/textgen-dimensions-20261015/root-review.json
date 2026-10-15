@@ -1,0 +1,31 @@
+{
+  "scope": "CLEAN",
+  "changed_go": [
+    "tasks/textgen/model.go",
+    "tasks/textgen/model_dimensions.go",
+    "tasks/textgen/model_dimensions_test.go"
+  ],
+  "formal_source_count": 822,
+  "frozen_regressions_unchanged": true,
+  "api_and_format_changes": false,
+  "new_dependencies": false,
+  "findings": [],
+  "verified_behaviors": [
+    "Public valid Vocabulary reaches configuration validation and length validation before allocation",
+    "Positive-divisor checks precede all division; encoder/readout float64 byte limit implies element limit",
+    "NewModel retains ModelConfig order; bounded node/edge calculations use existing validated widths",
+    "Save/Load share constructor and unchanged checkpoint format",
+    "8 normal byte-exact model comparisons and 16 old-model new-process restores pass"
+  ],
+  "limitations": [
+    "Representable but unavailable allocations may still fail at runtime",
+    "Actual execution is macOS arm64; no 32-bit execution",
+    "No new model accuracy or biological mechanism claim"
+  ],
+  "subtraction_review": {
+    "simplified": "Two checked lengths reused by normal construction and save/restore validation; no duplicate formulas at loaders",
+    "omitted": "No recover wrapper, memory-limit option, public helper, tokenizer product or new format; remove only owned probes/caches after preservation"
+  },
+  "engineering_pending": false,
+  "engineering_verification": "engineering-verification.json"
+}

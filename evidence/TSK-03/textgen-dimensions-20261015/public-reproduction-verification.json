@@ -1,0 +1,64 @@
+{
+  "requirement": [
+    "TSK-03",
+    "OPS-01"
+  ],
+  "reproduction_command": {
+    "ordinary-v2": [
+      "go",
+      "run",
+      "./runs/.tmp/textgen-dimensions-20261015/driver"
+    ],
+    "race": [
+      "go",
+      "run",
+      "-race",
+      "./runs/.tmp/textgen-dimensions-20261015/driver"
+    ]
+  },
+  "environment": "command-environment.json",
+  "input_fingerprints": [
+    "source-before.json",
+    "public-probe-freeze.json"
+  ],
+  "observed_result": {
+    "builds": {
+      "ordinary-v2": {
+        "command": [
+          "go",
+          "run",
+          "./runs/.tmp/textgen-dimensions-20261015/driver"
+        ],
+        "log": "public-probe-ordinary-v2.log",
+        "log_sha256": "5c6452291c7ecf9acd54bbbe073c4de66bc31852ae262f5fa80a759fc1a0309e",
+        "invalid_public_panics": 3,
+        "legal_controls": 2
+      },
+      "race": {
+        "command": [
+          "go",
+          "run",
+          "-race",
+          "./runs/.tmp/textgen-dimensions-20261015/driver"
+        ],
+        "log": "public-probe-race.log",
+        "log_sha256": "5c6452291c7ecf9acd54bbbe073c4de66bc31852ae262f5fa80a759fc1a0309e",
+        "invalid_public_panics": 3,
+        "legal_controls": 2
+      }
+    },
+    "provider_contract_checked": true,
+    "canonical_hash_independently_recomputed": true,
+    "earliest_failure": "NewModel unchecked vocabSize*Embed reaches uniform make with negative length before learning.NewTrainer",
+    "normal_controls_build_models": true
+  },
+  "test_log": [
+    "public-probe-ordinary-v2.log",
+    "public-probe-race.log"
+  ],
+  "verified_at": "2026-10-15T11:01:09.001653+00:00",
+  "source_count": 820,
+  "formal_sources_unchanged": true,
+  "source": "public-probe.go.txt",
+  "limit": "Constructor/runtime custom Vocabulary only; not high-level bos/eos tasks, saving custom vocabulary, physical memory capacity or 32-bit execution."
+}

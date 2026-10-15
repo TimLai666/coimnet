@@ -1,0 +1,55 @@
+{
+  "requirement": [
+    "TSK-03",
+    "OPS-01"
+  ],
+  "reproduction_command": {
+    "ordinary": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/red-overlay.json",
+      "-json",
+      "-count=1",
+      "-run",
+      "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+      "./tasks/textgen"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/red-overlay.json",
+      "-json",
+      "-count=1",
+      "-run",
+      "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+      "./tasks/textgen"
+    ]
+  },
+  "environment": "command-environment.json",
+  "input_fingerprints": "regression-freeze.json",
+  "observed_result": {
+    "ordinary": {
+      "fail": 18,
+      "pass": 6
+    },
+    "race": {
+      "fail": 18,
+      "pass": 6
+    },
+    "public_constructor_panics": 3,
+    "legal_controls_pass": 2,
+    "private_readonly_boundary_failures": 13
+  },
+  "test_log": [
+    "regression-red-ordinary.log",
+    "regression-red-race.log"
+  ],
+  "formal_sources_unchanged": 820,
+  "source_history": [
+    "a28ce23b4f4c317d7ed5f46466ce43d22910c5bc feat: complete real task persistence and device training acceptance",
+    "421943d3e370333d499dd8b24fe532ca7b45ee91 feat(tasks/textgen): byte-level language model with masked next-token training (TSK-03)"
+  ]
+}

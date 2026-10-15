@@ -1,0 +1,125 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/red-overlay.json",
+    "-json",
+    "-count=1",
+    "-run",
+    "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+    "./tasks/textgen"
+  ],
+  "exit_code": 1,
+  "seconds": 15.643062375,
+  "counts": {
+    "fail": 18,
+    "pass": 6
+  },
+  "events": [
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_4",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_8",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_256",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/ordinary_bytes",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/ordinary_specials",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_zero",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_one",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_negative",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/embed_zero",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/embed_negative",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/hidden_zero",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/hidden_negative",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/minimum_legal_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/small_byte_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/small_special_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/maximum_legal_float64_byte_boundary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/encoder_just_over_float64_byte_boundary",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_alone_over_float64_byte_boundary",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/maximum_element_count_but_byte_count_over",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/encoder_element_multiplication_overflows",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_element_multiplication_overflows",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_element_multiplication_overflows_with_max_vocabulary",
+      "action": "fail"
+    },
+    {
+      "test": "TestModelParameterLengths",
+      "action": "fail"
+    }
+  ],
+  "log": "regression-red-race.log",
+  "log_sha256": "e14bbb3b897214396e8d5cfcf8b31976d33abebaa6008d0918a4dd0bd7f00b5b",
+  "frozen": {
+    "tests/model_dimensions_test.go": "e73b4f3340584f6d7012aeb2a74abb2c8f18f118a36d6c1415dd185380eb188e",
+    "skeleton/model_dimensions.go": "20f4ff7f73cf3320354b902f418c24d862ce0053b7d99a4fab95d040adad4c50"
+  },
+  "source_count": 820
+}

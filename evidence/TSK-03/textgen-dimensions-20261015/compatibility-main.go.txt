@@ -1,0 +1,121 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/TimLai666/coimnet/tasks/textgen"
+	"github.com/TimLai666/coimnet/tasks/textgen/tokenizer"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func encode(value any) []byte {
+	raw, err := json.Marshal(value)
+	must(err)
+	return raw
+}
+
+func digest(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+func save(path string, raw []byte) {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	must(err)
+	_, err = file.Write(raw)
+	must(err)
+	must(file.Close())
+}
+
+func example(vocab tokenizer.Vocabulary) textgen.Example {
+	ids, err := vocab.Encode("A貓")
+	must(err)
+	bos, ok := vocab.Special("bos")
+	if !ok {
+		panic("missing bos")
+	}
+	ids = append([]int{bos}, ids...)
+	scored := make([]bool, len(ids))
+	for i := 1; i < len(scored); i++ {
+		scored[i] = true
+	}
+	return textgen.Example{IDs: ids, Scored: scored}
+}
+
+func observe(model *textgen.Model) map[string]any {
+	ctx := context.Background()
+	ex := example(model.Vocabulary())
+	before := encode(model.Snapshot())
+	logits, err := model.Logits(ctx, ex.IDs)
+	must(err)
+	loss, err := model.NLL(ctx, ex)
+	must(err)
+	step, gradient, err := model.Step(ctx, ex)
+	must(err)
+	if !step.Applied {
+		panic("next update not applied")
+	}
+	next := encode(model.Snapshot())
+	return map[string]any{
+		"snapshot": json.RawMessage(before), "snapshot_sha256": digest(before),
+		"logits": logits, "nll": loss, "step": step, "gradient": gradient,
+		"next_snapshot": json.RawMessage(next), "next_snapshot_sha256": digest(next),
+	}
+}
+
+func main() {
+	if len(os.Args) != 4 || (os.Args[1] != "write" && os.Args[1] != "restore") {
+		panic("usage: compat write|restore ROOT LABEL")
+	}
+	mode, root, label := os.Args[1], os.Args[2], os.Args[3]
+	ctx := context.Background()
+	configs := []textgen.ModelConfig{
+		{Embed: 4, Hidden: 4, Settle: 1, LearningRate: 0.01, Seed: 7},
+		{Embed: 4, Hidden: 8, Settle: 2, LearningRate: 0.01, Seed: 11},
+		{Embed: 8, Hidden: 4, Settle: 1, LearningRate: 0.01, Seed: 13},
+		{Embed: 8, Hidden: 8, Settle: 2, LearningRate: 0.01, Seed: 17},
+	}
+	for i, config := range configs {
+		path := filepath.Join(root, fmt.Sprintf("case-%d", i))
+		var model *textgen.Model
+		var err error
+		if mode == "write" {
+			vocab, err := tokenizer.New(tokenizer.Config{Format: tokenizer.FormatByte, Specials: []tokenizer.SpecialToken{
+				{Name: "bos", Role: "bos"}, {Name: "eos", Role: "eos"}, {Name: "pad", Role: "pad"},
+			}})
+			must(err)
+			model, err = textgen.NewModel(vocab, config)
+			must(err)
+			save(path+"-initial.json", encode(model.Snapshot()))
+			for update := 0; update < 3; update++ {
+				step, _, err := model.Step(ctx, example(vocab))
+				must(err)
+				if !step.Applied {
+					panic("training update not applied")
+				}
+			}
+			must(model.Save(ctx, path))
+		} else {
+			model, err = textgen.LoadModel(ctx, path)
+			must(err)
+		}
+		if model.Config() != config {
+			panic("model configuration changed")
+		}
+		record := observe(model)
+		save(filepath.Join(root, fmt.Sprintf("%s-case-%d.json", label, i)), encode(record))
+		must(json.NewEncoder(os.Stdout).Encode(map[string]any{"case": i, "mode": mode,
+			"snapshot_sha256": record["snapshot_sha256"], "next_snapshot_sha256": record["next_snapshot_sha256"]}))
+	}
+}

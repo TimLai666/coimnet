@@ -1,0 +1,50 @@
+{
+  "requirement": [
+    "TSK-03",
+    "OPS-01"
+  ],
+  "reproduction_command": {
+    "ordinary": [
+      "go",
+      "test",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/candidate-overlay.json",
+      "-json",
+      "-count=1",
+      "-run",
+      "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+      "./tasks/textgen"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/candidate-overlay.json",
+      "-json",
+      "-count=1",
+      "-run",
+      "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+      "./tasks/textgen"
+    ]
+  },
+  "environment": "command-environment.json",
+  "input_fingerprints": [
+    "regression-freeze.json",
+    "candidate-freeze.json"
+  ],
+  "observed_result": {
+    "ordinary": {
+      "pass": 24
+    },
+    "race": {
+      "pass": 24
+    },
+    "red_test_names_preserved": true,
+    "public_panics_replaced_by_errors": true
+  },
+  "test_log": [
+    "regression-green-ordinary.log",
+    "regression-green-race.log"
+  ]
+}

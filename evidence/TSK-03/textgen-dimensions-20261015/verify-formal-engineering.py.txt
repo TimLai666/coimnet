@@ -1,0 +1,105 @@
+from pathlib import Path
+import collections, datetime, gzip, hashlib, json, os, subprocess, time
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-03/textgen-dimensions-20261015'
+w = r / 'runs/.tmp/textgen-dimensions-20261015'
+source = json.loads((e / 'formal-source.json').read_text())
+env = os.environ.copy()
+env.update(json.loads((e / 'command-environment.json').read_text()))
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+def gate():
+    assert len(source) == 822
+    for path, digest in source.items():
+        assert sha(r / path) == digest, path
+    for path, digest in json.loads((e / 'protected-models.json').read_text()).items():
+        assert sha(r / path) == digest, path
+
+def terminal(raw):
+    tests, packages = {}, {}
+    for line in raw.decode().splitlines():
+        try:
+            x = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if x.get('Action') not in ['pass', 'fail', 'skip']:
+            continue
+        if x.get('Test'):
+            key = (x['Package'], x['Test'])
+            assert key not in tests, key
+            tests[key] = x['Action']
+        else:
+            packages[x['Package']] = x['Action']
+    return tests, packages
+
+go_files = [p for p in source if p.endswith('.go') and not p.startswith('evidence/')]
+assert len(go_files) == 818
+pattern = '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+steps = [('format', ['gofmt', '-l', *go_files]), ('build', ['go', 'build', './...']),
+         ('unit', ['go', 'test', '-json', '-count=1', './...']),
+         ('race', ['go', 'test', '-race', '-json', '-count=1', './...']),
+         ('vet', ['go', 'vet', './...']), ('module-verify', ['go', 'mod', 'verify']),
+         ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+         ('governance', ['go', 'test', '-json', '-count=1', '-run', pattern, '.']),
+         ('closure-binary', ['go', 'test', '-c', '-o', str(w / 'final-root.test'), '.'])]
+results = []
+for name, command in steps:
+    gate()
+    log = e / ('engineering-' + name + '.log')
+    start = time.monotonic()
+    with log.open('xb') as handle:
+        code = subprocess.run(command, cwd=r, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    raw = log.read_bytes()
+    result = {'name': name, 'command': command, 'exit_code': code, 'seconds': time.monotonic() - start,
+              'raw_sha256': sha(log), 'raw_bytes': len(raw)}
+    errors = []
+    if name in ['unit', 'race', 'governance']:
+        tests, packages = terminal(raw)
+        result['test_events'] = dict(collections.Counter(tests.values()))
+        result['package_events'] = dict(collections.Counter(packages.values()))
+        if name in ['unit', 'race']:
+            old_name = 'formal-engineering-local-v2-' + name + '.log.gz'
+            old_raw = gzip.decompress((r / 'evidence/TSK-02/asr-dimensions-20261015' / old_name).read_bytes())
+            old, old_packages = terminal(old_raw)
+            if packages != old_packages:
+                errors.append('package terminal results differ from previous acceptance')
+            changed = [(key, value, tests.get(key)) for key, value in old.items() if tests.get(key) != value]
+            added = {key: value for key, value in tests.items() if key not in old}
+            result['prior_test_events_preserved'] = len(old) if not changed else False
+            result['changed_events'] = changed
+            result['added_events'] = [{'package': key[0], 'test': key[1], 'action': value} for key, value in added.items()]
+            if changed or len(added) != 24 or set(added.values()) != {'pass'}:
+                errors.append('existing events changed or 24 passing regression events absent')
+            expected = {'pass': 5915, 'skip': 22} if name == 'unit' else {'pass': 5914, 'skip': 23}
+            if result['test_events'] != expected:
+                errors.append('test totals differ from frozen expectation')
+        elif result['test_events'] != {'pass': 31}:
+            errors.append('governance events differ from 31 passing expectation')
+    if name == 'format' and raw.strip():
+        errors.append('unformatted sources')
+    if name == 'module-selection' and raw.decode().strip() != 'github.com/HazelnutParadise/insyra v0.3.4':
+        errors.append('fixed dependency changed')
+    if name in ['unit', 'race']:
+        archive = log.with_suffix('.log.gz')
+        with archive.open('xb') as handle:
+            handle.write(gzip.compress(raw, mtime=0))
+        assert gzip.decompress(archive.read_bytes()) == raw
+        result.update(log=archive.name, log_sha256=sha(archive), compression='gzip; raw bytes exact')
+        assert sha(log) == result['raw_sha256']
+        log.unlink()
+    else:
+        result.update(log=log.name, log_sha256=sha(log))
+    result['acceptance_errors'] = errors
+    with (e / ('engineering-' + name + '.json')).open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+    print(json.dumps({key: value for key, value in result.items() if key not in ['command', 'added_events']}), flush=True)
+    assert code == 0 and not errors, result
+    results.append(result)
+with (e / 'engineering-verification.json').open('x') as handle:
+    json.dump({'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+               'source_count': len(source), 'formal_go_files': len(go_files), 'all_passed': True,
+               'steps': results, 'scope': 'Final formal source for ticket109, macOS arm64; no task-quality or zero-bug claim.'}, handle, indent=2)
+    handle.write('\n')

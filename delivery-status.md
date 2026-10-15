@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 109](docs/tickets/109-textgen-vocabulary-dimensions.md) 的文字模型詞表尺寸修正已通過完整工程驗收。822 份來源的一般／競態各 58 套件通過，5,915／5,914 個成功事件、22／23 個略過、零失敗，格式、build、vet 及固定依賴通過，見[驗收](evidence/TSK-03/textgen-dimensions-20261015/verification.json)。8 組正常模型與 16 次舊保存新程序接續逐位相同，TSK-03／OPS-01 恢復 passed，目前 91／91 工程需求 passed。最後 31 項治理通過，本輪 1,848,615,536 bytes 暫存已清除，原模型、必要資料與兩個舊暫存目錄保持，見[清理](evidence/TSK-03/textgen-dimensions-20261015/cleanup.json)。本票 4／5，修正 `71ad3af` 已提交，回歸、證據與遠端核對待完成，整體零 bug 目標持續進行。
+
 [ticket 108](docs/tickets/108-asr-constructor-dimensions.md) 已完成 5／5。ASR 會在配置前拒絕無法表示的節點、邊與陣列尺寸。最終 820 份 Go／module 的一般／競態各 58 套件通過，5,891／5,890 個事件成功、22／23 個略過、零失敗，build、vet、格式及固定相依性通過，見[驗收](evidence/TSK-02/asr-dimensions-20261015/verification.json)。四組合法模型及 16 次跨版本新程序接續相同。最後 31 項治理通過，自有暫存清除，修正 `5be55c2` 與回歸／證據 `b9b465b` 已正常推送且遠端讀回相同，見[交付](evidence/TSK-02/asr-dimensions-20261015/delivery.json)。OPS-01／TSK-02 已恢復 passed，最新為 91／91 工程需求 passed，整體零 bug 目標持續進行。
 
 [ticket 107](docs/tickets/107-recognizer-unicode-construction.md) 已完成 5／5。OCR／ASR 在建立模型時拒絕原本無法保存的非法字碼，正常模型、舊保存及串流防護保持。專項兩種建置各 353 個事件通過，接續 108 的完整一般／競態與最後 31 項治理通過，見[驗收](evidence/TSK-01/recognizer-unicode-20261015/verification.json)。64 個必要工作檔已保存，自有暫存清除。修正 `c877ab2` 與回歸／證據 `b9b465b` 已正常推送且遠端讀回相同，見[交付](evidence/TSK-01/recognizer-unicode-20261015/delivery.json)。TSK-01／TSK-02 已恢復 passed。

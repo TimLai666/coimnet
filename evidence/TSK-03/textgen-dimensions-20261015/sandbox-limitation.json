@@ -1,0 +1,39 @@
+{
+  "failed_run": "engineering-unit.json",
+  "failed_events": [
+    {
+      "package": "github.com/TimLai666/coimnet",
+      "test": "TestCancelReleases/download_Fetch"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet",
+      "test": "TestCancelReleases"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/distill",
+      "test": "TestUntrustedTeacherAnswersStayData"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/download",
+      "test": "TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/experiment/studenteval",
+      "test": "TestStudentModeNeverReachesTheNetwork"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/internal/cli",
+      "test": "TestDataDownloadRunE2EAndReceipt"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/teacher",
+      "test": "TestHTTPRetriesOnServerErrorsExactly"
+    }
+  ],
+  "symptom": "httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted",
+  "metal_difference": "sandbox device discovery also skipped existing hardware checks; rerun outside sandbox without changing tests",
+  "repair": "same frozen runner/checks, preserve successful format/build, separate local prefix; no production/test change",
+  "continuation": "continue-formal-engineering-local.py.txt",
+  "continuation_sha256": "6acca5eb3fe5067a8195e65f63b95bc37e2c8a8b1e76bd5ca41fedbcca1dc9e9",
+  "stop_attempt": "read-only process inventory succeeded; process-specific stop guard found PID already absent; no signal delivered"
+}

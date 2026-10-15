@@ -1,0 +1,63 @@
+{
+  "requirement": [
+    "TSK-03",
+    "OPS-01"
+  ],
+  "verified_at": "2026-10-15T11:59:37.370513+00:00",
+  "engineering_passed": true,
+  "reproduction_command": "verify-formal-engineering.py.txt with continue-formal-engineering-local-v2.py.txt; public/red/green/compatibility commands recorded in their receipts",
+  "environment": [
+    "host.json",
+    "host-execution-environment.json",
+    "command-environment.json"
+  ],
+  "input_fingerprints": [
+    "formal-source.json",
+    "regression-freeze.json",
+    "candidate-freeze.json",
+    "compatibility-preservation.json"
+  ],
+  "source_entries": 822,
+  "observed_result": {
+    "full_unit": {
+      "pass": 5915,
+      "skip": 22
+    },
+    "full_race": {
+      "pass": 5914,
+      "skip": 23
+    },
+    "package_passes_per_build": 58,
+    "new_passing_events_per_build": 24,
+    "old_test_events_preserved": true,
+    "normal_model_pairs": 8,
+    "old_model_new_process_restores": 16,
+    "normal_initialization_training_and_next_updates_byte_equal": true,
+    "format_build_vet_fixed_dependencies_passed": true
+  },
+  "test_log": [
+    "engineering-local-unit.log.gz",
+    "engineering-local-race.log.gz"
+  ],
+  "engineering": "engineering-verification.json",
+  "regressions": [
+    "regression-red-verification.json",
+    "regression-green-verification.json"
+  ],
+  "compatibility": "candidate-compatibility-verification.json",
+  "preservation": [
+    "compatibility-preservation.json",
+    "work-preservation.json",
+    "protected-preservation.json"
+  ],
+  "cleanup_pending": false,
+  "delivery_pending": true,
+  "milestones": [
+    4,
+    5
+  ],
+  "limits": "Actual macOS arm64 execution; representable lengths do not guarantee physical memory/runtime allocation capacity. Custom lazy Vocabulary is a constructor control, not a new persistable tokenizer. No model quality superiority, biological mechanism proof, 32-bit execution or zero-bug guarantee.",
+  "cleanup": "cleanup.json",
+  "final_governance": "final-governance.json",
+  "implementation_commit": "71ad3af0ecf44a7c657e2fa7b5b89ae35252f9f5"
+}

@@ -1,0 +1,159 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strconv"
+	"strings"
+
+	"github.com/TimLai666/coimnet/tasks/textgen"
+	"github.com/TimLai666/coimnet/tasks/textgen/tokenizer"
+)
+
+// lazyVocabulary declares every byte and special ID with a constant-size rule.
+// It is deliberately not ByteVocab and makes no checkpoint-support claim.
+type lazyVocabulary struct{ size int }
+
+var _ tokenizer.Vocabulary = lazyVocabulary{}
+
+func (v lazyVocabulary) Encode(text string) ([]int, error) {
+	ids := make([]int, len(text))
+	for i := range ids {
+		ids[i] = int(text[i])
+	}
+	return ids, nil
+}
+
+func (v lazyVocabulary) Decode(ids []int) (string, error) {
+	var out []byte
+	for _, id := range ids {
+		if id < 0 || id >= v.size {
+			return "", fmt.Errorf("ID %d outside [0, %d)", id, v.size)
+		}
+		if id < 256 {
+			out = append(out, byte(id))
+		}
+	}
+	return string(out), nil
+}
+
+func (v lazyVocabulary) Size() int { return v.size }
+
+func (v lazyVocabulary) Special(name string) (int, bool) {
+	value, ok := strings.CutPrefix(name, "extra:")
+	if !ok {
+		return 0, false
+	}
+	index, err := strconv.Atoi(value)
+	if err != nil || index < 0 || index >= v.size-256 || strconv.Itoa(index) != value {
+		return 0, false
+	}
+	return index + 256, true
+}
+
+func (v lazyVocabulary) Hash() string {
+	declaration := map[string]any{
+		"schema": "test-lazy-byte-specials-v1", "size": v.size,
+		"byte_ids": 256, "special_name": "extra:{decimal-index}",
+	}
+	raw, err := json.Marshal(declaration)
+	if err != nil {
+		panic(err)
+	}
+	digest := sha256.Sum256(raw)
+	return hex.EncodeToString(digest[:])
+}
+
+func contract(v lazyVocabulary) error {
+	const text = "A貓<eos>🙂"
+	ids, err := v.Encode(text)
+	if err != nil || len(ids) != len(text) {
+		return fmt.Errorf("encode: %v", err)
+	}
+	for i, id := range ids {
+		if id != int(text[i]) || id >= 256 {
+			return fmt.Errorf("byte mapping at %d", i)
+		}
+	}
+	decoded, err := v.Decode(ids)
+	if err != nil || decoded != text {
+		return fmt.Errorf("roundtrip: %q, %v", decoded, err)
+	}
+	for _, id := range []int{-1, v.size} {
+		if _, err := v.Decode([]int{id}); err == nil {
+			return fmt.Errorf("accepted invalid ID %d", id)
+		}
+	}
+	if v.size > 256 {
+		for _, id := range []int{256, v.size - 1} {
+			got, ok := v.Special("extra:" + strconv.Itoa(id-256))
+			if !ok || got != id {
+				return fmt.Errorf("special lookup at %d", id)
+			}
+			if out, err := v.Decode([]int{id, 65, id}); err != nil || out != "A" {
+				return fmt.Errorf("special decode: %q, %v", out, err)
+			}
+		}
+	}
+	if _, ok := v.Special("extra:" + strconv.Itoa(v.size-256)); ok {
+		return fmt.Errorf("accepted undeclared special")
+	}
+	if digest, err := hex.DecodeString(v.Hash()); err != nil || len(digest) != 32 {
+		return fmt.Errorf("invalid declaration hash")
+	}
+	return nil
+}
+
+func construct(v tokenizer.Vocabulary, c textgen.ModelConfig) (model *textgen.Model, err error, recovered any) {
+	defer func() { recovered = recover() }()
+	model, err = textgen.NewModel(v, c)
+	return
+}
+
+func main() {
+	maxInt := int(^uint(0) >> 1)
+	for _, entry := range []struct {
+		name, kind  string
+		size, embed int
+	}{
+		{"max_vocab_embed4", "invalid", maxInt, 4},
+		{"max_vocab_embed8", "invalid", maxInt, 8},
+		{"max_vocab_embed256", "invalid", maxInt, 256},
+		{"ordinary_bytes", "legal", 256, 4},
+		{"ordinary_specials", "legal", 260, 4},
+	} {
+		vocab := lazyVocabulary{size: entry.size}
+		if err := contract(vocab); err != nil {
+			panic(err)
+		}
+		config := textgen.ModelConfig{Embed: entry.embed, Hidden: 4, Settle: 1, LearningRate: 0.01, Seed: 7}
+		if err := config.Validate(); err != nil {
+			panic(err)
+		}
+		length := entry.size * entry.embed
+		if entry.kind == "invalid" && length >= 0 {
+			panic("unsafe probe: first encoder allocation is not negative")
+		}
+		model, err, recovered := construct(vocab, config)
+		result := map[string]any{"case": entry.name, "kind": entry.kind, "vocabulary_size": entry.size,
+			"config": config, "contract_checked": true, "declaration_sha256": vocab.Hash(),
+			"wrapped_first_encoder_length": length, "panic": recovered != nil, "model_returned": model != nil}
+		if err != nil {
+			result["error"] = err.Error()
+		}
+		if recovered != nil {
+			result["panic_message"] = fmt.Sprint(recovered)
+		}
+		if model != nil {
+			snapshot := model.Snapshot()
+			result["encoder_elements"] = len(snapshot.Parameters.Encoder)
+			result["readout_elements"] = len(snapshot.Parameters.Readout)
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+			panic(err)
+		}
+	}
+}

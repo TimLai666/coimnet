@@ -1,0 +1,121 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/textgen-dimensions-20261015/candidate-overlay.json",
+    "-json",
+    "-count=1",
+    "-run",
+    "^Test(ModelRejectsUnrepresentableVocabularyBeforeAllocation|ModelParameterLengths)$",
+    "./tasks/textgen"
+  ],
+  "exit_code": 0,
+  "seconds": 3.72172,
+  "counts": {
+    "pass": 24
+  },
+  "events": [
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_4",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_8",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/max_vocabulary_embed_256",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/ordinary_bytes",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation/ordinary_specials",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelRejectsUnrepresentableVocabularyBeforeAllocation",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_zero",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_one",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/vocabulary_negative",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/embed_zero",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/embed_negative",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/hidden_zero",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/hidden_negative",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/minimum_legal_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/small_byte_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/small_special_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/maximum_legal_float64_byte_boundary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/encoder_just_over_float64_byte_boundary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_alone_over_float64_byte_boundary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/maximum_element_count_but_byte_count_over",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/encoder_element_multiplication_overflows",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_element_multiplication_overflows",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths/readout_element_multiplication_overflows_with_max_vocabulary",
+      "action": "pass"
+    },
+    {
+      "test": "TestModelParameterLengths",
+      "action": "pass"
+    }
+  ],
+  "log": "regression-green-race.log",
+  "log_sha256": "a31da487aac8e5db38f10215a1187d3c36682867e94ca743fbbcd0a0eafab6da",
+  "candidate_freeze": "candidate-freeze.json",
+  "source_count": 820
+}

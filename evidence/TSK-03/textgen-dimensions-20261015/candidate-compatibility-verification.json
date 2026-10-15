@@ -1,0 +1,149 @@
+{
+  "requirement": [
+    "TSK-03",
+    "OPS-01"
+  ],
+  "reproduction_command": "per-command compatibility/public receipts in this directory",
+  "environment": "command-environment.json",
+  "input_fingerprints": [
+    "source-before.json",
+    "candidate-freeze.json",
+    "compatibility-main-v2.go.txt"
+  ],
+  "observed_result": {
+    "normal_model_pairs": 8,
+    "old_model_new_process_restores": 16,
+    "initialization_training_logits_nll_snapshot_and_next_update_bytes_equal": true,
+    "public_invalid_refused_per_build": 3,
+    "public_legal_per_build": 2,
+    "panics": 0
+  },
+  "test_log": [
+    "compatibility-candidate-write-ordinary.log",
+    "compatibility-restore-ordinary-by-ordinary.log",
+    "compatibility-restore-race-by-ordinary.log",
+    "compatibility-old-ordinary.log",
+    "compatibility-restore-ordinary-by-race.log",
+    "compatibility-restore-race-by-race.log",
+    "compatibility-candidate-write-race.log",
+    "compatibility-old-ordinary-v2.log",
+    "compatibility-old-race-v2.log",
+    "public-candidate-ordinary.log",
+    "public-candidate-race.log"
+  ],
+  "restores": [
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "ordinary",
+      "case": 0,
+      "full_observation_sha256": "a5d5c88a4cc2b0a131228a3f7fbc78b25eae1817c014eaf6d426092e26552f1d",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "ordinary",
+      "case": 1,
+      "full_observation_sha256": "a8dc1dceed64ece278ff3ba881a3825217fa66a12b0a9a2c3e2d44fe18e7fcd5",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "ordinary",
+      "case": 2,
+      "full_observation_sha256": "8f46afc023ea24cdd57988a31f1d3f079a519825c44fd421acbfb3bb6b3eeb50",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "ordinary",
+      "case": 3,
+      "full_observation_sha256": "7affd9b6ef256e8b208798821eec9a7cbfbe2861d90ee6bb432a0ba1d52e55f2",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "race",
+      "case": 0,
+      "full_observation_sha256": "a5d5c88a4cc2b0a131228a3f7fbc78b25eae1817c014eaf6d426092e26552f1d",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "race",
+      "case": 1,
+      "full_observation_sha256": "a8dc1dceed64ece278ff3ba881a3825217fa66a12b0a9a2c3e2d44fe18e7fcd5",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "race",
+      "case": 2,
+      "full_observation_sha256": "8f46afc023ea24cdd57988a31f1d3f079a519825c44fd421acbfb3bb6b3eeb50",
+      "match": true
+    },
+    {
+      "saved_build": "ordinary",
+      "loaded_build": "race",
+      "case": 3,
+      "full_observation_sha256": "7affd9b6ef256e8b208798821eec9a7cbfbe2861d90ee6bb432a0ba1d52e55f2",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "ordinary",
+      "case": 0,
+      "full_observation_sha256": "a5d5c88a4cc2b0a131228a3f7fbc78b25eae1817c014eaf6d426092e26552f1d",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "ordinary",
+      "case": 1,
+      "full_observation_sha256": "a8dc1dceed64ece278ff3ba881a3825217fa66a12b0a9a2c3e2d44fe18e7fcd5",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "ordinary",
+      "case": 2,
+      "full_observation_sha256": "8f46afc023ea24cdd57988a31f1d3f079a519825c44fd421acbfb3bb6b3eeb50",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "ordinary",
+      "case": 3,
+      "full_observation_sha256": "7affd9b6ef256e8b208798821eec9a7cbfbe2861d90ee6bb432a0ba1d52e55f2",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "race",
+      "case": 0,
+      "full_observation_sha256": "a5d5c88a4cc2b0a131228a3f7fbc78b25eae1817c014eaf6d426092e26552f1d",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "race",
+      "case": 1,
+      "full_observation_sha256": "a8dc1dceed64ece278ff3ba881a3825217fa66a12b0a9a2c3e2d44fe18e7fcd5",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "race",
+      "case": 2,
+      "full_observation_sha256": "8f46afc023ea24cdd57988a31f1d3f079a519825c44fd421acbfb3bb6b3eeb50",
+      "match": true
+    },
+    {
+      "saved_build": "race",
+      "loaded_build": "race",
+      "case": 3,
+      "full_observation_sha256": "7affd9b6ef256e8b208798821eec9a7cbfbe2861d90ee6bb432a0ba1d52e55f2",
+      "match": true
+    }
+  ],
+  "scope": "fixed ByteVocab models, macOS arm64; custom provider is constructor-only; no all-model or task-quality claim"
+}

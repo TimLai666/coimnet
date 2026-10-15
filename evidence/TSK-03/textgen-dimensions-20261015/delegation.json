@@ -1,0 +1,41 @@
+{
+  "host": "Codex desktop",
+  "host_identity": "CODEX_THREAD_ID=01a099a7-7772-7363-9935-5fe62074aa74",
+  "free_model_discovery": {
+    "command": [
+      "opencode",
+      "models"
+    ],
+    "exit_code": 1,
+    "log": "opencode-models.log",
+    "log_sha256": "dcde89202b3e9bf2b45158d5546063697f58df6b73a250bcd56b3f153d56ce2d"
+  },
+  "fallback_rule": "Project AGENTS: gpt-5.6-luna with max after OpenCode unavailable",
+  "workers": [
+    {
+      "task": "textgen_dimension_tests",
+      "tool": "native collaboration",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "allowed": "private tests/model_dimensions_test.go only",
+      "performed": "gofmt; no Go execution; no source/Git writes"
+    },
+    {
+      "task": "textgen_dimension_impl",
+      "tool": "native collaboration",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "allowed": "private candidate model.go and model_dimensions.go only",
+      "performed": "gofmt; tests immutable; no Go execution; no formal/Git writes"
+    },
+    {
+      "task": "remaining_temp_inventory",
+      "tool": "native collaboration",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "allowed": "read only Vocabulary contract and preservation inventory",
+      "performed": "static/source/manifest audit; actual constructor and archive validation performed by Root"
+    }
+  ],
+  "root_verification": "Full test and candidate diff personally reviewed; all red/green/public/compatibility commands executed by Root; no agent result accepted as execution proof."
+}
