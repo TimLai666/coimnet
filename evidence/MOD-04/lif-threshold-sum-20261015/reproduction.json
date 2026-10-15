@@ -1,0 +1,43 @@
+{
+  "requirement": [
+    "COR-04",
+    "MOD-04"
+  ],
+  "reproduction_command": "env GOCACHE=$PWD/runs/.tmp/lif-threshold-sum-20261015/go-cache GOMODCACHE=$PWD/runs/.tmp/lif-threshold-sum-20261015/go-mod-cache GOTMPDIR=$PWD/runs/.tmp/lif-threshold-sum-20261015/go-tmp GOPROXY=off GOSUMDB=off GOTOOLCHAIN=local GOMAXPROCS=4 GOMEMLIMIT=8GiB go run -mod=readonly ./runs/.tmp/lif-threshold-sum-20261015/probe",
+  "environment": {
+    "go": "go1.26.5",
+    "os_arch": "darwin/arm64",
+    "cgo": true,
+    "filesystem": "local APFS"
+  },
+  "input_fingerprints": {
+    "source_reference": "../lif-threshold-floor-20261015/formal-source.json",
+    "probe_sha256": "cb56626490ba7fe005b3e381043dd517809bf741f785f02caa7d78811f13ff71"
+  },
+  "observed_result": {
+    "b": 8.98846567431158e+307,
+    "batch_error": "non-finite state at step 1 neuron 0",
+    "coupled_error": "non-finite threshold at step 1 neuron 0",
+    "coupled_trace_nil": true,
+    "exact_final_threshold": 8.98846567431158e+307,
+    "exact_float64": true,
+    "intermediate_overflow": true,
+    "persisted_error": "non-finite state at step 1 neuron 0",
+    "reachable_adaptation": [
+      8.98846567431158e+307
+    ],
+    "warm_events": [
+      [
+        1
+      ]
+    ],
+    "warm_state_validation_error": ""
+  },
+  "test_log": [
+    "probe.json",
+    "probe.log"
+  ],
+  "exit_code": 0,
+  "verified_at": "2026-10-15T14:12:54.899447+00:00",
+  "classification": "confirmed intermediate-overflow defect under final-threshold contract; no formal fix adopted yet"
+}

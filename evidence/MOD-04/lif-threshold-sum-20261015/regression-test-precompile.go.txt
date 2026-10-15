@@ -1,0 +1,843 @@
+package dynamics_test
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"math/big"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+type thresholdSumMechanism struct {
+	name        string
+	adaptation  float64
+	homeostasis float64
+}
+
+func thresholdSumMechanisms(b float64) []thresholdSumMechanism {
+	return []thresholdSumMechanism{
+		{name: "adaptation only", adaptation: b},
+		{name: "homeostasis only", homeostasis: b},
+		{name: "adaptation and homeostasis", adaptation: b / 2, homeostasis: b / 2},
+	}
+}
+
+func (c thresholdSumMechanism) lifConfig(thetaMin, thetaMax, vReset float64) dynamics.LIFConfig {
+	config := dynamics.LIFConfig{
+		Nodes: 1, DT: 1, TauSyn: 1,
+		ThetaMin: thetaMin, ThetaMax: thetaMax, VReset: vReset,
+		RefractorySteps: 0,
+		Surrogate:       dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+	}
+	if c.adaptation != 0 {
+		config.Adaptation = dynamics.LIFAdaptation{Enabled: true, TauAdapt: 1, Beta: c.adaptation}
+	}
+	if c.homeostasis != 0 {
+		config.Homeostasis = &dynamics.LIFHomeostasis{
+			Enabled: true, TauRate: 1, TargetRate: 0,
+			Eta: c.homeostasis, HMax: c.homeostasis,
+		}
+	}
+	return config
+}
+
+func (c thresholdSumMechanism) mixedConfig(thetaMin, thetaMax, vReset float64) dynamics.MixedConfig {
+	lif := c.lifConfig(thetaMin, thetaMax, vReset)
+	return dynamics.MixedConfig{
+		Nodes: 2, DT: 1,
+		NodeRule:   []uint8{dynamics.RuleLIF, dynamics.RuleContinuous},
+		Continuous: dynamics.ContinuousRule{Activation: "tanh"},
+		LIF: dynamics.LIFRule{
+			TauSyn: lif.TauSyn, ThetaMin: lif.ThetaMin, ThetaMax: lif.ThetaMax,
+			VReset: lif.VReset, RefractorySteps: lif.RefractorySteps,
+			Adaptation: lif.Adaptation, Homeostasis: lif.Homeostasis,
+			Surrogate: lif.Surrogate,
+		},
+	}
+}
+
+func thresholdSumLIFParameters() dynamics.LIFParameters {
+	return dynamics.LIFParameters{
+		Bias: []float64{0}, LogTau: []float64{-10}, ThetaRaw: []float64{0},
+	}
+}
+
+func thresholdSumMixedParameters() dynamics.MixedParameters {
+	return dynamics.MixedParameters{
+		Bias: []float64{0, 0}, LogTau: []float64{-10, -10}, ThetaRaw: []float64{0},
+	}
+}
+
+func thresholdSumRat(t *testing.T, value float64) *big.Rat {
+	t.Helper()
+	r := new(big.Rat).SetFloat64(value)
+	if r == nil {
+		t.Fatalf("cannot represent %v as an exact rational", value)
+	}
+	return r
+}
+
+// thresholdSumReference computes the raw midpoint and the four declared terms
+// independently, then applies the lower projection in exact rational arithmetic.
+func thresholdSumReference(t *testing.T, thetaMin, thetaMax, adaptation, homeostasis, shift float64) (float64, *big.Rat) {
+	t.Helper()
+	base := thresholdSumRat(t, thetaMin)
+	base.Add(base, thresholdSumRat(t, thetaMax))
+	base.Quo(base, big.NewRat(2, 1))
+	sum := new(big.Rat).Set(base)
+	for _, term := range []float64{adaptation, homeostasis, shift} {
+		sum.Add(sum, thresholdSumRat(t, term))
+	}
+	floor := thresholdSumRat(t, thetaMin)
+	if sum.Cmp(floor) < 0 {
+		sum.Set(floor)
+	}
+	value, exact := sum.Float64()
+	if !exact {
+		t.Fatalf("projected exact threshold %s is not exactly a float64", sum.RatString())
+	}
+	return value, sum
+}
+
+func thresholdSumRows(t *testing.T, name string, rows [][]float64, wantRows, wantCols int) {
+	t.Helper()
+	if len(rows) != wantRows {
+		t.Fatalf("%s has %d rows, want %d", name, len(rows), wantRows)
+	}
+	for row, values := range rows {
+		if len(values) != wantCols {
+			t.Fatalf("%s[%d] has %d values, want %d", name, row, len(values), wantCols)
+		}
+		for col, value := range values {
+			if math.IsNaN(value) || math.IsInf(value, 0) {
+				t.Fatalf("%s[%d][%d] is non-finite: %v", name, row, col, value)
+			}
+		}
+	}
+}
+
+func thresholdSumCloneRows(rows [][]float64) [][]float64 {
+	if rows == nil {
+		return nil
+	}
+	cloned := make([][]float64, len(rows))
+	for i, row := range rows {
+		cloned[i] = append([]float64(nil), row...)
+	}
+	return cloned
+}
+
+func thresholdSumCloneModulation(mod *dynamics.Modulation) *dynamics.Modulation {
+	if mod == nil {
+		return nil
+	}
+	return &dynamics.Modulation{
+		Gain: thresholdSumCloneRows(mod.Gain), Offset: thresholdSumCloneRows(mod.Offset),
+		Threshold: thresholdSumCloneRows(mod.Threshold),
+	}
+}
+
+func thresholdSumCloneLIFState(state dynamics.LIFState) dynamics.LIFState {
+	return dynamics.LIFState{
+		SchemaVersion: state.SchemaVersion, ConfigHash: state.ConfigHash, Steps: state.Steps,
+		Voltage: thresholdSumCloneRows([][]float64{state.Voltage})[0],
+		History: thresholdSumCloneRows(state.History), Adaptation: append([]float64(nil), state.Adaptation...),
+		Refractory: append([]int(nil), state.Refractory...), Rate: append([]float64(nil), state.Rate...),
+		Homeostasis: append([]float64(nil), state.Homeostasis...),
+	}
+}
+
+func thresholdSumCloneMixedState(state dynamics.MixedState) dynamics.MixedState {
+	return dynamics.MixedState{
+		SchemaVersion: state.SchemaVersion, ConfigHash: state.ConfigHash, Steps: state.Steps,
+		Continuous: dynamics.State{
+			SchemaVersion: state.Continuous.SchemaVersion, ConfigHash: state.Continuous.ConfigHash,
+			Steps: state.Continuous.Steps, Voltage: append([]float64(nil), state.Continuous.Voltage...),
+			History: thresholdSumCloneRows(state.Continuous.History),
+		},
+		LIF: thresholdSumCloneLIFState(state.LIF),
+		Index: dynamics.MixedIndex{
+			ContinuousNodes: append([]int(nil), state.Index.ContinuousNodes...),
+			LIFNodes:        append([]int(nil), state.Index.LIFNodes...),
+		},
+	}
+}
+
+func thresholdSumLIFModulationRows(first, second float64) []*dynamics.Modulation {
+	return []*dynamics.Modulation{
+		{Threshold: [][]float64{{first}}},
+		{Threshold: [][]float64{{second}}},
+	}
+}
+
+func thresholdSumMixedModulationRows(first, second float64) []*dynamics.Modulation {
+	return []*dynamics.Modulation{
+		{Threshold: [][]float64{{first, 0}}},
+		{Threshold: [][]float64{{second, 0}}},
+	}
+}
+
+// thresholdSumSequence is a public-API-only coupled source. It records reverse
+// calls so the test checks the declared threshold derivative rather than private tape.
+type thresholdSumSequence struct {
+	mods     []*dynamics.Modulation
+	nodes    int
+	reverses []*thresholdSumReverse
+}
+
+func (s *thresholdSumSequence) Forward(ctx context.Context, step int, previous []float64) (*dynamics.Modulation, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || step < 0 || step >= len(s.mods) || len(previous) != s.nodes {
+		return nil, fmt.Errorf("invalid threshold-sum forward step")
+	}
+	return thresholdSumCloneModulation(s.mods[step]), nil
+}
+
+func (s *thresholdSumSequence) NewReverse(ctx context.Context, steps, window int) (dynamics.ModulationReverse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || steps != len(s.mods) || window < 0 {
+		return nil, fmt.Errorf("invalid threshold-sum reverse shape")
+	}
+	reverse := &thresholdSumReverse{nodes: s.nodes}
+	s.reverses = append(s.reverses, reverse)
+	return reverse, nil
+}
+
+type thresholdSumGradientCall struct {
+	step     int
+	gradient dynamics.ModulationGradient
+}
+
+type thresholdSumReverse struct {
+	nodes int
+	calls []thresholdSumGradientCall
+}
+
+func (r *thresholdSumReverse) BackwardStep(ctx context.Context, step int, gradient dynamics.ModulationGradient) ([]dynamics.ActivityGradient, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if r == nil || step < 0 || step >= 2 || len(gradient.Gain) != r.nodes ||
+		len(gradient.Offset) != r.nodes || len(gradient.Threshold) != r.nodes {
+		return nil, fmt.Errorf("invalid threshold-sum reverse step")
+	}
+	r.calls = append(r.calls, thresholdSumGradientCall{
+		step: step,
+		gradient: dynamics.ModulationGradient{
+			Gain:      append([]float64(nil), gradient.Gain...),
+			Offset:    append([]float64(nil), gradient.Offset...),
+			Threshold: append([]float64(nil), gradient.Threshold...),
+		},
+	})
+	return nil, nil
+}
+
+// thresholdSumRecomputeSequence supplies the same rows to the recompute API;
+// its restart returns a local public sequence beginning at the checkpoint.
+type thresholdSumRecomputeSequence struct {
+	mods     []*dynamics.Modulation
+	reverses []*thresholdSumReverse
+	nodes    int
+}
+
+func (s *thresholdSumRecomputeSequence) Forward(ctx context.Context, step int, previous []float64) (*dynamics.Modulation, error) {
+	return (&thresholdSumSequence{mods: s.mods, nodes: s.nodes}).Forward(ctx, step, previous)
+}
+
+func (s *thresholdSumRecomputeSequence) NewReverse(ctx context.Context, steps, window int) (dynamics.ModulationReverse, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || steps != len(s.mods) || window < 0 {
+		return nil, fmt.Errorf("invalid threshold-sum recompute reverse shape")
+	}
+	reverse := &thresholdSumReverse{nodes: s.nodes}
+	s.reverses = append(s.reverses, reverse)
+	return reverse, nil
+}
+
+func (s *thresholdSumRecomputeSequence) Checkpoint(ctx context.Context, nextStep int) (dynamics.ModulationRestart, error) {
+	if ctx == nil {
+		return nil, fmt.Errorf("nil context")
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if s == nil || nextStep < 0 || nextStep >= len(s.mods) {
+		return nil, fmt.Errorf("invalid threshold-sum checkpoint")
+	}
+	replay := make([]*dynamics.Modulation, len(s.mods)-nextStep)
+	for i := range replay {
+		replay[i] = thresholdSumCloneModulation(s.mods[nextStep+i])
+	}
+	return func(restartCtx context.Context) (dynamics.ModulationSequence, error) {
+		if restartCtx == nil {
+			return nil, fmt.Errorf("nil threshold-sum restart context")
+		}
+		if err := restartCtx.Err(); err != nil {
+			return nil, err
+		}
+		return &thresholdSumSequence{mods: thresholdSumCloneModulations(replay), nodes: s.nodes}, nil
+	}, nil
+}
+
+func thresholdSumCloneModulations(mods []*dynamics.Modulation) []*dynamics.Modulation {
+	cloned := make([]*dynamics.Modulation, len(mods))
+	for i, mod := range mods {
+		cloned[i] = thresholdSumCloneModulation(mod)
+	}
+	return cloned
+}
+
+func thresholdSumAssertLIFResults(t *testing.T, outputs, spikes [][]float64, wantRows int) {
+	t.Helper()
+	thresholdSumRows(t, "LIF outputs", outputs, wantRows, 1)
+	thresholdSumRows(t, "LIF spikes", spikes, wantRows, 1)
+	for row := range spikes {
+		if spikes[row][0] != 1 {
+			t.Fatalf("LIF spikes = %v, row %d want 1", spikes, row)
+		}
+	}
+}
+
+func thresholdSumAssertMixedResults(t *testing.T, outputs, spikes [][]float64, wantRows int) {
+	t.Helper()
+	thresholdSumRows(t, "mixed outputs", outputs, wantRows, 2)
+	thresholdSumRows(t, "mixed spikes", spikes, wantRows, 2)
+	for row := range outputs {
+		if outputs[row][1] != 0 {
+			t.Fatalf("continuous zero-node outputs = %v, row %d want zero", outputs, row)
+		}
+		if spikes[row][0] != 1 || spikes[row][1] != 0 {
+			t.Fatalf("mixed spikes = %v, row %d want [1 0]", spikes, row)
+		}
+	}
+	if len(outputs) == 0 {
+		t.Fatalf("continuous zero-node outputs = %v, want zero", outputs)
+	}
+}
+
+func thresholdSumAssertReverse(t *testing.T, reverse *thresholdSumReverse, nodes, lifNode int, wantThreshold float64) {
+	t.Helper()
+	if reverse == nil || len(reverse.calls) != 2 {
+		t.Fatalf("reverse calls = %#v, want two steps", reverse)
+	}
+	rows := make([]*dynamics.ModulationGradient, 2)
+	for i := range reverse.calls {
+		call := reverse.calls[i]
+		if call.step < 0 || call.step >= len(rows) || rows[call.step] != nil {
+			t.Fatalf("invalid or duplicate reverse step %d", call.step)
+		}
+		if len(call.gradient.Gain) != nodes || len(call.gradient.Offset) != nodes || len(call.gradient.Threshold) != nodes {
+			t.Fatalf("reverse gradient at step %d has wrong lengths", call.step)
+		}
+		gradient := call.gradient
+		rows[call.step] = &gradient
+	}
+	for step := range rows {
+		if rows[step] == nil {
+			t.Fatalf("reverse did not visit step %d", step)
+		}
+		for node, value := range rows[step].Threshold {
+			want := 0.0
+			if step == 1 && node == lifNode {
+				want = wantThreshold
+			}
+			if value != want {
+				t.Fatalf("threshold gradient step %d node %d = %v, want %v", step, node, value, want)
+			}
+		}
+	}
+}
+
+func thresholdSumExpectedThetaGradient(t *testing.T, thetaMin, thetaMax float64, floor bool) float64 {
+	t.Helper()
+	if floor {
+		return 0
+	}
+	slope := thresholdSumRat(t, thetaMax)
+	slope.Sub(slope, thresholdSumRat(t, thetaMin))
+	slope.Quo(slope, big.NewRat(4, 1))
+	slope.Neg()
+	value, exact := slope.Float64()
+	if !exact {
+		t.Fatalf("theta slope %s is not exactly a float64", slope.RatString())
+	}
+	return value
+}
+
+func thresholdSumAssertLIFGradient(t *testing.T, gradient dynamics.LIFGradient, sequence *thresholdSumSequence, wantTheta, wantShift float64) {
+	t.Helper()
+	if len(gradient.ThetaRaw) != 1 {
+		t.Fatalf("LIF ThetaRaw gradient has %d values, want 1", len(gradient.ThetaRaw))
+	}
+	thresholdSumRows(t, "LIF input gradient", gradient.Inputs, 2, 1)
+	if gradient.ThetaRaw[0] != wantTheta {
+		t.Fatalf("LIF ThetaRaw gradient = %v, want %v", gradient.ThetaRaw[0], wantTheta)
+	}
+	if len(sequence.reverses) != 1 {
+		t.Fatalf("LIF reverse sessions = %d, want 1", len(sequence.reverses))
+	}
+	thresholdSumAssertReverse(t, sequence.reverses[0], 1, 0, wantShift)
+}
+
+func thresholdSumAssertMixedGradient(t *testing.T, gradient dynamics.MixedGradient, sequence *thresholdSumSequence, wantTheta, wantShift float64) {
+	t.Helper()
+	if len(gradient.ThetaRaw) != 1 {
+		t.Fatalf("mixed ThetaRaw gradient has %d values, want 1", len(gradient.ThetaRaw))
+	}
+	thresholdSumRows(t, "mixed input gradient", gradient.Inputs, 2, 2)
+	if gradient.ThetaRaw[0] != wantTheta {
+		t.Fatalf("mixed ThetaRaw gradient = %v, want %v", gradient.ThetaRaw[0], wantTheta)
+	}
+	if len(sequence.reverses) != 1 {
+		t.Fatalf("mixed reverse sessions = %d, want 1", len(sequence.reverses))
+	}
+	thresholdSumAssertReverse(t, sequence.reverses[0], 2, 0, wantShift)
+}
+
+func TestThresholdSumFiniteRecoveryAndGradients(t *testing.T) {
+	b := math.Ldexp(1, 1023)
+	thetaMin, thetaMax := b/2, b*1.5
+	for _, mechanism := range thresholdSumMechanisms(b) {
+		mechanism := mechanism
+		for _, caseData := range []struct {
+			name  string
+			shift float64
+			floor bool
+		}{
+			{name: "exact final threshold", shift: -b},
+			{name: "projected lower floor", shift: -math.MaxFloat64, floor: true},
+		} {
+			caseData := caseData
+			t.Run(mechanism.name+"/"+caseData.name, func(t *testing.T) {
+				wantThreshold, wantRat := thresholdSumReference(t, thetaMin, thetaMax, mechanism.adaptation, mechanism.homeostasis, caseData.shift)
+				if thresholdSumRat(t, wantThreshold).Cmp(wantRat) != 0 {
+					t.Fatalf("reference threshold float %v does not preserve %s", wantThreshold, wantRat.RatString())
+				}
+				model, err := dynamics.NewLIF(mechanism.lifConfig(thetaMin, thetaMax, 0))
+				if err != nil {
+					t.Fatal(err)
+				}
+				parameters := thresholdSumLIFParameters()
+				initial := []float64{0}
+				inputs := [][]float64{{math.MaxFloat64}, {wantThreshold}}
+
+				startState, err := model.NewState(initial)
+				if err != nil {
+					t.Fatalf("NewState: %v", err)
+				}
+				warm, warmOutputs, warmSpikes, err := model.Advance(context.Background(), parameters, startState, inputs[:1])
+				if err != nil {
+					t.Fatalf("warm Advance: %v", err)
+				}
+				thresholdSumRows(t, "warm outputs", warmOutputs, 1, 1)
+				thresholdSumRows(t, "warm spikes", warmSpikes, 1, 1)
+				if warmSpikes[0][0] != 1 {
+					t.Fatalf("warm spike = %v, want 1", warmSpikes[0][0])
+				}
+				if len(warm.Adaptation) != 1 || warm.Adaptation[0] != mechanism.adaptation {
+					t.Fatalf("warm adaptation = %v, want %v", warm.Adaptation, mechanism.adaptation)
+				}
+				if mechanism.homeostasis != 0 {
+					if len(warm.Homeostasis) != 1 || warm.Homeostasis[0] != mechanism.homeostasis {
+						t.Fatalf("warm homeostasis = %v, want %v", warm.Homeostasis, mechanism.homeostasis)
+					}
+				} else if warm.Homeostasis != nil {
+					t.Fatalf("disabled homeostasis = %v, want nil", warm.Homeostasis)
+				}
+				if err := model.ValidateState(warm); err != nil {
+					t.Fatalf("warm state is invalid: %v", err)
+				}
+
+				wantThetaGradient := thresholdSumExpectedThetaGradient(t, thetaMin, thetaMax, caseData.floor)
+				wantShiftGradient := map[bool]float64{false: -1, true: 0}[caseData.floor]
+
+				t.Run("LIF/continued AdvanceModulated", func(t *testing.T) {
+					secondMod := &dynamics.Modulation{Threshold: [][]float64{{caseData.shift}}}
+					continued, continuedOutputs, continuedSpikes, err := model.AdvanceModulated(
+						context.Background(), parameters, thresholdSumCloneLIFState(warm), inputs[1:], secondMod,
+					)
+					if err != nil {
+						t.Fatalf("continued AdvanceModulated: %v", err)
+					}
+					thresholdSumAssertLIFResults(t, continuedOutputs, continuedSpikes, 1)
+					if err := model.ValidateState(continued); err != nil {
+						t.Fatalf("continued state is invalid: %v", err)
+					}
+				})
+
+				t.Run("LIF/batch AdvanceModulated", func(t *testing.T) {
+					batchMod := &dynamics.Modulation{Threshold: [][]float64{{0}, {caseData.shift}}}
+					batch, batchOutputs, batchSpikes, err := model.AdvanceModulated(
+						context.Background(), parameters, thresholdSumCloneLIFState(startState), inputs, batchMod,
+					)
+					if err != nil {
+						t.Fatalf("whole-sequence AdvanceModulated: %v", err)
+					}
+					thresholdSumAssertLIFResults(t, batchOutputs, batchSpikes, 2)
+					if batch.Steps != 2 {
+						t.Fatalf("whole-sequence state steps = %d, want 2", batch.Steps)
+					}
+					if err := model.ValidateState(batch); err != nil {
+						t.Fatalf("whole-sequence state is invalid: %v", err)
+					}
+				})
+
+				t.Run("LIF/ForwardCoupled", func(t *testing.T) {
+					sequence := &thresholdSumSequence{mods: thresholdSumLIFModulationRows(0, caseData.shift), nodes: 1}
+					trace, err := model.ForwardCoupled(context.Background(), parameters, initial, inputs, sequence)
+					if err != nil {
+						t.Fatalf("ForwardCoupled: %v", err)
+					}
+					thresholdSumAssertLIFResults(t, trace.Outputs(), trace.Spikes(), 2)
+					upstream := [][]float64{{0}, {1}}
+					gradient, err := model.Backward(context.Background(), trace, upstream, 0)
+					if err != nil {
+						t.Fatalf("coupled Backward: %v", err)
+					}
+					thresholdSumAssertLIFGradient(t, gradient, sequence, wantThetaGradient, wantShiftGradient)
+				})
+
+				t.Run("LIF/ForwardCoupledRecompute", func(t *testing.T) {
+					recomputeSequence := &thresholdSumRecomputeSequence{
+						mods: thresholdSumLIFModulationRows(0, caseData.shift), nodes: 1,
+					}
+					recomputed, err := model.ForwardCoupledRecompute(
+						context.Background(), parameters, initial, inputs, recomputeSequence, 1,
+					)
+					if err != nil {
+						t.Fatalf("ForwardCoupledRecompute: %v", err)
+					}
+					thresholdSumRows(t, "recomputed outputs", recomputed.Outputs(), 2, 1)
+					upstream := [][]float64{{0}, {1}}
+					recomputedGradient, err := model.BackwardCoupledRecompute(context.Background(), recomputed, upstream, 0)
+					if err != nil {
+						t.Fatalf("BackwardCoupledRecompute: %v", err)
+					}
+					if len(recomputeSequence.reverses) != 1 {
+						t.Fatalf("recompute reverse sessions = %d, want 1", len(recomputeSequence.reverses))
+					}
+					if len(recomputedGradient.ThetaRaw) != 1 {
+						t.Fatalf("recomputed ThetaRaw gradient length = %d, want 1", len(recomputedGradient.ThetaRaw))
+					}
+					if recomputedGradient.ThetaRaw[0] != wantThetaGradient {
+						t.Fatalf("recomputed ThetaRaw gradient = %v, want %v", recomputedGradient.ThetaRaw, wantThetaGradient)
+					}
+					thresholdSumAssertReverse(t, recomputeSequence.reverses[0], 1, 0, wantShiftGradient)
+				})
+
+				mixed, err := dynamics.NewMixed(mechanism.mixedConfig(thetaMin, thetaMax, 0))
+				if err != nil {
+					t.Fatalf("NewMixed: %v", err)
+				}
+				mixedParameters := thresholdSumMixedParameters()
+				mixedInitial := []float64{0, 0}
+				mixedInputs := [][]float64{{math.MaxFloat64, 0}, {wantThreshold, 0}}
+				mixedStart, err := mixed.NewState(mixedInitial)
+				if err != nil {
+					t.Fatalf("Mixed NewState: %v", err)
+				}
+				mixedWarm, mixedWarmOutputs, mixedWarmSpikes, err := mixed.Advance(context.Background(), mixedParameters, mixedStart, mixedInputs[:1])
+				if err != nil {
+					t.Fatalf("mixed warm Advance: %v", err)
+				}
+				thresholdSumRows(t, "mixed warm outputs", mixedWarmOutputs, 1, 2)
+				thresholdSumRows(t, "mixed warm spikes", mixedWarmSpikes, 1, 2)
+				if mixedWarmSpikes[0][0] != 1 || mixedWarmSpikes[0][1] != 0 {
+					t.Fatalf("mixed warm spikes = %v, want [[1 0]]", mixedWarmSpikes)
+				}
+				if len(mixedWarm.LIF.Adaptation) != 1 || mixedWarm.LIF.Adaptation[0] != mechanism.adaptation {
+					t.Fatalf("mixed warm adaptation = %v, want %v", mixedWarm.LIF.Adaptation, mechanism.adaptation)
+				}
+				if mechanism.homeostasis != 0 {
+					if len(mixedWarm.LIF.Homeostasis) != 1 || mixedWarm.LIF.Homeostasis[0] != mechanism.homeostasis {
+						t.Fatalf("mixed warm homeostasis = %v, want %v", mixedWarm.LIF.Homeostasis, mechanism.homeostasis)
+					}
+				} else if mixedWarm.LIF.Homeostasis != nil {
+					t.Fatalf("mixed disabled homeostasis = %v, want nil", mixedWarm.LIF.Homeostasis)
+				}
+				if err := mixed.ValidateState(mixedWarm); err != nil {
+					t.Fatalf("mixed warm state is invalid: %v", err)
+				}
+
+				t.Run("Mixed/continued AdvanceModulated", func(t *testing.T) {
+					mixedSecond, mixedSecondOutputs, mixedSecondSpikes, err := mixed.AdvanceModulated(
+						context.Background(), mixedParameters, thresholdSumCloneMixedState(mixedWarm), mixedInputs[1:],
+						&dynamics.Modulation{Threshold: [][]float64{{caseData.shift, 0}}},
+					)
+					if err != nil {
+						t.Fatalf("mixed continued AdvanceModulated: %v", err)
+					}
+					thresholdSumAssertMixedResults(t, mixedSecondOutputs, mixedSecondSpikes, 1)
+					if err := mixed.ValidateState(mixedSecond); err != nil {
+						t.Fatalf("mixed continued state is invalid: %v", err)
+					}
+				})
+
+				t.Run("Mixed/batch AdvanceModulated", func(t *testing.T) {
+					mixedBatch, mixedBatchOutputs, mixedBatchSpikes, err := mixed.AdvanceModulated(
+						context.Background(), mixedParameters, thresholdSumCloneMixedState(mixedStart), mixedInputs,
+						&dynamics.Modulation{Threshold: [][]float64{{0, 0}, {caseData.shift, 0}}},
+					)
+					if err != nil {
+						t.Fatalf("mixed whole-sequence AdvanceModulated: %v", err)
+					}
+					thresholdSumAssertMixedResults(t, mixedBatchOutputs, mixedBatchSpikes, 2)
+					if mixedBatch.Steps != 2 {
+						t.Fatalf("mixed whole-sequence state steps = %d, want 2", mixedBatch.Steps)
+					}
+					if err := mixed.ValidateState(mixedBatch); err != nil {
+						t.Fatalf("mixed whole-sequence state is invalid: %v", err)
+					}
+				})
+
+				t.Run("Mixed/ForwardCoupled", func(t *testing.T) {
+					mixedSequence := &thresholdSumSequence{mods: thresholdSumMixedModulationRows(0, caseData.shift), nodes: 2}
+					mixedTrace, err := mixed.ForwardCoupled(context.Background(), mixedParameters, mixedInitial, mixedInputs, mixedSequence)
+					if err != nil {
+						t.Fatalf("mixed ForwardCoupled: %v", err)
+					}
+					thresholdSumAssertMixedResults(t, mixedTrace.Outputs(), mixedTrace.Spikes(), 2)
+					mixedGradient, err := mixed.Backward(context.Background(), mixedTrace, [][]float64{{0, 0}, {1, 0}}, 0)
+					if err != nil {
+						t.Fatalf("mixed coupled Backward: %v", err)
+					}
+					thresholdSumAssertMixedGradient(t, mixedGradient, mixedSequence, wantThetaGradient, wantShiftGradient)
+				})
+			})
+		}
+	}
+
+	t.Run("small finite nil and zero modulation control", func(t *testing.T) {
+		model, err := dynamics.NewLIF(dynamics.LIFConfig{
+			Nodes: 1, DT: 1, TauSyn: 1, ThetaMin: 1, ThetaMax: 3, VReset: 0,
+			Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		parameters := dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{-10}, ThetaRaw: []float64{0}}
+		state, nilOutputs, nilSpikes, err := model.AdvanceModulated(context.Background(), parameters, mustLIFState(t, model), [][]float64{{2}}, nil)
+		if err != nil {
+			t.Fatalf("nil modulation control: %v", err)
+		}
+		thresholdSumRows(t, "nil control outputs", nilOutputs, 1, 1)
+		thresholdSumRows(t, "nil control spikes", nilSpikes, 1, 1)
+		zeroState, zeroOutputs, zeroSpikes, err := model.AdvanceModulated(context.Background(), parameters, mustLIFState(t, model), [][]float64{{2}}, &dynamics.Modulation{Threshold: [][]float64{{0}}})
+		if err != nil {
+			t.Fatalf("zero modulation control: %v", err)
+		}
+		thresholdSumRows(t, "zero control outputs", zeroOutputs, 1, 1)
+		thresholdSumRows(t, "zero control spikes", zeroSpikes, 1, 1)
+		if !reflect.DeepEqual(state, zeroState) || nilSpikes[0][0] != 1 || zeroSpikes[0][0] != 1 {
+			t.Fatalf("nil and zero controls differ: nil=%v zero=%v", nilSpikes, zeroSpikes)
+		}
+	})
+}
+
+func mustLIFState(t *testing.T, model *dynamics.LIF) dynamics.LIFState {
+	t.Helper()
+	state, err := model.NewState([]float64{0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return state
+}
+
+func TestThresholdSumRejectsTrueOverflowAndNonFiniteInputs(t *testing.T) {
+	b := math.Ldexp(1, 1023)
+	thetaMin, thetaMax := b/2, b*1.5
+	for _, mechanism := range thresholdSumMechanisms(b) {
+		mechanism := mechanism
+		t.Run("LIF/"+mechanism.name, func(t *testing.T) {
+			model, err := dynamics.NewLIF(mechanism.lifConfig(thetaMin, thetaMax, 0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			parameters := thresholdSumLIFParameters()
+			warm, _, spikes, err := model.Advance(context.Background(), parameters, mustLIFState(t, model), [][]float64{{math.MaxFloat64}})
+			if err != nil {
+				t.Fatalf("warm Advance: %v", err)
+			}
+			thresholdSumRows(t, "warm spikes", spikes, 1, 1)
+			before := thresholdSumCloneLIFState(warm)
+			for _, testCase := range []struct {
+				name string
+				mod  *dynamics.Modulation
+			}{
+				{name: "nil threshold", mod: nil},
+				{name: "zero threshold", mod: &dynamics.Modulation{Threshold: [][]float64{{0}}}},
+			} {
+				t.Run(testCase.name, func(t *testing.T) {
+					got, outputs, events, err := model.AdvanceModulated(context.Background(), parameters, warm, [][]float64{{0}}, testCase.mod)
+					if err == nil || !reflect.DeepEqual(got, dynamics.LIFState{}) || outputs != nil || events != nil {
+						t.Fatalf("overflow result state=%#v outputs=%v events=%v err=%v", got, outputs, events, err)
+					}
+					if !reflect.DeepEqual(warm, before) {
+						t.Fatal("overflow changed caller-owned LIF state")
+					}
+				})
+			}
+			for _, input := range []float64{math.NaN(), math.Inf(1)} {
+				input := input
+				t.Run(fmt.Sprintf("nonfinite input %v", input), func(t *testing.T) {
+					got, outputs, events, err := model.AdvanceModulated(context.Background(), parameters, warm, [][]float64{{input}}, nil)
+					if err == nil || !reflect.DeepEqual(got, dynamics.LIFState{}) || outputs != nil || events != nil {
+						t.Fatalf("nonfinite result state=%#v outputs=%v events=%v err=%v", got, outputs, events, err)
+					}
+					if !reflect.DeepEqual(warm, before) {
+						t.Fatal("nonfinite input changed caller-owned LIF state")
+					}
+				})
+			}
+			coupled := &thresholdSumSequence{mods: thresholdSumLIFModulationRows(0, 0), nodes: 1}
+			trace, err := model.ForwardCoupled(context.Background(), parameters, []float64{0}, [][]float64{{math.MaxFloat64}, {0}}, coupled)
+			if err == nil || trace != nil {
+				t.Fatalf("coupled final overflow trace=%v err=%v, want nil trace and error", trace, err)
+			}
+			badCoupled := &thresholdSumSequence{mods: []*dynamics.Modulation{{Threshold: [][]float64{{0}}}}, nodes: 1}
+			trace, err = model.ForwardCoupled(context.Background(), parameters, []float64{0}, [][]float64{{math.NaN()}}, badCoupled)
+			if err == nil || trace != nil {
+				t.Fatalf("coupled nonfinite trace=%v err=%v, want nil trace and error", trace, err)
+			}
+		})
+
+		t.Run("Mixed/"+mechanism.name, func(t *testing.T) {
+			model, err := dynamics.NewMixed(mechanism.mixedConfig(thetaMin, thetaMax, 0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			parameters := thresholdSumMixedParameters()
+			start, err := model.NewState([]float64{0, 0})
+			if err != nil {
+				t.Fatal(err)
+			}
+			warm, _, spikes, err := model.Advance(context.Background(), parameters, start, [][]float64{{math.MaxFloat64, 0}})
+			if err != nil {
+				t.Fatalf("warm Advance: %v", err)
+			}
+			thresholdSumRows(t, "warm mixed spikes", spikes, 1, 2)
+			before := thresholdSumCloneMixedState(warm)
+			for _, testCase := range []struct {
+				name string
+				mod  *dynamics.Modulation
+			}{
+				{name: "nil threshold", mod: nil},
+				{name: "zero threshold", mod: &dynamics.Modulation{Threshold: [][]float64{{0, 0}}}},
+			} {
+				t.Run(testCase.name, func(t *testing.T) {
+					got, outputs, events, err := model.AdvanceModulated(context.Background(), parameters, warm, [][]float64{{0, 0}}, testCase.mod)
+					if err == nil || !reflect.DeepEqual(got, dynamics.MixedState{}) || outputs != nil || events != nil {
+						t.Fatalf("overflow result state=%#v outputs=%v events=%v err=%v", got, outputs, events, err)
+					}
+					if !reflect.DeepEqual(warm, before) {
+						t.Fatal("overflow changed caller-owned mixed state")
+					}
+				})
+			}
+			for _, input := range []float64{math.NaN(), math.Inf(1)} {
+				input := input
+				t.Run(fmt.Sprintf("nonfinite input %v", input), func(t *testing.T) {
+					got, outputs, events, err := model.AdvanceModulated(context.Background(), parameters, warm, [][]float64{{input, 0}}, nil)
+					if err == nil || !reflect.DeepEqual(got, dynamics.MixedState{}) || outputs != nil || events != nil {
+						t.Fatalf("nonfinite result state=%#v outputs=%v events=%v err=%v", got, outputs, events, err)
+					}
+					if !reflect.DeepEqual(warm, before) {
+						t.Fatal("nonfinite input changed caller-owned mixed state")
+					}
+				})
+			}
+			coupled := &thresholdSumSequence{mods: thresholdSumMixedModulationRows(0, 0), nodes: 2}
+			trace, err := model.ForwardCoupled(context.Background(), parameters, []float64{0, 0}, [][]float64{{math.MaxFloat64, 0}, {0, 0}}, coupled)
+			if err == nil || trace != nil {
+				t.Fatalf("mixed coupled final overflow trace=%v err=%v, want nil trace and error", trace, err)
+			}
+			badCoupled := &thresholdSumSequence{mods: []*dynamics.Modulation{{Threshold: [][]float64{{0, 0}}}}, nodes: 2}
+			trace, err = model.ForwardCoupled(context.Background(), parameters, []float64{0, 0}, [][]float64{{math.NaN(), 0}}, badCoupled)
+			if err == nil || trace != nil {
+				t.Fatalf("mixed coupled nonfinite trace=%v err=%v, want nil trace and error", trace, err)
+			}
+		})
+	}
+}
+
+func TestThresholdSumSignedFiniteForwardControl(t *testing.T) {
+	b := math.Ldexp(1, 1023)
+	maxFloat := math.MaxFloat64
+	model, err := dynamics.NewLIF(dynamics.LIFConfig{
+		Nodes: 1, DT: 1, TauSyn: 1,
+		ThetaMin: -b, ThetaMax: 0, VReset: -maxFloat,
+		Adaptation:  dynamics.LIFAdaptation{Enabled: true, TauAdapt: 1, Beta: maxFloat},
+		Homeostasis: &dynamics.LIFHomeostasis{Enabled: true, TauRate: 1, TargetRate: 0, Eta: maxFloat, HMax: maxFloat},
+		Surrogate:   dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	parameters := thresholdSumLIFParameters()
+	inputs := [][]float64{{0}, {0}}
+	modulation := &dynamics.Modulation{Threshold: [][]float64{{0}, {-maxFloat}}}
+	wantThreshold, wantRat := thresholdSumReference(t, -b, 0, maxFloat, maxFloat, -maxFloat)
+	if math.IsNaN(wantThreshold) || math.IsInf(wantThreshold, 0) || wantThreshold <= 0 || thresholdSumRat(t, wantThreshold).Cmp(wantRat) != 0 {
+		t.Fatalf("signed exact threshold = %v, want finite positive %s", wantThreshold, wantRat.RatString())
+	}
+	initial, err := model.NewState([]float64{0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Run("ordinary AdvanceModulated", func(t *testing.T) {
+		state, outputs, spikes, err := model.AdvanceModulated(
+			context.Background(), parameters, thresholdSumCloneLIFState(initial), inputs, modulation,
+		)
+		if err != nil {
+			t.Fatalf("signed AdvanceModulated: %v", err)
+		}
+		thresholdSumRows(t, "signed outputs", outputs, 2, 1)
+		thresholdSumRows(t, "signed spikes", spikes, 2, 1)
+		if spikes[0][0] != 1 || spikes[1][0] != 0 {
+			t.Fatalf("signed spikes = %v, want [[1] [0]]", spikes)
+		}
+		if len(state.Adaptation) != 1 || len(state.Homeostasis) != 1 {
+			t.Fatalf("signed state lengths adaptation=%d homeostasis=%d", len(state.Adaptation), len(state.Homeostasis))
+		}
+		if state.Adaptation[0] != math.Exp(-1)*maxFloat || state.Homeostasis[0] != maxFloat {
+			t.Fatalf("signed state adaptation/homeostasis = %v/%v", state.Adaptation[0], state.Homeostasis[0])
+		}
+		if err := model.ValidateState(state); err != nil {
+			t.Fatalf("signed state is invalid: %v", err)
+		}
+	})
+
+	t.Run("ForwardCoupled", func(t *testing.T) {
+		sequence := &thresholdSumSequence{mods: thresholdSumLIFModulationRows(0, -maxFloat), nodes: 1}
+		trace, err := model.ForwardCoupled(context.Background(), parameters, []float64{0}, inputs, sequence)
+		if err != nil {
+			t.Fatalf("signed ForwardCoupled: %v", err)
+		}
+		thresholdSumRows(t, "signed coupled outputs", trace.Outputs(), 2, 1)
+		thresholdSumRows(t, "signed coupled spikes", trace.Spikes(), 2, 1)
+		if trace.Spikes()[0][0] != 1 || trace.Spikes()[1][0] != 0 {
+			t.Fatalf("signed coupled spikes = %v, want [[1] [0]]", trace.Spikes())
+		}
+	})
+}

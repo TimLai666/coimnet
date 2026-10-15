@@ -1,0 +1,157 @@
+package dynamics_test
+
+import (
+	"context"
+	"math"
+	"math/big"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+func TestThresholdSumSupplementalOverflowAndRoundingControl(t *testing.T) {
+	b := math.Ldexp(1, 1023)
+	ctx := context.Background()
+	for _, mechanism := range thresholdSumMechanisms(b) {
+		t.Run("negative shift true overflow/"+mechanism.name, func(t *testing.T) {
+			// 2B-1 exceeds MaxFloat64 even though the negative shift is finite.
+			exact := new(big.Rat).Add(thresholdSumRat(t, b), thresholdSumRat(t, b))
+			exact.Sub(exact, big.NewRat(1, 1))
+			if exact.Cmp(thresholdSumRat(t, math.MaxFloat64)) <= 0 {
+				t.Fatal("control does not exceed MaxFloat64")
+			}
+			check := func(t *testing.T, err error, partial bool) {
+				t.Helper()
+				if err == nil || !strings.Contains(err.Error(), "non-finite") || partial {
+					t.Fatalf("error=%v partial_result=%v, want non-finite error without partial result", err, partial)
+				}
+			}
+			m, err := dynamics.NewLIF(mechanism.lifConfig(b/2, 1.5*b, 0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := thresholdSumLIFParameters()
+			start := mustLIFState(t, m)
+			warm, _, _, err := m.Advance(ctx, p, start, [][]float64{{math.MaxFloat64}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			before := thresholdSumCloneLIFState(warm)
+			t.Run("LIF continued", func(t *testing.T) {
+				s, y, z, err := m.AdvanceModulated(ctx, p, warm, [][]float64{{0}}, &dynamics.Modulation{Threshold: [][]float64{{-1}}})
+				check(t, err, !reflect.DeepEqual(s, dynamics.LIFState{}) || y != nil || z != nil)
+				if !reflect.DeepEqual(warm, before) {
+					t.Fatal("caller state changed")
+				}
+			})
+			x := [][]float64{{math.MaxFloat64}, {0}}
+			t.Run("LIF batch", func(t *testing.T) {
+				s, y, z, err := m.AdvanceModulated(ctx, p, start, x, &dynamics.Modulation{Threshold: [][]float64{{0}, {-1}}})
+				check(t, err, !reflect.DeepEqual(s, dynamics.LIFState{}) || y != nil || z != nil)
+			})
+			t.Run("LIF coupled", func(t *testing.T) {
+				tr, err := m.ForwardCoupled(ctx, p, []float64{0}, x, &thresholdSumSequence{mods: thresholdSumLIFModulationRows(0, -1), nodes: 1})
+				check(t, err, tr != nil)
+			})
+			t.Run("LIF recompute", func(t *testing.T) {
+				tr, err := m.ForwardCoupledRecompute(ctx, p, []float64{0}, x, &thresholdSumRecomputeSequence{mods: thresholdSumLIFModulationRows(0, -1), nodes: 1}, 1)
+				check(t, err, tr != nil)
+			})
+			mixed, err := dynamics.NewMixed(mechanism.mixedConfig(b/2, 1.5*b, 0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			mp := thresholdSumMixedParameters()
+			ms, err := mixed.NewState([]float64{0, 0})
+			if err != nil {
+				t.Fatal(err)
+			}
+			mx := [][]float64{{math.MaxFloat64, 0}, {0, 0}}
+			mw, _, _, err := mixed.Advance(ctx, mp, ms, mx[:1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			mb := thresholdSumCloneMixedState(mw)
+			t.Run("Mixed continued", func(t *testing.T) {
+				s, y, z, err := mixed.AdvanceModulated(ctx, mp, mw, mx[1:], &dynamics.Modulation{Threshold: [][]float64{{-1, 0}}})
+				check(t, err, !reflect.DeepEqual(s, dynamics.MixedState{}) || y != nil || z != nil)
+				if !reflect.DeepEqual(mw, mb) {
+					t.Fatal("caller state changed")
+				}
+			})
+			t.Run("Mixed batch", func(t *testing.T) {
+				s, y, z, err := mixed.AdvanceModulated(ctx, mp, ms, mx, &dynamics.Modulation{Threshold: [][]float64{{0, 0}, {-1, 0}}})
+				check(t, err, !reflect.DeepEqual(s, dynamics.MixedState{}) || y != nil || z != nil)
+			})
+			t.Run("Mixed coupled", func(t *testing.T) {
+				tr, err := mixed.ForwardCoupled(ctx, mp, []float64{0, 0}, mx, &thresholdSumSequence{mods: thresholdSumMixedModulationRows(0, -1), nodes: 2})
+				check(t, err, tr != nil)
+			})
+		})
+	}
+	for _, recovery := range []bool{false, true} {
+		name, adaptation, shift := "ordinary", 0.0, -b/2
+		if recovery {
+			name, adaptation, shift = "recovery", b, -1.5*b
+		}
+		t.Run("rounded floor/"+name, func(t *testing.T) {
+			h := math.Ldexp(1, 968)
+			exact := new(big.Rat).Add(thresholdSumRat(t, b/2), thresholdSumRat(t, h))
+			rounded, exactFloat := exact.Float64()
+			if rounded != b/2 || exactFloat || exact.Cmp(thresholdSumRat(t, b/2)) <= 0 {
+				t.Fatal("invalid near-floor reference")
+			}
+			mechanism := thresholdSumMechanism{adaptation: adaptation, homeostasis: h}
+			m, err := dynamics.NewLIF(mechanism.lifConfig(b/2, 1.5*b, 0))
+			if err != nil {
+				t.Fatal(err)
+			}
+			p, x := thresholdSumLIFParameters(), [][]float64{{math.MaxFloat64}, {b / 2}}
+			t.Run("LIF coupled", func(t *testing.T) {
+				seq := &thresholdSumSequence{mods: thresholdSumLIFModulationRows(0, shift), nodes: 1}
+				tr, err := m.ForwardCoupled(ctx, p, []float64{0}, x, seq)
+				if err != nil {
+					t.Fatal(err)
+				}
+				g, err := m.Backward(ctx, tr, [][]float64{{0}, {1}}, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				thresholdSumAssertLIFGradient(t, g, seq, 0, 0)
+			})
+			t.Run("LIF recompute", func(t *testing.T) {
+				seq := &thresholdSumRecomputeSequence{mods: thresholdSumLIFModulationRows(0, shift), nodes: 1}
+				tr, err := m.ForwardCoupledRecompute(ctx, p, []float64{0}, x, seq, 1)
+				if err != nil {
+					t.Fatal(err)
+				}
+				g, err := m.BackwardCoupledRecompute(ctx, tr, [][]float64{{0}, {1}}, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(g.ThetaRaw) != 1 || g.ThetaRaw[0] != 0 || len(seq.reverses) != 1 {
+					t.Fatal("invalid rounded-floor gradient")
+				}
+				thresholdSumAssertReverse(t, seq.reverses[0], 1, 0, 0)
+			})
+			t.Run("Mixed coupled", func(t *testing.T) {
+				m, err := dynamics.NewMixed(mechanism.mixedConfig(b/2, 1.5*b, 0))
+				if err != nil {
+					t.Fatal(err)
+				}
+				seq := &thresholdSumSequence{mods: thresholdSumMixedModulationRows(0, shift), nodes: 2}
+				tr, err := m.ForwardCoupled(ctx, thresholdSumMixedParameters(), []float64{0, 0}, [][]float64{{math.MaxFloat64, 0}, {b / 2, 0}}, seq)
+				if err != nil {
+					t.Fatal(err)
+				}
+				g, err := m.Backward(ctx, tr, [][]float64{{0, 0}, {1, 0}}, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				thresholdSumAssertMixedGradient(t, g, seq, 0, 0)
+			})
+		})
+	}
+}

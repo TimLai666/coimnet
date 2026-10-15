@@ -1,0 +1,69 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"math/big"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+type sequence struct{ shifts []float64 }
+
+func (s sequence) Forward(_ context.Context, step int, _ []float64) (*dynamics.Modulation, error) {
+	return &dynamics.Modulation{Threshold: [][]float64{{s.shifts[step]}}}, nil
+}
+
+func (sequence) NewReverse(context.Context, int, int) (dynamics.ModulationReverse, error) {
+	return nil, fmt.Errorf("diagnostic does not request reverse")
+}
+
+func message(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func main() {
+	b := math.Ldexp(1, 1023)
+	m, err := dynamics.NewLIF(dynamics.LIFConfig{
+		Nodes: 1, DT: 1, TauSyn: 1, ThetaMin: b / 2, ThetaMax: b * 1.5,
+		Adaptation: dynamics.LIFAdaptation{Enabled: true, TauAdapt: 1, Beta: b},
+		Surrogate:  dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+	})
+	if err != nil {
+		panic(err)
+	}
+	p := dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+	initial, err := m.NewState([]float64{0})
+	if err != nil {
+		panic(err)
+	}
+	ctx := context.Background()
+	warm, _, events, warmErr := m.Advance(ctx, p, initial, [][]float64{{math.MaxFloat64}})
+	if warmErr != nil {
+		panic(warmErr)
+	}
+	validErr := m.ValidateState(warm)
+	_, _, _, persistedErr := m.AdvanceModulated(ctx, p, warm, [][]float64{{0}}, &dynamics.Modulation{Threshold: [][]float64{{-b}}})
+	_, _, _, batchErr := m.AdvanceModulated(ctx, p, initial, [][]float64{{math.MaxFloat64}, {0}}, &dynamics.Modulation{Threshold: [][]float64{{0}, {-b}}})
+	tr, coupledErr := m.ForwardCoupled(ctx, p, []float64{0}, [][]float64{{math.MaxFloat64}, {0}}, sequence{[]float64{0, -b}})
+	exact := new(big.Rat).SetFloat64(b)
+	exact.Add(exact, new(big.Rat).SetFloat64(b))
+	exact.Sub(exact, new(big.Rat).SetFloat64(b))
+	final, exactFloat := exact.Float64()
+	report := map[string]any{
+		"b": b, "exact_final_threshold": final, "exact_float64": exactFloat,
+		"intermediate_overflow": math.IsInf(b+b, 1), "warm_events": events,
+		"reachable_adaptation": warm.Adaptation, "warm_state_validation_error": message(validErr),
+		"persisted_error": message(persistedErr), "batch_error": message(batchErr),
+		"coupled_error": message(coupledErr), "coupled_trace_nil": tr == nil,
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(report); err != nil {
+		panic(err)
+	}
+}

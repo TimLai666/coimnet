@@ -1,0 +1,64 @@
+{
+  "requirement": [
+    "COR-04",
+    "MOD-04"
+  ],
+  "reproduction_command": "go test -json -count=1 -overlay runs/.tmp/lif-threshold-sum-20261015/red-overlay.json -run ^TestThresholdSum ./dynamics",
+  "environment": {
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-sum-20261015/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-sum-20261015/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-sum-20261015/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-threshold-sum-20261015/go-tmp",
+    "GOPROXY": "off",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOMAXPROCS": "4",
+    "GOMEMLIMIT": "8GiB",
+    "GOFLAGS": "-mod=readonly",
+    "GOTELEMETRY": "off"
+  },
+  "input_fingerprints": {
+    "test_sha256": "1f7e7617e61a5fb0723f8e92571a45c5f813321b591865c2f22bd776b4fa511b",
+    "test_lines": 843,
+    "formal_target": "dynamics/modulated_threshold_sum_test.go",
+    "pattern": "^TestThresholdSum",
+    "old_source_count": 823,
+    "root_review": "Full source reviewed; public paths are independent sibling subtests, one-row continuations are explicit, exact rational reference and floor derivatives retained.",
+    "initial_test_sha256": "54e7190e48ae2c548401071169e9a6b8864aafa9ac5f3e5349b0ed686080eb9e",
+    "initial_compile_failure_logs": [
+      "regression-red.log",
+      "regression-red-race.log"
+    ],
+    "root_api_correction": "big.Rat.Neg requires its operand; changed Neg() to Neg(slope) without changing expected values. Initial compiler failures are preserved and are not defect reproductions."
+  },
+  "observed_result": {
+    "regression-red-v2": {
+      "events": {
+        "fail": 52,
+        "pass": 32
+      },
+      "failed_public_leaf_cases": 44,
+      "log": "regression-red-v2.log",
+      "log_sha256": "12ec808b7eebc509826eaa565c125c6168155295c156a36e15feff312ba642b7",
+      "all_failure_causes_expected": true
+    },
+    "regression-red-v2-race": {
+      "events": {
+        "fail": 52,
+        "pass": 32
+      },
+      "failed_public_leaf_cases": 44,
+      "log": "regression-red-v2-race.log",
+      "log_sha256": "16c5cce4e967fd65599ee4031a61ad56d696169ca1fcb3eaf6c5a3f123d353a4",
+      "all_failure_causes_expected": true
+    }
+  },
+  "test_log": [
+    "regression-red-v2.log",
+    "regression-red-v2-race.log"
+  ],
+  "initial_compile_failures_not_counted": [
+    "regression-red.log",
+    "regression-red-race.log"
+  ]
+}

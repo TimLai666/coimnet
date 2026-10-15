@@ -1,0 +1,80 @@
+"""Copy only this repository's pinned dependencies into its owned work root."""
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import re
+import shutil
+import subprocess
+
+root = Path(__file__).resolve().parents[3]
+work = root / 'runs/.tmp/lif-threshold-sum-20261015'
+evidence = Path(__file__).resolve().parent
+source = json.loads((root / 'evidence/MOD-04/lif-threshold-floor-20261015/formal-source.json').read_text())
+for path, expected in source.items():
+    if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+        raise SystemExit('formal source changed: ' + path)
+global_cache = Path('/Users/timlai/go/pkg/mod')
+target = work / 'go-mod-cache'
+modules = re.findall(r'^\s+(\S+)\s+(v\S+)', (root / 'go.mod').read_text(), re.M)
+escape = lambda value: ''.join('!' + c.lower() if c.isupper() else c for c in value)
+copied = {}
+metadata_count = 0
+for module, version in modules:
+    escaped = escape(module)
+    src = global_cache / (escaped + '@' + version)
+    dst = target / (escaped + '@' + version)
+    if not src.is_dir():
+        raise SystemExit('missing pinned module: ' + str(src))
+    # Hard links are disallowed by the read-only source permission. Ordinary
+    # copies leave the global cache's contents and file properties untouched.
+    for file in src.rglob('*'):
+        out = dst / file.relative_to(src)
+        if file.is_symlink():
+            raise SystemExit('unexpected module symlink: ' + str(file))
+        if file.is_dir():
+            out.mkdir(parents=True, exist_ok=True)
+        else:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            expected = hashlib.sha256(file.read_bytes()).hexdigest()
+            if out.exists():
+                if hashlib.sha256(out.read_bytes()).hexdigest() != expected:
+                    raise SystemExit('existing copy differs: ' + str(out))
+            else:
+                shutil.copy2(file, out)
+            copied[str(file)] = expected
+    metadata = global_cache / 'cache/download' / escaped / '@v'
+    dest = target / 'cache/download' / escaped / '@v'
+    dest.mkdir(parents=True, exist_ok=True)
+    for file in metadata.glob(version + '.*'):
+        if not file.is_file():
+            continue
+        out = dest / file.name
+        if out.exists():
+            raise SystemExit('metadata target already exists: ' + str(out))
+        shutil.copy2(file, out)
+        metadata_count += 1
+
+probe = work / 'probe/main.go'
+(evidence / 'probe.go.txt').write_bytes(probe.read_bytes())
+(work / 'module-source-manifest.json').write_text(json.dumps(copied, indent=2) + '\n')
+baseline = {
+    'head': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+    'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'formal_source_reference': '../lif-threshold-floor-20261015/formal-source.json',
+    'formal_sources_unchanged': len(source),
+    'work_inode': work.stat().st_ino,
+    'modules': len(modules), 'copied_module_files': len(copied),
+    'copied_metadata_files': metadata_count,
+    'opencode_error': 'Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)',
+    'protected_models_reference': '../lif-threshold-floor-20261015/protected-models.json',
+    'protected_data_reference': '../lif-threshold-floor-20261015/persistent-data-preservation.json',
+    'protected_old_roots': {
+        path: {'inode': (root / path).stat().st_ino,
+               'children': sorted(p.name for p in (root / path).iterdir())}
+        for path in ['runs/.tmp/62', 'runs/.tmp/real-task-quality-20261012']
+    },
+}
+(evidence / 'baseline.json').write_text(json.dumps(baseline, indent=2) + '\n')
+print(json.dumps({'modules': len(modules), 'copied_module_files': len(copied),
+                  'copied_metadata_files': metadata_count, 'formal_sources': len(source)}))

@@ -1,0 +1,257 @@
+from __future__ import annotations
+
+import os
+import stat
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+EVIDENCE = Path(__file__).resolve().parent
+OUTPUT = EVIDENCE / "changed-files.md"
+
+EXPLICIT_PATHS = (
+    "ENG.md",
+    "delivery-status.md",
+    "docs/requirements-status.json",
+    "docs/tickets/112-chemical-threshold-sum.md",
+    "dynamics/modulation.go",
+    "dynamics/lif_state.go",
+    "dynamics/mixed_state.go",
+    "dynamics/lif_coupled.go",
+    "dynamics/mixed_coupled.go",
+    "dynamics/modulated_threshold_sum_test.go",
+)
+FOREIGN_PREFIXES = (
+    ("evidence", "LRN-06"),
+    ("evidence", "LRN-09"),
+)
+
+
+def is_excluded(relative: Path) -> bool:
+    if "AGENTS.md" in relative.parts:
+        return True
+    return relative.parts[:2] in FOREIGN_PREFIXES
+
+
+def collect_evidence_files() -> list[Path]:
+    result: list[Path] = []
+    for base, dirs, files in os.walk(EVIDENCE, topdown=True, followlinks=False):
+        base_path = Path(base)
+        dirs[:] = [name for name in dirs if not (base_path / name).is_symlink()]
+        for name in files:
+            path = base_path / name
+            if path.is_symlink() or not stat.S_ISREG(path.stat().st_mode):
+                continue
+            relative = path.relative_to(ROOT)
+            if not is_excluded(relative):
+                result.append(path)
+    return sorted(result, key=lambda path: str(path.resolve()))
+
+
+def collect_files() -> list[Path]:
+    explicit = [ROOT / relative for relative in EXPLICIT_PATHS]
+    for path in explicit:
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(f"required ticket file is missing or non-regular: {path}")
+
+    files: list[Path] = []
+    seen: set[Path] = set()
+    for path in explicit + collect_evidence_files():
+        resolved = path.resolve()
+        if resolved not in seen:
+            seen.add(resolved)
+            files.append(resolved)
+    return files
+
+
+def artifact_kind(path: Path) -> str:
+    name = path.name
+    if name.endswith(".log.gz"):
+        return "壓縮 log"
+    if name.endswith(".log"):
+        return "log"
+    if name.endswith(".json"):
+        return "receipt"
+    if name.endswith(".md"):
+        return "文件"
+    if name.endswith(".go.txt"):
+        return "來源快照"
+    if name.endswith(".py.txt"):
+        return "腳本來源"
+    if name.endswith(".gz"):
+        return "壓縮證據"
+    return "驗收證據"
+
+
+def summary(path: Path) -> str:
+    relative = path.relative_to(ROOT).as_posix()
+    name = path.name
+    if relative == "ENG.md":
+        return "公開工程契約與數值處理決策。"
+    if relative == "delivery-status.md":
+        return "本票交付狀態追蹤。"
+    if relative == "docs/requirements-status.json":
+        return "需求狀態追蹤資料。"
+    if relative == "docs/tickets/112-chemical-threshold-sum.md":
+        return "ticket 112 規格、決策、驗收與交付紀錄。"
+    if relative == "dynamics/modulation.go":
+        return "門檻部分和恢復與調節輸入實作。"
+    if relative == "dynamics/lif_state.go":
+        return "LIF 一般狀態路徑的門檻恢復與有限值檢查。"
+    if relative == "dynamics/mixed_state.go":
+        return "Mixed 一般狀態路徑的 LIF 門檻恢復與有限值檢查。"
+    if relative == "dynamics/lif_coupled.go":
+        return "LIF coupled 門檻恢復、下限投影與錯誤路徑。"
+    if relative == "dynamics/mixed_coupled.go":
+        return "Mixed coupled LIF 門檻恢復、下限投影與錯誤路徑。"
+    if relative == "dynamics/modulated_threshold_sum_test.go":
+        return "門檻和恢復、下限、反向、重算與拒絕控制回歸測試。"
+
+    if name == "changed-files.py.txt":
+        return "本票交付檔案盤點產生器。"
+    if name == "changed-files.md":
+        return "本票實際檔案與變更摘要表。"
+    if name == "cleanup-owned.py.txt":
+        return "自有暫存清理前置 gate 與清理器來源。"
+    if name == "baseline.json":
+        return "本票基線與保護對象索引。"
+    if name == "formal-source.json":
+        return "正式來源檔案 SHA256 manifest。"
+    if name == "foreign-work-before.json":
+        return "本票外既有工作 SHA256 清單。"
+    if name == "frozen-test.json":
+        return "凍結測試指紋與來源說明。"
+    if name == "plan.md":
+        return "本票範圍、測試預期與清理計畫。"
+    if name == "root-review.md":
+        return "本票審查記錄。"
+    if name == "candidate-verification.json":
+        return "候選一般與競態驗收摘要。"
+    if name.startswith("candidate-green"):
+        return f"候選成功回歸驗收 {artifact_kind(path)}。"
+    if name == "regression-red-verification.json":
+        return "修正前失敗回歸驗收 receipt。"
+    if name.startswith("regression-red-v2"):
+        return f"修正前失敗回歸重跑 {artifact_kind(path)}。"
+    if name.startswith("regression-red"):
+        return f"最初測試的編譯失敗原始紀錄 {artifact_kind(path)}。"
+    if name == "regression-test.go.txt" or name == "regression-test-precompile.go.txt":
+        return "門檻和回歸測試來源快照。"
+    if name.startswith("normal-core-before"):
+        return f"既有核心相容性基線 {artifact_kind(path)}。"
+    if name.startswith("normal-core-after"):
+        return f"候選後既有核心相容性對照 {artifact_kind(path)}。"
+    if name.startswith("chemical-save-before"):
+        return f"既有化學模型保存相容性基線 {artifact_kind(path)}。"
+    if name.startswith("chemical-save-after"):
+        return f"候選後化學模型保存相容性對照 {artifact_kind(path)}。"
+    if name.startswith("chemical-resume-before"):
+        return f"既有化學模型接續相容性基線 {artifact_kind(path)}。"
+    if name.startswith("chemical-resume-after"):
+        return f"候選後化學模型接續相容性對照 {artifact_kind(path)}。"
+    if name == "reproduction.json":
+        return "原始公開重現證據。"
+    if name == "probe-after.json" or name == "probe-after.log":
+        return f"修正後公開 probe {artifact_kind(path)}。"
+    if name == "probe.json" or name == "probe.log" or name == "probe.go.txt":
+        return f"公開 probe {artifact_kind(path)}。"
+    if name.startswith("supplemental-control"):
+        return f"補充控制與重跑驗收 {artifact_kind(path)}。"
+    if name == "supplemental-test.go.txt":
+        return "補充控制測試來源快照。"
+    if name == "supplemental-verification.json":
+        return "補充控制驗收摘要。"
+    if name == "cleanup-safety-review.json":
+        return "清理安全審查 receipt。"
+    if name == "timeout-diagnosis.json":
+        return "工程逾時診斷 receipt。"
+    if name == "compatibility-drivers.json":
+        return "相容性驅動索引。"
+    if name == "command-environment.json" or name == "environment.json":
+        return "命令與工程驗收環境 receipt。"
+    if name == "engineering.py.txt":
+        return "工程驗收腳本來源。"
+    if name == "finish-engineering.py.txt":
+        return "工程驗收彙整腳本來源。"
+    if name == "prepare-cache.py.txt":
+        return "可重建快取準備腳本來源。"
+    if name == "run-command.py.txt":
+        return "受控命令執行腳本來源。"
+    if name == "engineering-build.json" or name == "engineering-build.log":
+        return f"工程 build 驗收 {artifact_kind(path)}。"
+    if name == "engineering-format.json" or name == "engineering-format.log":
+        return f"工程 format 驗收 {artifact_kind(path)}。"
+    if name == "engineering-unit.json" or name == "engineering-unit.log":
+        return f"工程一般測試驗收 {artifact_kind(path)}。"
+    if name == "engineering-race.json":
+        return "首次完整競態驗收的逾時與中止回條。"
+    if name == "engineering-race.log":
+        return "工程競態驗收 log。"
+    if name == "engineering-race.log.gz":
+        return "首次完整競態逾時與中止的壓縮原始日誌。"
+    if name == "engineering-race-retry.log":
+        return "工程競態重跑 log。"
+    if name in ("engineering-race-retry.log.gz", "engineering-race-retry.json"):
+        return "沿用既有時間與並行上限的完整競態重跑紀錄。"
+    if name == "engineering-retry-environment.json":
+        return "工程重跑環境 receipt。"
+    if name == "engineering-retry.py.txt":
+        return "工程重跑腳本來源。"
+    if name == "engineering-unit.log.gz":
+        return "工程一般測試壓縮 log。"
+    if name == "closure-binary.json":
+        return "清理前 closure binary 指紋 receipt。"
+    if name == "work-preservation.json":
+        return "必要工作檔封存逐位核對 receipt。"
+    if name == "engineering-verification.json":
+        return "完整工程驗收彙整 receipt。"
+    if name == "final-governance.json":
+        return "最終治理門檻 receipt。"
+    if name == "cleanup-inventory.json.gz":
+        return "清理前內容 inventory 壓縮封存。"
+    if name == "cleanup.json":
+        return "清理結果 receipt。"
+    if name == "initial-race-stop.json":
+        return "首次驗收已逾時後，只中止剩餘自有測試程序的紀錄。"
+    if name == "preserved-work.tar.gz":
+        return "必要來源、人工模型與模組指紋的逐位封存。"
+    if name == "final-governance.py.txt":
+        return "使用既有測試二進位檔完成最後治理檢查。"
+    if name == "delivery.json":
+        return "本票提交、推送與遠端讀回紀錄。"
+    if name == "verification.json":
+        return "工程需求驗收總表與範圍限制。"
+    return "本票驗收證據"
+
+
+def render(files: list[Path]) -> str:
+    rows = ["# Ticket 112 實際檔案", "", "| 檔案 | 變更摘要 |", "| --- | --- |"]
+    for path in files:
+        absolute = path.as_posix()
+        rows.append(f"| [{absolute}]({absolute}) | {summary(path)} |")
+    rows.append("")
+    return "\n".join(rows)
+
+
+def main() -> None:
+    if OUTPUT.is_symlink() or (OUTPUT.exists() and not OUTPUT.is_file()):
+        raise SystemExit("refusing non-regular inventory target")
+    before = OUTPUT.read_bytes() if OUTPUT.exists() else None
+    files = collect_files()
+    if OUTPUT.resolve() not in files:
+        files.append(OUTPUT.resolve())
+        files[len(EXPLICIT_PATHS):] = sorted(files[len(EXPLICIT_PATHS):], key=lambda path: str(path.resolve()))
+    content = render(files).encode("utf-8")
+    if before is None:
+        with OUTPUT.open("xb") as handle:
+            handle.write(content)
+    else:
+        if OUTPUT.is_symlink() or OUTPUT.read_bytes() != before:
+            raise SystemExit("inventory target changed before replacement")
+        OUTPUT.write_bytes(content)
+    if [path.as_posix() for path in collect_files()] != [path.as_posix() for path in files]:
+        raise SystemExit("file inventory changed while rendering")
+
+
+if __name__ == "__main__":
+    main()

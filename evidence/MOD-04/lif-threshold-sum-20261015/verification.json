@@ -1,0 +1,139 @@
+{
+  "requirement": [
+    "COR-04",
+    "MOD-04"
+  ],
+  "engineering_passed": true,
+  "reproduction_command": "run-command.py.txt and per-command receipts; engineering.py.txt runs format, build, full unit/race, vet, pinned dependency and governance checks",
+  "environment": {
+    "observed_at": "2026-10-15T14:40:30.792649+00:00",
+    "go": "go version go1.26.5 darwin/arm64",
+    "system": "macOS 27.0.1 (26A434)",
+    "machine": "arm64",
+    "filesystem": "/dev/disk3s5 local APFS /System/Volumes/Data",
+    "base_commit": "d4c2fca1e00eed0a081b2b2313668ad7a00f6a1f",
+    "remote_baseline_verified": "d4c2fca1e00eed0a081b2b2313668ad7a00f6a1f",
+    "branch": "codex/receptor-chemistry-training",
+    "go_environment": "command-environment.json",
+    "network_dependency_fetch": false,
+    "loopback_and_metal_for_full_tests": true,
+    "engineering_retry_environment": "engineering-retry-environment.json",
+    "initial_timeout_diagnosis": "timeout-diagnosis.json",
+    "engineering_tail_environment": "engineering-tail-environment.json",
+    "module_metadata_diagnosis": "module-metadata-diagnosis.json"
+  },
+  "input_fingerprints": {
+    "before": "../lif-threshold-floor-20261015/formal-source.json",
+    "formal": "formal-source.json",
+    "formal_sha256": "ffacc0f7acf78c6e3babdd3e28b113a20fb79b656f39b02032fe5e95cf98a647",
+    "frozen_test": {
+      "test_sha256": "1f7e7617e61a5fb0723f8e92571a45c5f813321b591865c2f22bd776b4fa511b",
+      "test_lines": 843,
+      "formal_target": "dynamics/modulated_threshold_sum_test.go",
+      "pattern": "^TestThresholdSum",
+      "old_source_count": 823,
+      "root_review": "Full source reviewed; public paths are independent sibling subtests, one-row continuations are explicit, exact rational reference and floor derivatives retained.",
+      "initial_test_sha256": "54e7190e48ae2c548401071169e9a6b8864aafa9ac5f3e5349b0ed686080eb9e",
+      "initial_compile_failure_logs": [
+        "regression-red.log",
+        "regression-red-race.log"
+      ],
+      "root_api_correction": "big.Rat.Neg requires its operand; changed Neg() to Neg(slope) without changing expected values. Initial compiler failures are preserved and are not defect reproductions."
+    },
+    "candidate": {
+      "lif_state.go": "f0f257dc31df201c820afa7a43300e272b2a7a4979f6d88d3e728ab48f1c6ba0",
+      "mixed_coupled.go": "ec7a8266fb4f6d28f1eb2d23c0d518ec1bded282c79a836c194d896b87405661",
+      "lif_coupled.go": "7b797ca5e0ed7efd57e171b680458ed2a506e100d02a337f387223b73003c05b",
+      "modulation.go": "f7a56f53b9f91fa63855076e1a302f359da48d6cf3708c5627291a10a7da4145",
+      "mixed_state.go": "2772808e224897cb58ffee5763a4178d5c3ad8e69c355b9c7a4aa2807c6674c8"
+    },
+    "protected_original_models": "../lif-threshold-floor-20261015/protected-models.json",
+    "protected_data": "../lif-threshold-floor-20261015/persistent-data-preservation.json"
+  },
+  "observed_result": {
+    "source_count": 824,
+    "formal_go_files": 820,
+    "ordinary_test_events": {
+      "pass": 6013,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6012,
+      "skip": 23
+    },
+    "package_events": {
+      "pass": 58,
+      "skip": 3
+    },
+    "prior_test_events_preserved_per_build": 5951,
+    "new_regression_pass_events_per_build": 84,
+    "supplemental_pass_events_per_build": 33,
+    "normal_core_pairs_bytes_equal": 32,
+    "old_chemical_model_new_process_continuations_bytes_equal": 12,
+    "all_12_old_models_trained_updates": 3,
+    "original_public_reproduction_fixed": true,
+    "engineering_governance_pass_events": 31,
+    "remaining_delivery": [
+      "commits and push/readback"
+    ],
+    "cleanup": {
+      "cleaned_at": "2026-10-15T15:28:31.501970+00:00",
+      "owned_directory": "runs/.tmp/lif-threshold-sum-20261015",
+      "owned_inode": 56269668,
+      "removed_entries": 28013,
+      "removed_bytes": 1814305716,
+      "inventory_archive": "cleanup-inventory.json.gz",
+      "inventory_archive_sha256": "403d724a8b4f6a46876ed6a70342f85a95a0a0cdb3eda9bd90c7deb12a9e9a46",
+      "no_open_handles": true,
+      "necessary_files_preserved": true,
+      "source_entries_preserved": 824,
+      "original_model_files_preserved": 18,
+      "persistent_data_files_preserved": 6,
+      "protected_old_roots_preserved": [
+        "62",
+        "real-task-quality-20261012"
+      ],
+      "directory_removed": true,
+      "original_module_files_preserved": 15046
+    },
+    "final_governance_pass_events": 31
+  },
+  "test_log": [
+    "candidate-green-race.log",
+    "candidate-green.log",
+    "chemical-resume-after-race.log",
+    "chemical-resume-after.log",
+    "chemical-resume-before-race.log",
+    "chemical-resume-before.log",
+    "chemical-save-before-race.log",
+    "chemical-save-before.log",
+    "engineering-build.log",
+    "engineering-closure-binary.log",
+    "engineering-format.log",
+    "engineering-governance.log",
+    "engineering-module-selection.log",
+    "engineering-module-verify-local-cache.log",
+    "engineering-module-verify.log",
+    "engineering-race-retry.log.gz",
+    "engineering-race.log.gz",
+    "engineering-unit.log.gz",
+    "engineering-vet.log",
+    "normal-core-after-race.log",
+    "normal-core-after.log",
+    "normal-core-before-race.log",
+    "normal-core-before.log",
+    "probe-after.log",
+    "probe.log",
+    "regression-red-race.log",
+    "regression-red-v2-race.log",
+    "regression-red-v2.log",
+    "regression-red.log",
+    "supplemental-control-race.log",
+    "supplemental-control.log",
+    "final-governance.log"
+  ],
+  "limits": "Synthetic numerical and persistence controls. No new task-quality, biological, GPU whole-brain or absolute zero-bug conclusion.",
+  "verified_at": "2026-10-15T15:27:59.098237+00:00",
+  "cleanup_receipt": "cleanup.json",
+  "final_governance_receipt": "final-governance.json"
+}

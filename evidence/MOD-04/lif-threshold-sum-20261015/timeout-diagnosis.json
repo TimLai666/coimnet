@@ -1,0 +1,63 @@
+{
+  "observed_at": "2026-10-15T14:50:19.239262+00:00",
+  "confirmed_failure": "Go package watchdog reached its default 10m deadline; initial full race does not pass",
+  "prior_verified_environment": {
+    "file": "../lif-threshold-floor-20261015/command-environment.json",
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-p=2 -timeout=60m"
+  },
+  "initial_environment": {
+    "file": "command-environment.json",
+    "GOMAXPROCS": "4",
+    "GOMEMLIMIT": "8GiB",
+    "GOFLAGS": "-mod=readonly",
+    "effective_go_test_timeout": "10m default"
+  },
+  "observed_memory": {
+    "command": "sysctl hw.memsize vm.swapusage",
+    "hw_memsize_bytes": 17179869184,
+    "swap_total_mib": 14336.0,
+    "swap_used_mib": 12601.5,
+    "swap_free_mib": 1734.5,
+    "limits": "Single observation; does not prove the cause of swap or apportion it to these tests."
+  },
+  "timeout_stacks": {
+    "experiment": "Insyra tensor construction inside unchanged continuous Network prediction; TestRunAttributionIsDeterministic",
+    "experiment/multimodaleval": "Insyra Tape backward inside unchanged continuous Network training; TestRunIsDeterministic"
+  },
+  "interpretation": "Initial validation omitted the previously used scheduling/time budget. Stack snapshots show active numerical work, without the threshold recovery helper on either captured stack. This does not establish performance causation or a general no-race conclusion.",
+  "retry": "Restore GOMAXPROCS=2, -p=2 and -timeout=60m. Keep all source, test expectations and inputs unchanged. Rerun the entire race suite after the initial command exits. Reuse only source-verified completed format/build/unit checks; execute all remaining checks.",
+  "retry_script_sha256": "00dc07857c3aa79bce8e712c8cc4b0023d8ad3997dd1a8545227aa621fd26e5a",
+  "initial_diagnostic_errors": [
+    "Sandbox sysctl first read denied; required read-only escalation succeeded.",
+    "First environment comparison assumed the old record contained GOMEMLIMIT; corrected to optional lookup before interpreting any result."
+  ],
+  "initial_failed_packages": {
+    "github.com/TimLai666/coimnet/experiment": 600.548,
+    "github.com/TimLai666/coimnet/experiment/multimodaleval": 600.459,
+    "github.com/TimLai666/coimnet/tasks/media": 600.502,
+    "github.com/TimLai666/coimnet/tasks/textgen": 586.19
+  },
+  "initial_watchdog_panics": [
+    {
+      "package": "github.com/TimLai666/coimnet/experiment",
+      "output": "panic: test timed out after 10m0s\n"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/experiment/multimodaleval",
+      "output": "panic: test timed out after 10m0s\n"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/tasks/media",
+      "output": "panic: test timed out after 10m0s\n"
+    }
+  ],
+  "remaining_owned_test_interrupted": "initial-race-stop.json",
+  "prior_elapsed_seconds": {
+    "experiment": 1464.285,
+    "multimodaleval": 1218.12,
+    "media": 380.909,
+    "textgen": 697.99
+  },
+  "prior_raw_log": "../lif-threshold-floor-20261015/engineering-race.log.gz"
+}

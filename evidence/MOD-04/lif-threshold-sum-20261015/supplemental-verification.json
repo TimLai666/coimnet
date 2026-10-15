@@ -1,0 +1,39 @@
+{
+  "requirement": [
+    "COR-04",
+    "MOD-04"
+  ],
+  "reproduction_command": "see supplemental-control.json and supplemental-control-race.json; virtual extra test only",
+  "environment": {
+    "go": "go1.26.5",
+    "os_arch": "darwin/arm64",
+    "formal_sources": 824
+  },
+  "input_fingerprints": {
+    "formal_source_manifest": "formal-source.json",
+    "supplemental_test_sha256": "077f05eee6f7241ea638946c64eba7966a45d625f6251fac4361ae634e68843c"
+  },
+  "observed_result": {
+    "supplemental-control": {
+      "test_events": {
+        "pass": 33
+      },
+      "log": "supplemental-control.log",
+      "log_sha256": "cebd46e6e50e47cf8530cc0cf4cf1144a01d85ef1e1383f517c983c034b87512"
+    },
+    "supplemental-control-race": {
+      "test_events": {
+        "pass": 33
+      },
+      "log": "supplemental-control-race.log",
+      "log_sha256": "52debb121afac35434ed3330119974d5db9edb096436ee3c1a800cd8e95e2484"
+    }
+  },
+  "test_log": [
+    "supplemental-control.log",
+    "supplemental-control-race.log"
+  ],
+  "verified_at": "2026-10-15T14:38:51.066226+00:00",
+  "contract_resolution": "Model projection and floor mask operate on float64. Exact summation is solely an overflow recovery, followed by rounding to float64. Existing ordinary and recovered near-floor cases both produce zero threshold derivatives. No public exact-real model is introduced.",
+  "negative_shift_true_overflow": "Exact 2B-1 > MaxFloat64. All seven public paths reject without partial state/trace; caller state remains unchanged. Three independently reachable mechanism states verified."
+}

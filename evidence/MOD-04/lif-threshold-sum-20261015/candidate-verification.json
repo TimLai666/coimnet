@@ -1,0 +1,120 @@
+{
+  "requirement": [
+    "COR-04",
+    "MOD-04"
+  ],
+  "reproduction_command": "see per-command JSON receipts; same frozen test and source overlays",
+  "environment": {
+    "go": "go1.26.5",
+    "os_arch": "darwin/arm64",
+    "filesystem": "local APFS"
+  },
+  "input_fingerprints": {
+    "old_source_manifest": "../lif-threshold-floor-20261015/formal-source.json",
+    "frozen_test": {
+      "test_sha256": "1f7e7617e61a5fb0723f8e92571a45c5f813321b591865c2f22bd776b4fa511b",
+      "test_lines": 843,
+      "formal_target": "dynamics/modulated_threshold_sum_test.go",
+      "pattern": "^TestThresholdSum",
+      "old_source_count": 823,
+      "root_review": "Full source reviewed; public paths are independent sibling subtests, one-row continuations are explicit, exact rational reference and floor derivatives retained.",
+      "initial_test_sha256": "54e7190e48ae2c548401071169e9a6b8864aafa9ac5f3e5349b0ed686080eb9e",
+      "initial_compile_failure_logs": [
+        "regression-red.log",
+        "regression-red-race.log"
+      ],
+      "root_api_correction": "big.Rat.Neg requires its operand; changed Neg() to Neg(slope) without changing expected values. Initial compiler failures are preserved and are not defect reproductions."
+    },
+    "candidate": {
+      "lif_state.go": "f0f257dc31df201c820afa7a43300e272b2a7a4979f6d88d3e728ab48f1c6ba0",
+      "mixed_coupled.go": "ec7a8266fb4f6d28f1eb2d23c0d518ec1bded282c79a836c194d896b87405661",
+      "lif_coupled.go": "7b797ca5e0ed7efd57e171b680458ed2a506e100d02a337f387223b73003c05b",
+      "modulation.go": "f7a56f53b9f91fa63855076e1a302f359da48d6cf3708c5627291a10a7da4145",
+      "mixed_state.go": "2772808e224897cb58ffee5763a4178d5c3ad8e69c355b9c7a4aa2807c6674c8"
+    }
+  },
+  "observed_result": {
+    "normal-core": {
+      "cases": 16,
+      "bytes_exact": true,
+      "before_sha256": "007423a3fdc400af76a5a4e0324a24ba554cfd73bf8bc30c15a2e52ee4b85497",
+      "after_sha256": "007423a3fdc400af76a5a4e0324a24ba554cfd73bf8bc30c15a2e52ee4b85497"
+    },
+    "chemical-resume": {
+      "cases": 6,
+      "bytes_exact": true,
+      "before_sha256": "fe8906baa0424566d200fa750eb2bca8886161e7ad5e3ef9ce532406992db1af",
+      "after_sha256": "fe8906baa0424566d200fa750eb2bca8886161e7ad5e3ef9ce532406992db1af"
+    },
+    "trained-save": {
+      "cases": 6,
+      "updates_per_case": 3,
+      "all_applied": true
+    },
+    "red-green": {
+      "regression-red-v2": {
+        "fail": 52,
+        "pass": 32
+      },
+      "candidate-green": {
+        "pass": 84
+      }
+    },
+    "normal-core-race": {
+      "cases": 16,
+      "bytes_exact": true,
+      "before_sha256": "afc7ff3f1632ec93402a49827c6f3bc70dd6b73a78fa11ea338d6740725d4aca",
+      "after_sha256": "afc7ff3f1632ec93402a49827c6f3bc70dd6b73a78fa11ea338d6740725d4aca"
+    },
+    "chemical-resume-race": {
+      "cases": 6,
+      "bytes_exact": true,
+      "before_sha256": "62018e4067fb2994ea1eb142cfc59763ef249ec70226ac61f727bf89b7434511",
+      "after_sha256": "62018e4067fb2994ea1eb142cfc59763ef249ec70226ac61f727bf89b7434511"
+    },
+    "trained-save-race": {
+      "cases": 6,
+      "updates_per_case": 3,
+      "all_applied": true
+    },
+    "red-green-race": {
+      "regression-red-v2": {
+        "fail": 52,
+        "pass": 32
+      },
+      "candidate-green": {
+        "pass": 84
+      }
+    }
+  },
+  "public_probe_after": {
+    "b": 8.98846567431158e+307,
+    "batch_error": "",
+    "coupled_error": "",
+    "coupled_trace_nil": false,
+    "exact_final_threshold": 8.98846567431158e+307,
+    "exact_float64": true,
+    "intermediate_overflow": true,
+    "persisted_error": "",
+    "reachable_adaptation": [
+      8.98846567431158e+307
+    ],
+    "warm_events": [
+      [
+        1
+      ]
+    ],
+    "warm_state_validation_error": ""
+  },
+  "test_log": [
+    "candidate-green.log",
+    "candidate-green-race.log",
+    "normal-core-after.log",
+    "normal-core-after-race.log",
+    "chemical-resume-after.log",
+    "chemical-resume-after-race.log",
+    "probe-after.log"
+  ],
+  "verified_at": "2026-10-15T14:32:03.789615+00:00",
+  "limits": "Artificial finite/extreme numerical controls. No claim of task quality or biological validation."
+}
