@@ -1,0 +1,48 @@
+# coding: utf-8
+"""Synchronize engineering acceptance without claiming remote delivery."""
+from pathlib import Path
+import json
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+v = json.loads((e / 'verification.json').read_text())
+assert v['engineering_passed']
+assert v['observed_result']['ordinary_test_events'] == {'pass': 6383, 'skip': 22}
+assert v['observed_result']['race_test_events'] == {'pass': 6382, 'skip': 23}
+
+def update(path, substitutions, addition=''):
+    p = r / path
+    old = p.read_bytes()
+    text = old.decode('utf-8')
+    for before, after in substitutions:
+        assert text.count(before) == 1, (path, before)
+        text = text.replace(before, after)
+    assert p.read_bytes() == old, path
+    p.write_text(text + addition, encoding='utf-8')
+
+update('docs/tickets/116-threshold-tail.md', [
+    ('- [ ] 完整工程驗收與需求證據。', '- [x] 完整工程驗收與需求證據。'),
+], '\n## 工程驗收｜2026-10-16\n\n833 份來源的完整一般／競態各 58 套件通過，6,383／6,382 個事件成功、22／23 個略過、零失敗。原有各 6,136 個終端事件保持，新增各 269 個通過。格式、build、vet、模組校驗、固定 Insyra v0.3.4 及 31 項治理通過，見[驗收](../../evidence/COR-04/threshold-tail-20261016/verification.json)。32 份正常核心、32 次舊神經狀態與 12 次舊化學模型的新程序接續相同。本票完成 4／5，暫存清理及遠端交付尚未完成。\n')
+
+update('README.md', [
+    ('最新閾值數值稽核已修正有限尾端的放電與梯度缺陷，一般／競態各 269 個凍結測試事件通過。COR-04／09 暫為 implemented_unverified，完整工程驗收進行中，見 [ticket 116](docs/tickets/116-threshold-tail.md)。先前已完成的化學增益規則保持。',
+     '有限尾端的閾值與梯度修正已通過完整工程驗收，工程需求恢復 91／91 passed。正常核心與測試用舊保存的接續結果保持，見 [ticket 116](docs/tickets/116-threshold-tail.md)及[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。這輪沒有新的任務辨識率或生物校準結果。'),
+])
+
+p = r / 'delivery-status.md'
+old = p.read_bytes()
+text = old.decode('utf-8')
+start = text.index('[ticket 116]')
+end = text.index('\n\n', start)
+text = text[:start] + '[ticket 116](docs/tickets/116-threshold-tail.md) 已通過完整工程驗收。833 份來源的一般／競態各 58 套件通過，6,383／6,382 個事件成功、22／23 個略過、零失敗，原有各 6,136 個終端事件保持，新增各 269 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及 31 項治理通過，見[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。32 份正常核心、32 次舊神經狀態與 12 次舊化學模型接續相同。COR-04／09 恢復 passed，目前 91／91 工程需求 passed。本票完成 4／5，證據保存、暫存清理及遠端交付尚未完成。整體零 bug 目標保持進行中。' + text[end:]
+for before, after in [
+    ('正常核心與舊保存接續保持，完整工程驗收進行中。', '正常核心與舊保存接續保持，完整工程驗收通過。'),
+    ('| in_progress | 3／5。一般／競態專項各 269 個事件通過，正常與舊保存接續保持，完整工程驗收進行中 |', '| in_progress | 4／5。專項、正常／舊保存、完整工程及需求證據通過，暫存清理與遠端交付待完成 |'),
+    ('ticket 116 的閾值尾端缺陷已重現，修正與完整工程驗收進行中。', 'ticket 116 的閾值尾端修正已通過完整工程驗收，暫存清理及遠端交付待完成。'),
+    ('ticket 116 已完成修正、專項及相容性對照。下一個可驗證成果是整套競態與其餘工程檢查通過，再保存證據、清除自有暫存及核對遠端交付。沒有新增待決策事項。', 'ticket 116 已通過完整工程驗收。下一個可驗證成果是必要證據封存、自有暫存清理、提交推送及遠端讀回。沒有新增待決策事項。'),
+]:
+    assert text.count(before) == 1, before
+    text = text.replace(before, after)
+assert p.read_bytes() == old
+p.write_text(text, encoding='utf-8')
+print('ticket 116 engineering accepted: 4/5; delivery pending')

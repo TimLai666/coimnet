@@ -1,0 +1,62 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"math"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+type fixture struct {
+	Name             string               `json:"name"`
+	Minimum          float64              `json:"minimum"`
+	Maximum          float64              `json:"maximum"`
+	Raw              float64              `json:"raw"`
+	Initial          float64              `json:"initial"`
+	Input            float64              `json:"input"`
+	Reset            float64              `json:"reset"`
+	Base             float64              `json:"base"`
+	Slope            float64              `json:"slope"`
+	ExpectedSpike    float64              `json:"expected_spike"`
+	ExpectedVoltage  float64              `json:"expected_voltage"`
+	ExpectedGradient dynamics.LIFGradient `json:"expected_gradient"`
+}
+
+func main() {
+	b, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	var input struct{ Cases []fixture }
+	if err := json.Unmarshal(b, &input); err != nil {
+		panic(err)
+	}
+	var rows []any
+	for _, c := range input.Cases {
+		m, err := dynamics.NewLIF(dynamics.LIFConfig{Nodes: 1, DT: math.Ln2, TauSyn: 1,
+			ThetaMin: c.Minimum, ThetaMax: c.Maximum, VReset: c.Reset,
+			Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}})
+		if err != nil {
+			panic(err)
+		}
+		p := dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{c.Raw}}
+		tr, err := m.Forward(context.Background(), p, []float64{c.Initial}, [][]float64{{c.Input}})
+		if err != nil {
+			panic(err)
+		}
+		g, err := m.Backward(context.Background(), tr, [][]float64{{1}}, 0)
+		if err != nil {
+			panic(err)
+		}
+		got, want := g.ThetaRaw[0], c.ExpectedGradient.ThetaRaw[0]
+		close := got == want || (want != 0 && math.Abs((got-want)/want) <= 1e-12)
+		rows = append(rows, map[string]any{"fixture": c, "outputs": tr.Outputs(), "spikes": tr.Spikes(),
+			"voltages": tr.Voltages(), "gradient": g, "theta_gradient_matches": close,
+			"forward_matches": tr.Spikes()[0][0] == c.ExpectedSpike && tr.Voltages()[0][0] == c.ExpectedVoltage})
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(rows); err != nil {
+		panic(err)
+	}
+}

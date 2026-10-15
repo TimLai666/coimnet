@@ -1,0 +1,57 @@
+"""Independent high-precision threshold mapping and one-step reference."""
+from decimal import Decimal, localcontext
+from fractions import Fraction
+import hashlib
+import json
+import math
+from pathlib import Path
+import struct
+
+e = Path(__file__).resolve().parent
+cases = []
+def case(name, lo, hi, raw, initial, input_value, reset=-1):
+    cases.append(dict(name=name, minimum=lo, maximum=hi, raw=raw,
+                      initial=initial, input=input_value, reset=reset))
+for raw in [0, 8, 12, 20, 40, 50]:
+    case('ordinary-positive-' + str(raw), 0., 2., float(raw), 0., 1.)
+for raw in [40, 50, 740, 750, 1000]:
+    case('wide-positive-' + str(raw), 0., 1e308, float(raw), 1e308, 1e308)
+for raw in [-40, -740, -750, -1000]:
+    case('wide-negative-' + str(raw), 0., 1e308, float(raw), 0., 0.)
+case('forward-cancellation-positive-40', -1e308, 0., 40., 0., -1e200, -float.fromhex('0x1.fffffffffffffp1023'))
+for raw in [-1000, 1000]:
+    case('true-coefficient-underflow-' + str(raw), 0., 2., float(raw), 0., 0.)
+
+def mapping(c, precision):
+    with localcontext() as context:
+        context.prec = precision
+        lo, hi, raw = (Decimal.from_float(c[k]) for k in ['minimum', 'maximum', 'raw'])
+        small_exp = (-abs(raw)).exp()
+        small = small_exp / (1 + small_exp)
+        span = hi - lo
+        base = hi - span * small if raw >= 0 else lo + span * small
+        slope = span * small_exp / ((1 + small_exp) ** 2)
+        return float(base), float(slope)
+
+for c in cases:
+    base, slope = mapping(c, 200)
+    assert (struct.pack('!d', base), struct.pack('!d', slope)) == tuple(struct.pack('!d', v) for v in mapping(c, 280))
+    candidate = .5 * c['initial'] + .5 * c['input']
+    den = 1 + abs(candidate - base)
+    psi = float(1 / (Fraction(den) ** 2)) if math.isfinite(den) else 0.
+    spike = float(candidate >= base)
+    log_tau = float(Fraction(psi) * Fraction(c['initial'] - c['input']) * Fraction(.5 * math.log(2)))
+    c.update(base=base, slope=slope, candidate=candidate, expected_spike=spike,
+             expected_voltage=c['reset'] if spike else candidate,
+             expected_gradient=dict(Weights=[], Bias=[.5 * psi], LogTau=[log_tau],
+                                    ThetaRaw=[-float(Fraction(psi) * Fraction(slope))],
+                                    Inputs=[[.5 * psi]], Initial=[.5 * psi]))
+    assert all(math.isfinite(c[k]) for k in ['base', 'slope', 'candidate', 'expected_voltage'])
+result = {'method': 'Independent Python Decimal exp at 200 and 280 digits, stable endpoint formula, matching float64 rounding; Fraction for the declared stored local surrogate and subsequent one-step chain.',
+          'relative_gradient_tolerance': 1e-12, 'absolute_gradient_tolerance': 0,
+          'cases': cases, 'limits': 'Synthetic numerical reference, no biological or real-task quality conclusion.'}
+with (e / 'reference-input.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'reference_cases': len(cases), 'precision_checks': [200, 280],
+                  'input_sha256': hashlib.sha256((e / 'reference-input.json').read_bytes()).hexdigest()}))

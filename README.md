@@ -1,5 +1,7 @@
 # CoImNet
 
+有限尾端的閾值與梯度修正已通過完整工程驗收，工程需求恢復 91／91 passed。正常核心與測試用舊保存的接續結果保持，見 [ticket 116](docs/tickets/116-threshold-tail.md)及[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。這輪沒有新的任務辨識率或生物校準結果。
+
 **Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
 
 儲存庫提供通用 SDK、CLI 與驗證範例。使用者自己的任務程式、資料與訓練模型由使用者專案管理。本文的 `delayed`、`experiment` 套件與小型快照證據都是人工教學／測試範例，不是預訓練果蠅模型。

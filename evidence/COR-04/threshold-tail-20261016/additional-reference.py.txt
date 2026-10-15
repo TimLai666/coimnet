@@ -1,0 +1,38 @@
+"""Independent boundary coefficients, no production implementation import."""
+from decimal import Decimal, localcontext
+import json
+import math
+from pathlib import Path
+
+cases = []
+a = math.ldexp(1.0, 1023)
+for raw in [40., -40., 740., -740., 750., -750., 1000., -1000.]:
+    cases.append(('overflow-span-' + str(raw), -a, a, raw))
+cases.extend([
+    ('close-endpoints', 1e308, math.nextafter(1e308, math.inf), 40.),
+    ('positive-cutoff-before', 0., 2., math.nextafter(7., -math.inf)),
+    ('positive-cutoff', 0., 2., 7.),
+    ('negative-cutoff-before', 0., 2., math.nextafter(-700., math.inf)),
+    ('negative-cutoff', 0., 2., -700.),
+    ('subnormal-final', 0., 2., 740.),
+])
+out = []
+for name, lo, hi, raw in cases:
+    answers = []
+    for precision in [200, 280]:
+        with localcontext() as ctx:
+            ctx.prec = precision
+            lower, upper = Decimal.from_float(lo), Decimal.from_float(hi)
+            e = (-abs(Decimal.from_float(raw))).exp()
+            offset = (upper-lower)*e/(1+e)
+            value = upper-offset if raw >= 0 else lower+offset
+            slope = offset/(1+e)
+            answers.append((float(value), float(slope)))
+    assert answers[0] == answers[1], name
+    out.append(dict(name=name, minimum=lo, maximum=hi, raw=raw,
+                    base=answers[0][0], slope=answers[0][1]))
+target = Path(__file__).resolve().parent / 'additional-reference.json'
+with target.open('x') as handle:
+    json.dump({'precision': [200, 280], 'cases': out}, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'additional_coefficient_cases': len(out)}))

@@ -1,0 +1,20 @@
+"""Capture same-build controls with the pre-fix production source."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+root = Path(__file__).resolve().parents[3]
+evidence = Path(__file__).resolve().parent
+work = root / 'runs/.tmp/threshold-tail-20261016'
+base = json.loads((evidence / 'source-before.json').read_text())
+commands = [('go-version', ['go', 'version'])]
+for suffix, flags in [('', []), ('-race', ['-race'])]:
+    commands.extend([
+        ('core-before' + suffix, ['go', 'run', *flags, './runs/.tmp/threshold-tail-20261016/core-compat']),
+        ('chemical-resume-before' + suffix, ['go', 'run', *flags, './runs/.tmp/threshold-tail-20261016/chemical-compat', 'resume', str(work / ('chemical-models-race' if flags else 'chemical-models-ordinary'))]),
+    ])
+for label, command in commands:
+    for path, digest in base.items():
+        assert hashlib.sha256((root / path).read_bytes()).hexdigest() == digest, path
+    subprocess.run(['python3', str(evidence / 'run-command.py.txt'), label, *command], cwd=root, check=True)

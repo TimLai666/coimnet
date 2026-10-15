@@ -326,9 +326,9 @@ func TestThresholdRangeSaturationAndNormalControls(t *testing.T) {
 }
 
 func TestThresholdRangeExtremeSaturationControls(t *testing.T) {
-	// For the same overflowing span as the midpoint fixture, exp(-1000)
-	// underflows to zero.  Therefore raw=-1000 maps exactly to theta_min=-a,
-	// raw=+1000 maps exactly to theta_max=+a, and both sigmoid slopes are zero.
+	// For the same overflowing span as the midpoint fixture, the threshold
+	// rounds to the corresponding endpoint at raw=+/-1000. The scaled
+	// transform slope can remain representable even when exp(-1000) does not.
 	// At candidate 0, the lower endpoint emits one hard event and the upper
 	// endpoint emits none.  The surrogate derivative also underflows to zero at
 	// |u|=a, so the independently expected theta_raw gradient is exactly zero.

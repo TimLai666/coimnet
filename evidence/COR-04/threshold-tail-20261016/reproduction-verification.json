@@ -1,0 +1,34 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "reproduction_command": "python3 evidence/COR-04/threshold-tail-20261016/run-command.py.txt reproduction go run ./runs/.tmp/threshold-tail-20261016/probe evidence/COR-04/threshold-tail-20261016/reference-input.json",
+  "environment": {
+    "observed_at": "2026-10-15T19:06:20.270900+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "f8c4fc736ac77875729a3d562acaf54aeb4f75f4",
+    "base_source_manifest": "../../COR-09/surrogate-square-20261016/formal-source.json",
+    "scope": "Public CPU float64 mapping/gradient reference; no task-quality or biological claim"
+  },
+  "input_fingerprints": {
+    "probe.go.txt": "820ca271bc78e2f35863b28feca122c842673eeef2ca05fe9f32f02933f59f67",
+    "reference.py.txt": "f800e8f2cb90d776e7bd0b5693d2831c75687c4aac1d495b6b66ef5b6699013e",
+    "reference-input.json": "46e4f8aa121dd4a0071f165772fe7632645745c0ba44f16a02205fd55c0db876"
+  },
+  "observed_result": {
+    "confirmed": true,
+    "total": 18,
+    "forward_mismatch": 3,
+    "theta_gradient_mismatch": 12,
+    "wide_raw40_actual_theta_gradient": 0,
+    "wide_raw40_reference_theta_gradient": -4.248354255291589e+290,
+    "cause": "Stored sigmoid rounds toward 0/1 before affine threshold and analytic slope are evaluated; scaled coefficients and endpoint correction can remain representable."
+  },
+  "test_log": {
+    "path": "evidence/COR-04/threshold-tail-20261016/reproduction.log",
+    "sha256": "2750c9928920ad04618f74fa9a12e13bb40658dcdd1b3277d92e655549aa5dfe"
+  },
+  "limits": "Public CPU numerical cases; no task accuracy or biology result."
+}

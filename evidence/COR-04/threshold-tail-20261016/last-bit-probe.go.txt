@@ -1,0 +1,40 @@
+package main
+
+import (
+	"encoding/json"
+	"math"
+	"os"
+
+	"github.com/TimLai666/coimnet/internal/thresholdtail"
+)
+
+func main() {
+	var input struct {
+		Cases []struct {
+			Name    string  `json:"name"`
+			Minimum float64 `json:"minimum"`
+			Maximum float64 `json:"maximum"`
+			Raw     float64 `json:"raw"`
+			Base    float64 `json:"base"`
+			Slope   float64 `json:"slope"`
+		}
+	}
+	b, err := os.ReadFile(os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(b, &input); err != nil {
+		panic(err)
+	}
+	var rows []any
+	for _, c := range input.Cases {
+		base, slope, recovered := thresholdtail.Recover(c.Raw, c.Minimum, c.Maximum)
+		if !recovered || math.Float64bits(base) != math.Float64bits(c.Base) || math.Float64bits(slope) != math.Float64bits(c.Slope) {
+			panic(c.Name)
+		}
+		rows = append(rows, map[string]any{"name": c.Name, "base_bits": math.Float64bits(base), "slope_bits": math.Float64bits(slope), "reference_bits_equal": true})
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(rows); err != nil {
+		panic(err)
+	}
+}

@@ -1,0 +1,108 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "engineering_passed": true,
+  "verified_at": "2026-10-15T20:03:24.286606+00:00",
+  "reproduction_command": "Per-command receipts, baseline-controls.py.txt, candidate-commands.py.txt and engineering.py.txt retain exact commands; regression filter ^TestThresholdTail.",
+  "environment": {
+    "observed_at": "2026-10-15T19:06:20.270900+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "f8c4fc736ac77875729a3d562acaf54aeb4f75f4",
+    "base_source_manifest": "../../COR-09/surrogate-square-20261016/formal-source.json",
+    "scope": "Public CPU float64 mapping/gradient reference; no task-quality or biological claim",
+    "final_engineering_capability": "Local test TCP listeners and device access permitted after restricted-run failure; no system settings changed. See restricted-run.json and index-before/context.json."
+  },
+  "input_fingerprints": {
+    "base_commit": "f8c4fc736ac77875729a3d562acaf54aeb4f75f4",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "e1f595476d8198e387f3ce2e609f4d74d0d62da421ae6c56c6162635c3fd208f",
+    "frozen_tests": {
+      "files": {
+        "dynamics/threshold_tail_test.go": "5caee82f8f9074249207a86c103825290731b3abef4576b86b03b5a8665335dd",
+        "experiment/lif_threshold_tail_test.go": "5bf6bd8861c394c3e00160a7f23f5970ea1cc7973f09bf7bed16d1267efe1861"
+      },
+      "before_events": {
+        "regression-before": {
+          "pass": 75,
+          "fail": 194
+        },
+        "regression-before-race": {
+          "pass": 75,
+          "fail": 194
+        }
+      },
+      "root_review": "Full source read; corrected wrong report span and two-row spike expectation before red; no assertion weakened after implementation."
+    },
+    "reference_files": {
+      "reference-input.json": "46e4f8aa121dd4a0071f165772fe7632645745c0ba44f16a02205fd55c0db876",
+      "additional-reference.json": "d8b5271b104ccaf7fe0e8d242638e3e81d2c19e2e8586a000b675f95ff7e441f",
+      "last-bit-reference.json": "97ff1e05316f857a50f5ab81ccd8ccf97b5d25dd7f915faeefcffcd9edc139d5",
+      "last-bit-probe.go.txt": "746d8a5eb7d5e0b6dab333e70a3ca824eea5981cebe88bb4a3e5a68ee952c60a"
+    }
+  },
+  "observed_result": {
+    "source_count": 833,
+    "formal_go_files": 829,
+    "ordinary_test_events": {
+      "pass": 6383,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6382,
+      "skip": 23
+    },
+    "package_events_per_build": {
+      "pass": 58,
+      "skip": 4
+    },
+    "prior_terminal_events_unchanged_each_build": 6136,
+    "new_passing_regression_events_each_build": 269,
+    "normal_core_records_bytes_equal": 32,
+    "old_core_state_new_process_continuations": 32,
+    "old_chemical_model_new_process_continuations": 12,
+    "chemical_updates_after_resume_each": 1,
+    "public_cases": 18,
+    "forward_mismatch": 0,
+    "theta_gradient_mismatch": 0,
+    "last_bit_slope_bits_each_build": [
+      1,
+      1,
+      0,
+      0
+    ],
+    "approved_gain_range_checks_passed_each_build": [
+      "TestNeutralGainRejectsExcludedRange",
+      "TestNeutralGainRetainsValidRanges"
+    ],
+    "remaining_delivery": [
+      "commit and remote readback"
+    ],
+    "cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1702725267,
+      "owned_work_root_removed": true
+    },
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    }
+  },
+  "root_review": "root-review.md",
+  "candidate_acceptance": "candidate-verification.json",
+  "engineering_details": "engineering-verification.json",
+  "test_log": [
+    "regression-before.log",
+    "regression-before-race.log",
+    "regression-candidate.log",
+    "regression-candidate-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log",
+    "last-bit-final.log",
+    "last-bit-final-race.log"
+  ],
+  "limits": "macOS arm64 numerical and compatibility checks. No new real-task accuracy, biological completeness or absolute-zero-bug conclusion."
+}

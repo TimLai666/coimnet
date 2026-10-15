@@ -1,0 +1,23 @@
+from decimal import Decimal, localcontext
+import json
+import math
+from pathlib import Path
+
+a = math.ldexp(1., 1023)
+rows = []
+for raw in [1454.3, -1454.3, 1455., -1455.]:
+    answers = []
+    for precision in [200, 280]:
+        with localcontext() as ctx:
+            ctx.prec = precision
+            e = (-abs(Decimal.from_float(raw))).exp()
+            offset = 2*Decimal.from_float(a)*e/(1+e)
+            base = Decimal.from_float(a)-offset if raw >= 0 else -Decimal.from_float(a)+offset
+            answers.append((float(base), float(offset/(1+e))))
+    assert answers[0] == answers[1]
+    rows.append(dict(name='last-bit-' + str(raw), minimum=-a, maximum=a, raw=raw,
+                     base=answers[0][0], slope=answers[0][1]))
+with (Path(__file__).resolve().parent / 'last-bit-reference.json').open('x') as f:
+    json.dump({'precision': [200, 280], 'cases': rows}, f, indent=2)
+    f.write('\n')
+print(json.dumps({'cases': len(rows)}))

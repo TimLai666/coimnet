@@ -228,6 +228,8 @@ bundle 訓練的化學 resources 與 pending_feedback 必須有鍵，合法空�
 
 混合核心完整化學路徑的獨立參考使用測試私有前向微分，依方程式傳播每項參數的導數，與正式反向的方向和實作分開。硬事件值採 0／1、導數採宣告的 fast_sigmoid，硬重設停止事件導數，適應保留事件導數。不增加公開 smooth API，不用硬事件普通有限差分判錯。輸入／讀出跨 Insyra float32 邊界須另核對捨入誤差，範圍與驗收由[ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md)管理。
 
+有界閾值的 sigmoid 尾端以私有 `internal/thresholdtail` 共用計算。正參數從 7 起使用小補數，負參數從 -700 起在指數進入次正規數前先縮放跨度。必要時使用半指數乘積，跨度溢位時先合併已縮放的有限端點，再完成最後一次乘法，保留可表示的最後非零位元。一般算式、有限值拒絕與保存格式保持。LIF 一般／分段／耦合、Mixed 與持續模擬使用相同規則，人工閾值範例報告沿用這個轉換。驗收見[ticket 116](docs/tickets/116-threshold-tail.md)。
+
 LIF 與混合核心的 `fast_sigmoid` 保留正常的 `1/(den*den)` 算式。有限 `den` 的平方先溢位而局部斜率仍可表示時，共用私有 helper 以原分母精確平方、取倒數，再一次捨入為 float64。`den >= 2^538` 時局部斜率必定低於最小次正規數的一半，直接為零。這只恢復宣告的局部替代梯度，不改後續反向的浮點儲存政策。數值、一般／重算／化學耦合與舊保存對照見[ticket 115](docs/tickets/115-surrogate-extreme-audit.md)。
 
 ## 機制與品質缺陷稽核（2026-10-13）
