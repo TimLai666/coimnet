@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 118](docs/tickets/118-signed-gradient-finite.md) 的共用固定符號梯度有限值修正已通過完整工程驗收。834 份來源的一般／競態各 58 套件通過，6,455／6,454 pass、22／23 skip、零失敗，原有各 6,405 個終端事件保持，只新增 72 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及 31 項治理通過，正常核心、舊神經狀態與舊化學模型的 32／32／12 組接續結果保持。COR-08 恢復 passed，最新 91／91 工程需求 passed。見[驗收](evidence/COR-08/signed-gradient-overflow-20261016/verification.json)。最後 31 項治理通過，本輪 1,726,991,821 bytes 暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-08/signed-gradient-overflow-20261016/cleanup.json)。本票完成 3／4，遠端交付尚待完成，整體零 bug 目標持續。
+
 [ticket 117](docs/tickets/117-state-parity.md) 已完成 4／4。一般／競態各 96 組混合神經元案例、3,744 個接續點與 80 次節點改編號對照相同，各機制關閉後都改變輸出，沒有確認新的核心缺陷。833 份正式來源相同，沿用既有完整驗收，這輪另通過診斷 vet 與 31 項治理。91／91 工程需求保持 passed，845,159,670 bytes 暫存已清除，原模型、資料、原始模組與其他工作保持。提交 `f12db13` 已推送且遠端讀回相同，833 份來源與 46 個交付檔案的提交內容相符，見[驗收](evidence/COR-04/state-parity-20261016/verification.json)、[清理](evidence/COR-04/state-parity-20261016/cleanup.json)及[交付](evidence/COR-04/state-parity-20261016/delivery.json)。下一個可驗證成果是非零化學與來源歷史下，一般訓練和分段重算的完整更新對照，尚未確認新缺陷。整體零 bug 目標保持進行中。
 
 [ticket 116](docs/tickets/116-threshold-tail.md) 已完成 5／5。833 份來源的一般／競態各 58 套件通過，6,383／6,382 個事件成功、22／23 個略過、零失敗，原有各 6,136 個終端事件保持，新增各 269 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及最後 31 項治理通過，見[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。32 份正常核心、32 次舊神經狀態與 12 次舊化學模型接續相同。COR-04／09 恢復 passed，目前 91／91 工程需求 passed。必要 25 個工作檔已封存，本輪 1,702,725,267 bytes 暫存已清除，原模型、資料、原始模組及其他工作保持，見[清理](evidence/COR-04/threshold-tail-20261016/cleanup.json)。修正 `475cc75` 與回歸／證據 `1f644f7` 已推送且遠端讀回相同，833 份提交來源及 963 個唯一提交內容指紋相符，見[交付](evidence/COR-04/threshold-tail-20261016/delivery.json)。整體零 bug 目標保持進行中。

@@ -1,0 +1,90 @@
+{
+  "requirement": [
+    "COR-08"
+  ],
+  "engineering_passed": true,
+  "verified_at": "2026-10-15T21:27:36.446472+00:00",
+  "reproduction_command": "Exact per-command receipts, controls.py.txt and engineering.py.txt; regression filter ^TestFixedSignGradient.",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "go": "go version go1.26.5 darwin/arm64",
+    "base_commit": "6ea2b05dc94eb7c53f2fe2a33f59aeb180afd65f",
+    "settings": "command-environment.json",
+    "scope": "Local CPU finite-gradient validation; large finite artificial parameters; no model-quality claim"
+  },
+  "input_fingerprints": {
+    "base_commit": "6ea2b05dc94eb7c53f2fe2a33f59aeb180afd65f",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "2daf901db0a30012cfb47358dd2014109f467b321d2d377f89f392acd7839a3c",
+    "frozen_tests": {
+      "frozen_at": "2026-10-15T20:52:23.011388+00:00",
+      "files": {
+        "learning/signed_gradient_finite_test.go": "58c8657d62e90f0998786043a7c98aa9717d381afbf5c7cd8fcfdbcb5f5fa020"
+      },
+      "before_events": {
+        "regression-before": {
+          "fail": 17,
+          "pass": 55
+        },
+        "regression-before-race": {
+          "fail": 17,
+          "pass": 55
+        }
+      },
+      "root_review": "Read all 513 lines; requested independent API subtests, finite direct-core proof, three-API finite controls, Close and pending-accumulator assertions before red. All 12 leaf public API cases fail for the expected missing numerical error; Trainer protections and finite controls pass. No implementation changes yet."
+    },
+    "decimal_reference_sha256": "d1b599d4abbfc08aeaf05daa7867e1804b6cafaf297f171ed94120e29f54ac63"
+  },
+  "observed_result": {
+    "source_count": 834,
+    "formal_go_files": 830,
+    "ordinary_test_events": {
+      "pass": 6455,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6454,
+      "skip": 23
+    },
+    "package_events_each_build": {
+      "pass": 58,
+      "skip": 4
+    },
+    "prior_terminal_events_unchanged_each_build": 6405,
+    "new_passing_regression_events_each_build": 72,
+    "public_overflow_rejections_each_build": 3,
+    "finite_controls_unchanged_each_build": 2,
+    "normal_core_records_equal_total": 32,
+    "old_core_state_continuations_equal_total": 32,
+    "old_chemical_continuations_with_one_update_equal_total": 12,
+    "neutral_gain_checks_passed_each_build": [
+      "TestNeutralGainRejectsExcludedRange",
+      "TestNeutralGainRetainsValidRanges"
+    ],
+    "remaining_delivery": [
+      "commit and remote readback"
+    ],
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "pass_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1726991821
+    }
+  },
+  "candidate_acceptance": "candidate-verification.json",
+  "engineering_details": "engineering-verification.json",
+  "root_review": "root-review.md",
+  "test_log": [
+    "regression-before.log",
+    "regression-before-race.log",
+    "regression-candidate.log",
+    "regression-candidate-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "limits": "macOS arm64 numerical and saved-fixture compatibility. No new real-task quality, biological calibration or absolute-zero-bug conclusion."
+}

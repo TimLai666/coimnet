@@ -1,0 +1,31 @@
+{
+  "requirement": [
+    "COR-08"
+  ],
+  "engineering_passed": false,
+  "verified_at": "2026-10-15T20:47:39.958011+00:00",
+  "reproduction_command": [
+    "go run ./runs/.tmp/signed-gradient-overflow-20261016/probe",
+    "go run -race ./runs/.tmp/signed-gradient-overflow-20261016/probe"
+  ],
+  "environment": "environment.json",
+  "input_fingerprints": {
+    "base_commit": "6ea2b05dc94eb7c53f2fe2a33f59aeb180afd65f",
+    "formal_source": "../../COR-04/threshold-tail-20261016/formal-source.json",
+    "probe_sha256": "a5ddb97b643de60e192e372aa19c3358a63a19a83725155f71cfecfd2f08ac41",
+    "product_reference": "product-reference.json"
+  },
+  "observed_result": {
+    "public_violations": 3,
+    "finite_controls": 2,
+    "both_builds_bytes_equal": true,
+    "direct_core_all_finite": true,
+    "root_cause": "Shared reverse applies dL/drho=dL/dw*w without checking the finite product. Direct core results and selected float32 boundaries remain finite.",
+    "severity": "P2; extreme but valid finite parameters can return infinite public gradients with nil error. Active-gradient Trainer norm already rejects Inf."
+  },
+  "test_log": [
+    "reproduction.log",
+    "reproduction-race.log"
+  ],
+  "limits": "Artificial numerical failure; no new task-quality conclusion."
+}

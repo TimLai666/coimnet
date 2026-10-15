@@ -1,0 +1,96 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"os"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func finite(values []float64) bool {
+	for _, v := range values {
+		if math.IsInf(v, 0) || math.IsNaN(v) {
+			return false
+		}
+	}
+	return true
+}
+
+func main() {
+	ctx := context.Background()
+	var results []map[string]any
+	violations := 0
+	for _, tc := range []struct {
+		name                string
+		raw, sign, upstream float64
+		fixed               bool
+	}{
+		{"positive-overflow", 370, 1, 1, true},
+		{"negative-overflow", 370, -1, 1, true},
+		{"negative-upstream", 370, 1, -1, true},
+		{"large-finite", 300, 1, 1, true},
+		{"free-parameter-control", 370, 1, 1, false},
+	} {
+		core := dynamics.Config{Nodes: 3, Sources: []int{0, 1}, Targets: []int{1, 2}, Delays: []int{0, 0}, DT: 1, Activation: "tanh"}
+		c := learning.Config{Dynamics: core, InputSize: 1, OutputSize: 1, InputNodes: []int{2}, ReadoutNodes: []int{2}}
+		w := math.Exp(tc.raw)
+		p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{tc.raw, tc.raw}, Bias: []float64{1e160, -tc.sign * w, 0}, LogTau: []float64{math.Log(.001), math.Log(.001), math.Log(.001)}}, Encoder: []float64{1}, Readout: []float64{1}}
+		if tc.fixed {
+			c.EdgeSigns = []int8{int8(tc.sign), 1}
+		} else {
+			p.Core.Weights = []float64{tc.sign * w, w}
+		}
+		before, _ := json.Marshal([]any{c, p})
+		effective, err := learning.EffectiveWeights(c, p)
+		if err != nil {
+			panic(err)
+		}
+		model, err := dynamics.NewContinuous(core)
+		if err != nil {
+			panic(err)
+		}
+		cp := p.Core
+		cp.Weights = effective
+		trace, err := model.Forward(ctx, cp, []float64{0, 0, 0}, [][]float64{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}})
+		if err != nil {
+			panic(err)
+		}
+		cg, err := model.Backward(ctx, trace, [][]float64{{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, tc.upstream}}, 2)
+		if err != nil {
+			panic(err)
+		}
+		coreFinite := finite(cg.Weights) && finite(cg.Bias) && finite(cg.LogTau) && finite(cg.Initial)
+		for _, row := range cg.Inputs {
+			coreFinite = coreFinite && finite(row)
+		}
+		if !coreFinite {
+			panic("direct core gradient is not finite")
+		}
+		network, err := learning.NewNetwork(c)
+		if err != nil {
+			panic(err)
+		}
+		input, upstream := [][]float64{{0}, {0}, {0}, {0}}, [][]float64{{0}, {0}, {0}, {tc.upstream}}
+		g, publicError := network.LossGradientFrom(ctx, p, input, upstream, 2)
+		after, _ := json.Marshal([]any{c, p})
+		if string(before) != string(after) {
+			panic("caller arguments changed")
+		}
+		publicFinite := finite(g.Core.Weights)
+		bad := publicError == nil && !publicFinite
+		if bad {
+			violations++
+		}
+		row := map[string]any{"name": tc.name, "direct_core_finite": coreFinite, "direct_core_weight_gradient": fmt.Sprint(cg.Weights), "effective_weights": fmt.Sprint(effective), "public_weight_gradient": fmt.Sprint(g.Core.Weights), "public_error": fmt.Sprint(publicError), "public_finite": publicFinite, "zero_gradient_on_error": publicError == nil || reflect.DeepEqual(g, learning.Gradient{}), "violation": bad, "core_outputs": trace.Outputs()}
+		results = append(results, row)
+	}
+	json.NewEncoder(os.Stdout).Encode(map[string]any{"violations": violations, "results": results})
+	if violations > 0 {
+		os.Exit(3)
+	}
+}

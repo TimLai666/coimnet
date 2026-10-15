@@ -1,0 +1,33 @@
+"""Run final governance from the already verified root test binary."""
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/signed-gradient-overflow-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = json.loads((E / "formal-source.json").read_text())
+assert all(sha(R / p) == h for p, h in source.items())
+binary = W / "final-root.test"
+assert sha(binary) == json.loads((E / "closure-binary.json").read_text())["sha256"]
+env = dict(os.environ)
+env.update(json.loads((E / "command-environment.json").read_text()))
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+command = [str(binary), "-test.v", "-test.count=1", "-test.run=" + pattern]
+log = E / "final-governance.log"
+with log.open("xb") as f:
+    code = subprocess.run(command, cwd=R, env=env, stdout=f, stderr=subprocess.STDOUT).returncode
+lines = log.read_text().splitlines()
+passed = sum(x.lstrip().startswith("--- PASS:") for x in lines)
+top = sum(x.startswith("--- PASS:") for x in lines)
+result = {"at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "command": command, "exit_code": code, "passed_events": passed, "top_level_pass": top, "log": log.name, "log_sha256": sha(log), "source_count": len(source)}
+with (E / "final-governance.json").open("x") as f:
+    json.dump(result, f, indent=2)
+    f.write("\n")
+assert code == 0 and passed == 31 and top == 11, result
+assert all(sha(R / p) == h for p, h in source.items())
+print(json.dumps(result))

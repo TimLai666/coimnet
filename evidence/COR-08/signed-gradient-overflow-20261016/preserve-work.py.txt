@@ -1,0 +1,36 @@
+"""Preserve the exact diagnostic sources and old inputs before owned cleanup."""
+import hashlib
+import json
+from pathlib import Path
+import tarfile
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/signed-gradient-overflow-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino == json.loads((E / "baseline.json").read_text())["work_inode"]
+files = [W / "module-originals.json", W / "probe/main.go", W / "core-compat/main.go", W / "chemical-compat/main.go"]
+for folder in ["chemical-models-ordinary", "chemical-models-race"]:
+    group = sorted((W / folder).glob("*.json"))
+    assert len(group) == 6
+    files.extend(group)
+items = {str(p.relative_to(W)): {"bytes": p.stat().st_size, "sha256": sha(p)} for p in files}
+assert len(items) == 16
+old = json.loads((E / "compatibility-input.json").read_text())
+assert sha(R / old["source_archive"]) == old["source_archive_sha256"]
+assert all(items[name] == item for name, item in old["files"].items())
+archive = E / "preserved-work.tar.gz"
+with archive.open("xb") as raw:
+    with tarfile.open(fileobj=raw, mode="w:gz") as handle:
+        for p in files:
+            handle.add(p, arcname=str(p.relative_to(W)), recursive=False)
+with tarfile.open(archive) as handle:
+    assert set(handle.getnames()) == set(items)
+    for name, item in items.items():
+        b = handle.extractfile(name).read()
+        assert len(b) == item["bytes"] and hashlib.sha256(b).hexdigest() == item["sha256"]
+assert all(sha(W / name) == item["sha256"] for name, item in items.items())
+with (E / "work-preservation.json").open("x") as f:
+    json.dump({"archive": archive.name, "archive_bytes": archive.stat().st_size, "archive_sha256": sha(archive), "files": items}, f, indent=2)
+    f.write("\n")
+print(json.dumps({"necessary_files_preserved": len(items), "archive_bytes": archive.stat().st_size}))

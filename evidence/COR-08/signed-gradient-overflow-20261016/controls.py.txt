@@ -1,0 +1,18 @@
+"""Repeat public failure and same-build compatibility controls after the patch."""
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = "./runs/.tmp/signed-gradient-overflow-20261016"
+for suffix, flags, models in [("", [], "ordinary"), ("-race", ["-race"], "race")]:
+    commands = [
+        ("reproduction-candidate" + suffix, ["go", "run", *flags, W + "/probe"]),
+        ("core-candidate" + suffix, ["go", "run", *flags, W + "/core-compat"]),
+        ("state-resume" + suffix, ["go", "run", *flags, W + "/core-compat", "resume", str(E / ("core-before" + suffix + ".log"))]),
+        ("chemical-candidate" + suffix, ["go", "run", *flags, W + "/chemical-compat", "resume", W + "/chemical-models-" + models]),
+    ]
+    for label, command in commands:
+        subprocess.run([sys.executable, str(E / "run-command.py.txt"), label, *command], cwd=R, check=True)

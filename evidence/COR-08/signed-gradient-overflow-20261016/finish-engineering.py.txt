@@ -1,0 +1,81 @@
+"""Accept the final source only after all engineering and compatibility gates."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip evidence checks")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/signed-gradient-overflow-20261016"
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = read(E / "formal-source.json")
+assert len(source) == len(read(E / "source-before.json")) + 1 == 834
+paths = subprocess.check_output(["git", "ls-files", "--cached", "--others", "--exclude-standard", "-z", "--", "*.go", "go.mod", "go.sum"], cwd=R).split(b"\0")
+assert {p.decode() for p in paths if p} == set(source)
+assert all(sha(R / p) == h for p, h in source.items())
+assert all(sha(R / p) == h for p, h in read(E / "frozen-test.json")["files"].items())
+engineering = read(E / "engineering-verification.json")
+assert engineering["all_passed"] and len(engineering["steps"]) == 9
+for step in engineering["steps"]:
+    assert step["exit_code"] == 0 and not step["acceptance_errors"]
+    assert sha(E / step["log"]) == step["log_sha256"]
+candidate = read(E / "candidate-verification.json")
+assert candidate["all_passed"] and candidate["source_count"] == len(source)
+assert candidate["regression_events_each_build"] == {"pass": 72}
+gain_checks = ["TestNeutralGainRejectsExcludedRange", "TestNeutralGainRetainsValidRanges"]
+for label in ["unit", "race"]:
+    step = read(E / ("engineering-" + label + ".json"))
+    assert step["package_events"] == {"pass": 58, "skip": 4}
+    assert step["prior_event_count"] == 6405 and not step["changed_events"]
+    assert len(step["added_events"]) == 72
+    assert all(x["action"] == "pass" and x["test"].startswith("TestFixedSignGradient") for x in step["added_events"])
+    events = [json.loads(line) for line in gzip.decompress((E / step["log"]).read_bytes()).splitlines()]
+    for test in gain_checks:
+        assert any(x.get("Package") == "github.com/TimLai666/coimnet/modulation" and x.get("Test") == test and x.get("Action") == "pass" for x in events), test
+result = {
+    "requirement": ["COR-08"], "engineering_passed": True,
+    "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "reproduction_command": "Exact per-command receipts, controls.py.txt and engineering.py.txt; regression filter ^TestFixedSignGradient.",
+    "environment": read(E / "environment.json"),
+    "input_fingerprints": {"base_commit": read(E / "baseline.json")["head"], "formal_source": "formal-source.json", "formal_source_sha256": sha(E / "formal-source.json"), "frozen_tests": read(E / "frozen-test.json"), "decimal_reference_sha256": sha(E / "product-reference.json")},
+    "observed_result": {
+        "source_count": len(source), "formal_go_files": engineering["formal_go_files"],
+        "ordinary_test_events": read(E / "engineering-unit.json")["test_events"],
+        "race_test_events": read(E / "engineering-race.json")["test_events"],
+        "package_events_each_build": {"pass": 58, "skip": 4},
+        "prior_terminal_events_unchanged_each_build": 6405,
+        "new_passing_regression_events_each_build": 72,
+        "public_overflow_rejections_each_build": 3, "finite_controls_unchanged_each_build": 2,
+        "normal_core_records_equal_total": 32, "old_core_state_continuations_equal_total": 32,
+        "old_chemical_continuations_with_one_update_equal_total": 12,
+        "neutral_gain_checks_passed_each_build": gain_checks,
+        "remaining_delivery": ["final governance", "owned temporary cleanup", "commit and remote readback"]
+    },
+    "candidate_acceptance": "candidate-verification.json", "engineering_details": "engineering-verification.json", "root_review": "root-review.md",
+    "test_log": ["regression-before.log", "regression-before-race.log", "regression-candidate.log", "regression-candidate-race.log", "engineering-unit.log.gz", "engineering-race.log.gz", "engineering-governance.log"],
+    "limits": "macOS arm64 numerical and saved-fixture compatibility. No new real-task quality, biological calibration or absolute-zero-bug conclusion."
+}
+with (E / "verification.json").open("x") as f:
+    json.dump(result, f, indent=2)
+    f.write("\n")
+p = R / "docs/requirements-status.json"
+raw = p.read_bytes()
+status = json.loads(raw)
+items = [x for x in status["requirements"] if x["id"] == "COR-08"]
+assert len(items) == 1 and items[0]["status"] == "failed"
+items[0]["status"] = "passed"
+items[0]["evidence"].append("../evidence/COR-08/signed-gradient-overflow-20261016/verification.json")
+assert p.read_bytes() == raw
+p.write_text(json.dumps(status, ensure_ascii=False, indent=2) + "\n")
+assert collections.Counter(x["status"] for x in status["requirements"]) == {"passed": 91}
+binary = W / "final-root.test"
+with (E / "closure-binary.json").open("x") as f:
+    json.dump({"path": binary.name, "bytes": binary.stat().st_size, "sha256": sha(binary)}, f, indent=2)
+    f.write("\n")
+print(json.dumps({"engineering_passed": True, "source_count": len(source), "requirements": "91/91 passed"}))
