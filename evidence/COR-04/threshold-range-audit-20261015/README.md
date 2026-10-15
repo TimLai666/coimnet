@@ -36,6 +36,8 @@
 
 本輪主暫存已清除 1,707,216,011 bytes，見 [清理回條](cleanup.json)。清除前兩次核對完整內容與開啟狀態，18 個原模型檔、兩個原有暫存目錄及 41,797 個唯讀連結來源保持。清理後最後 11 項治理檢查、31 個測試事件通過，見 [回條](final-validation/governance-post-cleanup.json)。其 36,506,434 bytes 執行檔也已[清除](smoke-cleanup.json)，本輪兩個暫存目錄都已不存在，合計清除 1,743,722,445 bytes，沒有重建 Go 快取。
 
+修正 `29dffdc` 與回歸／證據 `b433d26` 已正常推送到 `codex/receptor-chemistry-training`，遠端讀回相同，見[交付回條](delivery.json)與[完整檔案清單](changes.md)。812 份提交來源與完整驗證的指紋相同。本票完成 5／5，整體零 bug 與長期品質目標繼續追蹤。
+
 ## 執行環境與分工
 
 宿主為 Codex，Go `1.26.5`、macOS arm64、Apple M3。執行工作與全部快取均位於本專案的 `runs/.tmp/`，使用唯讀連結的既有固定模組。沒有執行 SSH 或網路磁碟壓力測試。
