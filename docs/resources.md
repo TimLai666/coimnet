@@ -255,12 +255,13 @@ OPS-06 已提供依展開組態估算啟動前記憶體並在超額時拒絕執�
 
 ## 重現局部量測
 
-依 README 建置後，macOS 可執行：
+依 README 建置後，在專案根目錄執行，macOS 可使用：
 
 ```sh
-run_dir=$(mktemp -d)
+mkdir -p runs/.tmp
+run_dir=$(mktemp -d "$PWD/runs/.tmp/resource-profile.XXXXXX")
 /usr/bin/time -l ./bin/coimnet train delayed --steps 600 \
   --checkpoint "$run_dir/example.json" > "$run_dir/result.json" 2> "$run_dir/time.log"
 ```
 
-Linux 使用 GNU `/usr/bin/time -v`，其 maximum resident set size 單位為 KiB，轉成 bytes 時乘以 1024。每次使用新目錄，連做至少三次，保留全部結果及 `coimnet doctor`。檢查資料時改用 `data inspect` 及實際原件路徑，記錄檔案指紋與快取條件。量測結果和範例快照留在指定目錄，不作使用者的模型發布。
+Linux 使用 GNU `/usr/bin/time -v`，其 maximum resident set size 單位為 KiB，轉成 bytes 時乘以 1024。每次使用新目錄，連做至少三次，保留全部結果及 `coimnet doctor`。檢查資料時改用 `data inspect` 及實際原件路徑，記錄檔案指紋與快取條件。核對量測結果、範例快照與日誌後，先將必要成果保存到專案內指定的 runs 子目錄，再清除本次 run_dir 暫存目錄。範例快照不作使用者的模型發布。

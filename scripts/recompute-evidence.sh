@@ -15,7 +15,7 @@ Usage: scripts/recompute-evidence.sh [--scale small|full] [--out FILE]
                       the current directory. An existing file is replaced.
 
 Builds the learning test binary with go test -c into a mktemp directory under
-.recompute-work at the repository root, then runs TestRecomputeRSSHelper four
+runs/.tmp at the repository root, then runs TestRecomputeRSSHelper four
 times, each in its own process under /usr/bin/time -l (macOS) or -v (Linux):
 the continuous and the LIF core, each with the full reverse history and with
 Recompute{SegmentSteps: 16}, over T = 256 steps with 8 in-edges per node.
@@ -23,7 +23,7 @@ The document keeps every run's JSON line plus max_rss_bytes, and per core the
 two maxima, their difference (saving_bytes) and whether both modes produced
 the same parameters. A failing run stops the script with a nonzero exit and
 prints that run's stdout and stderr; no document is written then. The mktemp
-directory, and .recompute-work once empty, are removed on exit.
+directory is removed on exit; the shared runs/.tmp directory is retained.
 Requires Go on PATH and /usr/bin/time.
 USAGE
 }
@@ -96,17 +96,17 @@ json_string() {
   printf '"%s"' "$value"
 }
 
-work_root="$repo_root/.recompute-work"
+work_root="$repo_root/runs/.tmp"
 work=""
 cleanup() {
-  if [[ -n $work ]]; then rm -rf "$work"; fi
-  rmdir "$work_root" 2>/dev/null || true
+  if [[ -n $work && $work == "$work_root"/recompute-rss.* ]]; then rm -rf "$work"; fi
+  # Keep the shared temporary root and any other work it contains.
 }
 trap cleanup EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 mkdir -p "$work_root"
-work=$(mktemp -d "$work_root/run.XXXXXX")
+work=$(mktemp -d "$work_root/recompute-rss.XXXXXX")
 binary="$work/learning.test"
 go test -c -o "$binary" ./learning/
 
