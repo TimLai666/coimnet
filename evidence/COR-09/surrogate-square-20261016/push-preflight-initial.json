@@ -1,0 +1,98 @@
+{
+  "exit_code": 1,
+  "reason": "credential-shaped substring requires local classification",
+  "matches": [
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\"}\n{\"Time\":\"2026-10-16T02:26:56.455997+08:00\",\"Act"
+    },
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Output\":\"=== RUN   TestContinualOwnershipReport"
+    },
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\\n\"}\n{\"Time\":\"2026-10-16T02:26:56.46609+08:00\",\"Ac"
+    },
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Output\":\"--- PASS: TestContinualOwnershipReport"
+    },
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE] (0.01s)\\n\"}\n{\"Time\":\"2026-10-16T02:26:56.466106+0"
+    },
+    {
+      "file": "engineering-race.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Elapsed\":0.01}\n{\"Time\":\"2026-10-16T02:26:56.466"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\"}\n{\"Time\":\"2026-10-16T02:16:51.33187+08:00\",\"Acti"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Output\":\"=== RUN   TestContinualOwnershipReport"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\\n\"}\n{\"Time\":\"2026-10-16T02:16:51.333905+08:00\",\"A"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Output\":\"--- PASS: TestContinualOwnershipReport"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE] (0.00s)\\n\"}\n{\"Time\":\"2026-10-16T02:16:51.333939+0"
+    },
+    {
+      "file": "engineering-unit.log.gz",
+      "pattern": 2,
+      "bytes": 27,
+      "sha256": "e9a1fee627833978cc0af103ba5aeaa6f6de4c500dc5f14bf4f3735b0e103963",
+      "masked_context": "eportMutationDoesNotRewriteCallerOrSecondReport/ta[REDACTED_CANDIDATE]\",\"Elapsed\":0}\n{\"Time\":\"2026-10-16T02:16:51.333944"
+    }
+  ],
+  "classification": {
+    "result": "false positive: sk- substring inside a task-prefixed public test case label",
+    "source": "experiment/continual_ownership_test.go",
+    "line": 126,
+    "exact_label": "task-params-map-insert-delete",
+    "all_matches_have_known_substring_hash": true,
+    "correction": "Require a token boundary before the sk- credential prefix; retain full raw logs and all credential signatures."
+  }
+}

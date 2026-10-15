@@ -1,0 +1,33 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "reproduction_command": "python3 evidence/COR-09/surrogate-square-20261016/run-command.py.txt reproduction go run ./runs/.tmp/surrogate-square-20261016/probe",
+  "environment": {
+    "observed_at": "2026-10-15T18:03:08.266330+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "9a399f145d2eedaecd116fd1b62fc60a68eced1f",
+    "base_source_manifest": "../event-adjoint-20261016/formal-source.json",
+    "scope": "CPU float64 public numerical probe; no task-quality or biological claim"
+  },
+  "input_fingerprints": {
+    "probe.go.txt": "1dff928521599bfd9273e4902a7255675a3ccb1f20bfc236070fd1758561a455"
+  },
+  "observed_result": {
+    "confirmed": true,
+    "signs": [
+      1,
+      -1
+    ],
+    "actual_bias": 0,
+    "reference_bias": 0.0049999999999999845,
+    "local_slope": 1e-310,
+    "cause": "finite denominator square overflows before reciprocal"
+  },
+  "test_log": {
+    "path": "evidence/COR-09/surrogate-square-20261016/reproduction.log",
+    "sha256": "99939d952bcda4894afdf5c4ce05cb6e7e650813b768cc7311ac62ed1e4730c8"
+  }
+}

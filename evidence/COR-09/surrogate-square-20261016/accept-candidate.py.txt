@@ -1,0 +1,81 @@
+"""Validate candidate records without changing the frozen checks."""
+import collections
+import datetime
+import hashlib
+import json
+import math
+from pathlib import Path
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = json.loads((e / 'formal-source.json').read_text())
+assert len(source) == 830
+for path, digest in source.items():
+    assert sha(r / path) == digest, path
+frozen = json.loads((e / 'frozen-test.json').read_text())
+assert sha(r / frozen['file']) == frozen['sha256']
+
+def log(label):
+    receipt = json.loads((e / (label + '.json')).read_text())
+    p = e / receipt['log']
+    assert receipt['exit_code'] == 0 and sha(p) == receipt['log_sha256']
+    return p.read_bytes()
+
+def numbers(raw):
+    # Keep the exact Go JSON number token, including negative zero.
+    return json.loads(raw, parse_float=lambda s: ('number', s), parse_int=lambda s: ('number', s))
+
+comparisons = []
+for suffix in ['', '-race']:
+    raw = log('regression-candidate' + suffix)
+    terminal = [x for line in raw.splitlines() if (x := json.loads(line)).get('Test') and x.get('Action') in ['pass', 'skip', 'fail']]
+    assert collections.Counter(x['Action'] for x in terminal) == {'pass': 51}
+    for kind, records in [('core', 16), ('chemical-resume', 6)]:
+        before = log(kind + '-before' + suffix)
+        after = log(kind + '-candidate' + suffix)
+        assert before == after, (kind, suffix)
+        assert len(json.loads(before)) == records
+        comparisons.append({'before': kind + '-before' + suffix + '.log',
+                            'after': kind + '-candidate' + suffix + '.log',
+                            'records': records, 'bytes_equal': True})
+    old = numbers(log('core-before' + suffix))
+    resumed = numbers(log('core-state-resume-candidate' + suffix))
+    assert resumed == [row['Continued'] for row in old]
+
+public = json.loads(log('reproduction-candidate'))
+assert len(public) == 2
+for row in public:
+    assert row['matches_reference_bias'] and row['gradient']['Bias'][0] > 0
+    def close(got, want):
+        if isinstance(want, list):
+            assert len(got) == len(want)
+            for a, b in zip(got, want):
+                close(a, b)
+        else:
+            assert math.isfinite(got) and math.isclose(got, want, rel_tol=1e-15, abs_tol=1e-15), (got, want)
+    for key, expected in row['reference'].items():
+        close(row['gradient'][key], expected)
+
+result = {'all_passed': True, 'observed_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'source_manifest': 'formal-source.json', 'source_count': len(source), 'frozen_test': 'frozen-test.json',
+          'regression_events_each_build': {'pass': 51}, 'comparisons': comparisons,
+          'normal_core_records_bytes_equal': 32, 'old_core_state_new_process_continuations': 32,
+          'old_chemical_model_new_process_continuations': 12,
+          'old_chemical_model_training_updates_after_resume_each': 1,
+          'core_continuation_comparison': 'Exact Go JSON numeric tokens, retaining negative zero',
+          'public_positive_and_negative_reverse_fields_match_reference': True,
+          'limits': 'Synthetic numerical and compatibility controls; no task-quality or biological claim.'}
+with (e / 'candidate-verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+p = r / 'docs/requirements-status.json'
+raw = p.read_bytes()
+status = json.loads(raw)
+for item in status['requirements']:
+    if item['id'] in ['COR-04', 'COR-09']:
+        assert item['status'] == 'failed'
+        item['status'] = 'implemented_unverified'
+assert p.read_bytes() == raw
+p.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'candidate_passed': True, 'regression_events_each_build': 51, 'normal_records': 32, 'old_neural_continuations': 32, 'old_chemical_continuations': 12}))

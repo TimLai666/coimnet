@@ -1,0 +1,29 @@
+"""Independent rational arithmetic for the public one-step reference."""
+from fractions import Fraction
+import json
+import math
+from pathlib import Path
+
+e = Path(__file__).resolve().parent
+rows = []
+actual = json.loads((e / 'reproduction.log').read_text())
+for input_value, observed in zip([2e155, -2e155], actual):
+    den = 1 + abs(.5 * input_value - 1)
+    exact_slope = 1 / (Fraction(den) ** 2)
+    slope = float(exact_slope)
+    du = 1e308 * slope
+    log_tau = float(Fraction(du) * Fraction(-input_value) * Fraction(.5 * math.log(2)))
+    expected = {'Weights': [], 'Bias': [.5 * du], 'LogTau': [log_tau],
+                'ThetaRaw': [-.5 * du], 'Inputs': [[.5 * du]], 'Initial': [.5 * du]}
+    assert expected == observed['reference']
+    assert slope == observed['independent_surrogate'] and slope > 0
+    assert observed['gradient']['Bias'] == [0]
+    assert all(math.isfinite(v) for key in ['Bias', 'LogTau', 'ThetaRaw', 'Initial'] for v in expected[key])
+    rows.append({'input': input_value, 'rounded_denominator': den,
+                 'exact_local_slope_fraction': str(exact_slope),
+                 'rounded_local_slope': slope, 'expected_gradient': expected})
+with (e / 'exact-reference.json').open('x') as handle:
+    json.dump({'method': 'Python Fraction over float64 input operands; local slope rounded once, then the declared reverse chain. Independent of Go production and test helpers.',
+               'rows': rows, 'limits': 'This reference fixes local float64 surrogate storage; it is not arbitrary-precision differentiation of the entire network.'}, handle, indent=2)
+    handle.write('\n')
+print('Independent Fraction reference agrees with both public probe references.')

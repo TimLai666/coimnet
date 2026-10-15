@@ -1,0 +1,29 @@
+"""Read-only verification of the repository named by the user's module."""
+import datetime
+import json
+from pathlib import Path
+import subprocess
+from urllib.parse import urlsplit
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+def output(args):
+    return subprocess.check_output(args, cwd=r, text=True).strip()
+remote = urlsplit(output(['git', 'remote', 'get-url', 'origin']))
+assert remote.scheme == 'https' and remote.hostname == 'github.com'
+assert remote.username is None and remote.password is None
+assert remote.path == '/TimLai666/coimnet.git'
+account = output(['gh', 'api', 'user', '--jq', '.login'])
+repo = json.loads(output(['gh', 'repo', 'view', 'TimLai666/coimnet', '--json', 'nameWithOwner,viewerPermission,url,owner']))
+assert account == 'TimLai666' and repo['nameWithOwner'] == 'TimLai666/coimnet'
+assert repo['owner']['login'] == account and repo['viewerPermission'] == 'ADMIN'
+result = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'account': account, 'repository': repo,
+          'remote': 'https://github.com/TimLai666/coimnet.git',
+          'branch': output(['git', 'branch', '--show-current']),
+          'head_before_delivery': output(['git', 'rev-parse', 'HEAD']),
+          'authorization': 'User-provided AGENTS.md authorizes verified CoImNet commits and pushes; module explicitly names TimLai666/coimnet.'}
+with (e / 'remote-target.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'account': account, 'repository': repo['nameWithOwner'], 'permission': repo['viewerPermission']}))

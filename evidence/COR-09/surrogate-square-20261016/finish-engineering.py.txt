@@ -1,0 +1,102 @@
+"""Restore requirement status only after the complete immutable-source gate."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip acceptance checks')
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+w = r / 'runs/.tmp/surrogate-square-20261016'
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = read(e / 'formal-source.json')
+assert len(source) == 830
+paths = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z', '--', '*.go', 'go.mod', 'go.sum'], cwd=r).split(b'\0')
+assert {p.decode() for p in paths if p} == set(source)
+for path, digest in source.items():
+    assert sha(r / path) == digest, path
+engineering = read(e / 'engineering-verification.json')
+assert engineering['all_passed'] and len(engineering['steps']) == 9
+for step in engineering['steps']:
+    assert step['exit_code'] == 0 and not step['acceptance_errors']
+    assert sha(e / step['log']) == step['log_sha256']
+unit = read(e / 'engineering-unit.json')
+race = read(e / 'engineering-race.json')
+assert unit['test_events'] == {'pass': 6114, 'skip': 22}
+assert race['test_events'] == {'pass': 6113, 'skip': 23}
+for result in [unit, race]:
+    assert result['package_events'] == {'pass': 58, 'skip': 3}
+    assert result['prior_event_count'] == 6085 and not result['changed_events']
+    assert len(result['added_events']) == 51
+    assert all(x['action'] == 'pass' and x['test'].startswith('TestSurrogateSquare') for x in result['added_events'])
+gain_checks = ['TestNeutralGainRejectsExcludedRange', 'TestNeutralGainRetainsValidRanges']
+for result in [unit, race]:
+    events = [json.loads(line) for line in gzip.decompress((e / result['log']).read_bytes()).splitlines()]
+    for name in gain_checks:
+        assert any(x.get('Package') == 'github.com/TimLai666/coimnet/modulation' and x.get('Test') == name and x.get('Action') == 'pass' for x in events), name
+candidate = read(e / 'candidate-verification.json')
+assert candidate['all_passed'] and candidate['source_count'] == len(source)
+assert candidate['regression_events_each_build'] == {'pass': 51}
+frozen = read(e / 'frozen-test.json')
+assert sha(r / frozen['file']) == frozen['sha256']
+result = {
+    'requirement': ['COR-04', 'COR-09'], 'engineering_passed': True,
+    'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'reproduction_command': 'Per-command receipts and baseline-controls.py.txt, candidate-commands.py.txt, engineering.py.txt retain exact commands; regression filter ^TestSurrogateSquare.',
+    'environment': read(e / 'environment.json'),
+    'input_fingerprints': {
+        'base_commit': read(e / 'baseline.json')['head'],
+        'formal_source': 'formal-source.json', 'formal_source_sha256': sha(e / 'formal-source.json'),
+        'frozen_test': frozen,
+        'independent_reference': 'exact-reference.json', 'independent_reference_sha256': sha(e / 'exact-reference.json'),
+        'protected_models': '../../MOD-04/lif-threshold-floor-20261015/protected-models.json',
+        'protected_data': '../../MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json',
+    },
+    'observed_result': {
+        'source_count': len(source),
+        'formal_go_files': len([p for p in source if p.endswith('.go') and not p.startswith('evidence/')]),
+        'ordinary_test_events': unit['test_events'], 'race_test_events': race['test_events'],
+        'package_events_per_build': unit['package_events'],
+        'prior_terminal_events_unchanged_each_build': 6085,
+        'new_passing_regression_events_each_build': 51,
+        'normal_core_records_bytes_equal': 32,
+        'old_core_state_new_process_continuations': 32,
+        'old_chemical_model_new_process_continuations': 12,
+        'chemical_training_updates_after_resume_each': 1,
+        'approved_gain_range_checks_passed_each_build': gain_checks,
+        'remaining_delivery': ['final governance', 'owned temporary cleanup', 'commit and remote readback'],
+    },
+    'root_review': 'root-review.md', 'candidate_acceptance': 'candidate-verification.json',
+    'engineering_details': 'engineering-verification.json',
+    'test_log': ['regression-before.log', 'regression-before-race.log', 'regression-candidate.log', 'regression-candidate-race.log', 'engineering-unit.log.gz', 'engineering-race.log.gz', 'engineering-governance.log'],
+    'limits': 'macOS arm64 numerical and compatibility checks. No real-task accuracy, biological completeness or absolute-zero-bug conclusion.',
+}
+with (e / 'verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+p = r / 'docs/requirements-status.json'
+raw = p.read_bytes()
+status = json.loads(raw)
+for item in status['requirements']:
+    if item['id'] in result['requirement']:
+        assert item['status'] == 'implemented_unverified'
+        item['status'] = 'passed'
+        item['evidence'].append('../evidence/COR-09/surrogate-square-20261016/verification.json')
+assert p.read_bytes() == raw
+p.write_text(json.dumps(status, ensure_ascii=False, indent=2) + '\n')
+assert collections.Counter(item['status'] for item in status['requirements']) == {'passed': 91}
+p = r / 'docs/tickets/115-surrogate-extreme-audit.md'
+raw = p.read_bytes()
+old = '- [ ] \u5b8c\u6210\u5fc5\u8981\u5de5\u7a0b\u9a57\u6536\u8207\u9700\u6c42\u8b49\u64da\u3002'.encode()
+assert raw.count(old) == 1 and p.read_bytes() == raw
+p.write_bytes(raw.replace(old, old.replace(b'[ ]', b'[x]')))
+binary = w / 'final-root.test'
+with (e / 'closure-binary.json').open('x') as handle:
+    json.dump({'path': binary.name, 'bytes': binary.stat().st_size, 'sha256': sha(binary)}, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'engineering_passed': True, 'source_count': len(source), 'requirement_status': '91/91 passed', 'ticket_verified': '4/5'}))

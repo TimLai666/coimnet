@@ -1,0 +1,60 @@
+"""List the complete owned delivery, excluding protected unrelated work."""
+import json
+from pathlib import Path
+import subprocess
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+target = e / 'changed-files.md'
+previous = target.read_bytes() if target.exists() else None
+summaries = {
+    'dynamics/lif.go': '僅在分母平方溢位時恢復局部斜率，釐清適應與慢速穩定的註解。',
+    'dynamics/mixed.go': '混合核心沿用相同的例外斜率恢復。',
+    'dynamics/surrogate_gradient.go': '共用私有倒數平方計算，真正下溢直接為零。',
+    'dynamics/surrogate_square_test.go': '凍結極端值、跨路徑、普通值及下溢控制，共 51 個測試事件。',
+    'docs/model-and-mechanisms.md': '依實作區分短期適應跨時間導數與慢速穩定常數。',
+    'docs/individual-state.md': '釐清同一回合內適應導數與個體狀態的關係。',
+    'ENG.md': '記錄局部替代梯度的例外數值計算契約。',
+    'delivery-status.md': '記錄本票驗收、清理與交付狀態。',
+    'docs/requirements-status.json': '連結 COR-04／09 的實際重現與驗收證據。',
+    'docs/tickets/115-surrogate-extreme-audit.md': '記錄根因、最小修正、驗收條件與五項完成狀態。',
+}
+files = set(summaries)
+files.update(str(p.relative_to(r)) for p in e.rglob('*') if p.is_file())
+files.add(str(target.relative_to(r)))
+foreign = {str(Path(p).relative_to(r)) for p in json.loads((e / 'foreign-before.json').read_text())}
+base = json.loads((e / 'baseline.json').read_text())['head']
+changed = set(subprocess.check_output(['git', 'diff', '--name-only', base, '-z'], cwd=r).decode().split('\0'))
+changed.update(subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '-z'], cwd=r).decode().split('\0'))
+changed.discard('')
+assert not (changed - files - foreign), changed - files - foreign
+assert not (files & foreign)
+rows = ['# 本輪檔案變更', '', '本表逐檔列出 ticket 115 的交付範圍。', '', '| 檔案 | 變更摘要 |', '|---|---|']
+for name in sorted(files):
+    p = r / name
+    assert p.is_file() or p == target, name
+    summary = summaries.get(name)
+    if summary is None:
+        if name.endswith('.log') or name.endswith('.log.gz'):
+            summary = '保留原始命令輸出。'
+        elif name.endswith('.py.txt'):
+            summary = '保存可重現的驗收、證據或清理程式。'
+        elif name.endswith('.go.txt'):
+            summary = '保存公開重現程式。'
+        elif p.name == 'preserved-work.tar.gz':
+            summary = '保存人工模型、修正前來源、驅動程式與原始模組指紋。'
+        elif p.name == 'cleanup-inventory.json.gz':
+            summary = '保存清理前逐項內容與指紋。'
+        elif p.name == 'changed-files.md':
+            summary = '逐檔列出本輪交付範圍。'
+        else:
+            summary = '記錄計畫、審查、指紋或實際驗證結果。'
+    rows.append('| [' + name + '](' + str(p) + ') | ' + summary + ' |')
+if previous is None:
+    assert not target.exists()
+    with target.open('x') as handle:
+        handle.write('\n'.join(rows) + '\n')
+else:
+    assert target.read_bytes() == previous
+    target.write_text('\n'.join(rows) + '\n')
+print(json.dumps({'delivered_paths': len(files), 'protected_foreign_paths': len(foreign)}))

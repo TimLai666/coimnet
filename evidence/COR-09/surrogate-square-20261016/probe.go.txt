@@ -1,0 +1,56 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"math/big"
+	"os"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+func rat(v float64) *big.Rat     { return new(big.Rat).SetFloat64(v) }
+func rounded(v *big.Rat) float64 { x, _ := v.Float64(); return x }
+
+func main() {
+	var rows []any
+	for _, input := range []float64{2e155, -2e155} {
+		m, err := dynamics.NewLIF(dynamics.LIFConfig{
+			Nodes: 1, DT: math.Log(2), TauSyn: 1, ThetaMin: 0, ThetaMax: 2,
+			VReset: -1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1},
+		})
+		if err != nil {
+			panic(err)
+		}
+		p := dynamics.LIFParameters{Bias: []float64{0}, LogTau: []float64{0}, ThetaRaw: []float64{0}}
+		tr, err := m.Forward(context.Background(), p, []float64{0}, [][]float64{{input}})
+		if err != nil {
+			panic(err)
+		}
+		g, err := m.Backward(context.Background(), tr, [][]float64{{1e308}}, 0)
+		if err != nil {
+			panic(err)
+		}
+		den := 1 + math.Abs(.5*input-1)
+		square := new(big.Rat).Mul(rat(den), rat(den))
+		psi := rounded(new(big.Rat).Inv(square))
+		du := 1e308 * psi
+		logTau := rounded(new(big.Rat).Mul(new(big.Rat).Mul(rat(du), rat(-input)), rat(.5*math.Log(2))))
+		reference := dynamics.LIFGradient{
+			Weights: []float64{}, Bias: []float64{.5 * du}, LogTau: []float64{logTau},
+			ThetaRaw: []float64{-.5 * du}, Inputs: [][]float64{{.5 * du}}, Initial: []float64{.5 * du},
+		}
+		rows = append(rows, map[string]any{
+			"input": input, "upstream": 1e308, "den": den,
+			"independent_surrogate": psi, "outputs": tr.Outputs(), "spikes": tr.Spikes(),
+			"voltages": tr.Voltages(), "gradient": g, "reference": reference,
+			"matches_reference_bias": g.Bias[0] == reference.Bias[0],
+		})
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(rows); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}

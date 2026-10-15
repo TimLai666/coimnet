@@ -1,0 +1,78 @@
+"""Read and scan the exact owned payload before an authorized Git push."""
+import datetime
+import gzip
+import hashlib
+import io
+import json
+from pathlib import Path
+import re
+import subprocess
+import tarfile
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+receipt = e / 'push-preflight.json'
+previous_receipt = receipt.read_bytes() if receipt.exists() else None
+read = lambda p: json.loads(p.read_text())
+sha = lambda b: hashlib.sha256(b).hexdigest()
+assert read(e / 'cleanup.json')['directory_removed']
+assert read(e / 'verification.json')['engineering_passed']
+assert read(e / 'remote-target.json')['repository']['viewerPermission'] == 'ADMIN'
+assert read(e / 'remote-target.json')['account'] == 'TimLai666'
+assert subprocess.check_output(['git', 'remote', 'get-url', 'origin'], cwd=r, text=True).strip() == 'https://github.com/TimLai666/coimnet.git'
+for path, digest in read(e / 'formal-source.json').items():
+    assert sha((r / path).read_bytes()) == digest, path
+foreign = {str(Path(p).relative_to(r)) for p in read(e / 'foreign-before.json')}
+base = read(e / 'baseline.json')['head']
+changed = set(subprocess.check_output(['git', 'diff', '--name-only', base, '-z'], cwd=r).decode().split('\0'))
+changed.update(subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '-z'], cwd=r).decode().split('\0'))
+changed.discard('')
+owned = changed - foreign
+owned.discard(str(receipt.relative_to(r)))
+allowed = {'ENG.md', 'delivery-status.md', 'docs/individual-state.md', 'docs/model-and-mechanisms.md',
+           'docs/requirements-status.json', 'docs/tickets/115-surrogate-extreme-audit.md',
+           'dynamics/lif.go', 'dynamics/mixed.go', 'dynamics/surrogate_gradient.go', 'dynamics/surrogate_square_test.go'}
+prefix = str(e.relative_to(r)) + '/'
+assert all(p in allowed or p.startswith(prefix) for p in owned)
+assert not any(p.startswith(('data/', 'models/', 'checkpoints/', 'runs/')) for p in owned)
+patterns = [rb'gh[pousr]_[A-Za-z0-9]{20,}', rb'github_pat_[A-Za-z0-9_]{20,}',
+            rb'(?<![A-Za-z0-9_])sk-(?:proj-)?[A-Za-z0-9_-]{24,}', rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----']
+streams = 0
+def scan(raw):
+    global streams
+    streams += 1
+    assert not any(re.search(p, raw) for p in patterns), 'credential-shaped content requires local review'
+digests = {}
+archive_members = []
+for path in sorted(owned):
+    raw = (r / path).read_bytes()
+    digests[path] = sha(raw)
+    if path.endswith('.tar.gz'):
+        with tarfile.open(fileobj=io.BytesIO(raw), mode='r:gz') as handle:
+            for member in handle:
+                assert member.isfile() and not Path(member.name).is_absolute() and '..' not in Path(member.name).parts
+                scan(handle.extractfile(member).read())
+                archive_members.append(member.name)
+    elif path.endswith('.gz'):
+        scan(gzip.decompress(raw))
+    else:
+        scan(raw)
+result = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'destination': 'https://github.com/TimLai666/coimnet.git',
+          'branch': 'codex/receptor-chemistry-training', 'remote_ownership': 'remote-target.json',
+          'checked_files': digests, 'input_text_streams_scanned': streams,
+          'credential_pattern_matches': 0, 'archive_members': archive_members,
+          'protected_foreign_paths_excluded': len(foreign),
+          'data_model_run_paths_in_payload': 0,
+          'receipt_excluded_from_own_hashes': True, 'receipt_scanned': True,
+          'previous_receipt_sha256': sha(previous_receipt) if previous_receipt else None,
+          'receipt_scope': 'This receipt is derived only from checked payload hashes, public repository identity and scan counts; its serialized content is scanned separately.'}
+serialized = (json.dumps(result, indent=2) + '\n').encode()
+scan(serialized)
+if previous_receipt is None:
+    with receipt.open('xb') as handle:
+        handle.write(serialized)
+else:
+    assert receipt.read_bytes() == previous_receipt
+    receipt.write_bytes(serialized)
+print(json.dumps({'payload_files_scanned': len(digests), 'streams_scanned': streams, 'credential_matches': 0, 'archive_members': len(archive_members)}))

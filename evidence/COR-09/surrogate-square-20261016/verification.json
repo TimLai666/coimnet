@@ -1,0 +1,90 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "engineering_passed": true,
+  "verified_at": "2026-10-15T18:49:49.744830+00:00",
+  "reproduction_command": "Per-command receipts and baseline-controls.py.txt, candidate-commands.py.txt, engineering.py.txt retain exact commands; regression filter ^TestSurrogateSquare.",
+  "environment": {
+    "observed_at": "2026-10-15T18:03:08.266330+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "9a399f145d2eedaecd116fd1b62fc60a68eced1f",
+    "base_source_manifest": "../event-adjoint-20261016/formal-source.json",
+    "scope": "CPU float64 public numerical probe; no task-quality or biological claim",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "storage_observed": {
+      "device": "/dev/disk3s5",
+      "mount": "/System/Volumes/Data",
+      "check": "df -h .; current project on local disk"
+    }
+  },
+  "input_fingerprints": {
+    "base_commit": "9a399f145d2eedaecd116fd1b62fc60a68eced1f",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "51504a64c64e9aa1973a8c906d739e42dd01302a1ad8f8b3b5230e51cc1703ef",
+    "frozen_test": {
+      "file": "dynamics/surrogate_square_test.go",
+      "sha256": "380d5bd9a8caaffff2f862135ff4ef4760b32fefecf60684443ee896e7746435",
+      "lines": 585,
+      "root_review": "All 585 lines read; independent rational oracle and two-row carry cancellation checked before implementation.",
+      "red_receipts": [
+        "regression-before.json",
+        "regression-before-race.json"
+      ],
+      "red_events_each_build": {
+        "pass": 17,
+        "fail": 34
+      }
+    },
+    "independent_reference": "exact-reference.json",
+    "independent_reference_sha256": "2c4cb9329f97719416f69076b0e34dd6239fd097eafb08439255a45d1ec242bf",
+    "protected_models": "../../MOD-04/lif-threshold-floor-20261015/protected-models.json",
+    "protected_data": "../../MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json"
+  },
+  "observed_result": {
+    "source_count": 830,
+    "formal_go_files": 826,
+    "ordinary_test_events": {
+      "pass": 6114,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6113,
+      "skip": 23
+    },
+    "package_events_per_build": {
+      "pass": 58,
+      "skip": 3
+    },
+    "prior_terminal_events_unchanged_each_build": 6085,
+    "new_passing_regression_events_each_build": 51,
+    "normal_core_records_bytes_equal": 32,
+    "old_core_state_new_process_continuations": 32,
+    "old_chemical_model_new_process_continuations": 12,
+    "chemical_training_updates_after_resume_each": 1,
+    "approved_gain_range_checks_passed_each_build": [
+      "TestNeutralGainRejectsExcludedRange",
+      "TestNeutralGainRetainsValidRanges"
+    ],
+    "remaining_delivery": [
+      "final governance",
+      "owned temporary cleanup",
+      "commit and remote readback"
+    ]
+  },
+  "root_review": "root-review.md",
+  "candidate_acceptance": "candidate-verification.json",
+  "engineering_details": "engineering-verification.json",
+  "test_log": [
+    "regression-before.log",
+    "regression-before-race.log",
+    "regression-candidate.log",
+    "regression-candidate-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "limits": "macOS arm64 numerical and compatibility checks. No real-task accuracy, biological completeness or absolute-zero-bug conclusion."
+}
