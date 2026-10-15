@@ -99,25 +99,27 @@ func LoadRecognizer(ctx context.Context, path string) (*Recognizer, error) {
 
 func validateASRCheckpointShape(config RecognizerConfig, snapshot learning.TrainingSnapshot) error {
 	network := snapshot.Config
+	maxInt := int(^uint(0) >> 1)
+	if config.Hidden <= 0 || config.FrontEnd.Mels <= 0 || network.Dynamics.Nodes < 0 ||
+		network.Dynamics.Nodes > maxInt/config.Hidden {
+		return errors.New("asr: checkpoint reconstruction dimensions overflow")
+	}
+	dimensions, err := deriveRecognizerDimensions(config)
+	if err != nil {
+		return err
+	}
 	if config.FrontEnd.Mels != network.InputSize || config.FrontEnd.Mels != len(network.InputNodes) ||
 		config.Hidden != len(network.ReadoutNodes) ||
-		config.Hidden != network.Dynamics.Nodes-config.FrontEnd.Mels ||
-		len(config.Alphabet) != network.OutputSize-1 {
+		dimensions.nodes != network.Dynamics.Nodes ||
+		dimensions.classes != network.OutputSize {
 		return errors.New("asr: checkpoint task dimensions do not match training config")
 	}
 	// Reconstruction is dense even if the supplied saved network is sparse.
 	// Match every allocated array before running the constructor.
-	mels := config.FrontEnd.Mels
-	maxInt := int(^uint(0) >> 1)
-	if config.Hidden <= 0 || mels <= 0 || network.Dynamics.Nodes > maxInt/config.Hidden ||
-		mels > maxInt/mels || network.OutputSize > maxInt/config.Hidden {
-		return errors.New("asr: checkpoint reconstruction dimensions overflow")
-	}
-	edges := network.Dynamics.Nodes * config.Hidden
-	if len(network.Dynamics.Sources) != edges || len(network.Dynamics.Targets) != edges ||
-		len(snapshot.Parameters.Core.Weights) != edges ||
-		len(snapshot.Parameters.Encoder) != mels*mels ||
-		len(snapshot.Parameters.Readout) != config.Hidden*network.OutputSize {
+	if len(network.Dynamics.Sources) != dimensions.edges || len(network.Dynamics.Targets) != dimensions.edges ||
+		len(snapshot.Parameters.Core.Weights) != dimensions.edges ||
+		len(snapshot.Parameters.Encoder) != dimensions.encoder ||
+		len(snapshot.Parameters.Readout) != dimensions.readout {
 		return errors.New("asr: checkpoint dense array sizes do not match task config")
 	}
 	return nil

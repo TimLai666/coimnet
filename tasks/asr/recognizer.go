@@ -37,6 +37,7 @@ type RecognizerConfig struct {
 // that does not fit the sample rate (which covers a non-positive rate), Hidden
 // below 2, an empty, repeating or non-scalar alphabet, or a learning rate that is not a
 // positive finite number.
+// Derived array lengths and byte sizes must fit the platform's int.
 func (c RecognizerConfig) Validate() error {
 	if err := c.FrontEnd.Validate(c.SampleRate); err != nil {
 		return err
@@ -60,7 +61,8 @@ func (c RecognizerConfig) Validate() error {
 	if !(c.LearningRate > 0) || math.IsInf(c.LearningRate, 1) {
 		return fmt.Errorf("asr: learning rate %v must be positive and finite", c.LearningRate)
 	}
-	return nil
+	_, err := deriveRecognizerDimensions(c)
+	return err
 }
 
 // Recognizer reads log-mel frames one per step and emits one logit row per
@@ -112,10 +114,14 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	if err := c.Validate(); err != nil {
 		return nil, err
 	}
+	dimensions, err := deriveRecognizerDimensions(c)
+	if err != nil {
+		return nil, err
+	}
 	c.Alphabet = append([]rune(nil), c.Alphabet...)
 	mels := c.FrontEnd.Mels
-	nodes := mels + c.Hidden
-	edges := mels*c.Hidden + c.Hidden*c.Hidden
+	nodes := dimensions.nodes
+	edges := dimensions.edges
 	sources := make([]int, 0, edges)
 	targets := make([]int, 0, edges)
 	for s := 0; s < nodes; s++ {
@@ -132,7 +138,7 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	for i := range readoutNodes {
 		readoutNodes[i] = mels + i
 	}
-	classes := len(c.Alphabet) + 1
+	classes := dimensions.classes
 	cfg := learning.Config{
 		Dynamics:         dynamics.Config{Nodes: nodes, Sources: sources, Targets: targets, DT: 1, Activation: "tanh"},
 		InputSize:        mels,
@@ -143,7 +149,7 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 	}
 	// The encoder is the identity from the Mels inputs onto the Mels input
 	// nodes, row-major [input, input-node], and stays frozen.
-	encoder := make([]float64, mels*mels)
+	encoder := make([]float64, dimensions.encoder)
 	for i := 0; i < mels; i++ {
 		encoder[i*mels+i] = 1
 	}
@@ -159,7 +165,7 @@ func NewRecognizer(c RecognizerConfig) (*Recognizer, error) {
 			LogTau:  logTau,
 		},
 		Encoder: encoder,
-		Readout: uniform(rand.NewPCG(c.Seed, 1), c.Hidden*classes),
+		Readout: uniform(rand.NewPCG(c.Seed, 1), dimensions.readout),
 	}
 	o := learning.DefaultOptions()
 	o.LearningRate = c.LearningRate
