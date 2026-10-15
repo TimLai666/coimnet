@@ -38,8 +38,10 @@
 | [evidence/COR-04/threshold-tail-20261016/cleanup-inventory.json.gz](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/cleanup-inventory.json.gz) | 保存清理前逐項內容與指紋。 |
 | [evidence/COR-04/threshold-tail-20261016/cleanup-owned.py.txt](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/cleanup-owned.py.txt) | 保存可重現的驗收、證據或清理程式。 |
 | [evidence/COR-04/threshold-tail-20261016/cleanup.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/cleanup.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
+| [evidence/COR-04/threshold-tail-20261016/close-delivery.py.txt](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/close-delivery.py.txt) | 保存可重現的驗收、證據或清理程式。 |
 | [evidence/COR-04/threshold-tail-20261016/closure-binary.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/closure-binary.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/command-environment.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/command-environment.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
+| [evidence/COR-04/threshold-tail-20261016/committed-primary.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/committed-primary.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/core-before-race.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/core-before-race.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/core-before-race.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/core-before-race.log) | 保留原始命令輸出。 |
 | [evidence/COR-04/threshold-tail-20261016/core-before.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/core-before.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
@@ -53,6 +55,7 @@
 | [evidence/COR-04/threshold-tail-20261016/core-state-resume-candidate.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/core-state-resume-candidate.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/core-state-resume-candidate.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/core-state-resume-candidate.log) | 保留原始命令輸出。 |
 | [evidence/COR-04/threshold-tail-20261016/delegation.md](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/delegation.md) | 記錄計畫、審查、指紋或實際驗證結果。 |
+| [evidence/COR-04/threshold-tail-20261016/delivery.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/delivery.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/engineering-build.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/engineering-build.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/engineering-build.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/engineering-build.log) | 保留原始命令輸出。 |
 | [evidence/COR-04/threshold-tail-20261016/engineering-closure-binary.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/engineering-closure-binary.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
@@ -121,6 +124,7 @@
 | [evidence/COR-04/threshold-tail-20261016/regression-candidate-race.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/regression-candidate-race.log) | 保留原始命令輸出。 |
 | [evidence/COR-04/threshold-tail-20261016/regression-candidate.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/regression-candidate.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/regression-candidate.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/regression-candidate.log) | 保留原始命令輸出。 |
+| [evidence/COR-04/threshold-tail-20261016/remote-primary.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/remote-primary.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/remote-target.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/remote-target.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/reproduction-candidate.json](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/reproduction-candidate.json) | 記錄計畫、審查、指紋或實際驗證結果。 |
 | [evidence/COR-04/threshold-tail-20261016/reproduction-candidate.log](/Users/timlai/Developer/coimnet/evidence/COR-04/threshold-tail-20261016/reproduction-candidate.log) | 保留原始命令輸出。 |

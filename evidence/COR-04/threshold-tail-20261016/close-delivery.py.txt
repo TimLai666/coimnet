@@ -1,0 +1,71 @@
+# coding: utf-8
+"""Record completed delivery after actual remote readback."""
+import datetime
+import hashlib
+import json
+from pathlib import Path
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source, primary, remote, cleanup = [read(e / p) for p in ['formal-source.json', 'committed-primary.json', 'remote-primary.json', 'cleanup.json']]
+assert primary['primary_commit'] == remote['remote_commit'] and remote['matches']
+assert cleanup['directory_removed'] and not (r / cleanup['owned_directory']).exists()
+for path, digest in source.items():
+    assert sha(r / path) == digest, path
+for path, digest in read(e / 'foreign-before.json').items():
+    assert sha(Path(path)) == digest, path
+delivery = dict(
+    requirement=['COR-04', 'COR-09'], delivered_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    reproduction_command='git push origin HEAD:refs/heads/codex/receptor-chemistry-training; git ls-remote --exit-code origin refs/heads/codex/receptor-chemistry-training; see remote-primary.json and committed-primary.json.',
+    environment=read(e / 'environment.json'),
+    input_fingerprints=dict(formal_source_sha256=sha(e / 'formal-source.json'), source_count=len(source),
+                            fix_commit=primary['fix_commit'], primary_commit=primary['primary_commit']),
+    observed_result=dict(remote=remote['remote_commit'], branch='codex/receptor-chemistry-training',
+                          all_source_and_payload_blobs_match=True, unique_primary_blob_checks=primary['unique_committed_blob_checks'],
+                          original_foreign_paths_preserved=32, owned_work_root_removed=True,
+                          removed_bytes=cleanup['removed_bytes'], necessary_files_preserved=25,
+                          normal_core_records_equal=32, old_neural_continuations_equal=32, old_chemical_continuations_equal=12),
+    test_log=['remote-primary.json', 'committed-primary.json', 'cleanup.json', 'engineering-unit.log.gz', 'engineering-race.log.gz'],
+    limits='Verified bounded numerical fix and delivery; no new task-quality, biology or absolute-zero-bug claim.')
+with (e / 'delivery.json').open('x') as f:
+    json.dump(delivery, f, indent=2)
+    f.write('\n')
+
+p = e / 'verification.json'
+old = p.read_bytes()
+v = json.loads(old)
+v['observed_result']['remaining_delivery'] = []
+v['observed_result']['delivery'] = dict(receipt='delivery.json', fix_commit=primary['fix_commit'], primary_commit=primary['primary_commit'], remote_readback=remote['remote_commit'])
+assert p.read_bytes() == old
+p.write_text(json.dumps(v, indent=2) + '\n')
+
+p = r / 'docs/tickets/116-threshold-tail.md'
+old = p.read_bytes()
+text = old.decode('utf-8')
+assert text.count('**Status:** in_progress') == 1
+text = text.replace('**Status:** in_progress', '**Status:** completed')
+target = '- [ ] 保存必要證據、清除自有暫存、提交推送及遠端讀回。'
+assert text.count(target) == 1
+text = text.replace(target, target.replace('[ ]', '[x]'))
+text += '\n## 交付｜2026-10-16\n\n修正 `475cc75` 與回歸／證據 `1f644f7` 已正常推送，遠端讀回一致。833 份已提交來源與驗收指紋一致，共核對 963 個唯一提交內容。必要檔案已封存，1,702,725,267 bytes 本輪暫存已清除，原有模型、資料、原始模組檔及其他工作保持。本票完成 5／5，見[交付](../../evidence/COR-04/threshold-tail-20261016/delivery.json)與[清理](../../evidence/COR-04/threshold-tail-20261016/cleanup.json)。整體零 bug 目標持續，沒有以本票成功推論真實任務改善。\n'
+assert p.read_bytes() == old
+p.write_text(text, encoding='utf-8')
+
+p = r / 'delivery-status.md'
+old = p.read_bytes()
+text = old.decode('utf-8')
+start = text.index('[ticket 116]')
+end = text.index('\n\n', start)
+text = text[:start] + '[ticket 116](docs/tickets/116-threshold-tail.md) 已完成 5／5。833 份來源的一般／競態各 58 套件通過，6,383／6,382 個事件成功、22／23 個略過、零失敗，原有各 6,136 個終端事件保持，新增各 269 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及最後 31 項治理通過，見[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。32 份正常核心、32 次舊神經狀態與 12 次舊化學模型接續相同。COR-04／09 恢復 passed，目前 91／91 工程需求 passed。必要 25 個工作檔已封存，本輪 1,702,725,267 bytes 暫存已清除，原模型、資料、原始模組及其他工作保持，見[清理](evidence/COR-04/threshold-tail-20261016/cleanup.json)。修正 `475cc75` 與回歸／證據 `1f644f7` 已推送且遠端讀回相同，833 份提交來源及 963 個唯一提交內容指紋相符，見[交付](evidence/COR-04/threshold-tail-20261016/delivery.json)。整體零 bug 目標保持進行中。' + text[end:]
+for before, after in [
+    ('| in_progress | 4／5。專項、正常／舊保存、完整工程及需求證據通過，暫存清理與遠端交付待完成 |', '| completed | 5／5。完整工程、正常／舊保存、清理、提交推送及 833 份提交來源核對完成 |'),
+    ('ticket 116 的閾值尾端修正已通過完整工程驗收，暫存清理及遠端交付待完成。', 'ticket 116 的閾值尾端修正已完成驗收、清理及遠端交付，本票沒有待處理阻礙。'),
+    ('ticket 116 已通過完整工程驗收。下一個可驗證成果是必要證據封存、自有暫存清理、提交推送及遠端讀回。沒有新增待決策事項。', 'ticket 116 已完成驗收與交付。本票沒有剩餘工作。整體機制稽核持續，下一票尚未建立；須先以新的公開反例確認缺陷，不重做已驗證事項，也不把數值測試通過當成模型品質或零 bug 的證明。'),
+]:
+    assert text.count(before) == 1, before
+    text = text.replace(before, after)
+assert p.read_bytes() == old
+p.write_text(text, encoding='utf-8')
+print('ticket 116 delivered: 5/5; overall audit remains active')
