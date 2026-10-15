@@ -40,6 +40,7 @@
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/closure-binary.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/closure-binary.json) | 清理前 closure binary 指紋 receipt。 |
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/command-environment.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/command-environment.json) | 命令與工程驗收環境 receipt。 |
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/compatibility-drivers.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/compatibility-drivers.json) | 相容性驅動索引。 |
+| [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/delivery.json) | 本票提交、推送與遠端讀回紀錄。 |
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-build.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-build.json) | 工程 build 驗收 receipt。 |
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-build.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-build.log) | 工程 build 驗收 log。 |
 | [/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-closure-binary.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-sum-20261015/engineering-closure-binary.json) | 本票驗收證據 |
