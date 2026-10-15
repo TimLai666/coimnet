@@ -342,3 +342,4 @@
 | evidence/TSK-11/build-quality-audit-20261015/vet.json | 新增：設定、來源指紋、執行回條或驗證結果 |
 | evidence/TSK-11/build-quality-audit-20261015/vet.log | 新增：原始執行／失敗輸出 |
 | evidence/TSK-11/build-quality-audit-20261015/diff-review.json | 新增：範圍、數值審查與來源核對結果 |
+| evidence/TSK-11/build-quality-audit-20261015/delivery.json | 新增：正常推送、遠端讀回及提交來源核對 |
