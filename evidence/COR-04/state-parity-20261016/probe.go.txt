@@ -1,0 +1,449 @@
+// Public-API diagnostic only. This is not part of the distributed framework.
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"math"
+	"math/rand"
+	"os"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+)
+
+var checks, floats, boundaries, permutationComparisons int
+
+func require(ok bool, detail string) {
+	checks++
+	if !ok {
+		panic(detail)
+	}
+}
+
+func blob(v any) []byte {
+	b, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func digest(v any) string {
+	b := sha256.Sum256(blob(v))
+	return hex.EncodeToString(b[:])
+}
+
+func difference(a, b reflect.Value, path string) string {
+	if a.Type() != b.Type() {
+		return path + ": type"
+	}
+	switch a.Kind() {
+	case reflect.Float64:
+		floats++
+		if math.Float64bits(a.Float()) != math.Float64bits(b.Float()) {
+			return fmt.Sprintf("%s: bits %016x != %016x", path, math.Float64bits(a.Float()), math.Float64bits(b.Float()))
+		}
+	case reflect.Struct:
+		for i := 0; i < a.NumField(); i++ {
+			if d := difference(a.Field(i), b.Field(i), path+"."+a.Type().Field(i).Name); d != "" {
+				return d
+			}
+		}
+	case reflect.Slice:
+		if a.IsNil() != b.IsNil() || a.Len() != b.Len() {
+			return path + ": slice shape or nil"
+		}
+		for i := 0; i < a.Len(); i++ {
+			if d := difference(a.Index(i), b.Index(i), fmt.Sprintf("%s[%d]", path, i)); d != "" {
+				return d
+			}
+		}
+	default:
+		if !reflect.DeepEqual(a.Interface(), b.Interface()) {
+			return path + ": value"
+		}
+	}
+	return ""
+}
+
+func same(a, b any, path string) {
+	d := difference(reflect.ValueOf(a), reflect.ValueOf(b), path)
+	require(d == "", d)
+}
+
+func different(a, b any) bool {
+	return difference(reflect.ValueOf(a), reflect.ValueOf(b), "control") != ""
+}
+
+func roundTrip(s dynamics.MixedState) dynamics.MixedState {
+	var saved dynamics.MixedState
+	if err := json.Unmarshal(blob(s), &saved); err != nil {
+		panic(err)
+	}
+	same(s, saved, "JSON state round-trip")
+	return saved
+}
+
+func sliceMod(m *dynamics.Modulation, start, end int) *dynamics.Modulation {
+	if m == nil {
+		return nil
+	}
+	return &dynamics.Modulation{Gain: m.Gain[start:end], Offset: m.Offset[start:end], Threshold: m.Threshold[start:end]}
+}
+
+type fixedSequence struct {
+	mod      *dynamics.Modulation
+	steps    []int
+	previous [][]float64
+}
+
+func (s *fixedSequence) Forward(ctx context.Context, step int, previous []float64) (*dynamics.Modulation, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if step < 0 || step >= len(s.mod.Gain) || len(previous) != 3 {
+		return nil, fmt.Errorf("invalid callback row")
+	}
+	s.steps = append(s.steps, step)
+	s.previous = append(s.previous, append([]float64(nil), previous...))
+	return &dynamics.Modulation{
+		Gain:      [][]float64{append([]float64(nil), s.mod.Gain[step]...)},
+		Offset:    [][]float64{append([]float64(nil), s.mod.Offset[step]...)},
+		Threshold: [][]float64{append([]float64(nil), s.mod.Threshold[step]...)},
+	}, nil
+}
+
+func (*fixedSequence) NewReverse(context.Context, int, int) (dynamics.ModulationReverse, error) {
+	return nil, fmt.Errorf("forward-only audit does not request reverse sessions")
+}
+
+type fixture struct {
+	Config  dynamics.MixedConfig
+	Params  dynamics.MixedParameters
+	Initial []float64
+	Inputs  [][]float64
+	Mod     *dynamics.Modulation
+}
+
+// perm maps logical C/L1/L2 nodes to physical indices. Parameter ownership
+// follows the public ascending-LIF-node convention, not logical order.
+func makeFixture(activation string, seed int64, perm []int) fixture {
+	r := rand.New(rand.NewSource(seed))
+	c := dynamics.MixedConfig{Nodes: 3, DT: 0.7, NodeRule: make([]uint8, 3),
+		Continuous: dynamics.ContinuousRule{Activation: activation},
+		LIF: dynamics.LIFRule{TauSyn: 1.4, ThetaMin: 0.15, ThetaMax: 0.65, VReset: -0.05,
+			RefractorySteps: 2,
+			Adaptation:      dynamics.LIFAdaptation{Enabled: true, TauAdapt: 3, Beta: 0.24},
+			Homeostasis:     &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2.1, TargetRate: 0.1, Eta: 0.15, HMax: 0.5},
+			Surrogate:       dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}}
+	sources, targets := []int{0, 1, 2, 0, 1, 2, 1, 0}, []int{1, 2, 0, 0, 1, 2, 0, 2}
+	for e := range sources {
+		c.Sources = append(c.Sources, perm[sources[e]])
+		c.Targets = append(c.Targets, perm[targets[e]])
+	}
+	c.Delays = []int{0, 1, 2, 1, 2, 0, 0, 2}
+	c.NodeRule[perm[1]], c.NodeRule[perm[2]] = dynamics.RuleLIF, dynamics.RuleLIF
+	p := dynamics.MixedParameters{Weights: []float64{0.7, 0.4, -0.25, 0.15, 0.2, -0.12, 0.35, -0.3}, Bias: make([]float64, 3), LogTau: make([]float64, 3)}
+	for i := range p.Weights {
+		p.Weights[i] *= 0.8 + 0.4*r.Float64()
+	}
+	initial := make([]float64, 3)
+	for logical := 0; logical < 3; logical++ {
+		i := perm[logical]
+		p.Bias[i] = []float64{0.03, 0.15, 0.1}[logical]
+		p.LogTau[i] = math.Log([]float64{1.1, 0.8, 1.25}[logical])
+		initial[i] = []float64{0.2, 0.1, -0.15}[logical] + 0.02*r.Float64()
+	}
+	for i := 0; i < 3; i++ {
+		if c.NodeRule[i] == dynamics.RuleLIF {
+			value := -0.8
+			if i == perm[2] {
+				value = 0.5
+			}
+			p.ThetaRaw = append(p.ThetaRaw, value)
+		}
+	}
+	f := fixture{Config: c, Params: p, Initial: initial, Mod: &dynamics.Modulation{}}
+	for t := 0; t < 24; t++ {
+		input, gain, offset, threshold := make([]float64, 3), make([]float64, 3), make([]float64, 3), make([]float64, 3)
+		for logical := 0; logical < 3; logical++ {
+			i := perm[logical]
+			input[i] = []float64{2.3, 0.45, 0.75, 1.4, 0.2, 0.85}[t%6] + 0.12*r.Float64()
+			if logical == 0 {
+				input[i] = 0.2*math.Sin(float64(t+1)) - 0.1
+			}
+			gain[i] = 0.65 + 0.55*r.Float64()
+			offset[i] = -0.1 + 0.2*r.Float64()
+			if logical > 0 {
+				threshold[i] = -0.12 + 0.2*r.Float64()
+			}
+		}
+		f.Inputs = append(f.Inputs, input)
+		f.Mod.Gain = append(f.Mod.Gain, gain)
+		f.Mod.Offset = append(f.Mod.Offset, offset)
+		f.Mod.Threshold = append(f.Mod.Threshold, threshold)
+	}
+	return f
+}
+
+func advance(m *dynamics.Mixed, f fixture, state dynamics.MixedState, start, end int, mod *dynamics.Modulation) (dynamics.MixedState, [][]float64, [][]float64) {
+	before := blob([]any{f, state, mod})
+	s, out, spikes, err := m.AdvanceModulated(context.Background(), f.Params, state, f.Inputs[start:end], sliceMod(mod, start, end))
+	if err != nil {
+		panic(err)
+	}
+	require(bytes.Equal(before, blob([]any{f, state, mod})), "Advance modified caller arguments")
+	require(m.ValidateState(s) == nil, "returned state failed validation")
+	return s, out, spikes
+}
+
+type result struct {
+	Activation       string  `json:"activation"`
+	Seed             int64   `json:"seed"`
+	Permutation      []int   `json:"permutation"`
+	Modulated        bool    `json:"modulated"`
+	InputSHA256      string  `json:"input_sha256"`
+	ConfigHash       string  `json:"config_hash"`
+	OutputSHA256     string  `json:"output_sha256"`
+	FinalStateSHA256 string  `json:"final_state_sha256"`
+	Events           float64 `json:"events"`
+}
+
+// Config hashes legitimately differ after relabeling. Normalize all numerical
+// persistent fields, histories and node outputs to logical C/L1/L2 order.
+type canonicalResult struct {
+	Outputs, Spikes, History               [][]float64
+	Voltage, Adaptation, Rate, Homeostasis []float64
+	Refractory                             []int
+	Steps                                  uint64
+}
+
+func canonical(s dynamics.MixedState, out, spikes [][]float64, perm []int) canonicalResult {
+	reorder := func(row []float64) []float64 {
+		return []float64{row[perm[0]], row[perm[1]], row[perm[2]]}
+	}
+	voltage, adapt, rate, homeo := make([]float64, 3), make([]float64, 3), make([]float64, 3), make([]float64, 3)
+	ref := make([]int, 3)
+	history := make([][]float64, len(s.Continuous.History))
+	for t := range history {
+		history[t] = make([]float64, 3)
+	}
+	for k, i := range s.Index.ContinuousNodes {
+		voltage[i] = s.Continuous.Voltage[k]
+		for t := range history {
+			history[t][i] = s.Continuous.History[t][k]
+		}
+	}
+	for k, i := range s.Index.LIFNodes {
+		voltage[i], adapt[i], rate[i], homeo[i], ref[i] = s.LIF.Voltage[k], s.LIF.Adaptation[k], s.LIF.Rate[k], s.LIF.Homeostasis[k], s.LIF.Refractory[k]
+		for t := range history {
+			history[t][i] = s.LIF.History[t][k]
+		}
+	}
+	c := canonicalResult{Voltage: reorder(voltage), Adaptation: reorder(adapt), Rate: reorder(rate), Homeostasis: reorder(homeo), Refractory: []int{ref[perm[0]], ref[perm[1]], ref[perm[2]]}, Steps: s.Steps}
+	for _, row := range out {
+		c.Outputs = append(c.Outputs, reorder(row))
+	}
+	for _, row := range spikes {
+		c.Spikes = append(c.Spikes, reorder(row))
+	}
+	for _, row := range history {
+		c.History = append(c.History, reorder(row))
+	}
+	return c
+}
+
+func run(f fixture, name string, mod *dynamics.Modulation, perm []int) (result, [][]float64, canonicalResult) {
+	m, err := dynamics.NewMixed(f.Config)
+	if err != nil {
+		panic(err)
+	}
+	zero, err := m.NewState(f.Initial)
+	if err != nil {
+		panic(err)
+	}
+	whole, out, spikes := advance(m, f, zero, 0, 24, mod)
+	var trace *dynamics.MixedTrace
+	before := blob(f)
+	if mod == nil {
+		trace, err = m.Forward(context.Background(), f.Params, f.Initial, f.Inputs)
+	} else {
+		seq := &fixedSequence{mod: mod}
+		trace, err = m.ForwardCoupled(context.Background(), f.Params, f.Initial, f.Inputs, seq)
+		want := make([]int, 24)
+		for i := range want {
+			want[i] = i
+		}
+		same(seq.steps, want, name+" callback clock")
+		initialOutput := make([]float64, 3)
+		for k, i := range zero.Index.ContinuousNodes {
+			initialOutput[i] = zero.Continuous.History[0][k]
+		}
+		for k, i := range zero.Index.LIFNodes {
+			initialOutput[i] = zero.LIF.History[0][k]
+		}
+		wantPrevious := append([][]float64{initialOutput}, out[:23]...)
+		same(seq.previous, wantPrevious, name+" callback previous raw activity")
+	}
+	if err != nil {
+		panic(err)
+	}
+	require(bytes.Equal(before, blob(f)), name+" Forward modified caller arguments")
+	same(trace.Outputs(), out, name+" Forward outputs")
+	same(trace.Spikes(), spikes, name+" Forward events")
+	v := make([]float64, 3)
+	for k, i := range whole.Index.ContinuousNodes {
+		v[i] = whole.Continuous.Voltage[k]
+	}
+	for k, i := range whole.Index.LIFNodes {
+		v[i] = whole.LIF.Voltage[k]
+	}
+	same(trace.FinalVoltage(), v, name+" Forward voltage")
+	one := make([]int, 24)
+	for i := range one {
+		one[i] = 1
+	}
+	patterns := [][]int{one, {2, 1, 3, 2, 1, 3, 2, 1, 3, 2, 1, 3}, {7, 8, 9}}
+	active := [5]bool{}
+	for pattern, chunks := range patterns {
+		state := zero
+		start := 0
+		var gotOut, gotSpikes [][]float64
+		for _, width := range chunks {
+			end := start + width
+			var x, z [][]float64
+			state, x, z = advance(m, f, roundTrip(state), start, end, mod)
+			gotOut, gotSpikes = append(gotOut, x...), append(gotSpikes, z...)
+			prefix, px, pz := advance(m, f, zero, 0, end, mod)
+			same(state, prefix, name+" boundary state")
+			same(gotOut, px, name+" boundary output")
+			same(gotSpikes, pz, name+" boundary events")
+			same(x, out[start:end], name+" whole-row output")
+			same(z, spikes[start:end], name+" whole-row events")
+			if pattern == 0 {
+				for _, row := range z {
+					for _, a := range row {
+						active[0] = active[0] || a > 0
+					}
+				}
+				for _, a := range state.LIF.Adaptation {
+					active[1] = active[1] || a > 0
+				}
+				for _, a := range state.LIF.Homeostasis {
+					active[2] = active[2] || a > 0
+				}
+				for _, a := range state.LIF.Rate {
+					active[3] = active[3] || a > 0
+				}
+				for _, a := range state.LIF.Refractory {
+					active[4] = active[4] || a > 0
+				}
+			}
+			boundaries++
+			start = end
+		}
+		require(start == 24, "chunk coverage")
+		same(state, whole, name+" final state")
+		same(gotOut, out, name+" complete outputs")
+		same(gotSpikes, spikes, name+" complete events")
+	}
+	for i, yes := range active {
+		require(yes, fmt.Sprintf("%s inactive mechanism %d", name, i))
+	}
+	events := 0.0
+	for _, row := range spikes {
+		for _, x := range row {
+			events += x
+		}
+	}
+	return result{Modulated: mod != nil, InputSHA256: digest(f), ConfigHash: whole.ConfigHash, OutputSHA256: digest([]any{out, spikes, v}), FinalStateSHA256: digest(whole), Events: events}, out, canonical(whole, out, spikes, perm)
+}
+
+func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			fmt.Fprintln(os.Stderr, "AUDIT FAILED:", err)
+			os.Exit(1)
+		}
+	}()
+	require(different([]float64{0}, []float64{math.Copysign(0, -1)}), "comparator must detect signed zero")
+	require(different([]int{0, 1}, []int{1, 0}), "comparator must detect node-map changes")
+	perms := [][]int{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}
+	controls := map[string]int{"modulation": 0, "delays": 0, "self_edges": 0, "adaptation": 0, "homeostasis": 0, "refractory": 0}
+	var results []result
+	for _, activation := range []string{"tanh", "softplus"} {
+		for seed := int64(1); seed <= 4; seed++ {
+			var plainCanonical, modCanonical canonicalResult
+			for permutation, perm := range perms {
+				f := makeFixture(activation, seed, perm)
+				name := fmt.Sprintf("%s/seed%d/perm%v", activation, seed, perm)
+				plain, plainOut, pc := run(f, name+"/plain", nil, perm)
+				modulated, modOut, mc := run(f, name+"/mod", f.Mod, perm)
+				if permutation == 0 {
+					plainCanonical, modCanonical = pc, mc
+				} else {
+					same(pc, plainCanonical, name+" plain logical permutation")
+					same(mc, modCanonical, name+" modulated logical permutation")
+					permutationComparisons += 2
+				}
+				for _, p := range []*result{&plain, &modulated} {
+					p.Activation, p.Seed, p.Permutation = activation, seed, perm
+				}
+				results = append(results, plain, modulated)
+				if different(plainOut, modOut) {
+					controls["modulation"]++
+				}
+				for _, kind := range []string{"delays", "self_edges", "adaptation", "homeostasis", "refractory"} {
+					var ablated fixture
+					if err := json.Unmarshal(blob(f), &ablated); err != nil {
+						panic(err)
+					}
+					switch kind {
+					case "delays":
+						for i := range ablated.Config.Delays {
+							ablated.Config.Delays[i] = 0
+						}
+					case "self_edges":
+						for e, source := range ablated.Config.Sources {
+							if source == ablated.Config.Targets[e] {
+								ablated.Params.Weights[e] = 0
+							}
+						}
+					case "adaptation":
+						ablated.Config.LIF.Adaptation = dynamics.LIFAdaptation{}
+					case "homeostasis":
+						ablated.Config.LIF.Homeostasis = nil
+					case "refractory":
+						ablated.Config.LIF.RefractorySteps = 0
+					}
+					m, err := dynamics.NewMixed(ablated.Config)
+					if err != nil {
+						panic(err)
+					}
+					tr, err := m.Forward(context.Background(), ablated.Params, ablated.Initial, ablated.Inputs)
+					if err != nil {
+						panic(err)
+					}
+					if different(plainOut, tr.Outputs()) {
+						controls[kind]++
+					}
+				}
+			}
+		}
+	}
+	for kind, changed := range controls {
+		require(changed > 0, "no observable effect for "+kind)
+	}
+	report := map[string]any{"status": "passed", "scenarios": len(results), "boundary_comparisons": boundaries,
+		"checks": checks, "float_bit_comparisons": floats, "logical_permutation_comparisons": permutationComparisons, "positive_controls_changed_fixtures": controls, "results": results}
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(report); err != nil {
+		panic(err)
+	}
+}

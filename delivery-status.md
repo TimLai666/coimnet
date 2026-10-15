@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 117](docs/tickets/117-state-parity.md) 的混合神經元狀態稽核完成 3／4。一般／競態各 96 組案例、3,744 個接續點與 80 次節點改編號對照相同，所有機制關閉後都改變輸出，沒有確認新的核心缺陷。833 份正式來源相同，沿用既有完整驗收，這輪另通過診斷 vet 與 31 項治理。91／91 工程需求保持 passed，845,159,670 bytes 自有暫存已清除，原模型、資料與其他工作保持，見[驗收](evidence/COR-04/state-parity-20261016/verification.json)及[清理](evidence/COR-04/state-parity-20261016/cleanup.json)。提交與遠端讀回待完成。整體零 bug 目標保持進行中。
+
 [ticket 116](docs/tickets/116-threshold-tail.md) 已完成 5／5。833 份來源的一般／競態各 58 套件通過，6,383／6,382 個事件成功、22／23 個略過、零失敗，原有各 6,136 個終端事件保持，新增各 269 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及最後 31 項治理通過，見[驗收](evidence/COR-04/threshold-tail-20261016/verification.json)。32 份正常核心、32 次舊神經狀態與 12 次舊化學模型接續相同。COR-04／09 恢復 passed，目前 91／91 工程需求 passed。必要 25 個工作檔已封存，本輪 1,702,725,267 bytes 暫存已清除，原模型、資料、原始模組及其他工作保持，見[清理](evidence/COR-04/threshold-tail-20261016/cleanup.json)。修正 `475cc75` 與回歸／證據 `1f644f7` 已推送且遠端讀回相同，833 份提交來源及 963 個唯一提交內容指紋相符，見[交付](evidence/COR-04/threshold-tail-20261016/delivery.json)。整體零 bug 目標保持進行中。
 
 [ticket 115](docs/tickets/115-surrogate-extreme-audit.md) 已通過完整工程驗收。830 份來源的一般／競態各 58 套件通過，6,114／6,113 個測試事件成功、22／23 個略過、零失敗，原有各 6,085 個終端事件保持，只新增 51 個通過。格式、build、vet、固定 Insyra v0.3.4、相依性及最後 31 項治理通過，見[驗收](evidence/COR-09/surrogate-square-20261016/verification.json)。32 份正常核心紀錄、32 次舊神經狀態與 12 次舊化學模型接續相同。COR-04／09 恢復 passed，目前 91／91 工程需求 passed。本輪 1,661,870,007 bytes 暫存已清除，原模型、必要資料、原始模組及兩個舊工作目錄保持，見[清理](evidence/COR-09/surrogate-square-20261016/cleanup.json)。修正 `25685dc` 與回歸／證據 `4ff6619` 已正常推送且遠端讀回相同，830 份已提交來源與驗收指紋相符，見[交付](evidence/COR-09/surrogate-square-20261016/delivery.json)。本票完成 5／5。下一項是[閾值尾端斜率的待查假設](evidence/COR-09/surrogate-square-20261016/next-audit.md)，尚未公開重現。整體零 bug 目標保持進行中。

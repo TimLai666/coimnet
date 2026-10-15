@@ -1,0 +1,66 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-05",
+    "MOD-04"
+  ],
+  "engineering_passed": true,
+  "verified_at": "2026-10-15T20:28:50.234903+00:00",
+  "reproduction_command": "Use prepare.py.txt and run-command.py.txt receipts; execute probe.go.txt inside the ignored project-local probe directory with go run and go run -race. No network or model writes.",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "ca46e303dd22ba54a6c4da81d7356fa35992bc79",
+    "go": "go version go1.26.5 darwin/arm64",
+    "settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source_manifest": "evidence/COR-04/threshold-tail-20261016/formal-source.json",
+    "formal_source_manifest_sha256": "e1f595476d8198e387f3ce2e609f4d74d0d62da421ae6c56c6162635c3fd208f",
+    "probe_initial_sha256": "07ae69a151f4064f1a6caf2017ef590ec7086cb9cbbf48d2d697a6989eb83267",
+    "probe_final_sha256": "c35a9c7eb6af849867b90b407ab3acfd79d22ad6a3de003ccef0ed93f57a29d1",
+    "per_scenario": "InputSHA256, ConfigHash and seed/permutation/activation are recorded in final logs"
+  },
+  "observed_result": {
+    "boundary_comparisons": 3744,
+    "checks": 39832,
+    "float_bit_comparisons": 541645,
+    "logical_permutation_comparisons": 80,
+    "positive_controls_changed_fixtures": {
+      "adaptation": 48,
+      "delays": 48,
+      "homeostasis": 48,
+      "modulation": 48,
+      "refractory": 48,
+      "self_edges": 48
+    },
+    "scenarios": 96,
+    "status": "passed"
+  },
+  "root_review": "root-review.md",
+  "engineering_details": "exact-source-reuse.json",
+  "test_log": [
+    "probe-final.log",
+    "probe-final-race.log"
+  ],
+  "new_full_suite_run": false,
+  "formal_source_changes": false,
+  "governance": {
+    "receipt": "governance.json",
+    "receipt_sha256": "9cdcd1336985995693a273db2ddd8a140a0c9493c32e2eecdcfda105a05b78e3",
+    "passed_events": 31,
+    "failed_events": 0,
+    "package_pass": 1
+  },
+  "cleanup": {
+    "receipt": "cleanup.json",
+    "removed_bytes": 845159670,
+    "owned_work_root_removed": true,
+    "original_models": 18,
+    "persistent_data_files": 6,
+    "original_module_files": 15046,
+    "foreign_files": 32
+  },
+  "delivery": "pending",
+  "limits": "Artificial three-node continuation consistency only. No independent physiological/gradient/whole-brain/task-quality conclusion and no proof of zero bugs."
+}
