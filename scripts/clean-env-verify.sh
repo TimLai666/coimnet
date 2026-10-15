@@ -7,8 +7,8 @@ set -euo pipefail
 #
 # Usage: scripts/clean-env-verify.sh [--workdir DIR] [--data DIR] [--out FILE] [--list-steps]
 #   --workdir DIR  scratch directory for the export and the step outputs;
-#                  default is a new mktemp directory, which is removed at the
-#                  end. A directory given here is kept. The script replaces
+#                  default is a new runs/.tmp/clean-env.* directory, removed
+#                  at the end. A directory given here is kept. The script replaces
 #                  src/ and the paths used by its steps inside this directory.
 #   --data DIR     official MaleCNS data directory holding the graph store,
 #                  derived parameters and the three Feather source files.
@@ -27,9 +27,9 @@ Usage: scripts/clean-env-verify.sh [--workdir DIR] [--data DIR] [--out FILE] [--
   --list-steps   print each step and its condition (always, needs --data, or
                  always blocked), then exit without exporting or executing.
   --workdir DIR  scratch directory for the export and the step outputs; default
-                 is a new mktemp directory, which is removed at the end. A
-                 directory given here is kept. The script replaces src/ and
-                 the paths used by its steps inside this directory.
+                 is a new runs/.tmp/clean-env.* directory under the repo root,
+                 removed at the end. A directory given here is kept.
+                 The script replaces src/ and the paths used by its steps.
   --data DIR     official MaleCNS directory. It must contain graph-v1.coimgraph,
                  params-derive-v1.coimparams, connectome-weights-male-cns-v1.0-
                  minconf-0.5.feather, body-annotations-male-cns-v1.0-minconf-
@@ -40,7 +40,8 @@ Usage: scripts/clean-env-verify.sh [--workdir DIR] [--data DIR] [--out FILE] [--
                  repository root. Step logs go to <dirname>/logs/<step>.log.
 
 Every step runs inside a clean export of the committed tree (git archive HEAD),
-never in the working tree. A failing step is recorded and the run continues;
+with Go VCS stamping disabled and other GOFLAGS retained.
+A failing step is recorded and the run continues;
 the script exits 1 when any step failed. Blocked steps are not failures.
 USAGE
 }
@@ -165,7 +166,8 @@ log_dir="$out_dir/logs"
 
 workdir_is_default=false
 if [[ -z $workdir ]]; then
-  workdir=$(mktemp -d)
+  mkdir -p "$repo_root/runs/.tmp"
+  workdir=$(mktemp -d "$repo_root/runs/.tmp/clean-env.XXXXXX")
   workdir_is_default=true
 fi
 mkdir -p "$workdir"
@@ -249,6 +251,9 @@ printf 'head: %s\nworkdir: %s\nout: %s\n\n' "$head" "$workdir" "$out_file"
 rm -rf "$src"
 mkdir -p "$src"
 git -C "$repo_root" archive HEAD | tar -x -C "$src"
+
+# Do not stamp the parent working checkout onto binaries from this clean export.
+export GOFLAGS="${GOFLAGS:+$GOFLAGS }-buildvcs=false"
 
 if [[ -n $data_dir ]]; then
   mkdir -p "$src/data"

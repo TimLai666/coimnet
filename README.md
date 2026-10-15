@@ -113,10 +113,11 @@ go build -o bin/coimnet ./cmd/coimnet
 
 SDK 的導航報告各自持有種子與策略清單。取得導航報告後，修改呼叫端的設定或 suite 其中一份報告，不會改到其他報告的清單與雜湊。
 
-保存與接續單組人工範例訓練：
+在專案根目錄保存與接續單組人工範例訓練，成果留在 runs/ 的新目錄：
 
 ```sh
-run_dir=$(mktemp -d)
+mkdir -p runs
+run_dir=$(mktemp -d "$PWD/runs/delayed-example.XXXXXX")
 ./bin/coimnet train delayed --steps 600 --checkpoint "$run_dir/first.json"
 ./bin/coimnet resume --checkpoint "$run_dir/first.json" --steps 200 --out "$run_dir/second.json"
 printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
@@ -157,11 +158,12 @@ restored, err := checkpoint.LoadModelPackageBundle(ctx, "/Volumes/Models/model-0
 
 個體快照可以遷移到新檔而不動原件：`./bin/coimnet checkpoint migrate --src old.json --dst migrated.json` 讀 `--src`、寫 `--dst`（已存在的路徑拒絕、同路徑拒絕），印出含前後 SHA-256、欄位變更清單與資訊損失的 JSON 報告；聯集出現以前的連續個體檔會升級成 `coimnet-individual-checkpoint/v1` 聯集形，同版本則逐位複製。
 
-取得官方原始資料：
+在專案根目錄取得官方原始資料，原件與下載回條保存在 data/downloads/：
 
 ```sh
 ./bin/coimnet data sources
-data_dir=$(mktemp -d)
+mkdir -p data/downloads
+data_dir=$(mktemp -d "$PWD/data/downloads/malecns.XXXXXX")
 ./bin/coimnet data download \
   --url https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather \
   --out "$data_dir/annotations.feather" --max-bytes 20000000 \

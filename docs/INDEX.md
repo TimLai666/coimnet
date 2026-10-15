@@ -190,7 +190,7 @@
 | --- | --- | --- | --- |
 | `coimnet-goal-acceptance/v1` | `evidence/goal-91-20261012` | 91 項工程驗收與證據彙整紀錄 | [evidence/goal-91-20261012/contracts-and-validation-drivers/close_acceptance_metadata.py:34](../evidence/goal-91-20261012/contracts-and-validation-drivers/close_acceptance_metadata.py#L34) |
 | `coimnet-integrated-validation/v1` | `evidence/goal-91-20261012` | 完整驗證命令、來源與保存日誌核對紀錄 | [evidence/goal-91-20261012/contracts-and-validation-drivers/preserve_final_checks.py:56](../evidence/goal-91-20261012/contracts-and-validation-drivers/preserve_final_checks.py#L56) |
-| `coimnet-clean-env-run/v1` | `scripts` | 乾淨環境驗證流程的執行報告格式 | [scripts/clean-env-verify.sh:423](../scripts/clean-env-verify.sh#L423) |
+| `coimnet-clean-env-run/v1` | `scripts` | 乾淨環境驗證流程的執行報告格式 | [scripts/clean-env-verify.sh:428](../scripts/clean-env-verify.sh#L428) |
 | `coimnet-counterfactual-summary/v1` | `evidence/TSK-11/stimulus-counterfactual-20261003` | 刺激反事實分析工具的報告格式 | [evidence/TSK-11/stimulus-counterfactual-20261003/analyze.py:56](../evidence/TSK-11/stimulus-counterfactual-20261003/analyze.py#L56) |
 | `coimnet-multitask-suite/v1` | `experiment` | 多任務測試報告格式 | [experiment/multitask_evidence_test.go:55](../experiment/multitask_evidence_test.go#L55) |
 | `coimnet-platform-matrix/v1` | `scripts` | 跨平台編譯與測試矩陣工具的報告格式 | [scripts/platform-matrix.sh:198](../scripts/platform-matrix.sh#L198) |

@@ -10,7 +10,8 @@
 
 ```sh
 go build -o bin/coimnet ./cmd/coimnet
-run_dir=$(mktemp -d)
+mkdir -p runs
+run_dir=$(mktemp -d "$PWD/runs/realsubgraph.XXXXXX")
 ./bin/coimnet data import \
   --manifest examples/realsubgraph/malecns-alin.json \
   --max-memory-bytes 2147483648 --sort-buffer-bytes 536870912 \

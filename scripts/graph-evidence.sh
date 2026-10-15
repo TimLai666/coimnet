@@ -5,8 +5,8 @@ if [[ $# -lt 1 || $# -gt 2 || $1 == --help || $1 == -h ]]; then
   echo 'Usage: scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY [NEW_STORE_FILE]'
   echo 'Builds the CLI, records doctor/binary/manifest fingerprints, then runs'
   echo '  coimnet data import --manifest manifests/malecns-v1.0.json [--out-store NEW_STORE_FILE]'
-  echo 'under /usr/bin/time with a fresh temporary directory, saving report.json (or'
-  echo 'import.json with the store receipt), run.log, started-at/finished-at and the'
+  echo 'under /usr/bin/time with a fresh runs/.tmp/graph-evidence.* directory, saving'
+  echo 'report.json (or import.json with the store receipt), run.log, started-at/finished-at and the'
   echo 'temp directory listing after the run. With NEW_STORE_FILE it then runs'
   echo '  coimnet data validate --store NEW_STORE_FILE'
   echo 'in a new process, saving validate.json and validate.log. Requires the three'
@@ -32,7 +32,8 @@ fi
 "${hash_command[@]}" bin/coimnet > "$output/binary.sha256"
 (cd manifests && "${hash_command[@]}" malecns-v1.0.json) > "$output/manifest.sha256"
 ./bin/coimnet doctor > "$output/doctor.json"
-tmp=$(mktemp -d)
+mkdir -p runs/.tmp
+tmp=$(mktemp -d "$PWD/runs/.tmp/graph-evidence.XXXXXX")
 echo "$tmp" > "$output/temp-dir.txt"
 printf 'scripts/graph-evidence.sh %q %q\n' "$1" "$store" > "$output/command.txt"
 if [[ $(uname -s) == Darwin ]]; then
