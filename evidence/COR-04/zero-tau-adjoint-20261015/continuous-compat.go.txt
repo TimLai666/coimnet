@@ -1,0 +1,40 @@
+package main
+
+import (
+ "context"
+ "encoding/json"
+ "os"
+ "github.com/TimLai666/coimnet/dynamics"
+)
+
+func must(err error) { if err != nil { panic(err) } }
+type sequence struct{}
+func (sequence) Forward(context.Context,int,[]float64)(*dynamics.Modulation,error) {
+ return &dynamics.Modulation{Gain:[][]float64{{1.1,.9}},Offset:[][]float64{{.02,-.01}}},nil
+}
+func (sequence) NewReverse(context.Context,int,int)(dynamics.ModulationReverse,error) { return sequence{},nil }
+func (sequence) BackwardStep(context.Context,int,dynamics.ModulationGradient)([]dynamics.ActivityGradient,error) {return nil,nil}
+func main() {
+ ctx:=context.Background();var records []map[string]any
+ p:=dynamics.Parameters{Weights:[]float64{.3,-.2},Bias:[]float64{.1,-.03},LogTau:[]float64{.2,-.1}}
+ inputs:=[][]float64{{.3,-.2},{.1,.6},{-.5,.7},{.2,.4}}
+ up:=[][]float64{{.1,.2},{-.3,.4},{.5,-.6},{.2,.3}}
+ for _,act:=range []string{"tanh","softplus"} {
+  cfg:=dynamics.Config{Nodes:2,Sources:[]int{0,1},Targets:[]int{1,0},Delays:[]int{0,1},DT:.4,Activation:act}
+  m,err:=dynamics.NewContinuous(cfg);must(err)
+  vcfg:=cfg;vcfg.StateDimension=1
+  v,err:=dynamics.NewVectorContinuous(vcfg);must(err)
+  initial:=[]float64{.1,-.2}
+  tr,err:=m.Forward(ctx,p,initial,inputs);must(err)
+  ct,err:=m.ForwardCoupled(ctx,p,initial,inputs,sequence{});must(err)
+  vt,err:=v.Forward(ctx,dynamics.VectorParameters{Weights:p.Weights,Bias:p.Bias,LogTau:p.LogTau},initial,inputs);must(err)
+  for _,window:=range []int{0,2} {
+   g,err:=m.Backward(ctx,tr,up,window);must(err)
+   cg,err:=m.Backward(ctx,ct,up,window);must(err)
+   rg,err:=m.BackwardRecompute(ctx,p,initial,inputs,up,window,2);must(err)
+   vg,err:=v.Backward(ctx,vt,up,window);must(err)
+   records=append(records,map[string]any{"activation":act,"window":window,"outputs":tr.Outputs(),"gradient":g,"coupled_outputs":ct.Outputs(),"coupled_gradient":cg,"recomputed_gradient":rg,"vector_outputs":vt.Outputs(),"vector_gradient":vg})
+  }
+ }
+ must(json.NewEncoder(os.Stdout).Encode(records))
+}

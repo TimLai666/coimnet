@@ -1,0 +1,79 @@
+"""Validate the frozen regression and old/new public model records."""
+import collections
+import datetime
+import hashlib
+import json
+from pathlib import Path
+import struct
+import subprocess
+import sys
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip acceptance gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/zero-tau-adjoint-20261015"
+source = json.loads((E / "formal-source.json").read_text())
+def gate():
+    for p, digest in source.items():
+        assert hashlib.sha256((R / p).read_bytes()).hexdigest() == digest, p
+
+commands = [
+    ("regression-accepted", ["go", "test", "-json", "-count=1", "-run", "^TestZeroTauAdjoint", "./dynamics"]),
+    ("regression-accepted-race", ["go", "test", "-race", "-json", "-count=1", "-run", "^TestZeroTauAdjoint", "./dynamics"]),
+    ("core-accepted-race", ["go", "run", "-race", str(W / "core-compat")]),
+    ("continuous-accepted-race", ["go", "run", "-race", str(W / "continuous-compat")]),
+    ("chemical-resume-accepted", ["go", "run", str(W / "chemical-compat"), "resume", str(W / "chemical-models-ordinary")]),
+    ("chemical-resume-accepted-race", ["go", "run", "-race", str(W / "chemical-compat"), "resume", str(W / "chemical-models-race")]),
+    ("core-old-state-resume", ["go", "run", str(W / "core-compat"), "resume", str(E / "core-before.log")]),
+    ("core-old-state-resume-race", ["go", "run", "-race", str(W / "core-compat"), "resume", str(E / "core-before-race.log")]),
+    ("reproduction-accepted", ["go", "run", str(W / "probe")]),
+    ("reproduction-nonzero-accepted", ["go", "run", str(W / "probe-nonzero")]),
+]
+for label, command in commands:
+    gate()
+    subprocess.run([sys.executable, str(E / "run-command.py.txt"), label, *command], cwd=R, check=True)
+    gate()
+
+pairs = [("core-before", "core-accepted", 16), ("core-before-race", "core-accepted-race", 16),
+         ("continuous-before-corrected", "continuous-accepted", 4), ("continuous-before-race", "continuous-accepted-race", 4),
+         ("chemical-resume-before", "chemical-resume-accepted", 6), ("chemical-resume-before-race", "chemical-resume-accepted-race", 6)]
+comparisons = []
+for before, after, count in pairs:
+    a, b = (E / (before + ".log")).read_bytes(), (E / (after + ".log")).read_bytes()
+    assert a == b, (before, after)
+    assert len(json.loads(a)) == count
+    comparisons.append({"before": before + ".log", "after": after + ".log", "records": count, "bytes_equal": True})
+
+def normalized(value):
+    if isinstance(value, float):
+        return ("float64", struct.pack(">d", value).hex())
+    if isinstance(value, dict):
+        return {k: normalized(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [normalized(v) for v in value]
+    return value
+
+for suffix in ["", "-race"]:
+    before = json.loads((E / ("core-before" + suffix + ".log")).read_text(), parse_float=float, parse_int=float)
+    resumed = json.loads((E / ("core-old-state-resume" + suffix + ".log")).read_text(), parse_float=float, parse_int=float)
+    assert normalized([x["Continued"] for x in before]) == normalized(resumed)
+
+regressions = {}
+for suffix in ["", "-race"]:
+    events = [json.loads(line) for line in (E / ("regression-accepted" + suffix + ".log")).read_text().splitlines() if line.startswith("{")]
+    terminal = {x["Test"]: x["Action"] for x in events if x.get("Test") and x.get("Action") in ["pass", "fail", "skip"]}
+    assert dict(collections.Counter(terminal.values())) == {"pass": 27}
+    assert terminal["TestZeroTauAdjointGPU"] == "pass"
+    regressions[suffix or "ordinary"] = {"pass": 27, "gpu_executed": True}
+
+result = {"observed_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "all_passed": True,
+          "source_manifest": "formal-source.json", "source_count": len(source), "frozen_test": "frozen-test.json",
+          "regressions": regressions, "comparisons": comparisons, "normal_core_records_bytes_equal": 40,
+          "old_core_state_new_process_continuations": 32, "old_chemical_model_new_process_continuations": 12,
+          "old_chemical_models_training_updates_each": 3,
+          "limits": "Synthetic compatibility controls and extreme numerical regressions; no real-task accuracy or biological claim."}
+with (E / "candidate-verification.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps(result), flush=True)

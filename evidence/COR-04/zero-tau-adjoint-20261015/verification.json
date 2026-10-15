@@ -1,0 +1,102 @@
+{
+  "requirement": [
+    "COR-02",
+    "COR-04",
+    "COR-06",
+    "COR-08",
+    "COR-09"
+  ],
+  "engineering_passed": true,
+  "reproduction_command": "Exact commands and environments are in run-command.py.txt, engineering.py.txt and the per-command JSON receipts. Frozen before/after regression uses ^TestZeroTauAdjoint.",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "os": "macOS-27.0.1-arm64-arm-64bit",
+    "filesystem": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   318Gi   107Gi    75%    4.0M  1.1G    0%   /System/Volumes/Data",
+    "process_settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "base_commit": "99b2a5cc2c0d82ac05abb77f1a66e1668102f74e",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "44fa6e5db5bd1493f1b5f873b088c95a61f6f37a6b74c0bf1caa6ac087ce2928",
+    "frozen_test": {
+      "file": "dynamics/zero_tau_adjoint_test.go",
+      "sha256": "ca5e507b2e002334f2580a7c1acbde76f78adc828103b10bd269b4cedee9bf3b",
+      "lines": 526,
+      "pattern": "^TestZeroTauAdjoint",
+      "root_review": "Full file read, two missing recompute paths added, underflow premise repaired, GPU reachable via host bias/initial."
+    },
+    "independent_reference": "independent-reference.json",
+    "protected_models": "../../MOD-04/lif-threshold-floor-20261015/protected-models.json",
+    "protected_data": "../../MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json"
+  },
+  "observed_result": {
+    "source_count": 826,
+    "formal_go_files": 822,
+    "ordinary_test_events": {
+      "pass": 6040,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6039,
+      "skip": 23
+    },
+    "package_events_per_build": {
+      "pass": 58,
+      "skip": 3
+    },
+    "prior_terminal_events_present_per_build": 6035,
+    "prior_result_changes": {
+      "ordinary": [],
+      "race": []
+    },
+    "new_regression_events_per_build": 27,
+    "normal_core_records_bytes_equal": 40,
+    "old_core_state_new_process_continuations": 32,
+    "old_chemical_model_new_process_continuations": 12,
+    "artificial_models_training_updates_each": 3,
+    "gpu_standalone_regression_executed_per_build": true,
+    "remaining_delivery": [
+      "commit and remote readback"
+    ],
+    "cleanup": {
+      "cleaned_at": "2026-10-15T16:37:39.042483+00:00",
+      "owned_directory": "runs/.tmp/zero-tau-adjoint-20261015",
+      "owned_inode": 56389496,
+      "removed_entries": 28201,
+      "removed_bytes": 1915525802,
+      "inventory_archive": "cleanup-inventory.json.gz",
+      "inventory_archive_sha256": "1a98a28fb64dd97756d1f8360c01c7cb1847f339c59617819aa7ddee63974926",
+      "no_open_handles": true,
+      "necessary_files_preserved": true,
+      "source_entries_preserved": 826,
+      "original_model_files_preserved": 18,
+      "persistent_data_files_preserved": 6,
+      "protected_old_roots_preserved": [
+        "62",
+        "real-task-quality-20261012"
+      ],
+      "directory_removed": true,
+      "original_module_files_preserved": 15046
+    },
+    "final_governance_pass_events": 31,
+    "fix_commit": "a45bae834eadf7f56f1397a7a0a30f5c707474d7"
+  },
+  "test_log": [
+    "regression-final-red.log",
+    "regression-final-red-race.log",
+    "regression-accepted.log",
+    "regression-accepted-race.log",
+    "engineering-build.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-vet.log",
+    "engineering-module-verify.log",
+    "engineering-module-selection.log",
+    "engineering-governance.log"
+  ],
+  "root_review": "root-review.md",
+  "candidate_acceptance": "candidate-verification.json",
+  "engineering_details": "engineering-verification.json",
+  "verified_at": "2026-10-15T16:36:13.188986+00:00",
+  "limits": "Extreme synthetic numerical cases and compatibility controls; no claim of real-task accuracy improvement, biological completeness or absolute absence of bugs. The two rejected candidate versions are preserved."
+}

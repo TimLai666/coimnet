@@ -1,0 +1,19 @@
+package main
+
+import (
+ "context"
+ "fmt"
+ "math"
+ "github.com/TimLai666/coimnet/dynamics"
+)
+
+func main() {
+ m, err := dynamics.NewLIF(dynamics.LIFConfig{Nodes:1, DT:math.Log(2), TauSyn:1, ThetaMin:0, ThetaMax:2, VReset:-1e308, RefractorySteps:1, Surrogate:dynamics.LIFSurrogate{Kind:"fast_sigmoid", Scale:2}})
+ if err != nil { panic(err) }
+ p := dynamics.LIFParameters{Bias:[]float64{0}, LogTau:[]float64{0}, ThetaRaw:[]float64{0}}
+ tr, err := m.Forward(context.Background(),p,[]float64{0},[][]float64{{3},{1e308}})
+ if err != nil { panic(err) }
+ fmt.Printf("forward outputs=%v spikes=%v voltages=%v\n",tr.Outputs(),tr.Spikes(),tr.Voltages())
+ g, err := m.Backward(context.Background(),tr,[][]float64{{0},{1}},0)
+ fmt.Printf("backward error=%v log_tau=%v expected=%g\n",err,g.LogTau,-3*math.Log(2)/16)
+}

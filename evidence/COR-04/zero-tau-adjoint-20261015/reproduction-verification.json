@@ -1,0 +1,100 @@
+{
+  "requirement": [
+    "COR-02",
+    "COR-04",
+    "COR-06",
+    "COR-08",
+    "COR-09"
+  ],
+  "engineering_passed": false,
+  "observed_at": "2026-10-15T15:55:33.431940+00:00",
+  "base_commit": "99b2a5cc2c0d82ac05abb77f1a66e1668102f74e",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "os": "macOS-27.0.1-arm64-arm-64bit",
+    "filesystem": "Filesystem      Size    Used   Avail Capacity iused ifree %iused  Mounted on\n/dev/disk3s5   460Gi   318Gi   107Gi    75%    4.0M  1.1G    0%   /System/Volumes/Data",
+    "process_settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_before": "../../MOD-04/lif-threshold-sum-20261015/formal-source.json",
+    "frozen_test": "frozen-test.json",
+    "public_inputs": "probe.go.txt",
+    "nonzero_public_inputs": "probe-nonzero.go.txt"
+  },
+  "observed_result": {
+    "lif_forward_finite": true,
+    "lif_backward_rejected_finite_zero_contribution": true,
+    "continuous_finite_final_derivative_rejected": true,
+    "frozen_regression": {
+      "regression-final-red": {
+        "events": {
+          "fail": 21,
+          "pass": 6
+        },
+        "failed_leaf_cases": [
+          "TestZeroTauAdjointLIF/Forward",
+          "TestZeroTauAdjointLIF/ForwardCoupled",
+          "TestZeroTauAdjointLIF/BackwardRecompute/segment=1",
+          "TestZeroTauAdjointLIF/BackwardRecompute/segment=2",
+          "TestZeroTauAdjointLIF/ForwardCoupledRecompute/segment=1",
+          "TestZeroTauAdjointLIF/ForwardCoupledRecompute/segment=2",
+          "TestZeroTauAdjointMixedLIF/Forward",
+          "TestZeroTauAdjointMixedLIF/ForwardCoupled",
+          "TestZeroTauAdjointContinuous/Forward",
+          "TestZeroTauAdjointContinuous/ForwardCoupled",
+          "TestZeroTauAdjointContinuous/ForwardCoupledRecompute",
+          "TestZeroTauAdjointContinuous/BackwardRecompute/segment=1",
+          "TestZeroTauAdjointGPU",
+          "TestZeroTauAdjointContinuousCancellation/Forward",
+          "TestZeroTauAdjointContinuousCancellation/ForwardCoupled",
+          "TestZeroTauAdjointContinuousCancellation/ForwardCoupledRecompute",
+          "TestZeroTauAdjointVector"
+        ],
+        "gpu": "failed",
+        "receipt": "regression-final-red.json"
+      },
+      "regression-final-red-race": {
+        "events": {
+          "fail": 21,
+          "pass": 6
+        },
+        "failed_leaf_cases": [
+          "TestZeroTauAdjointLIF/Forward",
+          "TestZeroTauAdjointLIF/ForwardCoupled",
+          "TestZeroTauAdjointLIF/BackwardRecompute/segment=1",
+          "TestZeroTauAdjointLIF/BackwardRecompute/segment=2",
+          "TestZeroTauAdjointLIF/ForwardCoupledRecompute/segment=1",
+          "TestZeroTauAdjointLIF/ForwardCoupledRecompute/segment=2",
+          "TestZeroTauAdjointMixedLIF/Forward",
+          "TestZeroTauAdjointMixedLIF/ForwardCoupled",
+          "TestZeroTauAdjointContinuous/Forward",
+          "TestZeroTauAdjointContinuous/ForwardCoupled",
+          "TestZeroTauAdjointContinuous/ForwardCoupledRecompute",
+          "TestZeroTauAdjointContinuous/BackwardRecompute/segment=1",
+          "TestZeroTauAdjointGPU",
+          "TestZeroTauAdjointContinuousCancellation/Forward",
+          "TestZeroTauAdjointContinuousCancellation/ForwardCoupled",
+          "TestZeroTauAdjointContinuousCancellation/ForwardCoupledRecompute",
+          "TestZeroTauAdjointVector"
+        ],
+        "gpu": "failed",
+        "receipt": "regression-final-red-race.json"
+      }
+    }
+  },
+  "test_log": [
+    "reproduction.log",
+    "reproduction-nonzero.log",
+    "regression-final-red.log",
+    "regression-final-red-race.log"
+  ],
+  "test_premise_corrections": {
+    "initial_red_logs": [
+      "regression-red.log",
+      "regression-red-race.log"
+    ],
+    "invalid_tau": "LogTau=-745 underflowed to zero in this environment, corrected to valid tau=1 with DT=1000. This initial test failure is not counted as a defect reproduction.",
+    "compatibility_driver": "continuous-before.log failed because vector StateDimension was omitted; corrected driver sets 1, continuous-before-corrected.log passed."
+  },
+  "reproduction_command": "See reproduction.json, reproduction-nonzero.json, regression-final-red.json and regression-final-red-race.json for exact commands, process environments, exit codes and raw logs."
+}

@@ -62,6 +62,7 @@
 - 第一批用純量連續動態與逐邊參數建立完整梯度。向量/共享參數在稀疏數值介面驗證，隨後接入動態。LIF、調節、真實資料與 GPU 仍是完整必做範圍。
 - 未支援的設定返回具體錯誤，不退回別種模型或偷偷縮圖。人工圖與資料產生器在設定、輸出與報告明示名稱。
 - 所有可失敗更新先驗證輸入並計算候選結果，再提交狀態；取消、NaN、Inf 或形狀錯誤不得留半次更新。
+- 膜時間常數的導數保留各核心原算式與正常累加順序。只有結果非有限、但原始電位、drive、adjoint 與衰退導數皆有限時，精確重算完整差乘積後做一次 float64 捨入；真正超限與原始非有限值依既有梯度檢查拒絕。精確重算不放進正常路徑，以舊新逐位對照驗證保存模型接續的相容性。範圍與驗收見 [ticket 113](docs/tickets/113-membrane-tau-derivative.md)。
 - 初期手動稀疏反向計算屬主規格允許方案。Insyra 必須實際參與張量與可用數值/學習操作，不能只是檔案讀取。若其 tape 無公開接合方法，使用明示且測過的完整向量梯度契約，禁止 unsafe/反射或假裝 detach 後仍可微。
 - Insyra v0.3.4 的 `Tape.BackwardFrom` 用於兩段 tape 的外部梯度：讀出 tape 接收與 prediction 同形狀的種子，核心 float64 時間回推後，編碼器 tape 接收與 encoded 同形狀的種子。保留原有 float32 轉換、輸入節點順序與核心反向契約。驗收見 [ticket 31](docs/tickets/31-direct-upstream-gradient.md)。`Tape.Custom` 尚未採用。最佳化器保存由 CoImNet 的 AdamW 負責，追蹤 [#376](https://github.com/HazelnutParadise/insyra/issues/376)。`nn.EdgeSum` 的精確加總後一次捨入，與 CoImNet float64／WebGPU 依邊順序加總的數值契約不同，不直接替換核心。CoImNet 目前沒有呼叫 Insyra `Tape.Tanh`，該 API 的 float32 捨入變更不影響現有活化路徑。若之後採用，須另驗證數值與舊模型接續相容性。
 - 第一版快照明確命名為 `episode-training/v1`，每個訓練步驟重設神經狀態。資料由固定版本、seed 與樣本索引決定。此格式不保存持續個體的神經歷史或快速權重；若 `Config.Chemistry` 宣告 `ChemicalEpisode`，則保存獨立回合的化學起點、來源時鐘與來源視窗、資源、回饋及讀出表現調節。完整持續個體另用個體 schema。

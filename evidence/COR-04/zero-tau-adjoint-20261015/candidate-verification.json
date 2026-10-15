@@ -1,0 +1,60 @@
+{
+  "observed_at": "2026-10-15T16:04:52.247337+00:00",
+  "all_passed": true,
+  "source_manifest": "formal-source.json",
+  "source_count": 826,
+  "frozen_test": "frozen-test.json",
+  "regressions": {
+    "ordinary": {
+      "pass": 27,
+      "gpu_executed": true
+    },
+    "-race": {
+      "pass": 27,
+      "gpu_executed": true
+    }
+  },
+  "comparisons": [
+    {
+      "before": "core-before.log",
+      "after": "core-accepted.log",
+      "records": 16,
+      "bytes_equal": true
+    },
+    {
+      "before": "core-before-race.log",
+      "after": "core-accepted-race.log",
+      "records": 16,
+      "bytes_equal": true
+    },
+    {
+      "before": "continuous-before-corrected.log",
+      "after": "continuous-accepted.log",
+      "records": 4,
+      "bytes_equal": true
+    },
+    {
+      "before": "continuous-before-race.log",
+      "after": "continuous-accepted-race.log",
+      "records": 4,
+      "bytes_equal": true
+    },
+    {
+      "before": "chemical-resume-before.log",
+      "after": "chemical-resume-accepted.log",
+      "records": 6,
+      "bytes_equal": true
+    },
+    {
+      "before": "chemical-resume-before-race.log",
+      "after": "chemical-resume-accepted-race.log",
+      "records": 6,
+      "bytes_equal": true
+    }
+  ],
+  "normal_core_records_bytes_equal": 40,
+  "old_core_state_new_process_continuations": 32,
+  "old_chemical_model_new_process_continuations": 12,
+  "old_chemical_models_training_updates_each": 3,
+  "limits": "Synthetic compatibility controls and extreme numerical regressions; no real-task accuracy or biological claim."
+}
