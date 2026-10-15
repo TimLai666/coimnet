@@ -1,0 +1,28 @@
+from pathlib import Path
+import hashlib,json,subprocess,sys
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+fix=json.loads((e/'applied-fix.json').read_text())['changes']
+def sha(raw): return hashlib.sha256(raw).hexdigest()
+saved={name:(r/name).read_bytes() for name in fix}
+for name,raw in saved.items(): assert sha(raw)==fix[name]['after_sha256'],name
+assert sha((r/'recompute_temp_paths_test.go').read_bytes())==json.loads((e/'test-freeze.json').read_text())['sha256']
+old_paths={'scripts/recompute-evidence.sh':e/'recompute-evidence.sh.before.txt','docs/resources.md':e/'resources.md.before.txt'}
+old={name:p.read_bytes() for name,p in old_paths.items()}
+for name,raw in old.items(): assert sha(raw)==fix[name]['before_sha256'],name
+changed=[]
+result=None
+try:
+ for name,raw in old.items():
+  assert (r/name).read_bytes()==saved[name],name
+  (r/name).write_bytes(raw)
+  changed.append(name)
+ result=subprocess.run([sys.executable,str(r/'runs/.tmp/recompute-temp-path-20261015/run.py'),'targeted-red-local','go','test','.','-run','^(TestRecomputeEvidenceTempPaths|TestResourceMeasurementExampleTempPath)$','-count=1','-json'],cwd=r)
+finally:
+ for name in changed:
+  assert (r/name).read_bytes()==old[name],('unexpected concurrent change; not overwriting',name)
+  (r/name).write_bytes(saved[name])
+ receipt={'returned_to_fixed_sources':all((r/name).read_bytes()==saved[name] for name in saved),'files':fix,'old_source_test_exit_code':None if result is None else result.returncode}
+ with (e/'pre-fix-reproduction-restoration.json').open('x') as out: out.write(json.dumps(receipt,indent=2)+'\n')
+assert result is not None and result.returncode==1,result
+print(json.dumps(receipt))

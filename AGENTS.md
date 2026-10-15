@@ -66,7 +66,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。
 - `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但預設 GC 下程序峰值足跡會超出這個存活陣列估算；2026-09-24 已提交的 OPS-07 證據中，預設 GC 峰值足跡 12.22 GiB、85 秒，設 `GOMEMLIMIT=8GiB` 時 8.01 GiB、72 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，執行全圖命令時建議明示 `GOMEMLIMIT=8GiB`。OPS-10 腳本本身尚未設定。
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
-- `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
 - `modulation/memory_controller.go:104`、`modulation/controller.go:199`：[NEEDS INVESTIGATION] 已有活動歷史後修改公開 Inputs／Nodes 宣告時，MemoryController 可能重建視窗。規格尚未指定應回錯、重設或保留歷史，正常呼叫端也不改宣告。後續先釐清支援契約再補測試，不列為已確認缺陷。
 
 - `docs/tickets/18-local-plasticity.md:21`：[NEEDS INVESTIGATION] 公式寫 pre(t)×post(t+1)，但同票 121–137 手算表、套件註解與 consumer 使用核心步驟後的 pre。Root 兩列 LIF 實測 eligibility／plastic 為 exp(-1)，與既有手算表一致；若把 pre 當本步開始的突觸跡，該案例為 1。主規格 10.3 只寫 pre_activity×post_activity，沒有指定兩側時點。需先釐清時點定義，不把 worker 的演算法錯誤判定當成已確認，不先改正常模型。證據見 `evidence/MOD-05/receptor-rule-ownership-20261014/timing-audit.json`。

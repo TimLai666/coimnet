@@ -1,0 +1,5 @@
+AGENTS.md:69:- `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
+scripts/clean-env-verify.sh:326:run_step recompute_rss_small bash scripts/recompute-evidence.sh --scale small --out "$workdir/rss-small.json"
+docs/INDEX.md:203:| `coimnet-recompute-rss/v1` | `scripts` | 重算模式 RSS 證據工具的報告格式 | [scripts/recompute-evidence.sh:158](../scripts/recompute-evidence.sh#L158) |
+scripts/recompute-evidence.sh:10:Usage: scripts/recompute-evidence.sh [--scale small|full] [--out FILE]
+docs/tickets/25-mixed-types-vector-nodes-shared-parameters-and-recompute.md:224:RSS（`scripts/recompute-evidence.sh`，每個模式各自一個行程，`/usr/bin/time -l`，`T = 256`、`S = 16`）：連續核心 50,000 節點、

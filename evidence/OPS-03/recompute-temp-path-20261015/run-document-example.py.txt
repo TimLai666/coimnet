@@ -1,0 +1,28 @@
+from pathlib import Path
+import json,subprocess,hashlib,sys
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+fixture=r/'runs/.tmp/recompute-temp-path-20261015/doc-fixture'
+doc=(r/'docs/resources.md').read_text()
+section=doc.split('## '+chr(37325)+chr(29694)+chr(23616)+chr(37096)+chr(37327)+chr(28204),1)[1]
+block=section.split('```sh\n',1)[1].split('```',1)[0]
+with (e/'document-example.sh.txt').open('x') as out:out.write(block)
+rows=[]
+for index in range(1,4):
+ run=subprocess.run(['sh','-ec',block+'\nprintf "%s\\n" "$run_dir"\n'],cwd=fixture,text=True,capture_output=True)
+ assert run.returncode==0,{'run':index,'code':run.returncode,'stderr':run.stderr}
+ work=Path(run.stdout.strip());work.relative_to(fixture/'runs/.tmp')
+ assert work.is_dir() and len(list(work.iterdir()))>=3,work
+ result=json.loads((work/'result.json').read_text())
+ files={}
+ for p in sorted(work.rglob('*')):
+  if p.is_file():files[str(p.relative_to(work))]={'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+ assert 'result.json' in files and 'time.log' in files
+ assert any(name.startswith('example.json') for name in files)
+ for name in ['result.json','time.log']:
+  raw=(work/name).read_bytes()
+  with (e/('doc-example-'+str(index)+'-'+name)).open('xb') as out:out.write(raw)
+ rows.append({'run':index,'directory':str(work.relative_to(r)),'exit_code':run.returncode,'files':files,'result_json_type':type(result).__name__})
+receipt={'literal_document_block_executed':True,'runs':rows,'all_results_and_checkpoints_created':True,'claim':'functional document-example validation only; concurrent load prevents performance comparison'}
+with (e/'document-example-verification.json').open('x') as out:out.write(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps({'document_runs':len(rows),'all_results_and_checkpoints_created':True}))

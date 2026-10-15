@@ -1,0 +1,40 @@
+from pathlib import Path
+import hashlib,json,datetime
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+b=json.loads((e/'baseline.json').read_text())
+def read(name):
+ p=r/name
+ raw=p.read_bytes()
+ assert hashlib.sha256(raw).hexdigest()==b['target_sources'][name],name
+ return raw.decode('utf-8')
+script=read('scripts/recompute-evidence.sh')
+doc=read('docs/resources.md')
+replacements={
+ '.recompute-work at the repository root, then runs TestRecomputeRSSHelper four':'runs/.tmp at the repository root, then runs TestRecomputeRSSHelper four',
+ 'directory, and .recompute-work once empty, are removed on exit.':'directory is removed on exit; the shared runs/.tmp directory is retained.',
+ 'work_root="$repo_root/.recompute-work"':'work_root="$repo_root/runs/.tmp"',
+ '  if [[ -n $work ]]; then rm -rf "$work"; fi':'  if [[ -n $work && $work == "$work_root"/recompute-rss.* ]]; then rm -rf "$work"; fi',
+ '  rmdir "$work_root" 2>/dev/null || true':'  # Keep the shared temporary root and any other work it contains.',
+ 'work=$(mktemp -d "$work_root/run.XXXXXX")':'work=$(mktemp -d "$work_root/recompute-rss.XXXXXX")',
+}
+for old,new in replacements.items():
+ assert script.count(old)==1,old
+ script=script.replace(old,new)
+changes={
+ '依 README 建置後，macOS 可執行：':'依 README 建置後，在專案根目錄執行，macOS 可使用：',
+ 'run_dir=$(mktemp -d)':'mkdir -p runs/.tmp\nrun_dir=$(mktemp -d "$PWD/runs/.tmp/resource-profile.XXXXXX")',
+ '量測結果和範例快照留在指定目錄，不作使用者的模型發布。':'核對量測結果、範例快照與日誌後，先將必要成果保存到專案內指定的 runs 子目錄，再清除本次 run_dir 暫存目錄。範例快照不作使用者的模型發布。',
+}
+for old,new in changes.items():
+ assert doc.count(old)==1,old
+ doc=doc.replace(old,new)
+result={}
+for name,content in [('scripts/recompute-evidence.sh',script),('docs/resources.md',doc)]:
+ p=r/name
+ assert hashlib.sha256(p.read_bytes()).hexdigest()==b['target_sources'][name],name
+ p.write_text(content,encoding='utf-8')
+ result[name]={'before_sha256':b['target_sources'][name],'after_sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+with (e/'applied-fix.json').open('x') as out:
+ out.write(json.dumps({'applied_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'changes':result,'existing_go_files_modified':0},indent=2)+'\n')
+print(json.dumps(result))

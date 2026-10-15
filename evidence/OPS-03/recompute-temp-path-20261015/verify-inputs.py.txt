@@ -1,0 +1,28 @@
+from pathlib import Path
+import hashlib,json,sys,datetime
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+study=r/'evidence/TSK-11/lif-build-quality-20261015'
+w=r/'runs/.tmp/lif-build-quality-20261015'
+def sha(p):
+ return hashlib.sha256(p.read_bytes()).hexdigest()
+def check_map(values):
+ for name,want in values.items():
+  assert sha(r/name)==want, ('source changed',name)
+ return len(values)
+sources=check_map(json.loads((e/'go-source-before.json').read_text()))
+models=check_map(json.loads((study/'protected-models.json').read_text()))
+freeze=json.loads((study/'driver-freeze-v2.json').read_text())
+drivers=check_map(freeze['driver_files'])
+for name,want in freeze['binaries'].items():
+ assert sha(w/name)==want, ('binary changed',name)
+assert sha(study/'protocol.json')==freeze['protocol_sha256']
+baseline=json.loads((e/'baseline.json').read_text())
+for saved in baseline['preexisting_temp_roots']:
+ assert (r/'runs/.tmp'/saved['name']).stat().st_ino==saved['inode'], saved['name']
+assert sorted(p.name for p in (r/'runs/.tmp/62').iterdir())==['buffer-tests']
+assert sorted(p.name for p in (r/'runs/.tmp/real-task-quality-20261012').iterdir())==['input-profile-tests']
+result={'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'original_source_files_unchanged':sources,'original_model_files_unchanged':models,'frozen_driver_files_unchanged':drivers,'frozen_binaries_unchanged':len(freeze['binaries']),'protocol_unchanged':True,'preexisting_temp_roots_preserved':baseline['preexisting_temp_roots'],'additive_tool_test_is_not_an_input_to_the_frozen_training_binaries':True}
+with (e/(sys.argv[1]+'.json')).open('x') as out:
+ out.write(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result))

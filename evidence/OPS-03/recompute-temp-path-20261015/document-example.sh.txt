@@ -1,0 +1,4 @@
+mkdir -p runs/.tmp
+run_dir=$(mktemp -d "$PWD/runs/.tmp/resource-profile.XXXXXX")
+/usr/bin/time -l ./bin/coimnet train delayed --steps 600 \
+  --checkpoint "$run_dir/example.json" > "$run_dir/result.json" 2> "$run_dir/time.log"

@@ -1,0 +1,253 @@
+{
+  "requirement": [
+    "OPS-03"
+  ],
+  "scope": "supplemental project-local temporary storage acceptance; original expanded configuration requirement unchanged",
+  "reproduction_command": [
+    {
+      "receipt": "full-build.json",
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 19.533022208000002
+    },
+    {
+      "receipt": "full-unit-local.json",
+      "command": [
+        "go",
+        "test",
+        "./...",
+        "-count=1",
+        "-json"
+      ],
+      "exit_code": 0,
+      "seconds": 404.44205333400004
+    },
+    {
+      "receipt": "full-race-local.json",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./...",
+        "-count=1",
+        "-json"
+      ],
+      "exit_code": 0,
+      "seconds": 3531.079510666
+    },
+    {
+      "receipt": "full-vet.json",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "exit_code": 0,
+      "seconds": 3.040481417
+    },
+    {
+      "receipt": "module-verify.json",
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "exit_code": 0,
+      "seconds": 12.433525625
+    },
+    {
+      "receipt": "module-selection.json",
+      "command": [
+        "go",
+        "list",
+        "-m",
+        "all"
+      ],
+      "exit_code": 0,
+      "seconds": 0.04018587500000001
+    },
+    {
+      "receipt": "go-format.json",
+      "command": [
+        "gofmt",
+        "-l",
+        "recompute_temp_paths_test.go"
+      ],
+      "exit_code": 0,
+      "seconds": 0.014092292000000003
+    },
+    {
+      "receipt": "final-governance.json",
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^(TestGovernance|TestFormatIndex|TestTargetFlow)",
+        "-count=1",
+        "-json"
+      ],
+      "exit_code": 0,
+      "seconds": 4.970739875
+    },
+    {
+      "receipt": "governance-privacy-final.json",
+      "command": [
+        "go",
+        "test",
+        ".",
+        "-run",
+        "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$",
+        "-count=1",
+        "-json"
+      ],
+      "exit_code": 0
+    }
+  ],
+  "environment": {
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-temp-path-20261015/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/recompute-temp-path-20261015/go-tmp",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+    "GOSUMDB": "off",
+    "GOTOOLCHAIN": "local",
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-p=2 -timeout=60m"
+  },
+  "input_fingerprints": {
+    "original_commit": "b4b90034a84e4e965311555a2170e56173defb07",
+    "original_go_module_entries": 812,
+    "final_go_module_entries": 813,
+    "final_source_manifest": "go-source-final.json",
+    "final_source_manifest_sha256": "c1b29293391a11fb12f8e6fd524e45203650f08f834e1b807cf85babce2e4f0e",
+    "changed_source_and_test": {
+      "scripts/recompute-evidence.sh": "3a380136cd5071c42db111c1700a9241c9c2832cfe3ef35883391ef1f26547c5",
+      "docs/resources.md": "0fc8b793f4923ef2137fb4037a7583e588d63735e8453aad5a2e7f8e438d0b52",
+      "recompute_temp_paths_test.go": "e56e559cf1ef1f0e4a665be32103ca0e9447e1c97d87d574c62afd078e8e02ca"
+    }
+  },
+  "observed_result": {
+    "checks": {
+      "full-unit-local": {
+        "test_events": {
+          "pass": 5826,
+          "skip": 22
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 3
+        },
+        "top_level_passed": 2169,
+        "log_sha256": "69822d6777fab582a55ddfc559f81f3aed786d76bcea2a9f2b0959716b8d98b2",
+        "command_receipt": "full-unit-local.json"
+      },
+      "full-race-local": {
+        "test_events": {
+          "pass": 5825,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 3
+        },
+        "top_level_passed": 2168,
+        "log_sha256": "8252aca226fbcdf4da9e3c48d9106af57d373a9c2a2c97367b9f6b01d7135f99",
+        "command_receipt": "full-race-local.json"
+      },
+      "governance-privacy-final": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        },
+        "top_level_passed": 11,
+        "log_sha256": "5da684268463e7439f53ad67919dbb56bad70f9468b2dcaaf1e0d984b851dff9",
+        "command_receipt": "governance-privacy-final.json"
+      },
+      "targeted-red-local": {
+        "test_events": {
+          "fail": 8
+        },
+        "log_sha256": "ecffb173c3c6f5789bf342db943f885c46a3a51d797afcb36724f8a5e375d6df"
+      },
+      "targeted-green-local": {
+        "test_events": {
+          "pass": 8
+        },
+        "log_sha256": "23545ff12c3d8f550455926547a74fb6b1978e2982b3af4f9692573222ecbe1f"
+      },
+      "targeted-race-local": {
+        "test_events": {
+          "pass": 8
+        },
+        "log_sha256": "97bb43276ef53ef1e94be1b712b8a567ae20407f893d24262edac8975b332a49"
+      }
+    },
+    "actual_RSS_helper_processes": 4,
+    "actual_document_example_runs": 3,
+    "checkpoint_bytes_preserved": 1177,
+    "preserved_original_models": 18,
+    "no_numerical_core_or_model_format_change": true,
+    "no_full_scale_performance_or_real_task_quality_claim": true
+  },
+  "test_log": [
+    "full-unit-local.log.gz",
+    "full-race-local.log.gz",
+    "governance-privacy-final.log",
+    "targeted-red-local.log",
+    "targeted-green-local.log",
+    "targeted-race-local.log",
+    "rss-small-local.log",
+    "document-example-local.log",
+    "adversarial-review.md",
+    "adversarial-final-engineering-review.md",
+    "governance-post-metadata.log",
+    "governance-post-cleanup.log"
+  ],
+  "engineering_passed": true,
+  "historical_progress_receipts": [
+    "full-unit-verification.json",
+    "concurrent-document-ownership.json"
+  ],
+  "historical_receipts_are_time_specific_and_superseded_by_this_final_aggregate": true,
+  "checked_at": "2026-10-15T07:28:56.188579+00:00",
+  "limitations": [
+    "macOS arm64 runtime validation",
+    "small artificial RSS run validates script flow, not new performance gains",
+    "overall zero-bug objective remains unproven",
+    "ticket 104 and ticket 106 continue independently"
+  ],
+  "final_governance_after_metadata": {
+    "command_receipt": "governance-post-metadata.json",
+    "test_log": "governance-post-metadata.log",
+    "top_level_passed": 11,
+    "test_events_passed": 31,
+    "log_sha256": "25595722dadb89aedac8199fc730efc718d17baac6462c7aab47b04bc9908aac"
+  },
+  "protected_inputs_after_engineering": "protected-inputs-final.json",
+  "cleanup_completed": true,
+  "cleanup_receipt": "cleanup.json",
+  "delivery_pending": true,
+  "implementation_commit": "eedb19aa62849eda90078521c0a585441408141c",
+  "governance_after_cleanup": {
+    "command_receipt": "governance-post-cleanup.json",
+    "test_log": "governance-post-cleanup.log",
+    "top_level_passed": 11,
+    "test_events_passed": 31,
+    "log_sha256": "fa4b6686a0c9bf71aa165edda16d5af3c3f33142c1b71f80c34a92f0a01f5747"
+  },
+  "expected_race_skip_difference": {
+    "test": "TestBundleLargerThanSingleFileLimit",
+    "source": "checkpoint/bundle_kinds_test.go:274",
+    "normal_runs_large_fixture": true,
+    "race_skips_large_fixture": true,
+    "no_new_skips_added": true
+  },
+  "engineering_log_archive_map": "engineering-log-archives.json"
+}

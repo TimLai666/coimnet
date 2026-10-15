@@ -1,0 +1,30 @@
+from pathlib import Path
+import json,subprocess,sys,hashlib,datetime
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+wrapper=r/'runs/.tmp/recompute-temp-path-20261015/run.py'
+commands=[
+ ('full-build',['go','build','./...']),
+ ('full-unit-local',['go','test','./...','-count=1','-json']),
+ ('full-race-local',['go','test','-race','./...','-count=1','-json']),
+ ('full-vet',['go','vet','./...']),
+ ('module-verify',['go','mod','verify']),
+ ('module-selection',['go','list','-m','all']),
+ ('go-format',['gofmt','-l','recompute_temp_paths_test.go']),
+ ('final-governance',['go','test','.','-run','^(TestGovernance|TestFormatIndex|TestTargetFlow)','-count=1','-json']),
+]
+fix=json.loads((e/'applied-fix.json').read_text())['changes']
+test=json.loads((e/'test-freeze.json').read_text())
+checks={name:data['after_sha256'] for name,data in fix.items()}
+checks[test['path']]=test['sha256']
+results=[]
+for name,cmd in commands:
+ for path,want in checks.items():
+  assert hashlib.sha256((r/path).read_bytes()).hexdigest()==want,path
+ rc=subprocess.run([sys.executable,str(wrapper),name,*cmd],cwd=r).returncode
+ results.append({'name':name,'exit_code':rc})
+ if rc:break
+receipt={'completed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'commands':results,'all_required_commands_completed':len(results)==len(commands),'all_passed':len(results)==len(commands) and all(row['exit_code']==0 for row in results),'source_and_test_fingerprints':checks}
+with (e/'engineering-pipeline.json').open('x') as out:out.write(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps(receipt))
+sys.exit(0 if receipt['all_passed'] else 1)

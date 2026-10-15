@@ -1,0 +1,25 @@
+from pathlib import Path
+import json,os,subprocess,hashlib,time,datetime,collections
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/recompute-temp-path-20261015'
+assert not (r/'runs/.tmp/recompute-temp-path-20261015').exists()
+env=os.environ.copy();env.update(json.loads((e/'full-build.json').read_text())['environment'])
+borrow=r/'runs/.tmp/operational-temp-paths-20261015/go-tmp'
+assert borrow.is_dir()
+env.update({'GOTMPDIR':str(borrow),'TMPDIR':str(borrow)})
+for name,h in json.loads((e/'go-source-final.json').read_text()).items():assert hashlib.sha256((r/name).read_bytes()).hexdigest()==h,name
+command=['go','test','.','-run','^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$','-count=1','-json']
+t=time.monotonic()
+p=e/'governance-post-cleanup.log'
+with p.open('xb') as out:result=subprocess.run(command,cwd=r,env=env,stdout=out,stderr=subprocess.STDOUT)
+receipt={'command':command,'exit_code':result.returncode,'duration_seconds':time.monotonic()-t,'log_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'temporary_environment':{'GOTMPDIR':str(borrow),'TMPDIR':str(borrow)},'borrowed_existing_106_temporary_directory':True,'105_deleted_root_not_recreated':not (r/'runs/.tmp/recompute-temp-path-20261015').exists(),'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat()}
+with (e/'governance-post-cleanup.json').open('x') as out:out.write(json.dumps(receipt,indent=2)+'\n')
+assert result.returncode==0,receipt
+c=collections.Counter();top=[]
+for line in p.read_text().splitlines():
+ d=json.loads(line)
+ if d.get('Test') and d['Action'] in ('pass','fail','skip'):
+  c[d['Action']]+=1
+  if d['Action']=='pass' and '/' not in d['Test']:top.append(d['Test'])
+assert c=={'pass':31} and len(top)==11,(c,top)
+print(json.dumps(receipt))
