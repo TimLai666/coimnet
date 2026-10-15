@@ -1,0 +1,92 @@
+{
+  "requirement": [
+    "LRN-04",
+    "LRN-05",
+    "NAT-06"
+  ],
+  "reproduction_command": "python3 evidence/LRN-05/plasticity-time-definition-20261015/audit.py.txt --output evidence/LRN-05/plasticity-time-definition-20261015/document-recheck.json",
+  "environment": {
+    "system": "macOS-27.0.1-arm64-arm-64bit",
+    "python": "3.9.6"
+  },
+  "input_fingerprints": {
+    "baseline": "baseline.json",
+    "same_source_manifest": "../../MOD-04/lif-threshold-floor-20261015/formal-source.json",
+    "audit_script_sha256": "dd8f7a43196d8365236e155be30926647850e62d7884eb629d2435632e0c8a22"
+  },
+  "observed_result": {
+    "document_red_failures": 7,
+    "document_green_passes": 7,
+    "formal_sources_unchanged": 823,
+    "protected_models_unchanged": 18,
+    "persistent_data_unchanged": 6,
+    "reused_selected_unit_passes": 8,
+    "reused_selected_race_passes": 8,
+    "new_go_execution": false,
+    "new_confirmed_algorithm_bugs": [],
+    "confirmed_document_defects": [
+      "unindexed specification incorrectly attributed an indexed formula",
+      "completed runner phase described as not started"
+    ],
+    "owned_temporary_paths_created": [],
+    "owned_temporary_paths_remaining": []
+  },
+  "test_log": [
+    "document-red.json",
+    "document-green.json",
+    "document-final.json"
+  ],
+  "source_history": [
+    {
+      "commit": "809965bdc37531fe629f15143b2e1bb33da428e2",
+      "role": "original unindexed specification"
+    },
+    {
+      "commit": "3d7d9e09eea0d918e2989bf335c69f27c90affc7",
+      "role": "indexed ticket formula added"
+    },
+    {
+      "commit": "c5933d6e5ad4eabcde14cad1c7c325a0d197102e",
+      "role": "runner update-order decision"
+    },
+    {
+      "commit": "e9a927dc14b28b6f63a7889a7614a4288334e8f5",
+      "role": "individual integration"
+    },
+    {
+      "commit": "b2276a325924e21b5e68882db4499fe034241fc5",
+      "role": "runner integration"
+    }
+  ],
+  "root_review": {
+    "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md:458": "Original spec does not fix activity sampling indices; artificial reference rule only.",
+    "learning/individual.go:747": "After-core row supplied as Pre; event/output chosen by target core type.",
+    "simulate/runner.go:767": "Same after-core pre/post row; updated weights used on next step.",
+    "plasticity/plasticity.go:381": "Pair traces decay, residual traces contribute, own events added last; rate uses supplied Pre*Post.",
+    "docs/tickets/18-local-plasticity.md": "Original hand-calculated exp(-1) result agrees with consumers; old indexed label is ambiguous.",
+    "docs/tickets/19-plasticity-on-runner.md": "Existing LIF and continuous reference calculations use same after-core row."
+  },
+  "prior_runtime_timing_evidence": {
+    "receipt": "../../MOD-05/receptor-rule-ownership-20261014/timing-audit.json",
+    "log_sha256": "fef495c40344a27ec3e39a91c3b8746f4721aec84dee7e0ac59bc6f42b10c094",
+    "fresh_execution": false
+  },
+  "limits": [
+    "This audit documents existing behavior and fixes source attribution; no algorithm or model timing policy changed.",
+    "No new Go build, unit, race, vet or full-brain execution in this documentation-only stage.",
+    "Same-source full engineering logs were hash-checked and their terminal counts re-parsed; eight relevant tests per build were confirmed passed.",
+    "No biological accuracy, learning-quality improvement, or repository-wide bug absence is established."
+  ],
+  "verified_at": "2026-10-15T13:55:22.375622+00:00",
+  "documentation_validation": {
+    "requirement_ids_match": 91,
+    "passed_requirement_entries": 91,
+    "evidence_paths_with_schema_checked": 225,
+    "local_document_links_checked": 392,
+    "dated_root_decisions_in_changed_tickets": true,
+    "handoff_sha256sum_entries_passed": 7,
+    "governance_go_tests_rerun": false
+  },
+  "executed_command": "python3 evidence/LRN-05/plasticity-time-definition-20261015/audit.py.txt --output evidence/LRN-05/plasticity-time-definition-20261015/document-final.json",
+  "reproduction_note": "Use a fresh output filename; existing receipts are deliberately not overwritten."
+}

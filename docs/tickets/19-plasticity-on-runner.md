@@ -21,7 +21,8 @@ Status：done（契約 2026-09-15 定案，2026-09-16 實作與驗證，見「�
 2. **runner 內的順序**：沿用 18 的固定順序（核心前向 → 更新跡 → 套閘門 → 下一步用新的
    `w_eff`）。`w_eff` 每步重算成核心的權重陣列（`dynamics` 的 `Advance` 接受每次呼叫的參數，
    因此分塊推進時在每個分塊前更新一次；為了逐步更新，分塊大小在開啟可塑性時強制為 1，並在報告寫明
-   耗時代價）。
+   耗時代價）。`pre`／`post` 採核心推進後同一列的訊號，沿用 18 的手算表。
+   資料列定義與來源核對見 [ticket 111](111-plasticity-time-definition.md)。
 3. **三種執行**（`simulate compare` 新增 `learning_variants`）：`original`（無可塑性，逐位等於
    NAT-01／02 的報告）、`plastic`（開啟，報告學後的 plastic 統計）、`learned_then_frozen`（先跑
    `plastic` 得到 `plastic` 陣列，再以該陣列固定為 `w_eff` 且關閉更新，重跑同一刺激）。指標與門檻

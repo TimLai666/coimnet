@@ -8,8 +8,8 @@ User Story：研究者可以在個體運作中開啟局部可塑性：每條指�
 
 Blocked by：11 LIF 核心、16 LIF 個體（第一階段）、17 固定符號（第一階段）
 
-Status：in progress（第一階段已於 2026-09-15 實作並驗證，見「第一階段證據」；第二階段 runner 與
-compare，NAT-06，尚未開始）
+Status：done（第一階段見「第一階段證據」；第二階段 runner 與 compare 已由
+[ticket 19](19-plasticity-on-runner.md) 完成，NAT-06 的驗收見下方勾選項目。）
 
 對應需求：LRN-04（活動相關與脈衝時序相關規則，各有方程式與前後時序測試）、LRN-05（近期參與
 紀錄與調節控制：延遲回饋、閘門關閉、衰退、更新順序）、MOD-05 的閘門與時間窗部分（受體來源在
@@ -17,11 +17,13 @@ compare，NAT-06，尚未開始）
 
 ## Root 決策（2026-09-15）
 
-1. **參考規則（主規格 10.3 原式）**：對每條啟用可塑性的邊 e=(j→i)：
-   `elig_e(t+1) = decay_e * elig_e(t) + pre_j(t) * post_i(t+1)`，
-   `plastic_e(t+1) = bounded(decay_p * plastic_e(t) + gate(t+1) * elig_e(t+1))`。
-   `pre`／`post` 對 LIF 是突觸跡 x 與當步 spike（活動相關版）；連續核心是輸出 y。`bounded` 為
-   `clamp(·, -plastic_max, plastic_max)`。
+1. **參考規則（主規格 10.3）**：對每條啟用可塑性的邊 e=(j→i)：
+   `elig_next = decay_e * elig + pre_j * post_i`，
+   `plastic_next = bounded(decay_p * plastic + gate * elig_next)`。
+   `next` 指一次局部更新後的快速狀態。主規格沒有指定活動的時間索引。
+   目前呼叫端的 `pre`／`post` 對 LIF 是突觸跡 x 與當步 spike。連續核心是輸出 y，
+   兩者都取核心推進後同一列的結果。`bounded` 為 `clamp(·, -plastic_max, plastic_max)`。
+   這是既有手算表與兩個執行入口採用的工程假設，生物時點與任務效益須另行驗證。
 2. **脈衝時序規則（STDP，只對 LIF）**：每邊兩個跡 `pre_trace`（`decay_pre`，在 pre spike 時 +1）與
    `post_trace`（`decay_post`，在 post spike 時 +1）；post spike 時 `elig += a_plus * pre_trace`，
    pre spike 時 `elig -= a_minus * post_trace`；`plastic` 更新同上。規則以名稱選擇
@@ -42,6 +44,9 @@ compare，NAT-06，尚未開始）
 7. **第二階段（NAT-06 前置）**：`simulate` 的 protocol 可宣告 `plasticity` 區塊，runner 在 `Run` 中
    套同一套規則（第一階段的 `plasticity` 套件），`RunReport` 加 `plasticity{rule, enabled_edges,
    clamped, gate_source}`；`simulate compare` 可跑「學習前／學習後／關閉」三格同一刺激。
+
+資料列、混合核心與事件時序的完整定義見 [ENG](../../ENG.md#局部可塑性的資料列與時間定義)。
+來源歸因與文件核對見 [ticket 111](111-plasticity-time-definition.md)。
 
 ## 契約（第一階段：套件 `plasticity` 與 learning 整合）
 

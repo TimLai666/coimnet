@@ -277,3 +277,11 @@ Online UpdateReport.GradientSteps 只計 StepResult.Applied 的套用次數，�
 OCR 人工樣本共用 glyphs.ValidateGenerateDimensions，在 Generate、Render 的衍生影像配置與 FixtureConfig.Validate 的訓練入口確認樣本容器及每列影像的位元組大小可由 int 表示。樣本元素大小依平台型別，影像沿用寬度 9L−1、8 列 float64 像素。零樣本的未使用寬字長範圍保持合法，基本負值／倒置範圍及有限選項規則保持。這是算術可表示性，不保證 Go runtime 的 maxAlloc 或可用記憶體。正常亂數、字形、模型與最佳化器格式保持，驗收由 [ticket 95](docs/tickets/95-ocr-generate-representability.md) 管理。
 
 文字生成的 NewModel 在所有可變大小配置前，以私有長度檢查確認 encoder 與 readout 的 float64 元素及位元組大小可由 int 表示。Save／Load 沿用同一建構入口，不改公開 Vocabulary、正常初始化、PCG 串流、訓練算式或保存格式。算術可表示不保證 runtime 或實體記憶體容量，驗收由 [ticket 109](docs/tickets/109-textgen-vocabulary-dimensions.md) 管理。
+
+## 局部可塑性的資料列與時間定義
+
+`learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。
+
+`hebbian_rate` 的 `elig_next = decay_e * elig + pre_j * post_i` 使用上述同列訊號。`stdp_pair` 使用當列兩端的放電事件，先衰退事件跡，eligibility 讀取尚未加上當列事件的跡，再加入各自的當列事件。當列首次同時放電不會互相配對。兩種規則都先得到新的 eligibility，再套閘門更新 plastic。
+
+主規格 10.3 只提供不帶活動時間索引的人工參考式。上述取樣時點是既有執行入口及手算表的工程假設，沒有證明其生物正確性或任務效益。核心連線在步驟開始讀取前一狀態，與核心之後的局部更新取樣是不同操作。文件核對由 [ticket 111](docs/tickets/111-plasticity-time-definition.md) 管理，正常模型、公開介面及保存格式保持。

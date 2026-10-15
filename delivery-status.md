@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 111](docs/tickets/111-plasticity-time-definition.md) 已釐清局部可塑性的時間符號：原始規格沒有活動索引，ticket 18 的索引式誤稱為原式，第二階段完成狀態也過時。已修正文字並集中記錄既有的核心後同列訊號，不改模型計算或保存格式。七項文件檢查通過，823 份 Go／module 來源、18 個原模型與六份必要資料保持相同；同份來源的既有一般／競態原始日誌各核對八項相關通過，這輪沒有重新執行 Go，見[驗收](evidence/LRN-05/plasticity-time-definition-20261015/verification.json)。本票完成 3／4，待提交、推送與核對遠端。沒有建立本票暫存。工程狀態保持 91／91 passed，生物時點與任務效益沒有新結論。下一個可驗證成果是核對適應、穩定項與化學偏移相加時，是否會過早拒絕可表示的門檻；這是待查假設，尚非確認缺陷。整體零 bug 目標保持進行中。
+
 [ticket 110](docs/tickets/110-chemical-threshold-floor.md) 已通過完整工程驗收。823 份來源的一般／競態各 58 套件通過，5,929／5,928 個事件成功、22／23 個略過、零失敗；原有各 5,937 個事件保持，只新增本票 14 個通過。格式、build、vet、固定依賴與 31 項治理通過，見[驗收](evidence/MOD-04/lif-threshold-floor-20261015/verification.json)。32 組正常核心及 12 次舊化學模型新程序接續逐位相同。MOD-04 恢復 passed，最新 91／91 工程需求 passed。最後 31 項治理通過，本輪 1,789,486,258 bytes 暫存已清除，18 個原模型、6 個必要資料與兩個舊目錄保持，見[清理](evidence/MOD-04/lif-threshold-floor-20261015/cleanup.json)。修正 007d4b3 與回歸／證據 76689bf 已正常推送且遠端讀回相同，823 份已提交來源相符，見[交付](evidence/MOD-04/lif-threshold-floor-20261015/delivery.json)。本票完成 5／5。下一個可驗證成果是局部可塑性時間符號與既有手算、呼叫端的契約核對，不先改正常模型。整體零 bug 目標保持進行中。
 
 [ticket 109](docs/tickets/109-textgen-vocabulary-dimensions.md) 的文字模型詞表尺寸修正已通過完整工程驗收。822 份來源的一般／競態各 58 套件通過，5,915／5,914 個成功事件、22／23 個略過、零失敗，格式、build、vet 及固定依賴通過，見[驗收](evidence/TSK-03/textgen-dimensions-20261015/verification.json)。8 組正常模型與 16 次舊保存新程序接續逐位相同，TSK-03／OPS-01 恢復 passed，目前 91／91 工程需求 passed。最後 31 項治理通過，本輪 1,848,615,536 bytes 暫存已清除，原模型、必要資料與兩個舊暫存目錄保持，見[清理](evidence/TSK-03/textgen-dimensions-20261015/cleanup.json)。本票已完成 5／5，修正 `71ad3af` 與回歸／證據 `bdb1fea` 已正常推送且遠端讀回相同，822 份已提交來源相符，見[交付](evidence/TSK-03/textgen-dimensions-20261015/delivery.json)。下一個可驗證成果是釐清既有 LIF 閾值位移兩條路徑的拒絕語意，先核對契約，不先改正常模型。整體零 bug 目標持續進行。

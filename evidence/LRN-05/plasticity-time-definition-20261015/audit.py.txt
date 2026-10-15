@@ -1,0 +1,114 @@
+# -*- coding: utf-8 -*-
+"""Read-only document, reference arithmetic, and preserved-evidence checks."""
+import argparse
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+import math
+import subprocess
+from pathlib import Path
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output', required=True, help='New receipt path inside this evidence directory')
+args = parser.parse_args()
+root = Path(__file__).resolve().parents[3]
+evidence = Path(__file__).resolve().parent
+prior = root / 'evidence/MOD-04/lif-threshold-floor-20261015'
+output = Path(args.output).resolve()
+if output.parent != evidence or output.exists():
+    raise SystemExit('refusing output outside evidence directory or replacement')
+
+def digest(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def require(condition, message):
+    if not condition:
+        raise RuntimeError(message)
+
+baseline = json.loads((evidence / 'baseline.json').read_text())
+formal = json.loads((prior / 'formal-source.json').read_text())
+for path, expected in formal.items():
+    require(digest(root / path) == expected, 'formal source changed: ' + path)
+models = json.loads((prior / 'protected-models.json').read_text())
+for path, expected in models.items():
+    require(digest(root / path) == expected, 'protected model changed: ' + path)
+data_receipt = json.loads((prior / 'persistent-data-preservation.json').read_text())
+data = data_receipt['persistent_data_files']
+if isinstance(data, dict):
+    data = [dict(value, path=key) for key, value in data.items()]
+for item in data:
+    require(digest(root / item['path']) == item['sha256'], 'persistent data changed: ' + item['path'])
+for path, expected in baseline['protected_temp_roots'].items():
+    actual = root / path
+    require(actual.stat().st_ino == expected['inode'], 'protected root changed: ' + path)
+    require(sorted(p.name for p in actual.iterdir()) == expected['children'], 'protected children changed: ' + path)
+
+ticket = (root / 'docs/tickets/18-local-plasticity.md').read_text()
+eng = (root / 'ENG.md').read_text()
+runner_ticket = (root / 'docs/tickets/19-plasticity-on-runner.md').read_text()
+agent = (root / 'AGENTS.md').read_text()
+checks = {
+    'ticket_status_complete': 'Status：done' in ticket and 'NAT-06，尚未開始' not in ticket,
+    'source_attribution_corrected': '主規格 10.3 原式' not in ticket,
+    'unindexed_reference_formula': 'elig_next = decay_e * elig + pre_j * post_i' in ticket and 'pre_j(t)' not in ticket,
+    'existing_row_explicit': '兩者都取核心推進後同一列的結果' in ticket,
+    'shared_engineering_definition': '## 局部可塑性的資料列與時間定義' in eng,
+    'runner_links_shared_definition': '111-plasticity-time-definition.md' in runner_ticket,
+    'resolved_followup_removed': '[NEEDS INVESTIGATION] 公式寫 pre(t)' not in agent,
+}
+
+selected = {
+    'learning': ['TestGatedAdvanceFollowsTheHandComputedOrder', 'TestDelayedGatePulseChangesLaterRows',
+                 'TestSTDPPairRunsOnTheSpikingIndividual', 'TestMixedPlasticitySignals'],
+    'simulate': ['TestPlasticRunnerMatchesTheHandCalculatedTwoStepFixture',
+                 'TestPlasticContinuousCoreUsesOutputsAsBothSignals', 'TestSTDPPairRunsOnTheSpikingCore',
+                 'TestPlasticWeightsReachTheNextStep'],
+}
+reused = {}
+for build in ['unit', 'race']:
+    receipt = json.loads((prior / ('engineering-' + build + '.json')).read_text())
+    packed = prior / receipt['log']
+    require(digest(packed) == receipt['log_sha256'], 'compressed log fingerprint mismatch')
+    raw = gzip.decompress(packed.read_bytes())
+    require(hashlib.sha256(raw).hexdigest() == receipt['raw_sha256'], 'raw log fingerprint mismatch')
+    events = [json.loads(line) for line in raw.splitlines()]
+    terminals = {(e['Package'], e['Test']): e['Action'] for e in events
+                 if e.get('Test') and e['Action'] in ['pass', 'fail', 'skip']}
+    require(dict(collections.Counter(terminals.values())) == receipt['test_events'], 'terminal totals differ')
+    wanted = {(('github.com/TimLai666/coimnet/' + package), name): 'pass'
+              for package, names in selected.items() for name in names}
+    require(all(terminals.get(key) == value for key, value in wanted.items()), 'selected existing test did not pass')
+    reused[build] = {'receipt': str((prior / ('engineering-' + build + '.json')).relative_to(root)),
+                     'raw_sha256': receipt['raw_sha256'], 'selected_passes': len(wanted),
+                     'total_terminal_events': len(terminals), 'fresh_execution': False}
+
+# Independent reference: a source event at row 0 leaves trace 1; one silent
+# interval decays it to exp(-1), while the target event at row 1 is 1.
+k = math.exp(-1)
+elig_current_row = 0.5 * 0 + k * 1
+elig_previous_row = 0.5 * 0 + 1 * 1
+require(elig_current_row != elig_previous_row, 'reference does not distinguish the interpretations')
+source = json.loads((prior / 'formal-source.json').read_text())
+changed = subprocess.check_output(['git', 'diff', '--name-only', baseline['head']], cwd=root, text=True).splitlines()
+require(not any(p.endswith('.go') or p in ['go.mod', 'go.sum'] for p in changed), 'unexpected Go modification')
+report = {
+    'requirement': ['LRN-04', 'LRN-05', 'NAT-06'],
+    'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'document_checks': checks, 'all_document_checks_passed': all(checks.values()),
+    'formal_sources_unchanged': len(source), 'protected_models_unchanged': len(models),
+    'persistent_data_unchanged': len(data), 'protected_old_roots_unchanged': len(baseline['protected_temp_roots']),
+    'reused_same_source_engineering': reused,
+    'independent_reference': {'source_before_row_1': 1.0, 'source_after_row_1': k,
+                              'target_event_row_1': 1.0, 'current_row_eligibility': elig_current_row,
+                              'previous_row_eligibility': elig_previous_row,
+                              'current_row_fast_change_with_gate_1': elig_current_row},
+    'new_go_execution': False, 'new_go_source_or_tests': False,
+    'owned_temporary_paths_created': [], 'owned_temporary_paths_remaining': [],
+    'biological_timing_or_task_quality_established': False,
+}
+output.write_text(json.dumps(report, indent=2) + '\n')
+print(json.dumps({'output': str(output.relative_to(root)), 'checks': checks,
+                  'sources': len(source), 'reused_selected_passes_per_build': 8}))
+raise SystemExit(0 if all(checks.values()) else 1)
