@@ -50,3 +50,4 @@
 | [evidence/COR-04/state-parity-20261016/vet-probe.json](../../../evidence/COR-04/state-parity-20261016/vet-probe.json) | 保存命令、環境、指紋、實測或清理結果。 |
 | [evidence/COR-04/state-parity-20261016/vet-probe.log](../../../evidence/COR-04/state-parity-20261016/vet-probe.log) | 保存該指令的原始輸出。 |
 | [evidence/COR-04/state-parity-20261016/work-preservation.json](../../../evidence/COR-04/state-parity-20261016/work-preservation.json) | 保存命令、環境、指紋、實測或清理結果。 |
+| [evidence/COR-04/state-parity-20261016/delivery.json](../../../evidence/COR-04/state-parity-20261016/delivery.json) | 保存推送、遠端讀回與提交內容核對。 |
