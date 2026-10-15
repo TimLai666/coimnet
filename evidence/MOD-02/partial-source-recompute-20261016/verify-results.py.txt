@@ -1,0 +1,61 @@
+"""Independently validate actual command receipts, matrix coverage and inherited full-suite evidence."""
+import collections,datetime,gzip,hashlib,itertools,json,subprocess,sys
+from pathlib import Path
+if not __debug__:raise SystemExit("optimized Python refused")
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;P=R/"evidence/COR-08/signed-gradient-overflow-20261016"
+sha=lambda b:hashlib.sha256(b).hexdigest()
+read=lambda p:json.loads(p.read_text())
+source=read(E/"source-before.json")
+paths={p for p in subprocess.check_output(["git","ls-files","-co","--exclude-standard","-z"],cwd=R).decode().split("\0") if p and (p.endswith(".go") or p in ["go.mod","go.sum"])}
+assert paths==set(source) and source==read(P/"formal-source.json")
+assert len(source)==834 and all(sha((R/p).read_bytes())==h for p,h in source.items())
+for p,h in read(E/"frozen-diagnostic.json")["files"].items():assert sha((R/p).read_bytes())==h
+receipts=[]
+for p in sorted(E.glob("*.json")):
+    item=read(p)
+    if not isinstance(item,dict) or "command" not in item or "log_sha256" not in item:continue
+    assert item["exit_code"]==0,p
+    assert sha((E/item["log"]).read_bytes())==item["log_sha256"],p
+    if p.name != "final-governance.json":receipts.append(p.name)
+assert len(receipts)==42,len(receipts)
+expected=set(itertools.product(["continuous","lif"],[0,1,3,4],[2,5],[0,3,5],[1,2,5,11]))
+observed={}
+for mode in ["ordinary","race"]:
+    report=read(E/("audit-"+mode+".log"));assert report["all_passed"]
+    matrix=report["matrix"];assert len(matrix)==192
+    keys={tuple(x["Key"][k] for k in ["Core","Filled","Delay","Window","Segment"]) for x in matrix};assert keys==expected
+    assert all(x["Operations"]==5 and x["ParametersChanged"] and x["FirstUpdateClipped"]==(x["FirstUpdateMeanNorm"]>.7) for x in matrix)
+    controls=report["controls"];assert len(controls)==22 and len({(x["Core"],x["Name"]) for x in controls})==22
+    assert all(x["OutputsDiffer"] or x["GradientsDiffer"] for x in controls)
+    refs=report["references"];assert len(refs)==54 and len({(x["Filled"],x["Coordinate"]) for x in refs})==54
+    assert all(x["Tolerance"]==.002+.002*abs(x["Reference"]) and x["AbsoluteError"]==abs(x["Gradient"]-x["Reference"]) and x["AbsoluteError"]<=x["Tolerance"] for x in refs)
+    assert all(abs(x["Reference"])>x["Tolerance"] for x in refs), "a reference would accept a zero derivative"
+    resumes=report["resume_inputs"];assert len(resumes)==16 and len(set(resumes))==16
+    for i,path in enumerate(resumes):
+        record=read(E/("resume-"+mode+"-"+str(i)+".log"));saved=read(Path(path))
+        assert record["all_passed"] and record["mode"]=="resume" and record["operations"]==4 and record["key"]==saved["Key"]
+        assert saved["Snapshot"]["accumulator"]["count"]==1
+    assert report["ownership_cases"]==2
+    observed[mode]={"matrix":len(matrix),"operations_per_case":5,"effective_controls":len(controls),"controls_with_changed_outputs":sum(x["OutputsDiffer"] for x in controls),"controls_with_changed_gradients":sum(x["GradientsDiffer"] for x in controls),"ownership":2,"independent_references":len(refs),"references_rejecting_zero":sum(abs(x["Reference"])>x["Tolerance"] for x in refs),"max_absolute_reference_error":max(x["AbsoluteError"] for x in refs),"max_error_fraction_of_tolerance":max(x["AbsoluteError"]/x["Tolerance"] for x in refs),"first_updates_clipped":sum(x["FirstUpdateClipped"] for x in matrix),"first_mean_norm_range":[min(x["FirstUpdateMeanNorm"] for x in matrix),max(x["FirstUpdateMeanNorm"] for x in matrix)],"new_process_continuations":len(resumes)}
+previous=read(P/"engineering-verification.json");assert previous["all_passed"]
+inherited=[]
+for step in previous["steps"]:
+    b=(P/step["log"]).read_bytes();assert sha(b)==step["log_sha256"]
+    raw=gzip.decompress(b) if step.get("compression") else b
+    assert sha(raw)==step["raw_sha256"] and step["exit_code"]==0 and not step["acceptance_errors"]
+    record={"name":step["name"],"log":str((P/step["log"]).relative_to(R)),"sha256":sha(b),"exit_code":0}
+    if step["name"] in ["unit","race"]:
+        events=[json.loads(line) for line in raw.splitlines()]
+        assert not any(x["Action"]=="fail" for x in events)
+        counts=dict(collections.Counter(x["Action"] for x in events if x.get("Test") and x["Action"] in ["pass","skip","fail"]))
+        assert counts==step["test_events"];record["test_events"]=counts
+    inherited.append(record)
+result={"requirement":["LRN-02","MOD-02","STA-03"],"verified_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"diagnostic_passed":True,"engineering_passed":True,"production_changes":False,"confirmed_new_defects":0,"reproduction_command":"audit-driver.py.txt; exact 42 per-command receipts; verify-results.py.txt; preserved-work.tar.gz contains all three diagnostic Go sources and 32 SDK snapshot inputs","environment":read(E/"environment.json"),"input_fingerprints":{"formal_source":"source-before.json","formal_source_sha256":sha((E/"source-before.json").read_bytes()),"diagnostic":"frozen-diagnostic.json","base_commit":read(E/"baseline.json")["head"]},"observed_result":observed,"current_command_receipts":receipts,"full_suite_reuse":{"basis":"All 834 source paths and bytes exactly match delivered ticket118; raw prior engineering logs rehashed and terminal events recounted. Full framework build/unit/race/vet were not rerun for unchanged formal source.","verification":str((P/"verification.json").relative_to(R)),"steps":inherited},"test_log":["audit-ordinary.log","audit-race.log","resume-ordinary-*.log","resume-race-*.log","governance-before-metadata.log"],"limits":["Bounded two-node CPU scalar SDK fixtures, not whole-brain or task-quality/biological evidence","LIF surrogate derivatives are not finite-difference claims","No direct recomputed observation/initial-state gradient API exists; complete trainable pending sums, updates and snapshots compared instead","Independent comparisons and resumes are within each build; cross-build bitwise equality is not required","SDK TrainingSnapshot JSON restore, not checkpoint bundle migration"],"remaining_delivery":["final metadata governance","owned cleanup","commit push remote readback"]}
+if sys.argv[1:]==["--check-only"]:
+    saved=read(E/"verification.json")
+    assert all(saved["observed_result"][mode]==record for mode,record in observed.items())
+    assert saved["input_fingerprints"]==result["input_fingerprints"]
+else:
+    assert not sys.argv[1:], "usage: verify-results.py.txt [--check-only]"
+    with (E/"verification.json").open("x") as f:json.dump(result,f,indent=2);f.write("\n")
+print(json.dumps({"all_passed":True,"receipts":len(receipts),"formal_sources":len(source),"observed_result":observed}))

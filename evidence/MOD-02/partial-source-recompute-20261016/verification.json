@@ -1,0 +1,204 @@
+{
+  "requirement": [
+    "LRN-02",
+    "MOD-02",
+    "STA-03"
+  ],
+  "verified_at": "2026-10-15T21:56:12.494011+00:00",
+  "diagnostic_passed": true,
+  "engineering_passed": true,
+  "production_changes": false,
+  "confirmed_new_defects": 0,
+  "reproduction_command": "audit-driver.py.txt; exact 42 per-command receipts; verify-results.py.txt; preserved-work.tar.gz contains all three diagnostic Go sources and 32 SDK snapshot inputs",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go": "go version go1.26.5 darwin/arm64",
+    "base_commit": "f958108902e4c9e180cbdc1fa7e93876710e5332",
+    "source_manifest": "source-before.json",
+    "settings": "command-environment.json",
+    "scope": "Public CPU scalar chemical recomputation audit; no new model quality or biology claim"
+  },
+  "input_fingerprints": {
+    "formal_source": "source-before.json",
+    "formal_source_sha256": "2daf901db0a30012cfb47358dd2014109f467b321d2d377f89f392acd7839a3c",
+    "diagnostic": "frozen-diagnostic.json",
+    "base_commit": "f958108902e4c9e180cbdc1fa7e93876710e5332"
+  },
+  "observed_result": {
+    "ordinary": {
+      "matrix": 192,
+      "operations_per_case": 5,
+      "effective_controls": 22,
+      "controls_with_changed_outputs": 19,
+      "controls_with_changed_gradients": 22,
+      "ownership": 2,
+      "independent_references": 54,
+      "references_rejecting_zero": 54,
+      "max_absolute_reference_error": 2.8308030541879248e-05,
+      "max_error_fraction_of_tolerance": 0.0055333832607827515,
+      "first_updates_clipped": 192,
+      "first_mean_norm_range": [
+        1.2404903356397619,
+        3.0181671108961843
+      ],
+      "new_process_continuations": 16
+    },
+    "race": {
+      "matrix": 192,
+      "operations_per_case": 5,
+      "effective_controls": 22,
+      "controls_with_changed_outputs": 19,
+      "controls_with_changed_gradients": 22,
+      "ownership": 2,
+      "independent_references": 54,
+      "references_rejecting_zero": 54,
+      "max_absolute_reference_error": 2.8308030541879248e-05,
+      "max_error_fraction_of_tolerance": 0.0055333832607827515,
+      "first_updates_clipped": 192,
+      "first_mean_norm_range": [
+        1.2404903356397619,
+        3.0181671108961843
+      ],
+      "new_process_continuations": 16
+    },
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1058888032
+    }
+  },
+  "current_command_receipts": [
+    "audit-ordinary.json",
+    "audit-race.json",
+    "build-ordinary.json",
+    "build-race.json",
+    "closure-binary.json",
+    "diagnostic-format.json",
+    "diagnostic-vet.json",
+    "governance-before-metadata.json",
+    "module-selection.json",
+    "module-verify.json",
+    "resume-ordinary-0.json",
+    "resume-ordinary-1.json",
+    "resume-ordinary-10.json",
+    "resume-ordinary-11.json",
+    "resume-ordinary-12.json",
+    "resume-ordinary-13.json",
+    "resume-ordinary-14.json",
+    "resume-ordinary-15.json",
+    "resume-ordinary-2.json",
+    "resume-ordinary-3.json",
+    "resume-ordinary-4.json",
+    "resume-ordinary-5.json",
+    "resume-ordinary-6.json",
+    "resume-ordinary-7.json",
+    "resume-ordinary-8.json",
+    "resume-ordinary-9.json",
+    "resume-race-0.json",
+    "resume-race-1.json",
+    "resume-race-10.json",
+    "resume-race-11.json",
+    "resume-race-12.json",
+    "resume-race-13.json",
+    "resume-race-14.json",
+    "resume-race-15.json",
+    "resume-race-2.json",
+    "resume-race-3.json",
+    "resume-race-4.json",
+    "resume-race-5.json",
+    "resume-race-6.json",
+    "resume-race-7.json",
+    "resume-race-8.json",
+    "resume-race-9.json"
+  ],
+  "full_suite_reuse": {
+    "basis": "All 834 source paths and bytes exactly match delivered ticket118; raw prior engineering logs rehashed and terminal events recounted. Full framework build/unit/race/vet were not rerun for unchanged formal source.",
+    "verification": "evidence/COR-08/signed-gradient-overflow-20261016/verification.json",
+    "steps": [
+      {
+        "name": "format",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-format.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "build",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-build.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "unit",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-unit.log.gz",
+        "sha256": "8f144ddf9603d34d6990c4bd637ebf1b371679449baac17220d433dc972ffa68",
+        "exit_code": 0,
+        "test_events": {
+          "pass": 6455,
+          "skip": 22
+        }
+      },
+      {
+        "name": "race",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-race.log.gz",
+        "sha256": "a58b0b2336f101edc367fada82fec5f5f149bc39e2dea18ad2bc673db4f5f956",
+        "exit_code": 0,
+        "test_events": {
+          "pass": 6454,
+          "skip": 23
+        }
+      },
+      {
+        "name": "vet",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-vet.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "module-verify",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-module-verify.log",
+        "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "exit_code": 0
+      },
+      {
+        "name": "module-selection",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-module-selection.log",
+        "sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "exit_code": 0
+      },
+      {
+        "name": "governance",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-governance.log",
+        "sha256": "12a18a1e682edbbedc37122ba2cc082f04dbd8a75d6da48577a8ad11bd61daca",
+        "exit_code": 0
+      },
+      {
+        "name": "closure-binary",
+        "log": "evidence/COR-08/signed-gradient-overflow-20261016/engineering-closure-binary.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      }
+    ]
+  },
+  "test_log": [
+    "audit-ordinary.log",
+    "audit-race.log",
+    "resume-ordinary-*.log",
+    "resume-race-*.log",
+    "governance-before-metadata.log"
+  ],
+  "limits": [
+    "Bounded two-node CPU scalar SDK fixtures, not whole-brain or task-quality/biological evidence",
+    "LIF surrogate derivatives are not finite-difference claims",
+    "No direct recomputed observation/initial-state gradient API exists; complete trainable pending sums, updates and snapshots compared instead",
+    "Independent comparisons and resumes are within each build; cross-build bitwise equality is not required",
+    "SDK TrainingSnapshot JSON restore, not checkpoint bundle migration"
+  ],
+  "remaining_delivery": [
+    "commit push remote readback"
+  ],
+  "root_review": "root-review.md",
+  "adversarial_review": "adversarial-review.md"
+}

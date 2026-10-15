@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 119](docs/tickets/119-partial-chemical-recompute.md) 已通過公開組合稽核。一般／競態各 192 組完整／分段結果一致，22 個機制關閉對照有效、54 個獨立參考及 16 次新程序接續通過，沒有確認新缺陷。834 份正式來源與上一輪驗收相同，沿用完整工程結果，另通過本輪診斷 vet、模組與 31 項治理。91／91 工程需求保持 passed，見[驗收](evidence/MOD-02/partial-source-recompute-20261016/verification.json)。最後 31 項治理通過，本輪 1,058,888,032 bytes 暫存已清除，18 個原模型、六份必要資料、原始模組與其他工作保持，見[清理](evidence/MOD-02/partial-source-recompute-20261016/cleanup.json)。本票完成 3／4，剩提交、推送與遠端讀回。整體零 bug 目標持續，真實模型品質沒有新結論。
+
 [ticket 118](docs/tickets/118-signed-gradient-finite.md) 的共用固定符號梯度有限值修正已通過完整工程驗收。834 份來源的一般／競態各 58 套件通過，6,455／6,454 pass、22／23 skip、零失敗，原有各 6,405 個終端事件保持，只新增 72 個通過。格式、build、vet、固定 Insyra v0.3.4、模組校驗及 31 項治理通過，正常核心、舊神經狀態與舊化學模型的 32／32／12 組接續結果保持。COR-08 恢復 passed，最新 91／91 工程需求 passed。見[驗收](evidence/COR-08/signed-gradient-overflow-20261016/verification.json)。最後 31 項治理通過，本輪 1,726,991,821 bytes 暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-08/signed-gradient-overflow-20261016/cleanup.json)。修正 `29d611f` 與回歸／證據 `90cceb0` 已正常推送且遠端讀回相同，834 份來源及 96 個交付檔案的提交內容相符，見[交付](evidence/COR-08/signed-gradient-overflow-20261016/delivery.json)。本票完成 4／4。下一個可驗證成果是來源視窗尚未填滿時，多通道化學與分段重算的梯度對照，尚未確認新缺陷。整體零 bug 目標持續，真實模型品質沒有新結論。
 
 [ticket 117](docs/tickets/117-state-parity.md) 已完成 4／4。一般／競態各 96 組混合神經元案例、3,744 個接續點與 80 次節點改編號對照相同，各機制關閉後都改變輸出，沒有確認新的核心缺陷。833 份正式來源相同，沿用既有完整驗收，這輪另通過診斷 vet 與 31 項治理。91／91 工程需求保持 passed，845,159,670 bytes 暫存已清除，原模型、資料、原始模組與其他工作保持。提交 `f12db13` 已推送且遠端讀回相同，833 份來源與 46 個交付檔案的提交內容相符，見[驗收](evidence/COR-04/state-parity-20261016/verification.json)、[清理](evidence/COR-04/state-parity-20261016/cleanup.json)及[交付](evidence/COR-04/state-parity-20261016/delivery.json)。下一個可驗證成果是非零化學與來源歷史下，一般訓練和分段重算的完整更新對照，尚未確認新缺陷。整體零 bug 目標保持進行中。
