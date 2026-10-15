@@ -1,6 +1,6 @@
 # Fixed-sign gradient finite-boundary audit
 
-Status: confirmed P2 defect; independently frozen red regression followed by the common-producer finite guard. Candidate, complete engineering, final governance and owned cleanup passed; remote delivery remains.
+Status: confirmed P2 defect; independently frozen red regression followed by the common-producer finite guard. Completed 4/4: candidate, complete engineering, final governance, owned cleanup and remote readback passed. The original zero-bug objective remains active.
 
 ## Root reproduction skeleton
 
