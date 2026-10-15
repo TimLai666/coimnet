@@ -1,0 +1,53 @@
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip governance gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/event-adjoint-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = json.loads((E / "formal-source.json").read_text())
+assert len(source) == 828
+for p, digest in source.items():
+    assert sha(R / p) == digest, p
+assert json.loads((E / "engineering-verification.json").read_text())["all_passed"]
+assert json.loads((E / "verification.json").read_text())["engineering_passed"]
+binary = json.loads((E / "closure-binary.json").read_text())
+executable = W / binary["path"]
+assert sha(executable) == binary["sha256"]
+assert W.stat().st_ino == 56471328 and not W.is_symlink()
+unavailable_modules = W / "unavailable-module-cache"
+assert not unavailable_modules.exists()
+env = dict(os.environ)
+env.update(json.loads((E / "command-environment.json").read_text()))
+env.update(GOCACHE="off", GOMODCACHE=str(unavailable_modules))
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+command = [str(executable), "-test.v", "-test.run", pattern]
+start = time.monotonic()
+log = E / "final-governance.log"
+with log.open("xb") as handle:
+    code = subprocess.run(command, cwd=R, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+raw = log.read_text()
+passed = sum(line.lstrip().startswith("--- PASS:") for line in raw.splitlines())
+failed = sum(line.lstrip().startswith("--- FAIL:") for line in raw.splitlines())
+assert not unavailable_modules.exists()
+for p, digest in source.items():
+    assert sha(R / p) == digest, p
+receipt = {
+    "command": command, "exit_code": code, "passed_events": passed,
+    "failed_events": failed, "seconds": time.monotonic() - start,
+    "go_cache_disabled": True, "module_cache_unavailable": True,
+    "log": log.name, "log_sha256": sha(log),
+    "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+}
+with (E / "final-governance.json").open("x") as handle:
+    json.dump(receipt, handle, indent=2)
+    handle.write("\n")
+print(json.dumps(receipt), flush=True)
+assert code == 0 and passed == 31 and failed == 0

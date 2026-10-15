@@ -1,0 +1,101 @@
+"""Accept immutable sources only after all required engineering checks pass."""
+import collections
+import datetime
+import hashlib
+import json
+from pathlib import Path
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip acceptance checks")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/event-adjoint-20261016"
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = read(E / "formal-source.json")
+assert len(source) == 828
+for p, digest in source.items():
+    assert sha(R / p) == digest, p
+engineering = read(E / "engineering-verification.json")
+assert engineering["all_passed"] and len(engineering["steps"]) == 9
+for step in engineering["steps"]:
+    assert step["exit_code"] == 0 and not step["acceptance_errors"]
+    assert sha(E / step["log"]) == step["log_sha256"]
+unit = read(E / "engineering-unit-retry.json")
+race = read(E / "engineering-race.json")
+for result in [unit, race]:
+    assert result["package_events"] == {"pass": 58, "skip": 3}
+    assert sum(result["test_events"].values()) == 6085
+    assert not result["test_events"].get("fail")
+    assert result["prior_event_count"] == 6062
+    assert not result["changed_events"], result["changed_events"]
+    assert len(result["added_events"]) == 23
+    assert all(x["action"] == "pass" for x in result["added_events"])
+candidate = read(E / "candidate-verification.json")
+assert candidate["all_passed"] and candidate["source_count"] == len(source)
+assert candidate["regression_events_each_build"] == {"pass": 23}
+frozen = read(E / "frozen-test.json")
+assert sha(R / frozen["file"]) == frozen["sha256"]
+result = {
+    "requirement": ["COR-04", "COR-09"],
+    "engineering_passed": True,
+    "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "reproduction_command": "Exact commands are retained in per-command receipts, engineering.py.txt and engineering-resume.py.txt. Frozen regression filter: ^TestEventAdjoint.",
+    "environment": read(E / "environment.json"),
+    "input_fingerprints": {
+        "base_commit": read(E / "baseline.json")["head"],
+        "formal_source": "formal-source.json",
+        "formal_source_sha256": sha(E / "formal-source.json"),
+        "frozen_test": frozen,
+        "independent_reference": "exact-reference.json",
+        "independent_reference_sha256": sha(E / "exact-reference.json"),
+        "protected_models": "../../MOD-04/lif-threshold-floor-20261015/protected-models.json",
+        "protected_data": "../../MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json",
+    },
+    "observed_result": {
+        "source_count": len(source), "formal_go_files": 824,
+        "ordinary_test_events": unit["test_events"],
+        "race_test_events": race["test_events"],
+        "package_events_per_build": unit["package_events"],
+        "prior_terminal_events_unchanged_each_build": 6062,
+        "new_passing_regression_events_each_build": 23,
+        "normal_core_records_bytes_equal": 32,
+        "old_core_state_new_process_continuations": 32,
+        "old_chemical_model_new_process_continuations": 12,
+        "artificial_models_training_updates_each": 3,
+        "remaining_delivery": ["final governance", "owned temporary cleanup", "commit and remote readback"],
+    },
+    "root_review": "root-review.md",
+    "candidate_acceptance": "candidate-verification.json",
+    "engineering_details": "engineering-verification.json",
+    "test_log": ["regression-before-corrected.log", "regression-before-race.log", "regression-candidate-final.log", "regression-candidate-final-race.log", "engineering-unit-retry.log.gz", "engineering-race.log.gz", "engineering-governance.log"],
+    "preserved_rejected_work": ["frozen-test-initial.json", "candidate-initial-rounding.json", "engineering-unit.json"],
+    "limits": "Synthetic numerical/compatibility checks. No claim of real-task accuracy improvement, biological completeness or absolute absence of bugs.",
+}
+with (E / "verification.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+p = R / "docs/requirements-status.json"
+raw = p.read_bytes()
+x = json.loads(raw)
+for item in x["requirements"]:
+    if item["id"] in result["requirement"]:
+        assert item["status"] == "implemented_unverified"
+        item["status"] = "passed"
+        old = "../evidence/COR-09/event-adjoint-20261016/reproduction.json"
+        item["evidence"] = [v.replace(old, "../evidence/COR-09/event-adjoint-20261016/reproduction-verification.json") for v in item["evidence"]]
+        item["evidence"].append("../evidence/COR-09/event-adjoint-20261016/verification.json")
+assert p.read_bytes() == raw
+p.write_text(json.dumps(x, ensure_ascii=False, indent=2) + "\n")
+assert collections.Counter(item["status"] for item in x["requirements"]) == {"passed": 91}
+p = R / "docs/tickets/114-lif-event-adjoint.md"
+raw = p.read_bytes()
+s = raw.decode()
+old = "- [ ] \u5b8c\u6210\u5fc5\u8981\u5de5\u7a0b\u9a57\u6536\u8207\u9700\u6c42\u8b49\u64da\u3002"
+assert s.count(old) == 1 and p.read_bytes() == raw
+p.write_text(s.replace(old, old.replace("[ ]", "[x]")))
+binary = W / "final-root.test"
+with (E / "closure-binary.json").open("x") as handle:
+    json.dump({"path": binary.name, "bytes": binary.stat().st_size, "sha256": sha(binary)}, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"engineering_passed": True, "source_count": len(source), "requirement_status": "91/91 passed", "ticket_items_verified": "4/5"}), flush=True)

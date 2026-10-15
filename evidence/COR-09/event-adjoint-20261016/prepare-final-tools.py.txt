@@ -1,0 +1,17 @@
+"""Prepare final governance and path inventory without shell Unicode parsing."""
+from pathlib import Path
+import json
+E=Path(__file__).resolve().parent
+P=E.parents[1]/"COR-04/zero-tau-adjoint-20261015"
+s=(P/"final-governance.py.txt").read_text().replace("runs/.tmp/zero-tau-adjoint-20261015","runs/.tmp/event-adjoint-20261016").replace("== 826","== 828").replace("56389496","56471328")
+assert not (E/"final-governance.py.txt").exists()
+(E/"final-governance.py.txt").write_text(s)
+s=(P/"changed-files.py.txt").read_text()
+a=s.index("summaries = {")
+b=s.index("\nfiles = set(summaries)",a)
+summaries=json.loads(r'''{"dynamics/event_adjoint.go":"\u65b0\u589e\u4e8b\u4ef6\u4e58\u52a0\u68af\u5ea6\u7684\u79c1\u6709\u7cbe\u78ba\u6062\u5fa9\u3002","dynamics/event_adjoint_test.go":"\u51cd\u7d50\u516b\u500b\u5931\u6557\u6848\u4f8b\u53ca\u505c\u7528\u3001\u622a\u65b7\u8207\u771f\u6b63\u6ea2\u4f4d\u63a7\u5236\u3002","dynamics/lif.go":"\u4fdd\u7559\u6b63\u5e38 du \u8207\u95be\u503c\u7d2f\u52a0\uff0c\u53ea\u5728\u975e\u6709\u9650\u4e8b\u4ef6\u68af\u5ea6\u6642\u6062\u5fa9\u3002","dynamics/lif_recompute.go":"\u5206\u6bb5\u91cd\u7b97\u6cbf\u7528\u76f8\u540c\u7684\u4e8b\u4ef6\u6062\u5fa9\u53ca\u6b63\u5e38\u6368\u5165\u3002","dynamics/coupled_reverse.go":"LIF \u5316\u5b78\u8026\u5408\u53cd\u5411\u6aa2\u67e5\u6700\u7d42\u4e8b\u4ef6\u68af\u5ea6\uff0c\u6062\u5fa9\u53ef\u8868\u793a\u7d50\u679c\u3002","dynamics/mixed.go":"\u6df7\u5408\u6838\u5fc3\u7684 LIF \u7bc0\u9ede\u63a1\u76f8\u540c\u4f8b\u5916\u6062\u5fa9\u3002","dynamics/mixed_coupled.go":"\u6df7\u5408\u5316\u5b78\u8026\u5408\u53cd\u5411\u4fdd\u7559\u6709\u9650\u503c\u6aa2\u67e5\u4e26\u6062\u5fa9\u4e8b\u4ef6\u68af\u5ea6\u3002","ENG.md":"\u8a18\u9304\u9069\u61c9\u68af\u5ea6\u53ca\u4f8b\u5916\u6578\u503c\u6062\u5fa9\u5951\u7d04\u3002","delivery-status.md":"\u8a18\u9304\u672c\u7968\u9a57\u6536\u3001\u6e05\u7406\u8207\u4ea4\u4ed8\u72c0\u614b\u3002","docs/requirements-status.json":"\u9023\u7d50 COR-04\uff0f09 \u7684\u5be6\u969b\u91cd\u73fe\u8207\u9a57\u6536\u8b49\u64da\u3002","docs/tickets/11-lif-core.md":"\u4fee\u6b63\u9069\u61c9\u72c0\u614b\u53cd\u5411\u88ab\u8aa4\u7a31\u70ba\u5e38\u6578\u7684\u77db\u76fe\u6587\u5b57\u3002","docs/tickets/16-lif-individual-and-model-package.md":"\u5340\u5206\u9069\u61c9\u72c0\u614b\u8de8\u6642\u9593\u50b3\u905e\u8207\u6162\u901f\u7a69\u5b9a\u5e38\u6578\u3002","docs/tickets/114-lif-event-adjoint.md":"\u8a18\u9304\u6839\u56e0\u3001\u9a57\u6536\u689d\u4ef6\u53ca\u4e94\u9805\u5b8c\u6210\u72c0\u614b\u3002"}''')
+s=s[:a]+"summaries = "+ascii(summaries)+s[b:]
+s=s.replace("ticket 113","ticket 114")
+assert not (E/"changed-files.py.txt").exists()
+(E/"changed-files.py.txt").write_text(s)
+print("Prepared final governance and path inventory; no cleanup or Git writes.")

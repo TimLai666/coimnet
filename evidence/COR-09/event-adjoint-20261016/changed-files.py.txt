@@ -1,0 +1,48 @@
+"""List every delivered path without staging unrelated work."""
+import json
+from pathlib import Path
+import subprocess
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+target = E / "changed-files.md"
+previous = target.read_bytes() if target.exists() else None
+summaries = {'dynamics/event_adjoint.go': '\u65b0\u589e\u4e8b\u4ef6\u4e58\u52a0\u68af\u5ea6\u7684\u79c1\u6709\u7cbe\u78ba\u6062\u5fa9\u3002', 'dynamics/event_adjoint_test.go': '\u51cd\u7d50\u516b\u500b\u5931\u6557\u6848\u4f8b\u53ca\u505c\u7528\u3001\u622a\u65b7\u8207\u771f\u6b63\u6ea2\u4f4d\u63a7\u5236\u3002', 'dynamics/lif.go': '\u4fdd\u7559\u6b63\u5e38 du \u8207\u95be\u503c\u7d2f\u52a0\uff0c\u53ea\u5728\u975e\u6709\u9650\u4e8b\u4ef6\u68af\u5ea6\u6642\u6062\u5fa9\u3002', 'dynamics/lif_recompute.go': '\u5206\u6bb5\u91cd\u7b97\u6cbf\u7528\u76f8\u540c\u7684\u4e8b\u4ef6\u6062\u5fa9\u53ca\u6b63\u5e38\u6368\u5165\u3002', 'dynamics/coupled_reverse.go': 'LIF \u5316\u5b78\u8026\u5408\u53cd\u5411\u6aa2\u67e5\u6700\u7d42\u4e8b\u4ef6\u68af\u5ea6\uff0c\u6062\u5fa9\u53ef\u8868\u793a\u7d50\u679c\u3002', 'dynamics/mixed.go': '\u6df7\u5408\u6838\u5fc3\u7684 LIF \u7bc0\u9ede\u63a1\u76f8\u540c\u4f8b\u5916\u6062\u5fa9\u3002', 'dynamics/mixed_coupled.go': '\u6df7\u5408\u5316\u5b78\u8026\u5408\u53cd\u5411\u4fdd\u7559\u6709\u9650\u503c\u6aa2\u67e5\u4e26\u6062\u5fa9\u4e8b\u4ef6\u68af\u5ea6\u3002', 'ENG.md': '\u8a18\u9304\u9069\u61c9\u68af\u5ea6\u53ca\u4f8b\u5916\u6578\u503c\u6062\u5fa9\u5951\u7d04\u3002', 'delivery-status.md': '\u8a18\u9304\u672c\u7968\u9a57\u6536\u3001\u6e05\u7406\u8207\u4ea4\u4ed8\u72c0\u614b\u3002', 'docs/requirements-status.json': '\u9023\u7d50 COR-04\uff0f09 \u7684\u5be6\u969b\u91cd\u73fe\u8207\u9a57\u6536\u8b49\u64da\u3002', 'docs/tickets/11-lif-core.md': '\u4fee\u6b63\u9069\u61c9\u72c0\u614b\u53cd\u5411\u88ab\u8aa4\u7a31\u70ba\u5e38\u6578\u7684\u77db\u76fe\u6587\u5b57\u3002', 'docs/tickets/16-lif-individual-and-model-package.md': '\u5340\u5206\u9069\u61c9\u72c0\u614b\u8de8\u6642\u9593\u50b3\u905e\u8207\u6162\u901f\u7a69\u5b9a\u5e38\u6578\u3002', 'docs/tickets/114-lif-event-adjoint.md': '\u8a18\u9304\u6839\u56e0\u3001\u9a57\u6536\u689d\u4ef6\u53ca\u4e94\u9805\u5b8c\u6210\u72c0\u614b\u3002'}
+summaries["docs/tickets/115-surrogate-extreme-audit.md"] = "\u6392\u5b9a\u4e0b\u4e00\u8f2a\u516c\u958b\u91cd\u73fe\u8207\u516c\u958b\u8a3b\u89e3\u6838\u5c0d\uff0c\u5c1a\u672a\u5be6\u4f5c\u3002"
+files = set(summaries)
+files.update(str(p.relative_to(R)) for p in E.rglob("*") if p.is_file())
+files.add(str((E / "changed-files.md").relative_to(R)))
+foreign = {str(Path(p).relative_to(R)) for p in json.loads((E / "foreign-before.json").read_text())}
+changed = set(subprocess.check_output(["git", "diff", "--name-only", "HEAD", "-z"], cwd=R).decode().split("\0"))
+changed.update(subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z"], cwd=R).decode().split("\0"))
+changed.discard("")
+assert not (changed - files - foreign), changed - files - foreign
+assert not (files & foreign)
+rows = ["# 本輪檔案變更", "", "本表逐檔列出 ticket 114 交付內容。既有 AGENTS.md 與兩組其他工作證據不在交付範圍。", "", "| 檔案 | 變更摘要 |", "|---|---|"]
+for name in sorted(files):
+    p = R / name
+    summary = summaries.get(name)
+    if summary is None:
+        if name.endswith(".log") or name.endswith(".log.gz"):
+            summary = "保留 " + p.name + " 的原始命令輸出。"
+        elif name.endswith(".py.txt"):
+            summary = "保存 " + p.name + " 的驗收、證據或清理程式。"
+        elif name.endswith(".go.txt"):
+            summary = "保存 " + p.name + " 的公開重現、凍結測試或相容性程式。"
+        elif p.name == "preserved-work.tar.gz":
+            summary = "保存人工模型、來源版本、驅動程式及原始模組指紋，供清理後核對。"
+        elif p.name == "cleanup-inventory.json.gz":
+            summary = "保存刪除前逐項內容與指紋。"
+        elif p.name == "changed-files.md":
+            summary = "逐檔列出本輪交付範圍。"
+        else:
+            summary = "記錄 " + p.name + " 的計畫、審查、指紋或驗證結果。"
+    rows.append("| [" + name + "](" + str(p) + ") | " + summary + " |")
+if previous is None:
+    assert not target.exists()
+    with target.open("x") as handle:
+        handle.write("\n".join(rows) + "\n")
+else:
+    assert target.read_bytes() == previous
+    target.write_text("\n".join(rows) + "\n")
+print(json.dumps({"delivered_paths": len(files), "protected_foreign_paths": len(foreign)}))

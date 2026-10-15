@@ -1,0 +1,49 @@
+"""Preserve necessary owned inputs before removing reproducible caches."""
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import tarfile
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip preservation gates")
+E = Path(__file__).resolve().parent
+R = Path(__file__).resolve().parents[3]
+W = R / "runs/.tmp/event-adjoint-20261016"
+assert W.stat().st_ino == 56471328 and not W.is_symlink()
+assert W.resolve() == W
+assert json.loads((E / "engineering-verification.json").read_text())["all_passed"]
+assert json.loads((E / "final-governance-retry.json").read_text())["passed_events"] == 31
+files = {}
+for base, dirs, names in os.walk(W, followlinks=False):
+    parent = Path(base)
+    if parent == W:
+        dirs[:] = [name for name in dirs if name not in ["go-cache", "go-mod-cache", "go-tmp"]]
+    for name in names:
+        p = parent / name
+        if p == W / "final-root.test":
+            continue
+        assert p.is_file() and not p.is_symlink(), p
+        raw = p.read_bytes()
+        files[str(p.relative_to(W))] = {"bytes": len(raw), "sha256": hashlib.sha256(raw).hexdigest()}
+archive = E / "preserved-work.tar.gz"
+with tarfile.open(archive, "x:gz") as handle:
+    for name, item in sorted(files.items()):
+        raw = (W / name).read_bytes()
+        assert len(raw) == item["bytes"] and hashlib.sha256(raw).hexdigest() == item["sha256"]
+        info = tarfile.TarInfo(name)
+        info.size = len(raw)
+        info.mode = 0o644
+        handle.addfile(info, io.BytesIO(raw))
+with tarfile.open(archive) as handle:
+    assert set(handle.getnames()) == set(files)
+    for name, item in files.items():
+        raw = handle.extractfile(name).read()
+        assert len(raw) == item["bytes"] and hashlib.sha256(raw).hexdigest() == item["sha256"]
+result = {"archive": archive.name, "archive_bytes": archive.stat().st_size,
+          "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "files": files}
+with (E / "work-preservation.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"preserved_files": len(files), "archive_bytes": result["archive_bytes"]}))

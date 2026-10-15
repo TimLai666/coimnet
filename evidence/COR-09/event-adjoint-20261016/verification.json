@@ -1,0 +1,106 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "engineering_passed": true,
+  "verified_at": "2026-10-15T17:44:41.616814+00:00",
+  "reproduction_command": "Exact commands are retained in per-command receipts, engineering.py.txt and engineering-resume.py.txt. Frozen regression filter: ^TestEventAdjoint.",
+  "environment": {
+    "observed_at": "2026-10-15T16:58:27.174820+00:00",
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "head": "29d220fc5785268ecc681ed3ecb52dc4e0bb8510",
+    "branch": "codex/receptor-chemistry-training",
+    "base_source_manifest": "../../COR-04/zero-tau-adjoint-20261015/formal-source.json",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "scope": "CPU float64 synthetic numerical controls; no full-brain/real-task/biological claim"
+  },
+  "input_fingerprints": {
+    "base_commit": "29d220fc5785268ecc681ed3ecb52dc4e0bb8510",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "dbb2ae72de38bcf83d178b9b48a97e44320805fd3aebf733bb182175013d57da",
+    "frozen_test": {
+      "file": "dynamics/event_adjoint_test.go",
+      "sha256": "daee0ffbb21b120dee8e2391671830e825366371d4a13a4556143c5bc1b9cbfb",
+      "lines": 539,
+      "root_reviewed": true,
+      "red_receipt": "regression-before-corrected.json",
+      "terminal_events": {
+        "TestEventAdjointLIF/Backward": "fail",
+        "TestEventAdjointLIF/BackwardRecompute/segment=1": "fail",
+        "TestEventAdjointLIF/BackwardRecompute/segment=2": "fail",
+        "TestEventAdjointLIF/BackwardCoupled": "fail",
+        "TestEventAdjointLIF/BackwardCoupledRecompute": "fail",
+        "TestEventAdjointLIF": "fail",
+        "TestEventAdjointMixed/all-LIF/Backward": "fail",
+        "TestEventAdjointMixed/all-LIF/BackwardCoupled": "fail",
+        "TestEventAdjointMixed": "fail",
+        "TestEventAdjointMixedContinuousLIF": "fail",
+        "TestEventAdjointDisabledAdaptation": "pass",
+        "TestEventAdjointFiniteSurrogateControl": "pass",
+        "TestEventAdjointTruncationPreservesWithinWindowState": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/LIF/Backward": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/LIF/BackwardRecompute": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/LIF/BackwardCoupled": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/LIF/BackwardCoupledRecompute": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/Mixed/Backward": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow/Mixed/BackwardCoupled": "pass",
+        "TestEventAdjointRejectsTrueFinalOverflow": "pass",
+        "TestEventAdjointTruncationPreservesFinalForwardState/window=1": "pass",
+        "TestEventAdjointTruncationPreservesFinalForwardState/window=2": "pass",
+        "TestEventAdjointTruncationPreservesFinalForwardState": "pass"
+      },
+      "supersedes": "frozen-test-initial.json"
+    },
+    "independent_reference": "exact-reference.json",
+    "independent_reference_sha256": "4dc24e72798c9c70c5b46aac472753238a2f189b91b73630876083180dc77893",
+    "protected_models": "../../MOD-04/lif-threshold-floor-20261015/protected-models.json",
+    "protected_data": "../../MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json"
+  },
+  "observed_result": {
+    "source_count": 828,
+    "formal_go_files": 824,
+    "ordinary_test_events": {
+      "pass": 6063,
+      "skip": 22
+    },
+    "race_test_events": {
+      "pass": 6062,
+      "skip": 23
+    },
+    "package_events_per_build": {
+      "pass": 58,
+      "skip": 3
+    },
+    "prior_terminal_events_unchanged_each_build": 6062,
+    "new_passing_regression_events_each_build": 23,
+    "normal_core_records_bytes_equal": 32,
+    "old_core_state_new_process_continuations": 32,
+    "old_chemical_model_new_process_continuations": 12,
+    "artificial_models_training_updates_each": 3,
+    "remaining_delivery": [
+      "final governance",
+      "owned temporary cleanup",
+      "commit and remote readback"
+    ]
+  },
+  "root_review": "root-review.md",
+  "candidate_acceptance": "candidate-verification.json",
+  "engineering_details": "engineering-verification.json",
+  "test_log": [
+    "regression-before-corrected.log",
+    "regression-before-race.log",
+    "regression-candidate-final.log",
+    "regression-candidate-final-race.log",
+    "engineering-unit-retry.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "preserved_rejected_work": [
+    "frozen-test-initial.json",
+    "candidate-initial-rounding.json",
+    "engineering-unit.json"
+  ],
+  "limits": "Synthetic numerical/compatibility checks. No claim of real-task accuracy improvement, biological completeness or absolute absence of bugs."
+}

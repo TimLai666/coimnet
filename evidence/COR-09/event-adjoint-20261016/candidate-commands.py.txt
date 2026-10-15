@@ -1,0 +1,9 @@
+import subprocess,sys
+from pathlib import Path
+E=Path(__file__).resolve().parent
+W=Path("runs/.tmp/event-adjoint-20261016").resolve()
+commands=[("regression-candidate-race",["go","test","-race","-json","-count=1","-run","^TestEventAdjoint","./dynamics"]),("core-candidate",["go","run",str(W/"core-compat")]),("core-candidate-race",["go","run","-race",str(W/"core-compat")]),("chemical-resume-candidate",["go","run",str(W/"chemical-compat"),"resume",str(W/"chemical-models-ordinary")]),("chemical-resume-candidate-race",["go","run","-race",str(W/"chemical-compat"),"resume",str(W/"chemical-models-race")]),("core-old-state-resume",["go","run",str(W/"core-compat"),"resume",str(E/"core-before-corrected.log")]),("core-old-state-resume-race",["go","run","-race",str(W/"core-compat"),"resume",str(E/"core-before-race.log")]),("reproduction-candidate",["go","run",str(W/"probe")])]
+for label,cmd in commands:
+ p=subprocess.run([sys.executable,str(E/"run-command.py.txt"),label,*cmd],stdout=subprocess.PIPE,text=True)
+ print(label,"exit",p.returncode,flush=True)
+ if p.returncode: raise SystemExit(p.returncode)

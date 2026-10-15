@@ -1,0 +1,93 @@
+{
+  "confirmed": true,
+  "command_receipt": "reproduction.json",
+  "log": "reproduction.log",
+  "log_sha256": "3a795e5e75596542424563996bfb4e76d998c7c58be9bc5379044fbbaecb6e68",
+  "input_source": "probe.go.txt",
+  "input_sha256": "c56b1e0417819c5978127595154c71da81639dd1ef2e018f70a72dcb8026be2e",
+  "reference": "exact-reference.json",
+  "expected_outputs": [
+    [
+      1
+    ],
+    [
+      0.5
+    ],
+    [
+      1.25
+    ]
+  ],
+  "expected_spikes": [
+    [
+      1
+    ],
+    [
+      0
+    ],
+    [
+      1
+    ]
+  ],
+  "observed_error": "gradient[0] is non-finite",
+  "finite_final_reference": true,
+  "base_source_manifest": "../../COR-04/zero-tau-adjoint-20261015/formal-source.json",
+  "requirement": [
+    "COR-04",
+    "COR-09"
+  ],
+  "reproduction_command": [
+    "go",
+    "run",
+    "./runs/.tmp/event-adjoint-20261016/probe"
+  ],
+  "environment": {
+    "host": "environment.json",
+    "command_settings": {
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+      "GOMEMLIMIT": "8GiB",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/event-adjoint-20261016/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/event-adjoint-20261016/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/event-adjoint-20261016/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/event-adjoint-20261016/go-tmp",
+      "GOTOOLCHAIN": "local",
+      "GOSUMDB": "off",
+      "GOTELEMETRY": "off",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+    }
+  },
+  "observed_result": {
+    "forward_outputs": [
+      [
+        1
+      ],
+      [
+        0.5
+      ],
+      [
+        1.25
+      ]
+    ],
+    "forward_spikes": [
+      [
+        1
+      ],
+      [
+        0
+      ],
+      [
+        1
+      ]
+    ],
+    "backward_error": "gradient[0] is non-finite",
+    "all_final_gradients_representable_by_independent_reference": true
+  },
+  "test_log": [
+    "reproduction.log"
+  ],
+  "input_fingerprints": {
+    "probe_source_sha256": "c56b1e0417819c5978127595154c71da81639dd1ef2e018f70a72dcb8026be2e",
+    "reference_sha256": "4dc24e72798c9c70c5b46aac472753238a2f189b91b73630876083180dc77893",
+    "base_source_manifest": "../../COR-04/zero-tau-adjoint-20261015/formal-source.json"
+  }
+}

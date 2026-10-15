@@ -23,7 +23,7 @@ modulation)`）、15.1–15.4。
    `theta_eff = theta_base + a + h`。`h` 只往上抬或回落到 0（「避免長期過強或沉默的受限調整」，
    主規格 S16 用語），`h_max` 保證 `v_reset < theta_eff` 仍成立（建構時檢查
    `theta_min + h_max` 在合法範圍且 `v_reset < theta_min`）。`r`、`h` 是狀態，不是可訓練參數，
-   反向把 `h` 視為常數（與適應相同），文件寫明。關閉時 `r ≡ h ≡ 0`，前向與反向必須與未啟用逐位相同。
+   反向把 `h` 視為常數。適應狀態 `a` 依 ticket 11 決策 7 跨時間傳遞。關閉時 `r ≡ h ≡ 0`，前向與反向必須與未啟用逐位相同。
    設定：`LIFHomeostasis{Enabled bool; TauRate, TargetRate, Eta, HMax float64}`，
    `LIFConfig.Homeostasis *LIFHomeostasis json:"homeostasis,omitempty"`（指標加 omitempty，
    既有 `core_config_hash`、`protocol_hash` 與 NAT-01／02／03／05 的紀錄 hash 不變，有測試）。

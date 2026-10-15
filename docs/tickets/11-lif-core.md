@@ -245,8 +245,7 @@ tangent 參考 1e-12、平滑模式中心差分，硬放電未做有限差分）
 **2026-09-15 更新**：慢速穩定（homeostasis）已在 [ticket 16](16-lif-individual-and-model-package.md)
 實作並驗證，`evidence/COR-04/verification.json` 改寫為完整紀錄，保留本票的閾值訓練與短期適應
 證據，並補上慢速穩定的規則、手算時序表位置、收斂數字、關閉逐位相同與既有指紋不變的證明。
-COR-04 的三項機制（可訓練基礎閾值、短期適應、慢速穩定）到此到齊，且可各自獨立開關；反向把
-適應與慢速穩定都視為常數。`docs/requirements-status.json` 的狀態更新不在 ticket 16 第二階段的
+COR-04 的三項機制（可訓練基礎閾值、短期適應、慢速穩定）到此到齊，且可各自獨立開關；反向沿用本票決策 7 的適應狀態跨時間傳遞，慢速穩定偏移視為常數。`docs/requirements-status.json` 的狀態更新不在 ticket 16 第二階段的
 檔案範圍內，是唯一剩下的登記步驟。
 
 ## 依據

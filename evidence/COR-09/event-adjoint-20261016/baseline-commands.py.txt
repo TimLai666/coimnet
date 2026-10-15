@@ -1,0 +1,7 @@
+import subprocess,sys
+from pathlib import Path
+E=Path(__file__).resolve().parent
+W=Path("runs/.tmp/event-adjoint-20261016").resolve()
+commands=[("core-before-corrected",["go","run",str(W/"core-compat")]),("core-before-race",["go","run","-race",str(W/"core-compat")]),("chemical-resume-before",["go","run",str(W/"chemical-compat"),"resume",str(W/"chemical-models-ordinary")]),("chemical-resume-before-race",["go","run","-race",str(W/"chemical-compat"),"resume",str(W/"chemical-models-race")])]
+for label,cmd in commands:
+ subprocess.run([sys.executable,str(E/"run-command.py.txt"),label,*cmd],check=True)
