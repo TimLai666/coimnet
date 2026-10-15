@@ -3,13 +3,13 @@
 **Epic:** 機制與模型品質稽核
 **User Story:** 使用者能以固定的真實單字元資料，核對 LIF 訓練、化學開關與一般／競態建置的結果。
 **Blocked by:** 101、103（已完成）
-**Status:** in progress
+**Status:** done
 
 - [x] 固定原始資料、切分、LIF 假設、三個種子與更新預算。
 - [x] 公開 LIF API、零化學作用、梯度與新程序保存接續驗證通過。
 - [x] 12 組完整訓練及接續完成，保留全部曲線與結果。
 - [x] 核對品質、逐筆預測及狀態差異，處理確認缺陷並完成適當工程檢查。
-- [ ] 保存證據、清除本輪暫存、提交及核對遠端。
+- [x] 保存證據、清除本輪暫存、提交及核對遠端。
 
 ## 範圍與驗收
 
@@ -21,4 +21,4 @@ OCR Recognizer 只提供相同的初始參數與輸入轉換，實際模型由�
 
 ## Root 決策｜2026-10-15
 
-目前 4／5。12 組固定訓練與新程序接續已完成，Root 獨立核對 288 份評分與六組各九份數值陣列，原資料、來源、driver、binary、協定與原模型指紋保持，見[驗收](../../evidence/TSK-11/lif-build-quality-20261015/root-final-audit.json)。主要辨識率為 68.30%～71.00%，化學 ON／OFF 沒有穩定品質提升證據。六組跨建置最終狀態都有差異，各自建置內的 12 次保存接續相同，見[結果與限制](../../evidence/TSK-11/lif-build-quality-20261015/README.md)。固定分析已驗收，106 也已完成交付，107／108 可接續正式採用。固定來源的工程檢查與最終 820 份來源的完整一般／競態驗收皆通過。必要資料、16 份恢復封存及工作檔已保存，本票自有暫存已清除，見[驗收](../../evidence/TSK-11/lif-build-quality-20261015/verification.json)與[清理](../../evidence/TSK-11/lif-build-quality-20261015/cleanup.json)。最後治理及交付待完成。
+本票完成 5／5。12 組固定訓練與新程序接續已完成，Root 獨立核對 288 份評分與六組各九份數值陣列，原資料、來源、driver、binary、協定與原模型指紋保持，見[驗收](../../evidence/TSK-11/lif-build-quality-20261015/root-final-audit.json)。主要辨識率為 68.30%～71.00%，化學 ON／OFF 沒有穩定品質提升證據。六組跨建置最終狀態都有差異，各自建置內的 12 次保存接續相同，見[結果與限制](../../evidence/TSK-11/lif-build-quality-20261015/README.md)。固定分析已驗收，106 也已完成交付，107／108 可接續正式採用。固定來源的工程檢查與最終 820 份來源的完整一般／競態驗收皆通過。必要資料、16 份恢復封存及工作檔已保存，本票自有暫存已清除，見[驗收](../../evidence/TSK-11/lif-build-quality-20261015/verification.json)與[清理](../../evidence/TSK-11/lif-build-quality-20261015/cleanup.json)。最後 31 項治理事件通過，來源與證據提交 `b9b465b` 已正常推送且遠端讀回相同，見[交付](../../evidence/TSK-11/lif-build-quality-20261015/delivery.json)。

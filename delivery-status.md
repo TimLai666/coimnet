@@ -2,15 +2,15 @@
 
 ## 目前階段
 
-[ticket 108](docs/tickets/108-asr-constructor-dimensions.md) 的 ASR 配置前尺寸修正已通過完整驗收。最終 820 份 Go／module 的一般／競態各 58 套件通過，5,891／5,890 個事件成功、22／23 個略過、零失敗，build、vet、格式、固定相依性與 31 項治理事件通過，見[驗收](evidence/TSK-02/asr-dimensions-20261015/verification.json)。四組合法模型及 16 次跨版本新程序接續相同。目前 4／5，剩下最終治理、暫存清理及交付。OPS-01／TSK-02 暫維持 failed，最新 88／91 passed，交付完成後恢復。
+[ticket 108](docs/tickets/108-asr-constructor-dimensions.md) 已完成 5／5。ASR 會在配置前拒絕無法表示的節點、邊與陣列尺寸。最終 820 份 Go／module 的一般／競態各 58 套件通過，5,891／5,890 個事件成功、22／23 個略過、零失敗，build、vet、格式及固定相依性通過，見[驗收](evidence/TSK-02/asr-dimensions-20261015/verification.json)。四組合法模型及 16 次跨版本新程序接續相同。最後 31 項治理通過，自有暫存清除，修正 `5be55c2` 與回歸／證據 `b9b465b` 已正常推送且遠端讀回相同，見[交付](evidence/TSK-02/asr-dimensions-20261015/delivery.json)。OPS-01／TSK-02 已恢復 passed，最新為 91／91 工程需求 passed，整體零 bug 目標持續進行。
 
-[ticket 107](docs/tickets/107-recognizer-unicode-construction.md) 已在建立 OCR／ASR 模型時拒絕無法保存的非法字碼。專項兩種建置各 353 個事件通過，接續 108 的完整一般／競態工程檢查通過，正常模型及舊保存相容性保持，見[驗收](evidence/TSK-01/recognizer-unicode-20261015/verification.json)。本票自有暫存已清除，64 個必要工作檔已逐位保存。目前 4／5，最後治理及交付待完成，TSK-01／TSK-02 暫維持 failed。
+[ticket 107](docs/tickets/107-recognizer-unicode-construction.md) 已完成 5／5。OCR／ASR 在建立模型時拒絕原本無法保存的非法字碼，正常模型、舊保存及串流防護保持。專項兩種建置各 353 個事件通過，接續 108 的完整一般／競態與最後 31 項治理通過，見[驗收](evidence/TSK-01/recognizer-unicode-20261015/verification.json)。64 個必要工作檔已保存，自有暫存清除。修正 `c877ab2` 與回歸／證據 `b9b465b` 已正常推送且遠端讀回相同，見[交付](evidence/TSK-01/recognizer-unicode-20261015/delivery.json)。TSK-01／TSK-02 已恢復 passed。
 
 [ticket 106](docs/tickets/106-operational-project-temp.md) 已完成操作腳本與教學的專案內保存，乾淨匯出建置也不再帶入外層工作區版本資訊。永久回歸一般／競態各 14 個事件通過，完整一般／競態各 58 套件通過，5,840／5,839 個事件成功、22／23 個略過、零失敗。build、vet、格式、固定相依性及最後 11 項治理檢查通過，見[驗收](evidence/OPS-03/operational-temp-paths-20261015/verification.json)。README 的訓練、接續與推論已實跑，必要快照及輸入原文已保存。自有暫存已清除，其他五個工作目錄、815 份 Go／module、18 個模型及固定訓練輸入保持，見[清理](evidence/OPS-03/operational-temp-paths-20261015/cleanup.json)。本票完成 4／4。修正 `30713b6` 與回歸／證據 `d62f677` 已正常推送且遠端讀回相同，815 份提交來源指紋一致，見[交付](evidence/OPS-03/operational-temp-paths-20261015/delivery.json)。
 
 [ticket 105](docs/tickets/105-recompute-project-temp.md) 已修正重算工具與文件範例的暫存路徑，工作留在 `runs/.tmp/`，只清除本次子目錄，共用目錄與原結果保留。一般／競態專項各 8 個事件通過，四個真實小圖 helper 與三次文件範例完成，必要快照原檔已保存。完整一般／競態各 58 套件通過，5,826／5,825 個事件成功、22／23 個略過、零失敗，build、vet、格式、相依性及最後 11 項治理／31 個事件通過，見[驗收](evidence/OPS-03/recompute-temp-path-20261015/verification.json)。本票完成 4／4。修正 `eedb19a` 與回歸／證據 `668fd08` 已正常推送且遠端讀回相同，見[交付](evidence/OPS-03/recompute-temp-path-20261015/delivery.json)。自有暫存與教學 fixture 共 36,423,885 bytes 已清除。原有 812 份 Go／module、18 個模型及 ticket 104 固定輸入保持，新增工具測試不參與既有訓練程式。沒有本票交付阻礙，下一個可驗證成果是 ticket 106 的永久回歸整合。整體零 bug 目標持續進行。
 
-[ticket 104](docs/tickets/104-lif-real-task-build-quality.md) 的 12 組固定 LIF 訓練、新程序接續、288 份評分及六組數值陣列已通過獨立核對，見[驗收](evidence/TSK-11/lif-build-quality-20261015/verification.json)。主要辨識率為 68.30%～71.00%，化學作用沒有穩定品質提升證據。六組一般／競態最終狀態不同，各自建置內的保存接續相同，見[結果](evidence/TSK-11/lif-build-quality-20261015/README.md)。必要資料保存在專案 data/，16 份恢復封存已保存，自有 1,769,612,968 bytes 暫存已清除。目前 4／5，最後治理及交付待完成。
+[ticket 104](docs/tickets/104-lif-real-task-build-quality.md) 已完成 5／5。12 組固定 LIF 訓練、新程序接續、288 份評分及六組數值陣列通過獨立核對，見[驗收](evidence/TSK-11/lif-build-quality-20261015/verification.json)。主要辨識率 68.30%～71.00%，沒有穩定化學助益證據。六組一般／競態最終狀態不同，各自建置內的保存接續相同，見[結果](evidence/TSK-11/lif-build-quality-20261015/README.md)。六份必要資料保存在專案 data/，16 份恢復封存已保存，自有 1,769,612,968 bytes 暫存已清除。最後 31 項治理通過，來源／證據提交 `b9b465b` 已正常推送且遠端讀回相同，見[交付](evidence/TSK-11/lif-build-quality-20261015/delivery.json)。
 
 [ticket 103](docs/tickets/103-lif-threshold-range.md) 已修正合法閾值跨度溢位及最終閾值溢位未拒絕的缺陷。一般／競態各 40 個永久回歸通過，32 組正常訓練及 64 次舊快照新程序接續相同。完整一般／競態各 58 套件通過，5,818／5,817 個事件成功、22／23 個略過、0 失敗，build、vet、格式、固定相依性與最後 11 項治理／31 事件通過，見[驗收](evidence/COR-04/threshold-range-audit-20261015/verification.json)。812 份提交來源與驗證指紋相同，最新 91 項工程 passed。本輪兩個暫存共 1,743,722,445 bytes 已清除，原有目錄及 18 個原模型檔保持。修正 `29dffdc` 與回歸／證據 `b433d26` 已正常推送且遠端讀回相同，見[交付](evidence/COR-04/threshold-range-audit-20261015/delivery.json)。本票完成 5／5，沒有目前交付阻礙。下一個可驗證成果是固定真實單字元資料、種子與預算的 LIF 長期辨識品質量測，下一票尚未建立。整體零 bug 目標保持進行中。負向調變取下界的既有契約差異見 AGENTS.md Follow-ups。
 
@@ -333,7 +333,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-tickets 104、107、108 已通過各自實驗／相容性及完整工程檢查。下一個可驗證成果是完成最後治理、清理剩餘自有暫存，再提交及核對遠端。交付完成前不將三票記為 5／5。
+tickets 104、107、108 已完成驗收、清理及遠端交付。下一個可驗證成果是依 AGENTS.md 的後續項目，確認文字生成的自訂詞表尺寸能否安全重現建構缺陷；尚未將候選算術疑慮列為已確認問題。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

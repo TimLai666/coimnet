@@ -1,0 +1,28 @@
+{
+  "failed_log": "final-governance-closure.log",
+  "log_sha256": "f09cae1cf9feec779485223cb18f8045c5cee89d57817947b5467c1a9ef71d22",
+  "exit_code": 1,
+  "passed_events": 30,
+  "failed_test": "TestGovernancePassedRequirementsHaveEvidence",
+  "cause": "Failed-state requirement references pointed to raw reproduction summaries without the required acceptance schema. Restoring passed status checks every listed evidence file.",
+  "correction": "Requirement references now use complete acceptance verification.json documents, which retain links to original failed reproduction summaries; raw summaries unchanged.",
+  "removed_direct_failure_only_references": [
+    [
+      "TSK-01",
+      "../evidence/TSK-01/recognizer-unicode-20261015/public-reproduction-verification.json"
+    ],
+    [
+      "TSK-02",
+      "../evidence/TSK-01/recognizer-unicode-20261015/public-reproduction-verification.json"
+    ],
+    [
+      "TSK-02",
+      "../evidence/TSK-02/asr-dimensions-20261015/public-reproduction-verification.json"
+    ],
+    [
+      "OPS-01",
+      "../evidence/TSK-02/asr-dimensions-20261015/public-reproduction-verification.json"
+    ]
+  ],
+  "source_tests_thresholds_and_observed_results_changed": false
+}

@@ -54,8 +54,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## Follow-ups
 
-- `dynamics/lif.go`／`learning/network.go`：[NEEDS INVESTIGATION] 普通／`-race` 的人工 LIF 一個間距梯度差異已確認來自 candidate 融合不同乘法項，是 Go 允許的取整結果。最早儲存分歧 cand[1][0] 被不應期捨棄，第一個傳到梯度的是 cand[4][2]。公開 Network／LIF、唯讀 trace、獨立完整前向／反向與同建置新程序重跑保持一致，正常公式不改。長期訓練／真實任務品質影響尚未量測；後續用固定資料、預算與建置做成對任務比較，不以此人工案例外推。證據見 `evidence/LRN-01/lif-float-audit-20261015/complete-reference-bits.json` 與 `root-review.json`。
-
 - `tasks/ocr`：`page.go` 與 `metrics.go` 各有一段 `// Package ocr` 註解，`go doc` 會併著顯示；併成一段（放 `doc.go`）時一起處理。
 - `tasks/ocr/glyphs`：`Options.Invert` 時字距欄等於 Background（反相後正好是筆劃值），多字反相會像有墨；目前沒有呼叫端用到，之後決定字距欄在反相時要不要跟著反相。
 - `experiment/imitation.go`：讀出節點離輸入兩跳，走廊 fixture 的前兩步 logits 永遠是零（只剩讀出 bias 可學），一致率上限約 0.83 且對 Episodes 不單調；要提高就得加輸入→讀出的直接邊或縮短路徑。50／200／500 episodes 的原始曲線已保存於 `evidence/LRN-09/imitation-baseline.jsonl`，本輪保持既有模仿模型不變。
@@ -71,3 +69,5 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `docs/tickets/18-local-plasticity.md:21`：[NEEDS INVESTIGATION] 公式寫 pre(t)×post(t+1)，但同票 121–137 手算表、套件註解與 consumer 使用核心步驟後的 pre。Root 兩列 LIF 實測 eligibility／plastic 為 exp(-1)，與既有手算表一致；若把 pre 當本步開始的突觸跡，該案例為 1。主規格 10.3 只寫 pre_activity×post_activity，沒有指定兩側時點。需先釐清時點定義，不把 worker 的演算法錯誤判定當成已確認，不先改正常模型。證據見 `evidence/MOD-05/receptor-rule-ownership-20261014/timing-audit.json`。
 
 - `dynamics/modulation.go:95`、`dynamics/lif_coupled.go:249`：[NEEDS INVESTIGATION] 有限負向閾值位移造成 floor 前的和為 −Inf 時，普通 `AdvanceModulated` 會取回 `ThetaMin`，非 nil 耦合前向會拒絕。Root 用有限跨度 `[-2^1023, 0]`、raw −1000、shift −MaxFloat64 在原來源及最終來源重現相同差異，並非 ticket 103 引入。先釐清 floor 前不可表示值應拒絕或允許取下界的共用契約，再決定修改，不列為已確認缺陷、不先改正常模型。證據見 `evidence/COR-04/threshold-range-audit-20261015/modulation-floor-follow-up.json`。
+
+- `tasks/textgen/model.go:123-124`：[NEEDS INVESTIGATION] 公開 `tokenizer.Vocabulary` 是可替換介面，NewModel 只確認 Size 至少為 2，encoder／readout 的 Size×Embed／Hidden 沒有配置前乘法檢查。MaxInt×4 的純算術會包回負值，但尚未執行符合完整 Vocabulary 契約的公開重現。107／108 交付後先用不配置巨量資料的自訂 vocabulary 驗證，再判斷是否為缺陷；不要把內建 vocabulary 需要巨大 specials slice 的不可達案例當成已確認。

@@ -3,18 +3,18 @@
 **Epic:** 模型建構與公開拒絕稽核
 **User Story:** 語音模型的衍生尺寸無法表示時，SDK 在配置前回傳錯誤，避免設定驗證成功後程式中斷。
 **Blocked by:** 無，已接續 107 正式採用
-**Status:** in progress
+**Status:** done
 
 - [x] 公開 API 重現整數溢位，核對正常 tiny 控制及配置前安全條件。
 - [x] 凍結公開失敗回歸，完成全部建構陣列的隔離尺寸驗證。
 - [x] 接續 107 正式採用，核對合法初始化、訓練及保存恢復保持。
 - [x] 完成工程檢查並備妥對應需求證據。
-- [ ] 保存證據、清除自有暫存、拆分提交並核對遠端。
+- [x] 保存證據、清除自有暫存、拆分提交並核對遠端。
 
 ## Root 決策｜2026-10-15
 
-目前 4／5。一般／競態各五個公開建構案例通過 Validate 後，第一個配置即因負容量而 panic，見[公開重現](../../evidence/TSK-02/asr-dimensions-20261015/public-reproduction-verification.json)。凍結回歸修正前各 12 fail／5 pass，候選各 17 pass。三份私有來源與凍結測試已逐位正式採用，兩個完整辨識套件一般／競態各 370 個事件通過，與候選逐項一致，見[正式套件驗收](../../evidence/TSK-02/asr-dimensions-20261015/formal-package-verification.json)。四組合法模型的初始化、訓練與下一次更新相同，兩種建置共 16 次跨版本新程序接續相同，見[審查](../../evidence/TSK-02/asr-dimensions-20261015/root-review.md)。每個非法執行案例事前都證明第一個配置容量為負，沒有執行正值的大型配置。32 位只有靜態算術證明，不視為平台執行。
+本票完成 5／5。一般／競態各五個公開建構案例通過 Validate 後，第一個配置即因負容量而 panic，見[公開重現](../../evidence/TSK-02/asr-dimensions-20261015/public-reproduction-verification.json)。凍結回歸修正前各 12 fail／5 pass，候選各 17 pass。三份私有來源與凍結測試已逐位正式採用，兩個完整辨識套件一般／競態各 370 個事件通過，與候選逐項一致，見[正式套件驗收](../../evidence/TSK-02/asr-dimensions-20261015/formal-package-verification.json)。四組合法模型的初始化、訓練與下一次更新相同，兩種建置共 16 次跨版本新程序接續相同，見[審查](../../evidence/TSK-02/asr-dimensions-20261015/root-review.md)。每個非法執行案例事前都證明第一個配置容量為負，沒有執行正值的大型配置。32 位只有靜態算術證明，不視為平台執行。
 
 修正沿用既有整數加乘檢查，於 Validate、建構與保存形狀核對共用衍生尺寸。節點、邊、類別、encoder 與 readout 的元素數及 float64 位元組必須可由 int 表示。合法設定的亂數、參數、學習算式與保存格式保持，不設定任意容量上限，也不承諾實體記憶體足夠。驗收、安全回歸條件與責任見[計畫](../../evidence/TSK-02/asr-dimensions-20261015/plan.md)。
 
-最終 820 份來源的完整一般／競態各 58 套件通過，5,891／5,890 個事件成功、22／23 個略過、零失敗。build、vet、格式、固定相依性與 31 項治理事件通過，見[驗收](../../evidence/TSK-02/asr-dimensions-20261015/verification.json)。OPS-01／TSK-02 暫維持 failed，清理及交付完成後恢復。正式來源、既有資料、模型及長期驗收保持。
+最終 820 份來源的完整一般／競態各 58 套件通過，5,891／5,890 個事件成功、22／23 個略過、零失敗。build、vet、格式、固定相依性與 31 項治理事件通過，見[驗收](../../evidence/TSK-02/asr-dimensions-20261015/verification.json)。OPS-01／TSK-02 已恢復 passed。自有暫存清除，原有目錄及 18 個模型檔保持。修正 `5be55c2` 與回歸／證據 `b9b465b` 已正常推送且遠端讀回相同，見[交付](../../evidence/TSK-02/asr-dimensions-20261015/delivery.json)。正式來源、既有資料、模型及長期驗收保持。
