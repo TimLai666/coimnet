@@ -1,0 +1,1140 @@
+{
+  "task": "TSK-11 chemical state audit phase4",
+  "date": "2026-10-15",
+  "scope": {
+    "states": [
+      "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/models/20260924-off-ordinary.state.json",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/models/20260924-on-ordinary.state.json"
+    ],
+    "read_only": true,
+    "scores_and_model_quality_read": false,
+    "training_or_restore_started": false
+  },
+  "sources": {
+    "protocol": "/Users/timlai/Developer/coimnet/evidence/TSK-11/lif-build-quality-20261015/protocol.json",
+    "chemistry_source": "/Users/timlai/Developer/coimnet/evidence/TSK-11/lif-build-quality-20261015/sources-v2/chemistry.go.txt",
+    "lif_source": "/Users/timlai/Developer/coimnet/evidence/TSK-11/lif-build-quality-20261015/sources-v2/lif.go.txt",
+    "protocol_chemistry": {
+      "source": "fixed activity-summary Controller; SummaryWindow3,Hidden1,parameters[0.6,0.2,0.05,0.8,-0.1],no target/feedback/resources",
+      "regions": 1,
+      "channels": 1,
+      "dt": 1,
+      "tau": [
+        2
+      ],
+      "initial_concentration": [
+        [
+          0
+        ]
+      ],
+      "receptor_cells": "hidden nodes28..51",
+      "engineering_kd": 0.5,
+      "engineering_n": 1,
+      "gamma_scale": 0.8,
+      "beta_scale": 0.1,
+      "gamma_min": 0.5,
+      "gamma_max": 2,
+      "beta_abs_max": 1,
+      "scope": "engineering coefficients from ticket65 public fixture; no biological hormone or measured receptor attribution",
+      "trainable_chemistry_parameters": 0
+    },
+    "protocol_lif": {
+      "nodes": 52,
+      "edges": 1248,
+      "topology": "unchanged OCR topology s=0..51 to h=28..51, zero delays",
+      "dt": 1,
+      "tau_syn": 1,
+      "theta_min": 0.05,
+      "theta_max": 1,
+      "v_reset": -0.5,
+      "refractory_steps": 1,
+      "adaptation": false,
+      "homeostasis": false,
+      "surrogate": "fast_sigmoid",
+      "surrogate_scale": 2,
+      "theta_raw_initial": -2,
+      "settings_source": "ticket11 threshold fixture, not optimized for KMNIST"
+    }
+  },
+  "states": [
+    {
+      "file": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/models/20260924-off-ordinary.state.json",
+      "group": "off",
+      "updates": 120000,
+      "fixed_checks": [
+        {
+          "json_path": "config.lif.nodes",
+          "actual": 52,
+          "actual_present": true,
+          "expected": 52,
+          "expected_source": "protocol.json:147-149; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.dt",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:151; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.tau_syn",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:152; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.theta_min",
+          "actual": 0.05,
+          "actual_present": true,
+          "expected": 0.05,
+          "expected_source": "protocol.json:153; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.theta_max",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:154; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.v_reset",
+          "actual": -0.5,
+          "actual_present": true,
+          "expected": -0.5,
+          "expected_source": "protocol.json:155; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.refractory_steps",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:156; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.adaptation",
+          "actual": {
+            "enabled": false,
+            "tau_adapt": 0,
+            "beta": 0
+          },
+          "actual_present": true,
+          "expected": {
+            "enabled": false,
+            "tau_adapt": 0,
+            "beta": 0
+          },
+          "expected_source": "protocol.json:157; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.surrogate",
+          "actual": {
+            "kind": "fast_sigmoid",
+            "scale": 2
+          },
+          "actual_present": true,
+          "expected": {
+            "kind": "fast_sigmoid",
+            "scale": 2
+          },
+          "expected_source": "protocol.json:159-160; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.sources",
+          "actual": {
+            "length": 1248
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248
+          },
+          "expected_source": "protocol.json:148-150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen source reuses the factory topology; the state is checked by edge count here."
+        },
+        {
+          "json_path": "config.lif.targets",
+          "actual": {
+            "length": 1248
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248
+          },
+          "expected_source": "protocol.json:148-150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen source reuses the factory topology; the state is checked by edge count here."
+        },
+        {
+          "json_path": "config.lif.delays",
+          "actual": {
+            "length": 1248,
+            "all": 0
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248,
+            "all": 0
+          },
+          "expected_source": "protocol.json:150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen LIF construction creates one zero delay per source edge."
+        },
+        {
+          "json_path": "options.chemistry",
+          "actual": null,
+          "actual_present": false,
+          "expected": null,
+          "expected_source": "protocol.json:26-48 (trainable_chemistry_parameters=0); chemistry.go.txt:28-76",
+          "status": "mismatch",
+          "note": "No chemistry-specific optimizer option is present in the snapshot."
+        },
+        {
+          "json_path": "options.trainable",
+          "actual": {
+            "encoder": true,
+            "weights": true,
+            "bias": true,
+            "tau": false,
+            "theta": true,
+            "readout": true
+          },
+          "actual_present": true,
+          "expected": {
+            "weights": true,
+            "bias": true,
+            "tau": false,
+            "theta": true,
+            "encoder": true,
+            "readout": true
+          },
+          "expected_source": "protocol.json:164-170; lif.go.txt:39-40",
+          "status": "match",
+          "note": "This is a shared optimizer mask, recorded separately from chemistry trainability."
+        },
+        {
+          "json_path": "config.chemistry",
+          "actual": null,
+          "actual_present": false,
+          "expected": null,
+          "expected_source": "chemistry.go.txt:11,15-16",
+          "status": "mismatch",
+          "note": "OFF must carry no ChemicalEpisode configuration."
+        }
+      ],
+      "dynamic_state": [
+        {
+          "json_path": "updates",
+          "actual": 120000,
+          "actual_present": true,
+          "expected": 120000,
+          "expected_source": "protocol.json:9-10",
+          "status": "match",
+          "note": "Training progress, not a chemistry quality result."
+        },
+        {
+          "json_path": "config.chemistry.part.state",
+          "actual": null,
+          "actual_present": false,
+          "initial_expected": null,
+          "initial_source": "chemistry.go.txt:15-16",
+          "status": "not_applicable",
+          "note": "OFF has no chemistry state because config.chemistry is nil."
+        }
+      ]
+    },
+    {
+      "file": "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/models/20260924-on-ordinary.state.json",
+      "group": "on",
+      "updates": 120000,
+      "fixed_checks": [
+        {
+          "json_path": "config.lif.nodes",
+          "actual": 52,
+          "actual_present": true,
+          "expected": 52,
+          "expected_source": "protocol.json:147-149; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.dt",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:151; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.tau_syn",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:152; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.theta_min",
+          "actual": 0.05,
+          "actual_present": true,
+          "expected": 0.05,
+          "expected_source": "protocol.json:153; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.theta_max",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:154; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.v_reset",
+          "actual": -0.5,
+          "actual_present": true,
+          "expected": -0.5,
+          "expected_source": "protocol.json:155; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.refractory_steps",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:156; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.adaptation",
+          "actual": {
+            "enabled": false,
+            "tau_adapt": 0,
+            "beta": 0
+          },
+          "actual_present": true,
+          "expected": {
+            "enabled": false,
+            "tau_adapt": 0,
+            "beta": 0
+          },
+          "expected_source": "protocol.json:157; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.surrogate",
+          "actual": {
+            "kind": "fast_sigmoid",
+            "scale": 2
+          },
+          "actual_present": true,
+          "expected": {
+            "kind": "fast_sigmoid",
+            "scale": 2
+          },
+          "expected_source": "protocol.json:159-160; lif.go.txt:34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.lif.sources",
+          "actual": {
+            "length": 1248
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248
+          },
+          "expected_source": "protocol.json:148-150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen source reuses the factory topology; the state is checked by edge count here."
+        },
+        {
+          "json_path": "config.lif.targets",
+          "actual": {
+            "length": 1248
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248
+          },
+          "expected_source": "protocol.json:148-150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen source reuses the factory topology; the state is checked by edge count here."
+        },
+        {
+          "json_path": "config.lif.delays",
+          "actual": {
+            "length": 1248,
+            "all": 0
+          },
+          "actual_present": true,
+          "expected": {
+            "length": 1248,
+            "all": 0
+          },
+          "expected_source": "protocol.json:150; lif.go.txt:34",
+          "status": "match",
+          "note": "The frozen LIF construction creates one zero delay per source edge."
+        },
+        {
+          "json_path": "options.chemistry",
+          "actual": null,
+          "actual_present": false,
+          "expected": null,
+          "expected_source": "protocol.json:26-48 (trainable_chemistry_parameters=0); chemistry.go.txt:28-76",
+          "status": "mismatch",
+          "note": "No chemistry-specific optimizer option is present in the snapshot."
+        },
+        {
+          "json_path": "options.trainable",
+          "actual": {
+            "encoder": true,
+            "weights": true,
+            "bias": true,
+            "tau": false,
+            "theta": true,
+            "readout": true
+          },
+          "actual_present": true,
+          "expected": {
+            "weights": true,
+            "bias": true,
+            "tau": false,
+            "theta": true,
+            "encoder": true,
+            "readout": true
+          },
+          "expected_source": "protocol.json:164-170; lif.go.txt:39-40",
+          "status": "match",
+          "note": "This is a shared optimizer mask, recorded separately from chemistry trainability."
+        },
+        {
+          "json_path": "config.chemistry.part.config.chemistry.regions",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:26-30; chemistry.go.txt:30-33",
+          "status": "match"
+        },
+        {
+          "json_path": "config.chemistry.part.config.chemistry.channels",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:26-30; chemistry.go.txt:30-34",
+          "status": "match"
+        },
+        {
+          "json_path": "config.chemistry.part.config.chemistry.dt",
+          "actual": 1,
+          "actual_present": true,
+          "expected": 1,
+          "expected_source": "protocol.json:26-30; chemistry.go.txt:30-35",
+          "status": "match"
+        },
+        {
+          "json_path": "config.chemistry.part.config.chemistry.tau",
+          "actual": [
+            2
+          ],
+          "actual_present": true,
+          "expected": [
+            2
+          ],
+          "expected_source": "protocol.json:26-32; chemistry.go.txt:30-36",
+          "status": "match"
+        },
+        {
+          "json_path": "config.chemistry.part.config.chemistry.units",
+          "actual": "",
+          "actual_present": true,
+          "expected": "",
+          "expected_source": "chemistry.go.txt:30-36",
+          "status": "match",
+          "note": "Units is not assigned by the frozen source and remains its zero value."
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.kind",
+          "actual": null,
+          "actual_present": false,
+          "expected": "controller",
+          "expected_source": "chemistry.go.txt:37-38",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.channel",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0,
+          "expected_source": "chemistry.go.txt:37-40",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.inputs.summary_window",
+          "actual": null,
+          "actual_present": false,
+          "expected": 3,
+          "expected_source": "protocol.json:27; chemistry.go.txt:40-42",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.inputs.use_feedback",
+          "actual": null,
+          "actual_present": false,
+          "expected": false,
+          "expected_source": "protocol.json:27; chemistry.go.txt:40-42",
+          "status": "mismatch",
+          "note": "The protocol explicitly says no feedback; the frozen ControllerInputs leaves this field false."
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.nodes",
+          "actual": null,
+          "actual_present": false,
+          "expected": 52,
+          "expected_source": "chemistry.go.txt:18-20,40-44; protocol.json:147-149",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.hidden",
+          "actual": null,
+          "actual_present": false,
+          "expected": 1,
+          "expected_source": "protocol.json:27; chemistry.go.txt:40-44",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.channel",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0,
+          "expected_source": "chemistry.go.txt:40-44",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.sources.0.controller.parameters",
+          "actual": null,
+          "actual_present": false,
+          "expected": [
+            0.6,
+            0.2,
+            0.05,
+            0.8,
+            -0.1
+          ],
+          "expected_source": "protocol.json:27; chemistry.go.txt:45-47",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.cells",
+          "actual": null,
+          "actual_present": false,
+          "expected": [
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51
+          ],
+          "expected_source": "protocol.json:39; chemistry.go.txt:23,50-52",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.signal",
+          "actual": null,
+          "actual_present": false,
+          "expected": "engineering_activity_summary",
+          "expected_source": "chemistry.go.txt:50-53",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.channel",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0,
+          "expected_source": "chemistry.go.txt:50-53",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.status",
+          "actual": null,
+          "actual_present": false,
+          "expected": "hypothesized",
+          "expected_source": "chemistry.go.txt:50-57",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.engineering_kd",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0.5,
+          "expected_source": "protocol.json:39-41; chemistry.go.txt:54-56",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.engineering_n",
+          "actual": null,
+          "actual_present": false,
+          "expected": 1,
+          "expected_source": "protocol.json:39-41; chemistry.go.txt:55-56",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.evidence",
+          "actual": null,
+          "actual_present": false,
+          "expected": "declared engineering experiment",
+          "expected_source": "chemistry.go.txt:56-58",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.measurement_kind",
+          "actual": null,
+          "actual_present": false,
+          "expected": "declared",
+          "expected_source": "chemistry.go.txt:57-59",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.receptors.records.0.mapping_version",
+          "actual": null,
+          "actual_present": false,
+          "expected": "tsk-11-chemical-quality-20261013/v1",
+          "expected_source": "chemistry.go.txt:58-60",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.kind",
+          "actual": null,
+          "actual_present": false,
+          "expected": "sensitivity",
+          "expected_source": "chemistry.go.txt:61-63",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.receptor",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0,
+          "expected_source": "chemistry.go.txt:61-64",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.gamma_scale",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0.8,
+          "expected_source": "protocol.json:42; chemistry.go.txt:64-65",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.beta_scale",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0.1,
+          "expected_source": "protocol.json:43; chemistry.go.txt:64-65",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.gamma_min",
+          "actual": null,
+          "actual_present": false,
+          "expected": 0.5,
+          "expected_source": "protocol.json:44; chemistry.go.txt:65-68",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.gamma_max",
+          "actual": null,
+          "actual_present": false,
+          "expected": 2,
+          "expected_source": "protocol.json:45; chemistry.go.txt:66-68",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.effects.0.beta_abs_max",
+          "actual": null,
+          "actual_present": false,
+          "expected": 1,
+          "expected_source": "protocol.json:46; chemistry.go.txt:67-69",
+          "status": "mismatch"
+        },
+        {
+          "json_path": "config.chemistry.part.config.regions.node_region",
+          "actual": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "actual_present": true,
+          "expected": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "expected_source": "chemistry.go.txt:18-23,70-70",
+          "status": "match",
+          "note": "52 LIF nodes are assigned to one region; all entries are zero."
+        }
+      ],
+      "dynamic_state": [
+        {
+          "json_path": "updates",
+          "actual": 120000,
+          "actual_present": true,
+          "expected": 120000,
+          "expected_source": "protocol.json:9-10",
+          "status": "match",
+          "note": "Training progress, not a chemistry quality result."
+        },
+        {
+          "json_path": "config.chemistry.part.state.concentration",
+          "actual": [
+            [
+              0
+            ]
+          ],
+          "actual_present": true,
+          "initial_expected": [
+            [
+              0
+            ]
+          ],
+          "initial_source": "protocol.json:34-37; chemistry.go.txt:72",
+          "status": "unknown_current_semantics",
+          "note": "Concentration is a mutable runtime field; only its recorded initial value is independently prescribed."
+        },
+        {
+          "json_path": "config.chemistry.part.state.steps",
+          "actual": 0,
+          "actual_present": true,
+          "initial_expected": 0,
+          "initial_source": "chemistry.go.txt:72-73 (zero-value field; not a protocol invariant)",
+          "status": "unknown_current_semantics",
+          "note": "Post-training chemistry step semantics are not specified by the allowed sources."
+        },
+        {
+          "json_path": "config.chemistry.source_step",
+          "actual": 0,
+          "actual_present": true,
+          "initial_expected": 0,
+          "initial_source": "chemistry.go.txt:75",
+          "status": "unknown_current_semantics",
+          "note": "SourceStep is initialized to zero; post-training progression is not specified by the allowed sources."
+        },
+        {
+          "json_path": "config.chemistry.pending_feedback",
+          "actual": null,
+          "actual_present": false,
+          "initial_expected": null,
+          "initial_source": "chemistry.go.txt:28-75 (field not assigned)",
+          "status": "unknown_current_semantics",
+          "note": "Pending feedback is a runtime field with no fixed post-training expectation in the allowed sources."
+        },
+        {
+          "json_path": "config.chemistry.part.resources",
+          "actual": {},
+          "actual_present": true,
+          "initial_expected": {},
+          "initial_source": "chemistry.go.txt:72-73",
+          "status": "unknown_current_semantics",
+          "note": "Resources are initialized empty; no post-training mutation contract is stated."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "fixed_checks": 59,
+    "fixed_mismatches": 27,
+    "dynamic_unknowns": 5,
+    "mismatches": [
+      {
+        "json_path": "options.chemistry",
+        "actual": null,
+        "actual_present": false,
+        "expected": null,
+        "expected_source": "protocol.json:26-48 (trainable_chemistry_parameters=0); chemistry.go.txt:28-76",
+        "status": "mismatch",
+        "note": "No chemistry-specific optimizer option is present in the snapshot."
+      },
+      {
+        "json_path": "config.chemistry",
+        "actual": null,
+        "actual_present": false,
+        "expected": null,
+        "expected_source": "chemistry.go.txt:11,15-16",
+        "status": "mismatch",
+        "note": "OFF must carry no ChemicalEpisode configuration."
+      },
+      {
+        "json_path": "options.chemistry",
+        "actual": null,
+        "actual_present": false,
+        "expected": null,
+        "expected_source": "protocol.json:26-48 (trainable_chemistry_parameters=0); chemistry.go.txt:28-76",
+        "status": "mismatch",
+        "note": "No chemistry-specific optimizer option is present in the snapshot."
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.kind",
+        "actual": null,
+        "actual_present": false,
+        "expected": "controller",
+        "expected_source": "chemistry.go.txt:37-38",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.channel",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0,
+        "expected_source": "chemistry.go.txt:37-40",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.inputs.summary_window",
+        "actual": null,
+        "actual_present": false,
+        "expected": 3,
+        "expected_source": "protocol.json:27; chemistry.go.txt:40-42",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.inputs.use_feedback",
+        "actual": null,
+        "actual_present": false,
+        "expected": false,
+        "expected_source": "protocol.json:27; chemistry.go.txt:40-42",
+        "status": "mismatch",
+        "note": "The protocol explicitly says no feedback; the frozen ControllerInputs leaves this field false."
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.nodes",
+        "actual": null,
+        "actual_present": false,
+        "expected": 52,
+        "expected_source": "chemistry.go.txt:18-20,40-44; protocol.json:147-149",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.hidden",
+        "actual": null,
+        "actual_present": false,
+        "expected": 1,
+        "expected_source": "protocol.json:27; chemistry.go.txt:40-44",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.channel",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0,
+        "expected_source": "chemistry.go.txt:40-44",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.sources.0.controller.parameters",
+        "actual": null,
+        "actual_present": false,
+        "expected": [
+          0.6,
+          0.2,
+          0.05,
+          0.8,
+          -0.1
+        ],
+        "expected_source": "protocol.json:27; chemistry.go.txt:45-47",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.cells",
+        "actual": null,
+        "actual_present": false,
+        "expected": [
+          28,
+          29,
+          30,
+          31,
+          32,
+          33,
+          34,
+          35,
+          36,
+          37,
+          38,
+          39,
+          40,
+          41,
+          42,
+          43,
+          44,
+          45,
+          46,
+          47,
+          48,
+          49,
+          50,
+          51
+        ],
+        "expected_source": "protocol.json:39; chemistry.go.txt:23,50-52",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.signal",
+        "actual": null,
+        "actual_present": false,
+        "expected": "engineering_activity_summary",
+        "expected_source": "chemistry.go.txt:50-53",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.channel",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0,
+        "expected_source": "chemistry.go.txt:50-53",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.status",
+        "actual": null,
+        "actual_present": false,
+        "expected": "hypothesized",
+        "expected_source": "chemistry.go.txt:50-57",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.engineering_kd",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0.5,
+        "expected_source": "protocol.json:39-41; chemistry.go.txt:54-56",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.engineering_n",
+        "actual": null,
+        "actual_present": false,
+        "expected": 1,
+        "expected_source": "protocol.json:39-41; chemistry.go.txt:55-56",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.evidence",
+        "actual": null,
+        "actual_present": false,
+        "expected": "declared engineering experiment",
+        "expected_source": "chemistry.go.txt:56-58",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.measurement_kind",
+        "actual": null,
+        "actual_present": false,
+        "expected": "declared",
+        "expected_source": "chemistry.go.txt:57-59",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.receptors.records.0.mapping_version",
+        "actual": null,
+        "actual_present": false,
+        "expected": "tsk-11-chemical-quality-20261013/v1",
+        "expected_source": "chemistry.go.txt:58-60",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.kind",
+        "actual": null,
+        "actual_present": false,
+        "expected": "sensitivity",
+        "expected_source": "chemistry.go.txt:61-63",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.receptor",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0,
+        "expected_source": "chemistry.go.txt:61-64",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.gamma_scale",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0.8,
+        "expected_source": "protocol.json:42; chemistry.go.txt:64-65",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.beta_scale",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0.1,
+        "expected_source": "protocol.json:43; chemistry.go.txt:64-65",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.gamma_min",
+        "actual": null,
+        "actual_present": false,
+        "expected": 0.5,
+        "expected_source": "protocol.json:44; chemistry.go.txt:65-68",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.gamma_max",
+        "actual": null,
+        "actual_present": false,
+        "expected": 2,
+        "expected_source": "protocol.json:45; chemistry.go.txt:66-68",
+        "status": "mismatch"
+      },
+      {
+        "json_path": "config.chemistry.part.config.effects.0.beta_abs_max",
+        "actual": null,
+        "actual_present": false,
+        "expected": 1,
+        "expected_source": "protocol.json:46; chemistry.go.txt:67-69",
+        "status": "mismatch"
+      }
+    ],
+    "unknown_paths": [
+      "config.chemistry.part.state.concentration",
+      "config.chemistry.part.state.steps",
+      "config.chemistry.source_step",
+      "config.chemistry.pending_feedback",
+      "config.chemistry.part.resources"
+    ]
+  },
+  "limitations": [
+    "Only config/options and the serialized chemistry runtime fields were checked; parameters, predictions, scores, and quality were not evaluated.",
+    "Concentration, chemistry steps, source step, pending feedback, and resources are separated as dynamic state. The allowed sources do not define post-training invariants for these fields.",
+    "The report does not infer biological meaning or claim that the fixed engineering chemistry improves the model."
+  ]
+}

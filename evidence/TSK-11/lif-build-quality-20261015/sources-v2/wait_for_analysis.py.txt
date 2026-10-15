@@ -1,0 +1,29 @@
+"""Run fixed read-only quality analysis after the existing training process succeeds."""
+import argparse
+from pathlib import Path
+import hashlib
+import json
+import subprocess
+import sys
+import time
+
+argparse.ArgumentParser(description=__doc__).parse_args()
+r = Path('/Users/timlai/Developer/coimnet')
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+receipt = e / 'training-orchestration.json'
+deadline = time.monotonic() + 24 * 3600
+print(json.dumps({'event': 'waiting-for-existing-training', 'analysis_starts_only_after_success': True}), flush=True)
+while not receipt.exists():
+    if time.monotonic() >= deadline:
+        raise TimeoutError('existing training receipt still unavailable after 24 hours')
+    time.sleep(10)
+assert json.loads(receipt.read_text())['exit_code'] == 0
+complete = json.loads((e / 'training-complete.json').read_text())
+assert complete['all_complete'] is True and complete['count'] == 12
+analysis = w / 'analyze_completed.py'
+assert hashlib.sha256(analysis.read_bytes()).hexdigest() == '222fa19a26ccaacc53c4b1cf525854268f9c49dd79618d3b63fc7a3e792ec5a5'
+assert not (e / 'quality-and-state-comparison.json').exists()
+print(json.dumps({'event': 'starting-fixed-analysis', 'runs': 12}), flush=True)
+subprocess.run([sys.executable, str(w / 'run.py'), 'quality-analysis', sys.executable, '-B', str(analysis)], cwd=r, check=True)
+print(json.dumps({'event': 'analysis-complete'}), flush=True)

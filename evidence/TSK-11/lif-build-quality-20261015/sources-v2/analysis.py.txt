@@ -1,0 +1,109 @@
+"""Pure evidence checks for the fixed LIF task; importing performs no I/O."""
+import json
+import math
+import struct
+from decimal import Decimal, localcontext
+
+
+def decode_snapshot(raw):
+    def number(token):
+        value = float(token)
+        if not math.isfinite(value):
+            raise ValueError("nonfinite JSON number")
+        return value
+    def constant(token):
+        raise ValueError("nonfinite JSON constant: " + token)
+    return json.loads(raw, parse_int=lambda token: -0.0 if token == '-0' else int(token),
+                      parse_float=number, parse_constant=constant)
+
+
+def _sequence(value):
+    if not isinstance(value, (list, tuple)):
+        raise ValueError("expected a vector")
+    return value
+
+
+def _float64(value):
+    if type(value) not in (int, float):
+        raise ValueError("expected finite float64 data")
+    try:
+        converted = float(value)
+    except OverflowError as error:
+        raise ValueError("float64 overflow") from error
+    if not math.isfinite(converted) or (type(value) is int and int(converted) != value):
+        raise ValueError("value is not exactly representable as finite float64")
+    return converted
+
+
+def verify_score(score, truth):
+    truth = _sequence(truth)
+    if not isinstance(score, dict) or not truth:
+        raise ValueError("nonempty score and labels required")
+    predictions = _sequence(score.get('predictions'))
+    if len(predictions) != len(truth):
+        raise ValueError("prediction length mismatch")
+    if any(type(v) is not int or not 0 <= v < 10 for v in list(truth) + list(predictions)):
+        raise ValueError("class must be an integer in 0..9")
+    confusion = [[0] * 10 for _ in range(10)]
+    for target, prediction in zip(truth, predictions):
+        confusion[target][prediction] += 1
+    supplied = _sequence(score.get('confusion'))
+    if len(supplied) != 10:
+        raise ValueError("confusion row count")
+    for row in supplied:
+        if len(_sequence(row)) != 10 or any(type(v) is not int or v < 0 for v in row):
+            raise ValueError("confusion row values")
+    correct = sum(confusion[i][i] for i in range(10))
+    if (type(score.get('samples')) is not int or score['samples'] != len(truth)
+            or type(score.get('correct')) is not int or score['correct'] != correct
+            or supplied != confusion or _float64(score.get('accuracy')) != correct / len(truth)):
+        raise ValueError("score counts or accuracy mismatch")
+    if _float64(score.get('mean_cross_entropy')) < 0:
+        raise ValueError("negative cross entropy")
+
+
+def score_pair(a, b, truth):
+    verify_score(a, truth)
+    verify_score(b, truth)
+    pa, pb = a['predictions'], b['predictions']
+    return {
+        'a_accuracy': a['accuracy'], 'b_accuracy': b['accuracy'],
+        'b_minus_a_accuracy_percentage_points': (b['correct'] - a['correct']) * 100 / len(truth),
+        'b_minus_a_cross_entropy': b['mean_cross_entropy'] - a['mean_cross_entropy'],
+        'different_predictions': sum(u != v for u, v in zip(pa, pb)),
+        'a_correct_b_wrong': sum(u == t and v != t for u, v, t in zip(pa, pb, truth)),
+        'a_wrong_b_correct': sum(u != t and v == t for u, v, t in zip(pa, pb, truth)),
+        'both_wrong_different_class': sum(u != v and u != t and v != t for u, v, t in zip(pa, pb, truth)),
+    }
+
+
+def compare_float_vectors(a, b):
+    a, b = _sequence(a), _sequence(b)
+    if len(a) != len(b):
+        raise ValueError("float vector shape mismatch")
+    x, y = list(map(_float64, a)), list(map(_float64, b))
+    unequal = [i for i, (u, v) in enumerate(zip(x, y)) if struct.pack('>d', u) != struct.pack('>d', v)]
+    delta = [v - u for u, v in zip(x, y)]
+    maximum = max(map(abs, delta), default=0.0)
+    norm = math.hypot(*delta)
+    result = {'scalars': len(x), 'different_float64_bits': len(unequal),
+              'max_absolute_difference': maximum if math.isfinite(maximum) else None,
+              'difference_l2': norm if math.isfinite(norm) else None,
+              'first_differences': [{'index': i, 'ordinary': x[i], 'race': y[i]} for i in unequal[:5]]}
+    if not math.isfinite(maximum) or not math.isfinite(norm):
+        with localcontext() as context:
+            context.prec = 80
+            exact = [Decimal.from_float(v) - Decimal.from_float(u) for u, v in zip(x, y)]
+            if not math.isfinite(maximum):
+                result['max_absolute_difference_decimal'] = str(max(map(abs, exact), default=Decimal(0)))
+            if not math.isfinite(norm):
+                result['difference_l2_decimal'] = str(sum((v * v for v in exact), Decimal(0)).sqrt())
+    return result
+
+
+def compare_step_vectors(a, b):
+    a, b = _sequence(a), _sequence(b)
+    if len(a) != len(b) or any(type(v) is not int or not 0 <= v < 2**64 for v in list(a) + list(b)):
+        raise ValueError("step vector shape or uint64 value mismatch")
+    return {'scalars': len(a), 'different_integer_values': sum(u != v for u, v in zip(a, b)),
+            'max_absolute_difference': max((abs(v - u) for u, v in zip(a, b)), default=0)}

@@ -1,0 +1,56 @@
+{
+  "verified_at": "2026-10-15T09:39:10.599683+00:00",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/asr-dimensions-20261015/green-overlay.json",
+        "-json",
+        "-count=1",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 0,
+      "seconds": 6.5687841659999995,
+      "test_events": {
+        "pass": 370
+      },
+      "package_passes": 2,
+      "existing_events_preserved": 353,
+      "new_dimension_test_events_passed": 17,
+      "log": "candidate-full-packages-ordinary.log",
+      "log_sha256": "090a54e64f9aee6ceecbfff47a19888519372913e1bbb91976db810d73350669"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/asr-dimensions-20261015/green-overlay.json",
+        "-json",
+        "-count=1",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 0,
+      "seconds": 44.606865,
+      "test_events": {
+        "pass": 370
+      },
+      "package_passes": 2,
+      "existing_events_preserved": 353,
+      "new_dimension_test_events_passed": 17,
+      "log": "candidate-full-packages-race.log",
+      "log_sha256": "be06ce4a04a5e9932f4399c82a3c10271d0e0cc974a9136a4b4ed53dbc19be2e"
+    }
+  ],
+  "baseline": "candidate-existing-test-baseline.json",
+  "source_count": 815,
+  "formal_sources_unchanged": true,
+  "frozen_tests_and_candidate_unchanged": true,
+  "formal_adoption_pending": true,
+  "scope": "Complete private OCR/ASR overlay; no whole-framework acceptance or task-quality claim."
+}

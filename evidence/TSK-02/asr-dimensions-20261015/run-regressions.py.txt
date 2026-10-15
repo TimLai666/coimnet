@@ -1,0 +1,29 @@
+from pathlib import Path
+import collections,datetime,hashlib,json,os,subprocess,sys,time
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/asr-dimensions-20261015';e=r/'evidence/TSK-02/asr-dimensions-20261015';base=r/'runs/.tmp/recognizer-unicode-20261015';source=json.loads((r/'evidence/OPS-03/operational-temp-paths-20261015/go-source-final.json').read_text());freeze=json.loads((e/'regression-freeze.json').read_text());env=os.environ.copy();env.update(json.loads((e/'command-environment.json').read_text()));mode=sys.argv[1];assert mode in ['red','green']
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+ assert w.stat().st_ino==55651638
+ for p,h in source.items():assert sha(r/p)==h,p
+ assert sha(w/'tests/recognizer_dimensions_test.go')==freeze['test_sha256']
+ manifest=(e/freeze['base_candidate']).resolve();assert sha(manifest)==freeze['base_candidate_manifest_sha256']
+ for p,h in json.loads(manifest.read_text())['source_files'].items():assert sha(base/'candidate'/p)==h,p
+ for p,v in json.loads((r/'evidence/TSK-01/recognizer-unicode-20261015/regression-freeze.json').read_text())['tests'].items():assert sha(base/'tests'/p)==v['sha256'],p
+ if mode=='green':
+  for p,h in json.loads((e/'candidate-freeze.json').read_text())['source_files'].items():assert sha(w/'candidate'/p)==h,p
+results=[]
+for label,flags in [('ordinary',[]),('race',['-race'])]:
+ gate();name='regression-'+mode+'-'+label;cmd=['go','test',*flags,'-overlay',str(w/(mode+'-overlay.json')),'-json','-count=1','-run','^TestRecognizerDimensionRepresentability$','./tasks/asr'];start=time.monotonic()
+ with (e/(name+'.log')).open('x') as f:code=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT).returncode
+ gate();events=[]
+ for line in (e/(name+'.log')).read_text().splitlines():
+  try:events.append(json.loads(line))
+  except json.JSONDecodeError:pass
+ terminal=[v for v in events if v.get('Test') and v.get('Action') in ['pass','fail','skip']];counts=collections.Counter(v['Action'] for v in terminal);invalid=[v for v in terminal if '/invalid_' in v['Test']];valid=[v for v in terminal if '/valid_' in v['Test']]
+ assert len(invalid)==11 and all(v['Action']==('fail' if mode=='red' else 'pass') for v in invalid),invalid
+ assert len(valid)==5 and all(v['Action']=='pass' for v in valid),valid
+ assert code==(1 if mode=='red' else 0) and counts==({'fail':12,'pass':5} if mode=='red' else {'pass':17}),(code,counts)
+ result={'command':cmd,'exit_code':code,'seconds':time.monotonic()-start,'test_events':dict(counts),'invalid_subcases':11,'legal_subcases':5,'actual_test_events_checked':True,'log':name+'.log','log_sha256':sha(e/(name+'.log'))}
+ with (e/(name+'.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ results.append(result);print(json.dumps(result),flush=True)
+with (e/('regression-'+mode+'-verification.json')).open('x') as f:json.dump({'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'results':results,'formal_source_count':815,'formal_sources_unchanged':True,'frozen_tests_unchanged':True,'original107_candidate_unchanged':True},f,indent=2);f.write('\n')

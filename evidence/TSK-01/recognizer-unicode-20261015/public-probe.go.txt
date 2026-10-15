@@ -1,0 +1,47 @@
+package main
+import (
+ "context"
+ "crypto/sha256"
+ "encoding/hex"
+ "encoding/json"
+ "fmt"
+ "os"
+ "path/filepath"
+ "unicode/utf8"
+ "github.com/TimLai666/coimnet/tasks/asr"
+ "github.com/TimLai666/coimnet/tasks/asr/audio"
+ "github.com/TimLai666/coimnet/tasks/ocr"
+)
+func errText(err error) string {if err==nil{return ""};return err.Error()}
+func digest(v any) string {b,err:=json.Marshal(v);if err!=nil{panic(err)};s:=sha256.Sum256(b);return hex.EncodeToString(s[:])}
+func emit(v any){if err:=json.NewEncoder(os.Stdout).Encode(v);err!=nil{panic(err)}}
+func main(){
+ root:=os.Args[1]; mode:="probe";if len(os.Args)>2{mode=os.Args[2]}
+ ctx:=context.Background()
+ cases:=[]struct{name string; value rune}{{"negative",-1},{"surrogate-high",0xd800},{"surrogate-low",0xdfff},{"above-max",0x110000},{"int32-max",0x7fffffff},{"ascii",'A'},{"nul",0},{"replacement",utf8.RuneError},{"max-scalar",utf8.MaxRune}}
+ for _,item:=range cases{
+  oc:=ocr.RecognizerConfig{Height:1,Hidden:2,Alphabet:[]rune{item.value},LearningRate:.01,Seed:7}
+  ac:=asr.RecognizerConfig{SampleRate:16000,FrontEnd:audio.FrontEndConfig{Window:16,Hop:8,Mels:2,FMin:0,FMax:8000,Floor:1e-10},Hidden:2,Alphabet:[]rune{item.value},LearningRate:.01,Seed:7}
+  if mode=="restore"{
+   if !utf8.ValidRune(item.value){continue}
+   o,err:=ocr.LoadRecognizer(ctx,filepath.Join(root,"ocr-"+item.name));if err!=nil{panic(err)}
+   a,err:=asr.LoadRecognizer(ctx,filepath.Join(root,"asr-"+item.name));if err!=nil{panic(err)}
+   emit(map[string]any{"mode":mode,"task":"ocr","case":item.name,"snapshot_sha256":digest(o.Snapshot()),"config_sha256":digest(o.Config())})
+   emit(map[string]any{"mode":mode,"task":"asr","case":item.name,"snapshot_sha256":digest(a.Snapshot()),"config_sha256":digest(a.Config())})
+   continue
+  }
+  o,oe:=ocr.NewRecognizer(oc);a,ae:=asr.NewRecognizer(ac)
+  for _,task:=range []string{"ocr","asr"}{
+   path:=filepath.Join(root,task+"-"+item.name);result:=map[string]any{"mode":mode,"task":task,"case":item.name,"rune":int32(item.value),"valid_scalar":utf8.ValidRune(item.value)}
+   if task=="ocr"{
+    result["validate_error"]=errText(oc.Validate());result["constructor_error"]=errText(oe)
+    if oe==nil{result["snapshot_sha256"]=digest(o.Snapshot());result["config_sha256"]=digest(o.Config());result["save_error"]=errText(o.Save(ctx,path))}
+   }else{
+    result["validate_error"]=errText(ac.Validate());result["constructor_error"]=errText(ae)
+    if ae==nil{result["snapshot_sha256"]=digest(a.Snapshot());result["config_sha256"]=digest(a.Config());result["save_error"]=errText(a.Save(ctx,path))}
+   }
+   _,err:=os.Stat(path);result["saved_path_exists"]=err==nil;emit(result)
+  }
+ }
+ fmt.Fprintln(os.Stderr,"public recognizer Unicode probe complete")
+}

@@ -430,18 +430,6 @@ func TestRestoreStreamValidatesCTCFrameMinimum(t *testing.T) {
 	}
 }
 
-func TestNewStreamRejectsInvalidAlphabetRune(t *testing.T) {
-	cfg := recognizerConfig()
-	cfg.Alphabet = []rune{0xd800, 'b', 'c'}
-	r, err := asr.NewRecognizer(cfg)
-	if err != nil {
-		t.Fatalf("NewRecognizer: %v", err)
-	}
-	if _, err := r.NewStream(); err == nil {
-		t.Fatal("NewStream accepted an invalid Unicode alphabet rune")
-	}
-}
-
 func TestStreamSnapshotUsesCurrentFrontEndVersion(t *testing.T) {
 	r, err := asr.NewRecognizer(recognizerConfig())
 	if err != nil {

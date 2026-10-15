@@ -1,0 +1,11 @@
+from pathlib import Path
+import hashlib,json
+p=Path('/Users/timlai/Developer/coimnet/runs/.tmp/asr-dimensions-20261015/verify-formal-engineering.py')
+e=Path('/Users/timlai/Developer/coimnet/evidence/TSK-02/asr-dimensions-20261015')
+s=p.read_text()
+assert hashlib.sha256(p.read_bytes()).hexdigest()==json.loads((e/'formal-engineering-check-freeze.json').read_text())['runner_sha256']
+for name in ['format','build']:
+ assert json.loads((e/('formal-engineering-'+name+'.json')).read_text())['exit_code']==0
+s=s.replace("results = []\nfor name, command in steps:","steps = [(name,command) for name,command in steps if name not in ['format','build']]\nresults = [json.loads((e / ('formal-engineering-' + name + '.json')).read_text()) for name in ['format','build']]\nfor name, command in steps:",1)
+s=s.replace("filename = 'formal-engineering-' + name", "filename = 'formal-engineering-local-' + name",1)
+exec(compile(s,str(p),'exec'))

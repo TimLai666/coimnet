@@ -1,0 +1,90 @@
+from pathlib import Path
+import collections, datetime, gzip, hashlib, json, os, subprocess, time
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-02/asr-dimensions-20261015'
+source = json.loads((e / 'formal-source-108.json').read_text())
+env = os.environ.copy()
+env.update(json.loads((e / 'command-environment.json').read_text()))
+baseline = r / 'evidence/OPS-03/operational-temp-paths-20261015'
+sha = lambda path: hashlib.sha256(path.read_bytes()).hexdigest()
+
+def gate():
+    assert len(source) == 820
+    for path, digest in source.items():
+        assert sha(r / path) == digest, path
+    for path, digest in json.loads((r / 'evidence/TSK-11/lif-build-quality-20261015/protected-models.json').read_text()).items():
+        assert sha(r / path) == digest, path
+
+def terminal_tests(raw):
+    result, packages = {}, {}
+    for line in raw.decode().splitlines():
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if value.get('Action') not in ['pass', 'fail', 'skip']:
+            continue
+        if value.get('Test'):
+            key = (value['Package'], value['Test'])
+            assert key not in result, key
+            result[key] = value['Action']
+        else:
+            packages[value['Package']] = value['Action']
+    return result, packages
+
+go_files = [path for path in source if path.endswith('.go') and not path.startswith('evidence/')]
+assert len(go_files) == 816
+governance_command = json.loads((baseline / 'closure-governance.json').read_text())['command']
+steps = [('format', ['gofmt', '-l', *go_files]), ('build', ['go', 'build', './...']),
+         ('unit', ['go', 'test', '-json', '-count=1', './...']),
+         ('race', ['go', 'test', '-race', '-json', '-count=1', './...']),
+         ('vet', ['go', 'vet', './...']), ('module-verify', ['go', 'mod', 'verify']),
+         ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+         ('governance', governance_command)]
+results = []
+for name, command in steps:
+    gate()
+    filename = 'formal-engineering-' + name
+    start = time.monotonic()
+    log = e / (filename + '.log')
+    with log.open('x') as handle:
+        code = subprocess.run(command, cwd=r, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    result = {'name': name, 'command': command, 'exit_code': code, 'seconds': time.monotonic() - start,
+              'log': log.name, 'log_sha256': sha(log)}
+    raw = log.read_bytes()
+    if name in ['unit', 'race', 'governance']:
+        tests, packages = terminal_tests(raw)
+        result['test_events'] = dict(collections.Counter(tests.values()))
+        result['package_events'] = dict(collections.Counter(packages.values()))
+        if name in ['unit', 'race']:
+            old_file = baseline / ('full-' + name + '-final-local.log.gz')
+            old, old_packages = terminal_tests(gzip.decompress(old_file.read_bytes()))
+            assert packages == old_packages and collections.Counter(packages.values())['pass'] == 58, packages
+            for key, action in old.items():
+                assert tests.get(key) == action, (name, key, action, tests.get(key))
+            added = {key: action for key, action in tests.items() if key not in old}
+            assert len(added) == 51 and set(added.values()) == {'pass'}, added
+            expected = {'pass': 5891, 'skip': 22} if name == 'unit' else {'pass': 5890, 'skip': 23}
+            assert result['test_events'] == expected, result
+            result['prior_test_events_preserved'] = len(old)
+            result['new_unicode_and_dimension_test_events'] = len(added)
+        else:
+            assert result['test_events'] == {'pass': 31}, result
+    if name == 'format':
+        assert not raw.strip(), raw
+    if name == 'module-selection':
+        assert raw.decode().strip() == 'github.com/HazelnutParadise/insyra v0.3.4'
+    with (e / (filename + '.json')).open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+    print(json.dumps({key: value for key, value in result.items() if key != 'command'}), flush=True)
+    assert code == 0, result
+    results.append(result)
+with (e / 'formal-engineering-verification.json').open('x') as handle:
+    json.dump({'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+               'source_count': len(source), 'formal_go_files': len(go_files), 'all_passed': True,
+               'steps': results, 'covers_tickets': [107, 108],
+               'scope': 'Final combined formal sources; separate ticket107 public package acceptance precedes ticket108 adoption.'}, handle, indent=2)
+    handle.write('\n')

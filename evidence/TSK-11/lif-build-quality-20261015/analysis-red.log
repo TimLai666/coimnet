@@ -1,0 +1,383 @@
+test_compare_float_vectors_rejects_unsafe_values (analysis_test.AnalysisContractTests) ... ERROR
+test_compare_float_vectors_tracks_bits_and_stable_distances (analysis_test.AnalysisContractTests) ... ERROR
+test_compare_float_vectors_uses_decimal_fallback_for_overflow (analysis_test.AnalysisContractTests) ... ERROR
+test_compare_step_vectors_is_exact_unsigned_64_bit_comparison (analysis_test.AnalysisContractTests) ... ERROR
+test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) ... test_decode_snapshot_preserves_go_negative_zero_and_rejects_nonfinite (analysis_test.AnalysisContractTests) ... ERROR
+test_score_pair_reports_independent_prediction_outcomes (analysis_test.AnalysisContractTests) ... ERROR
+test_score_pair_validates_both_scores_without_zip_truncation (analysis_test.AnalysisContractTests) ... ERROR
+test_verify_score_accepts_complete_ten_class_score (analysis_test.AnalysisContractTests) ... ERROR
+test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) ... 
+======================================================================
+ERROR: test_compare_float_vectors_rejects_unsafe_values (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 215, in test_compare_float_vectors_rejects_unsafe_values
+    exact_integer = analysis.compare_float_vectors([2**53], [float(2**53)])
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 21, in compare_float_vectors
+    raise NotImplementedError("finite float64 bits and stable difference magnitude")
+NotImplementedError: finite float64 bits and stable difference magnitude
+
+======================================================================
+ERROR: test_compare_float_vectors_tracks_bits_and_stable_distances (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 163, in test_compare_float_vectors_tracks_bits_and_stable_distances
+    signed_zero = analysis.compare_float_vectors([0.0, -0.0], [-0.0, 0.0])
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 21, in compare_float_vectors
+    raise NotImplementedError("finite float64 bits and stable difference magnitude")
+NotImplementedError: finite float64 bits and stable difference magnitude
+
+======================================================================
+ERROR: test_compare_float_vectors_uses_decimal_fallback_for_overflow (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 201, in test_compare_float_vectors_uses_decimal_fallback_for_overflow
+    result = analysis.compare_float_vectors(
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 21, in compare_float_vectors
+    raise NotImplementedError("finite float64 bits and stable difference magnitude")
+NotImplementedError: finite float64 bits and stable difference magnitude
+
+======================================================================
+ERROR: test_compare_step_vectors_is_exact_unsigned_64_bit_comparison (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 235, in test_compare_step_vectors_is_exact_unsigned_64_bit_comparison
+    result = analysis.compare_step_vectors(
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='shape')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='bool')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='fraction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='integral float')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='negative')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='overflow')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='string')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_compare_step_vectors_rejects_non_unsigned_integer_inputs (analysis_test.AnalysisContractTests) (case='none')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 264, in test_compare_step_vectors_rejects_non_unsigned_integer_inputs
+    analysis.compare_step_vectors(ordinary, race)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 25, in compare_step_vectors
+    raise NotImplementedError("exact unsigned 64-bit step counters")
+NotImplementedError: exact unsigned 64-bit step counters
+
+======================================================================
+ERROR: test_decode_snapshot_preserves_go_negative_zero_and_rejects_nonfinite (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 32, in test_decode_snapshot_preserves_go_negative_zero_and_rejects_nonfinite
+    decoded = analysis.decode_snapshot(b'{"values":[-0,0]}')
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 9, in decode_snapshot
+    raise NotImplementedError("preserve Go signed zero and reject nonfinite JSON")
+NotImplementedError: preserve Go signed zero and reject nonfinite JSON
+
+======================================================================
+ERROR: test_score_pair_reports_independent_prediction_outcomes (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 121, in test_score_pair_reports_independent_prediction_outcomes
+    result = analysis.score_pair(a, b, TRUTH)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 17, in score_pair
+    raise NotImplementedError("validate both scores then compare every prediction")
+NotImplementedError: validate both scores then compare every prediction
+
+======================================================================
+ERROR: test_score_pair_validates_both_scores_without_zip_truncation (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 155, in test_score_pair_validates_both_scores_without_zip_truncation
+    analysis.score_pair(a, short_b, TRUTH)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 17, in score_pair
+    raise NotImplementedError("validate both scores then compare every prediction")
+NotImplementedError: validate both scores then compare every prediction
+
+======================================================================
+ERROR: test_verify_score_accepts_complete_ten_class_score (analysis_test.AnalysisContractTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 50, in test_verify_score_accepts_complete_ten_class_score
+    self.assertIsNone(analysis.verify_score(score, TRUTH))
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='empty truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='prediction length')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='sample count')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='correct count')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='accuracy')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='confusion row count')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='confusion column count')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='confusion value')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='negative CE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='NaN CE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='infinite CE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='bool prediction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='float prediction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='negative prediction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='out of range prediction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='string prediction')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='bool truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='float truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='negative truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='out of range truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+======================================================================
+ERROR: test_verify_score_rejects_incomplete_or_invalid_values (analysis_test.AnalysisContractTests) (case='string truth')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis_test.py", line 116, in test_verify_score_rejects_incomplete_or_invalid_values
+    analysis.verify_score(score, truth)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/analysis.py", line 13, in verify_score
+    raise NotImplementedError("validate complete ten-class score against explicit labels")
+NotImplementedError: validate complete ten-class score against explicit labels
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.002s
+
+FAILED (errors=37)

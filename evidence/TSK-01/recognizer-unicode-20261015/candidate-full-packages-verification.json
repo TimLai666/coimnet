@@ -1,0 +1,58 @@
+{
+  "verified_at": "2026-10-15T08:57:17.137964+00:00",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "-json",
+        "-count=1",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 0,
+      "seconds": 7.261593166999999,
+      "test_events": {
+        "pass": 353
+      },
+      "package_passes": 2,
+      "existing_events_preserved": 319,
+      "new_unicode_test_events_passed": 34,
+      "existing_trained_save_resume_controls_passed": true,
+      "log": "candidate-full-packages-ordinary.log",
+      "log_sha256": "531c80d653bc0f4bbd5f53f34b71b4f715d666f8a0e6fc4e51a473dd44a49ae6"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "-json",
+        "-count=1",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 0,
+      "seconds": 60.665614417,
+      "test_events": {
+        "pass": 353
+      },
+      "package_passes": 2,
+      "existing_events_preserved": 319,
+      "new_unicode_test_events_passed": 34,
+      "existing_trained_save_resume_controls_passed": true,
+      "log": "candidate-full-packages-race.log",
+      "log_sha256": "5f94a3cb00d39452a6facdeb6ef5daa79877b25ca1cc2989213016aa4d446317"
+    }
+  ],
+  "baseline": "candidate-existing-test-baseline.json",
+  "source_count": 815,
+  "formal_source_unchanged": true,
+  "candidate_and_regression_hashes_preserved": true,
+  "formal_adoption_pending": true,
+  "scope": "Complete OCR and ASR package tests under private overlay; not a full-framework final engineering acceptance or task-quality study."
+}

@@ -1,0 +1,208 @@
+"""Negative controls for the in-memory aggregate evidence gate."""
+
+import contextlib
+import hashlib
+import io
+import json
+from pathlib import Path as RealPath
+import unittest
+from unittest import mock
+
+import analyze_completed as aggregate
+
+
+ROOT = RealPath('/Users/timlai/Developer/coimnet')
+EVIDENCE = ROOT / 'evidence/TSK-11/lif-build-quality-20261015'
+WORK = ROOT / 'runs/.tmp/lif-build-quality-20261015'
+LOCK = EVIDENCE / 'analysis-input-lock.json'
+DATA_COPY = EVIDENCE / 'data-copy.json'
+SDK_RECEIPT = EVIDENCE / 'sdk-ordinary-v2.json'
+SDK_LOG = EVIDENCE / 'sdk-ordinary-v2.log'
+TRAINING_COMPLETE = EVIDENCE / 'training-complete.json'
+QUALITY_OUTPUT = EVIDENCE / 'quality-and-state-comparison.json'
+DATA_COPY_RELATIVE = 'evidence/TSK-11/lif-build-quality-20261015/data-copy.json'
+
+
+def digest(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def json_bytes(value):
+    return (json.dumps(value, indent=2, sort_keys=True) + '\n').encode()
+
+
+class ReadOnlyPath:
+    """Path facade with only selected in-memory reads and no real writes."""
+
+    def __init__(self, path, overrides, reads, writes):
+        self._path = RealPath(path)
+        self._overrides = overrides
+        self._reads = reads
+        self._writes = writes
+
+    def __truediv__(self, child):
+        return type(self)(self._path / child, self._overrides, self._reads, self._writes)
+
+    def __fspath__(self):
+        return str(self._path)
+
+    def __str__(self):
+        return str(self._path)
+
+    def __repr__(self):
+        return f'ReadOnlyPath({self._path!r})'
+
+    def _record_read(self):
+        self._reads.append(str(self._path))
+
+    def read_bytes(self):
+        self._record_read()
+        value = self._overrides.get(str(self._path))
+        if value is not None:
+            return value
+        return self._path.read_bytes()
+
+    def read_text(self, *args, **kwargs):
+        self._record_read()
+        value = self._overrides.get(str(self._path))
+        if value is not None:
+            encoding = kwargs.get('encoding') or (args[0] if args else 'utf-8')
+            return value.decode(encoding)
+        return self._path.read_text(*args, **kwargs)
+
+    def open(self, mode='r', *args, **kwargs):
+        self._record_read()
+        if any(flag in mode for flag in 'wax+'):
+            self._writes.append(str(self._path))
+            return io.StringIO()
+        value = self._overrides.get(str(self._path))
+        if value is not None:
+            if 'b' in mode:
+                return io.BytesIO(value)
+            encoding = kwargs.get('encoding') or 'utf-8'
+            return io.StringIO(value.decode(encoding))
+        return self._path.open(mode, *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._path, name)
+
+
+class AggregateGateTests(unittest.TestCase):
+    def _before_output(self):
+        if QUALITY_OUTPUT.exists():
+            return True, QUALITY_OUTPUT.read_bytes()
+        return False, None
+
+    @contextlib.contextmanager
+    def _sandbox(self, overrides, *, lock_digest=None, go_side_effect=None, go_return=None):
+        reads = []
+        writes = []
+        root = ReadOnlyPath(ROOT, overrides, reads, writes)
+        evidence = ReadOnlyPath(EVIDENCE, overrides, reads, writes)
+        work = ReadOnlyPath(WORK, overrides, reads, writes)
+
+        def path_factory(value):
+            return ReadOnlyPath(value, overrides, reads, writes)
+
+        go_suite = mock.Mock(side_effect=go_side_effect, return_value=go_return)
+        patches = [
+            mock.patch.object(aggregate, 'r', root),
+            mock.patch.object(aggregate, 'e', evidence),
+            mock.patch.object(aggregate, 'w', work),
+            mock.patch.object(aggregate, 'Path', new=path_factory),
+            mock.patch.object(aggregate, 'verify_go_suite', new=go_suite),
+        ]
+        if lock_digest is not None:
+            patches.append(mock.patch.object(aggregate, 'INPUT_LOCK_SHA256', lock_digest))
+
+        before_output = self._before_output()
+        with contextlib.ExitStack() as stack:
+            for patcher in patches:
+                stack.enter_context(patcher)
+            yield {'reads': reads, 'writes': writes, 'go_suite': go_suite,
+                   'before_output': before_output}
+        after_output = self._before_output()
+        self.assertEqual(before_output, after_output)
+        self.assertEqual(writes, [], 'negative gate must not open aggregate output')
+
+    def _assert_early_rejection(self, fixture, expected=(AssertionError, ValueError)):
+        with self.assertRaises(expected):
+            aggregate.main()
+        self.assertEqual(fixture['go_suite'].call_count, 0,
+                         'input gate must reject before complete Go suites')
+        self.assertFalse(any('/models/' in path for path in fixture['reads']),
+                         'input gate must reject before model reads')
+
+    def test_missing_sdk_event_rejected_even_with_zero_exit_receipt(self):
+        receipt = json.loads(SDK_RECEIPT.read_text())
+        self.assertEqual(receipt['exit_code'], 0)
+        rows = [json.loads(line) for line in SDK_LOG.read_text().splitlines()]
+        self.assertEqual(len(rows), 2)
+        missing_event = (json.dumps(rows[0], separators=(',', ':')) + '\n').encode()
+
+        lock = json.loads(LOCK.read_text())
+        lock['checks']['sdk-ordinary-v2']['log_sha256'] = digest(missing_event)
+        lock_raw = json_bytes(lock)
+        overrides = {
+            str(LOCK): lock_raw,
+            str(SDK_LOG): missing_event,
+        }
+        with self._sandbox(overrides, lock_digest=digest(lock_raw),
+                           go_side_effect=AssertionError('Go suite must not run')) as fixture:
+            with self.assertRaisesRegex(ValueError, 'SDK event sequence'):
+                aggregate.main()
+            self.assertEqual(fixture['go_suite'].call_count, 0)
+            self.assertFalse(any('/models/' in path for path in fixture['reads']))
+
+    def test_data_copy_mutation_rejected_by_pinned_input_lock(self):
+        data_copy = json.loads(DATA_COPY.read_text())
+        original_sha = data_copy['files'][0]['sha256']
+        data_copy['files'][0]['sha256'] = '0' * 64
+        mutated_data = json_bytes(data_copy)
+
+        lock = json.loads(LOCK.read_text())
+        lock['files'][DATA_COPY_RELATIVE] = digest(mutated_data)
+        pinned = lock['pinned_data_files'][data_copy['files'][0]['name']]['sha256']
+        self.assertEqual(pinned, original_sha)
+        self.assertNotEqual(pinned, data_copy['files'][0]['sha256'])
+        mutated_lock = json_bytes(lock)
+        overrides = {
+            str(LOCK): mutated_lock,
+            str(DATA_COPY): mutated_data,
+        }
+        with self._sandbox(overrides, lock_digest=digest(mutated_lock),
+                           go_side_effect=AssertionError('Go suite must not run')) as fixture:
+            self._assert_early_rejection(fixture)
+
+    def test_input_lock_tampering_rejected_before_any_downstream_gate(self):
+        lock = json.loads(LOCK.read_text())
+        lock['legacy_data_commit'] = 'tampered-in-memory-only'
+        overrides = {str(LOCK): json_bytes(lock)}
+        with self._sandbox(overrides,
+                           go_side_effect=AssertionError('Go suite must not run')) as fixture:
+            self._assert_early_rejection(fixture)
+
+    def _completion_payload(self, count, runs):
+        return json_bytes({'all_complete': True, 'count': count, 'runs': runs})
+
+    def _completion_rejection(self, completion):
+        overrides = {str(TRAINING_COMPLETE): completion}
+        with self._sandbox(overrides, go_return={}) as fixture:
+            with self.assertRaises((AssertionError, ValueError)):
+                aggregate.main()
+            self.assertEqual(fixture['go_suite'].call_args_list, [
+                mock.call('full-unit-local', 5818, 22),
+                mock.call('full-race-local', 5817, 23, race=True),
+            ])
+            self.assertFalse(any('/models/' in path for path in fixture['reads']))
+
+    def test_training_completion_count_zero_rejected(self):
+        self._completion_rejection(self._completion_payload(0, []))
+
+    def test_training_completion_duplicate_arm_rejected(self):
+        duplicate = {'seed': 20260924, 'group': 'off', 'build': 'ordinary'}
+        self._completion_rejection(self._completion_payload(12, [duplicate] * 12))
+
+
+if __name__ == '__main__':
+    unittest.main()

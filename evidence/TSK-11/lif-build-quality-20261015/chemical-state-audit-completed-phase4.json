@@ -1,0 +1,212 @@
+{
+  "verified_at": "2026-10-15T05:31:05.183243+00:00",
+  "root_verified_runs": [
+    {
+      "arm": "20260924-off-ordinary",
+      "group": "off",
+      "full_chemical_boundary_exact": true,
+      "state_file_sha256": "1065b4fc915ccca7780e1f12cb2589a267c7951687c1485211c44eb1d0b39014",
+      "chemical_boundary": null
+    },
+    {
+      "arm": "20260924-on-ordinary",
+      "group": "on",
+      "full_chemical_boundary_exact": true,
+      "state_file_sha256": "4f7e1e828057a095698df35ebfe6cc99983217c85954b7fc21363006d984d46b",
+      "chemical_boundary": {
+        "part": {
+          "config": {
+            "chemistry": {
+              "regions": 1,
+              "channels": 1,
+              "dt": 1,
+              "tau": [
+                2
+              ],
+              "units": ""
+            },
+            "sources": [
+              {
+                "kind": "controller",
+                "channel": 0,
+                "controller": {
+                  "inputs": {
+                    "summary_window": 3,
+                    "use_feedback": false
+                  },
+                  "nodes": 52,
+                  "hidden": 1,
+                  "channel": 0,
+                  "parameters": [
+                    0.6,
+                    0.2,
+                    0.05,
+                    0.8,
+                    -0.1
+                  ]
+                }
+              }
+            ],
+            "receptors": {
+              "records": [
+                {
+                  "cells": [
+                    28,
+                    29,
+                    30,
+                    31,
+                    32,
+                    33,
+                    34,
+                    35,
+                    36,
+                    37,
+                    38,
+                    39,
+                    40,
+                    41,
+                    42,
+                    43,
+                    44,
+                    45,
+                    46,
+                    47,
+                    48,
+                    49,
+                    50,
+                    51
+                  ],
+                  "signal": "engineering_activity_summary",
+                  "channel": 0,
+                  "status": "hypothesized",
+                  "engineering_kd": 0.5,
+                  "engineering_n": 1,
+                  "evidence": "declared engineering experiment",
+                  "measurement_kind": "declared",
+                  "mapping_version": "tsk-11-chemical-quality-20261013/v1"
+                }
+              ],
+              "allow_assumed_coefficients": false
+            },
+            "effects": [
+              {
+                "kind": "sensitivity",
+                "receptor": 0,
+                "gamma_scale": 0.8,
+                "beta_scale": 0.1,
+                "gamma_min": 0.5,
+                "gamma_max": 2,
+                "beta_abs_max": 1
+              }
+            ],
+            "regions": {
+              "node_region": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          },
+          "state": {
+            "concentration": [
+              [
+                0
+              ]
+            ],
+            "steps": 0
+          },
+          "resources": {},
+          "pending_feedback": null
+        },
+        "source_step": 0
+      }
+    },
+    {
+      "arm": "20260925-off-ordinary",
+      "group": "off",
+      "full_chemical_boundary_exact": true,
+      "state_file_sha256": "84cc465994f4fb44ec5a2151f86f00f7b0c552b3ef30752708d1a8cdb5dcfeaa",
+      "chemical_boundary": null
+    }
+  ],
+  "verified_count": 3,
+  "expected_total": 12,
+  "method": "entire declared ChemicalEpisode comparison; no custom JSON path lookup",
+  "source_basis": [
+    "protocol.json chemistry fields",
+    "sources-v2/chemistry.go.txt:11-76",
+    "learning/chemical_episode.go:14-27",
+    "learning/chemical_sequence.go:68-129",
+    "learning/chemistry.go:59-72"
+  ],
+  "source_hashes": {
+    "evidence/TSK-11/lif-build-quality-20261015/protocol.json": "4326e586219614ef74d3027f2e7ab871910f129f1c6d5a914188d2eba2aa0959",
+    "evidence/TSK-11/lif-build-quality-20261015/sources-v2/chemistry.go.txt": "fea0709b7abf851e361e1316759effd0d7ca9d82dae474de460bdbad9cc21a19",
+    "learning/chemical_episode.go": "928fb5dfea73a2ace4be49debf6084aad77173c5b6ff390b6f0df40cb4d941b7",
+    "learning/chemical_sequence.go": "c73b9c655e451ac5dd882547a260c69e48ea5379b4b08c53c4dd2cf3b5ac9305",
+    "learning/chemistry.go": "4e6164cbafd843c56c357558e9b8a580598b607daeccffbfc74a714052a52032"
+  },
+  "rejected_report": {
+    "file": "chemical-state-audit-phase4.rejected.json",
+    "sha256": "450c418e67088ca19af14401c17ccb8a09c04c79816001fc302e399175d884ff",
+    "false_mismatches": 27,
+    "array_path_lookup_errors": 24,
+    "optional_absent_nil_errors": 3,
+    "invalid_feedback_path": "config.chemistry.pending_feedback",
+    "correct_feedback_path": "config.chemistry.part.pending_feedback",
+    "accepted_as_framework_findings": false
+  },
+  "state_semantics": "Config.Chemistry is the independent episode initial boundary. Each forward creates an owned sequence and runtime copy. Saved zero concentration/steps are prescribed initial conditions, not the final runtime trajectory.",
+  "runtime_trajectory_exported_or_verified_here": false,
+  "quality_claim": null,
+  "protocol_or_framework_changed": false
+}

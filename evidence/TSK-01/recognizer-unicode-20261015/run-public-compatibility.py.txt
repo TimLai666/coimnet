@@ -1,0 +1,42 @@
+from pathlib import Path
+import subprocess,os,json,hashlib,time,datetime
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/recognizer-unicode-20261015';e=r/'evidence/TSK-01/recognizer-unicode-20261015';src=json.loads((r/'evidence/OPS-03/operational-temp-paths-20261015/go-source-final.json').read_text());protected=json.loads((r/'evidence/TSK-11/lif-build-quality-20261015/protected-models.json').read_text());env=os.environ.copy();env.update(json.loads((e/'command-environment.json').read_text()));overlay=w/'green-overlay.json'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+ assert w.stat().st_ino==55632307
+ for name,h in {**src,**protected}.items():assert sha(r/name)==h,name
+ assert sha(w/'main.go')=='93641c82d745d8d37f640abe438a1cb761feb2b8eb037b51cce268fe7b0f7eaf'
+ for rel,h in json.loads((e/'candidate-freeze.json').read_text())['source_files'].items():assert sha(w/'candidate'/rel)==h,rel
+ for rel,v in json.loads((e/'regression-freeze.json').read_text())['tests'].items():assert sha(w/'tests'/rel)==v['sha256'],rel
+candidate=w/'candidate-models';assert not candidate.exists();candidate.mkdir()
+oldfiles={str(p.relative_to(w/'models')):sha(p) for p in (w/'models').rglob('*') if p.is_file()};assert len(oldfiles)>8
+original=[]
+for line in (e/'public-probe.log').read_text().splitlines():
+ try:original.append(json.loads(line))
+ except json.JSONDecodeError:pass
+expected={(v['task'],v['case']):v for v in original if v.get('valid_scalar')};assert len(expected)==8
+results=[];observations={}
+steps=[('candidate-public-probe-v2',[],candidate,'probe'),('candidate-restore-old',[],w/'models','restore'),('candidate-restore-new',[],candidate,'restore'),('candidate-race-restore-old',['-race'],w/'models','restore')]
+for name,flags,root,mode in steps:
+ gate();cmd=['go','run',*flags,'-overlay',str(overlay),str(w/'main.go'),str(root),mode];start=time.monotonic()
+ with (e/(name+'.log')).open('x') as f:code=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT).returncode
+ gate();assert code==0,(name,code);rows=[]
+ for line in (e/(name+'.log')).read_text().splitlines():
+  try:rows.append(json.loads(line))
+  except json.JSONDecodeError:pass
+ if mode=='probe':
+  invalid=[v for v in rows if not v['valid_scalar']];legal=[v for v in rows if v['valid_scalar']]
+  assert len(invalid)==10 and len(legal)==8
+  for v in invalid:assert 'Unicode scalar' in v['validate_error'] and 'Unicode scalar' in v['constructor_error'] and not v['saved_path_exists'],v
+  for v in legal:
+   old=expected[(v['task'],v['case'])];assert v['validate_error']==v['constructor_error']==v['save_error']=='' and v['saved_path_exists'],v
+   assert v['snapshot_sha256']==old['snapshot_sha256'] and v['config_sha256']==old['config_sha256'],v
+ else:
+  assert len(rows)==8
+  for v in rows:
+   old=expected[(v['task'],v['case'])];assert v['snapshot_sha256']==old['snapshot_sha256'] and v['config_sha256']==old['config_sha256'],v
+ observations[name]=rows;result={'name':name,'command':cmd,'exit_code':code,'seconds':time.monotonic()-start,'rows':len(rows),'log':name+'.log','log_sha256':sha(e/(name+'.log'))};results.append(result)
+ with (e/(name+'.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ print(json.dumps(result),flush=True)
+for name,h in oldfiles.items():assert sha(w/'models'/name)==h,name
+with (e/'candidate-public-compatibility.json').open('x') as f:json.dump({'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'results':results,'observations':observations,'invalid_constructor_cases_refused':10,'valid_config_and_initial_snapshot_cases_equal':8,'old_saved_models_loaded_new_processes':{'ordinary':8,'race':8},'new_saved_models_loaded_new_process':8,'old_models_bytes_unchanged':True,'original_18_models_unchanged':True,'formal_815_source_fingerprints_preserved':True,'limitation':'Small initialization fixtures establish constructor and persistence compatibility, not task quality or training convergence.'},f,indent=2);f.write('\n')

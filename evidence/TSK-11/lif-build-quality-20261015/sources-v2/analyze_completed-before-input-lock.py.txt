@@ -1,0 +1,166 @@
+"""Read all fixed runs, verify their evidence, and compare both build conditions."""
+from pathlib import Path
+import gzip
+import hashlib
+import json
+import struct
+
+from analysis import decode_snapshot, verify_score, score_pair, compare_float_vectors, compare_step_vectors
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+
+
+def sha(raw):
+    return hashlib.sha256(raw).hexdigest()
+
+
+def main():
+    protocol = json.loads((e / 'protocol.json').read_text())
+    freeze = json.loads((e / 'driver-freeze-v2.json').read_text())
+    assert sha((e / 'protocol.json').read_bytes()) == freeze['protocol_sha256']
+    completion = json.loads((e / 'training-complete.json').read_text())
+    assert completion['all_complete'] is True and type(completion['count']) is int and completion['count'] == 12
+    expected = {(s, g, b) for s in protocol['seed_list'] for g in protocol['groups'] for b in protocol['builds']}
+    observed = [(x['seed'], x['group'], x['build']) for x in completion['runs']]
+    assert len(observed) == 12 and set(observed) == expected
+    for path, digest in {**freeze['driver_files'], **json.loads((e / 'source-before.json').read_text()),
+                         **json.loads((e / 'protected-models.json').read_text())}.items():
+        assert sha((r / path).read_bytes()) == digest, path
+    for path, digest in freeze['binaries'].items():
+        assert sha((w / path).read_bytes()) == digest, path
+
+    copies = json.loads((e / 'data-copy.json').read_text())['files']
+    for record in copies:
+        raw = (w / 'data/kmnist' / record['name']).read_bytes()
+        assert len(raw) == record['bytes'] and sha(raw) == record['sha256']
+    raw_labels = {}
+    for key, filename, size in [('train', 'train-labels-idx1-ubyte.gz', 60000), ('test', 't10k-labels-idx1-ubyte.gz', 10000)]:
+        raw = gzip.decompress((w / 'data/kmnist' / filename).read_bytes())
+        assert struct.unpack('>II', raw[:8]) == (2049, size) and len(raw) == size + 8
+        buckets = [[i for i, label in enumerate(raw[8:]) if label == c] for c in range(10)]
+        indices = [buckets[c][rank] for rank in range(600 if key == 'train' else 1000) for c in range(10)]
+        raw_labels[key] = ([raw[8 + i] for i in indices], indices)
+    train, train_indices = raw_labels['train']
+    test, test_indices = raw_labels['test']
+    labels = {'before': test[200:2200], 'after': test[200:2200], 'confirmation': test[8000:],
+              'train': train, 'development': test[:200]}
+    for key, indices in [('train', train_indices), ('development', test_indices[:200]),
+                         ('primary', test_indices[200:2200]), ('confirmation', test_indices[8000:])]:
+        assert sha(b''.join(struct.pack('>Q', i) for i in indices)) == protocol['splits'][key]['index_sha256']
+
+    def events(name, command):
+        receipt = json.loads((e / (name + '.json')).read_text())
+        raw = (e / (name + '.log')).read_bytes()
+        assert receipt['exit_code'] == 0 and receipt['command'] == command
+        assert receipt['log_sha256'] == sha(raw) and receipt['protocol_sha256'] == freeze['protocol_sha256']
+        return [json.loads(line) for line in raw.decode().splitlines()]
+
+    parameter_shapes = {'core.weights': 1248, 'core.bias': 52, 'core.log_tau': 52,
+                        'theta_raw': 52, 'encoder': 21952, 'readout': 264}
+
+    def vectors(state):
+        p = state['parameters']
+        assert set(p) == {'core', 'theta_raw', 'encoder', 'readout'}
+        assert set(p['core']) == {'weights', 'bias', 'log_tau'}
+        result = {'core.' + k: v for k, v in p['core'].items()}
+        result.update({k: p[k] for k in ['theta_raw', 'encoder', 'readout']})
+        for key, count in parameter_shapes.items():
+            assert len(result[key]) == count
+            compare_float_vectors(result[key], result[key])
+        optimizer = state['optimizer']
+        assert set(optimizer) == {'first', 'second', 'steps'}
+        for key in ['first', 'second', 'steps']:
+            assert len(optimizer[key]) == 23620
+        compare_float_vectors(optimizer['first'], optimizer['first'])
+        compare_float_vectors(optimizer['second'], optimizer['second'])
+        compare_step_vectors(optimizer['steps'], optimizer['steps'])
+        steps = optimizer['steps']
+        assert steps.count(120000) == 23568 and steps.count(0) == 52
+        assert steps[1300:1352] == [0] * 52
+        result.update({'optimizer.' + k: optimizer[k] for k in ['first', 'second']})
+        return result
+
+    models = {}
+    verified_scores = 0
+    for seed, group, build in sorted(expected):
+        name = f'{seed}-{group}-{build}'
+        binary = w / (build + '-v2')
+        model = w / 'models' / name
+        command = [str(binary), '-data-dir', str(w / 'data/kmnist'), '-group', group,
+                   '-seed', str(seed), '-model', str(model)]
+        rows = events(name + '-train', command + ['-mode', 'train'])
+        resumed = events(name + '-restore', command + ['-mode', 'restore'])
+        assert len(rows) == 23 and len(resumed) == 2
+        selection, restored_selection = rows[0], resumed[0]
+        assert selection == restored_selection and selection['event'] == 'selection'
+        assert selection['seed'] == seed and selection['group'] == group
+        assert selection['program']['binary_sha256'] == sha(binary.read_bytes())
+        assert selection['stored_parameters'] == 23620 and selection['trainable_parameters'] == 23568
+        assert selection['trainable_groups'] == protocol['trainable_groups']
+        source_files = selection['source_files']
+        assert len(source_files) == 5 and len({x['name'] for x in source_files}) == 5
+        assert {x['name']: (x['bytes'], x['sha256']) for x in source_files} == {
+            x['name']: (x['bytes'], x['sha256']) for x in copies if x['name'] != 'metadata.json'}
+        assert selection['metadata_sha256'] == next(x['sha256'] for x in copies if x['name'] == 'metadata.json')
+        for field, value in [('train_count', 6000), ('test_count', 2000), ('confirmation_count', 2000), ('epochs', 20), ('updates_expected', 120000)]:
+            assert type(selection[field]) is int and selection[field] == value
+        for i, row in enumerate(rows[1:21], 1):
+            assert row['event'] == 'epoch' and row['epoch'] == i and row['updates'] == 6000 * i
+            assert row['seed'] == seed and row['group'] == group
+            verify_score(row['development'], labels['development'])
+            verified_scores += 1
+        assert rows[21]['event'] == 'timing'
+        final, restored = rows[-1], resumed[-1]
+        assert final['event'] == restored['event'] == 'final'
+        assert final['mode'] == 'train' and restored['mode'] == 'restore'
+        assert final['updates'] == restored['updates'] == 120000
+        assert final['frozen_evaluation'] is restored['frozen_evaluation'] is True
+        assert restored['before'] == final['after']
+        for key in ['after', 'confirmation', 'train', 'snapshot_sha256', 'next_update_sha256',
+                    'parameters_sha256', 'optimizer_sha256', 'final_activity']:
+            assert final[key] == restored[key], (name, key)
+        for split in ['before', 'after', 'confirmation', 'train']:
+            verify_score(final[split], labels[split])
+            verified_scores += 1
+        raw = Path(str(model) + '.state.json').read_bytes()
+        assert raw.endswith(b'\n') and sha(raw[:-1]) == final['snapshot_sha256']
+        state = decode_snapshot(raw)
+        assert state['updates'] == 120000 and 'accumulator' not in state
+        assert state['config'] == selection['network_config']
+        assert state['options']['trainable'] == protocol['trainable_groups']
+        models[(seed, group, build)] = (rows, final, state, vectors(state))
+
+    build_pairs, chemical_pairs = [], []
+    for seed in protocol['seed_list']:
+        for group in protocol['groups']:
+            ar, a, ast, av = models[(seed, group, 'ordinary')]
+            br, b, bst, bv = models[(seed, group, 'race')]
+            assert {k: v for k, v in ar[0].items() if k != 'program'} == {k: v for k, v in br[0].items() if k != 'program'}
+            assert ast['config'] == bst['config'] and ast['options'] == bst['options']
+            arrays = {k: compare_float_vectors(av[k], bv[k]) for k in av}
+            arrays['optimizer.steps'] = compare_step_vectors(ast['optimizer']['steps'], bst['optimizer']['steps'])
+            build_pairs.append({'seed': seed, 'group': group, 'numeric_arrays': arrays,
+                                'snapshot_equal': a['snapshot_sha256'] == b['snapshot_sha256'],
+                                'next_update_equal': a['next_update_sha256'] == b['next_update_sha256'],
+                                'scores_race_minus_ordinary': {k: score_pair(a[k], b[k], labels[k]) for k in ['before', 'after', 'confirmation', 'train']},
+                                'epochs': [{'epoch': i + 1, 'development': score_pair(ar[i+1]['development'], br[i+1]['development'], labels['development']),
+                                            'training_cross_entropy_race_minus_ordinary': br[i+1]['mean_training_cross_entropy'] - ar[i+1]['mean_training_cross_entropy']} for i in range(20)]})
+        for build in protocol['builds']:
+            a = models[(seed, 'off', build)][1]
+            b = models[(seed, 'on', build)][1]
+            chemical_pairs.append({'seed': seed, 'build': build,
+                                   'scores_on_minus_off': {k: score_pair(a[k], b[k], labels[k]) for k in ['before', 'after', 'confirmation', 'train']}})
+    result = {'training_runs': len(models), 'new_process_restores': len(models), 'scores_independently_verified': verified_scores,
+              'typed_numeric_arrays_per_snapshot': 9, 'build_pairs': build_pairs, 'chemical_pairs': chemical_pairs,
+              'scope': 'fixed LIF artificial topology; three seeds and previously observed KMNIST single-character data; descriptive comparisons only',
+              'no_tuning_or_selection': True, 'oversized_distance_representation': 'numeric null plus finite 80-digit Decimal approximation'}
+    with (e / 'quality-and-state-comparison.json').open('x') as out:
+        json.dump(result, out, indent=2, allow_nan=False)
+        out.write('\n')
+    print(json.dumps({'analyzed_runs': len(models), 'build_pairs': len(build_pairs), 'scores_verified': verified_scores}))
+
+
+if __name__ == '__main__':
+    main()

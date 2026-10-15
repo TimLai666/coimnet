@@ -1,0 +1,62 @@
+{
+  "verified_at": "2026-10-15T08:41:05.785425+00:00",
+  "results": [
+    {
+      "mode": "red",
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/red-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^Test(RecognizerAlphabetUnicodeScalar|NewStreamRejectsInvalidAlphabetRune)$",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "seconds": 7.777442875,
+      "test_events": {
+        "fail": 22,
+        "pass": 13
+      },
+      "invalid_scalar_cases": 20,
+      "legal_scalar_cases": 12,
+      "new_stream_guard_pass": true,
+      "log": "regression-red-v2-ordinary.log",
+      "log_sha256": "4898e4d2d25e4e365a05093a0a9fc69f11e2674ef35510556b2ff55d5032a721",
+      "source_and_frozen_tests_preserved": true
+    },
+    {
+      "mode": "red",
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/red-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^Test(RecognizerAlphabetUnicodeScalar|NewStreamRejectsInvalidAlphabetRune)$",
+        "./tasks/ocr",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "seconds": 6.829893833,
+      "test_events": {
+        "fail": 22,
+        "pass": 13
+      },
+      "invalid_scalar_cases": 20,
+      "legal_scalar_cases": 12,
+      "new_stream_guard_pass": true,
+      "log": "regression-red-v2-race.log",
+      "log_sha256": "cc2529d2d9de617b713e8f289778d3f0b6d91e41d76f54776905e66247a50db6",
+      "source_and_frozen_tests_preserved": true
+    }
+  ],
+  "actual_behavioral_test_events_required": true,
+  "formal_source_unchanged": true
+}

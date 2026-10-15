@@ -1,0 +1,5 @@
+# Existing download cancellation follow-up
+
+Repeat the existing TestCancelReleases/download_Fetch case 200 times in its own race-enabled test binary, using unchanged repository source and the current project-local cache/temp environment. This is an independent bounded check of the recorded intermittent resource-reclamation failure; it does not change the frozen LIF study or prove the failure cannot occur in another suite context.
+
+At the last (index 19) reclaim sample, a still-failing goroutine or heap bound deterministically exhausts the original test retry budget. Capture an all-goroutine dump by sending SIGQUIT only to the owned live test subprocess before its fixture defers run. Record that as an intentional diagnostic stop, not a completed test or a framework leak conclusion. Preserve all output, source/binary fingerprints, counts and actual exit status. If all 200 cases pass, retain the observed limits and leave the original whole-suite root cause unresolved. Do not weaken the original test or alter any production source.

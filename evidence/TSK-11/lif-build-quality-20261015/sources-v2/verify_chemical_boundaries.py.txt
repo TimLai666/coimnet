@@ -1,0 +1,80 @@
+"""Check accepted model configurations against the frozen episode declaration."""
+from pathlib import Path
+import argparse
+import datetime
+import hashlib
+import json
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--output', required=True, help='New evidence JSON filename; existing files are refused.')
+args = parser.parse_args()
+assert Path(args.output).name == args.output and args.output.endswith('.json')
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+protocol = json.loads((e / 'protocol.json').read_text())
+p = protocol['chemistry']
+expected = {'part': {'config': {
+    'chemistry': {'regions': p['regions'], 'channels': p['channels'], 'dt': p['dt'], 'tau': p['tau'], 'units': ''},
+    'sources': [{'kind': 'controller', 'channel': 0, 'controller': {
+        'inputs': {'summary_window': 3, 'use_feedback': False}, 'nodes': protocol['lif']['nodes'],
+        'hidden': 1, 'channel': 0, 'parameters': [0.6, 0.2, 0.05, 0.8, -0.1]}}],
+    'receptors': {'records': [{'cells': list(range(28, 52)), 'signal': 'engineering_activity_summary',
+        'channel': 0, 'status': 'hypothesized', 'engineering_kd': p['engineering_kd'],
+        'engineering_n': p['engineering_n'], 'evidence': 'declared engineering experiment',
+        'measurement_kind': 'declared', 'mapping_version': 'tsk-11-chemical-quality-20261013/v1'}],
+        'allow_assumed_coefficients': False},
+    'effects': [{'kind': 'sensitivity', 'receptor': 0, 'gamma_scale': p['gamma_scale'],
+        'beta_scale': p['beta_scale'], 'gamma_min': p['gamma_min'], 'gamma_max': p['gamma_max'],
+        'beta_abs_max': p['beta_abs_max']}],
+    'regions': {'node_region': [0] * protocol['lif']['nodes']}},
+    'state': {'concentration': p['initial_concentration'], 'steps': 0},
+    'resources': {}, 'pending_feedback': None}, 'source_step': 0}
+canonical = lambda value: json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False)
+checks = []
+for receipt_path in sorted(e.glob('*-accepted.json')):
+    accepted = json.loads(receipt_path.read_text())
+    name = receipt_path.name.removesuffix('-accepted.json')
+    state_path = w / 'models' / (name + '.state.json')
+    raw = state_path.read_bytes()
+    assert raw.endswith(b'\n') and sha(raw[:-1]) == accepted['snapshot_sha256']
+    state = json.loads(raw)
+    assert state['updates'] == 120000 and state['options']['trainable'] == protocol['trainable_groups']
+    assert 'chemistry' not in state['options']
+    if accepted['group'] == 'off':
+        assert 'chemistry' not in state['config'], name
+        compared = None
+    else:
+        assert accepted['group'] == 'on', name
+        assert canonical(state['config']['chemistry']) == canonical(expected), name
+        compared = expected
+    checks.append({'arm': name, 'group': accepted['group'], 'full_chemical_boundary_exact': True,
+                   'state_file_sha256': sha(raw), 'chemical_boundary': compared})
+rejected_path = e / 'chemical-state-audit-phase4.rejected.json'
+rejected = json.loads(rejected_path.read_text())
+false = rejected['summary']['mismatches']
+assert len(false) == 27
+false_array_paths = [x['json_path'] for x in false if '.0.' in x['json_path']]
+assert len(false_array_paths) == 24
+assert len(false) - len(false_array_paths) == 3
+result = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'root_verified_runs': checks, 'verified_count': len(checks), 'expected_total': 12,
+    'method': 'entire declared ChemicalEpisode comparison; no custom JSON path lookup',
+    'source_basis': ['protocol.json chemistry fields', 'sources-v2/chemistry.go.txt:11-76',
+                     'learning/chemical_episode.go:14-27', 'learning/chemical_sequence.go:68-129',
+                     'learning/chemistry.go:59-72'],
+    'source_hashes': {str(path.relative_to(r)): sha(path.read_bytes()) for path in [e/'protocol.json',
+        e/'sources-v2/chemistry.go.txt', r/'learning/chemical_episode.go', r/'learning/chemical_sequence.go', r/'learning/chemistry.go']},
+    'rejected_report': {'file': rejected_path.name, 'sha256': sha(rejected_path.read_bytes()),
+        'false_mismatches': 27, 'array_path_lookup_errors': 24, 'optional_absent_nil_errors': 3,
+        'invalid_feedback_path': 'config.chemistry.pending_feedback',
+        'correct_feedback_path': 'config.chemistry.part.pending_feedback', 'accepted_as_framework_findings': False},
+    'state_semantics': 'Config.Chemistry is the independent episode initial boundary. Each forward creates an owned sequence and runtime copy. Saved zero concentration/steps are prescribed initial conditions, not the final runtime trajectory.',
+    'runtime_trajectory_exported_or_verified_here': False, 'quality_claim': None,
+    'protocol_or_framework_changed': False}
+with (e / args.output).open('x') as out:
+    json.dump(result, out, indent=2, allow_nan=False)
+    out.write('\n')
+print(json.dumps({'verified_runs': len(checks), 'configuration_mismatches': 0,
+                  'rejected_false_report_findings': 27, 'output': args.output}))

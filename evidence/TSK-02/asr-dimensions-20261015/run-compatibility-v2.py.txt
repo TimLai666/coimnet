@@ -1,0 +1,95 @@
+from pathlib import Path
+import datetime, hashlib, json, os, subprocess, time
+
+r = Path('/Users/timlai/Developer/coimnet')
+w = r / 'runs/.tmp/asr-dimensions-20261015'
+e = r / 'evidence/TSK-02/asr-dimensions-20261015'
+prior = r / 'runs/.tmp/recognizer-unicode-20261015'
+source = json.loads((r / 'evidence/OPS-03/operational-temp-paths-20261015/go-source-final.json').read_text())
+candidate = json.loads((e / 'candidate-freeze.json').read_text())['source_files']
+base = json.loads((r / 'evidence/TSK-01/recognizer-unicode-20261015/candidate-freeze.json').read_text())['source_files']
+old_probe = json.loads((e / 'public-reproduction-verification.json').read_text())['results']
+driver = w / 'compatibility/main_v2.go'
+driver_sha = hashlib.sha256(driver.read_bytes()).hexdigest()
+env = os.environ.copy()
+env.update(json.loads((e / 'command-environment.json').read_text()))
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def gate():
+    assert w.stat().st_ino == 55651638 and sha(driver) == driver_sha
+    for path, digest in source.items():
+        assert sha(r / path) == digest, path
+    for path, digest in candidate.items():
+        assert sha(w / 'candidate' / path) == digest, path
+    for path, digest in base.items():
+        assert sha(prior / 'candidate' / path) == digest, path
+
+def run(name, flags, overlay, program, arguments):
+    gate()
+    command = ['go', 'run', *flags, '-overlay', str(overlay), str(program), *map(str, arguments)]
+    start = time.monotonic()
+    with (e / (name + '.log')).open('x') as handle:
+        code = subprocess.run(command, cwd=r, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    assert code == 0, (name, code)
+    rows = [json.loads(line) for line in (e / (name + '.log')).read_text().splitlines()]
+    receipt = {'command': command, 'exit_code': code, 'seconds': time.monotonic() - start,
+               'observations': rows, 'log': name + '.log', 'log_sha256': sha(e / (name + '.log'))}
+    with (e / (name + '.json')).open('x') as handle:
+        json.dump(receipt, handle, indent=2)
+        handle.write('\n')
+    print(json.dumps({'name': name, 'exit_code': code, 'observations': len(rows)}), flush=True)
+    return rows
+
+def by_case(rows):
+    result = {row['case']: row for row in rows}
+    assert len(rows) == len(result) == 4
+    return result
+
+results = []
+for label, flags in [('ordinary', []), ('race', ['-race'])]:
+    probe = run('candidate-public-v2-' + label, flags, w / 'green-overlay.json', w / 'main.go', [])
+    old = {row['name']: row for row in old_probe[0 if label == 'ordinary' else 1]['observations']}
+    assert len(probe) == 8
+    for row in probe:
+        assert not row['panic'], row
+        if row['intended_invalid_dimensions']:
+            assert row['validate_error'] and row['constructor_error'] and row['model_nil'], row
+        else:
+            assert not row['validate_error'] and not row['constructor_error'] and not row['model_nil'], row
+            assert row['snapshot_sha256'] == old[row['name']]['snapshot_sha256'], row
+    old_root = w / 'compatibility-fixtures-v2' / label / 'base'
+    new_root = w / 'compatibility-fixtures-v2' / label / 'candidate'
+    assert not old_root.exists() and not new_root.exists()
+    old_root.mkdir(parents=True)
+    new_root.mkdir(parents=True)
+    old_rows = by_case(run('compatibility-v2-base-create-' + label, flags, prior / 'green-overlay.json', driver, ['create', old_root]))
+    new_rows = by_case(run('compatibility-v2-candidate-create-' + label, flags, w / 'green-overlay.json', driver, ['create', new_root]))
+    assert old_rows == new_rows, label
+    old_loaded = by_case(run('compatibility-v2-old-loaded-by-candidate-' + label, flags, w / 'green-overlay.json', driver, ['restore', old_root]))
+    new_loaded = by_case(run('compatibility-v2-new-loaded-by-base-' + label, flags, prior / 'green-overlay.json', driver, ['restore', new_root]))
+    for name in old_rows:
+        expected = {key: value for key, value in old_rows[name].items() if key not in ['initial_snapshot', 'training_reports']}
+        assert old_loaded[name] == expected and new_loaded[name] == expected, (label, name)
+    results.append({'build': label, 'invalid_public_refusals': 5, 'tiny_initial_snapshots_preserved': 3,
+                    'initial_trained_and_next_updates_preserved': 4, 'old_saved_new_process_resumes': 4,
+                    'new_saved_base_process_resumes': 4})
+preserved = {}
+for path in sorted((w / 'compatibility-fixtures-v2').rglob('*')):
+    if not path.is_file():
+        continue
+    relative = path.relative_to(w / 'compatibility-fixtures-v2')
+    target = e / 'compatibility-fixtures-v2' / relative
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with target.open('xb') as handle:
+        handle.write(path.read_bytes())
+    assert sha(path) == sha(target)
+    preserved[str(relative)] = {'sha256': sha(target), 'bytes': target.stat().st_size}
+with (e / 'candidate-compatibility-verification.json').open('x') as handle:
+    json.dump({'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'results': results,
+               'driver_sha256': driver_sha, 'formal_sources_and_base107_preserved': True,
+               'complete_config_and_training_snapshots_compared': True, 'saved_fixture_files': preserved,
+               'scope': 'Small artificial compatibility controls; not task-quality or full-framework acceptance.'}, handle, indent=2)
+    handle.write('\n')

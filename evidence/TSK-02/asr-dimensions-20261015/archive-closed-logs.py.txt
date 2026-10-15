@@ -1,0 +1,42 @@
+from pathlib import Path
+import datetime, gzip, hashlib, json, subprocess
+
+root = Path('/Users/timlai/Developer/coimnet')
+paths = ['TSK-11/lif-build-quality-20261015', 'TSK-01/recognizer-unicode-20261015',
+         'TSK-02/asr-dimensions-20261015']
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+for path in paths:
+    evidence = root / 'evidence' / path
+    mapping = evidence / 'engineering-log-archives.json'
+    prior = mapping.read_bytes() if mapping.exists() else None
+    data = json.loads(prior) if prior else {'files': []}
+    known = {item['original_log'] for item in data['files']}
+    for logfile in sorted(evidence.glob('*.log')):
+        raw = logfile.read_bytes()
+        if raw.count(b'\n') < 1000 and len(raw) <= 5 * 1024 * 1024:
+            continue
+        assert logfile.name not in known
+        handles = subprocess.run(['lsof', '-t', str(logfile)], capture_output=True)
+        if handles.returncode == 0 and handles.stdout:
+            print('ACTIVE preserved: ' + str(logfile.relative_to(root)), flush=True)
+            continue
+        assert handles.returncode == 1 and not handles.stdout and not handles.stderr
+        archive = logfile.with_name(logfile.name + '.gz')
+        assert not archive.exists()
+        packed = gzip.compress(raw, compresslevel=9, mtime=0)
+        with archive.open('xb') as handle:
+            handle.write(packed)
+        assert gzip.decompress(archive.read_bytes()) == raw
+        assert logfile.read_bytes() == raw
+        logfile.unlink()
+        data['files'].append({'original_log': logfile.name, 'original_bytes': len(raw),
+                              'original_sha256': sha(raw), 'archive': archive.name,
+                              'compressed_bytes': len(packed), 'archive_sha256': sha(packed),
+                              'decompressed_bytes_exact': True,
+                              'raw_copy_removed_after_no_open_handles': True})
+        print('ARCHIVED ' + str(logfile.relative_to(root)), flush=True)
+    data.update({'updated_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                 'recovery': 'Decompress archive to original_log before replaying historical commands; raw receipt hashes preserved.',
+                 'existing_receipts_not_rewritten': True})
+    assert (mapping.read_bytes() if mapping.exists() else None) == prior
+    mapping.write_text(json.dumps(data, indent=2) + '\n')

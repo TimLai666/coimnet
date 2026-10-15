@@ -1,0 +1,81 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+// comparisonTrainer restores an owned Trainer with identical parameters/options.
+// off: nil chemistry; on: protocol's fixed chemical boundary; neutral: on with neutral effects.
+// Unknown groups must fail before building or updating.
+func comparisonTrainer(base learning.TrainingSnapshot, group string) (*learning.Trainer, error) {
+	switch group {
+	case "off":
+		base.Config.Chemistry = nil
+	case "on", "neutral":
+		nodes := base.Config.Dynamics.Nodes
+		if base.Config.LIF != nil {
+			nodes = base.Config.LIF.Nodes
+		}
+		nodeRegion := make([]int, nodes)
+		receptorCells := append([]int(nil), base.Config.ReadoutNodes...)
+		gammaScale, betaScale := 0.8, 0.1
+		if group == "neutral" {
+			gammaScale, betaScale = 0, 0
+		}
+		base.Config.Chemistry = &learning.ChemicalEpisode{
+			Part: learning.ChemicalPart{
+				Config: modulation.ChemistryConfig{
+					Chemistry: modulation.Chemistry{
+						Regions:  1,
+						Channels: 1,
+						DT:       1,
+						Tau:      []float64{2},
+					},
+					Sources: []modulation.SourceSpec{{
+						Kind:    modulation.SourceController,
+						Channel: 0,
+						Controller: &modulation.Controller{
+							Inputs:  modulation.ControllerInputs{SummaryWindow: 3},
+							Nodes:   nodes,
+							Hidden:  1,
+							Channel: 0,
+							Parameters: []float64{
+								0.6, 0.2, 0.05, 0.8, -0.1,
+							},
+						},
+					}},
+					Receptors: modulation.Receptors{Records: []modulation.Receptor{{
+						Cells:           receptorCells,
+						Signal:          "engineering_activity_summary",
+						Channel:         0,
+						Status:          modulation.StatusHypothesized,
+						Kd:              0.5,
+						N:               1,
+						Evidence:        "declared engineering experiment",
+						MeasurementKind: "declared",
+						MappingVersion:  "tsk-11-chemical-quality-20261013/v1",
+					}}},
+					Effects: []modulation.Effect{{
+						Kind:       modulation.EffectSensitivity,
+						Receptor:   0,
+						GammaScale: gammaScale,
+						BetaScale:  betaScale,
+						GammaMin:   0.5,
+						GammaMax:   2,
+						BetaAbsMax: 1,
+					}},
+					Regions: modulation.RegionAssignment{NodeRegion: nodeRegion},
+				},
+				State:     modulation.ChemistryState{Concentration: [][]float64{{0}}},
+				Resources: map[string]float64{},
+			},
+			SourceStep: 0,
+		}
+	default:
+		return nil, fmt.Errorf("unknown comparison group %q", group)
+	}
+	return learning.RestoreTrainer(base)
+}

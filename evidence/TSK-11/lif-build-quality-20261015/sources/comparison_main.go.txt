@@ -1,0 +1,254 @@
+// Example-only paired experiment. Dataset and OCR helpers are exact source copies.
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"flag"
+	"fmt"
+	"math"
+	"math/rand/v2"
+	"os"
+	"reflect"
+	"time"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+func emit(v any)          { must(json.NewEncoder(os.Stdout).Encode(v)) }
+func digest(v any) string { h, e := digestJSON(v); must(e); return h }
+
+func main() {
+	dir := flag.String("data-dir", "", "verified official KMNIST directory (required)")
+	mode := flag.String("mode", "check", "check, train or restore")
+	group := flag.String("group", "off", "off or on for training; neutral is verification only")
+	seed := flag.Uint64("seed", 20260924, "fixed initialization and training-order seed")
+	modelPath := flag.String("model", "", "new TrainingBundle for train; existing for restore")
+	flag.Parse()
+	if *mode != "check" && *mode != "train" && *mode != "restore" {
+		panic("unknown mode")
+	}
+	if *group != "off" && *group != "on" {
+		panic("only off/on are formal training groups")
+	}
+	ctx := context.Background()
+	ds, e := LoadDataset(*dir, DatasetLimits{TrainCount: 6000, TestCount: 10000})
+	must(e)
+	if len(ds.Train) != 6000 || len(ds.Test) != 10000 {
+		panic("fixed selection sizes")
+	}
+	alphabet := make([]rune, len(ds.Metadata.Mapping))
+	for i, m := range ds.Metadata.Mapping {
+		alphabet[i] = []rune(m.Char)[0]
+	}
+	config := ocr.RecognizerConfig{Height: 28, Hidden: 24, Alphabet: alphabet, LearningRate: 0.002, Seed: *seed, TrainableEncoder: true, InputProfile: "single-character", CharacterWidth: 28}
+	mapper, e := ocr.NewRecognizer(config)
+	must(e)
+	base, e := makeLIFBase(mapper.Snapshot())
+	must(e)
+	stored, trainable := parameterCounts(base)
+	tr, e := comparisonTrainer(base, *group)
+	must(e)
+	expected := tr.Snapshot()
+	primary := ds.Test[200:2200]
+	confirmation := ds.Test[8000:10000]
+	development := ds.Test[:200]
+	emit(map[string]any{"event": "selection", "group": *group, "seed": *seed, "train_count": len(ds.Train), "test_count": len(primary), "confirmation_count": len(confirmation), "train_indices_sha256": digestIntSlice(ds.TrainIndices), "test_indices_sha256": digestIntSlice(ds.TestIndices[200:2200]), "confirmation_indices_sha256": digestIntSlice(ds.TestIndices[8000:]), "source_files": ds.FileFingerprints, "metadata_sha256": ds.MetadataSHA256, "task_config": config, "network_config": expected.Config, "initial_parameter_sha256": digest(base.Parameters), "initial_snapshot_sha256": digest(base), "epochs": 20, "updates_expected": 120000, "stored_parameters": stored, "trainable_parameters": trainable, "trainable_groups": expected.Options.Trainable, "development_indices_sha256": digestIntSlice(ds.TestIndices[:200]), "fixed_chemical_parameters": func() int {
+		if *group == "on" {
+			return 5
+		}
+		return 0
+	}(), "program": programFingerprint()})
+	if *mode == "check" {
+		checkLIFSDK(ctx, base, mapper, ds.Train[:10])
+		if *modelPath == "" {
+			return
+		}
+		trainSample(ctx, tr, mapper, ds.Train[0], alphabet)
+		must(checkpoint.SaveTrainingBundle(ctx, *modelPath, tr.Snapshot()))
+	}
+	if *modelPath == "" {
+		panic("model path required")
+	}
+	if *mode == "restore" {
+		sn, e := checkpoint.LoadTrainingBundle(ctx, *modelPath)
+		must(e)
+		if !reflect.DeepEqual(sn.Config, expected.Config) || !reflect.DeepEqual(sn.Options, expected.Options) {
+			panic("restored configuration mismatch")
+		}
+		tr, e = learning.RestoreTrainer(sn)
+		must(e)
+	}
+	initialActivity := spikeActivity(ctx, tr, mapper, ds.Train[:10])
+	before := score(ctx, tr, mapper, primary, alphabet)
+	if *mode == "train" {
+		order := make([]int, len(ds.Train))
+		for i := range order {
+			order[i] = i
+		}
+		rng := rand.New(rand.NewPCG(*seed, 37))
+		start := time.Now()
+		for epoch := 0; epoch < 20; epoch++ {
+			rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] })
+			losses := 0.0
+			epochStart := time.Now()
+			for _, i := range order {
+				losses += trainSample(ctx, tr, mapper, ds.Train[i], alphabet)
+			}
+			emit(map[string]any{"event": "epoch", "group": *group, "seed": *seed, "epoch": epoch + 1, "mean_training_cross_entropy": losses / float64(len(order)), "updates": tr.Snapshot().Updates, "train_seconds": time.Since(epochStart).Seconds(), "development": score(ctx, tr, mapper, development, alphabet)})
+		}
+		emit(map[string]any{"event": "timing", "training_including_development_seconds": time.Since(start).Seconds()})
+		must(checkpoint.SaveTrainingBundle(ctx, *modelPath, tr.Snapshot()))
+	}
+	after := score(ctx, tr, mapper, primary, alphabet)
+	extra := score(ctx, tr, mapper, confirmation, alphabet)
+	trained := score(ctx, tr, mapper, ds.Train, alphabet)
+	sn := tr.Snapshot()
+	if *mode == "train" {
+		f, err := os.OpenFile(*modelPath+".state.json", os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+		must(err)
+		must(json.NewEncoder(f).Encode(sn))
+		must(f.Close())
+	}
+	beforeHash := digest(sn)
+	// Probe a private clone for exact new-process next-update continuation.
+	clone, e := learning.RestoreTrainer(sn)
+	must(e)
+	trainSample(ctx, clone, mapper, ds.Train[0], alphabet)
+	if digest(tr.Snapshot()) != beforeHash {
+		panic("evaluation or clone update changed original model")
+	}
+	emit(map[string]any{"event": "final", "mode": *mode, "group": *group, "seed": *seed, "before": before, "after": after, "confirmation": extra, "train": trained, "updates": sn.Updates, "model": *modelPath, "snapshot_sha256": beforeHash, "next_update_sha256": digest(clone.Snapshot()), "parameters_sha256": digest(sn.Parameters), "optimizer_sha256": digest(sn.Optimizer), "frozen_evaluation": true, "initial_activity": initialActivity, "final_activity": spikeActivity(ctx, tr, mapper, ds.Train[:10])})
+}
+
+type scoreReport struct {
+	Accuracy         float64 `json:"accuracy"`
+	MeanCrossEntropy float64 `json:"mean_cross_entropy"`
+	Samples          int     `json:"samples"`
+	Correct          int     `json:"correct"`
+	Predictions      []int   `json:"predictions"`
+	Confusion        [][]int `json:"confusion"`
+}
+
+func classID(text string, alphabet []rune) int {
+	runes := []rune(text)
+	if len(runes) != 1 {
+		panic("expected one character")
+	}
+	for i, c := range alphabet {
+		if runes[0] == c {
+			return i + 1
+		}
+	}
+	panic("label outside alphabet")
+}
+
+func sampleLogits(ctx context.Context, tr *learning.Trainer, m *ocr.Recognizer, s glyphs.Sample) ([][]float64, [][]float64) {
+	inputs, e := m.Inputs(s.Image)
+	must(e)
+	logits, e := tr.PredictAll(ctx, inputs)
+	must(e)
+	if len(logits) != 2 || len(inputs) != 2 {
+		panic("single-character neural-step alignment")
+	}
+	return inputs, logits
+}
+
+func trainSample(ctx context.Context, tr *learning.Trainer, m *ocr.Recognizer, s glyphs.Sample, alphabet []rune) float64 {
+	inputs, logits := sampleLogits(ctx, tr, m, s)
+	loss, g, e := comparisonLoss(logits[1], classID(s.Text, alphabet))
+	must(e)
+	up := [][]float64{make([]float64, len(g)), g}
+	result, e := tr.StepFrom(ctx, inputs, up)
+	must(e)
+	if !result.Applied {
+		panic("expected one committed update per training image")
+	}
+	return loss
+}
+
+func score(ctx context.Context, tr *learning.Trainer, m *ocr.Recognizer, samples []glyphs.Sample, alphabet []rune) scoreReport {
+	if len(samples) == 0 {
+		panic("empty evaluation")
+	}
+	before := digest(tr.Snapshot())
+	r := scoreReport{Samples: len(samples), Predictions: make([]int, 0, len(samples)), Confusion: make([][]int, len(alphabet))}
+	for i := range r.Confusion {
+		r.Confusion[i] = make([]int, len(alphabet))
+	}
+	total := 0.0
+	for _, s := range samples {
+		_, logits := sampleLogits(ctx, tr, m, s)
+		last := logits[1]
+		want := classID(s.Text, alphabet)
+		loss, _, e := comparisonLoss(last, want)
+		must(e)
+		total += loss
+		got := 1
+		for j := 2; j < len(last); j++ {
+			if last[j] > last[got] {
+				got = j
+			}
+		}
+		r.Predictions = append(r.Predictions, got-1)
+		r.Confusion[want-1][got-1]++
+		if got == want {
+			r.Correct++
+		}
+	}
+	if digest(tr.Snapshot()) != before {
+		panic("scoring advanced training state")
+	}
+	r.Accuracy = float64(r.Correct) / float64(r.Samples)
+	r.MeanCrossEntropy = total / float64(r.Samples)
+	return r
+}
+
+// Exact objective copied from the current public OCR implementation.
+func comparisonLoss(logits []float64, target int) (float64, []float64, error) {
+	if len(logits) < 2 || target < 1 || target >= len(logits) {
+		return 0, nil, errors.New("ocr: single-character logits or target is invalid")
+	}
+	for class, value := range logits {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, nil, fmt.Errorf("ocr: single-character logit class %d is not finite", class)
+		}
+	}
+	maxLogit := logits[1]
+	for _, value := range logits[2:] {
+		if value > maxLogit {
+			maxLogit = value
+		}
+	}
+	sum := 0.0
+	probabilities := make([]float64, len(logits))
+	for class := 1; class < len(logits); class++ {
+		value := math.Exp(logits[class] - maxLogit)
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, nil, errors.New("ocr: single-character normalization is not finite")
+		}
+		probabilities[class] = value
+		sum += value
+	}
+	if !(sum > 0) || math.IsNaN(sum) || math.IsInf(sum, 0) {
+		return 0, nil, errors.New("ocr: single-character normalization is invalid")
+	}
+	for class := 1; class < len(probabilities); class++ {
+		probabilities[class] /= sum
+	}
+	loss := -(logits[target] - maxLogit - math.Log(sum))
+	if math.IsNaN(loss) || math.IsInf(loss, 0) {
+		return 0, nil, errors.New("ocr: single-character loss is not finite")
+	}
+	probabilities[target]--
+	return loss, probabilities, nil
+}

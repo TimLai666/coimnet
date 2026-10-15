@@ -1,0 +1,335 @@
+package main
+
+import (
+	"bytes"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+const (
+	lifProtocolNodes          = 52
+	lifProtocolEdges          = 1248
+	lifProtocolInputSize      = 784
+	lifProtocolOutputSize     = 11
+	lifProtocolStored         = 23620
+	lifProtocolTrainable      = 23568
+	lifProtocolThetaRaw       = -2
+	lifProtocolThetaMin       = 0.05
+	lifProtocolThetaMax       = 1
+	lifProtocolVReset         = -0.5
+	lifProtocolSurrogate      = "fast_sigmoid"
+	lifProtocolSurrogateScale = 2
+)
+
+func repeatedFloats(n int, value float64) []float64 {
+	out := make([]float64, n)
+	for i := range out {
+		out[i] = value
+	}
+	return out
+}
+
+func protocolLIFConfig(base learning.TrainingSnapshot) dynamics.LIFConfig {
+	d := base.Config.Dynamics
+	return dynamics.LIFConfig{
+		Nodes:           d.Nodes,
+		Sources:         append([]int(nil), d.Sources...),
+		Targets:         append([]int(nil), d.Targets...),
+		Delays:          make([]int, len(d.Sources)),
+		DT:              1,
+		TauSyn:          1,
+		ThetaMin:        lifProtocolThetaMin,
+		ThetaMax:        lifProtocolThetaMax,
+		VReset:          lifProtocolVReset,
+		RefractorySteps: 1,
+		Surrogate:       dynamics.LIFSurrogate{Kind: lifProtocolSurrogate, Scale: lifProtocolSurrogateScale},
+	}
+}
+
+func zeroAdamState(count int) learning.AdamState {
+	return learning.AdamState{
+		First:  make([]float64, count),
+		Second: make([]float64, count),
+		Steps:  make([]uint64, count),
+	}
+}
+
+func TestLIFFactoryConvertsFreshOCRSnapshot(t *testing.T) {
+	base := publicSnapshot(t)
+	baseBefore := snapshotJSON(t, base)
+
+	got, err := makeLIFBase(base)
+	if err != nil {
+		t.Fatalf("makeLIFBase(fresh OCR snapshot): %v", err)
+	}
+	if after := snapshotJSON(t, base); !bytes.Equal(after, baseBefore) {
+		t.Fatal("makeLIFBase changed the caller-owned fresh snapshot")
+	}
+
+	if got.SchemaVersion != base.SchemaVersion {
+		t.Fatalf("schema version = %q, want %q", got.SchemaVersion, base.SchemaVersion)
+	}
+	if got.Updates != 0 {
+		t.Fatalf("updates = %d, want fresh zero", got.Updates)
+	}
+	if got.Accumulator != nil {
+		t.Fatalf("accumulator = %#v, want nil at a fresh update boundary", got.Accumulator)
+	}
+	if !reflect.DeepEqual(got.Config.Dynamics, dynamics.Config{}) {
+		t.Fatalf("continuous config was retained alongside LIF: %+v", got.Config.Dynamics)
+	}
+	if got.Config.LIF == nil {
+		t.Fatal("converted snapshot has no LIF config")
+	}
+	if got.Config.Mixed != nil || len(got.Config.LIFIndex) != 0 {
+		t.Fatalf("uniform LIF config has mixed-only fields: mixed=%#v lif_index=%v", got.Config.Mixed, got.Config.LIFIndex)
+	}
+
+	lif := got.Config.LIF
+	if lif.Nodes != lifProtocolNodes || len(lif.Sources) != lifProtocolEdges || len(lif.Targets) != lifProtocolEdges || len(lif.Delays) != lifProtocolEdges {
+		t.Fatalf("LIF topology shape = nodes %d sources %d targets %d delays %d, want 52/1248/1248/1248", lif.Nodes, len(lif.Sources), len(lif.Targets), len(lif.Delays))
+	}
+	for source := 0; source < lifProtocolNodes; source++ {
+		for hidden := 0; hidden < comparisonHidden; hidden++ {
+			edge := source*comparisonHidden + hidden
+			if lif.Sources[edge] != source || lif.Targets[edge] != comparisonHeight+hidden || lif.Delays[edge] != 0 {
+				t.Fatalf("edge %d = %d->%d delay %d, want %d->%d delay 0", edge, lif.Sources[edge], lif.Targets[edge], lif.Delays[edge], source, comparisonHeight+hidden)
+			}
+		}
+	}
+	if lif.DT != 1 || lif.TauSyn != 1 || lif.ThetaMin != lifProtocolThetaMin || lif.ThetaMax != lifProtocolThetaMax || lif.VReset != lifProtocolVReset || lif.RefractorySteps != 1 {
+		t.Fatalf("LIF fixture = %+v, want protocol threshold fixture", *lif)
+	}
+	if lif.Adaptation != (dynamics.LIFAdaptation{}) || lif.Homeostasis != nil {
+		t.Fatalf("LIF slow threshold mechanisms = adaptation %+v homeostasis %#v, want both disabled", lif.Adaptation, lif.Homeostasis)
+	}
+	if lif.Surrogate.Kind != lifProtocolSurrogate || lif.Surrogate.Scale != lifProtocolSurrogateScale {
+		t.Fatalf("surrogate = %+v, want fast_sigmoid scale 2", lif.Surrogate)
+	}
+
+	if got.Config.InputSize != lifProtocolInputSize || got.Config.OutputSize != lifProtocolOutputSize {
+		t.Fatalf("input/output sizes = %d/%d, want 784/11", got.Config.InputSize, got.Config.OutputSize)
+	}
+	if !reflect.DeepEqual(got.Config.InputNodes, base.Config.InputNodes) || !reflect.DeepEqual(got.Config.ReadoutNodes, base.Config.ReadoutNodes) {
+		t.Fatalf("input/readout node selections changed: input=%v/%v readout=%v/%v", got.Config.InputNodes, base.Config.InputNodes, got.Config.ReadoutNodes, base.Config.ReadoutNodes)
+	}
+	if !reflect.DeepEqual(got.Config.InputNodes, func() []int {
+		want := make([]int, comparisonHeight)
+		for i := range want {
+			want[i] = i
+		}
+		return want
+	}()) {
+		t.Fatalf("input nodes = %v, want 0..27", got.Config.InputNodes)
+	}
+	if !reflect.DeepEqual(got.Config.ReadoutNodes, func() []int {
+		want := make([]int, comparisonHidden)
+		for i := range want {
+			want[i] = comparisonHeight + i
+		}
+		return want
+	}()) {
+		t.Fatalf("readout nodes = %v, want 28..51", got.Config.ReadoutNodes)
+	}
+	if got.Config.ReadoutEveryStep != base.Config.ReadoutEveryStep || !reflect.DeepEqual(got.Config.EdgeSigns, base.Config.EdgeSigns) || got.Config.MinLogMagnitude != base.Config.MinLogMagnitude || !reflect.DeepEqual(got.Config.Sharing, base.Config.Sharing) || !reflect.DeepEqual(got.Config.Chemistry, base.Config.Chemistry) {
+		t.Fatal("common network configuration changed during LIF conversion")
+	}
+
+	if !floatBitsEqual(got.Parameters.Core.Weights, base.Parameters.Core.Weights) || !floatBitsEqual(got.Parameters.Core.Bias, base.Parameters.Core.Bias) || !floatBitsEqual(got.Parameters.Core.LogTau, base.Parameters.Core.LogTau) || !floatBitsEqual(got.Parameters.Encoder, base.Parameters.Encoder) || !floatBitsEqual(got.Parameters.Readout, base.Parameters.Readout) {
+		t.Fatal("existing OCR parameters were not preserved bit-for-bit")
+	}
+	if len(got.Parameters.ThetaRaw) != lifProtocolNodes {
+		t.Fatalf("theta_raw length = %d, want %d", len(got.Parameters.ThetaRaw), lifProtocolNodes)
+	}
+	for i, value := range got.Parameters.ThetaRaw {
+		if value != lifProtocolThetaRaw {
+			t.Fatalf("theta_raw[%d] = %.17g, want -2", i, value)
+		}
+	}
+
+	wantOptions := base.Options
+	wantOptions.Trainable.Tau = false
+	wantOptions.Trainable.Theta = true
+	if !reflect.DeepEqual(got.Options, wantOptions) {
+		t.Fatalf("options = %+v, want base options with Tau=false and Theta=true", got.Options)
+	}
+	if len(got.Optimizer.First) != lifProtocolStored || len(got.Optimizer.Second) != lifProtocolStored || len(got.Optimizer.Steps) != lifProtocolStored {
+		t.Fatalf("optimizer shape = %d/%d/%d, want 23620/23620/23620", len(got.Optimizer.First), len(got.Optimizer.Second), len(got.Optimizer.Steps))
+	}
+	for i := 0; i < lifProtocolStored; i++ {
+		if got.Optimizer.First[i] != 0 || got.Optimizer.Second[i] != 0 || got.Optimizer.Steps[i] != 0 {
+			t.Fatalf("optimizer entry %d = (%g,%g,%d), want all zero", i, got.Optimizer.First[i], got.Optimizer.Second[i], got.Optimizer.Steps[i])
+		}
+	}
+	stored, trainable := parameterCounts(got)
+	if stored != lifProtocolStored || trainable != lifProtocolTrainable {
+		t.Fatalf("parameterCounts = stored %d trainable %d, want 23620/23568", stored, trainable)
+	}
+
+	// Every array and topology slice in the result must be independently owned.
+	got.Parameters.Core.Weights[0]++
+	got.Parameters.Core.Bias[0]++
+	got.Parameters.Core.LogTau[0]++
+	got.Parameters.Encoder[0]++
+	got.Parameters.Readout[0]++
+	got.Parameters.ThetaRaw[0]++
+	got.Optimizer.First[0]++
+	got.Config.LIF.Sources[0]++
+	got.Config.LIF.Targets[0]++
+	got.Config.LIF.Delays[0]++
+	got.Config.InputNodes[0]++
+	got.Config.ReadoutNodes[0]++
+	if after := snapshotJSON(t, base); !bytes.Equal(after, baseBefore) {
+		t.Fatal("mutating the converted snapshot changed the original OCR snapshot")
+	}
+}
+
+func TestLIFFactoryRejectsNonFreshOrInvalidSnapshot(t *testing.T) {
+	tests := []struct {
+		name   string
+		mutate func(*learning.TrainingSnapshot)
+	}{
+		{name: "updates", mutate: func(s *learning.TrainingSnapshot) { s.Updates = 1 }},
+		{name: "parameter_shape", mutate: func(s *learning.TrainingSnapshot) {
+			s.Parameters.Core.Weights = append([]float64(nil), s.Parameters.Core.Weights[:len(s.Parameters.Core.Weights)-1]...)
+		}},
+		{name: "optimizer_shape", mutate: func(s *learning.TrainingSnapshot) {
+			s.Optimizer.First = append([]float64(nil), s.Optimizer.First[:len(s.Optimizer.First)-1]...)
+		}},
+		{name: "topology_shape", mutate: func(s *learning.TrainingSnapshot) {
+			s.Config.Dynamics.Sources = append([]int(nil), s.Config.Dynamics.Sources[:len(s.Config.Dynamics.Sources)-1]...)
+		}},
+		{name: "input_shape", mutate: func(s *learning.TrainingSnapshot) {
+			s.Config.InputNodes = append([]int(nil), s.Config.InputNodes[:len(s.Config.InputNodes)-1]...)
+		}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			base := publicSnapshot(t)
+			tc.mutate(&base)
+			before := snapshotJSON(t, base)
+			if _, err := makeLIFBase(base); err == nil {
+				t.Fatalf("makeLIFBase accepted malformed/non-fresh %s snapshot", tc.name)
+			}
+			if after := snapshotJSON(t, base); !bytes.Equal(after, before) {
+				t.Fatalf("makeLIFBase changed rejected %s snapshot", tc.name)
+			}
+		})
+	}
+}
+
+func existingLIFSnapshot(t *testing.T, base learning.TrainingSnapshot) learning.TrainingSnapshot {
+	t.Helper()
+	cfg := protocolLIFConfig(base)
+	model, err := dynamics.NewLIF(cfg)
+	if err != nil {
+		t.Fatalf("construct existing LIF fixture: %v", err)
+	}
+	cfg = model.Config()
+	base.Config.Dynamics = dynamics.Config{}
+	base.Config.LIF = &cfg
+	base.Config.Mixed = nil
+	base.Config.LIFIndex = nil
+	base.Parameters.ThetaRaw = repeatedFloats(lifProtocolNodes, lifProtocolThetaRaw)
+	base.Options.Trainable.Theta = true
+	base.Optimizer = zeroAdamState(lifProtocolStored)
+	if _, err := learning.RestoreTrainer(base); err != nil {
+		t.Fatalf("existing LIF fixture is not a valid training snapshot: %v", err)
+	}
+	return base
+}
+
+func existingMixedSnapshot(t *testing.T, base learning.TrainingSnapshot) learning.TrainingSnapshot {
+	t.Helper()
+	d := base.Config.Dynamics
+	mixed, err := dynamics.NewMixed(dynamics.MixedConfig{
+		Nodes:      d.Nodes,
+		Sources:    append([]int(nil), d.Sources...),
+		Targets:    append([]int(nil), d.Targets...),
+		Delays:     make([]int, len(d.Sources)),
+		DT:         d.DT,
+		NodeRule:   make([]uint8, d.Nodes),
+		Continuous: dynamics.ContinuousRule{Activation: d.Activation},
+	})
+	if err != nil {
+		t.Fatalf("construct existing mixed fixture: %v", err)
+	}
+	mixedConfig := mixed.Config()
+	base.Config.Dynamics = dynamics.Config{}
+	base.Config.LIF = nil
+	base.Config.Mixed = &mixedConfig
+	base.Config.LIFIndex = nil
+	if _, err := learning.RestoreTrainer(base); err != nil {
+		t.Fatalf("existing mixed fixture is not a valid training snapshot: %v", err)
+	}
+	return base
+}
+
+func TestLIFFactoryRejectsExistingCoreOrChemistry(t *testing.T) {
+	base := publicSnapshot(t)
+	chemistryTrainer, err := comparisonTrainer(base, "on")
+	if err != nil {
+		t.Fatalf("comparisonTrainer(on) for chemistry rejection: %v", err)
+	}
+
+	tests := []struct {
+		name string
+		snap learning.TrainingSnapshot
+	}{
+		{name: "lif", snap: existingLIFSnapshot(t, publicSnapshot(t))},
+		{name: "mixed", snap: existingMixedSnapshot(t, publicSnapshot(t))},
+		{name: "chemistry", snap: chemistryTrainer.Snapshot()},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			before := snapshotJSON(t, tc.snap)
+			if _, err := makeLIFBase(tc.snap); err == nil {
+				t.Fatalf("makeLIFBase accepted an existing %s declaration", tc.name)
+			}
+			if after := snapshotJSON(t, tc.snap); !bytes.Equal(after, before) {
+				t.Fatalf("makeLIFBase changed rejected existing %s snapshot", tc.name)
+			}
+		})
+	}
+}
+
+func TestParameterCountsFollowsTrainableGroupsAndMasks(t *testing.T) {
+	snapshot := learning.TrainingSnapshot{
+		Parameters: learning.Parameters{
+			Core: dynamics.Parameters{
+				Weights: []float64{1, 2, 3, 4},
+				Bias:    []float64{5, 6, 7},
+				LogTau:  []float64{8, 9, 10},
+			},
+			ThetaRaw: []float64{11, 12, 13},
+			Encoder:  []float64{14, 15},
+			Readout:  []float64{16, 17},
+		},
+		Options: learning.Options{
+			Trainable: learning.Trainable{Encoder: true, Weights: true, Bias: true, Theta: true, Readout: true},
+			Masks: &learning.UpdateMasks{
+				Edges: []bool{true, false, true, false},
+				Nodes: []bool{true, false, true},
+			},
+		},
+	}
+	if stored, trainable := parameterCounts(snapshot); stored != 17 || trainable != 10 {
+		t.Fatalf("masked counts = stored %d trainable %d, want 17/10", stored, trainable)
+	}
+
+	snapshot.Options.Trainable.Tau = true
+	snapshot.Options.Masks.Edges = []bool{true, true, true, true}
+	snapshot.Options.Masks.Nodes = []bool{true, true, true}
+	if stored, trainable := parameterCounts(snapshot); stored != 17 || trainable != 17 {
+		t.Fatalf("all-enabled counts = stored %d trainable %d, want 17/17", stored, trainable)
+	}
+
+	snapshot.Options.Trainable.Weights = false
+	snapshot.Options.Trainable.Theta = false
+	if stored, trainable := parameterCounts(snapshot); stored != 17 || trainable != 10 {
+		t.Fatalf("group-disabled counts = stored %d trainable %d, want 17/10", stored, trainable)
+	}
+}

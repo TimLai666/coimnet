@@ -1,0 +1,37 @@
+{
+  "reviewed_at": "2026-10-15T10:40:12.086015+00:00",
+  "scope": "CLEAN",
+  "reviewed_commits": [
+    "c877ab2",
+    "5be55c2"
+  ],
+  "primary_review": "Root read complete production diff, all new regression files, stream test relocation and index synchronization; checked actual build/race/full-suite receipts and preserved model/source hashes.",
+  "adversarial_review": {
+    "tool": "native subagent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "selection": "Project AGENTS.md explicitly requires this fallback after OpenCode fails; it takes precedence over generic review model preference.",
+    "opencode_models_exit_code": 1,
+    "opencode_error": "Unexpected error; Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+    "read_only": true,
+    "extra_go_execution": false,
+    "result": "No confirmed findings; no new investigation concerns within established diff."
+  },
+  "confirmed_findings": [],
+  "needs_investigation": [],
+  "checked_behaviors": [
+    "Unicode scalar validation shared by public constructors and persistence",
+    "ASR derived node/edge/class/encoder/readout sizes before allocation",
+    "dense reconstruction amplification guard retained",
+    "legal initialization and saved-state compatibility",
+    "stream guard preserved by internal invalid-state injection regression",
+    "frozen red tests fail before correction and green tests pass after correction",
+    "original test events preserved by both full suites"
+  ],
+  "limits": [
+    "Review is not proof of absence of all framework bugs.",
+    "Dimension validation covers integer and byte-size representability, not available physical memory.",
+    "32-bit runtime was not executed."
+  ],
+  "engineering": "formal-engineering-verification.json"
+}

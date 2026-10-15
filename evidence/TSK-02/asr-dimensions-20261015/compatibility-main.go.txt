@@ -1,0 +1,79 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/TimLai666/coimnet/tasks/asr"
+	"github.com/TimLai666/coimnet/tasks/asr/audio"
+)
+
+func check(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func digest(value any) string {
+	data, err := json.Marshal(value)
+	check(err)
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func main() {
+	ctx := context.Background()
+	mode, root := os.Args[1], os.Args[2]
+	if mode != "create" && mode != "restore" {
+		panic("invalid mode")
+	}
+	for _, size := range [][2]int{{1, 2}, {2, 2}, {4, 2}, {6, 8}} {
+		name := fmt.Sprintf("mels-%d-hidden-%d", size[0], size[1])
+		path := filepath.Join(root, name)
+		config := asr.RecognizerConfig{SampleRate: 16000, FrontEnd: audio.FrontEndConfig{Window: 16, Hop: 8, Mels: size[0], FMin: 0, FMax: 8000, Floor: 1e-10}, Hidden: size[1], Alphabet: []rune{'A', '\u03b2'}, LearningRate: .01, Seed: 7}
+		samples := make([]float64, 64)
+		for i := range samples {
+			samples[i] = float64((i*7)%17-8) / 8
+		}
+		var model *asr.Recognizer
+		var err error
+		result := map[string]any{"case": name}
+		if mode == "create" {
+			model, err = asr.NewRecognizer(config)
+			check(err)
+			result["initial_snapshot"] = digest(model.Snapshot())
+			reports := make([]asr.TrainReport, 0, 3)
+			for i := 0; i < 3; i++ {
+				report, err := model.TrainUtterance(ctx, samples, "A")
+				check(err)
+				if report.Impossible {
+					panic("control has no alignment")
+				}
+				reports = append(reports, report)
+			}
+			result["training_reports"] = digest(reports)
+			check(model.Save(ctx, path))
+		} else {
+			model, err = asr.LoadRecognizer(ctx, path)
+			check(err)
+		}
+		result["config"] = digest(model.Config())
+		result["trained_snapshot"] = digest(model.Snapshot())
+		prediction, err := model.Transcribe(ctx, samples)
+		check(err)
+		result["prediction"] = prediction
+		report, err := model.TrainUtterance(ctx, samples, "A")
+		check(err)
+		if report.Impossible {
+			panic("next update has no alignment")
+		}
+		result["next_report"] = digest(report)
+		result["next_snapshot"] = digest(model.Snapshot())
+		check(json.NewEncoder(os.Stdout).Encode(result))
+	}
+}

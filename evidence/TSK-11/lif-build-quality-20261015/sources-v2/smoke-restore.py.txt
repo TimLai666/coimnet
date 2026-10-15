@@ -1,0 +1,22 @@
+from pathlib import Path
+import json,subprocess,concurrent.futures
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/TSK-11/lif-build-quality-20261015';w=r/'runs/.tmp/lif-build-quality-20261015'
+def one(build,group):
+ name='smoke-'+build+'-'+group
+ receipt=e/(name+'.json')
+ assert receipt.exists() and json.loads(receipt.read_text())['exit_code']==0
+ cmd=['python3',str(w/'run.py'),name+'-restore-v2',str(w/(build+'-v2')),'-mode','restore','-group',group,'-data-dir',str(w/'data/kmnist'),'-model',str(w/'models'/name)]
+ p=subprocess.run(cmd,cwd=r,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+ assert p.returncode==0,p.stdout
+ def final(path):
+  a=[json.loads(line) for line in path.read_text().splitlines()]
+  return [x for x in a if x.get('event')=='final'][0]
+ a,b=final(e/(name+'.log')),final(e/(name+'-restore-v2.log'))
+ for key in ['after','confirmation','train','snapshot_sha256','next_update_sha256','parameters_sha256','optimizer_sha256','updates','final_activity']:
+  assert a[key]==b[key],(name,key)
+ assert a['updates']==1
+ return {'build':build,'group':group,'updates':1,'scores_and_full_state_and_next_update_exact':True,'snapshot_sha256':a['snapshot_sha256']}
+with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
+ futures=[pool.submit(one,b,g) for b in ['ordinary','race'] for g in ['off','on']]
+ results=[x.result() for x in futures]
+(e/'smoke-restore-equality.json').open('x').write(json.dumps(results,indent=2)+'\n');print(json.dumps(results))

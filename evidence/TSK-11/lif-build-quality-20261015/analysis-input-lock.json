@@ -1,0 +1,152 @@
+{
+  "legacy_data_commit": "b4b90034a84e4e965311555a2170e56173defb07",
+  "legacy_data_path": "evidence/TSK-11/build-quality-audit-20261015/data-copy.json",
+  "legacy_data_manifest_sha256": "7d990a7b506da01b0fd9c35662530849517ca5a25d1cf8a6d581c8840756a6dd",
+  "pinned_data_files": {
+    "kmnist_classmap.csv": {
+      "bytes": 151,
+      "sha256": "88ba4be4bd52d986ae100b425d5c28437c81829c87800c5832a2253edc758374"
+    },
+    "metadata.json": {
+      "bytes": 2331,
+      "sha256": "e5d19fcbf83240be5a73e6a4ef2b63e385a7e32ca802188aa0911fc05867b9c3"
+    },
+    "t10k-images-idx3-ubyte.gz": {
+      "bytes": 3041136,
+      "sha256": "edd7a857845ad6bb1d0ba43fe7e794d164fe2dce499a1694695a792adfac43c5"
+    },
+    "t10k-labels-idx1-ubyte.gz": {
+      "bytes": 5120,
+      "sha256": "20bb9a0ef54c7db3efc55a92eef5582c109615df22683c380526788f98e42a1c"
+    },
+    "train-images-idx3-ubyte.gz": {
+      "bytes": 18165135,
+      "sha256": "51467d22d8cc72929e2a028a0428f2086b092bb31cfb79c69cc0a90ce135fde4"
+    },
+    "train-labels-idx1-ubyte.gz": {
+      "bytes": 29497,
+      "sha256": "e38f9ebcd0f3ebcdec7fc8eabdcdaef93bb0df8ea12bee65224341c8183d8e17"
+    }
+  },
+  "files": {
+    "evidence/TSK-11/lif-build-quality-20261015/protocol.json": "4326e586219614ef74d3027f2e7ab871910f129f1c6d5a914188d2eba2aa0959",
+    "evidence/TSK-11/lif-build-quality-20261015/data-copy.json": "45bdf23ad95bd3025d8a7e7bb13af0d58b9c4d91a91be3a623ac8b97e5905629",
+    "evidence/TSK-11/lif-build-quality-20261015/source-before.json": "be4dd53a28c64684014263c25d02353d8a1eff52713e35a6bc5b78d0305193a9",
+    "evidence/TSK-11/lif-build-quality-20261015/protected-models.json": "9fb347bc0fcffe370236aba563431972a759cb161c7c733ad21f4ec93f3c8dd8",
+    "evidence/TSK-11/lif-build-quality-20261015/driver-freeze-v2.json": "34e55e95e70a026922b0012d45791b558972db6ec5e857009a3aaded3544671c"
+  },
+  "helper_files": {
+    "runs/.tmp/lif-build-quality-20261015/analysis.py": "c23be6242549a481c7a5837020780829748037123c91a326ddcf6772b68a4738",
+    "runs/.tmp/lif-build-quality-20261015/analysis_test.py": "8db86bacbee514d93a5073558f4e1c9d1613e04e57ad95cbbeb0c9eb54e8d416"
+  },
+  "checks": {
+    "driver-green-v2": {
+      "command": [
+        "go",
+        "test",
+        "./runs/.tmp/lif-build-quality-20261015/driver",
+        "-count=1",
+        "-v"
+      ],
+      "receipt_sha256": "db5c6f003a6dfc7ed6bd7e196c66098b4c593d94024d6ae4491a59a5a3ed6b39",
+      "log_sha256": "f4f98b74c8f44f1c5d25f7d90f5d373cc9c9b61aafb66c65d189884dbcbbeec9"
+    },
+    "driver-race-v2": {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "./runs/.tmp/lif-build-quality-20261015/driver",
+        "-count=1",
+        "-v"
+      ],
+      "receipt_sha256": "c9593e78a5bd2c32515fa7af95e2efb5965aee19ef6e5ba4da60746389a86a9d",
+      "log_sha256": "880d2bbf671135224b57458b83825756a5e127272630d8e969a25b99a9d9e121"
+    },
+    "driver-vet-v2": {
+      "command": [
+        "go",
+        "vet",
+        "./runs/.tmp/lif-build-quality-20261015/driver"
+      ],
+      "receipt_sha256": "3973c6ab49b6daae9f2bd1c653ba68502d1ad03fb845b4dbb41279c52dbde2d5",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "full-build": {
+      "command": [
+        "go",
+        "build",
+        "./..."
+      ],
+      "receipt_sha256": "b660ec9bdcd62c614b25121dfe8411113c0b8c16464605222c2a1136918f0661",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "full-unit-local": {
+      "command": [
+        "go",
+        "test",
+        "./...",
+        "-count=1",
+        "-json"
+      ],
+      "receipt_sha256": "a113d6d3b6cdfb41c2693c4cc77d771b55220d08215539d6d533b8a9f7745f37",
+      "log_sha256": "04b51808ed4794f595ac8d69acbfc4c44e6702dd3ba5affa5ac3cbd65ff3a07a"
+    },
+    "full-vet": {
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "receipt_sha256": "522aee4b1dd4e9a12996af27815d477f3d7f5865f3aeac3056828b0e48aa2b9a",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "module-verify": {
+      "command": [
+        "go",
+        "mod",
+        "verify"
+      ],
+      "receipt_sha256": "f917b03ad7e8097ad56f37f6fb58f55e1934e291c44df767ec3e7e1657109872",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd"
+    },
+    "sdk-ordinary-v2": {
+      "command": [
+        "runs/.tmp/lif-build-quality-20261015/ordinary-v2",
+        "-mode",
+        "check",
+        "-data-dir",
+        "runs/.tmp/lif-build-quality-20261015/data/kmnist"
+      ],
+      "receipt_sha256": "ef38f6c31cb618741f4dc46d079d33647b9e760858ca7e87b9f978d9baa8090b",
+      "log_sha256": "23c77dc0e2a18cfeb7bbe47b35b8e9a993bb64b396443c32d0675ed380ffb866"
+    },
+    "sdk-race-v2": {
+      "command": [
+        "runs/.tmp/lif-build-quality-20261015/race-v2",
+        "-mode",
+        "check",
+        "-data-dir",
+        "runs/.tmp/lif-build-quality-20261015/data/kmnist"
+      ],
+      "receipt_sha256": "178cb3ffbf2c8d2b25b81836f04b79555369daeb4aa4e967f902202f68eb7f1f",
+      "log_sha256": "c2634340b2a16bba40e0b24d6b43b56b3561ec9db0bd0b8b4bab8e8ef0f44595"
+    },
+    "analysis-green": {
+      "command": [
+        "python3",
+        "-B",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "runs/.tmp/lif-build-quality-20261015",
+        "-p",
+        "analysis_test.py",
+        "-v"
+      ],
+      "receipt_sha256": "d54f12eb40916685d5d605367e20b431376c0c8a7c792aa47310d0fe1b019237",
+      "log_sha256": "8569a2523b43328b5d7983e81b61175ce6a692f58e66bc7253f27aa4424d72d5"
+    }
+  }
+}

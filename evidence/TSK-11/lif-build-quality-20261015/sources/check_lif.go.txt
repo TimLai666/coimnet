@@ -1,0 +1,109 @@
+package main
+
+import (
+	"context"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+// The Recognizer is an input factory only. Every prediction/update uses LIF.
+func checkLIFSDK(ctx context.Context, base learning.TrainingSnapshot, m *ocr.Recognizer, samples []glyphs.Sample) {
+	off, e := comparisonTrainer(base, "off")
+	must(e)
+	neutral, e := comparisonTrainer(base, "neutral")
+	must(e)
+	on, e := comparisonTrainer(base, "on")
+	must(e)
+	activeOutputs, activeGradients := false, false
+	for _, s := range samples {
+		inputs, a := sampleLogits(ctx, off, m, s)
+		_, b := sampleLogits(ctx, neutral, m, s)
+		_, c := sampleLogits(ctx, on, m, s)
+		if digest(a) != digest(b) {
+			panic("neutral LIF outputs differ")
+		}
+		activeOutputs = activeOutputs || digest(a) != digest(c)
+		os, ns, cs := off.Snapshot(), neutral.Snapshot(), on.Snapshot()
+		network, err := learning.NewNetwork(os.Config)
+		must(err)
+		reference, err := network.PredictAll(ctx, os.Parameters, inputs)
+		must(err)
+		if digest(reference) != digest(a) {
+			panic("Network/Trainer LIF outputs differ")
+		}
+		_, g, err := comparisonLoss(a[1], classID(s.Text, m.Config().Alphabet))
+		must(err)
+		up := [][]float64{make([]float64, len(g)), g}
+		gradient, err := network.LossGradientFrom(ctx, os.Parameters, inputs, up, 0)
+		must(err)
+		nn, err := learning.NewNetwork(ns.Config)
+		must(err)
+		ng, err := nn.LossGradientFrom(ctx, ns.Parameters, inputs, up, 0)
+		must(err)
+		if digest(gradient) != digest(ng) {
+			panic("neutral LIF gradients differ")
+		}
+		cn, err := learning.NewNetwork(cs.Config)
+		must(err)
+		cg, err := cn.LossGradientFrom(ctx, cs.Parameters, inputs, up, 0)
+		must(err)
+		activeGradients = activeGradients || digest(gradient) != digest(cg)
+		for _, trainer := range []*learning.Trainer{off, neutral, on} {
+			result, err := trainer.StepFrom(ctx, inputs, up)
+			must(err)
+			if !result.Applied || result.LossKnown || result.Loss != 0 {
+				panic("StepFrom external-objective contract")
+			}
+		}
+		o, n := off.Snapshot(), neutral.Snapshot()
+		n.Config = o.Config
+		if !reflect.DeepEqual(n, o) {
+			panic("neutral LIF parameters/optimizer/update differ")
+		}
+	}
+	if digest(base) != digest(func() learning.TrainingSnapshot {
+		t, err := learning.RestoreTrainer(base)
+		must(err)
+		return t.Snapshot()
+	}()) {
+		panic("LIF base restore changed snapshot")
+	}
+	emit(map[string]any{"event": "SDK-equivalence", "core": "lif", "samples": len(samples), "network_trainer_exact": true, "neutral_outputs_gradients_updates_exact": true, "external_loss_contract": true, "active_outputs_differ": activeOutputs, "active_gradients_differ": activeGradients})
+}
+
+func spikeActivity(ctx context.Context, tr *learning.Trainer, m *ocr.Recognizer, samples []glyphs.Sample) map[string]any {
+	before := digest(tr.Snapshot())
+	spikes, hidden, slots, hiddenSlots := 0, 0, 0, 0
+	for _, sample := range samples {
+		input, err := m.Inputs(sample.Image)
+		must(err)
+		rows, err := tr.Spikes(ctx, input)
+		must(err)
+		if len(rows) != 2 {
+			panic("LIF spike rows")
+		}
+		for _, row := range rows {
+			if len(row) != 52 {
+				panic("LIF spike width")
+			}
+			for i, v := range row {
+				if v != 0 && v != 1 {
+					panic("non-binary LIF spike")
+				}
+				slots++
+				spikes += int(v)
+				if i >= 28 {
+					hiddenSlots++
+					hidden += int(v)
+				}
+			}
+		}
+	}
+	if digest(tr.Snapshot()) != before {
+		panic("Spikes advanced training state")
+	}
+	return map[string]any{"training_images": len(samples), "spikes": spikes, "slots": slots, "hidden_spikes": hidden, "hidden_slots": hiddenSlots}
+}

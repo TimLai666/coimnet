@@ -1,0 +1,20 @@
+test_data_copy_mutation_rejected_by_pinned_input_lock (aggregate_gate_test.AggregateGateTests) ... FAIL
+test_input_lock_tampering_rejected_before_any_downstream_gate (aggregate_gate_test.AggregateGateTests) ... ok
+test_missing_sdk_event_rejected_even_with_zero_exit_receipt (aggregate_gate_test.AggregateGateTests) ... ok
+test_training_completion_count_zero_rejected (aggregate_gate_test.AggregateGateTests) ... ok
+test_training_completion_duplicate_arm_rejected (aggregate_gate_test.AggregateGateTests) ... ok
+
+======================================================================
+FAIL: test_data_copy_mutation_rejected_by_pinned_input_lock (aggregate_gate_test.AggregateGateTests)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/aggregate_gate_test.py", line 175, in test_data_copy_mutation_rejected_by_pinned_input_lock
+    self._assert_early_rejection(fixture)
+  File "/Users/timlai/Developer/coimnet/runs/.tmp/lif-build-quality-20261015/aggregate_gate_test.py", line 131, in _assert_early_rejection
+    self.assertEqual(fixture['go_suite'].call_count, 0,
+AssertionError: 1 != 0 : input gate must reject before complete Go suites
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.033s
+
+FAILED (failures=1)

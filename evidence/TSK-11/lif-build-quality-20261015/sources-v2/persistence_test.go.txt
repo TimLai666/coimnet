@@ -1,0 +1,61 @@
+package main
+
+import (
+	"context"
+	"path/filepath"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func TestLIFChemistryNodesAndBundleContinuation(t *testing.T) {
+	for _, group := range []string{"off", "neutral", "on"} {
+		t.Run(group, func(t *testing.T) {
+			base, err := makeLIFBase(publicSnapshot(t))
+			if err != nil {
+				t.Fatal(err)
+			}
+			tr, err := comparisonTrainer(base, group)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if group != "off" {
+				c := tr.Snapshot().Config.Chemistry.Part.Config
+				if len(c.Regions.NodeRegion) != 52 || c.Sources[0].Controller.Nodes != 52 || !reflect.DeepEqual(c.Receptors.Records[0].Cells, base.Config.ReadoutNodes) {
+					t.Fatal("LIF chemical node/receptor mapping differs from protocol")
+				}
+			}
+			inputs, upstream := comparisonProbe(11)
+			if _, err := tr.StepFrom(context.Background(), inputs, upstream); err != nil {
+				t.Fatal(err)
+			}
+			sn := tr.Snapshot()
+			path := filepath.Join(t.TempDir(), "model")
+			if err := checkpoint.SaveTrainingBundle(context.Background(), path, sn); err != nil {
+				t.Fatal(err)
+			}
+			loaded, err := checkpoint.LoadTrainingBundle(context.Background(), path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			restored, err := learning.RestoreTrainer(loaded)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if digest(sn) != digest(restored.Snapshot()) {
+				t.Fatal("public trainer canonical restore differs")
+			}
+			if _, err := tr.StepFrom(context.Background(), inputs, upstream); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := restored.StepFrom(context.Background(), inputs, upstream); err != nil {
+				t.Fatal(err)
+			}
+			if digest(tr.Snapshot()) != digest(restored.Snapshot()) {
+				t.Fatal("bundle next update differs")
+			}
+		})
+	}
+}

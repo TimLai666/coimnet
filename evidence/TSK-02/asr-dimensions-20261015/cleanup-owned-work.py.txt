@@ -1,0 +1,147 @@
+from pathlib import Path
+import datetime, gzip, hashlib, json, os, shutil, subprocess, sys, tarfile
+
+root = Path('/Users/timlai/Developer/coimnet')
+e108 = root / 'evidence/TSK-02/asr-dimensions-20261015'
+jobs = {
+    '104': ('lif-build-quality-20261015', 55399790, 'TSK-11/lif-build-quality-20261015'),
+    '107': ('recognizer-unicode-20261015', 55632307, 'TSK-01/recognizer-unicode-20261015'),
+    '108': ('asr-dimensions-20261015', 55651638, 'TSK-02/asr-dimensions-20261015'),
+}
+protected = {'62': 49680181, 'real-task-quality-20261012': 50419696}
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+read = lambda path: json.loads(path.read_text())
+
+
+def verify(path, item):
+    assert path.is_file() and not path.is_symlink(), path
+    raw = path.read_bytes()
+    assert len(raw) == item['bytes'] and sha(raw) == item['sha256'], path
+
+
+def gate():
+    sources = read(e108 / 'formal-source-108.json')
+    assert len(sources) == 820
+    for path, digest in sources.items():
+        assert sha((root / path).read_bytes()) == digest, path
+    e104 = root / 'evidence/TSK-11/lif-build-quality-20261015'
+    models = read(e104 / 'protected-models.json')
+    assert len(models) == 18
+    for path, digest in models.items():
+        assert sha((root / path).read_bytes()) == digest, path
+    for path, item in read(e104 / 'data-preservation.json')['files'].items():
+        verify(root / path, item)
+    for name, inode in protected.items():
+        p = root / 'runs/.tmp' / name
+        assert not p.is_symlink() and p.stat().st_ino == inode, p
+
+
+def inventory(directory):
+    result = {}
+    for current, dirs, files in os.walk(directory, followlinks=False):
+        for name in dirs + files:
+            path = Path(current) / name
+            key = str(path.relative_to(directory))
+            if path.is_symlink():
+                result[key] = {'symlink': os.readlink(path)}
+            elif path.is_file():
+                raw = path.read_bytes()
+                result[key] = {'bytes': len(raw), 'sha256': sha(raw)}
+    return result
+
+
+def preserve_check(key):
+    name, inode, evidence = jobs[key]
+    work = root / 'runs/.tmp' / name
+    assert not work.is_symlink() and work.stat().st_ino == inode
+    evidence = root / 'evidence' / evidence
+    receipt = read(evidence / 'work-preservation.json')
+    accounted = set()
+    if key == '104':
+        for item in receipt['remaining_noncached_files']:
+            verify(work / item['path'], item)
+            verify(evidence / item['archive'], item)
+            accounted.add(item['path'])
+        binaries = receipt['regenerable_binaries_not_archived']
+        for archive in read(evidence / 'model-preservation.json')['archives']:
+            packed = evidence / archive['archive']
+            assert packed.stat().st_size == archive['compressed_bytes']
+            assert sha(packed.read_bytes()) == archive['sha256']
+            with tarfile.open(packed, 'r:gz') as handle:
+                assert sorted(handle.getnames()) == sorted(archive['members'])
+                for path, item in archive['members'].items():
+                    raw = handle.extractfile(path).read()
+                    assert len(raw) == item['bytes'] and sha(raw) == item['sha256']
+                    verify(work / 'models' / path, item)
+                    accounted.add('models/' + path)
+        for path, item in read(evidence / 'data-preservation.json')['files'].items():
+            relative = 'data/kmnist/' + Path(path).name
+            verify(work / relative, item)
+            accounted.add(relative)
+    else:
+        for item in receipt['files']:
+            verify(work / item['source'], item)
+            verify(root / item['archive'], item)
+            accounted.add(item['source'])
+        binaries = receipt['regenerable_executables']
+    for item in binaries:
+        path = item.get('path', item.get('source'))
+        verify(work / path, item)
+        accounted.add(path)
+    actual = inventory(work)
+    for path in actual:
+        if path.split('/')[0] not in ['go-cache', 'go-mod-cache', 'go-tmp']:
+            assert path in accounted, ('unpreserved work', key, path)
+    return work, evidence, actual
+
+
+def remove_readonly(function, path, error):
+    target = Path(path)
+    assert not target.is_symlink() and root / 'runs/.tmp' in target.parents
+    os.chmod(target, target.stat().st_mode | 0o700)
+    function(path)
+
+
+gate()
+mode = sys.argv[1]
+assert mode in ['preflight', 'clean104107', 'clean108']
+if mode != 'preflight':
+    assert read(e108 / 'formal-engineering-verification.json')['all_passed']
+    if mode == 'clean108':
+        assert read(e108 / 'final-governance-postcache-cleanup.json')['exit_code'] == 0
+        assert not (root / 'runs/.tmp' / jobs['104'][0]).exists()
+        assert not (root / 'runs/.tmp' / jobs['107'][0]).exists()
+before_protected = {name: inventory(root / 'runs/.tmp' / name) for name in protected}
+keys = ['104', '107', '108'] if mode == 'preflight' else (['104', '107'] if mode == 'clean104107' else ['108'])
+for key in keys:
+    work, evidence, contents = preserve_check(key)
+    byte_count = sum(x.get('bytes', 0) for x in contents.values())
+    print(json.dumps({'ticket': key, 'mode': mode, 'entries': len(contents), 'bytes': byte_count}), flush=True)
+    if mode == 'preflight':
+        continue
+    handles = subprocess.run(['lsof', '-t', '+D', str(work)], capture_output=True)
+    assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+    assert inventory(work) == contents, 'owned contents changed before cleanup'
+    gate()
+    archive_name = 'cleanup-inventory.json.gz'
+    packed = gzip.compress(json.dumps(contents, sort_keys=True).encode(), compresslevel=9, mtime=0)
+    with (evidence / archive_name).open('xb') as handle:
+        handle.write(packed)
+    assert json.loads(gzip.decompress((evidence / archive_name).read_bytes())) == contents
+    assert work.stat().st_ino == jobs[key][1]
+    shutil.rmtree(work, onerror=remove_readonly)
+    assert not work.exists()
+    gate()
+    assert before_protected == {name: inventory(root / 'runs/.tmp' / name) for name in protected}
+    result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+              'owned_directory': str(work.relative_to(root)), 'owned_inode': jobs[key][1],
+              'removed_entries': len(contents), 'removed_bytes': byte_count,
+              'inventory_archive': archive_name, 'inventory_archive_sha256': sha(packed),
+              'no_open_handles': True, 'necessary_files_preserved': True,
+              'source_entries_preserved': 820, 'original_model_files_preserved': 18,
+              'persistent_data_files_preserved': 6, 'protected_temporary_roots_preserved': list(protected),
+              'directory_removed': True}
+    with (evidence / 'cleanup.json').open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+gate()

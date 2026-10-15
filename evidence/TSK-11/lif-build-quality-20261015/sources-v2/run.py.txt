@@ -1,0 +1,10 @@
+from pathlib import Path
+import os,json,subprocess,sys,time
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/TSK-11/lif-build-quality-20261015';w=r/'runs/.tmp/lif-build-quality-20261015'
+env=os.environ.copy();env.update(json.loads((e/'cache-preparation.json').read_text())['go_environment'])
+name=sys.argv[1];cmd=sys.argv[2:];start=time.time()
+with (e/(name+'.log')).open('xb') as out:
+ p=subprocess.run(cmd,cwd=r,env=env,stdout=out,stderr=subprocess.STDOUT)
+receipt={'command':cmd,'exit_code':p.returncode,'seconds':time.time()-start,'environment':{k:env[k] for k in ['GOCACHE','GOMODCACHE','GOTMPDIR','TMPDIR','GOPROXY','GOSUMDB','GOTOOLCHAIN','GOMAXPROCS','GOFLAGS']}}
+(e/(name+'.json')).open('x').write(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps({'name':name,'exit_code':p.returncode,'seconds':receipt['seconds']}));sys.exit(p.returncode)

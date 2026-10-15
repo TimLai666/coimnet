@@ -1,0 +1,40 @@
+from pathlib import Path
+import collections,datetime,gzip,hashlib,json,os,subprocess,time
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/recognizer-unicode-20261015';e=r/'evidence/TSK-01/recognizer-unicode-20261015';reference=r/'evidence/OPS-03/operational-temp-paths-20261015/full-unit-final-local.log.gz';source=json.loads((reference.parent/'go-source-final.json').read_text());tests=json.loads((e/'regression-freeze.json').read_text())['tests'];candidate=json.loads((e/'candidate-freeze.json').read_text())['source_files'];env=os.environ.copy();env.update(json.loads((e/'command-environment.json').read_text()));packages={'github.com/TimLai666/coimnet/tasks/ocr','github.com/TimLai666/coimnet/tasks/asr'}
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+ for p,h in source.items():assert sha(r/p)==h,p
+ for p,v in tests.items():assert sha(w/'tests'/p)==v['sha256'],p
+ for p,h in candidate.items():assert sha(w/'candidate'/p)==h,p
+ assert w.stat().st_ino==55632307
+baseline={}
+for line in gzip.decompress(reference.read_bytes()).splitlines():
+ try:v=json.loads(line)
+ except json.JSONDecodeError:continue
+ if v.get('Package') in packages and v.get('Test') and v.get('Action') in ['pass','skip','fail']:
+  key=(v['Package'],v['Test']);assert key not in baseline,key;baseline[key]=v['Action']
+assert baseline and 'fail' not in baseline.values()
+with (e/'candidate-existing-test-baseline.json').open('x') as f:json.dump({'reference_log':str(reference.relative_to(r)),'reference_gzip_sha256':sha(reference),'events':[{'package':p,'test':t,'action':a} for (p,t),a in sorted(baseline.items())]},f,indent=2);f.write('\n')
+results=[]
+for label,flags in [('ordinary',[]),('race',['-race'])]:
+ gate();cmd=['go','test',*flags,'-overlay',str(w/'green-overlay.json'),'-json','-count=1','./tasks/ocr','./tasks/asr'];name='candidate-full-packages-'+label;start=time.monotonic()
+ with (e/(name+'.log')).open('x') as f:code=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT).returncode
+ gate();terminal={};package_terminal={}
+ for line in (e/(name+'.log')).read_text().splitlines():
+  try:v=json.loads(line)
+  except json.JSONDecodeError:continue
+  if v.get('Package') not in packages:continue
+  if v.get('Test') and v.get('Action') in ['pass','skip','fail']:
+   key=(v['Package'],v['Test']);assert key not in terminal,key;terminal[key]=v['Action']
+  elif not v.get('Test') and v.get('Action') in ['pass','skip','fail']:package_terminal[v['Package']]=v['Action']
+ counts=collections.Counter(terminal.values());assert code==0 and not counts['fail'],(code,counts)
+ assert package_terminal=={p:'pass' for p in packages},package_terminal
+ for key,action in baseline.items():assert terminal.get(key)==action,(label,'existing test changed/missing',key,action,terminal.get(key))
+ added={k:a for k,a in terminal.items() if k not in baseline};assert len(added)==34 and all(a=='pass' and k[1].startswith('TestRecognizerAlphabetUnicodeScalar') for k,a in added.items()),added
+ required=['TestRecognizerPersistenceRoundTripAndSubprocessResume','TestRecognizerPersistenceDoesNotOverwriteExistingDestination','TestRecognizerPersistenceRejectsMalformedAndSemanticVariants','TestNewStreamRejectsInvalidAlphabetRune']
+ for name_required in required:
+  found=[k for k,a in terminal.items() if k[1]==name_required and a=='pass'];assert len(found)==(1 if name_required.startswith('TestNewStream') else 2),(label,name_required,found)
+ result={'command':cmd,'exit_code':code,'seconds':time.monotonic()-start,'test_events':dict(counts),'package_passes':len(package_terminal),'existing_events_preserved':len(baseline),'new_unicode_test_events_passed':len(added),'existing_trained_save_resume_controls_passed':True,'log':name+'.log','log_sha256':sha(e/(name+'.log'))}
+ with (e/(name+'.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ results.append(result);print(json.dumps(result),flush=True)
+with (e/'candidate-full-packages-verification.json').open('x') as f:json.dump({'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'results':results,'baseline':'candidate-existing-test-baseline.json','source_count':815,'formal_source_unchanged':True,'candidate_and_regression_hashes_preserved':True,'formal_adoption_pending':True,'scope':'Complete OCR and ASR package tests under private overlay; not a full-framework final engineering acceptance or task-quality study.'},f,indent=2);f.write('\n')

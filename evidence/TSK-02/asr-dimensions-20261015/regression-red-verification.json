@@ -1,0 +1,58 @@
+{
+  "verified_at": "2026-10-15T09:24:48.818201+00:00",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/asr-dimensions-20261015/red-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestRecognizerDimensionRepresentability$",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "seconds": 3.551572875,
+      "test_events": {
+        "fail": 12,
+        "pass": 5
+      },
+      "invalid_subcases": 11,
+      "legal_subcases": 5,
+      "actual_test_events_checked": true,
+      "log": "regression-red-ordinary.log",
+      "log_sha256": "dce3bccca91074d0bf5b0b412dd45e239ffcd82470b5113ae3aaecc6e0dbcffc"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/asr-dimensions-20261015/red-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestRecognizerDimensionRepresentability$",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "seconds": 3.319404541,
+      "test_events": {
+        "fail": 12,
+        "pass": 5
+      },
+      "invalid_subcases": 11,
+      "legal_subcases": 5,
+      "actual_test_events_checked": true,
+      "log": "regression-red-race.log",
+      "log_sha256": "226a8202eeb31cf7042ec23a3a9e66514966293d5c9dde061fcf8595ff9617af"
+    }
+  ],
+  "formal_source_count": 815,
+  "formal_sources_unchanged": true,
+  "frozen_tests_unchanged": true,
+  "original107_candidate_unchanged": true
+}

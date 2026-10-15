@@ -1,0 +1,467 @@
+{
+  "verified_at": "2026-10-15T08:45:17.954723+00:00",
+  "results": [
+    {
+      "name": "candidate-public-probe-v2",
+      "command": [
+        "go",
+        "run",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/main.go",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/candidate-models",
+        "probe"
+      ],
+      "exit_code": 0,
+      "seconds": 1.8107627499999999,
+      "rows": 18,
+      "log": "candidate-public-probe-v2.log",
+      "log_sha256": "14efe2c31070579e62e42c1faa1411f21bcaddede65aa69ed735adb4036fd925"
+    },
+    {
+      "name": "candidate-restore-old",
+      "command": [
+        "go",
+        "run",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/main.go",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/models",
+        "restore"
+      ],
+      "exit_code": 0,
+      "seconds": 0.4585529580000003,
+      "rows": 8,
+      "log": "candidate-restore-old.log",
+      "log_sha256": "c779116c30db2a47e52a99d7973161de08ebe227fe4c29719da2ae4cce084331"
+    },
+    {
+      "name": "candidate-restore-new",
+      "command": [
+        "go",
+        "run",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/main.go",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/candidate-models",
+        "restore"
+      ],
+      "exit_code": 0,
+      "seconds": 0.4299336250000003,
+      "rows": 8,
+      "log": "candidate-restore-new.log",
+      "log_sha256": "c779116c30db2a47e52a99d7973161de08ebe227fe4c29719da2ae4cce084331"
+    },
+    {
+      "name": "candidate-race-restore-old",
+      "command": [
+        "go",
+        "run",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/green-overlay.json",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/main.go",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/models",
+        "restore"
+      ],
+      "exit_code": 0,
+      "seconds": 5.00246975,
+      "rows": 8,
+      "log": "candidate-race-restore-old.log",
+      "log_sha256": "c779116c30db2a47e52a99d7973161de08ebe227fe4c29719da2ae4cce084331"
+    }
+  ],
+  "observations": {
+    "candidate-public-probe-v2": [
+      {
+        "case": "negative",
+        "constructor_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": -1,
+        "saved_path_exists": false,
+        "task": "ocr",
+        "valid_scalar": false,
+        "validate_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "negative",
+        "constructor_error": "asr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": -1,
+        "saved_path_exists": false,
+        "task": "asr",
+        "valid_scalar": false,
+        "validate_error": "asr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "surrogate-high",
+        "constructor_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 55296,
+        "saved_path_exists": false,
+        "task": "ocr",
+        "valid_scalar": false,
+        "validate_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "surrogate-high",
+        "constructor_error": "asr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 55296,
+        "saved_path_exists": false,
+        "task": "asr",
+        "valid_scalar": false,
+        "validate_error": "asr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "surrogate-low",
+        "constructor_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 57343,
+        "saved_path_exists": false,
+        "task": "ocr",
+        "valid_scalar": false,
+        "validate_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "surrogate-low",
+        "constructor_error": "asr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 57343,
+        "saved_path_exists": false,
+        "task": "asr",
+        "valid_scalar": false,
+        "validate_error": "asr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "above-max",
+        "constructor_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 1114112,
+        "saved_path_exists": false,
+        "task": "ocr",
+        "valid_scalar": false,
+        "validate_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "above-max",
+        "constructor_error": "asr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 1114112,
+        "saved_path_exists": false,
+        "task": "asr",
+        "valid_scalar": false,
+        "validate_error": "asr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "int32-max",
+        "constructor_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 2147483647,
+        "saved_path_exists": false,
+        "task": "ocr",
+        "valid_scalar": false,
+        "validate_error": "ocr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "int32-max",
+        "constructor_error": "asr: alphabet rune at position 0 is not a Unicode scalar value",
+        "mode": "probe",
+        "rune": 2147483647,
+        "saved_path_exists": false,
+        "task": "asr",
+        "valid_scalar": false,
+        "validate_error": "asr: alphabet rune at position 0 is not a Unicode scalar value"
+      },
+      {
+        "case": "ascii",
+        "config_sha256": "7864731784922121c187063c19fbbf762539006d6decf97c67ea0ddb67dbf3de",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 65,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "ascii",
+        "config_sha256": "e0e3a601b2ce149c2698ca12414bf8c6fd13a062ffa2c1ec44a597da92bfaa6c",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 65,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "nul",
+        "config_sha256": "64339bb1eed494da8c7fa99818e0ce3cfddb92f3a8058ed7d19e72bcf4648fbd",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 0,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "nul",
+        "config_sha256": "498a485ff3685194f691d56ffa5b3fb737aa03328b24e7ca41eb706d754fa9db",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 0,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "6100b4823cb743140e819ec908fd0fb5eb875ec4b768803e43f3b9def088decb",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 65533,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "27728cfbc38ee13bab5ce8f37ce11a19211ae18bf71af628d040e17f27e5e7c4",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 65533,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "46aa8af5cb9c71b87bf4c7a1cce8dde2b2878e8f5b8e0c4b42c3cf8192900e62",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 1114111,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr",
+        "valid_scalar": true,
+        "validate_error": ""
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "6ec9641538888a2e9363a7657c873b7ded92371ea547750d8a3f91ba13c9e73a",
+        "constructor_error": "",
+        "mode": "probe",
+        "rune": 1114111,
+        "save_error": "",
+        "saved_path_exists": true,
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr",
+        "valid_scalar": true,
+        "validate_error": ""
+      }
+    ],
+    "candidate-restore-old": [
+      {
+        "case": "ascii",
+        "config_sha256": "7864731784922121c187063c19fbbf762539006d6decf97c67ea0ddb67dbf3de",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "ascii",
+        "config_sha256": "e0e3a601b2ce149c2698ca12414bf8c6fd13a062ffa2c1ec44a597da92bfaa6c",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "64339bb1eed494da8c7fa99818e0ce3cfddb92f3a8058ed7d19e72bcf4648fbd",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "498a485ff3685194f691d56ffa5b3fb737aa03328b24e7ca41eb706d754fa9db",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "6100b4823cb743140e819ec908fd0fb5eb875ec4b768803e43f3b9def088decb",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "27728cfbc38ee13bab5ce8f37ce11a19211ae18bf71af628d040e17f27e5e7c4",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "46aa8af5cb9c71b87bf4c7a1cce8dde2b2878e8f5b8e0c4b42c3cf8192900e62",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "6ec9641538888a2e9363a7657c873b7ded92371ea547750d8a3f91ba13c9e73a",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      }
+    ],
+    "candidate-restore-new": [
+      {
+        "case": "ascii",
+        "config_sha256": "7864731784922121c187063c19fbbf762539006d6decf97c67ea0ddb67dbf3de",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "ascii",
+        "config_sha256": "e0e3a601b2ce149c2698ca12414bf8c6fd13a062ffa2c1ec44a597da92bfaa6c",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "64339bb1eed494da8c7fa99818e0ce3cfddb92f3a8058ed7d19e72bcf4648fbd",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "498a485ff3685194f691d56ffa5b3fb737aa03328b24e7ca41eb706d754fa9db",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "6100b4823cb743140e819ec908fd0fb5eb875ec4b768803e43f3b9def088decb",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "27728cfbc38ee13bab5ce8f37ce11a19211ae18bf71af628d040e17f27e5e7c4",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "46aa8af5cb9c71b87bf4c7a1cce8dde2b2878e8f5b8e0c4b42c3cf8192900e62",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "6ec9641538888a2e9363a7657c873b7ded92371ea547750d8a3f91ba13c9e73a",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      }
+    ],
+    "candidate-race-restore-old": [
+      {
+        "case": "ascii",
+        "config_sha256": "7864731784922121c187063c19fbbf762539006d6decf97c67ea0ddb67dbf3de",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "ascii",
+        "config_sha256": "e0e3a601b2ce149c2698ca12414bf8c6fd13a062ffa2c1ec44a597da92bfaa6c",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "64339bb1eed494da8c7fa99818e0ce3cfddb92f3a8058ed7d19e72bcf4648fbd",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "nul",
+        "config_sha256": "498a485ff3685194f691d56ffa5b3fb737aa03328b24e7ca41eb706d754fa9db",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "6100b4823cb743140e819ec908fd0fb5eb875ec4b768803e43f3b9def088decb",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "replacement",
+        "config_sha256": "27728cfbc38ee13bab5ce8f37ce11a19211ae18bf71af628d040e17f27e5e7c4",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "46aa8af5cb9c71b87bf4c7a1cce8dde2b2878e8f5b8e0c4b42c3cf8192900e62",
+        "mode": "restore",
+        "snapshot_sha256": "c653bde52d6c73960c11d980c597b18c167e625ec37bef02daaded5bd26b2422",
+        "task": "ocr"
+      },
+      {
+        "case": "max-scalar",
+        "config_sha256": "6ec9641538888a2e9363a7657c873b7ded92371ea547750d8a3f91ba13c9e73a",
+        "mode": "restore",
+        "snapshot_sha256": "2259378a7b610366973cfba324781157b7826228a0fab19f9676a390be814d67",
+        "task": "asr"
+      }
+    ]
+  },
+  "invalid_constructor_cases_refused": 10,
+  "valid_config_and_initial_snapshot_cases_equal": 8,
+  "old_saved_models_loaded_new_processes": {
+    "ordinary": 8,
+    "race": 8
+  },
+  "new_saved_models_loaded_new_process": 8,
+  "old_models_bytes_unchanged": true,
+  "original_18_models_unchanged": true,
+  "formal_815_source_fingerprints_preserved": true,
+  "limitation": "Small initialization fixtures establish constructor and persistence compatibility, not task quality or training convergence."
+}

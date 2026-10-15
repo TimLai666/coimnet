@@ -1,0 +1,46 @@
+{
+  "verified_at": "2026-10-15T09:01:48.739178+00:00",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/stream-guard-negative-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestNewStreamRejectsInvalidAlphabetRune$",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "expected_guard_test_fail_events": 1,
+      "actual_test_executed": true,
+      "log": "stream-guard-negative-ordinary.log",
+      "log_sha256": "f437ce996fa1159201852950e583675df5fbe551bb6b7e0501b071e3a9053305"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/recognizer-unicode-20261015/stream-guard-negative-overlay.json",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestNewStreamRejectsInvalidAlphabetRune$",
+        "./tasks/asr"
+      ],
+      "exit_code": 1,
+      "expected_guard_test_fail_events": 1,
+      "actual_test_executed": true,
+      "log": "stream-guard-negative-race.log",
+      "log_sha256": "72660dfeae3936a8bfcb4d3048bda3ff28d090ec988a0a498aec4e8d8199d97c"
+    }
+  ],
+  "mutation": "Remove only NewStream alphabet guard in a separate private overlay; frozen test and normal candidate unchanged",
+  "semantic_guard_coverage_proven": true,
+  "formal_sources_unchanged": true,
+  "fixture_size_change_accepted_by_root": true
+}

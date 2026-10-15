@@ -1,0 +1,226 @@
+{
+  "task": "TSK-11 LIF build quality training-data review",
+  "date": "2026-10-15",
+  "observation_scope": {
+    "training_images_only": true,
+    "training_selected_images": 6000,
+    "test_pixel_eda_performed": false,
+    "test_scores_computed": false,
+    "method": "Python standard library only: csv, gzip, hashlib, json, math, struct",
+    "test_image_distribution_eda": false
+  },
+  "sources": {
+    "raw_data_dir": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist",
+    "metadata_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/metadata.json",
+    "classmap_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/kmnist_classmap.csv",
+    "data_copy_manifest": "evidence/TSK-11/build-quality-audit-20261015/data-copy.json",
+    "loader_source": "evidence/TSK-11/chemical-quality-20261013/sources/main.go.txt",
+    "protocol": "evidence/TSK-11/build-quality-audit-20261015/protocol.json",
+    "dataset": "Kuzushiji-MNIST",
+    "repository_url": "https://github.com/rois-codh/kmnist",
+    "dataset_url": "https://codh.rois.ac.jp/kmnist/",
+    "license": {
+      "name": "CC BY-SA 4.0",
+      "url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "attribution": "KMNIST Dataset (created by CODH), adapted from Kuzushiji Dataset (created by NIJL and others), doi:10.20676/00000341"
+    },
+    "metadata_sha256": "e5d19fcbf83240be5a73e6a4ef2b63e385a7e32ca802188aa0911fc05867b9c3",
+    "classmap_sha256": "88ba4be4bd52d986ae100b425d5c28437c81829c87800c5832a2253edc758374"
+  },
+  "files": [
+    {
+      "name": "train-images-idx3-ubyte.gz",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/train-images-idx3-ubyte.gz",
+      "bytes": 18165135,
+      "sha256": "51467d22d8cc72929e2a028a0428f2086b092bb31cfb79c69cc0a90ce135fde4",
+      "matches_data_copy": true,
+      "matches_metadata": true
+    },
+    {
+      "name": "train-labels-idx1-ubyte.gz",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/train-labels-idx1-ubyte.gz",
+      "bytes": 29497,
+      "sha256": "e38f9ebcd0f3ebcdec7fc8eabdcdaef93bb0df8ea12bee65224341c8183d8e17",
+      "matches_data_copy": true,
+      "matches_metadata": true
+    },
+    {
+      "name": "t10k-images-idx3-ubyte.gz",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/t10k-images-idx3-ubyte.gz",
+      "bytes": 3041136,
+      "sha256": "edd7a857845ad6bb1d0ba43fe7e794d164fe2dce499a1694695a792adfac43c5",
+      "matches_data_copy": true,
+      "matches_metadata": true
+    },
+    {
+      "name": "t10k-labels-idx1-ubyte.gz",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/t10k-labels-idx1-ubyte.gz",
+      "bytes": 5120,
+      "sha256": "20bb9a0ef54c7db3efc55a92eef5582c109615df22683c380526788f98e42a1c",
+      "matches_data_copy": true,
+      "matches_metadata": true
+    },
+    {
+      "name": "kmnist_classmap.csv",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/kmnist_classmap.csv",
+      "bytes": 151,
+      "sha256": "88ba4be4bd52d986ae100b425d5c28437c81829c87800c5832a2253edc758374",
+      "matches_data_copy": true,
+      "matches_metadata": true
+    },
+    {
+      "name": "metadata.json",
+      "source_path": "/Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist/metadata.json",
+      "bytes": 2331,
+      "sha256": "e5d19fcbf83240be5a73e6a4ef2b63e385a7e32ca802188aa0911fc05867b9c3",
+      "matches_data_copy": true,
+      "matches_metadata": null
+    }
+  ],
+  "idx_validation": {
+    "gzip_crc_and_trailer_verified": true,
+    "train_images": {
+      "magic": 2051,
+      "count": 60000,
+      "rows": 28,
+      "cols": 28,
+      "uncompressed_bytes": 47040016,
+      "payload_bytes": 47040000
+    },
+    "train_labels": {
+      "magic": 2049,
+      "count": 60000,
+      "uncompressed_bytes": 60008,
+      "payload_bytes": 60000
+    },
+    "test_images": {
+      "magic": 2051,
+      "count": 10000,
+      "rows": 28,
+      "cols": 28,
+      "uncompressed_bytes": 7840016,
+      "payload_bytes": 7840000
+    },
+    "test_labels": {
+      "magic": 2049,
+      "count": 10000,
+      "uncompressed_bytes": 10008,
+      "payload_bytes": 10000
+    }
+  },
+  "splits": {
+    "train": {
+      "source": "train labels",
+      "count": 6000,
+      "per_class": [
+        600,
+        600,
+        600,
+        600,
+        600,
+        600,
+        600,
+        600,
+        600,
+        600
+      ],
+      "selection_rule": "balancedIndices(trainLabels, 6000, 10): round-robin ranks 0..599 in each class",
+      "index_sha256": "bb87f08092d04ad4f4fb16715f44b6e46f44e4d558db6bb5f63be57a3d11434f"
+    },
+    "development": {
+      "source": "balanced test index order",
+      "count": 200,
+      "per_class": [
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20,
+        20
+      ],
+      "selection_rule": "balanced test ranks 0..19 in each class",
+      "index_sha256": "9b4fb30a75bdb1625bf0e636831ec633c86a7a62e74882d6c6fc2e5bc51943d2"
+    },
+    "primary": {
+      "source": "balanced test index order",
+      "count": 2000,
+      "per_class": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "selection_rule": "balanced test ranks 20..219 in each class",
+      "index_sha256": "a25ee4d0b8c80fa5dc347e8fa821d90f67eec5e8365dc06fcd20ff83eb734f43"
+    },
+    "confirmation": {
+      "source": "balanced test index order",
+      "count": 2000,
+      "per_class": [
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200,
+        200
+      ],
+      "selection_rule": "balanced test ranks 800..999 in each class",
+      "index_sha256": "9500a51eff8ec4e5ef522459730caae6dd0b3463898ecc86430c4849875937a5"
+    },
+    "development_primary_confirmation_disjoint": true,
+    "train_test_streams_distinct": true
+  },
+  "train_pixel_eda": {
+    "observation_unit": "selected train image pixels",
+    "images": 6000,
+    "pixels": 4704000,
+    "encoding": "IDX uint8 normalized by /255",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "zero_fraction": 0.6697604166666666,
+    "mean": 0.191140664599173,
+    "population_stddev": 0.347961470804463,
+    "quartiles": [
+      0.0,
+      0.0,
+      0.17647058823529413
+    ],
+    "missing": 0,
+    "nonfinite": 0,
+    "raw_uint8_range": [
+      0,
+      255
+    ]
+  },
+  "confirmed": [
+    "All six raw files exist and match data-copy.json bytes and SHA-256.",
+    "IDX gzip CRC/trailer, magic, counts, dimensions, and payload lengths are valid.",
+    "The selected training split has 6000 images and 600 images per class.",
+    "Development, primary, and confirmation index sets are disjoint."
+  ],
+  "confirmed_issues": [
+    "protocol.json does not record development count, selection rule, or expected index SHA-256."
+  ],
+  "unknown_or_limited": [
+    "Remote official content was not downloaded or queried; official-source confirmation is local metadata and fingerprint consistency only.",
+    "No test image pixel distribution or test scores were computed; test IDX was checked only for file structure and integrity.",
+    "The held-out splits were previously observed and cannot be described as a new blind test.",
+    "No conclusion is made about LIF training quality or existing OCR model quality."
+  ]
+}

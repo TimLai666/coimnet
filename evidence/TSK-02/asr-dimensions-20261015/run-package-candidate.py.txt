@@ -1,0 +1,88 @@
+from pathlib import Path
+import collections, datetime, hashlib, json, os, subprocess, time
+
+r = Path('/Users/timlai/Developer/coimnet')
+w = r / 'runs/.tmp/asr-dimensions-20261015'
+e = r / 'evidence/TSK-02/asr-dimensions-20261015'
+base = r / 'evidence/TSK-01/recognizer-unicode-20261015'
+reference = base / 'candidate-full-packages-ordinary.log'
+source = json.loads((r / 'evidence/OPS-03/operational-temp-paths-20261015/go-source-final.json').read_text())
+frozen = json.loads((e / 'candidate-freeze.json').read_text())['source_files']
+test_frozen = json.loads((e / 'regression-freeze.json').read_text())
+unicode_tests = json.loads((base / 'regression-freeze.json').read_text())['tests']
+env = os.environ.copy()
+env.update(json.loads((e / 'command-environment.json').read_text()))
+packages = {'github.com/TimLai666/coimnet/tasks/ocr', 'github.com/TimLai666/coimnet/tasks/asr'}
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def gate():
+    assert w.stat().st_ino == 55651638
+    for path, digest in source.items():
+        assert sha(r / path) == digest, path
+    for path, digest in frozen.items():
+        assert sha(w / 'candidate' / path) == digest, path
+    assert sha(w / 'tests/recognizer_dimensions_test.go') == test_frozen['test_sha256']
+    for path, value in unicode_tests.items():
+        assert sha(r / 'runs/.tmp/recognizer-unicode-20261015/tests' / path) == value['sha256'], path
+
+def terminals(path):
+    tests, package_events = {}, {}
+    for line in path.read_text().splitlines():
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if value.get('Package') not in packages or value.get('Action') not in ['pass', 'fail', 'skip']:
+            continue
+        if value.get('Test'):
+            key = (value['Package'], value['Test'])
+            assert key not in tests, key
+            tests[key] = value['Action']
+        else:
+            package_events[value['Package']] = value['Action']
+    return tests, package_events
+
+baseline, baseline_packages = terminals(reference)
+assert len(baseline) == 353 and set(baseline.values()) == {'pass'}
+assert baseline_packages == {package: 'pass' for package in packages}
+with (e / 'candidate-existing-test-baseline.json').open('x') as handle:
+    json.dump({'reference_log': str(reference.relative_to(r)), 'reference_sha256': sha(reference),
+               'existing_pass_events': len(baseline), 'includes_prior_319_and_34_unicode_events': True}, handle, indent=2)
+    handle.write('\n')
+
+results = []
+for label, flags in [('ordinary', []), ('race', ['-race'])]:
+    gate()
+    name = 'candidate-full-packages-' + label
+    command = ['go', 'test', *flags, '-overlay', str(w / 'green-overlay.json'), '-json', '-count=1', './tasks/ocr', './tasks/asr']
+    start = time.monotonic()
+    log = e / (name + '.log')
+    with log.open('x') as handle:
+        code = subprocess.run(command, cwd=r, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    tests, package_events = terminals(log)
+    counts = collections.Counter(tests.values())
+    assert code == 0 and package_events == baseline_packages, (code, package_events, counts)
+    for key, action in baseline.items():
+        assert tests.get(key) == action, (label, key, action, tests.get(key))
+    added = {key: action for key, action in tests.items() if key not in baseline}
+    assert len(added) == 17 and all(action == 'pass' and key[1].startswith('TestRecognizerDimensionRepresentability') for key, action in added.items()), added
+    assert counts == {'pass': 370}, counts
+    result = {'command': command, 'exit_code': code, 'seconds': time.monotonic() - start,
+              'test_events': dict(counts), 'package_passes': len(package_events),
+              'existing_events_preserved': len(baseline), 'new_dimension_test_events_passed': len(added),
+              'log': log.name, 'log_sha256': sha(log)}
+    with (e / (name + '.json')).open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+    results.append(result)
+    print(json.dumps(result), flush=True)
+with (e / 'candidate-full-packages-verification.json').open('x') as handle:
+    json.dump({'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'results': results,
+               'baseline': 'candidate-existing-test-baseline.json', 'source_count': 815,
+               'formal_sources_unchanged': True, 'frozen_tests_and_candidate_unchanged': True,
+               'formal_adoption_pending': True,
+               'scope': 'Complete private OCR/ASR overlay; no whole-framework acceptance or task-quality claim.'}, handle, indent=2)
+    handle.write('\n')

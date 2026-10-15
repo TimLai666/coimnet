@@ -1,0 +1,74 @@
+package main
+
+import (
+	"errors"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+// makeLIFBase converts only a fresh, untrained factory snapshot to the fixed protocol.
+func makeLIFBase(base learning.TrainingSnapshot) (learning.TrainingSnapshot, error) {
+	if base.Updates != 0 || base.Accumulator != nil || base.Config.LIF != nil || base.Config.Mixed != nil || base.Config.Chemistry != nil {
+		return learning.TrainingSnapshot{}, errors.New("LIF experiment needs a fresh continuous factory snapshot")
+	}
+	for _, values := range [][]float64{base.Optimizer.First, base.Optimizer.Second} {
+		for _, v := range values {
+			if v != 0 {
+				return learning.TrainingSnapshot{}, errors.New("nonzero factory optimizer")
+			}
+		}
+	}
+	for _, v := range base.Optimizer.Steps {
+		if v != 0 {
+			return learning.TrainingSnapshot{}, errors.New("nonzero factory clock")
+		}
+	}
+	factory, err := learning.RestoreTrainer(base)
+	if err != nil {
+		return learning.TrainingSnapshot{}, err
+	}
+	owned := factory.Snapshot()
+	c, p, o := owned.Config, owned.Parameters, owned.Options
+	d := c.Dynamics
+	c.Dynamics = dynamics.Config{}
+	c.LIF = &dynamics.LIFConfig{Nodes: d.Nodes, Sources: d.Sources, Targets: d.Targets, Delays: make([]int, len(d.Sources)), DT: 1, TauSyn: 1, ThetaMin: 0.05, ThetaMax: 1, VReset: -0.5, RefractorySteps: 1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+	p.ThetaRaw = make([]float64, d.Nodes)
+	for i := range p.ThetaRaw {
+		p.ThetaRaw[i] = -2
+	}
+	o.Trainable.Theta = true
+	o.Trainable.Tau = false
+	tr, err := learning.NewTrainer(c, p, o)
+	if err != nil {
+		return learning.TrainingSnapshot{}, err
+	}
+	return tr.Snapshot(), nil
+}
+
+// parameterCounts returns stored and mask-selected trainable scalar counts.
+func parameterCounts(s learning.TrainingSnapshot) (int, int) {
+	p, t := s.Parameters, s.Options.Trainable
+	stored := len(p.Core.Weights) + len(p.Core.Bias) + len(p.Core.LogTau) + len(p.ThetaRaw) + len(p.Encoder) + len(p.Readout)
+	trainable := 0
+	var edges, nodes []bool
+	if s.Options.Masks != nil {
+		edges, nodes = s.Options.Masks.Edges, s.Options.Masks.Nodes
+	}
+	count := func(n int, enabled bool, mask []bool) {
+		if !enabled {
+			return
+		}
+		for i := 0; i < n; i++ {
+			if len(mask) == 0 || mask[i] {
+				trainable++
+			}
+		}
+	}
+	count(len(p.Core.Weights), t.Weights, edges)
+	count(len(p.Core.Bias), t.Bias, nodes)
+	count(len(p.Core.LogTau), t.Tau, nodes)
+	count(len(p.ThetaRaw), t.Theta, nodes)
+	count(len(p.Encoder), t.Encoder, nil)
+	count(len(p.Readout), t.Readout, nil)
+	return stored, trainable
+}

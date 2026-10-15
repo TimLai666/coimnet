@@ -1,0 +1,178 @@
+--- base107/tasks/asr/recognizer.go
++++ candidate108/tasks/asr/recognizer.go
+@@ -37,6 +37,7 @@
+ // that does not fit the sample rate (which covers a non-positive rate), Hidden
+ // below 2, an empty, repeating or non-scalar alphabet, or a learning rate that is not a
+ // positive finite number.
++// Derived array lengths and byte sizes must fit the platform's int.
+ func (c RecognizerConfig) Validate() error {
+ 	if err := c.FrontEnd.Validate(c.SampleRate); err != nil {
+ 		return err
+@@ -60,7 +61,8 @@
+ 	if !(c.LearningRate > 0) || math.IsInf(c.LearningRate, 1) {
+ 		return fmt.Errorf("asr: learning rate %v must be positive and finite", c.LearningRate)
+ 	}
+-	return nil
++	_, err := deriveRecognizerDimensions(c)
++	return err
+ }
+ 
+ // Recognizer reads log-mel frames one per step and emits one logit row per
+@@ -112,10 +114,14 @@
+ 	if err := c.Validate(); err != nil {
+ 		return nil, err
+ 	}
++	dimensions, err := deriveRecognizerDimensions(c)
++	if err != nil {
++		return nil, err
++	}
+ 	c.Alphabet = append([]rune(nil), c.Alphabet...)
+ 	mels := c.FrontEnd.Mels
+-	nodes := mels + c.Hidden
+-	edges := mels*c.Hidden + c.Hidden*c.Hidden
++	nodes := dimensions.nodes
++	edges := dimensions.edges
+ 	sources := make([]int, 0, edges)
+ 	targets := make([]int, 0, edges)
+ 	for s := 0; s < nodes; s++ {
+@@ -132,7 +138,7 @@
+ 	for i := range readoutNodes {
+ 		readoutNodes[i] = mels + i
+ 	}
+-	classes := len(c.Alphabet) + 1
++	classes := dimensions.classes
+ 	cfg := learning.Config{
+ 		Dynamics:         dynamics.Config{Nodes: nodes, Sources: sources, Targets: targets, DT: 1, Activation: "tanh"},
+ 		InputSize:        mels,
+@@ -143,7 +149,7 @@
+ 	}
+ 	// The encoder is the identity from the Mels inputs onto the Mels input
+ 	// nodes, row-major [input, input-node], and stays frozen.
+-	encoder := make([]float64, mels*mels)
++	encoder := make([]float64, dimensions.encoder)
+ 	for i := 0; i < mels; i++ {
+ 		encoder[i*mels+i] = 1
+ 	}
+@@ -159,7 +165,7 @@
+ 			LogTau:  logTau,
+ 		},
+ 		Encoder: encoder,
+-		Readout: uniform(rand.NewPCG(c.Seed, 1), c.Hidden*classes),
++		Readout: uniform(rand.NewPCG(c.Seed, 1), dimensions.readout),
+ 	}
+ 	o := learning.DefaultOptions()
+ 	o.LearningRate = c.LearningRate
+--- base107/tasks/asr/persistence.go
++++ candidate108/tasks/asr/persistence.go
+@@ -99,25 +99,27 @@
+ 
+ func validateASRCheckpointShape(config RecognizerConfig, snapshot learning.TrainingSnapshot) error {
+ 	network := snapshot.Config
++	maxInt := int(^uint(0) >> 1)
++	if config.Hidden <= 0 || config.FrontEnd.Mels <= 0 || network.Dynamics.Nodes < 0 ||
++		network.Dynamics.Nodes > maxInt/config.Hidden {
++		return errors.New("asr: checkpoint reconstruction dimensions overflow")
++	}
++	dimensions, err := deriveRecognizerDimensions(config)
++	if err != nil {
++		return err
++	}
+ 	if config.FrontEnd.Mels != network.InputSize || config.FrontEnd.Mels != len(network.InputNodes) ||
+ 		config.Hidden != len(network.ReadoutNodes) ||
+-		config.Hidden != network.Dynamics.Nodes-config.FrontEnd.Mels ||
+-		len(config.Alphabet) != network.OutputSize-1 {
++		dimensions.nodes != network.Dynamics.Nodes ||
++		dimensions.classes != network.OutputSize {
+ 		return errors.New("asr: checkpoint task dimensions do not match training config")
+ 	}
+ 	// Reconstruction is dense even if the supplied saved network is sparse.
+ 	// Match every allocated array before running the constructor.
+-	mels := config.FrontEnd.Mels
+-	maxInt := int(^uint(0) >> 1)
+-	if config.Hidden <= 0 || mels <= 0 || network.Dynamics.Nodes > maxInt/config.Hidden ||
+-		mels > maxInt/mels || network.OutputSize > maxInt/config.Hidden {
+-		return errors.New("asr: checkpoint reconstruction dimensions overflow")
+-	}
+-	edges := network.Dynamics.Nodes * config.Hidden
+-	if len(network.Dynamics.Sources) != edges || len(network.Dynamics.Targets) != edges ||
+-		len(snapshot.Parameters.Core.Weights) != edges ||
+-		len(snapshot.Parameters.Encoder) != mels*mels ||
+-		len(snapshot.Parameters.Readout) != config.Hidden*network.OutputSize {
++	if len(network.Dynamics.Sources) != dimensions.edges || len(network.Dynamics.Targets) != dimensions.edges ||
++		len(snapshot.Parameters.Core.Weights) != dimensions.edges ||
++		len(snapshot.Parameters.Encoder) != dimensions.encoder ||
++		len(snapshot.Parameters.Readout) != dimensions.readout {
+ 		return errors.New("asr: checkpoint dense array sizes do not match task config")
+ 	}
+ 	return nil
+--- base107/tasks/asr/recognizer_dimensions.go
++++ candidate108/tasks/asr/recognizer_dimensions.go
+@@ -0,0 +1,68 @@
++package asr
++
++import "fmt"
++
++type recognizerDimensions struct {
++	nodes   int
++	edges   int
++	classes int
++	encoder int
++	readout int
++}
++
++func deriveRecognizerDimensions(config RecognizerConfig) (recognizerDimensions, error) {
++	mels := int64(config.FrontEnd.Mels)
++	hidden := int64(config.Hidden)
++	classes, ok := checkedAdd(int64(len(config.Alphabet)), 1)
++	if !ok {
++		return recognizerDimensions{}, errorsForRecognizerDimensions("classes")
++	}
++	nodes, ok := checkedAdd(mels, hidden)
++	if !ok {
++		return recognizerDimensions{}, errorsForRecognizerDimensions("nodes")
++	}
++	edges, ok := checkedProduct(nodes, hidden)
++	if !ok {
++		return recognizerDimensions{}, errorsForRecognizerDimensions("edges")
++	}
++	encoder, ok := checkedProduct(mels, mels)
++	if !ok {
++		return recognizerDimensions{}, errorsForRecognizerDimensions("encoder")
++	}
++	readout, ok := checkedProduct(hidden, classes)
++	if !ok {
++		return recognizerDimensions{}, errorsForRecognizerDimensions("readout")
++	}
++
++	maxInt := int64(^uint(0) >> 1)
++	maxFloat64Elements := maxInt / 8
++	for _, dimension := range []struct {
++		name        string
++		value       int64
++		float64Data bool
++	}{
++		{name: "nodes", value: nodes, float64Data: true},
++		{name: "edges", value: edges, float64Data: true},
++		{name: "classes", value: classes},
++		{name: "encoder", value: encoder, float64Data: true},
++		{name: "readout", value: readout, float64Data: true},
++	} {
++		if dimension.value > maxInt {
++			return recognizerDimensions{}, errorsForRecognizerDimensions(dimension.name)
++		}
++		if dimension.float64Data && dimension.value > maxFloat64Elements {
++			return recognizerDimensions{}, fmt.Errorf("asr: %s float64 array has %d elements, exceeds platform allocation capacity", dimension.name, dimension.value)
++		}
++	}
++	return recognizerDimensions{
++		nodes:   int(nodes),
++		edges:   int(edges),
++		classes: int(classes),
++		encoder: int(encoder),
++		readout: int(readout),
++	}, nil
++}
++
++func errorsForRecognizerDimensions(name string) error {
++	return fmt.Errorf("asr: %s dimension cannot be represented", name)
++}

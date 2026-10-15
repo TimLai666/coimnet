@@ -1,0 +1,75 @@
+from pathlib import Path
+import collections, datetime, gzip, hashlib, json
+
+root = Path('/Users/timlai/Developer/coimnet')
+e108 = root / 'evidence/TSK-02/asr-dimensions-20261015'
+e107 = root / 'evidence/TSK-01/recognizer-unicode-20261015'
+e104 = root / 'evidence/TSK-11/lif-build-quality-20261015'
+read = lambda path: json.loads(path.read_text())
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+engineering = read(e108 / 'formal-engineering-verification.json')
+assert engineering['all_passed'] and len(engineering['steps']) == 8
+sources = read(e108 / 'formal-source-108.json')
+assert len(sources) == 820
+for path, digest in sources.items():
+    assert sha((root / path).read_bytes()) == digest, path
+for item in engineering['steps']:
+    assert item['exit_code'] == 0
+    log = e108 / item['log']
+    raw = log.read_bytes() if log.exists() else gzip.decompress(Path(str(log) + '.gz').read_bytes())
+    assert sha(raw) == item['log_sha256']
+steps = {item['name']: item for item in engineering['steps']}
+assert steps['unit']['test_events'] == {'pass': 5891, 'skip': 22}
+assert steps['race']['test_events'] == {'pass': 5890, 'skip': 23}
+for name in ['unit', 'race']:
+    assert steps[name]['package_events'] == {'pass': 58, 'skip': 3}
+    assert steps[name]['new_unicode_and_dimension_test_events'] == 51
+assert steps['governance']['test_events'] == {'pass': 31}
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+for ticket, evidence, requirement in [('107', e107, ['TSK-01', 'TSK-02']), ('108', e108, ['TSK-02', 'OPS-01'])]:
+    prefix = '../../TSK-02/asr-dimensions-20261015/' if ticket == '107' else ''
+    result = {'requirement': requirement, 'verified_at': now, 'engineering_passed': True,
+              'reproduction_command': 'Public reproductions, frozen red/green and compatibility commands are recorded in per-step receipts; final runner: verify-formal-engineering.py.txt with continue-formal-engineering-v2.py.txt',
+              'environment': prefix + 'host-final.json', 'command_environment': 'command-environment.json',
+              'input_fingerprints': prefix + 'formal-source-108.json', 'source_entries': 820,
+              'observed_result': {'full_unit': steps['unit']['test_events'], 'full_race': steps['race']['test_events'],
+                                  'package_passes_per_build': 58, 'prior_test_events_preserved': True,
+                                  'new_passing_events': 51, 'format_build_vet_fixed_dependencies_passed': True},
+              'public_reproduction': 'public-reproduction-verification.json',
+              'frozen_regressions': ['regression-red-verification.json', 'regression-green-verification.json'],
+              'formal_packages': 'formal-package-verification.json',
+              'engineering': prefix + 'formal-engineering-verification.json',
+              'test_log': [prefix + 'formal-engineering-local-v2-unit.log.gz', prefix + 'formal-engineering-local-v2-race.log.gz'],
+              'log_recovery_map': 'engineering-log-archives.json',
+              'cleanup_pending': True, 'delivery_pending': True, 'milestones': [4, 5],
+              'limitation': 'Actual macOS arm64 execution; no 32-bit runtime, new whole-brain task or quality-superiority claim. Physical memory availability is not guaranteed by representable lengths.'}
+    if ticket == '107':
+        result['compatibility'] = 'phase2-broader-acceptance.json'
+        result['stream_guard'] = 'stream-guard-negative-verification.json'
+        result['index_sync'] = 'format-index-sync-correction.json'
+    else:
+        result['compatibility'] = 'candidate-compatibility-verification.json'
+    with (evidence / 'verification.json').open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+audit = read(e104 / 'root-final-audit.json')
+assert audit['runs'] == 12 and audit['score_events'] == 288 and audit['new_process_restores'] == 12
+old = read(e104 / 'analysis-gate-verification-phase3.json')['engineering']
+result = {'requirement': ['TSK-11'], 'verified_at': now,
+          'reproduction_command': 'Frozen protocol.json, driver-freeze-v2.json and sources/*.txt; run.py and analyze_completed.py are archived in work-preservation.json; restore raw logs using engineering-log-archives.json before replay.',
+          'environment': '../../TSK-02/asr-dimensions-20261015/host-final.json',
+          'input_fingerprints': ['protocol.json', 'analysis-input-lock.json', 'source-before.json', 'driver-freeze-v2.json'],
+          'observed_result': audit, 'engineering': old,
+          'engineering_source_count': 812, 'current_combined_engineering_source_count': 820,
+          'current_combined_engineering': '../../TSK-02/asr-dimensions-20261015/formal-engineering-verification.json',
+          'analysis': 'quality-and-state-comparison.json', 'analysis_acceptance': 'analysis-acceptance.json',
+          'test_log': ['full-unit-local.log.gz', 'full-race-local.log.gz', 'quality-analysis.log'],
+          'data_preservation': 'data-preservation.json', 'model_preservation': 'model-preservation.json',
+          'work_preservation': 'work-preservation.json', 'cleanup_pending': True,
+          'delivery_pending': True, 'milestones': [4, 5],
+          'limitation': 'Fixed artificial LIF graph on previously observed KMNIST single characters, not full words or whole brain; no consistent chemical benefit. Builds differ, same-build restores match; exported logits unavailable for independent cross-entropy recomputation.'}
+with (e104 / 'verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'engineering_accepted': [107, 108], 'study_accepted': 104,
+                  'source_entries': 820, 'requirements_not_yet_restored': True}))

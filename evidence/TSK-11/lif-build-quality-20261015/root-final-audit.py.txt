@@ -1,0 +1,117 @@
+from pathlib import Path
+import datetime, gzip, hashlib, json, math, struct
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+freeze = json.loads((e / 'driver-freeze-v2.json').read_text())
+for path, digest in {**json.loads((e / 'source-before.json').read_text()), **freeze['driver_files'],
+                     **json.loads((e / 'protected-models.json').read_text())}.items():
+    assert sha((r / path).read_bytes()) == digest, path
+assert sha((e / 'protocol.json').read_bytes()) == freeze['protocol_sha256']
+for path, digest in freeze['binaries'].items():
+    assert sha((w / path).read_bytes()) == digest
+for record in json.loads((e / 'data-copy.json').read_text())['files']:
+    raw = (w / 'data/kmnist' / record['name']).read_bytes()
+    assert len(raw) == record['bytes'] and sha(raw) == record['sha256']
+
+truth = {}
+for split, filename, count in [('train', 'train-labels-idx1-ubyte.gz', 60000),
+                               ('test', 't10k-labels-idx1-ubyte.gz', 10000)]:
+    raw = gzip.decompress((w / 'data/kmnist' / filename).read_bytes())
+    assert struct.unpack('>II', raw[:8]) == (2049, count) and len(raw) == count + 8
+    labels = list(raw[8:])
+    buckets = [[i for i, label in enumerate(labels) if label == klass] for klass in range(10)]
+    ranges = {'train': range(600)} if split == 'train' else {'development': range(20), 'before': range(20, 220), 'after': range(20, 220), 'confirmation': range(800, 1000)}
+    for name, ranks in ranges.items():
+        truth[name] = [labels[buckets[klass][rank]] for rank in ranks for klass in range(10)]
+
+def score(value, labels):
+    assert len(value['predictions']) == len(labels) == value['samples']
+    matrix = [[0] * 10 for _ in range(10)]
+    for target, prediction in zip(labels, value['predictions']):
+        assert type(prediction) is int and 0 <= prediction < 10
+        matrix[target][prediction] += 1
+    correct = sum(matrix[i][i] for i in range(10))
+    assert matrix == value['confusion'] and correct == value['correct']
+    assert correct / len(labels) == value['accuracy']
+    assert math.isfinite(value['mean_cross_entropy']) and value['mean_cross_entropy'] >= 0
+
+def parse_state(raw):
+    return json.loads(raw, parse_int=lambda token: -0.0 if token == '-0' else int(token))
+
+def arrays(state):
+    p, opt = state['parameters'], state['optimizer']
+    result = {'core.' + key: value for key, value in p['core'].items()}
+    result.update({key: p[key] for key in ['theta_raw', 'encoder', 'readout']})
+    result.update({'optimizer.' + key: opt[key] for key in ['first', 'second', 'steps']})
+    assert len(result) == 9
+    assert len(opt['steps']) == 23620 and opt['steps'][1300:1352] == [0] * 52
+    assert opt['steps'].count(120000) == 23568 and opt['steps'].count(0) == 52
+    for name, values in result.items():
+        if name == 'optimizer.steps':
+            assert all(type(value) is int and 0 <= value < 2**64 for value in values)
+        else:
+            assert all(type(value) in [int, float] and math.isfinite(value) for value in values)
+    return result
+
+protocol = json.loads((e / 'protocol.json').read_text())
+summary = json.loads((e / 'quality-and-state-comparison.json').read_text())
+models, scores = {}, 0
+for seed in protocol['seed_list']:
+    for group in protocol['groups']:
+        for build in protocol['builds']:
+            name = f'{seed}-{group}-{build}'
+            rows = [json.loads(line) for line in (e / (name + '-train.log')).read_text().splitlines()]
+            restored = [json.loads(line) for line in (e / (name + '-restore.log')).read_text().splitlines()][-1]
+            assert len(rows) == 23
+            for epoch, row in enumerate(rows[1:21], 1):
+                assert row['epoch'] == epoch and row['updates'] == epoch * 6000
+                score(row['development'], truth['development'])
+                scores += 1
+            final = rows[-1]
+            assert final['updates'] == restored['updates'] == 120000
+            for field in ['after', 'confirmation', 'train', 'snapshot_sha256', 'next_update_sha256', 'parameters_sha256', 'optimizer_sha256', 'final_activity']:
+                assert final[field] == restored[field], (name, field)
+            for split in ['before', 'after', 'confirmation', 'train']:
+                score(final[split], truth[split])
+                scores += 1
+            raw = (w / 'models' / (name + '.state.json')).read_bytes()
+            assert raw[-1:] == b'\n' and sha(raw[:-1]) == final['snapshot_sha256']
+            models[(seed, group, build)] = (final, arrays(parse_state(raw)))
+
+for pair in summary['build_pairs']:
+    a, av = models[(pair['seed'], pair['group'], 'ordinary')]
+    b, bv = models[(pair['seed'], pair['group'], 'race')]
+    for name in av:
+        assert len(av[name]) == len(bv[name]) == pair['numeric_arrays'][name]['scalars']
+        if name == 'optimizer.steps':
+            different = sum(x != y for x, y in zip(av[name], bv[name]))
+            assert different == pair['numeric_arrays'][name]['different_integer_values']
+        else:
+            different = sum(struct.pack('!d', x) != struct.pack('!d', y) for x, y in zip(av[name], bv[name]))
+            assert different == pair['numeric_arrays'][name]['different_float64_bits']
+    assert pair['snapshot_equal'] == (a['snapshot_sha256'] == b['snapshot_sha256'])
+    assert pair['next_update_equal'] == (a['next_update_sha256'] == b['next_update_sha256'])
+for pair in summary['chemical_pairs']:
+    a = models[(pair['seed'], 'off', pair['build'])][0]
+    b = models[(pair['seed'], 'on', pair['build'])][0]
+    for split in ['before', 'after', 'confirmation', 'train']:
+        actual = pair['scores_on_minus_off'][split]
+        assert actual['a_accuracy'] == a[split]['accuracy'] and actual['b_accuracy'] == b[split]['accuracy']
+        assert actual['b_minus_a_accuracy_percentage_points'] == (b[split]['correct'] - a[split]['correct']) * 100 / len(truth[split])
+        assert actual['b_minus_a_cross_entropy'] == b[split]['mean_cross_entropy'] - a[split]['mean_cross_entropy']
+assert len(models) == 12 and scores == 288
+result = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'runs': len(models),
+          'score_events': scores, 'build_pairs_numeric_arrays': [6, 9], 'new_process_restores': 12,
+          'data_sources_drivers_binaries_protocol_and_original_models_preserved': True,
+          'ordinary_race_snapshot_or_next_update_equal_pairs': sum(p['snapshot_equal'] or p['next_update_equal'] for p in summary['build_pairs']),
+          'method': 'Independent stdlib checker; no import of fixed aggregate/helper',
+          'cross_entropy_limit': 'Checked reported finite nonnegative loss and differences; no exported per-image logits for independent recomputation',
+          'comparison_sha256': sha((e / 'quality-and-state-comparison.json').read_bytes()),
+          'script_sha256': sha(Path(__file__).read_bytes())}
+with (e / 'root-final-audit.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result))

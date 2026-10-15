@@ -1,0 +1,48 @@
+{
+  "requirement": [
+    "TSK-02",
+    "OPS-01"
+  ],
+  "verified_at": "2026-10-15T10:36:57.746091+00:00",
+  "engineering_passed": true,
+  "reproduction_command": "Public reproductions, frozen red/green and compatibility commands are recorded in per-step receipts; final runner: verify-formal-engineering.py.txt with continue-formal-engineering-v2.py.txt",
+  "environment": "host-final.json",
+  "command_environment": "command-environment.json",
+  "input_fingerprints": "formal-source-108.json",
+  "source_entries": 820,
+  "observed_result": {
+    "full_unit": {
+      "pass": 5891,
+      "skip": 22
+    },
+    "full_race": {
+      "pass": 5890,
+      "skip": 23
+    },
+    "package_passes_per_build": 58,
+    "prior_test_events_preserved": true,
+    "new_passing_events": 51,
+    "format_build_vet_fixed_dependencies_passed": true
+  },
+  "public_reproduction": "public-reproduction-verification.json",
+  "frozen_regressions": [
+    "regression-red-verification.json",
+    "regression-green-verification.json"
+  ],
+  "formal_packages": "formal-package-verification.json",
+  "engineering": "formal-engineering-verification.json",
+  "test_log": [
+    "formal-engineering-local-v2-unit.log.gz",
+    "formal-engineering-local-v2-race.log.gz"
+  ],
+  "log_recovery_map": "engineering-log-archives.json",
+  "cleanup_pending": true,
+  "delivery_pending": true,
+  "milestones": [
+    4,
+    5
+  ],
+  "limitation": "Actual macOS arm64 execution; no 32-bit runtime, new whole-brain task or quality-superiority claim. Physical memory availability is not guaranteed by representable lengths.",
+  "compatibility": "candidate-compatibility-verification.json",
+  "implementation_commit": "5be55c2a18a534645a2c425d901d82ae719e74da"
+}

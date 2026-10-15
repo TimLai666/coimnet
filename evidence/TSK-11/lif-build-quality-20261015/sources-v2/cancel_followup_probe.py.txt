@@ -1,0 +1,64 @@
+"""Repeat only the existing download-cancellation test; capture an exhausted-bound stack."""
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import os
+import re
+import signal
+import subprocess
+import sys
+import time
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+binary = w / 'cancel-follow-up.test'
+command = [str(binary), '-test.run=^TestCancelReleases$/^download_Fetch$', '-test.count=200', '-test.v', '-test.timeout=5m']
+env = os.environ.copy()
+env['GOTRACEBACK'] = 'all'
+started = time.monotonic()
+proc = subprocess.Popen(command, cwd=r, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+trigger = None
+passes = 0
+failures = 0
+baselines = []
+after = []
+print(json.dumps({'event': 'owned-test-start', 'pid': proc.pid, 'command': command}), flush=True)
+for line in proc.stdout:
+    sys.stdout.write(line)
+    sys.stdout.flush()
+    if line.lstrip().startswith('--- PASS: TestCancelReleases/download_Fetch ('):
+        passes += 1
+    if line.lstrip().startswith('--- FAIL:'):
+        failures += 1
+    before = re.search(r'before TestCancelReleases/download_Fetch: goroutines=(\d+) HeapInuse=(\d+)', line)
+    if before:
+        baselines.append({'goroutines': int(before[1]), 'heap_inuse': int(before[2])})
+    sample = re.search(r'after TestCancelReleases/download_Fetch attempt (\d+): goroutines=(\d+) \(want (\d+)\) HeapInuse=(\d+) \(limit (\d+)\)', line)
+    if sample:
+        attempt, got, want, heap, limit = map(int, sample.groups())
+        after.append({'attempt': attempt, 'goroutines': got, 'want_goroutines': want, 'heap_inuse': heap, 'heap_limit': limit})
+        if attempt == 19 and (got != want or heap > limit) and trigger is None:
+            trigger = {'sample': after[-1], 'reason': 'original reclaim loop has exhausted all twenty checks', 'signal': 'SIGQUIT', 'owned_pid': proc.pid}
+            if proc.poll() is None:
+                proc.send_signal(signal.SIGQUIT)
+code = proc.wait()
+result = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': command,
+          'duration_seconds': time.monotonic() - started, 'test_exit_code': code,
+          'completed_download_subtests': passes, 'failure_lines': failures,
+          'baseline_samples': baselines, 'reclaim_samples': after, 'diagnostic_stop': trigger,
+          'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest(),
+          'source_sha256': hashlib.sha256((r / 'cancel_release_test.go').read_bytes()).hexdigest(),
+          'production_source_or_original_test_modified': False,
+          'scope': 'isolated existing cancellation case under concurrent fixed LIF study; not proof about all suite interleavings'}
+with (e / 'cancel-follow-up-observation-phase5.json').open('x') as out:
+    json.dump(result, out, indent=2, allow_nan=False)
+    out.write('\n')
+print(json.dumps({'event': 'owned-test-end', 'completed': passes, 'exit_code': code, 'diagnostic_stop': trigger is not None}), flush=True)
+if trigger is not None:
+    sys.exit(2)
+if code != 0:
+    sys.exit(code if code > 0 else 128 - code)
+if passes != 200 or len(baselines) != 200:
+    raise AssertionError('requested 200 download subtests were not all observed')

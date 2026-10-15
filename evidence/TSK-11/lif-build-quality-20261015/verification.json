@@ -1,0 +1,67 @@
+{
+  "requirement": [
+    "TSK-11"
+  ],
+  "verified_at": "2026-10-15T10:36:57.746091+00:00",
+  "reproduction_command": "Frozen protocol.json, driver-freeze-v2.json and sources/*.txt; run.py and analyze_completed.py are archived in work-preservation.json; restore raw logs using engineering-log-archives.json before replay.",
+  "environment": "../../TSK-02/asr-dimensions-20261015/host-final.json",
+  "input_fingerprints": [
+    "protocol.json",
+    "analysis-input-lock.json",
+    "source-before.json",
+    "driver-freeze-v2.json"
+  ],
+  "observed_result": {
+    "verified_at": "2026-10-15T09:47:31.639159+00:00",
+    "runs": 12,
+    "score_events": 288,
+    "build_pairs_numeric_arrays": [
+      6,
+      9
+    ],
+    "new_process_restores": 12,
+    "data_sources_drivers_binaries_protocol_and_original_models_preserved": true,
+    "ordinary_race_snapshot_or_next_update_equal_pairs": 0,
+    "method": "Independent stdlib checker; no import of fixed aggregate/helper",
+    "cross_entropy_limit": "Checked reported finite nonnegative loss and differences; no exported per-image logits for independent recomputation",
+    "comparison_sha256": "edeb6274d5ffba9d438af637f8f0d5632a3312fc8543e573c47b063a33171ef1",
+    "script_sha256": "68ed46140a95ba50519002fe2b12b0d6e3e950bd5f343388c7ad7dd65717774b"
+  },
+  "engineering": {
+    "unit": {
+      "packages": 58,
+      "pass": 5818,
+      "skip": 22,
+      "fail": 0,
+      "log_sha256": "04b51808ed4794f595ac8d69acbfc4c44e6702dd3ba5affa5ac3cbd65ff3a07a"
+    },
+    "race": {
+      "packages": 58,
+      "pass": 5817,
+      "skip": 23,
+      "fail": 0,
+      "log_sha256": "f2129c01a3eb4a194e62f9014eb05293878502db283165317030f1583039bbe4"
+    }
+  },
+  "engineering_source_count": 812,
+  "current_combined_engineering_source_count": 820,
+  "current_combined_engineering": "../../TSK-02/asr-dimensions-20261015/formal-engineering-verification.json",
+  "analysis": "quality-and-state-comparison.json",
+  "analysis_acceptance": "analysis-acceptance.json",
+  "test_log": [
+    "full-unit-local.log.gz",
+    "full-race-local.log.gz",
+    "quality-analysis.log"
+  ],
+  "data_preservation": "data-preservation.json",
+  "model_preservation": "model-preservation.json",
+  "work_preservation": "work-preservation.json",
+  "cleanup_pending": false,
+  "delivery_pending": true,
+  "milestones": [
+    4,
+    5
+  ],
+  "limitation": "Fixed artificial LIF graph on previously observed KMNIST single characters, not full words or whole brain; no consistent chemical benefit. Builds differ, same-build restores match; exported logits unavailable for independent cross-entropy recomputation.",
+  "cleanup": "cleanup.json"
+}

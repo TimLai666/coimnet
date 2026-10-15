@@ -1,0 +1,150 @@
+from pathlib import Path
+import concurrent.futures
+import datetime
+import hashlib
+import json
+import os
+import subprocess
+import threading
+import time
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/lif-build-quality-20261015'
+w = r / 'runs/.tmp/lif-build-quality-20261015'
+protocol = json.loads((e / 'protocol.json').read_text())
+freeze = json.loads((e / 'driver-freeze-v2.json').read_text())
+env = os.environ.copy()
+env.update(json.loads((e / 'cache-preparation.json').read_text())['go_environment'])
+lock = threading.Lock()
+completed = []
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def unchanged():
+    assert sha(e / 'protocol.json') == freeze['protocol_sha256']
+    for path, expected in freeze['driver_files'].items():
+        assert sha(r / path) == expected, path
+    for build, expected in freeze['binaries'].items():
+        assert sha(w / build) == expected, build
+    for path, expected in json.loads((e / 'source-before.json').read_text()).items():
+        assert sha(r / path) == expected, path
+    for path, expected in json.loads((e / 'protected-models.json').read_text()).items():
+        assert sha(r / path) == expected, path
+
+
+def records(path):
+    return [json.loads(line) for line in path.read_text().splitlines()]
+
+
+def execute(name, command):
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    start = time.monotonic()
+    log = e / (name + '.log')
+    with log.open('xb') as out:
+        result = subprocess.run(command, cwd=r, env=env, stdout=out, stderr=subprocess.STDOUT)
+    receipt = {'command': command, 'started_at': started,
+               'duration_seconds': time.monotonic() - start,
+               'exit_code': result.returncode, 'log': log.name,
+               'log_sha256': sha(log), 'protocol_sha256': freeze['protocol_sha256']}
+    with (e / (name + '.json')).open('x') as out:
+        out.write(json.dumps(receipt, indent=2) + '\n')
+    assert result.returncode == 0, (name, result.returncode)
+    return records(log)
+
+
+def score_valid(score):
+    n = score['samples']
+    predictions = score['predictions']
+    assert n > 0 and len(predictions) == n
+    confusion = [[0] * 10 for _ in range(10)]
+    for i, prediction in enumerate(predictions):
+        assert type(prediction) is int and 0 <= prediction < 10
+        confusion[i % 10][prediction] += 1
+    correct = sum(confusion[i][i] for i in range(10))
+    assert score['confusion'] == confusion and score['correct'] == correct
+    assert score['accuracy'] == correct / n
+
+
+def one(seed, group, build):
+    unchanged()
+    name = f'{seed}-{group}-{build}'
+    model = w / 'models' / name
+    common = [str(w / (build + '-v2')), '-data-dir', str(w / 'data/kmnist'),
+              '-group', group, '-seed', str(seed), '-model', str(model)]
+    train = execute(name + '-train', common + ['-mode', 'train'])
+    selection = train[0]
+    assert selection['event'] == 'selection'
+    assert selection['group'] == group and selection['seed'] == seed
+    assert selection['train_count'] == 6000 and selection['test_count'] == 2000
+    assert selection['confirmation_count'] == 2000 and selection['epochs'] == 20
+    assert selection['updates_expected'] == 120000
+    assert selection['stored_parameters'] == 23620 and selection['trainable_parameters'] == 23568
+    for key, split in [('train_indices_sha256', 'train'), ('test_indices_sha256', 'primary'),
+                       ('development_indices_sha256', 'development'), ('confirmation_indices_sha256', 'confirmation')]:
+        assert selection[key] == protocol['splits'][split]['index_sha256'], (name, key)
+    assert selection['network_config']['lif']['nodes'] == 52
+    epochs = [x for x in train if x.get('event') == 'epoch']
+    assert [x['epoch'] for x in epochs] == list(range(1, 21))
+    assert [x['updates'] for x in epochs] == [6000 * i for i in range(1, 21)]
+    for epoch in epochs:
+        assert epoch['development']['samples'] == 200
+        score_valid(epoch['development'])
+    final = [x for x in train if x.get('event') == 'final']
+    assert len(final) == 1
+    final = final[0]
+    assert final['updates'] == 120000 and final['frozen_evaluation'] is True
+    for split, count in [('before', 2000), ('after', 2000), ('confirmation', 2000), ('train', 6000)]:
+        assert final[split]['samples'] == count
+        score_valid(final[split])
+    state_path = Path(str(model) + '.state.json')
+    state_bytes = state_path.read_bytes()
+    assert state_bytes.endswith(b'\n')
+    assert hashlib.sha256(state_bytes[:-1]).hexdigest() == final['snapshot_sha256']
+    restored = execute(name + '-restore', common + ['-mode', 'restore'])
+    other = [x for x in restored if x.get('event') == 'final']
+    assert len(other) == 1
+    other = other[0]
+    for key in ['after', 'confirmation', 'train', 'updates', 'snapshot_sha256',
+                'next_update_sha256', 'parameters_sha256', 'optimizer_sha256', 'final_activity']:
+        assert final[key] == other[key], (name, key)
+    unchanged()
+    accepted = {'seed': seed, 'group': group, 'build': build, 'epochs': 20,
+                'updates': 120000, 'snapshot_sha256': final['snapshot_sha256'],
+                'next_update_sha256': final['next_update_sha256'],
+                'new_process_restore_exact': True, 'scores_independently_verified': 24}
+    with (e / (name + '-accepted.json')).open('x') as out:
+        out.write(json.dumps(accepted, indent=2) + '\n')
+    with lock:
+        completed.append(accepted)
+        print(json.dumps({'event': 'accepted', 'completed': len(completed), 'total': 12,
+                          'seed': seed, 'group': group, 'build': build}), flush=True)
+    return accepted
+
+
+for name in ['driver-green-v2', 'driver-race-v2', 'driver-vet-v2', 'full-build', 'full-unit-local',
+             'full-race-local', 'full-vet', 'module-verify', 'sdk-ordinary-v2', 'sdk-race-v2']:
+    receipt = e / (name + '.json')
+    deadline = time.monotonic() + 3600
+    if not receipt.exists():
+        print(json.dumps({'event': 'waiting-for-engineering', 'receipt': receipt.name}), flush=True)
+    while not receipt.exists():
+        assert time.monotonic() < deadline, (name, 'engineering receipt timeout')
+        time.sleep(5)
+    assert json.loads(receipt.read_text())['exit_code'] == 0, name
+assert len(json.loads((e / 'smoke-restore-equality.json').read_text())) == 4
+unchanged()
+with (e / 'training-started.json').open('x') as out:
+    out.write(json.dumps({'pid': os.getpid(), 'concurrency': 3, 'runs': 12,
+                          'protocol_sha256': freeze['protocol_sha256'],
+                          'started_at': datetime.datetime.now(datetime.timezone.utc).isoformat()}, indent=2) + '\n')
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+    futures = [pool.submit(one, seed, group, build) for seed in protocol['seed_list']
+               for group in protocol['groups'] for build in protocol['builds']]
+    results = [future.result() for future in futures]
+unchanged()
+with (e / 'training-complete.json').open('x') as out:
+    out.write(json.dumps({'runs': results, 'count': len(results), 'all_complete': True}, indent=2) + '\n')
+print(json.dumps({'event': 'all-complete', 'runs': len(results)}), flush=True)

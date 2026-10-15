@@ -1,0 +1,32 @@
+from pathlib import Path
+import collections,datetime,hashlib,json,os,subprocess,sys,time
+r=Path('/Users/timlai/Developer/coimnet');w=r/'runs/.tmp/recognizer-unicode-20261015';e=r/'evidence/TSK-01/recognizer-unicode-20261015'
+mode=sys.argv[1];assert mode in ['red','green'];source=json.loads((r/'evidence/OPS-03/operational-temp-paths-20261015/go-source-final.json').read_text());freeze=json.loads((e/'regression-freeze.json').read_text());env=os.environ.copy();env.update(json.loads((e/'command-environment.json').read_text()))
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+ assert w.stat().st_ino==55632307
+ for p,h in source.items():assert sha(r/p)==h,p
+ current=set(subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard','--','*.go','go.mod','go.sum'],cwd=r,text=True).splitlines());assert current==set(source)
+ for rel,info in freeze['tests'].items():assert sha(w/'tests'/rel)==info['sha256'],rel
+ if mode=='green':
+  for rel,h in json.loads((e/'candidate-freeze.json').read_text())['source_files'].items():assert sha(w/'candidate'/rel)==h,rel
+results=[]
+for label,flags in [('ordinary',[]),('race',['-race'])]:
+ gate();name='regression-'+mode+'-v2-'+label;cmd=['go','test',*flags,'-overlay',str(w/(mode+'-overlay.json')),'-json','-count=1','-run','^Test(RecognizerAlphabetUnicodeScalar|NewStreamRejectsInvalidAlphabetRune)$','./tasks/ocr','./tasks/asr'];start=time.monotonic()
+ with (e/(name+'.log')).open('x') as f:code=subprocess.run(cmd,cwd=r,env=env,stdout=f,stderr=subprocess.STDOUT).returncode
+ gate();events=[]
+ for line in (e/(name+'.log')).read_text().splitlines():
+  try:events.append(json.loads(line))
+  except json.JSONDecodeError:pass
+ terminal=[v for v in events if v.get('Test') and v.get('Action') in ['pass','fail','skip']]; counts=collections.Counter(v['Action'] for v in terminal)
+ invalid=[v for v in terminal if v['Test'].startswith('TestRecognizerAlphabetUnicodeScalar/invalid_')];legal=[v for v in terminal if v['Test'].startswith('TestRecognizerAlphabetUnicodeScalar/legal_')];stream=[v for v in terminal if v['Test']=='TestNewStreamRejectsInvalidAlphabetRune']
+ assert len(invalid)==20 and all(v['Action']==('fail' if mode=='red' else 'pass') for v in invalid),(mode,'invalid',invalid)
+ assert len(legal)==12 and all(v['Action']=='pass' for v in legal),(mode,'legal',legal)
+ assert len(stream)==1 and stream[0]['Action']=='pass',(mode,'stream',stream)
+ assert {v['Package'] for v in terminal}=={'github.com/TimLai666/coimnet/tasks/ocr','github.com/TimLai666/coimnet/tasks/asr'}
+ assert code==(1 if mode=='red' else 0) and counts['skip']==0,(code,counts)
+ assert counts['fail']==(22 if mode=='red' else 0),(mode,counts)
+ result={'mode':mode,'command':cmd,'exit_code':code,'seconds':time.monotonic()-start,'test_events':dict(counts),'invalid_scalar_cases':len(invalid),'legal_scalar_cases':len(legal),'new_stream_guard_pass':True,'log':name+'.log','log_sha256':sha(e/(name+'.log')),'source_and_frozen_tests_preserved':True}
+ with (e/(name+'.json')).open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+ results.append(result);print(json.dumps(result),flush=True)
+with (e/('regression-'+mode+'-verification.json')).open('x') as f:json.dump({'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'results':results,'actual_behavioral_test_events_required':True,'formal_source_unchanged':True},f,indent=2);f.write('\n')

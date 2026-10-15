@@ -1,0 +1,268 @@
+import copy
+import math
+import struct
+import unittest
+from decimal import Decimal
+
+import analysis
+
+
+TRUTH = [0, 1, 2, 3, 4]
+PREDICTIONS_A = [0, 2, 1, 3, 8]
+PREDICTIONS_B = [1, 1, 8, 3, 9]
+
+
+def make_score(truth, predictions, cross_entropy):
+    confusion = [[0] * 10 for _ in range(10)]
+    for target, prediction in zip(truth, predictions):
+        confusion[target][prediction] += 1
+    correct = sum(confusion[index][index] for index in range(10))
+    return {
+        "samples": len(truth),
+        "predictions": list(predictions),
+        "confusion": confusion,
+        "correct": correct,
+        "accuracy": correct / len(truth) if truth else 0.0,
+        "mean_cross_entropy": cross_entropy,
+    }
+
+
+class AnalysisContractTests(unittest.TestCase):
+    def test_decode_snapshot_preserves_go_negative_zero_and_rejects_nonfinite(self):
+        decoded = analysis.decode_snapshot(b'{"values":[-0,0]}')
+        negative_zero, positive_zero = decoded["values"]
+        self.assertEqual(
+            struct.pack(">d", float(negative_zero)).hex(),
+            "8000000000000000",
+        )
+        self.assertEqual(
+            struct.pack(">d", float(positive_zero)).hex(),
+            "0000000000000000",
+        )
+
+        for token in (b"NaN", b"Infinity", b"-Infinity"):
+            with self.subTest(token=token):
+                with self.assertRaises(ValueError):
+                    analysis.decode_snapshot(b"{" + b'"value":' + token + b"}")
+
+    def test_verify_score_accepts_complete_ten_class_score(self):
+        score = make_score(TRUTH, PREDICTIONS_A, 1.25)
+        self.assertIsNone(analysis.verify_score(score, TRUTH))
+
+    def test_verify_score_rejects_incomplete_or_invalid_values(self):
+        valid = make_score(TRUTH, PREDICTIONS_A, 1.25)
+        invalid_cases = []
+
+        invalid_cases.append(("empty truth", make_score([], [], 0.0), []))
+
+        short_predictions = copy.deepcopy(valid)
+        short_predictions["predictions"] = short_predictions["predictions"][:-1]
+        invalid_cases.append(("prediction length", short_predictions, TRUTH))
+
+        wrong_samples = copy.deepcopy(valid)
+        wrong_samples["samples"] = len(TRUTH) + 1
+        invalid_cases.append(("sample count", wrong_samples, TRUTH))
+
+        wrong_correct = copy.deepcopy(valid)
+        wrong_correct["correct"] += 1
+        invalid_cases.append(("correct count", wrong_correct, TRUTH))
+
+        wrong_accuracy = copy.deepcopy(valid)
+        wrong_accuracy["accuracy"] = 0.0
+        invalid_cases.append(("accuracy", wrong_accuracy, TRUTH))
+
+        wrong_matrix_rows = copy.deepcopy(valid)
+        wrong_matrix_rows["confusion"] = wrong_matrix_rows["confusion"][:-1]
+        invalid_cases.append(("confusion row count", wrong_matrix_rows, TRUTH))
+
+        wrong_matrix_columns = copy.deepcopy(valid)
+        wrong_matrix_columns["confusion"][0] = [0] * 9
+        invalid_cases.append(("confusion column count", wrong_matrix_columns, TRUTH))
+
+        wrong_matrix_value = copy.deepcopy(valid)
+        wrong_matrix_value["confusion"][0][0] += 1
+        invalid_cases.append(("confusion value", wrong_matrix_value, TRUTH))
+
+        for name, value in (("negative CE", -1.0), ("NaN CE", math.nan), ("infinite CE", math.inf)):
+            bad_ce = copy.deepcopy(valid)
+            bad_ce["mean_cross_entropy"] = value
+            invalid_cases.append((name, bad_ce, TRUTH))
+
+        for name, value in (
+            ("bool prediction", True),
+            ("float prediction", 1.0),
+            ("negative prediction", -1),
+            ("out of range prediction", 10),
+            ("string prediction", "1"),
+        ):
+            bad_prediction = copy.deepcopy(valid)
+            bad_prediction["predictions"][0] = value
+            invalid_cases.append((name, bad_prediction, TRUTH))
+
+        for name, value in (
+            ("bool truth", True),
+            ("float truth", 1.0),
+            ("negative truth", -1),
+            ("out of range truth", 10),
+            ("string truth", "1"),
+        ):
+            bad_truth = list(TRUTH)
+            bad_truth[0] = value
+            invalid_cases.append((name, valid, bad_truth))
+
+        for name, score, truth in invalid_cases:
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    analysis.verify_score(score, truth)
+
+    def test_score_pair_reports_independent_prediction_outcomes(self):
+        a = make_score(TRUTH, PREDICTIONS_A, 1.25)
+        b = make_score(TRUTH, PREDICTIONS_B, 1.50)
+        result = analysis.score_pair(a, b, TRUTH)
+
+        expected_keys = {
+            "a_accuracy",
+            "b_accuracy",
+            "b_minus_a_accuracy_percentage_points",
+            "b_minus_a_cross_entropy",
+            "different_predictions",
+            "a_correct_b_wrong",
+            "a_wrong_b_correct",
+            "both_wrong_different_class",
+        }
+        self.assertTrue(expected_keys.issubset(result))
+        self.assertEqual(result["a_accuracy"], 0.4)
+        self.assertEqual(result["b_accuracy"], 0.4)
+        self.assertEqual(result["different_predictions"], 4)
+        self.assertEqual(result["a_correct_b_wrong"], 1)
+        self.assertEqual(result["a_wrong_b_correct"], 1)
+        self.assertEqual(result["both_wrong_different_class"], 2)
+        self.assertEqual(result["b_minus_a_accuracy_percentage_points"], 0.0)
+        self.assertEqual(result["b_minus_a_cross_entropy"], 0.25)
+
+        perfect = make_score(TRUTH, TRUTH, 0.0)
+        perfect_result = analysis.score_pair(a, perfect, TRUTH)
+        self.assertEqual(perfect_result["b_minus_a_accuracy_percentage_points"], 60.0)
+
+    def test_score_pair_validates_both_scores_without_zip_truncation(self):
+        a = make_score(TRUTH, PREDICTIONS_A, 1.25)
+        b = make_score(TRUTH, PREDICTIONS_B, 1.50)
+
+        short_b = copy.deepcopy(b)
+        short_b["predictions"] = short_b["predictions"][:-1]
+        short_b["samples"] -= 1
+        with self.assertRaises(ValueError):
+            analysis.score_pair(a, short_b, TRUTH)
+
+        bad_a = copy.deepcopy(a)
+        bad_a["mean_cross_entropy"] = -0.1
+        with self.assertRaises(ValueError):
+            analysis.score_pair(bad_a, b, TRUTH)
+
+    def test_compare_float_vectors_tracks_bits_and_stable_distances(self):
+        signed_zero = analysis.compare_float_vectors([0.0, -0.0], [-0.0, 0.0])
+        self.assertEqual(signed_zero["scalars"], 2)
+        self.assertEqual(signed_zero["different_float64_bits"], 2)
+        self.assertEqual(signed_zero["max_absolute_difference"], 0.0)
+        self.assertEqual(signed_zero["difference_l2"], 0.0)
+        self.assertEqual(
+            [item["index"] for item in signed_zero["first_differences"]],
+            [0, 1],
+        )
+
+        minimum_subnormal = math.ldexp(1.0, -1074)
+        subnormal = analysis.compare_float_vectors([minimum_subnormal], [0.0])
+        self.assertEqual(subnormal["different_float64_bits"], 1)
+        self.assertGreater(subnormal["max_absolute_difference"], 0.0)
+        self.assertGreater(subnormal["difference_l2"], 0.0)
+        self.assertEqual(subnormal["difference_l2"], minimum_subnormal)
+
+        first_five = analysis.compare_float_vectors([0.0] * 7, [1.0] * 7)
+        self.assertEqual(first_five["scalars"], 7)
+        self.assertEqual(first_five["different_float64_bits"], 7)
+        self.assertEqual(len(first_five["first_differences"]), 5)
+        self.assertEqual(
+            [item["index"] for item in first_five["first_differences"]],
+            [0, 1, 2, 3, 4],
+        )
+        self.assertEqual(
+            first_five["first_differences"][0],
+            {"index": 0, "ordinary": 0.0, "race": 1.0},
+        )
+
+        large = analysis.compare_float_vectors([0.0, 0.0], [8e307, 8e307])
+        self.assertTrue(math.isfinite(large["max_absolute_difference"]))
+        self.assertTrue(math.isfinite(large["difference_l2"]))
+        self.assertEqual(large["max_absolute_difference"], 8e307)
+        self.assertAlmostEqual(large["difference_l2"], math.hypot(8e307, 8e307))
+
+    def test_compare_float_vectors_uses_decimal_fallback_for_overflow(self):
+        maximum = float.fromhex("0x1.fffffffffffffp+1023")
+        result = analysis.compare_float_vectors(
+            [maximum, -maximum], [-maximum, maximum]
+        )
+        self.assertIsNone(result["max_absolute_difference"])
+        self.assertIsNone(result["difference_l2"])
+        for key in ("max_absolute_difference_decimal", "difference_l2_decimal"):
+            with self.subTest(field=key):
+                decimal_value = Decimal(result[key])
+                self.assertTrue(decimal_value.is_finite())
+                self.assertGreater(decimal_value, 0)
+                self.assertNotIn("inf", str(result[key]).lower())
+                self.assertNotIn("nan", str(result[key]).lower())
+
+    def test_compare_float_vectors_rejects_unsafe_values(self):
+        exact_integer = analysis.compare_float_vectors([2**53], [float(2**53)])
+        self.assertEqual(exact_integer["scalars"], 1)
+        self.assertEqual(exact_integer["different_float64_bits"], 0)
+
+        invalid_cases = [
+            ("shape", [0.0], [0.0, 0.0]),
+            ("bool", [True], [1.0]),
+            ("string", ["1"], [1.0]),
+            ("none", [None], [1.0]),
+            ("nan", [math.nan], [1.0]),
+            ("positive infinity", [math.inf], [1.0]),
+            ("negative infinity", [-math.inf], [1.0]),
+            ("inexact integer", [2**53 + 1], [float(2**53)]),
+        ]
+        for name, ordinary, race in invalid_cases:
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    analysis.compare_float_vectors(ordinary, race)
+
+    def test_compare_step_vectors_is_exact_unsigned_64_bit_comparison(self):
+        result = analysis.compare_step_vectors(
+            [0, 2**53 + 1, 2**64 - 1],
+            [0, 2**53, 2**64 - 2],
+        )
+        self.assertEqual(result["scalars"], 3)
+        self.assertEqual(result["different_integer_values"], 2)
+        self.assertEqual(result["max_absolute_difference"], 1)
+        self.assertIsInstance(result["max_absolute_difference"], int)
+
+        largest_difference = analysis.compare_step_vectors(
+            [0, 2**64 - 1], [2**64 - 1, 0]
+        )
+        self.assertEqual(largest_difference["different_integer_values"], 2)
+        self.assertEqual(largest_difference["max_absolute_difference"], 2**64 - 1)
+
+    def test_compare_step_vectors_rejects_non_unsigned_integer_inputs(self):
+        invalid_cases = [
+            ("shape", [0], [0, 1]),
+            ("bool", [True], [1]),
+            ("fraction", [1.5], [1]),
+            ("integral float", [1.0], [1]),
+            ("negative", [-1], [0]),
+            ("overflow", [2**64], [0]),
+            ("string", ["1"], [1]),
+            ("none", [None], [1]),
+        ]
+        for name, ordinary, race in invalid_cases:
+            with self.subTest(case=name):
+                with self.assertRaises(ValueError):
+                    analysis.compare_step_vectors(ordinary, race)
+
+
+if __name__ == "__main__":
+    unittest.main()
