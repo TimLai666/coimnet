@@ -241,7 +241,7 @@ JSON 欄位名為 `engineering_kd`／`engineering_n`。
 | `Kinetics.Step` 參數 | `Step(s, release)` | `Step(s, release, clearanceBoost)` | ticket 20 的 `RewardRecord.ClearanceBoost` 需要落點；`b` 進清除率 `rate = 1/tau + b`，穩態同形為 `q/rate`，`b = 0` 時逐位走票面原式 |
 | `Occupancies` 回傳 | `([]OccupancyRecord, error)` | `([]OccupancyRecord, OccupancySummary, error)` | root 決策要求報告 `Assumed`／`UnknownSkipped`／`Unresponsive` 計數，與紀錄一起回傳比讓呼叫端重數可靠 |
 | `ApplyEffects` 簽名 | `(effects, occ, nodes)` | `(effects, occ, mix, nodes)` | 混合規則屬於受體設定，效果層需要知道它；`Receptors.Mix` 由呼叫端傳入 |
-| 混合語意 | 「佔用率乘各自比例後相加或取最大」 | 先依 mix 累加原始佔用率，再套一組係數 | 每個公式只指名一組係數；同種效果打到同一顆細胞而係數不同時直接拒絕，不自訂規則。係數相同時兩種讀法結果一致 |
+| 混合語意 | 「佔用率乘各自比例後相加或取最大」 | 先依 mix 對原始佔用率加總或取最大，再套一組係數 | 每個公式只指名一組係數；同種效果打到同一顆細胞而係數不同時直接拒絕，不自訂規則。負係數時，max 仍先選原始佔用率最大者，不改成比較映射後的效果 |
 | `Occupancy` 定義域外 | 未定義 | 回 NaN | 函式沒有錯誤回傳；NaN 是明顯的「未定義」而不是看起來像量測的 0，`Validate` 是真正的守門 |
 | 額外拒絕 | 未提 | `1-exp(-dt/tau)` 捨入為 0 的通道；宣告了該 kind 不讀的欄位（如 sensitivity 帶 `ThetaScale`） | 兩者都是「永遠不會生效的旋鈕」，沿用 `RewardMapper` 對 `Window` 的既有作法 |
 | 增益作用範圍 | `I_eff = gamma*I + beta` | `I` 為「外部輸入 + 突觸（含延遲）」，bias 在增益之外 | bias 是神經元的可訓練參數，不是輸入電流 |

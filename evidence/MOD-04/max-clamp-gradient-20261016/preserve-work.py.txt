@@ -1,0 +1,33 @@
+"""Archive reviewed diagnostic sources and SDK resume inputs before owned cleanup."""
+import hashlib,json,tarfile
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/"runs/.tmp/max-clamp-gradient-20261016"
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==57003931 and not W.is_symlink()
+files=[W/"module-originals.json",*sorted((W/"probe").glob("*.go"))]
+assert len(files)==6
+for mode in ["ordinary","race"]:
+    group=sorted((W/("resume-"+mode)).glob("*.json"));assert len(group)==28;files.extend(group)
+mutation_files=sorted((W/"mutations").rglob("*")); mutation_files=[p for p in mutation_files if p.is_file()]; assert len(mutation_files)==5; files.extend(mutation_files)
+items={str(p.relative_to(W)):{"bytes":p.stat().st_size,"sha256":sha(p)} for p in files}
+assert len(items)==67
+anchor=json.loads((E/"module-manifest-anchor.json").read_text()); assert sha(W/"module-originals.json")==anchor["sha256"]
+mutation=json.loads((E/"mutation-verification.json").read_text()); assert mutation["all_rejected"] and mutation["formal_sources_unchanged"]
+for item in mutation["mutations"]:
+    assert sha(W/item["overlay"])==item["overlay_sha256"]
+    assert all(sha(W/p)==h for p,h in item["mutated_files"].items())
+assert all(not p.is_symlink() for p in files)
+for name,digest in json.loads((E/"frozen-diagnostic.json").read_text())["files"].items():assert sha(R/name)==digest
+archive=E/"preserved-work.tar.gz"
+with archive.open("xb") as raw:
+    with tarfile.open(fileobj=raw,mode="w:gz") as handle:
+        for p in files:handle.add(p,arcname=str(p.relative_to(W)),recursive=False)
+with tarfile.open(archive) as handle:
+    assert set(handle.getnames())==set(items)
+    for name,item in items.items():
+        b=handle.extractfile(name).read();assert len(b)==item["bytes"] and hashlib.sha256(b).hexdigest()==item["sha256"]
+assert all(sha(W/name)==item["sha256"] for name,item in items.items())
+with (E/"work-preservation.json").open("x") as f:json.dump({"archive":archive.name,"archive_bytes":archive.stat().st_size,"archive_sha256":sha(archive),"files":items},f,indent=2);f.write("\n")
+binaries={p.name:{"bytes":p.stat().st_size,"sha256":sha(p)} for p in [W/"probe-ordinary",W/"probe-race",W/"final-root.test",W/"skeleton-probe"]}
+with (E/"discarded-binaries.json").open("x") as f:json.dump(binaries,f,indent=2);f.write("\n")
+print(json.dumps({"preserved_files":len(items),"archive_bytes":archive.stat().st_size,"discarded_binaries":len(binaries)}))

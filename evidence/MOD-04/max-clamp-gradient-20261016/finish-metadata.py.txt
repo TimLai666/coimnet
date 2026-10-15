@@ -1,0 +1,108 @@
+"""Publish bounded acceptance metadata only after actual full gate success."""
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = read(E / "formal-source.json")
+assert len(source) == 835 and all(sha(R / p) == h for p, h in source.items())
+engineering = read(E / "engineering-verification.json")
+diagnostic = read(E / "diagnostic-verification.json")
+regression = read(E / "regression-verification.json")
+mutation = read(E / "mutation-verification.json")
+assert engineering["all_passed"] and engineering["source_count"] == 835
+assert diagnostic["all_passed"] and regression["all_passed"] and mutation["all_rejected"]
+for item in engineering["steps"]:
+    assert item["exit_code"] == 0 and not item["acceptance_errors"] and sha(E / item["log"]) == item["log_sha256"]
+adoption = {}
+for mode in ["unit", "race"]:
+    item = next(v for v in engineering["steps"] if v["name"] == mode)
+    raw = gzip.decompress((E / item["log"]).read_bytes())
+    events = [json.loads(line) for line in raw.splitlines() if line.startswith(b"{")]
+    selected = {v["Package"] + ":" + v["Test"]: v["Action"] for v in events if v.get("Action") in ["pass", "fail", "skip"] and v.get("Test", "").startswith("TestNeutralGain")}
+    assert len(selected) == 21 and set(selected.values()) == {"pass"}
+    adoption[mode] = selected
+with (E / "adoption-current.json").open("x") as handle:
+    json.dump({"all_passed": True, "effective_gain_bounds_include_one": True, "current_effects_sha256": source["modulation/effects.go"], "construction_and_restore_refuse_excluded_ranges": True, "current_full_suite_events": adoption, "original_adoption": "../neutral-gain-adoption-20261014/verification.json"}, handle, indent=2)
+    handle.write("\n")
+verification = {
+    "requirement": ["LRN-02", "MOD-04"],
+    "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "engineering_passed": True, "diagnostic_passed": True,
+    "production_changes": False, "new_permanent_test_files": 1,
+    "confirmed_new_production_defects": 0,
+    "source_count": 835,
+    "reproduction_command": "audit-driver.py.txt; verify-diagnostic.py.txt; regression-driver.py.txt; verify-regression.py.txt; mutation-check.py.txt; engineering-r2.py.txt",
+    "environment": read(E / "environment.json"),
+    "input_fingerprints": {"base_commit": read(E / "baseline.json")["head"], "formal_source": "formal-source.json", "formal_source_sha256": sha(E / "formal-source.json"), "diagnostic": "frozen-diagnostic.json", "diagnostic_sha256": sha(E / "frozen-diagnostic.json"), "command_environment": "command-environment.json"},
+    "observed_result": {"diagnostic": diagnostic["builds"], "permanent_tests": regression["builds"], "mutations": "mutation-verification.json", "engineering": "engineering-verification.json", "adopted_neutral_gain_rule": "adoption-current.json"},
+    "retained_failed_diagnostics": {"empty_slots": ["skeleton-empty.json", "permanent-empty.json"], "diagnostic_unused_import": "skeleton-build.json", "incorrect_new_test_shape_oracle": "test-oracle-correction.json", "sandbox_loopback_denial": "sandbox-limitation.json"},
+    "test_log": ["audit-ordinary.log", "audit-race.log", "regression-r2-ordinary.log", "regression-r2-race.log", "engineering-r2-unit.log.gz", "engineering-r2-race.log.gz"],
+    "root_review": "root-review.md", "readonly_review": "readonly-review.md",
+    "limits": ["Bounded artificial CPU scalar fixtures, not whole-brain or real-task quality evidence", "No new independent full LIF surrogate gradient reference or hard-spike finite difference claim", "First-step chemistry proofs only; no claim every later row has the same clamp state", "No cross-build bitwise or checkpoint-bundle migration claim", "No biological calibration or absolute zero-bug proof"],
+    "remaining_delivery": ["final governance", "preserve necessary evidence", "owned temporary cleanup", "commit/push/remote readback"],
+    "acceptance_complete": False,
+}
+with (E / "verification.json").open("x") as handle:
+    json.dump(verification, handle, indent=2)
+    handle.write("\n")
+steps = {item["name"]: item for item in engineering["steps"]}
+unit, race = steps["unit"]["test_events"], steps["race"]["test_events"]
+report = f"""# 最大受體作用與夾限的訓練驗證
+
+負係數、最大受體作用與作用上下限的指定組合通過驗證，這輪沒有確認新的正式程式缺陷。已修正 ticket21 的數學說明，並加入永久整合測試。正式模型計算、API、保存格式及依賴保持原樣。
+
+最大作用先選原始受體佔用率，再套用係數。佔用率0.8／0.2、係數−0.5時，增益是0.6；輸出梯度為2時，兩筆佔用率梯度為−1／0。負係數不改變選中的受體。
+
+| 檢查 | 一般建置 | 競態建置 |
+| --- | ---: | ---: |
+| 完整／分段訓練組合 | 336 | 336 |
+| 有效機制對照 | 36 | 36 |
+| 第一個化學步的公開規則證明 | 56 | 56 |
+| 獨立連續核心梯度座標 | 432 | 432 |
+| 新程序恢復並接續四次操作 | 28 | 28 |
+| 新增永久測試事件 | 65 | 65 |
+| 永久測試中的獨立梯度座標 | 108 | 108 |
+| 既有直接受體／夾限測試事件 | 39 | 39 |
+| 完整套件通過 | 58 | 58 |
+| 完整測試事件通過 | {unit['pass']:,} | {race['pass']:,} |
+| 完整測試事件略過 | {unit['skip']} | {race['skip']} |
+
+432個參考座標全部能排除零梯度，最大絕對誤差為2.0321e−5，低於事前固定門檻。刻意把最大值改成總和，或忽略作用夾限的梯度，測試都會失敗。後者也被兩組增益上下限的獨立數值參考抓到。
+
+格式、build、vet、固定 Insyra v0.3.4、模組校驗與工程治理檢查通過。原有各6,477個終端測試事件保持，只新增各65個通過。完整結果見[驗收](verification.json)、[工程結果](engineering-verification.json)、[診斷](diagnostic-verification.json)、[永久測試](regression-verification.json)與[錯誤植入驗證](mutation-verification.json)。
+
+這是人工雙節點CPU純量驗證。公開診斷有五種來源，永久測試重用既有三通道fixture。LIF採明示的替代梯度規則，沒有對硬放電做中央有限差分，也沒有新增獨立完整LIF梯度參考。第一步的化學證明不表示後續每列都處於相同夾限狀態。本票沒有新的全腦、真實辨識率或生物校準結果，也不能證明整個框架完全沒有bug。
+
+命令、環境與來源指紋保存在驗收JSON。正式測試為[chemical_max_recompute_test.go](../../../learning/chemical_max_recompute_test.go)，可由專案的測試流程執行。診斷五份程式、56份SDK快照、錯誤植入檔及模組來源清單會保存於preserved-work.tar.gz，供新工作目錄重建；原證據目錄拒絕覆寫。
+
+原始失敗紀錄保留：新測試錯把初始狀態導數長度寫成零，已依既有API改為節點數；首次完整測試的本機HTTP綁定被沙盒拒絕，未改程式或測試，改以原授權的本機驗收重跑。詳見[test oracle修正](test-oracle-correction.json)與[環境限制](sandbox-limitation.json)。
+
+最後治理、暫存清理與Git交付由verification.json的remaining_delivery及對應回條記錄，完成後才結束本票。
+
+減法審查：重用既有fixture及獨立參考，不增加正式抽象層或新依賴；證據保存後清除本輪編譯快取與診斷二進位檔。
+"""
+with (E / "README.md").open("x") as handle:
+    handle.write(report)
+p = R / "docs/requirements-status.json"
+original = p.read_bytes()
+document = json.loads(original)
+relative = "../" + str(E.relative_to(R)) + "/verification.json"
+seen = set()
+for requirement in document["requirements"]:
+    if requirement["id"] in verification["requirement"]:
+        assert requirement["status"] == "passed"
+        assert relative not in requirement["evidence"]
+        requirement["evidence"].append(relative)
+        seen.add(requirement["id"])
+assert seen == set(verification["requirement"])
+assert p.read_bytes() == original
+p.write_text(json.dumps(document, ensure_ascii=False, indent=2) + "\n")
+print(json.dumps({"engineering_passed": True, "diagnostic_passed": True, "requirements_evidence_added": sorted(seen), "acceptance_complete": False}), flush=True)

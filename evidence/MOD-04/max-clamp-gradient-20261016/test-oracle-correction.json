@@ -1,0 +1,8 @@
+{
+  "before_sha256": "624343b3ec84577ddc1e1ed33bcbbf03162f158579102604e6ca069c02171b05",
+  "after_sha256": "1e8ebebb9f62a5447542c9ad8ed912e04b6cef32960fb570d73b920d92c63f12",
+  "failure_log": "regression-ordinary.log",
+  "cause": "New test incorrectly expected an empty Core.Initial gradient. Existing dynamics/coupled_reverse.go allocates n initial-state derivatives even for zero initial state. Fixture has two nodes. Correct the shape oracle to config.Dynamics.Nodes; all 108 parameter/input reference requirements unchanged.",
+  "source": "dynamics/coupled_reverse.go:45",
+  "production_bug": false
+}

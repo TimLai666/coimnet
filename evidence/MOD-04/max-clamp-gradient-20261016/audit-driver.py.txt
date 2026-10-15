@@ -1,0 +1,53 @@
+"""Execute the reviewed frozen public diagnostic; no formal source mutations."""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip audit gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/max-clamp-gradient-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = json.loads((E / "source-before.json").read_text())
+frozen = json.loads((E / "frozen-diagnostic.json").read_text())["files"]
+
+def gate():
+    paths = {p for p in subprocess.check_output(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=R).decode().split("\0") if p and (p.endswith(".go") or p in ("go.mod", "go.sum"))}
+    assert len(source) == 834 and paths == set(source) | {"learning/chemical_max_recompute_test.go"}, "formal source path set changed"
+    diagnostics = {str(p.relative_to(R)) for p in (W / "probe").glob("*.go")}
+    assert diagnostics == set(frozen), "diagnostic source path set changed"
+    assert W.stat().st_ino == json.loads((E / "baseline.json").read_text())["work_inode"]
+    assert all(sha(R / p) == h for p, h in {**source, **frozen}.items())
+    assert all(sha(Path(p)) == h for p, h in json.loads((E / "foreign-before.json").read_text()).items())
+
+def run(label, command):
+    gate()
+    subprocess.run([sys.executable, str(E / "run-command.py.txt"), label, *command], cwd=R, check=True)
+    gate()
+
+files = sorted(str(p.relative_to(R)) for p in (W / "probe").glob("*.go"))
+run("diagnostic-format", ["gofmt", "-l", *files])
+assert not (E / "diagnostic-format.log").read_bytes().strip()
+for mode, flags in [("ordinary", []), ("race", ["-race"])]:
+    binary = W / ("probe-" + mode)
+    run("build-" + mode, ["go", "build", *flags, "-o", str(binary), "./" + str((W / "probe").relative_to(R))])
+    resume = W / ("resume-" + mode)
+    assert not resume.exists()
+    resume.mkdir()
+    run("audit-" + mode, [str(binary), "audit", str(resume)])
+    report = json.loads((E / ("audit-" + mode + ".log")).read_text())
+    assert report["all_passed"] and len(report["matrix"]) == 336
+    inputs = report["resume_inputs"]
+    assert len(inputs) == 28 and len(set(inputs)) == 28
+    for i, name in enumerate(inputs):
+        p = Path(name)
+        if not p.is_absolute():
+            p = R / p
+        assert p.is_file() and p.resolve().is_relative_to(resume.resolve())
+        run("resume-" + mode + "-" + str(i), [str(binary), "resume", str(p)])
+run("diagnostic-vet", ["go", "vet", "./" + str((W / "probe").relative_to(R))])
+gate()
+print(json.dumps({"all_commands_passed":True,"unchanged_original_sources":len(source),"new_permanent_test_excluded_from_diagnostic_build":True,"ordinary_race_matrix_each":336,"new_process_resumes_each":28}))

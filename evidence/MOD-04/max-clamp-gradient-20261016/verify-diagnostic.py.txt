@@ -1,0 +1,79 @@
+"""Independently check exact key/coordinate coverage in captured public results."""
+import collections
+import hashlib
+import itertools
+import json
+import math
+from pathlib import Path
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip verification")
+E = Path(__file__).resolve().parent
+R = E.parents[2]
+W = R / "runs/.tmp/max-clamp-gradient-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+common = ["open-positive", "open-negative", "gain-upper", "gain-lower", "offset-upper", "offset-lower"]
+profiles = {"continuous": common, "lif": common + ["threshold-upper", "threshold-lower"]}
+fields = ("Core", "Mix", "Profile", "Filled", "Delay", "Window", "Segment")
+key = lambda k: tuple(k[f] for f in fields)
+matrix_keys = {(core, mix, profile, fill, 5, window, segment) for core in profiles for profile in profiles[core] for mix, fill, window, segment in itertools.product(["sum", "max"], [1, 3], [0, 3], [1, 5, 11])}
+proof_keys = {(c, m, p, f, 5, 0, 1) for c in profiles for p in profiles[c] for m, f in itertools.product(["sum", "max"], [1, 3])}
+coords = {f"{group}[{i}]" for group in ["weights", "bias", "log_tau", "encoder", "readout"] for i in [0, 1]} | {f"input[{i}]" for i in range(8)}
+reference_keys = {(c, m, p, f, 5, 0, 1, coord) for c in ["continuous"] for p in common for m, f, coord in itertools.product(["sum", "max"], [1, 3], coords)}
+control_keys = {(c, "sum", p, f, 5, 0, 1, "sum-vs-max") for c in profiles for p in profiles[c] for f in [1, 3]} | {(c, m, "open-positive", f, 5, 0, 1, "open-positive-vs-open-negative") for c, m, f in itertools.product(profiles, ["sum", "max"], [1, 3])}
+resume_keys = {(c, "max", p, f, 5, 3, s) for c in profiles for p in (["open-negative", "gain-lower", "offset-upper"] + (["threshold-lower"] if c == "lif" else [])) for f, s in itertools.product([1, 3], [1, 5])}
+results = {}
+for mode in ["ordinary", "race"]:
+    report = json.loads((E / ("audit-" + mode + ".log")).read_text())
+    assert report["all_passed"]
+    assert len(report["matrix"]) == 336 and {key(v["Key"]) for v in report["matrix"]} == matrix_keys
+    assert all(v["Operations"] == 5 and v["ParametersChanged"] and math.isfinite(v["FirstUpdateMeanNorm"]) and v["FirstUpdateMeanNorm"] > 0 for v in report["matrix"])
+    assert len(report["controls"]) == 36 and {(*key(v["Key"]), v["Kind"]) for v in report["controls"]} == control_keys
+    assert all(v["OutputsDiffer"] or v["GradientsDiffer"] for v in report["controls"])
+    assert len(report["initial_proofs"]) == 56 and {key(v["Key"]) for v in report["initial_proofs"]} == proof_keys
+    clamps = collections.Counter()
+    for proof in report["initial_proofs"]:
+        profile = proof["Key"]["Profile"]
+        expected = {"gamma": 0, "beta": 0, "theta": 0}
+        if profile.startswith("gain-"):
+            expected["gamma"] = 2
+        elif profile.startswith("offset-"):
+            expected["beta"] = 2
+        elif profile.startswith("threshold-"):
+            expected["theta"] = 2
+        assert proof["Clamp"] == expected
+        clamps["open" if profile.startswith("open-") else "capped"] += 1
+    assert clamps == {"open": 16, "capped": 40}
+    refs = report["references"]
+    assert len(refs) == 432 and {(*key(v["Key"]), v["Coordinate"]) for v in refs} == reference_keys
+    informative = collections.Counter()
+    max_error = 0.0
+    for v in refs:
+        gradient, reference = v["Gradient"], v["Reference"]
+        assert math.isfinite(gradient) and math.isfinite(reference)
+        error = abs(gradient - reference)
+        tolerance = .002 + .002 * abs(reference)
+        assert error <= tolerance
+        max_error = max(error, max_error)
+        informative[(v["Key"]["Mix"], v["Key"]["Profile"], v["Key"]["Filled"])] += int(abs(reference) > tolerance)
+    assert len(informative) == 24 and all(v > 0 for v in informative.values())
+    inputs = report["resume_inputs"]
+    assert len(inputs) == len(set(inputs)) == 28
+    seen = set()
+    for index, name in enumerate(inputs):
+        p = Path(name)
+        if not p.is_absolute():
+            p = R / p
+        assert p.resolve().is_relative_to((W / ("resume-" + mode)).resolve())
+        inp = json.loads(p.read_text())
+        seen.add(key(inp["Key"]))
+        receipt = json.loads((E / f"resume-{mode}-{index}.json").read_text())
+        out = json.loads((E / receipt["log"]).read_text())
+        assert receipt["exit_code"] == 0 and sha(E / receipt["log"]) == receipt["log_sha256"]
+        assert out["all_passed"] and out["operations"] == 4 and out["key"] == inp["Key"]
+    assert seen == resume_keys
+    results[mode] = {"matrix_cases": 336, "controls": 36, "initial_step_proofs": 56, "initial_clamp_groups": dict(clamps), "finite_difference_coordinates": 432, "informative_coordinates": sum(informative.values()), "informative_groups": len(informative), "max_absolute_gradient_error": max_error, "new_process_resumes": 28, "clipped_first_updates": sum(v["FirstUpdateClipped"] for v in report["matrix"])}
+with (E / "diagnostic-verification.json").open("x") as f:
+    json.dump({"all_passed": True, "builds": results, "cross_build_bitwise_equality_required": False}, f, indent=2)
+    f.write("\n")
+print(json.dumps(results), flush=True)

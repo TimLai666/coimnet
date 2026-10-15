@@ -1,0 +1,29 @@
+"""Run the already-built root governance tests after final metadata edits."""
+import hashlib
+import json
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/max-clamp-gradient-20261016"
+source = json.loads((E / "formal-source.json").read_text())
+assert len(source) == 835 and all(hashlib.sha256((R / p).read_bytes()).hexdigest() == h for p, h in source.items())
+assert json.loads((E / "engineering-verification.json").read_text())["all_passed"]
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+command = [str(W / "final-root.test"), "-test.v", "-test.count=1", "-test.run=" + pattern]
+subprocess.run([sys.executable, str(E / "run-command.py.txt"), "final-governance", *command], cwd=R, check=True)
+log = (E / "final-governance.log").read_text()
+passed = len(re.findall(r"^\s*--- PASS: ", log, re.M))
+assert passed == 31 and "--- FAIL:" not in log
+p = E / "final-governance.json"
+original = p.read_bytes()
+receipt = json.loads(original)
+receipt.update(passed_events=passed, source_count=len(source))
+assert p.read_bytes() == original
+p.write_text(json.dumps(receipt, indent=2) + "\n")
+print(json.dumps({"passed_events": passed, "source_count": len(source)}), flush=True)

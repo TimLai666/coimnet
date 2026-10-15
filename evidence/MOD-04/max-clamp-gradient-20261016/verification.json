@@ -1,0 +1,177 @@
+{
+  "requirement": [
+    "LRN-02",
+    "MOD-04"
+  ],
+  "verified_at": "2026-10-15T23:08:47.671427+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": false,
+  "new_permanent_test_files": 1,
+  "confirmed_new_production_defects": 0,
+  "source_count": 835,
+  "reproduction_command": "audit-driver.py.txt; verify-diagnostic.py.txt; regression-driver.py.txt; verify-regression.py.txt; mutation-check.py.txt; engineering-r2.py.txt",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "go": "go version go1.26.5 darwin/arm64",
+    "base_commit": "c0217428a20c42b580d087f2edcb98d7d56ad418",
+    "scope": "CPU scalar max/clamp integration; no biological or task-quality conclusion"
+  },
+  "input_fingerprints": {
+    "base_commit": "c0217428a20c42b580d087f2edcb98d7d56ad418",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "1f5f987ccefbf9bd783de9b0bc309fe2de3912c135883913ac938cbdb9f5fa5a",
+    "diagnostic": "frozen-diagnostic.json",
+    "diagnostic_sha256": "414461c6ce816eafce6f2f16e1b1522e549eb38269076dda490d652f47601a46",
+    "command_environment": "command-environment.json"
+  },
+  "observed_result": {
+    "diagnostic": {
+      "ordinary": {
+        "matrix_cases": 336,
+        "controls": 36,
+        "initial_step_proofs": 56,
+        "initial_clamp_groups": {
+          "open": 16,
+          "capped": 40
+        },
+        "finite_difference_coordinates": 432,
+        "informative_coordinates": 432,
+        "informative_groups": 24,
+        "max_absolute_gradient_error": 2.032082964920079e-05,
+        "new_process_resumes": 28,
+        "clipped_first_updates": 336
+      },
+      "race": {
+        "matrix_cases": 336,
+        "controls": 36,
+        "initial_step_proofs": 56,
+        "initial_clamp_groups": {
+          "open": 16,
+          "capped": 40
+        },
+        "finite_difference_coordinates": 432,
+        "informative_coordinates": 432,
+        "informative_groups": 24,
+        "max_absolute_gradient_error": 2.032082964920079e-05,
+        "new_process_resumes": 28,
+        "clipped_first_updates": 336
+      }
+    },
+    "permanent_tests": {
+      "ordinary": {
+        "permanent_test_pass_events": 65,
+        "training_leaf_cases": 56,
+        "finite_difference_coordinates": 108,
+        "reference_profiles": {
+          "open-positive": {
+            "checked": 18,
+            "informative": 18
+          },
+          "open-negative": {
+            "checked": 18,
+            "informative": 18
+          },
+          "gain-upper": {
+            "checked": 18,
+            "informative": 18
+          },
+          "gain-lower": {
+            "checked": 18,
+            "informative": 18
+          },
+          "offset-upper": {
+            "checked": 18,
+            "informative": 18
+          },
+          "offset-lower": {
+            "checked": 18,
+            "informative": 18
+          }
+        },
+        "direct_effect_rule_pass_events": 39
+      },
+      "race": {
+        "permanent_test_pass_events": 65,
+        "training_leaf_cases": 56,
+        "finite_difference_coordinates": 108,
+        "reference_profiles": {
+          "open-positive": {
+            "checked": 18,
+            "informative": 18
+          },
+          "open-negative": {
+            "checked": 18,
+            "informative": 18
+          },
+          "gain-upper": {
+            "checked": 18,
+            "informative": 18
+          },
+          "gain-lower": {
+            "checked": 18,
+            "informative": 18
+          },
+          "offset-upper": {
+            "checked": 18,
+            "informative": 18
+          },
+          "offset-lower": {
+            "checked": 18,
+            "informative": 18
+          }
+        },
+        "direct_effect_rule_pass_events": 39
+      }
+    },
+    "mutations": "mutation-verification.json",
+    "engineering": "engineering-verification.json",
+    "adopted_neutral_gain_rule": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance-r2.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1668319814,
+      "preserved_original_models": 18,
+      "preserved_persistent_data_files": 6
+    }
+  },
+  "retained_failed_diagnostics": {
+    "empty_slots": [
+      "skeleton-empty.json",
+      "permanent-empty.json"
+    ],
+    "diagnostic_unused_import": "skeleton-build.json",
+    "incorrect_new_test_shape_oracle": "test-oracle-correction.json",
+    "sandbox_loopback_denial": "sandbox-limitation.json",
+    "missing_evidence_test_log": "metadata-correction.json"
+  },
+  "root_review": "root-review.md",
+  "readonly_review": "readonly-review.md",
+  "limits": [
+    "Bounded artificial CPU scalar fixtures, not whole-brain or real-task quality evidence",
+    "No new independent full LIF surrogate gradient reference or hard-spike finite difference claim",
+    "First-step chemistry proofs only; no claim every later row has the same clamp state",
+    "No cross-build bitwise or checkpoint-bundle migration claim",
+    "No biological calibration or absolute zero-bug proof"
+  ],
+  "remaining_delivery": [
+    "commit/push/remote readback"
+  ],
+  "acceptance_complete": false,
+  "test_log": [
+    "audit-ordinary.log",
+    "audit-race.log",
+    "regression-r2-ordinary.log",
+    "regression-r2-race.log",
+    "modulation-rules-ordinary.log",
+    "modulation-rules-race.log",
+    "engineering-r2-unit.log.gz",
+    "engineering-r2-race.log.gz",
+    "final-governance-r2.log"
+  ],
+  "necessary_evidence": "work-preservation.json"
+}
