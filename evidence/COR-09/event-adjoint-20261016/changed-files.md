@@ -68,6 +68,7 @@
 | [evidence/COR-09/event-adjoint-20261016/core-old-state-resume-race.log](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/core-old-state-resume-race.log) | 保留 core-old-state-resume-race.log 的原始命令輸出。 |
 | [evidence/COR-09/event-adjoint-20261016/core-old-state-resume.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/core-old-state-resume.json) | 記錄 core-old-state-resume.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/core-old-state-resume.log](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/core-old-state-resume.log) | 保留 core-old-state-resume.log 的原始命令輸出。 |
+| [evidence/COR-09/event-adjoint-20261016/delivery.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/delivery.json) | 記錄 delivery.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/engineering-build.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/engineering-build.json) | 記錄 engineering-build.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/engineering-build.log](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/engineering-build.log) | 保留 engineering-build.log 的原始命令輸出。 |
 | [evidence/COR-09/event-adjoint-20261016/engineering-closure-binary.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/engineering-closure-binary.json) | 記錄 engineering-closure-binary.json 的計畫、審查、指紋或驗證結果。 |
@@ -114,6 +115,7 @@
 | [evidence/COR-09/event-adjoint-20261016/preserve-work.py.txt](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/preserve-work.py.txt) | 保存 preserve-work.py.txt 的驗收、證據或清理程式。 |
 | [evidence/COR-09/event-adjoint-20261016/preserved-work.tar.gz](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/preserved-work.tar.gz) | 保存人工模型、來源版本、驅動程式及原始模組指紋，供清理後核對。 |
 | [evidence/COR-09/event-adjoint-20261016/probe.go.txt](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/probe.go.txt) | 保存 probe.go.txt 的公開重現、凍結測試或相容性程式。 |
+| [evidence/COR-09/event-adjoint-20261016/push-preflight.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/push-preflight.json) | 記錄 push-preflight.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/red-verification.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/red-verification.json) | 記錄 red-verification.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/regression-before-corrected.json](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/regression-before-corrected.json) | 記錄 regression-before-corrected.json 的計畫、審查、指紋或驗證結果。 |
 | [evidence/COR-09/event-adjoint-20261016/regression-before-corrected.log](/Users/timlai/Developer/coimnet/evidence/COR-09/event-adjoint-20261016/regression-before-corrected.log) | 保留 regression-before-corrected.log 的原始命令輸出。 |

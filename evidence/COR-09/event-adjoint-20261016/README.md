@@ -24,6 +24,6 @@
 
 28 份必要工作檔已封存，封存檔 745,722 bytes。已清除自有暫存 28,111 個項目、1,926,900,129 bytes。18 個原模型、六份必要資料、15,046 個原始模組檔及兩個既有工作目錄保持，見[清理回條](cleanup.json)與[封存清單](work-preservation.json)。
 
-逐檔變更見[檔案清單](changed-files.md)。Git 交付以 delivery.json 的遠端讀回為準。
+修正 `0fbdb89` 與主要回歸／證據 `6092f93` 已正常推送，遠端讀回相同，828 份已提交來源指紋符合驗收。逐檔變更見[檔案清單](changed-files.md)，交付證據見[遠端回條](delivery.json)。
 
 下一票為[替代梯度極端值稽核](../../../docs/tickets/115-surrogate-extreme-audit.md)，目前只有唯讀線索，尚未執行公開重現。
