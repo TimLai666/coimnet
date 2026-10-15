@@ -228,6 +228,8 @@ bundle 訓練的化學 resources 與 pending_feedback 必須有鍵，合法空�
 
 混合核心完整化學路徑的獨立參考使用測試私有前向微分，依方程式傳播每項參數的導數，與正式反向的方向和實作分開。硬事件值採 0／1、導數採宣告的 fast_sigmoid，硬重設停止事件導數，適應保留事件導數。不增加公開 smooth API，不用硬事件普通有限差分判錯。輸入／讀出跨 Insyra float32 邊界須另核對捨入誤差，範圍與驗收由[ticket 88](docs/tickets/88-mixed-chemical-gradient-reference.md)管理。
 
+LIF 與混合核心的 `fast_sigmoid` 保留正常的 `1/(den*den)` 算式。有限 `den` 的平方先溢位而局部斜率仍可表示時，共用私有 helper 以原分母精確平方、取倒數，再一次捨入為 float64。`den >= 2^538` 時局部斜率必定低於最小次正規數的一半，直接為零。這只恢復宣告的局部替代梯度，不改後續反向的浮點儲存政策。數值、一般／重算／化學耦合與舊保存對照見[ticket 115](docs/tickets/115-surrogate-extreme-audit.md)。
+
 ## 機制與品質缺陷稽核（2026-10-13）
 
 持續化學的釋放總量也須有限。每列可合法而整段總量溢位時，整次 Advance／AdvanceGated 回錯，保留神經、化學、來源、可塑性及上一份報告。鞏固先在同一把鎖內驗證 slow 與 plastic 候選、三層範數及共同有效權重，再提交。第一掃描按啟用位置查實際核心邊，固定符號的原始 rho 先轉成 exp(rho)，再沿用 `(base + slow) + plastic` 及 w_min 下限。下限可擋住的負向幅度溢位保持合法，不可表示的有效權重回錯且不消耗預算。候選、範數與取消的既有失敗優先序保持。範數使用 Hypot 避免平方中間值溢位，不可表示的實際範數仍回錯。兩次掃描不配置新的邊陣列，Model.Edge 僅回傳實際邊索引與下限。驗收由[ticket 90](docs/tickets/90-slow-memory-composition.md)管理。

@@ -47,9 +47,9 @@ type LIFConfig struct {
 // and the event of a step compares against theta_base + adaptation + h. The
 // offset only raises the threshold or falls back to zero, which is the bounded
 // adjustment the specification asks for, never an unbounded gain. Both values
-// are state, not learnable parameters: the reverse pass treats h as a constant
-// exactly as it treats the adaptation. Disabled leaves r and h at zero and
-// restores the behaviour of a model that never had the mechanism.
+// are state, not learnable parameters: the reverse pass detaches h, while
+// adaptation retains its existing cross-time derivative. Disabled leaves r and
+// h at zero and restores the behaviour of a model that never had the mechanism.
 type LIFHomeostasis struct {
 	Enabled    bool    `json:"enabled"`
 	TauRate    float64 `json:"tau_rate"`
@@ -449,6 +449,9 @@ func (m *LIF) event(u float64) (spike, derivative float64) {
 	scale := m.config.Surrogate.Scale
 	den := 1 + scale*math.Abs(u)
 	psi := 1 / (den * den)
+	if psi == 0 && finite(den) {
+		psi = recoverSurrogateDerivative(den)
+	}
 	if m.smooth {
 		return .5 * (1 + scale*u/den), .5 * scale * psi
 	}

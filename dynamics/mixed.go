@@ -278,6 +278,9 @@ func (m *Mixed) event(u float64) (spike, derivative float64) {
 	scale := m.config.LIF.Surrogate.Scale
 	den := 1 + scale*math.Abs(u)
 	psi := 1 / (den * den)
+	if psi == 0 && finite(den) {
+		psi = recoverSurrogateDerivative(den)
+	}
 	if m.smooth {
 		return .5 * (1 + scale*u/den), .5 * scale * psi
 	}
