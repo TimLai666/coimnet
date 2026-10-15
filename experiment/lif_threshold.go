@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/thresholdtail"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -260,7 +261,15 @@ func lifThresholdHoldoutSpikeRate(ctx context.Context, trainer *learning.Trainer
 func thetaBases(raw []float64, core dynamics.LIFConfig) []float64 {
 	out := make([]float64, len(raw))
 	for i, value := range raw {
+		if recoveredBase, _, recovered := thresholdtail.Recover(value, core.ThetaMin, core.ThetaMax); recovered {
+			out[i] = recoveredBase
+			continue
+		}
 		out[i] = core.ThetaMin + (core.ThetaMax-core.ThetaMin)*logistic(value)
+		if math.IsInf(core.ThetaMax-core.ThetaMin, 1) {
+			s := logistic(value)
+			out[i] = core.ThetaMin*(1-s) + core.ThetaMax*s
+		}
 	}
 	return out
 }

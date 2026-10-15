@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+
+	"github.com/TimLai666/coimnet/internal/thresholdtail"
 )
 
 // LIFStateVersion identifies the persistent state of the spiking core and its
@@ -393,6 +395,13 @@ func (m *LIF) lifBaseThreshold(thetaRaw []float64) ([]float64, error) {
 	span := m.config.ThetaMax - m.config.ThetaMin
 	base := make([]float64, len(thetaRaw))
 	for i, raw := range thetaRaw {
+		if recoveredBase, _, recovered := thresholdtail.Recover(raw, m.config.ThetaMin, m.config.ThetaMax); recovered {
+			base[i] = recoveredBase
+			if !finite(base[i]) {
+				return nil, fmt.Errorf("theta_base[%d] is not representable", i)
+			}
+			continue
+		}
 		base[i] = m.config.ThetaMin + span*logistic(raw)
 		if math.IsInf(span, 1) {
 			s := logistic(raw)

@@ -114,8 +114,8 @@
 | `coimnet-imitation/v1` | `experiment` | 模仿學習報告格式 | [experiment/imitation.go:15](../experiment/imitation.go#L15) |
 | `coimnet-individual-checkpoint/v1` | `checkpoint` | 連續個體快照格式 | [checkpoint/individual.go:25](../checkpoint/individual.go#L25) |
 | `coimnet-individual/v1` | `learning` | 持續個體與訓練狀態版本 | [learning/individual.go:20](../learning/individual.go#L20) |
-| `coimnet-lif-state/v1` | `dynamics` | LIF 個體狀態格式 | [dynamics/lif_state.go:14](../dynamics/lif_state.go#L14) |
-| `coimnet-lif-threshold-example/v1` | `experiment` | LIF 閾值範例報告格式 | [experiment/lif_threshold.go:16](../experiment/lif_threshold.go#L16) |
+| `coimnet-lif-state/v1` | `dynamics` | LIF 個體狀態格式 | [dynamics/lif_state.go:16](../dynamics/lif_state.go#L16) |
+| `coimnet-lif-threshold-example/v1` | `experiment` | LIF 閾值範例報告格式 | [experiment/lif_threshold.go:17](../experiment/lif_threshold.go#L17) |
 | `coimnet-media/v1` | `tasks/media` | 媒體範例報告格式 | [tasks/media/run.go:15](../tasks/media/run.go#L15) |
 | `coimnet-mixed-state/v1` | `dynamics` | 混合核心個體狀態格式 | [dynamics/mixed_state.go:17](../dynamics/mixed_state.go#L17) |
 | `coimnet-model-package/v1` | `checkpoint` | 模型包格式 | [checkpoint/package.go:26](../checkpoint/package.go#L26) |

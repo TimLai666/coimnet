@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+
+	"github.com/TimLai666/coimnet/internal/thresholdtail"
 )
 
 // lifCoupledTrace is the extra tape owned by a coupled LIF forward pass. The
@@ -85,6 +87,13 @@ func (m *LIF) forwardLIFCoupled(ctx context.Context, p LIFParameters, initial []
 	span := m.config.ThetaMax - m.config.ThetaMin
 	base, slope := make([]float64, n), make([]float64, n)
 	for i, raw := range p.ThetaRaw {
+		if recoveredBase, recoveredSlope, recovered := thresholdtail.Recover(raw, m.config.ThetaMin, m.config.ThetaMax); recovered {
+			base[i], slope[i] = recoveredBase, recoveredSlope
+			if !finite(base[i]) || !finite(slope[i]) {
+				return nil, fmt.Errorf("theta_base[%d] is not representable", i)
+			}
+			continue
+		}
 		s := logistic(raw)
 		base[i] = m.config.ThetaMin + span*s
 		slope[i] = span * s * (1 - s)

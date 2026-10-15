@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"math"
+
+	"github.com/TimLai666/coimnet/internal/thresholdtail"
 )
 
 // Node rule codes of MixedConfig.NodeRule. Every node follows exactly one of
@@ -332,6 +334,19 @@ func (m *Mixed) baseThreshold(thetaRaw []float64, withSlope bool) (base, slope [
 		slope = make([]float64, len(thetaRaw))
 	}
 	for k, raw := range thetaRaw {
+		if recoveredBase, recoveredSlope, recovered := thresholdtail.Recover(raw, m.config.LIF.ThetaMin, m.config.LIF.ThetaMax); recovered {
+			base[k] = recoveredBase
+			if withSlope {
+				slope[k] = recoveredSlope
+			}
+			if !finite(base[k]) {
+				return nil, nil, fmt.Errorf("theta_base[%d] is not representable", k)
+			}
+			if withSlope && !finite(slope[k]) {
+				return nil, nil, fmt.Errorf("theta_base[%d] is not representable", k)
+			}
+			continue
+		}
 		s := logistic(raw)
 		base[k] = m.config.LIF.ThetaMin + span*s
 		if math.IsInf(span, 1) {
