@@ -3,12 +3,12 @@
 **Epic:** 設計與實作一致性稽核
 **User Story:** 研究者能從文件辨識局部更新讀取哪一列訊號，並分清原始規格與工程假設。
 **Blocked by:** 無
-**Status:** in progress
+**Status:** done
 
 - [x] 核對原始規格、來源歷史與兩個執行入口。
 - [x] 修正錯誤歸因、時間符號與過時完成狀態。
 - [x] 核對獨立算式、文件檢查、既有原始日誌及來源／模型保存。
-- [ ] 保存證據並提交、推送與核對遠端。
+- [x] 保存證據並提交、推送與核對遠端。
 
 ## Root 決策｜2026-10-15
 
@@ -23,3 +23,5 @@
 範圍、預期結果與分工見[計畫](../../evidence/LRN-05/plasticity-time-definition-20261015/plan.md)。文件修正前七項檢查失敗，見[原始結果](../../evidence/LRN-05/plasticity-time-definition-20261015/document-red.json)。原始交接包保持不變。
 
 七項文件檢查通過，見[修正後結果](../../evidence/LRN-05/plasticity-time-definition-20261015/document-green.json)。全部 823 份 Go／module 來源、18 個原模型及六份必要資料保持相同。依相同來源指紋校驗既有完整一般／競態日誌，兩種建置各八項相關測試已通過。本票沒有重新執行 Go，不把既有日誌重報為新測試，見[驗收](../../evidence/LRN-05/plasticity-time-definition-20261015/verification.json)。沒有建立或留下本票暫存。
+
+文件與核對證據提交 `4f6fa2c` 已推送且遠端讀回相同，16 個檔案的範圍及 823 份來源保持已核對，見[交付](../../evidence/LRN-05/plasticity-time-definition-20261015/delivery.json)。本票完成 4／4；整體零 bug 目標保持進行中。
