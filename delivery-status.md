@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 106](docs/tickets/106-operational-project-temp.md) 已完成操作腳本與教學的專案內保存，乾淨匯出建置也不再帶入外層工作區版本資訊。永久回歸一般／競態各 14 個事件通過，完整一般／競態各 58 套件通過，5,840／5,839 個事件成功、22／23 個略過、零失敗。build、vet、格式、固定相依性及最後 11 項治理檢查通過，見[驗收](evidence/OPS-03/operational-temp-paths-20261015/verification.json)。README 的訓練、接續與推論已實跑，必要快照及輸入原文已保存。自有暫存已清除，其他五個工作目錄、815 份 Go／module、18 個模型及固定訓練輸入保持，見[清理](evidence/OPS-03/operational-temp-paths-20261015/cleanup.json)。目前 3／4，剩下拆分提交與遠端核對。
+[ticket 106](docs/tickets/106-operational-project-temp.md) 已完成操作腳本與教學的專案內保存，乾淨匯出建置也不再帶入外層工作區版本資訊。永久回歸一般／競態各 14 個事件通過，完整一般／競態各 58 套件通過，5,840／5,839 個事件成功、22／23 個略過、零失敗。build、vet、格式、固定相依性及最後 11 項治理檢查通過，見[驗收](evidence/OPS-03/operational-temp-paths-20261015/verification.json)。README 的訓練、接續與推論已實跑，必要快照及輸入原文已保存。自有暫存已清除，其他五個工作目錄、815 份 Go／module、18 個模型及固定訓練輸入保持，見[清理](evidence/OPS-03/operational-temp-paths-20261015/cleanup.json)。本票完成 4／4。修正 `30713b6` 與回歸／證據 `d62f677` 已正常推送且遠端讀回相同，815 份提交來源指紋一致，見[交付](evidence/OPS-03/operational-temp-paths-20261015/delivery.json)。
 
 [ticket 105](docs/tickets/105-recompute-project-temp.md) 已修正重算工具與文件範例的暫存路徑，工作留在 `runs/.tmp/`，只清除本次子目錄，共用目錄與原結果保留。一般／競態專項各 8 個事件通過，四個真實小圖 helper 與三次文件範例完成，必要快照原檔已保存。完整一般／競態各 58 套件通過，5,826／5,825 個事件成功、22／23 個略過、零失敗，build、vet、格式、相依性及最後 11 項治理／31 個事件通過，見[驗收](evidence/OPS-03/recompute-temp-path-20261015/verification.json)。本票完成 4／4。修正 `eedb19a` 與回歸／證據 `668fd08` 已正常推送且遠端讀回相同，見[交付](evidence/OPS-03/recompute-temp-path-20261015/delivery.json)。自有暫存與教學 fixture 共 36,423,885 bytes 已清除。原有 812 份 Go／module、18 個模型及 ticket 104 固定輸入保持，新增工具測試不參與既有訓練程式。沒有本票交付阻礙，下一個可驗證成果是 ticket 106 的永久回歸整合。整體零 bug 目標持續進行。
 
