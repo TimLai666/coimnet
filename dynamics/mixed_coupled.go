@@ -192,12 +192,11 @@ func (m *Mixed) forwardCoupled(ctx context.Context, p MixedParameters, initial [
 			}
 			if mod.Threshold != nil && threshold[i] != 0 {
 				shifted := theta + threshold[i]
-				if !finite(shifted) {
-					return nil, fmt.Errorf("non-finite threshold at step %d neuron %d", t, i)
-				}
 				if shifted <= m.config.LIF.ThetaMin {
 					theta = m.config.LIF.ThetaMin
 					thresholdFloor[i] = true
+				} else if !finite(shifted) {
+					return nil, fmt.Errorf("non-finite threshold at step %d neuron %d", t, i)
 				} else {
 					theta = shifted
 				}

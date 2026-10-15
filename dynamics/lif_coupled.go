@@ -247,12 +247,11 @@ func (m *LIF) forwardLIFCoupled(ctx context.Context, p LIFParameters, initial []
 				shift := mod.Threshold[0][i]
 				if shift != 0 {
 					shifted := theta + shift
-					if !finite(shifted) {
-						return nil, fmt.Errorf("non-finite threshold at step %d neuron %d", t, i)
-					}
 					if shifted <= m.config.ThetaMin {
 						theta = m.config.ThetaMin
 						thresholdFloor[i] = true
+					} else if !finite(shifted) {
+						return nil, fmt.Errorf("non-finite threshold at step %d neuron %d", t, i)
 					} else {
 						theta = shifted
 					}
