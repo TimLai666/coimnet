@@ -3,7 +3,7 @@
     "MOD-04"
   ],
   "engineering_passed": true,
-  "acceptance_complete": false,
+  "acceptance_complete": true,
   "reproduction_command": "run-command.py.txt with commands in individual receipts; engineering.py.txt runs gofmt, build, full unit/race, vet, module verification, fixed Insyra and governance",
   "environment": {
     "observed_at": "2026-10-15T12:44:34.241174+00:00",
@@ -48,9 +48,7 @@
     "all_12_models_had_training_parameter_updates": true,
     "original_reproduction_fixed": true,
     "engineering_governance_pass_events": 31,
-    "remaining_delivery": [
-      "commits and push/readback"
-    ],
+    "remaining_delivery": [],
     "cleanup": {
       "cleaned_at": "2026-10-15T13:26:45.177362+00:00",
       "owned_directory": "runs/.tmp/lif-threshold-floor-20261015",
@@ -70,7 +68,28 @@
       ],
       "directory_removed": true
     },
-    "final_governance_pass_events": 31
+    "final_governance_pass_events": 31,
+    "delivery": {
+      "observed_at": "2026-10-15T13:38:26.516468+00:00",
+      "branch": "codex/receptor-chemistry-training",
+      "push_command": [
+        "git",
+        "push",
+        "origin",
+        "HEAD:refs/heads/codex/receptor-chemistry-training"
+      ],
+      "push_exit_code": 0,
+      "fix_commit": "007d4b3c16bfad918769294b5e00513452fa2835",
+      "primary_commit": "76689bf631e1f8c5da69bb2a0650347ea8237db5",
+      "remote_readback": "76689bf631e1f8c5da69bb2a0650347ea8237db5",
+      "remote_readback_matches": true,
+      "committed_source_entries_verified": 823,
+      "primary_deliverable_paths_verified": 108,
+      "source_manifest": "formal-source.json",
+      "source_bytes_match_verified_source": true,
+      "temporary_cleanup": "cleanup.json",
+      "closure_note": "This receipt records source and evidence delivery at the primary commit; a following metadata-only commit records this receipt and closes the ticket. Its remote readback is reported in the final tool output."
+    }
   },
   "test_log": [
     "engineering-format.log",
@@ -99,5 +118,6 @@
   "limits": "Synthetic numerical and persistence controls; no new task-quality, biological, GPU whole-brain or absolute zero-bug conclusion.",
   "verified_at": "2026-10-15T13:24:44.635473+00:00",
   "cleanup_receipt": "cleanup.json",
-  "final_governance_receipt": "final-governance.json"
+  "final_governance_receipt": "final-governance.json",
+  "delivery_receipt": "delivery.json"
 }

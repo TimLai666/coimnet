@@ -1,6 +1,6 @@
 # Ticket 110 實際異動
 
-相對於 75cd0d43，本票目前共 108 個交付檔案。原模型、必要資料與兩個舊暫存目錄保持。下表不包含未提交的取消診斷 hunk 或其他未完成稽核目錄。
+相對於 75cd0d43，本票目前共 111 個交付檔案。原模型、必要資料與兩個舊暫存目錄保持。下表不包含未提交的取消診斷 hunk 或其他未完成稽核目錄。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
@@ -46,7 +46,10 @@
 | [evidence/MOD-04/lif-threshold-floor-20261015/command-environment.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/command-environment.json) | 保存 command-environment.json 的來源、驗收、保存或交付紀錄。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/commit-fix-scan.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/commit-fix-scan.json) | 保存 commit-fix-scan.json 的來源、驗收、保存或交付紀錄。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/commit-fix-scan.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/commit-fix-scan.log) | 保留 commit-fix-scan.log 的實際命令輸出，壓縮日誌原位元組保持。 |
+| [evidence/MOD-04/lif-threshold-floor-20261015/commit-regression-scan.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/commit-regression-scan.json) | 保存 commit-regression-scan.json 的來源、驗收、保存或交付紀錄。 |
+| [evidence/MOD-04/lif-threshold-floor-20261015/commit-regression-scan.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/commit-regression-scan.log) | 保留 commit-regression-scan.log 的實際命令輸出，壓縮日誌原位元組保持。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/core-compat.go.txt](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/core-compat.go.txt) | 保存 core-compat.go.txt 的原始程式與重現依據。 |
+| [evidence/MOD-04/lif-threshold-floor-20261015/delivery.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/delivery.json) | 保存 delivery.json 的來源、驗收、保存或交付紀錄。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/engineering-build.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/engineering-build.json) | 保存 engineering-build.json 的來源、驗收、保存或交付紀錄。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/engineering-build.log](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/engineering-build.log) | 保留 engineering-build.log 的實際命令輸出，壓縮日誌原位元組保持。 |
 | [evidence/MOD-04/lif-threshold-floor-20261015/engineering-closure-binary.json](/Users/timlai/Developer/coimnet/evidence/MOD-04/lif-threshold-floor-20261015/engineering-closure-binary.json) | 保存 engineering-closure-binary.json 的來源、驗收、保存或交付紀錄。 |
