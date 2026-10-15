@@ -1,0 +1,49 @@
+{
+  "verified_at": "2026-10-15T08:43:29.339100+00:00",
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestNeutralGainRejectsConstructionAndRestore$",
+        "./learning"
+      ],
+      "test_events": {
+        "pass": 4
+      },
+      "log": "current-construction-ordinary-20261015.log",
+      "log_sha256": "ba96509abcfe126ae61d06305d40d04970fcffbf63e2bf247c4e6f335dfa520d"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "-run",
+        "^TestNeutralGainRejectsConstructionAndRestore$",
+        "./learning"
+      ],
+      "test_events": {
+        "pass": 4
+      },
+      "log": "current-construction-race-20261015.log",
+      "log_sha256": "67ffc5d40925e5c28fbe9de2012989a38c49369bae0fb26b10cfec9d1256f660"
+    }
+  ],
+  "modulation_module_refresh": "current-verification-20261015.json",
+  "all_815_source_fingerprints_preserved": true,
+  "formal_implementation_changed": false,
+  "scope": "Current construction and in-memory restore rejection plus ownership controls; actual historical file compatibility remains in compatibility.json and persistence-endpoints.json.",
+  "source_commit": "0f3f3f6f2f802bf50e37f1ef445cd1af149154ea",
+  "tracked_go_module_files_matching_commit": 813,
+  "excluded_untracked_root_test_files": [
+    "operational_temp_paths_test.go",
+    "clean_export_isolation_test.go"
+  ],
+  "source_scope_note": "The selected modulation and learning package commands compile the committed source. The two untracked root-package operational tests are outside these commands. All 815 local Go/module fingerprints were also checked without mutation."
+}

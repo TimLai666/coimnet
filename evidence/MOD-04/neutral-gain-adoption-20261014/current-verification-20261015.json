@@ -1,0 +1,50 @@
+{
+  "verified_at": "2026-10-15T08:41:58.564138+00:00",
+  "all_815_source_fingerprints_preserved": true,
+  "fix_and_regression_commits_are_ancestors_of_HEAD": true,
+  "results": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "./modulation"
+      ],
+      "test_events": {
+        "pass": 381
+      },
+      "neutral_gain_pass_events": 17,
+      "package_passes": 1,
+      "log": "current-ordinary-20261015.log",
+      "log_sha256": "1496c7a8817e3b8801ccf4ce9300bfa9cbe71825aa6087404310853c18c17a35"
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-race",
+        "-json",
+        "-count=1",
+        "./modulation"
+      ],
+      "test_events": {
+        "pass": 381
+      },
+      "neutral_gain_pass_events": 17,
+      "package_passes": 1,
+      "log": "current-race-20261015.log",
+      "log_sha256": "3675ac6fb17310a0f869f7a94171d7f24404335c3edf70db1e05d25a95963b6d"
+    }
+  ],
+  "implementation_changed": false,
+  "receipt_correction": "Initial wrapper expected the prior combined-flow total of 21 neutral tests; actual modulation-only inventory is 17. The ordinary go test itself passed; its original log was re-used without rerunning. Both results require actual test and package pass events.",
+  "limitation": "This refresh checks current modulation tests. Prior full-suite and old-model compatibility receipts retain their original source and execution scope.",
+  "source_commit": "0f3f3f6f2f802bf50e37f1ef445cd1af149154ea",
+  "tracked_go_module_files_matching_commit": 813,
+  "excluded_untracked_root_test_files": [
+    "operational_temp_paths_test.go",
+    "clean_export_isolation_test.go"
+  ],
+  "source_scope_note": "The selected modulation and learning package commands compile the committed source. The two untracked root-package operational tests are outside these commands. All 815 local Go/module fingerprints were also checked without mutation."
+}
