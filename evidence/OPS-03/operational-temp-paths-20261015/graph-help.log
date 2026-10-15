@@ -1,0 +1,10 @@
+Usage: scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY [NEW_STORE_FILE]
+Builds the CLI, records doctor/binary/manifest fingerprints, then runs
+  coimnet data import --manifest manifests/malecns-v1.0.json [--out-store NEW_STORE_FILE]
+under /usr/bin/time with a fresh runs/.tmp/graph-evidence.* directory, saving
+report.json (or import.json with the store receipt), run.log, started-at/finished-at and the
+temp directory listing after the run. With NEW_STORE_FILE it then runs
+  coimnet data validate --store NEW_STORE_FILE
+in a new process, saving validate.json and validate.log. Requires the three
+official MaleCNS v1.0 files at data/malecns-v1.0/. The output directory and the
+store file must not exist. Run from the repository root with Go on PATH.

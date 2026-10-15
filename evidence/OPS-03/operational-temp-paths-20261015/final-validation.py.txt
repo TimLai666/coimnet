@@ -1,0 +1,38 @@
+from pathlib import Path
+import datetime,hashlib,json,subprocess,sys
+r=Path('/Users/timlai/Developer/coimnet'); e=r/'evidence/OPS-03/operational-temp-paths-20261015'; w=r/'runs/.tmp/operational-temp-paths-20261015'; study=r/'evidence/TSK-11/lif-build-quality-20261015'
+def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+source_map=json.loads((e/'go-source-final.json').read_text())
+assert len(source_map)==815
+product={name: v['after_sha256'] for name,v in json.loads((e/'applied-fix.json').read_text())['changes'].items()}
+product.update({name:v['after_sha256'] for name,v in json.loads((e/'applied-metadata-fix.json').read_text())['changes'].items()})
+freeze=json.loads((study/'driver-freeze-v2.json').read_text())
+def gate():
+ for name,want in {**source_map,**product,**freeze['driver_files'],**json.loads((study/'protected-models.json').read_text())}.items():
+  assert sha(r/name)==want, ('fingerprint changed',name)
+ for name,want in freeze['binaries'].items(): assert sha(r/'runs/.tmp/lif-build-quality-20261015'/name)==want,name
+ assert sha(study/'protocol.json')==freeze['protocol_sha256']
+ current=set(subprocess.check_output(['git','ls-files','--cached','--others','--exclude-standard','--','*.go','go.mod','go.sum'],cwd=r,text=True).splitlines())
+ assert current==set(source_map),('source inventory changed',sorted(current-set(source_map)),sorted(set(source_map)-current))
+ assert w.stat().st_ino==55570988
+ for name,inode in [('lif-build-quality-20261015',55399790),('62',49680181),('real-task-quality-20261012',50419696)]: assert (r/'runs/.tmp'/name).stat().st_ino==inode,name
+ assert sorted(p.name for p in (r/'runs/.tmp/62').iterdir())==['buffer-tests']
+ assert sorted(p.name for p in (r/'runs/.tmp/real-task-quality-20261012').iterdir())==['input-profile-tests']
+ assert not (r/'runs/.tmp/recompute-temp-path-20261015').exists()
+ assert json.loads((r/'evidence/OPS-03/recompute-temp-path-20261015/cleanup.json').read_text())
+regex='^Test(OperationalScriptsProjectTemp|CleanExportBuildMetadataIsolation)$'
+gov='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+steps=[('formal-targeted-local',['go','test','-json','-count=1','-run',regex,'.']),('formal-targeted-race-local',['go','test','-race','-json','-count=1','-run',regex,'.']),('full-build-final',['go','build','./...']),('full-unit-final-local',['go','test','-json','-count=1','./...']),('full-race-final-local',['go','test','-race','-json','-count=1','./...']),('full-vet-final',['go','vet','./...']),('module-verify-final',['go','mod','verify']),('module-selection-final',['go','list','-m','github.com/HazelnutParadise/insyra']),('go-format-final',['gofmt','-l',*sorted(p for p in source_map if p.endswith('.go'))]),('governance-final',['go','test','-json','-count=1','-run',gov,'.'])]
+results=[]
+for name,cmd in steps:
+ gate()
+ rc=subprocess.run([sys.executable,str(w/'run.py'),name,*cmd],cwd=r).returncode
+ results.append({'name':name,'command':cmd,'exit_code':rc})
+ gate()
+ if rc: break
+ if name=='go-format-final': assert (e/(name+'.log')).read_bytes()==b'','gofmt output nonempty'
+ if name=='module-selection-final': assert (e/(name+'.log')).read_text().strip()=='github.com/HazelnutParadise/insyra v0.3.4','dependency changed'
+result={'finished_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_entries':len(source_map),'steps':results,'all_passed':len(results)==len(steps) and all(x['exit_code']==0 for x in results),'original_812_sources_models_drivers_binaries_protocol_preserved':True,'scope':'106 formal integration; independent of fixed ticket104 training'}
+with (e/'formal-engineering-pipeline.json').open('x') as f: f.write(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result),flush=True)
+sys.exit(0 if result['all_passed'] else 1)

@@ -1,0 +1,31 @@
+from pathlib import Path
+import json,subprocess,hashlib
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/operational-temp-paths-20261015'
+fixture=r/'runs/.tmp/operational-temp-paths-20261015/tutorial-fixture'
+text=(r/'README.md').read_text()
+blocks=[part.split('```',1)[0] for part in text.split('```sh\n')[1:]]
+block=next(part for part in blocks if 'run_dir=' in part and ' train delayed ' in part and ' resume ' in part and ' predict ' in part)
+with (e/'tutorial-block.sh.txt').open('x') as out:out.write(block)
+run=subprocess.run(['sh','-ec',block+'\nprintf "TUTORIAL_RUN_DIR=%s\\n" "$run_dir"\n'],cwd=fixture,text=True,capture_output=True)
+with (e/'tutorial-stdout.log').open('x') as out:out.write(run.stdout)
+with (e/'tutorial-stderr.log').open('x') as out:out.write(run.stderr)
+assert run.returncode==0,run.returncode
+output,marker,dirname=run.stdout.rpartition('TUTORIAL_RUN_DIR=')
+assert marker
+work=Path(dirname.strip());assert work.parent==fixture/'runs' and work.name.startswith('delayed-example.')
+decoder=json.JSONDecoder();objects=[]
+while output.strip():
+ obj,offset=decoder.raw_decode(output.lstrip());objects.append(obj);output=output.lstrip()[offset:]
+assert len(objects)==3,len(objects)
+assert objects[0]['next_sample']==600
+assert objects[1]['next_sample']==800
+files={}
+for p in work.iterdir():
+ assert p.is_file() and not p.is_symlink(),p
+ raw=p.read_bytes();files[p.name]={'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()}
+assert set(files)=={'first.json','second.json','observations.json'},files
+with (e/'tutorial-output.json').open('x') as out:out.write(json.dumps(objects,indent=2)+'\n')
+receipt={'literal_readme_block_executed':True,'exit_code':run.returncode,'train_next_sample':objects[0]['next_sample'],'resume_next_sample':objects[1]['next_sample'],'command_reports':len(objects),'run_directory':str(work.relative_to(r)),'files':files,'preserved_until_evidence_and_owned_cleanup':True,'real_data_download_executed':False}
+with (e/'tutorial-verification.json').open('x') as out:out.write(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps(receipt))

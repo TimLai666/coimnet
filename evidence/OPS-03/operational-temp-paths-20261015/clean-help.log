@@ -1,0 +1,19 @@
+Usage: scripts/clean-env-verify.sh [--workdir DIR] [--data DIR] [--out FILE] [--list-steps]
+  --list-steps   print each step and its condition (always, needs --data, or
+                 always blocked), then exit without exporting or executing.
+  --workdir DIR  scratch directory for the export and the step outputs; default
+                 is a new runs/.tmp/clean-env.* directory under the repo root,
+                 removed at the end. A directory given here is kept.
+                 The script replaces src/ and the paths used by its steps.
+  --data DIR     official MaleCNS directory. It must contain graph-v1.coimgraph,
+                 params-derive-v1.coimparams, connectome-weights-male-cns-v1.0-
+                 minconf-0.5.feather, body-annotations-male-cns-v1.0-minconf-
+                 0.5.feather and body-neurotransmitters-male-cns-v1.0.feather.
+                 It is linked at data/malecns-v1.0 in the clean export.
+                 Without it, data-dependent steps are recorded as blocked_data.
+  --out FILE     run document; default evidence/OPS-10/run.json relative to the
+                 repository root. Step logs go to <dirname>/logs/<step>.log.
+
+Every step runs inside a clean export of the committed tree (git archive HEAD),
+never in the working tree. A failing step is recorded and the run continues;
+the script exits 1 when any step failed. Blocked steps are not failures.

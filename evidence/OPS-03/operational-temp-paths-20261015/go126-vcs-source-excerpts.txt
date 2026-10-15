@@ -1,0 +1,211 @@
+Copyright 2009 The Go Authors.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are
+met:
+
+   * Redistributions of source code must retain the above copyright
+notice, this list of conditions and the following disclaimer.
+   * Redistributions in binary form must reproduce the above
+copyright notice, this list of conditions and the following disclaimer
+in the documentation and/or other materials provided with the
+distribution.
+   * Neither the name of Google LLC nor the names of its
+contributors may be used to endorse or promote products derived from
+this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+Source: /usr/local/go/src/cmd/go/internal/load/pkg.go lines 2485-2587
+
+// Copyright 2011 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// Package load loads packages.
+	// Add VCS status if all conditions are true:
+	//
+	// - -buildvcs is enabled.
+	// - p is a non-test contained within a main module (there may be multiple
+	//   main modules in a workspace, but local replacements don't count).
+	// - Both the current directory and p's module's root directory are contained
+	//   in the same local repository.
+	// - We know the VCS commands needed to get the status.
+	setVCSError := func(err error) {
+		setPkgErrorf("error obtaining VCS status: %v\n\tUse -buildvcs=false to disable VCS stamping.", err)
+	}
+
+	var repoDir string
+	var vcsCmd *vcs.Cmd
+	var err error
+
+	wantVCS := false
+	switch cfg.BuildBuildvcs {
+	case "true":
+		wantVCS = true // Include VCS metadata even for tests if requested explicitly; see https://go.dev/issue/52648.
+	case "auto":
+		wantVCS = autoVCS && !p.IsTestOnly()
+	case "false":
+	default:
+		panic(fmt.Sprintf("unexpected value for cfg.BuildBuildvcs: %q", cfg.BuildBuildvcs))
+	}
+
+	if wantVCS && p.Module != nil && p.Module.Version == "" && !p.Standard {
+		if p.Module.Path == "bootstrap" && cfg.GOROOT == os.Getenv("GOROOT_BOOTSTRAP") {
+			// During bootstrapping, the bootstrap toolchain is built in module
+			// "bootstrap" (instead of "std"), with GOROOT set to GOROOT_BOOTSTRAP
+			// (so the bootstrap toolchain packages don't even appear to be in GOROOT).
+			goto omitVCS
+		}
+		repoDir, vcsCmd, err = vcs.FromDir(base.Cwd(), "")
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			setVCSError(err)
+			return
+		}
+		if !str.HasFilePathPrefix(p.Module.Dir, repoDir) &&
+			!str.HasFilePathPrefix(repoDir, p.Module.Dir) {
+			// The module containing the main package does not overlap with the
+			// repository containing the working directory. Don't include VCS info.
+			// If the repo contains the module or vice versa, but they are not
+			// the same directory, it's likely an error (see below).
+			goto omitVCS
+		}
+		if cfg.BuildBuildvcs == "auto" && vcsCmd != nil && vcsCmd.Cmd != "" {
+			if _, err := pathcache.LookPath(vcsCmd.Cmd); err != nil {
+				// We fould a repository, but the required VCS tool is not present.
+				// "-buildvcs=auto" means that we should silently drop the VCS metadata.
+				goto omitVCS
+			}
+		}
+	}
+	if repoDir != "" && vcsCmd.Status != nil {
+		// Check that the current directory, package, and module are in the same
+		// repository. vcs.FromDir disallows nested VCS and multiple VCS in the
+		// same repository, unless the GODEBUG allowmultiplevcs is set. The
+		// current directory may be outside p.Module.Dir when a workspace is
+		// used.
+		pkgRepoDir, _, err := vcs.FromDir(p.Dir, "")
+		if err != nil {
+			setVCSError(err)
+			return
+		}
+		if pkgRepoDir != repoDir {
+			if cfg.BuildBuildvcs != "auto" {
+				setVCSError(fmt.Errorf("main package is in repository %q but current directory is in repository %q", pkgRepoDir, repoDir))
+				return
+			}
+			goto omitVCS
+		}
+		modRepoDir, _, err := vcs.FromDir(p.Module.Dir, "")
+		if err != nil {
+			setVCSError(err)
+			return
+		}
+		if modRepoDir != repoDir {
+			if cfg.BuildBuildvcs != "auto" {
+				setVCSError(fmt.Errorf("main module is in repository %q but current directory is in repository %q", modRepoDir, repoDir))
+				return
+			}
+			goto omitVCS
+		}
+
+		st, err := vcsStatusCache.Do(repoDir, func() (vcs.Status, error) {
+			return vcsCmd.Status(vcsCmd, repoDir)
+		})
+		if err != nil {
+			setVCSError(err)
+			return
+		}
+
+		appendSetting("vcs", vcsCmd.Cmd)
+		if st.Revision != "" {
+			appendSetting("vcs.revision", st.Revision)
+		}
+		if !st.CommitTime.IsZero() {
+			stamp := st.CommitTime.UTC().Format(time.RFC3339Nano)
+			appendSetting("vcs.time", stamp)
+		}
+		appendSetting("vcs.modified", strconv.FormatBool(st.Uncommitted))
+
+Source: /usr/local/go/src/cmd/go/internal/vcs/vcs.go lines 582-645
+
+// Copyright 2012 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package vcs
+func FromDir(dir, srcRoot string) (repoDir string, vcsCmd *Cmd, err error) {
+	// Clean and double-check that dir is in (a subdirectory of) srcRoot.
+	dir = filepath.Clean(dir)
+	if srcRoot != "" {
+		srcRoot = filepath.Clean(srcRoot)
+		if len(dir) <= len(srcRoot) || dir[len(srcRoot)] != filepath.Separator {
+			return "", nil, fmt.Errorf("directory %q is outside source root %q", dir, srcRoot)
+		}
+	}
+
+	origDir := dir
+	for len(dir) > len(srcRoot) {
+		for _, vcs := range vcsList {
+			if isVCSRoot(dir, vcs.RootNames) {
+				if vcsCmd == nil {
+					// Record first VCS we find.
+					vcsCmd = vcs
+					repoDir = dir
+					if allowmultiplevcs.Value() == "1" {
+						allowmultiplevcs.IncNonDefault()
+						return repoDir, vcsCmd, nil
+					}
+					// If allowmultiplevcs is not set, keep looking for
+					// repositories in current and parent directories and report
+					// an error if one is found to mitigate VCS injection
+					// attacks.
+					continue
+				}
+				if vcsCmd == vcsGit && vcs == vcsGit {
+					// Nested Git is allowed, as this is how things like
+					// submodules work. Git explicitly protects against
+					// injection against itself.
+					continue
+				}
+				return "", nil, fmt.Errorf("multiple VCS detected: %s in %q, and %s in %q",
+					vcsCmd.Cmd, repoDir, vcs.Cmd, dir)
+			}
+		}
+
+		// Move to parent.
+		ndir := filepath.Dir(dir)
+		if len(ndir) >= len(dir) {
+			break
+		}
+		dir = ndir
+	}
+	if vcsCmd == nil {
+		return "", nil, &vcsNotFoundError{dir: origDir}
+	}
+	return repoDir, vcsCmd, nil
+}
+
+// isVCSRoot identifies a VCS root by checking whether the directory contains
+// any of the listed root names.
+func isVCSRoot(dir string, rootNames []rootName) bool {
+	for _, root := range rootNames {
+		fi, err := os.Stat(filepath.Join(dir, root.filename))
+		if err == nil && fi.IsDir() == root.isDir {
+			return true
+		}
+	}
+
+	return false
+}

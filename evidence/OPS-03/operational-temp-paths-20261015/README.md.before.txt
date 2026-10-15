@@ -1,0 +1,362 @@
+# CoImNet
+
+**Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
+
+儲存庫提供通用 SDK、CLI 與驗證範例。使用者自己的任務程式、資料與訓練模型由使用者專案管理。本文的 `delayed`、`experiment` 套件與小型快照證據都是人工教學／測試範例，不是預訓練果蠅模型。
+
+目前的連續核心屬於稀疏的連續時間循環神經網路。接線圖決定哪些神經元相連，神經動態與學習方法則由框架提供。詳見[模型定位與可選機制](docs/model-and-mechanisms.md)，以及[記憶體與時間量測](docs/resources.md)。
+
+目前已實作 CPU 連續動態、完整與截斷時間梯度、Insyra 輸入與讀出、AdamW 訓練，以及人工延遲訊號範例。LIF 放電核心可以用同一套拓撲、延遲與時鐘執行，並以宣告的替代梯度訓練基礎放電閾值，也可以開啟慢速穩定，讓每顆神經元依自己的活動估計調整閾值偏移。連續與 LIF 都能建立持續個體，把電位、延遲歷史、突觸跡、適應、不應期與慢速穩定狀態一起保存和接續。模型包、個體快照與訓練快照是三種分開版本的保存物，彼此不能互相當成完整恢復來源。
+
+官方 MaleCNS 資料可下載、校驗、逐批讀取 Feather，並依明示的 manifest 建成 `raw_segments` 與 `annotated_neurons` 兩個具名視圖及統計報告。選入圖可保存為固定格式並在新程序驗證、讀回。`examples/realsubgraph` 示範將選出的 ALIN 子圖接上訓練核心。
+
+CPU 上真實 MaleCNS 全圖的一次短訓練、三種保存物的落盤與新程序恢復已經驗證：165,122 節點、25,563,197 邊的一次反向更新，並實際執行 4,096 條可塑性邊與一個化學通道（[OPS-07](evidence/OPS-07/verification.json)）。全圖效能與活動量測也有報告（[OPS-08](evidence/OPS-08/verification.json)）。分段重算在同一張全圖上的修改前後對照已量測，完整更新的耗時中位數由 18.30 降到 8.46 秒，配對耗時減少 52.56%，並增加暫存配置（[全圖對照](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md)）。這些證據都不代表真實任務已達標。
+
+原始 85 項與 NAT 六項工程需求在 2026-10-12 完成 91／91 驗收。2026-10-14 的化學組合稽核確認 MOD-04 中性增益缺陷，慢速記憶組合的 MOD-06 缺陷已修正並完成本機工程驗證，原生入口的 MOD-05 受體宣告拒絕修正已通過本機工程驗證，見 [ticket 92](docs/tickets/92-native-receptor-declaration-refusal.md)。NAT-06 原生幅度報告的中間平方溢位／下溢已修正並通過本機工程驗證，見 [ticket 93](docs/tickets/93-native-plastic-norm-representability.md)。NAT-01 的有限平均與集合量測成功發布缺陷已修正，正常模型與舊狀態的新程序接續保持，見 [ticket 94](docs/tickets/94-native-mean-representability.md)。OCR 的不可表示樣本／字長宣告已改為訓練前回傳錯誤，正常資料及三種舊 OCR 模式的載入與下一次訓練保持，見 [ticket 95](docs/tickets/95-ocr-generate-representability.md)。MOD-04 的中性增益修正已核准並通過完整工程驗收，範圍套用零值預設後必須包含 1，不符合的舊模型會拒絕載入。合法舊模型的後續模擬、預測與訓練保持，見 [ticket 89](docs/tickets/89-chemical-composition-neutrality.md)及[本輪驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json)。STA-02 存檔必填欄位與合法化學訓練載入的修正已通過完整工程驗證，合法空集合與既有模型行為保持，最新為 91 項 passed，見 [ticket 97](docs/tickets/97-chemical-restore-composition.md)。LRN-03 的梯度累積溢位已改為回傳錯誤並保留上一個有效狀態，正常模型及新程序恢復結果保持，見 [ticket 98](docs/tickets/98-training-failure-composition.md)。公開授權資料已用於語音、文字、OCR、文字條件影音及果蠅軌跡範例，模型可保存後由新程序推論或接續。Apple M3 Metal 也已驗證稀疏前向、反向及裝置 AdamW 更新／恢復。真實任務的模型品質仍有限，GPU 全圖容量與加速尚未量測。各項範圍與負面結果見[開發進度](delivery-status.md)及[最終驗收](evidence/goal-91-20261012/verification.json)。
+
+## 能力狀態
+
+未訓練的模型只能稱為初始化模型，人工圖與真實圖的名稱要能辨識（fixture 人工圖／real-subgraph 真實子圖／male-full 真實全圖），工具輔助的結果不計為核心能力。下表只列 [docs/requirements-status.json](docs/requirements-status.json) 標為 `passed` 且證據檔存在的需求群，每一格的規模依證據內容標注；模型類能力中，`male-full` 用於 NAT-01～06 與 OPS-07；LRN-02 與 OPS-08 兼用 fixture＋male-full（分段重算與效能量測），其餘一律 `fixture` 或 `real-subgraph`，純資料管線與工具類能力則標其實際資料規模。
+
+| 能力 | 模型狀態 | 資料規模 | 角色 | 證據 |
+| --- | --- | --- | --- | --- |
+| 連續核心訓練：可訓練稀疏連續動態、真實連線計算、完整／截斷梯度、受限更新與完整最佳化器（COR-02、COR-07、COR-08、COR-10、LRN-01、LRN-03） | 已訓練（人工資料） | fixture | 核心能力 | [COR-02](evidence/COR-02/verification.json)・[COR-07](evidence/COR-07/verification.json)・[COR-08](evidence/COR-08/verification.json)・[COR-10](evidence/COR-10/verification.json)・[LRN-01](evidence/LRN-01/verification.json)・[LRN-03](evidence/LRN-03/verification.json) |
+| 反向歷史重算：訓練步不保存核心歷史、反向逐段重算；人工圖梯度與完整歷史逐位相同，真實全圖修改前後的輸出、梯度、更新參數及 Adam 狀態相同；16 步／段長 8 的完整更新耗時配對減少 52.56%（LRN-02，人工刺激，不是任務成績） | 已訓練（人工資料）；全圖一次更新 | fixture＋male-full | 核心能力 | [LRN-02](evidence/LRN-02/verification.json)・[全圖量測](evidence/LRN-02/fullgraph-activation-reuse-20261011/README.md) |
+| LIF 放電核心：替代梯度閾值訓練、慢速穩定與個體持續狀態（COR-03、COR-04、COR-09） | 已訓練（人工資料） | fixture | 核心能力 | [COR-03](evidence/COR-03/verification.json)・[COR-04](evidence/COR-04/verification.json)・[COR-09](evidence/COR-09/verification.json) |
+| 混合核心：連續／脈衝依神經元類型混合執行（COR-05） | 初始化模型（未訓練） | fixture | 核心能力 | [COR-05](evidence/COR-05/verification.json) |
+| 向量節點與共享參數：純量或多維節點、共享或逐項參數、分開回報容量（COR-06） | 已訓練（人工資料） | fixture | 核心能力 | [COR-06](evidence/COR-06/verification.json) |
+| 訊號、時間對齊與映射：具名訊號、因果／離線取樣、輸入輸出映射保存與替換（SIG-01、SIG-02、SIG-04、SIG-05、SIG-06） | 初始化模型（資料層） | fixture | 核心能力 | [SIG-01](evidence/SIG-01/verification.json)・[SIG-02](evidence/SIG-02/verification.json)・[SIG-04](evidence/SIG-04/verification.json)・[SIG-05](evidence/SIG-05/verification.json)・[SIG-06](evidence/SIG-06/verification.json) |
+| 個體與保存：解剖／參數／個體／訓練器狀態分離、三種保存物、安全快照與隔離個體（COR-01、STA-01、STA-02、STA-04） | 已訓練（人工資料） | fixture | 核心能力 | [COR-01](evidence/COR-01/verification.json)・[STA-01](evidence/STA-01/verification.json)・[STA-02](evidence/STA-02/verification.json)・[STA-04](evidence/STA-04/verification.json) |
+| 精確中斷接續：連續執行對照下同時恢復參數、最佳化器、快速權重、化學與資料游標（STA-03） | 已訓練（人工資料） | fixture | 核心能力 | [STA-03](evidence/STA-03/verification.json) |
+| 調節來源與化學：觀察／目標／回饋分離、四種調節來源、獎懲映射、時間衰退的濃度、選擇性受體（SIG-03、MOD-01、MOD-02、MOD-03、MOD-08） | 初始化模型（未訓練） | fixture | 核心能力 | [SIG-03](evidence/SIG-03/verification.json)・[MOD-01](evidence/MOD-01/verification.json)・[MOD-02](evidence/MOD-02/verification.json)・[MOD-03](evidence/MOD-03/verification.json)・[MOD-08](evidence/MOD-08/verification.json) |
+| 當下敏感度與有效閾值：中性作用與未啟用相同，暫時效果不覆寫基礎參數，敏感度範圍包含 1，不合法舊存檔明確拒絕（MOD-04） | 初始化模型（未訓練） | fixture | 核心能力 | [MOD-04](evidence/MOD-04/verification.json)・[中性增益驗收](evidence/MOD-04/neutral-gain-adoption-20261014/verification.json) |
+| 局部可塑性規則：活動相關與脈衝時序規則、近期參與紀錄與學習閘門（LRN-04、LRN-05） | 初始化模型（未訓練） | fixture | 核心能力 | [LRN-04](evidence/LRN-04/verification.json)・[LRN-05](evidence/LRN-05/verification.json) |
+| 運行中學習與重播：作答／回饋／更新分離、受限容量重播與適應性評估（LRN-06、LRN-07） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-06](evidence/LRN-06/verification.json)・[LRN-07](evidence/LRN-07/verification.json) |
+| 持續學習矩陣：階段後全任務評估、遺忘、固定化學與狀態切換對照、independent 對照、事前 bootstrap 比較（LRN-08） | 已訓練（人工資料） | fixture | 核心能力 | [LRN-08](evidence/LRN-08/verification.json) |
+| 環境學習：專家模仿與取樣式循環 PPO、狀態／版本一致、時間上限的下一步價值、三個 seed 的訓練前與隨機對照（LRN-09） | 已訓練（人工走廊） | fixture | 核心能力 | [LRN-09](evidence/LRN-09/verification.json)・[六步提示對照](experiment/gridnav/README.md#六步左右配對提示檢查) |
+| 二維導航與位置記憶：有限視野、隱藏狀態、碰撞與轉向、目標記憶、新地圖評估，前饋／重連／隨機對照（TSK-08） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-08](evidence/TSK-08/verification.json) |
+| 多模態配對資料：配對／缺失／非同步樣本、ID 不進模型、缺失與零值分離、未見組合分割與評估（TSK-10；留出組合的影像↔文字檢索為 0，不宣稱跨模態概念） | 已訓練（合成資料） | fixture | 核心能力 | [TSK-10](evidence/TSK-10/verification.json) |
+| 多任務共用核心：兩個任務各有 adapter、三種排程、更新份額對宣告比例、每個任務在自己的個體上評估並記錄模型包指紋與血統（TSK-09） | 已訓練（人工資料） | fixture | 核心能力 | [TSK-09](evidence/TSK-09/verification.json) |
+| 核心、外圍與接線的歸因對照：凍結核心、只訓練核心、一般網路、重連、移除後重訓、容量匹配調節器共七組，事前配對 bootstrap 與排查清單（TSK-12；本次 normal 基準沒學會，不支持依賴或接線較優的結論） | 已訓練（人工地圖） | fixture | 核心能力 | [TSK-12](evidence/TSK-12/verification.json) |
+| 有來源的生物啟發干預協定：脈衝時機曲線與受體驅動的表現抑制／恢復對照，定量生物命名缺四項證據即拒絕（MOD-09） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-09](evidence/MOD-09/verification.json) |
+| 小型可訓練調節控制器與對照流程：控制器手算前向／有限差分／容量報告、無題目旁路、容量匹配對照，`examples run ablate` 五組同資料同預算對照（MOD-07、MOD-10） | 已訓練（人工資料） | fixture | 核心能力 | [MOD-07](evidence/MOD-07/verification.json)・[MOD-10](evidence/MOD-10/verification.json) |
+| 教師蒸餾：學生自編碼的標籤／行動蒸餾、保留集隔離、合法對齊的分布蒸餾（TCH-03、TCH-04） | 已訓練（人工資料） | fixture | 核心能力 | [TCH-03](evidence/TCH-03/verification.json)・[TCH-04](evidence/TCH-04/verification.json) |
+| OCR 單行辨識：log-space CTC 與枚舉對照、rune 層級 CER／WER、程式生成字形的訓練測試分離、投影切行的頁面區塊契約、核心斷開檢查（TSK-01；本列只驗證 fixture，真實單字元範例另見 TSK-11） | 已訓練（程式生成字形） | fixture | 核心能力 | [TSK-01](evidence/TSK-01/verification.json)・[尺寸拒絕驗收](evidence/TSK-01/glyph-contract-20261014/verification.json) |
+| 語音轉文字：授權 manifest 的 WAV 匯入、說話者／場次分割、整檔與因果串流 CTC 輸出、快照與跨程序接續、CER／WER 可重現（TSK-02；同分布保留集 CER 0.78 → 0，跨說話者／場次的 CLI fixture 只從 13/19 降到 12/19、WER 維持 0.9；本列只驗證 fixture） | 已訓練（人工音調） | fixture | 核心能力 | [TSK-02](evidence/TSK-02/review-20260924/verification.json) |
+| 文字生成：位元組 tokenizer 與詞表雜湊、已知前綴預測與遮罩、EOS／最大長度、溫度／top-k／top-p 可重現採樣、串流 UTF-8 緩衝、來源層級保留語料、教師去重與封鎖教師的學生模式評估（TSK-03；三字合成文法，不宣稱中文對話、推理或知識；本列只驗證 fixture） | 已訓練（合成文法） | fixture | 核心能力 | [TSK-03](evidence/TSK-03/verification.json) |
+| 文字條件影像與音訊生成：核心產生表示、固定 clamp 解碼器不讀提示、PNG／WAV 精確輸出、保留條件與凍結核心容量對照、核心斷開檢查（TSK-04、TSK-05；凍結核心和完整核心一樣好、留出條件全部生成錯，不宣稱核心學習的必要性或組合泛化；本列只驗證 fixture） | 已訓練（人工影像與音調） | fixture | 核心能力 | [TSK-04](evidence/TSK-04/verification.json)・[TSK-05](evidence/TSK-05/verification.json) |
+| 文字條件影片與同步音訊：核心逐格產生影格與音訊區塊、原生 PNG／WAV／時間線輸出、獨立判讀與同步誤差、凍結核心對照、選用 ffmpeg 封裝器（缺席或失敗照實記錄，`doctor` 顯示版本）（TSK-06；預設 80 輪同步偏弱，已見片段只有 0 到 3 個對齊；加長訓練後的比較不穩定，不宣稱核心學習的必要性） | 已訓練（人工動點與嗶聲） | fixture | 核心能力 | [TSK-06](evidence/TSK-06/verification.json) |
+| 三條生成流程與角色：核心直接生成、固定還原器（凍結自編碼器以雜湊標名）、外部工具（結構化請求、白名單工具、呼叫預算），每張輸出標明產生者，工具像素不計入核心能力（TSK-07；外部工具是本機替身，未呼叫第三方模型） | 已訓練（人工影像） | fixture | 核心能力 | [TSK-07](evidence/TSK-07/verification.json) |
+| 原生模擬 runner：不經訓練直接執行標準接線圖並讀出指定神經元（NAT-01） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-01](evidence/NAT-01/verification.json) |
+| 動態參數 adapter：由發布資料推導正負號、信心度與強度並回報未知計數（NAT-02） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-02](evidence/NAT-02/verification.json) |
+| 空模型對照與判讀：保留度數重連、正負號／權重置換、具名集合與事前門檻（NAT-03、NAT-04、NAT-05） | 初始化模型（未訓練） | male-full | 核心能力 | [NAT-03](evidence/NAT-03/verification.json)・[NAT-04](evidence/NAT-04/verification.json)・[NAT-05](evidence/NAT-05/verification.json) |
+| 原生模擬上的可塑性對照：original／plastic／learned_then_frozen 三格比較（NAT-06） | 初始化模型（未訓練，快速變化不寫回參數集） | male-full | 核心能力 | [NAT-06](evidence/NAT-06/verification.json) |
+| 全圖短訓練與保存恢復：165,122 個神經元與 25,563,197 條邊全部參與的一次反向更新（五組可訓練參數都有變動）、可塑性與化學調節、三種 bundle、新程序恢復後續跑摘要相等、訓練前記憶體預估與實測峰值（OPS-07；只證明整張圖能跑完一次更新並保存恢復，不是訓練結果；預設 GC 下峰值足跡約 12 GiB，設 `GOMEMLIMIT=8GiB` 可壓在 8 GiB） | 一次更新（非訓練結果） | male-full | 核心能力 | [OPS-07](evidence/OPS-07/verification.json) |
+| 效能與活動量報告：六個階段各分初始化、傳輸、暖機與穩態，前向活動量與同 seed 重現檢查，能耗固定記為未量測；fixture 與真實全圖各一份（OPS-08；耗時只是這台共用 Mac 的觀察，不代表硬體上限） | 不適用（效能量測） | fixture＋male-full | 工具輔助 | [OPS-08](evidence/OPS-08/verification.json) |
+| 乾淨環境重跑：`scripts/clean-env-verify.sh --data` 以 git archive 匯出已提交版本，依序跑建置、完整測試、doctor、所有 fixture 範例、真實子圖與全圖流程和完成報告，每步記命令、設定雜湊、狀態與 log（OPS-10；該次 37 步中 35 步通過，TSK-11 與 GPU 後端當時明示受阻；同一台 Mac，不是全新機器） | 不適用（驗證流程） | fixture＋real-subgraph＋male-full | 工具輔助 | [OPS-10](evidence/OPS-10/verification.json) |
+| 官方資料工具：下載與校驗、Feather 逐批讀取、標準化接線圖建構、外部 ID 保真、聚合與未知欄位保留（DAT-01、DAT-02、DAT-03、DAT-04、DAT-05、DAT-08） | 不適用（資料管線） | 官方全量原件（非模型執行） | 工具輔助 | [DAT-01](evidence/DAT-01/verification.json)・[DAT-02](evidence/DAT-02/verification.json)・[DAT-03](evidence/DAT-03/verification.json)・[DAT-04](evidence/DAT-04/verification.json)・[DAT-05](evidence/DAT-05/verification.json)・[DAT-08](evidence/DAT-08/verification.json) |
+| FlyWire 獨立匯入：公開釋出 CSV／gzip 轉 Feather 與 manifest、`flywire-<version>` 獨立命名空間與大 root id 字串精確往返、無映射證據一律拒絕與 MaleCNS 拼接（DAT-06；真實 FlyWire 檔案 blocked_data，需帳號與條款同意，目前只驗到 fixture） | 不適用（資料管線） | fixture | 工具輔助 | [DAT-06](evidence/DAT-06/verification.json) |
+| 真實子圖範例：ALIN 子圖選取與人工脈衝短訓練（DAT-07） | 已訓練（人工脈衝短訓練） | real-subgraph | 工具輔助（範例） | [DAT-07](evidence/DAT-07/verification.json) |
+| 教師工具：離線 JSONL 答案、重播、HTTP 存取與封鎖教師（TCH-01、TCH-02） | 不適用（教師工具） | fixture | 工具輔助（教師） | [TCH-01](evidence/TCH-01/verification.json)・[TCH-02](evidence/TCH-02/verification.json) |
+| 學生獨立評估與外部回應安全：student 模式封鎖教師與網路、teacher_assisted 分開報告、20% 錯標籤穩健性、工具允許清單與參數 schema、回應只當資料不外傳未授權欄位（TCH-05、TCH-06）。這些教師與工具功能不把 CoImNet 擴大成任意電腦操作 agent：回應只當資料，不執行其中的指令 | 不適用（評估與工具） | fixture | 核心能力與工具輔助 | [TCH-05](evidence/TCH-05/verification.json)・[TCH-06](evidence/TCH-06/verification.json) |
+| SDK 與 CLI 介面：八個可執行 SDK 範例、88 個非法輸入不 panic 的案例、五個取消釋放測試，以及 doctor／model inspect／model validate／run --dry-run／benchmark／export／report／examples／checkpoint migrate 的端到端與失敗測試（OPS-01、OPS-02） | 不適用（介面層） | fixture | 工具輔助 | [OPS-01](evidence/OPS-01/verification.json)・[OPS-02](evidence/OPS-02/verification.json) |
+| 五類真實任務流程與模型保存：授權資料匯入、訓練、獨立推論／評估、PNG／JPEG、同模型頁面辨識、固定／可訓練編碼器對照（TSK-11；保留模型品質負面結果） | 已訓練（有限真實資料） | fixture（真實任務小樣本） | 核心能力與範例 | [TSK-11](evidence/TSK-11/verification.json) |
+| 可選 GPU 裝置訓練：稀疏前向／反向、float32 AdamW、候選原子提交、完整 bundle 新程序恢復與 CPU 對照（OPS-05；Apple M3 Metal，未量 GPU 全圖） | 已訓練（人工資料） | fixture | 核心能力 | [OPS-05](evidence/OPS-05/verification.json) |
+| 環境與自動驗證：鎖定版本建置、Insyra 實際參與運算、自動防退步檢查（GOV-02、GOV-03、OPS-09） | 不適用（環境與測試） | 不適用 | 工具輔助 | [GOV-02](evidence/GOV-02/verification.json)・[GOV-03](evidence/GOV-03/verification.json)・[OPS-09](evidence/OPS-09/verification.json) |
+
+以上都是「能力已驗證」的陳述，不表示這些能力在同一張圖或同一台機器上已全部組合完成；組合性的完整執行仍以 [delivery-status.md](delivery-status.md) 為準。
+
+TSK-11 的五類真實任務已完成匯入、訓練、獨立推論、評估與模型保存流程。PNG／JPEG 與同一模型的頁面辨識介面也已驗證，但真實 OCR 品質樣本限於 KMNIST 單字元。舊欄位模式的固定與可訓練編碼器都得到 CER 0.9、完整辨識比例 0.1。新增可選時間對齊與整圖單字元模式後，另以 6,000／2,000 圖片測試三個種子，正確率為 73.25%、71.45%、71.50%，低於同資料四個最近鄰的 81.85% 及事前 80% 門檻。訓練成績約 99%，新圖片仍辨識不佳，見[品質驗證](evidence/TSK-11/quality-20261012/README.md)。文字仍破碎，影音畫面接近全黑，語音、影音及原軌跡的保留集未改善。自主行走工程評估為 0／13，不支持真實導航或回巢能力。資料、授權及實測見[真實範例來源](docs/real-data-sources.md)與 [TSK-11 紀錄](evidence/TSK-11/verification.json)。OPS-05 已在 Apple M3 Metal 通過宣告的純量零延遲 profile：稀疏前向／反向、裝置 AdamW 更新、完整訓練 bundle 新程序接續及量測。參數、動量與計數留在裝置，神經狀態與活化仍在主機。GPU 全圖容量、速度、實際顯示記憶體及 Linux／Windows GPU 尚未驗證，見 [OPS-05 紀錄](evidence/OPS-05/verification.json)。
+
+[刺激記憶範例](examples/realnavmemory/README.md) 使用完整試次歷史，比較實際送出刺激、無刺激與因果打亂刺激三組模型。它使用八個節點的人工接線，保留原 13 個測試試次，原 26 個訓練試次再分成 20 train／6 validation。位置是明示觀察代理，模型輸出是模仿標籤的位移，神經獎勵到達時間保持未知。新範例的位移預測誤差下降，但所有模型組別均命中 0／13，沒有導航改善證據。凍結模型的刺激清除檢查確認過去刺激會影響後段輸出與行走，但預測誤差改善方向不一致，命中仍為 0／13。範例使用獨立格式，與原 realnav 分開驗收。
+
+## 科學界線
+
+下列界線逐條對應[主規格 3.2](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md#chapter-03)：
+
+- 接線圖不是已訓練好的全能模型：接線只決定哪些神經元相連，動態、參數與學習方法是明示的額外假設，未經訓練的圖只能稱為初始化模型。
+- 神經傳導物質預測不等於已量測的突觸作用正負：推導的正負號由「預測機率」依規則換出，不是量測值，未知的邊必須保持未知。
+- 未知受體不是沒有受體：查無受體表現資料時以 `unresponsive`／`unknown`／`hypothesized` 分開報告，採用未知係數必須明示為假設。
+- 數千萬個突觸接點不等於同樣數量的獨立參數：接點數、神經元配對數與參數量分開統計，接線規模不能自動當成可訓練參數量。
+- 獎勵、懲罰、損失函數、神經調節物質、內分泌荷爾蒙是不同概念：可以互相映射，但不能改名後宣稱生物合理。
+- 固定編碼器不等於能力歸因已完成：固定輸入輸出映射的貢獻必須以對照（例如空模型）確認才算歸因。
+- 專案名稱不構成新的學術分類或優於既有方法的證據：CoImNet 只是框架名稱，不是已驗證的生物或學術宣稱。
+- 全腦或 GPU 測試受硬體限制時標示受阻：缺少資料或硬體的項目標 `blocked_*`，局部已實作但未完整驗收的項目標 `specified`；不拿小型資料或人工圖的成功替代全圖或平台執行。
+
+## 建置與範例
+
+```sh
+go build -o bin/coimnet ./cmd/coimnet
+./bin/coimnet --help
+./bin/coimnet doctor
+./bin/coimnet examples run delayed
+./bin/coimnet examples run lif-threshold
+./bin/coimnet examples run gridnav --method ppo
+./bin/coimnet examples run nav2d
+./bin/coimnet examples run multimodal
+./bin/coimnet examples run attribution
+```
+
+`delayed` 是三個人工神經元的五步延遲訊號任務，使用三組固定 seed。每組都執行訓練、凍結核心及打亂答案對照。輸入映射與讀出保持固定，只有核心連線權重可更新。JSON 輸出包含每組結果、設定及指紋，門檻未通過會傳回非零退出碼。
+
+`lif-threshold` 把同一份延遲資料換成三顆 LIF 放電神經元，只比較基礎閾值可不可訓練。三組固定 seed 各跑全部可訓練、只訓練閾值與全部凍結三個對照，報告列出每組的保留資料 MSE、逐顆 `theta_base` 與放電率。更新預算用 `--updates` 調整，預設 300，範圍 1 到 100000。事前寫死的門檻沒過時仍輸出完整報告，並傳回非零退出碼。這是人工資料上的數值可學習性檢查，不是果蠅放電行為成績，詳見[範例說明](examples/lifthreshold/README.md)。
+
+`gridnav` 示範在人工走廊進行 PPO 或專家模仿，輸出三個 seed 的訓練與評估報告。PPO 預設每個 seed 更新 200 次，平均回報須同時超過訓練前與隨機基線。使用 `--method imitation --updates 500` 可執行既有模仿一致率改善協定，詳見[走廊範例](experiment/gridnav/README.md)。平均回報改善與依提示導航分開判讀，逐回合抵達與提示對照見[人工走廊檢查](experiment/gridnav/README.md#起始提示與抵達檢查)。
+
+`nav2d` 在 9×9 人工地圖上跑四個二維導航任務（記住只出現一次的目標、避開障礙、中途換地圖、依語言指定的角落），每個任務比較遞迴、前饋、重新接線與隨機四種策略，各 3 個 seed。報告分開列出訓練前、訓練用地圖與沒看過的地圖上的成功率、專家一致率與碰撞數；`--task` 可以只跑一個任務。
+
+`multimodal` 用合成的影像、文字與音訊建立配對資料，其中一個形狀與顏色的組合完全不進訓練。報告分開列出看過與沒看過的組合的跨模態檢索與屬性準確率，並附隨機基準；缺少的音訊以「缺失」而不是全零進模型。
+
+`attribution` 在同一個導航任務上跑七組對照：正常訓練、凍結核心、只訓練核心、一般網路、重新接線、移除核心後重訓、容量匹配調節器。以正常組為基準做事前選定的配對 bootstrap，結論只有一句固定文字。這三個範例都是人工 fixture，不是果蠅接線或真實任務的成績。
+
+`nav2d` 與 `attribution` 的新報告會在 `config.env` 列出補齊預設值後的實際設定，`config_hash` 是整份已展開 `config` 的 SHA-256。省略預設值與明填相同預設值會得到相同雜湊。歷史報告保留原來的輸入設定與雜湊。SDK 的環境設定中，四個浮點欄位必須是有限值，NaN 與正負無限大會在執行前回錯。
+
+SDK 的導航報告各自持有種子與策略清單。取得導航報告後，修改呼叫端的設定或 suite 其中一份報告，不會改到其他報告的清單與雜湊。
+
+保存與接續單組人工範例訓練：
+
+```sh
+run_dir=$(mktemp -d)
+./bin/coimnet train delayed --steps 600 --checkpoint "$run_dir/first.json"
+./bin/coimnet resume --checkpoint "$run_dir/first.json" --steps 200 --out "$run_dir/second.json"
+printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
+./bin/coimnet predict --checkpoint "$run_dir/second.json" --input "$run_dir/observations.json"
+```
+
+訓練器可以限制更新範圍與更新方式：`learning.Options` 的 `Trainable` 群組旗標搭配 `Masks` 逐邊、逐節點指定哪些參數能動，被凍結的參數連動量、步數與權重衰減都不變；`Config.EdgeSigns` 讓有依據的邊固定興奮或抑制、只學幅度，符號永遠不會翻轉；`Ranges` 在每次更新後把數值投影回宣告的區間並回報被投影的數量。一步的順序是固定的：梯度先乘 `LossScale` 再除回（乘出非有限值就整步拒絕，不留半次狀態），累積滿 `AccumulateSteps` 次才平均，平均後才套 `ClipNorm`，再交給 AdamW 以 `Schedule`（`constant`／`step`／`cosine`，都可加線性暖身）算出的學習率更新。學習率只由已完成的更新次數決定，累積到一半的梯度也進快照，因此中途保存再恢復與一次跑完的結果逐位相同。
+
+訓練快照保存完整參數、最佳化器、資料 seed 與格式定義的資料游標。設定 `Config.Chemistry` 時，也保存每回合的化學起點、來源視窗、資源、回饋與受體位置。每個回合從自己的副本開始，不保存或推進持續個體的神經狀態。一般任務的資料進度由呼叫端管理，不能把人工 delayed 格式的游標當成任意資料產生器的游標。檔案上限為 64 MiB，以校驗碼、版本與形狀檢查後恢復。目的路徑已存在時拒絕覆寫，檔案系統須支援 hardlink 與目錄同步。
+
+三種保存物各有自己的 schema，載入時互相拒絕，並說明讀到的是哪一種：模型包 `coimnet-model-package/v1` 只有拓撲指紋、設定、基礎參數、宣告單位與證據清單，可以用來建立新個體，不能當成恢復來源；個體快照 `coimnet-individual-checkpoint/v1` 另外保存持續神經狀態、最佳化器動量與更新次數；訓練快照 `coimnet-episode-checkpoint/v1` 保存訓練器狀態與資料游標。
+
+### 網路磁碟上的模型保存
+
+先在作業系統掛載網路磁碟，再用 `checkpoint` 的資料夾保存入口。每次保存使用一個尚未存在的新目錄，父目錄須已存在。
+
+| 保存內容 | 保存／載入 API |
+| --- | --- |
+| 模型設定與參數 | `SaveModelPackageBundle`／`LoadModelPackageBundle` |
+| 持續個體的神經與學習狀態 | `SaveIndividualBundle`／`LoadIndividualBundle` |
+| 訓練器與最佳化器狀態 | `SaveTrainingBundle`／`LoadTrainingBundle` |
+
+例如把既有模型包 `pkg` 存到已掛載的分享資料夾，再讀回：
+
+```go
+err := checkpoint.SaveModelPackageBundle(ctx, "/Volumes/Models/model-001", pkg)
+if err != nil {
+    return err
+}
+restored, err := checkpoint.LoadModelPackageBundle(ctx, "/Volumes/Models/model-001")
+```
+
+資料夾格式是既有 `coimnet-checkpoint-bundle/v2`，包含 `document.json`、`arrays.bin` 與最後寫入的 `manifest.json`。移動或備份時須保存整個目錄。載入會核對檔案大小、校驗碼、版本與狀態，缺失或截斷的完成清單會被拒絕。檔案系統須支援排他建立檔案與目錄、檔案及目錄同步。
+
+保存完成後才發生取消或同步錯誤時，框架會保留模型並回報已發佈。網路錯誤造成結果無法確認時，也會保留目錄並回報狀態未確認。遇到這兩種錯誤，先用對應的載入 API 確認成果，避免刪除可能已完成的模型。
+
+這些入口保存 SDK 的模型、個體與訓練器。上方人工範例的 `train delayed`／`resume` 使用單檔並包含資料游標，不能用訓練器資料夾快照取代。
+
+個體快照可以遷移到新檔而不動原件：`./bin/coimnet checkpoint migrate --src old.json --dst migrated.json` 讀 `--src`、寫 `--dst`（已存在的路徑拒絕、同路徑拒絕），印出含前後 SHA-256、欄位變更清單與資訊損失的 JSON 報告；聯集出現以前的連續個體檔會升級成 `coimnet-individual-checkpoint/v1` 聯集形，同版本則逐位複製。
+
+取得官方原始資料：
+
+```sh
+./bin/coimnet data sources
+data_dir=$(mktemp -d)
+./bin/coimnet data download \
+  --url https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/body-annotations-male-cns-v1.0-minconf-0.5.feather \
+  --out "$data_dir/annotations.feather" --max-bytes 20000000 \
+  > "$data_dir/receipt.json"
+```
+
+取消或網路中斷後，以相同命令及目的路徑重試，可接續經版本驗證的暫存檔。既有完整檔案、無法辨識的暫存檔及來源改版都會返回錯誤。強制終止程序後若留下鎖或不一致暫存資料，會拒絕自動續傳並保留檔案。下載器會比對伺服器提供的 CRC32C，也接受使用者提供的官方校驗值。回條中的 SHA-256 一律在本機計算，`hash_status` 另記錄是否已比對上游校驗值。
+
+逐批檢查 Feather 原件：
+
+```sh
+./bin/coimnet data inspect --input "$data_dir/annotations.feather" --max-bytes 20000000
+```
+
+命令讀取每個批次並報告欄位、資料列與 Arrow 配置量。檔案、footer、Arrow 配置量與資料列均有上限，可由 `--help` 查閱。失敗報告的 `complete` 為 `false`，退出碼非零。Arrow 配置量不包含整個程序的記憶體。讀取原件不代表已完成神經元篩選或建立訓練圖。
+
+由三份原件建立標準化接線圖並輸出報告：
+
+```sh
+./bin/coimnet data import --manifest manifests/malecns-v1.0.json > graph-report.json
+```
+
+[manifests/malecns-v1.0.json](manifests/malecns-v1.0.json) 明示官方欄位名稱、來源指紋、端點身份假設與選取條件（`annotations.status == "Traced"`，標為工程選取）。相對路徑以 manifest 所在目錄解析，原件保持只讀，讀取前後都比對 SHA-256。報告列出原始列數、選入節點、每一種排除原因、未對應註記的端點、unique／duplicate pair、自環、孤立節點、原始 `weight` 加總、傳導物質預測未知比例與受體 `not_derived` 狀態，每個比例都附分子、分母與依據欄位。記憶體、暫存空間、run 數與列數超限時直接失敗，不會偷偷縮圖。`weight` 是來源原始值，不是突觸數；重複 pair 預設保留每一列，只有 manifest 宣告可加總分割時才允許 `--edge-view aggregated_pairs`。加上 `--out-store graph.coimgraph` 會把 `annotated_neurons` 視圖與報告以不覆寫方式落盤，輸出改為 `{report, store}`；之後用 `./bin/coimnet data validate --store graph.coimgraph` 在新程序讀回，逐段比對 SHA-256、footer、結構不變量與 node index／edge order／report hash 後印出報告。同一張圖兩次落盤位元組相同。store 只記錄 weights 原件的路徑與指紋，不複製原件，讀回後串流 raw view 仍會先比對指紋。
+
+不經訓練直接執行接線圖：
+
+```sh
+./bin/coimnet simulate run \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol evidence/NAT-01/protocol-fullgraph-uniform.json \
+  > run.json
+./bin/coimnet simulate run \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol evidence/NAT-02/protocol-fullgraph-derived.json \
+  --params params-derive-v1.coimparams \
+  > run-derived.json
+```
+
+`simulate run` 把 store 的節點與邊直接接上連續核心或 LIF 核心，用固定注入把刺激送進指定神經元，再以具名探針讀出指定神經元的活動。過程不經 encoder、readout、最佳化器或任何訓練步驟，也沒有可訓練矩陣。protocol 是嚴格 JSON，宣告核心設定（不含拓撲，節點與邊一律由圖提供）、注入、探針、刺激、門檻與參數來源。探針的 `reduce` 可選 `mean_output`、`sum_output`，LIF 另有 `spike_count` 與 `spike_fraction`；節點可直接給索引，也可用 `class`、`type`、`superclass`、`subclass`、`instance`、`soma_side` 的選擇器解析，解析結果寫進報告。報告含核心設定、圖、參數與 protocol 四個指紋、每步探針時序、沉默比例、每步全群放電比例、放電率分位數與穩定旗標。平均輸出在中間加總溢位時使用穩定計算。真正不可表示的探針總和或具名集合原始總和會拒絕執行，保留上一次成功的神經狀態與量測。相同輸入兩次執行的 JSON 位元組相同；`--state-out` 保存狀態，`--state-in` 接續，分兩段跑的結果與一次跑完相同。
+
+參數必須明示來源，目前有兩種。`engineering_uniform_positive` 不需要 `--params`：每條邊的權重是 `gain × 原始 weight`（因此全部是興奮性），每顆神經元共用同一組 bias、log_tau 與 theta_raw，延遲一律為零。`derived_release/v1` 必須加 `--params`，讀 `data derive` 產生的參數集，權重為 `weight_scale × 推導 sign × 推導強度`；protocol 要多一個 `derived` 區塊宣告 `unknown_sign`（`exclude` 權重為 0、`excitatory` 取 +|w|、`inhibitory` 取 −|w|）與大於零的 `weight_scale`，兩個欄位都沒有預設值，unknown 的邊數寫進報告。這個來源的節點純量仍由 protocol 的 `uniform` 區塊提供，所以該區塊的 `gain` 必須不寫或為零；命令會先比對參數集與 store 的 node index／edge order hash，不符就拒絕。
+
+**兩種來源都是明示假設，不是生物參數。** uniform 的全興奮與統一純量是工程佔位；derived 的正負號是由「預測傳導物質機率」依規則推導的，不是量測到的突觸作用，而 bias、log_tau、theta_raw 與零延遲仍然是統一工程值。報告的 `assumptions` 會依來源原樣寫出這些話。要把觀察歸因於接線本身還需要 [ticket 14](docs/tickets/14-null-models-and-behavior.md) 的空模型對照。全圖實測與完整數據見 [evidence/NAT-01/verification.json](evidence/NAT-01/verification.json)（uniform）與 [evidence/NAT-02/verification.json](evidence/NAT-02/verification.json)（derived，含兩者的逐項比較）。
+
+由發布資料推導動態參數：
+
+```sh
+./bin/coimnet data derive \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --rules rules.json \
+  --out params.coimparams \
+  > derive.json
+./bin/coimnet data validate --params params.coimparams --store data/malecns-v1.0/graph-v1.coimgraph
+```
+
+`data derive` 讀四份官方原件（`body-stats`、`tbar-neurotransmitters`、`syn-partners`、`Neuprint_Meta.csv`），依規則檔 `coimnet-derivation-rules/v1` 產生每條邊的**正負號、信心度、傳導物質、配對突觸數**與**正規化強度**，以及每個神經元的 pre／post 突觸數與主要 ROI，寫成不覆寫的參數集檔 `coimnet-parameter-set/v1`。規則檔用相對路徑與 SHA-256 指定四份原件，開始排序前先逐一比對指紋。
+
+**正負號是規則推導的，不是量測值。** 發布資料只有每個突觸前位置的傳導物質「預測機率」；命令取配對突觸的平均機率、選出機率最高的傳導物質，再用規則檔的對應表換成 `+1`／`-1`／unknown。果蠅 glutamate 多為抑制屬工程假設，規則檔的 `basis` 必須寫出「假設」或 "assumption" 才會通過驗證。**未知保持未知**：沒配到突觸、平均機率低於 `min_probability`、配對比例低於 `min_matched_fraction`，或規則本身把該傳導物質標為 unknown 的邊，正負號一律是 unknown，不補預設值；報告分開計算這四種原因。強度是 `gain × 原始 weight ÷ normalizer`，`normalizer` 可選 `none`、`post_total`（目標的 body-stats post）或 `pre_total`（來源的 pre），normalizer 為 0 的邊權重為 0 並計數。
+
+推導報告寫在 JSON 輸出裡，也嵌在參數集檔中：四份來源指紋、規則 hash、每一步的計數與比例（附分子、分母與依據）、每種傳導物質的邊數、sign 分布、unknown 比例、強度分位數、`normalizer_zero_edges`、四個外部排序的 run 數與暫存位元組，以及耗時。整條流程有界：逐突觸資料一律走 `internal/extsort` 的固定寬度記錄，記憶體、暫存、run 數、Arrow 與列數都有上限，超限或取消時不產生輸出也不留暫存檔。`data validate --params` 在新程序讀回，逐段比對 SHA-256、footer 與結構不變量；加 `--store` 會再比對 node index／edge order hash，確認參數集確實屬於那張圖。同一份參數集兩次落盤位元組相同。
+
+**全圖實測（2026-09-15）**：25,563,197 條邊全部推導完成，耗時 207.31 s、最大 RSS 3.87 GB（6 GiB 記憶體與 40 GiB 暫存上限都沒觸及），參數集檔 463,451,966 B。逐突觸座標的配對比例是 124,025,046／124,025,046 = 1.000（分母是兩端神經元都被選入的突觸列），沒有重複座標的 T-bar，也沒有配不到的突觸；正負號為 +13,636,628（53.3%）／−9,172,513（35.9%）／unknown 2,754,056（10.8%），unknown 全部來自「平均機率低於 0.5」1,038,293 與「規則把該傳導物質標為 unknown」1,715,763，沒有任何一條是因為配不到突觸。完整數字（每種傳導物質的邊數、強度分位數、四個排序的 run 數與暫存量）見 [evidence/NAT-02/verification.json](evidence/NAT-02/verification.json)，規則檔原件見 [evidence/NAT-02/rules-derive-v1.json](evidence/NAT-02/rules-derive-v1.json)。
+
+產生的參數集用 `simulate run --params` 執行同一張圖：以 `unknown_sign: exclude`、`weight_scale: 21.6` 跑完 NAT-01 的同一份 protocol 後，沉默比例由 0.0207 升到 0.6440、最大全群放電比例由 0.5467 降到 0.0793，穩定旗標也由 `max_population_rate_exceeded` 變成沒有旗標。這是兩組參數假設在同一張接線圖上的差異，不是果蠅生理的結論。
+
+比較原圖與空模型：
+
+```sh
+./bin/coimnet simulate compare \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol compare.json \
+  --params params-derive-v1.coimparams \
+  --out-dir cells \
+  > compare.json
+```
+
+`simulate compare` 用同一份 protocol、同一份刺激先跑原始接線，再跑每一種空模型的每一個 seed，每一格都是一份完整的 `simulate run` 報告。加上 `--out-dir` 會把每一格另存成 `cell-<編號>-<變體>.json`，那個目錄必須還不存在。
+
+**空模型是記憶體裡的衍生物，不會另存成一張圖。** 三種空模型都不改 store 與參數集檔。`degree_preserving_rewire` 固定每個節點的出度與入度，用 double-edge swap 交換兩條邊的目標，嘗試次數是 `ceil(swap_factor × 邊數)`，提議只要會做出自環或重複 pair 就拒絕，兩種原因分開計數，每條邊的權重與正負號跟著自己那條邊走。`sign_shuffle` 只把正負號標籤在邊之間置換，`+1`／`-1`／unknown 各自的數量不變，而且只有 `derived_release/v1` 能用，因為 uniform 的邊全部是興奮性，沒有標籤可以換。`weight_shuffle` 只置換強度，正負號留在原來的邊上。
+
+亂數是 `math/rand/v2` 的 PCG(seed, 0)，報告寫出 kind、seed、`prng`、嘗試次數、成功次數、兩種拒絕原因，以及衍生拓撲與參數的 SHA-256。拿原本的 store 加上這幾個欄位就能重算出同一份衍生物再比對 hash，所以不需要把假的「來源指紋」寫進第一層的圖格式。
+
+**指標與門檻寫在 protocol 裡，跑之前就定案。** 具名神經元集合是多個選擇器的交集，報告記錄每個選擇器解析到什麼、節點數，以及節點索引的 SHA-256。集合名稱由使用者給，框架不預設任何集合代表某種行為。LIF 核心可用 `spike_fraction`、`mean_rate`、`latency_to_first_spike` 與 `activity_ratio_vs_baseline`，連續核心沒有事件，只能用 `mean_output`。窗是 `[start, end)` 的步數範圍，超出這次執行的步數就拒絕。
+
+**沒有值的指標就是未定義，不是 0。** 集合在窗內完全沒有放電時 latency 沒有值，baseline 的放電率為 0 時 activity ratio 沒有值，門檻碰到未定義的指標一律 fail 並記下 `undefined`。門檻結果只寫進報告，不改退出碼。
+
+多個 seed 的結果以分布呈現。每一種空模型對每個指標給 p0、p25、p50、p75、p100（最近秩，不內插），以及原圖的值落在該分布的百分位 `(小於的個數 + 0.5 × 相等的個數) ÷ 有定義的個數`。原圖或全部 seed 都沒有值時就不給百分位。每一格還會給每個指標與原圖的差 `deltas_from_original`，兩邊都有定義才有值。報告只陳述這些數字與事前宣告的門檻結果，不做沒有宣告過的檢定，也不宣稱任何生物行為。
+
+真實全圖跑過兩次矩陣，每次十格（原圖加三種空模型 × seed 1、2、3），都是 165,122 個神經元與 25,563,197 條邊的 300 步。集合由註記解析成 `alin` 24 個、`descending_neuron` 1,314 個、`vnc_motor` 708 個節點。LIF 矩陣 890.94 s、最大 RSS 5,909,626,880 B；連續核心矩陣 929.97 s、最大 RSS 5,659,115,520 B；兩邊每一格的拓撲與參數 hash 逐格相同。指標的位置會隨核心改變：LIF 的 `descending_neuron_mean_rate` 原圖 0.0879，在三種空模型的三個 seed 分布中百分位都是 0（比每個 seed 都低），但連續核心的 `descending_neuron_mean_output` 原圖在 rewire 與 weight_shuffle 的分布中百分位是 1。三個 seed 的百分位只是位置，不是檢定。證據見 `evidence/NAT-03/`、`NAT-04/` 與 `NAT-05/`，指令封裝在 `scripts/compare-evidence.sh`。
+
+在原生模擬之上開啟可塑性：
+
+```sh
+./bin/coimnet simulate compare \
+  --store data/malecns-v1.0/graph-v1.coimgraph \
+  --protocol evidence/NAT-06/compare-fullgraph-derived-plastic.json \
+  --params params-derive-v1.coimparams \
+  --out-dir cells \
+  > compare.json
+```
+
+protocol 多一個 `plasticity` 區塊就會在執行中開啟局部可塑性，`simulate run` 與 `simulate compare` 都吃這個區塊，兩個命令都沒有新旗標。`rule` 選 `hebbian_rate`（LIF 核心另有 `stdp_pair`）並帶 `decay_e`、`decay_p`、`plastic_max` 與 `w_min`；`all` 與 `edges` 選擇器二擇一決定哪些連線參與，選擇器解析出一組神經元後啟用「兩端都在這組裡」的邊；`gate_channel` 與 `gate_scale` 直接從刺激矩陣的一個通道讀學習閘門，所以不必另外給一份輸入。閘門通道必須是刺激宣告的通道，而且不能是任何注入使用的通道，否則同一個通道既驅動神經元又開閘門，事後分不出是哪一個造成的。
+
+每一步的權重是「參數集的權重加上該條邊有上限的快速變化」，在推進之前重算；固定符號的邊被 `w_min` 擋在零的同一側，永遠不會翻成相反的作用；快速變化不寫回參數集。因為下一步的權重取決於這一步的快速變化，開啟後分塊大小強制為 1，報告的 `plasticity` 區塊會寫出規則、啟用邊數、閘門通道、`w_min` 與 `plastic_max` 各擋下幾次、快速變化的 L2 範數（執行前後）、分塊大小與這個耗時代價。沒有宣告 `plasticity` 的 protocol 逐位元等於這個區塊出現以前的執行與報告。
+
+`simulate compare` 的 `learning_variants` 用同一份刺激跑三格：`original` 是把 `plasticity` 區塊拿掉的執行，也是所有差值的基準，報告逐位元等於沒有宣告區塊的那一格；`plastic` 開啟區塊；`learned_then_frozen` 以 `plastic` 跑完的快速變化把權重固定住、不再更新，重跑同一份刺激。三格加上空模型那幾格共用同一組指標與門檻，空模型那幾格不帶可塑性。
+
+**報告只給差值與百分位，不做文字判斷。** 每一格的 `deltas_from_original` 是它與 `original` 的逐指標差，兩邊都有定義才有值；「增強、修改或破壞」由讀者從差值和門檻結果自己判斷，框架不寫這種句子。**規則與四個常數是明示的工程假設**，不是量測到的果蠅可塑性，報告的 `assumptions` 會原樣寫出來。
+
+真實全圖跑過兩次三格矩陣（2026-09-16），同一份 store、同一份參數集與同一份刺激，只有 `decay_p` 不同：0.5 與 0.999。每一格都是 165,122 個神經元、25,563,197 條邊、300 步，`all: true` 啟用全部 25,563,197 條邊。刺激是 NAT-02 的同一個脈衝（通道 0，第 10–29 步）加上通道 1 的閘門（第 30–49 步常數 1）。兩次都是 1252.44 s 與 1217.28 s、最大 RSS 6.61 GB 與 6.56 GB，可塑性那一格各約 610 s 與 599 s。`original` 那一格的四個探針序列、monitors 與 assumptions 與 NAT-02 的全腦單次執行逐位相同。
+
+`decay_p` 0.999 時快速變化撐到最後（L2 範數 11.90），`learned_then_frozen` 拿到的正是那組值：ALIN 的 `mean_rate` 在閘門之後 +0.0585（凍結後 +0.0728），`descending_neuron` 的 `spike_fraction` −0.0723（凍結後 −0.0502），`vnc_motor` 的首次放電延遲在凍結那一格少 3 步。`decay_p` 0.5 時閘門關上之後 `plastic` 每步衰減一半，250 步後整個陣列只剩 8.08e-75，所以 `learned_then_frozen` 的報告與 `original` 位元組相同，十四個有定義的差值全部是 0（剩下那一個三格都未定義），但 `plastic` 那一格仍然有差。**快速變化撐不撐得到最後由 `decay_p` 決定**，不是實作的選擇。完整數字、假設與限制見 [evidence/NAT-06/verification.json](evidence/NAT-06/verification.json)，指令封裝在 `scripts/plasticity-evidence.sh`。
+
+真實子圖的選取與短訓練見 [ALIN 範例](examples/realsubgraph/README.md)。範例明示人工脈衝任務、初始化假設及更新範圍，輸出來源與參數指紋。
+
+[多通道 adapter 範例](examples/multichannel/README.md) 將不同頻率的連續值、區間與脈衝轉成六欄輸入，接到既有核心與訓練器。執行 `go test ./examples/multichannel -run ExampleAdapt -count=1 -v` 可跑人工資料的完整流程。
+
+## Go SDK
+
+`experiment.RunBioInspired` 的兩種人工生物啟發協定各自保存本次設定。回傳後修改呼叫端設定或另一份報告，不會連動修改既有報告，取消後的部分報告也適用。保留空值、原有錯誤與合法輸出；執行期間請勿並行修改傳入設定。驗收見 [ticket 54](docs/tickets/54-bioinspired-config-ownership.md)。
+
+新增的任務 SDK 入口：[PPO 更新](learning/rl/README.md)、[音訊轉文字與串流恢復](tasks/asr/README.md)；OCR 的影像與頁面入口是 `tasks/ocr.LoadImage` 與 `Recognizer.InferPage`，範圍與限制見 [realocr 範例](examples/realocr/README.md)。PPO 與 ASR 已通過 fixture 驗收，範圍與限制見上表的 LRN-09 與 TSK-02 列。
+
+`tasks/ocr.LoadImage` 只讀有上限的 PNG／JPEG，回傳與同一次讀取綁定的灰階 raster 及來源／尺寸／縮放／方向／座標 metadata；`Recognizer.InferPage` 將單欄水平頁面切行後送入同一個 Recognizer，依 reading order 回填 `Page.Blocks[].Text`，空頁回傳非 nil 的空結果。metadata 固定記錄 stored pixel order 與 horizontal left-to-right，不代表支援 EXIF 自動旋轉或 ICC 轉換。
+
+- `dynamics.NewContinuous` 建立同步稀疏連續模型。`Forward` 支援延遲，`Backward` 提供完整或固定視窗梯度。
+- `dynamics.NewLIF` 用同一套拓撲、延遲與時鐘建立 LIF 放電核心。神經元達到閾值就產生一次事件並把電位重設，對外輸出是會衰減的突觸跡，不應期內保持重設值並忽略當步輸入。`Backward` 依宣告的 `fast_sigmoid` 替代梯度回推，重設分支不傳梯度。
+- `learning.Config.LIF` 與 `Config.Dynamics` 二選一。選用 LIF 後，`Parameters.ThetaRaw` 是各神經元的閾值參數，經有界轉換得到 `theta_base`。`Trainable.Theta` 決定要不要訓練這一組，`Trainer.Spikes` 回傳每步的 0／1 事件。`LIFConfig.Homeostasis` 是可選的慢速穩定區塊，開啟後每顆神經元多一個活動估計與一個只會抬高或回落到零的閾值偏移，放電判定用的是 `theta_base + 適應 + 偏移`；不宣告這個區塊的設定，編碼與既有指紋完全不變。
+- `learning.NewNetwork` 將 Insyra 編碼器及讀出接到核心，`LossGradient` 回傳整條路徑的梯度。
+- `learning.NewTrainer` 使用可保存的 AdamW 狀態。凍結參數群組時，權重、動量、步數與衰減一起凍結。
+- `learning.NewGPUTrainer` 是可選的 WebGPU 訓練入口，只支援純量、零延遲連續核心的獨立序列，仍使用 host AdamW；`Step`／`StepFrom` 的稀疏前向與反向經 GPU 執行，`RestoreGPUTrainer` 可由既有 episode 快照續訓，使用完呼叫 `Close`。不支援的設定會回錯，不在裝置失敗後靜默改跑 CPU；實測範圍與未加速部分見 [OPS-05](evidence/OPS-05/verification.json)。
+- `learning.NewGPUDeviceTrainer`／`RestoreGPUDeviceTrainer` 是另一條 opt-in 的 float32 裝置 AdamW episode 路徑；參數、`p/m/v/count` 在裝置更新，`webgpu.DeviceAdamW.StepChecked` 會以完整候選 readback host mirror 交給獨立 callback，合法零 rate 也走 checked 路徑。神經狀態、activation 與稀疏 weight 仍在 host 傳輸，Insyra 編碼器／讀出裝置執行尚未量測；projection、fixed signs、sharing，以及既有 LIF、vector、delay、recompute、persistent neural state 設定會拒絕。新建構會量化到可表示的 float32，Restore 對不精確的已訓練 state 直接拒絕；搭配 `checkpoint.SaveTrainingBundle`／`LoadTrainingBundle` 保存完整 TrainingBundle。`maxOptimizerBytes` 是 logical budget，不是 allocator VRAM 或 RSS，也沒有速度宣稱。
+- `webgpu.NewDeviceAdamW`／`webgpu.RestoreDeviceAdamW` 建立或恢復 GPU 常駐的 AdamW 原語；`DeviceAdamW.Step` 只上傳本次梯度、mask、設定與狀態旗標並更新裝置狀態，`Snapshot` 明確讀回完整參數、兩個 moment 與更新計數器，使用完呼叫 `Close`。這些是原語，不是完整連續網路或訓練整合。
+- `tasks/asr` 的 `Recognizer.Save`／`LoadRecognizer`、`tasks/ocr` 的 `Recognizer.Save`／`LoadRecognizer`，以及 `tasks/textgen` 的 `Model.Save`／`LoadModel` 可在不同程序間保存與載入完整任務模型與最佳化器狀態。保存時傳入尚未存在的新目錄；另一個程序以對應 `Load...` 載入，載入會驗證任務設定、詞表（textgen）與拓撲。載入後的 `LoadedCheckpointSHA256()` 是已驗證 canonical `manifest.json` 的 SHA-256；新的模型則回傳空字串。
+- `signal` 提供具版本訊號、時鐘驗證與事件排序、觀察／答案／回饋分離及無損外部 ID 映射。`NewStreamingResampler` 支援連續值的因果取樣，`ResampleOffline` 另支援離線線性插值。`NewPulseAligner` 將脈衝對齊至當下或下一個神經步號，逐筆保留事件。`NewIntervalResampler` 依起訖時間取樣固定值區間，詳見[時間對齊與限制](docs/signal-resampling.md)。
+- `signal.NewProjection` 保存輸入／輸出係數、選取條件與神經元指紋。`learning.BindProjections` 將映射接到實際圖，支援保存後重建及建立獨立替換模型，詳見[映射指南](docs/signal-projections.md)。
+- `checkpoint.NewState`、`Save`、`Load` 提供獨立序列快照，`learning.RestoreTrainer` 重建隔離訓練器。
+- `learning.NewIndividual` 對連續與 LIF 兩種核心建立隔離的持續個體，`ResetNeural`／`ResetParameters`／`ResetOptimizer` 各自只重設指定資料。`checkpoint.SaveIndividual`／`LoadIndividual` 保存持續神經狀態，LIF 個體另外保存突觸跡、適應、不應期與慢速穩定狀態，詳見[個體狀態與保存](docs/individual-state.md)。
+- `plasticity.New`／`Model.Config` 的受體設定與 `Individual.Snapshot` 都提供獨立指標值副本。`RestoreIndividual` 沿用啟用入口的受體綁定檢查，拒絕引用缺失化學層或不存在受體的快照。沒有受體參照的舊缺省可恢復。
+- `checkpoint.NewModelPackage`、`SaveModelPackage`、`LoadModelPackage` 保存模型包，`NewIndividualFromPackage` 由模型包建立新個體，結果與用同一份設定、參數直接呼叫 `learning.NewIndividual` 相同。模型包不接受獨立回合的 `Config.Chemistry`；保存這類訓練器請使用訓練快照或 `SaveTrainingBundle`。
+- `download.Fetch` 提供容量限制、取消、有限重試、版本檢查、續傳及來源回條。
+- `feather.Scan` 以 callback 逐批讀取 Feather V2，保留整數、缺值、字典與 list。批次資料在 callback 期間有效，需保留時呼叫 `Retain`，使用完畢後 `Release`。
+- `connectome.Build` 依 `DatasetManifest` 與 `ResourceLimits` 建立不可變的 `Graph` 與 `GraphReport`。`Node`、`IndexOf`、`NeuronIDs` 提供無損外部 ID 與連續索引的雙向對照；`StreamAnnotatedNodes`／`StreamAnnotatedEdges` 依固定順序串流選入視圖；`StreamRawSegments` 重新逐批讀取 weights 原件並保留每一列。重複 pair 以有界外部排序的相鄰 run 計數，不建立全量 pair map。
+- `simulate.Build` 以 `connectome.Graph`、`ParameterSet` 與 `Protocol` 建立核心無關的 `Runner`，`Run` 推進持續狀態並回傳 `RunReport`，`State`／`RestoreState` 保存與接續。`simulate.UniformPositive` 由原始 weight 產生 `engineering_uniform_positive` 參數集。套件不使用 Insyra，也不碰 `learning`。原生可塑性使用刺激通道閘門與固定衰退，沒有化學受體綁定；`Protocol.Validate`、`DecodeProtocol`、`Build` 與 `BuildVariant` 都會拒絕非 nil 的 `GateReceptor`／`DecayEReceptor`，凍結設定也一樣。合法缺省的格式與 hash 保持。
+- `connectome.Save`、`Load` 以固定區段格式落盤與讀回同一個 `Graph`：每段與 footer 都有 SHA-256，讀回時重算 node index／edge order／report hash 並檢查順序與索引範圍，不符即 `ErrStoreCorrupt`。`LoadWithReceipt` 另回傳實際驗證位元組的 SHA-256，供 CLI 報告使用。檔案、footer 與記憶體受 `StoreLimits` 限制。
+- `params.DecodeRules` 讀取 `coimnet-derivation-rules/v1`，`params.Derive` 依規則由四份發布原件推導每條邊的正負號、信心度與強度，`Save`／`Load`／`LoadWithReceipt` 以區段加 footer 加 SHA-256 的格式落盤與讀回，`Set.CheckGraph` 比對 node index／edge order hash。套件不使用 Insyra，也不碰 `learning` 與 `simulate`。
+
+`signal.NewSignal` 接受呼叫者已解碼的數值來源，連續、活動、脈衝與調節的具名訊號可用 `go test ./signal -run ExampleNewSignal -count=1 -v` 查看保存與讀回範例。訊號 JSON 的數值欄位拒絕 `null`，例如 `values:[null]` 不會被當成零。`quality.score` 與整個 `valid_range` 可用 `null` 表示未知，省略原本可省略的數值欄位則維持既有預設。從 JSON 建立訊號請使用 `DecodeSignal`，不要先以一般 JSON 解碼器讀入 `SignalSpec`，以免在驗證前就遺失缺值資訊。
+
+`Trainer.Step`／`Predict` 與 `Network.Predict` 從零神經狀態開始獨立序列，`Predict` 回傳最後一步輸出。設定 `ReadoutEveryStep` 後可用 `PredictAll` 取得每步輸出，並以 `StepFrom` 傳入每步的輸出梯度。持續個體則使用 `Individual.Advance`，接續電位與延遲歷史，回傳每一步輸出。
+
+`learning.Config.Chemistry` 接受可選的 `ChemicalEpisode`。`Part` 指定化學設定、濃度與來源狀態，`SourceStep` 指定來源時鐘，`InitialActivity` 可指定第一步釋放所觀察的活動。每個獨立回合使用這份起點的私有副本，後續釋放讀取前一步的實際神經輸出。訓練反向包含這條活動回授與濃度變化，控制器參數及受體反應係數保持固定。CPU 純量連續、LIF 與混合核心支援完整歷史，連續與 LIF 另支援分段重算。GPU、向量、PPO、混合核心重算及從持續神經狀態重算的組合會明示拒絕。
+
+持續個體沿用 `Individual.EnableChemistry`，`TrainEpisode` 從個體當下的化學狀態、來源視窗、來源時鐘與上一列活動建立獨立訓練副本，成功只提交參數與最佳化器。這個入口不能同時另設 `Config.Chemistry`。受體的 `Location.Region` 指定讀取的區域濃度，`Compartment` 保存研究部位，尚未分別模擬各部位的電位。實測 Rdl 定位的來源與類型推論見[受體位置範例](examples/receptorlocation/README.md)。
+
+CPU 純量連續核心可用 `Continuous.ForwardFromState` 從保存狀態計算目前段的前向與梯度。`Network.LossGradientFromState` 接上編碼器與讀出，`Trainer.StepFromState` 沿用既有最佳化器更新；保存歷史固定，不回推先前經驗，也不支援 Recompute。PPO 的接續用法及限制見 [更新 API](learning/rl/README.md)。CPU 動態使用 float64，Insyra 編碼器、讀出與損失使用 float32。完整 API 可用 `go doc ./learning` 與 `go doc ./dynamics` 查閱。
+
+訊號套件的嚴格 JSON 會在解碼前拒絕非法 UTF-8 與未配對的 Unicode surrogate，避免來源名稱或外部 ID 被改寫。
+
+訊號、快照、下載續傳資料與圖資料的嚴格 JSON 解碼皆限制巢狀路徑深度為 64 層，並拒絕 Unicode 大小寫別名重複欄位。例如 `schema_version` 與 `ſchema_version` 會被 Go 解碼器視為同一欄位，因此同時出現時拒絕輸入。
+
+## 開發驗證
+
+```sh
+go test ./...
+go test -race ./...
+go vet ./...
+go build ./...
+go mod verify
+```
+
+在 macOS 或 Linux 可用 `scripts/verify.sh NEW_OUTPUT_DIRECTORY` 一次執行上述檢查、三組學習對照，以及真正跨程序的 CLI 續訓比對，並執行 LIF 閾值範例及其預註冊門檻，保存環境報告、來源指紋與日誌。目錄須尚未存在。已下載三份官方原件時，`scripts/graph-evidence.sh NEW_OUTPUT_DIRECTORY` 會在計時下重跑真實接線圖建構並保存報告、環境與指紋。
+
+commit 前的敏感資料掃描可以選擇安裝，不會自動啟用：`git config core.hooksPath .githooks` 之後，每次 `git commit` 會先執行 `scripts/scan-commit.sh`，掃描暫存 diff 的金鑰樣式、超過 5 MiB 的檔、`data/` 原件目錄新增與 `teacher_response` 原文，違規就中止提交；`git config --unset core.hooksPath` 取消。
+
+## 開發入口
+
+- [專案工作規則](AGENTS.md)：開發、驗證與 sub-agent 使用順序。
+- [初始化紀錄](docs/initialization.md)：環境、依賴版本、查證命令與接續工作。
+- [完整規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)：25 章規格與 14 個工作包。
+- [需求定義](docs/handoff/requirements.json)與[實作狀態](docs/requirements-status.json)：85 項必要需求及各項驗證證據。
+- [交接包說明](docs/handoff/README.zh-TW.md)與[研究來源](docs/handoff/sources.json)。
+
+Go 最低版本為 `1.25.12`。指定依賴 Insyra `v0.3.4` 對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`，已在 `go.mod` 與 `go.sum` 固定版本與校驗值。上述核心與例子以 Go 獨立執行，不需要 Python。
+
+## 框架目標
+
+主要資料來源為 MaleCNS，另支援 FlyWire 比較。完整範圍涵蓋連續與脈衝神經動態、可訓練閾值、持續學習、化學調節、教師蒸餾及完整狀態保存。
+
+任務驗證包含 OCR、語音轉文字、語言生成、文字轉影音、空間與導航，以及共用核心的多模態學習。這些是待驗證的研究目標。
+
+這些任務的特定資料處理、訓練配方與模型只以明示範例或外部實驗呈現。通用核心、訓練器與快照介面不依賴某一個任務或個人模型。新增任務範例統一放在 `examples/`，既有 `experiment` 是人工延遲關聯的驗證範例套件。
+
+依[主規格第 3 章](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md#chapter-03)，實驗報告須區分軟體正確性、任務能力與生物證據。接線圖不等於已訓練模型，傳導物質預測不等於量測出的突觸作用，未知受體也不能當成沒有受體。突觸接點、神經元配對與參數量分開統計。獎勵、損失與化學調節分別建模，人工假設要明示。共同訊號格式或小型任務成功，不能證明一般語言、自然影音能力，固定編碼器的貢獻也須以對照確認。
+
+## 授權與資料
+
+儲存庫沿用既有 [MIT 授權](LICENSE)。接線資料、研究程式與外部模型依各自授權使用。原始資料放在專案內的 `data/`，模型與執行結果放在 `models/`、`checkpoints/` 或 `runs/`，這些目錄都由 `.gitignore` 排除。過程暫存放 `runs/.tmp/`，完成驗證與必要證據保存後清除。MaleCNS 原件保留於 `data/malecns-v1.0/`；真實任務來源在 `data/TSK-11/`，對應模型與結果在 `runs/TSK-11/`。歷史報告中的舊絕對路徑保留為當時紀錄，現在的命令使用新位置。

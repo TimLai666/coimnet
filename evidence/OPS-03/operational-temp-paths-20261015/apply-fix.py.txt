@@ -1,0 +1,53 @@
+from pathlib import Path
+import hashlib,json,datetime
+r=Path('/Users/timlai/Developer/coimnet')
+e=r/'evidence/OPS-03/operational-temp-paths-20261015'
+w=r/'runs/.tmp/operational-temp-paths-20261015'
+b=json.loads((e/'baseline.json').read_text())
+test=json.loads((e/'test-freeze.json').read_text())
+def sha(raw):return hashlib.sha256(raw).hexdigest()
+assert sha((w/'probe/operational_temp_paths_test.go').read_bytes())==test['private_test_sha256']
+for name in ['private-red-local','private-red-race-local']:
+ assert json.loads((e/(name+'.json')).read_text())['exit_code']==1,name
+values={}
+for name in ['scripts/clean-env-verify.sh','scripts/graph-evidence.sh','README.md','examples/realsubgraph/README.md','docs/INDEX.md']:
+ raw=(r/name).read_bytes()
+ assert sha(raw)==b['target_sources'][name],name
+ values[name]=(raw,raw.decode('utf-8'))
+def change(name,old,new):
+ raw,text=values[name];assert text.count(old)==1,(name,old)
+ values[name]=(raw,text.replace(old,new))
+change('scripts/clean-env-verify.sh',
+ '#                  default is a new mktemp directory, which is removed at the\n#                  end. A directory given here is kept. The script replaces',
+ '#                  default is a new runs/.tmp/clean-env.* directory, removed\n#                  at the end. A directory given here is kept. The script replaces')
+change('scripts/clean-env-verify.sh',
+ '                 is a new mktemp directory, which is removed at the end. A\n                 directory given here is kept. The script replaces src/ and\n                 the paths used by its steps inside this directory.',
+ '                 is a new runs/.tmp/clean-env.* directory under the repo root,\n                 removed at the end. A directory given here is kept.\n                 The script replaces src/ and the paths used by its steps.')
+change('scripts/clean-env-verify.sh',
+ '  workdir=$(mktemp -d)',
+ '  mkdir -p "$repo_root/runs/.tmp"\n  workdir=$(mktemp -d "$repo_root/runs/.tmp/clean-env.XXXXXX")')
+change('scripts/graph-evidence.sh',
+ "  echo 'under /usr/bin/time with a fresh temporary directory, saving report.json (or'\n  echo 'import.json with the store receipt), run.log, started-at/finished-at and the'",
+ "  echo 'under /usr/bin/time with a fresh runs/.tmp/graph-evidence.* directory, saving'\n  echo 'report.json (or import.json with the store receipt), run.log, started-at/finished-at and the'")
+change('scripts/graph-evidence.sh',
+ 'tmp=$(mktemp -d)',
+ 'mkdir -p runs/.tmp\ntmp=$(mktemp -d "$PWD/runs/.tmp/graph-evidence.XXXXXX")')
+change('README.md','保存與接續單組人工範例訓練：','在專案根目錄保存與接續單組人工範例訓練，成果留在 runs/ 的新目錄：')
+change('README.md','run_dir=$(mktemp -d)','mkdir -p runs\nrun_dir=$(mktemp -d "$PWD/runs/delayed-example.XXXXXX")')
+change('README.md','取得官方原始資料：','在專案根目錄取得官方原始資料，原件與下載回條保存在 data/downloads/：')
+change('README.md','data_dir=$(mktemp -d)','mkdir -p data/downloads\ndata_dir=$(mktemp -d "$PWD/data/downloads/malecns.XXXXXX")')
+change('examples/realsubgraph/README.md','run_dir=$(mktemp -d)','mkdir -p runs\nrun_dir=$(mktemp -d "$PWD/runs/realsubgraph.XXXXXX")')
+producer=next(i for i,line in enumerate(values['scripts/clean-env-verify.sh'][1].splitlines(),1) if line.startswith("printf '{") and 'coimnet-clean-env-run/v1' in line)
+change('docs/INDEX.md','scripts/clean-env-verify.sh:423','scripts/clean-env-verify.sh:'+str(producer))
+change('docs/INDEX.md','../scripts/clean-env-verify.sh#L423','../scripts/clean-env-verify.sh#L'+str(producer))
+receipt={}
+for name,(raw,text) in values.items():
+ p=r/name;assert p.read_bytes()==raw,name
+ p.write_text(text,encoding='utf-8')
+ receipt[name]={'before_sha256':sha(raw),'after_sha256':sha(p.read_bytes())}
+ # Only copied inputs are refreshed, not any copied/new Go file.
+ copied=w/'probe'/name
+ assert sha(copied.read_bytes())==b['target_sources'][name],name
+ copied.write_bytes(p.read_bytes())
+with (e/'applied-fix.json').open('x') as out:out.write(json.dumps({'applied_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'changes':receipt,'clean_env_schema_producer_line':producer,'formal_go_files_modified':0,'fixed_private_test_sha256':test['private_test_sha256']},indent=2)+'\n')
+print(json.dumps(receipt))

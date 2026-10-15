@@ -1,0 +1,343 @@
+//go:build darwin || linux
+
+package coimnet_test
+
+import (
+	"context"
+	"debug/buildinfo"
+	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+)
+
+const cleanExportIsolationFakeGo = `#!/bin/sh
+set -eu
+
+if [ "${1-}" = mod ] && [ "${2-}" = download ]; then
+  printf '%s\n' "${GIT_CEILING_DIRECTORIES-}" > "${FAKE_GIT_CEILING_PROBE:?}"
+  set +e
+  git_output=$(git rev-parse --show-toplevel 2>&1)
+  git_status=$?
+  set -e
+  printf '%s\n' "$git_output" > "${FAKE_GIT_PROBE_OUTPUT:?}"
+  printf '%s\n' "$git_status" > "${FAKE_GIT_PROBE_STATUS:?}"
+  "${FAKE_REAL_GO:?}" build -o "${FAKE_BINARY:?}" .
+fi
+
+write_file=
+write_dir=
+previous=
+for arg in "$@"; do
+  if [ "$previous" = file ]; then
+    write_file=$arg
+    previous=
+    continue
+  fi
+  if [ "$previous" = dir ]; then
+    write_dir=$arg
+    previous=
+    continue
+  fi
+  case "$arg" in
+  --checkpoint|--out|--out-json|--out-md) previous=file ;;
+  --out-dir) previous=dir ;;
+  esac
+done
+if [ -n "$write_dir" ]; then
+  mkdir -p "$write_dir"
+fi
+if [ -n "$write_file" ]; then
+  mkdir -p "$(dirname "$write_file")"
+  printf '%s\n' 'fake output' > "$write_file"
+fi
+exit 0
+`
+
+func runCleanExportGitCommand(t *testing.T, dir string, env []string, args ...string) string {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Dir = dir
+	cmd.Env = env
+	output, err := cmd.CombinedOutput()
+	if ctx.Err() != nil {
+		t.Fatalf("git command timed out: %s", ctx.Err())
+	}
+	if err != nil {
+		t.Fatalf("git %v failed: %v\n%s", args, err, output)
+	}
+	return string(output)
+}
+
+func cleanExportUnsetEnv(env []string, keys ...string) []string {
+	blocked := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		blocked[key] = struct{}{}
+	}
+	result := make([]string, 0, len(env))
+	for _, item := range env {
+		key, _, ok := strings.Cut(item, "=")
+		if !ok {
+			result = append(result, item)
+			continue
+		}
+		if _, skip := blocked[key]; !skip {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func cleanExportGitEnv(env []string) []string {
+	env = cleanExportUnsetEnv(env,
+		"GIT_DIR",
+		"GIT_CEILING_DIRECTORIES",
+		"GIT_WORK_TREE",
+		"GIT_INDEX_FILE",
+		"GIT_OBJECT_DIRECTORY",
+		"GIT_ALTERNATE_OBJECT_DIRECTORIES",
+		"GIT_COMMON_DIR",
+		"GIT_NAMESPACE",
+		"GIT_QUARANTINE_PATH",
+		"GIT_CONFIG",
+		"GIT_CONFIG_SYSTEM",
+		"GIT_CONFIG_COUNT",
+		"GIT_CONFIG_PARAMETERS",
+		"GIT_CONFIG_KEY_0",
+		"GIT_CONFIG_VALUE_0",
+		"GIT_CONFIG_KEY_1",
+		"GIT_CONFIG_VALUE_1",
+	)
+	env = setEnv(env, "GIT_CONFIG_NOSYSTEM", "1")
+	env = setEnv(env, "GIT_CONFIG_GLOBAL", "/dev/null")
+	env = setEnv(env, "GIT_TERMINAL_PROMPT", "0")
+	return env
+}
+
+func writeCleanExportFixtureFile(t *testing.T, path, contents string, mode os.FileMode) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(contents), mode); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCleanExportBuildMetadataIsolation(t *testing.T) {
+	container := t.TempDir()
+	fixtureRoot := filepath.Join(container, "fixture repo with spaces")
+	if err := os.MkdirAll(fixtureRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cleanSource, err := os.ReadFile(filepath.Join(repositoryRoot(t), "scripts", "clean-env-verify.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	writeCleanExportFixtureFile(t, filepath.Join(fixtureRoot, "scripts", "clean-env-verify.sh"), string(cleanSource), 0o755)
+	writeCleanExportFixtureFile(t, filepath.Join(fixtureRoot, "scripts", "recompute-evidence.sh"), "#!/bin/sh\nexit 0\n", 0o755)
+	writeCleanExportFixtureFile(t, filepath.Join(fixtureRoot, "go.mod"), "module fixture.local/coimnet\n\ngo 1.25\n", 0o644)
+	writeCleanExportFixtureFile(t, filepath.Join(fixtureRoot, "main.go"), "package main\n\nfunc main() {}\n", 0o644)
+
+	gitEnv := cleanExportGitEnv(os.Environ())
+	runCleanExportGitCommand(t, fixtureRoot, gitEnv, "init")
+	runCleanExportGitCommand(t, fixtureRoot, gitEnv, "add", "--", "go.mod", "main.go", "scripts/clean-env-verify.sh", "scripts/recompute-evidence.sh")
+	runCleanExportGitCommand(t, fixtureRoot, gitEnv,
+		"-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false",
+		"-c", "user.name=clean-export-test", "-c", "user.email=clean-export-test@example.invalid",
+		"commit", "-m", "fixture")
+
+	mainPath := filepath.Join(fixtureRoot, "main.go")
+	mainContents, err := os.ReadFile(mainPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mainContents = append(mainContents, []byte("// dirty tracked fixture\n")...)
+	if err := os.WriteFile(mainPath, mainContents, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	realGo, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatalf("locate real Go: %v", err)
+	}
+	realGo, err = filepath.Abs(realGo)
+	if err != nil {
+		t.Fatalf("resolve real Go path: %v", err)
+	}
+
+	tempRoot := filepath.Join(fixtureRoot, "runs", ".tmp")
+	if err := os.MkdirAll(tempRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := filepath.Join(tempRoot, "outer-sentinel.txt")
+	writeCleanExportFixtureFile(t, sentinel, "keep outer sentinel\n", 0o644)
+	beforeEntries := directoryEntries(t, tempRoot)
+
+	trackedBefore := make(map[string][]byte)
+	for _, relative := range []string{
+		"go.mod",
+		"main.go",
+		"scripts/clean-env-verify.sh",
+		"scripts/recompute-evidence.sh",
+	} {
+		contents, err := os.ReadFile(filepath.Join(fixtureRoot, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
+		trackedBefore[relative] = contents
+	}
+	trackedStatusBefore := strings.TrimSpace(runCleanExportGitCommand(t, fixtureRoot, gitEnv, "status", "--porcelain", "--untracked-files=no"))
+	headBefore := strings.TrimSpace(runCleanExportGitCommand(t, fixtureRoot, gitEnv, "rev-parse", "HEAD"))
+
+	fakeBin := filepath.Join(fixtureRoot, "fake-bin")
+	if err := os.MkdirAll(fakeBin, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(fakeBin, "go"), []byte(cleanExportIsolationFakeGo), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	probeRoot := filepath.Join(container, "git-probe")
+	if err := os.MkdirAll(probeRoot, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	probeOutput := filepath.Join(probeRoot, "rev-parse.output")
+	probeStatus := filepath.Join(probeRoot, "rev-parse.status")
+	probeCeiling := filepath.Join(probeRoot, "git-ceiling.env")
+	probeBinary := filepath.Join(probeRoot, "minimal-binary")
+	existingCeiling := filepath.Join(container, "existing-ceiling")
+	if err := os.MkdirAll(existingCeiling, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	env := append([]string(nil), gitEnv...)
+	env = setEnv(env, "GIT_CEILING_DIRECTORIES", existingCeiling)
+	env = setEnv(env, "PATH", fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	env = setEnv(env, "FAKE_GIT_PROBE_OUTPUT", probeOutput)
+	env = setEnv(env, "FAKE_GIT_PROBE_STATUS", probeStatus)
+	env = setEnv(env, "FAKE_GIT_CEILING_PROBE", probeCeiling)
+	env = setEnv(env, "FAKE_REAL_GO", realGo)
+	env = setEnv(env, "FAKE_BINARY", probeBinary)
+	env = setEnv(env, "GOFLAGS", "-ldflags=-s -buildvcs=true")
+
+	output := filepath.Join(fixtureRoot, "out", "run.json")
+	result := commandResult(t, fixtureRoot, "bash", []string{
+		filepath.Join(fixtureRoot, "scripts", "clean-env-verify.sh"),
+		"--out", output,
+	}, env)
+	if result.exit != 0 {
+		t.Fatalf("clean export failed: %q", result.output)
+	}
+	if !strings.Contains(result.output, "RESULT: no step failed") {
+		t.Fatalf("clean export did not report success: %q", result.output)
+	}
+	if !strings.Contains(result.output, "head: "+headBefore) {
+		t.Fatalf("clean export did not use fixture HEAD %q: %q", headBefore, result.output)
+	}
+
+	probeStatusText, err := os.ReadFile(probeStatus)
+	if err != nil {
+		t.Fatal(err)
+	}
+	probeExit, err := strconv.Atoi(strings.TrimSpace(string(probeStatusText)))
+	if err != nil {
+		t.Fatalf("invalid git probe exit code: %q", probeStatusText)
+	}
+	probeText, err := os.ReadFile(probeOutput)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("diagnostic exported-source git rev-parse: exit=%d output=%q", probeExit, probeText)
+
+	workdir := printedOperationalValue(result.output, "workdir:")
+	if workdir == "" {
+		t.Fatalf("clean export did not print default workdir: %q", result.output)
+	}
+	if !pathWithin(workdir, tempRoot) || filepath.Dir(workdir) != tempRoot || !strings.HasPrefix(filepath.Base(workdir), "clean-env.") {
+		t.Fatalf("default workspace %q is not a direct clean-env child of %q", workdir, tempRoot)
+	}
+	if _, err := os.Stat(workdir); !os.IsNotExist(err) {
+		t.Fatalf("default workspace was not removed: %v", err)
+	}
+	assertEntriesUnchanged(t, tempRoot, beforeEntries)
+	if got, err := os.ReadFile(sentinel); err != nil {
+		t.Fatal(err)
+	} else if string(got) != "keep outer sentinel\n" {
+		t.Fatalf("outer sentinel changed: %q", got)
+	}
+	assertOutput(t, output)
+	var runDocument struct {
+		Head           string `json:"head"`
+		WorkdirRemoved bool   `json:"workdir_removed"`
+	}
+	runJSON, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(runJSON, &runDocument); err != nil {
+		t.Fatalf("invalid clean export run.json: %v", err)
+	}
+	if runDocument.Head != headBefore {
+		t.Fatalf("run.json head = %q, want %q", runDocument.Head, headBefore)
+	}
+	if !runDocument.WorkdirRemoved {
+		t.Fatal("run.json workdir_removed = false, want true")
+	}
+	buildInfo, err := buildinfo.ReadFile(probeBinary)
+	if err != nil {
+		t.Fatalf("read fake Go probe build metadata: %v", err)
+	}
+	ldflagsFound := false
+	for _, setting := range buildInfo.Settings {
+		if setting.Key == "-ldflags" {
+			ldflagsFound = true
+			if setting.Value != "-s" {
+				t.Fatalf("probe binary -ldflags = %q, want -s", setting.Value)
+			}
+		}
+		if setting.Key == "vcs" || strings.HasPrefix(setting.Key, "vcs.") {
+			t.Fatalf("probe binary contains VCS build setting %q=%q", setting.Key, setting.Value)
+		}
+	}
+	if !ldflagsFound {
+		t.Fatal("probe binary omitted -ldflags build setting")
+	}
+	ceilingText, err := os.ReadFile(probeCeiling)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ceilingItems := strings.Split(strings.TrimSpace(string(ceilingText)), string(os.PathListSeparator))
+	ceilingPreserved := false
+	for _, item := range ceilingItems {
+		if item == existingCeiling {
+			ceilingPreserved = true
+			break
+		}
+	}
+	if !ceilingPreserved {
+		t.Fatalf("child Git ceiling %q was not preserved: %q", existingCeiling, ceilingText)
+	}
+
+	for relative, before := range trackedBefore {
+		after, err := os.ReadFile(filepath.Join(fixtureRoot, relative))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(after) != string(before) {
+			t.Fatalf("tracked fixture file %s changed", relative)
+		}
+	}
+	trackedStatusAfter := strings.TrimSpace(runCleanExportGitCommand(t, fixtureRoot, gitEnv, "status", "--porcelain", "--untracked-files=no"))
+	if trackedStatusAfter != trackedStatusBefore {
+		t.Fatalf("tracked fixture status changed: before=%q after=%q", trackedStatusBefore, trackedStatusAfter)
+	}
+	headAfter := strings.TrimSpace(runCleanExportGitCommand(t, fixtureRoot, gitEnv, "rev-parse", "HEAD"))
+	if headAfter != headBefore {
+		t.Fatalf("fixture HEAD changed: before=%q after=%q", headBefore, headAfter)
+	}
+}

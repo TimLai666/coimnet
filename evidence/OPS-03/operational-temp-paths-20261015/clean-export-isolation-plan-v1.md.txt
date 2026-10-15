@@ -1,0 +1,9 @@
+# Clean export isolation follow-up
+
+The new project-local default moves an archive below a parent Git checkout. A minimal native Go build in that location currently embeds the parent revision and dirty status. This is a confirmed property of the minimal probe; the operational script impact must first be reproduced.
+
+Root contract: commands inside the committed export must not discover the parent working Git checkout. Parent repository metadata, files, explicit workdir retention, source commit selection and output schema stay unchanged. The existing frozen path regression is not editable. A separate additive test will run the actual shell script in a tiny committed fixture, stub heavy Go commands only in its child PATH, query real Git from the export, and assert isolation plus successful default workspace cleanup and sibling preservation. Root runs that test against the current candidate before any further source repair.
+
+If the operational reproduction fails, the smallest repair is a process-local Git discovery ceiling at the workspace, preserving any pre-existing ceiling entries. This does not modify Git configuration, permissions, the archived source, or the numerical programs. Explicit Git commands against the original repository must continue working. Re-run both the original frozen path regression and the new isolation regression unchanged, normal and race, then the required final engineering checks.
+
+Keep the long LIF study unchanged. Do not run the full real-data OPS-10 workflow or download/import data for this isolation check.

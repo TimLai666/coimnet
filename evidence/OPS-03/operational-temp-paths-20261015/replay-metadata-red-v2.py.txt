@@ -1,0 +1,30 @@
+from pathlib import Path
+import json,hashlib,subprocess,sys,datetime
+r=Path('/Users/timlai/Developer/coimnet')
+w=r/'runs/.tmp/operational-temp-paths-20261015'
+e=r/'evidence/OPS-03/operational-temp-paths-20261015'
+p=w/'probe/scripts/clean-env-verify.sh'
+fixed=p.read_bytes()
+old=(e/'clean-env-before-metadata-fix.sh.txt').read_bytes()
+sha=lambda b:hashlib.sha256(b).hexdigest()
+assert sha(fixed)=='b7fc01baf9596299390327034e1b364dd213ed192f8dcefd0e036e1aab5cfb45'
+assert sha(old)=='d75d0ff0dd1a1ae07f8376806c8e24aa3cdc0f8a7101c3477cde99327d5f7508'
+assert (r/'scripts/clean-env-verify.sh').read_bytes()==fixed
+assert sha((w/'probe/clean_export_isolation_test.go').read_bytes())=='c925bdac20bac96424d3b77b38a23b3473a4abf7625dabc8cb5152d815448615'
+results=[]
+assert p.read_bytes()==fixed
+p.write_bytes(old)
+try:
+ for name,race in [('clean-export-v2-red',False),('clean-export-v2-red-race',True)]:
+  args=['go','test']+(['-race'] if race else [])+['./runs/.tmp/operational-temp-paths-20261015/probe','-run','^TestCleanExportBuildMetadataIsolation$','-count=1','-json']
+  rc=subprocess.run([sys.executable,str(w/'run.py'),name,*args],cwd=r).returncode
+  assert rc==1,(name,rc)
+  assert 'probe binary contains VCS build setting' in (e/(name+'.log')).read_text(),name
+  results.append({'name':name,'exit_code':rc,'expected_failure_at_actual_VCS_build_metadata':True})
+finally:
+ assert p.read_bytes()==old,'private script concurrently changed; refusing to overwrite'
+ p.write_bytes(fixed)
+ assert (r/'scripts/clean-env-verify.sh').read_bytes()==fixed
+ result={'completed_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'private_script_restored_sha256':sha(p.read_bytes()),'formal_script_unchanged':True,'results':results,'no_formal_Go_or_training_input_mutated':True}
+ with (e/'private-red-v2-restoration.json').open('x') as out:out.write(json.dumps(result,indent=2)+'\n')
+print(json.dumps(result))

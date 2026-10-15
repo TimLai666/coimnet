@@ -1,0 +1,6 @@
+mkdir -p runs
+run_dir=$(mktemp -d "$PWD/runs/delayed-example.XXXXXX")
+./bin/coimnet train delayed --steps 600 --checkpoint "$run_dir/first.json"
+./bin/coimnet resume --checkpoint "$run_dir/first.json" --steps 200 --out "$run_dir/second.json"
+printf '[[0.7],[0],[0],[0],[0]]\n' > "$run_dir/observations.json"
+./bin/coimnet predict --checkpoint "$run_dir/second.json" --input "$run_dir/observations.json"

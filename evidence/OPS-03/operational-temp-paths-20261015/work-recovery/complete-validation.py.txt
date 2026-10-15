@@ -1,0 +1,21 @@
+from pathlib import Path
+import datetime,hashlib,json,subprocess,sys
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/OPS-03/operational-temp-paths-20261015';w=r/'runs/.tmp/operational-temp-paths-20261015';original=w/'final-validation.py';expected='c7f786ba830bf818981455ba1e44c7e9a6b5a25af928e294a00c2d49db2f756b';assert hashlib.sha256(original.read_bytes()).hexdigest()==expected
+prefix=original.read_text().split("regex='^Test",1)[0]
+assert 'def gate():' in prefix and 'steps=' not in prefix
+exec(compile(prefix,str(original)+'[frozen gate prefix]','exec'),globals())
+gate();initial=(e/'go-format-final.log').read_text().splitlines();assert initial==['evidence/TSK-11/ocr-raster-encoder-20261012/review/raster_overflow.go'],initial
+prior=json.loads((r/'evidence/COR-04/threshold-range-audit-20261015/format.json').read_text());assert 'excluding historical evidence programs' in prior['command'][-1]
+formal=sorted(p for p in source_map if p.endswith('.go') and not p.startswith('evidence/'));historical=sorted(p for p in source_map if p.endswith('.go') and p.startswith('evidence/'));assert len(formal)==811 and len(historical)==2
+with (e/'format-scope-correction.json').open('x') as f:json.dump({'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'initial_pipeline_exit_code':1,'initial_command_exit_code':0,'initial_nonempty_output':initial,'classification':'verification runner included byte-preserved historical evidence programs in formal-source formatting scope','established_scope_receipt':'evidence/COR-04/threshold-range-audit-20261015/format.json','formal_go_files_checked':len(formal),'historical_go_programs_preserved':{p:sha(r/p) for p in historical},'original_815_manifest_preserved':True,'long_test_runs_not_restarted':True},f,indent=2);f.write('\n')
+valid_names=['formal-targeted-local','formal-targeted-race-local','full-build-final','full-unit-final-local','full-race-final-local','full-vet-final','module-verify-final','module-selection-final'];results=[]
+for name in valid_names:
+ v=json.loads((e/(name+'.json')).read_text());assert v['exit_code']==0,(name,v);results.append({'name':name,'command':v['command'],'exit_code':v['exit_code'],'receipt':name+'.json'})
+gov='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+for name,cmd in [('go-format-formal-final',['gofmt','-l',*formal]),('governance-final',['go','test','-json','-count=1','-run',gov,'.'])]:
+ gate();code=subprocess.run([sys.executable,str(w/'run.py'),name,*cmd],cwd=r).returncode;gate();assert code==0,(name,code)
+ if name.startswith('go-format'):assert (e/(name+'.log')).read_bytes()==b'','formal source formatting differences'
+ results.append({'name':name,'command':cmd,'exit_code':code,'receipt':name+'.json'})
+assert (e/'module-selection-final.log').read_text().strip()=='github.com/HazelnutParadise/insyra v0.3.4'
+with (e/'formal-engineering-pipeline.json').open('x') as f:json.dump({'finished_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'source_entries':len(source_map),'steps':results,'all_passed':len(results)==10 and all(v['exit_code']==0 for v in results),'original_812_sources_models_drivers_binaries_protocol_preserved':True,'scope':'106 formal integration; independent of fixed ticket104 training','format_scope_correction':'format-scope-correction.json','historical_evidence_go_bytes_preserved':True,'long_tests_not_restarted':True},f,indent=2);f.write('\n')
+print('106 engineering ten checks accepted; original long test results retained and format scope matches established policy.',flush=True)

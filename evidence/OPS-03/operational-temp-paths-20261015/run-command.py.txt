@@ -1,0 +1,10 @@
+from pathlib import Path
+import os,json,subprocess,sys,time
+r=Path('/Users/timlai/Developer/coimnet');e=r/'evidence/OPS-03/operational-temp-paths-20261015';w=r/'runs/.tmp/operational-temp-paths-20261015'
+env=os.environ.copy();env.update(json.loads((e/'command-environment.json').read_text()))
+name=sys.argv[1];cmd=sys.argv[2:];start=time.monotonic()
+with (e/(name+'.log')).open('xb') as out:
+ p=subprocess.run(cmd,cwd=r,env=env,stdout=out,stderr=subprocess.STDOUT)
+receipt={'command':cmd,'exit_code':p.returncode,'seconds':time.monotonic()-start,'environment':{k:env[k] for k in ['GOCACHE','GOMODCACHE','GOTMPDIR','TMPDIR','GOPROXY','GOSUMDB','GOTOOLCHAIN','GOMAXPROCS','GOFLAGS']}}
+with (e/(name+'.json')).open('x') as out:out.write(json.dumps(receipt,indent=2)+'\n')
+print(json.dumps({'name':name,'exit_code':p.returncode,'seconds':receipt['seconds']}));sys.exit(p.returncode)
