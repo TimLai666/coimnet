@@ -32,7 +32,7 @@ type RecognizerConfig struct {
 
 // Validate reports the first field that cannot build a recognizer, including
 // profile-specific widths and derived dimensions that would overflow an
-// allocation.
+// allocation. Alphabet entries must be Unicode scalar values.
 func (c RecognizerConfig) Validate() error {
 	if c.Height < 1 {
 		return fmt.Errorf("ocr: height %d must be at least 1", c.Height)
@@ -45,6 +45,9 @@ func (c RecognizerConfig) Validate() error {
 	}
 	seen := make(map[rune]bool, len(c.Alphabet))
 	for i, r := range c.Alphabet {
+		if !utf8.ValidRune(r) {
+			return fmt.Errorf("ocr: alphabet rune at position %d is not a Unicode scalar value", i)
+		}
 		if seen[r] {
 			return fmt.Errorf("ocr: alphabet repeats %q at position %d", r, i)
 		}

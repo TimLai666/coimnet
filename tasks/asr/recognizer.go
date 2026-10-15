@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand/v2"
+	"unicode/utf8"
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
@@ -34,7 +35,7 @@ type RecognizerConfig struct {
 
 // Validate reports the first field that cannot build a recognizer: a front end
 // that does not fit the sample rate (which covers a non-positive rate), Hidden
-// below 2, an empty or repeating alphabet, or a learning rate that is not a
+// below 2, an empty, repeating or non-scalar alphabet, or a learning rate that is not a
 // positive finite number.
 func (c RecognizerConfig) Validate() error {
 	if err := c.FrontEnd.Validate(c.SampleRate); err != nil {
@@ -48,6 +49,9 @@ func (c RecognizerConfig) Validate() error {
 	}
 	seen := make(map[rune]bool, len(c.Alphabet))
 	for i, r := range c.Alphabet {
+		if !utf8.ValidRune(r) {
+			return fmt.Errorf("asr: alphabet rune at position %d is not a Unicode scalar value", i)
+		}
 		if seen[r] {
 			return fmt.Errorf("asr: alphabet repeats %q at position %d", r, i)
 		}

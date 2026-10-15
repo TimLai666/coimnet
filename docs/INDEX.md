@@ -77,7 +77,7 @@
 | --- | --- | --- | --- |
 | `coimnet-ablation/v1` | `experiment` | 消融報告格式，也記錄消融證據使用的 MappingVersion | [experiment/ablation.go:16](../experiment/ablation.go#L16) |
 | `coimnet-adaptive-evaluation/v1` | `experiment` | 適應性評估報告格式 | [experiment/adaptive_run.go:276](../experiment/adaptive_run.go#L276) |
-| `coimnet-asr-checkpoint/v1` | `tasks/asr` | ASR 任務模型與訓練狀態 bundle 格式 | [tasks/asr/persistence.go:15](../tasks/asr/persistence.go#L15) |
+| `coimnet-asr-checkpoint/v1` | `tasks/asr` | ASR 任務模型與訓練狀態 bundle 格式 | [tasks/asr/persistence.go:14](../tasks/asr/persistence.go#L14) |
 | `coimnet-asr-dataset/v1` | `tasks/asr` | 授權語音資料集 manifest 格式 | [tasks/asr/dataset.go:21](../tasks/asr/dataset.go#L21) |
 | `coimnet-asr-fixture/v1` | `internal/cli` | ASR fixture 範例報告格式 | [internal/cli/asr.go:16](../internal/cli/asr.go#L16) |
 | `coimnet-asr-stream/v1` | `tasks/asr` | ASR 串流檔案狀態格式 | [tasks/asr/stream_file.go:16](../tasks/asr/stream_file.go#L16) |
@@ -125,7 +125,7 @@
 | `coimnet-nav2d-suite/v1` | `experiment` | 二維導航四項任務的比較報告格式 | [experiment/nav2d_suite.go:16](../experiment/nav2d_suite.go#L16) |
 | `coimnet-nav2d-trajectory/v1` | `tasks/nav2d/trajectory` | 果蠅軌跡資料格式 | [tasks/nav2d/trajectory/trajectory.go:31](../tasks/nav2d/trajectory/trajectory.go#L31) |
 | `coimnet-nav2d/v1` | `experiment` | 二維導航環境報告格式 | [experiment/nav2d_suite.go:14](../experiment/nav2d_suite.go#L14) |
-| `coimnet-ocr-checkpoint/v1` | `tasks/ocr` | OCR 任務模型與訓練狀態 bundle 格式 | [tasks/ocr/persistence.go:15](../tasks/ocr/persistence.go#L15) |
+| `coimnet-ocr-checkpoint/v1` | `tasks/ocr` | OCR 任務模型與訓練狀態 bundle 格式 | [tasks/ocr/persistence.go:14](../tasks/ocr/persistence.go#L14) |
 | `coimnet-ocr-fixture/v1` | `tasks/ocr` | OCR fixture 報告格式 | [tasks/ocr/fixture.go:15](../tasks/ocr/fixture.go#L15) |
 | `coimnet-ocr-raster/v1` | `tasks/ocr` | 有上限 PNG／JPEG raster 與來源、尺寸、縮放 metadata 格式 | [tasks/ocr/raster.go:23](../tasks/ocr/raster.go#L23) |
 | `coimnet-parameter-derive/v1` | `internal/cli` | CLI 參數推導報告格式 | [internal/cli/derive.go:19](../internal/cli/derive.go#L19) |

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"unicode/utf8"
 
 	"github.com/TimLai666/coimnet/checkpoint"
 	"github.com/TimLai666/coimnet/learning"
@@ -154,15 +153,7 @@ func ocrContextError(ctx context.Context) error {
 }
 
 func validateOCRConfig(config RecognizerConfig) error {
-	if err := config.Validate(); err != nil {
-		return err
-	}
-	for i, r := range config.Alphabet {
-		if !utf8.ValidRune(r) {
-			return fmt.Errorf("ocr: alphabet rune at position %d is not a Unicode scalar value", i)
-		}
-	}
-	return nil
+	return config.Validate()
 }
 
 func validateOCRIndex(config RecognizerConfig, index map[rune]int) error {
