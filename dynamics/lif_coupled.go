@@ -247,6 +247,16 @@ func (m *LIF) forwardLIFCoupled(ctx context.Context, p LIFParameters, initial []
 				shift := mod.Threshold[0][i]
 				if shift != 0 {
 					shifted := theta + shift
+					if math.IsInf(theta, 1) && shift < 0 {
+						rawAdaptation, rawHomeostasis := 0.0, 0.0
+						if m.config.Adaptation.Enabled {
+							rawAdaptation = tr.adapt[t][i]
+						}
+						if stabilising {
+							rawHomeostasis = tr.homeo[t][i]
+						}
+						shifted = recoverThresholdSum(base[i], rawAdaptation, rawHomeostasis, shift)
+					}
 					if shifted <= m.config.ThetaMin {
 						theta = m.config.ThetaMin
 						thresholdFloor[i] = true

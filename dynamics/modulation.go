@@ -1,6 +1,9 @@
 package dynamics
 
-import "fmt"
+import (
+	"fmt"
+	"math/big"
+)
 
 // Modulation is the per-step, per-node adjustment a chemical layer hands to a
 // core for the length of one call. Gain and Offset change the input current of
@@ -102,4 +105,13 @@ func modulatedThreshold(theta float64, mod *Modulation, t, i int, low float64) f
 		return low
 	}
 	return theta
+}
+
+func recoverThresholdSum(base, adaptation, homeostasis, shift float64) float64 {
+	total := new(big.Rat).SetFloat64(base)
+	total.Add(total, new(big.Rat).SetFloat64(adaptation))
+	total.Add(total, new(big.Rat).SetFloat64(homeostasis))
+	total.Add(total, new(big.Rat).SetFloat64(shift))
+	result, _ := total.Float64()
+	return result
 }

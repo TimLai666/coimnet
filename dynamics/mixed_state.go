@@ -391,7 +391,22 @@ func (m *Mixed) AdvanceModulated(ctx context.Context, p MixedParameters, s Mixed
 				theta += homeostasis[i]
 			}
 			if shifted {
-				theta = modulatedThreshold(theta, mod, t, i, m.config.LIF.ThetaMin)
+				shift := mod.Threshold[t][i]
+				if math.IsInf(theta, 1) && shift < 0 {
+					rawAdaptation, rawHomeostasis := 0.0, 0.0
+					if adapting {
+						rawAdaptation = adaptation[i]
+					}
+					if stabilising {
+						rawHomeostasis = homeostasis[i]
+					}
+					theta = recoverThresholdSum(base[k], rawAdaptation, rawHomeostasis, shift)
+					if theta < m.config.LIF.ThetaMin {
+						theta = m.config.LIF.ThetaMin
+					}
+				} else {
+					theta = modulatedThreshold(theta, mod, t, i, m.config.LIF.ThetaMin)
+				}
 			}
 			if refractory[i] > 0 {
 				// Hold and ignore: the drive of this step never reaches the

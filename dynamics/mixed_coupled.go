@@ -192,6 +192,16 @@ func (m *Mixed) forwardCoupled(ctx context.Context, p MixedParameters, initial [
 			}
 			if mod.Threshold != nil && threshold[i] != 0 {
 				shifted := theta + threshold[i]
+				if math.IsInf(theta, 1) && threshold[i] < 0 {
+					rawAdaptation, rawHomeostasis := 0.0, 0.0
+					if adapting {
+						rawAdaptation = tr.adapt[t][i]
+					}
+					if stabilising {
+						rawHomeostasis = tr.homeo[t][i]
+					}
+					shifted = recoverThresholdSum(base[k], rawAdaptation, rawHomeostasis, threshold[i])
+				}
 				if shifted <= m.config.LIF.ThetaMin {
 					theta = m.config.LIF.ThetaMin
 					thresholdFloor[i] = true
