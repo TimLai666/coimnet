@@ -633,6 +633,10 @@ func (m *Mixed) Backward(ctx context.Context, tr *MixedTrace, upstream [][]float
 				}
 				du := dspike * tr.dspike[t][i]
 				dcand = gv[i]*tr.reset[t][i] + du
+				if !finite(du) {
+					du = m.spike.recoverEventAdjoint(gout[t+1][i], ga[i], gv[i], tr.cand[t][i], tr.dspike[t][i], m.smooth)
+					dcand = gv[i]*tr.reset[t][i] + du
+				}
 				// theta_effective = theta_base + a(t) + h(t), so the threshold
 				// gradient is -du on both the bounded transform and the
 				// adaptation state. The slow stabiliser offset is a declared

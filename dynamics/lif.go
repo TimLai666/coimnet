@@ -569,16 +569,24 @@ func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, 
 			}
 			du := dspike * tr.dspike[t][i]
 			dcand := gv[i]*tr.reset[t][i] + du
+			if !finite(du) {
+				recoveredDu := m.recoverEventAdjoint(gx[t+1][i], ga[i], gv[i], tr.cand[t][i], tr.dspike[t][i], m.smooth)
+				dcand = gv[i]*tr.reset[t][i] + recoveredDu
+				if adapting && keep {
+					prevA[i] -= recoveredDu
+				}
+				g.ThetaRaw[i] -= recoveredDu * tr.thetaSlope[i]
+			} else {
+				if adapting && keep {
+					prevA[i] -= du
+				}
+				g.ThetaRaw[i] -= du * tr.thetaSlope[i]
+			}
 			// theta_effective = theta_base + a(t) + h(t), so the threshold
 			// gradient is -du on both the bounded transform and the adaptation
-			// state. The slow stabiliser offset h is a declared constant of the
-			// reverse pass, exactly like the adaptation inside one step: it
-			// carries no gradient and opens no path back to the events that
-			// raised it.
-			if adapting && keep {
-				prevA[i] -= du
-			}
-			g.ThetaRaw[i] -= du * tr.thetaSlope[i]
+			// state. The adaptation state keeps its cross-time path; the slow
+			// stabiliser offset h is constant here and has no path back to the
+			// activity events that raised it.
 			g.Inputs[t][i] = tr.alpha[i] * dcand
 			g.Bias[i] += g.Inputs[t][i]
 			// d exp(-dt/exp(log_tau)) / d log_tau = lambda*dt/tau.

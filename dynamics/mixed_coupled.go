@@ -379,9 +379,6 @@ func (m *Mixed) backwardCoupled(ctx context.Context, tr *MixedTrace, upstream []
 				if m.smooth {
 					dspike += gv[i] * (m.config.LIF.VReset - tr.cand[t][i])
 				}
-				if !finite(dspike) {
-					return empty, fmt.Errorf("non-finite coupled event adjoint at step %d neuron %d", t, i)
-				}
 				if keep {
 					gx := m.spike.kappa * gy[t+1][i]
 					if !finite(gx) || !finite(gy[t][i]+gx) {
@@ -397,6 +394,10 @@ func (m *Mixed) backwardCoupled(ctx context.Context, tr *MixedTrace, upstream []
 				}
 				du := dspike * tr.dspike[t][i]
 				dcand = gv[i]*tr.reset[t][i] + du
+				if !finite(du) {
+					du = m.spike.recoverEventAdjoint(gy[t+1][i], ga[i], gv[i], tr.cand[t][i], tr.dspike[t][i], m.smooth)
+					dcand = gv[i]*tr.reset[t][i] + du
+				}
 				if !finite(du) || !finite(dcand) {
 					return empty, fmt.Errorf("non-finite coupled event adjoint at step %d neuron %d", t, i)
 				}

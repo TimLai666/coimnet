@@ -295,7 +295,11 @@ func (m *LIF) backwardLIFCoupledTape(ctx context.Context, tr *LIFTrace, upstream
 			}
 			du := dspike * row.dspike[local][i]
 			dcand := gv[i]*row.reset[local][i] + du
-			if !finite(dspike) || !finite(du) || !finite(dcand) {
+			if !finite(du) {
+				du = m.recoverEventAdjoint(gy[t+1][i], ga[i], gv[i], row.cand[local][i], row.dspike[local][i], m.smooth)
+				dcand = gv[i]*row.reset[local][i] + du
+			}
+			if !finite(du) || !finite(dcand) {
 				return empty, fmt.Errorf("non-finite coupled event adjoint at step %d neuron %d", t, i)
 			}
 			if !row.coupled.thresholdFloor[local][i] {
