@@ -331,11 +331,18 @@ func (m *Mixed) baseThreshold(thetaRaw []float64, withSlope bool) (base, slope [
 	for k, raw := range thetaRaw {
 		s := logistic(raw)
 		base[k] = m.config.LIF.ThetaMin + span*s
+		if math.IsInf(span, 1) {
+			base[k] = m.config.LIF.ThetaMin*(1-s) + m.config.LIF.ThetaMax*s
+		}
 		if !finite(base[k]) {
 			return nil, nil, fmt.Errorf("theta_base[%d] is not representable", k)
 		}
 		if withSlope {
 			slope[k] = span * s * (1 - s)
+			if math.IsInf(span, 1) {
+				q := s * (1 - s)
+				slope[k] = m.config.LIF.ThetaMax*q - m.config.LIF.ThetaMin*q
+			}
 			if !finite(slope[k]) {
 				return nil, nil, fmt.Errorf("theta_base[%d] is not representable", k)
 			}
@@ -489,7 +496,7 @@ func (m *Mixed) Forward(ctx context.Context, p MixedParameters, initial []float6
 			if stabilising {
 				rate[i], homeo[i] = m.spike.stabilise(tr.rate[t][i], tr.homeo[t][i], spike[i])
 			}
-			if !finite(drive[i]) || !finite(cand[i]) || !finite(voltage[i]) || !finite(out[i]) || !finite(adapt[i]) || !finite(rate[i]) || !finite(homeo[i]) {
+			if !finite(drive[i]) || !finite(cand[i]) || !finite(theta) || !finite(voltage[i]) || !finite(out[i]) || !finite(adapt[i]) || !finite(rate[i]) || !finite(homeo[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
 		}

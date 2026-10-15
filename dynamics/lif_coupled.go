@@ -88,6 +88,12 @@ func (m *LIF) forwardLIFCoupled(ctx context.Context, p LIFParameters, initial []
 		s := logistic(raw)
 		base[i] = m.config.ThetaMin + span*s
 		slope[i] = span * s * (1 - s)
+		if math.IsInf(span, 1) {
+			// Scale finite endpoints before combining an overflowing span.
+			base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s
+			q := s * (1 - s)
+			slope[i] = m.config.ThetaMax*q - m.config.ThetaMin*q
+		}
 		if !finite(base[i]) || !finite(slope[i]) {
 			return nil, fmt.Errorf("theta_base[%d] is not representable", i)
 		}

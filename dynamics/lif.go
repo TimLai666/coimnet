@@ -328,6 +328,12 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 		s := logistic(raw)
 		base[i] = m.config.ThetaMin + span*s
 		slope[i] = span * s * (1 - s)
+		if math.IsInf(span, 1) {
+			// Scale finite endpoints before combining an overflowing span.
+			base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s
+			q := s * (1 - s)
+			slope[i] = m.config.ThetaMax*q - m.config.ThetaMin*q
+		}
 		if !finite(base[i]) || !finite(slope[i]) {
 			return nil, fmt.Errorf("theta_base[%d] is not representable", i)
 		}
@@ -409,7 +415,7 @@ func (m *LIF) Forward(ctx context.Context, p LIFParameters, initial []float64, i
 			if stabilising {
 				rate[i], homeo[i] = m.stabilise(tr.rate[t][i], tr.homeo[t][i], spike[i])
 			}
-			if !finite(drive[i]) || !finite(cand[i]) || !finite(voltage[i]) || !finite(synapse[i]) || !finite(adapt[i]) || !finite(rate[i]) || !finite(homeo[i]) {
+			if !finite(drive[i]) || !finite(cand[i]) || !finite(theta) || !finite(voltage[i]) || !finite(synapse[i]) || !finite(adapt[i]) || !finite(rate[i]) || !finite(homeo[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
 		}

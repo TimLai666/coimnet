@@ -332,7 +332,7 @@ func (m *LIF) AdvanceModulated(ctx context.Context, p LIFParameters, s LIFState,
 					return LIFState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
 				}
 			}
-			if !finite(drive[i]) || !finite(cand) || !finite(nextV[i]) || !finite(synapse[i]) || !finite(nextA[i]) {
+			if !finite(drive[i]) || !finite(cand) || !finite(theta) || !finite(nextV[i]) || !finite(synapse[i]) || !finite(nextA[i]) {
 				return LIFState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
 			}
 		}
@@ -379,6 +379,10 @@ func (m *LIF) lifBaseThreshold(thetaRaw []float64) ([]float64, error) {
 	base := make([]float64, len(thetaRaw))
 	for i, raw := range thetaRaw {
 		base[i] = m.config.ThetaMin + span*logistic(raw)
+		if math.IsInf(span, 1) {
+			s := logistic(raw)
+			base[i] = m.config.ThetaMin*(1-s) + m.config.ThetaMax*s
+		}
 		if !finite(base[i]) {
 			return nil, fmt.Errorf("theta_base[%d] is not representable", i)
 		}

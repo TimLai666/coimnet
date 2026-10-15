@@ -417,7 +417,7 @@ func (m *Mixed) AdvanceModulated(ctx context.Context, p MixedParameters, s Mixed
 					return MixedState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
 				}
 			}
-			if !finite(drive[i]) || !finite(cand) || !finite(nextV[i]) || !finite(out[i]) || !finite(nextA[i]) {
+			if !finite(drive[i]) || !finite(cand) || !finite(theta) || !finite(nextV[i]) || !finite(out[i]) || !finite(nextA[i]) {
 				return MixedState{}, nil, nil, fmt.Errorf("non-finite state at step %d neuron %d", step, i)
 			}
 		}
