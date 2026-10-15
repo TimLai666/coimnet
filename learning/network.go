@@ -449,6 +449,9 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 		for i, sign := range n.config.EdgeSigns {
 			if sign != 0 {
 				cg.core.Weights[i] *= e.weights[i]
+				if !finite(cg.core.Weights[i]) {
+					return empty, fmt.Errorf("signed weight gradient at edge %d is not finite", i)
+				}
 			}
 		}
 	}
