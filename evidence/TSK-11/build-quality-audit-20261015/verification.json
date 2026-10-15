@@ -1,0 +1,116 @@
+{
+  "checked_at": "2026-10-15T02:24:51.439248+00:00",
+  "base_commit": "c41dcaf4f2eca39cbf69997d9e008a7717600157",
+  "environment": "Go 1.26.5 darwin/arm64 CGO_ENABLED=1, Apple M3 macOS 27.0.1; project-local APFS temporary files",
+  "protocol_sha256": "97a84ae5466c028483396b5b2689dace5477aecef170e5f8c711973e9351b7f6",
+  "source_manifest_sha256": "ab532767b128dd0c24a664f0697deb60b3dc4def8750ee09c9c1ce46168ef6d9",
+  "formal_source_count": 810,
+  "formal_sources_and_original_model_bytes_unchanged": true,
+  "completed_acceptance_steps": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "training_runs": 12,
+  "fresh_process_restores": 12,
+  "full_state_dumps": 12,
+  "build_pairs_bit_exact": 6,
+  "all_six_cross_build_next_update_hashes_equal": true,
+  "scores_and_confusions_independently_verified": 288,
+  "epochs_each": 20,
+  "updates_each": 120000,
+  "engineering": {
+    "build": {
+      "receipt": "build.json",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    "vet": {
+      "receipt": "vet.json",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "exit_code": 0
+    },
+    "mod-verify": {
+      "receipt": "mod-verify.json",
+      "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+      "exit_code": 0
+    },
+    "full-unit-local": {
+      "receipt": "full-unit-local.json",
+      "log_sha256": "58979201143fef269aab0cad94f05172e0ed8afee5745ffa538d0c8e45436344",
+      "exit_code": 0
+    },
+    "full-race-local": {
+      "receipt": "full-race-local.json",
+      "log_sha256": "fcc47808a4be40cadaad601d7589bec6bd456b3d8411c21c313c82a27fe20a2d",
+      "exit_code": 0
+    },
+    "paired-analysis-final": {
+      "receipt": "paired-analysis-final.json",
+      "log_sha256": "30d0e2102188bea09ce94bd9fd7dc1e4cb02adf1eb085ae9300c9c18b435ce17",
+      "exit_code": 0
+    },
+    "root-final-quality-verification": {
+      "receipt": "root-final-quality-verification.json",
+      "log_sha256": "8509bbafeb9983e8cbcfd27c976f847a097aa9a428a28351b99afb8226c935bb",
+      "exit_code": 0
+    },
+    "format": {
+      "report": "format.json",
+      "sha256": "f81ae50f198e838ad0fe057f3aa5dbedf928f77afe1e39215de60e35893cecf2",
+      "unformatted": 0
+    },
+    "format-after-controls": {
+      "report": "format-after-controls.json",
+      "sha256": "288f699ec24eef6ebcb0c114cc3a8b3fe80de5b32c34192802122c5c3684d900",
+      "unformatted": 0
+    }
+  },
+  "controls": "numeric-report-root-verified.json",
+  "analysis": "root-results.json",
+  "cleanup_pending": false,
+  "delivery_pending": true,
+  "framework_bug_confirmed_in_this_ticket": false,
+  "root_analysis_defects_fixed": [
+    "class numbering",
+    "failed receipts or changed logs accepted",
+    "negative zero lost",
+    "fixed data and completion gates missing",
+    "distance underflow or overflow"
+  ],
+  "numeric_distance_fix_changed_actual_model_reports": false,
+  "scope": "fixed KMNIST single-character continuous model and three previously observed seeds; no LIF, whole-brain or biological efficacy claim",
+  "goal_no_bugs_still_active": true,
+  "requirement": [
+    "TSK-11"
+  ],
+  "reproduction_command": "python3 evidence/TSK-11/build-quality-audit-20261015/prepare-replay.py.txt --data-dir /Volumes/SSD/Developer/coimnet/data/TSK-11/kmnist --name 102-ocr-replay-check; execute results/replay-commands.json in order as documented in reproduction.md",
+  "observed_result": {
+    "training_and_restore_runs": 12,
+    "bit_exact_build_pairs": 6,
+    "stable_chemical_benefit_demonstrated": false,
+    "no_new_framework_defect_confirmed": true,
+    "details": "root-results.json"
+  },
+  "test_log": [
+    "paired-analysis-final.log",
+    "root-final-quality-verification.log",
+    "engineering-log-archives.json",
+    "quality-comparison.json",
+    "state-comparison.json"
+  ],
+  "final_governance": {
+    "receipt": "governance-final-passed.json",
+    "top_level_passes": 11,
+    "test_event_counts": {
+      "pass": 31,
+      "skip": 0,
+      "fail": 0
+    },
+    "log_sha256": "f1590ea1a0b4b4fabae915ee3f23a518b2e3d855254e9db5fc58530db3874834",
+    "prior_metadata_failure_preserved": "governance-final.json"
+  },
+  "cleanup": "cleanup.json",
+  "all_owned_temporary_files_removed": true
+}

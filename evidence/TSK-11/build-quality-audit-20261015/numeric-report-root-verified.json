@@ -1,0 +1,70 @@
+{
+  "analyzer_sha256": "594f0e14c290133e3d6eaea832c7051d4e82ee84e2c5cd255aabcf93df6d07ef",
+  "worker_report_sha256": "33f59d0c9c5924679009fc8ea2535569efe00b5d913f20e792c2e89a47317350",
+  "root_reran_actual_functions": true,
+  "boundary_old_fails_new_passes": [
+    {
+      "expected": 1e-200,
+      "old": 0.0,
+      "new": 1e-200
+    },
+    {
+      "expected": 1e+200,
+      "old": "inf",
+      "new": 1e+200
+    },
+    {
+      "expected": 5e-324,
+      "old": 0.0,
+      "new": 5e-324
+    }
+  ],
+  "snapshot_checked": {
+    "name": "runs/.tmp/build-quality-audit-20261015/first-pair-state-ordinary.json",
+    "sha256": "d647aa4376ef75377492f905dd5e5799c52e4db7c403797c67b33bd7e3a2bdd1",
+    "typed_numeric_leaf_lengths": {
+      ".parameters.core.weights": 1248,
+      ".parameters.core.bias": 52,
+      ".parameters.core.log_tau": 52,
+      ".parameters.encoder": 21952,
+      ".parameters.readout": 264,
+      ".optimizer.first": 23568,
+      ".optimizer.second": 23568,
+      ".optimizer.steps": 23568
+    },
+    "updates": 120000,
+    "maximum_integer_step": 120000
+  },
+  "worker_adjudication": {
+    "C-01": "confirmed numeric-report defect; fixed with stable hypot; actual final model impact pending",
+    "C-02": "not a confirmed current-model defect: public typed parameter/optimizer slices and actual snapshot are homogeneous numeric leaves; arbitrary mixed JSON is outside this helper input",
+    "C-03": "not a confirmed current-model defect: fixed public JSON field names contain no path delimiters; config/options also compared structurally before numeric statistics",
+    "C-04": "not a confirmed current-model defect: every real final/development score passes length/count/confusion validation before score_pair; shortened prediction rejected",
+    "large_integers": "not applicable to this fixed model: parameter/moment fields float64, optimizer counters 0 or 120000"
+  },
+  "controls": {
+    "numeric-selfcheck-final": {
+      "receipt_sha256": "3b57f14ec8b14dad2b3fe954ae049bdf46fa331a4d9eb2f1b5d096fc0393d4ef",
+      "report_sha256": "5abd36bd18ef0c93a3369d69ed63ca9496ce61cd52bcf4b162711d02f4c183e4",
+      "checks": 9
+    },
+    "numeric-distance-boundary-green": {
+      "receipt_sha256": "5ad11861b27ba4da082a0c2ad194d1eda6c0776267ecc51947c0c43bb9abe6cc",
+      "report_sha256": "25352a539950802f70da82110e118b00f34eb60c290913fad0d74c629c472289",
+      "checks": 6
+    },
+    "analysis-gate-after-distance": {
+      "receipt_sha256": "917c07a61fe1e8c4ec0700567a90c34afba433cf69e8a51d643ee7c3a9a9e762",
+      "report_sha256": "d956155fbf7c46760d57579315f0710f9f1f2f8dba4561d852b742ecfe43c4f2",
+      "checks": 16
+    },
+    "prepare-replay-after-distance": {
+      "checks": 6,
+      "receipt_sha256": "b99db0e91b953292c5d2bd7d9c6da8e22f41c0f41f32a72f282fec244989320a",
+      "log_sha256": "7a76f78cc8ea93cb8fba566e77dc74ce4b14754c83ab88ad6f24087859f70e8e"
+    }
+  },
+  "formal_sources_checked_unchanged": 810,
+  "no_new_model_quality_conclusion": true,
+  "main_training_not_restarted_or_retuned": true
+}

@@ -1,0 +1,138 @@
+{
+  "complete_suite_passed": false,
+  "receipt": "full-unit.json",
+  "failed_events": [
+    {
+      "Time": "2026-10-15T07:09:55.291725+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet",
+      "Test": "TestCancelReleases/download_Fetch",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:09:55.301597+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet",
+      "Test": "TestCancelReleases",
+      "Elapsed": 0.44
+    },
+    {
+      "Time": "2026-10-15T07:09:55.30166+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet",
+      "Elapsed": 3.156
+    },
+    {
+      "Time": "2026-10-15T07:10:04.42011+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/distill",
+      "Test": "TestUntrustedTeacherAnswersStayData",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:10:04.420158+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/distill",
+      "Elapsed": 0.704
+    },
+    {
+      "Time": "2026-10-15T07:10:05.786992+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/download",
+      "Test": "TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:10:05.78704+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/download",
+      "Elapsed": 0.574
+    },
+    {
+      "Time": "2026-10-15T07:11:20.557837+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/experiment/studenteval",
+      "Test": "TestStudentModeNeverReachesTheNetwork",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:11:20.557875+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/experiment/studenteval",
+      "Elapsed": 0.533
+    },
+    {
+      "Time": "2026-10-15T07:11:41.595084+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/internal/cli",
+      "Test": "TestDataDownloadRunE2EAndReceipt",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:11:41.59523+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/internal/cli",
+      "Elapsed": 18.569
+    },
+    {
+      "Time": "2026-10-15T07:12:22.029136+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/teacher",
+      "Test": "TestHTTPRetriesOnServerErrorsExactly",
+      "Elapsed": 0
+    },
+    {
+      "Time": "2026-10-15T07:12:22.029193+08:00",
+      "Action": "fail",
+      "Package": "github.com/TimLai666/coimnet/teacher",
+      "Elapsed": 0.403
+    }
+  ],
+  "errors": [
+    {
+      "Time": "2026-10-15T07:09:55.295282+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet",
+      "Test": "TestCancelReleases",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    },
+    {
+      "Time": "2026-10-15T07:10:04.418411+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet/distill",
+      "Test": "TestUntrustedTeacherAnswersStayData",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    },
+    {
+      "Time": "2026-10-15T07:10:05.785414+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet/download",
+      "Test": "TestFetchRejectsExcessiveMetadataJSONNestingWithLongKeys",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    },
+    {
+      "Time": "2026-10-15T07:11:20.556299+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet/experiment/studenteval",
+      "Test": "TestStudentModeNeverReachesTheNetwork",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    },
+    {
+      "Time": "2026-10-15T07:11:41.555997+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet/internal/cli",
+      "Test": "TestDataDownloadRunE2EAndReceipt",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    },
+    {
+      "Time": "2026-10-15T07:12:22.02758+08:00",
+      "Action": "output",
+      "Package": "github.com/TimLai666/coimnet/teacher",
+      "Test": "TestHTTPRetriesOnServerErrorsExactly",
+      "Output": "panic: httptest: failed to listen on a port: listen tcp6 [::1]:0: bind: operation not permitted [recovered, repanicked]\n"
+    }
+  ],
+  "root_cause": "sandbox denies localhost test-server bind; six failed packages each panic at httptest listener creation",
+  "test_source_unchanged": true,
+  "requires_retry_with_loopback_permission": true
+}

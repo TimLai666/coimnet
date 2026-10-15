@@ -1,0 +1,98 @@
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+import hashlib, json, math, subprocess, sys, threading, time
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'runs/.tmp/102-ocr-replay-smoke-20261015/results'
+w = r / 'runs/.tmp/102-ocr-replay-smoke-20261015'
+protocol = json.loads((e / 'protocol.json').read_text())
+binaries = json.loads((e / 'binary-lock.json').read_text())
+preflight = json.loads((e / 'preflight.json').read_text())
+lock = threading.Lock()
+failed = threading.Event()
+def save(name, obj):
+    with (e / name).open('x') as f:
+        json.dump(obj, f, indent=2)
+        f.write('\n')
+def events(name):
+    return [json.loads(s) for s in (e / (name + '.log')).read_text().splitlines() if s.startswith('{')]
+def command(name, argv):
+    for p, h in binaries.items():
+        assert hashlib.sha256((r / p).read_bytes()).hexdigest() == h, p
+    subprocess.run([sys.executable, str(e / 'run-command.py.txt'), name, *map(str, argv)], cwd=r, check=True)
+    return events(name)
+def check_score(score, count):
+    assert score['samples'] == count and len(score['predictions']) == count
+    assert all(0 <= v < 10 for v in score['predictions'])
+    assert len(score['confusion']) == 10 and all(len(row) == 10 for row in score['confusion'])
+    assert sum(sum(row) for row in score['confusion']) == count
+    assert sum(score['confusion'][i][i] for i in range(10)) == score['correct']
+    assert score['accuracy'] == score['correct'] / count
+    assert math.isfinite(score['mean_cross_entropy']) and score['mean_cross_entropy'] >= 0
+
+schedule = []
+for i, seed in enumerate(protocol['seed_list']):
+    lane = []
+    for j, group in enumerate(protocol['groups']):
+        builds = ['ordinary', 'race'] if (i + j) % 2 == 0 else ['race', 'ordinary']
+        lane.extend({'seed': seed, 'group': group, 'build': build} for build in builds)
+    schedule.append(lane)
+assert json.loads((e / 'execution-order.json').read_text())['lanes'] == schedule
+
+def lane_work(lane):
+    try:
+        for arm in lane:
+            if failed.is_set():
+                return
+            seed, group, build = arm['seed'], arm['group'], arm['build']
+            name = f'{seed}-{group}-{build}'
+            binary = w / ('comparison' if build == 'ordinary' else 'comparison-race')
+            model = w / 'models' / build / f'{seed}-{group}'
+            argv = [binary, '--data-dir', w / 'data/kmnist', '--group', group, '--seed', str(seed), '--model', model]
+            receipt = e / (name + '-train.json')
+            if (e / (name + '-train.log')).exists():
+                # The three original arms are retained; one is still running.
+                while not receipt.exists():
+                    time.sleep(2)
+                saved = json.loads(receipt.read_text())
+                assert saved['exit_code'] == 0 and saved['command'] == [*map(str, argv), '--mode', 'train']
+                assert hashlib.sha256((e / saved['log']).read_bytes()).hexdigest() == saved['log_sha256']
+                rows = events(name + '-train')
+            else:
+                assert not model.exists(), model
+                rows = command(name + '-train', [*argv, '--mode', 'train'])
+            assert len(rows) == 23, (name, len(rows))
+            selection = rows[0]
+            assert selection['event'] == 'selection' and selection['seed'] == seed and selection['group'] == group
+            assert (selection['epochs'], selection['updates_expected'], selection['trainable_parameters']) == (20, 120000, 23516)
+            for field, split in [('train_indices_sha256', 'train'), ('test_indices_sha256', 'primary'), ('confirmation_indices_sha256', 'confirmation')]:
+                assert selection[field] == preflight['split_index_sha256'][split]
+            assert selection['program']['binary_sha256'] == binaries[str(binary.relative_to(r))]
+            for epoch, row in enumerate(rows[1:21], 1):
+                assert row['event'] == 'epoch' and row['epoch'] == epoch and row['updates'] == epoch * 6000
+                assert row['seed'] == seed and row['group'] == group
+                assert math.isfinite(row['mean_training_cross_entropy']) and row['mean_training_cross_entropy'] >= 0
+                check_score(row['development'], 200)
+            final = rows[-1]
+            assert final['event'] == 'final' and final['updates'] == 120000 and final['frozen_evaluation'] is True
+            for field, count in [('before', 2000), ('after', 2000), ('confirmation', 2000), ('train', 6000)]:
+                check_score(final[field], count)
+            restored = command(name + '-restore', [*argv, '--mode', 'restore'])
+            assert len(restored) == 2 and restored[0] == selection
+            resumed = restored[-1]
+            for field in ['after', 'confirmation', 'train', 'updates', 'snapshot_sha256', 'next_update_sha256', 'parameters_sha256', 'optimizer_sha256', 'frozen_evaluation']:
+                assert resumed[field] == final[field], (name, field)
+            assert resumed['before'] == final['after']
+            save(name + '-accepted.json', {'arm': arm, 'epochs': 20, 'updates': 120000, 'new_process_restore': True, 'all_scores_predictions_state_and_next_update_exact': True, 'train_receipt': name + '-train.json', 'restore_receipt': name + '-restore.json'})
+            with lock:
+                print('ACCEPTED ' + name, flush=True)
+    except BaseException:
+        failed.set()
+        raise
+
+with ThreadPoolExecutor(max_workers=3) as pool:
+    list(pool.map(lane_work, schedule))
+assert not failed.is_set()
+assert len(list(e.glob('*-accepted.json'))) == 12
+save('training-complete.json', {'accepted_full_runs': 12, 'epochs_each': 20, 'updates_each': 120000, 'fresh_process_restores': 12, 'failed': False})
+print('ALL 12 TRAINING AND RESTORE RUNS ACCEPTED', flush=True)

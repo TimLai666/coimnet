@@ -1,0 +1,35 @@
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import subprocess
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/build-quality-audit-20261015'
+prompt = '''你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成。
+角色：資深驗證工程師，只接受程式與日誌直接支持的結論。
+可改檔案：僅 runs/.tmp/build-quality-audit-20261015/gate-review.md。唯讀範圍：evidence/TSK-11/build-quality-audit-20261015/analyze.py.txt、run-pairs-resume.py.txt、protocol.json、analysis-selfcheck.py.txt。其他檔案不得修改，不寫記憶。
+任務與驗收：唯讀審查最後品質分析是否嚴格要求原定三個種子、ON/OFF、普通/競態共12組，20輪、120000更新、成功命令、資料來源指紋、完整同圖片評分及新程序恢復。指出確定會允許未完成或不符合協定的結果被算成功的觸發條件。不得修改測試檔，認為測試錯就停下回報。不改協定、來源或模型、不執行訓練/Go/網路，不讀模型資料或其他專案。
+驗證指令：僅 Python 解析/唯讀檢查以上檔案及其行號，不呼叫其他 shell 子程序。
+回報格式：CONFIRMED 附檔名行號、觸發及影響；NEEDS INVESTIGATION 附缺少的事實；列未驗證項目。只寫允許的報告。
+不要 commit，也不要 stash 或 reset。'''
+command = ['opencode', 'run', '--model', 'opencode/big-pickle', '--agent', 'plan', '--format', 'json', prompt]
+started = datetime.datetime.now(datetime.timezone.utc)
+record = {'command': command, 'started_at': started.isoformat(), 'timeout_seconds': 55,
+          'model_verified_available_by_opencode_models': True,
+          'host': 'Codex', 'report': 'runs/.tmp/build-quality-audit-20261015/gate-review.md'}
+with (e / 'opencode-gate-review.log').open('xb') as f:
+    try:
+        result = subprocess.run(command, cwd=r, stdout=f, stderr=subprocess.STDOUT, timeout=55)
+        record['exit_code'] = result.returncode
+    except subprocess.TimeoutExpired:
+        record['exit_code'] = None
+        record['actual_error'] = 'subprocess.TimeoutExpired after 55 seconds; direct child killed and reaped'
+raw = (e / 'opencode-gate-review.log').read_bytes()
+record['log_sha256'] = hashlib.sha256(raw).hexdigest()
+record['duration_seconds'] = (datetime.datetime.now(datetime.timezone.utc) - started).total_seconds()
+record['report_exists'] = (r / record['report']).exists()
+with (e / 'opencode-gate-review.json').open('x') as f:
+    json.dump(record, f, indent=2)
+    f.write('\n')
+print(json.dumps({k: v for k, v in record.items() if k != 'command'}))

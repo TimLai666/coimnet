@@ -1,0 +1,15 @@
+usage: prepare-replay.py.txt [-h] --data-dir DATA_DIR --name NAME
+
+Prepare a fresh project-local replay; never execute training or overwrite
+results.
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --data-dir DATA_DIR  read-only directory containing the six original KMNIST
+                       files including metadata.json; fingerprints must match
+  --name NAME          new direct child of runs/.tmp, named 102-ocr-
+                       replay-<lowercase-id>; an existing destination is
+                       rejected
+
+Example: python3 prepare-replay.py.txt --data-dir data/TSK-11/kmnist --name
+102-ocr-replay-check

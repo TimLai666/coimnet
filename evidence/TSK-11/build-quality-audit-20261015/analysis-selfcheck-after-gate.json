@@ -1,0 +1,45 @@
+{
+  "analyzer_sha256": "23ae109ac53945ecd35ff258af79842d593d95b3d362cb7b4ccbed720f139e8b",
+  "checks": {
+    "failed_receipt_rejected": true,
+    "wrong_command_rejected": true,
+    "mutated_log_rejected": true,
+    "wrong_source_count_rejected": true,
+    "invalid_prediction_-1_rejected": true,
+    "invalid_prediction_10_rejected": true,
+    "invalid_prediction_False_rejected": true,
+    "go_serialized_negative_zero_preserved": true,
+    "shape_mismatch_rejected": true
+  },
+  "paired_control": {
+    "a_accuracy": 0.4,
+    "b_accuracy": 0.4,
+    "b_minus_a_accuracy_percentage_points": 0.0,
+    "b_minus_a_cross_entropy": 0.25,
+    "different_predictions": 4,
+    "a_correct_b_wrong": 1,
+    "a_wrong_b_correct": 1,
+    "both_wrong_different_class": 2
+  },
+  "perfect_minus_a_accuracy_percentage_points": 60,
+  "signed_zero_and_numeric_control": {
+    "scalars": 3,
+    "different_float64_bits": 2,
+    "max_absolute_difference": 1.0,
+    "difference_l2": 1.0,
+    "first_differences": [
+      {
+        "index": 1,
+        "ordinary": -0.0,
+        "race": 0.0
+      },
+      {
+        "index": 2,
+        "ordinary": 2.0,
+        "race": 3.0
+      }
+    ]
+  },
+  "artifact": "deterministic verifier controls; not model quality measurements",
+  "pure_functions_only_no_training_or_model_commands": true
+}

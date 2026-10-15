@@ -1,0 +1,88 @@
+"""Remove this audit's verified temporary tree, preserving original bytes."""
+from pathlib import Path
+import argparse
+import datetime
+import hashlib
+import json
+import os
+import shutil
+import stat
+import subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--apply', action='store_true', help='remove only the owned audit tree after all analysis and final governance gates pass; writes cleanup.json once')
+args = parser.parse_args()
+if not args.apply:
+    parser.print_help()
+    raise SystemExit(0)
+e = Path(__file__).resolve().parent
+r = e.parents[2]
+baseline = json.loads((e / 'baseline.json').read_text())
+w = Path(baseline['own_temp'])
+assert w == r / 'runs/.tmp/build-quality-audit-20261015'
+assert w.lstat().st_ino == baseline['own_temp_inode'] and not w.is_symlink()
+assert not (e / 'cleanup.json').exists()
+result = json.loads((e / 'root-results.json').read_text())
+assert result['training_runs_independently_verified'] == result['fresh_process_restores_verified'] == result['state_dumps_verified'] == 12
+assert json.loads((e / 'training-complete.json').read_text())['failed'] is False
+governance = json.loads((e / 'governance-final-passed.json').read_text())
+assert governance['exit_code'] == 0
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+assert sha((e / governance['log']).read_bytes()) == governance['log_sha256']
+processes = subprocess.check_output(['ps', '-axo', 'pid=,command='], text=True)
+assert not any(str(w) in line or str(e / 'run-pairs-resume.py.txt') in line for line in processes.splitlines()), 'audit process still running'
+native = Path('/Users/timlai/go/pkg/mod')
+def digest(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for block in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+def protected():
+    for filename in ['source-before.json', 'protected-models.json']:
+        for p, h in json.loads((e / filename).read_text()).items():
+            assert digest(r / p) == h, p
+    for rec in json.loads((e / 'data-copy.json').read_text()):
+        assert digest(Path(rec['source'])) == rec['sha256']
+    for name, rec in baseline['protected_temporary_directories'].items():
+        p = r / 'runs/.tmp' / name
+        assert p.lstat().st_ino == rec['inode'] and not p.is_symlink()
+        assert sorted(x.name for x in p.iterdir()) == rec['entries']
+protected()
+for name, rec in json.loads((e / 'state-comparison.json').read_text())['bundle_fingerprints'].items():
+    seed, group, build = name.split('-')
+    model = w / 'models' / build / (seed + '-' + group)
+    assert {p.name: digest(p) for p in model.iterdir() if p.is_file()} == rec['files']
+inventory, targets = [], {}
+files = links = total_bytes = 0
+for here, dirs, names in os.walk(w, followlinks=False):
+    dirs.sort()
+    for name in sorted(dirs + names):
+        p = Path(here) / name
+        s, rel = p.lstat(), p.relative_to(w).as_posix()
+        if stat.S_ISLNK(s.st_mode):
+            target = p.resolve(strict=True)
+            assert target.is_relative_to(native) and target.is_file(), str(target)
+            targets[str(target)] = digest(target)
+            inventory.append([rel, 'symlink', os.readlink(p)])
+            links += 1
+        elif stat.S_ISREG(s.st_mode):
+            inventory.append([rel, 'file', s.st_size, digest(p)])
+            files += 1
+            total_bytes += s.st_size
+        else:
+            assert stat.S_ISDIR(s.st_mode), rel
+            inventory.append([rel, 'directory', s.st_ino])
+native_sha = sha(json.dumps(targets, sort_keys=True).encode())
+inventory_sha = sha(json.dumps(inventory, separators=(',', ':')).encode())
+assert w.lstat().st_ino == baseline['own_temp_inode'] and not w.is_symlink()
+protected()
+shutil.rmtree(w)
+assert not w.exists() and not w.is_symlink()
+protected()
+assert all(digest(Path(p)) == h for p, h in targets.items())
+report = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'command': ['python3', str(Path(__file__).resolve()), '--apply'], 'removed': str(w), 'expected_inode': baseline['own_temp_inode'], 'removed_regular_files': files, 'removed_symlinks': links, 'removed_regular_bytes': total_bytes, 'inspected_tree_sha256': inventory_sha, 'unique_native_targets': len(targets), 'native_target_manifest_sha256_before_and_after': native_sha, 'all_native_target_bytes_preserved': True, 'framework_810_sources_preserved': True, 'original_18_model_files_preserved': True, 'original_six_data_files_preserved': True, 'protected_sibling_directories_preserved': True, 'twelve_verified_test_models_removed': True, 'root_results_sha256': digest(e / 'root-results.json')}
+with (e / 'cleanup.json').open('x') as f:
+    json.dump(report, f, indent=2)
+    f.write('\n')
+print(json.dumps(report))

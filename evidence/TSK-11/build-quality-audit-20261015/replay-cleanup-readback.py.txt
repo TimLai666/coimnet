@@ -1,0 +1,39 @@
+from pathlib import Path
+import hashlib
+import json
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/build-quality-audit-20261015'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+report = json.loads((e / 'replay-smoke-cleanup.json').read_text())
+log = (e / 'replay-smoke-cleanup.log').read_bytes()
+assert json.loads(log) == report
+removed = Path(report['removed'])
+assert removed == r / 'runs/.tmp/102-ocr-replay-smoke-20261015'
+assert not removed.exists() and not removed.is_symlink()
+for filename in ['source-before.json', 'protected-models.json']:
+    for p, digest in json.loads((e / filename).read_text()).items():
+        assert sha((r / p).read_bytes()) == digest, p
+for rec in json.loads((e / 'data-copy.json').read_text()):
+    assert sha(Path(rec['source']).read_bytes()) == rec['sha256']
+baseline = json.loads((e / 'baseline.json').read_text())
+live = Path(baseline['own_temp'])
+assert live.lstat().st_ino == baseline['own_temp_inode'] and not live.is_symlink()
+for name, rec in baseline['protected_temporary_directories'].items():
+    p = r / 'runs/.tmp' / name
+    assert p.lstat().st_ino == rec['inode'] and not p.is_symlink()
+    assert sorted(x.name for x in p.iterdir()) == rec['entries']
+for name, rec in json.loads((e / 'replay-smoke-verified.json').read_text())['archived_results_manifest'].items():
+    assert sha((e / 'replay-smoke' / name).read_bytes()) == rec['sha256']
+assert not list((r / 'runs/.tmp').glob('102-ocr-replay-control-*'))
+proof = {'removed_tree_still_absent': True, 'archived_results_sha256_verified': True,
+         'framework_810_sources_original_18_models_original_six_data_preserved': True,
+         'live_training_tree_and_protected_siblings_preserved': True,
+         'cleanup_report_sha256': sha((e / 'replay-smoke-cleanup.json').read_bytes()),
+         'cleanup_log_sha256': sha(log), 'cleanup_wrapper_exit_code': 1,
+         'cleanup_wrapper_error': 'FileExistsError writing its receipt; inner cleanup report used the same replay-smoke-cleanup.json filename',
+         'cleanup_not_reexecuted': True, 'main_training_cleanup_pending': True}
+with (e / 'replay-smoke-cleanup-confirmed.json').open('x') as f:
+    json.dump(proof, f, indent=2)
+    f.write('\n')
+print(json.dumps(proof))

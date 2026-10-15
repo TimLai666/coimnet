@@ -1,0 +1,120 @@
+"""Exercise actual analyzer gates in memory; no model, training or probe commands."""
+from pathlib import Path
+import argparse
+import ast
+import copy
+import gzip
+import hashlib
+import json
+import math
+import sys
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/build-quality-audit-20261015'
+w = r / 'runs/.tmp/build-quality-audit-20261015'
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--report', required=True, help='new report filename in this evidence directory')
+args = parser.parse_args()
+assert Path(args.report).name == args.report
+source = (e / 'analyze.py.txt').read_bytes()
+tree = ast.parse(source)
+functions = [n for n in tree.body if isinstance(n, ast.FunctionDef)
+             and n.name in ['events', 'verify_score', 'verify_selection', 'verify_completion']]
+outer = next(n for n in tree.body if isinstance(n, ast.For) and isinstance(n.target, ast.Name)
+             and n.target.id == 'seed')
+body = outer.body[0].body[0].body
+cut = next(i for i, n in enumerate(body) if isinstance(n, ast.Assign)
+           and any(isinstance(t, ast.Name) and t.id == 'dump' for t in n.targets))
+run_gate = ast.Module(body=body[:cut], type_ignores=[])
+assert not any(isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute)
+               and isinstance(n.func.value, ast.Name) and n.func.value.id == 'subprocess'
+               for n in ast.walk(run_gate))
+completion = next(n for n in tree.body if isinstance(n, (ast.Assert, ast.Expr))
+                  and 'training-complete.json' in ast.unparse(n))
+seed, group, build = 20260925, 'off', 'ordinary'
+stem = f'{seed}-{group}-{build}'
+def log_rows(name):
+    return [json.loads(s) for s in (e / name).read_text().splitlines() if s.startswith('{')]
+base_train = log_rows(stem + '-train.log')
+base_restore = log_rows(stem + '-restore.log')
+base_receipts = {mode: json.loads((e / (stem + '-' + mode + '.json')).read_text())
+                 for mode in ['train', 'restore']}
+labels_train = gzip.decompress((w / 'data/kmnist/train-labels-idx1-ubyte.gz').read_bytes())[8:]
+labels_test = gzip.decompress((w / 'data/kmnist/t10k-labels-idx1-ubyte.gz').read_bytes())[8:]
+def truth(labels, start, count):
+    buckets = [[i for i, label in enumerate(labels) if label == c] for c in range(10)]
+    return [labels[buckets[c][rank]] for rank in range(start, start + count) for c in range(10)]
+labels = {'before': truth(labels_test, 20, 200), 'after': truth(labels_test, 20, 200),
+          'confirmation': truth(labels_test, 800, 200), 'train': truth(labels_train, 0, 600),
+          'development': truth(labels_test, 0, 20)}
+overrides = {}
+class MemoryFile:
+    def __init__(self, name):
+        self.name = name
+    def read_bytes(self):
+        return overrides[self.name] if self.name in overrides else (e / self.name).read_bytes()
+    def read_text(self):
+        return self.read_bytes().decode()
+class MemoryDirectory:
+    def __truediv__(self, name):
+        return MemoryFile(name)
+def namespace():
+    ns = {'r': r, 'w': w, 'e': MemoryDirectory(), 'Path': Path, 'json': json, 'math': math,
+          'sha': lambda raw: hashlib.sha256(raw).hexdigest(), 'seed': seed, 'group': group,
+          'build': build, 'name': stem, 'labels': labels,
+          'preflight': json.loads((e / 'preflight.json').read_text())}
+    exec(compile(ast.Module(body=functions, type_ignores=[]), 'actual-gate-functions', 'exec'), ns)
+    return ns
+def set_logs(train, restore):
+    overrides.clear()
+    for mode, rows in [('train', train), ('restore', restore)]:
+        raw = ('\n'.join(json.dumps(v) for v in rows) + '\n').encode()
+        receipt = dict(base_receipts[mode], log_sha256=hashlib.sha256(raw).hexdigest())
+        overrides[stem + '-' + mode + '.log'] = raw
+        overrides[stem + '-' + mode + '.json'] = json.dumps(receipt).encode()
+def rejects(code):
+    try:
+        exec(compile(code, 'actual-analyzer-gate', 'exec'), namespace())
+    except (AssertionError, KeyError, ValueError):
+        return True
+    return False
+results = {}
+set_logs(copy.deepcopy(base_train), copy.deepcopy(base_restore))
+assert not rejects(run_gate), 'completed real arm rejected'
+results['completed_real_arm_accepted'] = True
+variants = {
+    'empty_source_files': ('source_files', []),
+    'duplicate_source_files': ('source_files', [base_train[0]['source_files'][0]] * 5),
+    'missing_source_file': ('source_files', base_train[0]['source_files'][:-1]),
+    'wrong_train_indices': ('train_indices_sha256', '0' * 64),
+    'wrong_test_indices': ('test_indices_sha256', '0' * 64),
+    'wrong_confirmation_indices': ('confirmation_indices_sha256', '0' * 64),
+    'wrong_train_count': ('train_count', 5999),
+    'wrong_declared_epochs': ('epochs', 19),
+    'wrong_declared_update_budget': ('updates_expected', 119999),
+}
+for case, (key, value) in variants.items():
+    train, restore = copy.deepcopy(base_train), copy.deepcopy(base_restore)
+    train[0][key] = restore[0][key] = value
+    set_logs(train, restore)
+    results[case + '_rejected'] = rejects(run_gate)
+complete = {'accepted_full_runs': 12, 'epochs_each': 20, 'updates_each': 120000,
+            'fresh_process_restores': 12, 'failed': False}
+overrides.clear()
+overrides['training-complete.json'] = json.dumps(complete).encode()
+assert not rejects(ast.Module(body=[completion], type_ignores=[])), 'valid completion rejected'
+results['valid_completion_accepted'] = True
+for key, value in [('accepted_full_runs', 11), ('epochs_each', 19), ('updates_each', 119999),
+                   ('fresh_process_restores', 11), ('failed', True)]:
+    overrides['training-complete.json'] = json.dumps(dict(complete, **{key: value})).encode()
+    results['completion_' + key + '_rejected'] = rejects(ast.Module(body=[completion], type_ignores=[]))
+report = {'analyzer_sha256': hashlib.sha256(source).hexdigest(), 'checks': results,
+          'passed': sum(results.values()), 'failed': sum(not v for v in results.values()),
+          'base_arm': stem, 'actual_analyzer_gates_executed': True,
+          'all_mutations_in_memory_only': True, 'no_model_or_subprocess_commands': True,
+          'scope': 'verifier negative controls; not new task training or quality observations'}
+with (e / args.report).open('x') as f:
+    json.dump(report, f, indent=2)
+    f.write('\n')
+print(json.dumps(report))
+sys.exit(0 if all(results.values()) else 1)

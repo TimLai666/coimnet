@@ -1,0 +1,43 @@
+{
+  "analyzer_sha256": "594f0e14c290133e3d6eaea832c7051d4e82ee84e2c5cd255aabcf93df6d07ef",
+  "checks": [
+    {
+      "case": "ordinary_3_4",
+      "expected_l2": 5.0,
+      "actual_l2": 5.0,
+      "different_bits": 2,
+      "max_absolute_difference": 4.0,
+      "passed": true
+    },
+    {
+      "case": "finite_tiny_singleton",
+      "expected_l2": 1e-200,
+      "actual_l2": 1e-200,
+      "different_bits": 1,
+      "max_absolute_difference": 1e-200,
+      "passed": true
+    },
+    {
+      "case": "finite_large_singleton",
+      "expected_l2": 1e+200,
+      "actual_l2": 1e+200,
+      "different_bits": 1,
+      "max_absolute_difference": 1e+200,
+      "passed": true
+    },
+    {
+      "case": "signed_zero",
+      "passed": true
+    },
+    {
+      "case": "shape_mismatch_rejected",
+      "passed": true
+    }
+  ],
+  "passed": 5,
+  "failed": 0,
+  "all_inputs_finite": true,
+  "expected_distances_hand_computable": true,
+  "pure_functions_only_no_model_or_training_commands": true,
+  "scope": "numeric reporting kernel; not evidence that current model values reach these limits"
+}

@@ -1,0 +1,81 @@
+"""Remove only the verified preparation smoke tree; preserve the live training tree."""
+from pathlib import Path
+import datetime
+import hashlib
+import json
+import os
+import shutil
+import stat
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/build-quality-audit-20261015'
+record = json.loads((e / 'replay-smoke-work.json').read_text())
+w = Path(record['path'])
+assert w == r / 'runs/.tmp/102-ocr-replay-smoke-20261015'
+assert w.lstat().st_ino == record['inode'] and not w.is_symlink()
+assert json.loads((e / 'replay-smoke-verified.json').read_text())['training_runs_started'] == 0
+native = Path('/Users/timlai/go/pkg/mod')
+def digest(path):
+    h = hashlib.sha256()
+    with path.open('rb') as f:
+        for block in iter(lambda: f.read(1024 * 1024), b''):
+            h.update(block)
+    return h.hexdigest()
+def protected():
+    for filename in ['source-before.json', 'protected-models.json']:
+        for p, h in json.loads((e / filename).read_text()).items():
+            assert digest(r / p) == h, p
+    for rec in json.loads((e / 'data-copy.json').read_text()):
+        assert digest(Path(rec['source'])) == rec['sha256']
+    baseline = json.loads((e / 'baseline.json').read_text())
+    live = Path(baseline['own_temp'])
+    assert live.lstat().st_ino == baseline['own_temp_inode'] and not live.is_symlink()
+    for name, rec in baseline['protected_temporary_directories'].items():
+        p = r / 'runs/.tmp' / name
+        assert p.lstat().st_ino == rec['inode'] and not p.is_symlink()
+        assert sorted(x.name for x in p.iterdir()) == rec['entries']
+protected()
+inventory = []
+targets = {}
+files = links = total_bytes = 0
+for here, dirs, names in os.walk(w, followlinks=False):
+    dirs.sort()
+    for name in sorted(dirs + names):
+        p = Path(here) / name
+        s = p.lstat()
+        rel = p.relative_to(w).as_posix()
+        if stat.S_ISLNK(s.st_mode):
+            target = p.resolve(strict=True)
+            assert target.is_relative_to(native) and target.is_file(), str(target)
+            targets[str(target)] = digest(target)
+            inventory.append([rel, 'symlink', os.readlink(p)])
+            links += 1
+        elif stat.S_ISREG(s.st_mode):
+            inventory.append([rel, 'file', s.st_size, digest(p)])
+            files += 1
+            total_bytes += s.st_size
+        else:
+            assert stat.S_ISDIR(s.st_mode), rel
+            inventory.append([rel, 'directory', s.st_ino])
+for name, rec in json.loads((e / 'replay-smoke-verified.json').read_text())['archived_results_manifest'].items():
+    assert digest(w / 'results' / name) == digest(e / 'replay-smoke' / name) == rec['sha256']
+native_before = hashlib.sha256(json.dumps(targets, sort_keys=True).encode()).hexdigest()
+inventory_sha = hashlib.sha256(json.dumps(inventory, separators=(',', ':')).encode()).hexdigest()
+assert w.lstat().st_ino == record['inode'] and not w.is_symlink()
+shutil.rmtree(w)  # unlink owned symlinks; never remove their targets
+assert not w.exists() and not w.is_symlink()
+protected()
+assert all(digest(Path(p)) == h for p, h in targets.items())
+report = {'checked_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+          'removed': str(w), 'expected_inode': record['inode'], 'removed_regular_files': files,
+          'removed_symlinks': links, 'removed_regular_bytes': total_bytes,
+          'inspected_tree_sha256': inventory_sha, 'unique_native_targets': len(targets),
+          'native_target_manifest_sha256_before_and_after': native_before,
+          'all_native_target_bytes_preserved': True, 'archived_results_files': 34,
+          'framework_810_sources_preserved': True, 'original_18_model_files_preserved': True,
+          'original_six_data_files_preserved': True, 'protected_sibling_directories_preserved': True,
+          'live_training_tree_preserved': True, 'main_training_cleanup_still_pending': True}
+with (e / 'replay-smoke-cleanup.json').open('x') as f:
+    json.dump(report, f, indent=2)
+    f.write('\n')
+print(json.dumps(report))

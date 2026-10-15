@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-15",
+  "source_commit": "c41dcaf4f2eca39cbf69997d9e008a7717600157",
+  "task": "paired ordinary/race build quality of the unchanged artificial CPU continuous KMNIST single-character model",
+  "groups": [
+    "off",
+    "on"
+  ],
+  "training": 6000,
+  "epochs": 20,
+  "learning_rate": 0.002,
+  "hidden": 24,
+  "height": 28,
+  "seed_list": [
+    20260924,
+    20260925,
+    20260926
+  ],
+  "training_order": "PCG(seed,37); shuffle previous epoch permutation each epoch; identical per pair",
+  "input_profile": "single-character: full image plus zero propagation row; final nonblank softmax only",
+  "held_out": {
+    "count": 2000,
+    "selection": "same balanced official test indices as ticket64, per-class offset20",
+    "status": "fixed follow-on comparison on previously observed test split; no blind-test claim; no hyperparameter selection in this task"
+  },
+  "chemistry": {
+    "source": "fixed activity-summary Controller; SummaryWindow3,Hidden1,parameters[0.6,0.2,0.05,0.8,-0.1],no target/feedback/resources",
+    "regions": 1,
+    "channels": 1,
+    "dt": 1,
+    "tau": [
+      2
+    ],
+    "initial_concentration": [
+      [
+        0
+      ]
+    ],
+    "receptor_cells": "hidden nodes28..51",
+    "engineering_kd": 0.5,
+    "engineering_n": 1,
+    "gamma_scale": 0.8,
+    "beta_scale": 0.1,
+    "gamma_min": 0.5,
+    "gamma_max": 2,
+    "beta_abs_max": 1,
+    "scope": "engineering coefficients from ticket65 public fixture; no biological hormone or measured receptor attribution",
+    "trainable_chemistry_parameters": 0
+  },
+  "selection_policy": "unchanged original protocol; no tuning, seed selection, early stopping or best-epoch selection",
+  "comparison": "per seed/group ordinary-race accuracy percentage-point difference, same-image prediction/discordance, cross-entropy and full state differences; no population inference from three seeds",
+  "completion": [
+    "fixed protocol, data fingerprints and split verified",
+    "public SDK equivalence, neutral/active checks and fresh-process restore verified",
+    "three complete paired real-task runs analyzed",
+    "confirmed framework defects fixed if any, appropriate full checks passed",
+    "evidence delivered and owned temp cleared"
+  ],
+  "confirmation": {
+    "count": 2000,
+    "selection": "balanced official test positions800..999 per class, same fixed task; distinct from primary20..219",
+    "status": "not used in this experiment for selection; no global never-observed claim",
+    "index_sha256_expected": "9500a51eff8ec4e5ef522459730caae6dd0b3463898ecc86430c4849875937a5"
+  },
+  "builds": [
+    "ordinary",
+    "race"
+  ],
+  "full_training_runs": 12,
+  "lif_quality_scope": "not measured: this existing continuous-core task never executes the LIF candidate expression",
+  "training_models": "new paths below runs/.tmp/build-quality-audit-20261015/models; removed after evidence saved"
+}

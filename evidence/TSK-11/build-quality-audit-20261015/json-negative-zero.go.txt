@@ -1,0 +1,13 @@
+package main
+
+import (
+	"encoding/json"
+	"math"
+	"os"
+)
+
+func main() {
+	if err := json.NewEncoder(os.Stdout).Encode([]float64{math.Copysign(0, -1), 0}); err != nil {
+		panic(err)
+	}
+}

@@ -1,0 +1,159 @@
+from pathlib import Path
+import gzip, hashlib, json, math, struct, subprocess, sys
+
+r = Path('/Users/timlai/Developer/coimnet')
+e = r / 'evidence/TSK-11/build-quality-audit-20261015'
+w = r / 'runs/.tmp/build-quality-audit-20261015'
+protocol = json.loads((e / 'protocol.json').read_text())
+preflight = json.loads((e / 'preflight.json').read_text())
+def verify_completion(value):
+    for field, expected in {'accepted_full_runs': 12, 'epochs_each': 20, 'updates_each': 120000, 'fresh_process_restores': 12}.items():
+        assert type(value.get(field)) is int and value[field] == expected, field
+    assert value.get('failed') is False
+verify_completion(json.loads((e / 'training-complete.json').read_text()))
+sha = lambda b: hashlib.sha256(b).hexdigest()
+def save(name, obj):
+    with (e / name).open('x') as f:
+        json.dump(obj, f, indent=2, ensure_ascii=False)
+        f.write('\n')
+def events(name, expected_command=None):
+    receipt = json.loads((e / (name + '.json')).read_text())
+    raw = (e / (name + '.log')).read_bytes()
+    assert receipt['exit_code'] == 0, (name, 'command failed')
+    assert sha(raw) == receipt['log_sha256'], (name, 'log fingerprint changed')
+    assert receipt['formal_source_manifest'] == 'source-before.json' and receipt['formal_sources_checked'] == 810
+    if expected_command is not None:
+        assert receipt['command'] == expected_command, (name, 'command mismatch')
+    return [json.loads(s) for s in raw.decode().splitlines() if s.startswith('{')]
+def pick(labels, offset, count):
+    buckets = [[i for i, v in enumerate(labels) if v == c] for c in range(10)]
+    return [labels[buckets[c][rank]] for rank in range(offset, offset + count) for c in range(10)]
+train_labels = gzip.decompress((w / 'data/kmnist/train-labels-idx1-ubyte.gz').read_bytes())[8:]
+test_labels = gzip.decompress((w / 'data/kmnist/t10k-labels-idx1-ubyte.gz').read_bytes())[8:]
+labels = {'before': pick(test_labels, 20, 200), 'after': pick(test_labels, 20, 200), 'confirmation': pick(test_labels, 800, 200), 'train': pick(train_labels, 0, 600), 'development': pick(test_labels, 0, 20)}
+def verify_score(score, truth):
+    confusion = [[0] * 10 for _ in range(10)]
+    assert len(score['predictions']) == len(truth)
+    assert all(type(v) is int and 0 <= v < 10 for v in truth + score['predictions'])
+    for target, prediction in zip(truth, score['predictions']):
+        confusion[target][prediction] += 1
+    correct = sum(confusion[i][i] for i in range(10))
+    assert confusion == score['confusion'] and correct == score['correct']
+    assert score['samples'] == len(truth) and score['accuracy'] == correct / len(truth)
+    assert math.isfinite(score['mean_cross_entropy'])
+
+def verify_selection(selection):
+    for field, expected in {'train_count': 6000, 'test_count': 2000, 'confirmation_count': 2000, 'epochs': 20, 'updates_expected': 120000, 'trainable_parameters': 23516}.items():
+        assert type(selection.get(field)) is int and selection[field] == expected, field
+    for field, split in [('train_indices_sha256', 'train'), ('test_indices_sha256', 'primary'), ('confirmation_indices_sha256', 'confirmation')]:
+        assert selection[field] == preflight['split_index_sha256'][split], field
+    copies = json.loads((e / 'data-copy.json').read_text())
+    metadata = next(c for c in copies if Path(c['path']).name == 'metadata.json')
+    assert selection['metadata_sha256'] == metadata['sha256']
+    assert type(selection['source_files']) is list
+    actual = {}
+    for source in selection['source_files']:
+        assert source['name'] not in actual, source['name']
+        actual[source['name']] = (source['bytes'], source['sha256'])
+    expected = {Path(c['path']).name: (c['bytes'], c['sha256']) for c in copies if Path(c['path']).name != 'metadata.json'}
+    assert actual == expected
+
+def decode_snapshot(raw):
+    # Go encodes negative float64 zero as the JSON integer-looking token -0.
+    return json.loads(raw, parse_int=lambda text: -0.0 if text == '-0' else int(text))
+
+def numeric_arrays(value, path=''):
+    if isinstance(value, dict):
+        for k, v in sorted(value.items()):
+            yield from numeric_arrays(v, path + '.' + k)
+    elif isinstance(value, list):
+        if all(type(x) in (int, float) for x in value):
+            yield path, value
+        else:
+            for i, v in enumerate(value):
+                yield from numeric_arrays(v, path + f'[{i}]')
+
+def array_comparison(a, b):
+    aa, bb = dict(numeric_arrays(a)), dict(numeric_arrays(b))
+    assert aa.keys() == bb.keys()
+    result = {}
+    for key in aa:
+        x, y = aa[key], bb[key]
+        assert len(x) == len(y)
+        assert all(math.isfinite(v) for v in x + y)
+        unequal = [i for i, (u, v) in enumerate(zip(x, y)) if struct.pack('>d', u) != struct.pack('>d', v)]
+        diff = [v - u for u, v in zip(x, y)]
+        result[key] = {'scalars': len(x), 'different_float64_bits': len(unequal), 'max_absolute_difference': max(map(abs, diff), default=0), 'difference_l2': math.hypot(*diff), 'first_differences': [{'index': i, 'ordinary': x[i], 'race': y[i]} for i in unequal[:5]]}
+    return result
+
+models, bundle_fingerprints = {}, {}
+probe_lock = json.loads((e / 'state-probe-lock.json').read_text())
+assert sha((r / probe_lock['source']).read_bytes()) == probe_lock['sha256']
+probe_sha = sha((w / 'dump-state').read_bytes())
+for seed in protocol['seed_list']:
+    for group in protocol['groups']:
+        for build in protocol['builds']:
+            name = f'{seed}-{group}-{build}'
+            accepted = json.loads((e / (name + '-accepted.json')).read_text())
+            assert accepted['arm'] == {'seed': seed, 'group': group, 'build': build}
+            assert accepted['epochs'] == 20 and accepted['updates'] == 120000
+            assert accepted['new_process_restore'] and accepted['all_scores_predictions_state_and_next_update_exact']
+            binary = w / ('comparison' if build == 'ordinary' else 'comparison-race')
+            model = w / 'models' / build / f'{seed}-{group}'
+            argv = list(map(str, [binary, '--data-dir', w / 'data/kmnist', '--group', group, '--seed', seed, '--model', model]))
+            rows = events(name + '-train', [*argv, '--mode', 'train'])
+            restored = events(name + '-restore', [*argv, '--mode', 'restore'])
+            assert len(rows) == 23 and len(restored) == 2
+            assert rows[0]['seed'] == seed and rows[0]['group'] == group and rows[0]['event'] == 'selection'
+            assert rows[0] == restored[0]
+            assert rows[0]['program']['binary_sha256'] == sha(binary.read_bytes())
+            for i, row in enumerate(rows[1:21], 1):
+                assert row['event'] == 'epoch' and row['epoch'] == i and row['updates'] == i * 6000
+                assert row['seed'] == seed and row['group'] == group
+            final, resumed = rows[-1], restored[-1]
+            assert final['event'] == resumed['event'] == 'final' and final['mode'] == 'train' and resumed['mode'] == 'restore'
+            for field in ['after', 'confirmation', 'train', 'updates', 'snapshot_sha256', 'next_update_sha256', 'parameters_sha256', 'optimizer_sha256', 'frozen_evaluation']:
+                assert final[field] == resumed[field], (name, field)
+            assert resumed['before'] == final['after'] and final['updates'] == 120000 and final['frozen_evaluation']
+            verify_selection(rows[0])
+            for field in ['before', 'after', 'confirmation', 'train']:
+                verify_score(final[field], labels[field])
+            for row in rows[1:21]:
+                verify_score(row['development'], labels['development'])
+            dump = w / f'{name}-snapshot.json'
+            before = {p.name: sha(p.read_bytes()) for p in model.iterdir() if p.is_file()}
+            subprocess.run([sys.executable, str(e / 'run-command.py.txt'), name + '-state', str(w / 'dump-state'), str(model), str(dump)], check=True, cwd=r)
+            assert before == {p.name: sha(p.read_bytes()) for p in model.iterdir() if p.is_file()}
+            raw = dump.read_bytes()
+            assert sha(raw) == final['snapshot_sha256']
+            state = decode_snapshot(raw)
+            assert state['updates'] == 120000 and 'accumulator' not in state
+            p = state['parameters']
+            nominal = sum(len(p['core'][k]) for k in ['weights', 'bias']) + len(p['encoder']) + len(p['readout'])
+            assert nominal == rows[0]['trainable_parameters'] == 23516
+            assert sum(len(v) for _, v in numeric_arrays(p)) == 23568
+            assert all(len(state['optimizer'][k]) == 23568 for k in ['first', 'second', 'steps'])
+            assert state['optimizer']['steps'].count(120000) == 23516 and state['optimizer']['steps'].count(0) == 52
+            bundle_fingerprints[name] = {'files': before, 'snapshot_json_sha256': sha(raw), 'snapshot_json_bytes': len(raw), 'trainable_nominal_scalars': nominal, 'all_parameter_scalars': sum(len(v) for _, v in numeric_arrays(p)), 'state_probe_binary_sha256': probe_sha}
+            models[(seed, group, build)] = (rows, final, state)
+
+def score_pair(a, b, truth):
+    pa, pb = a['predictions'], b['predictions']
+    return {'a_accuracy': a['accuracy'], 'b_accuracy': b['accuracy'], 'b_minus_a_accuracy_percentage_points': (b['correct'] - a['correct']) * 100 / len(truth), 'b_minus_a_cross_entropy': b['mean_cross_entropy'] - a['mean_cross_entropy'], 'different_predictions': sum(u != v for u, v in zip(pa, pb)), 'a_correct_b_wrong': sum(u == t and v != t for u, v, t in zip(pa, pb, truth)), 'a_wrong_b_correct': sum(u != t and v == t for u, v, t in zip(pa, pb, truth)), 'both_wrong_different_class': sum(u != v and u != t and v != t for u, v, t in zip(pa, pb, truth))}
+
+pairs, chemical_pairs = [], []
+for seed in protocol['seed_list']:
+    for group in protocol['groups']:
+        ar, af, ast = models[(seed, group, 'ordinary')]
+        br, bf, bst = models[(seed, group, 'race')]
+        assert {k: v for k, v in ar[0].items() if k != 'program'} == {k: v for k, v in br[0].items() if k != 'program'}
+        for field in ['schema_version', 'config', 'options', 'updates']:
+            assert ast[field] == bst[field], (seed, group, field)
+        arrays = array_comparison(ast, bst)
+        pairs.append({'seed': seed, 'group': group, 'score_differences_race_minus_ordinary': {field: score_pair(af[field], bf[field], labels[field]) for field in ['before', 'after', 'confirmation', 'train']}, 'snapshot_equal': af['snapshot_sha256'] == bf['snapshot_sha256'], 'parameters_equal': af['parameters_sha256'] == bf['parameters_sha256'], 'optimizer_equal': af['optimizer_sha256'] == bf['optimizer_sha256'], 'numeric_arrays': arrays, 'epochs': [{'epoch': i + 1, 'race_minus_ordinary_training_cross_entropy': br[i + 1]['mean_training_cross_entropy'] - ar[i + 1]['mean_training_cross_entropy'], 'development': score_pair(ar[i + 1]['development'], br[i + 1]['development'], labels['development'])} for i in range(20)]})
+    for build in protocol['builds']:
+        off, on = models[(seed, 'off', build)][1], models[(seed, 'on', build)][1]
+        chemical_pairs.append({'seed': seed, 'build': build, 'score_differences_on_minus_off': {field: score_pair(off[field], on[field], labels[field]) for field in ['before', 'after', 'confirmation', 'train']}})
+save('state-comparison.json', {'bundle_fingerprints': bundle_fingerprints, 'pairs': pairs, 'complete_numeric_arrays_compared': True, 'full_prediction_and_confusion_verified_independently': True, 'fresh_process_restore_count': 12})
+save('quality-comparison.json', {'build_pairs': [{k: v for k, v in p.items() if k != 'numeric_arrays'} for p in pairs], 'chemical_pairs': chemical_pairs, 'scope': 'observed three seeds, fixed previously observed KMNIST single-character split and artificial continuous core; no population or LIF inference', 'no_tuning_or_selection': True})
+print(json.dumps({'analyzed_full_runs': len(models), 'build_pairs': len(pairs), 'chemical_pairs': len(chemical_pairs), 'fresh_process_state_dumps_match_training_hashes': True}))

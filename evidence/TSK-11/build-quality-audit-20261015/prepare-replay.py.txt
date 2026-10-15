@@ -1,0 +1,126 @@
+"""Prepare a fresh project-local replay; never execute training or overwrite results."""
+from pathlib import Path
+import argparse
+import ast
+import hashlib
+import json
+import re
+
+E = Path(__file__).resolve().parent
+ROOT = E.parents[2]
+TOOLS = ['cache-prepare.py.txt', 'run-command.py.txt', 'preflight.py.txt',
+         'run-pairs-resume.py.txt', 'analyze.py.txt']
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+
+def prepare(data_dir, name):
+    if not re.fullmatch(r'102-ocr-replay-[a-z0-9-]{1,49}', name):
+        raise ValueError('name must be 102-ocr-replay- followed by 1..49 lowercase letters, digits or hyphens')
+    base = ROOT / 'runs/.tmp'
+    if base.resolve() != base:
+        raise ValueError('runs/.tmp must be a real project directory')
+    w = base / name
+    if w.exists() or w.is_symlink():
+        raise FileExistsError(str(w))
+    out = w / 'results'
+    source = json.loads((E / 'source-before.json').read_text())
+    if len(source) != 810:
+        raise ValueError('expected the frozen 810-source manifest')
+    for path, digest in source.items():
+        if sha((ROOT / path).read_bytes()) != digest:
+            raise ValueError('framework source changed: ' + path)
+    # Read and validate every input before creating the new destination.
+    files = {}
+    data_records = []
+    for rec in json.loads((E / 'data-copy.json').read_text()):
+        filename = Path(rec['path']).name
+        p = Path(data_dir) / filename
+        raw = p.read_bytes()
+        if len(raw) != rec['bytes'] or sha(raw) != rec['sha256']:
+            raise ValueError('data fingerprint mismatch: ' + str(p))
+        files['data/kmnist/' + filename] = raw
+        data_records.append({**rec, 'source': str(p.resolve()),
+                             'path': str(w / 'data/kmnist' / filename)})
+    driver_lock = {}
+    for rec in json.loads((E / 'driver-source.json').read_text()):
+        raw = (ROOT / rec['archive']).read_bytes()
+        if len(raw) != rec['bytes'] or sha(raw) != rec['sha256']:
+            raise ValueError('driver archive changed: ' + rec['archive'])
+        path = 'driver/' + Path(rec['path']).name
+        files[path] = raw
+        driver_lock[str((w / path).relative_to(ROOT))] = sha(raw)
+    for filename in ['protocol.json', 'execution-order.json', 'source-before.json', 'protected-models.json']:
+        files['results/' + filename] = (E / filename).read_bytes()
+    driver_lock[str((out / 'protocol.json').relative_to(ROOT))] = sha(files['results/protocol.json'])
+    for filename in ['data-review.md', 'driver-review.md']:
+        files[filename] = (E / filename).read_bytes()
+    for filename, target in [('dump-state.go.txt', 'dump_state.go'),
+                             ('json-negative-zero.go.txt', 'json_negative_zero.go')]:
+        files[target] = (E / filename).read_bytes()
+    original_paths = [('/Users/timlai/Developer/coimnet', str(ROOT)),
+                      ('runs/.tmp/build-quality-audit-20261015', str(w.relative_to(ROOT))),
+                      ('evidence/TSK-11/build-quality-audit-20261015', str(out.relative_to(ROOT)))]
+    rebased = {}
+    for filename in TOOLS:
+        raw = (E / filename).read_bytes()
+        text = raw.decode()
+        for old, new in original_paths:
+            literal = repr(old)
+            if text.count(literal) != 1:
+                raise ValueError('unexpected path declaration: ' + filename + ': ' + old)
+            text = text.replace(literal, repr(new), 1)
+        ast.parse(text, filename=filename)
+        files['results/' + filename] = text.encode()
+        rebased[filename] = {'archive_sha256': sha(raw), 'replay_sha256': sha(text.encode())}
+    def encode(value):
+        return (json.dumps(value, indent=2, ensure_ascii=False) + '\n').encode()
+    files['results/driver-lock.json'] = encode(driver_lock)
+    files['results/data-copy.json'] = encode(data_records)
+    files['results/state-probe-lock.json'] = encode({
+        'source': str((w / 'dump_state.go').relative_to(ROOT)),
+        'sha256': sha(files['dump_state.go'])})
+    wrapper = ['python3', str(out / 'run-command.py.txt')]
+    driver = './' + str((w / 'driver').relative_to(ROOT))
+    commands = [
+        {'command': ['python3', str(out / 'cache-prepare.py.txt')]},
+        {'command': [*wrapper, 'driver-build', 'go', 'build', '-o', str(w / 'comparison'), driver]},
+        {'command': [*wrapper, 'driver-race-build', 'go', 'build', '-race', '-o', str(w / 'comparison-race'), driver]},
+        {'command': [*wrapper, 'driver-tests', 'go', 'test', '-v', '-count=1', driver]},
+        {'command': [*wrapper, 'driver-race-tests', 'go', 'test', '-race', '-v', '-count=1', driver]},
+        {'command': [*wrapper, 'state-probe-build', 'go', 'build', '-o', str(w / 'dump-state'), str(w / 'dump_state.go')]},
+    ]
+    for build, binary in [('ordinary', 'comparison'), ('race', 'comparison-race')]:
+        commands.append({'command': [*wrapper, 'sdk-check-' + build, str(w / binary),
+                                    '--data-dir', str(w / 'data/kmnist'), '--mode', 'check',
+                                    '--group', 'off', '--seed', '20260924']})
+    commands.extend({'command': ['python3', str(out / filename)]}
+                    for filename in ['preflight.py.txt', 'run-pairs-resume.py.txt', 'analyze.py.txt'])
+    files['results/replay-commands.json'] = encode(commands)
+    files['results/preparation.json'] = encode({
+        'source_manifest_records': 810, 'driver_files': 5, 'data_files': len(data_records),
+        'protocol_sha256': sha(files['results/protocol.json']), 'rebased_tools': rebased,
+        'training_executed': False, 'results': str(out),
+        'cache_prerequisite': '/Users/timlai/go/pkg/mod; see cache-prepare.py.txt'})
+    w.mkdir()  # Exclusive directory creation also rejects a concurrent creator.
+    for path, raw in files.items():
+        p = w / path
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with p.open('xb') as f:
+            f.write(raw)
+    return w
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__,
+        epilog='Example: python3 prepare-replay.py.txt --data-dir data/TSK-11/kmnist --name 102-ocr-replay-check')
+    parser.add_argument('--data-dir', required=True, type=Path,
+                        help='read-only directory containing the six original KMNIST files including metadata.json; fingerprints must match')
+    parser.add_argument('--name', required=True,
+                        help='new direct child of runs/.tmp, named 102-ocr-replay-<lowercase-id>; an existing destination is rejected')
+    import sys
+    if len(sys.argv) == 1:
+        parser.print_help()
+        sys.exit(0)
+    args = parser.parse_args()
+    try:
+        print(prepare(args.data_dir, args.name))
+    except (OSError, ValueError) as error:
+        parser.error(str(error))

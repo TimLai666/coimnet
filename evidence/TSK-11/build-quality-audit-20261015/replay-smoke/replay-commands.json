@@ -1,0 +1,120 @@
+[
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/cache-prepare.py.txt"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "driver-build",
+      "go",
+      "build",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/comparison",
+      "./runs/.tmp/102-ocr-replay-smoke-20261015/driver"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "driver-race-build",
+      "go",
+      "build",
+      "-race",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/comparison-race",
+      "./runs/.tmp/102-ocr-replay-smoke-20261015/driver"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "driver-tests",
+      "go",
+      "test",
+      "-v",
+      "-count=1",
+      "./runs/.tmp/102-ocr-replay-smoke-20261015/driver"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "driver-race-tests",
+      "go",
+      "test",
+      "-race",
+      "-v",
+      "-count=1",
+      "./runs/.tmp/102-ocr-replay-smoke-20261015/driver"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "state-probe-build",
+      "go",
+      "build",
+      "-o",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/dump-state",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/dump_state.go"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "sdk-check-ordinary",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/comparison",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/data/kmnist",
+      "--mode",
+      "check",
+      "--group",
+      "off",
+      "--seed",
+      "20260924"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-command.py.txt",
+      "sdk-check-race",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/comparison-race",
+      "--data-dir",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/data/kmnist",
+      "--mode",
+      "check",
+      "--group",
+      "off",
+      "--seed",
+      "20260924"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/preflight.py.txt"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/run-pairs-resume.py.txt"
+    ]
+  },
+  {
+    "command": [
+      "python3",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/102-ocr-replay-smoke-20261015/results/analyze.py.txt"
+    ]
+  }
+]

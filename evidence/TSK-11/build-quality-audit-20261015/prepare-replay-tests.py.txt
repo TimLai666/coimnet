@@ -1,0 +1,117 @@
+"""Preparation-only controls. No Go, training, downloads or production writes."""
+from importlib.machinery import SourceFileLoader
+from importlib.util import module_from_spec, spec_from_loader
+from pathlib import Path
+import ast
+import hashlib
+import json
+import os
+import shutil
+import unittest
+import uuid
+
+e = Path(__file__).resolve().parent
+r = e.parents[2]
+w = r / 'runs/.tmp/build-quality-audit-20261015'
+data = w / 'data/kmnist'
+helper = e / 'prepare-replay.py.txt'
+
+class PrepareReplay(unittest.TestCase):
+    def setUp(self):
+        self.owned = []
+        loader = SourceFileLoader('prepare_replay', str(helper))
+        self.module = module_from_spec(spec_from_loader(loader.name, loader))
+        loader.exec_module(self.module)
+
+    def target(self):
+        p = r / 'runs/.tmp' / ('102-ocr-replay-control-' + uuid.uuid4().hex)
+        self.owned.append(p)
+        return p
+
+    def tearDown(self):
+        for p in self.owned:
+            if p.is_symlink():
+                os.readlink(p)
+                p.unlink()
+            elif p.exists():
+                # Inspect only our newly created tree; never follow its links.
+                for here, dirs, files in os.walk(p, followlinks=False):
+                    for name in dirs + files:
+                        q = Path(here) / name
+                        if q.is_symlink():
+                            os.readlink(q)
+                        elif q.is_file():
+                            q.read_bytes()
+                shutil.rmtree(p)
+
+    def test_valid_prepare_rebases_tools_and_keeps_protocol(self):
+        p = self.target()
+        result = self.module.prepare(data, p.name)
+        self.assertEqual(result, p)
+        out = p / 'results'
+        self.assertEqual((out / 'protocol.json').read_bytes(), (e / 'protocol.json').read_bytes())
+        self.assertEqual((out / 'execution-order.json').read_bytes(), (e / 'execution-order.json').read_bytes())
+        locks = json.loads((out / 'driver-lock.json').read_text())
+        self.assertEqual(len(locks), 6)
+        for path, expected in locks.items():
+            self.assertEqual(hashlib.sha256((r / path).read_bytes()).hexdigest(), expected)
+        for name in self.module.TOOLS:
+            text = (out / name).read_text()
+            tree = ast.parse(text)
+            paths = [node.value for node in ast.walk(tree) if isinstance(node, ast.Constant) and isinstance(node.value, str)]
+            self.assertNotIn('runs/.tmp/build-quality-audit-20261015', paths)
+            self.assertNotIn('evidence/TSK-11/build-quality-audit-20261015', paths)
+        copies = json.loads((out / 'data-copy.json').read_text())
+        self.assertEqual(len(copies), 6)
+        for rec in copies:
+            self.assertEqual(Path(rec['source']).parent, data)
+            self.assertEqual(Path(rec['path']).parent, p / 'data/kmnist')
+            self.assertEqual(hashlib.sha256(Path(rec['path']).read_bytes()).hexdigest(), rec['sha256'])
+        self.assertFalse(list(out.glob('*-train.log')))
+        self.assertFalse((p / 'models').exists())
+        commands = json.loads((out / 'replay-commands.json').read_text())
+        self.assertEqual(commands[-1]['command'], ['python3', str(out / 'analyze.py.txt')])
+
+    def test_existing_directory_preserved(self):
+        p = self.target()
+        p.mkdir()
+        (p / 'marker').write_bytes(b'preserve this result')
+        with self.assertRaises(FileExistsError):
+            self.module.prepare(data, p.name)
+        self.assertEqual((p / 'marker').read_bytes(), b'preserve this result')
+        self.assertEqual([q.name for q in p.iterdir()], ['marker'])
+
+    def test_existing_symlink_preserved(self):
+        p = self.target()
+        p.symlink_to(w, target_is_directory=True)
+        with self.assertRaises(FileExistsError):
+            self.module.prepare(data, p.name)
+        self.assertEqual(p.readlink(), w)
+
+    def test_missing_data_rejected_before_create(self):
+        p = self.target()
+        with self.assertRaises(FileNotFoundError):
+            self.module.prepare(w / 'absent-input', p.name)
+        self.assertFalse(p.exists())
+
+    def test_changed_data_rejected_before_create(self):
+        bad = self.target()
+        bad.mkdir()
+        for source in data.iterdir():
+            (bad / source.name).symlink_to(source)
+        q = bad / 'kmnist_classmap.csv'
+        q.readlink()
+        q.unlink()
+        q.write_bytes(b'wrong official data')
+        p = self.target()
+        with self.assertRaises(ValueError):
+            self.module.prepare(bad, p.name)
+        self.assertFalse(p.exists())
+
+    def test_paths_cannot_escape_or_reuse_live_work(self):
+        for name in ['../outside', '/tmp/replay', 'build-quality-audit-20261015', '102-ocr-replay-x/../y']:
+            with self.subTest(name=name), self.assertRaises(ValueError):
+                self.module.prepare(data, name)
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

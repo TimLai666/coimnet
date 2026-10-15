@@ -1,0 +1,111 @@
+"""Independently verify all twelve finished reports and typed model arrays."""
+from pathlib import Path
+import argparse
+import gzip
+import hashlib
+import json
+import math
+import struct
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--verify', action='store_true', help='verify completed analysis and write new root-results.json; refuses incomplete inputs or existing output')
+args = parser.parse_args()
+if not args.verify:
+    parser.print_help()
+    raise SystemExit(0)
+e = Path(__file__).resolve().parent
+r = e.parents[2]
+w = r / 'runs/.tmp/build-quality-audit-20261015'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+assert sha((e / 'analyze.py.txt').read_bytes()) == '594f0e14c290133e3d6eaea832c7051d4e82ee84e2c5cd255aabcf93df6d07ef'
+complete = json.loads((e / 'training-complete.json').read_text())
+assert complete == {'accepted_full_runs': 12, 'epochs_each': 20, 'updates_each': 120000, 'fresh_process_restores': 12, 'failed': False}
+comparison = json.loads((e / 'state-comparison.json').read_text())
+quality = json.loads((e / 'quality-comparison.json').read_text())
+assert len(comparison['bundle_fingerprints']) == 12 and len(comparison['pairs']) == len(quality['build_pairs']) == len(quality['chemical_pairs']) == 6
+def events(stem):
+    rec = json.loads((e / (stem + '.json')).read_text())
+    raw = (e / (stem + '.log')).read_bytes()
+    assert rec['exit_code'] == 0 and sha(raw) == rec['log_sha256']
+    assert rec['formal_sources_checked'] == 810
+    return [json.loads(line) for line in raw.decode().splitlines() if line.startswith('{')]
+label_bytes = {kind: gzip.decompress((w / 'data/kmnist' / name).read_bytes())[8:]
+               for kind, name in [('train', 'train-labels-idx1-ubyte.gz'), ('test', 't10k-labels-idx1-ubyte.gz')]}
+def truth(kind, offset, count):
+    buckets = [[i for i, c in enumerate(label_bytes[kind]) if c == label] for label in range(10)]
+    return [label_bytes[kind][buckets[label][rank]] for rank in range(offset, offset + count) for label in range(10)]
+truths = {'before': truth('test', 20, 200), 'after': truth('test', 20, 200), 'confirmation': truth('test', 800, 200), 'train': truth('train', 0, 600), 'development': truth('test', 0, 20)}
+states, finals, rows_by_arm = {}, {}, {}
+for seed in [20260924, 20260925, 20260926]:
+    for group in ['off', 'on']:
+        for build in ['ordinary', 'race']:
+            name = f'{seed}-{group}-{build}'
+            rows, restored = events(name + '-train'), events(name + '-restore')
+            assert len(rows) == 23 and len(restored) == 2
+            final = rows[-1]
+            assert final['updates'] == 120000 and final['frozen_evaluation'] is True
+            assert all(final[key] == restored[-1][key] for key in ['after', 'confirmation', 'train', 'snapshot_sha256', 'next_update_sha256', 'parameters_sha256', 'optimizer_sha256'])
+            for field, score in [(key, final[key]) for key in ['before', 'after', 'confirmation', 'train']] + [('development', row['development']) for row in rows[1:21]]:
+                labels, predictions = truths[field], score['predictions']
+                assert len(labels) == len(predictions) == score['samples']
+                assert all(type(p) is int and 0 <= p < 10 for p in predictions)
+                correct = sum(predictions[i] == labels[i] for i in range(len(labels)))
+                matrix = [[sum(labels[i] == a and predictions[i] == b for i in range(len(labels))) for b in range(10)] for a in range(10)]
+                assert correct == score['correct'] and matrix == score['confusion']
+                assert score['accuracy'] == correct / len(labels) and math.isfinite(score['mean_cross_entropy']) and score['mean_cross_entropy'] >= 0
+            raw = (w / (name + '-snapshot.json')).read_bytes()
+            assert sha(raw) == final['snapshot_sha256'] == comparison['bundle_fingerprints'][name]['snapshot_json_sha256']
+            state = json.loads(raw, parse_int=lambda text: -0.0 if text == '-0' else int(text))
+            p, optimizer = state['parameters'], state['optimizer']
+            assert set(p) == {'core', 'encoder', 'readout'} and set(p['core']) == {'weights', 'bias', 'log_tau'}
+            assert set(optimizer) == {'first', 'second', 'steps'} and 'accumulator' not in state
+            assert [len(p['core'][k]) for k in ['weights', 'bias', 'log_tau']] == [1248, 52, 52]
+            assert len(p['encoder']) == 21952 and len(p['readout']) == 264
+            assert all(len(v) == 23568 for v in optimizer.values())
+            assert optimizer['steps'].count(120000) == 23516 and optimizer['steps'].count(0) == 52
+            states[name], finals[name], rows_by_arm[name] = state, final, rows
+def typed_leaves(state):
+    p = state['parameters']
+    return {**{'.parameters.core.' + k: v for k, v in p['core'].items()}, **{'.parameters.' + k: p[k] for k in ['encoder', 'readout']}, **{'.optimizer.' + k: v for k, v in state['optimizer'].items()}}
+def paired(a, b, field):
+    pa, pb, labels = a[field]['predictions'], b[field]['predictions'], truths[field]
+    return {'different_predictions': sum(pa[i] != pb[i] for i in range(len(labels))), 'a_correct_b_wrong': sum(pa[i] == labels[i] and pb[i] != labels[i] for i in range(len(labels))), 'a_wrong_b_correct': sum(pa[i] != labels[i] and pb[i] == labels[i] for i in range(len(labels))), 'both_wrong_different_class': sum(pa[i] != pb[i] and pa[i] != labels[i] and pb[i] != labels[i] for i in range(len(labels)))}
+build_rows, observed = [], []
+legacy_changed = legacy_wrong_limit = 0
+for pair in comparison['pairs']:
+    seed, group = pair['seed'], pair['group']
+    a, b = f'{seed}-{group}-ordinary', f'{seed}-{group}-race'
+    aa, bb = typed_leaves(states[a]), typed_leaves(states[b])
+    bit_count = 0
+    for key, x in aa.items():
+        y = bb[key]
+        assert len(x) == len(y) and all(math.isfinite(v) for v in x + y)
+        unequal = sum(struct.pack('>d', x[i]) != struct.pack('>d', y[i]) for i in range(len(x)))
+        differences = [y[i] - x[i] for i in range(len(x))]
+        scale = max(map(abs, differences), default=0.)
+        distance = scale * math.sqrt(math.fsum((v / scale) ** 2 for v in differences)) if scale else 0.
+        reported = pair['numeric_arrays'][key]
+        assert reported['different_float64_bits'] == unequal and reported['max_absolute_difference'] == scale
+        assert math.isclose(distance, reported['difference_l2'], rel_tol=2e-15, abs_tol=0.)
+        legacy = math.sqrt(math.fsum(v * v for v in differences))
+        legacy_changed += legacy != reported['difference_l2']
+        legacy_wrong_limit += distance > 0 and math.isfinite(distance) and (legacy == 0 or not math.isfinite(legacy))
+        bit_count += unequal
+    for field in ['before', 'after', 'confirmation', 'train']:
+        expected = paired(finals[a], finals[b], field)
+        assert all(pair['score_differences_race_minus_ordinary'][field][k] == v for k, v in expected.items())
+    build_rows.append({'seed': seed, 'group': group, 'all_parameter_and_optimizer_bit_differences': bit_count, 'primary_prediction_differences': paired(finals[a], finals[b], 'after')['different_predictions'], 'confirmation_prediction_differences': paired(finals[a], finals[b], 'confirmation')['different_predictions'], 'full_snapshot_equal': finals[a]['snapshot_sha256'] == finals[b]['snapshot_sha256']})
+for pair in quality['chemical_pairs']:
+    seed, build = pair['seed'], pair['build']
+    a, b = finals[f'{seed}-off-{build}'], finals[f'{seed}-on-{build}']
+    for field in ['before', 'after', 'confirmation', 'train']:
+        assert all(pair['score_differences_on_minus_off'][field][k] == v for k, v in paired(a, b, field).items())
+    if build == 'ordinary':
+        observed.append({'seed': seed, 'primary_off': a['after']['accuracy'], 'primary_on': b['after']['accuracy'], 'primary_on_minus_off_percentage_points': (b['after']['correct'] - a['after']['correct']) / 20, 'confirmation_off': a['confirmation']['accuracy'], 'confirmation_on': b['confirmation']['accuracy'], 'confirmation_on_minus_off_percentage_points': (b['confirmation']['correct'] - a['confirmation']['correct']) / 20})
+for name in ['source-before.json', 'protected-models.json']:
+    assert all(sha((r / path).read_bytes()) == expected for path, expected in json.loads((e / name).read_text()).items())
+result = {'training_runs_independently_verified': 12, 'fresh_process_restores_verified': 12, 'state_dumps_verified': 12, 'scores_and_confusions_verified': 288, 'typed_numeric_fields_each_snapshot': 8, 'build_pairs': build_rows, 'ordinary_chemical_observations': observed, 'legacy_distance_fields_changed_in_actual_typed_model_arrays': legacy_changed, 'legacy_wrong_zero_or_nonfinite_distance_fields': legacy_wrong_limit, 'analyzer_sha256': sha((e / 'analyze.py.txt').read_bytes()), 'framework_and_original_models_preserved': True, 'scope': 'fixed three previously observed seeds and KMNIST single-character splits, artificial continuous core; no LIF, full-brain or biological efficacy inference'}
+with (e / 'root-results.json').open('x') as f:
+    json.dump(result, f, indent=2, allow_nan=False)
+    f.write('\n')
+print(json.dumps(result, allow_nan=False))

@@ -1,0 +1,48 @@
+// Example-only read-only state inspection. The model and dump remain temporary.
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+)
+
+func main() {
+	if len(os.Args) != 3 {
+		panic("usage: dump-state MODEL_BUNDLE NEW_JSON_DUMP")
+	}
+	snapshot, err := checkpoint.LoadTrainingBundle(context.Background(), os.Args[1])
+	if err != nil {
+		panic(err)
+	}
+	if snapshot.Updates != 120000 || snapshot.Accumulator != nil {
+		panic("not a complete fixed-protocol model")
+	}
+	raw, err := json.Marshal(snapshot)
+	if err != nil {
+		panic(err)
+	}
+	f, err := os.OpenFile(os.Args[2], os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		panic(err)
+	}
+	n, err := f.Write(raw)
+	if err != nil || n != len(raw) {
+		panic(fmt.Sprintf("incomplete state dump: %d/%d: %v", n, len(raw), err))
+	}
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+	digest := sha256.Sum256(raw)
+	if err := json.NewEncoder(os.Stdout).Encode(map[string]any{
+		"snapshot_sha256": hex.EncodeToString(digest[:]), "json_bytes": len(raw),
+		"updates": snapshot.Updates, "accumulator_nil": true,
+	}); err != nil {
+		panic(err)
+	}
+}
