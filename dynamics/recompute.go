@@ -201,7 +201,11 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 				if lambda[i] == 0 {
 					dlambda = 0
 				}
+				previousLogTau := g.LogTau[i]
 				g.LogTau[i] += dv * (rows[t-lo][i] - drive[i]) * dlambda
+				if !finite(g.LogTau[i]) {
+					g.LogTau[i] = previousLogTau + membraneTauGradient(dv, rows[t-lo][i], drive[i], dlambda)
+				}
 				if t > wstart || wstart == 0 {
 					prev[i] = lambda[i] * dv
 				}

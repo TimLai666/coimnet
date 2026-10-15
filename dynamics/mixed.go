@@ -650,7 +650,11 @@ func (m *Mixed) Backward(ctx context.Context, tr *MixedTrace, upstream [][]float
 			if tr.lambda[i] == 0 {
 				dlambda = 0
 			}
+			previousLogTau := g.LogTau[i]
 			g.LogTau[i] += dcand * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
+			if !finite(g.LogTau[i]) {
+				g.LogTau[i] = previousLogTau + membraneTauGradient(dcand, tr.voltage[t][i], tr.drive[t][i], dlambda)
+			}
 			if keep {
 				prevV[i] = tr.lambda[i] * dcand
 			}

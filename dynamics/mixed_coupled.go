@@ -450,10 +450,18 @@ func (m *Mixed) backwardCoupled(ctx context.Context, tr *MixedTrace, upstream []
 				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
 			}
 			logTauGradient := dcand * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
-			if !finite(logTauGradient) || !finite(g.LogTau[i]+logTauGradient) {
-				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+			if !finite(logTauGradient) {
+				recovered := membraneTauGradient(dcand, tr.voltage[t][i], tr.drive[t][i], dlambda)
+				if !finite(recovered) || !finite(g.LogTau[i]+recovered) {
+					return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				}
+				g.LogTau[i] += recovered
+			} else {
+				if !finite(g.LogTau[i] + logTauGradient) {
+					return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				}
+				g.LogTau[i] += logTauGradient
 			}
-			g.LogTau[i] += logTauGradient
 			if keep {
 				prevV[i] = tr.lambda[i] * dcand
 				if !finite(prevV[i]) {

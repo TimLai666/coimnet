@@ -98,9 +98,14 @@ func (m *Continuous) backwardCoupledTape(ctx context.Context, tr *Trace, upstrea
 			}
 			logTauGradient := dv * (row.voltage[local][i] - row.drive[local][i]) * dlambda
 			if !finite(logTauGradient) {
-				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				recovered := membraneTauGradient(dv, row.voltage[local][i], row.drive[local][i], dlambda)
+				if !finite(recovered) {
+					return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				}
+				g.LogTau[i] += recovered
+			} else {
+				g.LogTau[i] += logTauGradient
 			}
-			g.LogTau[i] += logTauGradient
 			if !finite(g.LogTau[i]) {
 				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
 			}
@@ -336,9 +341,14 @@ func (m *LIF) backwardLIFCoupledTape(ctx context.Context, tr *LIFTrace, upstream
 			}
 			logTauGradient := dcand * (row.voltage[local][i] - row.drive[local][i]) * dlambda
 			if !finite(logTauGradient) {
-				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				recovered := membraneTauGradient(dcand, row.voltage[local][i], row.drive[local][i], dlambda)
+				if !finite(recovered) {
+					return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
+				}
+				g.LogTau[i] += recovered
+			} else {
+				g.LogTau[i] += logTauGradient
 			}
-			g.LogTau[i] += logTauGradient
 			if !finite(g.LogTau[i]) {
 				return empty, fmt.Errorf("coupled log_tau adjoint overflow at step %d neuron %d", t, i)
 			}

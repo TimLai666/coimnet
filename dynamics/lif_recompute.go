@@ -175,7 +175,11 @@ func (m *LIF) BackwardRecomputeStats(ctx context.Context, p LIFParameters, initi
 				if lambda[i] == 0 {
 					dlambda = 0
 				}
+				previousLogTau := g.LogTau[i]
 				g.LogTau[i] += dcand * (seg.VoltageRow(t)[i] - drive[i]) * dlambda
+				if !finite(g.LogTau[i]) {
+					g.LogTau[i] = previousLogTau + membraneTauGradient(dcand, seg.VoltageRow(t)[i], drive[i], dlambda)
+				}
 				if keep {
 					prevV[i] = lambda[i] * dcand
 				}

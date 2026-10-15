@@ -600,7 +600,11 @@ func (m *VectorContinuous) Backward(ctx context.Context, tr *VectorTrace, upstre
 				dv := gv[k] + gy[t+1][k]*deriv(tr.voltage[t+1][k])
 				g.Inputs[t][k] = tr.alpha[i] * dv
 				g.Bias[k] += g.Inputs[t][k]
+				previousLogTau := g.LogTau[i]
 				g.LogTau[i] += dv * (tr.voltage[t][k] - tr.drive[t][k]) * dlambda
+				if !finite(g.LogTau[i]) {
+					g.LogTau[i] = previousLogTau + membraneTauGradient(dv, tr.voltage[t][k], tr.drive[t][k], dlambda)
+				}
 				if t > start || start == 0 {
 					prev[k] = tr.lambda[i] * dv
 				}

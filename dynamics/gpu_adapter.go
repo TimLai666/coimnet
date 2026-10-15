@@ -358,7 +358,11 @@ func (g *GPUContinuous) Backward(ctx context.Context, tr *Trace, upstream [][]fl
 			if tr.lambda[i] == 0 {
 				dlambda = 0
 			}
+			previousLogTau := gradient.LogTau[i]
 			gradient.LogTau[i] += dv * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
+			if !finite(gradient.LogTau[i]) {
+				gradient.LogTau[i] = previousLogTau + membraneTauGradient(dv, tr.voltage[t][i], tr.drive[t][i], dlambda)
+			}
 			if t > start || start == 0 {
 				prev[i] = tr.lambda[i] * dv
 			}
