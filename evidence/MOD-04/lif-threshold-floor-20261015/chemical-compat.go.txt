@@ -1,0 +1,77 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/TimLai666/coimnet/checkpoint"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func must(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+func fresh(scale float64, recompute bool) *learning.Individual {
+	lif := dynamics.LIFConfig{Nodes: 1, Sources: []int{}, Targets: []int{}, DT: .4, TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2}}
+	c := learning.Config{LIF: &lif, InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{0}, ReadoutEveryStep: true}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{}, Bias: []float64{.1}, LogTau: []float64{0}}, ThetaRaw: []float64{0}, Encoder: []float64{1}, Readout: []float64{1}}
+	options := learning.DefaultOptions()
+	options.Trainable.Theta = true
+	if recompute {
+		options.Recompute = &learning.Recompute{SegmentSteps: 2}
+	}
+	i, err := learning.NewIndividual(c, p, options, []float64{0})
+	must(err)
+	chem := modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: .4, Tau: []float64{2}, Units: modulation.UnitNormalized},
+		Sources:   []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: []modulation.TimelineEntry{{Step: 0, Channel: 0, Rate: 1}}}}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "fixture", Channel: 0, Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "artificial compatibility control", MeasurementKind: "declared", MappingVersion: "fixture/v1"}}},
+		Effects:   []modulation.Effect{{Kind: modulation.EffectThreshold, Receptor: 0, ThetaScale: scale, ThetaAbsMax: 4}},
+		Regions:   modulation.RegionAssignment{NodeRegion: []int{0}},
+	}
+	must(i.EnableChemistry(chem))
+	return i
+}
+
+func main() {
+	ctx := context.Background()
+	mode, dir := os.Args[1], os.Args[2]
+	var results []map[string]any
+	for _, recompute := range []bool{false, true} {
+		for _, scale := range []float64{-3, 0, .2} {
+			name := fmt.Sprintf("recompute=%t-scale=%g.json", recompute, scale)
+			path := filepath.Join(dir, name)
+			if mode == "save" {
+				i := fresh(scale, recompute)
+				before := i.Snapshot()
+				steps := []learning.StepResult{}
+				for k := 0; k < 3; k++ {
+					step, err := i.TrainEpisode(ctx, [][]float64{{4}, {2}, {3}}, []float64{.3})
+					must(err)
+					steps = append(steps, step)
+				}
+				must(checkpoint.SaveIndividual(ctx, path, i.Snapshot()))
+				results = append(results, map[string]any{"case": name, "before": before, "steps": steps, "saved": i.Snapshot()})
+			} else {
+				s, err := checkpoint.LoadIndividual(ctx, path)
+				must(err)
+				i, err := learning.RestoreIndividual(s)
+				must(err)
+				output, err := i.Advance(ctx, [][]float64{{.6}, {.1}})
+				must(err)
+				step, err := i.TrainEpisode(ctx, [][]float64{{3}, {4}, {2}}, []float64{.4})
+				must(err)
+				results = append(results, map[string]any{"case": name, "before": s, "output": output, "step": step, "after": i.Snapshot()})
+			}
+		}
+	}
+	must(json.NewEncoder(os.Stdout).Encode(results))
+}

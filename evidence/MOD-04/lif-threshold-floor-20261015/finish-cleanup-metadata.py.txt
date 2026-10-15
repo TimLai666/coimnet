@@ -1,0 +1,37 @@
+# -*- coding: utf-8 -*-
+from pathlib import Path
+import json
+
+r = Path(__file__).resolve().parents[3]
+e = Path(__file__).resolve().parent
+c = json.loads((e / "cleanup.json").read_text())
+assert c["directory_removed"] and not (r / c["owned_directory"]).exists()
+
+p = e / "verification.json"
+old = p.read_bytes()
+d = json.loads(old)
+d["observed_result"].update(cleanup=c, final_governance_pass_events=31, remaining_delivery=["commits and push/readback"])
+d["test_log"].append("final-governance.log")
+d["cleanup_receipt"] = "cleanup.json"
+d["final_governance_receipt"] = "final-governance.json"
+assert p.read_bytes() == old
+p.write_text(json.dumps(d, indent=2) + "\n")
+
+p = e / "README.md"
+old = p.read_bytes()
+s = old.decode().replace("自有暫存清理與交付仍待完成。", "[自有暫存](cleanup.json) 1,789,486,258 bytes 已清除，18 個原模型檔、6 個必要資料檔與兩個舊暫存目錄保持。提交與遠端交付待完成。")
+assert p.read_bytes() == old
+p.write_text(s)
+
+p = r / "docs/tickets/110-chemical-threshold-floor.md"
+old = p.read_bytes()
+s = old.decode().replace("本票 4／5，尚待自有暫存清理及交付。", "最後 31 項治理在不使用 Go 快取及 module cache 的既有測試二進位檔下通過。自有暫存 1,789,486,258 bytes 已清除，原模型、必要資料及舊目錄保持，見[清理](../../evidence/MOD-04/lif-threshold-floor-20261015/cleanup.json)。本票 4／5，尚待提交與遠端交付。")
+assert p.read_bytes() == old
+p.write_text(s)
+
+p = e / "root-review.md"
+old = p.read_bytes()
+s = old.decode() + "\n## 完整驗收與清理\n\n823 份來源的一般／競態各 58 套件通過，5,929／5,928 個成功事件、22／23 個略過、零失敗。每種建置原有 5,937 個事件保持，只增加本票 14 個成功事件。格式、build、vet、固定依賴及治理通過。\n\nRoot 新增的原始重現回條最初漏填 requirement 欄位，最後治理因此有 30 個通過及 1 個失敗。補齊回條後以相同二進位檔重跑，31 個事件全數通過，沒有修改或放寬測試。原失敗保存為 final-governance-before-evidence-schema-fix 的 JSON／log。\n\n最後治理完成後才清除 inode 56134264 的本輪目錄，共 25,159 個項目、1,789,486,258 bytes。823 份正式來源、18 個原模型、6 個必要資料及兩個舊暫存目錄保持。清理腳本明確拒絕會略過 assert 的 Python optimized 模式，該拒絕已實跑。清理後只使用檔案、證據與狀態檢查，不宣稱再次執行已刪除的測試二進位檔。\n"
+assert p.read_bytes() == old
+p.write_text(s)
+print(json.dumps({"cleanup_bytes": c["removed_bytes"], "source_entries_preserved": c["source_entries_preserved"], "pending": "commits and push/readback"}))

@@ -1,0 +1,117 @@
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+import os
+import pathlib
+import subprocess
+import time
+
+R = pathlib.Path(__file__).resolve().parents[3]
+E = pathlib.Path(__file__).resolve().parent
+W = R / "runs/.tmp/lif-threshold-floor-20261015"
+source = json.loads((E / "formal-source.json").read_text())
+env = dict(os.environ)
+env.update(json.loads((E / "command-environment.json").read_text()))
+
+
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+
+def gate():
+    assert len(source) == 823
+    for p, digest in source.items():
+        assert sha(R / p) == digest, p
+    for p, digest in json.loads((E / "protected-models.json").read_text()).items():
+        assert sha(R / p) == digest, p
+
+
+def terminal(raw):
+    tests, packages = {}, {}
+    for line in raw.decode().splitlines():
+        try:
+            x = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if x.get("Action") not in ["pass", "fail", "skip"]:
+            continue
+        if x.get("Test"):
+            key = (x["Package"], x["Test"])
+            assert key not in tests, key
+            tests[key] = x["Action"]
+        else:
+            packages[x["Package"]] = x["Action"]
+    return tests, packages
+
+
+files = [p for p in source if p.endswith(".go") and not p.startswith("evidence/")]
+assert len(files) == 819
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+steps = [
+    ("format", ["gofmt", "-l", *files]),
+    ("build", ["go", "build", "./..."]),
+    ("unit", ["go", "test", "-json", "-count=1", "./..."]),
+    ("race", ["go", "test", "-race", "-json", "-count=1", "./..."]),
+    ("vet", ["go", "vet", "./..."]),
+    ("module-verify", ["go", "mod", "verify"]),
+    ("module-selection", ["go", "list", "-m", "github.com/HazelnutParadise/insyra"]),
+    ("governance", ["go", "test", "-json", "-count=1", "-run", pattern, "."]),
+    ("closure-binary", ["go", "test", "-c", "-o", str(W / "final-root.test"), "."]),
+]
+results = []
+green, _ = terminal((E / "candidate-green.log").read_bytes())
+assert green and set(green.values()) == {"pass"}
+for name, command in steps:
+    gate()
+    log = E / ("engineering-" + name + ".log")
+    start = time.monotonic()
+    with log.open("xb") as handle:
+        code = subprocess.run(command, cwd=R, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    raw = log.read_bytes()
+    result = {"name": name, "command": command, "exit_code": code, "seconds": time.monotonic() - start,
+              "raw_sha256": sha(log), "raw_bytes": len(raw)}
+    errors = []
+    if name in ["unit", "race", "governance"]:
+        tests, packages = terminal(raw)
+        result["test_events"] = dict(collections.Counter(tests.values()))
+        result["package_events"] = dict(collections.Counter(packages.values()))
+        if name in ["unit", "race"]:
+            old_file = R / "evidence/TSK-03/textgen-dimensions-20261015" / ("engineering-local-" + name + ".log.gz")
+            old, old_packages = terminal(gzip.decompress(old_file.read_bytes()))
+            changed = [dict(package=k[0], test=k[1], before=v, after=tests.get(k)) for k, v in old.items() if tests.get(k) != v]
+            added = {k: v for k, v in tests.items() if k not in old}
+            result.update(prior_test_events_preserved=len(old) if not changed else False,
+                          changed_events=changed, added_events=[dict(package=k[0], test=k[1], action=v) for k, v in added.items()])
+            if packages != old_packages or changed or added != green:
+                errors.append("prior package/test results changed or frozen regression events differ")
+        elif result["test_events"] != {"pass": 31}:
+            errors.append("expected 31 passing governance events")
+    if name == "format" and raw.strip():
+        errors.append("unformatted sources")
+    if name == "module-selection" and raw.decode().strip() != "github.com/HazelnutParadise/insyra v0.3.4":
+        errors.append("dependency selection changed")
+    if name in ["unit", "race"]:
+        archive = log.with_suffix(".log.gz")
+        with archive.open("xb") as handle:
+            handle.write(gzip.compress(raw, mtime=0))
+        assert gzip.decompress(archive.read_bytes()) == raw
+        result.update(log=archive.name, log_sha256=sha(archive), compression="gzip; raw bytes exact")
+        assert sha(log) == result["raw_sha256"]
+        log.unlink()
+    else:
+        result.update(log=log.name, log_sha256=sha(log))
+    result["acceptance_errors"] = errors
+    with (E / ("engineering-" + name + ".json")).open("x") as handle:
+        json.dump(result, handle, indent=2)
+        handle.write("\n")
+    print(json.dumps({k: v for k, v in result.items() if k not in ["command", "added_events", "changed_events"]}), flush=True)
+    assert code == 0 and not errors, {"step": name, "code": code, "errors": errors}
+    results.append(result)
+with (E / "engineering-verification.json").open("x") as handle:
+    json.dump({"verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+               "source_count": len(source), "formal_go_files": len(files), "all_passed": True, "steps": results,
+               "scope": "Final ticket110 source on macOS arm64; task quality, biology and absolute zero bugs are not established."}, handle, indent=2)
+    handle.write("\n")

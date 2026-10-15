@@ -1,0 +1,40 @@
+{
+  "reproduction_command": "run-command.py.txt regression-red[-race] go test [-race] -overlay red-overlay.json -json -count=1 -run ^TestThresholdProjection ./dynamics",
+  "environment": "command-environment.json",
+  "input_fingerprints": {
+    "source_manifest": "source-before.json",
+    "frozen_tests": "tests-frozen.json"
+  },
+  "observed_result": {
+    "regression-red": {
+      "test_events": {
+        "fail": 4,
+        "pass": 10
+      },
+      "failed_tests": [
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/LIF_ForwardCoupled",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/Mixed_ForwardCoupled",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/LIF_ForwardCoupledRecompute",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths"
+      ],
+      "receipt": "regression-red.json"
+    },
+    "regression-red-race": {
+      "test_events": {
+        "fail": 4,
+        "pass": 10
+      },
+      "failed_tests": [
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/LIF_ForwardCoupled",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/Mixed_ForwardCoupled",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths/LIF_ForwardCoupledRecompute",
+        "TestThresholdProjectionNegativeOverflowAcrossCoupledPaths"
+      ],
+      "receipt": "regression-red-race.json"
+    }
+  },
+  "test_log": [
+    "regression-red.log",
+    "regression-red-race.log"
+  ]
+}

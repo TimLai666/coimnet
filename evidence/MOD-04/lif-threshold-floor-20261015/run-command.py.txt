@@ -1,0 +1,33 @@
+import datetime
+import hashlib
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import time
+
+ROOT = pathlib.Path(__file__).resolve().parents[3]
+EVIDENCE = pathlib.Path(__file__).resolve().parent
+WORK = ROOT / "runs/.tmp/lif-threshold-floor-20261015"
+assert WORK.stat().st_ino == 56134264
+label, *command = sys.argv[1:]
+assert label and command and "/" not in label
+env = dict(os.environ)
+env.update(json.loads((EVIDENCE / "command-environment.json").read_text()))
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+t0 = time.monotonic()
+with (EVIDENCE / (label + ".log")).open("wb") as log:
+    result = subprocess.run(command, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT)
+receipt = {
+    "command": command,
+    "started_at": started,
+    "elapsed_seconds": time.monotonic() - t0,
+    "exit_code": result.returncode,
+    "environment": {k: env[k] for k in json.loads((EVIDENCE / "command-environment.json").read_text())},
+    "log": label + ".log",
+    "log_sha256": hashlib.sha256((EVIDENCE / (label + ".log")).read_bytes()).hexdigest(),
+}
+(EVIDENCE / (label + ".json")).write_text(json.dumps(receipt, indent=2) + "\n")
+print(json.dumps(receipt))
+sys.exit(result.returncode)
