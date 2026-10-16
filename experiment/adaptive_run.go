@@ -3,6 +3,7 @@ package experiment
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"reflect"
 	"slices"
 
@@ -274,12 +275,38 @@ func itemMSE(out [][]float64, item EvaluationItem) (float64, error) {
 	if len(lastRow) != len(item.Target) {
 		return 0, fmt.Errorf("item %q: output width %d does not match target width %d", item.ID, len(lastRow), len(item.Target))
 	}
+	const smallestNormal = 0x1p-1022
 	var mse float64
+	tinySquares := 0
 	for i := range lastRow {
 		d := lastRow[i] - item.Target[i]
+		if !finite(d) {
+			return 0, fmt.Errorf("item %q: non-finite squared error", item.ID)
+		}
 		mse += d * d
+		square := d * d
+		if d != 0 && square < smallestNormal {
+			tinySquares++
+		}
 	}
-	return mse / float64(len(lastRow)), nil
+	if finite(mse) && (tinySquares == 0 || mse >= float64(tinySquares)*smallestNormal) {
+		return mse / float64(len(lastRow)), nil
+	}
+
+	var exact big.Rat
+	var rational big.Rat
+	for i := range lastRow {
+		d := lastRow[i] - item.Target[i]
+		rational.SetFloat64(d)
+		rational.Mul(&rational, &rational)
+		exact.Add(&exact, &rational)
+	}
+	exact.Quo(&exact, new(big.Rat).SetInt64(int64(len(lastRow))))
+	result, _ := exact.Float64()
+	if !finite(result) {
+		return 0, fmt.Errorf("item %q: non-finite MSE", item.ID)
+	}
+	return result, nil
 }
 
 const evalSchemaVersion = "coimnet-adaptive-evaluation/v1"
