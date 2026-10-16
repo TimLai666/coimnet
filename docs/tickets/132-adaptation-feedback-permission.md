@@ -3,7 +3,7 @@
 **Epic:** 評估與機制一致性
 **User Story:** 使用者可以事先宣告哪些回饋可用，未允許的答案資訊不會改變適應模型。
 **Blocked by:** 無，與 ticket131 分開驗收
-**Status:** in_progress
+**Status:** completed
 
 ## Root 決策｜2026-10-16
 
@@ -16,12 +16,12 @@ Root 在公開 SDK、正常有限數值及合法宣告下確認 P1 缺陷。完�
 - [x] 固定獨立候選失敗回歸，覆蓋未提供、未允許、已允許及其他種類的回饋。
 - [x] 最小修正只使用明確可用且該題允許的回饋，沒有回饋時不由答案產生更新。
 - [x] 已允許的 score、固定評分、後續原生學習與舊模型保持對照通過。
-- [ ] 完整工程、證據、暫存清理與交付完成。
+- [x] 完整工程、證據、暫存清理與交付完成。
 
 不自行替 correctness 或其他名稱發明分數語意。若需要改變已公布的種類支援或拒絕行為，先依實際契約與相容性影響決定。既有 scoring 回饋計數的宣告拒絕／實際 Receive 檢查差異另列調查，不把未觸發的風險當成已確認故障。
 
-Root 已在正式採用前保存候選驗證，本輪重新以未修改的正式程式執行一般／競態回歸，各6 fail、1 pass。最小權限檢查已正式採用，一般／競態各39項相關測試及35項固定評分控制通過。10列公開探測證明三組未允許目標互不影響，兩組已允許score與原程式逐位相同，另外兩列重播控制保持。12份舊化學快照的新程序接續與修改前逐位相同。848份正式來源已完成完整工程與清理，本票3／4，待遠端交付，LRN-10保持specified。見[本輪驗收](../../evidence/LRN-10/feedback-permission-20261016/verification.json)與[原始失敗](../../evidence/LRN-10/feedback-permission-20261016/red-verification.json)。
+Root 已在正式採用前保存候選驗證，本輪重新以未修改的正式程式執行一般／競態回歸，各6 fail、1 pass。最小權限檢查已正式採用，一般／競態各39項相關測試及35項固定評分控制通過。10列公開探測證明三組未允許目標互不影響，兩組已允許score與原程式逐位相同，另外兩列重播控制保持。12份舊化學快照的新程序接續與修改前逐位相同。848份正式來源已完成完整工程與清理，本票4／4，主要提交9ff5aa2推送與遠端讀回相同，LRN-10保持specified。見[本輪驗收](../../evidence/LRN-10/feedback-permission-20261016/verification.json)與[原始失敗](../../evidence/LRN-10/feedback-permission-20261016/red-verification.json)。
 
 另以公開SDK與精確參考確認極端有限目標的MSE中間加總溢位，另由[ticket134](134-evaluation-mse-representability.md)接續，本票完整工程通過也不會單獨恢復LRN-10。
 
-848份來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。最後31項治理通過，33份必要輸入已封存，1,786,439,615 bytes本輪暫存已清除。本票3／4，待遠端交付，工程追蹤維持89／91。見[完整工程](../../evidence/LRN-10/feedback-permission-20261016/engineering-verification.json)。
+848份來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。最後31項治理通過，33份必要輸入已封存，1,786,439,615 bytes本輪暫存已清除。本票4／4，正式修正a7fba7e與主要驗收提交9ff5aa2已推送，遠端指紋相同。見[交付](../../evidence/LRN-10/feedback-permission-20261016/delivery.json)，工程追蹤維持89／91。見[完整工程](../../evidence/LRN-10/feedback-permission-20261016/engineering-verification.json)。

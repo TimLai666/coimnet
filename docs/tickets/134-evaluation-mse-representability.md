@@ -2,7 +2,7 @@
 
 **Epic:** 評估與數值一致性
 **User Story:** 有限輸入下，真實平均平方誤差可表示時，評估報告能回傳有限值並編碼。
-**Blocked by:** ticket132 的正式來源凍結與交付
+**Blocked by:** 無，ticket132 的正式來源凍結與交付已完成
 **Status:** ready
 
 ## Root 決策｜2026-10-16

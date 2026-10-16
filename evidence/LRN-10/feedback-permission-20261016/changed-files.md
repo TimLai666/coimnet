@@ -1,6 +1,6 @@
 # 本輪實際檔案變更
 
-完整工程與最後31項治理通過。33份必要輸入已封存，自有暫存已清除；遠端交付狀態依delivery.json及最後提交讀回判定。未修改AGENTS.md與兩個既有證據目錄。
+完整工程與最後31項治理通過。33份必要輸入已封存，自有暫存已清除；主要提交9ff5aa2已推送且遠端完整指紋相同，詳見delivery.json。未修改AGENTS.md與兩個既有證據目錄。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
@@ -149,3 +149,4 @@
 | [evidence/LRN-10/feedback-permission-20261016/verification.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/feedback-permission-20261016/verification.json) | 具體驗收、指紋、保存或狀態回條 |
 | [evidence/LRN-10/feedback-permission-20261016/work-payloads.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/feedback-permission-20261016/work-payloads.json) | 具體驗收、指紋、保存或狀態回條 |
 | [evidence/LRN-10/feedback-permission-20261016/work-preservation.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/feedback-permission-20261016/work-preservation.json) | 具體驗收、指紋、保存或狀態回條 |
+| [evidence/LRN-10/feedback-permission-20261016/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/feedback-permission-20261016/delivery.json) | 主要來源推送、精確遠端讀回與4／4交付回條 |
