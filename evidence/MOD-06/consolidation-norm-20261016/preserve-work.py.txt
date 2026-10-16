@@ -1,0 +1,30 @@
+"""Preserve every non-cache source/input before removing owned work."""
+import hashlib,json,tarfile
+from pathlib import Path
+assert __debug__
+E=Path(__file__).resolve().parent;R=E.parents[2];W=R/'runs/.tmp/consolidation-norm-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==57715016 and not W.is_symlink()
+assert json.loads((E/'engineering-verification.json').read_text())['all_passed']
+allowed={'module-originals.json','public-baseline/main.go','numeric-search/main.go','public-expanded/main.go',
+ 'mutation-old-hypot/consolidation.go','mutation-old-hypot/overlay.json',
+ 'mutation-budget-on-refusal/consolidation.go','mutation-budget-on-refusal/overlay.json','public-midpoint/main.go','next-online/main.go','next-online-output/main.go'}
+files={};binaries={}
+for p in sorted(W.rglob('*')):
+ if not p.is_file() or p.relative_to(W).parts[0] in ['go-cache','go-mod-cache','go-tmp']:continue
+ n=str(p.relative_to(W));assert not p.is_symlink()
+ item={'bytes':p.stat().st_size,'sha256':sha(p)}
+ if n=='final-root.test':binaries[n]=item;continue
+ assert n in allowed,n
+ files[n]=item
+assert set(files)==allowed and set(binaries)=={'final-root.test'}
+archive=E/'preserved-work.tar.gz';assert not archive.exists()
+with tarfile.open(archive,'w:gz') as f:
+ for n in files:f.add(W/n,arcname=n,recursive=False)
+with tarfile.open(archive,'r:gz') as f:
+ assert set(f.getnames())==set(files)
+ for n,item in files.items():
+  b=f.extractfile(n).read();assert len(b)==item['bytes'] and hashlib.sha256(b).hexdigest()==item['sha256']
+for name,value in [('work-preservation.json',{'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'files':files}),('discarded-binaries.json',binaries)]:
+ with (E/name).open('x') as f:json.dump(value,f,indent=2);f.write('\n')
+print(json.dumps({'necessary_files':len(files),'archive_bytes':archive.stat().st_size,'reproducible_binaries':len(binaries)}))

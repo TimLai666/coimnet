@@ -1,0 +1,17 @@
+package main
+import("encoding/json";"math";"math/big";"fmt")
+func main(){
+ for _,down:=range []int{1,2,3,4,5,8}{
+  for _,factor:=range []float64{1,1.01,1.05,1.1,1.11,1.2,1.3}{
+   x:=math.MaxFloat64;for k:=0;k<down;k++{x=math.Nextafter(x,0)}
+   tail:=math.Ldexp(math.MaxFloat64,-26)*factor
+   for _,count:=range []int{2,3,4,5,8}{
+    values:=[]float64{x};for k:=0;k<count;k++{values=append(values,tail)}
+    hyp:=0.0;sum:=new(big.Float).SetPrec(8192);term:=new(big.Float).SetPrec(8192)
+    for _,v:=range values{hyp=math.Hypot(hyp,v);term.SetFloat64(v);term.Mul(term,term);sum.Add(sum,term)}
+    sum.Sqrt(sum);exact,_:=sum.Float64()
+    if math.IsInf(hyp,1)!=math.IsInf(exact,1){b,_:=json.Marshal(map[string]any{"down":down,"factor":factor,"tail_count":count,"values":values,"sequential_hypot":fmt.Sprintf("%.17g",hyp),"exact_norm":fmt.Sprintf("%.17g",exact)});fmt.Println(string(b))}
+   }
+  }
+ }
+}

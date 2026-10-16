@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 已修正三種記憶報告的最高端誤接受與誤拒絕。一般／競態各129個新專項、224個相關事件與33個公開控制通過，兩種隔離錯誤均被拒絕。845份來源的完整一般／競態各58套件通過，8,233／8,232 pass、23／24 skip，原有各8,127個終端事件保持，只新增各129 pass。格式、build、vet、固定Insyra v0.3.4、模組及治理通過，MOD-06恢復passed，工程追蹤90／91，LRN-06由ticket130接續。本票3／4，待清理與交付，見[驗收](evidence/MOD-06/consolidation-norm-20261016/verification.json)。
+
 [ticket 128](docs/tickets/128-intervention-finite-norm.md) 已修正介入報告的中間平方上溢／下溢，真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。一般／競態各 99 個新專項、223 個相關事件與兩個原公開 witness 通過，四種隔離回退在兩種建置均被拒絕。844 份來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定依賴與治理通過，COR-11 恢復 passed，見[驗收](evidence/COR-11/finite-intervention-norm-20261016/verification.json)。本票 4／4，最後 31 項治理通過，2,632,490,749 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/finite-intervention-norm-20261016/cleanup.json)。主要提交 `2b9c959` 已推送且遠端讀回相同，844 份提交來源核對完成，見[交付](evidence/COR-11/finite-intervention-norm-20261016/delivery.json)。MOD-06 的三種記憶報告在最高端錯誤接受寫入，保持 specified，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續，目前工程追蹤 90／91。
 
 [ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,740,939,604 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/frozen-intervention-20261016/cleanup.json)。主要提交 `0af230b` 已推送且遠端讀回相同，841 份提交來源核對完成，見[交付](evidence/COR-11/frozen-intervention-20261016/delivery.json)。模型格式、正常載入及數值規則保持，整體機制稽核持續。
@@ -250,7 +252,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本輪 ticket128 修正介入報告的中間平方上下溢位、不可表示差異的失敗原狀與並行讀取，專項與完整工程通過。清理及交付以「目前階段」本票紀錄為準。COR-11 恢復 passed，另已確認的 MOD-06 報告缺陷由 ticket129 接續，工程追蹤 90／91。整體零 bug 與模型品質改善尚未證明。
+本輪 ticket129 的三種記憶報告修正已通過完整工程，MOD-06恢復passed，工程追蹤90／91，LRN-06由ticket130接續。清理與交付以「目前階段」紀錄為準。整體零bug與模型品質改善尚未證明。
 
 前一階段 ticket 66 的同一真實單字元化學開關比較已完成五項驗收，固定設定沒有顯示穩定改善。
 
@@ -271,6 +273,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 129 | 研究者可以拒絕真正不可表示的記憶寫入報告 | Codex Root／Luna max 測試與契約審查 | in_progress | 3／4。完整工程與MOD-06驗收通過，待清理及交付 |
 | 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | completed | 4／4。專項、完整工程、清理及遠端提交核對完成，COR-11 passed |
 | 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | completed | 4／4。兩項修正、90 項專項、完整工程、清理及遠端提交核對完成 |
 | 122 | 研究者可以接續可表示的慢速活動狀態 | Codex Root／Luna max 唯讀審查 | completed | 4／4。專項、正常／舊保存、完整工程、清理及遠端提交核對完成 |
@@ -356,7 +359,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-MOD-06 的 BaseL2／SlowL2／PlasticL2 在最高端誤報有限幅度並消耗寫入額度，ticket129 驗收前保持 specified，工程追蹤 90／91。ticket128 的 COR-11 修正已通過完整工程，其清理及交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
+MOD-06的三種記憶報告數值修正已通過完整工程，工程追蹤90／91，LRN-06由ticket130接續。ticket129清理與交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 
@@ -378,7 +381,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 為下一個實作，前置條件是 ticket128 完成交付。三種記憶報告的最高端誤接受已由一般／競態各九個公開案例確認，先凍結獨立回歸與正常位元控制，再修正並驗收，見[證據](evidence/COR-11/finite-intervention-norm-20261016/next-audit-verification.json)。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。
+先完成ticket129的清理與交付，再繼續以公開API核對生物機制、訓練及保存的組合行為。LRN-06的受體閘門與線上政策缺陷已重現，由ticket130接續。未重現的疑慮不列為缺陷，也不先更改模型規則。數值測試不作為模型品質或零bug的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
@@ -482,4 +485,4 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 來源與接手
 
-[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[2026-10-12 階段驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。原始工程曾完成 91／91，本輪 COR-11 已恢復 passed，因 MOD-06 另已確認報告缺陷維持 90／91，後續由 ticket129 驗收。模型品質、生物歸因及未測硬體須依各自證據判斷。
+[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[2026-10-12 階段驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。原始工程曾完成91／91，本輪MOD-06報告數值修正已通過完整驗收，LRN-06另有已確認的線上受體閘門缺陷，保持90／91，由ticket130接續。模型品質、生物歸因及未測硬體須依各自證據判斷。

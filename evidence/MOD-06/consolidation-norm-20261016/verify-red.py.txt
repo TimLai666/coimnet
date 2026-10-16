@@ -1,0 +1,23 @@
+# -*- coding: utf-8 -*-
+import collections,hashlib,json
+from pathlib import Path
+E=Path(__file__).resolve().parent;R=E.parents[2]
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+for n,h in json.loads((E/'red-source.json').read_text()).items():assert sha(R/n)==h,n
+r=json.loads((E/'red-norm.json').read_text());assert r['exit_code']==1 and sha(E/r['log'])==r['log_sha256']
+events={}
+for l in (E/r['log']).read_text().splitlines():
+ x=json.loads(l)
+ if x.get('Test') and x['Action'] in ['pass','fail','skip']:assert x['Test'] not in events;events[x['Test']]=x['Action']
+assert len(events)==129 and dict(collections.Counter(events.values()))=={'pass':74,'fail':55}
+assert all(n.startswith('TestConsolidationNormBoundary') for n,a in events.items() if a=='fail')
+for mode in ['ordinary','race']:
+ for name,expected in [('public-red-',9),('expanded-red-',15)]:
+  label=name+mode;r=json.loads((E/(label+'.json')).read_text());assert r['exit_code']==0 and sha(E/r['log'])==r['log_sha256'];rows=[json.loads(l) for l in (E/r['log']).read_text().splitlines()];assert len(rows)==expected
+  if expected==15:
+   for x in rows:
+    if x['case']=='false_overflow':assert not x['applied'] and x['expected_norm']=='1.7976931348623157e+308' and x['error']=='consolidation report norm is not finite' and not x['state_changed']
+    elif x['case']=='hidden_overflow':assert x['applied'] and x['expected_unrepresentable'] and x['state_changed']
+result={'compiled_and_ran':True,'source_count':845,'events':dict(collections.Counter(events.values())),'leaf_cases':126,'top_level_tests':3,'only_boundary_failures':True,'public_original_rows_each_build':9,'public_expanded_rows_each_build':15,'symmetric_public_defects_confirmed':True,'all_original_production_unchanged':True}
+with (E/'red-verification.json').open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+print(json.dumps(result))

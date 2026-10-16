@@ -1,0 +1,92 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"math/big"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+)
+
+func exactNorm(values []float64) float64 {
+	sum := new(big.Float).SetPrec(8192)
+	term := new(big.Float).SetPrec(8192)
+	for _, value := range values {
+		term.SetFloat64(value)
+		term.Mul(term, term)
+		sum.Add(sum, term)
+	}
+	sum.Sqrt(sum)
+	result, _ := sum.Float64()
+	return result
+}
+
+func run(name, layer string, values []float64) error {
+	weights := make([]float64, len(values))
+	if layer == "base" { copy(weights, values) }
+	sources, targets, delays, edges := make([]int, len(values)), make([]int, len(values)), make([]int, len(values)), make([]int, len(values))
+	for k := range values { delays[k], edges[k] = k+1, k }
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 1, Sources: sources, Targets: targets, Delays: delays, DT: 1, Activation: "tanh"}, InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{0}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: weights, Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0})
+	if err != nil {
+		return err
+	}
+	if err = a.EnablePlasticity(plasticity.Config{Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: math.MaxFloat64, WMin: .01}, Edges: edges}); err != nil {
+		return err
+	}
+	if err = a.EnableChemistry(modulation.ChemistryConfig{Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: 1, Tau: []float64{1}}, Sources: []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Timeline: &modulation.ExternalTimeline{ChannelCount: 1}}}, Regions: modulation.RegionAssignment{NodeRegion: []int{0}}, Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "engineering", Status: modulation.StatusHypothesized, Kd: 1, N: 1, Evidence: "report boundary probe", MeasurementKind: "engineering declaration", MappingVersion: "consolidation-norm/v1"}}}}); err != nil {
+		return err
+	}
+	if err = a.EnableConsolidation(1); err != nil {
+		return err
+	}
+	if layer != "base" {
+		s := a.Snapshot()
+		if layer == "slow" { s.Plastic.Slow.Values = append([]float64(nil), values...) } else { s.Plastic.State.Plastic = append([]float64(nil), values...) }
+		a, err = learning.RestoreIndividual(s)
+		if err != nil { return err }
+	}
+	rate := 1.0
+	if layer == "plastic" { rate = math.SmallestNonzeroFloat64 }
+	before := a.Snapshot()
+	report, consolidateErr := a.Consolidate(context.Background(), learning.ConsolidationTrigger{Receptor: 0, Threshold: 0, Rate: rate, Retain: 1})
+	message := ""
+	if consolidateErr != nil {
+		message = consolidateErr.Error()
+	}
+	norm := report.BaseL2
+	if layer == "slow" { norm = report.SlowL2 } else if layer == "plastic" { norm = report.PlasticL2 }
+	line, err := json.Marshal(map[string]any{"case": name, "layer": layer, "values": values, "expected_norm": fmt.Sprintf("%.17g", exactNorm(values)), "expected_unrepresentable": math.IsInf(exactNorm(values), 1), "reported_norm": fmt.Sprintf("%.17g", norm), "error": message, "applied": report.Applied, "state_changed": !reflect.DeepEqual(before, a.Snapshot()), "used_after": a.Snapshot().Plastic.Slow.Used})
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(line))
+	return nil
+}
+
+func main() {
+	x := math.MaxFloat64
+	for k := 0; k < 3; k++ { x = math.Nextafter(x, 0) }
+	tail := math.Ldexp(math.MaxFloat64, -26)
+	for _, tc := range []struct {
+		name string
+		weights []float64
+	}{
+		{"upper_finite", []float64{math.MaxFloat64, math.Ldexp(math.MaxFloat64, -27)}},
+		{"upper_overflow", []float64{math.MaxFloat64, math.Ldexp(math.MaxFloat64, -26)}},
+		{"obvious_overflow", []float64{1.3e308, 1.3e308}},
+		{"false_overflow", []float64{x, tail*1.3, tail*1.3}},
+		{"hidden_overflow", []float64{math.Nextafter(math.MaxFloat64, 0), tail, tail}},
+	} {
+		for _, layer := range []string{"base", "slow", "plastic"} {
+			if err := run(tc.name, layer, tc.weights); err != nil { panic(err) }
+		}
+	}
+}

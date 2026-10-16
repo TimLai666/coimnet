@@ -1,0 +1,19 @@
+"""Attach verified cleanup to acceptance without changing validated source."""
+import hashlib,json
+from pathlib import Path
+assert __debug__
+E=Path(__file__).resolve().parent;R=E.parents[2]
+read=lambda p:json.loads(p.read_text())
+c=read(E/'cleanup.json');assert c['directory_removed']
+assert not (R/c['owned_directory']).exists()
+assert c['source_entries_preserved']==845 and c['original_model_files_preserved']==18
+assert c['persistent_data_files_preserved']==6 and c['original_module_files_preserved']==15046
+for n,h in read(E/'formal-source.json').items():assert hashlib.sha256((R/n).read_bytes()).hexdigest()==h,n
+p=E/'verification.json';b=p.read_bytes();v=json.loads(b)
+assert v['engineering_passed'] and v['diagnostic_passed'] and not v['acceptance_complete']
+g=read(E/'final-governance-v2.json');assert g['exit_code']==0 and g['passed_events']==31
+v['observed_result']['final_governance']={'receipt':'final-governance-v2.json','passed_events':31}
+v['observed_result']['own_cleanup']={'receipt':'cleanup.json','removed_bytes':c['removed_bytes']}
+v['remaining_delivery'].remove('cleanup')
+assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+print(json.dumps({'cleanup_recorded':True,'removed_bytes':c['removed_bytes'],'remaining_delivery':v['remaining_delivery']}))

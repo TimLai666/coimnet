@@ -1,0 +1,33 @@
+"""Repair evidence metadata only, retain the failed check, and rerun governance."""
+import hashlib,json,re,subprocess,sys
+from pathlib import Path
+assert __debug__
+E=Path(__file__).resolve().parent;R=E.parents[2];W=R/'runs/.tmp/consolidation-norm-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+for n,h in json.loads((E/'formal-source.json').read_text()).items():assert sha(R/n)==h,n
+failed=json.loads((E/'final-governance.json').read_text());assert failed['exit_code']==1
+assert sha(E/'final-governance.log')==failed['log_sha256']
+before={}
+for name in ['verification.json','next-audit-verification.json']:
+ p=E/name;b=p.read_bytes();before[name]=hashlib.sha256(b).hexdigest();v=json.loads(b)
+ if name=='verification.json':
+  assert 'reproduction' in v and 'reproduction_command' not in v and 'test_log' not in v
+  v['reproduction_command']=v.pop('reproduction')
+  v['test_log']=['green-norm-ordinary.log','green-norm-race.log','engineering-unit.log.gz','engineering-race.log.gz']
+  v['input_fingerprints']={'source_manifest':'formal-source.json','source_manifest_sha256':sha(E/'formal-source.json'),'frozen_checks':'frozen-checks.json','frozen_checks_sha256':sha(E/'frozen-checks.json')}
+ else:
+  v['requirement']=['LRN-06']
+  v['environment']=json.loads((E/'command-environment.json').read_text())
+  v['test_log']=v['logs']+['next-online-output-ordinary.log','next-online-output-race.log']
+ assert all(k in v for k in ['requirement','reproduction_command','environment','input_fingerprints','observed_result','test_log'])
+ for log in v['test_log']:assert (E/log).is_file(),log
+ assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+pattern='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+subprocess.run([sys.executable,str(E/'run-command.py.txt'),'final-governance-v2',str(W/'final-root.test'),'-test.v','-test.run',pattern],check=True)
+p=E/'final-governance-v2.json';b=p.read_bytes();v=json.loads(b);assert v['exit_code']==0
+count=len(re.findall(r'^\s*--- PASS:',(E/'final-governance-v2.log').read_text(),re.M));assert count==31
+v['passed_events']=count;assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+for n,h in json.loads((E/'formal-source.json').read_text()).items():assert sha(R/n)==h,n
+with (E/'evidence-schema-correction.json').open('x') as f:
+ json.dump({'before':before,'after':{n:sha(E/n) for n in before},'failed_check_preserved':'final-governance.json','successful_check':'final-governance-v2.json','passed_events':31,'scope':'Evidence required keys only; no Go source or tests changed','formal_source_entries_unchanged':845},f,indent=2);f.write('\n')
+print(json.dumps({'evidence_schema_repaired':True,'final_governance_passed':count,'formal_sources_unchanged':845}))

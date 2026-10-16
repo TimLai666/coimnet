@@ -1,0 +1,73 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+func run(policy string, receptor, pulse bool) error {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, Delays: []int{0}, DT: 1, Activation: "tanh"}, InputSize: 2, OutputSize: 1, ReadoutNodes: []int{1}, InputNodes: []int{0, 1}}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.9}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}, Encoder: []float64{1, 0, 0, 1}, Readout: []float64{1}}
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil { return err }
+	chem := modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 2, Channels: 1, DT: 1, Tau: []float64{2}},
+		Sources: []modulation.SourceSpec{{Kind: modulation.SourceExternalTimeline, Timeline: &modulation.ExternalTimeline{ChannelCount: 1}}},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "engineering", Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "public online audit", MeasurementKind: "engineering declaration", MappingVersion: "online-receptor-audit/v1"}}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0, 1}},
+	}
+	if pulse { chem.Sources[0].Timeline.Entries = []modulation.TimelineEntry{{Step: 1, Channel: 0, Rate: 1}} }
+	if err = a.EnableChemistry(chem); err != nil { return err }
+	rule := plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 8, WMin: .0625}
+	if receptor { index := 0; rule.GateReceptor = &index; rule.GateScale = 1 }
+	if err = a.EnablePlasticity(plasticity.Config{Rule: rule, Edges: []int{0}}); err != nil { return err }
+	online := learning.OnlinePolicy{ClockUnit: signal.TimeUnitModelStep}
+	online.AllowGradient = policy == "gradient" || policy == "mixed" || policy == "evaluate"
+	online.AllowPlastic = policy == "plastic" || policy == "mixed"
+	online.Evaluate = policy == "evaluate"
+	var gate learning.RewardGate
+	if online.AllowPlastic {
+		mapper := &modulation.RewardMapper{Baseline: modulation.BaselineNone, Kind: modulation.KindRelu}
+		gate = learning.RewardGateFunc(func(score float64) ([]float64, error) { r, err := mapper.Map(score); return r.Applied, err })
+	}
+	l, err := learning.NewOnlineLearner(a, online, gate)
+	if err != nil { return err }
+	obs, err := signal.NewObservation(signal.CurrentSchemaVersion(), "exp-1", "stream-1", nil)
+	if err != nil { return err }
+	before := a.Snapshot()
+	record, err := l.Act(context.Background(), obs, [][]float64{{1, 0}, {1, 0}, {1, 0}})
+	if err != nil { return err }
+	afterAct := a.Snapshot()
+	if err = l.SetTargets(map[string][]float64{record.ActionID: {.1}}); err != nil { return err }
+	version, err := signal.NewVersion(1, 0)
+	if err != nil { return err }
+	fb, err := signal.NewFeedback(signal.FeedbackSpec{SchemaVersion: signal.CurrentSchemaVersion(), ExperienceID: "exp-1", ActionID: record.ActionID, ProducedAt: signal.Timestamp{Value: int64(record.Step), Unit: signal.TimeUnitModelStep}, AvailableAt: signal.Timestamp{Value: int64(record.Step), Unit: signal.TimeUnitModelStep}, Source: "audit", Score: 1, ModelVersion: version})
+	if err != nil { return err }
+	if err = l.Receive(context.Background(), fb); err != nil { return err }
+	update, updateErr := l.Update(context.Background(), signal.Timestamp{Value: int64(record.Step), Unit: signal.TimeUnitModelStep})
+	message := ""
+	if updateErr != nil { message = updateErr.Error() }
+	row := map[string]any{"policy": policy, "receptor_gate": receptor, "pulse": pulse, "constructor_accepted": true, "act_plastic_before": before.Plastic.State.Plastic, "act_plastic_after": afterAct.Plastic.State.Plastic, "act_eligibility_after": afterAct.Plastic.State.Eligibility, "act_output": record.Output, "act_base_changed": !reflect.DeepEqual(before.Parameters, afterAct.Parameters), "act_plastic_learned": !reflect.DeepEqual(before.Plastic.State.Plastic, afterAct.Plastic.State.Plastic), "update_error": message, "update_report": update, "update_base_changed": !reflect.DeepEqual(afterAct.Parameters, a.Snapshot().Parameters)}
+	b, err := json.Marshal(row)
+	if err != nil { return err }
+	fmt.Println(string(b))
+	return nil
+}
+
+func main() {
+	for _, policy := range []string{"gradient", "plastic", "mixed", "evaluate"} {
+		for _, receptor := range []bool{false, true} {
+			for _, pulse := range []bool{false, true} {
+				if err := run(policy, receptor, pulse); err != nil { panic(err) }
+			}
+		}
+	}
+}

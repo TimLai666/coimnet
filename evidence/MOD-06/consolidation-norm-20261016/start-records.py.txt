@@ -1,0 +1,13 @@
+# -*- coding: utf-8 -*-
+from pathlib import Path
+import json,hashlib
+E=Path(__file__).resolve().parent;R=E.parents[2]
+original=json.loads((E/'original-records.json').read_text())
+for n in ['delivery-status.md','docs/tickets/129-consolidation-norm-boundary.md']:assert hashlib.sha256((R/n).read_bytes()).hexdigest()==original[n],n
+p=R/'docs/tickets/129-consolidation-norm-boundary.md';b=p.read_bytes();s=b.decode();assert s.count('**Status:** specified')==1;s=s.replace('**Status:** specified','**Status:** in_progress');s+='\n本輪已接手，ticket128 的最終 844 份來源與交付已重新核對。Root 已固定範圍、正常位元、最高端參考及失敗原狀判準，測試與唯讀契約分工進行中，正式實作尚未改動。本票 0／4，MOD-06 保持 specified。見[本票計畫](../../evidence/MOD-06/consolidation-norm-20261016/plan.md)。\n';assert p.read_bytes()==b;p.write_text(s)
+p=R/'delivery-status.md';b=p.read_bytes();s=b.decode();marker='## 目前階段\n\n';assert s.count(marker)==1
+s=s.replace(marker,marker+'[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 已接手三種記憶報告的最高端誤接受。ticket128 的 844 份最終來源與交付已重新核對，測試與契約分工進行中，正式實作尚未改動。本票 0／4，MOD-06 保持 specified，工程追蹤 90／91，見[計畫](evidence/MOD-06/consolidation-norm-20261016/plan.md)。\n\n')
+old='本輪 ticket128 修正介入報告的中間平方上下溢位、不可表示差異的失敗原狀與並行讀取，專項與完整工程通過。清理及交付以「目前階段」本票紀錄為準。COR-11 恢復 passed，另已確認的 MOD-06 報告缺陷由 ticket129 接續，工程追蹤 90／91。整體零 bug 與模型品質改善尚未證明。';assert s.count(old)==1;s=s.replace(old,'本輪 ticket129 修正記憶寫入報告的最高端可表示性。先凍結三種層的獨立數值與失敗原狀測試，再完成最小實作與完整驗收。MOD-06 保持 specified，工程追蹤 90／91。整體零 bug 與模型品質改善尚未證明。')
+header='## 里程碑\n\n| id | 目標 | 負責者 | 狀態 | 驗證訊號 |\n| --- | --- | --- | --- | --- |';assert s.count(header)==1;s=s.replace(header,header+'\n| 129 | 研究者可以拒絕真正不可表示的記憶寫入報告 | Codex Root／Luna max 測試與契約審查 | in_progress | 0／4。已重核前置交付，測試／契約分工進行中 |')
+assert p.read_bytes()==b;p.write_text(s)
+print('ticket129_started_0_of_4_no_production_changes')

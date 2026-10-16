@@ -1,0 +1,80 @@
+"""Create one owned, project-local work root from verified pinned modules."""
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tarfile
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip preparation checks")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / "evidence/COR-11/finite-intervention-norm-20261016"
+W = R / "runs/.tmp/consolidation-norm-20261016"
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=R, text=True).strip()
+assert head == "a97129322c84cb0872c37d0cf20c3100771d2c96"
+source = json.loads((P / "formal-source-v2.json").read_text())
+for p, digest in source.items():
+    assert sha(R / p) == digest, p
+foreign = json.loads((P / "foreign-before.json").read_text())
+for p, digest in foreign.items():
+    assert sha(Path(p)) == digest, p
+assert not W.exists() and not W.is_symlink()
+W.mkdir()
+for name in ["go-cache", "go-mod-cache", "go-tmp"]:
+    (W / name).mkdir()
+preserved = json.loads((P / "work-preservation.json").read_text())
+archive = P / preserved["archive"]
+assert sha(archive) == preserved["archive_sha256"]
+with tarfile.open(archive) as handle:
+    raw = handle.extractfile("module-originals.json").read()
+assert hashlib.sha256(raw).hexdigest() == preserved["files"]["module-originals.json"]["sha256"]
+originals = json.loads(raw)
+assert len(originals) == 15046
+global_modules = Path("/Users/timlai/go/pkg/mod")
+roots = set()
+for name, digest in originals.items():
+    p = Path(name)
+    assert p.is_file() and not p.is_symlink() and sha(p) == digest, name
+    relative = p.relative_to(global_modules)
+    index = next(i for i, part in enumerate(relative.parts) if "@" in part)
+    roots.add(global_modules.joinpath(*relative.parts[:index + 1]))
+assert len(roots) == 45
+metadata_files = 0
+for root in sorted(roots):
+    relative = root.relative_to(global_modules)
+    shutil.copytree(root, W / "go-mod-cache" / relative, copy_function=shutil.copy2)
+    module, version = str(relative).rsplit("@", 1)
+    for name in [version + ".mod", version + ".info", version + ".ziphash", version + ".lock", "list"]:
+        src = global_modules / "cache/download" / module / "@v" / name
+        if src.is_file():
+            dst = W / "go-mod-cache/cache/download" / module / "@v" / name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            metadata_files += 1
+for name, digest in originals.items():
+    p = W / "go-mod-cache" / Path(name).relative_to(global_modules)
+    assert sha(p) == digest and p.stat().st_ino != Path(name).stat().st_ino, name
+(W / "module-originals.json").write_bytes(raw)
+settings = {
+    "GOMAXPROCS": "2", "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+    "GOMEMLIMIT": "8GiB", "GOCACHE": str(W / "go-cache"),
+    "GOMODCACHE": str(W / "go-mod-cache"), "GOTMPDIR": str(W / "go-tmp"),
+    "TMPDIR": str(W / "go-tmp"), "GOTOOLCHAIN": "local", "GOSUMDB": "off",
+    "GOTELEMETRY": "off", "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download",
+}
+(E / "command-environment.json").write_text(json.dumps(settings, indent=2) + "\n")
+(E / "foreign-before.json").write_text(json.dumps(foreign, indent=2) + "\n")
+(E / "baseline.json").write_text(json.dumps({
+    "head": head, "work_inode": W.stat().st_ino, "source_count": len(source),
+    "module_files": len(originals), "modules": len(roots), "metadata_files": metadata_files,
+    "at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+}, indent=2) + "\n")
+wrapper = (P / "run-command.py.txt").read_text()
+assert "runs/.tmp/intervention-finite-norm-20261016" in wrapper
+(E / "run-command.py.txt").write_text(wrapper.replace("runs/.tmp/intervention-finite-norm-20261016", "runs/.tmp/consolidation-norm-20261016"))
+print(json.dumps({"source_count": len(source), "modules": len(roots), "module_files": len(originals), "work_inode": W.stat().st_ino}), flush=True)

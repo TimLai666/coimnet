@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- `Consolidate` 的三種報告保留正常逐項 Hypot 位元，只在長度相關的安全界線外，以精確平方和重新判斷最高端的最近偶數溢位中點，修正誤拒絕與誤接受。先核對候選、報告與取消，再寫入慢速／快速記憶及計數器，不改公式、格式與拒絕順序。三層共用私有 helper，不配置候選向量。由[ticket 129](docs/tickets/129-consolidation-norm-boundary.md)驗收。
+
 - `Individual.Intervene` 的私有對照沿用同一持續快照，另複製當下 chemistry／plasticity 的 runtime freeze 旗標。先完成無介入對照，再設定 subject 的暫時網路與 hooks 並推進，避免對照失敗或取消時個體已提交。一般 `RestoreIndividual` 繼續預設解凍，保存格式、正常動態及 frozen channel phase 的既有優先序保持。公開未生效／阻斷控制與取消原子性由[ticket 127](docs/tickets/127-frozen-intervention.md)驗收。
 
 - `Intervene` 的四種差異範數保留正常平方和的索引順序與位元。只有中間平方／加總溢位或實質平方下溢改用穩定計算，最高端依 float64 最近偶數捨入界線判斷。任何真實差異無法表示時回傳錯誤、空輸出與空紀錄，並保留呼叫前的神經、快速可塑性、化學狀態、上一份化學報告與來源快取。還原沿用 `advanceRows` 成功才替換候選的 ownership，不重建整個模型。既有 preflight 後持有同一把個體操作鎖，涵蓋快照、對照、subject、差異報告及所有還原／hooks 清除，並行讀取只取得完整操作的狀態。公開 Snapshot 的複製內容抽為私有 `snapshotLocked`，subject 使用 `advanceRowsLocked`，不增加並行修改個體的保證。由[ticket 128](docs/tickets/128-intervention-finite-norm.md)驗收。

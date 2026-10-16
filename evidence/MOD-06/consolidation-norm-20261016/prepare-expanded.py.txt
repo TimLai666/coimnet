@@ -1,0 +1,11 @@
+# -*- coding: utf-8 -*-
+from pathlib import Path
+E=Path(__file__).resolve().parent;R=E.parents[2];W=R/'runs/.tmp/consolidation-norm-20261016'
+s=(E/'public-baseline.go.txt').read_text()
+a='c := learning.Config{Dynamics: dynamics.Config{Nodes: 1, Sources: []int{0, 0}, Targets: []int{0, 0}, Delays: []int{1, 2}, DT: 1, Activation: "tanh"}'
+b='sources, targets, delays, edges := make([]int, len(values)), make([]int, len(values)), make([]int, len(values)), make([]int, len(values))\n\tfor k := range values { delays[k], edges[k] = k+1, k }\n\tc := learning.Config{Dynamics: dynamics.Config{Nodes: 1, Sources: sources, Targets: targets, Delays: delays, DT: 1, Activation: "tanh"}'
+assert s.count(a)==1;s=s.replace(a,b);s=s.replace('Edges: []int{0, 1}', 'Edges: edges')
+a='func main() {\n';assert s.count(a)==1;s=s.replace(a,a+'\tx := math.MaxFloat64\n\tfor k := 0; k < 3; k++ { x = math.Nextafter(x, 0) }\n\ttail := math.Ldexp(math.MaxFloat64, -26)\n')
+a='{"obvious_overflow", []float64{1.3e308, 1.3e308}},';assert s.count(a)==1;s=s.replace(a,a+'\n\t\t{"false_overflow", []float64{x, tail*1.3, tail*1.3}},\n\t\t{"hidden_overflow", []float64{math.Nextafter(math.MaxFloat64, 0), tail, tail}},')
+(W/'public-expanded').mkdir();(W/'public-expanded/main.go').open('x').write(s);(E/'public-expanded.go.txt').open('x').write(s)
+print('expanded_public_fixture_written')

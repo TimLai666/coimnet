@@ -1,0 +1,82 @@
+# -*- coding: utf-8 -*-
+"""Close only after complete cleanup, committed content parity and remote readback."""
+import datetime,hashlib,json,subprocess
+from pathlib import Path
+assert __debug__
+E=Path(__file__).resolve().parent;R=E.parents[2]
+read=lambda p:json.loads(p.read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+def update(p,fn):
+ b=p.read_bytes();s=fn(b.decode());assert p.read_bytes()==b,p;p.write_text(s)
+d=read(E/'delivery.json');primary=d['primary_commit']
+assert git('rev-parse','HEAD')==primary and d['all_content_verified']
+assert git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0]==primary
+assert not git('diff','--cached','--name-only')
+for n,h in read(E/'committed-content.json')['files'].items():assert sha(R/n)==h,n
+assert read(E/'cleanup.json')['directory_removed']
+removed=read(E/'cleanup.json')['removed_bytes']
+p=E/'verification.json';b=p.read_bytes();v=json.loads(b)
+assert v['engineering_passed'] and v['diagnostic_passed']
+v['acceptance_complete']=True;v['remaining_delivery']=[]
+v['completed_at']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+v['observed_result']['delivery']={'receipt':'delivery.json','primary_commit':primary,'remote_readback':d['remote_readback'],'source_entries':845}
+assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+def ticket(s):
+ assert s.count('- [ ]')==1 and '**Status:** in_progress' in s
+ s=s.replace('**Status:** in_progress','**Status:** completed').replace('- [ ]','- [x]')
+ s+=f'\n本票完成4／4。{removed:,} bytes自有暫存已清除，18份原模型、六份資料、原始模組與其他工作保持，見[清理](../../evidence/MOD-06/consolidation-norm-20261016/cleanup.json)。主要提交`{primary[:7]}`已正常推送且遠端讀回相同，845份提交來源核對完成，見[交付](../../evidence/MOD-06/consolidation-norm-20261016/delivery.json)。整體零bug與任務品質改善沒有由本票證明。\n'
+ return s
+update(R/'docs/tickets/129-consolidation-norm-boundary.md',ticket)
+def status(s):
+ a=s.index('[ticket 129]');z=s.index('\n\n',a);part=s[a:z]
+ old='本票3／4，待清理與交付，';assert part.count(old)==1
+ part=part.replace(old,f'本票4／4。最後31項治理通過，{removed:,} bytes自有暫存清除，原模型、資料、原始模組及其他工作保持。主要提交`{primary[:7]}`已正常推送且遠端讀回相同，見[清理](evidence/MOD-06/consolidation-norm-20261016/cleanup.json)與[交付](evidence/MOD-06/consolidation-norm-20261016/delivery.json)。')
+ s=s[:a]+part+s[z:]
+ old='| in_progress | 3／4。完整工程與MOD-06驗收通過，待清理及交付 |';assert s.count(old)==1
+ s=s.replace(old,'| completed | 4／4。完整工程、清理與遠端提交核對完成，MOD-06 passed |')
+ s=s.replace('先完成ticket129的清理與交付，再繼續以公開API核對生物機制、訓練及保存的組合行為。','ticket129已完成清理與交付。接續以公開API核對生物機制、訓練及保存的組合行為。')
+ return s
+update(R/'delivery-status.md',status)
+paths=set(git('diff','--name-only',read(E/'baseline.json')['head'],primary).splitlines())
+paths|={str(p.relative_to(R)) for p in E.rglob('*') if p.is_file()}
+paths.add(str((E/'changed-files.md').relative_to(R)))
+descriptions={'learning/consolidation.go':'修正三層報告的最高端分類，保留正常公式與原子性',
+ 'learning/consolidation_norm_test.go':'獨立最高端數值、正常位元、狀態與拒絕順序回歸',
+ 'README.md':'同步MOD-06驗收與LRN-06待修正狀態','ENG.md':'記錄共用範數與先驗證再提交契約',
+ 'delivery-status.md':'同步本票驗收、清理與交付','docs/requirements-status.json':'MOD-06恢復passed並連結實際證據',
+ 'docs/model-and-mechanisms.md':'說明最高端報告與失敗保持原狀',
+ 'docs/tickets/129-consolidation-norm-boundary.md':'記錄四項完成條件與實際驗收',
+ 'docs/tickets/130-online-receptor-gate-ownership.md':'記錄另已確認的線上閘門缺陷與後續驗收範圍'}
+def desc(n):
+ if n in descriptions:return descriptions[n]
+ name=Path(n).name
+ if name.endswith('.log.gz'):return '保存無損壓縮完整工程日誌'
+ if name.endswith('.log'):return '保存原始驗證命令日誌'
+ if name.endswith('.py.txt'):return '保存驗證、清理或交付腳本'
+ if name.endswith('.go.txt'):return '保存凍結回歸、舊來源或公開診斷程式'
+ if name.endswith('.json'):return '保存來源指紋、命令回條或驗證結果'
+ if name=='preserved-work.tar.gz':return '封存必要診斷與輸入檔案'
+ if name=='cleanup-inventory.json.gz':return '保存清理前完整內容指紋與大小'
+ return '保存本票範圍、審查與驗收依據'
+table='# 本票變更檔案\n\n| 檔案 | 變更摘要 |\n| --- | --- |\n'
+table+=''.join(f'| [{n}](../../../{n}) | {desc(n)} |\n' for n in sorted(paths))
+(E/'changed-files.md').open('x').write(table)
+changed=['delivery-status.md','docs/tickets/129-consolidation-norm-boundary.md',*[str((E/n).relative_to(R)) for n in ['verification.json','delivery.json','committed-content.json','changed-files.md']]]
+assert set(git('diff','--name-only').splitlines())=={'AGENTS.md',*changed[:3]}
+hashes={n:sha(R/n) for n in paths}
+for n,h in read(E/'foreign-before.json').items():assert sha(Path(n))==h,n
+subprocess.run(['git','add','--',*changed],cwd=R,check=True)
+assert set(git('diff','--cached','--name-only').splitlines())==set(changed)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True)
+assert all(sha(R/n)==h for n,h in hashes.items())
+subprocess.run(['git','commit','--quiet','-m','docs: close consolidation norm boundary validation'],cwd=R,check=True)
+head=git('rev-parse','HEAD')
+assert set(git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines())==set(changed)
+for n,h in {**read(E/'formal-source.json'),**hashes}.items():
+ assert hashlib.sha256(subprocess.check_output(['git','show',head+':'+n],cwd=R)).hexdigest()==h,n
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0]
+assert remote==head and git('diff','--name-only')=='AGENTS.md'
+for n,h in read(E/'foreign-before.json').items():assert sha(Path(n))==h,n
+print(json.dumps({'completed':True,'primary_commit':primary,'final_commit':head,'remote_readback':remote,'source_entries':845,'changed_files':len(paths),'final_content_files':len(set(read(E/'formal-source.json'))|paths),'foreign_work_preserved':True}))

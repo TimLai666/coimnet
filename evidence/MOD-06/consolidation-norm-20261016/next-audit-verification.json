@@ -1,0 +1,51 @@
+{
+  "confirmed": true,
+  "requirement": [
+    "LRN-06"
+  ],
+  "severity": "P1",
+  "ordinary_and_race_rows_each": 16,
+  "outputs_equal": true,
+  "constructor_accepted_all": true,
+  "all_four_policies_learn_during_Act_only_with_receptor_and_pulse": true,
+  "evaluate_also_learns_before_feedback": true,
+  "normal_control_rows": 12,
+  "explicit_reward_update_rejected_with_receptor_rows": 4,
+  "existing_mixed_partial_gradient_behavior_not_a_new_atomicity_claim": true,
+  "formal_source_unchanged": 845,
+  "source": "next-online.go.txt",
+  "source_sha256": "8e035f8b2e865af617be108436a7700cc4909c951643baa2e1958bd18e2d2052",
+  "logs": [
+    "next-online-ordinary.log",
+    "next-online-race.log"
+  ],
+  "production_not_modified_for_probe": true,
+  "reproduction_command": "run-command.py.txt next-online-ordinary go run ./runs/.tmp/consolidation-norm-20261016/next-online; repeat with -race",
+  "environment_file": "command-environment.json",
+  "input_fingerprints": {
+    "probe_source_sha256": "8e035f8b2e865af617be108436a7700cc4909c951643baa2e1958bd18e2d2052",
+    "formal_source_manifest": "formal-source.json"
+  },
+  "observed_result": "Four online policies write new fast memory in Act before any feedback when a receptor gate is open. Direct no-receptor and silent controls remain zero. Plastic/mixed positive feedback then conflicts with the receptor declaration.",
+  "downstream_output_witness": "next-output-verification.json",
+  "output_changed_during_evaluate_before_feedback": true,
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/consolidation-norm-20261016/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/consolidation-norm-20261016/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/consolidation-norm-20261016/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/consolidation-norm-20261016/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "test_log": [
+    "next-online-ordinary.log",
+    "next-online-race.log",
+    "next-online-output-ordinary.log",
+    "next-online-output-race.log"
+  ]
+}

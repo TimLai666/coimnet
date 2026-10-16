@@ -1,0 +1,94 @@
+# -*- coding: utf-8 -*-
+"""Publish only verified acceptance and rerun metadata governance."""
+import datetime, hashlib, json, re, subprocess, sys
+from pathlib import Path
+
+assert __debug__
+E=Path(__file__).resolve().parent; R=E.parents[2]
+W=R/'runs/.tmp/consolidation-norm-20261016'
+read=lambda p:json.loads(p.read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+engineering=read(E/'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count']==845
+assert read(E/'diagnostic-verification.json')['all_passed']
+assert read(E/'midpoint-verification.json')['all_passed']
+for n,h in read(E/'formal-source.json').items():assert sha(R/n)==h,n
+for n,h in read(E/'foreign-before.json').items():assert sha(Path(n))==h,n
+unit=next(s for s in engineering['steps'] if s['name']=='unit')
+race=next(s for s in engineering['steps'] if s['name']=='race')
+assert unit['test_events']=={'pass':8233,'skip':23}
+assert race['test_events']=={'pass':8232,'skip':24}
+
+def update(path, transform):
+    raw=path.read_bytes();text=transform(raw.decode())
+    assert path.read_bytes()==raw,path
+    path.write_text(text)
+def once(text,before,after):
+    assert text.count(before)==1,before
+    return text.replace(before,after)
+
+verification={
+ 'requirement':['MOD-06'],'engineering_passed':True,'diagnostic_passed':True,
+ 'acceptance_complete':False,'confirmed_defects_fixed':1,
+ 'source_manifest':'formal-source.json','frozen_checks':'frozen-checks.json',
+ 'source_count':845,'baseline_commit':read(E/'baseline.json')['head'],
+ 'environment':read(E/'command-environment.json'),
+ 'reproduction':'run-command.py.txt; engineering.py.txt; preserved-work.tar.gz contains probe sources and overlay inputs',
+ 'observed_result':{'regression_pass_each_build':129,'related_pass_each_build':224,
+  'public_original_expanded_rows_each_build':24,'midpoint_rows_each_build':9,
+  'exact_midpoint_components':84,'mutation_variants_rejected_each_build':2,
+  'unit':unit['test_events'],'race':race['test_events'],'prior_events_preserved_each_build':8127,
+  'new_passing_events_each_build':129,'package_pass_each_build':58,
+  'normal_hypot_control_bits_unchanged':True,'refusal_state_and_budget_unchanged':True,
+  'model_format_and_public_settings_unchanged':True},
+ 'evidence':['red-verification.json','diagnostic-verification.json','midpoint-verification.json',
+  'engineering-verification.json','root-review.md','readonly-review.md'],
+ 'remaining_delivery':['cleanup','commit push and remote readback'],
+ 'limitation':'Extreme numeric report and atomic refusal correction. No new OCR quality, biological calibration, full-graph performance or absolute zero-bug claim.'}
+with (E/'verification.json').open('x') as f:json.dump(verification,f,indent=2);f.write('\n')
+
+p=R/'docs/requirements-status.json';raw=p.read_bytes();d=json.loads(raw)
+baseline=json.loads(subprocess.check_output(['git','show',read(E/'baseline.json')['head']+':docs/requirements-status.json'],cwd=R))
+for other in baseline['requirements']:
+    if other['id']=='LRN-06':
+        assert other['status']=='passed'
+        other['status']='specified'
+        other['evidence'].append('../evidence/MOD-06/consolidation-norm-20261016/next-audit-verification.json')
+assert d==baseline
+item=next(x for x in d['requirements'] if x['id']=='MOD-06');assert item['status']=='specified'
+item['status']='passed';item['evidence'].append('../evidence/MOD-06/consolidation-norm-20261016/verification.json')
+assert len(d['requirements'])==91 and sum(x['status']=='passed' for x in d['requirements'])==90
+assert all(x['status']=='passed' or (x['id']=='LRN-06' and x['status']=='specified') for x in d['requirements'])
+assert p.read_bytes()==raw;p.write_text(json.dumps(d,ensure_ascii=False,indent=2)+'\n')
+
+def readme(s):
+    old='介入報告修正已通過完整工程，慢速記憶報告由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 驗收中。另確認線上模式在開啟受體閘門後，作答可能提前建立快速記憶，連評估模式也受影響，由 [ticket 130](docs/tickets/130-online-receptor-gate-ownership.md) 接續。目前 MOD-06 與 LRN-06 為 specified，工程追蹤 89／91。這輪沒有新的任務辨識率或生物校準結果。'
+    new='三種慢速記憶報告的最高端誤接受與誤拒絕已修正並通過完整工程驗收，MOD-06 恢復 passed。LRN-06因新確認的線上受體閘門缺陷保持specified，由[ticket130](docs/tickets/130-online-receptor-gate-ownership.md)接續，目前工程追蹤為90／91，見 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md)。正常模型格式、記憶公式與拒絕順序保持。這輪沒有新的任務辨識率或生物校準結果。'
+    s=once(s,old,new)
+    return once(s,'目前工程追蹤為 89／91，MOD-06 與 LRN-06 分別由 tickets 129、130 驗收。','目前工程追蹤為90／91，MOD-06修正已通過驗收，LRN-06由ticket130接續。')
+update(R/'README.md',readme)
+def mechanisms(s):
+    old='三層 L2（`base_l2`／`slow_l2`／`plastic_l2`）分開報告，梯度路徑不動 `slow`。'
+    new='三層 L2（`base_l2`／`slow_l2`／`plastic_l2`）分開報告，最高端依最近偶數捨入界線判斷，合法值接受、真正不可表示時回錯並保持全部狀態與寫入額度，正常逐項 Hypot 位元保持，見 [ticket 129](tickets/129-consolidation-norm-boundary.md)。梯度路徑不動 `slow`。'
+    return once(s,old,new)
+update(R/'docs/model-and-mechanisms.md',mechanisms)
+summary='845份來源的完整一般／競態各58套件通過，8,233／8,232 pass、23／24 skip，原有各8,127個終端事件保持，只新增各129 pass。格式、build、vet、固定Insyra v0.3.4、模組及治理通過，MOD-06恢復passed，工程追蹤90／91，LRN-06由ticket130接續。'
+def ticket(s):
+    assert s.count('- [ ]')==2
+    s=s.replace('- [ ]','- [x]',1)
+    return s+'\n'+summary+'本票3／4，待清理與交付，見[驗收](../../evidence/MOD-06/consolidation-norm-20261016/verification.json)。\n'
+update(R/'docs/tickets/129-consolidation-norm-boundary.md',ticket)
+def status(s):
+    a=s.index('[ticket 129]');z=s.index('\n\n',a)
+    s=s[:a]+'[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 已修正三種記憶報告的最高端誤接受與誤拒絕。一般／競態各129個新專項、224個相關事件與33個公開控制通過，兩種隔離錯誤均被拒絕。'+summary+'本票3／4，待清理與交付，見[驗收](evidence/MOD-06/consolidation-norm-20261016/verification.json)。'+s[z:]
+    s=once(s,'2／4。最小修正與雙向邊界通過，完整工程進行中','3／4。完整工程與MOD-06驗收通過，待清理及交付')
+    s=once(s,'本輪ticket129修正記憶寫入報告的最高端可表示性，完整工程驗收進行中。另已確認LRN-06線上作答提前學習，ticket130等待前置交付。MOD-06與LRN-06保持specified，工程追蹤89／91。整體零bug與模型品質改善尚未證明。','本輪 ticket129 的三種記憶報告修正已通過完整工程，MOD-06恢復passed，工程追蹤90／91，LRN-06由ticket130接續。清理與交付以「目前階段」紀錄為準。整體零bug與模型品質改善尚未證明。')
+    s=once(s,'MOD-06由ticket129驗收中，LRN-06另已確認線上受體閘門缺陷，兩者保持specified，工程追蹤89／91。ticket130等待ticket129交付。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。','MOD-06的三種記憶報告數值修正已通過完整工程，工程追蹤90／91，LRN-06由ticket130接續。ticket129清理與交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。')
+    s=once(s,'[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 為下一個實作，前置條件是 ticket128 完成交付。三種記憶報告的最高端誤接受已由一般／競態各九個公開案例確認，先凍結獨立回歸與正常位元控制，再修正並驗收，見[證據](evidence/COR-11/finite-intervention-norm-20261016/next-audit-verification.json)。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。','先完成ticket129的清理與交付，再繼續以公開API核對生物機制、訓練及保存的組合行為。LRN-06的受體閘門與線上政策缺陷已重現，由ticket130接續。未重現的疑慮不列為缺陷，也不先更改模型規則。數值測試不作為模型品質或零bug的證明。')
+    return once(s,'原始工程曾完成91／91，本輪MOD-06報告與LRN-06線上閘門有已確認缺陷，維持89／91，由tickets129、130驗收。','原始工程曾完成91／91，本輪MOD-06報告數值修正已通過完整驗收，LRN-06另有已確認的線上受體閘門缺陷，保持90／91，由ticket130接續。')
+update(R/'delivery-status.md',status)
+pattern='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+subprocess.run([sys.executable,str(E/'run-command.py.txt'),'final-governance',str(W/'final-root.test'),'-test.v','-test.run',pattern],check=True)
+passed=len(re.findall(r'^\s*--- PASS:',(E/'final-governance.log').read_text(),re.M));assert passed==31
+p=E/'final-governance.json';raw=p.read_bytes();d=json.loads(raw);assert d['exit_code']==0;d['passed_events']=passed;assert p.read_bytes()==raw;p.write_text(json.dumps(d,indent=2)+'\n')
+print(json.dumps({'phase':'3/4','requirements_passed':'90/91','final_governance_passed':passed}))
