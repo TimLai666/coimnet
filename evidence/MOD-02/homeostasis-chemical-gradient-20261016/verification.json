@@ -1,0 +1,196 @@
+{
+  "requirement": "MOD-02",
+  "related_requirements": [
+    "MOD-02",
+    "COR-04",
+    "LRN-02"
+  ],
+  "verified_at": "2026-10-16T03:05:40.804761+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": false,
+  "source_count": 839,
+  "confirmed_new_production_defects": 0,
+  "reproduction_command": {
+    "ordinary": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./learning",
+      "-run",
+      "^TestChemicalHomeostasis|^TestChemicalMaxReferenceLegacyRecord$"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "./learning",
+      "-run",
+      "^TestChemicalHomeostasis|^TestChemicalMaxReferenceLegacyRecord$"
+    ],
+    "engineering": [
+      "python3",
+      "evidence/MOD-02/homeostasis-chemical-gradient-20261016/engineering.py.txt"
+    ]
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "baseline": "d2b3904f32affda485fe0dbe151d3423fd93966b",
+    "command_settings": "command-environment.json",
+    "go": "go version go1.26.5 darwin/arm64",
+    "command_environment": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "8defe716c61fde5afbb6b8409a1bc520a061618f00fb7112608d8c568249a27d",
+    "frozen_checks": "frozen-checks.json",
+    "frozen_checks_sha256": "b2fa332e15a1a5ddd12cfb53240a4229849854ddad730bfdb3781f129152e473",
+    "original_source": "source-before.json"
+  },
+  "observed_result": {
+    "reference": {
+      "ordinary": {
+        "terminal_events": 253,
+        "public_leaf_cases": 80,
+        "trainer_routes": 160,
+        "paired_controls": 16,
+        "hand_cases": 2,
+        "disabled_cases": 8,
+        "legacy_records": 7,
+        "legacy_records_sha256": "6013447dc2c87aa58742cbea1ae9282f74c8e1649d26e88ee7a17b5142b3c828",
+        "legacy_records_preserved_within_build": true,
+        "control_min_abs": 0.04150450954603112,
+        "maximum_reference_error": {
+          "max_gradient_abs": 1.94289029e-16,
+          "max_gradient_relative": 1.94289029e-16,
+          "max_prediction_abs": 0.0
+        },
+        "mutations": {
+          "wrong-tangent": {
+            "rejected": true,
+            "actual_value": 0.013117283950617287,
+            "receipt": "wrong-tangent-ordinary.json",
+            "leaf": "TestChemicalHomeostasisHandReference/refractory0"
+          },
+          "missing-refractory": {
+            "rejected": true,
+            "actual_value": 0.0,
+            "receipt": "missing-refractory-ordinary.json",
+            "leaf": "TestChemicalHomeostasisHandReference/refractory1"
+          }
+        },
+        "command_receipt": "reference-final-ordinary.json"
+      },
+      "race": {
+        "terminal_events": 253,
+        "public_leaf_cases": 80,
+        "trainer_routes": 160,
+        "paired_controls": 16,
+        "hand_cases": 2,
+        "disabled_cases": 8,
+        "legacy_records": 7,
+        "legacy_records_sha256": "f390e4681299ee36bb8eb5bd7d552f6efe37a84562545a3f14379876c2f0b127",
+        "legacy_records_preserved_within_build": true,
+        "control_min_abs": 0.04150450954603112,
+        "maximum_reference_error": {
+          "max_gradient_abs": 1.66533454e-16,
+          "max_gradient_relative": 1.66533454e-16,
+          "max_prediction_abs": 0.0
+        },
+        "mutations": {
+          "wrong-tangent": {
+            "rejected": true,
+            "actual_value": 0.013117283950617287,
+            "receipt": "wrong-tangent-race.json",
+            "leaf": "TestChemicalHomeostasisHandReference/refractory0"
+          },
+          "missing-refractory": {
+            "rejected": true,
+            "actual_value": 0.0,
+            "receipt": "missing-refractory-race.json",
+            "leaf": "TestChemicalHomeostasisHandReference/refractory1"
+          }
+        },
+        "command_receipt": "reference-final-race.json"
+      }
+    },
+    "red_and_wrong_algorithms": "diagnostic-verification.json",
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 7143,
+          "skip": 22
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6912
+      },
+      "race": {
+        "test_events": {
+          "pass": 7142,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6912
+      },
+      "governance": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      }
+    },
+    "approved_gain_policy": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "necessary_work_preservation": {
+      "receipt": "work-preservation.json",
+      "necessary_files": 3,
+      "archive_bytes": 720983
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1584963058
+    }
+  },
+  "test_log": [
+    "red-hand-corrected.log",
+    "reference-final-ordinary.log",
+    "reference-final-race.log",
+    "wrong-tangent-ordinary.log",
+    "wrong-tangent-race.log",
+    "missing-refractory-ordinary.log",
+    "missing-refractory-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "retained_corrections": [
+    "test-correction.json"
+  ],
+  "root_review": "root-review.md",
+  "limits": [
+    "Four steps, two nodes, four edges, one chemistry source/channel, ordinary finite fixtures",
+    "Independent full-window gradients; pure LIF only for recompute segments 1 and 3",
+    "First Adam update with accumulate=2 and no clipping, schedule, masks, sharing or weight decay",
+    "No persistent neural-state, positive truncation window, true-task quality or biological calibration conclusion",
+    "No absolute zero-bug proof"
+  ],
+  "remaining_delivery": [
+    "Git commit/push/readback"
+  ],
+  "acceptance_complete": false
+}

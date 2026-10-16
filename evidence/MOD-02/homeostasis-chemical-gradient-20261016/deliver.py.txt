@@ -1,0 +1,34 @@
+"""Commit only this audit, push normally, and verify remote/content readback."""
+import hashlib,json,re,subprocess
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+def write(name,value):
+    with (E/name).open('x') as f:json.dump(value,f,indent=2);f.write('\n')
+assert git('rev-parse','HEAD')=='d2b3904f32affda485fe0dbe151d3423fd93966b'
+assert git('branch','--show-current')=='codex/receptor-chemistry-training'
+assert re.search(r'github\.com[:/]TimLai666/coimnet(?:\.git)?$',git('remote','get-url','origin'))
+assert not git('diff','--cached','--name-only'),'foreign staged work exists'
+assert json.loads((E/'cleanup.json').read_text())['directory_removed']
+assert json.loads((E/'verification.json').read_text())['engineering_passed']
+for p,h in json.loads((E/'formal-source.json').read_text()).items():assert sha(R/p)==h,p
+for p,h in json.loads((E/'foreign-before.json').read_text()).items():assert sha(Path(p))==h,p
+owned=['ENG.md','delivery-status.md','docs/requirements-status.json','docs/tickets/124-homeostasis-chemical-reference.md','learning/chemical_mixed_reference_test.go','learning/chemical_homeostasis_reference_test.go']
+owned+=sorted(str(p.relative_to(R)) for p in E.rglob('*') if p.is_file())
+assert len(owned)==len(set(owned))
+hashes={p:sha(R/p) for p in owned}
+subprocess.run(['git','add','--',*owned],cwd=R,check=True)
+assert set(git('diff','--cached','--name-only').splitlines())==set(owned)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True)
+assert all(sha(R/p)==h for p,h in hashes.items()),'inputs changed after review'
+subprocess.run(['git','commit','-m','test(learning): verify chemical homeostasis gradients and updates'],cwd=R,check=True)
+head=git('rev-parse','HEAD');assert set(git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines())==set(owned)
+committed={**json.loads((E/'formal-source.json').read_text()),**hashes}
+for p,h in committed.items():
+    blob=subprocess.check_output(['git','show',head+':'+p],cwd=R);assert hashlib.sha256(blob).hexdigest()==h,p
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0];assert remote==head
+write('committed-content.json',{'commit':head,'files':committed,'source_entries':839,'changed_files':len(owned),'unique_content_files':len(committed)})
+write('delivery.json',{'primary_commit':head,'remote_readback':remote,'branch':'codex/receptor-chemistry-training','normal_push':True,'all_content_verified':True,'source_entries':839,'changed_files':len(owned),'production_changes':False,'foreign_work_unchanged':True})
+print(json.dumps({'primary_commit':head,'remote_readback':remote,'changed_files':len(owned),'unique_content_files':len(committed)}))

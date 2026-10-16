@@ -596,6 +596,8 @@ func mixedReferenceGradient(fixture mixedReferenceCase) (mixedReferenceExpected,
 }
 
 type mixedReferenceForward struct {
+	rate                 [][]float64
+	homeostasis          [][]float64
 	rawOutput            [][]dual
 	readout              [][]float64
 	occupancy            [][]dual
@@ -641,9 +643,6 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 		}
 		mixed = &mixedValue
 	}
-	if mixed.LIF.Homeostasis != nil && mixed.LIF.Homeostasis.Enabled {
-		panic("reference fixture LIF homeostasis is unsupported")
-	}
 	if mixed.Nodes != mixedReferenceNodes || len(mixed.NodeRule) != mixedReferenceNodes {
 		panic("reference fixture node shape is unsupported")
 	}
@@ -664,6 +663,30 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 		panic("reference fixture ThetaRaw shape is unsupported")
 	}
 	steps := len(encoded)
+	stabilising := mixed.LIF.Homeostasis != nil && mixed.LIF.Homeostasis.Enabled
+	var rate, homeostasis [][]float64
+	var updateHomeostasis func(step, node int, event dual)
+	if stabilising {
+		rate = make([][]float64, steps+1)
+		homeostasis = make([][]float64, steps+1)
+		for step := 0; step <= steps; step++ {
+			rate[step] = make([]float64, mixedReferenceNodes)
+			homeostasis[step] = make([]float64, mixedReferenceNodes)
+		}
+		h := mixed.LIF.Homeostasis
+		updateHomeostasis = func(step, node int, event dual) {
+			previousRate := rate[step][node]
+			nextRate := previousRate + mixed.DT/h.TauRate*(event.v-previousRate)
+			nextHomeostasis := homeostasis[step][node] + h.Eta*mixed.DT*(nextRate-h.TargetRate)
+			if nextHomeostasis < 0 {
+				nextHomeostasis = 0
+			} else if nextHomeostasis > h.HMax {
+				nextHomeostasis = h.HMax
+			}
+			rate[step+1][node] = nextRate
+			homeostasis[step+1][node] = nextHomeostasis
+		}
+	}
 	out := make([][]dual, steps+1)
 	voltage := make([][]dual, steps+1)
 	adapt := make([][]dual, steps+1)
@@ -783,6 +806,9 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 			if mixed.LIF.Adaptation.Enabled {
 				theta = theta.add(adapt[t][i])
 			}
+			if stabilising {
+				theta = theta.add(dConst(homeostasis[t][i], n))
+			}
 			floor := false
 			if threshold[i].v != 0 {
 				shifted := theta.add(threshold[i])
@@ -801,6 +827,9 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 				refract[t+1][i] = refract[t][i] - 1
 				if mixed.LIF.Adaptation.Enabled {
 					adapt[t+1][i] = adapt[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.Adaptation.TauAdapt))
+				}
+				if stabilising {
+					updateHomeostasis(t, i, dConst(0, n))
 				}
 				continue
 			}
@@ -822,6 +851,9 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 			out[t+1][i] = out[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.TauSyn)).add(spike)
 			if mixed.LIF.Adaptation.Enabled {
 				adapt[t+1][i] = adapt[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.Adaptation.TauAdapt)).add(spike.scale(mixed.LIF.Adaptation.Beta))
+			}
+			if stabilising {
+				updateHomeostasis(t, i, spike)
 			}
 		}
 		rawOutput[t] = append([]dual(nil), out[t+1]...)
@@ -857,7 +889,7 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 			}
 		}
 	}
-	return mixedReferenceForward{rawOutput: rawOutput, readout: readout, occupancy: occupancy, expressionSeeds: expressionSeeds, expressionGain: expressionGain, expressionNode: expressionNode,
+	return mixedReferenceForward{rate: rate, homeostasis: homeostasis, rawOutput: rawOutput, readout: readout, occupancy: occupancy, expressionSeeds: expressionSeeds, expressionGain: expressionGain, expressionNode: expressionNode,
 		floorSteps: coverage.floorSteps, refractorySteps: coverage.refractorySteps, effectSaturation: coverage.effectSaturation,
 		expressionActive: coverage.expressionActive, expressionSaturation: coverage.expressionSaturation}
 }

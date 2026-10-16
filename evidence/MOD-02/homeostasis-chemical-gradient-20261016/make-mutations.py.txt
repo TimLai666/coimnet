@@ -1,0 +1,48 @@
+"""Create isolated wrong algorithms without changing formal source or checks."""
+import hashlib,json
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/homeostasis-chemical-gradient-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+manifest=json.loads((E/'formal-source.json').read_text())
+for p,h in manifest.items():assert sha(R/p)==h,p
+assert W.stat().st_ino==json.loads((E/'baseline.json').read_text())['work_inode']
+p=R/'learning/chemical_mixed_reference_test.go';s=p.read_text()
+def replace_once(s,a,b):
+ assert s.count(a)==1,(a,s.count(a));return s.replace(a,b)
+x=replace_once(s,'\tvar rate, homeostasis [][]float64\n','\tvar rate, homeostasis [][]float64\n\tvar wrongRate, wrongHomeostasis [][]dual\n')
+x=replace_once(x,'\t\th := mixed.LIF.Homeostasis\n', '''		wrongRate = make([][]dual, steps+1)
+		wrongHomeostasis = make([][]dual, steps+1)
+		for step := 0; step <= steps; step++ {
+			wrongRate[step] = make([]dual, mixedReferenceNodes)
+			wrongHomeostasis[step] = make([]dual, mixedReferenceNodes)
+			for node := 0; node < mixedReferenceNodes; node++ {
+				wrongRate[step][node] = dConst(0, n)
+				wrongHomeostasis[step][node] = dConst(0, n)
+			}
+		}
+		h := mixed.LIF.Homeostasis
+''')
+x=replace_once(x,'\t\t\thomeostasis[step+1][node] = nextHomeostasis\n', '''			homeostasis[step+1][node] = nextHomeostasis
+			// Intentionally wrong: differentiate the nominal stabilising state.
+			previous := wrongRate[step][node]
+			next := previous.add(event.sub(previous).scale(mixed.DT / h.TauRate))
+			hNext := wrongHomeostasis[step][node].add(next.sub(dConst(h.TargetRate, n)).scale(h.Eta * mixed.DT))
+			if hNext.v < 0 {
+				hNext = dConst(0, n)
+			} else if hNext.v > h.HMax {
+				hNext = dConst(h.HMax, n)
+			}
+			wrongRate[step+1][node], wrongHomeostasis[step+1][node] = next, hNext
+''')
+x=replace_once(x,'theta = theta.add(dConst(homeostasis[t][i], n))','theta = theta.add(wrongHomeostasis[t][i])')
+y=replace_once(s,'\t\t\t\t\tupdateHomeostasis(t, i, dConst(0, n))','\t\t\t\t\t// Intentionally wrong: skip the refractory homeostasis update.')
+results={}
+for name,content,subtest in [('wrong-tangent',x,'refractory0'),('missing-refractory',y,'refractory1')]:
+ target=W/(name+'.go.txt')
+ with target.open('x') as f:f.write(content)
+ overlay=E/(name+'-overlay.json')
+ with overlay.open('x') as f:json.dump({'Replace':{str(p):str(target)}},f,indent=2);f.write('\n')
+ results[name]={'overlay':overlay.name,'source':str(target.relative_to(R)),'source_sha256':sha(target),'test':'^TestChemicalHomeostasisHandReference$/^'+subtest+'$'}
+for p,h in manifest.items():assert sha(R/p)==h,p
+with (E/'mutation-manifest.json').open('x') as f:json.dump({'formal_source_unchanged':True,'mutations':results},f,indent=2);f.write('\n')
+print(json.dumps(results))

@@ -1,0 +1,265 @@
+package learning_test
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+func chemicalHomeostasisForward(f mixedReferenceCase) mixedReferenceForward {
+	const weightBase, biasBase, logTauBase, thetaBase = 0, 4, 6, 8
+	initialBase := thetaBase + len(f.parameters.ThetaRaw)
+	inputBase := initialBase + mixedReferenceNodes
+	n := inputBase + mixedReferenceSteps*mixedReferenceNodes
+	encoded, _, _ := referenceEncodedInputs(f.input, f.parameters.Encoder, inputBase)
+	return referenceForward(f, encoded, n, weightBase, biasBase, logTauBase, thetaBase, initialBase, inputBase)
+}
+
+func chemicalHomeostasisSet(f *mixedReferenceCase, enabled bool) {
+	dt := 0.0
+	if f.config.LIF != nil {
+		dt = f.config.LIF.DT
+	} else {
+		dt = f.config.Mixed.DT
+	}
+	h := &dynamics.LIFHomeostasis{Enabled: enabled, TauRate: 2 * dt, TargetRate: .3, Eta: 1 / dt, HMax: .25}
+	if f.config.LIF != nil {
+		c := *f.config.LIF
+		c.Homeostasis = h
+		f.config.LIF = &c
+	} else {
+		c := *f.config.Mixed
+		c.LIF.Homeostasis = h
+		f.config.Mixed = &c
+	}
+}
+
+func chemicalHomeostasisRows(t *testing.T, label string, got, want [][]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("%s rows%d want%d", label, len(got), len(want))
+	}
+	for s, row := range want {
+		if len(got[s]) != len(row) {
+			t.Fatalf("%s row%d width differs", label, s)
+		}
+		for i, w := range row {
+			if !finiteReference(got[s][i]) || !finiteReference(w) || math.Abs(got[s][i]-w) > 1e-12 {
+				t.Fatalf("%s[%d][%d]=%.17g want%.17g", label, s, i, got[s][i], w)
+			}
+		}
+	}
+}
+
+func TestChemicalHomeostasisHandReference(t *testing.T) {
+	for _, refractory := range []int{0, 1} {
+		t.Run(fmt.Sprintf("refractory%d", refractory), func(t *testing.T) {
+			f := mixedReferenceFixture("neural", "nil")
+			f.config.Mixed.DT = math.Ln2
+			f.config.Mixed.LIF = dynamics.LIFRule{TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, RefractorySteps: refractory, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}, Homeostasis: &dynamics.LIFHomeostasis{Enabled: true, TauRate: 2 * math.Ln2, TargetRate: .25, Eta: 1 / math.Ln2, HMax: .4}}
+			f.parameters.Core = dynamics.Parameters{Weights: []float64{0, 0, 0, 0}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}
+			f.parameters.ThetaRaw = []float64{0}
+			f.parameters.Encoder = []float64{1, 0, 0, 1}
+			f.parameters.Readout = []float64{1, 0, 0, 1}
+			f.input = [][]float64{{0, 4}, {0, 15.0 / 4}, {0, 0}, {0, 0}}
+			f.upstream = [][]float64{{0, 0}, {0, 1}, {0, 0}, {0, 0}}
+			ref := chemicalHomeostasisForward(f)
+			// The first event has psi=1/4 and dSpike=1/8. Detached reset
+			// leaves the second output tangent at (1/2)*(1/8)=1/16.
+			// Wrong dr/dh propagation in refractory0 gives 17/1296.
+			inputBase := 8 + len(f.parameters.ThetaRaw) + mixedReferenceNodes
+			chemicalHomeostasisRows(t, "hand tangent", [][]float64{{ref.rawOutput[1][1].d[inputBase+1]}}, [][]float64{{1.0 / 16}})
+			rate := [][]float64{{0, 0}, {0, .5}, {0, .75}, {0, .375}, {0, .1875}}
+			h := [][]float64{{0, 0}, {0, .25}, {0, .4}, {0, .4}, {0, .3375}}
+			outputs := [][]float64{{0, 1}, {0, 1.5}, {0, .75}, {0, .375}}
+			if refractory == 1 {
+				rate = [][]float64{{0, 0}, {0, .5}, {0, .25}, {0, .125}, {0, .0625}}
+				h = [][]float64{{0, 0}, {0, .25}, {0, .25}, {0, .125}, {0, 0}}
+				outputs = [][]float64{{0, 1}, {0, .5}, {0, .25}, {0, .125}}
+			}
+			chemicalHomeostasisRows(t, "rate", ref.rate, rate)
+			chemicalHomeostasisRows(t, "homeostasis", ref.homeostasis, h)
+			g, prediction := runMixedReference(t, f)
+			chemicalHomeostasisRows(t, "public hand tangent", [][]float64{{g.Core.Inputs[0][1]}}, [][]float64{{1.0 / 16}})
+			chemicalHomeostasisRows(t, "public hand outputs", prediction, outputs)
+		})
+	}
+}
+
+func chemicalHomeostasisFlatReference(w mixedReferenceExpected) []float64 {
+	out := append([]float64(nil), w.coreWeights...)
+	for _, v := range [][]float64{w.coreBias, w.coreLogTau, w.thetaRaw, w.encoder, w.readout} {
+		out = append(out, v...)
+	}
+	return out
+}
+
+func chemicalHomeostasisFlatParameters(p learning.Parameters) []float64 {
+	out := append([]float64(nil), p.Core.Weights...)
+	for _, v := range [][]float64{p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout} {
+		out = append(out, v...)
+	}
+	return out
+}
+
+func chemicalHomeostasisTrain(t *testing.T, f mixedReferenceCase, w mixedReferenceExpected, prediction [][]float64, segment int) {
+	t.Helper()
+	ctx := context.Background()
+	o := learning.DefaultOptions()
+	o.LearningRate = .005
+	o.Epsilon = .01
+	o.ClipNorm = 0
+	o.AccumulateSteps = 2
+	o.Trainable = learning.Trainable{Weights: true, Bias: true, Tau: true, Theta: true, Encoder: true, Readout: true}
+	if segment > 0 {
+		o.Recompute = &learning.Recompute{SegmentSteps: segment}
+	}
+	trainer, err := learning.NewTrainer(f.config, f.parameters, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer trainer.Close()
+	if _, err = trainer.StepFrom(ctx, f.input, f.upstream); err != nil {
+		t.Fatal(err)
+	}
+	s := trainer.Snapshot()
+	want := chemicalHomeostasisFlatReference(w)
+	initial := chemicalHomeostasisFlatParameters(f.parameters)
+	width := 17
+	if f.config.LIF != nil {
+		width = 18
+	}
+	if len(want) != width || len(initial) != width || s.Updates != 0 || s.Accumulator == nil || s.Accumulator.Count != 1 || len(s.Accumulator.Sum) != width {
+		t.Fatalf("pending shape/count/updates: width%d state%+v", len(want), s)
+	}
+	if !reflect.DeepEqual(s.Parameters, f.parameters) {
+		t.Fatal("pending step changed parameters")
+	}
+	for i, g := range want {
+		v := s.Accumulator.Sum[i]
+		if !finiteReference(g) || !finiteReference(v) || math.Abs(v-g) > 1e-5+1e-4*math.Abs(g) {
+			t.Fatalf("pending%d=%g want%g", i, v, g)
+		}
+		if s.Optimizer.First[i] != 0 || s.Optimizer.Second[i] != 0 || s.Optimizer.Steps[i] != 0 {
+			t.Fatalf("pending step advanced optimizer%d", i)
+		}
+	}
+	got, err := trainer.PredictAll(ctx, f.input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(got, prediction) {
+		t.Fatal("pending prediction differs")
+	}
+	if _, err = trainer.StepFrom(ctx, f.input, f.upstream); err != nil {
+		t.Fatal(err)
+	}
+	s = trainer.Snapshot()
+	parameters := chemicalHomeostasisFlatParameters(s.Parameters)
+	if s.Updates != 1 || s.Accumulator != nil || len(parameters) != width || len(s.Optimizer.First) != width || len(s.Optimizer.Second) != width || len(s.Optimizer.Steps) != width {
+		t.Fatalf("updated state has wrong shape/count: %+v", s)
+	}
+	for i, g := range want {
+		m := (1 - o.Beta1) * g
+		v := (1 - o.Beta2) * g * g
+		p := initial[i] - o.LearningRate*g/(math.Abs(g)+o.Epsilon)
+		// Propagate the established float32 reference error. The first-step
+		// Adam parameter map is Lipschitz with constant learningRate/epsilon.
+		tol := 1e-5 + 1e-4*math.Abs(g)
+		mtol := (1-o.Beta1)*tol + 1e-12
+		vtol := (1-o.Beta2)*(2*math.Abs(g)*tol+tol*tol) + 1e-12
+		ptol := o.LearningRate*tol/o.Epsilon + 1e-12
+		if !finiteReference(parameters[i]) || !finiteReference(s.Optimizer.First[i]) || !finiteReference(s.Optimizer.Second[i]) || math.Abs(parameters[i]-p) > ptol || math.Abs(s.Optimizer.First[i]-m) > mtol || math.Abs(s.Optimizer.Second[i]-v) > vtol || s.Optimizer.Steps[i] != 1 {
+			t.Fatalf("update%d p/m/v/step=%g/%g/%g/%d want%g/%g/%g/1", i, parameters[i], s.Optimizer.First[i], s.Optimizer.Second[i], s.Optimizer.Steps[i], p, m, v)
+		}
+	}
+}
+
+func TestChemicalHomeostasisPublicReference(t *testing.T) {
+	cases, routes, controls := 0, 0, 0
+	for _, core := range []string{"mixed", "lif"} {
+		for _, source := range []string{"controller", "neural"} {
+			for _, mix := range []string{modulation.MixSum, modulation.MixMax} {
+				for _, profile := range []string{"open-positive", "open-negative", "gain-upper", "threshold-upper", "floor"} {
+					for _, implicit := range []bool{false, true} {
+						f := chemicalMaxReferenceFixture(t, core, source, mix, profile)
+						chemicalHomeostasisSet(&f, true)
+						if implicit {
+							f.config.Chemistry.InitialActivity = nil
+						}
+						f.name += fmt.Sprintf("/implicit%v", implicit)
+						cases++
+						t.Run(f.name, func(t *testing.T) {
+							g, prediction := runMixedReference(t, f)
+							want, _, coverage := mixedReferenceGradient(f)
+							if (profile == "gain-upper" || profile == "threshold-upper") && coverage.effectSaturation == 0 {
+								t.Fatal("capped profile did not clamp")
+							}
+							segments := []int{0}
+							if core == "lif" {
+								segments = append(segments, 1, 3)
+							}
+							for _, segment := range segments {
+								routes++
+								t.Run(fmt.Sprintf("train%d", segment), func(t *testing.T) { chemicalHomeostasisTrain(t, f, want, prediction, segment) })
+							}
+							if profile == "open-positive" {
+								controls++
+								off := f
+								chemicalHomeostasisSet(&off, false)
+								off.name += "/homeostasis-off"
+								runMixedReference(t, off)
+								offWant, _, _ := mixedReferenceGradient(off)
+								maxDifference := 0.0
+								a, b := chemicalHomeostasisFlatReference(want), chemicalHomeostasisFlatReference(offWant)
+								for i, v := range a {
+									maxDifference = math.Max(maxDifference, math.Abs(v-b[i]))
+								}
+								if !(maxDifference > 1e-9) {
+									t.Fatal("homeostasis gradient control was unobservable")
+								}
+								_ = offPrediction
+								nilChem := f
+								nilChem.config.Chemistry = nil
+								nilChem.name += "/chemistry-off"
+								nilGradient, nilPrediction := runMixedReference(t, nilChem)
+								assertChemicalVsNilDifference(t, g, prediction, nilGradient, nilPrediction)
+								t.Logf("homeostasis gradient control max_abs=%g", maxDifference)
+							}
+						})
+					}
+				}
+			}
+		}
+	}
+	if cases != 80 || routes != 160 || controls != 16 {
+		t.Fatalf("matrix cases/routes/controls=%d/%d/%d want80/160/16", cases, routes, controls)
+	}
+}
+
+func TestChemicalHomeostasisDisabledReference(t *testing.T) {
+	for _, core := range []string{"mixed", "lif"} {
+		for _, source := range []string{"controller", "neural"} {
+			for _, mix := range []string{modulation.MixSum, modulation.MixMax} {
+				f := chemicalMaxReferenceFixture(t, core, source, mix, "open-positive")
+				t.Run(f.name, func(t *testing.T) {
+					g, prediction := runMixedReference(t, f)
+					want, _, coverage := mixedReferenceGradient(f)
+					chemicalHomeostasisSet(&f, false)
+					disabled, disabledPrediction := runMixedReference(t, f)
+					disabledWant, _, disabledCoverage := mixedReferenceGradient(f)
+					ref := chemicalHomeostasisForward(f)
+					if !reflect.DeepEqual(g, disabled) || !reflect.DeepEqual(prediction, disabledPrediction) || !reflect.DeepEqual(want, disabledWant) || !reflect.DeepEqual(coverage, disabledCoverage) || ref.rate != nil || ref.homeostasis != nil {
+						t.Fatal("disabled reference or public result differs")
+					}
+				})
+			}
+		}
+	}
+}

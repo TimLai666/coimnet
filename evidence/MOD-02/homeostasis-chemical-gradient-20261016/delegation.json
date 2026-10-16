@@ -1,0 +1,45 @@
+{
+  "previous_goal_turn": "progress; ticket123 accepted, cleaned, committed, pushed and remote/content verified",
+  "host": "Codex",
+  "host_code_thread_id_present": true,
+  "opencode_models_exit_code": 1,
+  "opencode_models_error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "fallback_model": "gpt-5.6-luna",
+  "fallback_reasoning_effort": "max",
+  "initial_roles": [
+    "read-only math audit",
+    "read-only contract/entrypoint inventory"
+  ],
+  "implementation": {
+    "agent": "/root/homeostasis_math_122",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "allowed_scope": "referenceForward function body only",
+    "checks_owned_by": "root",
+    "completed": true,
+    "scope_review": "scope-review.json",
+    "root_verification": [
+      "reference-final-ordinary.json",
+      "reference-final-race.json"
+    ]
+  },
+  "final_readonly_inventory": {
+    "agent": "/root/homeostasis_edges_122",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "conclusion": "No confirmed test-contract defect; persistent final state and tiny-gradient update sensitivity are coverage limits, not confirmed production defects"
+  },
+  "persistent_state_inventory": {
+    "agent": "/root/homeostasis_edges_122",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "scope": "read-only inventory, no Go or edits",
+    "result": "next-audit.md",
+    "root_rechecked": [
+      "learning/lif_test.go:412",
+      "learning/chemistry_test.go:785",
+      "learning/chemical_stateful_test.go:265",
+      "dynamics/lif_state_test.go:629"
+    ]
+  }
+}
