@@ -13,7 +13,7 @@ Necessary draw invariants: keep/reservoir requires Draws>=Seen-Capacity after ov
 - [x] Root-read, freeze and run public regressions against unchanged production, covering both causes and additional counter failures.
 - [x] Adopt the minimal shared Restore validation and verify legal Add/Sample/Restore continuation across policies, refusal ownership, finite rejection and old model controls.
 - [x] Complete required engineering checks against frozen final source and update LRN-07 only with direct evidence. LRN-10 remains specified for ticket134.
-- [ ] Preserve necessary evidence, remove the owned project work root, commit, push and verify exact remote hash.
+- [x] Preserve necessary evidence, remove the owned project work root, commit, push and verify exact remote hash.
 
 ## Subtraction review
 

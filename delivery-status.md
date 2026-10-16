@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket133](docs/tickets/133-replay-restore-state-validation.md)已正式採用重播恢復的必要驗證。851份正式來源的完整一般／競態各58套件通過，8,517／8,516 pass、23／24 skip，原有各8,466個終端事件保持，只新增各74 pass。48份修改前重播存檔在新程序接續逐位元組相同，八列公開非法狀態均被拒絕。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。已核准中性增益的21個控制事件在兩種建置均通過。本票3／4，最後31項治理通過，60份必要輸入封存，1,739,953,161 bytes本輪暫存已清除，原模型、資料、模組及其他工作保持，待遠端交付。LRN-07恢復passed，LRN-10由ticket134接續，工程追蹤90／91。見[驗收](evidence/LRN-07/restore-validation-20261016/verification.json)。
+[ticket133](docs/tickets/133-replay-restore-state-validation.md)已正式採用重播恢復的必要驗證。851份正式來源的完整一般／競態各58套件通過，8,517／8,516 pass、23／24 skip，原有各8,466個終端事件保持，只新增各74 pass。48份修改前重播存檔在新程序接續逐位元組相同，八列公開非法狀態均被拒絕。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。已核准中性增益的21個控制事件在兩種建置均通過。本票4／4，最後31項治理通過，60份必要輸入封存，1,739,953,161 bytes本輪暫存已清除，原模型、資料、模組及其他工作保持。主要提交`d6a9678`已推送且遠端讀回相同，見[交付](evidence/LRN-07/restore-validation-20261016/delivery.json)。LRN-07恢復passed，LRN-10由ticket134接續，工程追蹤90／91。見[驗收](evidence/LRN-07/restore-validation-20261016/verification.json)。
 
 [ticket132](docs/tickets/132-adaptation-feedback-permission.md) 的回饋權限修正已正式採用。一般／競態各39項相關測試、35項固定評分控制與12份舊化學快照接續通過，10列公開控制中已允許score保持，未允許答案不再影響學習。本票4／4，主要提交`9ff5aa2`已推送且遠端讀回相同，見[交付](evidence/LRN-10/feedback-permission-20261016/delivery.json)。下一個可驗證成果是ticket133的完整失敗回歸與修正。848份正式來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組及31項治理通過。最後31項治理通過，33份必要輸入封存，1,786,439,615 bytes本輪暫存已清除，原模型、資料及其他工作保持。本票交付完成。LRN-10另有[ticket134](docs/tickets/134-evaluation-mse-representability.md)的極端有限誤差溢位，維持specified，LRN-07由ticket133接續，目前89／91。見[驗收](evidence/LRN-10/feedback-permission-20261016/verification.json)。
 
@@ -260,7 +260,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-ticket133重播恢復的正式修正已通過完整工程與舊存檔接續驗證，本輪暫存已清除，待遠端交付。接著由ticket134處理極端有限值的評估誤差溢位。LRN-07恢復passed，LRN-10保持specified，工程追蹤90／91。整體零bug與模型品質改善尚未證明。
+ticket133重播恢復的正式修正已通過完整工程與舊存檔接續驗證，本輪暫存已清除且遠端交付完成。接著由ticket134處理極端有限值的評估誤差溢位。LRN-07恢復passed，LRN-10保持specified，工程追蹤90／91。整體零bug與模型品質改善尚未證明。
 
 前一階段 ticket 66 的同一真實單字元化學開關比較已完成五項驗收，固定設定沒有顯示穩定改善。
 
@@ -283,7 +283,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 | --- | --- | --- | --- | --- |
 | 132 | 使用者可以限制適應評估可使用的回饋 | Codex Root／Luna max 唯讀審查 | completed | 4／4。完整工程、專項、舊模型、清理與遠端提交核對完成 |
 | 131 | 固定評分保持短期記憶 | Codex Root／Luna max 測試與實作 | completed | 4／4。完整工程、清理及遠端提交核對完成 |
-| 133 | 使用者可以拒絕不可能的重播恢復狀態 | Codex Root／Luna max 測試、實作與唯讀審查 | in_progress | 3／4。完整工程、最後31項治理、48份舊存檔接續與暫存清理通過，待遠端交付 |
+| 133 | 使用者可以拒絕不可能的重播恢復狀態 | Codex Root／Luna max 測試、實作與唯讀審查 | completed | 4／4。完整工程、最後31項治理、48份舊存檔接續、清理與遠端讀回完成 |
 | 134 | 使用者可以取得可表示的評估誤差 | Codex Root | ready | 1／4。公開有限值反例與精確參考已確認，正式修正待接續 |
 | 130 | 線上作答與回饋更新各自遵守閘門政策 | Codex Root／Luna max 測試與實作 | completed | 4／4。完整工程、清理與遠端提交核對完成，LRN-06 passed |
 | 129 | 研究者可以拒絕真正不可表示的記憶寫入報告 | Codex Root／Luna max 測試與契約審查 | completed | 4／4。完整工程、清理與遠端提交核對完成，MOD-06 passed |
@@ -372,7 +372,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-ticket133重播恢復的必要驗證已正式修正並通過完整工程，本輪暫存已清除，待遠端交付。ticket134極端有限MSE溢位的已確認缺陷仍待修正，LRN-07恢復passed，LRN-10保持specified，工程追蹤90／91。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
+ticket133重播恢復的必要驗證已正式修正並通過完整工程，本輪暫存已清除且遠端交付完成。ticket134極端有限MSE溢位的已確認缺陷仍待修正，LRN-07恢復passed，LRN-10保持specified，工程追蹤90／91。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 
@@ -394,7 +394,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket133](docs/tickets/133-replay-restore-state-validation.md)已通過完整工程與舊重播存檔接續，必要證據已封存且本輪暫存已清除，下一個可驗證成果是遠端交付。接著由[ticket134](docs/tickets/134-evaluation-mse-representability.md)處理有限MSE中間溢位。工程追蹤90／91，這些測試不作為模型品質或零bug的證明。
+[ticket133](docs/tickets/133-replay-restore-state-validation.md)已通過完整工程與舊重播存檔接續，必要證據封存、暫存清理與遠端交付均已完成。下一個可驗證成果是[ticket134](docs/tickets/134-evaluation-mse-representability.md)的有限MSE中間溢位修正。工程追蹤90／91，這些測試不作為模型品質或零bug的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

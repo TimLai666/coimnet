@@ -1,6 +1,6 @@
 # CoImNet
 
-重播恢復現在會拒絕不合格式的指紋與已確認不可能的亂數計數。851份正式來源的一般／競態完整檢查各58套件通過，48份舊重播存檔在新程序接續結果相同，見[ticket133](docs/tickets/133-replay-restore-state-validation.md)及[驗收](evidence/LRN-07/restore-validation-20261016/verification.json)。本票已清除本輪暫存，待遠端交付，目前工程追蹤90／91，LRN-10的極端有限值評估誤差溢位由[ticket134](docs/tickets/134-evaluation-mse-representability.md)接續。本輪沒有重測任務辨識率或生物校準。
+重播恢復現在會拒絕不合格式的指紋與已確認不可能的亂數計數。851份正式來源的一般／競態完整檢查各58套件通過，48份舊重播存檔在新程序接續結果相同，見[ticket133](docs/tickets/133-replay-restore-state-validation.md)及[驗收](evidence/LRN-07/restore-validation-20261016/verification.json)。本票已完成暫存清理與遠端交付，目前工程追蹤90／91，LRN-10的極端有限值評估誤差溢位由[ticket134](docs/tickets/134-evaluation-mse-representability.md)接續。本輪沒有重測任務辨識率或生物校準。
 
 **Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
 
