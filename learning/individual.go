@@ -443,10 +443,11 @@ func (i *Individual) snapshotLocked() IndividualSnapshot {
 // encodes observations and decodes selected core outputs with float32 tensors.
 // A failed or canceled call commits no steps. Inputs must be nonempty.
 //
-// With plasticity enabled this is AdvanceGated with a gate of zero on every
-// row: the eligibility and the pair traces keep tracking activity, and the
-// fast changes only decay. With plasticity disabled it is the path that
-// existed before the mechanism and is bit-identical to it.
+// With plasticity enabled a receptor declaration supplies its native
+// gate. Otherwise the implicit gate is zero on every row: the eligibility and
+// pair traces keep tracking activity, and the fast changes only decay. With
+// plasticity disabled it is the path that existed before the mechanism and is
+// bit-identical to it.
 func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float64, error) {
 	out, _, err := i.advanceRows(ctx, input, nil)
 	return out, err
@@ -471,6 +472,12 @@ func (i *Individual) AdvanceGated(ctx context.Context, input [][]float64, gate [
 }
 
 func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []float64) ([][]float64, PlasticReport, error) {
+	return i.advanceRowsWithGateSource(ctx, input, gate, true)
+}
+
+// advanceRowsWithGateSource acquires the individual lock. A false source
+// selection uses only the supplied gate, preserving receptor-controlled decay.
+func (i *Individual) advanceRowsWithGateSource(ctx context.Context, input [][]float64, gate []float64, useReceptorGate bool) ([][]float64, PlasticReport, error) {
 	if i == nil || i.trainer == nil {
 		return nil, PlasticReport{}, fmt.Errorf("uninitialized individual")
 	}
@@ -478,10 +485,15 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		return nil, PlasticReport{}, err
 	}
 	defer i.mu.Unlock()
-	return i.advanceRowsLocked(ctx, input, gate)
+	return i.advanceRowsWithGateSourceLocked(ctx, input, gate, useReceptorGate)
 }
 
 func (i *Individual) advanceRowsLocked(ctx context.Context, input [][]float64, gate []float64) ([][]float64, PlasticReport, error) {
+	return i.advanceRowsWithGateSourceLocked(ctx, input, gate, true)
+}
+
+// advanceRowsWithGateSourceLocked requires the caller to hold i.mu.
+func (i *Individual) advanceRowsWithGateSourceLocked(ctx context.Context, input [][]float64, gate []float64, useReceptorGate bool) ([][]float64, PlasticReport, error) {
 	n, p := i.trainer.network, i.trainer.parameters
 	if len(input) == 0 {
 		return nil, PlasticReport{}, fmt.Errorf("empty input sequence")
@@ -561,7 +573,7 @@ func (i *Individual) advanceRowsLocked(ctx context.Context, input [][]float64, g
 			return nil, PlasticReport{}, err
 		}
 	} else {
-		if stepwise, err = i.advanceStepwise(ctx, core, coreInputs, gate); err != nil {
+		if stepwise, err = i.advanceStepwise(ctx, core, coreInputs, gate, useReceptorGate); err != nil {
 			return nil, PlasticReport{}, err
 		}
 		state, outputs, report = stepwise.neural, stepwise.outputs, stepwise.plastic
@@ -660,7 +672,9 @@ type stepwiseResult struct {
 // stays at its zero value, and with the fast state frozen the row runs this
 // same order without its last step: the effective weights are still built from
 // the held state, the local update is not.
-func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64) (stepwiseResult, error) {
+// useReceptorGate selects native receptor gating. It does not disable chemistry
+// or receptor-controlled eligibility decay.
+func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreInputs [][]float64, gate []float64, useReceptorGate bool) (stepwiseResult, error) {
 	var result stepwiseResult
 	n := i.trainer.network
 	nodes := configNodes(n.config)
@@ -781,7 +795,7 @@ func (i *Individual) advanceStepwise(ctx context.Context, core Parameters, coreI
 				g = gate[t]
 			}
 			gateFromReceptor := false
-			if rule.GateReceptor != nil && i.chemical != nil {
+			if useReceptorGate && rule.GateReceptor != nil && i.chemical != nil {
 				avgOcc := chemical.receptorOccupancy[*rule.GateReceptor]
 				rg, ok := i.plastic.model.GateFor(avgOcc)
 				if ok {

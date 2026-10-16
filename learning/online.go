@@ -245,11 +245,11 @@ func (l *OnlineLearner) SetTargets(targets map[string][]float64) error {
 	return nil
 }
 
-// Act produces one answer and appends it to the append-only log. It runs the
-// individual's ordinary Advance, so with local plasticity enabled the fast
-// state keeps tracking activity under a closed gate and nothing learns here.
-// The observation is validated and its experience is remembered, so feedback
-// about a different experience cannot be attached to this action.
+// Act produces one answer and appends it to the append-only log. Its online
+// advance keeps the receptor learning gate closed, while the chemistry decay
+// window still runs, so local plasticity only tracks activity and decays fast
+// state here. The observation is validated and its experience is remembered,
+// so feedback about a different experience cannot be attached to this action.
 func (l *OnlineLearner) Act(ctx context.Context, obs signal.Observation, input [][]float64) (ActionRecord, error) {
 	if err := obs.Validate(); err != nil {
 		return ActionRecord{}, fmt.Errorf("learning: online observation: %w", err)
@@ -430,7 +430,7 @@ func (l *OnlineLearner) apply(ctx context.Context, fb signal.Feedback, report *U
 	for i := range gate {
 		gate[i] = applied[0]
 	}
-	if _, _, err = l.individual.AdvanceGated(ctx, entry.input, gate); err != nil {
+	if _, _, err = l.individual.advanceRowsWithGateSource(ctx, entry.input, gate, false); err != nil {
 		return err
 	}
 	report.PlasticSteps++

@@ -5,8 +5,9 @@ import (
 	"fmt"
 )
 
-// advanceVersioned performs the ordinary advance and derives the model version
-// while the same individual lock is held. Hashing first means a version
+// advanceVersioned performs an online advance with the receptor learning gate
+// closed and derives the model version while the same individual lock is held.
+// The chemistry decay window still runs. Hashing first means a version
 // encoding refusal cannot publish an advance that Act cannot record.
 func (i *Individual) advanceVersioned(ctx context.Context, input [][]float64) ([][]float64, string, error) {
 	if i == nil || i.trainer == nil {
@@ -20,7 +21,7 @@ func (i *Individual) advanceVersioned(ctx context.Context, input [][]float64) ([
 	if err != nil {
 		return nil, "", err
 	}
-	output, _, err := i.advanceRowsLocked(ctx, input, nil)
+	output, _, err := i.advanceRowsWithGateSourceLocked(ctx, input, nil, false)
 	if err != nil {
 		return nil, "", err
 	}
