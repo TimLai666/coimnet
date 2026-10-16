@@ -274,6 +274,8 @@ EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部�
 
 ## 線上回饋與共享訓練狀態一致性
 
+適應評估先執行每題的線上作答，再檢查該題是否允許score，宣告驗證已確保允許種類同時屬於全域可用種類。未允許時不讀取答案計算分數、不送入Receive／Update，作答的觀察、參與紀錄與自然衰退照常執行。自動runner只產生score，其他回饋名稱保留為metadata。公開API註解與CLI範例說明同步此限制，由[ticket132](docs/tickets/132-adaptation-feedback-permission.md)驗收。
+
 固定評估的快速狀態保持或重設後保持，神經與化學狀態仍依輸入推進。AdvanceFixed 沿用同一個鎖定、候選與提交入口，在整次個體鎖定期間維持快速狀態，解鎖前恢復既有凍結旗標。scoreItems 的固定、適應後評分與順序對照共用此操作。線上 Act 的關閘門及自然衰退是另一個契約，兩者不能互相取代。沒有新保存欄位。由 [ticket131](docs/tickets/131-fixed-scoring-state.md) 驗收。
 
 線上與原生推論共用advance的驗證、候選與提交，僅由私有的單次操作參數指定閘門來源。Act使用關閉的新寫入閘門，eligibility、神經、化學與受體時間窗正常推進；Update的局部階段使用reward mapper給定的閘門。一般Advance與公開AdvanceGated保留受體閘門及雙重宣告拒絕。此來源選擇不寫入模型、快照或runtime旗標，不用暫時改Rule或freeze達成。由[ticket130](docs/tickets/130-online-receptor-gate-ownership.md)驗收。

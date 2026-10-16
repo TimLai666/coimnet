@@ -1,0 +1,43 @@
+{
+  "at": "2026-10-16T11:42:51.312409+00:00",
+  "confirmed": true,
+  "same_ticket": 133,
+  "severity": "P2",
+  "normal_race_byte_identical": true,
+  "candidate_also_accepts": true,
+  "cases": [
+    {
+      "accepted": true,
+      "case": "empty",
+      "draws": 1,
+      "seen": 0
+    },
+    {
+      "accepted": true,
+      "case": "one-seen",
+      "draws": 1,
+      "seen": 1
+    },
+    {
+      "accepted": true,
+      "case": "fifo-capacity-one",
+      "draws": 1,
+      "seen": 3
+    },
+    {
+      "accepted": true,
+      "case": "time-balanced-capacity-two",
+      "draws": 1,
+      "seen": 3
+    }
+  ],
+  "root_cause": "Restore lacks upper/zero draw invariants when neither Add nor Sample could ever have consumed a random value.",
+  "basis": [
+    "Seen below2: at most one held item ever, first Add appends and Sample of <=1 draws nothing.",
+    "FIFO capacity1: Add is deterministic and at most one held item can be sampled.",
+    "FIFO time_balanced capacity2: no Add draws; every sample has at most two single-item buckets."
+  ],
+  "formal_source_unchanged": 848,
+  "candidate_complete": false,
+  "next_step": "Extend public tests and derive general conservative counter invariants before any formal ticket133 adoption. Check historical maximum held size and whether Add or Sample could draw, rather than patching case labels."
+}

@@ -1,0 +1,31 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-overlay=runs/.tmp/feedback-permission-20261016/future-replay-overlay.json",
+    "-json",
+    "-count=1",
+    "./replay",
+    "-run",
+    "^TestReplayRestore(RejectsNonHexFingerprints|RejectsImpossibleReservoirDraws|Continuation|DropAndHexControls)$"
+  ],
+  "exit_code": 1,
+  "started_at": "2026-10-16T11:32:00.555598+00:00",
+  "seconds": 2.859271625,
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/feedback-permission-20261016/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/feedback-permission-20261016/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/feedback-permission-20261016/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/feedback-permission-20261016/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "log": "future-replay-red-v2-race.log",
+  "log_sha256": "22b0d5661591f7b11fb0093f969fae3b880d4c6347a160d4846e05edf128f789"
+}

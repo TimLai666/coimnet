@@ -1,0 +1,50 @@
+{
+  "host": "Codex",
+  "probe": "opencode models",
+  "exit_code": 1,
+  "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "fallback": "collaboration.spawn_agent",
+  "agent": "/root/replay_restore_contract_133",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "scope": "read-only next replay restore contract audit; no Go or writes",
+  "additional_agents": [
+    {
+      "agent": "/root/feedback_permission_adversarial_132",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only adversarial source and documentation review",
+      "confirmed_findings": 0
+    },
+    {
+      "agent": "/root/replay_restore_tests_candidate_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "one proposed test text file in owned work root; formal source untouched"
+    },
+    {
+      "agent": "/root/replay_restore_implementation_candidate_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "one proposed replay/store.go text copy in owned work root; no formal source or tests changed",
+      "root_result": "96 candidate replay events pass per build, but4 additional unreachable counter states still accepted; candidate incomplete",
+      "read_only_followup": {
+        "scope": "proof and counterexample audit of historical draw impossibility; no writes, Go or runtime tests",
+        "proposed_necessary_conditions": [
+          "historical held upper bound min(Seen, Capacity)",
+          "random Add requires reservoir overflow",
+          "random Sample requires at least two historical held items, or at least three for time-balanced sampling"
+        ],
+        "status": "completed; Root directly checked current Add, Sample and draw paths",
+        "root_result": "Conservative zero-draw necessary condition is supported for keep/drop; min(Seen, Capacity) is a historical upper bound, not exact drop history. Reservoir lower bound remains keep-only. No formal adoption or new runtime test. Examples with exact one draw depend on the seeded stream; rejection can consume more raw draws."
+      }
+    },
+    {
+      "agent": "/root/closure_evidence_audit_132",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only closure evidence audit; no Go, source edits or files written",
+      "root_result": "Verified focused controls, full ordinary result, source848 and payload33. Engineering race, preservation and cleanup were genuinely pending. Timestamped partial race counters are observations, not a claimed final count."
+    }
+  ]
+}

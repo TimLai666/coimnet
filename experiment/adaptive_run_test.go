@@ -169,10 +169,11 @@ func TestRunAdaptiveEvaluationAdaptiveMode(t *testing.T) {
 	beforePlastic := ind.Snapshot().Plastic.State.Plastic
 
 	e := experiment.AdaptiveEvaluation{
-		Mode: experiment.EvaluationModeAdaptive,
+		Mode:              experiment.EvaluationModeAdaptive,
+		FeedbackAvailable: []string{"score"},
 		Adaptation: []experiment.EvaluationItem{
-			{ID: "adapt-a", Input: [][]float64{{.5}, {0}, {.2}}, Target: []float64{.4}},
-			{ID: "adapt-b", Input: [][]float64{{-.3}, {.1}}, Target: []float64{-.1}},
+			{ID: "adapt-a", Input: [][]float64{{.5}, {0}, {.2}}, Target: []float64{.4}, AllowedFeedback: []string{"score"}},
+			{ID: "adapt-b", Input: [][]float64{{-.3}, {.1}}, Target: []float64{-.1}, AllowedFeedback: []string{"score"}},
 		},
 		Scoring: []experiment.EvaluationItem{
 			{ID: "score-a", Input: [][]float64{{.5}, {0}, {.2}}, Target: []float64{.4}},

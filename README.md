@@ -1,6 +1,6 @@
 # CoImNet
 
-固定與適應後評分不再改變短期記憶，神經及化學狀態仍依設定演化。修正通過完整一般／競態各58套件與舊化學快照接續驗證，見[ticket131](docs/tickets/131-fixed-scoring-state.md)與[驗收](evidence/LRN-10/policy-composition-20261016/verification.json)。適應回饋權限與重播恢復的已確認缺陷分別由[ticket132](docs/tickets/132-adaptation-feedback-permission.md)及[ticket133](docs/tickets/133-replay-restore-state-validation.md)接續，目前工程追蹤89／91。本輪沒有重測任務辨識率或生物校準。
+固定與適應後評分不再改變短期記憶，神經及化學狀態仍依設定演化。修正通過完整一般／競態各58套件與舊化學快照接續驗證，見[ticket131](docs/tickets/131-fixed-scoring-state.md)與[驗收](evidence/LRN-10/policy-composition-20261016/verification.json)。適應回饋權限修正已通過完整一般／競態各58套件、專項與舊快照控制，[ticket132](docs/tickets/132-adaptation-feedback-permission.md)的暫存已清除，待遠端交付。重播恢復由[ticket133](docs/tickets/133-replay-restore-state-validation.md)接續，極端有限值的評估誤差溢位由[ticket134](docs/tickets/134-evaluation-mse-representability.md)追蹤，目前工程追蹤89／91。本輪沒有重測任務辨識率或生物校準。
 
 **Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
 

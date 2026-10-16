@@ -1,0 +1,12 @@
+{
+  "at": "2026-10-16T11:32:00.433059+00:00",
+  "original_labels": [
+    "future-replay-red-ordinary",
+    "future-replay-red-race"
+  ],
+  "compiled": false,
+  "failure": "go: reading overlay: open runs/.tmp/feedback-permission-20261016/future-replay-overlay.json: no such file or directory",
+  "cause": "Root text-shape assertion expected a combined nil/error if; worker correctly used two separate checks. The setup aborted before creating overlay. Subsequent command orchestration failed to stop on setup error.",
+  "correction": "Root inspected both actual helper bodies, verified the intended assertions, created and froze overlay, and retries use separate v2 labels. Setup failure exits orchestration before dependent commands.",
+  "not_counted_as_behavioral_regression": true
+}

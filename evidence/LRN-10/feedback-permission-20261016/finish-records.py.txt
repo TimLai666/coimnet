@@ -1,0 +1,96 @@
+"""Validate completed ticket132 receipts before cleanup and delivery."""
+from pathlib import Path
+from datetime import datetime, timezone
+import collections
+import gzip
+import hashlib
+import json
+import subprocess
+
+assert __debug__
+E = Path(__file__).resolve().parent
+R = E.parents[2]
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+engineering = read(E / 'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count'] == 848
+assert len(engineering['steps']) == 9
+summary = {}
+for step in engineering['steps']:
+    assert step['exit_code'] == 0 and not step['acceptance_errors'], step['name']
+    path = E / step['log']
+    assert sha(path) == step['log_sha256'], path
+    if path.name.endswith('.gz'):
+        assert hashlib.sha256(gzip.decompress(path.read_bytes())).hexdigest() == step['raw_sha256']
+    if step['name'] in ['unit', 'race']:
+        expected = {'pass': 8443, 'skip': 23} if step['name'] == 'unit' else {'pass': 8442, 'skip': 24}
+        assert step['test_events'] == expected
+        assert step['package_events'] == {'pass': 58, 'skip': 4}
+        assert step['prior_event_count'] == 8459 and not step['changed_events']
+        assert len(step['added_events']) == 7
+        assert all(x['action'] == 'pass' and x['test'].startswith('TestAdaptiveFeedbackPermission') for x in step['added_events'])
+        summary[step['name']] = {'test_events': expected, 'package_events': step['package_events'], 'prior_events_unchanged': 8459, 'new_pass_events': 7, 'receipt': 'engineering-' + step['name'] + '.json'}
+
+source = read(E / 'formal-source.json')
+assert len(source) == 848
+paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+assert paths == set(source)
+for name, digest in source.items():
+    assert sha(R / name) == digest, name
+for name, digest in read(E / 'foreign-before.json').items():
+    assert sha(Path(name)) == digest, name
+assert read(E / 'diagnostic-verification.json')['all_passed']
+assert read(E / 'cli-verification.json')['fixed_report_byte_identical']
+assert read(E / 'cli-verification.json')['adaptive_report_byte_identical']
+assert read(E / 'future-replay-verification.json')['candidate_complete'] is False
+assert read(E / 'future-replay-verification.json')['production_adopted'] is False
+assert read(E / 'next-mse-verification.json')['confirmed']
+status = read(R / 'docs/requirements-status.json')['requirements']
+assert collections.Counter(x['status'] for x in status) == {'passed': 89, 'specified': 2}
+assert {x['id'] for x in status if x['status'] == 'specified'} == {'LRN-07', 'LRN-10'}
+
+p = E / 'verification.json'
+original = p.read_bytes()
+verification = json.loads(original)
+assert not verification['engineering_passed'], 'finish records already applied'
+verification['verified_at'] = datetime.now(timezone.utc).isoformat()
+verification['engineering_passed'] = True
+verification['environment'] = read(E / 'host-go-environment.log')
+verification['go_version'] = (E / 'host-go-version.log').read_text().strip()
+verification['input_fingerprints'] = {
+    'formal_source': 'formal-source.json', 'formal_source_sha256': sha(E / 'formal-source.json'),
+    'frozen_regression': 'regression-frozen.json', 'work_payloads': 'work-payloads.json',
+    'work_payloads_sha256': sha(E / 'work-payloads.json'), 'module_anchor': 'module-manifest-anchor.json',
+}
+verification['observed_result']['engineering'] = summary
+verification['observed_result']['engineering_receipt'] = 'engineering-verification.json'
+verification['remaining_delivery'] = ['final governance', 'preservation', 'cleanup', 'commit', 'push', 'exact remote readback']
+verification['test_log'] += ['engineering-unit.log.gz', 'engineering-race.log.gz', 'engineering-governance.log']
+assert p.read_bytes() == original
+p.write_text(json.dumps(verification, indent=2) + '\n')
+
+p = E / 'progress.json'
+original = p.read_bytes()
+progress = json.loads(original)
+progress['at'] = verification['verified_at']
+progress['race'] = summary['race']
+progress['race_status'] = 'completed; engineering-verification.json all_passed=true'
+progress.pop('ongoing_engineering_session', None)
+progress.pop('race_observation', None)
+progress['cleanup_status'] = 'pending final governance and preservation'
+assert p.read_bytes() == original
+p.write_text(json.dumps(progress, indent=2) + '\n')
+
+for filename in ['delivery-status.md', 'docs/tickets/132-adaptation-feedback-permission.md']:
+    p = R / filename
+    original = p.read_bytes()
+    text = original.decode()
+    if filename == 'delivery-status.md':
+        old = '完整一般58套件通過，8,443 pass、23 skip，競態仍在同一個工程程序執行。'
+        assert text.count(old) == 1
+        text = text.replace(old, '848份正式來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組及31項治理通過。待最後治理、清理與交付。')
+    else:
+        text += '\n848份來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。本票3／4，待最後治理、清理與交付，工程追蹤維持89／91。見[完整工程](../../evidence/LRN-10/feedback-permission-20261016/engineering-verification.json)。\n'
+    assert p.read_bytes() == original
+    p.write_text(text)
+print(json.dumps({'engineering_passed': True, 'source_count': 848, 'unit_pass': 8443, 'race_pass': 8442, 'requirements_passed': 89, 'remaining_delivery': verification['remaining_delivery']}))

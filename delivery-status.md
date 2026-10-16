@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket132](docs/tickets/132-adaptation-feedback-permission.md) 的回饋權限修正已正式採用。一般／競態各39項相關測試、35項固定評分控制與12份舊化學快照接續通過，10列公開控制中已允許score保持，未允許答案不再影響學習。本票3／4，下一個可驗證成果是正式提交、推送與遠端讀回。848份正式來源的完整一般／競態各58套件通過，8,443／8,442 pass、23／24 skip，原有各8,459個終端事件保持，只新增各7 pass。格式、build、vet、固定Insyra v0.3.4、模組及31項治理通過。最後31項治理通過，33份必要輸入封存，1,786,439,615 bytes本輪暫存已清除，原模型、資料及其他工作保持。待遠端交付。LRN-10另有[ticket134](docs/tickets/134-evaluation-mse-representability.md)的極端有限誤差溢位，維持specified，LRN-07由ticket133接續，目前89／91。見[驗收](evidence/LRN-10/feedback-permission-20261016/verification.json)。
+
 [ticket131](docs/tickets/131-fixed-scoring-state.md) 的固定評分修正通過完整工程驗收。847份正式來源的一般／競態各58套件通過，8,436／8,435 pass、23／24 skip，原有各8,424個終端事件保持，只新增各35 pass。格式、build、vet、固定Insyra v0.3.4、模組及31項治理通過。12份舊化學快照接續保持。本票4／4，31項最後治理通過，1,718,722,369 bytes本輪暫存已清除，原有模型、資料與其他工作保持。主要提交`2387ca9`已推送且遠端讀回一致，見[交付](evidence/LRN-10/policy-composition-20261016/delivery.json)。見[驗收](evidence/LRN-10/policy-composition-20261016/verification.json)與[清理](evidence/LRN-10/policy-composition-20261016/cleanup.json)。[ticket132](docs/tickets/132-adaptation-feedback-permission.md)的候選修正僅在暫存overlay通過一般／競態各39項相關測試及10列公開控制，正式程式尚未採用。[ticket133](docs/tickets/133-replay-restore-state-validation.md)的重播恢復缺口仍待修正。LRN-10及LRN-07保持specified，工程追蹤89／91。
 
 [ticket130](docs/tickets/130-online-receptor-gate-ownership.md) 已修正線上作答提前學習與回饋閘門衝突。一般／競態各168個新專項、四個相關套件、32個公開控制與12份舊化學模型接續通過，兩種隔離錯誤均被拒絕。846份正式來源的完整一般／競態各58套件通過，8,401／8,400 pass、23／24 skip，原有各8,256個終端事件保持，只新增各168 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。LRN-06恢復passed，工程追蹤91／91。本票4／4。最後31項治理通過，1,873,901,825 bytes自有暫存已清除，原模型、資料、原始模組及其他工作保持。主要提交`119147a`已推送且遠端讀回相同，見[清理](evidence/LRN-06/online-receptor-policy-20261016/cleanup.json)與[交付](evidence/LRN-06/online-receptor-policy-20261016/delivery.json)。見[驗收](evidence/LRN-06/online-receptor-policy-20261016/verification.json)。
@@ -256,7 +258,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本輪ticket130的線上閘門修正已通過完整工程，原生受體學習、化學時間窗與既有保存格式保持。LRN-06恢復passed，工程追蹤91／91。清理與交付以「目前階段」為準。整體零bug與模型品質改善尚未證明。
+本輪目標是完成ticket132的回饋權限驗收與交付，確保沒有允許使用答案時，適應模型只觀察並依原規則衰退。正式修正、專項、完整工程及暫存清理已完成，遠端交付待完成。LRN-07與LRN-10維持specified，工程追蹤89／91。整體零bug與模型品質改善尚未證明。
 
 前一階段 ticket 66 的同一真實單字元化學開關比較已完成五項驗收，固定設定沒有顯示穩定改善。
 
@@ -277,6 +279,10 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 132 | 使用者可以限制適應評估可使用的回饋 | Codex Root／Luna max 唯讀審查 | in_progress | 3／4。完整工程、專項、舊模型控制與清理通過，待遠端交付 |
+| 131 | 固定評分保持短期記憶 | Codex Root／Luna max 測試與實作 | completed | 4／4。完整工程、清理及遠端提交核對完成 |
+| 133 | 使用者可以拒絕不可能的重播恢復狀態 | Codex Root／Luna max 候選測試與實作 | ready | 0／4。初版候選未涵蓋追加計數反例，不可正式採用 |
+| 134 | 使用者可以取得可表示的評估誤差 | Codex Root | ready | 1／4。公開有限值反例與精確參考已確認，正式修正待接續 |
 | 130 | 線上作答與回饋更新各自遵守閘門政策 | Codex Root／Luna max 測試與實作 | completed | 4／4。完整工程、清理與遠端提交核對完成，LRN-06 passed |
 | 129 | 研究者可以拒絕真正不可表示的記憶寫入報告 | Codex Root／Luna max 測試與契約審查 | completed | 4／4。完整工程、清理與遠端提交核對完成，MOD-06 passed |
 | 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | completed | 4／4。專項、完整工程、清理及遠端提交核對完成，COR-11 passed |
@@ -364,7 +370,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-ticket130完整工程已通過，LRN-06恢復passed，工程追蹤91／91，清理與交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
+ticket132完整工程與清理已完成，遠端交付待完成。另有ticket133重播恢復驗證及ticket134極端有限MSE溢位的已確認缺陷，LRN-07與LRN-10維持specified，工程追蹤89／91。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 
@@ -386,7 +392,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket130清理與交付已完成。後續機制稽核先以公開API核對疑慮，重現缺陷後才修正。工程追蹤為91／91，這些測試不作為模型品質或零bug的證明。
+目前先完成ticket132遠端交付，完整工程、必要證據保存及暫存清理均已完成。下一票是[ticket133](docs/tickets/133-replay-restore-state-validation.md)，補齊不可成立計數的失敗回歸，再完成重播恢復修正；[ticket134](docs/tickets/134-evaluation-mse-representability.md)另處理有限MSE中間溢位。工程追蹤89／91，這些測試不作為模型品質或零bug的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-16T11:32:51.889122+00:00",
+  "confirmed": true,
+  "severity": "P2",
+  "source": "experiment/adaptive_run.go:itemMSE",
+  "normal_race_byte_identical": true,
+  "public_sdk_rows": 2,
+  "finite_target": 1e+154,
+  "output_width": 2,
+  "expected_mean_squared_error": 1e+308,
+  "observed_mean_squared_error": "+Inf",
+  "report_serialization_error": "json: unsupported value: +Inf",
+  "reference": "math/big.Rat squares the exact input float64 and rounds the final mean; both target components are equal and output is zero",
+  "formal_source_unchanged": 848,
+  "implementation_changed": false,
+  "receipts": [
+    "next-mse-ordinary.json",
+    "next-mse-race.json"
+  ],
+  "input_source": "next-mse/main.go in the eventual work preservation archive",
+  "limit": "Extreme finite values, not a failure measured on ordinary OCR inputs."
+}

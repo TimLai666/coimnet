@@ -1,0 +1,13 @@
+Usage: coimnet examples run evaluate --mode fixed|adaptive --out FILE [--seed 1] [--reset neural,plastic,chemical]
+Builds the small delayed-correlation fixture: a 2-node continuous core with local plasticity on its edge and 8+8 deterministic items derived from --seed. Fixed mode scores the eight items without any feedback; adaptive mode first replays eight adaptation items with score feedback through the online learner, then scores the same eight items while holding their fast state. The evaluation report is written as indented JSON to a new --out file and a one-line summary goes to stdout.
+Example: coimnet examples run evaluate --mode adaptive --reset neural,plastic,chemical --out evaluation.json
+Errors: missing --mode or --out, unknown --mode, an existing --out path, an unknown --reset name, cancellation or output failure. Usage errors exit with status 1 and name the flag.
+Options and their defaults:
+  -mode string
+    	evaluation mode, fixed or adaptive (required)
+  -out string
+    	new evaluation report JSON file; an existing path is never overwritten (required)
+  -reset string
+    	comma-separated state reset before every item: neural,plastic,chemical (default none)
+  -seed uint
+    	deterministic item generator seed (default 1)
