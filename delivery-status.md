@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 128](docs/tickets/128-intervention-finite-norm.md) 已修正介入報告的中間平方上溢／下溢，真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。一般／競態各 99 個新專項、223 個相關事件與兩個原公開 witness 通過，四種隔離回退在兩種建置均被拒絕。844 份來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定依賴與治理通過，COR-11 恢復 passed，見[驗收](evidence/COR-11/finite-intervention-norm-20261016/verification.json)。本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。MOD-06 的三種記憶報告在最高端錯誤接受寫入，保持 specified，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續，目前工程追蹤 90／91。
+[ticket 128](docs/tickets/128-intervention-finite-norm.md) 已修正介入報告的中間平方上溢／下溢，真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。一般／競態各 99 個新專項、223 個相關事件與兩個原公開 witness 通過，四種隔離回退在兩種建置均被拒絕。844 份來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定依賴與治理通過，COR-11 恢復 passed，見[驗收](evidence/COR-11/finite-intervention-norm-20261016/verification.json)。本票 4／4，最後 31 項治理通過，2,632,490,749 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/finite-intervention-norm-20261016/cleanup.json)。主要提交 `2b9c959` 已推送且遠端讀回相同，844 份提交來源核對完成，見[交付](evidence/COR-11/finite-intervention-norm-20261016/delivery.json)。MOD-06 的三種記憶報告在最高端錯誤接受寫入，保持 specified，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續，目前工程追蹤 90／91。
 
 [ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,740,939,604 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/frozen-intervention-20261016/cleanup.json)。主要提交 `0af230b` 已推送且遠端讀回相同，841 份提交來源核對完成，見[交付](evidence/COR-11/frozen-intervention-20261016/delivery.json)。模型格式、正常載入及數值規則保持，整體機制稽核持續。
 
@@ -271,7 +271,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | in_progress | 3／4。專項、完整工程與 COR-11 驗收通過，待清理與交付 |
+| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | completed | 4／4。專項、完整工程、清理及遠端提交核對完成，COR-11 passed |
 | 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | completed | 4／4。兩項修正、90 項專項、完整工程、清理及遠端提交核對完成 |
 | 122 | 研究者可以接續可表示的慢速活動狀態 | Codex Root／Luna max 唯讀審查 | completed | 4／4。專項、正常／舊保存、完整工程、清理及遠端提交核對完成 |
 | 116 | 研究者可以在有限尾端設定下使用正確的放電閾值與梯度 | Codex Root／Luna max 測試、實作與唯讀審查 | completed | 5／5。完整工程、正常／舊保存、清理、提交推送及 833 份提交來源核對完成 |
