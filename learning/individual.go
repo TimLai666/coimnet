@@ -146,8 +146,8 @@ type Individual struct {
 	// episodes counts the completed TrainEpisode calls since the last
 	// ResetOptimizer, the clock every consolidation write reads.
 	episodes uint64
-	// rowOverride is the per-row hook an Intervene call is running, nil while no
-	// call is active. It is set outside the individual lock and read inside the
+	// rowOverride is the per-row hook an Intervene call owns while the individual
+	// operation lock is held, nil while no call is active. It is read inside the
 	// advance loop, so Intervene is not safe to call concurrently with other
 	// mutating methods on the same individual.
 	rowOverride rowOverride
@@ -404,6 +404,12 @@ func (i *Individual) Snapshot() IndividualSnapshot {
 	}
 	i.mu.Lock()
 	defer i.mu.Unlock()
+	return i.snapshotLocked()
+}
+
+// snapshotLocked returns an independent copy of all four parts at a completed
+// operation boundary. The caller must hold i.mu.
+func (i *Individual) snapshotLocked() IndividualSnapshot {
 	s := i.trainer.Snapshot()
 	var plastic *PlasticPart
 	if i.plastic != nil {

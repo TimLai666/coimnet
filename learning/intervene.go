@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"math/big"
 	"math/rand/v2"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/modulation"
 	"github.com/TimLai666/coimnet/plasticity"
 )
 
@@ -64,13 +66,17 @@ type rowOverride func(row uint64, next NeuralState, values, spikes []float64) er
 // flags when those runtimes exist, but receives no intervention hook beyond its
 // own concentration recorder. It completes before the subject's network,
 // neural state or hooks change, so a twin error or cancellation cannot commit
-// a subject advance.
+// a subject advance. If the subject run succeeds but a reported norm is not
+// representable, the subject runtime is restored before the error is returned.
 //
 // The rows of a plan index the submitted sequence of this call, so a fresh
 // individual and a continuing one both read "clamp rows 10..20" as rows 10..20
 // of what this call was given. Intervene spans several complete operations
 // (validate, snapshot, advance, restore) and is not safe to run concurrently
-// with other mutating calls on the same individual.
+// with other mutating calls on the same individual. After preflight, the
+// subject lock covers the snapshot, twin comparison, subject run, delta
+// calculation, rollback and hook cleanup, so readers wait for a completed
+// operation boundary.
 func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input [][]float64) ([][]float64, InterventionLog, error) {
 	var empty InterventionLog
 	if i == nil || i.trainer == nil {
@@ -86,7 +92,11 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 	if len(input) == 0 {
 		return nil, empty, fmt.Errorf("empty input sequence")
 	}
-	snap := i.Snapshot()
+	if err := i.mu.LockContext(ctx); err != nil {
+		return nil, empty, err
+	}
+	defer i.mu.Unlock()
+	snap := i.snapshotLocked()
 	// A shuffle interchange the whole call must hold under the permuted delays,
 	// so the window check and the network swap sit before anything advances and
 	// the snapshot is taken before the swap, keeping the twin on the original
@@ -124,6 +134,38 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 		return nil, empty, err
 	}
 	callOK := false
+	// The advance path commits by replacing these runtime values only after all
+	// rows succeed. Keep their pre-run ownership so a later norm refusal has the
+	// same atomic result as an advance refusal, including source runtime caches.
+	heldNeural := i.neural
+	hasPlastic := i.plastic != nil
+	var heldPlastic plasticity.State
+	if hasPlastic {
+		heldPlastic = i.plastic.state
+	}
+	hasChemical := i.chemical != nil
+	var heldChemical modulation.ChemistryState
+	var heldReport ChemistryReport
+	var heldSources []modulation.Source
+	if hasChemical {
+		heldChemical = i.chemical.state
+		heldReport = i.chemical.report
+		heldSources = i.chemical.sources
+	}
+	defer func() {
+		if callOK {
+			return
+		}
+		i.neural = heldNeural
+		if hasPlastic && i.plastic != nil {
+			i.plastic.state = heldPlastic
+		}
+		if hasChemical && i.chemical != nil {
+			i.chemical.state = heldChemical
+			i.chemical.report = heldReport
+			i.chemical.sources = heldSources
+		}
+	}()
 	if permuted {
 		// The permuted core owns a different configuration fingerprint, so the
 		// pre-run state cannot be carried into it as it is: the state is
@@ -164,12 +206,9 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 		i.chemical.override = runtime.applyChemical
 		defer func() { i.chemical.override = nil }()
 	}
-	out, _, err := i.advanceRows(ctx, input, nil)
+	out, _, err := i.advanceRowsLocked(ctx, input, nil)
 	if err != nil {
 		return nil, empty, err
-	}
-	if permuted {
-		callOK = true
 	}
 	var plasticA, plasticB []float64
 	if i.plastic != nil {
@@ -189,6 +228,9 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 	activityDelta := l2Diff(flatten(out), flatten(twinOut))
 	plasticDelta := l2Diff(plasticA, plasticB)
 	baseParameterDelta := l2Diff(flatParameters(i.trainer.parameters), flatParameters(twin.trainer.parameters))
+	if !finite(concentrationDelta) || !finite(activityDelta) || !finite(plasticDelta) || !finite(baseParameterDelta) {
+		return nil, empty, fmt.Errorf("learning: intervention delta is not finite")
+	}
 	for k, item := range plan.Items {
 		log.Entries = append(log.Entries, InterventionLogEntry{
 			Kind: item.Kind, Targets: append([]int(nil), item.Targets...), Channel: item.Channel,
@@ -197,6 +239,7 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 			ConcentrationDelta: concentrationDelta,
 		})
 	}
+	callOK = true
 	return out, log, nil
 }
 
@@ -614,10 +657,69 @@ func flatten(rows [][]float64) []float64 {
 
 // l2Diff is the Euclidean distance of two equally shaped series.
 func l2Diff(a, b []float64) float64 {
+	const smallestNormal = 0x1p-1022
+
 	var sum float64
+	tinySquares := 0
 	for k := range a {
 		d := a[k] - b[k]
-		sum += d * d
+		if math.IsInf(d, 0) {
+			return math.Inf(1)
+		}
+		square := d * d
+		sum += square
+		if d != 0 && square < smallestNormal {
+			tinySquares++
+		}
 	}
-	return math.Sqrt(sum)
+	if !math.IsInf(sum, 1) && (tinySquares == 0 || sum >= float64(tinySquares)*smallestNormal) {
+		return math.Sqrt(sum)
+	}
+
+	scale := 0.0
+	for k := range a {
+		d := a[k] - b[k]
+		scale = math.Max(scale, math.Abs(d))
+	}
+
+	scaled, correction := 0.0, 0.0
+	for k := range a {
+		d := a[k] - b[k]
+		ratio := d / scale
+		term := ratio*ratio - correction
+		next := scaled + term
+		correction = (next - scaled) - term
+		scaled = next
+	}
+	norm := scale * math.Sqrt(scaled)
+	if norm < math.MaxFloat64/2 {
+		return norm
+	}
+
+	// The scaled result is ambiguous only near the upper boundary. Use exact
+	// binary arithmetic to distinguish a norm representable as MaxFloat64 from
+	// a larger norm whose float64 conversion rounds to +Inf.
+	const precision = 2*(1024+1074) + 64
+	var exact, term, limit big.Float
+	exact.SetPrec(precision)
+	term.SetPrec(precision)
+	limit.SetPrec(precision)
+	for k := range a {
+		d := a[k] - b[k]
+		term.SetFloat64(d)
+		term.Mul(&term, &term)
+		exact.Add(&exact, &term)
+	}
+	limit.SetInt64(1)
+	limit.SetMantExp(&limit, 1024)
+	term.SetInt64(1)
+	term.SetMantExp(&term, 970)
+	limit.Sub(&limit, &term)
+	limit.Mul(&limit, &limit)
+	if exact.Cmp(&limit) >= 0 {
+		return math.Inf(1)
+	}
+	exact.Sqrt(&exact)
+	norm, _ = exact.Float64()
+	return norm
 }
