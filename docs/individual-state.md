@@ -9,6 +9,7 @@
 以 `NewIndividual(config, parameters, options, initialVoltage)` 建立個體，`config` 選 `Dynamics` 或 `LIF` 其中一種核心。`config`、`parameters` 與初始電位會複製，建立另一個個體時可再次使用相同資料。也可以用 `checkpoint.NewIndividualFromPackage(pkg, options, initialVoltage)` 由模型包建立，結果與用模型包裡的設定、參數直接呼叫 `NewIndividual` 相同。
 
 - `Advance(ctx, observations)` 接續持續神經狀態，回傳所有步的讀出，參數與最佳化器保持不變。空序列、錯誤形狀、非有限值及取消都會返回錯誤，整次操作不更新任何步數。
+- `AdvanceFixed(ctx, observations)` 以目前有效權重推進神經與化學狀態，整次呼叫保持快速權重、參與紀錄與脈衝配對紀錄。它保留原有凍結設定，後續一般推進依原學習政策執行。固定評估與適應後評分共用此入口。
 - `TrainEpisode(ctx, observations, target)` 每次從零核心神經狀態開始獨立訓練序列。開啟化學調節時，複製目前化學、來源、回饋與讀出表現調節的邊界，來源時鐘從持續神經步數起算，第一列讀取原持續活動，尚無活動時用零邊界，後續讀取此回合自己的輸出。成功只提交參數、最佳化器及回合計數，持續神經、化學、控制器、報告及回饋保持。沒有化學時沿用 `Trainer.Step`。
 - `Snapshot()` 等候目前操作完成，再複製完整狀態。快照與輸出陣列可由呼叫者修改，不影響個體。呼叫期間不要同時修改傳入的陣列。
 

@@ -1,0 +1,100 @@
+"""Validate the actual receipts and record scoped acceptance before cleanup."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+
+assert __debug__
+E = Path(__file__).resolve().parent
+R = E.parents[2]
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+read = lambda p: json.loads(p.read_text())
+
+
+def receipt(label, code=0):
+    value = read(E / (label + '.json'))
+    assert value['exit_code'] == code, label
+    assert sha(E / value['log']) == value['log_sha256'], label
+    return value
+
+
+def events(label, code=0):
+    value = receipt(label, code)
+    raw = (E / value['log']).read_bytes()
+    if value['log'].endswith('.gz'):
+        raw = gzip.decompress(raw)
+        assert hashlib.sha256(raw).hexdigest() == value['raw_sha256']
+    result = {}
+    for line in raw.decode().splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if row.get('Test') and row.get('Action') in ('pass', 'fail', 'skip'):
+            key = row['Package'], row['Test']
+            assert key not in result
+            result[key] = row['Action']
+    assert result
+    return result
+
+
+source = read(E / 'formal-source.json')
+assert len(source) == 847
+for name, digest in source.items():
+    assert sha(R / name) == digest, name
+for name, digest in read(E / 'foreign-before.json').items():
+    assert sha(Path(name)) == digest, name
+frozen = read(E / 'regression-frozen.json')
+formatted = read(E / 'regression-format.json')
+assert frozen['compiled'] and frozen['formal_baseline_unchanged'] == 846
+assert sha(E / 'regression-before-format.go.txt') == frozen['test_sha256']
+assert source[formatted['source']] == formatted['final_sha256']
+red = events('red-scoring-complete', 1)
+assert collections.Counter(red.values()) == {'fail': 35}
+diagnostic = {}
+for mode in ['ordinary', 'race']:
+    green = events('green-scoring-' + mode)
+    assert set(green) == set(red) and set(green.values()) == {'pass'}
+    receipt('old-chemical-' + mode)
+    prior = R / ('evidence/LRN-06/online-receptor-policy-20261016/old-chemical-green-' + mode + '.log')
+    assert (E / ('old-chemical-' + mode + '.log')).read_bytes() == prior.read_bytes()
+    assert len(read(prior)) == 6
+    diagnostic[mode] = {'focused_pass': len(green), 'historical_byte_identical': 6}
+assert read(E / 'next-audit-verification.json')['normal_race_byte_identical']
+assert read(E / 'future-feedback-verification.json')['candidate_only']
+with (E / 'diagnostic-verification.json').open('x') as handle:
+    json.dump({'all_passed': True, 'source_count': 847, 'checks': diagnostic,
+               'scope': 'ticket131 fixed scoring; pending defects remain in tickets132/133'}, handle, indent=2)
+    handle.write('\n')
+engineering = read(E / 'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count'] == 847
+assert len(engineering['steps']) == 9
+for step in engineering['steps']:
+    assert step['exit_code'] == 0 and not step['acceptance_errors']
+    assert sha(E / step['log']) == step['log_sha256']
+    if step['name'] in ['unit', 'race']:
+        assert not step['changed_events'] and step['prior_event_count'] == 8424
+        assert len(step['added_events']) == 35
+status = read(R / 'docs/requirements-status.json')['requirements']
+assert collections.Counter(item['status'] for item in status) == {'passed': 89, 'specified': 2}
+assert {item['id'] for item in status if item['status'] == 'specified'} == {'LRN-07', 'LRN-10'}
+result = {
+    'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'scope': 'ticket131 fixed scoring state; not a zero-bug or task-quality claim',
+    'engineering_passed': True, 'diagnostic_passed': True, 'acceptance_complete': False,
+    'source_manifest': 'formal-source.json', 'source_manifest_sha256': sha(E / 'formal-source.json'),
+    'source_count': 847, 'environment': read(E / 'host-go-environment.log'),
+    'observed_result': {'focused': diagnostic, 'engineering': engineering['steps'],
+                        'approved_neutral_gain': 'approved-neutral-range-readback.json'},
+    'remaining_delivery': ['cleanup', 'commit', 'push', 'exact remote readback'],
+    'remaining_framework_defects': [132, 133], 'requirements_passed': 89,
+    'limits': 'macOS arm64 engineering and synthetic public SDK controls; no new real task accuracy, biological calibration, full-brain training or cross-platform execution'
+}
+with (E / 'verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'engineering_passed': True, 'diagnostic_passed': True,
+                  'source_count': 847, 'framework_requirements_passed': 89,
+                  'remaining_delivery': result['remaining_delivery']}))

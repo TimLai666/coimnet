@@ -274,6 +274,8 @@ EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部�
 
 ## 線上回饋與共享訓練狀態一致性
 
+固定評估的快速狀態保持或重設後保持，神經與化學狀態仍依輸入推進。AdvanceFixed 沿用同一個鎖定、候選與提交入口，在整次個體鎖定期間維持快速狀態，解鎖前恢復既有凍結旗標。scoreItems 的固定、適應後評分與順序對照共用此操作。線上 Act 的關閘門及自然衰退是另一個契約，兩者不能互相取代。沒有新保存欄位。由 [ticket131](docs/tickets/131-fixed-scoring-state.md) 驗收。
+
 線上與原生推論共用advance的驗證、候選與提交，僅由私有的單次操作參數指定閘門來源。Act使用關閉的新寫入閘門，eligibility、神經、化學與受體時間窗正常推進；Update的局部階段使用reward mapper給定的閘門。一般Advance與公開AdvanceGated保留受體閘門及雙重宣告拒絕。此來源選擇不寫入模型、快照或runtime旗標，不用暫時改Rule或freeze達成。由[ticket130](docs/tickets/130-online-receptor-gate-ownership.md)驗收。
 
 線上 Act 在同一次個體鎖定中先取得參數版本，再推進神經狀態，答案與 ActionRecord.ModelVersion 使用同一份參數。線上損失權重的零神經狀態 episode 預測、target 加權及 TrainEpisode 也共用同一次個體鎖定，外部操作可等候或取消。私人已持鎖 helper 沿用 Individual → Trainer 的鎖順序，公開 Advance／TrainEpisode 保留原有入口。

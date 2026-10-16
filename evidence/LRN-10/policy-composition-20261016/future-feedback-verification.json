@@ -1,0 +1,154 @@
+{
+  "at": "2026-10-16T10:01:54.380875+00:00",
+  "candidate_only": true,
+  "production_adopted": false,
+  "formal_source_unchanged": 847,
+  "candidate_files": {
+    "future-feedback-tests.go.txt": "0d8ac7f619a29cac7a95b172d145e15b208ed039c9d63298cd5e1986614b9b18",
+    "future-feedback-existing-fixture.diff.txt": "7bf542f7a20c301d8311691d5e3ba2985874d9813601e8667439ddaec5fbd9dc",
+    "future-feedback-run.go.txt": "1760210bb511f4315e2e3bec978a3bc330dba72e3ac99fd9f5ee7adce8119be5",
+    "future-feedback-existing-test.go.txt": "8c334fe71c04f27b717bf2cfbb531caf26caaedb494473b52808c69e83091e73",
+    "future-feedback-overlay.json": "b9789db2526358cbcf2b3c2859db5e879600046eb9f7ab905b1c9f63cb351ed0",
+    "future-feedback-green-overlay.json": "625243716bf8fbe5efa617110a82b12fec94936a6cb15c169cf9053780444701"
+  },
+  "checks": {
+    "future-feedback-red-ordinary": {
+      "events": {
+        "fail": 6,
+        "pass": 1
+      },
+      "receipt": "future-feedback-red-ordinary.json",
+      "tests": {
+        "TestAdaptiveFeedbackPermissionEmptyDeclarations": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_disallows": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/correctness_only": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_allows_correctness_only": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind": "fail",
+        "TestAdaptiveFeedbackPermissionMixedItems": "fail",
+        "TestAdaptiveFeedbackPermissionAllowedScoreEffective": "pass"
+      }
+    },
+    "future-feedback-red-race": {
+      "events": {
+        "fail": 6,
+        "pass": 1
+      },
+      "receipt": "future-feedback-red-race.json",
+      "tests": {
+        "TestAdaptiveFeedbackPermissionEmptyDeclarations": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_disallows": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/correctness_only": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_allows_correctness_only": "fail",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind": "fail",
+        "TestAdaptiveFeedbackPermissionMixedItems": "fail",
+        "TestAdaptiveFeedbackPermissionAllowedScoreEffective": "pass"
+      }
+    },
+    "future-feedback-green-ordinary": {
+      "events": {
+        "pass": 39
+      },
+      "receipt": "future-feedback-green-ordinary.json",
+      "tests": {
+        "TestReplayRejectionCountRefusesEveryScoringItem": "pass",
+        "TestShuffleInvarianceHoldsWithFullReset": "pass",
+        "TestShuffleInvarianceFailsWithoutNeuralReset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks/full_reset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks/partial_reset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks": "pass",
+        "TestAdaptiveFeedbackPermissionEmptyDeclarations": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_disallows": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/correctness_only": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_allows_correctness_only": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind": "pass",
+        "TestAdaptiveFeedbackPermissionMixedItems": "pass",
+        "TestAdaptiveFeedbackPermissionAllowedScoreEffective": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/basic_properties": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/deterministic": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/nil_individual": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/target_width_mismatch": "pass",
+        "TestRunAdaptiveEvaluationFixedMode": "pass",
+        "TestRunAdaptiveEvaluationAdaptiveMode": "pass",
+        "TestRunAdaptiveEvaluationAdaptiveNeedsPlasticity": "pass",
+        "TestRunAdaptiveEvaluationFixedModeUnchanged": "pass",
+        "TestAdaptiveEvaluationValidate/valid_adaptive_declaration_passes": "pass",
+        "TestAdaptiveEvaluationValidate/valid_fixed_declaration_passes": "pass",
+        "TestAdaptiveEvaluationValidate/invalid_mode_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_scoring_partition_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/fixed_mode_with_adaptation_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/duplicate_id_across_partitions_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_item_id_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_with_no_rows_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_rows_of_unequal_length_are_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_containing_NaN_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_containing_Inf_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_target_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/target_containing_Inf_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/feedback_outside_feedback_available_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/scoring_item_with_allowed_feedback_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/duplicate_feedback_available_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_feedback_available_string_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate": "pass"
+      }
+    },
+    "future-feedback-green-race": {
+      "events": {
+        "pass": 39
+      },
+      "receipt": "future-feedback-green-race.json",
+      "tests": {
+        "TestReplayRejectionCountRefusesEveryScoringItem": "pass",
+        "TestShuffleInvarianceHoldsWithFullReset": "pass",
+        "TestShuffleInvarianceFailsWithoutNeuralReset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks/full_reset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks/partial_reset": "pass",
+        "TestRunAdaptiveEvaluationFillsContaminationChecks": "pass",
+        "TestAdaptiveFeedbackPermissionEmptyDeclarations": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_disallows": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/correctness_only": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind/score_available_but_item_allows_correctness_only": "pass",
+        "TestAdaptiveFeedbackPermissionUnavailableOrOtherKind": "pass",
+        "TestAdaptiveFeedbackPermissionMixedItems": "pass",
+        "TestAdaptiveFeedbackPermissionAllowedScoreEffective": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/basic_properties": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/deterministic": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/nil_individual": "pass",
+        "TestRunAdaptiveEvaluationFixedMode/target_width_mismatch": "pass",
+        "TestRunAdaptiveEvaluationFixedMode": "pass",
+        "TestRunAdaptiveEvaluationAdaptiveMode": "pass",
+        "TestRunAdaptiveEvaluationAdaptiveNeedsPlasticity": "pass",
+        "TestRunAdaptiveEvaluationFixedModeUnchanged": "pass",
+        "TestAdaptiveEvaluationValidate/valid_adaptive_declaration_passes": "pass",
+        "TestAdaptiveEvaluationValidate/valid_fixed_declaration_passes": "pass",
+        "TestAdaptiveEvaluationValidate/invalid_mode_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_scoring_partition_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/fixed_mode_with_adaptation_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/duplicate_id_across_partitions_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_item_id_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_with_no_rows_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_rows_of_unequal_length_are_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_containing_NaN_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/input_containing_Inf_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_target_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/target_containing_Inf_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/feedback_outside_feedback_available_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/scoring_item_with_allowed_feedback_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/duplicate_feedback_available_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate/empty_feedback_available_string_is_rejected": "pass",
+        "TestAdaptiveEvaluationValidate": "pass"
+      }
+    }
+  },
+  "remaining": "adopt only after ticket131 source freeze/delivery, update format index and API limits, rerun appropriate full engineering, clean candidate work and deliver ticket132",
+  "public_checks": {
+    "normal_race_byte_identical": true,
+    "rows": 10,
+    "forbidden_target_pairs_independent": 3,
+    "allowed_score_rows_byte_identical_to_baseline": 2,
+    "unrelated_replay_rows_unchanged": 2,
+    "receipts": [
+      "future-feedback-public-ordinary.json",
+      "future-feedback-public-race.json"
+    ]
+  }
+}

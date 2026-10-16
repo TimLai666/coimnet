@@ -1,0 +1,163 @@
+from pathlib import Path
+from datetime import datetime, timezone
+import collections
+import gzip
+import hashlib
+import json
+import subprocess
+
+root = Path(__file__).resolve().parents[3]
+evidence = root / 'evidence/LRN-10/policy-composition-20261016'
+expected = {
+    'verification.json': '0143f87d8177deae4da40675d3ba798b3f67c58b811554a528d3821d3661df2e',
+    'progress.json': 'b5a44bc79032824c3b898d9745a5a24b058a71054c40228adc91f6fff4351516',
+    'root-review.md': 'b792a17ce8a76e6377493bef75de1cfa53b6b55c092182149cc926cd8dacecc4',
+    'changed-files.md': '2b6ba4c9af8ec86854b811beb5fbc0363a1ad4ae8150377aacf9e40764b47170',
+    '../../../delivery-status.md': '93a95d7dd6982660b4d56d7722e9e9bbcf24e5c13a137faea8384da4bbfd04e6',
+    '../../../docs/tickets/131-fixed-scoring-state.md': 'cf38c017c9f62882fb2a2773808e7ef6305c127b2ac452b75513d65ff6bc2f8a',
+}
+originals = {name: (evidence / name).read_bytes() for name in expected}
+for name, raw in originals.items():
+    assert hashlib.sha256(raw).hexdigest() == expected[name], name
+
+def read(name):
+    return json.loads((evidence / name).read_text())
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+for name, count in [('formal-source.json', 847), ('foreign-before.json', 32)]:
+    manifest = read(name)
+    assert len(manifest) == count
+    for filename, digest in manifest.items():
+        path = Path(filename)
+        if not path.is_absolute():
+            path = root / path
+        assert sha(path) == digest, filename
+
+engineering = read('engineering-verification.json')
+assert engineering['all_passed'] is True
+diagnostic = read('diagnostic-verification.json')
+assert diagnostic['all_passed'] is True
+for name in ['engineering-r2-unit.json', 'engineering-r2-race.json', 'final-governance.json']:
+    receipt = read(name)
+    assert receipt['exit_code'] == 0
+    log = evidence / receipt['log']
+    assert sha(log) == receipt['log_sha256']
+    if log.suffix == '.gz':
+        assert hashlib.sha256(gzip.decompress(log.read_bytes())).hexdigest() == receipt['raw_sha256']
+cleanup = read('cleanup.json')
+assert cleanup['directory_removed'] and cleanup['necessary_files_preserved'] and cleanup['no_open_handles']
+assert not (root / cleanup['owned_directory']).exists()
+assert sha(evidence / cleanup['inventory_archive']) == cleanup['inventory_archive_sha256']
+preserved = read('work-preservation.json')
+assert sha(evidence / preserved['archive']) == preserved['archive_sha256']
+requirements = json.loads((root / 'docs/requirements-status.json').read_text())['requirements']
+counts = collections.Counter(item['status'] for item in requirements)
+assert len(requirements) == 91 and counts == {'passed': 89, 'specified': 2}
+assert {item['id'] for item in requirements if item['status'] != 'passed'} == {'LRN-07', 'LRN-10'}
+assert read('future-feedback-verification.json')['production_adopted'] is False
+
+verification = json.loads(originals['verification.json'])
+verification['observed_result']['final_governance'] = read('final-governance.json')
+verification['observed_result']['own_cleanup'] = {'receipt': 'cleanup.json', 'removed_bytes': cleanup['removed_bytes']}
+verification['remaining_delivery'] = ['commit', 'push', 'exact remote readback']
+progress = json.loads(originals['progress.json'])
+progress['at'] = datetime.now(timezone.utc).isoformat()
+progress['milestones_verified'] = 3
+progress['race'] = {'passed': 8435, 'skipped': 24, 'packages_passed': 58, 'prior_events_unchanged': 8424}
+progress.pop('ongoing_engineering_session', None)
+progress['race_status'] = 'completed; engineering-verification.json all_passed=true'
+progress['cleanup_status'] = 'completed; cleanup.json, owned root removed'
+progress['delivery_status'] = 'not committed or pushed'
+review = originals['root-review.md'].decode() + '''
+## Final engineering and preservation
+
+Root resumed the existing full-engineering process without starting a second race run. The completed r2 gate passed 58 packages in each mode: 8,436 pass / 23 skip for ordinary and 8,435 pass / 24 skip for race. All 8,424 prior terminal events retained their previous actions; the only additions are the 35 passing regression events. Build, formatting, vet, module verification and the pinned Insyra v0.3.4 check passed. Final governance passed 31 events. The separate archived ten-row public probe and candidate132 overlay do not count as formal production fixes.
+
+The guarded cleanup removed 1,718,722,369 bytes from the owned work root after preserving 21 necessary files in preserved-work.tar.gz. The original 847 source files, 18 model files, six persistent data files, 15,046 module-cache files, 32 foreign files and two protected old work roots remained unchanged. Root verified compressed and uncompressed full-test log hashes, final-governance log hash and archive/cleanup hashes again before staging. Cleanup is complete; commit, push and exact remote readback remain pending at this record.
+
+The approved neutral-range rejection was already delivered by ticket89. Its commit is an ancestor of the current baseline, the guard at modulation/effects.go:208 remains unchanged, and all 21 associated terminal events pass in the current full unit log.
+
+A final independent read-only evidence review found stale cleanup/race progress and an obsolete uncompressed race-log link in the file inventory. Root updated only those closure records. The reviewer used the project-directed gpt-5.6-luna/max fallback after this turn's OpenCode probe failed with `Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)`. No worker reran Go or modified formal sources.
+'''
+status = originals['../../../delivery-status.md'].decode()
+old = '本票3／4，下一個可驗證成果是清理與交付，見[驗收](evidence/LRN-10/policy-composition-20261016/verification.json)。'
+new = '本票3／4，31項最後治理通過，1,718,722,369 bytes本輪暫存已清除，原有模型、資料與其他工作保持，待提交與遠端讀回。見[驗收](evidence/LRN-10/policy-composition-20261016/verification.json)與[清理](evidence/LRN-10/policy-composition-20261016/cleanup.json)。'
+assert status.count(old) == 1
+status = status.replace(old, new)
+ticket = originals['../../../docs/tickets/131-fixed-scoring-state.md'].decode()
+assert ticket.count('本票3／4，待清理與交付') == 1
+ticket = ticket.replace('本票3／4，待清理與交付', '本票3／4，必要證據已保存且本輪暫存清除，待提交與遠端讀回')
+
+outputs = {
+    'verification.json': json.dumps(verification, ensure_ascii=False, indent=2) + '\n',
+    'progress.json': json.dumps(progress, ensure_ascii=False, indent=2) + '\n',
+    'root-review.md': review,
+    '../../../delivery-status.md': status,
+    '../../../docs/tickets/131-fixed-scoring-state.md': ticket,
+}
+for name, content in outputs.items():
+    path = evidence / name
+    assert path.read_bytes() == originals[name], name
+    path.write_text(content)
+
+record = {
+    'at': datetime.now(timezone.utc).isoformat(),
+    'source_count': 847, 'foreign_files_preserved': 32,
+    'full_engineering_passed': True, 'diagnostic_passed': True,
+    'unit_pass': 8436, 'race_pass': 8435, 'final_governance_pass': 31,
+    'log_archive_fingerprints_verified': True, 'cleanup_complete': True,
+    'necessary_files_archived': 21, 'requirements_passed': 89,
+    'pending_requirements': ['LRN-07', 'LRN-10'],
+    'git_baseline': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip(),
+    'delivery_pending': True,
+    'input_fingerprints': expected,
+}
+with (evidence / 'pre-delivery-verification.json').open('x') as out:
+    json.dump(record, out, ensure_ascii=False, indent=2)
+    out.write('\n')
+with (evidence / 'delegation-closure.json').open('x') as out:
+    json.dump({
+        'host': 'Codex', 'probe': 'opencode models', 'exit_code': 1,
+        'error': 'Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)',
+        'fallback': 'collaboration.spawn_agent', 'model': 'gpt-5.6-luna', 'reasoning_effort': 'max',
+        'agent': '/root/delivery_evidence_consistency_131', 'scope': 'read-only delivery evidence consistency',
+        'formal_source_changes': 0, 'tests_executed': 0,
+        'findings': ['outdated progress and cleanup status', 'outdated file inventory and race log path'],
+        'root_review': 'full local receipt hashes and manifests independently verified before staging',
+    }, out, ensure_ascii=False, indent=2)
+    out.write('\n')
+
+owned = {
+    'learning/individual.go': '新增單次固定推進，保留快速狀態與原有凍結政策',
+    'experiment/adaptive_run.go': '固定、適應後評分與順序對照共用固定推進',
+    'learning/fixed_evaluation_test.go': '三核心、重設、受體、取消與並行的失敗回歸',
+    'ENG.md': '保存固定評分與線上作答各自的狀態契約',
+    'README.md': '更新評分修正與尚待驗收的兩項需求，目前89／91',
+    'delivery-status.md': '更新工程、清理與待交付狀態',
+    'docs/INDEX.md': '更新格式常數來源行號',
+    'docs/individual-state.md': '說明公開AdvanceFixed效果與生命週期',
+    'docs/requirements-status.json': 'LRN-10及LRN-07回到specified並附新證據',
+    'docs/tickets/131-fixed-scoring-state.md': '固定評分修正範圍與驗收',
+    'docs/tickets/132-adaptation-feedback-permission.md': '追蹤未允許回饋仍驅動適應的P1缺陷',
+    'docs/tickets/133-replay-restore-state-validation.md': '追蹤重播恢復驗證的P2缺口',
+}
+for path in sorted(evidence.rglob('*')):
+    if path.is_file():
+        owned[str(path.relative_to(root))] = (
+            '必要來源、舊快照與候選修正的壓縮封存' if path.name == 'preserved-work.tar.gz'
+            else '本輪逐檔清理清單' if path.name == 'cleanup-inventory.json.gz'
+            else '完整原始測試日誌' if path.name.endswith('.log.gz')
+            else '原始命令輸出，成功或失敗依配對回條判讀' if path.suffix == '.log'
+            else '本輪專案暫存及驗證工具原文' if path.name.endswith('.py.txt')
+            else '範圍、契約或審查紀錄' if path.suffix == '.md'
+            else '驗證、狀態或內容指紋紀錄'
+        )
+lines = ['# 本輪檔案變更', '', '完整工程與清理已完成，提交與遠端讀回待完成。下列僅列本票實際檔案，保留其他工作。', '', '| 檔案 | 變更摘要 |', '| --- | --- |']
+for filename, description in owned.items():
+    lines.append(f'| [{filename}]({root / filename}) | {description} |')
+path = evidence / 'changed-files.md'
+assert path.read_bytes() == originals['changed-files.md']
+path.write_text('\n'.join(lines) + '\n')
+print(json.dumps({'metadata_updated': len(outputs) + 1, 'owned_files': len(owned), 'source_preserved': 847, 'foreign_preserved': 32, 'delivery_pending': True}))

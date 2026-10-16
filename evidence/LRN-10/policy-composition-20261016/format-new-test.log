@@ -1,0 +1,12 @@
+diff learning/fixed_evaluation_test.go.orig learning/fixed_evaluation_test.go
+--- learning/fixed_evaluation_test.go.orig
++++ learning/fixed_evaluation_test.go
+@@ -87,7 +87,7 @@
+ 				e := experiment.AdaptiveEvaluation{
+ 					Mode: experiment.EvaluationModeAdaptive, FeedbackAvailable: []string{"score"},
+ 					Adaptation: []experiment.EvaluationItem{{ID: "adapt", Input: onlineReceptorPolicyInput(), Target: []float64{.5}, AllowedFeedback: []string{"score"}}},
+-					Scoring: []experiment.EvaluationItem{{ID: "score", Input: [][]float64{{2, 2}}, Target: []float64{0}}},
++					Scoring:    []experiment.EvaluationItem{{ID: "score", Input: [][]float64{{2, 2}}, Target: []float64{0}}},
+ 				}
+ 				if _, err := experiment.RunAdaptiveEvaluation(context.Background(), a, e); err != nil {
+ 					t.Fatal(err)
