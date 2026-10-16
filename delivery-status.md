@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket134](docs/tickets/134-evaluation-mse-representability.md)已完成正式修正與完整工程驗收。853份來源的一般／競態各58套件通過，8,533／8,532 pass、23／24 skip，原有各8,540個終端事件保持，只新增各16 pass。相關各244 pass、各64份正常報告及十二份舊化學模型接續保持。格式、build、vet、固定依賴及最後31項治理通過。LRN-10恢復passed，工程追蹤91／91。24份必要輸入已保存，1,802,429,189 bytes本輪暫存已清除，原模型、資料及其他工作保持。本票3／4，遠端交付待核對。使用者核准的中性增益21個控制在本輪完整一般／競態也均通過，見[驗收](evidence/LRN-10/mse-representability-20261016/verification.json)。
+[ticket134](docs/tickets/134-evaluation-mse-representability.md)已完成正式修正與完整工程驗收。853份來源的一般／競態各58套件通過，8,533／8,532 pass、23／24 skip，原有各8,540個終端事件保持，只新增各16 pass。相關各244 pass、各64份正常報告及十二份舊化學模型接續保持。格式、build、vet、固定依賴及最後31項治理通過。LRN-10恢復passed，工程追蹤91／91。24份必要輸入已保存，1,802,429,189 bytes本輪暫存已清除，原模型、資料及其他工作保持。本票4／4，主要提交d7defe7已同步且遠端讀回相同，見[交付](evidence/LRN-10/mse-representability-20261016/delivery.json)。使用者核准的中性增益21個控制在本輪完整一般／競態也均通過，見[驗收](evidence/LRN-10/mse-representability-20261016/verification.json)。
 
 [ticket133](docs/tickets/133-replay-restore-state-validation.md)已正式採用重播恢復的必要驗證。851份正式來源的完整一般／競態各58套件通過，8,517／8,516 pass、23／24 skip，原有各8,466個終端事件保持，只新增各74 pass。48份修改前重播存檔在新程序接續逐位元組相同，八列公開非法狀態均被拒絕。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。已核准中性增益的21個控制事件在兩種建置均通過。本票4／4，最後31項治理通過，60份必要輸入封存，1,739,953,161 bytes本輪暫存已清除，原模型、資料、模組及其他工作保持。主要提交`d6a9678`已推送且遠端讀回相同，見[交付](evidence/LRN-07/restore-validation-20261016/delivery.json)。LRN-07恢復passed，LRN-10由ticket134接續，工程追蹤90／91。見[驗收](evidence/LRN-07/restore-validation-20261016/verification.json)。
 

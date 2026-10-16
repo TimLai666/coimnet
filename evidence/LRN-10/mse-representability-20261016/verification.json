@@ -2,8 +2,8 @@
   "requirement": "LRN-10",
   "engineering_passed": true,
   "diagnostic_passed": true,
-  "acceptance_complete": false,
-  "stage": "Full engineering, final governance, archive and cleanup complete; remote delivery pending.",
+  "acceptance_complete": true,
+  "stage": "Engineering, numerical and persistence controls, final governance, necessary-input preservation, cleanup and remote source delivery complete.",
   "reproduction_command": "run-command.py.txt receipts contain exact commands and environment; engineering.py.txt runs the final full gate.",
   "environment": {
     "go": "go version go1.26.5 darwin/arm64",
@@ -126,7 +126,12 @@
       "directory_removed": true,
       "original_module_files_preserved": 15046
     },
-    "approved_neutral_gain": "approved-neutral-gain-control.json"
+    "approved_neutral_gain": "approved-neutral-gain-control.json",
+    "delivery": {
+      "receipt": "delivery.json",
+      "source_commit": "d7defe7941ad122a0fd3a143470f621cc43fe1f3",
+      "exact_remote_match": true
+    }
   },
   "test_log": [
     "red-ordinary.log",
@@ -164,5 +169,6 @@
     "../evidence/LRN-10/feedback-permission-20261016/verification.json",
     "../evidence/LRN-10/feedback-permission-20261016/next-mse-verification.json"
   ],
-  "evidence_index_scope": "Current passed evidence indexes the original complete acceptance and this complete current verification. Prior policy, feedback and negative-finding artifacts remain unchanged and linked in prior_evidence; they lack some required current acceptance metadata and are not silently relabeled."
+  "evidence_index_scope": "Current passed evidence indexes the original complete acceptance and this complete current verification. Prior policy, feedback and negative-finding artifacts remain unchanged and linked in prior_evidence; they lack some required current acceptance metadata and are not silently relabeled.",
+  "completed_at": "2026-10-16T14:45:22.802822+00:00"
 }
