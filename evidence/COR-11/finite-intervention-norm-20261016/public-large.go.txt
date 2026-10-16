@@ -1,0 +1,39 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
+	"math"
+)
+
+func must(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func main() {
+	c := learning.Config{LIF: &dynamics.LIFConfig{Nodes: 1, Sources: []int{0}, Targets: []int{0}, DT: math.Ln2, TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: -1, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}}, InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{0}, ReadoutEveryStep: true}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{0}, Bias: []float64{0}, LogTau: []float64{0}}, ThetaRaw: []float64{0}, Encoder: []float64{1}, Readout: []float64{1}}
+	a, e := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0})
+	must(e)
+	must(a.EnablePlasticity(plasticity.Config{Rule: plasticity.Rule{Kind: plasticity.RuleSTDPPair, DecayE: .5, DecayP: .5, DecayPre: .5, DecayPost: .5, APlus: 1e308, AMinus: 0, PlasticMax: 1, WMin: .01}, Edges: []int{0}}))
+	s := a.Snapshot()
+	s.Plastic.State.PreTrace = []float64{1}
+	a, e = learning.RestoreIndividual(s)
+	must(e)
+	plan := learning.InterventionPlan{Authorized: true, Reason: "finite state L2 diagnostic", Items: []learning.Intervention{{Kind: learning.InterventionForceSpike, Targets: []int{0}, Value: 1, Start: 0, End: 1, Restore: true}}}
+	out, log, e := a.Intervene(context.Background(), plan, [][]float64{{0}})
+	must(e)
+	_, encodingError := json.Marshal(log)
+	message := ""
+	if encodingError != nil {
+		message = encodingError.Error()
+	}
+	b, e := json.Marshal(map[string]any{"plastic_delta": fmt.Sprintf("%.17g", log.Entries[0].PlasticDelta), "delta_is_inf": math.IsInf(log.Entries[0].PlasticDelta, 0), "json_error": message, "finite_eligibility": a.Snapshot().Plastic.State.Eligibility[0], "output": out, "expected_finite_norm": math.Hypot(5e307, math.Sqrt(2))})
+	must(e)
+	fmt.Println(string(b))
+}

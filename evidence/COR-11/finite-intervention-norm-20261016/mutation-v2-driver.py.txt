@@ -1,0 +1,70 @@
+"""Reject isolated numerical, rollback and read-boundary regressions on final frozen source."""
+import hashlib
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/intervention-finite-norm-20261016"
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+    for name, digest in read(E / "formal-source-v2.json").items():
+        assert sha(R / name) == digest, name
+    for name, digest in read(E / "frozen-checks-v2.json").items():
+        assert sha(R / name) == digest, name
+gate()
+production = R / "learning/intervene.go"
+current = production.read_text()
+before = (E / "intervene-before.go.txt").read_text()
+marker = "// l2Diff is the Euclidean distance of two equally shaped series."
+assert current.count(marker) == before.count(marker) == 1
+naive = current[:current.index(marker)] + before[before.index(marker):]
+naive = naive.replace('\t"math/big"\n', '')
+start = current.index("\t// The advance path commits")
+end = current.index("\tif permuted {", start)
+no_rollback = current[:start] + current[end:]
+no_rollback = no_rollback.replace('\t"github.com/TimLai666/coimnet/modulation"\n', '')
+hypot = current[:current.index(marker)] + marker + "\nfunc l2Diff(a, b []float64) float64 {\n var norm float64\n for k := range a { norm = math.Hypot(norm, a[k]-b[k]) }; return norm\n}\n"
+hypot = hypot.replace('\t"math/big"\n', '')
+variants = {"naive-norm": naive, "missing-rollback": no_rollback, "hypot-norm": hypot, "unprotected-read": (E / "intervene-v1.go.txt").read_text()}
+for name, content in variants.items():
+    path = W / (name + "-v2.go")
+    path.open("x").write(content)
+    (W / (name + "-v2-overlay.json")).open("x").write(json.dumps({"Replace": {str(production): str(path)}}) + "\n")
+records = []
+for name in variants:
+    for mode in ["ordinary", "race"]:
+        gate()
+        label = name + "-v2-" + mode
+        command = ["go", "test"] + (["-race"] if mode == "race" else []) + ["-overlay", str(W / (name + "-v2-overlay.json")), "-json", "-count=1", "-timeout=60s", "./learning", "-run", "^TestInterveneNorm"]
+        result = subprocess.run([sys.executable, str(E / "run-command.py.txt"), label, *command], cwd=R)
+        gate()
+        assert result.returncode == 1
+        events = {}
+        for line in (E / (label + ".log")).read_text().splitlines():
+            event = json.loads(line)
+            if event.get("Test") and event["Action"] in ["pass", "fail", "skip"]:
+                assert event["Test"] not in events
+                events[event["Test"]] = event["Action"]
+        assert len(events) == 99 and "skip" not in events.values()
+        failed = {k for k, v in events.items() if v == "fail"}
+        if name == "naive-norm":
+            assert len(failed) == 25 and all(any(k.startswith(p) for p in ["TestInterveneNormNumericalBoundaries", "TestInterveneNormFiniteConcentration", "TestInterveneNormFinitePlastic"]) for k in failed)
+        elif name == "missing-rollback":
+            assert len(failed) == 60 and all(any(k.startswith(p) for p in ["TestInterveneNormFailureKeepsControllerCache", "TestInterveneNormConcentrationRefusalAtomic", "TestInterveneNormPlasticRefusalAtomic", "TestInterveneNormSnapshotReaders"]) for k in failed)
+        elif name == "hypot-norm":
+            assert len(failed) == 4 and "TestInterveneNormNumericalBoundaries/upper_overflow" in failed
+        else:
+            assert 2 <= len(failed) <= 7 and all(k.startswith("TestInterveneNormSnapshotReaders") for k in failed)
+            if mode == "race":
+                assert len(failed) == 7
+        item = {"variant": name, "build": mode, "compiled_and_ran": True, "terminal_events": 99, "failed_events": len(failed), "receipt": label + ".json"}
+        records.append(item)
+        print(json.dumps(item), flush=True)
+with (E / "mutations-v2.json").open("x") as handle:
+    json.dump({"all_passed": True, "variants": records}, handle, indent=2)
+    handle.write("\n")

@@ -1,0 +1,58 @@
+# -*- coding: utf-8 -*-
+"""Commit verified fix separately from regressions/evidence, then perform a normal push."""
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+read = lambda p: json.loads(p.read_text())
+def git(*args):
+    return subprocess.check_output(["git", *args], cwd=R, text=True).strip()
+def save(name, value):
+    with (E / name).open("x") as handle:
+        json.dump(value, handle, indent=2)
+        handle.write("\n")
+baseline = "2fe2d703203c7cac76eb9a60b00caf80322f50cf"
+assert read(E / "baseline.json")["head"] == git("rev-parse", "HEAD") == baseline
+assert git("branch", "--show-current") == "codex/receptor-chemistry-training"
+assert re.search(r"github\.com[:/]TimLai666/coimnet(?:\.git)?$", git("remote", "get-url", "origin"))
+assert not git("diff", "--cached", "--name-only")
+assert read(E / "cleanup.json")["directory_removed"] and read(E / "verification.json")["engineering_passed"] and read(E / "verification.json")["diagnostic_passed"]
+for name, digest in read(E / "formal-source-v2.json").items():
+    assert sha(R / name) == digest, name
+for name, digest in read(E / "foreign-before.json").items():
+    assert sha(Path(name)) == digest, name
+production = ["learning/intervene.go", "learning/individual.go"]
+owned = ["ENG.md", "README.md", "delivery-status.md", "docs/model-and-mechanisms.md", "docs/requirements-status.json", "docs/tickets/128-intervention-finite-norm.md", "docs/tickets/129-consolidation-norm-boundary.md", *production, "learning/intervene_norm_internal_test.go", "learning/intervene_norm_test.go", "learning/intervene_snapshot_test.go"]
+owned += sorted(str(p.relative_to(R)) for p in E.rglob("*") if p.is_file())
+assert len(owned) == len(set(owned))
+hashes = {p: sha(R / p) for p in owned}
+subprocess.run(["git", "add", "--", *production], cwd=R, check=True)
+assert set(git("diff", "--cached", "--name-only").splitlines()) == set(production)
+subprocess.run(["git", "diff", "--cached", "--check"], cwd=R, check=True)
+assert all(sha(R / p) == h for p, h in hashes.items())
+subprocess.run(["git", "commit", "--quiet", "-m", "fix(learning): preserve finite intervention reports and atomic reads"], cwd=R, check=True)
+fix = git("rev-parse", "HEAD")
+assert set(git("diff-tree", "--no-commit-id", "--name-only", "-r", fix).splitlines()) == set(production)
+remaining = [p for p in owned if p not in production]
+subprocess.run(["git", "add", "--", *remaining], cwd=R, check=True)
+assert set(git("diff", "--cached", "--name-only").splitlines()) == set(remaining)
+subprocess.run(["git", "diff", "--cached", "--check"], cwd=R, check=True)
+assert all(sha(R / p) == h for p, h in hashes.items())
+subprocess.run(["git", "commit", "--quiet", "-m", "test(learning): cover finite intervention reports and atomic reads"], cwd=R, check=True)
+head = git("rev-parse", "HEAD")
+assert set(git("diff", "--name-only", baseline, head).splitlines()) == set(owned)
+committed = {**read(E / "formal-source-v2.json"), **hashes}
+for name, digest in committed.items():
+    assert hashlib.sha256(subprocess.check_output(["git", "show", head + ":" + name], cwd=R)).hexdigest() == digest, name
+subprocess.run(["git", "push", "origin", "HEAD:refs/heads/codex/receptor-chemistry-training"], cwd=R, check=True)
+remote = git("ls-remote", "origin", "refs/heads/codex/receptor-chemistry-training").split()[0]
+assert remote == head
+save("committed-content.json", {"commit": head, "files": committed, "source_entries": 844, "changed_files": len(owned), "unique_content_files": len(committed)})
+save("delivery.json", {"fix_commit": fix, "primary_commit": head, "remote_readback": remote, "branch": "codex/receptor-chemistry-training", "normal_push": True, "all_content_verified": True, "source_entries": 844, "changed_files": len(owned), "production_changes": True, "foreign_work_unchanged": True})
+print(json.dumps({"fix_commit": fix, "primary_commit": head, "remote_readback": remote, "changed_files": len(owned), "unique_content_files": len(committed)}))

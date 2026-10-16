@@ -1,0 +1,623 @@
+{
+  "requirement": "COR-11",
+  "verified_at": "2026-10-16T07:08:23.629975+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": true,
+  "confirmed_defects_fixed": 1,
+  "candidate_regression_caught_before_commit": {
+    "v1": "snapshot-review-block.json",
+    "fix": "whole-operation subject lock and unchanged private Snapshot copy helper",
+    "verified": "diagnostic-v2-verification.json"
+  },
+  "source_count": 844,
+  "reproduction_command": {
+    "focused": "go test [-race] -json -count=1 ./learning -run ^TestInterveneNorm",
+    "public": "go run [-race] ./runs/.tmp/intervention-finite-norm-20261016/public-large (or public-small)",
+    "engineering": "python3 evidence/COR-11/finite-intervention-norm-20261016/engineering-v2.py.txt"
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_version": "go version go1.26.5 darwin/arm64",
+    "baseline": "2fe2d703203c7cac76eb9a60b00caf80322f50cf",
+    "settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source-v2.json",
+    "formal_source_sha256": "4913c7b340f1c59820661d8f4929d2e8d9bdb487e18e8d711b11cbaade40d5ce",
+    "original_source": "source-before.json",
+    "checks": "frozen-checks-v2.json",
+    "checks_sha256": "f189495672f63e93fdbee0ac099c8ccc4142444eaeea801572a7048ab3ff7ef8"
+  },
+  "root_cause": {
+    "location": "learning/intervene.go:l2Diff",
+    "defect": "squared intermediate overflow or underflow misreports a representable norm",
+    "fix": "preserve normal reduction bits; use a stable fallback and exact upper representability boundary, then reject unrepresentable reports and hold the operation lock through rollback and hook cleanup so read-only observers see completed state"
+  },
+  "observed_result": {
+    "last_delivered_baseline_comparison": {
+      "unit": {
+        "original_events": 8028,
+        "all_original_results_preserved": true,
+        "new_regression_pass_events": 99,
+        "previous_log": "evidence/COR-11/frozen-intervention-20261016/engineering-unit.log.gz",
+        "previous_log_sha256": "9352d61d4d6c60c84ab0d22b6f26c38b33a1905c42d524196115170b9f5e3206"
+      },
+      "race": {
+        "original_events": 8028,
+        "all_original_results_preserved": true,
+        "new_regression_pass_events": 99,
+        "previous_log": "evidence/COR-11/frozen-intervention-20261016/engineering-race.log.gz",
+        "previous_log_sha256": "0af857b8bd58170c89390e532a6ed0c109185e9797eb2bb92bfabb8ece0aad9a"
+      }
+    },
+    "diagnostic": {
+      "all_passed": true,
+      "source_count": 844,
+      "source_manifest": "formal-source-v2.json",
+      "checks_manifest": "frozen-checks-v2.json",
+      "focused_counts": {
+        "ordinary": {
+          "pass_events": 99,
+          "leaf_cases": 91,
+          "related_pass_events": 223,
+          "exact_boundary_pass_events": 2,
+          "preflight_cases": 18
+        },
+        "race": {
+          "pass_events": 99,
+          "leaf_cases": 91,
+          "related_pass_events": 223,
+          "exact_boundary_pass_events": 2,
+          "preflight_cases": 18
+        }
+      },
+      "public_witnesses": {
+        "ordinary": {
+          "large": {
+            "delta_is_inf": false,
+            "expected_finite_norm": 5e+307,
+            "finite_eligibility": 5e+307,
+            "json_error": "",
+            "output": [
+              [
+                1
+              ]
+            ],
+            "plastic_delta": "5.0000000000000001e+307"
+          },
+          "small": {
+            "control_eligibility": 2.5e-201,
+            "expected_finite_norm": 2.5e-201,
+            "output": [
+              [
+                0,
+                0
+              ]
+            ],
+            "plastic_delta": 2.5e-201,
+            "subject_eligibility": 0
+          }
+        },
+        "race": {
+          "large": {
+            "delta_is_inf": false,
+            "expected_finite_norm": 5e+307,
+            "finite_eligibility": 5e+307,
+            "json_error": "",
+            "output": [
+              [
+                1
+              ]
+            ],
+            "plastic_delta": "5.0000000000000001e+307"
+          },
+          "small": {
+            "control_eligibility": 2.5e-201,
+            "expected_finite_norm": 2.5e-201,
+            "output": [
+              [
+                0,
+                0
+              ]
+            ],
+            "plastic_delta": 2.5e-201,
+            "subject_eligibility": 0
+          }
+        }
+      },
+      "isolated_mutations": {
+        "all_passed": true,
+        "variants": [
+          {
+            "variant": "naive-norm",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 25,
+            "receipt": "naive-norm-v2-ordinary.json"
+          },
+          {
+            "variant": "naive-norm",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 25,
+            "receipt": "naive-norm-v2-race.json"
+          },
+          {
+            "variant": "missing-rollback",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 60,
+            "receipt": "missing-rollback-v2-ordinary.json"
+          },
+          {
+            "variant": "missing-rollback",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 60,
+            "receipt": "missing-rollback-v2-race.json"
+          },
+          {
+            "variant": "hypot-norm",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 4,
+            "receipt": "hypot-norm-v2-ordinary.json"
+          },
+          {
+            "variant": "hypot-norm",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 4,
+            "receipt": "hypot-norm-v2-race.json"
+          },
+          {
+            "variant": "unprotected-read",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 6,
+            "receipt": "unprotected-read-v2-ordinary.json"
+          },
+          {
+            "variant": "unprotected-read",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 99,
+            "failed_events": 7,
+            "receipt": "unprotected-read-v2-race.json"
+          }
+        ]
+      },
+      "norm_helper_and_snapshot_copy_body_unchanged_from_v1": true,
+      "preflight": {
+        "all_passed": true,
+        "cases_per_build": 18,
+        "ordinary_race_and_v1_v2_identical": true,
+        "values": [
+          {
+            "context": "background",
+            "error": "",
+            "log": {
+              "reason": "preflight compatibility",
+              "entries": [
+                {
+                  "kind": "clamp_voltage",
+                  "targets": [
+                    0
+                  ],
+                  "start": 0,
+                  "end": 1,
+                  "applied_rows": 1,
+                  "activity_delta": 0.06312799453735352,
+                  "plastic_delta": 0,
+                  "base_parameter_delta": 0
+                }
+              ]
+            },
+            "output": [
+              [
+                0
+              ]
+            ],
+            "scenario": "valid",
+            "snapshot_sha256": "9b1c9b0021e7a3e2c6568c37cd5d270eb76ddbbb103a298b354073e22691163d",
+            "state_changed": true
+          },
+          {
+            "context": "nil",
+            "error": "nil context",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "valid",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "context canceled",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "valid",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "background",
+            "error": "learning: interventions need an authorized plan with a reason",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unauthorized",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "nil",
+            "error": "learning: interventions need an authorized plan with a reason",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unauthorized",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "learning: interventions need an authorized plan with a reason",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unauthorized",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "background",
+            "error": "empty input sequence",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "empty-input",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "nil",
+            "error": "empty input sequence",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "empty-input",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "empty input sequence",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "empty-input",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "background",
+            "error": "input[0] width 0, want 1",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "wrong-width",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "nil",
+            "error": "nil context",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "wrong-width",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "context canceled",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "wrong-width",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "background",
+            "error": "learning: items[0].kind: unknown intervention kind \"not-a-kind\"",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unknown-kind",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "nil",
+            "error": "learning: items[0].kind: unknown intervention kind \"not-a-kind\"",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unknown-kind",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "learning: items[0].kind: unknown intervention kind \"not-a-kind\"",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "unknown-kind",
+            "snapshot_sha256": "0fab1296e35f850966de05b3568072175984303fc5112c40efc619b46cb3a88e",
+            "state_changed": false
+          },
+          {
+            "context": "background",
+            "error": "learning: silence needs an activation with a zero, activation \"softplus\" has none",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "silence-softplus",
+            "snapshot_sha256": "6079578508946ae754bc4713219fb335db6491a8699751be5e415802491254a7",
+            "state_changed": false
+          },
+          {
+            "context": "nil",
+            "error": "learning: silence needs an activation with a zero, activation \"softplus\" has none",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "silence-softplus",
+            "snapshot_sha256": "6079578508946ae754bc4713219fb335db6491a8699751be5e415802491254a7",
+            "state_changed": false
+          },
+          {
+            "context": "canceled",
+            "error": "learning: silence needs an activation with a zero, activation \"softplus\" has none",
+            "log": {
+              "reason": "",
+              "entries": null
+            },
+            "output": null,
+            "scenario": "silence-softplus",
+            "snapshot_sha256": "6079578508946ae754bc4713219fb335db6491a8699751be5e415802491254a7",
+            "state_changed": false
+          }
+        ],
+        "scope": "Nil/canceled context, unauthorized/unknown plans, empty/wrong-width inputs, unsupported silence; normal state/output unchanged."
+      },
+      "reader_red": {
+        "verified": true,
+        "source_v1_unchanged": true,
+        "frozen_checks": "frozen-checks-v2.json",
+        "results": {
+          "ordinary": {
+            "compiled_and_ran": true,
+            "terminal_events": {
+              "fail": 6,
+              "pass": 1
+            },
+            "candidate_assertion_failures": 5,
+            "race_warnings": 0,
+            "receipt": "red-readers-formal-ordinary.json"
+          },
+          "race": {
+            "compiled_and_ran": true,
+            "terminal_events": {
+              "fail": 7
+            },
+            "candidate_assertion_failures": 6,
+            "race_warnings": 49,
+            "receipt": "red-readers-formal-race.json"
+          }
+        },
+        "observation": "Six public scenarios; ordinary interleavings exposed five, race build exposed all six. The earlier appended-test overlay exposed all six in both builds. Assertions were not changed."
+      },
+      "v1_review_block": "snapshot-review-block.json",
+      "limits": "Observer stress covers actual overlapping failures and mutations, not a forced scheduler at every iteration. Final lock ordering is independently source-reviewed. No task-quality, biology or zero-bug conclusion."
+    },
+    "exact_upper_and_reader_control": {
+      "source": "diagnostic-v2-verification.json",
+      "exact_each": 2,
+      "reader_each": 7
+    },
+    "engineering": {
+      "format": {
+        "exit_code": 0,
+        "seconds": 0.33806091699999996,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-v2-format.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "build": {
+        "exit_code": 0,
+        "seconds": 5.45789975,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-v2-build.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "unit": {
+        "exit_code": 0,
+        "seconds": 120.998383,
+        "raw_sha256": "d785c0baa241f1665fcb3142cbad4c40e91d39b75b14fef4e63c8234ff507a8d",
+        "test_events": {
+          "pass": 8104,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8120,
+        "log": "engineering-v2-unit.log.gz",
+        "log_sha256": "29b7e98d59fcbb67e7891e7aaa2b78009841c2f693008eaef8abafb3795fcb4c",
+        "acceptance_errors": []
+      },
+      "race": {
+        "exit_code": 0,
+        "seconds": 1956.718862667,
+        "raw_sha256": "a4de10a214a9d66f7beaeb9dd6d55cde5984e9f3fcddde5fffd48721c93f34bf",
+        "test_events": {
+          "pass": 8103,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8120,
+        "log": "engineering-v2-race.log.gz",
+        "log_sha256": "88e2afe4daf56c57bc5c02dc6dd03bfb0c893261d221f3afd731742b802371b7",
+        "acceptance_errors": []
+      },
+      "vet": {
+        "exit_code": 0,
+        "seconds": 1.9629043339996315,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-v2-vet.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "module-verify": {
+        "exit_code": 0,
+        "seconds": 1.771495457999663,
+        "raw_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "log": "engineering-v2-module-verify.log",
+        "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "acceptance_errors": []
+      },
+      "module-selection": {
+        "exit_code": 0,
+        "seconds": 0.06811829199978092,
+        "raw_sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "log": "engineering-v2-module-selection.log",
+        "log_sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "acceptance_errors": []
+      },
+      "governance": {
+        "exit_code": 0,
+        "seconds": 3.692619499999637,
+        "raw_sha256": "8a55527cc9a0f898e1d20ba3a1d3a1468f9781cd38cdc3a76183e931ef04048e",
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        },
+        "log": "engineering-v2-governance.log",
+        "log_sha256": "8a55527cc9a0f898e1d20ba3a1d3a1468f9781cd38cdc3a76183e931ef04048e",
+        "acceptance_errors": []
+      },
+      "closure-binary": {
+        "exit_code": 0,
+        "seconds": 1.0226119589997325,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-v2-closure-binary.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      }
+    },
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 2632490749
+    }
+  },
+  "test_log": [
+    "red-readers-formal-ordinary.log",
+    "red-readers-formal-race.log",
+    "unprotected-read-v2-ordinary.log",
+    "unprotected-read-v2-race.log",
+    "red-norm-v2.log",
+    "green-norm-v2-ordinary.log",
+    "green-norm-v2-race.log",
+    "public-large-v2-ordinary.log",
+    "public-small-v2-ordinary.log",
+    "public-large-v2-race.log",
+    "public-small-v2-race.log",
+    "existing-intervention-v2-ordinary.log",
+    "existing-intervention-v2-race.log",
+    "naive-norm-v2-ordinary.log",
+    "naive-norm-v2-race.log",
+    "missing-rollback-v2-ordinary.log",
+    "missing-rollback-v2-race.log",
+    "hypot-norm-v2-ordinary.log",
+    "hypot-norm-v2-race.log",
+    "upper-exact-v2-ordinary.log",
+    "upper-exact-v2-race.log",
+    "engineering-v2-unit.log.gz",
+    "engineering-v2-race.log.gz",
+    "engineering-v2-governance.log"
+  ],
+  "limits": [
+    "Small CPU engineering declarations, not biological calibration, task-quality or whole-brain evidence",
+    "No schema, configuration-domain, dependency or normal dynamics changes",
+    "Existing Intervene contract excludes concurrent mutation on the same individual",
+    "Finite report accuracy and refusal do not establish absolute zero bugs"
+  ],
+  "remaining_confirmed_issue": {
+    "ticket": "docs/tickets/129-consolidation-norm-boundary.md",
+    "severity": "P2",
+    "witness": "next-audit-verification.json",
+    "requirement_status": "MOD-06 specified"
+  },
+  "remaining_delivery": [
+    "commit push remote readback"
+  ]
+}

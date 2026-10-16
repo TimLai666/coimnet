@@ -1,0 +1,76 @@
+"""Recount final focused checks and public witnesses from immutable raw logs."""
+import collections
+import hashlib
+import json
+import math
+from pathlib import Path
+
+assert __debug__, "evidence assertions must run"
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / "evidence/COR-11/frozen-intervention-20261016"
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def command(label, code):
+    receipt = read(E / (label + ".json"))
+    assert receipt["exit_code"] == code, label
+    log = E / receipt["log"]
+    assert sha(log) == receipt["log_sha256"], label
+    return log.read_text()
+
+def events(label, code):
+    result = {}
+    for line in command(label, code).splitlines():
+        event = json.loads(line)
+        if event.get("Test") and event["Action"] in ["pass", "fail", "skip"]:
+            key = (event["Package"], event["Test"])
+            assert key not in result, key
+            result[key] = event["Action"]
+    return result
+
+source = read(E / "formal-source.json")
+assert len(source) == 843 and all(sha(R / p) == h for p, h in source.items())
+for p, h in read(E / "frozen-checks.json").items():
+    assert sha(R / p) == h, p
+assert read(E / "red-verification.json")["counts"] == {"pass": 14, "fail": 78}
+public = {}
+counts = {}
+for mode in ["ordinary", "race"]:
+    large, = [json.loads(x) for x in command("public-large-" + mode, 0).splitlines()]
+    small, = [json.loads(x) for x in command("public-small-" + mode, 0).splitlines()]
+    assert large["finite_eligibility"] == large["expected_finite_norm"] == 5e307
+    assert float(large["plastic_delta"]) == 5e307 and not large["delta_is_inf"]
+    assert large["json_error"] == "" and large["output"] == [[1]]
+    assert small["plastic_delta"] == small["control_eligibility"] == small["expected_finite_norm"] == 2.5e-201
+    assert small["subject_eligibility"] == 0 and small["output"] == [[0, 0]]
+    focused = events("green-norm-final-" + mode, 0)
+    existing = events("existing-intervention-" + mode, 0)
+    assert len(focused) == 92 and set(focused.values()) == {"pass"}
+    assert len(existing) == 216 and set(existing.values()) == {"pass"}
+    assert focused.items() <= existing.items()
+    old_receipt = read(P / ("existing-intervention-" + mode + ".json"))
+    assert sha(P / old_receipt["log"]) == old_receipt["log_sha256"]
+    old = {}
+    for line in (P / old_receipt["log"]).read_text().splitlines():
+        event = json.loads(line)
+        if event.get("Test") and event["Action"] in ["pass", "fail", "skip"]:
+            old[(event["Package"], event["Test"])] = event["Action"]
+    assert len(old) == 119 and old.items() <= existing.items()
+    public[mode] = {"large": large, "small": small}
+    counts[mode] = {"new_pass_events": len(focused), "leaf_cases": 85, "related_pass_events": len(existing), "previous_related_events_preserved": len(old), "broader_pattern_additional_pass_events": len(existing) - len(focused) - len(old)}
+mutations = read(E / "mutations.json")
+assert mutations["all_passed"] and len(mutations["variants"]) == 6
+for variant in mutations["variants"]:
+    label = variant["variant"] + "-" + variant["build"]
+    mutant = events(label, 1)
+    assert len(mutant) == 92
+    assert dict(collections.Counter(mutant.values())) == {"pass": 92 - variant["failed_events"], "fail": variant["failed_events"]}
+    assert variant["compiled_and_ran"] and variant["failed_events"] == {"naive-norm": 25, "missing-rollback": 53, "hypot-norm": 4}[variant["variant"]]
+    assert mutant[("github.com/TimLai666/coimnet/learning", "TestInterveneNormNumericalBoundaries/upper_overflow")] == ("fail" if variant["variant"] == "hypot-norm" else "pass")
+    assert mutant[("github.com/TimLai666/coimnet/learning", "TestInterveneNormNumericalBoundaries/large_single")] == ("fail" if variant["variant"] == "naive-norm" else "pass")
+result = {"all_passed": True, "source_count": len(source), "public_original_witnesses": public, "focused_counts": counts, "isolated_mutations": mutations, "checks_manifest": "frozen-checks.json", "production_manifest": "formal-source.json", "limits": "Finite engineering/report and atomic-refusal evidence only. No new task-quality, biological-calibration or absolute zero-bug conclusion."}
+with (E / "diagnostic-verification.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"all_passed": True, "focused_each": 92, "related_each": 216, "semantic_rejections": 6, "large_norm": 5e307, "small_norm": 2.5e-201}))

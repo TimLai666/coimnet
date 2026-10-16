@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+"""Assemble evidence only after complete immutable-source engineering succeeds."""
+import datetime
+import gzip
+import hashlib
+import json
+import platform
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+diagnostic = read(E / "diagnostic-v2-verification.json")
+engineering = read(E / "engineering-v2-verification.json")
+next_issue = read(E / "next-audit-verification.json")
+assert diagnostic["all_passed"] and engineering["all_passed"]
+assert next_issue["confirmed"] and not next_issue["fixed"]
+source = read(E / "formal-source-v2.json")
+assert len(source) == engineering["source_count"] == 844
+assert all(sha(R / p) == h for p, h in source.items())
+go_receipt = read(E / "host-go-version.json")
+assert go_receipt["exit_code"] == 0 and sha(E / go_receipt["log"]) == go_receipt["log_sha256"]
+go_version = (E / go_receipt["log"]).read_text().strip()
+steps = {}
+for step in engineering["steps"]:
+    assert step["exit_code"] == 0 and not step["acceptance_errors"]
+    assert sha(E / step["log"]) == step["log_sha256"]
+    steps[step["name"]] = {k: v for k, v in step.items() if k in ["exit_code", "log", "log_sha256", "raw_sha256", "seconds", "test_events", "package_events", "prior_event_count", "acceptance_errors"]}
+assert steps["unit"]["test_events"] == {"pass": 8104, "skip": 23}
+assert steps["race"]["test_events"] == {"pass": 8103, "skip": 24}
+assert steps["unit"]["package_events"] == steps["race"]["package_events"] == {"pass": 58, "skip": 4}
+def terminal_events(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("Action") not in ["pass", "fail", "skip"]:
+            continue
+        if event.get("Test"):
+            key = (event["Package"], event["Test"])
+            assert key not in tests
+            tests[key] = event["Action"]
+        else:
+            packages[event["Package"]] = event["Action"]
+    return tests, packages
+previous_e = R / "evidence/COR-11/frozen-intervention-20261016"
+previous = read(previous_e / "engineering-verification.json")
+assert previous["all_passed"] and previous["source_count"] == 841
+baseline_comparison = {}
+for mode in ["unit", "race"]:
+    old_step = next(x for x in previous["steps"] if x["name"] == mode)
+    new_step = next(x for x in engineering["steps"] if x["name"] == mode)
+    assert sha(previous_e / old_step["log"]) == old_step["log_sha256"]
+    old, old_packages = terminal_events(gzip.decompress((previous_e / old_step["log"]).read_bytes()))
+    new, new_packages = terminal_events(gzip.decompress((E / new_step["log"]).read_bytes()))
+    assert len(old) == 8028 and len(new) == 8127 and old.items() <= new.items() and old_packages == new_packages
+    added = {key: value for key, value in new.items() if key not in old}
+    assert len(added) == 99 and all(key[1].startswith("TestInterveneNorm") and value == "pass" for key, value in added.items())
+    baseline_comparison[mode] = {"original_events": 8028, "all_original_results_preserved": True, "new_regression_pass_events": 99, "previous_log": str((previous_e / old_step["log"]).relative_to(R)), "previous_log_sha256": old_step["log_sha256"]}
+result = {
+    "requirement": "COR-11",
+    "verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    "engineering_passed": True,
+    "diagnostic_passed": True,
+    "production_changes": True,
+    "confirmed_defects_fixed": 1,
+    "candidate_regression_caught_before_commit": {"v1": "snapshot-review-block.json", "fix": "whole-operation subject lock and unchanged private Snapshot copy helper", "verified": "diagnostic-v2-verification.json"},
+    "source_count": 844,
+    "reproduction_command": {
+        "focused": "go test [-race] -json -count=1 ./learning -run ^TestInterveneNorm",
+        "public": "go run [-race] ./runs/.tmp/intervention-finite-norm-20261016/public-large (or public-small)",
+        "engineering": "python3 evidence/COR-11/finite-intervention-norm-20261016/engineering-v2.py.txt"
+    },
+    "environment": {"platform": platform.platform(), "go_version": go_version, "baseline": read(E / "baseline.json")["head"], "settings": "command-environment.json"},
+    "input_fingerprints": {"formal_source": "formal-source-v2.json", "formal_source_sha256": sha(E / "formal-source-v2.json"), "original_source": "source-before.json", "checks": "frozen-checks-v2.json", "checks_sha256": sha(E / "frozen-checks-v2.json")},
+    "root_cause": {"location": "learning/intervene.go:l2Diff", "defect": "squared intermediate overflow or underflow misreports a representable norm", "fix": "preserve normal reduction bits; use a stable fallback and exact upper representability boundary, then reject unrepresentable reports and hold the operation lock through rollback and hook cleanup so read-only observers see completed state"},
+    "observed_result": {"last_delivered_baseline_comparison": baseline_comparison, "diagnostic": diagnostic, "exact_upper_and_reader_control": {"source": "diagnostic-v2-verification.json", "exact_each": 2, "reader_each": 7}, "engineering": steps},
+    "test_log": ["red-readers-formal-ordinary.log", "red-readers-formal-race.log", "unprotected-read-v2-ordinary.log", "unprotected-read-v2-race.log", "red-norm-v2.log", "green-norm-v2-ordinary.log", "green-norm-v2-race.log", "public-large-v2-ordinary.log", "public-small-v2-ordinary.log", "public-large-v2-race.log", "public-small-v2-race.log", "existing-intervention-v2-ordinary.log", "existing-intervention-v2-race.log", "naive-norm-v2-ordinary.log", "naive-norm-v2-race.log", "missing-rollback-v2-ordinary.log", "missing-rollback-v2-race.log", "hypot-norm-v2-ordinary.log", "hypot-norm-v2-race.log", "upper-exact-v2-ordinary.log", "upper-exact-v2-race.log", "engineering-v2-unit.log.gz", "engineering-v2-race.log.gz", "engineering-v2-governance.log"],
+    "limits": ["Small CPU engineering declarations, not biological calibration, task-quality or whole-brain evidence", "No schema, configuration-domain, dependency or normal dynamics changes", "Existing Intervene contract excludes concurrent mutation on the same individual", "Finite report accuracy and refusal do not establish absolute zero bugs"],
+    "remaining_confirmed_issue": {"ticket": "docs/tickets/129-consolidation-norm-boundary.md", "severity": "P2", "witness": "next-audit-verification.json", "requirement_status": "MOD-06 specified"},
+    "remaining_delivery": ["final metadata governance", "owned cleanup", "commit push remote readback"]
+}
+with (E / "verification.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"engineering_passed": True, "diagnostic_passed": True, "confirmed_defects_fixed": 1,
+    "candidate_regression_caught_before_commit": {"v1": "snapshot-review-block.json", "fix": "whole-operation subject lock and unchanged private Snapshot copy helper", "verified": "diagnostic-v2-verification.json"}, "source_entries": 844, "separate_remaining_gap": "MOD-06"}))

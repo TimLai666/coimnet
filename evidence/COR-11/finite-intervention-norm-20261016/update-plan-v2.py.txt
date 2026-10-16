@@ -1,0 +1,12 @@
+# -*- coding: utf-8 -*-
+"""Align the current plan with the v2 lock correction, preserving the first plan."""
+from pathlib import Path
+import json
+E=Path(__file__).resolve().parent;p=E/'plan.md';raw=p.read_bytes();s=raw.decode()
+with (E/'plan-v1.md.txt').open('xb') as f:f.write(raw)
+a='唯一正式實作範圍為 learning/intervene.go 的差異 helper、四個使用者的有限檢查，以及本次操作的失敗還原。';assert s.count(a)==1;s=s.replace(a,'最終正式實作範圍為 learning/intervene.go 的差異 helper、四個使用者的有限檢查、失敗還原與完整操作鎖，以及 learning/individual.go 原 Snapshot 複製內容抽出的私有 helper。')
+s=s.replace('Root 凍結 85 個葉案例與七個父測試，共 92 terminal events。','第一候選 v1 的 Root 凍結 85 個葉案例與七個父測試，共 92 terminal events。')
+s+='''\n## v2 讀取保護與最終驗收｜2026-10-16\n\nv1 完整工程雖曾通過，追加 Snapshot／ChemistryReport 的觀察者仍重現 rollback 競態與被拒絕狀態外露，未提交。Root 先凍結第三份失敗測試，再補完整操作鎖。既有 preflight 次序保持，在初始快照之前取得可取消的個體鎖，直到 twin、subject、報告、失敗還原、shuffle 及 hooks 清除才釋放。公開 Snapshot 與私有 snapshotLocked 使用同一份原複製內容，subject 使用既有 advanceRowsLocked，不增加並行修改個體的保證。\n\n最終三份凍結測試共 91 個葉案例、八個父測試，99 terminal events；一般／競態各 223 個相關事件、18 種 preflight 與四種隔離錯誤版本控制納入驗收。最終來源為 formal-source-v2.json 的 844 份，v1 的 843 份來源與日誌保留為被阻擋的候選紀錄。最終完整工程必須重新執行，並直接核對上一交付版本的全部 8,028 個事件與本輪新增 99 個通過事件。\n'''
+assert p.read_bytes()==raw;p.write_text(s)
+p=E/'delegation.json';raw=p.read_bytes();v=json.loads(raw);v['v1_implementation_slot']=v.pop('implementation_slot');assert p.read_bytes()==raw;p.write_text(json.dumps(v,indent=2)+'\n')
+print('current_plan_and_delegation_match_final_two_file_scope')

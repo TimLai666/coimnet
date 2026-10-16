@@ -1,0 +1,100 @@
+# -*- coding: utf-8 -*-
+"""Record verified intervention acceptance while preserving the separate consolidation gap."""
+import hashlib
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/intervention-finite-norm-20261016"
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+verification = read(E / "verification.json")
+assert verification["engineering_passed"] and verification["diagnostic_passed"]
+assert verification["confirmed_defects_fixed"] == 1
+for name, digest in read(E / "formal-source-v2.json").items():
+    assert sha(R / name) == digest, name
+
+def update(path, change):
+    before = path.read_bytes()
+    after = change(before.decode())
+    assert path.read_bytes() == before, path
+    path.write_text(after)
+
+def replace_once(text, before, after):
+    assert text.count(before) == 1, before
+    return text.replace(before, after)
+
+path = R / "docs/requirements-status.json"
+raw = path.read_bytes()
+current = json.loads(raw)
+baseline = json.loads(subprocess.check_output(["git", "show", read(E / "baseline.json")["head"] + ":docs/requirements-status.json"], cwd=R))
+mod_link = "../evidence/COR-11/finite-intervention-norm-20261016/next-audit-verification.json"
+for item in baseline["requirements"]:
+    if item["id"] == "MOD-06":
+        assert item["status"] == "passed"
+        item["status"] = "specified"
+        item["evidence"].append(mod_link)
+assert current == baseline
+for item in current["requirements"]:
+    if item["id"] == "COR-11":
+        assert item["status"] == "specified"
+        item["status"] = "passed"
+        item["evidence"].append("../evidence/COR-11/finite-intervention-norm-20261016/verification.json")
+assert len(current["requirements"]) == 91
+assert sum(x["status"] == "passed" for x in current["requirements"]) == 90
+assert all(x["status"] == "passed" or (x["id"] == "MOD-06" and x["status"] == "specified") for x in current["requirements"])
+assert path.read_bytes() == raw
+path.write_text(json.dumps(current, ensure_ascii=False, indent=2) + "\n")
+
+def ticket(text):
+    assert text.count("- [ ]") == 2
+    text = text.replace("- [ ]", "- [x]", 1)
+    old = "最終 v2 的 844 份正式來源已凍結，下一步完整工程驗收。本票 2／4，COR-11 保持 specified。"
+    new = "844 份正式來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定 Insyra v0.3.4、模組與治理通過，COR-11 恢復 passed。MOD-06 的另一個已確認報告缺陷由 ticket129 接續，工程追蹤 90／91。本票 3／4，待清理與交付，見[驗收](../../evidence/COR-11/finite-intervention-norm-20261016/verification.json)。"
+    return replace_once(text, old, new)
+update(R / "docs/tickets/128-intervention-finite-norm.md", ticket)
+
+def readme(text):
+    before = "介入報告的中間平方上溢／下溢修正正在完整驗收，另已確認慢速記憶報告的極端範數缺陷。目前 COR-11 與 MOD-06 維持 specified，工程追蹤為 89／91，分別由 [ticket 128](docs/tickets/128-intervention-finite-norm.md) 與 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 管理。這輪沒有新的任務辨識率或生物校準結果。"
+    after = "介入報告的中間平方上溢／下溢修正已通過完整工程驗收，COR-11 恢復 passed。慢速記憶報告另有已確認的極端範數缺陷，MOD-06 維持 specified，目前工程追蹤為 90／91，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續。這輪沒有新的任務辨識率或生物校準結果。"
+    text = replace_once(text, before, after)
+    return replace_once(text, "目前工程追蹤為 89／91，COR-11 由 ticket 128 驗收，MOD-06 由 ticket 129 接續。", "目前工程追蹤為 90／91，COR-11 的 ticket 128 已通過驗收，MOD-06 由 ticket 129 接續。")
+update(R / "README.md", readme)
+
+def status(text):
+    start = text.index("[ticket 128]")
+    end = text.index("\n\n", start)
+    summary = "[ticket 128](docs/tickets/128-intervention-finite-norm.md) 已修正介入報告的中間平方上溢／下溢，真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。一般／競態各 99 個新專項、223 個相關事件與兩個原公開 witness 通過，四種隔離回退在兩種建置均被拒絕。844 份來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定依賴與治理通過，COR-11 恢復 passed，見[驗收](evidence/COR-11/finite-intervention-norm-20261016/verification.json)。本票 3／4，暫存清理及交付尚待完成。MOD-06 的三種記憶報告在最高端錯誤接受寫入，保持 specified，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續，目前工程追蹤 90／91。"
+    text = text[:start] + summary + text[end:]
+    text = replace_once(text, "本輪 ticket 127 修正凍結個體的介入對照與失敗提交順序，專項與完整工程通過。清理、交付及來源證據以「目前階段」的本票紀錄為準。COR-11 因另已確認的報告範數上下溢位保持 specified，目前工程追蹤 90／91。整個框架零 bug 與模型品質改善尚未證明。", "本輪 ticket128 修正介入報告的中間平方上下溢位、不可表示差異的失敗原狀與並行讀取，專項與完整工程通過。清理及交付以「目前階段」本票紀錄為準。COR-11 恢復 passed，另已確認的 MOD-06 報告缺陷由 ticket129 接續，工程追蹤 90／91。整體零 bug 與模型品質改善尚未證明。")
+    header = "## 里程碑\n\n| id | 目標 | 負責者 | 狀態 | 驗證訊號 |\n| --- | --- | --- | --- | --- |"
+    text = replace_once(text, header, header + "\n| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | in_progress | 3／4。專項、完整工程與 COR-11 驗收通過，待清理與交付 |")
+    text = replace_once(text, "COR-11 仍有已確認的介入報告範數上下溢位，ticket 128 驗收前保持 specified，工程追蹤 90／91。ticket 127 的兩項修正已有完整工程證據，其清理與交付狀態見「目前階段」。真實品質及生物校準沒有由本階段重新驗收。混合重算是既有明示不支援的組合。", "MOD-06 的 BaseL2／SlowL2／PlasticL2 在最高端誤報有限幅度並消耗寫入額度，ticket129 驗收前保持 specified，工程追蹤 90／91。ticket128 的 COR-11 修正已通過完整工程，其清理及交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。")
+    text = replace_once(text, "[ticket 128](docs/tickets/128-intervention-finite-norm.md) 為下一個實作，前置條件是 ticket 127 完成交付。先以已保存的兩個公開控制驗證有限差異的上下溢位，核對四個 delta 使用者與真正不可表示結果的失敗原狀契約，再修正並驗收。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。", "[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 為下一個實作，前置條件是 ticket128 完成交付。三種記憶報告的最高端誤接受已由一般／競態各九個公開案例確認，先凍結獨立回歸與正常位元控制，再修正並驗收，見[證據](evidence/COR-11/finite-intervention-norm-20261016/next-audit-verification.json)。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。")
+    text = replace_once(text, "## 決策紀錄\n\n", "## 決策紀錄\n\n2026-10-16：ticket128 的四種介入差異保持正常平方和位元，僅在中間上下溢位改用穩定計算，真正不可表示時保留原 runtime 與來源快取，以同一把操作鎖保護讀取與 cleanup。COR-11 恢復 passed。另確認 MOD-06 三種記憶報告在最高端誤接受，回到 specified，由 ticket129 接續。\n\n")
+    return replace_once(text, "原始工程曾完成 91／91，本輪因 COR-11 已確認報告缺陷維持 90／91，後續由 ticket 128 驗收。", "原始工程曾完成 91／91，本輪 COR-11 已恢復 passed，因 MOD-06 另已確認報告缺陷維持 90／91，後續由 ticket129 驗收。")
+update(R / "delivery-status.md", status)
+
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+subprocess.run([sys.executable, str(E / "run-command.py.txt"), "final-governance", str(W / "final-root.test"), "-test.v", "-test.run", pattern], check=True)
+path = E / "final-governance.json"
+raw = path.read_bytes()
+receipt = json.loads(raw)
+passed = len(re.findall(r"^\s*--- PASS:", (E / "final-governance.log").read_text(), re.M))
+assert receipt["exit_code"] == 0 and passed == 31
+receipt["passed_events"] = passed
+assert path.read_bytes() == raw
+path.write_text(json.dumps(receipt, indent=2) + "\n")
+path = E / "verification.json"
+raw = path.read_bytes()
+verification = json.loads(raw)
+verification["observed_result"]["final_governance"] = {"receipt": "final-governance.json", "passed_events": 31}
+verification["remaining_delivery"].remove("final metadata governance")
+assert path.read_bytes() == raw
+path.write_text(json.dumps(verification, indent=2) + "\n")
+print(json.dumps({"final_governance_pass_events": 31, "requirements_passed": "90/91", "COR-11": "passed", "MOD-06": "specified", "verified_milestones": 3}))

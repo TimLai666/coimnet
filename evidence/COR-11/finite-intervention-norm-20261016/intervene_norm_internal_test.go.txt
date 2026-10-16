@@ -1,0 +1,160 @@
+package learning
+
+import (
+	"context"
+	"math"
+	"math/big"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+// The reference rounds each subtraction as the existing operation does, then
+// accumulates every square and its square root at independent high precision.
+func interventionNormReference(a, b []float64) float64 {
+	const precision = 8192
+	sum := new(big.Float).SetPrec(precision)
+	term := new(big.Float).SetPrec(precision)
+	for i := range a {
+		d := a[i] - b[i]
+		if math.IsInf(d, 0) {
+			return math.Inf(1)
+		}
+		term.SetFloat64(d)
+		term.Mul(term, term)
+		sum.Add(sum, term)
+	}
+	sum.Sqrt(sum)
+	out, _ := sum.Float64()
+	return out
+}
+
+func TestInterveneNormNumericalBoundaries(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		a, b []float64
+	}{
+		{"empty", nil, nil},
+		{"zero", []float64{0, -0.0}, []float64{0, 0}},
+		{"three_four", []float64{3, 4}, []float64{0, 0}},
+		{"large_single", []float64{5e307}, []float64{0}},
+		{"large_pair", []float64{5e307, -5e307}, []float64{0, 0}},
+		{"square_overflow", []float64{1e200}, []float64{0}},
+		{"sum_overflow", []float64{1e154, 1e154}, []float64{0, 0}},
+		{"tiny_single", []float64{2.5e-201}, []float64{0}},
+		{"tiny_pair", []float64{2.5e-201, -2.5e-201}, []float64{0, 0}},
+		{"partial_underflow", []float64{math.Ldexp(1, -537), math.Ldexp(1, -538)}, []float64{0, 0}},
+		{"nonzero_subnormal_squares", []float64{1e-160, 2e-160}, []float64{0, 0}},
+		{"smallest_nonzero", []float64{math.SmallestNonzeroFloat64}, []float64{0}},
+		{"mixed_scales", []float64{4e307, 2.5e-201}, []float64{0, 0}},
+		{"subtraction_overflow", []float64{math.MaxFloat64}, []float64{-math.MaxFloat64}},
+		{"norm_overflow", []float64{1.3e308, 1.3e308}, []float64{0, 0}},
+		{"upper_finite", []float64{math.MaxFloat64, math.Ldexp(math.MaxFloat64, -27)}, []float64{0, 0}},
+		{"upper_overflow", []float64{math.MaxFloat64, math.Ldexp(math.MaxFloat64, -26)}, []float64{0, 0}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			want := interventionNormReference(tc.a, tc.b)
+			got := l2Diff(tc.a, tc.b)
+			if math.IsInf(want, 1) {
+				if !math.IsInf(got, 1) {
+					t.Fatalf("unrepresentable norm: got %.17g want +Inf", got)
+				}
+				return
+			}
+			if math.IsNaN(got) || math.IsInf(got, 0) || (want != 0 && got == 0) {
+				t.Fatalf("finite norm: got %.17g want %.17g", got, want)
+			}
+			if want == 0 {
+				if got != 0 {
+					t.Fatalf("zero norm: got %.17g", got)
+				}
+			} else if math.Abs(got/want-1) > 3e-15 {
+				t.Fatalf("norm: got %.17g want %.17g", got, want)
+			}
+		})
+	}
+}
+
+func TestInterveneNormLegacyBits(t *testing.T) {
+	tail := make([]float64, 1025)
+	tail[0] = 1
+	for i := 1; i < len(tail); i++ {
+		tail[i] = math.Ldexp(1, -27)
+	}
+	for _, tc := range []struct {
+		name string
+		a, b []float64
+	}{
+		{"decimal", []float64{.1, .2, -.3}, []float64{.04, -.1, .02}},
+		{"ordinary_tail", tail, make([]float64, len(tail))},
+		{"insignificant_tiny_tail", []float64{1, 1e-200}, []float64{0, 0}},
+		{"ordinary_small", []float64{1e-100, 2e-100}, []float64{0, 0}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var sum float64
+			for i := range tc.a {
+				d := tc.a[i] - tc.b[i]
+				sum += d * d
+			}
+			want, got := math.Sqrt(sum), l2Diff(tc.a, tc.b)
+			if math.Float64bits(got) != math.Float64bits(want) {
+				t.Fatalf("legacy bits changed: got %x want %x", math.Float64bits(got), math.Float64bits(want))
+			}
+		})
+	}
+}
+
+func TestInterveneNormFailureKeepsControllerCache(t *testing.T) {
+	for _, shuffle := range []bool{false, true} {
+		name := "plain"
+		if shuffle {
+			name = "shuffle"
+		}
+		t.Run(name, func(t *testing.T) {
+			c := Config{Dynamics: dynamics.Config{Nodes: 1, Sources: []int{0, 0}, Targets: []int{0, 0}, Delays: []int{1, 2}, DT: math.Ln2, Activation: "tanh"}, InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{0}, ReadoutEveryStep: true}
+			p := Parameters{Core: dynamics.Parameters{Weights: []float64{0, 0}, Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+			a, err := NewIndividual(c, p, DefaultOptions(), []float64{.2})
+			if err != nil {
+				t.Fatal(err)
+			}
+			controller := &modulation.Controller{Inputs: modulation.ControllerInputs{SummaryWindow: 2}, Nodes: 1, Hidden: 1, Parameters: []float64{.1, .2, .05, .3, -.1}}
+			chemistry := modulation.ChemistryConfig{Chemistry: modulation.Chemistry{Regions: 2, Channels: 1, DT: math.Ln2, Tau: []float64{1}}, Sources: []modulation.SourceSpec{{Kind: modulation.SourceController, Controller: controller}}, Regions: modulation.RegionAssignment{NodeRegion: []int{0}}}
+			if err := a.EnableChemistry(chemistry); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := a.Advance(context.Background(), [][]float64{{.4}, {.1}}); err != nil {
+				t.Fatal(err)
+			}
+			before, report := a.Snapshot(), a.ChemistryReport()
+			source := a.chemical.sources[0].(*modulation.Controller)
+			objective := modulation.ControllerObjective{Kind: modulation.ObjectiveActivityTarget, Target: .3}
+			loss, gradient, err := source.Gradient(objective)
+			if err != nil {
+				t.Fatal(err)
+			}
+			plan := InterventionPlan{Authorized: true, Reason: "unrepresentable concentration preserves runtime", Items: []Intervention{{Kind: InterventionFixConcentration, Channel: 0, Value: 1.3e308, Start: 0, End: 1, Restore: true}}}
+			if shuffle {
+				plan.Items = append(plan.Items, Intervention{Kind: InterventionShuffleDelays, Seed: 3, Start: 0, End: 1, Restore: true})
+			}
+			out, log, err := a.Intervene(context.Background(), plan, [][]float64{{.2}})
+			if err == nil || out != nil || !reflect.DeepEqual(log, InterventionLog{}) {
+				t.Fatalf("numeric refusal got out=%v log=%+v err=%v", out, log, err)
+			}
+			if !reflect.DeepEqual(a.Snapshot(), before) || !reflect.DeepEqual(a.ChemistryReport(), report) {
+				t.Fatal("failure changed completed state or report")
+			}
+			if a.chemical.sources[0] != source {
+				t.Fatal("failure replaced original source runtime")
+			}
+			gotLoss, gotGradient, err := source.Gradient(objective)
+			if err != nil || gotLoss != loss || !reflect.DeepEqual(gotGradient, gradient) {
+				t.Fatalf("failure changed release gradient cache: %v", err)
+			}
+			if a.rowOverride != nil || a.chemical.override != nil {
+				t.Fatal("failure retained an intervention hook")
+			}
+		})
+	}
+}

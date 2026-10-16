@@ -1,0 +1,73 @@
+# -*- coding: utf-8 -*-
+"""Record focused v2 acceptance, without prematurely closing full engineering."""
+import hashlib,json
+from pathlib import Path
+E=Path(__file__).resolve().parent;R=E.parents[2]
+assert json.loads((E/'diagnostic-v2-verification.json').read_text())['all_passed']
+for n,h in json.loads((E/'formal-source-v2.json').read_text()).items():assert hashlib.sha256((R/n).read_bytes()).hexdigest()==h,n
+
+def update(p,fn):
+ before=p.read_bytes();after=fn(before.decode());assert p.read_bytes()==before,p;p.write_text(after)
+def once(s,a,b):
+ assert s.count(a)==1,a;return s.replace(a,b)
+
+def ticket(s):
+ assert s.count('- [ ]')==3
+ s=s.replace('- [ ]','- [x]',1)
+ start=s.index('最小修正完成。')
+ s=s[:start]+'''第一候選 v1 的一般／競態各 92 個新專項、216 個相關事件及完整工程曾通過，但 Root 追加唯讀觀察者後確認 Snapshot 會與 rollback 寫入競爭，且可讀到最後被拒絕的候選，因此禁止交付。最初 overlay 的六案例兩種建置各七個事件全部失敗；凍結成正式第三份測試後，一般為六 fail／一 pass，競態為七 fail 並有 49 次競態警告。這是排程差異，斷言未改，見[紅燈核對](../../evidence/COR-11/finite-intervention-norm-20261016/red-readers-verification.json)。原 843 份來源與 v1 完整工程結果保留，不能當最終驗收。
+
+最終 v2 使用同一把操作鎖保護 snapshot、twin、subject、報告、失敗還原及 hooks 清除。公開 Snapshot 的原複製內容僅抽成私有 helper，subject 沿用已持鎖的 advanceRowsLocked；既有驗證順序保持，不增加並行修改個體的保證。一般／競態各 99 個專項與 223 個相關事件通過，原 119 個事件保持。兩個公開 witness 分別正確回報 5e307 與 2.5e-201，大值 JSON 匯出成功。四種錯誤版本在兩種建置均被拒絕，18 種 preflight 控制與 v1 逐位相同，見[專項驗收](../../evidence/COR-11/finite-intervention-norm-20261016/diagnostic-v2-verification.json)。最終 v2 的 844 份正式來源已凍結，下一步完整工程驗收。本票 2／4，COR-11 保持 specified。
+'''
+ return s
+update(R/'docs/tickets/128-intervention-finite-norm.md',ticket)
+
+def status(s):
+ start=s.index('[ticket 128]');end=s.index('\n\n',start)
+ return s[:start]+'''[ticket 128](docs/tickets/128-intervention-finite-norm.md) 的最終 v2 已修正介入報告平方上下溢位、不可表示差異的失敗還原與並行快照讀取。一般／競態各 99 個專項、223 個相關事件及四種錯誤版本控制通過，18 種 preflight 控制與 v1 相同，見[專項驗收](evidence/COR-11/finite-intervention-norm-20261016/diagnostic-v2-verification.json)。第一候選雖曾通過整套驗收，Root 追加測試仍抓到競態，因此未提交，原始失敗與 v1 日誌保留。844 份最終來源已凍結，正在重新完整工程驗收。本票 2／4，COR-11 與另已確認缺陷的 MOD-06 保持 specified，工程追蹤 89／91。MOD-06 後續由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續。'''+s[end:]
+update(R/'delivery-status.md',status)
+update(R/'ENG.md',lambda s:once(s,'還原沿用 `advanceRows` 成功才替換候選的 ownership，不重建整個模型。','還原沿用 `advanceRows` 成功才替換候選的 ownership，不重建整個模型。既有 preflight 後持有同一把個體操作鎖，涵蓋快照、對照、subject、差異報告及所有還原／hooks 清除，並行讀取只取得完整操作的狀態。公開 Snapshot 的複製內容抽為私有 `snapshotLocked`，subject 使用 `advanceRowsLocked`，不增加並行修改個體的保證。'))
+update(R/'docs/model-and-mechanisms.md',lambda s:once(s,'並保留呼叫前的個體狀態、化學報告與來源快取，見 [ticket 128]','並保留呼叫前的個體狀態、化學報告與來源快取。介入執行與還原期間持有操作鎖，並行的快照／化學報告讀取只取得完整操作的狀態，見 [ticket 128]'))
+p=E/'root-review.md';before=p.read_bytes()
+with (E/'root-review-v1.md.txt').open('xb') as f:f.write(before)
+review='''# 介入報告有限範數與失敗原狀的 Root 審查
+
+Scope CLEAN。正式實作只有 learning/intervene.go 與 learning/individual.go，三份新增測試由 Root 凍結，實作者沒有更動。Root 完整閱讀兩檔 diff、三份測試、四個差異使用者、advanceRows／advanceStepwise 的候選提交、來源 clone 與所有 defer，並自行執行驗收。最終來源見 formal-source-v2.json（844 份），檢查見 frozen-checks-v2.json（三份）。
+
+## 已確認與採用
+
+原差異先平方，會把可表示的 5e307 算成 +Inf、2.5e-201 算成零。正常索引順序平方和位元保持，只有實質上下溢位使用 scaled compensated fallback，最高端用精確平方和判斷最近偶數捨入界線。四個使用者與等形有限輸入前提保持。真正不可表示時回傳空輸出、空紀錄與錯誤。
+
+advanceRowsLocked 只在完整成功後替換 neural、plastic.state、chemical.state/report/sources。舊 ownership 引用可以還原報告拒絕，且保留快照未保存的來源計算快取。第一版多餘的 committed 旗標、整個 plasticRuntime 與 report 深拷貝已移除，僅留一個 callOK 與必要舊欄位。沒有變更數值判準。
+
+## v1 審查阻擋與 v2 修正
+
+v1 的 92 項專項與完整工程曾通過，但 Root 追加並行 Snapshot／ChemistryReport 後，確認 rollback 寫入未持鎖，讀者會讀到最後被拒絕的候選。原始來源、日誌與 snapshot-review-block.json 保留，沒有將 v1 提交。
+
+凍結成正式第三份測試後，一般六 fail／一 pass，競態七 fail、49 次競態警告。較早的追加 overlay 在兩種建置各七 fail。這是排程觀察差異，測試斷言沒有放寬，見 red-readers-verification.json。
+
+v2 保持 preflight 次序，之後取得可取消的個體鎖，直到快照、twin、subject、報告與 cleanup 完成才解鎖。公開 Snapshot 的原複製內容精確抽至 snapshotLocked，subject 改用 advanceRowsLocked。defer 逆序為 chemical hook、row hook、shuffle network/hash 還原、runtime 還原、解鎖，讀者不會看到暫時網路或被拒絕的狀態。twin 有獨立鎖，沒有重入相同鎖。並行修改仍是既有不支援契約。
+
+## 最終專項與獨立控制
+
+有效數值 RED 為 14 pass／78 fail，92 個事件全部成功編譯執行，初稿過期 API 呼叫錯誤另存而未計為缺陷。v2 一般／競態各 99 pass，相關各 223 pass，包含原 119 個事件。公開大／小 witness 回報 5e307／2.5e-201，JSON 匯出成功。18 種 preflight 在 v1／v2 及一般／競態的輸出、錯誤、狀態指紋完全相同。
+
+四種隔離錯誤版本兩種建置都成功編譯、執行並被斷言拒絕：逐項平方各 25 fail、漏還原各 60 fail、逐項 Hypot 各四 fail、未保護讀取一般六 fail／競態七 fail。數值參考使用獨立 8192-bit 計算，正常平方和逐位比較。永久 upper_finite 用相對誤差，另有精確 MaxFloat64 overlay 兩種建置各兩 pass。
+
+觀察者 stress 確認實際交錯發生，但沒有強制每次迭代都交錯。六案例與錯誤版本控制、race 及 Root 的鎖順序審查共同構成證據，不宣稱任意排程形式驗證。大型 STDP aggregate 未逐欄對照所有 state，但另有原公開 eligibility witness 與完整失敗原狀比較。獨立 Luna max 唯讀對抗審查沒有提出已確認的新阻擋缺陷。
+
+完整競態與後續工程仍在執行。最終來源 844 份保持凍結，沒有在完整測試途中修改 Go 檔案。
+
+## 另列的確認問題
+
+Consolidate 的 BaseL2／SlowL2／PlasticL2 在最高端使用逐項 Hypot，會把真正不可表示的幅度回報為 MaxFloat64，並寫入 Used。一般／競態各九個公開案例已確認，見 next-audit-verification.json 與 ticket129。這是既有另一條路徑，未在本票擴大修改，MOD-06 保持 specified。沒有新的真實任務、生物校準或整體零 bug 證據。
+
+## 派工實況與減法審查
+
+宿主 Codex。本輪 opencode models 實際失敗：Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)。依專案第二選擇使用原生 gpt-5.6-luna、reasoning effort=max，負責數值／ownership 契約、兩個實作格子及唯讀審查。Root 保有判準、凍結測試、實際驗證、完整 diff 與交付審查。
+
+移除第一候選多餘的深拷貝與重複提交旗標。v2 僅抽原快照複製內容並沿用已持鎖的 advance 入口，不新增公開鎖 API、重複驗證或新的狀態格式。Consolidate 另票處理，避免同時修改另一條狀態提交路徑。
+'''
+assert p.read_bytes()==before;p.write_text(review)
+update(E/'delegation.json',lambda s:json.dumps({**json.loads(s),'v2_implementation_slot':['learning/intervene.go: whole-operation locking and locked advance','learning/individual.go: unchanged Snapshot copy helper'],'frozen_checks':'frozen-checks-v2.json','worker_changed_tests':False,'v1_root_review_block':'snapshot-review-block.json','v2_adversarial_review':'Root and native gpt-5.6-luna max; no confirmed blocking defect','closure_readonly_audit':'native gpt-5.6-luna max; no writes'},indent=2)+'\n')
+print(json.dumps({'verified_stage':'2/4','source_entries':844,'COR-11':'specified','MOD-06':'specified'}))

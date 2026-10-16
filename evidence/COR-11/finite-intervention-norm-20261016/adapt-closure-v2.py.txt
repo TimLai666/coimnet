@@ -1,0 +1,63 @@
+# -*- coding: utf-8 -*-
+"""Preserve unexecuted v1 closure drafts and adapt their checks to frozen v2."""
+import hashlib,json,tarfile
+from pathlib import Path
+E=Path(__file__).resolve().parent;R=E.parents[2]
+sha=lambda b:hashlib.sha256(b).hexdigest()
+names=['write-verification.py.txt','finish-records.py.txt','preserve-work.py.txt','cleanup-owned.py.txt','record-cleanup.py.txt','deliver.py.txt','close-delivery.py.txt']
+original={n:(E/n).read_bytes() for n in names}
+archive=E/'closure-drafts-v1.tar.gz'
+with archive.open('xb') as h:
+ with tarfile.open(fileobj=h,mode='w:gz') as f:
+  for n in names:f.add(E/n,arcname=n,recursive=False)
+with tarfile.open(archive,'r:gz') as f:
+ assert set(f.getnames())==set(names)
+ assert all(f.extractfile(n).read()==b for n,b in original.items())
+with (E/'closure-drafts-v1.json').open('x') as f:json.dump({'archive':archive.name,'sha256':sha(archive.read_bytes()),'files':{n:sha(b) for n,b in original.items()},'executed':False},f,indent=2);f.write('\n')
+
+def replace(s,a,b):
+ assert a in s,a
+ return s.replace(a,b)
+for n,raw in original.items():
+ s=raw.decode()
+ for a,b in [('formal-source.json','formal-source-v2.json'),('frozen-checks.json','frozen-checks-v2.json'),('diagnostic-verification.json','diagnostic-v2-verification.json'),('engineering-verification.json','engineering-v2-verification.json'),('engineering.py.txt','engineering-v2.py.txt'),('843','844'),('8097','8104'),('8096','8103'),('8,097','8,104'),('8,096','8,103'),('8,028','8,120')]:s=s.replace(a,b)
+ if n=='write-verification.py.txt':
+  s=s.replace('upper-exact-verification.json','diagnostic-v2-verification.json')
+  s=s.replace('"green-norm-final-','"green-norm-v2-')
+  for a,b in [('"public-large-','"public-large-v2-'),('"public-small-','"public-small-v2-'),('"existing-intervention-','"existing-intervention-v2-'),('"naive-norm-','"naive-norm-v2-'),('"missing-rollback-','"missing-rollback-v2-'),('"hypot-norm-','"hypot-norm-v2-'),('"upper-exact-','"upper-exact-v2-'),('"engineering-unit','"engineering-v2-unit'),('"engineering-race','"engineering-v2-race'),('"engineering-governance','"engineering-v2-governance')]:s=s.replace(a,b)
+  s=replace(s,'"exact_upper_control": exact','"exact_upper_and_reader_control": {"source": "diagnostic-v2-verification.json", "exact_each": 2, "reader_each": 7}')
+  s=replace(s,'"test_log": [','"test_log": ["red-readers-formal-ordinary.log", "red-readers-formal-race.log", "unprotected-read-v2-ordinary.log", "unprotected-read-v2-race.log", ')
+  s=replace(s,'then reject any unrepresentable report before committing subject runtime','then reject unrepresentable reports and hold the operation lock through rollback and hook cleanup so read-only observers see completed state')
+  s=replace(s,'"confirmed_defects_fixed": 1,','"confirmed_defects_fixed": 1,\n    "candidate_regression_caught_before_commit": {"v1": "snapshot-review-block.json", "fix": "whole-operation subject lock and unchanged private Snapshot copy helper", "verified": "diagnostic-v2-verification.json"},')
+ if n=='finish-records.py.txt':
+  s=s.replace('各 92 個新專項、216 個相關事件','各 99 個新專項、223 個相關事件')
+  s=s.replace('三種隔離回退在兩種建置均被拒絕','四種隔離回退在兩種建置均被拒絕')
+  s=s.replace('只新增各 92 pass','只新增各 7 pass')
+  s=replace(s,'old = "844 份正式來源已凍結，下一步完整工程驗收。本票 2／4，COR-11 保持 specified。"','old = "最終 v2 的 844 份正式來源已凍結，下一步完整工程驗收。本票 2／4，COR-11 保持 specified。"')
+  s=replace(s,'真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取。','真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。')
+  s=replace(s,'本輪 ticket128 修正介入報告的中間平方上下溢位與不可表示差異的失敗原狀，','本輪 ticket128 修正介入報告的中間平方上下溢位、不可表示差異的失敗原狀與並行讀取，')
+  s=replace(s,'真正不可表示時保留原 runtime 與來源快取。COR-11','真正不可表示時保留原 runtime 與來源快取，以同一把操作鎖保護讀取與 cleanup。COR-11')
+ if n=='preserve-work.py.txt':
+  old="'next-consolidation-layers/main.go']"
+  added=['snapshot-race-test.go','snapshot-race-overlay.json','snapshot-readers-test.go','snapshot-readers-overlay.json','context-preflight/main.go','intervene-v1.go','context-v1-overlay.json','naive-norm-v2.go','naive-norm-v2-overlay.json','missing-rollback-v2.go','missing-rollback-v2-overlay.json','hypot-norm-v2.go','hypot-norm-v2-overlay.json','unprotected-read-v2.go','unprotected-read-v2-overlay.json']
+  s=replace(s,old,"'next-consolidation-layers/main.go',"+','.join(repr(x) for x in added)+']')
+  s=replace(s,'assert len(files)==13','assert len(files)==28')
+ if n=='record-cleanup.py.txt':
+  s=s.replace('只新增各 92 pass','只新增各 7 pass').replace('13 個必要輸入','28 個必要輸入')
+ if n=='deliver.py.txt':
+  s=replace(s,'production = "learning/intervene.go"','production = ["learning/intervene.go", "learning/individual.go"]')
+  s=replace(s,', production, "learning/intervene_norm_internal_test.go", "learning/intervene_norm_test.go"]',', *production, "learning/intervene_norm_internal_test.go", "learning/intervene_norm_test.go", "learning/intervene_snapshot_test.go"]')
+  s=replace(s,'"add", "--", production','"add", "--", *production')
+  s=replace(s,'assert git("diff", "--cached", "--name-only") == production','assert set(git("diff", "--cached", "--name-only").splitlines()) == set(production)')
+  s=replace(s,'assert git("diff-tree", "--no-commit-id", "--name-only", "-r", fix) == production','assert set(git("diff-tree", "--no-commit-id", "--name-only", "-r", fix).splitlines()) == set(production)')
+  s=replace(s,'if p != production','if p not in production')
+  s=replace(s,'preserve finite intervention report norms','preserve finite intervention reports and atomic reads')
+  s=replace(s,'cover finite intervention norms and refusal state','cover finite intervention reports and atomic reads')
+ if n=='close-delivery.py.txt':
+  s=replace(s,'"learning/intervene.go": "修正差異範數上下溢位與不可表示報告的失敗還原",','"learning/intervene.go": "修正差異範數上下溢位、失敗還原與完整操作鎖",\n    "learning/individual.go": "抽出原快照複製內容供已持鎖的介入使用",\n    "learning/intervene_snapshot_test.go": "新增三種核心與延遲打亂的並行快照／報告檢查",')
+  s=s.replace('封存十三個必要診斷與輸入檔案','封存二十八個必要診斷與輸入檔案')
+ if not s.startswith('# -*- coding: utf-8 -*-'):s='# -*- coding: utf-8 -*-\n'+s
+ assert (E/n).read_bytes()==raw,n
+ compile(s,str(E/n),'exec')
+ (E/n).write_text(s)
+print(json.dumps({'adapted_drafts':len(names),'archive':archive.name}))

@@ -1,0 +1,122 @@
+# -*- coding: utf-8 -*-
+"""Close ticket128 only after verified cleanup, normal push and exact remote readback."""
+import datetime
+import hashlib
+import json
+import subprocess
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):
+    return subprocess.check_output(["git", *args], cwd=R, text=True).strip()
+def update(path, change):
+    before = path.read_bytes()
+    after = change(before)
+    assert path.read_bytes() == before, path
+    path.write_bytes(after)
+delivery = read(E / "delivery.json")
+primary = delivery["primary_commit"]
+assert git("rev-parse", "HEAD") == primary
+assert git("ls-remote", "origin", "refs/heads/codex/receptor-chemistry-training").split()[0] == primary
+assert not git("diff", "--cached", "--name-only")
+assert delivery["all_content_verified"] and read(E / "cleanup.json")["directory_removed"]
+for name, digest in read(E / "committed-content.json")["files"].items():
+    assert sha(R / name) == digest, name
+verification = read(E / "verification.json")
+assert verification["engineering_passed"] and verification["diagnostic_passed"]
+verification["observed_result"]["delivery"] = {"receipt": "delivery.json", "primary_commit": primary, "remote_readback": delivery["remote_readback"], "source_entries": 844}
+verification["remaining_delivery"] = []
+verification["acceptance_complete"] = True
+verification["completed_at"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+update(E / "verification.json", lambda raw: (json.dumps(verification, indent=2) + "\n").encode())
+removed = read(E / "cleanup.json")["removed_bytes"]
+
+def ticket(raw):
+    text = raw.decode()
+    assert text.count("- [ ]") == 1 and "**Status:** in_progress" in text
+    text = text.replace("**Status:** in_progress", "**Status:** completed").replace("- [ ]", "- [x]")
+    old = "本票 3／4，待清理與交付，"
+    assert text.count(old) == 1
+    text = text.replace(old, "本票 4／4，清理與交付完成，")
+    text += f"\n本輪 {removed:,} bytes 自有暫存已清除，18 個原模型、六份必要資料、原始模組與其他工作保持，見[清理](../../evidence/COR-11/finite-intervention-norm-20261016/cleanup.json)。主要提交 `{primary[:7]}` 已正常推送且遠端讀回相同，844 份來源與提交內容核對完成，見[交付](../../evidence/COR-11/finite-intervention-norm-20261016/delivery.json)。本票完成 4／4，MOD-06 的另一項已確認缺陷由 ticket129 接續。\n"
+    return text.encode()
+update(R / "docs/tickets/128-intervention-finite-norm.md", ticket)
+
+def status(raw):
+    text = raw.decode()
+    start = text.index("[ticket 128]")
+    end = text.index("\n\n", start)
+    part = text[start:end]
+    old = "本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。"
+    assert part.count(old) == 1
+    new = f"本票 4／4，最後 31 項治理通過，{removed:,} bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/finite-intervention-norm-20261016/cleanup.json)。主要提交 `{primary[:7]}` 已推送且遠端讀回相同，844 份提交來源核對完成，見[交付](evidence/COR-11/finite-intervention-norm-20261016/delivery.json)。"
+    text = text[:start] + part.replace(old, new) + text[end:]
+    before = "| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | in_progress | 3／4。專項、完整工程與 COR-11 驗收通過，待清理與交付 |"
+    after = "| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | completed | 4／4。專項、完整工程、清理及遠端提交核對完成，COR-11 passed |"
+    assert text.count(before) == 1
+    return text.replace(before, after).encode()
+update(R / "delivery-status.md", status)
+
+baseline = read(E / "baseline.json")["head"]
+paths = set(git("diff", "--name-only", baseline, primary).splitlines())
+paths |= {str(p.relative_to(R)) for p in E.rglob("*") if p.is_file()}
+paths.add(str((E / "changed-files.md").relative_to(R)))
+descriptions = {
+    "learning/intervene.go": "修正差異範數上下溢位、失敗還原與完整操作鎖",
+    "learning/individual.go": "抽出原快照複製內容供已持鎖的介入使用",
+    "learning/intervene_snapshot_test.go": "新增三種核心與延遲打亂的並行快照／報告檢查",
+    "learning/intervene_norm_internal_test.go": "新增獨立高精度數值、正常位元與來源快取控制",
+    "learning/intervene_norm_test.go": "新增公開有限報告及失敗後原狀與接續控制",
+    "README.md": "同步目前工程驗收與尚待修正的 MOD-06 狀態",
+    "ENG.md": "記錄共用範數與失敗還原契約",
+    "docs/model-and-mechanisms.md": "說明介入報告數值拒絕與保留狀態的行為",
+    "docs/requirements-status.json": "COR-11 恢復 passed，MOD-06 回到 specified 並連結新證據",
+    "delivery-status.md": "同步本票驗收、清理、交付與下一票",
+    "docs/tickets/128-intervention-finite-norm.md": "記錄本票四項完成條件與實際證據",
+    "docs/tickets/129-consolidation-norm-boundary.md": "記錄另已確認的三種記憶報告缺陷，尚未實作"
+}
+def description(name):
+    if name in descriptions:
+        return descriptions[name]
+    short = Path(name).name
+    specific = {"root-review.md": "Root 的完整 diff、數值、ownership 與分工審查", "plan.md": "固定修正範圍、失敗契約與驗收判準", "changed-files.md": "逐檔列出本次變更", "preserved-work.tar.gz": "封存二十八個必要診斷與輸入檔案", "cleanup-inventory.json.gz": "保存全部清理前內容指紋與大小"}
+    if short in specific:
+        return specific[short]
+    if short.endswith(".go.txt"):
+        return "保存診斷程式、凍結測試或原候選原文"
+    if short.endswith(".py.txt"):
+        return "保存 " + short[:-7] + " 的驗證或交付腳本"
+    if short.endswith(".log.gz"):
+        return "保存 " + short[:-7] + " 的無損壓縮原始日誌"
+    if short.endswith(".log"):
+        return "保存 " + short[:-4] + " 的原始命令日誌"
+    if short.endswith(".json"):
+        return "保存 " + short[:-5] + " 的設定、回條或驗證結果"
+    return "保存本票驗收依據"
+table = "# 本票變更檔案\n\n| 檔案 | 變更摘要 |\n| --- | --- |\n"
+table += "".join(f"| [{name}](../../../{name}) | {description(name)} |\n" for name in sorted(paths))
+(E / "changed-files.md").open("x").write(table)
+changed = ["delivery-status.md", "docs/tickets/128-intervention-finite-norm.md", str((E / "verification.json").relative_to(R)), str((E / "delivery.json").relative_to(R)), str((E / "committed-content.json").relative_to(R)), str((E / "changed-files.md").relative_to(R))]
+hashes = {name: sha(R / name) for name in paths}
+assert set(git("diff", "--name-only").splitlines()) == {"AGENTS.md", *changed[:2], changed[2]}
+for name, digest in read(E / "foreign-before.json").items():
+    assert sha(Path(name)) == digest, name
+subprocess.run(["git", "add", "--", *changed], cwd=R, check=True)
+assert set(git("diff", "--cached", "--name-only").splitlines()) == set(changed)
+subprocess.run(["git", "diff", "--cached", "--check"], cwd=R, check=True)
+assert all(sha(R / name) == digest for name, digest in hashes.items())
+subprocess.run(["git", "commit", "--quiet", "-m", "docs: close finite intervention norm validation"], cwd=R, check=True)
+head = git("rev-parse", "HEAD")
+assert set(git("diff-tree", "--no-commit-id", "--name-only", "-r", head).splitlines()) == set(changed)
+for name, digest in {**read(E / "formal-source-v2.json"), **hashes}.items():
+    assert hashlib.sha256(subprocess.check_output(["git", "show", head + ":" + name], cwd=R)).hexdigest() == digest, name
+subprocess.run(["git", "push", "origin", "HEAD:refs/heads/codex/receptor-chemistry-training"], cwd=R, check=True)
+remote = git("ls-remote", "origin", "refs/heads/codex/receptor-chemistry-training").split()[0]
+assert remote == head and git("diff", "--name-only") == "AGENTS.md"
+for name, digest in read(E / "foreign-before.json").items():
+    assert sha(Path(name)) == digest, name
+print(json.dumps({"completed": True, "primary_commit": primary, "final_commit": head, "remote_readback": remote, "source_entries": 844, "changed_file_count": len(paths), "final_content_files": len(set(read(E / "formal-source-v2.json")) | paths), "remaining_foreign_work_preserved": True}))

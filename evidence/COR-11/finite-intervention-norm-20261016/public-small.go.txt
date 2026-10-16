@@ -1,0 +1,35 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/plasticity"
+	"math"
+)
+
+func must(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+func main() {
+	c := learning.Config{Dynamics: dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, DT: math.Ln2, Activation: "tanh"}, InputSize: 2, OutputSize: 2, InputNodes: []int{0, 1}, ReadoutNodes: []int{0, 1}, ReadoutEveryStep: true}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{0}, Bias: []float64{1e-100, 1e-100}, LogTau: []float64{0, 0}}, Encoder: []float64{1, 0, 0, 1}, Readout: []float64{1, 0, 0, 1}}
+	a, e := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0, 0})
+	must(e)
+	must(a.EnablePlasticity(plasticity.Config{Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 1, WMin: .01}, Edges: []int{0}}))
+	control, e := learning.RestoreIndividual(a.Snapshot())
+	must(e)
+	_, e = control.Advance(context.Background(), [][]float64{{0, 0}})
+	must(e)
+	plan := learning.InterventionPlan{Authorized: true, Reason: "finite small state L2 diagnostic", Items: []learning.Intervention{{Kind: learning.InterventionClampVoltage, Targets: []int{1}, Value: 0, Start: 0, End: 1, Restore: true}}}
+	out, log, e := a.Intervene(context.Background(), plan, [][]float64{{0, 0}})
+	must(e)
+	expected := math.Abs(control.Snapshot().Plastic.State.Eligibility[0] - a.Snapshot().Plastic.State.Eligibility[0])
+	b, e := json.Marshal(map[string]any{"plastic_delta": log.Entries[0].PlasticDelta, "expected_finite_norm": expected, "control_eligibility": control.Snapshot().Plastic.State.Eligibility[0], "subject_eligibility": a.Snapshot().Plastic.State.Eligibility[0], "output": out})
+	must(e)
+	fmt.Println(string(b))
+}

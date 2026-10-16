@@ -1,0 +1,29 @@
+# 介入報告有限範數修正的 Root 審查
+
+Scope CLEAN。唯一正式實作為 `learning/intervene.go`，兩份新增測試由 Root 凍結，實作者沒有更動。Root 完整讀取 diff、測試、四個差異使用者、`advanceRows` 的提交位置、`advanceStepwise` 與來源 clone 路徑，並自行執行驗收。
+
+## 已確認與採用
+
+原本差異先平方，會把可表示的 5e307 算成 +Inf、2.5e-201 算成零。正常索引順序的平方和保持，只有實質上下溢位使用 scaled compensated fallback。最高端用精確平方和與最近偶數捨入界線判斷。原有 `float64` helper 簽名、合法等形有限輸入前提與四個使用者保持，真正不可表示的結果統一拒絕。
+
+`learning/individual.go:614-622` 只在完整成功後替換 neural、plastic.state、chemical.state/report/sources。`advanceStepwise` 的來源 clone、Kinetics 與 StepWith 產生候選，舊 state/report 不會被候選寫入。因此保留必要舊欄位引用足以還原失敗，且能保留 Snapshot 未保存的來源計算快取。shuffle defer 先恢復 network/hash，外層 defer 再恢復原 runtime。成功旗標在所有差異驗證與紀錄建構後才設為 true。
+
+第一版多留一個 committed 旗標、整個 plasticRuntime 與 report 深拷貝。Root 退回簡化為一個 callOK、只保存 plasticity.State 與原 report，並移除同份不可變合法資料上的重複防禦分支。這些移除沒有改變驗收判準。第一候選的原始碼與結果仍保存，正式驗收只使用 green-norm-final 日誌。
+
+## 獨立控制與限制
+
+有效 RED 為 14 pass／78 fail，92 個事件全部成功編譯與執行，沒有把初稿 API 呼叫錯誤當成模型缺陷。最終專項一般／競態各 92 pass，相關介入／凍結各 216 pass，包含全部原有 119 個事件。公開大／小 witness 各兩建置回報正確，最大案例可以 JSON 匯出。
+
+三種 overlay 均成功編譯並被行為斷言拒絕。逐項平方版本每種建置 25 fail，刪掉 rollback 的版本 53 fail，逐項 Hypot 版本 4 fail。獨立標量參考用 8192-bit 運算，正常位元另與原索引平方和精確比較。public fixture 的核心、STDP、controller 形狀與暖機均核對合法。
+
+獨立唯讀對抗審查由原生 gpt-5.6-luna/max 執行，未發現可重現的正式阻擋缺陷。審查指出 upper_finite 的永久測試只用相對誤差，Root 另以不改正式來源的 overlay 補精確 MaxFloat64 控制，一般／競態各兩個事件通過。大型 STDP aggregate 沒有逐欄斷言全部 state，但本票修正不改 state 的更新公式，另有原公開 eligibility witness 與完整失敗原狀比較。這些限制不作為新正式缺陷。
+
+完整競態與後續工程仍在執行。正式來源 843 份保持凍結，沒有在完整測試途中修改 Go 檔案。
+
+## 另列的確認問題
+
+`Consolidate` 的三種報告在最高端使用逐項 Hypot，會把真正不可表示的幅度回報為 MaxFloat64，並寫入 Used。一般／競態各九個公開案例已驗證，見 `next-audit-verification.json` 與 ticket129。這是既有另一條路徑，未在本票擴大修改。MOD-06 在後續驗收前回到 specified。本票不能宣稱整體零 bug 或真實任務品質改善。
+
+## 派工實況
+
+宿主 Codex。本輪 `opencode models` 實際失敗：`Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)`。依專案指定第二選擇使用原生 gpt-5.6-luna、reasoning effort=max，分別提供唯讀數值／ownership 稽核、單一實作格子與最終唯讀對抗審查。Root 保有判準、測試、實際驗證、diff 與交付審查。

@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+"""Compare final full test events directly to the last delivered baseline."""
+from pathlib import Path
+E=Path(__file__).resolve().parent
+p=E/'write-verification.py.txt';b=p.read_bytes();s=b.decode();s=s.replace('import datetime\n','import datetime\nimport gzip\n')
+marker='result = {\n'
+assert s.count(marker)==1
+insert='''def terminal_events(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if event.get("Action") not in ["pass", "fail", "skip"]:
+            continue
+        if event.get("Test"):
+            key = (event["Package"], event["Test"])
+            assert key not in tests
+            tests[key] = event["Action"]
+        else:
+            packages[event["Package"]] = event["Action"]
+    return tests, packages
+previous_e = R / "evidence/COR-11/frozen-intervention-20261016"
+previous = read(previous_e / "engineering-verification.json")
+assert previous["all_passed"] and previous["source_count"] == 841
+baseline_comparison = {}
+for mode in ["unit", "race"]:
+    old_step = next(x for x in previous["steps"] if x["name"] == mode)
+    new_step = next(x for x in engineering["steps"] if x["name"] == mode)
+    assert sha(previous_e / old_step["log"]) == old_step["log_sha256"]
+    old, old_packages = terminal_events(gzip.decompress((previous_e / old_step["log"]).read_bytes()))
+    new, new_packages = terminal_events(gzip.decompress((E / new_step["log"]).read_bytes()))
+    assert len(old) == 8028 and len(new) == 8127 and old.items() <= new.items() and old_packages == new_packages
+    added = {key: value for key, value in new.items() if key not in old}
+    assert len(added) == 99 and all(key[1].startswith("TestInterveneNorm") and value == "pass" for key, value in added.items())
+    baseline_comparison[mode] = {"original_events": 8028, "all_original_results_preserved": True, "new_regression_pass_events": 99, "previous_log": str((previous_e / old_step["log"]).relative_to(R)), "previous_log_sha256": old_step["log_sha256"]}
+'''
+s=s.replace(marker,insert+marker)
+s=s.replace('"observed_result": {"diagnostic": diagnostic,','"observed_result": {"last_delivered_baseline_comparison": baseline_comparison, "diagnostic": diagnostic,')
+assert p.read_bytes()==b;compile(s,str(p),'exec');p.write_text(s)
+for name in ['finish-records.py.txt','record-cleanup.py.txt']:
+ p=E/name;b=p.read_bytes();s=b.decode();assert '8,120' in s and '只新增各 7 pass' in s;s=s.replace('8,120','8,028').replace('只新增各 7 pass','只新增各 99 pass');assert p.read_bytes()==b;p.write_text(s)
+print('final_acceptance_will_compare_directly_to_last_delivered_8028_events')

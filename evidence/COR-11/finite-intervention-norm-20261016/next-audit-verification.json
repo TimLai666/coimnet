@@ -1,0 +1,301 @@
+{
+  "requirement": "MOD-06",
+  "severity": "P2",
+  "confirmed": true,
+  "fixed": false,
+  "reproduction_command": "go run [-race] ./runs/.tmp/intervention-finite-norm-20261016/next-consolidation-layers",
+  "environment": "command-environment.json",
+  "input_fingerprints": {
+    "probe": "next-consolidation-layers.go.txt",
+    "probe_sha256": "c19ce989c7c2f03a3caa58692b2ab6a55d6f958e129eee4a9f2403445c29046b",
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "db0de9447808ab4b9449a42c027ed92f03037f476b2c633c5f0ad4f843e9211b"
+  },
+  "observed_result": {
+    "ordinary": {
+      "receipt": "next-consolidation-layers-ordinary.json",
+      "rows": [
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "base",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "slow",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "plastic",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "base",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "slow",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "plastic",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "base",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "slow",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "plastic",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        }
+      ]
+    },
+    "race": {
+      "receipt": "next-consolidation-layers-race.json",
+      "rows": [
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "base",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "slow",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_finite",
+          "error": "",
+          "expected_norm": "1.7976931348623157e+308",
+          "expected_unrepresentable": false,
+          "layer": "plastic",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            1.339385758982834e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "base",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "slow",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": true,
+          "case": "upper_overflow",
+          "error": "",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "plastic",
+          "reported_norm": "1.7976931348623157e+308",
+          "state_changed": true,
+          "used_after": 1,
+          "values": [
+            1.7976931348623157e+308,
+            2.678771517965668e+300
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "base",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "slow",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        },
+        {
+          "applied": false,
+          "case": "obvious_overflow",
+          "error": "consolidation report norm is not finite",
+          "expected_norm": "+Inf",
+          "expected_unrepresentable": true,
+          "layer": "plastic",
+          "reported_norm": "0",
+          "state_changed": false,
+          "used_after": 0,
+          "values": [
+            1.3e+308,
+            1.3e+308
+          ]
+        }
+      ]
+    }
+  },
+  "test_log": [
+    "next-consolidation-layers-ordinary.log",
+    "next-consolidation-layers-race.log"
+  ],
+  "scope": "Separate existing Consolidate defect. Ticket128 production source remains frozen. Valid finite state is accepted, exact 8192-bit norm is unrepresentable, sequential Hypot misreports MaxFloat64 and consumes a write slot. Base, slow and plastic report paths all reproduced."
+}

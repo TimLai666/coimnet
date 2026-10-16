@@ -1,0 +1,27 @@
+{
+  "verified": true,
+  "source_v1_unchanged": true,
+  "frozen_checks": "frozen-checks-v2.json",
+  "results": {
+    "ordinary": {
+      "compiled_and_ran": true,
+      "terminal_events": {
+        "fail": 6,
+        "pass": 1
+      },
+      "candidate_assertion_failures": 5,
+      "race_warnings": 0,
+      "receipt": "red-readers-formal-ordinary.json"
+    },
+    "race": {
+      "compiled_and_ran": true,
+      "terminal_events": {
+        "fail": 7
+      },
+      "candidate_assertion_failures": 6,
+      "race_warnings": 49,
+      "receipt": "red-readers-formal-race.json"
+    }
+  },
+  "observation": "Six public scenarios; ordinary interleavings exposed five, race build exposed all six. The earlier appended-test overlay exposed all six in both builds. Assertions were not changed."
+}

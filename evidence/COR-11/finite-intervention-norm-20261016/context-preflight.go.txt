@@ -1,0 +1,43 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+)
+
+func main() {
+	for _, scenario := range []string{"valid", "unauthorized", "empty-input", "wrong-width", "unknown-kind", "silence-softplus"} {
+		for _, posture := range []string{"background", "nil", "canceled"} {
+			c := learning.Config{Dynamics: dynamics.Config{Nodes: 1, DT: 1, Activation: "tanh"}, InputSize: 1, OutputSize: 1, InputNodes: []int{0}, ReadoutNodes: []int{0}}
+			if scenario == "silence-softplus" { c.Dynamics.Activation = "softplus" }
+			p := learning.Parameters{Core: dynamics.Parameters{Bias: []float64{0}, LogTau: []float64{0}}, Encoder: []float64{1}, Readout: []float64{1}}
+			a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0})
+			if err != nil { panic(err) }
+			plan := learning.InterventionPlan{Authorized: true, Reason: "preflight compatibility", Items: []learning.Intervention{{Kind: learning.InterventionClampVoltage, Targets: []int{0}, Value: 0, Start: 0, End: 1, Restore: true}}}
+			input := [][]float64{{.1}}
+			switch scenario {
+			case "unauthorized": plan.Authorized = false
+			case "empty-input": input = nil
+			case "wrong-width": input = [][]float64{{}}
+			case "unknown-kind": plan.Items[0].Kind = "not-a-kind"
+			case "silence-softplus": plan.Items[0].Kind = learning.InterventionSilence
+			}
+			var ctx context.Context = context.Background()
+			if posture == "nil" { ctx = nil }
+			if posture == "canceled" { var cancel context.CancelFunc; ctx, cancel = context.WithCancel(ctx); cancel() }
+			before, err := json.Marshal(a.Snapshot()); if err != nil { panic(err) }
+			out, log, callErr := a.Intervene(ctx, plan, input)
+			after, err := json.Marshal(a.Snapshot()); if err != nil { panic(err) }
+			message := ""; if callErr != nil { message = callErr.Error() }
+			digest := sha256.Sum256(after)
+			row, err := json.Marshal(map[string]any{"scenario": scenario, "context": posture, "error": message, "state_changed": string(before) != string(after), "snapshot_sha256": hex.EncodeToString(digest[:]), "output": out, "log": log}); if err != nil { panic(err) }
+			fmt.Println(string(row))
+		}
+	}
+}

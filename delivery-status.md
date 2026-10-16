@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 128](docs/tickets/128-intervention-finite-norm.md) 已修正介入報告的中間平方上溢／下溢，真正不可表示的差異會回傳錯誤並保留原狀態、報告與來源快取，並行讀取只取得完整操作的狀態。一般／競態各 99 個新專項、223 個相關事件與兩個原公開 witness 通過，四種隔離回退在兩種建置均被拒絕。844 份來源的完整一般／競態各 58 套件通過，8,104／8,103 pass、23／24 skip，原有各 8,028 個終端事件保持，只新增各 99 pass。格式、build、vet、固定依賴與治理通過，COR-11 恢復 passed，見[驗收](evidence/COR-11/finite-intervention-norm-20261016/verification.json)。本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。MOD-06 的三種記憶報告在最高端錯誤接受寫入，保持 specified，由 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 接續，目前工程追蹤 90／91。
+
 [ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,740,939,604 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/frozen-intervention-20261016/cleanup.json)。主要提交 `0af230b` 已推送且遠端讀回相同，841 份提交來源核對完成，見[交付](evidence/COR-11/frozen-intervention-20261016/delivery.json)。模型格式、正常載入及數值規則保持，整體機制稽核持續。
 
 [ticket 126](docs/tickets/126-persistent-chemical-clock.md) 已通過持續 timeline 與延後回饋的絕對時間驗收。一般／競態各 48 案例、1,920 條不同路徑、48 次新程序接續及 48 次原子性拒絕通過，controller 視窗另與公開神經歷史獨立比對。兩種刻意時鐘錯誤於兩個建置均被拒絕。840 份正式來源與已交付 ticket125 逐位相同，沿用前先重新雜湊完整一般／競態日誌並重算事件。本輪診斷、全框架 build／vet、依賴及治理重新執行，工程追蹤保持 91／91，見[驗收](evidence/MOD-02/persistent-source-clock-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,301,795,158 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/MOD-02/persistent-source-clock-20261016/cleanup.json)。主要提交 `a2015a5` 已推送且遠端讀回相同，840 份提交來源核對完成，見[交付](evidence/MOD-02/persistent-source-clock-20261016/delivery.json)。沒有確認新的正式運算缺陷。下一項先驗證化學凍結與 Intervene 對照並用的旗標差異，不先改模型規則。
@@ -248,7 +250,7 @@ runner 上的可塑性對照（ticket 19、NAT-06）已在真實全圖驗證：p
 
 ## 階段目標
 
-本輪 ticket 127 修正凍結個體的介入對照與失敗提交順序，專項與完整工程通過。清理、交付及來源證據以「目前階段」的本票紀錄為準。COR-11 因另已確認的報告範數上下溢位保持 specified，目前工程追蹤 90／91。整個框架零 bug 與模型品質改善尚未證明。
+本輪 ticket128 修正介入報告的中間平方上下溢位、不可表示差異的失敗原狀與並行讀取，專項與完整工程通過。清理及交付以「目前階段」本票紀錄為準。COR-11 恢復 passed，另已確認的 MOD-06 報告缺陷由 ticket129 接續，工程追蹤 90／91。整體零 bug 與模型品質改善尚未證明。
 
 前一階段 ticket 66 的同一真實單字元化學開關比較已完成五項驗收，固定設定沒有顯示穩定改善。
 
@@ -269,6 +271,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
+| 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | in_progress | 3／4。專項、完整工程與 COR-11 驗收通過，待清理與交付 |
 | 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | completed | 4／4。兩項修正、90 項專項、完整工程、清理及遠端提交核對完成 |
 | 122 | 研究者可以接續可表示的慢速活動狀態 | Codex Root／Luna max 唯讀審查 | completed | 4／4。專項、正常／舊保存、完整工程、清理及遠端提交核對完成 |
 | 116 | 研究者可以在有限尾端設定下使用正確的放電閾值與梯度 | Codex Root／Luna max 測試、實作與唯讀審查 | completed | 5／5。完整工程、正常／舊保存、清理、提交推送及 833 份提交來源核對完成 |
@@ -353,7 +356,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-COR-11 仍有已確認的介入報告範數上下溢位，ticket 128 驗收前保持 specified，工程追蹤 90／91。ticket 127 的兩項修正已有完整工程證據，其清理與交付狀態見「目前階段」。真實品質及生物校準沒有由本階段重新驗收。混合重算是既有明示不支援的組合。
+MOD-06 的 BaseL2／SlowL2／PlasticL2 在最高端誤報有限幅度並消耗寫入額度，ticket129 驗收前保持 specified，工程追蹤 90／91。ticket128 的 COR-11 修正已通過完整工程，其清理及交付見「目前階段」。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
 
 ### 既有環境與研究限制
 
@@ -375,7 +378,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket 128](docs/tickets/128-intervention-finite-norm.md) 為下一個實作，前置條件是 ticket 127 完成交付。先以已保存的兩個公開控制驗證有限差異的上下溢位，核對四個 delta 使用者與真正不可表示結果的失敗原狀契約，再修正並驗收。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。
+[ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 為下一個實作，前置條件是 ticket128 完成交付。三種記憶報告的最高端誤接受已由一般／競態各九個公開案例確認，先凍結獨立回歸與正常位元控制，再修正並驗收，見[證據](evidence/COR-11/finite-intervention-norm-20261016/next-audit-verification.json)。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
@@ -388,6 +391,8 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 歷史 Mac／Ubuntu v25 是 2026-09-14 的 137 檔來源驗證，不能代表目前 checkout；新階段證據必須帶當次來源指紋。需求累計以 `docs/requirements-status.json` 為準。
 
 ## 決策紀錄
+
+2026-10-16：ticket128 的四種介入差異保持正常平方和位元，僅在中間上下溢位改用穩定計算，真正不可表示時保留原 runtime 與來源快取，以同一把操作鎖保護讀取與 cleanup。COR-11 恢復 passed。另確認 MOD-06 三種記憶報告在最高端誤接受，回到 specified，由 ticket129 接續。
 
 2026-10-16：ticket 127 的私有介入對照沿用 runtime 凍結旗標，先完成對照再推進 subject，維持一般 Restore 預設解凍與模型格式。另已公開重現報告範數上下溢位，COR-11 保持 specified，ticket 128 接續修正。
 
@@ -477,4 +482,4 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 來源與接手
 
-[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[2026-10-12 階段驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。原始工程曾完成 91／91，本輪因 COR-11 已確認報告缺陷維持 90／91，後續由 ticket 128 驗收。模型品質、生物歸因及未測硬體須依各自證據判斷。
+[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[2026-10-12 階段驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。原始工程曾完成 91／91，本輪 COR-11 已恢復 passed，因 MOD-06 另已確認報告缺陷維持 90／91，後續由 ticket129 驗收。模型品質、生物歸因及未測硬體須依各自證據判斷。

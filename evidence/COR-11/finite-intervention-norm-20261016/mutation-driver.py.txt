@@ -1,0 +1,25 @@
+"""Reject isolated numerical and state-commit regressions without changing formal source."""
+import collections,hashlib,json,subprocess,sys
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/intervention-finite-norm-20261016'
+read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+ for p,h in read(E/'formal-source.json').items():assert sha(R/p)==h,p
+ for p,h in read(E/'frozen-checks.json').items():assert sha(R/p)==h,p
+records=[]
+for name in ['naive-norm','missing-rollback','hypot-norm']:
+ for build in ['ordinary','race']:
+  gate();label=name+'-'+build;command=['go','test']+(['-race'] if build=='race' else [])+['-overlay',str(W/(name+'-overlay.json')),'-json','-count=1','./learning','-run','^TestInterveneNorm']
+  result=subprocess.run([sys.executable,str(E/'run-command.py.txt'),label,*command],cwd=R);gate();assert result.returncode==1
+  events={}
+  for line in (E/(label+'.log')).read_text().splitlines():
+   try:x=json.loads(line)
+   except ValueError:continue
+   if x.get('Test') and x.get('Action') in ['pass','fail','skip']:events[x['Test']]=x['Action']
+  assert len(events)==92 and 'skip' not in events.values()
+  failures={k for k,v in events.items() if v=='fail'}
+  if name=='naive-norm':assert len(failures)==25 and all(any(k.startswith(p) for p in ['TestInterveneNormNumericalBoundaries','TestInterveneNormFiniteConcentration','TestInterveneNormFinitePlastic']) for k in failures)
+  elif name=='missing-rollback':assert len(failures)==53 and all(any(k.startswith(p) for p in ['TestInterveneNormFailureKeepsControllerCache','TestInterveneNormConcentrationRefusalAtomic','TestInterveneNormPlasticRefusalAtomic']) for k in failures)
+  else:assert 'TestInterveneNormNumericalBoundaries/upper_overflow' in failures
+  item={'variant':name,'build':build,'compiled_and_ran':True,'terminal_events':len(events),'failed_events':len(failures),'receipt':label+'.json'};records.append(item);print(json.dumps(item),flush=True)
+with (E/'mutations.json').open('x') as f:json.dump({'all_passed':True,'variants':records},f,indent=2);f.write('\n')

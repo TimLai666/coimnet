@@ -1,0 +1,70 @@
+"""Verify final numerical reports, read boundaries, preflight compatibility and mutations."""
+import collections
+import hashlib
+import json
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+def command(label, code):
+    receipt = read(E / (label + ".json"))
+    assert receipt["exit_code"] == code and sha(E / receipt["log"]) == receipt["log_sha256"], label
+    return (E / receipt["log"]).read_text()
+def events(label, code):
+    result = {}
+    for line in command(label, code).splitlines():
+        event = json.loads(line)
+        if event.get("Test") and event["Action"] in ["pass", "fail", "skip"]:
+            assert event["Test"] not in result
+            result[event["Test"]] = event["Action"]
+    return result
+source = read(E / "formal-source-v2.json")
+assert len(source) == 844 and all(sha(R / p) == h for p, h in source.items())
+checks = read(E / "frozen-checks-v2.json")
+assert len(checks) == 3 and all(sha(R / p) == h for p, h in checks.items())
+before = (E / "intervene-v1.go.txt").read_text()
+after = (R / "learning/intervene.go").read_text()
+marker = "// l2Diff is the Euclidean distance"
+assert before[before.index(marker):] == after[after.index(marker):]
+before = (E / "individual-v1.go.txt").read_text()
+after = (R / "learning/individual.go").read_text()
+marker = "\ts := i.trainer.Snapshot()"
+before_body = before[before.index(marker):].split("\n}\n", 1)[0]
+after_body = after[after.index(marker):].split("\n}\n", 1)[0]
+assert before_body == after_body
+counts, public = {}, {}
+for mode in ["ordinary", "race"]:
+    focused = events("green-norm-v2-" + mode, 0)
+    related = events("existing-intervention-v2-" + mode, 0)
+    old = events("green-norm-final-" + mode, 0)
+    assert len(focused) == 99 and set(focused.values()) == {"pass"}
+    assert len(related) == 223 and set(related.values()) == {"pass"}
+    assert len(old) == 92 and old.items() <= focused.items() <= related.items()
+    exact = events("upper-exact-v2-" + mode, 0)
+    assert len(exact) == 2 and set(exact.values()) == {"pass"}
+    large, = [json.loads(x) for x in command("public-large-v2-" + mode, 0).splitlines()]
+    small, = [json.loads(x) for x in command("public-small-v2-" + mode, 0).splitlines()]
+    assert float(large["plastic_delta"]) == large["finite_eligibility"] == 5e307 and not large["delta_is_inf"] and large["json_error"] == ""
+    assert small["plastic_delta"] == small["expected_finite_norm"] == small["control_eligibility"] == 2.5e-201 and small["subject_eligibility"] == 0
+    assert command("preflight-v1-" + mode, 0) == command("preflight-v2-" + mode, 0)
+    assert len(command("preflight-v2-" + mode, 0).splitlines()) == 18
+    counts[mode] = {"pass_events": 99, "leaf_cases": 91, "related_pass_events": 223, "exact_boundary_pass_events": 2, "preflight_cases": 18}
+    public[mode] = {"large": large, "small": small}
+mutations = read(E / "mutations-v2.json")
+assert mutations["all_passed"] and len(mutations["variants"]) == 8
+for variant in mutations["variants"]:
+    values = events(variant["variant"] + "-v2-" + variant["build"], 1)
+    assert len(values) == 99
+    assert dict(collections.Counter(values.values())) == {"pass": 99 - variant["failed_events"], "fail": variant["failed_events"]}
+    expected = {"naive-norm": 25, "missing-rollback": 60, "hypot-norm": 4, "unprotected-read": 6 if variant["build"] == "ordinary" else 7}[variant["variant"]]
+    assert variant["failed_events"] == expected
+red = read(E / "red-readers-verification.json")
+assert red["verified"] and red["results"]["race"]["terminal_events"] == {"fail": 7}
+result = {"all_passed": True, "source_count": 844, "source_manifest": "formal-source-v2.json", "checks_manifest": "frozen-checks-v2.json", "focused_counts": counts, "public_witnesses": public, "isolated_mutations": mutations, "norm_helper_and_snapshot_copy_body_unchanged_from_v1": True, "preflight": read(E / "preflight-verification.json"), "reader_red": red, "v1_review_block": "snapshot-review-block.json", "limits": "Observer stress covers actual overlapping failures and mutations, not a forced scheduler at every iteration. Final lock ordering is independently source-reviewed. No task-quality, biology or zero-bug conclusion."}
+with (E / "diagnostic-v2-verification.json").open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"all_passed": True, "source_count": 844, "focused_each": 99, "related_each": 223, "semantic_rejections": 8, "preflight_cases_each": 18}))
