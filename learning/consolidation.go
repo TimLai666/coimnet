@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/big"
 )
 
 // The three refusals a consolidation write can hit. Each is the absent state of
@@ -179,6 +180,8 @@ func (i *Individual) Consolidate(ctx context.Context, trigger ConsolidationTrigg
 			effectiveErr = fmt.Errorf("consolidation edge %d produced a non-finite effective weight", edge)
 		}
 	}
+	slowL2 = refineConsolidationNorm(slowL2, slow.Values, plastic, trigger.Rate)
+	plasticL2 = refineConsolidationNorm(plasticL2, plastic, nil, trigger.Retain)
 	if !finite(baseL2) || !finite(slowL2) || !finite(plasticL2) {
 		return report, fmt.Errorf("consolidation report norm is not finite")
 	}
@@ -246,5 +249,52 @@ func l2(x []float64) float64 {
 	for _, v := range x {
 		norm = math.Hypot(norm, v)
 	}
+	return refineConsolidationNorm(norm, x, nil, 1)
+}
+
+// refineConsolidationNorm revisits only the upper-boundary cases where the
+// sequential Hypot result can no longer distinguish a finite norm from an
+// overflowing one. The rounded components are rebuilt with the same float64
+// expressions used by the caller, then their squares are accumulated exactly
+// at a precision that covers the complete float64 exponent range and vector
+// length. The normal path keeps the original sequential Hypot result bit for
+// bit.
+func refineConsolidationNorm(norm float64, values, added []float64, scale float64) float64 {
+	if len(values) < 2 || norm <= math.MaxFloat64/float64(len(values)) {
+		return norm
+	}
+
+	const precision = 2*(1024+1074) + 64
+	var exact, term, limit big.Float
+	exact.SetPrec(precision)
+	term.SetPrec(precision)
+	limit.SetPrec(precision)
+	for k, value := range values {
+		var component float64
+		if added != nil {
+			component = value + scale*added[k]
+		} else {
+			component = scale * value
+		}
+		if !finite(component) {
+			return norm
+		}
+		term.SetFloat64(component)
+		term.Mul(&term, &term)
+		exact.Add(&exact, &term)
+	}
+	// The nearest-even overflow midpoint is 2^1024 - 2^970. Compare squared
+	// norms before taking the square root so a true MaxFloat64 remains finite.
+	limit.SetInt64(1)
+	limit.SetMantExp(&limit, 1024)
+	term.SetInt64(1)
+	term.SetMantExp(&term, 970)
+	limit.Sub(&limit, &term)
+	limit.Mul(&limit, &limit)
+	if exact.Cmp(&limit) >= 0 {
+		return math.Inf(1)
+	}
+	exact.Sqrt(&exact)
+	norm, _ = exact.Float64()
 	return norm
 }
