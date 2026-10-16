@@ -1,0 +1,306 @@
+{
+  "requirement": [
+    "MOD-02",
+    "COR-04",
+    "STA-03"
+  ],
+  "verified_at": "2026-10-16T04:29:11.577436+00:00",
+  "diagnostic_passed": true,
+  "engineering_passed": true,
+  "production_changes": false,
+  "confirmed_new_defects": 0,
+  "reproduction_command": "audit-driver.py.txt; mutation-driver.py.txt; verify-results.py.txt; preserved-work.tar.gz contains diagnostic source and all checkpoint/resume inputs/results",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go": "go version go1.26.5 darwin/arm64",
+    "baseline": "22e91a6ca58e2992e8f0352f1930c20a22a5ffbe",
+    "settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "source-before.json",
+    "formal_source_sha256": "1c8f9681e2a6ccb3a37a7f086898262a32d54339f9c526f496c70700b0365e91",
+    "diagnostic": "frozen-diagnostic.json"
+  },
+  "observed_result": {
+    "ordinary": {
+      "cases": 48,
+      "distinct_routes": 1920,
+      "new_process_resumes": 48,
+      "atomic_cases": 12,
+      "atomic_rejections": 48,
+      "controller_window_reference_cases": 24
+    },
+    "race": {
+      "cases": 48,
+      "distinct_routes": 1920,
+      "new_process_resumes": 48,
+      "atomic_cases": 12,
+      "atomic_rejections": 48,
+      "controller_window_reference_cases": 24
+    },
+    "final_governance": {
+      "receipt": "final-governance-v2.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1301795158
+    }
+  },
+  "current_command_receipts": [
+    "audit-ordinary.json",
+    "audit-race.json",
+    "build-early-feedback-ordinary.json",
+    "build-early-feedback-race.json",
+    "build-ordinary.json",
+    "build-race.json",
+    "build-wrong-clock-ordinary.json",
+    "build-wrong-clock-race.json",
+    "closure-binary.json",
+    "diagnostic-format.json",
+    "diagnostic-vet.json",
+    "early-feedback-ordinary.json",
+    "early-feedback-race.json",
+    "framework-build.json",
+    "framework-vet.json",
+    "governance-before-metadata.json",
+    "module-selection.json",
+    "module-verify.json",
+    "red-build.json",
+    "red-unfilled.json",
+    "resume-ordinary-0.json",
+    "resume-ordinary-1.json",
+    "resume-ordinary-10.json",
+    "resume-ordinary-11.json",
+    "resume-ordinary-12.json",
+    "resume-ordinary-13.json",
+    "resume-ordinary-14.json",
+    "resume-ordinary-15.json",
+    "resume-ordinary-16.json",
+    "resume-ordinary-17.json",
+    "resume-ordinary-18.json",
+    "resume-ordinary-19.json",
+    "resume-ordinary-2.json",
+    "resume-ordinary-20.json",
+    "resume-ordinary-21.json",
+    "resume-ordinary-22.json",
+    "resume-ordinary-23.json",
+    "resume-ordinary-24.json",
+    "resume-ordinary-25.json",
+    "resume-ordinary-26.json",
+    "resume-ordinary-27.json",
+    "resume-ordinary-28.json",
+    "resume-ordinary-29.json",
+    "resume-ordinary-3.json",
+    "resume-ordinary-30.json",
+    "resume-ordinary-31.json",
+    "resume-ordinary-32.json",
+    "resume-ordinary-33.json",
+    "resume-ordinary-34.json",
+    "resume-ordinary-35.json",
+    "resume-ordinary-36.json",
+    "resume-ordinary-37.json",
+    "resume-ordinary-38.json",
+    "resume-ordinary-39.json",
+    "resume-ordinary-4.json",
+    "resume-ordinary-40.json",
+    "resume-ordinary-41.json",
+    "resume-ordinary-42.json",
+    "resume-ordinary-43.json",
+    "resume-ordinary-44.json",
+    "resume-ordinary-45.json",
+    "resume-ordinary-46.json",
+    "resume-ordinary-47.json",
+    "resume-ordinary-5.json",
+    "resume-ordinary-6.json",
+    "resume-ordinary-7.json",
+    "resume-ordinary-8.json",
+    "resume-ordinary-9.json",
+    "resume-race-0.json",
+    "resume-race-1.json",
+    "resume-race-10.json",
+    "resume-race-11.json",
+    "resume-race-12.json",
+    "resume-race-13.json",
+    "resume-race-14.json",
+    "resume-race-15.json",
+    "resume-race-16.json",
+    "resume-race-17.json",
+    "resume-race-18.json",
+    "resume-race-19.json",
+    "resume-race-2.json",
+    "resume-race-20.json",
+    "resume-race-21.json",
+    "resume-race-22.json",
+    "resume-race-23.json",
+    "resume-race-24.json",
+    "resume-race-25.json",
+    "resume-race-26.json",
+    "resume-race-27.json",
+    "resume-race-28.json",
+    "resume-race-29.json",
+    "resume-race-3.json",
+    "resume-race-30.json",
+    "resume-race-31.json",
+    "resume-race-32.json",
+    "resume-race-33.json",
+    "resume-race-34.json",
+    "resume-race-35.json",
+    "resume-race-36.json",
+    "resume-race-37.json",
+    "resume-race-38.json",
+    "resume-race-39.json",
+    "resume-race-4.json",
+    "resume-race-40.json",
+    "resume-race-41.json",
+    "resume-race-42.json",
+    "resume-race-43.json",
+    "resume-race-44.json",
+    "resume-race-45.json",
+    "resume-race-46.json",
+    "resume-race-47.json",
+    "resume-race-5.json",
+    "resume-race-6.json",
+    "resume-race-7.json",
+    "resume-race-8.json",
+    "resume-race-9.json",
+    "wrong-clock-ordinary.json",
+    "wrong-clock-race.json"
+  ],
+  "semantic_mutations": {
+    "all_passed": true,
+    "variants": [
+      {
+        "name": "wrong-clock",
+        "build": "ordinary",
+        "compiled": true,
+        "semantic_rejection": true,
+        "receipt": "wrong-clock-ordinary.json",
+        "diagnostic": "call release got5 want3"
+      },
+      {
+        "name": "wrong-clock",
+        "build": "race",
+        "compiled": true,
+        "semantic_rejection": true,
+        "receipt": "wrong-clock-race.json",
+        "diagnostic": "call release got5 want3"
+      },
+      {
+        "name": "early-feedback",
+        "build": "ordinary",
+        "compiled": true,
+        "semantic_rejection": true,
+        "receipt": "early-feedback-ordinary.json",
+        "diagnostic": "individual chemistry: source 0 at step 0: modulation: feedback 0 cannot be used at step 0: feedback is not available at 0; available at 1"
+      },
+      {
+        "name": "early-feedback",
+        "build": "race",
+        "compiled": true,
+        "semantic_rejection": true,
+        "receipt": "early-feedback-race.json",
+        "diagnostic": "individual chemistry: source 0 at step 0: modulation: feedback 0 cannot be used at step 0: feedback is not available at 0; available at 1"
+      }
+    ]
+  },
+  "full_suite_reuse": {
+    "basis": "All 840 formal source paths and bytes match delivered ticket125. Previous full unit/race logs rehashed and terminal events independently recounted. Current diagnostic normal/race, full build/vet, dependency and governance checks rerun. Full unit/race not rerun for unchanged formal source.",
+    "verification": "evidence/MOD-02/homeostasis-chemical-state-20261016/verification.json",
+    "steps": [
+      {
+        "name": "format",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-format.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "build",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-build.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "unit",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-unit.log.gz",
+        "sha256": "a71fd5b10c7477fbaa0ae23a1c0010ecf0f23ba845e97c47e7ce2d79304354a4",
+        "raw_sha256": "f8d64afcbb369dd97b271beec483ded9874ba070eb52529baf8718cb0e4db71e",
+        "exit_code": 0,
+        "test_events": {
+          "pass": 7915,
+          "skip": 23
+        }
+      },
+      {
+        "name": "race",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-race.log.gz",
+        "sha256": "8b9f72531d416264db8b8decc79900deb654aef3c2a5f820328f020adc4a784e",
+        "raw_sha256": "c9f91b6bcc0cff0b85e1f9e3ed4693526de4db8b90d675bccbc680c587f4fc34",
+        "exit_code": 0,
+        "test_events": {
+          "pass": 7914,
+          "skip": 24
+        }
+      },
+      {
+        "name": "vet",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-vet.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      },
+      {
+        "name": "module-verify",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-module-verify.log",
+        "sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "raw_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "exit_code": 0
+      },
+      {
+        "name": "module-selection",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-module-selection.log",
+        "sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "raw_sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "exit_code": 0
+      },
+      {
+        "name": "governance",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-governance.log",
+        "sha256": "a778977f5e9b09f85429f2ef6cf0c91c688b51469b0ea28665f863c7267edd3a",
+        "raw_sha256": "a778977f5e9b09f85429f2ef6cf0c91c688b51469b0ea28665f863c7267edd3a",
+        "exit_code": 0
+      },
+      {
+        "name": "closure-binary",
+        "log": "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering-closure-binary.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "exit_code": 0
+      }
+    ]
+  },
+  "limits": [
+    "Two-node CPU engineering declarations, no whole-brain/task-quality/biological calibration or zero-bug claim",
+    "Freeze runtime flag is not serialized; caller explicitly reapplies schedule",
+    "Controller window independently checked against public raw neural history; core voltage/homeostasis equations retain ticket125 evidence",
+    "Feedback remains readable after arrival by existing contract"
+  ],
+  "remaining_delivery": [
+    "commit push remote readback"
+  ],
+  "test_log": [
+    "audit-ordinary.log",
+    "audit-race.log",
+    "resume-ordinary-*.log",
+    "resume-race-*.log",
+    "governance-before-metadata.log"
+  ],
+  "metadata_repair": {
+    "first_receipt": "final-governance.json",
+    "root_cause": "missing required test_log evidence key",
+    "repaired_receipt": "final-governance-v2.json",
+    "formal_source_changes": false
+  }
+}

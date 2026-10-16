@@ -1,0 +1,137 @@
+package main
+
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "math"
+ "os"
+ "path/filepath"
+ "reflect"
+
+ "github.com/TimLai666/coimnet/checkpoint"
+ "github.com/TimLai666/coimnet/learning"
+)
+
+type caseSpec struct { Core,Source string; Warmup int; Initial uint64; Freeze bool }
+func (f caseSpec) String() string { return fmt.Sprintf("%s-%s-w%d-c%d-f%t",f.Core,f.Source,f.Warmup,f.Initial,f.Freeze) }
+func cases() []caseSpec {
+ var out []caseSpec
+ for _,core:=range []string{"continuous","lif","mixed"} { for _,source:=range []string{"timeline","controller"} { for _,warm:=range []int{0,3} { for _,initial:=range []uint64{0,11} { for _,freeze:=range []bool{false,true} { out=append(out,caseSpec{core,source,warm,initial,freeze}) } } } } }
+ check(len(out)==48,"case count")
+ return out
+}
+func check(ok bool, format string,args ...any) { if !ok { panic(fmt.Sprintf(format,args...)) } }
+func must(err error) { if err!=nil { panic(err) } }
+func near(label string,got,want float64) { check(!math.IsNaN(got)&&!math.IsInf(got,0)&&!math.IsNaN(want)&&!math.IsInf(want,0)&&math.Abs(got-want)<=1e-12*(1+math.Abs(want)),"%s got%.17g want%.17g",label,got,want) }
+func equal(label string,got,want any) { check(reflect.DeepEqual(got,want),"%s mismatch\ngot%+v\nwant%+v",label,got,want) }
+func frozen(f caseSpec,row int) bool { return f.Freeze && (row==1||row==2) }
+func release(f caseSpec,row int) float64 {
+ if frozen(f,row) { return 0 }
+ if f.Source=="timeline" { return []float64{2,5,0,3,0,7}[row] }
+ score:=0.0
+ if row>=1 { score=2 }; if row>=3 { score=.5 }
+ return math.Log1p(math.Exp(math.Tanh(score)))
+}
+func expected(f caseSpec,end int) (float64,uint64) {
+ c:=4.0; n:=f.Initial
+ for row:=0; row<end; row++ { if !frozen(f,row) { c=c/2+release(f,row)/2; n++ } }
+ return c,n
+}
+func neuralSteps(s learning.IndividualSnapshot) uint64 {
+ switch s.Neural.Core { case "continuous":return s.Neural.Continuous.Steps;case "lif":return s.Neural.LIF.Steps;case "mixed":return s.Neural.Mixed.Steps }
+ panic("unknown core")
+}
+func boundary(f caseSpec,a *learning.Individual,end int,initial learning.IndividualSnapshot) {
+ s:=a.Snapshot(); c,n:=expected(f,end)
+ check(s.Chemical!=nil,"%s chemistry absent",f)
+ check(len(s.Chemical.State.Concentration)==1 && len(s.Chemical.State.Concentration[0])==1,"concentration shape")
+ near(f.String()+" concentration",s.Chemical.State.Concentration[0][0],c)
+ check(s.Chemical.State.Steps==n,"%s kinetics steps got%d want%d",f,s.Chemical.State.Steps,n)
+ check(neuralSteps(s)==uint64(f.Warmup+end),"%s neural steps got%d want%d",f,neuralSteps(s),f.Warmup+end)
+ equal("parameters",s.Parameters,initial.Parameters); equal("optimizer",s.Optimizer,initial.Optimizer)
+ equal("feedback declaration",s.Chemical.PendingFeedback,initial.Chemical.PendingFeedback)
+}
+func observations(start,end int) [][]float64 {
+ in:=make([][]float64,end-start)
+ for i:=range in { in[i]=[]float64{.2*float64(start+i+1),3.5-.25*float64(start+i)} }
+ return in
+}
+func advance(f caseSpec,a *learning.Individual,start,end int,gated bool) [][]float64 {
+ check(start<end && start>=0 && end<=6,"invalid chunk")
+ for i:=start;i<end;i++ { check(frozen(f,i)==frozen(f,start),"chunk crosses freeze transition") }
+ must(a.FreezeChemistry(frozen(f,start)))
+ var out [][]float64; var err error
+ if gated { out,_,err=a.AdvanceGated(context.Background(),observations(start,end),make([]float64,end-start)) } else { out,err=a.Advance(context.Background(),observations(start,end)) }; must(err)
+ r:=a.ChemistryReport(); check(r.Steps==end-start && r.Frozen==frozen(f,start),"report length/frozen")
+ check(len(r.ReleaseTotal)==1,"release report shape")
+ q:=0.0;for row:=start;row<end;row++ {q+=release(f,row)}; near("call release",r.ReleaseTotal[0],q)
+ c,_:=expected(f,end);near("report concentration",r.Concentration[0][0],c)
+ return out
+}
+func baseline(f caseSpec) (learning.IndividualSnapshot,[][]float64) {
+ a,err:=newIndividual(f);must(err);initial:=a.Snapshot();boundary(f,a,0,initial)
+ var out [][]float64
+ for row:=0;row<6;row++ { out=append(out,advance(f,a,row,row+1,false)...);boundary(f,a,row+1,initial) }
+ return a.Snapshot(),out
+}
+type resumeInput struct { Case caseSpec; Split int; Checkpoint string; Final learning.IndividualSnapshot; Tail [][]float64 }
+func writeJSON(path string,v any) { b,err:=json.MarshalIndent(v,"","  ");must(err);h,err:=os.OpenFile(path,os.O_CREATE|os.O_EXCL|os.O_WRONLY,0600);must(err);_,err=h.Write(append(b,'\n'));must(err);must(h.Close()) }
+func readJSON(path string,v any) { b,err:=os.ReadFile(path);must(err);must(json.Unmarshal(b,v)) }
+func resume(path string) {
+ var in resumeInput;readJSON(path,&in)
+ s,err:=checkpoint.LoadIndividual(context.Background(),in.Checkpoint);must(err)
+ a,err:=learning.RestoreIndividual(s);must(err);boundary(in.Case,a,in.Split,s)
+ // The runtime flag is deliberately not serialized. Reapply the declared schedule.
+ var tail [][]float64
+ for row:=in.Split;row<6;row++ { tail=append(tail,advance(in.Case,a,row,row+1,true)...);boundary(in.Case,a,row+1,s) }
+ equal("new process tail",tail,in.Tail);equal("new process snapshot",a.Snapshot(),in.Final)
+ final:=path+".final.json";must(checkpoint.SaveIndividual(context.Background(),final,a.Snapshot()))
+ loaded,err:=checkpoint.LoadIndividual(context.Background(),final);must(err);equal("new process saved final",loaded,in.Final)
+ writeJSON(path+".result.json",map[string]any{"all_passed":true,"case":in.Case.String(),"split":in.Split,"neural_steps":neuralSteps(loaded),"chemical_steps":loaded.Chemical.State.Steps,"output":tail})
+ fmt.Println(`{"all_passed":true}`)
+}
+func atomic(f caseSpec) {
+ a,err:=newIndividual(f);must(err);initial:=a.Snapshot();advance(f,a,0,1,false)
+ before,report:=a.Snapshot(),a.ChemistryReport()
+ cancelled,cancel:=context.WithCancel(context.Background());cancel()
+ _,err=a.Advance(cancelled,observations(1,2));check(err!=nil,"cancel accepted");equal("cancel state",a.Snapshot(),before);equal("cancel report",a.ChemistryReport(),report)
+ _,err=a.Advance(context.Background(),[][]float64{{math.NaN(),0}});check(err!=nil,"NaN accepted");equal("NaN state",a.Snapshot(),before);equal("NaN report",a.ChemistryReport(),report)
+ _,_,err=a.AdvanceGated(context.Background(),observations(1,2),[]float64{0,0});check(err!=nil,"bad gate width accepted");equal("gate width state",a.Snapshot(),before);equal("gate width report",a.ChemistryReport(),report)
+ _,_,err=a.AdvanceGated(context.Background(),observations(1,2),[]float64{1});check(err!=nil,"nonzero gate accepted");equal("gate state",a.Snapshot(),before);equal("gate report",a.ChemistryReport(),report)
+ for row:=1;row<6;row++ {advance(f,a,row,row+1,true);boundary(f,a,row+1,initial)}
+}
+func audit(dir string) {
+ must(os.Mkdir(dir,0700));matrix:=[]map[string]any{};inputs:=[]string{};routes:=0;atomicCases:=0
+ for _,f:=range cases() {
+  final,want:=baseline(f); count:=0
+  for _,gated:=range []bool{false,true} { for mask:=0;mask<32;mask++ {
+   if f.Freeze && mask&5!=5 {continue}
+   a,err:=newIndividual(f);must(err);initial:=a.Snapshot();twin,err:=learning.RestoreIndividual(initial);must(err);var out [][]float64;start:=0
+   for end:=1;end<=6;end++ {if end!=6 && mask&(1<<(end-1))==0 {continue}
+    got:=advance(f,a,start,end,gated);other:=advance(f,twin,start,end,gated);equal("restore output",got,other);out=append(out,got...)
+    boundary(f,a,end,initial);boundary(f,twin,end,initial);equal("restore snapshot",a.Snapshot(),twin.Snapshot());equal("restore report",a.ChemistryReport(),twin.ChemistryReport())
+    twin,err=learning.RestoreIndividual(a.Snapshot());must(err);start=end
+   }
+   equal("segmented final",a.Snapshot(),final);equal("segmented outputs",out,want);routes++;count++
+  } }
+  matrix=append(matrix,map[string]any{"case":f.String(),"routes":count,"final_concentration":final.Chemical.State.Concentration[0][0],"final_neural_steps":neuralSteps(final),"final_chemical_steps":final.Chemical.State.Steps})
+  if f.Warmup==3 && f.Initial==11 {
+   atomic(f);atomicCases++
+   for _,split:=range []int{1,2,3,5} {
+    a,err:=newIndividual(f);must(err);initial:=a.Snapshot()
+    for row:=0;row<split;row++ {advance(f,a,row,row+1,false);boundary(f,a,row+1,initial)}
+    base:=filepath.Join(dir,fmt.Sprintf("%s-s%d",f.String(),split));path:=base+".checkpoint.json";must(checkpoint.SaveIndividual(context.Background(),path,a.Snapshot()))
+    in:=resumeInput{f,split,path,final,want[split:]};name:=base+".input.json";writeJSON(name,in);inputs=append(inputs,name)
+   }
+  }
+ }
+ check(routes==1920 && len(inputs)==48 && atomicCases==12,"matrix counts routes%d inputs%d atomic%d",routes,len(inputs),atomicCases)
+ b,err:=json.Marshal(map[string]any{"all_passed":true,"matrix":matrix,"routes":routes,"resume_inputs":inputs,"atomic_cases":atomicCases,"atomic_rejections":4*atomicCases});must(err);fmt.Println(string(b))
+}
+func main() {
+ defer func(){if r:=recover();r!=nil {fmt.Fprintln(os.Stderr,r);os.Exit(1)}}()
+ if len(os.Args)==1 || (len(os.Args)==2 && os.Args[1]=="--help") {fmt.Println("Usage: probe audit NEW_OUTPUT_DIRECTORY | probe resume INPUT_JSON\nAudit checks 48 declared engineering cases, 1920 public routes and creates 48 cross-process inputs. Resume loads one input, continues and saves final state. Existing files are never replaced. Errors exit 1.");return}
+ check(len(os.Args)==3,"invalid arguments; see --help")
+ switch os.Args[1] {case "audit":audit(os.Args[2]);case "resume":resume(os.Args[2]);default:panic("unknown command; see --help")}
+}

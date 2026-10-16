@@ -1,0 +1,56 @@
+"""Close the verified clock audit and publish its delivery metadata."""
+import datetime,hashlib,json,subprocess
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+def update(p,fn):
+ b=p.read_bytes();after=fn(b);assert p.read_bytes()==b;p.write_bytes(after)
+delivery=read(E/'delivery.json');primary=delivery['primary_commit']
+assert git('rev-parse','HEAD')==primary and git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0]==primary
+assert not git('diff','--cached','--name-only') and delivery['all_content_verified'] and read(E/'cleanup.json')['directory_removed']
+for p,h in read(E/'committed-content.json')['files'].items():assert sha(R/p)==h,p
+v=read(E/'verification.json');assert v['engineering_passed'] and v['diagnostic_passed']
+v['observed_result']['own_cleanup']={'receipt':'cleanup.json','removed_bytes':read(E/'cleanup.json')['removed_bytes']}
+v['observed_result']['delivery']={'receipt':'delivery.json','primary_commit':primary,'remote_readback':delivery['remote_readback'],'source_entries':840}
+v['remaining_delivery']=[];v['acceptance_complete']=True;v['completed_at']=datetime.datetime.now(datetime.timezone.utc).isoformat()
+update(E/'verification.json',lambda b:(json.dumps(v,indent=2)+'\n').encode())
+def ticket(b):
+ s=b.decode();assert s.count('- [ ]')==1 and '**Status:** in_progress' in s
+ s=s.replace('**Status:** in_progress','**Status:** complete').replace('- [ ]','- [x]')
+ s+=f"\n本輪 {read(E/'cleanup.json')['removed_bytes']:,} bytes 自有暫存已清除，18 個原模型、六份必要資料、原始模組與其他工作保持，見[清理](../../evidence/MOD-02/persistent-source-clock-20261016/cleanup.json)。主要提交 `{primary[:7]}` 已正常推送且遠端讀回相同，840 份來源與提交內容核對完成，見[交付](../../evidence/MOD-02/persistent-source-clock-20261016/delivery.json)。本票完成 4／4。\n"
+ return s.encode()
+update(R/'docs/tickets/126-persistent-chemical-clock.md',ticket)
+def status(b):
+ s=b.decode();start=s.index('[ticket 126]');end=s.index('\n\n',start);part=s[start:end]
+ old='本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。';assert part.count(old)==1
+ new=f"本票 4／4，最後 31 項治理通過，{read(E/'cleanup.json')['removed_bytes']:,} bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/MOD-02/persistent-source-clock-20261016/cleanup.json)。主要提交 `{primary[:7]}` 已推送且遠端讀回相同，840 份提交來源核對完成，見[交付](evidence/MOD-02/persistent-source-clock-20261016/delivery.json)。"
+ return (s[:start]+part.replace(old,new)+s[end:]).encode()
+update(R/'delivery-status.md',status)
+base=read(E/'baseline.json')['head'];paths=set(git('diff','--name-only',base,primary).splitlines())
+paths|={str(p.relative_to(R)) for p in E.rglob('*') if p.is_file()};paths.add(str((E/'changed-files.md').relative_to(R)))
+def summary(p):
+ if p in ['ENG.md','delivery-status.md','docs/requirements-status.json'] or p.startswith('docs/tickets/'):return '更新本票契約、驗收與交付狀態'
+ n=Path(p).name
+ descriptions={'plan.md':'固定時點算式、分段數量、責任及驗收判準','root-review.md':'Root 的完整來源、數值及證據審查','readonly-findings.md':'已核對契約與尚未重現的後續線索','changed-files.md':'完整列出本票變更檔案','preserved-work.tar.gz':'封存診斷來源及全部跨程序輸入、輸出與 checkpoint','cleanup-inventory.json.gz':'清理前全部內容指紋與位元組數'}
+ if n in descriptions:return descriptions[n]
+ if n.endswith('.go.txt'):return '保存 Root 診斷或分工前骨架'
+ if n.endswith('.py.txt'):return '保存 '+n[:-7]+' 的驗證與交付腳本'
+ if n.endswith('.log'):return '保存 '+n[:-4]+' 的原始命令日誌'
+ if n.endswith('.json'):return '保存 '+n[:-5]+' 的設定、命令回條或驗證結果'
+ return '本票驗收證據'
+table='# 本票變更檔案\n\n| 檔案 | 變更摘要 |\n| --- | --- |\n'+''.join(f'| [{p}](../../../{p}) | {summary(p)} |\n' for p in sorted(paths))
+(E/'changed-files.md').open('x').write(table)
+changed=['delivery-status.md','docs/tickets/126-persistent-chemical-clock.md',str((E/'verification.json').relative_to(R)),str((E/'delivery.json').relative_to(R)),str((E/'committed-content.json').relative_to(R)),str((E/'changed-files.md').relative_to(R))]
+hashes={p:sha(R/p) for p in paths}
+assert set(git('diff','--name-only').splitlines())=={'AGENTS.md',*changed[:2],changed[2]}
+for p,h in read(E/'foreign-before.json').items():assert sha(Path(p))==h,p
+subprocess.run(['git','add','--',*changed],cwd=R,check=True);assert set(git('diff','--cached','--name-only').splitlines())==set(changed)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True);assert all(sha(R/p)==h for p,h in hashes.items())
+subprocess.run(['git','commit','--quiet','-m','docs: close persistent chemical clock validation'],cwd=R,check=True);head=git('rev-parse','HEAD')
+assert set(git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines())==set(changed)
+for p,h in {**read(E/'formal-source.json'),**hashes}.items():assert hashlib.sha256(subprocess.check_output(['git','show',head+':'+p],cwd=R)).hexdigest()==h,p
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0];assert remote==head and git('diff','--name-only')=='AGENTS.md'
+for p,h in read(E/'foreign-before.json').items():assert sha(Path(p))==h,p
+print(json.dumps({'completed':True,'primary_commit':primary,'final_commit':head,'remote_readback':remote,'source_entries':840,'changed_file_count':len(paths),'final_content_files':len(set(read(E/'formal-source.json'))|paths),'remaining_foreign_work_preserved':True}))

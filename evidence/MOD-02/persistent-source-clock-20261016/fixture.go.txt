@@ -1,0 +1,127 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"math"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+// newIndividual constructs the frozen engineering declaration in plan.md.
+// Implementation slot only. Acceptance and expected results belong to Root.
+func newIndividual(f caseSpec) (*learning.Individual, error) {
+	dt := math.Ln2
+	homeostasis := &dynamics.LIFHomeostasis{
+		Enabled: true, TauRate: 2 * dt, TargetRate: .25, Eta: 1 / dt, HMax: .4,
+	}
+
+	config := learning.Config{
+		InputSize: 2, OutputSize: 2, ReadoutNodes: []int{0, 1}, InputNodes: []int{0, 1}, ReadoutEveryStep: true,
+	}
+	parameters := learning.Parameters{
+		Core:    dynamics.Parameters{Weights: []float64{}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}},
+		Encoder: []float64{1, 0, 0, 1}, Readout: []float64{1, 0, 0, 1},
+	}
+	switch f.Core {
+	case "continuous":
+		config.Dynamics = dynamics.Config{Nodes: 2, DT: dt, Activation: "tanh"}
+	case "lif":
+		config.LIF = &dynamics.LIFConfig{
+			Nodes: 2, DT: dt, TauSyn: 1, ThetaMin: .1, ThetaMax: 2, VReset: -.5,
+			Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}, Homeostasis: homeostasis,
+		}
+		parameters.ThetaRaw = []float64{0, 0}
+	case "mixed":
+		config.Mixed = &dynamics.MixedConfig{
+			Nodes: 2, DT: dt, NodeRule: []uint8{dynamics.RuleContinuous, dynamics.RuleLIF},
+			Continuous: dynamics.ContinuousRule{Activation: "tanh"},
+			LIF: dynamics.LIFRule{
+				TauSyn: 1, ThetaMin: .1, ThetaMax: 2, VReset: -.5,
+				Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}, Homeostasis: homeostasis,
+			},
+		}
+		parameters.ThetaRaw = []float64{0}
+	default:
+		return nil, fmt.Errorf("unsupported core %q", f.Core)
+	}
+
+	individual, err := learning.NewIndividual(config, parameters, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		return nil, err
+	}
+	if f.Warmup > 0 {
+		zeros := make([][]float64, f.Warmup)
+		for row := range zeros {
+			zeros[row] = []float64{0, 0}
+		}
+		if _, err := individual.Advance(context.Background(), zeros); err != nil {
+			return nil, fmt.Errorf("warmup: %w", err)
+		}
+	}
+
+	var source modulation.SourceSpec
+	switch f.Source {
+	case "timeline":
+		rates := []float64{2, 5, 0, 3, 0, 7}
+		entries := make([]modulation.TimelineEntry, len(rates))
+		for row, rate := range rates {
+			entries[row] = modulation.TimelineEntry{Step: uint64(f.Warmup + row), Channel: 0, Rate: rate}
+		}
+		source = modulation.SourceSpec{
+			Kind: modulation.SourceExternalTimeline, Channel: 0,
+			Timeline: &modulation.ExternalTimeline{ChannelCount: 1, Entries: entries},
+		}
+	case "controller":
+		source = modulation.SourceSpec{
+			Kind: modulation.SourceController, Channel: 0,
+			Controller: &modulation.Controller{
+				Inputs: modulation.ControllerInputs{SummaryWindow: 2, UseFeedback: true},
+				Nodes:  2, Hidden: 1, Channel: 0, Parameters: []float64{0, 0, 1, 0, 1, 0},
+			},
+		}
+	default:
+		return nil, fmt.Errorf("unsupported source %q", f.Source)
+	}
+	chemistry := modulation.ChemistryConfig{
+		Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: dt, Tau: []float64{1}},
+		Sources:   []modulation.SourceSpec{source},
+		Receptors: modulation.Receptors{Records: []modulation.Receptor{{
+			Cells: []int{0}, Signal: "fixture-signal", Channel: 0, Status: modulation.StatusHypothesized,
+			Kd: 1, N: 1, Evidence: "engineering declaration", MeasurementKind: "engineering declaration", MappingVersion: "persistent-source-clock/v1",
+		}}},
+		Effects: []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, BetaScale: .5, BetaAbsMax: 1}},
+		Regions: modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+	}
+	if err := individual.EnableChemistry(chemistry); err != nil {
+		return nil, err
+	}
+	version := signal.CurrentSchemaVersion()
+	for row, available := range []int{f.Warmup + 1, f.Warmup + 3} {
+		feedback, err := signal.NewFeedback(signal.FeedbackSpec{
+			SchemaVersion: version,
+			ExperienceID:  "persistent-source-clock-fixture",
+			ActionID:      fmt.Sprintf("action-%d", row),
+			ProducedAt:    signal.Timestamp{Value: int64(f.Warmup), Unit: signal.TimeUnitModelStep},
+			AvailableAt:   signal.Timestamp{Value: int64(available), Unit: signal.TimeUnitModelStep},
+			Source:        "persistent-source-clock/fixture",
+			Score:         []float64{2, -1}[row],
+			ModelVersion:  version,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if err := individual.OfferFeedback(feedback); err != nil {
+			return nil, err
+		}
+	}
+	snapshot := individual.Snapshot()
+	if snapshot.Chemical == nil {
+		return nil, fmt.Errorf("chemistry snapshot is nil")
+	}
+	snapshot.Chemical.State = modulation.ChemistryState{Concentration: [][]float64{{4}}, Steps: f.Initial}
+	return learning.RestoreIndividual(snapshot)
+}

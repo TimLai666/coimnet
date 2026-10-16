@@ -1,0 +1,26 @@
+"""Append only verified clock evidence and check final repository metadata."""
+import hashlib,json,re,subprocess,sys
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/persistent-source-clock-20261016'
+read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+v=read(E/'verification.json');assert v['diagnostic_passed'] and v['engineering_passed']
+for p,h in read(E/'formal-source.json').items():assert sha(R/p)==h
+p=R/'docs/requirements-status.json';b=p.read_bytes();assert hashlib.sha256(b).hexdigest()==read(E/'original-records.json')[str(p)]['sha256']
+vstatus=json.loads(b);assert len(vstatus['requirements'])==91 and all(x['status']=='passed' for x in vstatus['requirements'])
+for x in vstatus['requirements']:
+    if x['id'] in ['MOD-02','COR-04','STA-03']:
+        link='../evidence/MOD-02/persistent-source-clock-20261016/verification.json';assert link not in x['evidence'];x['evidence'].append(link)
+assert p.read_bytes()==b;p.write_text(json.dumps(vstatus,ensure_ascii=False,indent=2)+'\n')
+p=R/'docs/tickets/126-persistent-chemical-clock.md';b=p.read_bytes();s=b.decode();assert s.count('- [ ]')==4
+for _ in range(3):s=s.replace('- [ ]','- [x]',1)
+s+='\n一般／競態各 48 案例、1,920 條不同分段／恢復路徑、48 次新程序及 48 次原子性拒絕通過。controller 視窗在逐列基準另與公開 neural history 獨立比對，凍結列保持。兩種刻意時鐘錯誤在兩個建置均成功編譯並被行為檢查拒絕。840 份正式來源與 ticket125 逐位一致，已重新雜湊及重算其完整一般／競態測試事件，7,915／7,914 pass、23／24 skip。本輪重新執行診斷一般／競態、全框架 build／vet、固定依賴及治理，沒有重跑未變動正式來源的完整一般／競態。見[驗收](../../evidence/MOD-02/persistent-source-clock-20261016/verification.json)。\n\n後續線索：FreezeChemistry 與 Intervene 並用的對照旗標、OfferFeedback 舊註解見[唯讀盤點](../../evidence/MOD-02/persistent-source-clock-20261016/readonly-findings.md)，前者尚未重現，不列正式缺陷。\n'
+assert p.read_bytes()==b;p.write_text(s)
+p=R/'delivery-status.md';b=p.read_bytes();s=b.decode();start=s.index('[ticket 126]');end=s.index('\n\n',start)
+new='[ticket 126](docs/tickets/126-persistent-chemical-clock.md) 已通過持續 timeline 與延後回饋的絕對時間驗收。一般／競態各 48 案例、1,920 條不同路徑、48 次新程序接續及 48 次原子性拒絕通過，controller 視窗另與公開神經歷史獨立比對。兩種刻意時鐘錯誤於兩個建置均被拒絕。840 份正式來源與已交付 ticket125 逐位相同，沿用前先重新雜湊完整一般／競態日誌並重算事件。本輪診斷、全框架 build／vet、依賴及治理重新執行，工程追蹤保持 91／91，見[驗收](evidence/MOD-02/persistent-source-clock-20261016/verification.json)。本票 3／4，暫存清理及交付尚待完成。沒有確認新的正式運算缺陷。下一項先驗證化學凍結與 Intervene 對照並用的旗標差異，不先改模型規則。'
+s=s[:start]+new+s[end:];assert p.read_bytes()==b;p.write_text(s)
+pattern='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+subprocess.run([sys.executable,str(E/'run-command.py.txt'),'final-governance',str(W/'final-root.test'),'-test.v','-test.run',pattern],check=True)
+log=(E/'final-governance.log').read_text();passed=len(re.findall(r'^\s*--- PASS:',log,re.M));assert passed==31
+p=E/'final-governance.json';b=p.read_bytes();x=json.loads(b);x['passed_events']=passed;assert p.read_bytes()==b;p.write_text(json.dumps(x,indent=2)+'\n')
+p=E/'verification.json';b=p.read_bytes();v=json.loads(b);v['observed_result']['final_governance']={'receipt':'final-governance.json','passed_events':31};v['remaining_delivery'].remove('final metadata governance');assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+print(json.dumps({'requirements_passed':91,'final_governance_events':passed,'ticket_verified_milestones':3}))

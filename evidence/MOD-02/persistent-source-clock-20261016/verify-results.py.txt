@@ -1,0 +1,93 @@
+"""Recount the exact matrix and receipts; reuse full suite only for byte-identical formal source."""
+import collections,datetime,gzip,hashlib,itertools,json,math,platform,subprocess,sys,tarfile
+from pathlib import Path
+if not __debug__:raise SystemExit('optimized Python refused')
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/persistent-source-clock-20261016';P=R/'evidence/MOD-02/homeostasis-chemical-state-20261016'
+read=lambda p:json.loads(p.read_text());sha=lambda b:hashlib.sha256(b).hexdigest()
+source=read(E/'source-before.json')
+paths={p for p in subprocess.check_output(['git','ls-files','-co','--exclude-standard','-z'],cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod','go.sum'])}
+assert paths==set(source) and source==read(P/'formal-source.json') and len(source)==840
+assert all(sha((R/p).read_bytes())==h for p,h in source.items())
+for p,h in read(E/'frozen-diagnostic.json')['files'].items():
+    candidate=R/p
+    data=candidate.read_bytes() if candidate.exists() else (E/(candidate.name+'.txt')).read_bytes()
+    assert sha(data)==h,p
+for p,h in read(E/'foreign-before.json').items():assert sha(Path(p).read_bytes())==h,p
+archive=None
+def workread(path):
+    global archive
+    p=Path(path)
+    if not p.is_absolute():p=R/p
+    assert p.is_relative_to(W)
+    if p.exists():return json.loads(p.read_text())
+    if archive is None:archive=tarfile.open(E/'preserved-work.tar.gz','r:gz')
+    return json.load(archive.extractfile(str(p.relative_to(W))))
+labels={'red-build','red-unfilled','diagnostic-format','framework-build','framework-vet','diagnostic-vet','module-verify','module-selection','governance-before-metadata','closure-binary'}
+for mode in ['ordinary','race']:
+    labels|={'build-'+mode,'audit-'+mode}
+    labels|={'resume-'+mode+'-'+str(i) for i in range(48)}
+    for variant in ['wrong-clock','early-feedback']:labels|={'build-'+variant+'-'+mode,variant+'-'+mode}
+expected_fail={'red-unfilled','wrong-clock-ordinary','wrong-clock-race','early-feedback-ordinary','early-feedback-race'}
+for name in labels:
+    x=read(E/(name+'.json'));assert x['exit_code']==(1 if name in expected_fail else 0),name
+    assert sha((E/x['log']).read_bytes())==x['log_sha256'],name
+    assert x['environment']==read(E/'command-environment.json')
+assert (E/'diagnostic-format.log').read_bytes()==b''
+assert (E/'module-selection.log').read_text().strip()=='github.com/HazelnutParadise/insyra v0.3.4'
+assert 'unfilled fixture slot' in (E/'red-unfilled.log').read_text()
+observed={}
+keys={f'{core}-{src}-w{warm}-c{clock}-f{str(freeze).lower()}' for core,src,warm,clock,freeze in itertools.product(['continuous','lif','mixed'],['timeline','controller'],[0,3],[0,11],[False,True])}
+for mode in ['ordinary','race']:
+    v=read(E/('audit-'+mode+'.log'));assert v['all_passed'] and len(v['matrix'])==48
+    assert len({x['case'] for x in v['matrix']})==48 and {x['case'] for x in v['matrix']}==keys
+    for x in v['matrix']:
+        core,src,w,c,f=x['case'].split('-');warm=int(w[1:]);clock=int(c[1:]);freeze=f=='ftrue'
+        conc=4.0
+        for row in range(6):
+            if freeze and row in [1,2]:continue
+            score=0 if row==0 else (2 if row<3 else .5)
+            q=[2,5,0,3,0,7][row] if src=='timeline' else math.log1p(math.exp(math.tanh(score)))
+            conc=conc/2+q/2
+        assert abs(x['final_concentration']-conc)<=1e-12*(1+abs(conc))
+        assert x['routes']==(16 if freeze else 64) and x['final_neural_steps']==warm+6 and x['final_chemical_steps']==clock+(4 if freeze else 6)
+    assert sum(x['routes'] for x in v['matrix'])==v['routes']==1920
+    assert v['atomic_cases']==12 and v['atomic_rejections']==48
+    inputs=v['resume_inputs'];assert len(inputs)==len(set(inputs))==48
+    resume_keys=set()
+    for i,path in enumerate(inputs):
+        x=workread(path);result=workread(path+'.result.json')
+        assert read(E/('resume-'+mode+'-'+str(i)+'.log'))['all_passed'] and result['all_passed']
+        f=x['Case'];assert f['Warmup']==3 and f['Initial']==11 and x['Split'] in [1,2,3,5]
+        resume_keys.add((f['Core'],f['Source'],f['Freeze'],x['Split']))
+        assert result['split']==x['Split'] and result['neural_steps']==9 and result['chemical_steps']==(15 if f['Freeze'] else 17)
+        assert result['output']==x['Tail']
+        # Parent input, prefix and child final were saved through the real strict checkpoint APIs.
+        prefix=workread(x['Checkpoint']);final=workread(path+'.final.json')
+        assert prefix['payload']['neural']['core']==f['Core']
+        assert final['payload']['chemical']['state']['steps']==result['chemical_steps']
+    assert len(resume_keys)==48
+    observed[mode]={'cases':48,'distinct_routes':1920,'new_process_resumes':48,'atomic_cases':12,'atomic_rejections':48,'controller_window_reference_cases':24}
+mutations=read(E/'mutations.json');assert mutations['all_passed'] and len(mutations['variants'])==4
+assert all(x['compiled'] and x['semantic_rejection'] for x in mutations['variants'])
+gov=[json.loads(x) for x in (E/'governance-before-metadata.log').read_bytes().splitlines()]
+assert not any(x.get('Action')=='fail' for x in gov)
+assert sum(x.get('Test') is not None and x.get('Action')=='pass' for x in gov)==31
+prior=read(P/'engineering-verification.json');assert prior['all_passed'] and prior['source_count']==840
+inherited=[]
+for step in prior['steps']:
+    packed=(P/step['log']).read_bytes();assert sha(packed)==step['log_sha256']
+    raw=gzip.decompress(packed) if step.get('compression') else packed
+    assert sha(raw)==step['raw_sha256'] and step['exit_code']==0 and not step['acceptance_errors']
+    rec={'name':step['name'],'log':str((P/step['log']).relative_to(R)),'sha256':sha(packed),'raw_sha256':sha(raw),'exit_code':0}
+    if step['name'] in ['unit','race']:
+        events=[json.loads(x) for x in raw.splitlines()];assert not any(x.get('Action')=='fail' for x in events)
+        counts=dict(collections.Counter(x['Action'] for x in events if x.get('Test') and x['Action'] in ['pass','skip','fail']))
+        assert counts==step['test_events']==({'pass':7915,'skip':23} if step['name']=='unit' else {'pass':7914,'skip':24})
+        rec['test_events']=counts
+    inherited.append(rec)
+result={'requirement':['MOD-02','COR-04','STA-03'],'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'diagnostic_passed':True,'engineering_passed':True,'production_changes':False,'confirmed_new_defects':0,'reproduction_command':'audit-driver.py.txt; mutation-driver.py.txt; verify-results.py.txt; preserved-work.tar.gz contains diagnostic source and all checkpoint/resume inputs/results','environment':{'platform':platform.platform(),'go':subprocess.check_output(['go','version'],text=True).strip(),'baseline':read(E/'baseline.json')['head'],'settings':'command-environment.json'},'input_fingerprints':{'formal_source':'source-before.json','formal_source_sha256':sha((E/'source-before.json').read_bytes()),'diagnostic':'frozen-diagnostic.json'},'observed_result':observed,'current_command_receipts':sorted(name+'.json' for name in labels),'semantic_mutations':mutations,'full_suite_reuse':{'basis':'All 840 formal source paths and bytes match delivered ticket125. Previous full unit/race logs rehashed and terminal events independently recounted. Current diagnostic normal/race, full build/vet, dependency and governance checks rerun. Full unit/race not rerun for unchanged formal source.','verification':str((P/'verification.json').relative_to(R)),'steps':inherited},'limits':['Two-node CPU engineering declarations, no whole-brain/task-quality/biological calibration or zero-bug claim','Freeze runtime flag is not serialized; caller explicitly reapplies schedule','Controller window independently checked against public raw neural history; core voltage/homeostasis equations retain ticket125 evidence','Feedback remains readable after arrival by existing contract'],'test_log':['audit-ordinary.log', 'audit-race.log', 'resume-ordinary-*.log', 'resume-race-*.log', 'governance-before-metadata.log'],'remaining_delivery':['final metadata governance','owned cleanup','commit push remote readback']}
+if sys.argv[1:]==['--check-only']:
+    saved=read(E/'verification.json');assert saved['observed_result']['ordinary']==observed['ordinary'] and saved['observed_result']['race']==observed['race'] and saved['input_fingerprints']==result['input_fingerprints']
+else:
+    assert not sys.argv[1:];(E/'verification.json').open('x').write(json.dumps(result,indent=2)+'\n')
+print(json.dumps({'all_passed':True,'receipt_count':len(labels),'formal_source_count':len(source),'observed_result':observed}))

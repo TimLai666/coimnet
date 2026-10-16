@@ -1,0 +1,41 @@
+"""Run one evidence command with caches confined to the owned work root."""
+import datetime
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import sys
+import time
+
+root = Path(__file__).resolve().parents[3]
+evidence = Path(__file__).resolve().parent
+work = root / 'runs/.tmp/persistent-source-clock-20261016'
+baseline = json.loads((evidence / 'baseline.json').read_text())
+if work.stat().st_ino != baseline['work_inode']:
+    raise SystemExit('owned work root changed')
+if len(sys.argv) < 3:
+    raise SystemExit('usage: run-command.py.txt LABEL COMMAND [ARG ...]')
+label, *command = sys.argv[1:]
+if not label.replace('-', '').replace('_', '').isalnum():
+    raise SystemExit('invalid label')
+env = dict(os.environ)
+settings = json.loads((evidence / 'command-environment.json').read_text())
+env.update(settings)
+log_path = evidence / (label + '.log')
+receipt_path = evidence / (label + '.json')
+if log_path.exists() or receipt_path.exists():
+    raise SystemExit('existing command evidence is not overwritten')
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+with log_path.open('xb') as log:
+    code = subprocess.run(command, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT).returncode
+receipt = {'command': command, 'exit_code': code,
+           'started_at': started, 'seconds': time.monotonic() - start,
+           'environment': settings, 'log': log_path.name,
+           'log_sha256': hashlib.sha256(log_path.read_bytes()).hexdigest()}
+with receipt_path.open('x') as handle:
+    json.dump(receipt, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'label': label, 'exit_code': code, 'seconds': receipt['seconds'], 'log_sha256': receipt['log_sha256']}))
+raise SystemExit(code)

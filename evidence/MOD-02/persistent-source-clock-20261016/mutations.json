@@ -1,0 +1,37 @@
+{
+  "all_passed": true,
+  "variants": [
+    {
+      "name": "wrong-clock",
+      "build": "ordinary",
+      "compiled": true,
+      "semantic_rejection": true,
+      "receipt": "wrong-clock-ordinary.json",
+      "diagnostic": "call release got5 want3"
+    },
+    {
+      "name": "wrong-clock",
+      "build": "race",
+      "compiled": true,
+      "semantic_rejection": true,
+      "receipt": "wrong-clock-race.json",
+      "diagnostic": "call release got5 want3"
+    },
+    {
+      "name": "early-feedback",
+      "build": "ordinary",
+      "compiled": true,
+      "semantic_rejection": true,
+      "receipt": "early-feedback-ordinary.json",
+      "diagnostic": "individual chemistry: source 0 at step 0: modulation: feedback 0 cannot be used at step 0: feedback is not available at 0; available at 1"
+    },
+    {
+      "name": "early-feedback",
+      "build": "race",
+      "compiled": true,
+      "semantic_rejection": true,
+      "receipt": "early-feedback-race.json",
+      "diagnostic": "individual chemistry: source 0 at step 0: modulation: feedback 0 cannot be used at step 0: feedback is not available at 0; available at 1"
+    }
+  ]
+}

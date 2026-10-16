@@ -1,0 +1,27 @@
+"""Compile isolated wrong-clock/early-feedback variants, require semantic rejection."""
+import hashlib,json,subprocess,sys
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/persistent-source-clock-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+source=json.loads((E/'source-before.json').read_text())
+for p,h in source.items():assert sha(R/p)==h,p
+variants=[('wrong-clock','learning/individual.go','base = neuralSteps(i.neural)','base = i.chemical.state.Steps','call release'),('early-feedback','learning/chemistry.go','signal.NewTimestamp(int64(step), modulation.ReleaseTimeUnit)','signal.NewTimestamp(int64(step)+1, modulation.ReleaseTimeUnit)','not available')]
+observed=[]
+for name,target,old,new,witness in variants:
+ original=(R/target).read_text();assert original.count(old)==1
+ patch=W/(name+'.go');patch.open('x').write(original.replace(old,new))
+ overlay=W/(name+'-overlay.json');overlay.open('x').write(json.dumps({'Replace':{str(R/target):str(patch)}}))
+ for mode,flags in [('ordinary',[]),('race',['-race'])]:
+  binary=W/(name+'-'+mode)
+  command=['go','build',*flags,'-overlay',str(overlay),'-o',str(binary),'./'+str((W/'probe').relative_to(R))]
+  subprocess.run([sys.executable,str(E/'run-command.py.txt'),'build-'+name+'-'+mode,*command],check=True)
+  label=name+'-'+mode
+  child=subprocess.run([sys.executable,str(E/'run-command.py.txt'),label,str(binary),'audit',str(W/(label+'-output'))])
+  rec=json.loads((E/(label+'.json')).read_text());log=(E/rec['log']).read_text()
+  assert child.returncode==1 and rec['exit_code']==1,(label,log)
+  if name=='wrong-clock': assert ('call release got' in log and ' want' in log) or ('concentration' in log and 'want' in log),log
+  else: assert 'feedback' in log.lower() and ('available' in log or 'future' in log),log
+  observed.append({'name':name,'build':mode,'compiled':True,'semantic_rejection':True,'receipt':label+'.json','diagnostic':log.strip()})
+for p,h in source.items():assert sha(R/p)==h,p
+(E/'mutations.json').open('x').write(json.dumps({'all_passed':True,'variants':observed},indent=2)+'\n')
+print(json.dumps({'all_passed':True,'compiled_semantic_rejections':len(observed)}))

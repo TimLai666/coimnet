@@ -1,0 +1,28 @@
+"""Preserve every necessary diagnostic source and public checkpoint; discard reproducible binaries only."""
+import hashlib,json,tarfile
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/persistent-source-clock-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==57486054 and not W.is_symlink()
+v=json.loads((E/'verification.json').read_text());assert v['engineering_passed'] and v['diagnostic_passed']
+assert json.loads((E/'final-governance-v2.json').read_text())['passed_events']==31
+binary_names={'final-root.test','probe-red','probe-ordinary','probe-race','wrong-clock-ordinary','wrong-clock-race','early-feedback-ordinary','early-feedback-race'}
+fixed={'module-originals.json','probe/main.go','probe/fixture.go','wrong-clock.go','wrong-clock-overlay.json','early-feedback.go','early-feedback-overlay.json'}
+files={};binaries={}
+for p in sorted(W.rglob('*')):
+ if not p.is_file() or p.relative_to(W).parts[0] in ['go-cache','go-mod-cache','go-tmp']:continue
+ name=str(p.relative_to(W));assert not p.is_symlink();item={'bytes':p.stat().st_size,'sha256':sha(p)}
+ if name in binary_names:binaries[name]=item;continue
+ assert name in fixed or (p.parent.name in ['resume-ordinary','resume-race'] and name.endswith(('.input.json','.input.json.result.json','.input.json.final.json','.checkpoint.json'))),name
+ files[name]=item
+assert len(files)==391 and set(binaries)==binary_names,(len(files),set(binaries))
+archive=E/'preserved-work.tar.gz';assert not archive.exists()
+with tarfile.open(archive,'w:gz') as h:
+ for name in files:h.add(W/name,arcname=name,recursive=False)
+with tarfile.open(archive,'r:gz') as h:
+ assert set(h.getnames())==set(files)
+ for name,item in files.items():
+  b=h.extractfile(name).read();assert len(b)==item['bytes'] and hashlib.sha256(b).hexdigest()==item['sha256']
+for name,value in [('work-preservation.json',{'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'files':files}),('discarded-binaries.json',binaries)]:
+ (E/name).open('x').write(json.dumps(value,indent=2)+'\n')
+print(json.dumps({'necessary_files':len(files),'archive_bytes':archive.stat().st_size,'discarded_reproducible_binaries':len(binaries)}))
