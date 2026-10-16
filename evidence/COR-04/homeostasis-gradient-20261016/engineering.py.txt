@@ -1,0 +1,125 @@
+"""Run the project engineering gate against an immutable source manifest."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+import os
+from pathlib import Path
+import subprocess
+import time
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip evidence gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/homeostasis-gradient-20261016"
+source = json.loads((E / "formal-source.json").read_text())
+env = dict(os.environ)
+env.update(json.loads((E / "command-environment.json").read_text()))
+protected = json.loads((R / "evidence/MOD-04/lif-threshold-floor-20261015/protected-models.json").read_text())
+foreign = json.loads((E / "foreign-before.json").read_text())
+data = json.loads((R / "evidence/MOD-04/lif-threshold-floor-20261015/persistent-data-preservation.json").read_text())["persistent_data_files"]
+
+def sha(p):
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+def gate():
+    paths={p for p in subprocess.check_output(["git","ls-files","-co","--exclude-standard","-z"],cwd=R).decode().split("\0") if p and (p.endswith(".go") or p in ["go.mod","go.sum"])}
+    assert paths==set(source), "formal source paths changed"
+    assert W.stat().st_ino == json.loads((E / "baseline.json").read_text())["work_inode"]
+    for p, digest in {**source, **protected}.items():
+        assert sha(R / p) == digest, p
+    for p, digest in foreign.items():
+        assert sha(Path(p)) == digest, p
+    for p, v in data.items():
+        assert sha(R / p) == v["sha256"], p
+
+def events(raw):
+    tests, packages = {}, {}
+    for line in raw.decode().splitlines():
+        try:
+            x = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if x.get("Action") not in ["pass", "fail", "skip"]:
+            continue
+        if x.get("Test"):
+            key = (x["Package"], x["Test"])
+            assert key not in tests, key
+            tests[key] = x["Action"]
+        else:
+            packages[x["Package"]] = x["Action"]
+    return tests, packages
+
+files = [p for p in source if p.endswith(".go") and not p.startswith("evidence/")]
+pattern = "^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$"
+steps = [
+    ("format", ["gofmt", "-l", *files]),
+    ("build", ["go", "build", "./..."]),
+    ("unit", ["go", "test", "-json", "-count=1", "./..."]),
+    ("race", ["go", "test", "-race", "-json", "-count=1", "./..."]),
+    ("vet", ["go", "vet", "./..."]),
+    ("module-verify", ["go", "mod", "verify"]),
+    ("module-selection", ["go", "list", "-m", "github.com/HazelnutParadise/insyra"]),
+    ("governance", ["go", "test", "-json", "-count=1", "-run", pattern, "."]),
+    ("closure-binary", ["go", "test", "-c", "-o", str(W / "final-root.test"), "."]),
+]
+results = []
+for name, command in steps:
+    gate()
+    log = E / ("engineering-" + name + ".log")
+    start = time.monotonic()
+    with log.open("xb") as handle:
+        code = subprocess.run(command, cwd=R, env=env, stdout=handle, stderr=subprocess.STDOUT).returncode
+    gate()
+    raw = log.read_bytes()
+    result = {"name": name, "command": command, "environment_file": "command-environment.json", "exit_code": code, "seconds": time.monotonic() - start, "raw_sha256": sha(log), "raw_bytes": len(raw)}
+    errors = []
+    if name in ["unit", "race", "governance"]:
+        tests, packages = events(raw)
+        result["test_events"] = dict(collections.Counter(tests.values()))
+        result["package_events"] = dict(collections.Counter(packages.values()))
+        if not tests or "fail" in result["test_events"] or "fail" in result["package_events"]:
+            errors.append("missing results or failing tests")
+        if name in ["unit", "race"]:
+            old_e = R / "evidence/COR-04/homeostasis-rate-20261016"
+            prior = json.loads((old_e / "engineering-verification.json").read_text())
+            previous = next(x for x in prior["steps"] if x["name"] == name)
+            assert sha(old_e / previous["log"]) == previous["log_sha256"]
+            old, old_packages = events(gzip.decompress((old_e / previous["log"]).read_bytes()))
+            changed = [{"package": k[0], "test": k[1], "before": v, "after": tests.get(k)} for k, v in old.items() if tests.get(k) != v]
+            added = [{"package": k[0], "test": k[1], "action": v} for k, v in tests.items() if k not in old]
+            result.update(prior_event_count=len(old), changed_events=changed, added_events=added)
+            focused_mode = "ordinary" if name == "unit" else "race"
+            focused, _ = events((E / ("reference-final-" + focused_mode + ".log")).read_bytes())
+            expected_added = {k: v for k, v in focused.items() if k not in old}
+            actual_added = {(x["package"], x["test"]): x["action"] for x in added}
+            if packages != old_packages or changed or len(old) != 6749 or actual_added != expected_added or not expected_added or any(v != "pass" or not k[1].startswith("TestHomeostasisGradient") for k, v in expected_added.items()):
+                errors.append("prior package/test results missing, failed or new regression events differ")
+        elif result["test_events"] != {"pass": 31}:
+            errors.append("expected 31 passing governance events")
+    if name == "format" and raw.strip():
+        errors.append("unformatted sources")
+    if name == "module-selection" and raw.decode().strip() != "github.com/HazelnutParadise/insyra v0.3.4":
+        errors.append("pinned dependency changed")
+    if name in ["unit", "race"]:
+        archive = log.with_suffix(".log.gz")
+        with archive.open("xb") as handle:
+            handle.write(gzip.compress(raw, mtime=0))
+        assert gzip.decompress(archive.read_bytes()) == raw
+        result.update(log=archive.name, log_sha256=sha(archive), compression="gzip; raw bytes exact")
+        assert sha(log) == result["raw_sha256"]
+        log.unlink()
+    else:
+        result.update(log=log.name, log_sha256=sha(log))
+    result["acceptance_errors"] = errors
+    with (E / ("engineering-" + name + ".json")).open("x") as handle:
+        json.dump(result, handle, indent=2)
+        handle.write("\n")
+    print(json.dumps({k: v for k, v in result.items() if k not in ["command", "added_events", "changed_events"]}), flush=True)
+    assert code == 0 and not errors, {"step": name, "code": code, "errors": errors}
+    results.append(result)
+with (E / "engineering-verification.json").open("x") as handle:
+    json.dump({"verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "source_count": len(source), "formal_go_files": len(files), "all_passed": True, "steps": results, "scope": "Ticket123 independent homeostasis gradients. macOS arm64 full engineering. Production computations are unchanged. Task quality, biology and absolute zero bugs are not established."}, handle, indent=2)
+    handle.write("\n")

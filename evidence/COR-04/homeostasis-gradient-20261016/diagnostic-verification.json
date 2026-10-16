@@ -1,0 +1,50 @@
+{
+  "all_passed": true,
+  "red": {
+    "events": {
+      "pass": 2,
+      "fail": 161
+    },
+    "receipt": "red-reference-corrected.json",
+    "scope": "incomplete private reference, not a production failure"
+  },
+  "modes": {
+    "ordinary": {
+      "terminal_events": 163,
+      "public_leaf_cases": 120,
+      "legacy_reference_sha256": "39bab81a07e2416e617a4256fbf06c3bab3ff738217a2faddf7a3194b40597dd",
+      "legacy_reference_preserved_within_build": true,
+      "wrong_dh_rejected": true,
+      "wrong_dh_value": 0.013117283950617283,
+      "hand_expected": 0.0625,
+      "command_receipt": "reference-final-ordinary.json",
+      "mutant_receipt": "wrong-tangent-ordinary.json"
+    },
+    "race": {
+      "terminal_events": 163,
+      "public_leaf_cases": 120,
+      "legacy_reference_sha256": "39bab81a07e2416e617a4256fbf06c3bab3ff738217a2faddf7a3194b40597dd",
+      "legacy_reference_preserved_within_build": true,
+      "wrong_dh_rejected": true,
+      "wrong_dh_value": 0.013117283950617283,
+      "hand_expected": 0.0625,
+      "command_receipt": "reference-final-race.json",
+      "mutant_receipt": "wrong-tangent-race.json"
+    }
+  },
+  "checks_frozen": true,
+  "existing_source_changed": [
+    "dynamics/lif_test.go"
+  ],
+  "new_source": [
+    "dynamics/homeostasis_gradient_reference_test.go"
+  ],
+  "production_changes": false,
+  "scope_review": "scope-review.json",
+  "limits": [
+    "ordinary finite fixtures; full-window only",
+    "constant positive threshold effects; no activity feedback or floor derivative claim",
+    "Mixed all-LIF only; no mixed continuous/LIF or persistent training claim",
+    "no task quality or biological calibration conclusion"
+  ]
+}

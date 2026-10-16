@@ -1,0 +1,143 @@
+{
+  "requirement": "COR-04",
+  "verified_at": "2026-10-16T02:05:44.293988+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": false,
+  "source_count": 838,
+  "confirmed_new_production_defects": 0,
+  "reproduction_command": {
+    "ordinary": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./dynamics",
+      "-run",
+      "^TestHomeostasisGradient"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "./dynamics",
+      "-run",
+      "^TestHomeostasisGradient"
+    ],
+    "engineering": [
+      "python3",
+      "evidence/COR-04/homeostasis-gradient-20261016/engineering.py.txt"
+    ]
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "baseline": "66df631b8b9023097f288ceb2554ee773198113f",
+    "command_settings": "command-environment.json",
+    "go": "go version go1.26.5 darwin/arm64",
+    "command_environment": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "7097bfa195548f9d8a1b519d169a981ae60927ab48d4a41fa9a74db6abed24ed",
+    "frozen_checks": "frozen-checks.json",
+    "frozen_checks_sha256": "a03189a81ef8717d707b6a35e7280253c2f26dfd41839d20d03354eb6d6697d2",
+    "original_source": "source-before.json"
+  },
+  "observed_result": {
+    "reference": {
+      "ordinary": {
+        "terminal_events": 163,
+        "public_leaf_cases": 120,
+        "legacy_reference_sha256": "39bab81a07e2416e617a4256fbf06c3bab3ff738217a2faddf7a3194b40597dd",
+        "legacy_reference_preserved_within_build": true,
+        "wrong_dh_rejected": true,
+        "wrong_dh_value": 0.013117283950617283,
+        "hand_expected": 0.0625,
+        "command_receipt": "reference-final-ordinary.json",
+        "mutant_receipt": "wrong-tangent-ordinary.json"
+      },
+      "race": {
+        "terminal_events": 163,
+        "public_leaf_cases": 120,
+        "legacy_reference_sha256": "39bab81a07e2416e617a4256fbf06c3bab3ff738217a2faddf7a3194b40597dd",
+        "legacy_reference_preserved_within_build": true,
+        "wrong_dh_rejected": true,
+        "wrong_dh_value": 0.013117283950617283,
+        "hand_expected": 0.0625,
+        "command_receipt": "reference-final-race.json",
+        "mutant_receipt": "wrong-tangent-race.json"
+      }
+    },
+    "red_and_wrong_dh": "diagnostic-verification.json",
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 6890,
+          "skip": 22
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6749
+      },
+      "race": {
+        "test_events": {
+          "pass": 6889,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6749
+      },
+      "governance": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      }
+    },
+    "approved_gain_policy": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1578450997
+    }
+  },
+  "test_log": [
+    "red-reference-corrected.log",
+    "reference-final-ordinary.log",
+    "reference-final-race.log",
+    "wrong-tangent-ordinary.log",
+    "wrong-tangent-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "retained_corrections": [
+    "test-correction.json"
+  ],
+  "root_review": "root-review.md",
+  "limits": [
+    "ordinary finite fixtures; full-window only",
+    "constant positive threshold effects; no activity feedback or floor derivative claim",
+    "Mixed all-LIF only; no mixed continuous/LIF or persistent training claim",
+    "no task quality or biological calibration conclusion",
+    "No absolute zero-bug proof"
+  ],
+  "remaining_delivery": [
+    "Git commit/push/readback"
+  ],
+  "acceptance_complete": false,
+  "necessary_evidence": "work-preservation.json"
+}

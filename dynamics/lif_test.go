@@ -232,6 +232,15 @@ func lifForwardTangent(c LIFConfig, p LIFParameters, initial []float64, inputs, 
 	v := append([]float64(nil), initial...)
 	dv := append([]float64(nil), d.initial...)
 	a, da := make([]float64, n), make([]float64, n)
+	homeostatic := c.Homeostasis != nil && c.Homeostasis.Enabled
+	var rate, homeo []float64
+	var rateStep, offsetStep float64
+	if homeostatic {
+		rate = make([]float64, n)
+		homeo = make([]float64, n)
+		rateStep = c.DT / c.Homeostasis.TauRate
+		offsetStep = c.Homeostasis.Eta * c.DT
+	}
 	refract := make([]int, n)
 	x := [][]float64{make([]float64, n)}
 	dx := [][]float64{make([]float64, n)}
@@ -255,6 +264,9 @@ func lifForwardTangent(c LIFConfig, p LIFParameters, initial []float64, inputs, 
 			cand := lambda[i]*v[i] + alpha[i]*drive[i]
 			dCand := lambda[i]*dv[i] + dLambda[i]*v[i] + alpha[i]*dDrive[i] - dLambda[i]*drive[i]
 			eff, dEff := base[i]+a[i], dBase[i]+da[i]
+			if homeostatic {
+				eff += homeo[i]
+			}
 			spike, dSpike, next, dNext := 0.0, 0.0, c.VReset, 0.0
 			if refract[i] > 0 {
 				refract[i]--
@@ -275,6 +287,16 @@ func lifForwardTangent(c LIFConfig, p LIFParameters, initial []float64, inputs, 
 			nextDX[i] = kappa*dx[t][i] + dSpike
 			a[i] = rho*a[i] + beta*spike
 			da[i] = rho*da[i] + beta*dSpike
+			if homeostatic {
+				nextRate := rate[i] + rateStep*(spike-rate[i])
+				nextHomeo := homeo[i] + offsetStep*(nextRate-c.Homeostasis.TargetRate)
+				if nextHomeo < 0 {
+					nextHomeo = 0
+				} else if nextHomeo > c.Homeostasis.HMax {
+					nextHomeo = c.Homeostasis.HMax
+				}
+				rate[i], homeo[i] = nextRate, nextHomeo
+			}
 			tangent += up[t][i] * nextDX[i]
 		}
 		x, dx = append(x, nextX), append(dx, nextDX)

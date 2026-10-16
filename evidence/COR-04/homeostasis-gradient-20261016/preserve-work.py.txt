@@ -1,0 +1,27 @@
+"""Archive necessary work sources and fixture inputs, discard only reproducible binaries."""
+import hashlib,json,tarfile
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/homeostasis-gradient-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==json.loads((E/'baseline.json').read_text())['work_inode'] and not W.is_symlink()
+assert json.loads((E/'engineering-verification.json').read_text())['all_passed']
+binary_names={'final-root.test'}
+files={};binaries={}
+for p in sorted(W.rglob('*')):
+ if not p.is_file() or p.relative_to(W).parts[0] in ['go-cache','go-mod-cache','go-tmp']:continue
+ name=str(p.relative_to(W));assert not p.is_symlink()
+ item={'bytes':p.stat().st_size,'sha256':sha(p)}
+ if name in binary_names:binaries[name]=item;continue
+ assert name in ['module-originals.json','wrong-homeostasis-tangent.go.txt'],name
+ files[name]=item
+assert len(files)==2 and set(binaries)==binary_names
+archive=E/'preserved-work.tar.gz';assert not archive.exists()
+with tarfile.open(archive,'w:gz') as f:
+ for name in files:f.add(W/name,arcname=name,recursive=False)
+with tarfile.open(archive,'r:gz') as f:
+ assert set(f.getnames())==set(files)
+ for name,item in files.items():
+  b=f.extractfile(name).read();assert len(b)==item['bytes'] and hashlib.sha256(b).hexdigest()==item['sha256']
+for name,value in [('work-preservation.json',{'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'files':files}),('discarded-binaries.json',binaries)]:
+ with (E/name).open('x') as f:json.dump(value,f,indent=2);f.write('\n')
+print(json.dumps({'necessary_files':len(files),'archive_bytes':archive.stat().st_size,'discarded_reproducible_binaries':len(binaries)}))

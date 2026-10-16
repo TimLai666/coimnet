@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 123](docs/tickets/123-homeostasis-gradient-reference.md) 已通過慢速活動穩定的獨立梯度驗收。一般／競態各 120 條公開路徑、163 個專項通過，錯把 r/h 傳回的對照被手算拒絕。838 份來源的完整一般／競態各 58 套件通過，6,890／6,889 pass、22／23 skip，原有各 6,749 個終端事件保持，只新增各 163 個通過。格式、build、vet、固定依賴與 31 項治理通過，工程追蹤保持 91／91，見[驗收](evidence/COR-04/homeostasis-gradient-20261016/verification.json)。本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。沒有確認新正式運算缺陷，整體機制稽核持續。
+
 [ticket 122](docs/tickets/122-homeostasis-rate.md) 已完成 4／4。修正慢速活動率的中間溢位誤拒絕，正常公式與合法域保持。837 份來源的一般／競態各 58 套件通過，6,727／6,726 pass、22／23 skip，原有各 6,700 個終端事件保持，只新增各 49 個通過。build、vet、固定依賴與最後 31 項治理通過，COR-04 恢復 passed，工程追蹤 91／91。49 個專項、Rosetta amd64 的 98 個檢查，以及正常／舊保存對照通過，見[驗收](evidence/COR-04/homeostasis-rate-20261016/verification.json)。1,965,684,907 bytes 本輪暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-04/homeostasis-rate-20261016/cleanup.json)。修正 `72bfcc1` 與主要證據 `c721643` 已正常推送且遠端讀回相同，837 份提交來源核對完成，見[交付](evidence/COR-04/homeostasis-rate-20261016/delivery.json)。整體機制稽核持續，下一個候選是[慢速穩定的獨立梯度](evidence/COR-04/homeostasis-rate-20261016/next-audit.md)。
 
 [ticket 121](docs/tickets/121-lif-max-reference.md) 已完成 4／4。一般／競態各 72 組公開完整梯度、72 組分段待更新梯度與 11 個手算對照通過，七個原案例在各建置內逐位保持。兩個刻意算錯的正式運算對照都被新測試拒絕。836 份來源的完整一般／競態各 58 套件通過，6,678／6,677 pass、22／23 skip，原有各 6,542 個終端事件保持，只新增各 158 個通過。格式、build、vet、固定 Insyra v0.3.4、模組與 31 項治理通過，工程狀態保持 91／91，見[驗收](evidence/MOD-04/lif-max-reference-20261016/verification.json)。1,588,449,051 bytes 自有暫存已清除，原模型、資料、原始模組及其他工作保持，見[清理](evidence/MOD-04/lif-max-reference-20261016/cleanup.json)。主要提交 `c8c15f1` 已正常推送且遠端讀回相同，836 份來源與 82 個交付檔案的提交內容相符，見[交付](evidence/MOD-04/lif-max-reference-20261016/delivery.json)。沒有確認新正式程式缺陷，整體機制稽核持續，下一個候選為[慢速活動穩定的獨立梯度](evidence/MOD-04/lif-max-reference-20261016/next-audit.md)。
