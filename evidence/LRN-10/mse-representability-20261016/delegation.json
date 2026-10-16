@@ -1,0 +1,62 @@
+{
+  "host": "Codex",
+  "preferred_tool_probe": {
+    "command": "opencode models",
+    "exit_code": 1,
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "fallback": "Project AGENTS.md explicitly selects gpt-5.6-luna with max reasoning after unavailable OpenCode.",
+  "tool": "Codex native subagent",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "agents": [
+    {
+      "name": "mse_callers_audit_134",
+      "role": "read-only caller inventory",
+      "root_correction": "There are three production direct calls, not two; Root verified current source."
+    },
+    {
+      "name": "neutral_approval_evidence_readback",
+      "role": "read-only existing approval and evidence verification"
+    },
+    {
+      "name": "mse_numerical_tests_134",
+      "role": "test-only numerical slot"
+    },
+    {
+      "name": "mse_public_tests_134",
+      "role": "test-only public slot",
+      "root_revision": "Make three overflow paths and forbidden-feedback control separate subtests so all execute before implementation."
+    },
+    {
+      "name": "mse_implementation_134",
+      "role": "candidate-only implementation; no test changes",
+      "root_revision": "Remove redundant normal-result finite guard; keep original return expression and clearer smallestNormal name."
+    },
+    {
+      "name": "mse_cleanup_evidence_audit_134",
+      "role": "read-only counts, fingerprints, and cleanup scope verification"
+    }
+  ],
+  "root_execution": "Root read all supplied code and diffs, froze tests before implementation, ran all Go commands, verified diagnostic logs and byte comparisons, and owns formal adoption and delivery. Workers did not run Go or perform cleanup.",
+  "independent_readback": {
+    "public_rows_per_build": 6,
+    "related_pass_events_per_build": 244,
+    "old_checkpoint_cases_total": 12,
+    "work_payloads": 24,
+    "old_model_payloads": 12,
+    "work_inode": 58389343,
+    "module_manifest_entries": 15046,
+    "cleanup_target_only": "runs/.tmp/mse-report-20261016",
+    "protection_manifest_counts": {
+      "formal_sources": 853,
+      "models": 18,
+      "data": 6,
+      "foreign": 32
+    },
+    "status": "Static prerequisites confirmed; actual final engineering, governance, archive and cleanup remain separately gated.",
+    "ordinary_reports_per_build": 64,
+    "ordinary_mse_values_per_build": 128,
+    "additional_payload_review": "The same read-only worker verified the three added payloads, updated 24-entry guard and manifest hash, and exact ordinary before/after bytes. The original 21 inputs were unchanged."
+  }
+}

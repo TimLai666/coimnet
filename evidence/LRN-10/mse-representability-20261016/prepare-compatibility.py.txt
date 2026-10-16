@@ -1,0 +1,45 @@
+"""Preserve actual pre-change chemical checkpoints and an evaluation driver."""
+import hashlib
+import json
+from pathlib import Path
+import tarfile
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/mse-report-20261016"
+assert W.stat().st_ino == json.loads((E / "baseline.json").read_text())["work_inode"]
+archive = R / "evidence/LRN-10/feedback-permission-20261016/preserved-work.tar.gz"
+originals = {}
+with tarfile.open(archive) as t:
+    members = [m for m in t.getmembers() if m.name.startswith("old-chemical/")]
+    assert len(members) == 13
+    for m in members:
+        assert m.isfile() and ".." not in Path(m.name).parts
+        raw = t.extractfile(m).read()
+        target = W / m.name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("xb") as h:
+            h.write(raw)
+        originals[m.name] = hashlib.sha256(raw).hexdigest()
+source = (W / "old-chemical/main.go").read_text()
+source = source.replace('"github.com/TimLai666/coimnet/dynamics"', '"github.com/TimLai666/coimnet/dynamics"\n"github.com/TimLai666/coimnet/experiment"')
+needle = '\t\t\t\tstep, err := i.TrainEpisode(ctx, [][]float64{{3}, {4}, {2}}, []float64{.4})'
+assert source.count(needle) == 1
+source = source.replace(needle, '''                report, err := experiment.RunAdaptiveEvaluation(ctx, i, experiment.AdaptiveEvaluation{
+                    Mode: experiment.EvaluationModeFixed,
+                    Scoring: []experiment.EvaluationItem{
+                        {ID: "first", Input: [][]float64{{.25}, {-.5}}, Target: []float64{-.75}},
+                        {ID: "second", Input: [][]float64{{.1}, {.6}}, Target: []float64{.125}},
+                        {ID: "third", Input: [][]float64{{-.2}, {.75}}, Target: []float64{.875}},
+                    },
+                })
+                must(err)
+''' + needle)
+source = source.replace('"before": s, "output": output, "step": step', '"before": s, "output": output, "evaluation": report, "step": step')
+driver = W / "compatibility/main.go"
+driver.parent.mkdir()
+with driver.open("x") as h:
+    h.write(source)
+with (E / "compatibility-inputs.json").open("x") as h:
+    json.dump({"archive": str(archive.relative_to(R)), "archive_sha256": hashlib.sha256(archive.read_bytes()).hexdigest(), "original_files": originals, "fixture": "Twelve actual old chemical checkpoints; fixed evaluation plus next training in separate processes, matched per build."}, h, indent=2)
+    h.write("\n")

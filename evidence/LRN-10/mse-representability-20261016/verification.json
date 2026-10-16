@@ -1,0 +1,168 @@
+{
+  "requirement": "LRN-10",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "acceptance_complete": false,
+  "stage": "Full engineering, final governance, archive and cleanup complete; remote delivery pending.",
+  "reproduction_command": "run-command.py.txt receipts contain exact commands and environment; engineering.py.txt runs the final full gate.",
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "filesystem": "local APFS",
+    "go_environment": {
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+      "GOMEMLIMIT": "8GiB",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mse-report-20261016/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/mse-report-20261016/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mse-report-20261016/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mse-report-20261016/go-tmp",
+      "GOTOOLCHAIN": "local",
+      "GOSUMDB": "off",
+      "GOTELEMETRY": "off",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+    },
+    "go_platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ]
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "614f955c180fe6e3f76ceff5ee30438cf5099cb1b937b2ef5111a8f4da9299f8",
+    "frozen_regressions": "regression-frozen.json",
+    "work_payloads": "work-payloads.json",
+    "work_payloads_sha256": "f182041ad5e99ed9cb41f6cfed1663b28ccba783a128ff128aa4f36810d27399",
+    "module_anchor": "module-manifest-anchor.json",
+    "necessary_input_archive": "work-preservation.json"
+  },
+  "observed_result": {
+    "diagnostic": {
+      "at": "2026-10-16T14:04:01.268124+00:00",
+      "requirement": "LRN-10",
+      "formal_source_count": 853,
+      "all_passed": true,
+      "modes": {
+        "ordinary": {
+          "public_rows": 6,
+          "representable_values_match_exact_reference": 5,
+          "true_overflow_returns_zero_report_and_error": 1,
+          "related_pass_events": 244,
+          "old_checkpoint_cases": 6,
+          "old_checkpoint_reports_and_next_training_byte_identical": true,
+          "ordinary_reports_byte_identical": 64,
+          "ordinary_mse_values_byte_identical": 128,
+          "ordinary_output_widths": [
+            1,
+            2,
+            3,
+            5
+          ]
+        },
+        "race": {
+          "public_rows": 6,
+          "representable_values_match_exact_reference": 5,
+          "true_overflow_returns_zero_report_and_error": 1,
+          "related_pass_events": 244,
+          "old_checkpoint_cases": 6,
+          "old_checkpoint_reports_and_next_training_byte_identical": true,
+          "ordinary_reports_byte_identical": 64,
+          "ordinary_mse_values_byte_identical": 128,
+          "ordinary_output_widths": [
+            1,
+            2,
+            3,
+            5
+          ]
+        }
+      },
+      "old_input_files_unchanged": 13,
+      "normal_control": "Per build, 64 public reports with decimal targets and widths 1,2,3,5 compare byte for byte against the original source via overlay. Twelve old checkpoint continuations additionally include three ordinary scoring items per case and compare complete evaluation, outputs, training result and snapshot."
+    },
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 8533,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8540
+      },
+      "race": {
+        "test_events": {
+          "pass": 8532,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8540
+      }
+    },
+    "engineering_receipt": "engineering-verification.json",
+    "final_governance": "final-governance.json",
+    "own_cleanup": {
+      "cleaned_at": "2026-10-16T14:40:22.166026+00:00",
+      "owned_directory": "runs/.tmp/mse-report-20261016",
+      "owned_inode": 58389343,
+      "removed_entries": 28122,
+      "removed_bytes": 1802429189,
+      "inventory_archive": "cleanup-inventory.json.gz",
+      "inventory_archive_sha256": "8d39dc93ea402a8ed1f061f5f4c80dd65a925f3cf86fbcb956c524452da9371e",
+      "no_open_handles": true,
+      "necessary_files_preserved": true,
+      "source_entries_preserved": 853,
+      "original_model_files_preserved": 18,
+      "persistent_data_files_preserved": 6,
+      "protected_old_roots_preserved": [
+        "62",
+        "real-task-quality-20261012"
+      ],
+      "directory_removed": true,
+      "original_module_files_preserved": 15046
+    },
+    "approved_neutral_gain": "approved-neutral-gain-control.json"
+  },
+  "test_log": [
+    "red-ordinary.log",
+    "red-race.log",
+    "green-candidate-final-ordinary.log",
+    "green-candidate-final-race.log",
+    "green-related-ordinary.log",
+    "green-related-race.log",
+    "engineering-final-format.log",
+    "engineering-final-build.log",
+    "engineering-final-unit.log.gz",
+    "engineering-final-race.log.gz",
+    "engineering-final-vet.log",
+    "engineering-final-module-verify.log",
+    "engineering-final-module-selection.log",
+    "engineering-final-governance.log",
+    "engineering-final-closure-binary.log",
+    "final-governance-command.log"
+  ],
+  "limitation": "Artificial numerical and persistence controls; no new OCR quality, whole-brain performance, biological calibration or absolute zero-bug conclusion. Ordinary float64 differences retain their existing rounding policy.",
+  "engineering_receipts": [
+    "engineering-final-format.json",
+    "engineering-final-build.json",
+    "engineering-final-unit.json",
+    "engineering-final-race.json",
+    "engineering-final-vet.json",
+    "engineering-final-module-verify.json",
+    "engineering-final-module-selection.json",
+    "engineering-final-governance.json",
+    "engineering-final-closure-binary.json"
+  ],
+  "prior_evidence": [
+    "../evidence/LRN-10/verification.json",
+    "../evidence/LRN-10/policy-composition-20261016/verification.json",
+    "../evidence/LRN-10/feedback-permission-20261016/verification.json",
+    "../evidence/LRN-10/feedback-permission-20261016/next-mse-verification.json"
+  ],
+  "evidence_index_scope": "Current passed evidence indexes the original complete acceptance and this complete current verification. Prior policy, feedback and negative-finding artifacts remain unchanged and linked in prior_evidence; they lack some required current acceptance metadata and are not silently relabeled."
+}

@@ -76,7 +76,7 @@
 | 版本 | 套件/用途範圍 | 用途說明 | 來源 |
 | --- | --- | --- | --- |
 | `coimnet-ablation/v1` | `experiment` | 消融報告格式，也記錄消融證據使用的 MappingVersion | [experiment/ablation.go:16](../experiment/ablation.go#L16) |
-| `coimnet-adaptive-evaluation/v1` | `experiment` | 適應性評估報告格式 | [experiment/adaptive_run.go:285](../experiment/adaptive_run.go#L285) |
+| `coimnet-adaptive-evaluation/v1` | `experiment` | 適應性評估報告格式 | [experiment/adaptive_run.go:312](../experiment/adaptive_run.go#L312) |
 | `coimnet-asr-checkpoint/v1` | `tasks/asr` | ASR 任務模型與訓練狀態 bundle 格式 | [tasks/asr/persistence.go:14](../tasks/asr/persistence.go#L14) |
 | `coimnet-asr-dataset/v1` | `tasks/asr` | 授權語音資料集 manifest 格式 | [tasks/asr/dataset.go:21](../tasks/asr/dataset.go#L21) |
 | `coimnet-asr-fixture/v1` | `internal/cli` | ASR fixture 範例報告格式 | [internal/cli/asr.go:16](../internal/cli/asr.go#L16) |

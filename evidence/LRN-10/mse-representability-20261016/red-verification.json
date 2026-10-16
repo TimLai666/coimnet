@@ -1,0 +1,59 @@
+{
+  "requirement": "LRN-10",
+  "original_source": "source-before.json",
+  "tests": "regression-frozen.json",
+  "modes": {
+    "ordinary": {
+      "test_events": {
+        "fail": 12,
+        "pass": 4
+      },
+      "failures": [
+        "TestItemMSE134RepresentableLargeTargets/two-1e154",
+        "TestItemMSE134RepresentableLargeTargets/1.4e154-and-zero",
+        "TestItemMSE134RepresentableLargeTargets/1.6e154-and-two-zeroes",
+        "TestItemMSE134RepresentableLargeTargets",
+        "TestItemMSE134TinySquaredMeanRoundsToMinSubnormal",
+        "TestItemMSE134MaxFloatSquareOverflowReturnsItemError",
+        "TestAdaptiveMSE134/finite-fixed",
+        "TestAdaptiveMSE134/finite-adaptive",
+        "TestAdaptiveMSE134/fixed-overflow",
+        "TestAdaptiveMSE134/adaptive-overflow",
+        "TestAdaptiveMSE134/allowed-score-overflow",
+        "TestAdaptiveMSE134"
+      ],
+      "controls": [
+        "TestItemMSE134OrdinaryLastRowMatchesOriginalAndPreservesInput",
+        "TestItemMSE134WidthMismatchReturnsErrorAndPreservesInput",
+        "TestAdaptiveMSE134/ordinary-control",
+        "TestAdaptiveMSE134/closed-feedback"
+      ]
+    },
+    "race": {
+      "test_events": {
+        "fail": 12,
+        "pass": 4
+      },
+      "failures": [
+        "TestItemMSE134RepresentableLargeTargets/two-1e154",
+        "TestItemMSE134RepresentableLargeTargets/1.4e154-and-zero",
+        "TestItemMSE134RepresentableLargeTargets/1.6e154-and-two-zeroes",
+        "TestItemMSE134RepresentableLargeTargets",
+        "TestItemMSE134TinySquaredMeanRoundsToMinSubnormal",
+        "TestItemMSE134MaxFloatSquareOverflowReturnsItemError",
+        "TestAdaptiveMSE134/finite-fixed",
+        "TestAdaptiveMSE134/finite-adaptive",
+        "TestAdaptiveMSE134/fixed-overflow",
+        "TestAdaptiveMSE134/adaptive-overflow",
+        "TestAdaptiveMSE134/allowed-score-overflow",
+        "TestAdaptiveMSE134"
+      ],
+      "controls": [
+        "TestItemMSE134OrdinaryLastRowMatchesOriginalAndPreservesInput",
+        "TestItemMSE134WidthMismatchReturnsErrorAndPreservesInput",
+        "TestAdaptiveMSE134/ordinary-control",
+        "TestAdaptiveMSE134/closed-feedback"
+      ]
+    }
+  }
+}

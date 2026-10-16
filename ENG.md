@@ -278,6 +278,8 @@ Restore與checkpoint的Validate／Save／Load共用驗證。hashed-only指紋須
 
 ## 線上回饋與共享訓練狀態一致性
 
+評估的itemMSE保留正常float64差值、平方加總及除法順序。中間平方／加總溢位，或次正常平方主導結果時，以同一float64差值的精確有理數平方和除以維度，最後只轉換一次float64。真正無法回傳有限值時，既有固定／適應評分及允許的score回饋路徑回傳錯誤與空報告，不讓非有限數值成為成功結果。未允許score時不計算答案誤差。這不新增整次評估回滾保證，也不改訓練目標、重設與保存格式，由[ticket134](docs/tickets/134-evaluation-mse-representability.md)驗收。
+
 適應評估先執行每題的線上作答，再檢查該題是否允許score，宣告驗證已確保允許種類同時屬於全域可用種類。未允許時不讀取答案計算分數、不送入Receive／Update，作答的觀察、參與紀錄與自然衰退照常執行。自動runner只產生score，其他回饋名稱保留為metadata。公開API註解與CLI範例說明同步此限制，由[ticket132](docs/tickets/132-adaptation-feedback-permission.md)驗收。
 
 固定評估的快速狀態保持或重設後保持，神經與化學狀態仍依輸入推進。AdvanceFixed 沿用同一個鎖定、候選與提交入口，在整次個體鎖定期間維持快速狀態，解鎖前恢復既有凍結旗標。scoreItems 的固定、適應後評分與順序對照共用此操作。線上 Act 的關閘門及自然衰退是另一個契約，兩者不能互相取代。沒有新保存欄位。由 [ticket131](docs/tickets/131-fixed-scoring-state.md) 驗收。
