@@ -1,0 +1,200 @@
+{
+  "requirement": "MOD-02",
+  "related_requirements": [
+    "MOD-02",
+    "COR-04",
+    "STA-03"
+  ],
+  "verified_at": "2026-10-16T04:07:35.983904+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": false,
+  "source_count": 840,
+  "confirmed_new_production_defects": 0,
+  "reproduction_command": {
+    "ordinary": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "./learning",
+      "-run",
+      "^TestChemicalHomeostasisState|^TestChemicalMaxReferenceLegacyRecord$"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "./learning",
+      "-run",
+      "^TestChemicalHomeostasisState|^TestChemicalMaxReferenceLegacyRecord$"
+    ],
+    "engineering": [
+      "python3",
+      "evidence/MOD-02/homeostasis-chemical-state-20261016/engineering.py.txt"
+    ]
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "baseline": "aeb4956e3a390446a9da33ebab45e2849ab55101",
+    "command_settings": "command-environment.json",
+    "go": "go version go1.26.5 darwin/arm64",
+    "command_environment": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "1c8f9681e2a6ccb3a37a7f086898262a32d54339f9c526f496c70700b0365e91",
+    "frozen_checks": "checks-after-contract-review.json",
+    "frozen_checks_sha256": "5f1658b9cf59b0084fe33d4f3e15480d76a2bee72414c4bb42b12d64d58eedc9",
+    "original_source": "source-before.json"
+  },
+  "observed_result": {
+    "reference": {
+      "ordinary": {
+        "new_terminal_events": 773,
+        "new_pass": 772,
+        "explicit_parent_worker_skip": 1,
+        "cases": 40,
+        "persistent_routes": 640,
+        "fresh_neural_refusals": 40,
+        "fresh_processes": 16,
+        "atomic_cases": 8,
+        "rejections_per_atomic_case": 5,
+        "expression_controls": 8,
+        "minimum_expression_readout_difference": 0.03961285948753357,
+        "legacy_records": 7,
+        "legacy_preserved_within_build": true,
+        "legacy_records_sha256": "6013447dc2c87aa58742cbea1ae9282f74c8e1649d26e88ee7a17b5142b3c828",
+        "mutations": {
+          "wrong_snapshot": {
+            "rejected": true,
+            "actual_h": 0.125,
+            "want_h": 0,
+            "receipt": "wrong-snapshot-ordinary.json"
+          },
+          "expression_source_leak": {
+            "rejected": true,
+            "failed_partition_leaves": 560,
+            "one_row_partition_controls_pass": 80,
+            "first_failure_test": "TestChemicalHomeostasisStatePublic/mixed/controller/sum/open-positive/gatedfalse/partition0",
+            "first_failure_output": "chemical_homeostasis_state_reference_test.go:373: persistent readout[1][0]=0.20772890746593475 want0.20768527686595917",
+            "receipt": "expression-source-leak-v2-ordinary.json"
+          }
+        },
+        "command_receipt": "reference-final-v4-ordinary.json"
+      },
+      "race": {
+        "new_terminal_events": 773,
+        "new_pass": 772,
+        "explicit_parent_worker_skip": 1,
+        "cases": 40,
+        "persistent_routes": 640,
+        "fresh_neural_refusals": 40,
+        "fresh_processes": 16,
+        "atomic_cases": 8,
+        "rejections_per_atomic_case": 5,
+        "expression_controls": 8,
+        "minimum_expression_readout_difference": 0.03961285948753357,
+        "legacy_records": 7,
+        "legacy_preserved_within_build": true,
+        "legacy_records_sha256": "f390e4681299ee36bb8eb5bd7d552f6efe37a84562545a3f14379876c2f0b127",
+        "mutations": {
+          "wrong_snapshot": {
+            "rejected": true,
+            "actual_h": 0.125,
+            "want_h": 0,
+            "receipt": "wrong-snapshot-race.json"
+          },
+          "expression_source_leak": {
+            "rejected": true,
+            "failed_partition_leaves": 560,
+            "one_row_partition_controls_pass": 80,
+            "first_failure_test": "TestChemicalHomeostasisStatePublic/mixed/controller/sum/open-positive/gatedfalse/partition0",
+            "first_failure_output": "chemical_homeostasis_state_reference_test.go:373: persistent readout[1][0]=0.20772890746593475 want0.20768527686595917",
+            "receipt": "expression-source-leak-v2-race.json"
+          }
+        },
+        "command_receipt": "reference-final-v4-race.json"
+      }
+    },
+    "red_and_wrong_algorithms": "diagnostic-verification.json",
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 7915,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 7165
+      },
+      "race": {
+        "test_events": {
+          "pass": 7914,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 7165
+      },
+      "governance": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      }
+    },
+    "approved_gain_policy": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1685320683
+    },
+    "necessary_work_preservation": {
+      "receipt": "work-preservation.json",
+      "files": 7
+    }
+  },
+  "test_log": [
+    "red-state-reference-reviewed.log",
+    "reference-final-v4-ordinary.log",
+    "reference-final-v4-race.log",
+    "wrong-snapshot-ordinary.log",
+    "wrong-snapshot-race.log",
+    "expression-source-leak-v2-ordinary.log",
+    "expression-source-leak-v2-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "retained_corrections": [
+    "contract-review.json",
+    "warmup-width-review.json"
+  ],
+  "root_review": "root-review.md",
+  "limits": [
+    "Four chemical steps, two nodes, four edges, one source and one channel",
+    "Neural-source success requires one unmodulated warmup row; fresh first-step refusal is separately checked",
+    "Controller starts with a fresh zero window; arbitrary supplied source history is not covered",
+    "Zero-gated inference only; no plastic update, trained optimizer or in-call arbitrary cancellation claim",
+    "No real task quality, biological calibration or absolute zero-bug conclusion",
+    "The fixture sources do not depend on absolute source step; stored neural and chemical clocks are checked, timed-feedback or timeline source-clock offsets are not newly established",
+    "No absolute zero-bug proof"
+  ],
+  "remaining_delivery": [
+    "Git commit/push/readback"
+  ],
+  "acceptance_complete": false
+}

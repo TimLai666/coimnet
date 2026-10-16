@@ -1,0 +1,13 @@
+{
+  "outside_slot_byte_equal": true,
+  "frozen_tests_unchanged": true,
+  "reference_before_sha256": "044fcef2258ddc192358f1223f57742428f349c5d330b5275a518d82003eea24",
+  "reference_after_sha256": "d2859d1d0e7fca7659be477cb9674c4f4b5df0046ceaa7675faeeee76d58dbd5",
+  "production_changes": false,
+  "failed_attempts": [
+    "reference-final-ordinary.json",
+    "reference-final-race.json"
+  ],
+  "root_cause": "private reference closure was scoped inside initialization if, unavailable to step loop",
+  "revision": "remove unnecessary copy; referenceChemistryStep allocates fresh rows each step"
+}

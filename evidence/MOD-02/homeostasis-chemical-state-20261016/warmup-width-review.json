@@ -1,0 +1,11 @@
+{
+  "reason": "Existing private encoder and gradient wrapper allocated exactly 4 dual rows; neural warmup reference uses 5. State oracle now declares its 5-row width and encoder follows actual input length; old 4-row cases remain identical. Hand case uses external timeline, explicitly label external so it needs no neural-source warmup.",
+  "reference_before_sha256": "4cf384cb8c23bf5672794abc41c725029d3924b3ea65f1cd9dc9c913f3531a62",
+  "test_before_sha256": "0fa094e66e93ff0da73d5cee0ca1b93690567823dd6269199ab3a2d43a052427",
+  "tolerances_changed": false,
+  "formal_production_changes": false,
+  "failed_receipts": [
+    "reference-final-v3-ordinary.json",
+    "reference-final-v3-race.json"
+  ]
+}

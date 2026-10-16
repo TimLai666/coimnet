@@ -25,13 +25,14 @@ const (
 )
 
 type mixedReferenceCase struct {
-	name       string
-	source     string
-	variant    string
-	config     learning.Config
-	parameters learning.Parameters
-	input      [][]float64
-	upstream   [][]float64
+	name           string
+	source         string
+	variant        string
+	config         learning.Config
+	parameters     learning.Parameters
+	input          [][]float64
+	upstream       [][]float64
+	chemicalWarmup bool // one unmodulated row before enabling a persistent neural source
 }
 
 func TestMixedChemicalReference(t *testing.T) {
@@ -596,6 +597,10 @@ func mixedReferenceGradient(fixture mixedReferenceCase) (mixedReferenceExpected,
 }
 
 type mixedReferenceForward struct {
+	voltage              [][]dual
+	adaptation           [][]dual
+	refractory           [][]int
+	concentration        [][][]dual
 	rate                 [][]float64
 	homeostasis          [][]float64
 	rawOutput            [][]dual
@@ -723,16 +728,19 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 
 	chem := fixture.config.Chemistry
 	var state [][]dual
+	var concentration [][][]dual
 	var ring [][]dual
 	filled := 0
 	if chem != nil {
 		state = make([][]dual, len(chem.Part.State.Concentration))
+		concentration = make([][][]dual, steps+1)
 		for r := range state {
 			state[r] = make([]dual, len(chem.Part.State.Concentration[r]))
 			for c := range state[r] {
 				state[r][c] = dConst(chem.Part.State.Concentration[r][c], n)
 			}
 		}
+		concentration[0] = state
 		if controller := chemistryController(chem); controller != nil {
 			ring = make([][]dual, controller.Inputs.SummaryWindow)
 			for i := range ring {
@@ -757,7 +765,8 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 
 		var gain, offset, threshold []dual
 		var records []dual
-		if chem != nil {
+		chemicalActive := chem != nil && (!fixture.chemicalWarmup || t > 0)
+		if chemicalActive {
 			activity := out[t]
 			if t == 0 && chem.InitialActivity != nil {
 				activity = make([]dual, mixedReferenceNodes)
@@ -774,11 +783,15 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 			}
 			release := referenceRelease(chem, activity, ring, filled, n)
 			state = referenceChemistryStep(chem, state, release, n)
+			concentration[t+1] = state
 			records = referenceOccupancies(chem, state, n)
 			var saturated int
 			gain, offset, threshold, saturated = referenceEffects(chem, records, n)
 			coverage.effectSaturation += saturated
 		} else {
+			if chem != nil {
+				concentration[t+1] = state
+			}
 			gain = make([]dual, mixedReferenceNodes)
 			offset = make([]dual, mixedReferenceNodes)
 			threshold = make([]dual, mixedReferenceNodes)
@@ -860,7 +873,7 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 		occupancy[t] = records
 		readout[t] = make([]float64, mixedReferenceNodes)
 		expressionGain[t] = 1
-		if chem != nil && chem.Part.Expression != nil {
+		if chemicalActive && chem.Part.Expression != nil {
 			expression := chem.Part.Expression
 			metadata := referenceRecordMetadata(chem)
 			sum, count := 0.0, 0
@@ -884,12 +897,12 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 			}
 		}
 		for i := range readout[t] {
-			if !expressionNode[i] {
+			if !expressionNode[i] || !chemicalActive {
 				readout[t][i] = rawOutput[t][i].v
 			}
 		}
 	}
-	return mixedReferenceForward{rate: rate, homeostasis: homeostasis, rawOutput: rawOutput, readout: readout, occupancy: occupancy, expressionSeeds: expressionSeeds, expressionGain: expressionGain, expressionNode: expressionNode,
+	return mixedReferenceForward{voltage: voltage, adaptation: adapt, refractory: refract, concentration: concentration, rate: rate, homeostasis: homeostasis, rawOutput: rawOutput, readout: readout, occupancy: occupancy, expressionSeeds: expressionSeeds, expressionGain: expressionGain, expressionNode: expressionNode,
 		floorSteps: coverage.floorSteps, refractorySteps: coverage.refractorySteps, effectSaturation: coverage.effectSaturation,
 		expressionActive: coverage.expressionActive, expressionSaturation: coverage.expressionSaturation}
 }
@@ -1327,7 +1340,7 @@ func referenceEncodedInputs(input [][]float64, encoder []float64, inputBase int)
 		{float32(encoder[2]), float32(encoder[3])},
 	}
 	encoded32 := f32MatMul(input32, encoder32)
-	n := inputBase + mixedReferenceSteps*mixedReferenceNodes
+	n := inputBase + len(input)*mixedReferenceNodes
 	encoded := make([][]dual, len(encoded32))
 	for t, row := range encoded32 {
 		encoded[t] = make([]dual, len(row))

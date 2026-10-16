@@ -1,0 +1,92 @@
+"""Verify independent persistent state routes and semantic mutation failures."""
+import collections
+import hashlib
+import itertools
+import json
+import math
+from pathlib import Path
+import platform
+import re
+
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = read(E / 'formal-source.json')
+assert len(source) == 840
+for p, h in source.items():
+    assert sha(R / p) == h, p
+assert sha(R / 'learning/chemical_homeostasis_state_reference_test.go') == read(E / 'checks-after-contract-review.json')['frozen_test_sha256']
+before = read(E / 'source-before.json')
+assert [p for p in before if before[p] != source[p]] == ['learning/chemical_mixed_reference_test.go']
+assert set(source) - set(before) == {'learning/chemical_homeostasis_state_reference_test.go'}
+
+def command(label, code):
+    receipt = read(E / (label + '.json'))
+    p = E / receipt['log']
+    assert receipt['exit_code'] == code and sha(p) == receipt['log_sha256'], label
+    events = []
+    for line in p.read_text().splitlines():
+        try:
+            events.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return receipt, events
+
+def terminal(events):
+    pairs = [(x['Test'], x['Action']) for x in events if x.get('Test') and x.get('Action') in ['pass', 'fail', 'skip']]
+    assert len(pairs) == len(dict(pairs))
+    return dict(pairs)
+
+def legacy(events):
+    return [x['Output'].split('legacy-record:', 1)[1].rstrip('\r\n') for x in events if 'legacy-record:' in x.get('Output', '')]
+
+_, red = command('red-state-reference-reviewed', 1)
+assert any('state reference' in x.get('Output', '') and 'rows want5' in x['Output'] for x in red)
+prefix = 'TestChemicalHomeostasisStatePublic/'
+names = {'/'.join(x) for x in itertools.product(['mixed', 'lif'], ['controller', 'neural'], ['sum', 'max'], ['open-positive', 'open-negative', 'gain-upper', 'threshold-upper', 'floor'])}
+cases = {prefix + n for n in names}
+routes = {n + '/gated' + gated + '/partition' + str(mask) for n in cases for gated in ['false', 'true'] for mask in range(8)}
+refusals = {'TestChemicalHomeostasisStateFreshNeuralRefusal/' + n + '/gated' + gated for n in names if '/neural/' in n for gated in ['false', 'true']}
+processes = {'TestChemicalHomeostasisStateFreshProcess/' + n + '/split' + str(split) for n in names if n.endswith('/open-positive') for split in [1, 3]}
+assert (len(cases), len(routes), len(refusals), len(processes)) == (40, 640, 40, 16)
+modes = {}
+for mode in ['ordinary', 'race']:
+    _, events = command('reference-final-v4-' + mode, 0)
+    ts = terminal(events)
+    new = {k: v for k, v in ts.items() if k.startswith('TestChemicalHomeostasisState')}
+    assert len(ts) == 774 and collections.Counter(ts.values()) == {'pass': 773, 'skip': 1}
+    assert len(new) == 773 and new['TestChemicalHomeostasisStateProcessWorker'] == 'skip'
+    assert all(v == 'pass' for k, v in new.items() if k != 'TestChemicalHomeostasisStateProcessWorker')
+    assert {n for n in ts if n.startswith(prefix) and '/partition' not in n} == cases
+    assert {n for n in ts if n.startswith(prefix) and '/partition' in n} == routes
+    assert {n for n in ts if n.startswith('TestChemicalHomeostasisStateFreshNeuralRefusal/') and '/gated' in n} == refusals
+    assert {n for n in ts if n.startswith('TestChemicalHomeostasisStateFreshProcess/')} == processes
+    assert len([n for n in ts if n.startswith('TestChemicalHomeostasisStateAtomic/')]) == 8
+    assert {n for n in ts if n.startswith('TestChemicalHomeostasisStateHand/')} == {'TestChemicalHomeostasisStateHand/enabledtrue', 'TestChemicalHomeostasisStateHand/enabledfalse'}
+    controls = [float(m.group(1)) for x in events if (m := re.search(r'expression state control max_readout_abs=([0-9.eE+-]+)', x.get('Output', '')))]
+    assert len(controls) == 8 and all(math.isfinite(v) and v > 1e-6 for v in controls)
+    assert sum('fresh-process case=' in x.get('Output', '') for x in events) == 16
+    _, old_events = command('legacy-before-' + mode, 0)
+    old, now = legacy(old_events), legacy(events)
+    assert len(old) == 7 and old == now
+    _, wrong = command('wrong-snapshot-' + mode, 1)
+    wt = terminal(wrong)
+    assert wt == {'TestChemicalHomeostasisStateHand/enabledtrue': 'fail', 'TestChemicalHomeostasisStateHand': 'fail'}
+    assert sum('hand homeostasis[0][1]=0.125 want0' in x.get('Output', '') for x in wrong) == 1
+    _, leak = command('expression-source-leak-v2-' + mode, 1)
+    lt = terminal(leak)
+    assert set(lt) == {prefix[:-1]} | cases | routes
+    assert {n for n in routes if lt[n] == 'pass'} == {n for n in routes if n.endswith('/partition7')}
+    assert all(lt[n] == 'fail' for n in routes if not n.endswith('/partition7'))
+    mismatch = [x for x in leak if x.get('Test') in routes and 'persistent readout[' in x.get('Output', '')]
+    assert mismatch and lt[mismatch[0]['Test']] == 'fail'
+    modes[mode] = {'new_terminal_events': 773, 'new_pass': 772, 'explicit_parent_worker_skip': 1, 'cases': 40, 'persistent_routes': 640, 'fresh_neural_refusals': 40, 'fresh_processes': 16, 'atomic_cases': 8, 'rejections_per_atomic_case': 5, 'expression_controls': 8, 'minimum_expression_readout_difference': min(controls), 'legacy_records': 7, 'legacy_preserved_within_build': True, 'legacy_records_sha256': hashlib.sha256('\n'.join(now).encode()).hexdigest(), 'mutations': {'wrong_snapshot': {'rejected': True, 'actual_h': .125, 'want_h': 0, 'receipt': 'wrong-snapshot-' + mode + '.json'}, 'expression_source_leak': {'rejected': True, 'failed_partition_leaves': 560, 'one_row_partition_controls_pass': 80, 'first_failure_test': mismatch[0]['Test'], 'first_failure_output': mismatch[0]['Output'].strip(), 'receipt': 'expression-source-leak-v2-' + mode + '.json'}}, 'command_receipt': 'reference-final-v4-' + mode + '.json'}
+result = {'all_passed': True, 'modes': modes, 'production_changes': False, 'red_receipt': 'red-state-reference-reviewed.json', 'root_test_corrections': ['contract-review.json', 'warmup-width-review.json'], 'original_checks_preserved': 'root-checks-before-contract-review.go.txt', 'corrected_checks': 'checks-after-contract-review.json', 'limits': ['Four chemical steps, two nodes, four edges, one source and one channel', 'Neural-source success requires one unmodulated warmup row; fresh first-step refusal is separately checked', 'Controller starts with a fresh zero window; arbitrary supplied source history is not covered', 'Zero-gated inference only; no plastic update, trained optimizer or in-call arbitrary cancellation claim', 'No real task quality, biological calibration or absolute zero-bug conclusion']}
+with (E / 'diagnostic-verification.json').open('x') as f:
+    json.dump(result, f, indent=2)
+    f.write('\n')
+with (E / 'environment.json').open('x') as f:
+    json.dump({'platform': platform.platform(), 'machine': platform.machine(), 'baseline': read(E / 'baseline.json')['head'], 'command_settings': 'command-environment.json'}, f, indent=2)
+    f.write('\n')
+print(json.dumps({'all_passed': True, 'modes': modes}))

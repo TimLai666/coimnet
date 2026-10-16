@@ -1,0 +1,1379 @@
+package learning_test
+
+import (
+	"context"
+	"math"
+	"strconv"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+)
+
+// This file is deliberately a reference implementation rather than a second
+// route through the production reverse pass.  The only production operations
+// used by the tests are the public Network forward and LossGradientFrom
+// entrypoints.  In particular, the reference does not call dynamics or
+// modulation forward/backward helpers.
+
+const (
+	mixedReferenceSteps  = 4
+	mixedReferenceNodes  = 2
+	mixedReferenceInputs = 2
+	mixedReferenceEdges  = 4
+)
+
+type mixedReferenceCase struct {
+	name       string
+	source     string
+	variant    string
+	config     learning.Config
+	parameters learning.Parameters
+	input      [][]float64
+	upstream   [][]float64
+}
+
+func TestMixedChemicalReference(t *testing.T) {
+	var neuralNormalGradient learning.Gradient
+	var neuralNormalPrediction [][]float64
+	for _, source := range []string{"controller", "neural"} {
+		for _, variant := range []string{"normal", "floor", "saturation"} {
+			fixture := mixedReferenceFixture(source, variant)
+			t.Run(fixture.name, func(t *testing.T) {
+				got, prediction := runMixedReference(t, fixture)
+				if source == "neural" && variant == "normal" {
+					neuralNormalGradient = got
+					neuralNormalPrediction = prediction
+				}
+			})
+		}
+	}
+
+	// A nil chemical episode is the control path.  It uses exactly the same
+	// mixed core and boundary tensors, which makes the chemistry contribution
+	// observable rather than allowing a reference to agree only by accident.
+	fixture := mixedReferenceFixture("neural", "normal")
+	fixture.name = "nil-chemistry"
+	fixture.config.Chemistry = nil
+	fixture.parameters.ThetaRaw = []float64{-0.1}
+	nilGradient, nilPrediction := runMixedReference(t, fixture)
+	assertChemicalVsNilDifference(t, neuralNormalGradient, neuralNormalPrediction, nilGradient, nilPrediction)
+}
+
+func TestMixedChemicalReferencePrimitives(t *testing.T) {
+	const n = 1
+	point := dVar(0.37, 0, n)
+	hill := dHill(point, 0.23, 1.4)
+	h := 1e-6
+	finiteDifference := (hillValue(0.37+h, 0.23, 1.4) - hillValue(0.37-h, 0.23, 1.4)) / (2 * h)
+	if math.Abs(hill.d[0]-finiteDifference) > 2e-9 {
+		t.Fatalf("dual Hill derivative = %.16g, finite difference = %.16g", hill.d[0], finiteDifference)
+	}
+
+	logTau := dVar(-0.2, 0, n)
+	lambda, alpha := dLeak(logTau, 0.65)
+	tau := math.Exp(-0.2)
+	wantLambda := math.Exp(-0.65 / tau)
+	wantAlpha := -math.Expm1(-0.65 / tau)
+	if lambda.v != wantLambda || alpha.v != wantAlpha {
+		t.Fatalf("leak values = (%g,%g), want (%g,%g)", lambda.v, alpha.v, wantLambda, wantAlpha)
+	}
+	fdLambda := (math.Exp(-0.65/math.Exp(-0.2+h)) - math.Exp(-0.65/math.Exp(-0.2-h))) / (2 * h)
+	if math.Abs(lambda.d[0]-fdLambda) > 2e-9 {
+		t.Fatalf("dual lambda derivative = %.16g, finite difference = %.16g", lambda.d[0], fdLambda)
+	}
+
+	u := dVar(0.17, 0, n)
+	event := dHardEvent(u, 2.5)
+	wantPsi := 1 / math.Pow(1+2.5*math.Abs(0.17), 2)
+	if event.v != 1 || event.d[0] != wantPsi {
+		t.Fatalf("hard event = (%g,%g), want (1,%g)", event.v, event.d[0], wantPsi)
+	}
+}
+
+func mixedReferenceFixture(source, variant string) mixedReferenceCase {
+	mixed := dynamics.MixedConfig{
+		Nodes:    mixedReferenceNodes,
+		Sources:  []int{0, 1, 0, 1},
+		Targets:  []int{1, 0, 0, 1},
+		Delays:   []int{0, 1, 0, 1},
+		DT:       0.65,
+		NodeRule: []uint8{dynamics.RuleContinuous, dynamics.RuleLIF},
+		Continuous: dynamics.ContinuousRule{
+			Activation: "tanh",
+		},
+		LIF: dynamics.LIFRule{
+			TauSyn:          0.9,
+			ThetaMin:        0.15,
+			ThetaMax:        1.2,
+			VReset:          -0.25,
+			RefractorySteps: 1,
+			Adaptation: dynamics.LIFAdaptation{
+				Enabled:  true,
+				TauAdapt: 1.8,
+				Beta:     0.11,
+			},
+			Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 2.5},
+		},
+	}
+
+	input := [][]float64{
+		{0.70, -0.40},
+		{-0.20, 0.60},
+		{0.50, 0.30},
+		{-0.45, 0.20},
+	}
+	upstream := [][]float64{
+		{0.37, -0.21},
+		{-0.11, 0.29},
+		{0.23, 0.17},
+		{-0.19, 0.31},
+	}
+
+	chemistry := modulation.Chemistry{
+		Regions:  2,
+		Channels: 1,
+		DT:       0.58,
+		Tau:      []float64{1.7},
+		Transport: &modulation.Transport{Fraction: [][]float64{
+			{0, 0.20},
+			{0.35, 0},
+		}},
+	}
+	controller := &modulation.Controller{
+		Inputs: modulation.ControllerInputs{SummaryWindow: 2},
+		Nodes:  2, Hidden: 1, Channel: 0,
+		Parameters: []float64{0.55, -0.31, 0.12, 0.80, -0.20},
+	}
+	sourceSpec := modulation.SourceSpec{
+		Kind: modulation.SourceController, Channel: 0, Controller: controller,
+	}
+	if source == "neural" {
+		sourceSpec = modulation.SourceSpec{
+			Kind: modulation.SourceNeuralActivity, Channel: 0,
+			Neural: &modulation.NeuralActivity{
+				Nodes: []int{0, 1}, SetName: "mixed-reference", Gain: 1.25, Channel: 0,
+			},
+		}
+	}
+
+	receptorLocation0 := &modulation.ReceptorLocation{
+		Region: 1, Compartment: "postsynaptic", AnatomicalLocation: "reference-region-1",
+		Evidence: "bounded-test-fixture", MeasurementKind: "declared-engineering",
+		MappingVersion: "mixed-reference/v1",
+	}
+	receptorLocation1 := &modulation.ReceptorLocation{
+		Region: 0, Compartment: "dendrite", AnatomicalLocation: "reference-region-0",
+		Evidence: "bounded-test-fixture", MeasurementKind: "declared-engineering",
+		MappingVersion: "mixed-reference/v1",
+	}
+	receptors := modulation.Receptors{Records: []modulation.Receptor{
+		{
+			Cells: []int{0, 1}, Signal: "fixture-sensitivity", Channel: 0,
+			Status: modulation.StatusHypothesized, Kd: 0.23, N: 1.4,
+			Evidence: "bounded-test-fixture", MeasurementKind: "declared-engineering",
+			MappingVersion: "mixed-reference/v1", Location: receptorLocation0,
+		},
+		{
+			Cells: []int{1}, Signal: "fixture-threshold", Channel: 0,
+			Status: modulation.StatusHypothesized, Kd: 0.19, N: 1.2,
+			Evidence: "bounded-test-fixture", MeasurementKind: "declared-engineering",
+			MappingVersion: "mixed-reference/v1", Location: receptorLocation1,
+		},
+	}}
+
+	effects := []modulation.Effect{
+		{
+			Kind: modulation.EffectSensitivity, Receptor: 0,
+			GammaScale: 0.8, BetaScale: 0.18, GammaMin: 0.55, GammaMax: 1.8, BetaAbsMax: 0.6,
+		},
+		{Kind: modulation.EffectThreshold, Receptor: 1, ThetaScale: 0.35, ThetaAbsMax: 0.8},
+	}
+	expression := &learning.ExpressionGain{Nodes: []int{0}, Receptor: 0, Scale: 0.7, Min: 0.5, Max: 1.7}
+	switch variant {
+	case "floor":
+		effects[1].ThetaScale = -4
+		effects[1].ThetaAbsMax = 1
+	case "saturation":
+		effects[0].GammaScale = 8
+		effects[0].BetaScale = 5
+		effects[0].GammaMin = 0.9
+		effects[0].GammaMax = 1.000001
+		effects[0].BetaAbsMax = 0.000001
+		effects[1].ThetaScale = 4
+		effects[1].ThetaAbsMax = 0.000001
+		expression.Min = 0.999999
+		expression.Max = 1.000001
+	}
+
+	episode := &learning.ChemicalEpisode{
+		Part: learning.ChemicalPart{
+			Config: modulation.ChemistryConfig{
+				Chemistry: chemistry,
+				Sources:   []modulation.SourceSpec{sourceSpec},
+				Receptors: receptors,
+				Effects:   effects,
+				Regions:   modulation.RegionAssignment{NodeRegion: []int{0, 1}},
+			},
+			State:      modulation.ChemistryState{Concentration: [][]float64{{0.18}, {0.31}}},
+			Resources:  map[string]float64{},
+			Expression: expression,
+		},
+		SourceStep:      3,
+		InitialActivity: []float64{0.22, -0.08},
+	}
+
+	config := learning.Config{
+		Mixed: &mixed, InputSize: mixedReferenceInputs, OutputSize: 2,
+		ReadoutNodes: []int{0, 1}, InputNodes: []int{0, 1},
+		ReadoutEveryStep: true, Chemistry: episode,
+	}
+	if variant == "nil" {
+		config.Chemistry = nil
+	}
+	parameters := learning.Parameters{
+		Core: dynamics.Parameters{
+			Weights: []float64{0.32, -0.27, 0.11, 0.18},
+			Bias:    []float64{0.03, 1.80},
+			LogTau:  []float64{0.15, -0.20},
+		},
+		ThetaRaw: []float64{-0.10},
+		Encoder:  []float64{0.43, -0.31, 0.27, 0.36},
+		Readout:  []float64{0.61, -0.22, 0.17, 0.48},
+	}
+	return mixedReferenceCase{
+		name:       source + "-" + variant,
+		source:     source,
+		variant:    variant,
+		config:     config,
+		parameters: parameters,
+		input:      input,
+		upstream:   upstream,
+	}
+}
+
+func runMixedReference(t *testing.T, fixture mixedReferenceCase) (learning.Gradient, [][]float64) {
+	t.Helper()
+	network, err := learning.NewNetwork(fixture.config)
+	if err != nil {
+		t.Fatalf("NewNetwork: %v", err)
+	}
+	got, err := network.LossGradientFrom(context.Background(), fixture.parameters, fixture.input, fixture.upstream, 0)
+	if err != nil {
+		t.Fatalf("LossGradientFrom: %v", err)
+	}
+	want, outputs, coverage := mixedReferenceGradient(fixture)
+	compareMixedGradient(t, fixture.name, got, want)
+	t.Logf("reference=%s coverage floor=%d refractory=%d effect_saturation=%d expression_active=%d expression_saturation=%d", fixture.name, coverage.floorSteps, coverage.refractorySteps, coverage.effectSaturation, coverage.expressionActive, coverage.expressionSaturation)
+	if fixture.config.Chemistry != nil {
+		if coverage.refractorySteps == 0 {
+			t.Fatal("fixture did not enter the refractory hold/ignore branch")
+		}
+		if coverage.expressionActive == 0 {
+			t.Fatal("fixture did not apply a non-neutral expression gain")
+		}
+		switch fixture.variant {
+		case "floor":
+			if coverage.floorSteps == 0 {
+				t.Fatal("floor fixture did not reach the threshold floor")
+			}
+		case "saturation":
+			if coverage.effectSaturation == 0 || coverage.expressionSaturation == 0 {
+				t.Fatalf("saturation fixture did not clamp effects and expression: effects=%d expression=%d", coverage.effectSaturation, coverage.expressionSaturation)
+			}
+		}
+	}
+
+	prediction, err := network.PredictAll(context.Background(), fixture.parameters, fixture.input)
+	if err != nil {
+		t.Fatalf("PredictAll: %v", err)
+	}
+	if len(prediction) != len(outputs) {
+		t.Fatalf("prediction has %d rows, reference has %d", len(prediction), len(outputs))
+	}
+	maxOutput := 0.0
+	for step, row := range prediction {
+		if len(row) != len(outputs[step]) {
+			t.Fatalf("prediction[%d] has %d values, reference has %d", step, len(row), len(outputs[step]))
+		}
+		for j, value := range row {
+			if !finiteReference(value) || !finiteReference(outputs[step][j]) {
+				t.Fatalf("prediction[%d][%d] or reference is non-finite: got=%v reference=%v", step, j, value, outputs[step][j])
+			}
+			delta := math.Abs(value - outputs[step][j])
+			if delta > maxOutput {
+				maxOutput = delta
+			}
+			if delta > 1e-5+1e-4*math.Abs(outputs[step][j]) {
+				t.Fatalf("prediction[%d][%d] = %.9g, reference = %.9g, abs=%.3g", step, j, value, outputs[step][j], delta)
+			}
+		}
+	}
+	t.Logf("reference=%s max_prediction_abs=%.9g", fixture.name, maxOutput)
+	return got, prediction
+}
+
+func assertChemicalVsNilDifference(t *testing.T, chemical learning.Gradient, chemicalPrediction [][]float64, nilGradient learning.Gradient, nilPrediction [][]float64) {
+	t.Helper()
+	maxPredictionDifference := 0.0
+	for step := range chemicalPrediction {
+		for column := range chemicalPrediction[step] {
+			difference := math.Abs(chemicalPrediction[step][column] - nilPrediction[step][column])
+			if difference > maxPredictionDifference {
+				maxPredictionDifference = difference
+			}
+		}
+	}
+	maxGradientDifference := 0.0
+	update := func(a, b float64) {
+		difference := math.Abs(a - b)
+		if difference > maxGradientDifference {
+			maxGradientDifference = difference
+		}
+	}
+	for i := range chemical.Core.Weights {
+		update(chemical.Core.Weights[i], nilGradient.Core.Weights[i])
+	}
+	for i := range chemical.Core.Bias {
+		update(chemical.Core.Bias[i], nilGradient.Core.Bias[i])
+	}
+	for i := range chemical.Core.LogTau {
+		update(chemical.Core.LogTau[i], nilGradient.Core.LogTau[i])
+	}
+	for i := range chemical.ThetaRaw {
+		update(chemical.ThetaRaw[i], nilGradient.ThetaRaw[i])
+	}
+	for i := range chemical.Encoder {
+		update(chemical.Encoder[i], nilGradient.Encoder[i])
+	}
+	for i := range chemical.Readout {
+		update(chemical.Readout[i], nilGradient.Readout[i])
+	}
+	for step := range chemical.Core.Inputs {
+		for node := range chemical.Core.Inputs[step] {
+			update(chemical.Core.Inputs[step][node], nilGradient.Core.Inputs[step][node])
+		}
+	}
+	if !(maxPredictionDifference > 1e-9) || !(maxGradientDifference > 1e-9) {
+		t.Fatalf("normal chemistry did not differ from nil chemistry: max_prediction=%.9g max_gradient=%.9g", maxPredictionDifference, maxGradientDifference)
+	}
+	t.Logf("normal chemistry vs nil chemistry max_prediction_abs=%.9g max_gradient_abs=%.9g", maxPredictionDifference, maxGradientDifference)
+}
+
+type mixedReferenceExpected struct {
+	coreWeights []float64
+	coreBias    []float64
+	coreLogTau  []float64
+	thetaRaw    []float64
+	coreInputs  [][]float64
+	coreInitial []float64
+	encoder     []float64
+	readout     []float64
+	inputs      [][]float64
+}
+
+type mixedReferenceCoverage struct {
+	floorSteps           int
+	refractorySteps      int
+	effectSaturation     int
+	expressionActive     int
+	expressionSaturation int
+}
+
+func compareMixedGradient(t *testing.T, name string, got learning.Gradient, want mixedReferenceExpected) {
+	t.Helper()
+	if len(got.Core.Weights) != len(want.coreWeights) || len(got.Core.Bias) != len(want.coreBias) || len(got.Core.LogTau) != len(want.coreLogTau) || len(got.ThetaRaw) != len(want.thetaRaw) || len(got.Encoder) != len(want.encoder) || len(got.Readout) != len(want.readout) || len(got.Core.Initial) != len(want.coreInitial) {
+		t.Fatalf("gradient vector shape mismatch: got weights=%d bias=%d log_tau=%d theta=%d encoder=%d readout=%d initial=%d, reference weights=%d bias=%d log_tau=%d theta=%d encoder=%d readout=%d initial=%d", len(got.Core.Weights), len(got.Core.Bias), len(got.Core.LogTau), len(got.ThetaRaw), len(got.Encoder), len(got.Readout), len(got.Core.Initial), len(want.coreWeights), len(want.coreBias), len(want.coreLogTau), len(want.thetaRaw), len(want.encoder), len(want.readout), len(want.coreInitial))
+	}
+	if len(got.Core.Inputs) != len(want.coreInputs) || len(got.Inputs) != len(want.inputs) {
+		t.Fatalf("gradient row shape mismatch: got core_inputs=%d inputs=%d, reference core_inputs=%d inputs=%d", len(got.Core.Inputs), len(got.Inputs), len(want.coreInputs), len(want.inputs))
+	}
+	for row, values := range got.Core.Inputs {
+		if len(values) != len(want.coreInputs[row]) {
+			t.Fatalf("core.inputs[%d] has %d values, reference has %d", row, len(values), len(want.coreInputs[row]))
+		}
+	}
+	for row, values := range got.Inputs {
+		if len(values) != len(want.inputs[row]) {
+			t.Fatalf("inputs[%d] has %d values, reference has %d", row, len(values), len(want.inputs[row]))
+		}
+	}
+	maxAbs, maxRel := 0.0, 0.0
+	check := func(label string, got, want float64) {
+		if !finiteReference(got) || !finiteReference(want) {
+			t.Fatalf("%s is non-finite: got=%v reference=%v", label, got, want)
+		}
+		abs := math.Abs(got - want)
+		rel := abs / math.Max(1, math.Abs(want))
+		if abs > maxAbs {
+			maxAbs = abs
+		}
+		if rel > maxRel {
+			maxRel = rel
+		}
+		if abs > 1e-5+1e-4*math.Abs(want) {
+			t.Fatalf("%s: got %.12g, reference %.12g, abs %.4g rel %.4g", label, got, want, abs, rel)
+		}
+	}
+	for i, value := range got.Core.Weights {
+		check("core.weights["+itoa(i)+"]", value, want.coreWeights[i])
+	}
+	for i, value := range got.Core.Bias {
+		check("core.bias["+itoa(i)+"]", value, want.coreBias[i])
+	}
+	for i, value := range got.Core.LogTau {
+		check("core.log_tau["+itoa(i)+"]", value, want.coreLogTau[i])
+	}
+	for i, value := range got.ThetaRaw {
+		check("theta_raw["+itoa(i)+"]", value, want.thetaRaw[i])
+	}
+	for t, row := range got.Core.Inputs {
+		for i, value := range row {
+			check("core.inputs["+itoa(t)+"]["+itoa(i)+"]", value, want.coreInputs[t][i])
+		}
+	}
+	for i, value := range got.Encoder {
+		check("encoder["+itoa(i)+"]", value, want.encoder[i])
+	}
+	for i, value := range got.Readout {
+		check("readout["+itoa(i)+"]", value, want.readout[i])
+	}
+	for t, row := range got.Inputs {
+		for i, value := range row {
+			check("inputs["+itoa(t)+"]["+itoa(i)+"]", value, want.inputs[t][i])
+		}
+	}
+	for i, value := range got.Core.Initial {
+		check("core.initial["+itoa(i)+"]", value, want.coreInitial[i])
+	}
+	t.Logf("reference=%s max_gradient_abs=%.9g max_gradient_relative=%.9g", name, maxAbs, maxRel)
+}
+
+// The reference's number of variables consists of the core parameters and the
+// already-float32 encoded input. Encoder/readout VJPs are calculated below at
+// their own Insyra boundary, exactly as Network.lossGradientReverse does.
+func mixedReferenceGradient(fixture mixedReferenceCase) (mixedReferenceExpected, [][]float64, mixedReferenceCoverage) {
+	const (
+		weightBase = 0
+		biasBase   = weightBase + mixedReferenceEdges
+		logTauBase = biasBase + mixedReferenceNodes
+		thetaBase  = logTauBase + mixedReferenceNodes
+	)
+	initialBase := thetaBase + len(fixture.parameters.ThetaRaw)
+	inputBase := initialBase + mixedReferenceNodes
+	variableCount := inputBase + mixedReferenceSteps*mixedReferenceNodes
+	encoded, input32, encoder32 := referenceEncodedInputs(fixture.input, fixture.parameters.Encoder, inputBase)
+	ref := referenceForward(fixture, encoded, variableCount, weightBase, biasBase, logTauBase, thetaBase, initialBase, inputBase)
+
+	h := make([][]float32, mixedReferenceSteps)
+	for t := range h {
+		h[t] = make([]float32, 2)
+		for j := range h[t] {
+			h[t][j] = float32(ref.readout[t][j])
+		}
+	}
+	r32 := make([][]float32, 2)
+	for i := range r32 {
+		r32[i] = []float32{float32(fixture.parameters.Readout[2*i]), float32(fixture.parameters.Readout[2*i+1])}
+	}
+	up32 := make([][]float32, mixedReferenceSteps)
+	for t := range up32 {
+		up32[t] = []float32{float32(fixture.upstream[t][0]), float32(fixture.upstream[t][1])}
+	}
+	dh := f32MatMul(up32, transposeF32(r32))
+
+	for t := 0; t < mixedReferenceSteps; t++ {
+		ref.expressionSeeds[t] = make([]float64, len(ref.occupancy[t]))
+		if fixture.config.Chemistry == nil || fixture.config.Chemistry.Part.Expression == nil {
+			continue
+		}
+		expression := fixture.config.Chemistry.Part.Expression
+		if ref.expressionGain[t] <= expression.Min || ref.expressionGain[t] >= expression.Max {
+			continue
+		}
+		metadata := referenceRecordMetadata(fixture.config.Chemistry)
+		count := 0
+		for _, record := range metadata {
+			if record.receptor == expression.Receptor {
+				count++
+			}
+		}
+		if count == 0 {
+			continue
+		}
+		seed := 0.0
+		for _, node := range expression.Nodes {
+			seed += float64(dh[t][node]) * ref.rawOutput[t][node].v
+		}
+		seed *= expression.Scale / float64(count)
+		for index, record := range metadata {
+			if record.receptor == expression.Receptor {
+				ref.expressionSeeds[t][index] = seed
+			}
+		}
+	}
+
+	objective := dConst(0, variableCount)
+	for t := 0; t < mixedReferenceSteps; t++ {
+		for node := 0; node < mixedReferenceNodes; node++ {
+			up := float64(dh[t][node])
+			if ref.expressionNode[node] {
+				up *= ref.expressionGain[t]
+			}
+			objective = objective.add(ref.rawOutput[t][node].scale(up))
+		}
+		for i, seed := range ref.expressionSeeds[t] {
+			objective = objective.add(ref.occupancy[t][i].scale(seed))
+		}
+	}
+
+	want := mixedReferenceExpected{
+		coreWeights: append([]float64(nil), objective.d[weightBase:weightBase+mixedReferenceEdges]...),
+		coreBias:    append([]float64(nil), objective.d[biasBase:biasBase+mixedReferenceNodes]...),
+		coreLogTau:  append([]float64(nil), objective.d[logTauBase:logTauBase+mixedReferenceNodes]...),
+		thetaRaw:    append([]float64(nil), objective.d[thetaBase:initialBase]...),
+		coreInputs:  make([][]float64, mixedReferenceSteps),
+		coreInitial: make([]float64, mixedReferenceNodes),
+		encoder:     make([]float64, len(fixture.parameters.Encoder)),
+		readout:     make([]float64, len(fixture.parameters.Readout)),
+		inputs:      make([][]float64, mixedReferenceSteps),
+	}
+	for t := range want.coreInputs {
+		want.coreInputs[t] = append([]float64(nil), objective.d[inputBase+t*mixedReferenceNodes:inputBase+(t+1)*mixedReferenceNodes]...)
+	}
+	for i := range want.coreInitial {
+		want.coreInitial[i] = objective.d[initialBase+i]
+	}
+	for i := range want.readout {
+		row, column := i/2, i%2
+		var sum float32
+		for t := 0; t < mixedReferenceSteps; t++ {
+			sum += h[t][row] * up32[t][column]
+		}
+		want.readout[i] = float64(sum)
+	}
+	coreSeed := make([][]float32, mixedReferenceSteps)
+	for t := range coreSeed {
+		coreSeed[t] = make([]float32, mixedReferenceNodes)
+		for node := range coreSeed[t] {
+			coreSeed[t][node] = float32(objective.d[inputBase+t*mixedReferenceNodes+node])
+		}
+	}
+	for i := range want.encoder {
+		row, column := i/2, i%2
+		var sum float32
+		for t := 0; t < mixedReferenceSteps; t++ {
+			sum += input32[t][row] * coreSeed[t][column]
+		}
+		want.encoder[i] = float64(sum)
+	}
+	for t := range want.inputs {
+		want.inputs[t] = make([]float64, mixedReferenceInputs)
+		for i := 0; i < mixedReferenceInputs; i++ {
+			var sum float32
+			for j := 0; j < mixedReferenceNodes; j++ {
+				sum += coreSeed[t][j] * encoder32[i][j]
+			}
+			want.inputs[t][i] = float64(sum)
+		}
+	}
+	prediction32 := f32MatMul(h, r32)
+	prediction := make([][]float64, len(prediction32))
+	for t := range prediction32 {
+		prediction[t] = make([]float64, len(prediction32[t]))
+		for j, value := range prediction32[t] {
+			prediction[t][j] = float64(value)
+		}
+	}
+	return want, prediction, mixedReferenceCoverage{
+		floorSteps:           ref.floorSteps,
+		refractorySteps:      ref.refractorySteps,
+		effectSaturation:     ref.effectSaturation,
+		expressionActive:     ref.expressionActive,
+		expressionSaturation: ref.expressionSaturation,
+	}
+}
+
+type mixedReferenceForward struct {
+	voltage              [][]dual
+	adaptation           [][]dual
+	refractory           [][]int
+	concentration        [][][]dual
+	rate                 [][]float64
+	homeostasis          [][]float64
+	rawOutput            [][]dual
+	readout              [][]float64
+	occupancy            [][]dual
+	expressionSeeds      [][]float64
+	expressionGain       []float64
+	expressionNode       []bool
+	floorSteps           int
+	refractorySteps      int
+	effectSaturation     int
+	expressionActive     int
+	expressionSaturation int
+}
+
+func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBase, biasBase, logTauBase, thetaBase, initialBase, inputBase int) mixedReferenceForward {
+	mixed := fixture.config.Mixed
+	var mixedValue dynamics.MixedConfig
+	if mixed == nil {
+		lif := fixture.config.LIF
+		if lif == nil {
+			panic("reference fixture has neither Mixed nor LIF config")
+		}
+		allNodesLIF := make([]uint8, lif.Nodes)
+		for i := range allNodesLIF {
+			allNodesLIF[i] = dynamics.RuleLIF
+		}
+		mixedValue = dynamics.MixedConfig{
+			Nodes:    lif.Nodes,
+			Sources:  lif.Sources,
+			Targets:  lif.Targets,
+			Delays:   lif.Delays,
+			DT:       lif.DT,
+			NodeRule: allNodesLIF,
+			LIF: dynamics.LIFRule{
+				TauSyn:          lif.TauSyn,
+				ThetaMin:        lif.ThetaMin,
+				ThetaMax:        lif.ThetaMax,
+				VReset:          lif.VReset,
+				RefractorySteps: lif.RefractorySteps,
+				Adaptation:      lif.Adaptation,
+				Homeostasis:     lif.Homeostasis,
+				Surrogate:       lif.Surrogate,
+			},
+		}
+		mixed = &mixedValue
+	}
+	if mixed.Nodes != mixedReferenceNodes || len(mixed.NodeRule) != mixedReferenceNodes {
+		panic("reference fixture node shape is unsupported")
+	}
+	thetaIndexByNode := make([]int, mixedReferenceNodes)
+	thetaCount := 0
+	for node, rule := range mixed.NodeRule {
+		thetaIndexByNode[node] = -1
+		switch rule {
+		case dynamics.RuleContinuous:
+		case dynamics.RuleLIF:
+			thetaIndexByNode[node] = thetaCount
+			thetaCount++
+		default:
+			panic("reference fixture has an unsupported node rule")
+		}
+	}
+	if thetaCount != len(fixture.parameters.ThetaRaw) {
+		panic("reference fixture ThetaRaw shape is unsupported")
+	}
+	steps := len(encoded)
+	stabilising := mixed.LIF.Homeostasis != nil && mixed.LIF.Homeostasis.Enabled
+	var rate, homeostasis [][]float64
+	var updateHomeostasis func(step, node int, event dual)
+	if stabilising {
+		rate = make([][]float64, steps+1)
+		homeostasis = make([][]float64, steps+1)
+		for step := 0; step <= steps; step++ {
+			rate[step] = make([]float64, mixedReferenceNodes)
+			homeostasis[step] = make([]float64, mixedReferenceNodes)
+		}
+		h := mixed.LIF.Homeostasis
+		updateHomeostasis = func(step, node int, event dual) {
+			previousRate := rate[step][node]
+			nextRate := previousRate + mixed.DT/h.TauRate*(event.v-previousRate)
+			nextHomeostasis := homeostasis[step][node] + h.Eta*mixed.DT*(nextRate-h.TargetRate)
+			if nextHomeostasis < 0 {
+				nextHomeostasis = 0
+			} else if nextHomeostasis > h.HMax {
+				nextHomeostasis = h.HMax
+			}
+			rate[step+1][node] = nextRate
+			homeostasis[step+1][node] = nextHomeostasis
+		}
+	}
+	out := make([][]dual, steps+1)
+	voltage := make([][]dual, steps+1)
+	adapt := make([][]dual, steps+1)
+	refract := make([][]int, steps+1)
+	for t := 0; t <= steps; t++ {
+		out[t] = make([]dual, mixedReferenceNodes)
+		voltage[t] = make([]dual, mixedReferenceNodes)
+		adapt[t] = make([]dual, mixedReferenceNodes)
+		refract[t] = make([]int, mixedReferenceNodes)
+		for i := 0; i < mixedReferenceNodes; i++ {
+			out[t][i] = dConst(0, n)
+			voltage[t][i] = dConst(0, n)
+			adapt[t][i] = dConst(0, n)
+		}
+	}
+	for i := 0; i < mixedReferenceNodes; i++ {
+		voltage[0][i] = dVar(0, initialBase+i, n)
+		if mixed.NodeRule[i] == dynamics.RuleContinuous {
+			out[0][i] = dTanh(voltage[0][i])
+		}
+	}
+	rawOutput := make([][]dual, steps)
+	readout := make([][]float64, steps)
+	occupancy := make([][]dual, steps)
+	expressionSeeds := make([][]float64, steps)
+	expressionGain := make([]float64, steps)
+	expressionNode := make([]bool, mixedReferenceNodes)
+	coverage := mixedReferenceCoverage{}
+	if fixture.config.Chemistry != nil && fixture.config.Chemistry.Part.Expression != nil {
+		for _, node := range fixture.config.Chemistry.Part.Expression.Nodes {
+			expressionNode[node] = true
+		}
+	}
+
+	chem := fixture.config.Chemistry
+	var state [][]dual
+	var ring [][]dual
+	filled := 0
+	if chem != nil {
+		state = make([][]dual, len(chem.Part.State.Concentration))
+		for r := range state {
+			state[r] = make([]dual, len(chem.Part.State.Concentration[r]))
+			for c := range state[r] {
+				state[r][c] = dConst(chem.Part.State.Concentration[r][c], n)
+			}
+		}
+		if controller := chemistryController(chem); controller != nil {
+			ring = make([][]dual, controller.Inputs.SummaryWindow)
+			for i := range ring {
+				ring[i] = make([]dual, controller.Nodes)
+				for j := range ring[i] {
+					ring[i][j] = dConst(0, n)
+				}
+			}
+		}
+	}
+
+	for t := 0; t < steps; t++ {
+		rawDrive := append([]dual(nil), encoded[t]...)
+		for e := 0; e < mixedReferenceEdges; e++ {
+			past := 0
+			if mixed.Delays[e] < t {
+				past = t - mixed.Delays[e]
+			}
+			weight := parameterDual(fixture.parameters.Core.Weights[e], weightBase+e, n)
+			rawDrive[mixed.Targets[e]] = rawDrive[mixed.Targets[e]].add(weight.mul(out[past][mixed.Sources[e]]))
+		}
+
+		var gain, offset, threshold []dual
+		var records []dual
+		if chem != nil {
+			activity := out[t]
+			if t == 0 && chem.InitialActivity != nil {
+				activity = make([]dual, mixedReferenceNodes)
+				for i, value := range chem.InitialActivity {
+					activity[i] = dConst(value, n)
+				}
+			}
+			if ring != nil {
+				observeReferenceRing(ring, activity)
+				filled++
+				if filled > len(ring) {
+					filled = len(ring)
+				}
+			}
+			release := referenceRelease(chem, activity, ring, filled, n)
+			state = referenceChemistryStep(chem, state, release, n)
+			records = referenceOccupancies(chem, state, n)
+			var saturated int
+			gain, offset, threshold, saturated = referenceEffects(chem, records, n)
+			coverage.effectSaturation += saturated
+		} else {
+			gain = make([]dual, mixedReferenceNodes)
+			offset = make([]dual, mixedReferenceNodes)
+			threshold = make([]dual, mixedReferenceNodes)
+			for i := range gain {
+				gain[i], offset[i], threshold[i] = dConst(1, n), dConst(0, n), dConst(0, n)
+			}
+		}
+
+		for i := 0; i < mixedReferenceNodes; i++ {
+			bias := parameterDual(fixture.parameters.Core.Bias[i], biasBase+i, n)
+			current := gain[i].mul(rawDrive[i]).add(offset[i]).add(bias)
+			logTau := parameterDual(fixture.parameters.Core.LogTau[i], logTauBase+i, n)
+			lambda, alpha := dLeak(logTau, mixed.DT)
+			candidate := lambda.mul(voltage[t][i]).add(alpha.mul(current))
+			if mixed.NodeRule[i] == dynamics.RuleContinuous {
+				voltage[t+1][i] = candidate
+				out[t+1][i] = dTanh(candidate)
+				continue
+			}
+
+			thetaIndex := thetaIndexByNode[i]
+			thetaRaw := parameterDual(fixture.parameters.ThetaRaw[thetaIndex], thetaBase+thetaIndex, n)
+			base := dSigmoid(thetaRaw).scale(mixed.LIF.ThetaMax - mixed.LIF.ThetaMin).add(dConst(mixed.LIF.ThetaMin, n))
+			theta := base
+			if mixed.LIF.Adaptation.Enabled {
+				theta = theta.add(adapt[t][i])
+			}
+			if stabilising {
+				theta = theta.add(dConst(homeostasis[t][i], n))
+			}
+			floor := false
+			if threshold[i].v != 0 {
+				shifted := theta.add(threshold[i])
+				if shifted.v <= mixed.LIF.ThetaMin {
+					theta = dConst(mixed.LIF.ThetaMin, n)
+					floor = true
+					coverage.floorSteps++
+				} else {
+					theta = shifted
+				}
+			}
+			if refract[t][i] > 0 {
+				coverage.refractorySteps++
+				voltage[t+1][i] = dConst(mixed.LIF.VReset, n)
+				out[t+1][i] = dConst(0, n).add(out[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.TauSyn)))
+				refract[t+1][i] = refract[t][i] - 1
+				if mixed.LIF.Adaptation.Enabled {
+					adapt[t+1][i] = adapt[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.Adaptation.TauAdapt))
+				}
+				if stabilising {
+					updateHomeostasis(t, i, dConst(0, n))
+				}
+				continue
+			}
+			u := dConst(candidate.v-theta.v, n)
+			if floor {
+				u.d = append([]float64(nil), candidate.d...)
+			} else {
+				u.d = append([]float64(nil), candidate.d...)
+				for j := range u.d {
+					u.d[j] -= theta.d[j]
+				}
+			}
+			spike := dHardEvent(u, mixed.LIF.Surrogate.Scale)
+			reset := 1 - spike.v
+			voltage[t+1][i] = dual{v: reset*candidate.v + spike.v*mixed.LIF.VReset, d: scaleSlice(candidate.d, reset)}
+			if spike.v != 0 {
+				refract[t+1][i] = mixed.LIF.RefractorySteps
+			}
+			out[t+1][i] = out[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.TauSyn)).add(spike)
+			if mixed.LIF.Adaptation.Enabled {
+				adapt[t+1][i] = adapt[t][i].scale(math.Exp(-mixed.DT / mixed.LIF.Adaptation.TauAdapt)).add(spike.scale(mixed.LIF.Adaptation.Beta))
+			}
+			if stabilising {
+				updateHomeostasis(t, i, spike)
+			}
+		}
+		rawOutput[t] = append([]dual(nil), out[t+1]...)
+		occupancy[t] = records
+		readout[t] = make([]float64, mixedReferenceNodes)
+		expressionGain[t] = 1
+		if chem != nil && chem.Part.Expression != nil {
+			expression := chem.Part.Expression
+			metadata := referenceRecordMetadata(chem)
+			sum, count := 0.0, 0
+			for index, record := range metadata {
+				if record.receptor == expression.Receptor {
+					sum += records[index].v
+					count++
+				}
+			}
+			if count > 0 {
+				expressionGain[t] = clampReference(1+expression.Scale*sum/float64(count), expression.Min, expression.Max)
+				if expressionGain[t] != 1 {
+					coverage.expressionActive++
+				}
+				if expressionGain[t] <= expression.Min || expressionGain[t] >= expression.Max {
+					coverage.expressionSaturation++
+				}
+			}
+			for _, node := range expression.Nodes {
+				readout[t][node] = rawOutput[t][node].v * expressionGain[t]
+			}
+		}
+		for i := range readout[t] {
+			if !expressionNode[i] {
+				readout[t][i] = rawOutput[t][i].v
+			}
+		}
+	}
+	return mixedReferenceForward{rate: rate, homeostasis: homeostasis, rawOutput: rawOutput, readout: readout, occupancy: occupancy, expressionSeeds: expressionSeeds, expressionGain: expressionGain, expressionNode: expressionNode,
+		floorSteps: coverage.floorSteps, refractorySteps: coverage.refractorySteps, effectSaturation: coverage.effectSaturation,
+		expressionActive: coverage.expressionActive, expressionSaturation: coverage.expressionSaturation}
+}
+
+type dual struct {
+	v float64
+	d []float64
+}
+
+func dConst(value float64, n int) dual {
+	return dual{v: value, d: make([]float64, n)}
+}
+
+func dVar(value float64, index, n int) dual {
+	x := dConst(value, n)
+	x.d[index] = 1
+	return x
+}
+
+func parameterDual(value float64, index, n int) dual { return dVar(value, index, n) }
+
+func (x dual) add(y dual) dual {
+	z := dual{v: x.v + y.v, d: make([]float64, len(x.d))}
+	for i := range z.d {
+		z.d[i] = x.d[i] + y.d[i]
+	}
+	return z
+}
+
+func (x dual) sub(y dual) dual {
+	z := dual{v: x.v - y.v, d: make([]float64, len(x.d))}
+	for i := range z.d {
+		z.d[i] = x.d[i] - y.d[i]
+	}
+	return z
+}
+
+func (x dual) mul(y dual) dual {
+	z := dual{v: x.v * y.v, d: make([]float64, len(x.d))}
+	for i := range z.d {
+		z.d[i] = x.d[i]*y.v + y.d[i]*x.v
+	}
+	return z
+}
+
+func (x dual) scale(value float64) dual {
+	z := dual{v: x.v * value, d: make([]float64, len(x.d))}
+	for i := range z.d {
+		z.d[i] = x.d[i] * value
+	}
+	return z
+}
+
+func dExp(x dual) dual {
+	v := math.Exp(x.v)
+	return dual{v: v, d: scaleSlice(x.d, v)}
+}
+
+func dTanh(x dual) dual {
+	v := math.Tanh(x.v)
+	return dual{v: v, d: scaleSlice(x.d, 1-v*v)}
+}
+
+func dSigmoid(x dual) dual {
+	var value float64
+	if x.v >= 0 {
+		value = 1 / (1 + math.Exp(-x.v))
+	} else {
+		expValue := math.Exp(x.v)
+		value = expValue / (1 + expValue)
+	}
+	return dual{v: value, d: scaleSlice(x.d, value*(1-value))}
+}
+
+func dHill(c dual, kd, exponent float64) dual {
+	value := hillValue(c.v, kd, exponent)
+	derivative := 0.0
+	if c.v == 0 {
+		if exponent == 1 {
+			derivative = 1 / kd
+		}
+	} else {
+		derivative = exponent * value * (1 - value) / c.v
+	}
+	return dual{v: value, d: scaleSlice(c.d, derivative)}
+}
+
+func hillValue(c, kd, exponent float64) float64 {
+	if c == 0 {
+		return 0
+	}
+	return 1 / (1 + math.Exp(exponent*(math.Log(kd)-math.Log(c))))
+}
+
+func dLeak(logTau dual, dt float64) (dual, dual) {
+	tau := dExp(logTau)
+	ratioValue := dt / tau.v
+	ratio := dual{v: ratioValue, d: scaleSlice(logTau.d, -ratioValue)}
+	lambda := dExp(ratio.scale(-1))
+	alphaValue := -math.Expm1(-ratio.v)
+	return lambda, dual{v: alphaValue, d: scaleSlice(ratio.d, math.Exp(-ratio.v))}
+}
+
+func dHardEvent(u dual, scale float64) dual {
+	value := 0.0
+	if u.v >= 0 {
+		value = 1
+	}
+	psi := 1 / math.Pow(1+scale*math.Abs(u.v), 2)
+	return dual{v: value, d: scaleSlice(u.d, psi)}
+}
+
+func scaleSlice(values []float64, scale float64) []float64 {
+	out := make([]float64, len(values))
+	for i, value := range values {
+		out[i] = value * scale
+	}
+	return out
+}
+
+func clampReference(value, low, high float64) float64 {
+	if value < low {
+		return low
+	}
+	if value > high {
+		return high
+	}
+	return value
+}
+
+func clampDual(value dual, low, high float64) dual {
+	if value.v <= low {
+		return dConst(low, len(value.d))
+	}
+	if value.v >= high {
+		return dConst(high, len(value.d))
+	}
+	return value
+}
+
+type referenceRecord struct {
+	receptor int
+	cell     int
+	region   int
+	channel  int
+}
+
+func referenceRecordMetadata(episode *learning.ChemicalEpisode) []referenceRecord {
+	config := episode.Part.Config
+	metadata := make([]referenceRecord, 0)
+	for receptor, record := range config.Receptors.Records {
+		for _, cell := range record.Cells {
+			region := config.Regions.NodeRegion[cell]
+			if record.Location != nil {
+				region = record.Location.Region
+			}
+			metadata = append(metadata, referenceRecord{receptor: receptor, cell: cell, region: region, channel: record.Channel})
+		}
+	}
+	return metadata
+}
+
+func chemistryController(episode *learning.ChemicalEpisode) *modulation.Controller {
+	for _, source := range episode.Part.Config.Sources {
+		if source.Kind == modulation.SourceController {
+			return source.Controller
+		}
+	}
+	return nil
+}
+
+func observeReferenceRing(ring [][]dual, activity []dual) {
+	if len(ring) == 0 {
+		return
+	}
+	for i := 0; i < len(ring)-1; i++ {
+		ring[i] = ring[i+1]
+	}
+	row := make([]dual, len(activity))
+	for i, value := range activity {
+		row[i] = value
+	}
+	ring[len(ring)-1] = row
+}
+
+func referenceRelease(episode *learning.ChemicalEpisode, activity []dual, ring [][]dual, filled, n int) dual {
+	source := episode.Part.Config.Sources[0]
+	if source.Kind == modulation.SourceNeuralActivity {
+		neural := source.Neural
+		sum := dConst(0, n)
+		for _, node := range neural.Nodes {
+			sum = sum.add(activity[node])
+		}
+		product := sum.scale(neural.Gain / float64(len(neural.Nodes)))
+		if product.v <= 0 {
+			return dConst(0, n)
+		}
+		return product
+	}
+	controller := source.Controller
+	mean, variance := controllerSummaryReference(ring, filled, controller.Nodes, n)
+	x := []dual{mean, variance}
+	width := 2 + len(controller.Inputs.Resources)
+	if controller.Inputs.UseFeedback {
+		width++
+	}
+	bias1 := controller.Hidden * width
+	hidden := make([]dual, controller.Hidden)
+	for j := range hidden {
+		z := dConst(controller.Parameters[bias1+j], n)
+		for i := 0; i < width; i++ {
+			z = z.add(x[i].scale(controller.Parameters[j*width+i]))
+		}
+		hidden[j] = dTanh(z)
+	}
+	z := dConst(controller.Parameters[bias1+2*controller.Hidden], n)
+	for j, value := range hidden {
+		z = z.add(value.scale(controller.Parameters[bias1+controller.Hidden+j]))
+	}
+	if z.v > 30 {
+		return z
+	}
+	return dLogOnePlusExp(z)
+}
+
+func controllerSummaryReference(ring [][]dual, filled, nodes, n int) (dual, dual) {
+	total := float64(len(ring) * nodes)
+	start := len(ring) - filled
+	sum := dConst(0, n)
+	squares := dConst(0, n)
+	for i := start; i < len(ring); i++ {
+		for _, value := range ring[i] {
+			sum = sum.add(value)
+			squares = squares.add(value.mul(value))
+		}
+	}
+	mean := sum.scale(1 / total)
+	raw := squares.scale(1 / total).sub(mean.mul(mean))
+	if raw.v <= 0 {
+		return mean, dConst(0, n)
+	}
+	return mean, raw
+}
+
+func dLogOnePlusExp(x dual) dual {
+	if x.v > 30 {
+		return x
+	}
+	value := math.Log1p(math.Exp(x.v))
+	sigmoid := 1 / (1 + math.Exp(-x.v))
+	return dual{v: value, d: scaleSlice(x.d, sigmoid)}
+}
+
+func referenceChemistryStep(episode *learning.ChemicalEpisode, state [][]dual, release dual, n int) [][]dual {
+	chemistry := episode.Part.Config.Chemistry
+	lambda := math.Exp(-chemistry.DT / chemistry.Tau[0])
+	alpha := 1 - lambda
+	local := make([][]dual, len(state))
+	for r := range state {
+		local[r] = make([]dual, len(state[r]))
+		for channel := range state[r] {
+			local[r][channel] = state[r][channel].scale(lambda).add(release.scale(chemistry.Tau[channel] * alpha))
+		}
+	}
+	if chemistry.Transport == nil {
+		return local
+	}
+	next := make([][]dual, len(local))
+	for sink := range local {
+		next[sink] = make([]dual, len(local[sink]))
+		for channel := range local[sink] {
+			outflow := 0.0
+			for target, fraction := range chemistry.Transport.Fraction[sink] {
+				if target != sink {
+					outflow += fraction
+				}
+			}
+			value := local[sink][channel].scale(1 - outflow)
+			for source := range local {
+				if source == sink {
+					continue
+				}
+				value = value.add(local[source][channel].scale(chemistry.Transport.Fraction[source][sink]))
+			}
+			next[sink][channel] = value
+		}
+	}
+	return next
+}
+
+func referenceOccupancies(episode *learning.ChemicalEpisode, state [][]dual, n int) []dual {
+	metadata := referenceRecordMetadata(episode)
+	occupancy := make([]dual, len(metadata))
+	for index, record := range metadata {
+		declaration := episode.Part.Config.Receptors.Records[record.receptor]
+		occupancy[index] = dHill(state[record.region][record.channel], declaration.Kd, declaration.N)
+	}
+	return occupancy
+}
+
+func referenceEffects(episode *learning.ChemicalEpisode, occupancy []dual, n int) (gain, offset, threshold []dual, saturated int) {
+	config := episode.Part.Config
+	metadata := referenceRecordMetadata(episode)
+	if len(metadata) != len(occupancy) {
+		panic("reference fixture occupancy shape is unsupported")
+	}
+	mix := config.Receptors.Mix
+	if mix == "" {
+		mix = modulation.MixSum
+	}
+	if mix != modulation.MixSum && mix != modulation.MixMax {
+		panic("reference fixture uses an unsupported effect mix")
+	}
+	type effectGroup struct {
+		seen   bool
+		effect modulation.Effect
+		total  dual
+	}
+	sensitivity := make([]effectGroup, mixedReferenceNodes)
+	thresholdGroup := make([]effectGroup, mixedReferenceNodes)
+	gain = make([]dual, mixedReferenceNodes)
+	offset = make([]dual, mixedReferenceNodes)
+	threshold = make([]dual, mixedReferenceNodes)
+	for node := 0; node < mixedReferenceNodes; node++ {
+		gain[node], offset[node], threshold[node] = dConst(1, n), dConst(0, n), dConst(0, n)
+	}
+	sameCoefficients := func(left, right modulation.Effect) bool {
+		if left.Kind != right.Kind {
+			return false
+		}
+		switch left.Kind {
+		case modulation.EffectSensitivity:
+			return left.GammaScale == right.GammaScale && left.BetaScale == right.BetaScale && left.GammaMin == right.GammaMin && left.GammaMax == right.GammaMax && left.BetaAbsMax == right.BetaAbsMax
+		case modulation.EffectThreshold:
+			return left.ThetaScale == right.ThetaScale && left.ThetaAbsMax == right.ThetaAbsMax
+		default:
+			return false
+		}
+	}
+	for _, declared := range config.Effects {
+		effect := declared
+		var groups []effectGroup
+		switch effect.Kind {
+		case modulation.EffectSensitivity:
+			if effect.ThetaScale != 0 || effect.ThetaAbsMax != 0 {
+				panic("reference fixture has threshold fields on a sensitivity effect")
+			}
+			if effect.GammaMin == 0 {
+				effect.GammaMin = modulation.DefaultGammaMin
+			}
+			if effect.GammaMax == 0 {
+				effect.GammaMax = modulation.DefaultGammaMax
+			}
+			if effect.BetaAbsMax == 0 {
+				effect.BetaAbsMax = modulation.DefaultBetaAbsMax
+			}
+			groups = sensitivity
+		case modulation.EffectThreshold:
+			if effect.GammaScale != 0 || effect.BetaScale != 0 || effect.GammaMin != 0 || effect.GammaMax != 0 || effect.BetaAbsMax != 0 || effect.ThetaAbsMax <= 0 {
+				panic("reference fixture has invalid threshold effect fields")
+			}
+			groups = thresholdGroup
+		default:
+			panic("reference fixture has an unsupported effect kind")
+		}
+		if effect.Receptor < 0 {
+			panic("reference fixture has a negative effect receptor")
+		}
+		for index, record := range metadata {
+			if record.receptor != effect.Receptor {
+				continue
+			}
+			if record.cell < 0 || record.cell >= mixedReferenceNodes {
+				panic("reference fixture effect cell is outside the reference nodes")
+			}
+			group := &groups[record.cell]
+			if group.seen {
+				if !sameCoefficients(group.effect, effect) {
+					panic("reference fixture has inconsistent effect coefficients")
+				}
+			} else {
+				group.seen = true
+				group.effect = effect
+				group.total = dConst(0, n)
+			}
+			if mix == modulation.MixMax {
+				if occupancy[index].v > group.total.v {
+					group.total = occupancy[index]
+				}
+			} else {
+				group.total = group.total.add(occupancy[index])
+			}
+		}
+	}
+	for node, group := range sensitivity {
+		if !group.seen {
+			continue
+		}
+		effect := group.effect
+		gammaValue := 1 + effect.GammaScale*group.total.v
+		betaValue := effect.BetaScale * group.total.v
+		gain[node] = clampDual(dConst(1, n).add(group.total.scale(effect.GammaScale)), effect.GammaMin, effect.GammaMax)
+		offset[node] = clampDual(group.total.scale(effect.BetaScale), -effect.BetaAbsMax, effect.BetaAbsMax)
+		if gammaValue <= effect.GammaMin || gammaValue >= effect.GammaMax {
+			saturated++
+		}
+		if betaValue <= -effect.BetaAbsMax || betaValue >= effect.BetaAbsMax {
+			saturated++
+		}
+	}
+	for node, group := range thresholdGroup {
+		if !group.seen {
+			continue
+		}
+		effect := group.effect
+		thetaValue := effect.ThetaScale * group.total.v
+		threshold[node] = clampDual(group.total.scale(effect.ThetaScale), -effect.ThetaAbsMax, effect.ThetaAbsMax)
+		if thetaValue <= -effect.ThetaAbsMax || thetaValue >= effect.ThetaAbsMax {
+			saturated++
+		}
+	}
+	return gain, offset, threshold, saturated
+}
+
+func referenceEncodedInputs(input [][]float64, encoder []float64, inputBase int) ([][]dual, [][]float32, [][]float32) {
+	input32 := make([][]float32, len(input))
+	for t, row := range input {
+		input32[t] = make([]float32, len(row))
+		for i, value := range row {
+			input32[t][i] = float32(value)
+		}
+	}
+	encoder32 := [][]float32{
+		{float32(encoder[0]), float32(encoder[1])},
+		{float32(encoder[2]), float32(encoder[3])},
+	}
+	encoded32 := f32MatMul(input32, encoder32)
+	n := inputBase + mixedReferenceSteps*mixedReferenceNodes
+	encoded := make([][]dual, len(encoded32))
+	for t, row := range encoded32 {
+		encoded[t] = make([]dual, len(row))
+		for node, value := range row {
+			encoded[t][node] = dVar(float64(value), inputBase+t*mixedReferenceNodes+node, n)
+		}
+	}
+	return encoded, input32, encoder32
+}
+
+func f32MatMul(a, b [][]float32) [][]float32 {
+	rows := len(a)
+	columns := len(b[0])
+	inner := len(b)
+	out := make([][]float32, rows)
+	for row := range out {
+		out[row] = make([]float32, columns)
+		for column := 0; column < columns; column++ {
+			var sum float32
+			for k := 0; k < inner; k++ {
+				sum += a[row][k] * b[k][column]
+			}
+			out[row][column] = sum
+		}
+	}
+	return out
+}
+
+func transposeF32(matrix [][]float32) [][]float32 {
+	if len(matrix) == 0 {
+		return nil
+	}
+	out := make([][]float32, len(matrix[0]))
+	for column := range out {
+		out[column] = make([]float32, len(matrix))
+		for row := range matrix {
+			out[column][row] = matrix[row][column]
+		}
+	}
+	return out
+}
+
+func itoa(value int) string { return strconv.Itoa(value) }
+
+func finiteReference(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }

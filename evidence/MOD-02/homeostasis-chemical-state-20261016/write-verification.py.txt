@@ -1,0 +1,25 @@
+"""Assemble this audit from completed, hash-checked command receipts."""
+import datetime,gzip,hashlib,json
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+read=lambda p:json.loads(p.read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+engineering=read(E/'engineering-verification.json');diagnostic=read(E/'diagnostic-verification.json')
+assert engineering['all_passed'] and diagnostic['all_passed']
+source=read(E/'formal-source.json');assert len(source)==840
+for p,h in source.items():assert sha(R/p)==h,p
+neutral={}
+for mode in ['unit','race']:
+ step=next(x for x in engineering['steps'] if x['name']==mode)
+ assert step['exit_code']==0 and not step['acceptance_errors'] and not step['changed_events'] and step['prior_event_count']==7165
+ assert len(step['added_events'])==773 and sum(x['action']=='pass' for x in step['added_events'])==772 and sum(x['action']=='skip' and x['test']=='TestChemicalHomeostasisStateProcessWorker' for x in step['added_events'])==1
+ packed=E/step['log'];assert sha(packed)==step['log_sha256'];raw=gzip.decompress(packed.read_bytes());assert hashlib.sha256(raw).hexdigest()==step['raw_sha256']
+ events=[json.loads(line) for line in raw.decode().splitlines() if line.startswith('{')]
+ neutral[mode]={x['Package']+':'+x['Test']:x['Action'] for x in events if x.get('Test','').startswith('TestNeutralGain') and x.get('Action') in ['pass','fail','skip']}
+ assert len(neutral[mode])==21 and set(neutral[mode].values())=={'pass'}
+with (E/'adoption-current.json').open('x') as f:
+ json.dump({'all_passed':True,'effective_gain_bounds_include_one':True,'construction_and_restore_refuse_excluded_ranges':True,'current_effects_sha256':sha(R/'modulation/effects.go'),'current_full_suite_events':neutral},f,indent=2);f.write('\n')
+counts={x['name']:{k:x[k] for k in ['test_events','package_events','prior_event_count'] if k in x} for x in engineering['steps'] if x['name'] in ['unit','race','governance']}
+result={'requirement':'MOD-02','related_requirements':['MOD-02','COR-04','STA-03'],'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'engineering_passed':True,'diagnostic_passed':True,'production_changes':False,'source_count':840,'confirmed_new_production_defects':0,'reproduction_command':{'ordinary':read(E/'reference-final-v4-ordinary.json')['command'],'race':read(E/'reference-final-v4-race.json')['command'],'engineering':['python3','evidence/MOD-02/homeostasis-chemical-state-20261016/engineering.py.txt']},'environment':{**read(E/'environment.json'),'go':(E/'go-version.log').read_text().strip(),'command_environment':'command-environment.json'},'input_fingerprints':{'formal_source':'formal-source.json','formal_source_sha256':sha(E/'formal-source.json'),'frozen_checks':'checks-after-contract-review.json','frozen_checks_sha256':sha(E/'checks-after-contract-review.json'),'original_source':'source-before.json'},'observed_result':{'reference':diagnostic['modes'],'red_and_wrong_algorithms':'diagnostic-verification.json','engineering':counts,'approved_gain_policy':'adoption-current.json'},'test_log':['red-state-reference-reviewed.log','reference-final-v4-ordinary.log','reference-final-v4-race.log','wrong-snapshot-ordinary.log','wrong-snapshot-race.log','expression-source-leak-v2-ordinary.log','expression-source-leak-v2-race.log','engineering-unit.log.gz','engineering-race.log.gz','engineering-governance.log'],'retained_corrections':['contract-review.json','warmup-width-review.json'],'root_review':'root-review.md','limits':diagnostic['limits']+['No absolute zero-bug proof'],'remaining_delivery':['final metadata governance','necessary work preservation','owned temporary cleanup','Git commit/push/readback'],'acceptance_complete':False}
+with (E/'verification.json').open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+print(json.dumps({'engineering':counts,'persistent_cases_per_mode':40,'persistent_routes_per_mode':640,'fresh_processes_per_mode':16,'source_count':840,'remaining_delivery':result['remaining_delivery']}))
