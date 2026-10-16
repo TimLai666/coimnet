@@ -3,12 +3,12 @@
 **Epic:** 化學機制與持續狀態驗證
 **User Story:** 研究者分批推進、保存並恢復個體時，可以確認活動穩定、化學與來源歷史符合獨立計算。
 **Blocked by:** 16、65、124（已交付）
-**Status:** in_progress
+**Status:** complete
 
 - [x] Root 手算、固定矩陣、凍結判準與原參考缺口的 RED 完成。
 - [x] 640 條持續路徑、16 次新程序、錯誤/開關/舊結果與刻意錯誤對照通過。
 - [x] 完整工程與治理驗證通過。
-- [ ] 審查、暫存清理、提交推送與遠端讀回完成。
+- [x] 審查、暫存清理、提交推送與遠端讀回完成。
 
 ## Root 決策｜2026-10-16
 
@@ -18,4 +18,4 @@ Root 核對既有 ticket21 後，更正新增測試的首步假設。神經來�
 
 本票來源不讀絕對時間，因此只核對神經與化學的保存步數，未增加依時間到達的 feedback／timeline 的 source-clock 偏移結論。既有時間契約測試保持，不能用本票取代。
 
-840 份來源的完整一般／競態各 58 套件通過，7,915／7,914 pass、23／24 skip，原有各 7,165 個終端事件保持，新增各 772 個通過及一個父程序入口 skip。格式、build、vet、固定 Insyra v0.3.4、模組與 31 項治理通過。沒有確認新正式運算缺陷，見[驗收](../../evidence/MOD-02/homeostasis-chemical-state-20261016/verification.json)。清理與交付完成後才勾選最後一項。
+840 份來源的完整一般／競態各 58 套件通過，7,915／7,914 pass、23／24 skip，原有各 7,165 個終端事件保持，新增各 772 個通過及一個父程序入口 skip。格式、build、vet、固定 Insyra v0.3.4、模組與 31 項治理通過。沒有確認新正式運算缺陷，見[驗收](../../evidence/MOD-02/homeostasis-chemical-state-20261016/verification.json)。本輪 1,685,320,683 bytes 暫存已清除，18 個原模型、六份必要資料、原始模組與其他工作保持，見[清理](../../evidence/MOD-02/homeostasis-chemical-state-20261016/cleanup.json)。主要提交 `b8b7686` 已正常推送且遠端讀回相同，840 份來源與提交內容核對完成，見[交付](../../evidence/MOD-02/homeostasis-chemical-state-20261016/delivery.json)。本票完成 4／4。
