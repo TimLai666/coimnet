@@ -1,0 +1,32 @@
+"""Require semantic rejection of isolated lost-freeze and post-commit comparison regressions."""
+import hashlib,json,subprocess,sys
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/frozen-intervention-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+source=json.loads((E/'formal-source.json').read_text())
+for p,h in source.items():assert sha(R/p)==h,p
+current=(R/'learning/intervene.go').read_text()
+flags='\tif i.chemical != nil && twin.chemical != nil {\n\t\ttwin.chemical.frozen = i.chemical.frozen\n\t}\n\tif i.plastic != nil && twin.plastic != nil {\n\t\ttwin.plastic.frozen = i.plastic.frozen\n\t}\n'
+assert current.count(flags)==1
+old=subprocess.check_output(['git','show','efef47526f655a17ad86e51af81ffd4488f15c5c:learning/intervene.go'],cwd=R,text=True)
+assert hashlib.sha256(old.encode()).hexdigest()==json.loads((E/'original-records.json').read_text())[str(R/'learning/intervene.go')]['sha256']
+anchor='\tvar twinOut [][]float64\n';assert old.count(anchor)==1
+variants={'lost-freeze':current.replace(flags,''),'late-twin':old.replace(anchor,flags+anchor)}
+observed=[]
+for name,code in variants.items():
+ p=W/(name+'.go');p.open('x').write(code);overlay=W/(name+'-overlay.json');overlay.open('x').write(json.dumps({'Replace':{str(R/'learning/intervene.go'):str(p)}}))
+ for mode,flag in [('ordinary',[]),('race',['-race'])]:
+  label=name+'-'+mode
+  command=['go','test',*flag,'-overlay',str(overlay),'-json','-count=1','./learning','-run','^TestInterveneRuntime']
+  child=subprocess.run([sys.executable,str(E/'run-command.py.txt'),label,*command])
+  record=json.loads((E/(label+'.json')).read_text());assert child.returncode==record['exit_code']==1
+  ev=[json.loads(x) for x in (E/record['log']).read_text().splitlines()]
+  ends=[x for x in ev if x.get('Test') and x['Action'] in ['pass','fail','skip']];assert len(ends)==90
+  failed=[x['Test'] for x in ends if x['Action']=='fail'];assert failed
+  if name=='late-twin':assert len(failed)==19 and all(x.startswith('TestInterveneRuntimeCancelAtomic') for x in failed)
+  else:assert len(failed)==45 and not any(x.startswith('TestInterveneRuntimeCancelAtomic') for x in failed)
+  assert any(x['Action']=='run' and x.get('Test','').startswith('TestInterveneRuntime') for x in ev)
+  observed.append({'name':name,'build':mode,'compiled_and_ran':True,'terminal_events':90,'failed_events':len(failed),'receipt':label+'.json'})
+for p,h in source.items():assert sha(R/p)==h,p
+(E/'mutations.json').open('x').write(json.dumps({'all_passed':True,'variants':observed},indent=2)+'\n')
+print(json.dumps({'all_passed':True,'compiled_semantic_rejections':len(observed)}))

@@ -1,0 +1,35 @@
+# -*- coding: utf-8 -*-
+"""Record completed engineering while keeping the confirmed ticket128 gap explicit."""
+import hashlib,json,re,subprocess,sys
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/frozen-intervention-20261016'
+read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+v=read(E/'verification.json');assert v['engineering_passed'] and v['diagnostic_passed'] and v['confirmed_new_defects']==2
+for p,h in read(E/'formal-source.json').items():assert sha(R/p)==h,p
+p=R/'docs/requirements-status.json';b=p.read_bytes();current=json.loads(b)
+original=subprocess.check_output(['git','show','efef47526f655a17ad86e51af81ffd4488f15c5c:docs/requirements-status.json'],cwd=R)
+assert hashlib.sha256(original).hexdigest()==read(E/'original-records.json')[str(p)]['sha256']
+expected=json.loads(original)
+for x in expected['requirements']:
+ if x['id']=='COR-11':x['status']='specified'
+assert current==expected and len(current['requirements'])==91
+for x in current['requirements']:
+ if x['id']=='COR-11':
+  assert x['status']=='specified';link='../evidence/COR-11/frozen-intervention-20261016/verification.json';assert link not in x['evidence'];x['evidence'].append(link)
+assert sum(x['status']=='passed' for x in current['requirements'])==90 and all(x['status']=='passed' or (x['id']=='COR-11' and x['status']=='specified') for x in current['requirements']);assert p.read_bytes()==b;p.write_text(json.dumps(current,ensure_ascii=False,indent=2)+'\n')
+p=R/'docs/tickets/127-frozen-intervention.md';b=p.read_bytes();s=b.decode();assert s.count('- [ ]')==2;s=s.replace('- [ ]','- [x]',1);old_paragraph='專項一般／競態各 90 個 terminal pass，涵蓋 85 個公開控制案例。原有與新介入／凍結測試各 119 pass。隔離遺漏旗標版本各 45 fail，先提交 subject 的版本各 19 fail，皆已成功編譯並實際執行。完整一般測試 8,005 pass／23 skip，原有 7,938 terminal event 保持，只新增 90 pass。完整競態與後續工程尚在執行，來源已凍結為 841 份。';assert s.count(old_paragraph)==1;s=s.replace(old_paragraph,'專項一般／競態各 90 個 terminal pass，涵蓋 85 個公開控制案例。原有與新介入／凍結測試各 119 pass。隔離遺漏旗標版本各 45 fail，先提交 subject 的版本各 19 fail，皆已成功編譯並實際執行。841 份正式來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定 Insyra v0.3.4、模組及治理通過。COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](../../evidence/COR-11/frozen-intervention-20261016/verification.json)。清理與交付完成後才勾選最後一項。');assert p.read_bytes()==b;p.write_text(s)
+p=R/'delivery-status.md';b=p.read_bytes();s=b.decode();start=s.index('[ticket 127]');end=s.index('\n\n',start)
+new='[ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 3／4，暫存清理及交付尚待完成。模型格式、正常載入及數值規則保持，整體機制稽核持續。'
+s=s[:start]+new+s[end:]
+old_paragraph='本輪 ticket 122 已修正慢速活動率更新的中間溢位誤拒絕，專項、正常／舊保存、完整工程、清理與交付完成。整個框架零 bug 與模型品質改善尚未證明。';assert s.count(old_paragraph)==1;s=s.replace(old_paragraph,'本輪 ticket 127 修正凍結個體的介入對照與失敗提交順序，專項與完整工程通過。清理、交付及來源證據以「目前階段」的本票紀錄為準。COR-11 因另已確認的報告範數上下溢位保持 specified，目前工程追蹤 90／91。整個框架零 bug 與模型品質改善尚未證明。')
+old_paragraph='ticket 89 的增益範圍相容性修正已獲核准並完成正式驗收。ticket 122 已完成完整工程、清理及交付，沒有本票剩餘阻礙。初次追蹤欄位錯誤與失敗保留，修正後已重新完整驗收。真實品質及生物校準沒有由本階段重新驗收。混合重算是既有明示不支援的組合。';assert s.count(old_paragraph)==1;s=s.replace(old_paragraph,'COR-11 仍有已確認的介入報告範數上下溢位，ticket 128 驗收前保持 specified，工程追蹤 90／91。ticket 127 的兩項修正已有完整工程證據，其清理與交付狀態見「目前階段」。真實品質及生物校準沒有由本階段重新驗收。混合重算是既有明示不支援的組合。')
+old_paragraph='[ticket 122](docs/tickets/122-homeostasis-rate.md) 已完成，沒有本票剩餘工作。下一個可驗證候選是[慢速穩定的獨立梯度參考](evidence/COR-04/homeostasis-rate-20261016/next-audit.md)，尚未確認新缺陷。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。';assert s.count(old_paragraph)==1;s=s.replace(old_paragraph,'[ticket 128](docs/tickets/128-intervention-finite-norm.md) 為下一個實作，前置條件是 ticket 127 完成交付。先以已保存的兩個公開控制驗證有限差異的上下溢位，核對四個 delta 使用者與真正不可表示結果的失敗原狀契約，再修正並驗收。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。')
+old_paragraph='[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[最終驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。91／91 依原始工程條件驗收，模型品質、生物歸因及未測硬體須依各自證據判斷。\n';assert s.count(old_paragraph)==1;s=s.replace(old_paragraph,'[共用設計](ENG.md)、[近期 tickets](docs/tickets/)、[主規格](docs/handoff/CoImNet_Implementation_Plan.zh-TW.md)、[91 項需求狀態（85 原始＋6 NAT）](docs/requirements-status.json)、[2026-10-12 階段驗收](evidence/goal-91-20261012/verification.json)。交接原件與既有 LICENSE 保持不變。原始工程曾完成 91／91，本輪因 COR-11 已確認報告缺陷維持 90／91，後續由 ticket 128 驗收。模型品質、生物歸因及未測硬體須依各自證據判斷。')
+header='## 里程碑\n\n| id | 目標 | 負責者 | 狀態 | 驗證訊號 |\n| --- | --- | --- | --- | --- |';assert s.count(header)==1;s=s.replace(header,header+"\n"+'| 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | in_progress | 3／4。兩項修正、90 項專項及完整工程通過，待清理與交付 |',1)
+marker="## 決策紀錄\n\n";assert s.count(marker)==1;s=s.replace(marker,marker+'2026-10-16：ticket 127 的私有介入對照沿用 runtime 凍結旗標，先完成對照再推進 subject，維持一般 Restore 預設解凍與模型格式。另已公開重現報告範數上下溢位，COR-11 保持 specified，ticket 128 接續修正。\n\n',1)
+assert p.read_bytes()==b;p.write_text(s if s.endswith("\n") else s+"\n")
+pattern='^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+subprocess.run([sys.executable,str(E/'run-command.py.txt'),'final-governance',str(W/'final-root.test'),'-test.v','-test.run',pattern],check=True)
+p=E/'final-governance.json';b=p.read_bytes();r=json.loads(b);passed=len(re.findall(r'^\s*--- PASS:',(E/'final-governance.log').read_text(),re.M));assert r['exit_code']==0 and passed==31;r['passed_events']=passed;assert p.read_bytes()==b;p.write_text(json.dumps(r,indent=2)+'\n')
+p=E/'verification.json';b=p.read_bytes();v=json.loads(b);v['observed_result']['final_governance']={'receipt':'final-governance.json','passed_events':31};v['remaining_delivery'].remove('final metadata governance');assert p.read_bytes()==b;p.write_text(json.dumps(v,indent=2)+'\n')
+print(json.dumps({'final_governance_pass_events':31,'requirements_passed':'90/91','verified_milestones':3}))

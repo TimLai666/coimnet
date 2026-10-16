@@ -1,0 +1,33 @@
+"""Commit verified production fix separately from its regression and evidence, then push once."""
+import hashlib,json,re,subprocess
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest();read=lambda p:json.loads(p.read_text())
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+def save(name,v):(E/name).open('x').write(json.dumps(v,indent=2)+'\n')
+assert git('rev-parse','HEAD')=='efef47526f655a17ad86e51af81ffd4488f15c5c'
+assert git('branch','--show-current')=='codex/receptor-chemistry-training'
+assert re.search(r'github\.com[:/]TimLai666/coimnet(?:\.git)?$',git('remote','get-url','origin'))
+assert not git('diff','--cached','--name-only')
+assert read(E/'cleanup.json')['directory_removed'] and read(E/'verification.json')['engineering_passed'] and read(E/'verification.json')['diagnostic_passed']
+for p,h in read(E/'formal-source.json').items():assert sha(R/p)==h,p
+for p,h in read(E/'foreign-before.json').items():assert sha(Path(p))==h,p
+production='learning/intervene.go'
+owned=['ENG.md','delivery-status.md','docs/requirements-status.json','docs/tickets/127-frozen-intervention.md','docs/tickets/128-intervention-finite-norm.md',production,'learning/intervene_runtime_test.go']
+owned+=sorted(str(p.relative_to(R)) for p in E.rglob('*') if p.is_file());assert len(owned)==len(set(owned));hashes={p:sha(R/p) for p in owned}
+subprocess.run(['git','add','--',production],cwd=R,check=True);assert git('diff','--cached','--name-only')==production
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True);assert all(sha(R/p)==h for p,h in hashes.items())
+subprocess.run(['git','commit','--quiet','-m','fix(learning): preserve intervention evaluation state'],cwd=R,check=True);fix=git('rev-parse','HEAD')
+assert git('diff-tree','--no-commit-id','--name-only','-r',fix)==production
+remaining=[p for p in owned if p!=production];subprocess.run(['git','add','--',*remaining],cwd=R,check=True)
+assert set(git('diff','--cached','--name-only').splitlines())==set(remaining)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True);assert all(sha(R/p)==h for p,h in hashes.items())
+subprocess.run(['git','commit','--quiet','-m','test(learning): cover frozen intervention comparisons'],cwd=R,check=True);head=git('rev-parse','HEAD')
+assert set(git('diff','--name-only','efef47526f655a17ad86e51af81ffd4488f15c5c',head).splitlines())==set(owned)
+committed={**read(E/'formal-source.json'),**hashes}
+for p,h in committed.items():assert hashlib.sha256(subprocess.check_output(['git','show',head+':'+p],cwd=R)).hexdigest()==h,p
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0];assert remote==head
+save('committed-content.json',{'commit':head,'files':committed,'source_entries':841,'changed_files':len(owned),'unique_content_files':len(committed)})
+save('delivery.json',{'fix_commit':fix,'primary_commit':head,'remote_readback':remote,'branch':'codex/receptor-chemistry-training','normal_push':True,'all_content_verified':True,'source_entries':841,'changed_files':len(owned),'production_changes':True,'foreign_work_unchanged':True})
+print(json.dumps({'fix_commit':fix,'primary_commit':head,'remote_readback':remote,'changed_files':len(owned),'unique_content_files':len(committed)}))

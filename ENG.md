@@ -19,6 +19,8 @@
 
 ## 共用決策
 
+- `Individual.Intervene` 的私有對照沿用同一持續快照，另複製當下 chemistry／plasticity 的 runtime freeze 旗標。先完成無介入對照，再設定 subject 的暫時網路與 hooks 並推進，避免對照失敗或取消時個體已提交。一般 `RestoreIndividual` 繼續預設解凍，保存格式、正常動態及 frozen channel phase 的既有優先序保持。公開未生效／阻斷控制與取消原子性由[ticket 127](docs/tickets/127-frozen-intervention.md)驗收。
+
 - [Ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 沿用 OCR 的 Snapshot／Inputs 與通用 Trainer，加入固定 ChemicalEpisode。損失、初值、分割、順序與更新預算相同，先驗證與原 SDK 逐位一致。比較的是工程設定對單字元辨識的效果，保留全部結果，不依測試選參數，也不宣稱盲測或生物定量正確性。
 
 - OCR 新輸入模式以明示 opt-in 設定加入。舊欄位／CTC 模式與已存模型保持；aligned-columns 補一個傳遞步並同時對齊讀出與外部梯度；single-character 以完整圖片的一次輸入及一個零傳遞步，僅最後讀出計算單字元分類。所有模式保留既有稀疏連續核心與 Insyra 梯度，資料、容量、目標與人工核心範圍明示。正式品質設定在測試前凍結，已用於開發的 200 張測試圖片排除。見 [ticket 64](docs/tickets/64-real-task-quality.md)。

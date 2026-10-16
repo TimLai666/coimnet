@@ -1,0 +1,33 @@
+"""Recount public controls, pre-fix witnesses and isolated regressions from raw logs."""
+import collections,hashlib,json,math,struct
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def command(label,code):
+ r=read(E/(label+'.json'));assert r['exit_code']==code and sha(E/r['log'])==r['log_sha256'],label
+ return (E/r['log']).read_text()
+def events(label,code):
+ raw=command(label,code);ev=[json.loads(x) for x in raw.splitlines()];return ev,dict(collections.Counter(x['Action'] for x in ev if x.get('Test') and x['Action'] in ['pass','fail','skip']))
+source=read(E/'formal-source.json');assert len(source)==841 and all(sha(R/p)==h for p,h in source.items())
+for p,h in read(E/'frozen-checks.json')['files'].items():assert sha(R/p)==h,p
+red=[]
+for x in command('red-public-probe',1).splitlines():
+ try:red.append(json.loads(x))
+ except ValueError:assert x=='exit status 1'
+assert len(red)==2 and not any(x['passed'] for x in red)
+f32=lambda x:struct.unpack('f',struct.pack('f',x))[0]
+expected=f32(math.tanh(.7))-f32(math.tanh(2/3))
+assert red[0]['applied_rows']==0 and red[0]['activity_delta']==expected and expected>0
+assert red[0]['output']==red[0]['control']==[[f32(math.tanh(.7))]]
+assert red[1]['state_changed_on_error'] and 'no activity for step 0' in red[1]['error'] and red[1]['actual_neural_steps']==1
+for mode,suffix in [('ordinary',''),('race','-race')]:
+ v=[json.loads(x) for x in command('green-public-probe'+suffix,0).splitlines()];assert len(v)==2 and all(x['passed'] and not x['error'] and not x['state_changed_on_error'] and x['activity_delta']==0 for x in v)
+ _,counts=events('green-runtime-'+mode,0);assert counts=={'pass':90},counts
+ _,existing=events('existing-intervention-'+mode,0);assert existing=={'pass':119},existing
+_,redcounts=events('red-runtime-v2',1);assert redcounts=={'pass':26,'fail':64}
+mut=read(E/'mutations.json');assert mut['all_passed'] and len(mut['variants'])==4
+for x in mut['variants']:
+ _,counts=events(x['name']+'-'+x['build'],1);assert counts==({'pass':45,'fail':45} if x['name']=='lost-freeze' else {'pass':71,'fail':19})
+result={'all_passed':True,'source_count':841,'pre_fix_public_witnesses':red,'hand_witness':{'frozen_output':f32(math.tanh(.7)),'thawed_output':f32(math.tanh(2/3)),'false_noop_activity_delta':expected},'ordinary':{'new_pass_events':90,'behavior_cases':85,'existing_and_new_intervention_pass_events':119},'race':{'new_pass_events':90,'behavior_cases':85,'existing_and_new_intervention_pass_events':119},'pre_fix_regression_terminal_events':redcounts,'isolated_mutations':mut,'checks_manifest':'frozen-checks.json','production_manifest':'formal-source.json'}
+(E/'diagnostic-verification.json').open('x').write(json.dumps(result,indent=2)+'\n')
+print(json.dumps({'all_passed':True,'ordinary_pass':90,'race_pass':90,'existing_and_new_each':119,'semantic_rejections':4,'independent_false_delta':expected}))

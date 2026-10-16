@@ -1,0 +1,279 @@
+{
+  "requirement": "COR-11",
+  "verified_at": "2026-10-16T05:17:46.914311+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": true,
+  "confirmed_new_defects": 2,
+  "source_count": 841,
+  "reproduction_command": {
+    "focused": "go test [-race] -json -count=1 ./learning -run ^TestInterveneRuntime",
+    "public": "go run [-race] ./runs/.tmp/frozen-intervention-20261016/probe",
+    "engineering": "python3 evidence/COR-11/frozen-intervention-20261016/engineering.py.txt"
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "baseline": "efef47526f655a17ad86e51af81ffd4488f15c5c",
+    "settings": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "119bf22c9ad2207871807e2caa7f0a0706f2adb2f922b0ccc36a825df55eca79",
+    "original_source": "source-before.json",
+    "checks": "frozen-checks.json",
+    "checks_sha256": "62352aefea5b4b9002bf60ed8f53c2642a293b612e403067e73d8eb4de5a30a4"
+  },
+  "root_causes": [
+    {
+      "defect": "frozen subject compared with thawed internal twin",
+      "location": "learning/intervene.go:102-113",
+      "fix": "copy the two private runtime freeze flags into the internal comparison, retain normal external Restore semantics"
+    },
+    {
+      "defect": "subject committed before internal comparison returned an error or cancellation",
+      "location": "learning/intervene.go:95-132",
+      "fix": "complete the internal comparison before mutating subject network, neural state or hooks"
+    }
+  ],
+  "observed_result": {
+    "diagnostic": {
+      "all_passed": true,
+      "source_count": 841,
+      "pre_fix_public_witnesses": [
+        {
+          "activity_delta": 0.02158486843109131,
+          "actual_chemical_steps": 0,
+          "actual_neural_steps": 1,
+          "applied_rows": 0,
+          "concentration_delta": 0,
+          "control": [
+            [
+              0.6043677926063538
+            ]
+          ],
+          "error": "",
+          "neural_source": false,
+          "output": [
+            [
+              0.6043677926063538
+            ]
+          ],
+          "passed": false,
+          "state_changed_on_error": false
+        },
+        {
+          "activity_delta": 0,
+          "actual_chemical_steps": 0,
+          "actual_neural_steps": 1,
+          "applied_rows": 0,
+          "concentration_delta": 0,
+          "control": [
+            [
+              0.6043677926063538
+            ]
+          ],
+          "error": "individual chemistry: source 0 at step 0: modulation: neural source has no activity for step 0",
+          "neural_source": true,
+          "output": null,
+          "passed": false,
+          "state_changed_on_error": true
+        }
+      ],
+      "hand_witness": {
+        "frozen_output": 0.6043677926063538,
+        "thawed_output": 0.5827829241752625,
+        "false_noop_activity_delta": 0.02158486843109131
+      },
+      "ordinary": {
+        "new_pass_events": 90,
+        "behavior_cases": 85,
+        "existing_and_new_intervention_pass_events": 119
+      },
+      "race": {
+        "new_pass_events": 90,
+        "behavior_cases": 85,
+        "existing_and_new_intervention_pass_events": 119
+      },
+      "pre_fix_regression_terminal_events": {
+        "pass": 26,
+        "fail": 64
+      },
+      "isolated_mutations": {
+        "all_passed": true,
+        "variants": [
+          {
+            "name": "lost-freeze",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 90,
+            "failed_events": 45,
+            "receipt": "lost-freeze-ordinary.json"
+          },
+          {
+            "name": "lost-freeze",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 90,
+            "failed_events": 45,
+            "receipt": "lost-freeze-race.json"
+          },
+          {
+            "name": "late-twin",
+            "build": "ordinary",
+            "compiled_and_ran": true,
+            "terminal_events": 90,
+            "failed_events": 19,
+            "receipt": "late-twin-ordinary.json"
+          },
+          {
+            "name": "late-twin",
+            "build": "race",
+            "compiled_and_ran": true,
+            "terminal_events": 90,
+            "failed_events": 19,
+            "receipt": "late-twin-race.json"
+          }
+        ]
+      },
+      "checks_manifest": "frozen-checks.json",
+      "production_manifest": "formal-source.json"
+    },
+    "engineering": {
+      "format": {
+        "exit_code": 0,
+        "seconds": 0.339160167,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-format.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "build": {
+        "exit_code": 0,
+        "seconds": 7.543628458000001,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-build.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "unit": {
+        "exit_code": 0,
+        "seconds": 118.458373042,
+        "raw_sha256": "5abf8880ef6f88fa7e986d1e40f4004af719b2c71db4f093724a3a2b595de3c0",
+        "test_events": {
+          "pass": 8005,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 7938,
+        "log": "engineering-unit.log.gz",
+        "log_sha256": "9352d61d4d6c60c84ab0d22b6f26c38b33a1905c42d524196115170b9f5e3206",
+        "acceptance_errors": []
+      },
+      "race": {
+        "exit_code": 0,
+        "seconds": 1794.579563292,
+        "raw_sha256": "bc9c17b23c885d22d95fe85924293234b127122ef6d7175608cb80331afa1fd5",
+        "test_events": {
+          "pass": 8004,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 7938,
+        "log": "engineering-race.log.gz",
+        "log_sha256": "0af857b8bd58170c89390e532a6ed0c109185e9797eb2bb92bfabb8ece0aad9a",
+        "acceptance_errors": []
+      },
+      "vet": {
+        "exit_code": 0,
+        "seconds": 6.423288375000084,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-vet.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      },
+      "module-verify": {
+        "exit_code": 0,
+        "seconds": 1.353159999999889,
+        "raw_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "log": "engineering-module-verify.log",
+        "log_sha256": "b4537ed75f533f993f371954de47e42a793b8e5b0587577de7e27fb3e50696bd",
+        "acceptance_errors": []
+      },
+      "module-selection": {
+        "exit_code": 0,
+        "seconds": 0.06832912499999111,
+        "raw_sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "log": "engineering-module-selection.log",
+        "log_sha256": "ed8d401f741a385796f43a037907ed2fda02f83aa4b16d38703c3759a8e0906a",
+        "acceptance_errors": []
+      },
+      "governance": {
+        "exit_code": 0,
+        "seconds": 3.382007582999904,
+        "raw_sha256": "b72ae4166dc10d4e3ea0bf43a34cfba5e2e5b7a61171dd223e82bdd37702707a",
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        },
+        "log": "engineering-governance.log",
+        "log_sha256": "b72ae4166dc10d4e3ea0bf43a34cfba5e2e5b7a61171dd223e82bdd37702707a",
+        "acceptance_errors": []
+      },
+      "closure-binary": {
+        "exit_code": 0,
+        "seconds": 0.9769940409998981,
+        "raw_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "log": "engineering-closure-binary.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "acceptance_errors": []
+      }
+    },
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1740939604
+    }
+  },
+  "test_log": [
+    "red-public-probe.log",
+    "red-runtime-v2.log",
+    "green-public-probe.log",
+    "green-public-probe-race.log",
+    "green-runtime-ordinary.log",
+    "green-runtime-race.log",
+    "lost-freeze-ordinary.log",
+    "lost-freeze-race.log",
+    "late-twin-ordinary.log",
+    "late-twin-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log"
+  ],
+  "limits": [
+    "Public runtime-state and cancellation controls on small CPU declarations, not biological calibration, task-quality or whole-brain claims",
+    "Normal snapshot restore still starts thawed; no schema or saved-model change",
+    "Frozen chemistry still skips pre/post-kinetics intervention phases; this ticket does not select new precedence for fix/remove/swap",
+    "Existing Intervene contract excludes concurrent mutation on the same individual",
+    "No claim that every bug in the framework has been eliminated"
+  ],
+  "remaining_confirmed_issue": {
+    "ticket": "docs/tickets/128-intervention-finite-norm.md",
+    "severity": "P2",
+    "witness": "next-norm-probe-v2.log",
+    "requirement_status": "COR-11 specified"
+  },
+  "remaining_delivery": [
+    "commit push remote readback"
+  ]
+}

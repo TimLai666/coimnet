@@ -1,0 +1,340 @@
+package learning_test
+
+import (
+	"context"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/plasticity"
+)
+
+type interventionRuntimeCase struct {
+	core, source                           string
+	plastic, chemicalFrozen, plasticFrozen bool
+}
+
+func (f interventionRuntimeCase) name() string {
+	return fmt.Sprintf("%s/%s/plastic%t/chem%t/fast%t", f.core, f.source, f.plastic, f.chemicalFrozen, f.plasticFrozen)
+}
+func interventionRuntimeCases(sources []string) []interventionRuntimeCase {
+	var out []interventionRuntimeCase
+	for _, core := range []string{"continuous", "lif", "mixed"} {
+		for _, src := range sources {
+			for _, p := range []bool{false, true} {
+				for _, c := range []bool{false, true} {
+					for _, fast := range []bool{false, true} {
+						if !p && fast {
+							continue
+						}
+						out = append(out, interventionRuntimeCase{core, src, p, c, fast})
+					}
+				}
+			}
+		}
+	}
+	return out
+}
+func interventionRuntimeIndividual(t *testing.T, f interventionRuntimeCase, warm int) *learning.Individual {
+	t.Helper()
+	dt := math.Ln2
+	c := learning.Config{InputSize: 2, OutputSize: 2, InputNodes: []int{0, 1}, ReadoutNodes: []int{0, 1}, ReadoutEveryStep: true}
+	p := learning.Parameters{Core: dynamics.Parameters{Weights: []float64{.4}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}, Encoder: []float64{1, 0, 0, 1}, Readout: []float64{1, 0, 0, 1}}
+	rule := dynamics.LIFRule{TauSyn: 1, ThetaMin: 0, ThetaMax: 2, VReset: 0, Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: 1}}
+	switch f.core {
+	case "continuous":
+		c.Dynamics = dynamics.Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, DT: dt, Activation: "tanh"}
+	case "lif":
+		c.LIF = &dynamics.LIFConfig{Nodes: 2, Sources: []int{0}, Targets: []int{1}, DT: dt, TauSyn: rule.TauSyn, ThetaMin: rule.ThetaMin, ThetaMax: rule.ThetaMax, VReset: rule.VReset, Surrogate: rule.Surrogate}
+		p.ThetaRaw = []float64{0, 0}
+	case "mixed":
+		c.Mixed = &dynamics.MixedConfig{Nodes: 2, Sources: []int{0}, Targets: []int{1}, DT: dt, NodeRule: []uint8{dynamics.RuleContinuous, dynamics.RuleLIF}, Continuous: dynamics.ContinuousRule{Activation: "tanh"}, LIF: rule}
+		p.ThetaRaw = []float64{0}
+	default:
+		t.Fatal("unknown core")
+	}
+	a, err := learning.NewIndividual(c, p, learning.DefaultOptions(), []float64{0, 0})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if warm > 0 {
+		in := make([][]float64, warm)
+		for i := range in {
+			in[i] = []float64{0, 0}
+		}
+		if _, err = a.Advance(context.Background(), in); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if f.plastic {
+		err = a.EnablePlasticity(plasticity.Config{Rule: plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: .5, DecayP: .5, PlasticMax: 2, WMin: .01}, Edges: []int{0}})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	src := modulation.SourceSpec{Kind: modulation.SourceExternalTimeline, Channel: 0, Timeline: &modulation.ExternalTimeline{ChannelCount: 1}}
+	if f.source == "neural" {
+		src = modulation.SourceSpec{Kind: modulation.SourceNeuralActivity, Channel: 0, Neural: &modulation.NeuralActivity{Nodes: []int{0}, Gain: 1, Channel: 0}}
+	}
+	d := modulation.ChemistryConfig{Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: dt, Tau: []float64{1}}, Sources: []modulation.SourceSpec{src}, Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "engineering", Channel: 0, Status: modulation.StatusHypothesized, Kd: 1, N: 1, Evidence: "engineering boundary", MeasurementKind: "engineering boundary", MappingVersion: "frozen-intervention/v1"}}}, Effects: []modulation.Effect{{Kind: modulation.EffectSensitivity, Receptor: 0, BetaScale: .5}}, Regions: modulation.RegionAssignment{NodeRegion: []int{0, 0}}}
+	if err = a.EnableChemistry(d); err != nil {
+		t.Fatal(err)
+	}
+	s := a.Snapshot()
+	s.Chemical.State.Concentration = [][]float64{{4}}
+	// Explicit nonzero engineering boundary, so an unwanted rule decay is observable.
+	if f.plastic {
+		s.Plastic.State.Eligibility = []float64{.6}
+		s.Plastic.State.Plastic = []float64{.2}
+	}
+	a, err = learning.RestoreIndividual(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	interventionRuntimeFreeze(t, a, f)
+	return a
+}
+func interventionRuntimeFreeze(t *testing.T, a *learning.Individual, f interventionRuntimeCase) {
+	t.Helper()
+	if err := a.FreezeChemistry(f.chemicalFrozen); err != nil {
+		t.Fatal(err)
+	}
+	if f.plastic {
+		if err := a.FreezePlasticity(f.plasticFrozen); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+func interventionRuntimeClone(t *testing.T, a *learning.Individual, f interventionRuntimeCase) *learning.Individual {
+	t.Helper()
+	b, err := learning.RestoreIndividual(a.Snapshot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	interventionRuntimeFreeze(t, b, f)
+	return b
+}
+func interventionRuntimeInput() [][]float64 { return [][]float64{{1.8, .5}, {.2, .4}} }
+func interventionRuntimePlan(active bool) learning.InterventionPlan {
+	start, end := uint64(10), uint64(11)
+	if active {
+		start, end = 0, 2
+	}
+	return learning.InterventionPlan{Authorized: true, Reason: "independent runtime posture control", Items: []learning.Intervention{{Kind: learning.InterventionBlockChannel, Channel: 0, Start: start, End: end, Restore: true}}}
+}
+func interventionRuntimeEqual(t *testing.T, label string, got, want any) {
+	t.Helper()
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("%s mismatch\ngot%+v\nwant%+v", label, got, want)
+	}
+}
+func interventionRuntimeZero(t *testing.T, log learning.InterventionLog) {
+	t.Helper()
+	if len(log.Entries) != 1 {
+		t.Fatal(log)
+	}
+	e := log.Entries[0]
+	if e.AppliedRows != 0 || e.ActivityDelta != 0 || e.PlasticDelta != 0 || e.ConcentrationDelta != 0 || e.BaseParameterDelta != 0 {
+		t.Fatalf("no-op reported movement: %+v", e)
+	}
+}
+func TestInterveneRuntimeNoOpFreeze(t *testing.T) {
+	cases := interventionRuntimeCases([]string{"timeline", "neural"})
+	if len(cases) != 36 {
+		t.Fatal(len(cases))
+	}
+	for _, f := range cases {
+		t.Run(f.name(), func(t *testing.T) {
+			a := interventionRuntimeIndividual(t, f, 3)
+			control := interventionRuntimeClone(t, a, f)
+			want, err := control.Advance(context.Background(), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, log, err := a.Intervene(context.Background(), interventionRuntimePlan(false), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			interventionRuntimeEqual(t, "output", got, want)
+			interventionRuntimeEqual(t, "state", a.Snapshot(), control.Snapshot())
+			interventionRuntimeZero(t, log)
+			interventionRuntimeEqual(t, "chemical report", a.ChemistryReport(), control.ChemistryReport())
+		})
+	}
+}
+func TestInterveneRuntimeFreshNeural(t *testing.T) {
+	n := 0
+	for _, f := range interventionRuntimeCases([]string{"neural"}) {
+		if !f.chemicalFrozen {
+			continue
+		}
+		n++
+		t.Run(f.name(), func(t *testing.T) {
+			a := interventionRuntimeIndividual(t, f, 0)
+			control := interventionRuntimeClone(t, a, f)
+			want, err := control.Advance(context.Background(), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, log, err := a.Intervene(context.Background(), interventionRuntimePlan(false), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			interventionRuntimeEqual(t, "fresh frozen output", got, want)
+			interventionRuntimeEqual(t, "fresh frozen state", a.Snapshot(), control.Snapshot())
+			interventionRuntimeZero(t, log)
+		})
+	}
+	if n != 9 {
+		t.Fatal(n)
+	}
+}
+func interventionRuntimeNorm(a, b [][]float64) float64 {
+	sum := 0.0
+	for i := range a {
+		for j, x := range a[i] {
+			sum = math.Hypot(sum, x-b[i][j])
+		}
+	}
+	return sum
+}
+func interventionRuntimePlastic(s learning.IndividualSnapshot) [][]float64 {
+	if s.Plastic == nil {
+		return nil
+	}
+	return [][]float64{s.Plastic.State.Eligibility, s.Plastic.State.Plastic}
+}
+func interventionRuntimeNear(t *testing.T, label string, got, want float64) {
+	t.Helper()
+	if math.IsNaN(got) || math.IsInf(got, 0) || math.IsNaN(want) || math.IsInf(want, 0) || math.Abs(got-want) > 1e-12*(1+math.Abs(want)) {
+		t.Fatalf("%s got%.17g want%.17g", label, got, want)
+	}
+}
+func TestInterveneRuntimeBlockControl(t *testing.T) {
+	cases := interventionRuntimeCases([]string{"timeline"})
+	if len(cases) != 18 {
+		t.Fatal(len(cases))
+	}
+	for _, f := range cases {
+		t.Run(f.name(), func(t *testing.T) {
+			a := interventionRuntimeIndividual(t, f, 3)
+			control := interventionRuntimeClone(t, a, f)
+			unmod := interventionRuntimeClone(t, a, f)
+			unmod.DisableChemistry()
+			base, err := control.Advance(context.Background(), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, err := unmod.Advance(context.Background(), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, log, err := a.Intervene(context.Background(), interventionRuntimePlan(true), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			interventionRuntimeEqual(t, "blocked output", got, want)
+			interventionRuntimeEqual(t, "blocked neural", a.Snapshot().Neural, unmod.Snapshot().Neural)
+			interventionRuntimeEqual(t, "blocked plastic", a.Snapshot().Plastic, unmod.Snapshot().Plastic)
+			if len(log.Entries) != 1 || log.Entries[0].AppliedRows != 2 {
+				t.Fatal(log)
+			}
+			e := log.Entries[0]
+			delta := interventionRuntimeNorm(want, base)
+			if delta == 0 {
+				t.Fatal("positive control did not change output")
+			}
+			interventionRuntimeNear(t, "activity delta", e.ActivityDelta, delta)
+			interventionRuntimeNear(t, "plastic delta", e.PlasticDelta, interventionRuntimeNorm(interventionRuntimePlastic(unmod.Snapshot()), interventionRuntimePlastic(control.Snapshot())))
+			interventionRuntimeNear(t, "concentration delta", e.ConcentrationDelta, 0)
+			interventionRuntimeNear(t, "parameter delta", e.BaseParameterDelta, 0)
+		})
+	}
+}
+
+// Err can observe cancellation at any call. Trigger after exactly one complete
+// public Advance's checks, without timing races or mutating the individual.
+type interventionRuntimeContext struct {
+	context.Context
+	cancel       context.CancelFunc
+	calls, limit int
+}
+
+func (c *interventionRuntimeContext) Err() error {
+	c.calls++
+	if c.limit > 0 && c.calls == c.limit {
+		c.cancel()
+	}
+	return c.Context.Err()
+}
+func TestInterveneRuntimeCancelAtomic(t *testing.T) {
+	cases := interventionRuntimeCases([]string{"timeline"})
+	if len(cases) != 18 {
+		t.Fatal(len(cases))
+	}
+	for _, f := range cases {
+		t.Run(f.name(), func(t *testing.T) {
+			a := interventionRuntimeIndividual(t, f, 3)
+			counter := &interventionRuntimeContext{Context: context.Background()}
+			control := interventionRuntimeClone(t, a, f)
+			if _, err := control.Advance(counter, interventionRuntimeInput()); err != nil {
+				t.Fatal(err)
+			}
+			if counter.calls < 1 {
+				t.Fatal("cancellation control never checked context")
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			timed := &interventionRuntimeContext{Context: ctx, cancel: cancel, limit: counter.calls + 1}
+			before, report := a.Snapshot(), a.ChemistryReport()
+			_, _, err := a.Intervene(timed, interventionRuntimePlan(false), interventionRuntimeInput())
+			if err != context.Canceled {
+				t.Fatalf("error=%v want canceled", err)
+			}
+			interventionRuntimeEqual(t, "failed intervention state", a.Snapshot(), before)
+			interventionRuntimeEqual(t, "failed intervention report", a.ChemistryReport(), report)
+			got, err := a.Advance(context.Background(), interventionRuntimeInput())
+			if err != nil {
+				t.Fatal(err)
+			}
+			interventionRuntimeEqual(t, "continuation output", got, advance(t, interventionRuntimeIndividual(t, f, 3), interventionRuntimeInput()))
+			interventionRuntimeEqual(t, "continuation state", a.Snapshot(), control.Snapshot())
+		})
+	}
+}
+func TestInterveneRuntimePlasticWithoutChemistry(t *testing.T) {
+	for _, core := range []string{"continuous", "lif"} {
+		for _, freeze := range []bool{false, true} {
+			f := interventionRuntimeCase{core, "timeline", true, false, freeze}
+			t.Run(f.name(), func(t *testing.T) {
+				a := interventionRuntimeIndividual(t, f, 3)
+				a.DisableChemistry()
+				control, err := learning.RestoreIndividual(a.Snapshot())
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err = control.FreezePlasticity(freeze); err != nil {
+					t.Fatal(err)
+				}
+				plan := interventionRuntimePlan(false)
+				plan.Items[0].Kind = learning.InterventionSilence
+				plan.Items[0].Targets = []int{0}
+				want, err := control.Advance(context.Background(), interventionRuntimeInput())
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, log, err := a.Intervene(context.Background(), plan, interventionRuntimeInput())
+				if err != nil {
+					t.Fatal(err)
+				}
+				interventionRuntimeEqual(t, "no chemistry output", got, want)
+				interventionRuntimeEqual(t, "no chemistry state", a.Snapshot(), control.Snapshot())
+				interventionRuntimeZero(t, log)
+			})
+		}
+	}
+}
