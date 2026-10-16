@@ -1,0 +1,157 @@
+{
+  "requirement": "COR-04",
+  "verified_at": "2026-10-16T01:08:14.028471+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": true,
+  "source_count": 837,
+  "confirmed_production_defects_fixed": 1,
+  "reproduction_command": {
+    "red_build": [
+      "env",
+      "GOARCH=amd64",
+      "go",
+      "test",
+      "-overlay=evidence/COR-04/homeostasis-rate-20261016/red-overlay.json",
+      "-c",
+      "-o",
+      "runs/.tmp/homeostasis-rate-20261016/red2-amd64.test",
+      "./dynamics"
+    ],
+    "red_execute": [
+      "/usr/bin/arch",
+      "-x86_64",
+      "runs/.tmp/homeostasis-rate-20261016/red2-amd64.test",
+      "-test.v",
+      "-test.run",
+      "^TestHomeostasisRate"
+    ],
+    "ordinary": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^TestHomeostasisRate",
+      "./dynamics"
+    ],
+    "race": [
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "-run",
+      "^TestHomeostasisRate",
+      "./dynamics"
+    ],
+    "amd64": [
+      "/usr/bin/arch",
+      "-x86_64",
+      "runs/.tmp/homeostasis-rate-20261016/green-final-amd64.test",
+      "-test.v",
+      "-test.run",
+      "^TestHomeostasisRate|^TestLIF.*Homeostasis"
+    ],
+    "observable": [
+      "go",
+      "run",
+      "./runs/.tmp/homeostasis-rate-20261016/rate-parity"
+    ],
+    "engineering": [
+      "python3",
+      "evidence/COR-04/homeostasis-rate-20261016/engineering.py.txt"
+    ]
+  },
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "go_environment": "environment.log.gz",
+    "command_environment": "command-environment.json",
+    "baseline_commit": "f824e2526c44c0a029c51b26e023365908c0b62d",
+    "amd64": "actual local Rosetta execution; not physical Intel hardware"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "f5104135c38c12e0e21a6afc05841ce7e8b2a0eb8621816059da165266f4c364",
+    "tests": "locked-tests.json",
+    "original_source": "source-before.json",
+    "normal_controls": "compatibility-provenance.json"
+  },
+  "observed_result": {
+    "public_red": "reproduction-verification.json",
+    "focused": "candidate-verification.json",
+    "observable_checkpoint_parity": "observable-parity-verification.json",
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 6727,
+          "skip": 22
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6700
+      },
+      "race": {
+        "test_events": {
+          "pass": 6726,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6700
+      },
+      "governance": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      }
+    },
+    "approved_gain_policy": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1965684907,
+      "preserved_original_model_files": 18,
+      "preserved_persistent_data_files": 6
+    }
+  },
+  "test_log": [
+    "regression-red2-amd64.log",
+    "regression-final-ordinary.log",
+    "regression-final-race.log",
+    "regression-final-amd64.log",
+    "observable-final.log",
+    "observable-final-race.log",
+    "observable-final-amd64.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log",
+    "final-governance.log"
+  ],
+  "retained_corrections": [
+    "fixture-correction.json",
+    "initial-status-run.json",
+    "status-correction.json"
+  ],
+  "root_review": "adversarial-review.md",
+  "limits": [
+    "Extreme synthetic numerical regressions; no measured real-task quality effect or biological calibration",
+    "Full gate executed on macOS arm64; amd64 focused tests actually executed through local Rosetta",
+    "No claim of absolute zero bugs; independent nonzero homeostasis gradient reference remains next-audit.md"
+  ],
+  "remaining_delivery": [
+    "commits and normal push/readback"
+  ],
+  "acceptance_complete": false,
+  "necessary_evidence": "work-preservation.json"
+}

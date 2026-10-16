@@ -1,0 +1,33 @@
+{
+  "all_passed": true,
+  "source": "preserved-work.tar.gz:rate-parity/main.go",
+  "logs": [
+    "observable-final.log",
+    "observable-final-race.log",
+    "observable-final-amd64.log"
+  ],
+  "results_each_mode": {
+    "equal_output_paths": 11,
+    "h": 0.4,
+    "probe_event_with_homeostasis": 0,
+    "probe_event_without_homeostasis": 1,
+    "purpose": "observable large-rate checkpoint and replay parity; no task-quality claim",
+    "rate": 1.348269851146737e+308,
+    "steps": 1023,
+    "true_overflow_rejections": 10
+  },
+  "modes": [
+    "arm64 ordinary",
+    "arm64 race",
+    "local Rosetta amd64"
+  ],
+  "formal_go_sources_unchanged": true,
+  "resolves": "With nonzero eta and an observable late probe, segment/replay state is compared by output equality. Zero-upstream formal regression alone was not a proof of numerical parity.",
+  "initial_logs": [
+    "observable-parity.log",
+    "observable-parity-race.log",
+    "observable-parity-amd64.log"
+  ],
+  "nil_results_on_all_ten_rejections": true,
+  "diagnostic_source_sha256": "dabe874005bdb31edc6d0fbc0f49e6eccbc7b0fc90c30d8c2d03ed72b92060fa"
+}

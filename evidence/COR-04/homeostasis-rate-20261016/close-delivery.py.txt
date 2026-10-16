@@ -1,0 +1,55 @@
+"""Commit final acceptance metadata and verify all delivered content and remote HEAD."""
+import hashlib,json,re,subprocess
+from pathlib import Path
+if not __debug__:raise SystemExit("optimized Python disables required delivery gates")
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+read=lambda n:json.loads((E/n).read_text())
+delivery=read('delivery.json');assert git('rev-parse','HEAD')==delivery['primary_commit']
+assert git('branch','--show-current')=='codex/receptor-chemistry-training'
+assert not git('diff','--cached','--name-only')
+assert delivery['normal_push'] and delivery['remote_readback']==delivery['primary_commit']
+assert read('cleanup.json')['directory_removed'] and read('verification.json')['acceptance_complete']
+assert read('verification.json')['remaining_delivery']==[]
+for n,h in read('foreign-before.json').items():assert sha(Path(n))==h,n
+source=read('formal-source.json');assert len(source)==837
+for n,h in source.items():assert sha(R/n)==h,n
+prefix=str(E.relative_to(R))
+meta=['delivery-status.md','docs/tickets/122-homeostasis-rate.md']+[prefix+'/'+n for n in ['verification.json','delivery.json','committed-content.json','changed-files.md','closure-inputs.json']]
+assert not (E/'changed-files.md').exists() and not (E/'closure-inputs.json').exists()
+all_changed=sorted(set(git('diff','--name-only','f824e2526c44c0a029c51b26e023365908c0b62d','HEAD').splitlines())|set(meta))
+assert 'AGENTS.md' not in all_changed
+lines=['# 本輪變更檔案','', '| 檔案 | 變更摘要 |','| --- | --- |']
+for n in all_changed:
+ if n=='dynamics/lif.go':desc='修正中間溢位造成的活動率誤拒絕'
+ elif n=='dynamics/homeostasis_rate_test.go':desc='有限恢復、真正溢位與重播的回歸測試'
+ elif n=='docs/requirements-status.json':desc='連結本輪 COR-04 重現與驗收證據'
+ elif n in ['ENG.md','docs/model-and-mechanisms.md']:desc='記錄既有公式的有限活動率恢復規則'
+ elif n=='delivery-status.md':desc='目前驗收狀態與下一個可驗證成果'
+ elif n.startswith('docs/tickets/'):desc='工作範圍、Root 決策與完成條件'
+ elif '/initial-status-run/' in n:desc='保留初次追蹤欄位錯誤的驗收輸出'
+ elif n.endswith('.py.txt'):desc='可重現的驗證、保存、清理或交付程序'
+ elif n.endswith(('.log','.log.gz')):desc='原始命令或測試日誌'
+ elif n.endswith('.json'):desc='命令回條、指紋或驗收結果'
+ elif n.endswith('.tar.gz'):desc='必要診斷來源與人工測試輸入'
+ elif n.endswith('.json.gz'):desc='本輪清除暫存的完整指紋清單'
+ else:desc='本輪計畫、審查或重現來源'
+ lines.append('| ['+n+']('+str(R/n)+') | '+desc+' |')
+(E/'changed-files.md').write_text('\n'.join(lines)+'\n')
+inputs={n:sha(R/n) for n in meta if not n.endswith('/closure-inputs.json')}
+with (E/'closure-inputs.json').open('x') as f:json.dump({'primary_commit':delivery['primary_commit'],'source_entries':len(source),'metadata_inputs':inputs,'changed_files':len(all_changed)},f,indent=2);f.write('\n')
+hashes={n:sha(R/n) for n in meta}
+subprocess.run(['git','add','--',*meta],cwd=R,check=True)
+assert set(git('diff','--cached','--name-only').splitlines())==set(meta)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True)
+assert all(sha(R/n)==h for n,h in hashes.items())
+subprocess.run(['git','commit','-m','docs: close homeostasis rate validation'],cwd=R,check=True)
+head=git('rev-parse','HEAD');assert set(git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines())==set(meta)
+contents={**read('committed-content.json')['files'],**hashes}
+for n,h in contents.items():
+ b=subprocess.check_output(['git','show',head+':'+n],cwd=R);assert hashlib.sha256(b).hexdigest()==h,n
+for n,h in read('foreign-before.json').items():assert sha(Path(n))==h,n
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0];assert remote==head
+print(json.dumps({'closure_commit':head,'remote_readback':remote,'source_entries_verified':len(source),'metadata_files_verified':len(meta),'all_final_content_verified':len(contents),'changed_files':len(all_changed),'foreign_work_preserved':True}))

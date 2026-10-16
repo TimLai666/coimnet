@@ -1,0 +1,42 @@
+{
+  "requirement": "COR-04",
+  "reproduction_command": {
+    "build": [
+      "env",
+      "GOARCH=amd64",
+      "go",
+      "test",
+      "-overlay=evidence/COR-04/homeostasis-rate-20261016/red-overlay.json",
+      "-c",
+      "-o",
+      "runs/.tmp/homeostasis-rate-20261016/red2-amd64.test",
+      "./dynamics"
+    ],
+    "execute": [
+      "/usr/bin/arch",
+      "-x86_64",
+      "runs/.tmp/homeostasis-rate-20261016/red2-amd64.test",
+      "-test.v",
+      "-test.run",
+      "^TestHomeostasisRate"
+    ],
+    "environment_file": "command-environment.json",
+    "reconstruct_work_inputs": "prepare.py.txt and preserved-work.tar.gz"
+  },
+  "environment": "command-environment.json; local macOS arm64 and Rosetta amd64 execution",
+  "input_fingerprints": "source-before.json and locked-tests.json",
+  "observed_result": {
+    "confirmed_bug": true,
+    "failed_test_events": 43,
+    "passing_rejection_controls": 6,
+    "compile_success": true,
+    "fresh_zero_rate_trajectory_fails": true,
+    "original_source_rerun_after_fixture_correction": true
+  },
+  "test_log": [
+    "regression-red2-amd64.log",
+    "public-probe-amd64.log",
+    "public-probe.log"
+  ],
+  "initial_fixture_correction": "fixture-correction.json"
+}

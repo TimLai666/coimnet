@@ -1,0 +1,37 @@
+"""Close the engineering acceptance only after inspecting actual gate receipts."""
+from pathlib import Path
+import collections,datetime,gzip,hashlib,json,platform
+if not __debug__:raise SystemExit("optimized Python disables required acceptance gates")
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+read=lambda n:json.loads((E/n).read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+gate=read('engineering-verification.json');assert gate['all_passed'] and gate['source_count']==837
+candidate=read('candidate-verification.json');observable=read('observable-parity-verification.json')
+assert candidate['all_passed'] and observable['all_passed'] and observable['nil_results_on_all_ten_rejections']
+source=read('formal-source.json');assert len(source)==837
+assert all(sha(R/p)==h for p,h in source.items())
+for p,h in read('foreign-before.json').items():assert sha(Path(p))==h,p
+for p,h in read('locked-tests.json').items():assert sha(R/p)==h,p
+summary={s['name']:{k:s[k] for k in ['test_events','package_events','prior_event_count'] if k in s} for s in gate['steps'] if s['name'] in ['unit','race','governance']}
+assert summary['unit']['test_events']=={'pass':6727,'skip':22}
+assert summary['race']['test_events']=={'pass':6726,'skip':23}
+# Recheck the user's approved neutral-gain rejection in both current full runs.
+adoption={'all_passed':True,'effective_gain_bounds_include_one':True,'current_effects_sha256':sha(R/'modulation/effects.go'),'construction_and_restore_refuse_excluded_ranges':True,'current_full_suite_events':{}}
+prior=json.loads((R/'evidence/MOD-04/lif-max-reference-20261016/adoption-current.json').read_text())
+assert adoption['current_effects_sha256']==prior['current_effects_sha256']
+for mode in ['unit','race']:
+ step=next(s for s in gate['steps'] if s['name']==mode);data=gzip.decompress((E/step['log']).read_bytes());events={}
+ for line in data.splitlines():
+  x=json.loads(line)
+  if x.get('Test') and x['Action'] in ['pass','fail','skip']:events[x['Package']+':'+x['Test']]=x['Action']
+ adopted={k:events[k] for k in prior['current_full_suite_events'][mode]};assert len(adopted)==21 and set(adopted.values())=={'pass'}
+ adoption['current_full_suite_events'][mode]=adopted
+with (E/'adoption-current.json').open('x') as f:json.dump(adoption,f,indent=2);f.write('\n')
+v={'requirement':'COR-04','verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'engineering_passed':True,'diagnostic_passed':True,'production_changes':True,'source_count':837,'confirmed_production_defects_fixed':1,'reproduction_command':{'red_build':read('regression-red2-build.json')['command'],'red_execute':read('regression-red2-amd64.json')['command'],'ordinary':read('regression-final-ordinary.json')['command'],'race':read('regression-final-race.json')['command'],'amd64':read('regression-final-amd64.json')['command'],'observable':read('observable-final.json')['command'],'engineering':['python3',str(E.relative_to(R) / 'engineering.py.txt')]},'environment':{'platform':platform.platform(),'go_environment':'environment.log.gz','command_environment':'command-environment.json','baseline_commit':read('baseline.json')['head'],'amd64':'actual local Rosetta execution; not physical Intel hardware'},'input_fingerprints':{'formal_source':'formal-source.json','formal_source_sha256':sha(E/'formal-source.json'),'tests':'locked-tests.json','original_source':'source-before.json','normal_controls':'compatibility-provenance.json'},'observed_result':{'public_red':'reproduction-verification.json','focused':'candidate-verification.json','observable_checkpoint_parity':'observable-parity-verification.json','engineering':summary,'approved_gain_policy':'adoption-current.json'},'test_log':['regression-red2-amd64.log','regression-final-ordinary.log','regression-final-race.log','regression-final-amd64.log','observable-final.log','observable-final-race.log','observable-final-amd64.log','engineering-unit.log.gz','engineering-race.log.gz','engineering-governance.log'],'retained_corrections':['fixture-correction.json','initial-status-run.json','status-correction.json'],'root_review':'adversarial-review.md','limits':['Extreme synthetic numerical regressions; no measured real-task quality effect or biological calibration','Full gate executed on macOS arm64; amd64 focused tests actually executed through local Rosetta','No claim of absolute zero bugs; independent nonzero homeostasis gradient reference remains next-audit.md'],'remaining_delivery':['owned temporary cleanup','commits and normal push/readback'],'acceptance_complete':False}
+with (E/'verification.json').open('x') as f:json.dump(v,f,indent=2);f.write('\n')
+p=R/'docs/requirements-status.json';raw=p.read_bytes();x=json.loads(raw);r=next(r for r in x['requirements'] if r['id']=='COR-04');assert r['status']=='implemented_unverified';r['status']='passed'
+for name in ['reproduction-verification.json','verification.json']:
+ path='../'+str((E/name).relative_to(R));assert path not in r['evidence'];r['evidence'].append(path)
+assert all(r['status']=='passed' for r in x['requirements']);assert len(x['requirements'])==91
+assert p.read_bytes()==raw;p.write_text(json.dumps(x,ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({'engineering_passed':True,'source_count':837,'requirements_passed':91,'unit':summary['unit'],'race':summary['race'],'neutral_gain_events_each_mode':21}))

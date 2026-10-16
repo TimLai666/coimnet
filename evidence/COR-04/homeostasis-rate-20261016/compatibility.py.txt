@@ -1,0 +1,13 @@
+"""Run same-build normal-core and old-model continuation controls."""
+from pathlib import Path
+import hashlib,json,subprocess,sys
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/homeostasis-rate-20261016'
+mode=sys.argv[1];assert mode in ['before','after']
+anchor='source-before.json' if mode=='before' else 'formal-source.json'
+for suffix,flags in [('',[]),('-race',['-race'])]:
+ commands=[('core-'+mode+suffix,['go','run',*flags,'./'+str(W.relative_to(R))+'/core-compat']),
+ ('chemical-'+mode+suffix,['go','run',*flags,'./'+str(W.relative_to(R))+'/chemical-compat','resume',str(W/('chemical-models-race' if flags else 'chemical-models-ordinary'))])]
+ if mode=='after':commands.append(('core-resume'+suffix,['go','run',*flags,'./'+str(W.relative_to(R))+'/core-compat','resume',str(E/('core-before'+suffix+'.log'))]))
+ for label,command in commands:
+  for p,d in json.loads((E/anchor).read_text()).items():assert hashlib.sha256((R/p).read_bytes()).hexdigest()==d,p
+  subprocess.run(['python3',str(E/'run-command.py.txt'),label,*command],cwd=R,check=True)

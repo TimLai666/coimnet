@@ -1,0 +1,45 @@
+"""Commit only the verified rate fix and its separate regression/evidence, then read back remote content."""
+import hashlib,json,re,subprocess
+from pathlib import Path
+if not __debug__:raise SystemExit("optimized Python disables required delivery gates")
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+def git(*args):return subprocess.check_output(['git',*args],cwd=R,text=True).strip()
+def write(name,value):
+ with (E/name).open('x') as f:json.dump(value,f,indent=2);f.write('\n')
+assert git('rev-parse','HEAD')=='f824e2526c44c0a029c51b26e023365908c0b62d'
+assert git('branch','--show-current')=='codex/receptor-chemistry-training'
+assert re.search(r'github\.com[:/]TimLai666/coimnet(?:\.git)?$',git('remote','get-url','origin'))
+assert not git('diff','--cached','--name-only'),'foreign staged work exists'
+assert json.loads((E/'cleanup.json').read_text())['directory_removed']
+assert json.loads((E/'verification.json').read_text())['engineering_passed']
+source=json.loads((E/'formal-source.json').read_text())
+for p,h in source.items():assert sha(R/p)==h,p
+for p,h in json.loads((E/'foreign-before.json').read_text()).items():assert sha(Path(p))==h,p
+owned=['ENG.md','delivery-status.md','docs/requirements-status.json','docs/model-and-mechanisms.md','docs/tickets/122-homeostasis-rate.md','dynamics/homeostasis_rate_test.go']
+owned+=sorted(str(p.relative_to(R)) for p in E.rglob('*') if p.is_file())
+assert len(owned)==len(set(owned))
+hashes={p:sha(R/p) for p in owned}
+# Root reviewed the four-line production fix; keep it in its own commit.
+subprocess.run(['git','add','--','dynamics/lif.go'],cwd=R,check=True)
+assert git('diff','--cached','--name-only')=='dynamics/lif.go'
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True)
+assert sha(R/'dynamics/lif.go')==source['dynamics/lif.go']
+subprocess.run(['git','commit','-m','fix(dynamics): recover finite homeostatic rates'],cwd=R,check=True)
+fix=git('rev-parse','HEAD')
+assert git('diff-tree','--no-commit-id','--name-only','-r',fix)=='dynamics/lif.go'
+subprocess.run(['git','add','--',*owned],cwd=R,check=True)
+assert set(git('diff','--cached','--name-only').splitlines())==set(owned)
+subprocess.run(['git','diff','--cached','--check'],cwd=R,check=True)
+assert all(sha(R/p)==h for p,h in hashes.items()),'inputs changed after review'
+subprocess.run(['git','commit','-m','test(dynamics): verify homeostasis rate recovery'],cwd=R,check=True)
+head=git('rev-parse','HEAD');assert set(git('diff-tree','--no-commit-id','--name-only','-r',head).splitlines())==set(owned)
+committed={**source,**hashes}
+for p,h in committed.items():
+ blob=subprocess.check_output(['git','show',head+':'+p],cwd=R);assert hashlib.sha256(blob).hexdigest()==h,p
+for p,h in json.loads((E/'foreign-before.json').read_text()).items():assert sha(Path(p))==h,p
+subprocess.run(['git','push','origin','HEAD:refs/heads/codex/receptor-chemistry-training'],cwd=R,check=True)
+remote=git('ls-remote','origin','refs/heads/codex/receptor-chemistry-training').split()[0];assert remote==head
+write('committed-content.json',{'fix_commit':fix,'commit':head,'files':committed,'source_entries':len(source),'changed_files':len(owned)+1,'unique_content_files':len(committed)})
+write('delivery.json',{'fix_commit':fix,'primary_commit':head,'remote_readback':remote,'branch':'codex/receptor-chemistry-training','normal_push':True,'all_content_verified':True,'source_entries':len(source),'changed_files':len(owned)+1,'production_changes':True,'foreign_work_unchanged':True})
+print(json.dumps({'fix_commit':fix,'primary_commit':head,'remote_readback':remote,'changed_files':len(owned)+1,'unique_content_files':len(committed)}))
