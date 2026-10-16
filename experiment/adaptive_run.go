@@ -91,7 +91,8 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 // runAdaptiveEvaluation runs the adaptive mode: the adaptation partition is
 // replayed through an OnlineLearner with a plastic policy (base parameters and
 // fast state are changed only by the plasticity the learner applies), and the
-// scoring partition runs the same closed-gate evaluation as the fixed mode.
+// scoring partition holds the fast state while advancing neural and chemical
+// state.
 func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e AdaptiveEvaluation) (EvaluationReport, error) {
 	before := ind.Snapshot().Parameters
 	gate := learning.RewardGateFunc(func(score float64) ([]float64, error) {
@@ -204,17 +205,17 @@ func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 	}, nil
 }
 
-// scoreItems runs the closed-gate scoring flow of one partition on an
-// individual: it applies the declared reset before every item, advances the
-// individual, records the output and its MSE, and returns the item scores in
-// the order the items were given.
+// scoreItems runs the fixed scoring flow of one partition on an individual:
+// it applies the declared reset before every item, advances with the fast
+// plastic state held for that item, records the output and its MSE, and
+// returns the item scores in the order the items were given.
 func scoreItems(ctx context.Context, ind *learning.Individual, items []EvaluationItem, reset ResetPolicy) ([]ItemScore, error) {
 	scores := make([]ItemScore, 0, len(items))
 	for _, item := range items {
 		if err := resetForItem(ctx, ind, reset, item.ID); err != nil {
 			return nil, err
 		}
-		out, err := ind.Advance(ctx, item.Input)
+		out, err := ind.AdvanceFixed(ctx, item.Input)
 		if err != nil {
 			return nil, err
 		}

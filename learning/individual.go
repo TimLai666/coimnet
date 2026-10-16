@@ -453,6 +453,27 @@ func (i *Individual) Advance(ctx context.Context, input [][]float64) ([][]float6
 	return out, err
 }
 
+// AdvanceFixed consumes observations with the fast plastic state held for
+// this call. The same neural and chemical state advances as Advance, and the
+// existing runtime freeze posture is restored before the individual unlocks.
+// A failed or canceled call commits no state, just like Advance.
+func (i *Individual) AdvanceFixed(ctx context.Context, input [][]float64) ([][]float64, error) {
+	if i == nil || i.trainer == nil {
+		return nil, fmt.Errorf("uninitialized individual")
+	}
+	if err := i.mu.LockContext(ctx); err != nil {
+		return nil, err
+	}
+	defer i.mu.Unlock()
+	if i.plastic != nil {
+		frozen := i.plastic.frozen
+		i.plastic.frozen = true
+		defer func() { i.plastic.frozen = frozen }()
+	}
+	out, _, err := i.advanceRowsWithGateSourceLocked(ctx, input, nil, true)
+	return out, err
+}
+
 // AdvanceGated is Advance with an explicit learning gate: gate carries one
 // value per input row, supplied by the caller, so it can be a constant, a
 // window or a pulse that arrives several steps after the activity it rewards.
