@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 3／4，本輪暫存已清除，提交與遠端讀回尚待完成。模型格式、正常載入及數值規則保持，整體機制稽核持續。
+[ticket 127](docs/tickets/127-frozen-intervention.md) 已修正內部對照丟失凍結旗標，以及對照失敗前 subject 已提交的兩個缺陷。兩個公開 probe、一般／競態各 90 項專項、既有與新增各 119 項介入／凍結測試通過，兩種隔離回退被拒絕。841 份來源的完整一般／競態各 58 套件通過，8,005／8,004 pass、23／24 skip，原有各 7,938 個終端事件保持，只新增各 90 pass。格式、build、vet、固定依賴及治理通過，COR-11 因另已重現的範數溢位保持 specified，工程追蹤 90／91，下一項由 ticket128 修正，見[驗收](evidence/COR-11/frozen-intervention-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,740,939,604 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/COR-11/frozen-intervention-20261016/cleanup.json)。主要提交 `0af230b` 已推送且遠端讀回相同，841 份提交來源核對完成，見[交付](evidence/COR-11/frozen-intervention-20261016/delivery.json)。模型格式、正常載入及數值規則保持，整體機制稽核持續。
 
 [ticket 126](docs/tickets/126-persistent-chemical-clock.md) 已通過持續 timeline 與延後回饋的絕對時間驗收。一般／競態各 48 案例、1,920 條不同路徑、48 次新程序接續及 48 次原子性拒絕通過，controller 視窗另與公開神經歷史獨立比對。兩種刻意時鐘錯誤於兩個建置均被拒絕。840 份正式來源與已交付 ticket125 逐位相同，沿用前先重新雜湊完整一般／競態日誌並重算事件。本輪診斷、全框架 build／vet、依賴及治理重新執行，工程追蹤保持 91／91，見[驗收](evidence/MOD-02/persistent-source-clock-20261016/verification.json)。本票 4／4，最後 31 項治理通過，1,301,795,158 bytes 自有暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](evidence/MOD-02/persistent-source-clock-20261016/cleanup.json)。主要提交 `a2015a5` 已推送且遠端讀回相同，840 份提交來源核對完成，見[交付](evidence/MOD-02/persistent-source-clock-20261016/delivery.json)。沒有確認新的正式運算缺陷。下一項先驗證化學凍結與 Intervene 對照並用的旗標差異，不先改模型規則。
 
@@ -269,7 +269,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | in_progress | 3／4。兩項修正、90 項專項及完整工程通過，待清理與交付 |
+| 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | completed | 4／4。兩項修正、90 項專項、完整工程、清理及遠端提交核對完成 |
 | 122 | 研究者可以接續可表示的慢速活動狀態 | Codex Root／Luna max 唯讀審查 | completed | 4／4。專項、正常／舊保存、完整工程、清理及遠端提交核對完成 |
 | 116 | 研究者可以在有限尾端設定下使用正確的放電閾值與梯度 | Codex Root／Luna max 測試、實作與唯讀審查 | completed | 5／5。完整工程、正常／舊保存、清理、提交推送及 833 份提交來源核對完成 |
 | 115 | 研究者可以保留可表示的極端替代梯度 | Codex Root／Luna max | completed | 5／5。完整工程、相容性、清理、提交與遠端核對完成，見 ticket 115 |
