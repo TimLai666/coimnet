@@ -6,7 +6,7 @@
 | [delivery-status.md](../../../delivery-status.md) | 更新本票契約、驗收與交付狀態 |
 | [docs/requirements-status.json](../../../docs/requirements-status.json) | 更新本票契約、驗收與交付狀態 |
 | [docs/tickets/127-frozen-intervention.md](../../../docs/tickets/127-frozen-intervention.md) | 更新本票契約、驗收與交付狀態 |
-| [docs/tickets/128-intervention-finite-norm.md](../../../docs/tickets/128-intervention-finite-norm.md) | 更新本票契約、驗收與交付狀態 |
+| [docs/tickets/128-intervention-finite-norm.md](../../../docs/tickets/128-intervention-finite-norm.md) | 追蹤已確認的變化量上下溢位及下一票驗收條件 |
 | [evidence/COR-11/frozen-intervention-20261016/adversarial-review.md](../../../evidence/COR-11/frozen-intervention-20261016/adversarial-review.md) | 本票驗收證據 |
 | [evidence/COR-11/frozen-intervention-20261016/baseline.json](../../../evidence/COR-11/frozen-intervention-20261016/baseline.json) | 保存 baseline 的設定、命令回條或驗證結果 |
 | [evidence/COR-11/frozen-intervention-20261016/changed-files.md](../../../evidence/COR-11/frozen-intervention-20261016/changed-files.md) | 完整列出本票變更檔案 |
@@ -109,5 +109,5 @@
 | [evidence/COR-11/frozen-intervention-20261016/verify-diagnostic.py.txt](../../../evidence/COR-11/frozen-intervention-20261016/verify-diagnostic.py.txt) | 保存 verify-diagnostic 的驗證與交付腳本 |
 | [evidence/COR-11/frozen-intervention-20261016/work-preservation.json](../../../evidence/COR-11/frozen-intervention-20261016/work-preservation.json) | 保存 work-preservation 的設定、命令回條或驗證結果 |
 | [evidence/COR-11/frozen-intervention-20261016/write-verification.py.txt](../../../evidence/COR-11/frozen-intervention-20261016/write-verification.py.txt) | 保存 write-verification 的驗證與交付腳本 |
-| [learning/intervene.go](../../../learning/intervene.go) | 修正內部對照與取消原子性，新增85個行為控制案例 |
-| [learning/intervene_runtime_test.go](../../../learning/intervene_runtime_test.go) | 修正內部對照與取消原子性，新增85個行為控制案例 |
+| [learning/intervene.go](../../../learning/intervene.go) | 保留比較模型的凍結設定，先完成比較再推進原模型 |
+| [learning/intervene_runtime_test.go](../../../learning/intervene_runtime_test.go) | 新增 85 個公開行為控制案例與五個父測試 |
