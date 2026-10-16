@@ -246,6 +246,10 @@ func (m *LIF) homeostatic() bool {
 func (m *LIF) stabilise(rate, offset, spike float64) (float64, float64) {
 	h := m.config.Homeostasis
 	next := rate + m.rateStep*(spike-rate)
+	if !finite(next) {
+		// Recover a representable sum when an unfused product overflows.
+		next = math.FMA(m.rateStep, spike-rate, rate)
+	}
 	shifted := offset + m.offsetStep*(next-h.TargetRate)
 	// Plain comparisons so a non-finite value survives the clamp and is
 	// rejected by the caller's finite check instead of being hidden as zero.
