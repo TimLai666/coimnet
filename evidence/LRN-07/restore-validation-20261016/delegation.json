@@ -1,0 +1,56 @@
+{
+  "host": "Codex",
+  "probe": "opencode models",
+  "exit_code": 1,
+  "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "fallback": "collaboration",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "agents": [
+    {
+      "agent": "/root/replay_counter_tests_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "one additional proposed regression test text only; no Go commands"
+    },
+    {
+      "agent": "/root/replay_restore_callers_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only current producer/consumer and compatibility audit",
+      "root_review": "Caller chain verified. One false shortcut rejected: reservoir/time-balanced Seen<=2 does not exclude overflow at capacity1. General canAddDraw predicate and an explicit lawful boundary retained."
+    },
+    {
+      "agent": "/root/replay_checkpoint_tests_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "one proposed checkpoint public-boundary regression text only; Root read the full returned source"
+    },
+    {
+      "agent": "/root/replay_restore_implementation_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "one proposed production source text; tests frozen after actual34fail40pass per build; no tests or formal writes"
+    },
+    {
+      "agent": "/root/replay_restore_adversarial_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only adversarial review of frozen production diff and public test coverage; no Go or writes"
+    },
+    {
+      "agent": "/root/restore_evidence_check_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only independent formal test-event and source-manifest comparison; no writes or Go",
+      "result": "Confirmed689pass /688pass1skip,615 unchanged plus74 newpass; no confirmed narrow-patch defect. Historical pending ticket flags were updated independently by Root."
+    },
+    {
+      "agent": "/root/restore_cleanup_check_133",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "scope": "read-only safety review of preservation/cleanup scripts and manifests",
+      "root_review": "Target/inode/set checks verified. Root independently confirmed60/48/18/6/32 counts and added explicit guards plus manifest hash anchoring; no observed framework/deletion defect was established."
+    }
+  ]
+}

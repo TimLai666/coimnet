@@ -1,0 +1,7 @@
+# Root checkpoint public-boundary test slot133
+
+Output only runs/.tmp/replay-restore-20261016/checkpoint_replay_validation_test.go.txt, package checkpoint. Reuse newDelayedTrainer(t,7), NewState, existing envelopeJSON/checksumHex/writeRaw fixture helpers. All actual assertions target public State.Validate, Save and Load.
+
+Build three invalid replay blocks from public replay.New/Add, not a raw-store hash mismatch already rejected by old code: hashed-only FIFO with one input fingerprint changed to64 z; keep/reservoir capacity2 after3 Add with Draws changed to0; empty FIFO with Draws changed to1. For each, Validate must reject, Save to a fresh path must reject without publishing any file, and a complete JSON envelope containing the same invalid state with a freshly valid checksum must be rejected by Load with a zero State. Each operation must be tested in a distinct subtest so one early refusal assertion cannot conceal the other entry points. Check the caller State JSON bytes and the persisted input bytes remain unchanged. Do not weaken existing tests or change production.
+
+One lawful hashed/raw replay checkpoint control must Save/Load roundtrip and continue Sample/Add with equivalent item values, reports and final state to uninterrupted stores. Ordinary APIs must never produce fixture errors ignored by a test. No new subprocess helper is required in this test file. Root separately preserves before-change checkpoint bytes for actual cross-process compatibility checks. Worker must not execute Go, gofmt, tests, compilation or network.

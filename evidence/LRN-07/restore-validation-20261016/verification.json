@@ -1,0 +1,120 @@
+{
+  "ticket": 133,
+  "source_count": 851,
+  "engineering_passed": true,
+  "acceptance_complete": false,
+  "requirements_passed": 90,
+  "remaining": [
+    "commit",
+    "push",
+    "exact remote readback"
+  ],
+  "scope": "Necessary replay restore validation, not model-quality or zero-bug evidence.",
+  "diagnostic_passed": true,
+  "verified_at": "2026-10-16T13:19:42.863244+00:00",
+  "source_manifest": "formal-source.json",
+  "source_manifest_sha256": "0f3dbb94e1ce84fa0fad6af81fe5b86d805d04b0e4ef975809da1fcc8dbfee09",
+  "environment": {
+    "CGO_ENABLED": "1",
+    "GOARCH": "arm64",
+    "GOOS": "darwin",
+    "GOTOOLCHAIN": "local",
+    "GOVERSION": "go1.26.5"
+  },
+  "go_version": "go version go1.26.5 darwin/arm64",
+  "reproduction_command": "run-command.py.txt formal green-related, public/counters/additional-counters before/after, old-replay before/after; engineering.py.txt",
+  "environment_file": "command-environment.json",
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "0f3dbb94e1ce84fa0fad6af81fe5b86d805d04b0e4ef975809da1fcc8dbfee09",
+    "frozen_regressions": "regression-frozen.json",
+    "module_anchor": "module-manifest-anchor.json",
+    "work_payloads": "work-payloads.json",
+    "work_payloads_sha256": "f7eb3202799a64c7b12892a86abfadf42560aa5e00ad45109a3d5af779d5917e"
+  },
+  "observed_result": {
+    "diagnostic": {
+      "verified_at": "2026-10-16T12:41:38.129283+00:00",
+      "source_count": 851,
+      "formal_adoption": true,
+      "all_passed": true,
+      "modes": {
+        "ordinary": {
+          "test_events": {
+            "pass": 689
+          },
+          "old_events_unchanged": 615,
+          "new_pass_events": 74,
+          "public_refusals_corrected": 8,
+          "permission_controls_unchanged": 8,
+          "old_checkpoint_cases": 24,
+          "old_checkpoint_continuation_byte_identical": true
+        },
+        "race": {
+          "test_events": {
+            "pass": 688,
+            "skip": 1
+          },
+          "old_events_unchanged": 615,
+          "new_pass_events": 74,
+          "public_refusals_corrected": 8,
+          "permission_controls_unchanged": 8,
+          "old_checkpoint_cases": 24,
+          "old_checkpoint_continuation_byte_identical": true
+        }
+      },
+      "old_checkpoint_files_unchanged": 48,
+      "scope": "Necessary replay state validation; no arbitrary history reconstruction or model-quality inference."
+    },
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 8517,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_events_unchanged": 8466,
+        "new_pass_events": 74
+      },
+      "race": {
+        "test_events": {
+          "pass": 8516,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_events_unchanged": 8466,
+        "new_pass_events": 74
+      }
+    },
+    "engineering_receipt": "engineering-verification.json",
+    "approved_neutral_gain": "approved-neutral-gain-control.json"
+  },
+  "test_log": [
+    "red-ordinary.log",
+    "red-race.log",
+    "green-related-ordinary.log",
+    "green-related-race.log",
+    "old-replay-after-ordinary.log",
+    "old-replay-after-race.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log",
+    "final-governance-corrected.log"
+  ],
+  "limits": "Local macOS arm64 engineering and synthetic public API recovery controls; no new task accuracy or biological calibration.",
+  "remaining_framework_defects": [
+    134
+  ],
+  "requirement": "LRN-07",
+  "prior_finding": "evidence/LRN-10/policy-composition-20261016/next-audit-verification.json",
+  "final_governance": "final-governance.json",
+  "preservation_receipt": "work-preservation.json",
+  "cleanup_passed": true,
+  "cleanup_receipt": "cleanup.json"
+}

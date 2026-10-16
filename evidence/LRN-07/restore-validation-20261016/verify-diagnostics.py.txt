@@ -1,0 +1,109 @@
+"""Verify formal restore regressions and pre-change checkpoint continuation."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip evidence gates")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / "evidence/LRN-10/feedback-permission-20261016"
+
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def read_command(label):
+    receipt = json.loads((E / (label + ".json")).read_text())
+    log = E / receipt["log"]
+    assert receipt["exit_code"] == 0, label
+    assert sha(log) == receipt["log_sha256"], label
+    return log.read_bytes()
+
+
+def events(raw):
+    result = {}
+    for line in raw.decode().splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get("Test") and row.get("Action") in ("pass", "fail", "skip"):
+            key = row["Package"], row["Test"]
+            assert key not in result, key
+            result[key] = row["Action"]
+    return result
+
+
+source = json.loads((E / "formal-source.json").read_text())
+paths = {p for p in subprocess.check_output(
+    ["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=R
+).decode().split("\0") if p and (p.endswith(".go") or p in ("go.mod", "go.sum"))}
+assert len(source) == 851 and paths == set(source)
+for path, digest in source.items():
+    assert sha(R / path) == digest, path
+for path, digest in json.loads((E / "foreign-before.json").read_text()).items():
+    assert sha(Path(path)) == digest, path
+frozen = json.loads((E / "regression-frozen.json").read_text())
+for path, item in frozen["files"].items():
+    assert sha(R / path) == item["sha256"], path
+assert sha(R / "replay/store.go") == json.loads(
+    (E / "implementation-frozen.json").read_text()
+)["sha256"]
+
+results = {}
+for mode, previous_name in (("ordinary", "unit"), ("race", "race")):
+    current = events(read_command("green-related-" + mode))
+    prior = json.loads((P / "engineering-verification.json").read_text())
+    step = next(x for x in prior["steps"] if x["name"] == previous_name)
+    assert sha(P / step["log"]) == step["log_sha256"]
+    old = {k: v for k, v in events(gzip.decompress((P / step["log"]).read_bytes())).items()
+           if k[0] in ("github.com/TimLai666/coimnet/replay", "github.com/TimLai666/coimnet/checkpoint")}
+    added = {k: v for k, v in current.items() if k not in old}
+    assert len(old) == 615 and all(current.get(k) == v for k, v in old.items())
+    assert len(added) == 74 and set(added.values()) == {"pass"}
+    assert {k[1].split("/")[0] for k in added} == set(frozen["test_names"])
+    expected = {"pass": 689} if mode == "ordinary" else {"pass": 688, "skip": 1}
+    assert dict(collections.Counter(current.values())) == expected
+
+    before = json.loads(read_command("public-before-" + mode))
+    after = json.loads(read_command("public-after-" + mode))
+    assert len(before) == len(after) == 10 and before[:8] == after[:8]
+    assert all(row["accepted"] for row in before[8:])
+    assert all(not row["accepted"] and row["error"] for row in after[8:])
+    for prefix, count in (("counters", 4), ("additional-counters", 2)):
+        bad_before = json.loads(read_command(prefix + "-before-" + mode))
+        bad_after = json.loads(read_command(prefix + "-after-" + mode))
+        assert len(bad_before) == len(bad_after) == count
+        assert all(row["accepted"] for row in bad_before)
+        assert all(not row["accepted"] for row in bad_after)
+
+    old_before = read_command("old-replay-before-" + mode)
+    old_after = read_command("old-replay-after-" + mode)
+    assert old_before == old_after
+    assert len(json.loads(old_after)) == 24
+    results[mode] = {"test_events": expected, "old_events_unchanged": 615,
+                     "new_pass_events": 74, "public_refusals_corrected": 8,
+                     "permission_controls_unchanged": 8, "old_checkpoint_cases": 24,
+                     "old_checkpoint_continuation_byte_identical": True}
+
+baseline = json.loads((E / "old-replay-baseline-verification.json").read_text())
+assert len(baseline["checkpoint_files"]) == 48
+for path, item in baseline["checkpoint_files"].items():
+    assert sha(R / path) == item["sha256"] and (R / path).stat().st_size == item["bytes"]
+for prefix in ("public-after", "counters-after", "additional-counters-after", "old-replay-after"):
+    assert read_command(prefix + "-ordinary") == read_command(prefix + "-race")
+
+with (E / "diagnostic-verification.json").open("x") as handle:
+    json.dump({"verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+               "source_count": len(source), "formal_adoption": True, "all_passed": True,
+               "modes": results, "old_checkpoint_files_unchanged": 48,
+               "scope": "Necessary replay state validation; no arbitrary history reconstruction or model-quality inference."}, handle, indent=2)
+    handle.write("\n")
+print(json.dumps({"all_passed": True, "source_count": 851, "new_pass_events_per_build": 74,
+                  "old_checkpoint_files_unchanged": 48}))

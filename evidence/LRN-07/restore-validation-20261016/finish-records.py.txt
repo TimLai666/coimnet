@@ -1,0 +1,99 @@
+"""Accept direct full-engineering receipts before preservation and delivery."""
+import collections
+import datetime
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+
+if not __debug__:
+    raise SystemExit("optimized Python cannot skip evidence gates")
+E = Path(__file__).resolve().parent
+R = E.parents[2]
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+engineering = read(E / "engineering-verification.json")
+assert engineering["all_passed"] and engineering["source_count"] == 851
+assert len(engineering["steps"]) == 9
+regressions = set(read(E / "regression-frozen.json")["test_names"])
+summary = {}
+neutral_controls = {}
+for step in engineering["steps"]:
+    assert step["exit_code"] == 0 and not step["acceptance_errors"], step["name"]
+    log = E / step["log"]
+    assert sha(log) == step["log_sha256"]
+    if log.name.endswith(".gz"):
+        raw = gzip.decompress(log.read_bytes())
+        assert hashlib.sha256(raw).hexdigest() == step["raw_sha256"]
+    else:
+        raw = log.read_bytes()
+    if step["name"] not in ("unit", "race"):
+        continue
+    expected = {"pass": 8517, "skip": 23} if step["name"] == "unit" else {"pass": 8516, "skip": 24}
+    assert step["test_events"] == expected
+    assert step["package_events"] == {"pass": 58, "skip": 4}
+    assert step["prior_event_count"] == 8466 and not step["changed_events"]
+    assert len(step["added_events"]) == 74
+    assert all(x["action"] == "pass" and x["test"].split("/")[0] in regressions for x in step["added_events"])
+    summary[step["name"]] = {"test_events": expected, "package_events": step["package_events"],
+                             "prior_events_unchanged": 8466, "new_pass_events": 74}
+    neutral = []
+    for line in raw.decode().splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get("Test", "").startswith("TestNeutralGain") and row.get("Action") in ("pass", "skip", "fail"):
+            neutral.append({"package": row["Package"], "test": row["Test"], "action": row["Action"]})
+    assert len(neutral) == 21 and all(x["action"] == "pass" for x in neutral)
+    neutral_controls[step["name"]] = neutral
+
+source = read(E / "formal-source.json")
+assert len(source) == 851
+paths = {p for p in subprocess.check_output(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=R).decode().split("\0")
+         if p and (p.endswith(".go") or p in ("go.mod", "go.sum"))}
+assert paths == set(source)
+for name, digest in source.items():
+    assert sha(R / name) == digest, name
+for name, digest in read(E / "foreign-before.json").items():
+    assert sha(Path(name)) == digest, name
+diagnostic = read(E / "diagnostic-verification.json")
+assert diagnostic["all_passed"] and diagnostic["formal_adoption"]
+assert diagnostic["old_checkpoint_files_unchanged"] == 48
+status = read(R / "docs/requirements-status.json")["requirements"]
+assert collections.Counter(x["status"] for x in status) == {"passed": 89, "specified": 2}
+assert {x["id"] for x in status if x["status"] == "specified"} == {"LRN-07", "LRN-10"}
+with (E / "approved-neutral-gain-control.json").open("x") as handle:
+    json.dump({"approved_rule": "0 < gamma_min <= 1 <= gamma_max after zero-value defaults",
+               "production_commit": "90914c3", "source_manifest": "formal-source.json",
+               "passed_events_per_build": 21, "events": neutral_controls}, handle, indent=2)
+    handle.write("\n")
+
+p = E / "verification.json"
+original = p.read_bytes()
+verification = json.loads(original)
+assert not verification["engineering_passed"]
+verification.update(requirement="LRN-07", verified_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    engineering_passed=True, diagnostic_passed=True,
+                    source_manifest="formal-source.json", source_manifest_sha256=sha(E / "formal-source.json"),
+                    environment=read(E / "host-go-environment.log"),
+                    go_version=(E / "host-go-version.log").read_text().strip(),
+                    reproduction_command="run-command.py.txt formal green-related, public/counters/additional-counters before/after, old-replay before/after; engineering.py.txt",
+                    environment_file="command-environment.json", input_fingerprints={
+                        "formal_source": "formal-source.json", "formal_source_sha256": sha(E / "formal-source.json"),
+                        "frozen_regressions": "regression-frozen.json", "module_anchor": "module-manifest-anchor.json",
+                        "work_payloads": "work-payloads.json", "work_payloads_sha256": sha(E / "work-payloads.json")},
+                    observed_result={"diagnostic": diagnostic, "engineering": summary,
+                                     "engineering_receipt": "engineering-verification.json",
+                                     "approved_neutral_gain": "approved-neutral-gain-control.json"},
+                    test_log=["red-ordinary.log", "red-race.log", "green-related-ordinary.log", "green-related-race.log",
+                              "old-replay-after-ordinary.log", "old-replay-after-race.log", "engineering-unit.log.gz",
+                              "engineering-race.log.gz", "engineering-governance.log"],
+                    remaining=["final governance", "preservation", "cleanup", "commit", "push", "exact remote readback"],
+                    limits="Local macOS arm64 engineering and synthetic public API recovery controls; no new task accuracy or biological calibration.")
+assert p.read_bytes() == original
+p.write_text(json.dumps(verification, indent=2) + "\n")
+print(json.dumps({"engineering_passed": True, "source_count": 851, "unit_pass": 8517,
+                  "race_pass": 8516, "neutral_gain_pass_events_per_build": 21,
+                  "requirements_not_yet_updated": True}))

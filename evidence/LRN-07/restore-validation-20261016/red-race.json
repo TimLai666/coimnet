@@ -1,0 +1,33 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-overlay",
+    "runs/.tmp/replay-restore-20261016/red-overlay.json",
+    "-json",
+    "-count=1",
+    "./replay",
+    "./checkpoint",
+    "-run",
+    "^Test(ReplayRestore.*|CheckpointRejectsImpossibleReplayStates|CheckpointReplayRawAndHashedContinuation)$"
+  ],
+  "exit_code": 1,
+  "started_at": "2026-10-16T12:28:40.824345+00:00",
+  "seconds": 7.594802416,
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2 -timeout=60m",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/replay-restore-20261016/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/replay-restore-20261016/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/replay-restore-20261016/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/replay-restore-20261016/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "log": "red-race.log",
+  "log_sha256": "27d0919d7c9da8a061d26ce72632954ba432d3ba767e5048ca18f71ea3d8204d"
+}

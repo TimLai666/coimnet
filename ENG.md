@@ -272,6 +272,10 @@ EnableChemistry 在提交候選宣告前檢查既有 ExpressionGain，與局部�
 
 控制器活動視窗、濃度區域及有區域運輸時的完整網格，須先確認 float64 資料與外層 slice header 的總位元組大小可表示，再配置或觀察活動。ApplyEffects 也先檢查節點向量。這是宣告算術驗證，不保證可表示的大型配置有足夠實體記憶體。正常算式、公開簽名及保存格式保持，拒絕與相容性驗收見[ticket 87](docs/tickets/87-chemical-capacity-validation.md)。
 
+## 重播恢復的必要狀態限制
+
+Restore與checkpoint的Validate／Save／Load共用驗證。hashed-only指紋須為64個hex字元，合法大小寫保留。keep／reservoir溢出後的Draws至少為Seen−Capacity。兩種保留政策都依歷史可達的持有數上限與Add／Sample來源拒絕不可能的正Draws，不能只看目前持有數。所有seen項仍持有時，drop代表沒有非空取樣，keep／task_balanced的唯一TaskID代表每個歷史群都不會shuffle。這些是欄位可推得的必要限制，不宣稱重建任意操作歷史。正常抽樣、seed與保存格式保持，由[ticket133](docs/tickets/133-replay-restore-state-validation.md)驗收。
+
 ## 線上回饋與共享訓練狀態一致性
 
 適應評估先執行每題的線上作答，再檢查該題是否允許score，宣告驗證已確保允許種類同時屬於全域可用種類。未允許時不讀取答案計算分數、不送入Receive／Update，作答的觀察、參與紀錄與自然衰退照常執行。自動runner只產生score，其他回饋名稱保留為metadata。公開API註解與CLI範例說明同步此限制，由[ticket132](docs/tickets/132-adaptation-feedback-permission.md)驗收。
