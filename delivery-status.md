@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-[ticket130](docs/tickets/130-online-receptor-gate-ownership.md) 已修正線上作答提前學習與回饋閘門衝突。一般／競態各168個新專項、四個相關套件、32個公開控制與12份舊化學模型接續通過，兩種隔離錯誤均被拒絕。846份正式來源的完整一般／競態各58套件通過，8,401／8,400 pass、23／24 skip，原有各8,256個終端事件保持，只新增各168 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。LRN-06恢復passed，工程追蹤91／91。本票3／4，待清理與交付，見[驗收](evidence/LRN-06/online-receptor-policy-20261016/verification.json)。
+[ticket130](docs/tickets/130-online-receptor-gate-ownership.md) 已修正線上作答提前學習與回饋閘門衝突。一般／競態各168個新專項、四個相關套件、32個公開控制與12份舊化學模型接續通過，兩種隔離錯誤均被拒絕。846份正式來源的完整一般／競態各58套件通過，8,401／8,400 pass、23／24 skip，原有各8,256個終端事件保持，只新增各168 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。LRN-06恢復passed，工程追蹤91／91。本票4／4。最後31項治理通過，1,873,901,825 bytes自有暫存已清除，原模型、資料、原始模組及其他工作保持。主要提交`119147a`已推送且遠端讀回相同，見[清理](evidence/LRN-06/online-receptor-policy-20261016/cleanup.json)與[交付](evidence/LRN-06/online-receptor-policy-20261016/delivery.json)。見[驗收](evidence/LRN-06/online-receptor-policy-20261016/verification.json)。
 
 [ticket 129](docs/tickets/129-consolidation-norm-boundary.md) 已修正三種記憶報告的最高端誤接受與誤拒絕。一般／競態各129個新專項、224個相關事件與33個公開控制通過，兩種隔離錯誤均被拒絕。845份來源的完整一般／競態各58套件通過，8,233／8,232 pass、23／24 skip，原有各8,127個終端事件保持，只新增各129 pass。格式、build、vet、固定Insyra v0.3.4、模組及治理通過，MOD-06恢復passed，工程追蹤90／91，LRN-06由ticket130接續。本票4／4。最後31項治理通過，1,882,889,920 bytes自有暫存清除，原模型、資料、原始模組及其他工作保持。主要提交`0e08198`已正常推送且遠端讀回相同，見[清理](evidence/MOD-06/consolidation-norm-20261016/cleanup.json)與[交付](evidence/MOD-06/consolidation-norm-20261016/delivery.json)。見[驗收](evidence/MOD-06/consolidation-norm-20261016/verification.json)。
 
@@ -275,7 +275,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 | id | 目標 | 負責者 | 狀態 | 驗證訊號 |
 | --- | --- | --- | --- | --- |
-| 130 | 線上作答與回饋更新各自遵守閘門政策 | Codex Root／Luna max 測試與實作 | in_progress | 3／4。完整工程與LRN-06驗收通過，待清理及交付 |
+| 130 | 線上作答與回饋更新各自遵守閘門政策 | Codex Root／Luna max 測試與實作 | completed | 4／4。完整工程、清理與遠端提交核對完成，LRN-06 passed |
 | 129 | 研究者可以拒絕真正不可表示的記憶寫入報告 | Codex Root／Luna max 測試與契約審查 | completed | 4／4。完整工程、清理與遠端提交核對完成，MOD-06 passed |
 | 128 | 研究者可以匯出有限介入差異的報告 | Codex Root／Luna max 實作與唯讀審查 | completed | 4／4。專項、完整工程、清理及遠端提交核對完成，COR-11 passed |
 | 127 | 凍結個體可取得正確介入對照且失敗維持原狀 | Codex Root／Luna max 契約、實作與審查 | completed | 4／4。兩項修正、90 項專項、完整工程、清理及遠端提交核對完成 |
@@ -384,7 +384,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-先完成ticket130的清理與交付。之後的機制稽核先以公開API核對疑慮，重現缺陷後才修正。工程追蹤為91／91，這些測試不作為模型品質或零bug的證明。
+ticket130清理與交付已完成。後續機制稽核先以公開API核對疑慮，重現缺陷後才修正。工程追蹤為91／91，這些測試不作為模型品質或零bug的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
