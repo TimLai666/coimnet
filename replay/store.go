@@ -1,6 +1,7 @@
 package replay
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"math/rand/v2"
@@ -50,8 +51,12 @@ func Restore(b Buffer, s State) (*Store, error) {
 	if err := b.validate(); err != nil {
 		return nil, err
 	}
+	capacity := uint64(b.Capacity)
 	if s.SchemaVersion != StateVersion {
 		return nil, fmt.Errorf("replay: unsupported replay state %q", s.SchemaVersion)
+	}
+	if b.Eviction == EvictionReservoir && b.Privacy.Retention == RetentionKeepUntilEvicted && s.Seen > capacity && s.Draws < s.Seen-capacity {
+		return nil, fmt.Errorf("replay: reservoir state with %d seen items and capacity %d needs at least %d draws, got %d", s.Seen, b.Capacity, s.Seen-capacity, s.Draws)
 	}
 	if len(s.Items) > b.Capacity {
 		return nil, fmt.Errorf("replay: state holds %d items, the declared capacity is %d", len(s.Items), b.Capacity)
@@ -64,6 +69,36 @@ func Restore(b Buffer, s State) (*Store, error) {
 	// fewer, so only the keep policy can be checked this tightly.
 	if held := min(s.Seen, uint64(b.Capacity)); b.Privacy.Retention == RetentionKeepUntilEvicted && uint64(len(s.Items)) != held {
 		return nil, fmt.Errorf("replay: a store that has seen %d items under capacity %d must hold %d, not %d", s.Seen, b.Capacity, held, len(s.Items))
+	}
+	if s.Draws != 0 {
+		canAddDraw := b.Eviction == EvictionReservoir && s.Seen > capacity
+		maxHeld := min(s.Seen, capacity)
+		canSampleDraw := maxHeld >= 2
+		if b.Sampling == SamplingTimeBalanced {
+			canSampleDraw = maxHeld >= 3
+		}
+		if s.Seen == uint64(len(s.Items)) {
+			switch {
+			case b.Privacy.Retention == RetentionDropAfterSample:
+				canSampleDraw = false
+			case b.Privacy.Retention == RetentionKeepUntilEvicted && b.Sampling == SamplingTaskBalanced:
+				seenTasks := make(map[string]struct{}, len(s.Items))
+				allTasksUnique := true
+				for _, item := range s.Items {
+					if _, ok := seenTasks[item.TaskID]; ok {
+						allTasksUnique = false
+						break
+					}
+					seenTasks[item.TaskID] = struct{}{}
+				}
+				if allTasksUnique {
+					canSampleDraw = false
+				}
+			}
+		}
+		if !canAddDraw && !canSampleDraw {
+			return nil, fmt.Errorf("replay: state reports %d random draws, but no accepted add or sample could have drawn", s.Draws)
+		}
 	}
 	store := newStore(b)
 	for i, item := range s.Items {
@@ -105,6 +140,12 @@ func validateStored(e Experience, storeRaw bool) (Experience, error) {
 		}
 		if len(e.InputHash) != 2*32 || len(e.TargetHash) != 2*32 {
 			return Experience{}, fmt.Errorf("fingerprints %q/%q are not SHA-256 values", e.InputHash, e.TargetHash)
+		}
+		if _, err := hex.DecodeString(e.InputHash); err != nil {
+			return Experience{}, fmt.Errorf("input fingerprint %q is not hexadecimal", e.InputHash)
+		}
+		if _, err := hex.DecodeString(e.TargetHash); err != nil {
+			return Experience{}, fmt.Errorf("target fingerprint %q is not hexadecimal", e.TargetHash)
 		}
 		return e, nil
 	}
