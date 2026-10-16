@@ -1,0 +1,38 @@
+"""Verify all new events and exact preservation of the seven old trajectories."""
+import collections,hashlib,json,re
+from pathlib import Path
+E=Path(__file__).resolve().parent
+R=E.parents[2]
+def rows(path):
+    return [json.loads(x) for x in path.read_text().splitlines() if x.startswith('{')]
+def legacy(xs):
+    return [x['Output'].split('legacy-record:',1)[1].strip() for x in xs if 'legacy-record:' in x.get('Output','')]
+result={}
+for mode,before in [('ordinary','baseline-r2'),('race','legacy-before-race')]:
+    xs=rows(E/('regression-'+mode+'.log'))
+    assert json.loads((E/('regression-'+mode+'.json')).read_text())['exit_code']==0
+    terminal={x['Test']:x['Action'] for x in xs if x.get('Test') and x['Action'] in ['pass','fail','skip']}
+    assert terminal and set(terminal.values())=={'pass'}
+    main=[t for t in terminal if t.startswith('TestChemicalMaxIndependentReference/') and t.count('/')==4]
+    segments=[t for t in terminal if t.startswith('TestChemicalMaxIndependentReference/') and t.count('/')==5]
+    primitive=[t for t in terminal if t.startswith('TestChemicalMaxReferencePrimitives/')]
+    assert len(main)==72 and len(segments)==72 and len(primitive)==11,(len(main),len(segments),len(primitive))
+    old=legacy(rows(E/(before+'.log')));new=legacy(xs)
+    assert len(old)==len(new)==7 and old==new,'old reference or public values changed'
+    gradient_errors=[];prediction_errors=[];coverage=[]
+    for x in xs:
+        if not x.get('Test','').startswith('TestChemicalMaxIndependentReference/') or x['Test'].count('/')!=4:continue
+        line=x.get('Output','')
+        m=re.search(r'max_gradient_abs=([0-9.eE+-]+)',line)
+        if m:gradient_errors.append(float(m[1]))
+        m=re.search(r'max_prediction_abs=([0-9.eE+-]+)',line)
+        if m:prediction_errors.append(float(m[1]))
+        m=re.search(r'coverage floor=(\d+) refractory=(\d+) effect_saturation=(\d+) expression_active=(\d+)',line)
+        if m:coverage.append([int(v) for v in m.groups()])
+    assert len(gradient_errors)==len(prediction_errors)==len(coverage)==72
+    assert all(c[1]>0 and c[3]>0 for c in coverage)
+    result[mode]={'passed_events':len(terminal),'matrix_cases':72,'sum_max_controls':36,'segmented_checks':72,'gradient_coordinates':2556,'prediction_coordinates':576,'pending_trainable_coordinates':1296,'hand_cases':11,'old_records_identical':7,'legacy_sha256':hashlib.sha256('\n'.join(new).encode()).hexdigest(),'max_absolute_gradient_error':max(gradient_errors),'max_absolute_prediction_error':max(prediction_errors),'clamp_and_event_coverage':coverage}
+checks=json.loads((E/'root-checks.json').read_text())
+for p,h in checks.items():assert hashlib.sha256((R/p).read_bytes()).hexdigest()==h,p
+with (E/'regression-verification.json').open('x') as f:json.dump({'all_passed':True,'root_checks_unchanged':True,'builds':result},f,indent=2);f.write('\n')
+print(json.dumps({m:{k:v for k,v in d.items() if k!='clamp_and_event_coverage'} for m,d in result.items()}))

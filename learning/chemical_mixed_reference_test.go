@@ -455,13 +455,13 @@ func compareMixedGradient(t *testing.T, name string, got learning.Gradient, want
 // their own Insyra boundary, exactly as Network.lossGradientReverse does.
 func mixedReferenceGradient(fixture mixedReferenceCase) (mixedReferenceExpected, [][]float64, mixedReferenceCoverage) {
 	const (
-		weightBase  = 0
-		biasBase    = weightBase + mixedReferenceEdges
-		logTauBase  = biasBase + mixedReferenceNodes
-		thetaBase   = logTauBase + mixedReferenceNodes
-		initialBase = thetaBase + 1
-		inputBase   = initialBase + mixedReferenceNodes
+		weightBase = 0
+		biasBase   = weightBase + mixedReferenceEdges
+		logTauBase = biasBase + mixedReferenceNodes
+		thetaBase  = logTauBase + mixedReferenceNodes
 	)
+	initialBase := thetaBase + len(fixture.parameters.ThetaRaw)
+	inputBase := initialBase + mixedReferenceNodes
 	variableCount := inputBase + mixedReferenceSteps*mixedReferenceNodes
 	encoded, input32, encoder32 := referenceEncodedInputs(fixture.input, fixture.parameters.Encoder, inputBase)
 	ref := referenceForward(fixture, encoded, variableCount, weightBase, biasBase, logTauBase, thetaBase, initialBase, inputBase)
@@ -532,7 +532,7 @@ func mixedReferenceGradient(fixture mixedReferenceCase) (mixedReferenceExpected,
 		coreWeights: append([]float64(nil), objective.d[weightBase:weightBase+mixedReferenceEdges]...),
 		coreBias:    append([]float64(nil), objective.d[biasBase:biasBase+mixedReferenceNodes]...),
 		coreLogTau:  append([]float64(nil), objective.d[logTauBase:logTauBase+mixedReferenceNodes]...),
-		thetaRaw:    []float64{objective.d[thetaBase]},
+		thetaRaw:    append([]float64(nil), objective.d[thetaBase:initialBase]...),
 		coreInputs:  make([][]float64, mixedReferenceSteps),
 		coreInitial: make([]float64, mixedReferenceNodes),
 		encoder:     make([]float64, len(fixture.parameters.Encoder)),
@@ -611,6 +611,58 @@ type mixedReferenceForward struct {
 
 func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBase, biasBase, logTauBase, thetaBase, initialBase, inputBase int) mixedReferenceForward {
 	mixed := fixture.config.Mixed
+	var mixedValue dynamics.MixedConfig
+	if mixed == nil {
+		lif := fixture.config.LIF
+		if lif == nil {
+			panic("reference fixture has neither Mixed nor LIF config")
+		}
+		allNodesLIF := make([]uint8, lif.Nodes)
+		for i := range allNodesLIF {
+			allNodesLIF[i] = dynamics.RuleLIF
+		}
+		mixedValue = dynamics.MixedConfig{
+			Nodes:    lif.Nodes,
+			Sources:  lif.Sources,
+			Targets:  lif.Targets,
+			Delays:   lif.Delays,
+			DT:       lif.DT,
+			NodeRule: allNodesLIF,
+			LIF: dynamics.LIFRule{
+				TauSyn:          lif.TauSyn,
+				ThetaMin:        lif.ThetaMin,
+				ThetaMax:        lif.ThetaMax,
+				VReset:          lif.VReset,
+				RefractorySteps: lif.RefractorySteps,
+				Adaptation:      lif.Adaptation,
+				Homeostasis:     lif.Homeostasis,
+				Surrogate:       lif.Surrogate,
+			},
+		}
+		mixed = &mixedValue
+	}
+	if mixed.LIF.Homeostasis != nil && mixed.LIF.Homeostasis.Enabled {
+		panic("reference fixture LIF homeostasis is unsupported")
+	}
+	if mixed.Nodes != mixedReferenceNodes || len(mixed.NodeRule) != mixedReferenceNodes {
+		panic("reference fixture node shape is unsupported")
+	}
+	thetaIndexByNode := make([]int, mixedReferenceNodes)
+	thetaCount := 0
+	for node, rule := range mixed.NodeRule {
+		thetaIndexByNode[node] = -1
+		switch rule {
+		case dynamics.RuleContinuous:
+		case dynamics.RuleLIF:
+			thetaIndexByNode[node] = thetaCount
+			thetaCount++
+		default:
+			panic("reference fixture has an unsupported node rule")
+		}
+	}
+	if thetaCount != len(fixture.parameters.ThetaRaw) {
+		panic("reference fixture ThetaRaw shape is unsupported")
+	}
 	steps := len(encoded)
 	out := make([][]dual, steps+1)
 	voltage := make([][]dual, steps+1)
@@ -724,7 +776,8 @@ func referenceForward(fixture mixedReferenceCase, encoded [][]dual, n, weightBas
 				continue
 			}
 
-			thetaRaw := parameterDual(fixture.parameters.ThetaRaw[0], thetaBase, n)
+			thetaIndex := thetaIndexByNode[i]
+			thetaRaw := parameterDual(fixture.parameters.ThetaRaw[thetaIndex], thetaBase+thetaIndex, n)
 			base := dSigmoid(thetaRaw).scale(mixed.LIF.ThetaMax - mixed.LIF.ThetaMin).add(dConst(mixed.LIF.ThetaMin, n))
 			theta := base
 			if mixed.LIF.Adaptation.Enabled {
@@ -1108,53 +1161,122 @@ func referenceOccupancies(episode *learning.ChemicalEpisode, state [][]dual, n i
 func referenceEffects(episode *learning.ChemicalEpisode, occupancy []dual, n int) (gain, offset, threshold []dual, saturated int) {
 	config := episode.Part.Config
 	metadata := referenceRecordMetadata(episode)
+	if len(metadata) != len(occupancy) {
+		panic("reference fixture occupancy shape is unsupported")
+	}
+	mix := config.Receptors.Mix
+	if mix == "" {
+		mix = modulation.MixSum
+	}
+	if mix != modulation.MixSum && mix != modulation.MixMax {
+		panic("reference fixture uses an unsupported effect mix")
+	}
+	type effectGroup struct {
+		seen   bool
+		effect modulation.Effect
+		total  dual
+	}
+	sensitivity := make([]effectGroup, mixedReferenceNodes)
+	thresholdGroup := make([]effectGroup, mixedReferenceNodes)
 	gain = make([]dual, mixedReferenceNodes)
 	offset = make([]dual, mixedReferenceNodes)
 	threshold = make([]dual, mixedReferenceNodes)
 	for node := 0; node < mixedReferenceNodes; node++ {
 		gain[node], offset[node], threshold[node] = dConst(1, n), dConst(0, n), dConst(0, n)
 	}
-	for _, effect := range config.Effects {
-		for node := 0; node < mixedReferenceNodes; node++ {
-			total := dConst(0, n)
-			for index, record := range metadata {
-				if record.receptor == effect.Receptor && record.cell == node {
-					total = total.add(occupancy[index])
-				}
+	sameCoefficients := func(left, right modulation.Effect) bool {
+		if left.Kind != right.Kind {
+			return false
+		}
+		switch left.Kind {
+		case modulation.EffectSensitivity:
+			return left.GammaScale == right.GammaScale && left.BetaScale == right.BetaScale && left.GammaMin == right.GammaMin && left.GammaMax == right.GammaMax && left.BetaAbsMax == right.BetaAbsMax
+		case modulation.EffectThreshold:
+			return left.ThetaScale == right.ThetaScale && left.ThetaAbsMax == right.ThetaAbsMax
+		default:
+			return false
+		}
+	}
+	for _, declared := range config.Effects {
+		effect := declared
+		var groups []effectGroup
+		switch effect.Kind {
+		case modulation.EffectSensitivity:
+			if effect.ThetaScale != 0 || effect.ThetaAbsMax != 0 {
+				panic("reference fixture has threshold fields on a sensitivity effect")
 			}
-			if total.v == 0 {
+			if effect.GammaMin == 0 {
+				effect.GammaMin = modulation.DefaultGammaMin
+			}
+			if effect.GammaMax == 0 {
+				effect.GammaMax = modulation.DefaultGammaMax
+			}
+			if effect.BetaAbsMax == 0 {
+				effect.BetaAbsMax = modulation.DefaultBetaAbsMax
+			}
+			groups = sensitivity
+		case modulation.EffectThreshold:
+			if effect.GammaScale != 0 || effect.BetaScale != 0 || effect.GammaMin != 0 || effect.GammaMax != 0 || effect.BetaAbsMax != 0 || effect.ThetaAbsMax <= 0 {
+				panic("reference fixture has invalid threshold effect fields")
+			}
+			groups = thresholdGroup
+		default:
+			panic("reference fixture has an unsupported effect kind")
+		}
+		if effect.Receptor < 0 {
+			panic("reference fixture has a negative effect receptor")
+		}
+		for index, record := range metadata {
+			if record.receptor != effect.Receptor {
 				continue
 			}
-			switch effect.Kind {
-			case modulation.EffectSensitivity:
-				gammaMin, gammaMax := effect.GammaMin, effect.GammaMax
-				if gammaMin == 0 {
-					gammaMin = modulation.DefaultGammaMin
-				}
-				if gammaMax == 0 {
-					gammaMax = modulation.DefaultGammaMax
-				}
-				betaMax := effect.BetaAbsMax
-				if betaMax == 0 {
-					betaMax = modulation.DefaultBetaAbsMax
-				}
-				gammaValue := 1 + effect.GammaScale*total.v
-				betaValue := effect.BetaScale * total.v
-				gain[node] = clampDual(dConst(1, n).add(total.scale(effect.GammaScale)), gammaMin, gammaMax)
-				offset[node] = clampDual(total.scale(effect.BetaScale), -betaMax, betaMax)
-				if gammaValue <= gammaMin || gammaValue >= gammaMax {
-					saturated++
-				}
-				if betaValue <= -betaMax || betaValue >= betaMax {
-					saturated++
-				}
-			case modulation.EffectThreshold:
-				thetaValue := effect.ThetaScale * total.v
-				threshold[node] = clampDual(total.scale(effect.ThetaScale), -effect.ThetaAbsMax, effect.ThetaAbsMax)
-				if thetaValue <= -effect.ThetaAbsMax || thetaValue >= effect.ThetaAbsMax {
-					saturated++
-				}
+			if record.cell < 0 || record.cell >= mixedReferenceNodes {
+				panic("reference fixture effect cell is outside the reference nodes")
 			}
+			group := &groups[record.cell]
+			if group.seen {
+				if !sameCoefficients(group.effect, effect) {
+					panic("reference fixture has inconsistent effect coefficients")
+				}
+			} else {
+				group.seen = true
+				group.effect = effect
+				group.total = dConst(0, n)
+			}
+			if mix == modulation.MixMax {
+				if occupancy[index].v > group.total.v {
+					group.total = occupancy[index]
+				}
+			} else {
+				group.total = group.total.add(occupancy[index])
+			}
+		}
+	}
+	for node, group := range sensitivity {
+		if !group.seen {
+			continue
+		}
+		effect := group.effect
+		gammaValue := 1 + effect.GammaScale*group.total.v
+		betaValue := effect.BetaScale * group.total.v
+		gain[node] = clampDual(dConst(1, n).add(group.total.scale(effect.GammaScale)), effect.GammaMin, effect.GammaMax)
+		offset[node] = clampDual(group.total.scale(effect.BetaScale), -effect.BetaAbsMax, effect.BetaAbsMax)
+		if gammaValue <= effect.GammaMin || gammaValue >= effect.GammaMax {
+			saturated++
+		}
+		if betaValue <= -effect.BetaAbsMax || betaValue >= effect.BetaAbsMax {
+			saturated++
+		}
+	}
+	for node, group := range thresholdGroup {
+		if !group.seen {
+			continue
+		}
+		effect := group.effect
+		thetaValue := effect.ThetaScale * group.total.v
+		threshold[node] = clampDual(group.total.scale(effect.ThetaScale), -effect.ThetaAbsMax, effect.ThetaAbsMax)
+		if thetaValue <= -effect.ThetaAbsMax || thetaValue >= effect.ThetaAbsMax {
+			saturated++
 		}
 	}
 	return gain, offset, threshold, saturated

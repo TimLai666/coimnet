@@ -1,0 +1,28 @@
+"""Preserve only necessary work inputs before removing the owned cache tree."""
+import hashlib,json,tarfile
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;W=R/'runs/.tmp/lif-max-reference-20261016'
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==json.loads((E/'baseline.json').read_text())['work_inode'] and not W.is_symlink()
+assert json.loads((E/'engineering-verification.json').read_text())['all_passed']
+files={}
+for p in sorted(W.rglob('*')):
+    if not p.is_file() or p.relative_to(W).parts[0] in ['go-cache','go-mod-cache','go-tmp']:continue
+    name=str(p.relative_to(W))
+    if name=='final-root.test':continue
+    assert name=='module-originals.json' or name.startswith('mutations/'),name
+    assert not p.is_symlink()
+    files[name]={'bytes':p.stat().st_size,'sha256':sha(p)}
+assert len(files)==6,files
+archive=E/'preserved-work.tar.gz';assert not archive.exists()
+with tarfile.open(archive,'w:gz') as f:
+    for name in files:f.add(W/name,arcname=name,recursive=False)
+with tarfile.open(archive,'r:gz') as f:
+    assert set(f.getnames())==set(files)
+    for name,item in files.items():
+        b=f.extractfile(name).read();assert len(b)==item['bytes'] and hashlib.sha256(b).hexdigest()==item['sha256']
+receipt={'archive':archive.name,'archive_bytes':archive.stat().st_size,'archive_sha256':sha(archive),'files':files}
+with (E/'work-preservation.json').open('x') as f:json.dump(receipt,f,indent=2);f.write('\n')
+p=W/'final-root.test'
+with (E/'discarded-binaries.json').open('x') as f:json.dump({'final-root.test':{'bytes':p.stat().st_size,'sha256':sha(p)}},f,indent=2);f.write('\n')
+print(json.dumps({'necessary_files':len(files),'archive_bytes':archive.stat().st_size}))

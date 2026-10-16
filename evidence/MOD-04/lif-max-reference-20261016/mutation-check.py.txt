@@ -1,0 +1,85 @@
+"""Ensure the new checks reject consistent max-as-sum and unclamped VJP errors.
+
+Go overlays are isolated under the owned work directory. Formal files remain
+byte-identical. A mutation must compile and fail a test assertion, not merely
+return an arbitrary nonzero command status.
+"""
+import hashlib
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+if not __debug__:
+    raise SystemExit("optimized Python is not supported")
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / "runs/.tmp/lif-max-reference-20261016"
+source = json.loads((E / "formal-source.json").read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def gate():
+    assert W.stat().st_ino == 57090444 and not W.is_symlink()
+    paths = {p for p in subprocess.check_output(["git", "ls-files", "-co", "--exclude-standard", "-z"], cwd=R).decode().split("\0") if p and (p.endswith(".go") or p in ("go.mod", "go.sum"))}
+    assert len(source) == 836 and paths == set(source)
+    for p, digest in source.items():
+        assert sha(R / p) == digest, p
+
+def write(path, body):
+    with path.open("x") as f:
+        f.write(body)
+
+def events(raw):
+    result = []
+    for line in raw.splitlines():
+        try:
+            result.append(json.loads(line))
+        except json.JSONDecodeError:
+            pass
+    return result
+
+gate()
+mutation_root = W / "mutations"
+mutation_root.mkdir()
+results = []
+for name in ["max-as-sum", "unclamped-gradient"]:
+    folder = mutation_root / name
+    folder.mkdir()
+    replacements = {}
+    if name == "max-as-sum":
+        for relative, function in [("modulation/effects.go", "ApplyEffects"), ("modulation/receptor_gradient.go", "BackwardEffects")]:
+            original = (R / relative).read_text()
+            start = original.index("func " + function + "(")
+            brace = original.index(" {", start) + 2
+            body = original[:brace] + "\n\tif mix == MixMax { mix = MixSum }\n" + original[brace:]
+            target = folder / Path(relative).name
+            write(target, body)
+            replacements[str(R / relative)] = str(target)
+        pattern = "^TestChemicalMaxIndependentReference$"
+    else:
+        relative = "modulation/receptor_gradient.go"
+        original = (R / relative).read_text()
+        before = "return finite(value) && value > low && value < high"
+        assert original.count(before) == 1
+        target = folder / "receptor_gradient.go"
+        write(target, original.replace(before, "return finite(value)", 1))
+        replacements[str(R / relative)] = str(target)
+        pattern = "^TestChemicalMaxIndependentReference$"
+    overlay = folder / "overlay.json"
+    write(overlay, json.dumps({"Replace": replacements}, indent=2) + "\n")
+    label = "mutation-" + name
+    command = ["go", "test", "-overlay", str(overlay), "-json", "-count=1", "-run", pattern, "./learning", "./modulation"]
+    completed = subprocess.run([sys.executable, str(E / "run-command.py.txt"), label, *command], cwd=R)
+    receipt = json.loads((E / (label + ".json")).read_text())
+    raw = (E / (label + ".log")).read_text()
+    rows = events(raw)
+    failing = sorted({r["Test"] for r in rows if r.get("Action") == "fail" and r.get("Test")})
+    assert completed.returncode == receipt["exit_code"] == 1, receipt
+    assert failing and "[build failed]" not in raw and "undefined:" not in raw, raw[-2000:]
+    assert any(t.startswith("TestChemicalMaxIndependentReference/") for t in failing), failing
+    results.append({"mutation": name, "rejected_by_assertions": True, "failing_tests": failing, "overlay": str(overlay.relative_to(W)), "overlay_sha256": sha(overlay), "mutated_files": {str(Path(p).relative_to(W)): sha(Path(p)) for p in replacements.values()}, "receipt": label + ".json"})
+    gate()
+with (E / "mutation-verification.json").open("x") as f:
+    json.dump({"all_rejected": True, "formal_sources_unchanged": True, "mutations": results}, f, indent=2)
+    f.write("\n")
+print(json.dumps({"all_rejected": True, "mutations": len(results)}), flush=True)

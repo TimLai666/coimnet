@@ -1,0 +1,1001 @@
+{
+  "requirement": [
+    "COR-04",
+    "COR-09",
+    "LRN-02",
+    "MOD-04"
+  ],
+  "verified_at": "2026-10-16T00:11:41.065718+00:00",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "production_changes": false,
+  "source_count": 836,
+  "confirmed_new_production_defects": 0,
+  "reproduction_command": "go test -json -count=1 -run '^Test(ChemicalMaxReference|ChemicalMaxIndependentReference|MixedChemicalReference)' ./learning; repeat with -race; engineering.py.txt; mutation-check.py.txt",
+  "environment": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit",
+    "machine": "arm64",
+    "base_commit": "6572612e2e03623d78d2ad5146bc0a268c4823ec",
+    "go": "go version go1.26.5 darwin/arm64",
+    "command_environment": "command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "8da13787794ea2c85fd4f8be92d3bf6d04cebe9863e9836fee3dc75507333310",
+    "protocol": "protocol-inputs.json",
+    "protocol_sha256": "aa00f527724b9855d3ccb116c9fd787c5fc62fcd104a4f52406a92937f1ea312"
+  },
+  "observed_result": {
+    "reference": {
+      "ordinary": {
+        "passed_events": 166,
+        "matrix_cases": 72,
+        "sum_max_controls": 36,
+        "segmented_checks": 72,
+        "gradient_coordinates": 2556,
+        "prediction_coordinates": 576,
+        "pending_trainable_coordinates": 1296,
+        "hand_cases": 11,
+        "old_records_identical": 7,
+        "legacy_sha256": "6013447dc2c87aa58742cbea1ae9282f74c8e1649d26e88ee7a17b5142b3c828",
+        "max_absolute_gradient_error": 1.87350135e-16,
+        "max_absolute_prediction_error": 0.0,
+        "clamp_and_event_coverage": [
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            1,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            4,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            4,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ]
+        ]
+      },
+      "race": {
+        "passed_events": 166,
+        "matrix_cases": 72,
+        "sum_max_controls": 36,
+        "segmented_checks": 72,
+        "gradient_coordinates": 2556,
+        "prediction_coordinates": 576,
+        "pending_trainable_coordinates": 1296,
+        "hand_cases": 11,
+        "old_records_identical": 7,
+        "legacy_sha256": "f390e4681299ee36bb8eb5bd7d552f6efe37a84562545a3f14379876c2f0b127",
+        "max_absolute_gradient_error": 1.45716772e-16,
+        "max_absolute_prediction_error": 0.0,
+        "clamp_and_event_coverage": [
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            1,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            0,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            4,
+            2,
+            4,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            4,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            2,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            4,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            0,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            4,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            0,
+            3,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ],
+          [
+            8,
+            4,
+            8,
+            4
+          ]
+        ]
+      }
+    },
+    "mutations": "mutation-verification.json",
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 6678,
+          "skip": 22
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6542
+      },
+      "race": {
+        "test_events": {
+          "pass": 6677,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 6542
+      },
+      "governance": {
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      }
+    },
+    "neutral_gain": "adoption-current.json",
+    "final_governance": {
+      "receipt": "final-governance.json",
+      "passed_events": 31
+    },
+    "own_cleanup": {
+      "receipt": "cleanup.json",
+      "removed_bytes": 1588449051,
+      "preserved_original_model_files": 18,
+      "preserved_persistent_data_files": 6
+    }
+  },
+  "test_log": [
+    "regression-ordinary.log",
+    "regression-race.log",
+    "mutation-max-as-sum.log",
+    "mutation-unclamped-gradient.log",
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log",
+    "final-governance.log"
+  ],
+  "retained_corrections": {
+    "initial_root_build_field": "baseline-check.log",
+    "reference_coverage_red": "baseline-r2.log",
+    "root_finite_guards": "root-check-strengthening.json",
+    "wrong_ticket_review": "review-correction.json"
+  },
+  "root_review": "root-review.md",
+  "readonly_review": "readonly-review.md",
+  "limits": [
+    "Fixed artificial two-node four-step CPU scalar reference, not whole-brain or task-quality validation",
+    "Seven legacy trajectories remain exact within each build; no cross-build bitwise claim",
+    "Homeostasis/multiple chemistry channels/source partial histories/unknown receptor status are outside this reference scope",
+    "No absolute zero-bug or biological calibration proof"
+  ],
+  "remaining_delivery": [
+    "Git commit/push/readback"
+  ],
+  "acceptance_complete": false,
+  "necessary_evidence": "work-preservation.json"
+}

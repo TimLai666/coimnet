@@ -1,0 +1,24 @@
+"""Assemble acceptance from successful command receipts, never predicted results."""
+import datetime,gzip,hashlib,json,platform
+from pathlib import Path
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+read=lambda p:json.loads(p.read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+engineering=read(E/'engineering-verification.json');regression=read(E/'regression-verification.json');mutations=read(E/'mutation-verification.json')
+assert engineering['all_passed'] and regression['all_passed'] and mutations['all_rejected']
+for p,h in read(E/'formal-source.json').items():assert sha(R/p)==h,p
+neutral={}
+for mode in ['unit','race']:
+ step=next(x for x in engineering['steps'] if x['name']==mode)
+ assert step['exit_code']==0 and not step['acceptance_errors'] and not step['changed_events'] and step['prior_event_count']==6542
+ assert len(step['added_events'])==158 and all(x['action']=='pass' for x in step['added_events'])
+ packed=E/step['log'];assert sha(packed)==step['log_sha256'];raw=gzip.decompress(packed.read_bytes());assert hashlib.sha256(raw).hexdigest()==step['raw_sha256']
+ events=[json.loads(line) for line in raw.decode().splitlines() if line.startswith('{')]
+ neutral[mode]={x['Package']+':'+x['Test']:x['Action'] for x in events if x.get('Test','').startswith('TestNeutralGain') and x.get('Action') in ['pass','fail','skip']}
+ assert len(neutral[mode])==21 and set(neutral[mode].values())=={'pass'}
+adoption={'all_passed':True,'effective_gain_bounds_include_one':True,'construction_and_restore_refuse_excluded_ranges':True,'current_effects_sha256':sha(R/'modulation/effects.go'),'current_full_suite_events':neutral,'original_adoption':'../neutral-gain-adoption-20261014/verification.json'}
+with (E/'adoption-current.json').open('x') as f:json.dump(adoption,f,indent=2);f.write('\n')
+counts={x['name']:{k:x[k] for k in ['test_events','package_events','prior_event_count'] if k in x} for x in engineering['steps'] if x['name'] in ['unit','race','governance']}
+result={'requirement':['COR-04','COR-09','LRN-02','MOD-04'],'verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'engineering_passed':True,'diagnostic_passed':True,'production_changes':False,'source_count':836,'confirmed_new_production_defects':0,'reproduction_command':"go test -json -count=1 -run '^Test(ChemicalMaxReference|ChemicalMaxIndependentReference|MixedChemicalReference)' ./learning; repeat with -race; engineering.py.txt; mutation-check.py.txt",'environment':{**read(E/'protocol-inputs.json')['environment'],'go':(E/'go-version.log').read_text().strip(),'command_environment':'command-environment.json'},'input_fingerprints':{'formal_source':'formal-source.json','formal_source_sha256':sha(E/'formal-source.json'),'protocol':'protocol-inputs.json','protocol_sha256':sha(E/'protocol-inputs.json')},'observed_result':{'reference':regression['builds'],'mutations':'mutation-verification.json','engineering':counts,'neutral_gain':'adoption-current.json'},'test_log':['regression-ordinary.log','regression-race.log','mutation-max-as-sum.log','mutation-unclamped-gradient.log','engineering-unit.log.gz','engineering-race.log.gz','engineering-governance.log'],'retained_corrections':{'initial_root_build_field':'baseline-check.log','reference_coverage_red':'baseline-r2.log','root_finite_guards':'root-check-strengthening.json','wrong_ticket_review':'review-correction.json'},'root_review':'root-review.md','readonly_review':'readonly-review.md','limits':['Fixed artificial two-node four-step CPU scalar reference, not whole-brain or task-quality validation','Seven legacy trajectories remain exact within each build; no cross-build bitwise claim','Homeostasis/multiple chemistry channels/source partial histories/unknown receptor status are outside this reference scope','No absolute zero-bug or biological calibration proof'],'remaining_delivery':['final metadata governance','necessary work preservation','owned temporary cleanup','Git commit/push/readback'],'acceptance_complete':False}
+with (E/'verification.json').open('x') as f:json.dump(result,f,indent=2);f.write('\n')
+print(json.dumps({'engineering':counts,'reference_passed':True,'source_count':836,'remaining_delivery':result['remaining_delivery']}))

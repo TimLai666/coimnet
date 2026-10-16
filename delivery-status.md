@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket 121](docs/tickets/121-lif-max-reference.md) 已完成前三項：一般／競態各 72 組公開完整梯度、72 組分段待更新梯度與 11 個手算對照通過，七個原案例在各建置內逐位保持。兩個刻意算錯的正式運算對照都被新測試拒絕。836 份來源的完整一般／競態各 58 套件通過，6,678／6,677 pass、22／23 skip，原有各 6,542 個終端事件保持，只新增各 158 個通過。格式、build、vet、固定 Insyra v0.3.4、模組與 31 項治理通過，工程狀態保持 91／91，見[驗收](evidence/MOD-04/lif-max-reference-20261016/verification.json)。沒有確認新正式程式缺陷。1,588,449,051 bytes 自有暫存已清除，原模型、資料、原始模組及其他工作保持，見[清理](evidence/MOD-04/lif-max-reference-20261016/cleanup.json)。本票完成 3／4，Git 交付進行中。
+
 [ticket 120](docs/tickets/120-max-clamp-gradient.md) 的最大受體作用／負係數／夾限組合與正式回歸已通過驗收，沒有確認新程式缺陷。一般／競態各 336 組完整／分段訓練、36 個對照、56 個初始化學步、432 個獨立參考與 28 次新程序接續通過。835 份來源的完整一般／競態各 58 套件通過，6,520／6,519 pass、22／23 skip、零失敗，原有各 6,477 個終端事件保持，只新增各 65 個通過。格式、build、vet、固定 Insyra v0.3.4、模組與工程治理 31 項通過，見[驗收](evidence/MOD-04/max-clamp-gradient-20261016/verification.json)。ticket21 的負係數說明已修正，原有正式實作及模型格式保持。工程狀態保持 91／91，本票完成 4／4，最後治理 31 項通過，1,668,319,814 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理](evidence/MOD-04/max-clamp-gradient-20261016/cleanup.json)。主要提交 `4d1b89a` 已推送且遠端讀回相同，835 份來源及 229 個交付檔案的提交內容相符，見[交付](evidence/MOD-04/max-clamp-gradient-20261016/delivery.json)。下一個可驗證成果是[放電模型最大作用的完整獨立梯度對照](evidence/MOD-04/max-clamp-gradient-20261016/next-audit.md)，尚未確認新缺陷。整體缺陷檢查持續，真實品質沒有新結論。
 
 [ticket 119](docs/tickets/119-partial-chemical-recompute.md) 已通過公開組合稽核。一般／競態各 192 組完整／分段結果一致，22 個機制關閉對照有效、54 個獨立參考及 16 次新程序接續通過，沒有確認新缺陷。834 份正式來源與上一輪驗收相同，沿用完整工程結果，另通過本輪診斷 vet、模組與 31 項治理。91／91 工程需求保持 passed，見[驗收](evidence/MOD-02/partial-source-recompute-20261016/verification.json)。最後 31 項治理通過，本輪 1,058,888,032 bytes 暫存已清除，18 個原模型、六份必要資料、原始模組與其他工作保持，見[清理](evidence/MOD-02/partial-source-recompute-20261016/cleanup.json)。主要證據提交 `3b2e15f` 已推送且遠端讀回相同，834 份來源與 117 個交付檔案的提交內容相符，見[交付](evidence/MOD-02/partial-source-recompute-20261016/delivery.json)。本票完成 4／4。下一個可驗證成果是[最大受體作用及夾限交界的梯度對照](evidence/MOD-02/partial-source-recompute-20261016/next-audit.md)，尚未確認缺陷。整體零 bug 目標持續，真實模型品質沒有新結論。
@@ -359,7 +361,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-ticket 116 已完成驗收與交付。本票沒有剩餘工作。整體機制稽核持續，下一票尚未建立；須先以新的公開反例確認缺陷，不重做已驗證事項，也不把數值測試通過當成模型品質或零 bug 的證明。
+ticket 121 已完成數值及完整工程驗證，剩下 Git 交付。下一個可驗證候選是[慢速活動穩定的獨立梯度](evidence/MOD-04/lif-max-reference-20261016/next-audit.md)，尚未確認缺陷或建立新票。整體機制稽核持續，數值測試不作為模型品質或零 bug 的證明。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 
