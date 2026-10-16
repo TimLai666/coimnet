@@ -60,7 +60,11 @@ type rowOverride func(row uint64, next NeuralState, values, spikes []float64) er
 // and shuffle_delays permutes the edge delays for the whole call. The run is
 // compared against an in-silico twin restored from the same starting snapshot
 // and advanced without the plan, and the deltas of every entry report that
-// difference.
+// difference. The twin keeps the subject's chemistry and plasticity freeze
+// flags when those runtimes exist, but receives no intervention hook beyond its
+// own concentration recorder. It completes before the subject's network,
+// neural state or hooks change, so a twin error or cancellation cannot commit
+// a subject advance.
 //
 // The rows of a plan index the submitted sequence of this call, so a fresh
 // individual and a continuing one both read "clamp rows 10..20" as rows 10..20
@@ -88,6 +92,34 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 	// the snapshot is taken before the swap, keeping the twin on the original
 	// delays.
 	shuffled, permuted, err := shufflePlanConfig(plan, c, len(input))
+	if err != nil {
+		return nil, empty, err
+	}
+	// Build and complete the no-intervention twin before changing any subject
+	// network, neural state or per-row hook. Snapshot restore intentionally starts
+	// with both freeze flags false, so copy the current runtime postures into the
+	// private twin without adding them to the snapshot schema.
+	twin, err := RestoreIndividual(snap)
+	if err != nil {
+		return nil, empty, err
+	}
+	if i.chemical != nil && twin.chemical != nil {
+		twin.chemical.frozen = i.chemical.frozen
+	}
+	if i.plastic != nil && twin.plastic != nil {
+		twin.plastic.frozen = i.plastic.frozen
+	}
+	var twinOut [][]float64
+	var twinConc [][]float64
+	if i.chemical != nil && twin.chemical != nil {
+		// The twin records its own concentration trajectory under a hook that
+		// applies nothing, so the two trajectories share one shape.
+		twin.chemical.override = recordConcentration(&twinConc)
+		twinOut, _, err = twin.advanceRows(ctx, input, nil)
+		twin.chemical.override = nil
+	} else {
+		twinOut, err = twin.Advance(ctx, input)
+	}
 	if err != nil {
 		return nil, empty, err
 	}
@@ -138,24 +170,6 @@ func (i *Individual) Intervene(ctx context.Context, plan InterventionPlan, input
 	}
 	if permuted {
 		callOK = true
-	}
-	twin, err := RestoreIndividual(snap)
-	if err != nil {
-		return nil, empty, err
-	}
-	var twinOut [][]float64
-	var twinConc [][]float64
-	if i.chemical != nil && twin.chemical != nil {
-		// The twin records its own concentration trajectory under a hook that
-		// applies nothing, so the two trajectories share one shape.
-		twin.chemical.override = recordConcentration(&twinConc)
-		twinOut, _, err = twin.advanceRows(ctx, input, nil)
-		twin.chemical.override = nil
-	} else {
-		twinOut, err = twin.Advance(ctx, input)
-	}
-	if err != nil {
-		return nil, empty, err
 	}
 	var plasticA, plasticB []float64
 	if i.plastic != nil {
