@@ -28,7 +28,7 @@ func runEvaluate(ctx context.Context, args []string, stdout, stderr io.Writer) e
 	usageOutput := &outputCapture{writer: stdout}
 	fs.Usage = func() {
 		fmt.Fprintln(usageOutput, "Usage: coimnet examples run evaluate --mode fixed|adaptive --out FILE [--seed 1] [--reset neural,plastic,chemical]")
-		fmt.Fprintln(usageOutput, "Builds the small delayed-correlation fixture: a 2-node continuous core with local plasticity on its edge and 8+8 deterministic items derived from --seed. Fixed mode scores the eight items without any feedback; adaptive mode first replays eight adaptation items with score feedback through the online learner, then scores the same eight items closed-gate. The evaluation report is written as indented JSON to a new --out file and a one-line summary goes to stdout.")
+		fmt.Fprintln(usageOutput, "Builds the small delayed-correlation fixture: a 2-node continuous core with local plasticity on its edge and 8+8 deterministic items derived from --seed. Fixed mode scores the eight items without any feedback; adaptive mode first replays eight adaptation items with score feedback through the online learner, then scores the same eight items while holding their fast state. The evaluation report is written as indented JSON to a new --out file and a one-line summary goes to stdout.")
 		fmt.Fprintln(usageOutput, "Example: coimnet examples run evaluate --mode adaptive --reset neural,plastic,chemical --out evaluation.json")
 		fmt.Fprintln(usageOutput, "Errors: missing --mode or --out, unknown --mode, an existing --out path, an unknown --reset name, cancellation or output failure. Usage errors exit with status 1 and name the flag.")
 		fmt.Fprintln(usageOutput, "Options and their defaults:")

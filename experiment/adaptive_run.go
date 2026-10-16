@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/signal"
@@ -38,6 +39,8 @@ type EvaluationReport struct {
 }
 
 // RunAdaptiveEvaluation runs the declared evaluation on one individual.
+// Adaptive mode derives score feedback from the target only when "score" is
+// globally available and allowed for that item. Other kinds remain metadata.
 func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e AdaptiveEvaluation) (EvaluationReport, error) {
 	if ctx == nil {
 		return EvaluationReport{}, fmt.Errorf("context must not be nil")
@@ -92,7 +95,9 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 // replayed through an OnlineLearner with a plastic policy (base parameters and
 // fast state are changed only by the plasticity the learner applies), and the
 // scoring partition holds the fast state while advancing neural and chemical
-// state.
+// state. It synthesizes score feedback only when score is globally available
+// and explicitly allowed for the adaptation item; other declared feedback
+// kinds remain metadata and are not silently converted to score.
 func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e AdaptiveEvaluation) (EvaluationReport, error) {
 	before := ind.Snapshot().Parameters
 	gate := learning.RewardGateFunc(func(score float64) ([]float64, error) {
@@ -133,6 +138,9 @@ func runAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 		record, err := learner.Act(ctx, obs, item.Input)
 		if err != nil {
 			return EvaluationReport{}, err
+		}
+		if !slices.Contains(item.AllowedFeedback, "score") {
+			continue
 		}
 		mse, err := itemMSE(record.Output, item)
 		if err != nil {
