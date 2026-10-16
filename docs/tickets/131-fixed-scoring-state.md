@@ -3,12 +3,12 @@
 **Epic:** 評估與機制一致性
 **User Story:** 使用者可以在固定評估或適應後評分時，保留目前的短期記憶，讓神經與化學狀態依設定演化。
 **Blocked by:** 無，ticket130 已完成
-**Status:** in_progress
+**Status:** completed
 
 - [x] 核對既有契約，以公開 SDK 重現評分污染並固定失敗回歸。
 - [x] 最小修正與一般／競態專項、後續原生行為及舊化學模型接續通過。
 - [x] 本票完整工程、舊模型與需求證據通過，其他已確認缺陷仍保留追蹤。
-- [ ] 證據保存、暫存清理、提交與遠端讀回完成。
+- [x] 證據保存、暫存清理、提交與遠端讀回完成。
 
 ## Root 決策｜2026-10-16
 
@@ -24,4 +24,6 @@
 
 本票不代表真實任務成績改善，也不代表框架沒有其他缺陷。
 
-847份正式來源的完整一般／競態各58套件通過，8,436／8,435 pass、23／24 skip，原有各8,424個終端事件保持，只新增各35 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。12份舊化學快照接續保持。本票3／4，必要證據已保存且本輪暫存清除，待提交與遠端讀回，見[驗收](../../evidence/LRN-10/policy-composition-20261016/verification.json)。LRN-10仍因ticket132未採用而保持specified，LRN-07由ticket133接續，工程追蹤89／91。
+847份正式來源的完整一般／競態各58套件通過，8,436／8,435 pass、23／24 skip，原有各8,424個終端事件保持，只新增各35 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。12份舊化學快照接續保持。本票4／4，必要證據已保存，本輪暫存已清除，主要提交`2387ca9`已推送且遠端讀回一致，見[驗收](../../evidence/LRN-10/policy-composition-20261016/verification.json)。LRN-10仍因ticket132未採用而保持specified，LRN-07由ticket133接續，工程追蹤89／91。
+
+原始847份來源與提交內容指紋一致，原模型、資料及其他工作保留，見[交付](../../evidence/LRN-10/policy-composition-20261016/delivery.json)與[清理](../../evidence/LRN-10/policy-composition-20261016/cleanup.json)。

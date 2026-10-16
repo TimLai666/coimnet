@@ -1,6 +1,6 @@
 # 本輪檔案變更
 
-完整工程與清理已完成，提交與遠端讀回待完成。下列僅列本票實際檔案，保留其他工作。
+完整工程、清理、主要提交與遠端讀回已完成。下列僅列本票實際檔案，保留其他工作。
 
 | 檔案 | 變更摘要 |
 | --- | --- |
@@ -123,3 +123,4 @@
 | [evidence/LRN-10/policy-composition-20261016/source-before.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/policy-composition-20261016/source-before.json) | 驗證、狀態或內容指紋紀錄 |
 | [evidence/LRN-10/policy-composition-20261016/verification.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/policy-composition-20261016/verification.json) | 驗證、狀態或內容指紋紀錄 |
 | [evidence/LRN-10/policy-composition-20261016/work-preservation.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/policy-composition-20261016/work-preservation.json) | 驗證、狀態或內容指紋紀錄 |
+| [evidence/LRN-10/policy-composition-20261016/delivery.json](/Users/timlai/Developer/coimnet/evidence/LRN-10/policy-composition-20261016/delivery.json) | 主要修正及證據提交、遠端讀回與來源比對紀錄 |
