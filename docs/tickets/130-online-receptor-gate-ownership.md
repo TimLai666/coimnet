@@ -3,11 +3,11 @@
 **Epic:** 化學與線上學習的機制一致性
 **User Story:** 使用者開啟受體控制的局部可塑性後，線上作答不會提前學習，收到回饋後才由宣告的政策更新，評估模式不會偷偷建立新記憶。
 **Blocked by:** 129 完成交付
-**Status:** specified
+**Status:** in_progress
 
-- [ ] 核對作答、回饋更新與原生受體閘門的所有入口，凍結獨立失敗回歸。
-- [ ] 最小修正、四種線上政策、關閉控制與原生路徑回歸通過。
-- [ ] 完整工程、舊模型接續與需求證據通過。
+- [x] 核對作答、回饋更新與原生受體閘門的所有入口，凍結獨立失敗回歸。
+- [x] 最小修正、四種線上政策、關閉控制與原生路徑回歸通過。
+- [x] 完整工程、舊模型接續與需求證據通過。
 - [ ] 證據保存、暫存清理、提交與遠端讀回完成。
 
 ## Root 決策｜2026-10-16
@@ -27,3 +27,9 @@ ticket129 的845份正式來源在完整工程期間保持不變。Root 只在�
 `TrainEpisode` 的獨立zero-state episode契約已在實作與文件明示，本次沒有證據把它不使用持續fast／slow視為缺陷，不改該機制。
 
 證據見[公開驗證](../../evidence/MOD-06/consolidation-norm-20261016/next-audit-verification.json)。本票尚未開始實作，不將ticket129的通過結果當成本票驗收。
+
+Root已審查完整測試與所有入口契約。三核心的162個公開案例在未改的845份正式來源上成功編譯並重現缺陷，含父項的168個終端事件為112 pass、56 fail，見[RED](../../evidence/LRN-06/online-receptor-policy-20261016/red-online.json)。測試已依指紋凍結，另一位worker只填三份正式程式，Root負責所有Go驗證。本票1／4，LRN-06保持specified，見[本票計畫](../../evidence/LRN-06/online-receptor-policy-20261016/plan.md)。
+
+最小修正已通過一般／競態各168個專項，原生受體學習、完整凍結、拒絕原狀與合法重試均符合契約。四個相關套件一般為3,743 pass／16 skip，競態為3,742 pass／17 skip；原公開32列每種建置均修正，沒有受體閘門的控制逐位保持，12份舊化學模型接續相同。作答／回饋各一種刻意回退均成功編譯並被回歸拒絕。846份正式來源凍結，完整工程進行中。本票2／4，LRN-06保持specified，見[專項驗收](../../evidence/LRN-06/online-receptor-policy-20261016/diagnostic-verification.json)。
+
+846份正式來源的完整一般／競態各58套件通過，8,401／8,400 pass、23／24 skip，原有各8,256個終端事件保持，只新增各168 pass。格式、build、vet、固定Insyra v0.3.4、模組與31項治理通過。LRN-06恢復passed，工程追蹤91／91。本票3／4，待清理與交付，見[驗收](../../evidence/LRN-06/online-receptor-policy-20261016/verification.json)。

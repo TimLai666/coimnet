@@ -1,0 +1,66 @@
+# -*- coding: utf-8 -*-
+"""Commit verified fix separately from regressions/evidence, then perform a normal push."""
+import hashlib
+import json
+import re
+import subprocess
+from pathlib import Path
+
+assert __debug__
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+read = lambda p: json.loads(p.read_text())
+def git(*args):
+    return subprocess.check_output(["git", *args], cwd=R, text=True).strip()
+def save(name, value):
+    with (E / name).open("x") as handle:
+        json.dump(value, handle, indent=2)
+        handle.write("\n")
+baseline = "41ea240c8334d439a102a4b690bd7329cf922d9d"
+assert read(E / "baseline.json")["head"] == git("rev-parse", "HEAD") == baseline
+assert git("branch", "--show-current") == "codex/receptor-chemistry-training"
+assert re.search(r"github\.com[:/]TimLai666/coimnet(?:\.git)?$", git("remote", "get-url", "origin"))
+assert not git("diff", "--cached", "--name-only")
+assert read(E / "cleanup.json")["directory_removed"] and read(E / "verification.json")["engineering_passed"] and read(E / "verification.json")["diagnostic_passed"]
+for name, digest in read(E / "formal-source.json").items():
+    assert sha(R / name) == digest, name
+for name, digest in read(E / "foreign-before.json").items():
+    assert sha(Path(name)) == digest, name
+scans = []
+def scan(phase):
+    result = subprocess.run(["bash", "scripts/scan-commit.sh"], cwd=R, text=True, capture_output=True)
+    scans.append({"phase": phase, "exit_code": result.returncode, "output": result.stdout, "error": result.stderr})
+    assert result.returncode == 0, scans[-1]
+
+production = ["learning/individual.go", "learning/individual_online.go", "learning/online.go"]
+owned = ["ENG.md", "README.md", "delivery-status.md", "docs/model-and-mechanisms.md", "docs/requirements-status.json", "docs/tickets/130-online-receptor-gate-ownership.md", *production, "learning/online_receptor_policy_test.go"]
+owned += sorted(str(p.relative_to(R)) for p in E.rglob("*") if p.is_file())
+assert len(owned) == len(set(owned))
+hashes = {p: sha(R / p) for p in owned}
+subprocess.run(["git", "add", "--", *production], cwd=R, check=True)
+assert set(git("diff", "--cached", "--name-only").splitlines()) == set(production)
+subprocess.run(["git", "diff", "--cached", "--check"], cwd=R, check=True)
+assert all(sha(R / p) == h for p, h in hashes.items())
+scan("fix")
+subprocess.run(["git", "commit", "--quiet", "-m", "fix(learning): separate online and native receptor gates"], cwd=R, check=True)
+fix = git("rev-parse", "HEAD")
+assert set(git("diff-tree", "--no-commit-id", "--name-only", "-r", fix).splitlines()) == set(production)
+remaining = [p for p in owned if p not in production]
+subprocess.run(["git", "add", "--", *remaining], cwd=R, check=True)
+assert set(git("diff", "--cached", "--name-only").splitlines()) == set(remaining)
+subprocess.run(["git", "diff", "--cached", "--check"], cwd=R, check=True)
+assert all(sha(R / p) == h for p, h in hashes.items())
+scan("regressions-evidence")
+subprocess.run(["git", "commit", "--quiet", "-m", "test(learning): verify online receptor gate ownership"], cwd=R, check=True)
+head = git("rev-parse", "HEAD")
+assert set(git("diff", "--name-only", baseline, head).splitlines()) == set(owned)
+committed = {**read(E / "formal-source.json"), **hashes}
+for name, digest in committed.items():
+    assert hashlib.sha256(subprocess.check_output(["git", "show", head + ":" + name], cwd=R)).hexdigest() == digest, name
+subprocess.run(["git", "push", "origin", "HEAD:refs/heads/codex/receptor-chemistry-training"], cwd=R, check=True)
+remote = git("ls-remote", "origin", "refs/heads/codex/receptor-chemistry-training").split()[0]
+assert remote == head
+save("committed-content.json", {"commit": head, "files": committed, "source_entries": 846, "changed_files": len(owned), "unique_content_files": len(committed)})
+save("delivery.json", {"fix_commit": fix, "primary_commit": head, "remote_readback": remote, "branch": "codex/receptor-chemistry-training", "normal_push": True, "all_content_verified": True, "source_entries": 846, "changed_files": len(owned), "production_changes": True, "foreign_work_unchanged": True, "staged_scans": scans})
+print(json.dumps({"fix_commit": fix, "primary_commit": head, "remote_readback": remote, "changed_files": len(owned), "unique_content_files": len(committed)}))

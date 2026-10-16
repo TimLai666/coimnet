@@ -1,0 +1,36 @@
+{
+  "host": "Codex",
+  "previous_goal_turn": "progress: ticket129 completed full engineering cleanup and remote readback",
+  "opencode_models_exit_code": 1,
+  "opencode_error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "fallback": "native gpt-5.6-luna max per project",
+  "implementation_dispatched": true,
+  "tests": {
+    "agent": "/root/online_receptor_checks_130",
+    "model": "gpt-5.6-luna",
+    "effort": "max",
+    "allowed": [
+      "learning/online_receptor_policy_test.go"
+    ],
+    "root_runs_go": true
+  },
+  "readonly_contract": {
+    "agent": "/root/online_receptor_contract_130",
+    "model": "gpt-5.6-luna",
+    "effort": "max",
+    "writes_allowed": false
+  },
+  "implementation": {
+    "agent": "/root/online_receptor_implementation_130",
+    "model": "gpt-5.6-luna",
+    "effort": "max",
+    "allowed": [
+      "learning/individual.go",
+      "learning/individual_online.go",
+      "learning/online.go"
+    ],
+    "cannot_edit_tests": true,
+    "root_runs_go": true,
+    "after_valid_red": "red-online.json"
+  }
+}

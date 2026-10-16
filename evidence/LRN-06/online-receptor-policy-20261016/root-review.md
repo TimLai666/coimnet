@@ -1,0 +1,13 @@
+# Root review
+
+Scope: the three production files in implementation-slot.md, the independently authored public regression, and the records describing the same behavior. No confirmed defect remains in this reviewed diff. All original source paths except those three production files retain their baseline hashes; the new test retains its RED hash. Foreign work remains protected separately.
+
+The original advancement body is shared, with only the per-call gate-source argument added. The native wrappers pass true. Online Act hashes parameters while holding the same individual lock and then passes nil/false to the already-locked helper. The plastic feedback phase obtains the individual lock through the wrapper and passes the mapper's existing complete gate vector/false. It bypasses only the public wrapper's redundant nil check for that guaranteed nonempty vector. Validation, tensor construction, cancellation and candidate commit retain their original order.
+
+Only the GateReceptor branch is conditional. Receptor-controlled eligibility decay, chemistry release/state/effects/source candidates, effective fast/slow weights, frozen state and reports retain their existing path. No declaration, saved format, public option or persistent flag is introduced or temporarily mutated. Mixed feedback keeps its declared gradient partial-success and retry marker behavior.
+
+The public tests compare a full independently restored subject with a control that removes only GateReceptor/GateScale. They retain all other declarations, state, reports and floating-point bits. Seeded fast memory distinguishes normal decay from freezing; an active positive control on each core proves that native receptor learning remains observable. Error paths compare complete snapshots without declaration normalization. Root requested and reviewed the added post-online native control before executing RED.
+
+Root ran the original reproduction before and after the fix, normal/race new and related regressions, historical checkpoint continuations, and two isolated compiled behavioral regressions. Both erroneous gate-source choices were rejected in both builds. The independent read-only reviewer checked the actual diff and all six callers without finding a confirmed defect. Full engineering is recorded separately and is not inferred from these focused checks.
+
+Subtraction review: reuse the existing validation and state commit, avoid a second advance implementation, and keep gate selection local to each call. Do not add model settings, reject legitimate receptor models, or use freeze/rule-pointer mutation as a workaround. This is software-contract evidence, not a measurement of task accuracy or biological calibration.
