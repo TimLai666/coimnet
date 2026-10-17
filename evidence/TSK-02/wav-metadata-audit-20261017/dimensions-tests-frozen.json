@@ -1,0 +1,24 @@
+{
+  "reviewed_at": "2026-10-17T16:31:19.384869+00:00",
+  "worker": "/root/wav_metadata_tests_142",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "test_sha256": "0d99e593e71521ca4665e6220aef26c4814b59eb360c0c044d62e8bdf091d9f3",
+  "skeleton_sha256": "faa6cb23557fa4496faef7105da7e13ccd8674fb19f8e453008a9cb72c0c1879",
+  "worker_test_changed_by_root": false,
+  "root_contract_adjustment": "Accepted worker use of exact first overflowing byteRate2^32 instead of offset case; the separate public offset case remains. Same expected error, stronger edge control.",
+  "future_formal_path": "tasks/asr/audio/wav_output_dimensions_test.go",
+  "parent": "TestWAVOutputBytesExactLimits",
+  "expected_events_native64": 11,
+  "expected_unchecked_skeleton_events_native64": {
+    "fail": 7,
+    "pass": 4
+  },
+  "root_review": [
+    "Full source read; exact nonnegative math/big products and sums independent of native arithmetic guards.",
+    "All10cases checked against field/stride/byteRate/data/RIFF/native file capacity; four valid and six invalid.",
+    "No audio buffer or WAV file allocated; largest valid scalar and next failing scalar explicitly covered.",
+    "Sample-rate64 row skips before int conversion on32-bit, no claim of executed32-bit runtime.",
+    "Public original writer failure evidence is separate; skeleton is an overlay-only new calculation slot."
+  ]
+}

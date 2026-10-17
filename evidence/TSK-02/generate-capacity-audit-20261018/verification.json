@@ -1,0 +1,55 @@
+{
+  "requirement": "TSK-02",
+  "verified_at": "2026-10-17T16:49:16.933541+00:00",
+  "reproduction_command": "Use command/environment in probe.json with probe.go.txt copied to the stated project-local work path.",
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-probe-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-probe-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "input_fingerprints": "inputs.json",
+  "observed_result": {
+    "confirmed_public_panics": 2,
+    "normal_controls_passed": 2,
+    "platform": "darwin/arm64 native int64, Utterance72 bytes",
+    "actual_terminal": {
+      "session_id": 19389,
+      "exit_code": 0,
+      "chunk": "704389"
+    },
+    "allocation_reference": "Both requested products exceed MaxUint64, so runtime rejects the allocation size before allocating backing memory."
+  },
+  "test_log": [
+    "probe.json",
+    "probe.log"
+  ],
+  "scope": "Synthetic Generate helper container/rune byte representability only. No training, model or API format change. No 32-bit runtime or large allocation executed.",
+  "formal_fix_adopted": false,
+  "engineering_passed": false,
+  "milestones": {
+    "verified": 2,
+    "total": 5
+  },
+  "root_cause": {
+    "path": "tasks/asr/synth.go",
+    "lines": [
+      197,
+      199
+    ],
+    "description": "Generate validates scalar counts/order but allocates an utterance container and chosen rune slice without checking their element-byte products."
+  },
+  "cleanup": "probe-cleanup.json",
+  "cleanup_terminal": "probe-cleanup-terminal.json",
+  "red_verification": "red-verification.json",
+  "candidate_verification": "candidate-verification.json",
+  "candidate_only": true,
+  "regression_cleanup": "regression-cleanup.json"
+}

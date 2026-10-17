@@ -19,7 +19,7 @@ WriteWAV 在 wav.go:178-192 以原生 int 計算長度，再將取樣率、聲�
 ## 固定完成條件
 
 - [x] 公開重現截短欄位，核對獨立整數參考與正常控制，保存探測並清理暫存。
-- [ ] Root 凍結先失敗的回歸，涵蓋欄位、衍生長度、拒絕前不建立檔案及正常控制。
+- [x] Root 凍結先失敗的回歸，涵蓋欄位、衍生長度、拒絕前不建立檔案及正常控制。
 - [ ] 最小正式修正與專項一般／競態通過，正常 PCM16 位元組保持。
 - [ ] 格式、build、完整一般／競態、vet、固定模組與治理通過。
 - [ ] 保存證據、清除本票自有暫存、提交推送並核對遠端。
@@ -30,4 +30,8 @@ WriteWAV 在 wav.go:178-192 以原生 int 計算長度，再將取樣率、聲�
 
 ## 證據
 
-[Root 核對](../../evidence/TSK-02/wav-metadata-audit-20261017/verification.json)、[原始輸出](../../evidence/TSK-02/wav-metadata-audit-20261017/probe.log)與[清理](../../evidence/TSK-02/wav-metadata-audit-20261017/cleanup.json)。目前只有公開探測，沒有正式修正或完整工程通過聲明，進度 1／5。
+[Root 核對](../../evidence/TSK-02/wav-metadata-audit-20261017/verification.json)、[原始輸出](../../evidence/TSK-02/wav-metadata-audit-20261017/probe.log)與[清理](../../evidence/TSK-02/wav-metadata-audit-20261017/cleanup.json)。公開探測、先失敗的回歸與隔離候選均已驗證，正式修正與完整工程驗收尚待接續，進度 2／5。
+
+公開原版一般／競態各 6 fail／5 pass，五種非法 metadata 成功寫入的缺陷均重現，正常 golden 與既有路徑控制通過。另以未檢查算式的獨立私有函式骨架，一般／競態各 7 fail／4 pass，凍結不配置音訊的大整數尺寸界線測試。骨架不宣稱為既有正式實作，見[原版與骨架驗收](../../evidence/TSK-02/wav-metadata-audit-20261017/metadata-all-red-verification.json)。正式 860 份來源仍固定，WAV 正式檔尚未改動。
+
+隔離候選的一般／競態各 22 pass，單聲道／雙聲道完整 bytes、合法空檔與既有路徑保留控制保持，見[候選驗收](../../evidence/TSK-02/wav-metadata-audit-20261017/metadata-candidate-verification.json)。11,606 bytes 暫存已清除，三份必要輸入保存，見[清理](../../evidence/TSK-02/wav-metadata-audit-20261017/regression-cleanup.json)。正式採用與完整工程仍待 ticket141 交付後接續，本票維持 2／5。

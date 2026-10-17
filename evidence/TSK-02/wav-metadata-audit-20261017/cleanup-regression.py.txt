@@ -1,0 +1,78 @@
+"""Remove only the completed WAV overlay work after preserving its exact inputs."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, shutil, subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Verify candidate22pass in both builds, source/protected fingerprints, exact owned inode and no open handles; preserve input accounting and remove only WAV regression work. Retain the active parent cache.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+W = R / 'runs/.tmp/wav-metadata-regression-20261018'
+read = lambda p: json.loads(p.read_text())
+sha = lambda b: hashlib.sha256(b).hexdigest()
+baseline = read(E / 'regression-baseline.json')
+source = read(R / baseline['source_manifest'])
+models = read(P / 'protected-models.json')
+data = read(P / 'persistent-data.json')
+foreign = read(P / 'foreign-before.json')
+verification = read(E / 'metadata-candidate-verification.json')
+assert verification['candidate_only'] and not verification['formal_fix_adopted']
+assert verification['actual_terminal'] == {'session_id': 73794, 'exit_code': 0, 'chunk': 'a42ffd'}
+for build in ['unit', 'race']:
+    row = verification['ordinary_and_race'][build]
+    assert row['pass_events'] == 22 and set(row['terminal'].values()) == {'pass'}
+    assert sha((E / row['log']).read_bytes()) == row['log_sha256']
+
+def gate(work=True):
+    if work:
+        assert not W.is_symlink() and W.resolve() == W and W.stat().st_ino == 60263047
+    parent = R / baseline['parent_work_root']
+    assert not parent.is_symlink() and parent.stat().st_ino == 60204001
+    assert len(source) == 860 and len(models) == 18 and len(data) == 6 and len(foreign) == 32
+    for name, digest in {**source, **models}.items():
+        assert sha((R / name).read_bytes()) == digest, name
+    for name, item in data.items():
+        b = (R / name).read_bytes()
+        assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+    for name, digest in foreign.items():
+        assert sha(Path(name).read_bytes()) == digest, name
+
+def contents():
+    result = {}
+    for p in sorted(W.rglob('*')):
+        assert not p.is_symlink(), p
+        if p.is_file():
+            result[str(p.relative_to(W))] = p.read_bytes()
+        else:
+            assert p.is_dir(), p
+    return result
+
+gate()
+before = contents()
+links = {'regression.go': 'regression.go.txt', 'dimensions_regression.go': 'dimensions-regression.go.txt', 'dimensions_skeleton.go': 'dimensions-skeleton.go.txt'}
+assert set(before) == set(links), 'Unexpected work files refuse cleanup'
+for name, target in links.items():
+    assert before[name] == (E / target).read_bytes(), name
+handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+assert contents() == before
+gate()
+assert shutil.rmtree.avoids_symlink_attacks
+accounting = {name: {'bytes': len(b), 'sha256': sha(b), 'preserved_as': links[name]} for name, b in before.items()}
+with (E / 'regression-cleanup-inputs.json').open('x') as handle:
+    json.dump(accounting, handle, indent=2)
+    handle.write('\n')
+shutil.rmtree(W)
+assert not W.exists()
+gate(work=False)
+result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_root': str(W.relative_to(R)), 'owned_inode': 60263047, 'removed_files': len(before), 'removed_bytes': sum(map(len, before.values())), 'inputs_preserved': 'regression-cleanup-inputs.json', 'no_open_handles': True, 'directory_removed': True, 'source_entries_preserved': 860, 'original_model_files_preserved': 18, 'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'parent_cache_retained': baseline['parent_work_root']}
+with (E / 'regression-cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

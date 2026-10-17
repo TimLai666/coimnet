@@ -1,0 +1,86 @@
+"""Run frozen public Generate regressions with the original or isolated candidate."""
+from pathlib import Path
+import argparse, collections, datetime, hashlib, json, os, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run ordinary and race overlays for the selected implementation. Original failures or candidate passes must match the frozen contract; logs are never overwritten.')
+parser.add_argument('--implementation', choices=['original', 'candidate'], default='original', help='Original must reproduce both known panics; candidate must pass all six terminal events. Formal sources remain unchanged.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python cannot bypass validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+frozen = json.loads((E / 'tests-frozen.json').read_text())
+inputs = json.loads((E / 'inputs.json').read_text())
+source = json.loads((R / inputs['source_manifest']).read_text())
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+models = json.loads((P / 'protected-models.json').read_text())
+foreign = json.loads((P / 'foreign-before.json').read_text())
+data = json.loads((P / 'persistent-data.json').read_text())
+W = R / frozen['work']
+sha = lambda b: hashlib.sha256(b).hexdigest()
+
+def gate():
+    assert len(source) == 860
+    assert not W.is_symlink() and W.stat().st_ino == frozen['work_inode']
+    assert (R / 'runs/.tmp/asr-synth-shape-adoption-20261018').stat().st_ino == frozen['parent_cache_inode']
+    virtual = R / 'tasks/asr/generate_capacity_test.go'
+    assert not virtual.exists()
+    replacements = {str(virtual): str(W / 'regression.go')}
+    if args.implementation == 'candidate':
+        candidate = json.loads((E / 'candidate-source.json').read_text())
+        for path in [E / 'candidate-synth.go.txt', W / 'candidate-synth.go']:
+            assert sha(path.read_bytes()) == candidate['candidate_sha256']
+        replacements[str(R / 'tasks/asr/synth.go')] = str(W / 'candidate-synth.go')
+    assert json.loads((E / (args.implementation + '-overlay.json')).read_text()) == {'Replace': replacements}
+    for path in [W / 'regression.go', E / 'regression.go.txt']:
+        assert sha(path.read_bytes()) == frozen['regression_sha256']
+    for name, digest in {**source, **models, **foreign}.items():
+        p = Path(name)
+        assert sha((p if p.is_absolute() else R / p).read_bytes()) == digest, name
+    for name, item in data.items():
+        assert sha((R / name).read_bytes()) == item['sha256'], name
+
+env = dict(os.environ)
+private = json.loads((R / 'evidence/TSK-02/synth-shape-adoption-20261018/command-environment.json').read_text())
+private.update(GOTMPDIR=str(W / 'go-tmp'), TMPDIR=str(W / 'go-tmp'))
+env.update(private)
+pattern = '^TestGenerate(RejectsUnrepresentableCapacity|RetainsNormalAndUnusedLength)$'
+for build in ['unit', 'race']:
+    gate()
+    command = ['go', 'test', '-overlay', str(E / (args.implementation + '-overlay.json')), '-json', '-count=1', '-run', pattern]
+    if build == 'race':
+        command.append('-race')
+    command.append('./tasks/asr')
+    label = args.implementation + '-' + build
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    clock = time.monotonic()
+    log = E / (label + '.log')
+    with log.open('xb') as handle:
+        result = subprocess.run(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    gate()
+    raw = log.read_bytes()
+    events = {}
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get('Test') and row.get('Action') in ['pass', 'fail', 'skip']:
+            assert row['Test'] not in events
+            events[row['Test']] = row['Action']
+    counts = dict(collections.Counter(events.values()))
+    receipt = {'command': command, 'environment': private, 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'seconds': time.monotonic() - clock, 'exit_code': result.returncode, 'log': log.name, 'log_sha256': sha(raw), 'test_events': counts, 'terminal_events': events, 'formal_source_entries_preserved': len(source), 'test_sha256': frozen['regression_sha256']}
+    with (E / (label + '.json')).open('x') as handle:
+        json.dump(receipt, handle, indent=2)
+        handle.write('\n')
+    expected_code = 1 if args.implementation == 'original' else 0
+    expected_counts = {'fail': 3, 'pass': 3} if args.implementation == 'original' else {'pass': 6}
+    assert result.returncode == expected_code and counts == expected_counts, receipt
+    for name, action in events.items():
+        expected = 'fail' if args.implementation == 'original' and name.startswith('TestGenerateRejectsUnrepresentableCapacity') else 'pass'
+        assert action == expected, (name, action)
+    print(json.dumps({'implementation': args.implementation, 'build': build, 'exit_code': result.returncode, 'test_events': counts, 'expected_outcome_observed': True}), flush=True)

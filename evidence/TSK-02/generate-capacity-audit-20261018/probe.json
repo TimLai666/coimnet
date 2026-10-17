@@ -1,0 +1,77 @@
+{
+  "command": [
+    "go",
+    "run",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-probe-20261018/probe.go"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-probe-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-probe-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "started_at": "2026-10-17T16:47:51.970949+00:00",
+  "finished_at": "2026-10-17T16:47:56.081535+00:00",
+  "seconds": 4.110383416,
+  "exit_code": 0,
+  "log": "probe.log",
+  "log_sha256": "630b14aa35c0b2f294c9335717e8347146a2bc0dadb2ebf4b9966162d2f3cba8",
+  "source_entries_preserved": 860,
+  "observations": [
+    {
+      "name": "normal",
+      "n": 1,
+      "min_len": 1,
+      "max_len": 1,
+      "error": "",
+      "panic": "",
+      "returned": 1,
+      "nonnil": true,
+      "native_bits": 64,
+      "utterance_bytes": 72
+    },
+    {
+      "name": "zero_unused_length",
+      "n": 0,
+      "min_len": 9223372036854775807,
+      "max_len": 9223372036854775807,
+      "error": "",
+      "panic": "",
+      "returned": 0,
+      "nonnil": true,
+      "native_bits": 64,
+      "utterance_bytes": 72
+    },
+    {
+      "name": "utterance_container_overflow",
+      "n": 9223372036854775807,
+      "min_len": 1,
+      "max_len": 1,
+      "error": "",
+      "panic": "runtime error: makeslice: cap out of range",
+      "returned": 0,
+      "nonnil": false,
+      "native_bits": 64,
+      "utterance_bytes": 72
+    },
+    {
+      "name": "rune_buffer_overflow",
+      "n": 1,
+      "min_len": 9223372036854775807,
+      "max_len": 9223372036854775807,
+      "error": "",
+      "panic": "runtime error: makeslice: len out of range",
+      "returned": 0,
+      "nonnil": false,
+      "native_bits": 64,
+      "utterance_bytes": 72
+    }
+  ]
+}

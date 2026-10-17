@@ -1,0 +1,96 @@
+"""Run frozen WAV metadata tests through an isolated overlay."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run one frozen WAV regression, preserve its raw log and command receipt, and check source/protected-file fingerprints before and after.')
+parser.add_argument('--race', action='store_true', help='Use the Go race build.')
+parser.add_argument('--dimensions', action='store_true', help='Include nonallocating private size tests; original mode uses a separately identified unchecked arithmetic skeleton, candidate mode uses its implementation.')
+parser.add_argument('--implementation', choices=['original', 'candidate'], default='original', help='Use unchanged formal wav.go or a separately reviewed candidate-wav.go.txt; no production file is modified.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+baseline = read(E / 'regression-baseline.json')
+W = R / baseline['work_root']
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+source = read(R / baseline['source_manifest'])
+models = read(P / 'protected-models.json')
+data = read(P / 'persistent-data.json')
+foreign = read(P / 'foreign-before.json')
+candidate = E / 'candidate-wav.go.txt'
+candidate_digest = None
+if args.implementation == 'candidate':
+    candidate_digest = read(E / 'candidate-source.json')['sha256']
+    assert sha(candidate) == candidate_digest
+
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == 60263047
+    assert (R / baseline['parent_work_root']).stat().st_ino == 60204001
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert len(source) == 860 and paths == set(source)
+    for name, digest in {**source, **models}.items():
+        assert sha(R / name) == digest, name
+    for name, item in data.items():
+        assert sha(R / name) == item['sha256'], name
+    for name, digest in foreign.items():
+        assert sha(Path(name)) == digest, name
+    assert sha(W / 'regression.go') == sha(E / 'regression.go.txt') == baseline['frozen_test_sha256']
+    assert not (R / 'tasks/asr/audio/wav_metadata_test.go').exists()
+    if args.dimensions:
+        frozen = read(E / 'dimensions-tests-frozen.json')
+        assert sha(W / 'dimensions_regression.go') == sha(E / 'dimensions-regression.go.txt') == frozen['test_sha256']
+        assert sha(W / 'dimensions_skeleton.go') == sha(E / 'dimensions-skeleton.go.txt') == frozen['skeleton_sha256']
+        assert not (R / 'tasks/asr/audio/wav_output_dimensions_test.go').exists()
+    if args.implementation == 'candidate':
+        assert sha(candidate) == candidate_digest
+
+gate()
+mapping = read(E / 'metadata-original-overlay.json')
+if args.dimensions:
+    mapping['Replace'][str(R / 'tasks/asr/audio/wav_output_dimensions_test.go')] = str(W / 'dimensions_regression.go')
+    if args.implementation == 'original':
+        mapping['Replace'][str(R / 'tasks/asr/audio/wav_output_dimensions_skeleton.go')] = str(W / 'dimensions_skeleton.go')
+if args.implementation == 'candidate':
+    candidate = E / 'candidate-wav.go.txt'
+    assert candidate.is_file()
+    mapping['Replace'][str(R / 'tasks/asr/audio/wav.go')] = str(candidate)
+label = 'metadata-' + ('all-' if args.dimensions else '') + args.implementation + ('-race' if args.race else '-unit')
+overlay = E / (label.rsplit('-', 1)[0] + '-overlay.json')
+if overlay.exists():
+    assert read(overlay) == mapping
+else:
+    with overlay.open('x') as handle:
+        json.dump(mapping, handle, indent=2)
+        handle.write('\n')
+pattern = '^Test(WriteWAV(RejectsUnrepresentableMetadata|NormalMetadataAndBytes|ExistingPathPreserved)' + ('|WAVOutputBytesExactLimits' if args.dimensions else '') + ')$'
+command = ['go', 'test'] + (['-race'] if args.race else []) + ['-json', '-count=1', '-overlay', str(overlay), '-run', pattern, './tasks/asr/audio']
+env = dict(os.environ)
+env.update(read(E / 'regression-environment.json'))
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+start = time.monotonic()
+log = E / (label + '.log')
+with log.open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'label': label, 'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+result = {'command': command, 'environment': 'regression-environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic()-start, 'source_count': 860, 'source_manifest': baseline['source_manifest'], 'frozen_test_sha256': baseline['frozen_test_sha256'], 'implementation': args.implementation, 'log': log.name, 'log_sha256': sha(log), 'scope': 'Overlay-only focused metadata validation; exit1 requires independent behavioral failure review, not automatic acceptance.'}
+result['private_dimensions_included'] = args.dimensions
+if args.dimensions:
+    frozen = read(E / 'dimensions-tests-frozen.json')
+    result['dimensions_test_sha256'] = frozen['test_sha256']
+    result['original_private_helper_is_unchecked_skeleton'] = args.implementation == 'original'
+if args.implementation == 'candidate':
+    result['candidate_sha256'] = sha(candidate)
+with (E / (label + '.json')).open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)
+raise SystemExit(code)

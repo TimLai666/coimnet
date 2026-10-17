@@ -1,0 +1,49 @@
+{
+  "requirement": "TSK-02",
+  "reproduction_command": "python3 evidence/TSK-02/generate-capacity-audit-20261018/run-regression.py.txt --run",
+  "environment": "See original-unit.json and original-race.json",
+  "observed_result": {
+    "unit": {
+      "terminal_events": {
+        "TestGenerateRejectsUnrepresentableCapacity/utterance_container_max_int": "fail",
+        "TestGenerateRejectsUnrepresentableCapacity/rune_buffer_max_int": "fail",
+        "TestGenerateRejectsUnrepresentableCapacity": "fail",
+        "TestGenerateRetainsNormalAndUnusedLength/normal_one_rune": "pass",
+        "TestGenerateRetainsNormalAndUnusedLength/zero_count_unused_max_length": "pass",
+        "TestGenerateRetainsNormalAndUnusedLength": "pass"
+      },
+      "diagnostics": [
+        "generate_capacity_test.go:80: Generate panicked for unrepresentable utterance_container_max_int capacity: runtime error: makeslice: cap out of range",
+        "generate_capacity_test.go:80: Generate panicked for unrepresentable rune_buffer_max_int capacity: runtime error: makeslice: len out of range"
+      ],
+      "log_sha256": "f322b34c28ac29bbadb1d27765f5bb804e349f855507b27446c68ba082ecee5e"
+    },
+    "race": {
+      "terminal_events": {
+        "TestGenerateRejectsUnrepresentableCapacity/utterance_container_max_int": "fail",
+        "TestGenerateRejectsUnrepresentableCapacity/rune_buffer_max_int": "fail",
+        "TestGenerateRejectsUnrepresentableCapacity": "fail",
+        "TestGenerateRetainsNormalAndUnusedLength/normal_one_rune": "pass",
+        "TestGenerateRetainsNormalAndUnusedLength/zero_count_unused_max_length": "pass",
+        "TestGenerateRetainsNormalAndUnusedLength": "pass"
+      },
+      "diagnostics": [
+        "generate_capacity_test.go:80: Generate panicked for unrepresentable utterance_container_max_int capacity: runtime error: makeslice: cap out of range",
+        "generate_capacity_test.go:80: Generate panicked for unrepresentable rune_buffer_max_int capacity: runtime error: makeslice: len out of range"
+      ],
+      "log_sha256": "d7693029f56b3b95d48a3965d4cbbec640c87458b7caf219bd505e616055faf8"
+    }
+  },
+  "test_log": [
+    "original-unit.log",
+    "original-race.log"
+  ],
+  "actual_runner_terminal": {
+    "session_id": 83031,
+    "exit_code": 0,
+    "chunk": "2c8c52"
+  },
+  "formal_source_entries_preserved": 860,
+  "formal_fix_adopted": false,
+  "scope": "Two public original allocation panics reproduced; normal/empty controls passed. Go test commands fail as expected; successful wrapper is not a product acceptance claim."
+}

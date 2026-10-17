@@ -1,0 +1,20 @@
+{
+  "reviewed_at": "2026-10-17T16:37:05.084043+00:00",
+  "path": "candidate-wav.go.txt",
+  "sha256": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+  "worker_sha256": "bd46802a817ecba49d41c41fbb95cb32d58e2b2b2374eac8b38dbce5d972ccf2",
+  "formal_original_sha256": "6cd136a262dcef7722a370a19c8655bcb2531bf8416253502f4880e8c9af3824",
+  "candidate_only": true,
+  "formal_wav_changed": false,
+  "root_review": [
+    "Full original/candidate and diff read; only writer guard, byteRate expression, private size calculation and directly affected comments differ.",
+    "Removed duplicated impossible private basic validations; WriteWAV already checks those exact preconditions.",
+    "Combined implied channel/rate field bounds with blockAlign/byteRate bounds. Positive stride is at least2, so a bounded byteRate also bounds sampleRate.",
+    "Removed postproduct checks already implied by divided bounds and impossible nativeMaxInt<44 branch.",
+    "Channel guard proves stride<=65534; byteRate division check avoids multiplication overflow. Payload division uses min(RIFF limit minus36,nativeMaxInt minus44) before multiplying.",
+    "All decoder/parser/pcm16/helper suffix source bytes unchanged; documented NaN silence, len(Samples) authority, O_EXCL and sample loop retained.",
+    "Tests unchanged; root simplification preserved as diff and original worker source."
+  ],
+  "root_simplification": "root-simplification.diff",
+  "model_quality_claim": false
+}

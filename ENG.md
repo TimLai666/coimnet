@@ -308,6 +308,8 @@ OCR 人工樣本共用 glyphs.ValidateGenerateDimensions，在 Generate、Render
 
 文字生成的 NewModel 在所有可變大小配置前，以私有長度檢查確認 encoder 與 readout 的 float64 元素及位元組大小可由 int 表示。Save／Load 沿用同一建構入口，不改公開 Vocabulary、正常初始化、PCG 串流、訓練算式或保存格式。算術可表示不保證 runtime 或實體記憶體容量，驗收由 [ticket 109](docs/tickets/109-textgen-vocabulary-dimensions.md) 管理。
 
+ASR 合成音訊以完整整數乘積計算 floor(取樣率 × 毫秒／1000)，不能因中間乘法溢位而截短結果，也不能拒絕最終可表示的商。Validate 檢查每字樣本數，Synthesize 只在兩個以上字元時檢查會使用的間隔，再確認總樣本與 float64 位元組大小可由原生 int 表示。正常音調、相位、雜訊與 PCG 串流保持，驗收由 [ticket141](docs/tickets/141-asr-synthesis-dimensions.md) 管理。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

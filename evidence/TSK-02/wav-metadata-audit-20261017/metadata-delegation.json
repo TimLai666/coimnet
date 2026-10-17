@@ -1,0 +1,38 @@
+{
+  "host": "Codex",
+  "opencode_models_probe": {
+    "exit_code": 1,
+    "chunk": "7631eb",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "fallback_basis": "Project-specific second choice gpt-5.6-luna with max effort.",
+  "actual_workers": [
+    {
+      "worker": "/root/wav_metadata_tests_142",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "slots": [
+        "public metadata tests",
+        "private nonallocating dimension tests"
+      ],
+      "writable": [
+        "regression.go.txt",
+        "dimensions-regression.go.txt"
+      ]
+    },
+    {
+      "worker": "/root/wav_metadata_impl_142",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "max",
+      "slots": [
+        "private arithmetic and writer candidate"
+      ],
+      "writable": [
+        "candidate-wav.go.txt"
+      ]
+    }
+  ],
+  "root_review": "Root read all tests and candidate/full diff, accepted exact byteRate boundary refinement, simplified redundant candidate checks, independently ran and parsed both original/skeleton and candidate ordinary/race logs.",
+  "formal_source_changed": false,
+  "candidate_adopted_formally": false
+}

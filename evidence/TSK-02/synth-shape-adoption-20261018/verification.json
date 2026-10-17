@@ -1,0 +1,75 @@
+{
+  "requirement": "TSK-02",
+  "ticket": "141",
+  "verified_at": "2026-10-17T16:58:06.252314+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/TSK-02/synth-shape-adoption-20261018/engineering.py.txt --run --label-prefix engineering",
+    "python3 evidence/TSK-02/synth-shape-adoption-20261018/verify-parity.py.txt --run"
+  ],
+  "environment": {
+    "command_environment": "command-environment.json",
+    "preparation": "preparation.json",
+    "execution": "Project-local private caches; GOMAXPROCS=2, GOMEMLIMIT=8GiB, pinned Insyra v0.3.4. Original full runner98238 terminal0 directly observed."
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source.json",
+    "source_manifest_sha256": "3c4127d5137ed7fd035a8a1e0df5c793d46f06920b7da9d56b887b0f76569e36",
+    "source_entries": 860,
+    "adoption": "adoption.json",
+    "tests_frozen": "tests-frozen.json"
+  },
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "full_results": {
+      "unit": {
+        "prior_outcomes_preserved": 8668,
+        "new_pass_events": 13,
+        "test_events": {
+          "pass": 8658,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        }
+      },
+      "race": {
+        "prior_outcomes_preserved": 8668,
+        "new_pass_events": 13,
+        "test_events": {
+          "pass": 8657,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        }
+      }
+    },
+    "focused_pass_events_each_build": 13,
+    "normal_synthesis_payload": {
+      "bytes": 29121,
+      "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac"
+    },
+    "normal_report_hashes_unchanged_each_build": 9,
+    "approved_neutral_gain_pass_events_each_build": 21,
+    "governance_pass_events": 31
+  },
+  "test_log": [
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-verification.json",
+    "report-and-gain-parity.json"
+  ],
+  "root_review": [
+    "root-review.md",
+    "adversarial-review.json",
+    "unit-root-review.json"
+  ],
+  "runner_terminal": "runner-terminal.json",
+  "scope_limit": "Synthetic Synthesize quotient/total/byte representability and safe refusal. Normal tone/noise/PCG and valid empty Generate behavior preserved. WAV metadata and Generate container/rune capacities remain separate pending formal fixes. No model-quality, biological-validity,32-bit runtime or global zero-bug claim.",
+  "final_governance": "final-governance.json",
+  "cleanup": "cleanup.json",
+  "cleanup_terminal": "cleanup-terminal.json"
+}

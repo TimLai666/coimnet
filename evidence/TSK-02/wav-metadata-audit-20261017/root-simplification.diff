@@ -1,0 +1,90 @@
+--- worker-candidate-wav.go.txt
++++ candidate-wav.go.txt
+@@ -191,7 +191,7 @@
+ 	writeU32(buf, uint32(s.SampleRate))
+ 	writeU32(buf, uint32(uint64(s.SampleRate)*uint64(channels)*2)) // byte rate
+ 	writeU16(buf, uint16(channels*2))                              // block align
+-	writeU16(buf, 16)                                               // bits per sample
++	writeU16(buf, 16)                                              // bits per sample
+ 	buf.WriteString("data")
+ 	writeU32(buf, uint32(dataBytes))
+ 	for f := 0; f < frames; f++ {
+@@ -211,68 +211,30 @@
+ 	return f.Close()
+ }
+ 
+-// wavOutputBytes returns the exact PCM16 payload size when every WAV field
+-// and the complete output file are representable by their declared widths.
+-// It performs no allocation and validates dimensions before multiplying them.
++// wavOutputBytes checks format and native-buffer limits without allocating
++// an audio or byte buffer. Callers already validated nonnegative frames and
++// positive channels and sampleRate.
+ func wavOutputBytes(frames, channels, sampleRate int) (int, error) {
+ 	const (
+ 		maxWAVUint16 = uint64(1<<16 - 1)
+ 		maxWAVUint32 = uint64(1<<32 - 1)
+ 	)
+-
+-	if frames < 0 {
+-		return 0, fmt.Errorf("audio: frame count %d is negative", frames)
+-	}
+-	if channels <= 0 {
+-		return 0, fmt.Errorf("audio: channel count %d is not positive", channels)
+-	}
+-	if sampleRate <= 0 {
+-		return 0, fmt.Errorf("audio: sample rate %d is not positive", sampleRate)
+-	}
+-
+-	channelCount := uint64(channels)
+-	if channelCount > maxWAVUint16 {
+-		return 0, fmt.Errorf("audio: channel count %d exceeds the WAV uint16 field", channels)
+-	}
+-	if channelCount > maxWAVUint16/2 {
++	if uint64(channels) > maxWAVUint16/2 {
+ 		return 0, fmt.Errorf("audio: block align for %d channels exceeds the WAV uint16 field", channels)
+ 	}
+-	stride := channels * 2
+-
+-	rate := uint64(sampleRate)
+-	if rate > maxWAVUint32 {
+-		return 0, fmt.Errorf("audio: sample rate %d exceeds the WAV uint32 field", sampleRate)
+-	}
+-	strideUint := uint64(stride)
+-	if rate > maxWAVUint32/strideUint {
++	stride := uint64(channels) * 2
++	// A representable byte rate also bounds the positive sample rate.
++	if uint64(sampleRate) > maxWAVUint32/stride {
+ 		return 0, fmt.Errorf("audio: byte rate for %d Hz and %d channels exceeds the WAV uint32 field", sampleRate, channels)
+ 	}
+-	byteRate := rate * strideUint
+-	if byteRate > maxWAVUint32 {
+-		return 0, fmt.Errorf("audio: byte rate for %d Hz and %d channels exceeds the WAV uint32 field", sampleRate, channels)
+-	}
+-
+-	nativeMaxInt := uint64(^uint(0) >> 1)
+-	if nativeMaxInt < 44 {
+-		return 0, errors.New("audio: native integer cannot represent a WAV header")
+-	}
+ 	maxPayload := maxWAVUint32 - 36
+-	if filePayload := nativeMaxInt - 44; filePayload < maxPayload {
++	if filePayload := uint64(^uint(0)>>1) - 44; filePayload < maxPayload {
+ 		maxPayload = filePayload
+ 	}
+-	if uint64(frames) > maxPayload/strideUint {
++	if uint64(frames) > maxPayload/stride {
+ 		return 0, fmt.Errorf("audio: PCM16 payload for %d frames and %d channels is not representable", frames, channels)
+ 	}
+-	dataBytes := uint64(frames) * strideUint
+-	riffBytes := dataBytes + 36
+-	if riffBytes > maxWAVUint32 {
+-		return 0, fmt.Errorf("audio: RIFF size for %d frames and %d channels exceeds the WAV uint32 field", frames, channels)
+-	}
+-	fileBytes := dataBytes + 44
+-	if fileBytes > nativeMaxInt {
+-		return 0, fmt.Errorf("audio: WAV file size for %d frames and %d channels is not representable", frames, channels)
+-	}
+-	return int(dataBytes), nil
++	return int(uint64(frames) * stride), nil
+ }
+ 
+ // pcm16 converts one sample in [-1, 1] to int16, rounding to nearest and

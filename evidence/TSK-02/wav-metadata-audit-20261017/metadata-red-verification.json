@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-10-17T16:28:25.811616+00:00",
+  "formal_source_count": 860,
+  "formal_source_changed": false,
+  "ordinary_and_race": {
+    "unit": {
+      "test_events": {
+        "fail": 6,
+        "pass": 5
+      },
+      "terminal": {
+        "TestWriteWAVRejectsUnrepresentableMetadata/sample_rate_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/byte_rate_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/channel_count_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/block_align_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/empty_channel_metadata_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata": "fail",
+        "TestWriteWAVNormalMetadataAndBytes/mono_golden": "pass",
+        "TestWriteWAVNormalMetadataAndBytes/stereo_golden": "pass",
+        "TestWriteWAVNormalMetadataAndBytes/maximum_block_align_empty": "pass",
+        "TestWriteWAVNormalMetadataAndBytes": "pass",
+        "TestWriteWAVExistingPathPreserved": "pass"
+      },
+      "expected_behavior_diagnostics": [
+        "wav_metadata_test.go:128: WriteWAV(sample_rate_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(byte_rate_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(channel_count_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(block_align_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(empty_channel_metadata_overflow) = nil error, want unrepresentable metadata rejection"
+      ],
+      "log_sha256": "4049a7586deac8934be98c6cc4d9eb94f0fc65be221c28e6ee8c29b49e277dd3"
+    },
+    "race": {
+      "test_events": {
+        "fail": 6,
+        "pass": 5
+      },
+      "terminal": {
+        "TestWriteWAVRejectsUnrepresentableMetadata/sample_rate_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/byte_rate_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/channel_count_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/block_align_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata/empty_channel_metadata_overflow": "fail",
+        "TestWriteWAVRejectsUnrepresentableMetadata": "fail",
+        "TestWriteWAVNormalMetadataAndBytes/mono_golden": "pass",
+        "TestWriteWAVNormalMetadataAndBytes/stereo_golden": "pass",
+        "TestWriteWAVNormalMetadataAndBytes/maximum_block_align_empty": "pass",
+        "TestWriteWAVNormalMetadataAndBytes": "pass",
+        "TestWriteWAVExistingPathPreserved": "pass"
+      },
+      "expected_behavior_diagnostics": [
+        "wav_metadata_test.go:128: WriteWAV(sample_rate_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(byte_rate_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(channel_count_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(block_align_overflow) = nil error, want unrepresentable metadata rejection",
+        "wav_metadata_test.go:128: WriteWAV(empty_channel_metadata_overflow) = nil error, want unrepresentable metadata rejection"
+      ],
+      "log_sha256": "29acc96fb969605428f2552336a606f3e99ab2c5fa5cfdd3cde87c0f70b65121"
+    }
+  },
+  "actual_terminal": {
+    "session_id": 97076,
+    "wrapper_exit_code": 0,
+    "child_go_exit_each": 1,
+    "chunk": "148671"
+  },
+  "scope": "Public metadata regression only. Private nonallocating data/RIFF/native length checks are a separate pending slot before completing milestone2.",
+  "candidate_accepted": false,
+  "engineering_passed": false
+}

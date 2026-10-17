@@ -1,0 +1,25 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-json",
+    "-count=1",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/wav-metadata-audit-20261017/metadata-original-overlay.json",
+    "-run",
+    "^TestWriteWAV(RejectsUnrepresentableMetadata|NormalMetadataAndBytes|ExistingPathPreserved)$",
+    "./tasks/asr/audio"
+  ],
+  "environment": "regression-environment.json",
+  "started_at": "2026-10-17T16:25:58.481823+00:00",
+  "finished_at": "2026-10-17T16:26:00.890751+00:00",
+  "exit_code": 1,
+  "seconds": 2.4086684160000003,
+  "source_count": 860,
+  "source_manifest": "evidence/TSK-02/synth-shape-adoption-20261018/formal-source.json",
+  "frozen_test_sha256": "e1dd0bc3ad26dca0d515b09265cb431bef3bf21e400649f6c905714130aad224",
+  "implementation": "original",
+  "log": "metadata-original-unit.log",
+  "log_sha256": "4049a7586deac8934be98c6cc4d9eb94f0fc65be221c28e6ee8c29b49e277dd3",
+  "scope": "Overlay-only focused metadata validation; exit1 requires independent behavioral failure review, not automatic acceptance."
+}

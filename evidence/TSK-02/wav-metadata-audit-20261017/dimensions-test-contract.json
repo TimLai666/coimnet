@@ -1,0 +1,71 @@
+{
+  "signature": "func wavOutputBytes(frames, channels, sampleRate int) (int, error)",
+  "location": "private helper inside candidate tasks/asr/audio/wav.go; test package audio",
+  "preconditions": "frames>=0, channels>0, sampleRate>0, matching valid Signal slice dimensions already checked by WriteWAV. Do not test impossible negative helper-only inputs.",
+  "expected": "Return exact PCM16 payload byte count and nil only if channel/stride/rate/byteRate/data/RIFF/file capacity fields are all representable; otherwise return0 and nonnil error. No allocation of audio or byte buffers.",
+  "oracle": "Use math/big for exact frames*channels*2, channels*2, rate*channels*2, payload+36, payload+44. Require channels and stride<=65535; rate,byteRate,payload,RIFF<=4294967295; filebytes<=nativeMaxInt. This is independent of production division guards.",
+  "cases": {
+    "zero_frames": [
+      0,
+      1,
+      8000
+    ],
+    "ordinary": [
+      2,
+      2,
+      8000
+    ],
+    "largest_riff_or_native": [
+      "min(4294967295-36,nativeMaxInt-44)/2 floor",
+      1,
+      1
+    ],
+    "one_frame_too_many": [
+      "floor(min(4294967295-36,nativeMaxInt-44)/2)+1",
+      1,
+      1
+    ],
+    "native_buffer_overflow": [
+      "nativeMaxInt/2+1",
+      1,
+      1
+    ],
+    "total_product_overflow": [
+      "nativeMaxInt",
+      32767,
+      1
+    ],
+    "wide_byte_rate": [
+      0,
+      2,
+      1073741824
+    ],
+    "bad_block_align": [
+      0,
+      32768,
+      8000
+    ],
+    "sample_rate_overflow_native64": [
+      0,
+      1,
+      4294975296
+    ],
+    "max_legal_block": [
+      0,
+      32767,
+      8000
+    ]
+  },
+  "parent": "TestWAVOutputBytesExactLimits",
+  "expected_events_native64": 11,
+  "expected_skeleton_events_native64": {
+    "fail": 7,
+    "pass": 4
+  },
+  "worker_output": "evidence/TSK-02/wav-metadata-audit-20261017/dimensions-regression.go.txt",
+  "future_formal_path": "tasks/asr/audio/wav_output_dimensions_test.go",
+  "existing_public_test_frozen_sha256": "e1dd0bc3ad26dca0d515b09265cb431bef3bf21e400649f6c905714130aad224",
+  "skeleton_note": "Root supplies only a private unchecked arithmetic helper via overlay for preimplementation tests; the formal writer remains untouched. Public original failure evidence is separate and real, not inferred from the skeleton.",
+  "acceptance_flow": "Public golden/metadata tests plus candidate helper mathematical limits; Root checks writer invokes helper with actual dimensions before buffers/file creation. No huge physical allocation.",
+  "root_adjustment": "Accepted worker use of exact first overflowing byteRate2^32 instead of offset case; the separate public offset case remains. Same expected error, stronger edge control."
+}

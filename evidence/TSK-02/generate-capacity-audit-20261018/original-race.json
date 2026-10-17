@@ -1,0 +1,47 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/generate-capacity-audit-20261018/original-overlay.json",
+    "-json",
+    "-count=1",
+    "-run",
+    "^TestGenerate(RejectsUnrepresentableCapacity|RetainsNormalAndUnusedLength)$",
+    "-race",
+    "./tasks/asr"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-regression-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/asr-generation-regression-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "started_at": "2026-10-17T16:53:18.532917+00:00",
+  "finished_at": "2026-10-17T16:53:20.517406+00:00",
+  "seconds": 1.984488625,
+  "exit_code": 1,
+  "log": "original-race.log",
+  "log_sha256": "d7693029f56b3b95d48a3965d4cbbec640c87458b7caf219bd505e616055faf8",
+  "test_events": {
+    "fail": 3,
+    "pass": 3
+  },
+  "terminal_events": {
+    "TestGenerateRejectsUnrepresentableCapacity/utterance_container_max_int": "fail",
+    "TestGenerateRejectsUnrepresentableCapacity/rune_buffer_max_int": "fail",
+    "TestGenerateRejectsUnrepresentableCapacity": "fail",
+    "TestGenerateRetainsNormalAndUnusedLength/normal_one_rune": "pass",
+    "TestGenerateRetainsNormalAndUnusedLength/zero_count_unused_max_length": "pass",
+    "TestGenerateRetainsNormalAndUnusedLength": "pass"
+  },
+  "formal_source_entries_preserved": 860,
+  "test_sha256": "71460866c489de724fbb23c26ff63229a128e635f4f2246c04fc65761bdfb744"
+}

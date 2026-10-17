@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-10-17T16:21:18.670464+00:00",
+  "slot": "Public SDK WAV metadata representability regression only; no implementation and no new private helper assumption.",
+  "worker_output": "evidence/TSK-02/wav-metadata-audit-20261017/regression.go.txt",
+  "future_formal_path": "tasks/asr/audio/wav_metadata_test.go",
+  "package": "audio_test",
+  "production_signature": "audio.WriteWAV(path string, s audio.Signal) error",
+  "scope": "Fixed-width metadata refusal and exact normal output bytes; large data/RIFF size tests require separate nonallocating design later, do not allocate huge arrays.",
+  "parents": {
+    "TestWriteWAVRejectsUnrepresentableMetadata": [
+      "sample_rate_overflow: on64bit rate=(uint64(1)<<32)+8000,channels1,frames1. Use variable to compile32bit; skip there.",
+      "byte_rate_overflow:rate=(1<<30)+8000,channels2,frames1.",
+      "channel_count_overflow:rate8000,channels65536,frames1.",
+      "block_align_overflow:rate8000,channels32768,frames1.",
+      "empty_channel_metadata_overflow:rate8000,channels32768,frames0."
+    ],
+    "TestWriteWAVNormalMetadataAndBytes": [
+      "mono_golden:rate8000,lenSamples1,one sample.25; complete hex524946462600000057415645666d74201000000001000100401f0000803e00000200100064617461020000000020; sha256baee7bfeaadc5ce67fdcc38259844158c60cafd3a56eefae5e5566d097430cb6. Read/Inspect metadata8000Hz/1channel/1frame and decoded.25.",
+      "stereo_golden:rate8000,lenSamples2,one frame .25/- .25; RIFFsize40,data4,byteRate32000,blockAlign4,PCM bytes002000e0. Read/Inspect metadata8000Hz/2channels/1frame; exact normalbytes may build expected header from literal hex or independentbinary fields.",
+      "maximum_block_align_empty:rate8000,lenSamples32767,zero frames; valid header channels32767,blockAlign65534,byteRate524272000,data0. No huge allocations."
+    ],
+    "TestWriteWAVExistingPathPreserved": [
+      "Valid normal Signal writing an existing path returns an error and preserves exact sentinel bytes."
+    ]
+  },
+  "negative_assertions": [
+    "Input config otherwise valid and dimensions at most65536channels x1frame, no huge allocation. Reuse read-only one-frame backing slice for channels.",
+    "Every unrepresentable row must return error, never panic, and must not create path.",
+    "Verify normal channels derive from len(Samples), can use deliberately different Signal.Channels metadata as documented; no new rejection assumption.",
+    "Use t.TempDir; Root runs in project-local TMPDIR. No fixed global filenames."
+  ],
+  "expected_events_native64": 11,
+  "independent_oracle": "Exact integers and fixed header bytes above, not implementation helpers; preserve documented NaN silence and reader leniency (do not add conflicting reader assertions).",
+  "non_go_artifact_only": true,
+  "validation": "Root reviews test, uses overlay against unchanged wav.go and source860, parses behavioral failures and normal controls, then freezes. Worker must not execute Go."
+}

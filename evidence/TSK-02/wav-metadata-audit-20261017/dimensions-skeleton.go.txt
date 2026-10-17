@@ -1,0 +1,8 @@
+package audio
+
+// Root-only unchecked arithmetic skeleton for the new private calculation
+// slot. It is supplied only through the test overlay and allocates no buffer.
+// Public original writer failures are verified separately.
+func wavOutputBytes(frames, channels, sampleRate int) (int, error) {
+	return frames * channels * 2, nil
+}

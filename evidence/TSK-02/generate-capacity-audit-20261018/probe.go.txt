@@ -1,0 +1,57 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"strconv"
+	"unsafe"
+
+	"github.com/TimLai666/coimnet/tasks/asr"
+)
+
+type outcome struct {
+	Name           string  `json:"name"`
+	N              int     `json:"n"`
+	MinLen         int     `json:"min_len"`
+	MaxLen         int     `json:"max_len"`
+	Error          string  `json:"error"`
+	Panic          string  `json:"panic"`
+	Returned       int     `json:"returned"`
+	Nonnil         bool    `json:"nonnil"`
+	NativeBits     int     `json:"native_bits"`
+	UtteranceBytes uintptr `json:"utterance_bytes"`
+}
+
+func probe(name string, n, minLen, maxLen int) (out outcome) {
+	out = outcome{Name: name, N: n, MinLen: minLen, MaxLen: maxLen, NativeBits: strconv.IntSize, UtteranceBytes: unsafe.Sizeof(asr.Utterance{})}
+	defer func() {
+		if p := recover(); p != nil {
+			out.Panic = fmt.Sprint(p)
+		}
+	}()
+	rows, err := asr.Generate(asr.SynthConfig{SampleRate: 1000, DurationMS: 1, GapMS: 0, Alphabet: []rune{'a'}}, n, minLen, maxLen, 11)
+	if err != nil {
+		out.Error = err.Error()
+	}
+	out.Returned = len(rows)
+	out.Nonnil = rows != nil
+	return
+}
+
+func main() {
+	maxInt := int(^uint(0) >> 1)
+	enc := json.NewEncoder(os.Stdout)
+	// Both extreme products overflow uintptr before runtime allocation:
+	// MaxInt*sizeof(Utterance)>MaxUint and MaxInt*sizeof(rune)>MaxUint.
+	for _, row := range []outcome{
+		probe("normal", 1, 1, 1),
+		probe("zero_unused_length", 0, maxInt, maxInt),
+		probe("utterance_container_overflow", maxInt, 1, 1),
+		probe("rune_buffer_overflow", 1, maxInt, maxInt),
+	} {
+		if err := enc.Encode(row); err != nil {
+			panic(err)
+		}
+	}
+}

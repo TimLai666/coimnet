@@ -1,0 +1,27 @@
+{
+  "created_at": "2026-10-17T16:33:25.215500+00:00",
+  "slot": "Minimal PCM16 writer metadata and payload capacity checks; candidate-only during ticket141 source860 freeze.",
+  "output": "evidence/TSK-02/wav-metadata-audit-20261017/candidate-wav.go.txt",
+  "formal_original": "tasks/asr/audio/wav.go",
+  "original_sha256": "6cd136a262dcef7722a370a19c8655bcb2531bf8416253502f4880e8c9af3824",
+  "frozen_tests": {
+    "regression.go.txt": "e1dd0bc3ad26dca0d515b09265cb431bef3bf21e400649f6c905714130aad224",
+    "dimensions-regression.go.txt": "0d99e593e71521ca4665e6220aef26c4814b59eb360c0c044d62e8bdf091d9f3"
+  },
+  "signature": "private func wavOutputBytes(frames, channels, sampleRate int) (int, error)",
+  "preconditions": "Called only after existing writer verifies positive channel count, equal nonnegative per-channel frame lengths and positive sampleRate. Private math tests use the same domain.",
+  "expected_results": [
+    "Exact PCM16 data bytes, with no allocation, only when channels<=65535, blockAlign=2channels<=65535, rate<=4294967295, byteRate=rate*2channels<=4294967295, dataBytes<=4294967295,36+dataBytes<=4294967295,44+dataBytes<=nativeMaxInt. Otherwise0/error.",
+    "Perform no overflowing native or uint64 products before their bounds are established. Check rate and channel stride before bounded byteRate multiplication. Check frames using a divided size limit before multiplying payload. No arbitrary practical rate/channel/memory limits.",
+    "WriteWAV invokes helper with actual len(Samples),frames and SampleRate before allocating buffer or creating/opening output. Preserve existing basic error priority.",
+    "Write header byteRate without overflowing32-bit native int arithmetic; all narrowing only after helper validation.",
+    "ReadWAV,InspectWAV,parseWAV,pcm16 and sample loop stay byte-identical unless a directly necessary writer expression changes. Ordinary golden bytes, zero-frame normal files, len(Samples) authority, documented NaN silence and O_EXCL existing-path behavior remain.",
+    "Only directly relevant WriteWAV error documentation may change. No new API,dependencies,format,retry/streaming layer or generic abstraction."
+  ],
+  "root_design_hint": "A single private pure size function is needed for nonallocating mathematical edge tests. Payload maximum is min(4294967295-36,nativeMaxInt-44), after channel/rate bounds. The original mode private helper was only an explicitly identified unchecked test skeleton; do not copy it as the solution.",
+  "checks": [
+    "Root will run frozen public+private22event overlay tests in ordinary/race.",
+    "Main full source860 run98238 must remain unchanged. Formal adoption waits for ticket141 delivery."
+  ],
+  "non_go_run_by_worker": true
+}

@@ -1,0 +1,27 @@
+{
+  "slot": "Public regression only; implementation remains deferred behind tickets141/142",
+  "signature": "asr.Generate(c SynthConfig,n,minLen,maxLen int,seed uint64)([]Utterance,error)",
+  "test_output": "evidence/TSK-02/generate-capacity-audit-20261018/regression.go.txt",
+  "expected_results": [
+    "n=MaxInt,min=max=1 must return error and nil result without panic before any container allocation",
+    "n=1,min=max=MaxInt must return error and nil result without panic before rune allocation",
+    "ordinary n=1,min=max=1 with one-letter alphabet returns exact Text a, one zero sample, speaker spk3, session ses11",
+    "n=0,min=max=MaxInt returns nonnil empty slice without error because the unused length needs no rune allocation"
+  ],
+  "fixed_config": {
+    "SampleRate": 1000,
+    "DurationMS": 1,
+    "GapMS": 0,
+    "Noise": 0,
+    "Alphabet": [
+      "a"
+    ],
+    "seed": 11
+  },
+  "safe_cases": "MaxInt times Utterance element size or 4-byte rune exceeds uintptr on both32/64 architectures; do not add near-limit allocations, huge buffers, runtime memory caps, or new dependencies.",
+  "parent_tests": [
+    "TestGenerateRejectsUnrepresentableCapacity",
+    "TestGenerateRetainsNormalAndUnusedLength"
+  ],
+  "limits": "Current full engineering freezes860source paths. Only .go.txt evidence may be written; no formal source or module/cache changes. Root runs original failing overlay before any later implementation."
+}
