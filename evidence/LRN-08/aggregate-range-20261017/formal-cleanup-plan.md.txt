@@ -1,0 +1,56 @@
+# Ticket136 清理前保存與驗收計畫稽核
+
+稽核範圍是 `/Users/timlai/Developer/coimnet/runs/.tmp/aggregate-range-20261017`（W136）及 E135/E136 指定證據。這份報告只新增本檔案，沒有執行 Go、lsof、清理、刪除、程序操作或 Git 寫入。`engineering-final-race.log` 未讀取內容、未雜湊；不能由目前狀態判斷 session 50286 已結束。
+
+## 已核對的保存項目
+
+- `evidence/LRN-08/aggregate-range-20261017/work-preservation.json` 宣告 `preserved-work.tar.gz` 有 24 個 payload、826202 bytes、未壓縮 2989757 bytes，`readback_exact=true`。目前檔案的 SHA-256 是 `5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4`，與收據相同。
+- 24 個 payload 的 member 名稱與收據相同，逐一比對 archive digest 及 W136 目前 bytes 沒有不符。內容包括 `module-originals.json`、`run.py`、`environment.json`、`original-continual.go.txt`、`formal-original-overlay.json`、`old-chemical/main.go`、`aggregate-ordinary/main.go`、`aggregate-probe.go`、四份 `*.before` 文件，以及 ordinary/race 各 6 份、合計 12 份 `old-chemical/chemical-models-*.json`。
+- 只略過 W136 下的 `go-cache`、`go-mod-cache`、`go-tmp` 後，目前可見 57 個非 cache 檔案，沒有目前的 binary；所有 57 個檔案的 bytes 都能在 E136 證據根或 E136 `preserved-work.tar.gz` 找到相同 SHA-256。這是目前 inventory 的保存結果，不代表稍後工程步驟新增的 `final-root.test` 已被保存。
+- `evidence/LRN-08/aggregate-range-20261017/formal-source.json` 有 855 entries：853 個 `.go`（其中 851 個非 evidence、2 個 evidence）及 `go.mod`、`go.sum`。`formal-source-before.json` 是 853 entries；`baseline.json` 的 `source_count=854` 是舊基線，不能拿來取代 E136 final manifest 的 855。
+- `baseline.json` 的 W136 inode 是 59428337。當前核對結果：`runs/.tmp/aggregate-range-20261017` inode 59428337、不是 symlink 且 resolve 到自身；`runs/.tmp/62` inode 49680181；`runs/.tmp/real-task-quality-20261012` inode 50419696，兩個舊暫存根也都不是 symlink。E136 `cleanup-owned.py.txt:44-46,73-74,126-127` 的 inode/resolve guard 對應這三個值。
+- `evidence/LRN-08/aggregate-range-20261017/formal-control-inputs.json` 指向 E135 `evidence/LRN-10/chemical-evaluation-reset-20261017/preserved-work.tar.gz`，其宣告 SHA-256 `cec9329f1c4118e55e1f17e33e0a815bb9dda6cbf351d09b730bca32160ea72d`，目前 archive bytes 與該 SHA 相同，且收據列 `old_checkpoint_files=12`。該 E135 archive 實際含 12 個 ordinary/race、recompute false/true、scale -3/0.2/0 的舊模型 JSON。E136 archive 也有同一組 12 份，故 W136 內容可重建，但 E135 archive 仍是 `formal-control-inputs.json` 指定的來源，須保留其 provenance。
+- `module-manifest-anchor.json` 宣告 `module-originals.json` 有 15046 entries；E136 cleanup script 在 `:66-70` 會先比對該 manifest 與現行 module bytes。`protected-models.json` 有 18 entries，`persistent-data.json` 有 6 entries，`foreign-before.json` 有 32 entries；E136 cleanup script 的 `:31-43` 以 MOD-04 18/6 收據及 E136 32 筆 foreign 收據作完整 bytes/SHA guard。
+
+## E135 程序改成 E136 所需的精確替換
+
+目前準備的 `evidence/LRN-08/aggregate-range-20261017/cleanup-owned.py.txt` 已有以下替換：
+
+- `:18` 的 W 路徑由 E135 `runs/.tmp/evaluation-reset-20261017` 改為 `runs/.tmp/aggregate-range-20261017`。
+- `:26` 的 formal source count 由 854 改為 855。
+- `:73-74,126-127,140` 的 W inode/結果由 59353824 改為 59428337。
+- `:78-79` 的 runner session 由 E135 的 58245 改為 50286。
+- `:83` 只讀 E136 `work-preservation.json`，因 E136 沒有 `baseline-work-preservation.json`；E136 archive 的 24 payload 已包含 W136 必要輸入。E135 的 `preserved-work.tar.gz` 仍須以 `formal-control-inputs.json` 的路徑與 SHA guard 保留，不能因 W136 只讀一份 receipt 就解除其來源保存。
+- `:95` 的 evidence root 改為 E136 根，並排除 `.gz` 及名稱為 `engineering-final-race.log` 的 live log；這符合本輪不讀取、不雜湊 live race log 的限制。
+- `:19` 的兩個受保護舊根 inode 保持不變，因目前實際 inode 仍是 49680181 與 50419696。
+
+以下仍需在執行清理前修正或取得等價的正式收據：
+
+- `:75-76` 讀取 E136 尚不存在的 `verification.json`，並要求 `engineering_passed`、`diagnostic_passed`。目前有 `diagnostic-verification.json`，但沒有這個檔案；不能把 `diagnostic-verification.json:all_passed=true` 推成該 schema 已存在。應由 Root 先產生明確的 E136 verification receipt，或把腳本改成現有 final receipt 的明確欄位。
+- `:77` 要求尚不存在的 `engineering-verification.json:all_passed`。目前只有 format/build/unit 三份 step receipt，完整 `engineering-verification.json` 必須等所有步驟完成後出現。
+- `:80-81` 仍引用不存在的 `final-governance.json` 及 `passed_events`。E136 `engineering.py.txt:67,102,117-123` 的實際輸出名稱是 `engineering-final-governance.json`，欄位是 `test_events == {"pass": 31}` 並另有 `acceptance_errors`；這是 E135→E136 的命名/schema 不相容，不能直接執行目前腳本。
+- `:99-103` 讀取尚不存在的 `discarded-binaries.json`，並要求唯一項目 `final-root.test` 的 bytes/SHA。`engineering.py.txt:68` 的 closure-binary 步驟尚未留下該 binary 或 receipt；不能用目前沒有 binary 的 inventory 代替。
+- `:94-98` 只把 E136 evidence 根加入保存 hash。這足以覆蓋目前 W136 57 個非 cache 文字檔，但沒有明示檢查 `formal-control-inputs.json` 指向的 E135 archive。建議加上 E135 archive 路徑、SHA、12 個舊 checkpoint 的 cross-receipt guard，避免來源收據被誤清理或遺漏。
+- `:118-120` 的 lsof 無 open handle 及 inventory stability 是必要終端證據。本輪沒有執行，Root 必須等 session 50286 明確 terminal、所有工程輸出完成後再執行，不能把 live race 競態當作通過。
+- `:115-125,147-149` 的 `cleanup-accounting.json`、`cleanup-inventory.json.gz`、`cleanup.json` 都尚不存在。這些是清理後收據，現在不能宣稱已完成或預先補寫。
+
+## 目前診斷與工程證據
+
+- `diagnostic-verification.json` 的 `all_passed=true`、`formal_adopted=true`、`source_count=855`。ordinary 與 race 各有 114 related pass events、22 new regression events、64 normal statistics reports、6 old checkpoint continuations、3 public reproduction rows，`json_errors_before=2`、`json_errors_after=0`，red event count 為每組 pass 7、fail 15。這只證明已保存的診斷 receipt，不取代完整工程 gate 或 runner terminal。
+- `engineering-final-format.json` 有 `exit_code=0`、`raw_bytes=0`、`acceptance_errors=[]`；`engineering-final-build.json` 同樣為 exit 0、空輸出、無 acceptance error。
+- `engineering-final-unit.json` 有 `exit_code=0`、`test_events={"pass":8574,"skip":23}`、`package_events={"pass":58,"skip":4}`、`prior_event_count=8575`、`changed_events=[]`、22 個新增事件、`acceptance_errors=[]`。這不能代表 race、vet、module、governance 或 closure-binary 已完成。
+- `engineering-final-race.json`、`engineering-final-vet.json`、`engineering-final-module-verify.json`、`engineering-final-module-selection.json`、`engineering-final-governance.json`、`engineering-final-closure-binary.json`、`engineering-verification.json`、`runner-terminal.json`、`discarded-binaries.json` 均尚不存在。故目前沒有可核對的完整工程 terminal receipt，也沒有可供清理腳本使用的 binary disposal receipt。
+- `formal-adoption.json:adopted=true` 與 `delegation.json:adopted=false` 同時存在。這是不同階段的 receipt 狀態衝突，應由 Root 以最終、帶完整工程證據的 authoritative receipt reconcile；本報告不替它選邊，也不把 candidate 通過視為正式採用完成。
+
+## 清理前必要 accounting 規則
+
+1. W136 的每個非 cache、非 directory entry 都必須有 exact bytes/SHA 對應到 E136 evidence 或 `preserved-work.tar.gz`；目前 57 個既有文字檔已全部對應。新增的 `final-root.test` 只能由 `discarded-binaries.json` 的 exact bytes/SHA accounting 覆蓋。
+2. `go-cache`、`go-mod-cache`、`go-tmp` 是唯一可排除的 cache 根；其他檔案不能因名稱、大小或「可重建」推定可丟。E136 archive 的 12 份舊模型與 E135 `formal-control-inputs.json` 所指 12 份來源都要保留。
+3. 清理前要重新核對 formal source set 與 `formal-source.json` 855 entries、每個 source hash、`module-originals.json` 15046 entries、18 model、6 persistent data、32 foreign，以及兩個舊根的 inode/非 symlink 狀態。`baseline.json:source_count=854` 不得當作 final accounting。
+4. archive accounting 必須先核對 archive SHA、member set、每個 payload SHA、每個 W136 對應 bytes；E135 source archive 另核對 `formal-control-inputs.json` 的路徑/SHA/12 checkpoint count。
+5. 只有在 session 50286 有明確 terminal/exit 0、race 及後續工程 receipts 完整、runner 無 open handle 且 inventory 第二次比對不變後，才可產生清理 accounting 並考慮 Root 授權的 W136 清理。這些條件目前尚未全數成立。
+
+## 尚未查證與結論
+
+- 尚未查證 session 50286 的 terminal 結果、race 輸出、vet、module verify、module selection、governance、closure-binary、完整 engineering verification、lsof handle 狀態及任何清理後結果；本輪沒有讀取或雜湊 live `engineering-final-race.log`。
+- 目前只能確認保存包、既有診斷、format/build/unit receipt 及現有 bytes 對照，不能宣稱完整工程通過、清理完成、W136 已可刪除，或整個 `runs` 可清理。適用範圍若未來通過，只能是 W136 `runs/.tmp/aggregate-range-20261017`，且須保留上述 E135 archive、正式 source、模型、資料、module manifest 與兩個舊根。

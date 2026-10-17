@@ -1,6 +1,6 @@
 # CoImNet
 
-每題重設化學狀態已保留任務資源與排隊回饋。854份正式來源的完整一般／競態各58套件通過，正常報告與十二份舊化學模型接續保持，見[ticket135](docs/tickets/135-chemical-evaluation-reset.md)與[驗收](evidence/LRN-10/chemical-evaluation-reset-20261017/verification.json)。本票4／4，最後31項治理通過，2,156,022,451 bytes本輪暫存已清除，原模型、資料及其他工作保持。主要提交`2c95625`已推送且遠端讀回相同，見[交付](evidence/LRN-10/chemical-evaluation-reset-20261017/delivery.json)。極端分數的跨seed統計溢位由[ticket136](docs/tickets/136-aggregate-cell-representability.md)接續，LRN-08保持specified，目前工程追蹤90／91。
+極端有限分數的平均／標準差計算已通過完整工程驗收，保留正常算式，必要時才使用高精度計算。一般／競態各 58 個套件通過，正常統計及合計 12 份舊模型接續結果逐位元組保持，見 [ticket136](docs/tickets/136-aggregate-cell-representability.md)及[驗收](evidence/LRN-08/aggregate-range-20261017/verification.json)。LRN-08 恢復 passed，目前工程追蹤 91／91。本輪暫存已清除，本票 3／4，提交與遠端核對尚待完成。
 
 **Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
 

@@ -1,0 +1,39 @@
+# Ticket136 `AggregateCells` 呼叫者與結果消費稽核
+
+稽核是唯讀進行，沒有執行 Go、沒有改候選或測試，也沒有碰 live runner。先以 codebase-memory-mcp 的 `search_code`（`AggregateCells`、`experiment/` 與 `internal/cli/` 路徑）及 `trace_path` 查找，再逐檔讀目前來源與 `evidence/LRN-08/aggregate-range-20261017/fix-skeleton.md`。
+
+## 目前契約與來源狀態
+
+- fix skeleton 要求成功值必須有限，失敗遮罩中的 NaN/Inf 必須跳過，維持維度、`Total`/`Succeeded`、Min/Max、零成功行為與 JSON 相容性，見 `evidence/LRN-08/aggregate-range-20261017/fix-skeleton.md:3-7,18-20`。
+- 目前 `experiment/continual_math.go:109-187` 已有有限成功值檢查、失敗遮罩跳過及 exact-moments fallback。`CellStat` 的 JSON 欄位是 `mean`、`std`、`min`、`max`、`succeeded`、`total`，見 `experiment/continual_math.go:94-102`。
+- `evidence/LRN-08/aggregate-range-20261017/formal-adoption.json:2-15` 將目前正式檔標為 `adopted: true`，且 `after_sha256` 與目前 `experiment/continual_math.go` 的 SHA-256 相同。較早的 `candidate-validation.json:3` 的 `formal_adopted: false` 是採用前快照，不用來否定目前檔案狀態。
+
+## 所有非測試直接呼叫點
+
+| 呼叫點 | 輸入、失敗遮罩與有限值 | 結果消費與欄位 | 錯誤傳遞 |
+|---|---|---|---|
+| `experiment/continual_controls.go:119-146`，`runIndependent` | `perSeed` 與 `perFailed` 明確配置為 `len(Seeds) × len(Tasks) × 1`。`runTaskIndependent` 失敗時將 `SeedScore.Failed` 與 `perFailed[s][j][0]` 設為 true，分數槽保留 0，成功值來自 `evaluateTask`，見 `:121-144`。 | `cells[j][0]` 寫入 `IndependentResult.Stat`，見 `:150-152`；`Stat` 以 `json:"stat"` 輸出，見 `:55-63`。Min/Max/`Total`/`Succeeded` 沒有其他算術消費者。 | `AggregateCells` 錯誤直接以 `return nil, err` 傳出，見 `:146-148`。失敗值在 aggregate 內於 `experiment/continual_math.go:139-142` 跳過，成功值於 `:143-149` 檢查有限。 |
+| `experiment/continual_run.go:225-242`，`RunContinualMatrix` 的矩陣 cells | 每個 `SeedMatrix.Scores` 與 `Failed` 在 `:64-77` 依 stage/task 配置；評估錯誤於 `:132-143` 記錄並設 failed mask，build 失敗則整個 seed 標 failed，見 `:80-93`。因此傳入的 `perSeedScores` 與 `perSeedFailed` 形狀相同，見 `:225-235`。 | 結果寫入 `report.Cells`，JSON 欄位為 `cells`，見 `:44-57`、`:242-246`。aggregate 以成功值建立 `Total`、`Succeeded`、Min/Max 及統計，見 `experiment/continual_math.go:136-182`。 | aggregate 錯誤直接 `return report, err`，見 `:242-245`。 |
+| `experiment/continual_run.go:247-251`，`RunContinualMatrix` 的 forgetting cells | `perSeedForgetting` 取自每個 seed 的 `sm.Forgetting`，仍沿用 `perSeedFailed`，見 `:247-250`。`Forgetting` 對 failed 當前 cell 直接保留 0，並跳過 failed 的歷史 cell，見 `experiment/continual_math.go:61-91`。 | 結果寫入 `report.ForgettingCells`，JSON 欄位為 `forgetting_cells`，見 `experiment/continual_run.go:51-54,251-255`；無其他 Min/Max/平均值消費。 | aggregate 錯誤直接 `return report, err`，見 `:251-254`。目前 `Forgetting` 本身沒有有限值檢查，若 `best - scores[i][j]` 溢位，會由 `AggregateCells` 的成功值檢查在 `experiment/continual_math.go:143-170` 轉成錯誤。 |
+
+沒有找到 `internal/cli` 內直接呼叫 `AggregateCells`。CLI 的間接路徑是 `internal/cli/continual.go:72-81` 呼叫 `experiment.RunContinualMatrix`，入口由 `internal/cli/run.go:242-243` 轉送。報告寫出前在 `internal/cli/continual.go:157-164` 使用 `json.MarshalIndent`，JSON 編碼錯誤會回傳並阻止發佈；一般完成摘要只計算 failed records，見 `:84-92`。
+
+## 結果消費者與數值邊界
+
+- `CellStat` 的 Min/Max 以第一個成功值初始化，再逐項比較，保留既有 first-item 行為，見 `experiment/continual_math.go:174-182`。零成功時 `CellStat{Total: ...}` 的其餘 float 欄位維持零，且 `Succeeded` 為零，見 `:136-151`。
+- `compareToIndependent` 不是 `CellStat` 消費者。它在 `experiment/continual_comparison.go:83-145` 直接讀 `report.Seeds` 與 `report.Independent` 的原始成功分數，依 failed mask 配對，於 `:124-141` 計算差值、平均及 bootstrap；`RunContinualMatrix` 在 `:256-262` 呼叫並傳遞其結構錯誤。這條路徑沒有對差值或 bootstrap 結果另作有限值檢查。
+- 目前 `evaluateTask`/`scoreTwin` 的成功來源是 `experiment/continual_eval.go:89-110`；`itemMSE` 對每個差值與最終 MSE 有有限值檢查，並在需要時用 exact rational，見 `experiment/adaptive_run.go:273-309`。但 `scoreTwin` 對最後累積的 `score` 沒有獨立的 `finite(score)` 判斷，因此不能只靠呼叫點靜態檢查宣稱所有合法模型分數都已被明確界定。
+
+## 已確認事項
+
+1. 舊來源的公開統計缺陷已由 `evidence/LRN-08/aggregate-range-20261017/reproduction.json:5-38` 與 `probe-original.log:1-3` 具體重現：有限 `-1e308` 及 `-8e307/-7e307` 輸入曾得到 Inf，正常 `[-8,-7]` 為 `-7.5/0.5`。這是歷史來源證據；目前檔案已按 `formal-adoption.json` 採用有限值錯誤與 fallback，不能把舊 Inf 日誌當成目前 callsite 的未修復結果。
+2. 三個非測試直接呼叫點的失敗遮罩與 error return 都有明確程式路徑；`AggregateCells` 現在會先跳過 failed 值，再拒絕非有限成功值並回傳 seed/row/column context，見 `experiment/continual_math.go:139-170`。
+3. `Total` 是 seed 數，`Succeeded` 是未遮罩成功值數，Min/Max 僅由成功值計算；目前所有輸出位置均保留 `CellStat` 原物件與 JSON tags，沒有發現欄位被重算或丟棄。
+
+## 尚未證明、不得當成缺陷定論
+
+- 合法預設任務是否能產生可重現的 `1e308` 分數，目前仍未知。可確認的只有 CLI 預設 seeds/budget/episodes 與兩個 task 參數在 `internal/cli/continual.go:18-35,119-150`，以及 generator 的 `a` 與 target 建構在 `experiment/continual_math.go:33-54`；協定也只允許 finite、`|gain| <= 1`，見 `experiment/continual.go:102-115`。現有重現證據明確寫著「Current generated task score range has not been shown to reach these inputs」，見 `evidence/LRN-08/aggregate-range-20261017/reproduction.json:36-38`。本輪沒有執行 Go，不能把公共 helper 的 `1e308` 輸入推成預設任務輸出。
+- `Forgetting` 的有限差值，以及 `compareToIndependent` 的差值/bootstrap，理論上仍可能遇到極端有限分數的中間溢位；目前只看到來源算式與錯誤邊界，沒有合法預設任務的重現 JSON/log。ticket136 也明確把 scoreTwin/bootstrap/比較差值列為尚未證明，見 `docs/tickets/136-aggregate-cell-representability.md:21`，故列為後續調查項，不列已確認缺陷。
+- 未核對 runner 58245 的 terminal 狀態，也未讀或 hash live engineering race log。
+
+本報告只覆蓋 W136 的來源與呼叫者稽核，不代表整個 `runs/` 可清理，也不代表正式工程／競態驗證已完成。

@@ -2,6 +2,8 @@
 
 ## 目前階段
 
+[ticket136](docs/tickets/136-aggregate-cell-representability.md) 已通過完整工程驗收。855 份來源的一般／競態各 58 套件通過，8,574／8,573 pass、23／24 skip，原有各 8,575 個終端事件保持，只新增各 22 pass。正式原版各 15 fail／7 pass，修正後相關各 114 pass，各 64 份正常統計及合計 12 份舊模型接續逐位元組保持。格式、build、vet、固定 Insyra v0.3.4、模組及 31 項治理通過，已核准的中性增益控制各 21 pass，見[驗收](evidence/LRN-08/aggregate-range-20261017/verification.json)。LRN-08 恢復 passed，工程追蹤 91／91。最後 31 項治理通過，1,773,523,834 bytes 本輪暫存已清除，原模型、必要資料、原始模組及其他工作保持，見[清理](evidence/LRN-08/aggregate-range-20261017/cleanup.json)。本票 3／4，提交與遠端核對尚待完成。三條化學路徑的唯讀補充稽核未確認新缺陷，既有首步差異符合明文生命週期，見[補充稽核](evidence/LRN-08/aggregate-range-20261017/chemical-path-audit-review.json)。整體零 bug 目標保持進行中。
+
 [ticket135](docs/tickets/135-chemical-evaluation-reset.md)已通過完整工程驗收。854份來源的一般／競態各58套件通過，8,552／8,551 pass、23／24 skip，原有各8,556個終端事件保持，只新增各19 pass。相關各136 pass、64份正常報告及十二份舊化學保存接續保持，原版與略過重設的對照均未通過回歸。格式、build、vet、固定依賴及31項治理通過。LRN-10恢復passed，本票4／4，最後31項治理通過，2,156,022,451 bytes本輪暫存已清除，原模型、資料及其他工作保持。主要提交`2c95625`已推送且遠端讀回相同，見[交付](evidence/LRN-10/chemical-evaluation-reset-20261017/delivery.json)。已確認的[ticket136](docs/tickets/136-aggregate-cell-representability.md)統計溢位維持specified，工程追蹤90／91。
 
 [ticket134](docs/tickets/134-evaluation-mse-representability.md)已完成正式修正與完整工程驗收。853份來源的一般／競態各58套件通過，8,533／8,532 pass、23／24 skip，原有各8,540個終端事件保持，只新增各16 pass。相關各244 pass、各64份正常報告及十二份舊化學模型接續保持。格式、build、vet、固定依賴及最後31項治理通過。LRN-10恢復passed，工程追蹤91／91。24份必要輸入已保存，1,802,429,189 bytes本輪暫存已清除，原模型、資料及其他工作保持。本票4／4，主要提交d7defe7已同步且遠端讀回相同，見[交付](evidence/LRN-10/mse-representability-20261016/delivery.json)。使用者核准的中性增益21個控制在本輪完整一般／競態也均通過，見[驗收](evidence/LRN-10/mse-representability-20261016/verification.json)。

@@ -1,0 +1,29 @@
+{
+  "recorded_at": "2026-10-17T07:36:40.231348+00:00",
+  "host": "Codex",
+  "opencode_probe": "opencode-models-formal.json",
+  "opencode_error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+  "free_model_used": false,
+  "fallback": {
+    "tool": "Codex native collaboration",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "basis": "Project AGENTS.md explicit fallback; existing configured workers reused."
+  },
+  "prior_candidate_work": "delegation.json",
+  "assignments": [
+    {
+      "agent": "cleanup_plan_audit_135",
+      "scope": "Read-only caller audit; then cleanup prerequisite plan. No Go execution, production/test edits, deletion or runner control.",
+      "allowed_writes": [
+        "runs/.tmp/aggregate-range-20261017/callers-audit.md.txt",
+        "runs/.tmp/aggregate-range-20261017/cleanup-plan.md.txt"
+      ]
+    }
+  ],
+  "root_review": "Root read full caller report, all production diff and regression source; personally verified all three direct callers and CLI publication behavior. Root executes all Go commands. Root also read the full cleanup-plan report, corrected its stage/naming interpretations, and personally verified all archive payloads, old-checkpoint provenance and current noncache accounting; see formal-cleanup-review.json.",
+  "formal_adoption": "formal-adoption.json",
+  "test_fingerprint": "d928a255da2ad463f3b3b6973a7a39d8a49d9e94d8ade83527c3adf879138d60",
+  "production_fingerprint": "48b37409de2e0237e17c39aff250891b2c79cf55f5bc90378f9ac056bf13da51",
+  "cleanup_review": "formal-cleanup-review.json"
+}

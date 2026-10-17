@@ -1,0 +1,47 @@
+{
+  "reviewed_at": "2026-10-17T07:51:30.113483+00:00",
+  "scope": "Read-only chemical timing/effect audit for ordinary-range persistent Advance, independent training and segment replay.",
+  "new_confirmed_defects": [],
+  "root_conclusion": "The reported cold-start difference is explained by explicit existing lifecycle policies and tests. It is not a defect under the current documented contract; no implementation or default-policy change adopted.",
+  "worker": "adaptive_mean_audit_135",
+  "worker_result_reviewed": true,
+  "verified_current_source_paths": [
+    "learning/chemistry.go:156-276",
+    "learning/individual.go:683-745",
+    "learning/individual_chemical_training.go:13-111",
+    "learning/chemical_sequence.go:134-208",
+    "learning/chemical_recompute.go:15-49",
+    "modulation/sources.go:135-160",
+    "dynamics/coupled_modulation.go:146-172"
+  ],
+  "contract": [
+    "ENG.md:223-225 explicitly distinguishes independent episodes and the persistent source boundary.",
+    "learning/chemistry_test.go:579-610 explicitly requires fresh persistent NeuralActivity to refuse rather than invent an observed row, then checks warmed activity.",
+    "learning/individual_chemical_initial_test.go:24-102 intentionally distinguishes standalone implicit activated initial output from Individual explicit-zero boundary."
+  ],
+  "worker_corrections": [
+    "Worker cited docs/model-and-mechanisms.md:223 and :225, but that document has75 lines; the intended matching contract is ENG.md:223 and :225.",
+    "Confirmed behavior difference does not imply a confirmed bug. Existing code, explanatory comments and regression expectations explicitly account for the different lifecycles.",
+    "No four-way NeuralActivity public probe was executed this turn; worker reasoning about that matrix is static, not a new run."
+  ],
+  "coverage": {
+    "full_unit_receipt": "engineering-final-unit.json",
+    "full_unit_log_sha256": "205ba1653aa0364e20889e4d3d4ad5e1e50d1127fd63fa215358941aa5378941",
+    "matching_top_level_tests": 5,
+    "passed_terminal_events": 37,
+    "events": {
+      "TestChemicalEpisodeTimelineClockFeedbackAndInitialActivity": 1,
+      "TestChemicalRecomputeTrainerMatchesFullHistory": 25,
+      "TestChemicalRecomputeLIFTrainerMatchesFullHistory": 7,
+      "TestNeuralSourceReadsThePreviousRowOutputs": 1,
+      "TestIndividualChemicalInitialActivityMatchesStandaloneZeroBoundary": 3
+    }
+  },
+  "limits": [
+    "The audit does not prove all chemical mechanism combinations or the whole framework correct.",
+    "Full engineering race acceptance remains pending in live session50286."
+  ],
+  "source_manifest": "formal-source.json",
+  "implementation_changed": false,
+  "additional_go_commands_executed": false
+}

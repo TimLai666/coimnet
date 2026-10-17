@@ -1,0 +1,29 @@
+import hashlib
+import json
+import os
+import pathlib
+import subprocess
+import sys
+import time
+
+work = pathlib.Path(__file__).resolve().parent
+name, *command = sys.argv[1:]
+assert name and command
+log = work / (name + '.log')
+receipt = work / (name + '.json')
+assert not log.exists() and not receipt.exists()
+environment = os.environ.copy()
+environment.update(json.loads((work / 'environment.json').read_text()))
+started = time.monotonic()
+print(json.dumps({'running': name, 'command': command}), flush=True)
+with log.open('xb') as output:
+    result = subprocess.run(command, env=environment, stdout=output, stderr=subprocess.STDOUT)
+data = log.read_bytes()
+record = {'command': command, 'exit_code': result.returncode,
+          'seconds': time.monotonic() - started, 'sha256': hashlib.sha256(data).hexdigest(),
+          'bytes': len(data)}
+receipt.write_text(json.dumps(record, indent=2) + '\n')
+print(json.dumps(record), flush=True)
+if result.returncode:
+    print(data.decode(errors='replace')[-3500:], flush=True)
+sys.exit(result.returncode)
