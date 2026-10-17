@@ -2,7 +2,9 @@
 
 ## 目前階段
 
-[ticket137](docs/tickets/137-stream-partition-state.md) 已通過完整工程驗收，一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。新增 52 個語音分段／恢復子案例及 2 個父測試、兩種隔離刻意錯誤控制均驗收，格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[驗收](evidence/TSK-02/partition-state-20261017/verification.json)。855 份既有 Go／模組來源保持，只新增公開 SDK 性質回歸，目前沒有確認產品缺陷。早先沙箱禁止本機測試連接埠的失敗已保存[原因](evidence/TSK-02/partition-state-20261017/sandbox-failure.json)，最終完整驗收已在允許本機連線的環境通過。最後 31 項治理通過，1,551,595,591 bytes 本票暫存已清除，856 份來源、18 份原模型、6 份既有資料、15,046 份原始模組檔及其他工作保持，見[清理](evidence/TSK-02/partition-state-20261017/cleanup.json)。提交及遠端讀回尚未完成，本票 3／4，工程追蹤保持 91／91。
+[ticket137](docs/tickets/137-stream-partition-state.md) 已通過完整工程驗收，一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。新增 52 個語音分段／恢復子案例及 2 個父測試、兩種隔離刻意錯誤控制均驗收，格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[驗收](evidence/TSK-02/partition-state-20261017/verification.json)。855 份既有 Go／模組來源保持，只新增公開 SDK 性質回歸，目前沒有確認產品缺陷。早先沙箱禁止本機測試連接埠的失敗已保存[原因](evidence/TSK-02/partition-state-20261017/sandbox-failure.json)，最終完整驗收已在允許本機連線的環境通過。最後 31 項治理通過，1,551,595,591 bytes 本票暫存已清除，856 份來源、18 份原模型、6 份既有資料、15,046 份原始模組檔及其他工作保持，見[清理](evidence/TSK-02/partition-state-20261017/cleanup.json)。主要提交 `23fdec0` 已正常推送且遠端讀回完全相同，見[交付](evidence/TSK-02/partition-state-20261017/delivery.json)。本票 4／4，工程追蹤保持 91／91，整體零 bug 目標持續進行。
+
+下一個可驗證成果是受控觀察「取得更新鎖後，在無 target 或合法間隔 skip 階段取消」的消費與重試結果。這仍是未確認的情境，先比對既有部分成功契約，不預設需要更改學習流程。
 
 線上回饋消費、取消與重試的補充唯讀稽核已完成，未確認產品缺陷，見[Root 核對](evidence/TSK-02/partition-state-20261017/online-audit-review.json)。Root 另核對同一凍結來源完整一般日誌中的 7 個父測試、13 個 pass 事件，這份補充稽核沒有執行新 Go。取得 learner 鎖後、無 target 或合法間隔 skip 時取消的行為尚無受控動態反例，且未確認有更強的逐筆取消契約，不據此修改學習機制。
 

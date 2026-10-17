@@ -3,7 +3,7 @@
 **Epic:** 語音串流契約與模型狀態
 **User Story:** 使用者可以把同一段音訊任意分段並在途中恢復，取得相同文字與完整串流狀態。
 **Blocked by:** 無，前一輪唯讀稽核已交付
-**Status:** in progress
+**Status:** completed
 
 ## Root 決策｜2026-10-17
 
@@ -12,6 +12,6 @@
 - [x] 固定空音訊、視窗與步長附近、完整與短尾資料，以及非空文字控制，完成實際一致性量測。
 - [x] 一般與競態的新回歸及刻意錯誤控制有效，Root 審查測試及實際輸出。
 - [x] 完整工程驗證、來源與既有事件保持核對通過。
-- [ ] 證據、進度、暫存清理、提交及遠端讀回完成。
+- [x] 證據、進度、暫存清理、提交及遠端讀回完成。
 
-一般與競態各 52 個子案例、2 個父測試通過，完整錄音 7,040 樣本，相關結果見[專項驗收](../../evidence/TSK-02/partition-state-20261017/focused-verification.json)。重設前次 class、恢復遺失 pending 的兩種隔離刻意錯誤，都在一般與競態被完整快照斷言拒絕，見[控制驗收](../../evidence/TSK-02/partition-state-20261017/controls-verification.json)。產品 Go 來源沒有改動。完整一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[完整驗收](../../evidence/TSK-02/partition-state-20261017/verification.json)。清理與交付尚未完成。
+一般與競態各 52 個子案例、2 個父測試通過，完整錄音 7,040 樣本，相關結果見[專項驗收](../../evidence/TSK-02/partition-state-20261017/focused-verification.json)。重設前次 class、恢復遺失 pending 的兩種隔離刻意錯誤，都在一般與競態被完整快照斷言拒絕，見[控制驗收](../../evidence/TSK-02/partition-state-20261017/controls-verification.json)。產品 Go 來源沒有改動。完整一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[完整驗收](../../evidence/TSK-02/partition-state-20261017/verification.json)。最後 31 項治理通過，1,551,595,591 bytes 本票暫存已清除，原模型、資料、原始模組與其他工作保持，見[清理](../../evidence/TSK-02/partition-state-20261017/cleanup.json)。主要提交 `23fdec0` 已正常推送，遠端讀回完全相同，見[交付](../../evidence/TSK-02/partition-state-20261017/delivery.json)。本票 4／4，整體零 bug 目標保持進行中。
