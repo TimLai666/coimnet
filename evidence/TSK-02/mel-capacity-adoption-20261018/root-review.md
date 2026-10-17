@@ -8,6 +8,6 @@ Root 重新解析正式一般／競態日誌，各100個 pass 與隔離候選逐
 
 首次全套程序84436實際exit1，一般測試8708pass／23skip及一個TestFormatIndex失敗。新增unsafe匯入使版本常數由第11行移至12行，但docs/INDEX.md:179沿用舊行號。Root已更新該列label與anchor，未修改或放寬測試；31項治理重查全數pass。失敗日誌及實際terminal保留，見format-index-repair.json。
 
-新全套程序97205使用engineering-final標籤，與首輪結果分開保存，866份Go／模組來源保持相同，修正後的INDEX指紋另存validation-inputs.json。完整配方要求保留前一版全部8713個測試結果並只新增19個pass，另驗證格式、build、vet、固定模組、31項治理及最後治理用二進位檔。Root 已重新解析修正後完整一般日誌，8709pass／23skip、58pass／4skip套件，8713舊結果全部保持，僅新增19pass；正常音訊、九份報告與21中性增益控制保持，見unit-root-review.json。原程序97205已實際terminal exit0（3179bd）。Root逐筆重新解析完整一般／競態與全部九項receipt，8,709／8,708 pass、23／24 skip，各58套件通過，原8,713結果保持，只新增19pass；31項治理通過，正式866來源保持，見full-engineering-root-review.json及verification.json。本票4／5，最後31項治理已通過，1,648,123,020bytes自有暫存與快取已清除，原始模組、模型、資料與其他工作保持。提交推送與遠端核對待完成。
+新全套程序97205使用engineering-final標籤，與首輪結果分開保存，866份Go／模組來源保持相同，修正後的INDEX指紋另存validation-inputs.json。完整配方要求保留前一版全部8713個測試結果並只新增19個pass，另驗證格式、build、vet、固定模組、31項治理及最後治理用二進位檔。Root 已重新解析修正後完整一般日誌，8709pass／23skip、58pass／4skip套件，8713舊結果全部保持，僅新增19pass；正常音訊、九份報告與21中性增益控制保持，見unit-root-review.json。原程序97205已實際terminal exit0（3179bd）。Root逐筆重新解析完整一般／競態與全部九項receipt，8,709／8,708 pass、23／24 skip，各58套件通過，原8,713結果保持，只新增19pass；31項治理通過，正式866來源保持，見full-engineering-root-review.json及verification.json。本票4／5，最後31項治理已通過，1,648,123,020bytes自有暫存與快取已清除，原始模組、模型、資料與其他工作保持。修正647a4e0與主要證據5fd79b5已正常推送，遠端讀回相同，866份提交來源與驗收指紋相符，見delivery.json。本票5／5。
 
 算術可表示不保證 runtime 或可用記憶體容量。舊模型相容性對照只支持兩個已封存的人工小型存檔，不外推全部模型、任務品質、生物機制或其他平台。整體零 bug 目標持續。

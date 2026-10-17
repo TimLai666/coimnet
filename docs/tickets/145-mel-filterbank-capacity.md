@@ -6,7 +6,7 @@ User Story：公開音訊特徵入口遇到無法表示的濾波器緩衝尺寸�
 
 Blocked by：無，ticket144 已完成固定來源工程驗收與交付。
 
-Status：in_progress
+Status：done
 
 相關需求：TSK-02 音訊前處理與失敗處理。
 
@@ -28,7 +28,7 @@ Status：in_progress
 - [x] Root 凍結先失敗的回歸，隔離候選一般／競態及正常輸出對照通過。
 - [x] 正式採用最小修正，專項一般／競態與既有控制通過。
 - [x] 格式、build、完整一般／競態、vet、固定模組與治理通過。
-- [ ] 保存證據、清除自有暫存、提交推送並核對遠端。
+- [x] 保存證據、清除自有暫存、提交推送並核對遠端。
 
 ## 減法審查
 
@@ -48,4 +48,4 @@ Status：in_progress
 
 ## Root 決策（2026-10-18）：正式採用
 
-ticket144 已完成交付。原候選與兩份凍結回歸已逐位元組採用，其他 863 份既有來源保持，最終 866 份來源固定，見[採用紀錄](../../evidence/TSK-02/mel-capacity-adoption-20261018/adoption.json)。正式音訊套件一般／競態各 100 pass，隔離候選全部 100 個結果與原有 81 個結果保持，只新增 19 pass，見[專項驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-verification.json)及[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-root-review.json)。格式、build 與完整一般 8,709 pass／23 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。正常音訊、九份報告與中性增益控制保持，見[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/unit-root-review.json)。首輪格式索引舊行號已修正，31 項治理重查通過，失敗紀錄另存。完整競態 8,708 pass／24 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。其餘九項工程步驟均已通過，見[正式驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/verification.json)與[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/full-engineering-root-review.json)。最後 31 項治理通過，1,648,123,020 bytes 本票快取與暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/mel-capacity-adoption-20261018/cleanup.json)。目前 4／5，提交推送與遠端核對待完成。
+ticket144 已完成交付。原候選與兩份凍結回歸已逐位元組採用，其他 863 份既有來源保持，最終 866 份來源固定，見[採用紀錄](../../evidence/TSK-02/mel-capacity-adoption-20261018/adoption.json)。正式音訊套件一般／競態各 100 pass，隔離候選全部 100 個結果與原有 81 個結果保持，只新增 19 pass，見[專項驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-verification.json)及[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-root-review.json)。格式、build 與完整一般 8,709 pass／23 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。正常音訊、九份報告與中性增益控制保持，見[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/unit-root-review.json)。首輪格式索引舊行號已修正，31 項治理重查通過，失敗紀錄另存。完整競態 8,708 pass／24 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。其餘九項工程步驟均已通過，見[正式驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/verification.json)與[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/full-engineering-root-review.json)。最後 31 項治理通過，1,648,123,020 bytes 本票快取與暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/mel-capacity-adoption-20261018/cleanup.json)。修正 `647a4e0` 與主要證據 `5fd79b5` 已正常推送，遠端讀回完全相同，866 份提交來源與驗收指紋相符，見[交付](../../evidence/TSK-02/mel-capacity-adoption-20261018/delivery.json)。本票 5／5。
