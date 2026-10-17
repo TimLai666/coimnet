@@ -1,0 +1,76 @@
+package textgen
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+)
+
+// This test records observations; success is not a passing numerical regression.
+func TestRootObserveTextgenOffset146(t *testing.T) {
+	m, err := NewModel(testVocabulary(t), ModelConfig{Embed: 4, Hidden: 8, Settle: 3, LearningRate: .01, Seed: 17})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ex := Example{IDs: []int{0, 1}, Scored: []bool{false, true}}
+	type observation struct {
+		Case           string
+		Loss, Expected float64
+		Count          int
+		Error          string
+		GradientSame   bool
+		StatePreserved bool
+	}
+	var out []observation
+	var normal [][]float64
+	for _, offset := range []float64{0, math.Ldexp(1, 54), -math.Ldexp(1, 54)} {
+		logits := make([][]float64, 2)
+		for row := range logits {
+			logits[row] = make([]float64, m.vocabSize)
+			for i := range logits[row] {
+				logits[row][i] = offset
+			}
+		}
+		loss, count, gradient, err := m.lossAndUpstream(ex, logits)
+		if offset == 0 {
+			normal = gradient
+		}
+		o := observation{Case: fmt.Sprintf("uniform_offset_%g", offset), Loss: loss, Expected: math.Log(float64(m.vocabSize)), Count: count, GradientSame: reflect.DeepEqual(normal, gradient)}
+		if err != nil {
+			o.Error = err.Error()
+		}
+		out = append(out, o)
+	}
+	snapshot := m.Snapshot()
+	for i := range snapshot.Parameters.Readout {
+		snapshot.Parameters.Readout[i] = 1e20
+	}
+	snapshot.Options.Trainable = learning.Trainable{Readout: true}
+	m.trainer, err = learning.NewTrainer(snapshot.Config, snapshot.Parameters, snapshot.Options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before := m.Snapshot()
+	loss, count, err := m.NLL(context.Background(), ex)
+	o := observation{Case: "controlled_public_NLL", Loss: loss, Expected: math.Log(float64(m.vocabSize)), Count: count, StatePreserved: reflect.DeepEqual(before, m.Snapshot())}
+	if err != nil {
+		o.Error = err.Error()
+	}
+	out = append(out, o)
+	_, loss, err = m.Step(context.Background(), ex)
+	o = observation{Case: "controlled_public_Step", Loss: loss, Expected: math.Log(float64(m.vocabSize)), Count: 1}
+	if err != nil {
+		o.Error = err.Error()
+	}
+	out = append(out, o)
+	b, err := json.Marshal(out)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("textgen_offset_observations=%s", b)
+}

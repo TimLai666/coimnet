@@ -316,6 +316,8 @@ WriteWAV 在配置緩衝與開檔前檢查 PCM16 的聲道、block align、byte 
 
 Resample 在既有有限輸入檢查之後、配置之前，確認輸出樣本數乘以 8 的位元組大小可由原生 int 表示。超限時回傳 nil、零報告與 error。ResampleOutputLength 保留只查詢元素數的契約，不受配置限制影響，正常插值與報告保持。算術可表示不保證實體記憶體容量，驗收由 [ticket144](docs/tickets/144-resample-output-capacity.md) 管理。
 
+MelFilterbank 在基本設定驗證之後、首次配置之前，檢查 Mels+2 的 float64 邊緣陣列、Window/2+1 的頻率與濾波器列，以及外層切片標頭陣列的位元組大小，均須可由原生 int 表示。私有 melFilterbankBins 只計算尺寸，不配置音訊陣列。各列獨立配置，不增加總乘積或固定記憶體上限。超限由既有 error 路徑傳到 LogMel，基本 Validate、STFT、正常特徵及模型格式保持，驗收由 [ticket145](docs/tickets/145-mel-filterbank-capacity.md) 管理。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

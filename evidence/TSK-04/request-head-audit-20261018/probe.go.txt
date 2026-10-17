@@ -1,0 +1,47 @@
+package media
+
+import (
+ "context"
+ "encoding/json"
+ "fmt"
+ "math"
+ "testing"
+)
+
+type rootRequestObservation struct {
+ Case string `json:"case"`
+ Loss float64 `json:"loss"`
+ Expected float64 `json:"expected_uniform_loss,omitempty"`
+ Error string `json:"error,omitempty"`
+ Panic string `json:"panic,omitempty"`
+ Gradient []float64 `json:"gradient,omitempty"`
+ Mismatch bool `json:"uniform_loss_mismatch,omitempty"`
+}
+
+func rootObserveRequestHead(shortShapes bool) (out rootRequestObservation) {
+ old:=ImageShapes
+ defer func(){ImageShapes=old}()
+ defer func(){if v:=recover();v!=nil{out.Panic=fmt.Sprint(v)}}()
+ out.Case="default_public_step"
+ if shortShapes { out.Case="short_shapes_public_step";ImageShapes=append([]string(nil),old[:2]...) }
+ c:=DefaultGeneratorConfig(ModalityImage);c.Embed=4;c.Hidden=8;c.Settle=1;c.Seed=17
+ h,err:=NewRequestHead(c)
+ if err!=nil{out.Error=err.Error();return}
+ _,out.Loss,err=h.Step(context.Background(),"red square")
+ if err!=nil{out.Error=err.Error()}
+ return
+}
+
+// Diagnostic observations only: a passing probe is not a passing regression.
+func TestRootObserveRequestHead(t *testing.T) {
+ observations:=[]rootRequestObservation{rootObserveRequestHead(false),rootObserveRequestHead(true)}
+ for _,offset:=range []float64{0,math.Ldexp(1,54),-math.Ldexp(1,54)}{
+  logits:=[]float64{offset,offset,offset,offset,offset,offset}
+  loss,gradient,err:=requestLossGradient(logits,0,0)
+  out:=rootRequestObservation{Case:fmt.Sprintf("uniform_offset_%g",offset),Loss:loss,Expected:math.Log(3),Gradient:gradient,Mismatch:math.Abs(loss-math.Log(3))>1e-12}
+  if err!=nil{out.Error=err.Error()}
+  observations=append(observations,out)
+ }
+ b,err:=json.Marshal(observations);if err!=nil{t.Fatal(err)}
+ t.Logf("request_head_observations=%s",b)
+}

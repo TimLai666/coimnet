@@ -1,0 +1,54 @@
+"""Verify formally adopted MelFilterbank with the complete frozen audio package."""
+from pathlib import Path
+import argparse,collections,datetime,hashlib,json,subprocess,sys
+parser=argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run',action='store_true',help='Run ordinary/race audio package acceptance, compare all100 events with the exact isolated candidate, and preserve logs and receipts.')
+parser.add_argument('--label-prefix',choices=['focused','focused-final'],default='focused',help='Unique attempt prefix; preserve previous failures.')
+args=parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python cannot skip checks')
+R=Path(__file__).resolve().parents[3]
+E=Path(__file__).resolve().parent
+P=R/'evidence/TSK-02/mel-capacity-audit-20261018'
+sha=lambda b:hashlib.sha256(b).hexdigest()
+read=lambda p:json.loads(p.read_text())
+
+def parse(raw):
+    tests,packages={},{}
+    for line in raw.splitlines():
+        try:row=json.loads(line)
+        except json.JSONDecodeError:continue
+        if row.get('Action') not in ['pass','skip','fail']:continue
+        if row.get('Test'):
+            key=(row['Package'],row['Test'])
+            assert key not in tests
+            tests[key]=row['Action']
+        else:packages[row['Package']]=row['Action']
+    return tests,packages
+
+results={}
+for build in ['unit','race']:
+    command=['go','test','-json','-count=1','-timeout=5m']
+    if build=='race':command.append('-race')
+    command.append('./tasks/asr/audio')
+    label=args.label_prefix+'-'+build
+    result=subprocess.run([sys.executable,str(E/'run-command.py.txt'),label,*command],cwd=R)
+    receipt=read(E/(label+'.json'))
+    raw=(E/receipt['log']).read_bytes()
+    assert result.returncode==receipt['exit_code']==0 and sha(raw)==receipt['log_sha256']
+    actual,packages=parse(raw)
+    previous=read(P/('candidate-full-audio-'+build+'.json'))
+    oldraw=(P/previous['log']).read_bytes()
+    assert previous['exit_code']==0 and sha(oldraw)==previous['log_sha256']
+    expected,oldpackages=parse(oldraw)
+    assert len(expected)==100 and set(expected.values())=={'pass'}
+    assert actual==expected and packages==oldpackages=={'github.com/TimLai666/coimnet/tasks/asr/audio':'pass'}
+    results[build]={'test_events':{'pass':100},'package_events':{'pass':1},'candidate_events_preserved':100,'new_capacity_pass_events':19,'log':receipt['log'],'log_sha256':receipt['log_sha256']}
+    print(json.dumps({'build':build,**results[build]}),flush=True)
+out={'requirement':'TSK-02','ticket':'145','verified_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'reproduction_command':'python3 evidence/TSK-02/mel-capacity-adoption-20261018/focused.py.txt --run --label-prefix '+args.label_prefix,'environment':'command-environment.json','input_fingerprints':['formal-source.json','tests-frozen.json','adoption.json'],'observed_result':results,'test_log':[args.label_prefix+'-unit.log',args.label_prefix+'-race.log'],'formal_fix_adopted':True,'engineering_passed':False,'scope':'Formal complete audio-package acceptance only. Full framework engineering, final governance, cleanup and verified delivery remain.'}
+with (E/'focused-verification.json').open('x') as handle:
+    json.dump(out,handle,indent=2)
+    handle.write('\n')

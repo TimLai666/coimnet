@@ -1,0 +1,45 @@
+{
+  "prepared_at": "2026-10-17T19:53:04.795273+00:00",
+  "work_root": "runs/.tmp/categorical-loss-controls-20261018",
+  "work_inode": 60919110,
+  "files": {
+    "loss": {
+      "previous_source": "loss-regression.go.txt",
+      "previous_sha256": "5d2b266836f157f9e03b685dea8a3d2425b5af77903cf05762826f691a5416e6",
+      "source": "loss-regression-v2.go.txt",
+      "sha256": "ca441f64b9d57095e0f7810fccb9ff34b1a04ef56f37e75d1560f7a1e8a26138",
+      "work_test": "loss_v2_test.go",
+      "candidate_work": "media_candidate.go",
+      "candidate_sha256": "0f92249c2f65daa7cfe37e44e7c0db1747a89d0393b5e15ed274fd1bf9cb57f4"
+    },
+    "textgen": {
+      "previous_source": "textgen-regression.go.txt",
+      "previous_sha256": "f21fa2cd9155b1508ef15809fdbaf5bffe9099e691a7ff13f3fb2231bec884fc",
+      "source": "textgen-regression-v2.go.txt",
+      "sha256": "36dd129e6a2507ed72d8c3e7d13d76d37e5b3d585eb89f9705a7fe6243899ae6",
+      "work_test": "textgen_v2_test.go",
+      "candidate_work": "textgen_candidate.go",
+      "candidate_sha256": "35fd67c4daaa54c6c851a560e33b731997c64ac95aec41022adf8c0b79fc528c"
+    }
+  },
+  "change": "Preserve v1 tests/logs unchanged. v2 explicitly rejects NaN/Inf in finite-value comparisons and adds three non-finite input controls plus a parent per package. Root reruns original failures and candidate passes; production candidates unchanged.",
+  "expected_events": {
+    "media_original": {
+      "fail": 13,
+      "pass": 6
+    },
+    "media_candidate": {
+      "pass": 19
+    },
+    "textgen_original": {
+      "fail": 8,
+      "pass": 5
+    },
+    "textgen_candidate": {
+      "pass": 13
+    }
+  },
+  "formal_source_manifest": "evidence/TSK-02/mel-capacity-adoption-20261018/formal-source.json",
+  "formal_count": 866,
+  "parent_cache_inode": 60720355
+}

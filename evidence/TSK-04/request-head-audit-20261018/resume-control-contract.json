@@ -1,0 +1,20 @@
+{
+  "scope": "Two normal original-version textgen checkpoints, then independent original/candidate test processes load the identical files and continue one update within each build.",
+  "entry": "TestRootTextgenCompatibility146(t *testing.T), package textgen_test",
+  "environment": {
+    "COIMNET_146_COMPAT_MODE": "save or load",
+    "COIMNET_146_COMPAT_ROOT": "An existing project-owned working directory; do not use t.TempDir for retained inputs.",
+    "COIMNET_146_COMPAT_OUTPUT": "New JSON result path, created with exclusive-create semantics."
+  },
+  "profiles": [
+    {"name": "settle3", "config": {"embed": 4, "hidden": 8, "settle": 3, "learning_rate": 0.01, "seed": 17}},
+    {"name": "settle1", "config": {"embed": 4, "hidden": 4, "settle": 1, "learning_rate": 0.02, "seed": 29}}
+  ],
+  "vocabulary": "tokenizer.FormatByte; specials bos, eos, pad, each with matching Role; use only public APIs.",
+  "training": "Before Save, Step once each on abc, cab, bca. Prepend BOS to every example, score subsequent byte IDs, and leave BOS unscored. Require each update Applied. Use abc as the identical continuation example.",
+  "save": "NewModel, train, Save ROOT/profile. Capture reference from the original in-memory model after Save: Config, vocabulary hash, Snapshot, logits for continuation, NLL sum/count, StepResult, Step mean NLL, next Snapshot. Do not save again after reference Step.",
+  "load": "LoadModel ROOT/profile. Capture the same values before and after one Step. Require verified LoadedCheckpointSHA256 nonempty. Do not publish a model or modify the bundle.",
+  "result": "JSON array with one record per profile. Separate Preserved fields (config, vocab_hash, before_snapshot, logits, scored_count, step_result, after_snapshot) from Reported fields (nll_sum, step_mean). Include loaded_checkpoint_sha256 separately. Root compares every Preserved byte via canonical JSON between original save/reference, original fresh load, and candidate fresh load within each build; compare finite nonnegative Reported values within 16 ULP and report last-bit differences explicitly.",
+  "validation": "Reject missing or unknown mode/root/output. Check all errors. Require NLL count equals continuation scored positions; NLL leaves complete Snapshot unchanged. Require finite nonnegative NLL and mean. Require continuation Step Applied. Write JSON with O_CREATE|O_EXCL. Do not suppress failures.",
+  "ownership": "Only the final helper text file is worker-writable. Root creates the work root and runs original-save before either load; the source and both candidate arithmetic patches remain frozen. No extra deps or public API changes."
+}

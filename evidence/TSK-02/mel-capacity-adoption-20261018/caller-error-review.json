@@ -1,0 +1,28 @@
+{
+  "reviewed_at": "2026-10-17T19:21:27.358020+00:00",
+  "method": "Read current source after graph navigation; stale graph Features snippet was discarded and actual symbol found at recognizer.go:198.",
+  "source_fingerprints": {
+    "tasks/asr/recognizer.go": "cf3b1d1bd63660c341c5baec7561a2068b3625deaa854d167602df0d1bfd8f89",
+    "tasks/asr/stream.go": "9c8bcdb1f432e25f0fa8bef16e64e3f7532dba1f61f4289e3d1ca440bab3c1a9",
+    "tasks/asr/audio/frontend.go": "74a250c05544f0bcfb703f7520f43fe13fe9b00318b25c88593b83080e220e1a"
+  },
+  "confirmed_static_paths": [
+    {
+      "path": "tasks/asr/recognizer.go:198",
+      "observation": "Features delegates to audio.LogMel with private recognizer config and returns its result."
+    },
+    {
+      "path": "tasks/asr/recognizer.go:225",
+      "observation": "TrainUtterance returns a feature error before PredictAll, CTC loss or StepFrom."
+    },
+    {
+      "path": "tasks/asr/recognizer.go:264",
+      "observation": "transcribe returns a feature error before PredictAll."
+    },
+    {
+      "path": "tasks/asr/stream.go:216",
+      "observation": "step returns a LogMel error before ind.Advance or emit."
+    }
+  ],
+  "scope": "Static error propagation only; no additional Go executed and no whole Feed/Flush atomicity,all-model or task-quality claim. Tiny checkpoint compatibility remains the separate existing isolated evidence."
+}

@@ -1,0 +1,10 @@
+{
+  "frozen_at": "2026-10-17T19:43:23.658183+00:00",
+  "function": "lossAndUpstream",
+  "source": "tasks/textgen/model.go",
+  "source_sha256": "c263f607fecedd3df1e3774e0458d2640becd3c018b495143c099d89731f9430",
+  "regression_source": "textgen-regression.go.txt",
+  "regression_sha256": "f21fa2cd9155b1508ef15809fdbaf5bffe9099e691a7ff13f3fb2231bec884fc",
+  "expected": "For uniform 259-way logits, summed NLL equals scored_count*ln(259) at all finite common offsets; gradient scaling preserved. Controlled valid model public NLL/Step return ln(259), NLL preserves full state.",
+  "error_contract": "Keep summed NLL/count semantics and existing rejection of genuinely non-finite loss/sum."
+}

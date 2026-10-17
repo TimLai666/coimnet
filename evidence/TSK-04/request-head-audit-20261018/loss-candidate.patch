@@ -1,0 +1,26 @@
+--- tasks/media/external_tool.go
++++ tasks/media/external_tool.go
+@@ -234,8 +234,9 @@
+ 		for _, value := range logits[start : start+groupSize] {
+ 			sum += math.Exp(value - maximum)
+ 		}
+-		logNormalizer := maximum + math.Log(sum)
+-		loss += logNormalizer - logits[start+target]
++		// Scale the shifted loss before adding groups so a representable mean
++		// survives overflow of an individual difference or unscaled sum.
++		loss += (maximum/2 - logits[start+target]/2) + math.Log(sum)/2
+ 		for i, value := range logits[start : start+groupSize] {
+ 			probability := math.Exp(value-maximum) / sum
+ 			if i == target {
+@@ -244,7 +245,10 @@
+ 			gradient[start+i] = probability / 2
+ 		}
+ 	}
+-	return loss / 2, gradient, nil
++	if math.IsNaN(loss) || math.IsInf(loss, 0) {
++		return 0, nil, fmt.Errorf("media: request head mean loss is not finite")
++	}
++	return loss, gradient, nil
+ }
+ 
+ // argMax returns the first index containing the largest value.

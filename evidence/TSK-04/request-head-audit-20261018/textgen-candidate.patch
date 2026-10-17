@@ -1,0 +1,14 @@
+--- tasks/textgen/model.go
++++ tasks/textgen/model.go
+@@ -374,8 +374,9 @@
+ 		if !finite(expSum) || expSum <= 0 {
+ 			return 0, 0, nil, fmt.Errorf("invalid logit normalization at position %d", target-1)
+ 		}
+-		logNormalizer := maxLogit + math.Log(expSum)
+-		loss := logNormalizer - row[ex.IDs[target]]
++		// Keep the target difference shifted so a common large offset cancels
++		// before it can round away the log-normalization term.
++		loss := (maxLogit - row[ex.IDs[target]]) + math.Log(expSum)
+ 		if !finite(loss) {
+ 			return 0, 0, nil, fmt.Errorf("non-finite loss at position %d", target)
+ 		}

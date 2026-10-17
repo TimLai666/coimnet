@@ -1,0 +1,110 @@
+package media
+
+import (
+	"context"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+)
+
+// Equal scores give probability 1/3 independently of their common offset.
+func TestRequestLossUniformOffsets146(t *testing.T) {
+	for name, offset := range map[string]float64{"zero": 0, "positive": math.Ldexp(1, 54), "negative": -math.Ldexp(1, 54), "maximum": math.MaxFloat64, "minimum": -math.MaxFloat64} {
+		t.Run(name, func(t *testing.T) {
+			logits := []float64{offset, offset, offset, offset, offset, offset}
+			before := append([]float64(nil), logits...)
+			loss, gradient, err := requestLossGradient(logits, 0, 0)
+			if err != nil || math.Abs(loss-math.Log(3)) > 1e-14 {
+				t.Fatalf("uniform loss = %.17g, %v; want ln(3) = %.17g", loss, err, math.Log(3))
+			}
+			want := []float64{(1.0/3 - 1) / 2, 1.0 / 6, 1.0 / 6, (1.0/3 - 1) / 2, 1.0 / 6, 1.0 / 6}
+			for i := range want {
+				if math.Abs(gradient[i]-want[i]) > 1e-15 {
+					t.Errorf("gradient[%d] = %g, want %g", i, gradient[i], want[i])
+				}
+			}
+			if !reflect.DeepEqual(logits, before) {
+				t.Fatal("input scores changed")
+			}
+		})
+	}
+}
+
+func TestRequestLossTranslatedScores146(t *testing.T) {
+	// Every score is a multiple of four and remains exact at both offsets.
+	for name, offset := range map[string]float64{"zero": 0, "positive": math.Ldexp(1, 54), "negative": -math.Ldexp(1, 54)} {
+		t.Run(name, func(t *testing.T) {
+			logits := []float64{offset - 4, offset, offset + 4, offset + 8, offset + 4, offset}
+			loss, _, err := requestLossGradient(logits, 1, 2)
+			want := 6 + math.Log1p(math.Exp(-4)+math.Exp(-8))
+			if err != nil || math.Abs(loss-want) > 2e-14 {
+				t.Fatalf("translated loss = %.17g, %v; want %.17g", loss, err, want)
+			}
+		})
+	}
+}
+
+func TestRequestLossFiniteMean146(t *testing.T) {
+	for _, tc := range []struct {
+		name          string
+		logits        []float64
+		colour, shape int
+	}{
+		{"sum_overflows", []float64{math.MaxFloat64, 0, 0, 0, 0, -math.MaxFloat64}, 1, 2},
+		{"difference_overflows", []float64{math.MaxFloat64, -math.MaxFloat64, 0, 0, 0, 0}, 1, 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			loss, gradient, err := requestLossGradient(tc.logits, tc.colour, tc.shape)
+			if err != nil || loss != math.MaxFloat64 || len(gradient) != 6 {
+				t.Fatalf("representable mean = %g, gradient=%v, err=%v; want MaxFloat64", loss, gradient, err)
+			}
+		})
+	}
+}
+
+func TestRequestLossRejectsNonFiniteMean146(t *testing.T) {
+	loss, gradient, err := requestLossGradient([]float64{math.MaxFloat64, -math.MaxFloat64, 0, math.MaxFloat64, -math.MaxFloat64, 0}, 1, 1)
+	if err == nil || loss != 0 || gradient != nil {
+		t.Fatalf("unrepresentable mean = %g, %v, %v; want zero, nil, error", loss, gradient, err)
+	}
+}
+
+func TestRequestHeadStepUniformLargeReadout146(t *testing.T) {
+	config := DefaultGeneratorConfig(ModalityImage)
+	config.Embed, config.Hidden, config.Settle, config.Seed = 4, 8, 3, 17
+	head, err := NewRequestHead(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Set a valid finite trainer state with six identical output columns.
+	// This is controlled internal setup, followed by the public Step path.
+	snapshot := head.trainer.Snapshot()
+	for i := range snapshot.Parameters.Readout {
+		snapshot.Parameters.Readout[i] = 1e20
+	}
+	snapshot.Options.Trainable = learning.Trainable{Readout: true}
+	head.trainer, err = learning.NewTrainer(snapshot.Config, snapshot.Parameters, snapshot.Options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	input, _, _, err := head.requestInput("red square")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outputs, err := head.trainer.PredictAll(context.Background(), input)
+	if err != nil {
+		t.Fatal(err)
+	}
+	last := outputs[len(outputs)-1]
+	for _, v := range last {
+		if v != last[0] || math.Abs(v) < math.Ldexp(1, 54) {
+			t.Fatalf("control did not produce six identical large scores: %v", last)
+		}
+	}
+	_, loss, err := head.Step(context.Background(), "red square")
+	if err != nil || math.Abs(loss-math.Log(3)) > 1e-14 {
+		t.Fatalf("Step loss = %.17g, %v, scores=%v; want ln(3)", loss, err, last)
+	}
+}

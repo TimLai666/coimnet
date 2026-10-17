@@ -1,0 +1,56 @@
+{
+  "created_at": "2026-10-17T19:38:18.770547+00:00",
+  "root_cause": "The categorical loss adds the large maximum back before subtracting the target, discarding small log-normalization terms. Its unscaled group sum and target difference can also overflow before a representable mean.",
+  "places": [
+    {
+      "file": "tasks/media/external_tool.go",
+      "function": "requestLossGradient",
+      "lines": [
+        237,
+        238,
+        247
+      ],
+      "observed": "13 failed and 2 normal pass terminal test events on original ordinary build, including controlled valid trainer public Step; no source changes."
+    },
+    {
+      "file": "tasks/textgen/model.go",
+      "function": "lossAndUpstream",
+      "lines": [
+        377,
+        378
+      ],
+      "observed": "Confirmed by ordinary diagnostic and frozen regression: uniform259-way loss4/6 at +/-2^54, controlled public NLL/Step0 instead ofln259; original8fail/1pass. Preserve summed NLL/count semantics and rejection of genuinely non-finite loss/sum."
+    }
+  ],
+  "slot": {
+    "signature": "requestLossGradient([]float64,int,int) (float64,[]float64,error)",
+    "preserve": [
+      "categorical gradient formula and update input",
+      "existing non-finite input refusal",
+      "default vocab and model formats"
+    ],
+    "expected": "Compute both groups in shifted coordinates, scale before overflow-prone intermediate arithmetic, reject truly non-finite final mean; frozen regression covers each result.",
+    "candidate_policy": "Isolated overlay only while Ticket145 full runner97205 remains live. Do not adopt into formal source or declare final acceptance yet."
+  },
+  "deferred_contract": "Mutable exported fixture vocabularies need contract clarification before API changes. Observed subset panic remains documented.",
+  "subtraction_review": "Correct the existing arithmetic; no new public API, dependency or generalized numeric subsystem. Do not redesign fixture vocabularies as part of this numeric fix.",
+  "test_source_sha256": "5d2b266836f157f9e03b685dea8a3d2425b5af77903cf05762826f691a5416e6",
+  "original_test_terminal": {
+    "session_id": 62543,
+    "exit_code": 1,
+    "chunk_id": "e51dd7"
+  },
+  "original_test_events": {
+    "fail": 13,
+    "pass": 2
+  },
+  "quality_claim": false,
+  "textgen_reproduction": "textgen-root-review.json",
+  "textgen_slot": {
+    "signature": "(*Model).lossAndUpstream(Example,[][]float64) (float64,int,[][]float64,error)",
+    "change": "Keep target loss in shifted coordinates: (maxLogit-target)+log(expSum). Preserve summed NLL/count return, normalized gradients, masks, and existing finite loss/sum refusal.",
+    "expected_results": "For uniform 259-way logits, summed NLL equals scored_count*ln(259) at all finite common offsets; gradient scaling preserved. Controlled valid model public NLL/Step return ln(259), NLL preserves full state.",
+    "failing_regression": "textgen-loss-original-unit.json",
+    "candidate_policy": "Isolated overlay only; no formal source mutation while97205 runs."
+  }
+}

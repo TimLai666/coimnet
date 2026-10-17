@@ -1,0 +1,67 @@
+{
+  "verified_at": "2026-10-17T19:43:58.303005+00:00",
+  "probe_terminal": {
+    "session": 42909,
+    "exit_code": 0,
+    "chunk": "2553f0"
+  },
+  "observations": [
+    {
+      "Case": "uniform_offset_0",
+      "Loss": 5.556828061699537,
+      "Expected": 5.556828061699537,
+      "Count": 1,
+      "Error": "",
+      "GradientSame": true,
+      "StatePreserved": false
+    },
+    {
+      "Case": "uniform_offset_1.8014398509481984e+16",
+      "Loss": 4,
+      "Expected": 5.556828061699537,
+      "Count": 1,
+      "Error": "",
+      "GradientSame": true,
+      "StatePreserved": false
+    },
+    {
+      "Case": "uniform_offset_-1.8014398509481984e+16",
+      "Loss": 6,
+      "Expected": 5.556828061699537,
+      "Count": 1,
+      "Error": "",
+      "GradientSame": true,
+      "StatePreserved": false
+    },
+    {
+      "Case": "controlled_public_NLL",
+      "Loss": 0,
+      "Expected": 5.556828061699537,
+      "Count": 1,
+      "Error": "",
+      "GradientSame": false,
+      "StatePreserved": true
+    },
+    {
+      "Case": "controlled_public_Step",
+      "Loss": 0,
+      "Expected": 5.556828061699537,
+      "Count": 1,
+      "Error": "",
+      "GradientSame": false,
+      "StatePreserved": false
+    }
+  ],
+  "regression_terminal": {
+    "session": 28311,
+    "exit_code": 1,
+    "chunk": "956c1c"
+  },
+  "original_events": {
+    "fail": 8,
+    "pass": 1
+  },
+  "root_cause": "Same maximum+log(expSum)-target cancellation in lossAndUpstream. Public NLL and Step reproduced with a controlled valid finite trainer state. Gradient normalization unchanged for uniform direct controls.",
+  "formal_adopted": false,
+  "scope": "One ordinary build; no textgen candidate or race acceptance yet."
+}

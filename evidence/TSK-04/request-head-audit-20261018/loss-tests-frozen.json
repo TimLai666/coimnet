@@ -1,0 +1,16 @@
+{
+  "frozen_at": "2026-10-17T19:37:03.758310+00:00",
+  "formal_source": "tasks/media/external_tool.go",
+  "formal_source_sha256": "4f2b992c1db89c07416f453657c5059104b2cdcef70b2ca6890014e4df571f0d",
+  "regression_source": "loss-regression.go.txt",
+  "regression_sha256": "5d2b266836f157f9e03b685dea8a3d2425b5af77903cf05762826f691a5416e6",
+  "overlay": "loss-original-overlay.json",
+  "expected_results": [
+    "Uniform loss remains ln(3) for five finite offsets; analytical gradient and caller input preserved.",
+    "Nonuniform exactly representable translated scores have common reference loss.",
+    "Representable final means remain finite despite intermediate sum or difference overflow.",
+    "A genuinely unrepresentable final mean returns zero, nil, error.",
+    "Controlled valid trainer with six identical large readout columns exercises public Step and returns ln(3)."
+  ],
+  "scope": "Numerical request-head loss only. No vocabulary API changes or formal source mutation; original full engineering remains frozen."
+}

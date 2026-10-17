@@ -1,0 +1,99 @@
+{
+  "requirement": [
+    "TSK-03",
+    "TSK-07"
+  ],
+  "verified_at": "2026-10-17T19:59:22.646468+00:00",
+  "stage": {
+    "verified": 2,
+    "total": 5,
+    "ticket": "docs/tickets/146-categorical-loss-stability.md"
+  },
+  "reproduction_command": {
+    "media": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^TestRequest(Loss.*146|HeadStepUniformLargeReadout146)$",
+      "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-04/request-head-audit-20261018/loss-original-overlay.json",
+      "./tasks/media"
+    ],
+    "textgen": [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-run",
+      "^TestTextgen(UniformLoss146|LargeReadoutLoss146)$",
+      "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-04/request-head-audit-20261018/textgen-original-overlay.json",
+      "./tasks/textgen"
+    ]
+  },
+  "environment": "evidence/TSK-02/mel-capacity-adoption-20261018/command-environment.json",
+  "input_fingerprints": {
+    "formal_manifest": "evidence/TSK-02/mel-capacity-adoption-20261018/formal-source.json",
+    "formal_manifest_sha256": "861f7308ee4a04ed82e51e9992069215d90732629cf75a0764dbe5d57ecd5b64",
+    "formal_count": 866,
+    "media_regression": "5d2b266836f157f9e03b685dea8a3d2425b5af77903cf05762826f691a5416e6",
+    "media_candidate": "0f92249c2f65daa7cfe37e44e7c0db1747a89d0393b5e15ed274fd1bf9cb57f4",
+    "textgen_regression": "f21fa2cd9155b1508ef15809fdbaf5bffe9099e691a7ff13f3fb2231bec884fc",
+    "textgen_candidate": "35fd67c4daaa54c6c851a560e33b731997c64ac95aec41022adf8c0b79fc528c"
+  },
+  "observed_result": {
+    "original_each_build": {
+      "fail": 21,
+      "pass": 3
+    },
+    "candidate_focused_each_build": {
+      "pass": 24
+    },
+    "media_full_ordinary": {
+      "pass": 121,
+      "skip": 4
+    },
+    "textgen_full_ordinary": {
+      "pass": 140,
+      "skip": 1
+    },
+    "normal_media_training": "12 complete snapshots, StepResults, requests and losses equal within each build.",
+    "media_full_race": {
+      "pass": 121,
+      "skip": 4
+    },
+    "strengthened_v2": {
+      "original_each_build": {
+        "fail": 21,
+        "pass": 11
+      },
+      "candidate_each_build": {
+        "pass": 32
+      },
+      "v1_results_retained": true,
+      "new_nonfinite_controls_each_build": 8
+    },
+    "textgen_resume_control": "Four tiny artificial original-save models, two profiles per build; original/candidate fresh loads preserve all emitted state/logit/next-update bytes and reported NLL within each build."
+  },
+  "test_log": [
+    "loss-candidate-focused-verification.json",
+    "textgen-candidate-focused-verification.json",
+    "media-package-unit-root-review.json",
+    "textgen-package-unit-root-review.json",
+    "media-package-race-root-review.json",
+    "v2-focused-root-verification.json",
+    "textgen-resume-root-verification.json"
+  ],
+  "pending": [
+    "Ticket145Git delivery",
+    "Formal146source adoption,complete engineering,final governance,owned cleanup and delivery"
+  ],
+  "formal_adopted": false,
+  "engineering_passed": false,
+  "source_files_preserved": 866,
+  "model_quality_claim": false,
+  "biological_validity_claim": false,
+  "global_zero_bug_claim": false,
+  "isolated_cleanup": "isolated-work-cleanup.json",
+  "controls_cleanup": "controls-cleanup.json"
+}

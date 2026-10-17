@@ -1,0 +1,22 @@
+{
+  "source": "docs/INDEX.md",
+  "before_sha256": "b80dd118ff79f715b52d9ea65fa3fed7093792575418a7b9ec0315ebfe66ea37",
+  "failure": "engineering-unit.json",
+  "failed_runner_terminal": "failed-runner-terminal.json",
+  "confirmed_cause": "New unsafe import moves FrontEndVersion declaration from line11 to12; INDEX line179 retains the old source line. Runtime/version value unchanged.",
+  "observed_version_line": 12,
+  "repair": "Update both label and anchor from11 to12; no tests weakened and no runtime source changed.",
+  "after_sha256": "e59168c2b985cd13b38791eb69ca48e86fe76804e005619b999f6c74ad5391ef",
+  "runtime_source_manifest_unchanged": true,
+  "validation_inputs": "validation-inputs.json",
+  "fixed_at": "2026-10-17T19:18:32.208625+00:00",
+  "governance_recheck": {
+    "receipt": "metadata-governance.json",
+    "passed_events": 31,
+    "actual_terminal": {
+      "session_id": 96886,
+      "exit_code": 0,
+      "chunk": "2deefa"
+    }
+  }
+}

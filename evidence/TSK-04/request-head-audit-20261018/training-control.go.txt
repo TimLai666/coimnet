@@ -1,0 +1,50 @@
+package media
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/json"
+	"fmt"
+	"testing"
+)
+
+func TestRootObserveRequestTraining146(t *testing.T) {
+	c := DefaultGeneratorConfig(ModalityImage)
+	c.Embed, c.Hidden, c.Settle, c.Seed = 4, 8, 3, 17
+	h, err := NewRequestHead(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var states, requests []string
+	var losses []float64
+	for round := 0; round < 3; round++ {
+		for _, prompt := range []string{"red square", "green cross", "blue diagonal", "blue square"} {
+			result, loss, err := h.Step(context.Background(), prompt)
+			if err != nil {
+				t.Fatal(err)
+			}
+			b, err := json.Marshal(struct {
+				State  interface{}
+				Result interface{}
+			}{h.trainer.Snapshot(), result})
+			if err != nil {
+				t.Fatal(err)
+			}
+			states = append(states, fmt.Sprintf("%x", sha256.Sum256(b)))
+			losses = append(losses, loss)
+			r, err := h.Request(context.Background(), prompt)
+			if err != nil {
+				t.Fatal(err)
+			}
+			requests = append(requests, r.Colour+" "+r.Shape)
+		}
+	}
+	b, err := json.Marshal(struct {
+		States, Requests []string
+		Losses           []float64
+	}{states, requests, losses})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("request_training_control=%s", b)
+}

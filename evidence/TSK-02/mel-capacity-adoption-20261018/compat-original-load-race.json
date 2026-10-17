@@ -1,0 +1,27 @@
+{
+  "command": [
+    "env",
+    "COIMNET_146_COMPAT_MODE=load",
+    "COIMNET_146_COMPAT_ROOT=/Users/timlai/Developer/coimnet/runs/.tmp/categorical-loss-controls-20261018/models-race",
+    "COIMNET_146_COMPAT_OUTPUT=/Users/timlai/Developer/coimnet/runs/.tmp/categorical-loss-controls-20261018/compat-original-race.json",
+    "go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-run",
+    "^TestRootTextgenCompatibility146$",
+    "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-04/request-head-audit-20261018/compat-original-overlay.json",
+    "./tasks/textgen"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-17T19:56:23.332569+00:00",
+  "finished_at": "2026-10-17T19:56:26.055762+00:00",
+  "exit_code": 0,
+  "seconds": 2.723207375,
+  "source_count": 866,
+  "source_manifest": "formal-source.json",
+  "log": "compat-original-load-race.log",
+  "log_bytes": 1327,
+  "log_sha256": "df9a4ce96b81cbd054cb1aa6f077064c6fdacb70b2a97e75fa03ddd42357d419"
+}

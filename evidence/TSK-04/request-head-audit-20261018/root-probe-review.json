@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-10-17T19:35:38.306419+00:00",
+  "terminal": {
+    "session_id": 97946,
+    "exit_code": 0,
+    "chunk_id": "83e323"
+  },
+  "observations": [
+    {
+      "case": "default_public_step",
+      "loss": 1.0986633502611203
+    },
+    {
+      "case": "short_shapes_public_step",
+      "loss": 0,
+      "panic": "runtime error: slice bounds out of range [:6] with capacity 5"
+    },
+    {
+      "case": "uniform_offset_0",
+      "loss": 1.0986122886681096,
+      "expected_uniform_loss": 1.0986122886681096,
+      "gradient": [
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666,
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666
+      ]
+    },
+    {
+      "case": "uniform_offset_1.8014398509481984e+16",
+      "loss": 0,
+      "expected_uniform_loss": 1.0986122886681096,
+      "gradient": [
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666,
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666
+      ],
+      "uniform_loss_mismatch": true
+    },
+    {
+      "case": "uniform_offset_-1.8014398509481984e+16",
+      "loss": 2,
+      "expected_uniform_loss": 1.0986122886681096,
+      "gradient": [
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666,
+        -0.33333333333333337,
+        0.16666666666666666,
+        0.16666666666666666
+      ],
+      "uniform_loss_mismatch": true
+    }
+  ],
+  "formal_source_files_preserved": 866,
+  "source_manifest_sha256": "861f7308ee4a04ed82e51e9992069215d90732629cf75a0764dbe5d57ecd5b64",
+  "original_receipt_path": "evidence/TSK-02/mel-capacity-adoption-20261018/request-head-probe-unit.json",
+  "log_sha256": "25e7c3f8c4c8b70109c0af52357b0590c519560bda4e279e89b84c5eb09d1fb0",
+  "interpretation": {
+    "equal_logits_loss": "CONFIRMED numerical cancellation in default 3+3 group loss; expected ln(3), observed 0 or 2 at common offsets +/-2^54, identical gradients.",
+    "unequal_vocabulary": "Observed public Step panic after changing exported ImageShapes to a two-item subset. Whether mutation is a supported contract remains unknown.",
+    "test_kind": "Diagnostic only; passing observation test does not imply regression acceptance or fix.",
+    "quality_claim": false
+  }
+}

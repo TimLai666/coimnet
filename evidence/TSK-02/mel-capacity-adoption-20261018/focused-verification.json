@@ -1,0 +1,45 @@
+{
+  "requirement": "TSK-02",
+  "ticket": "145",
+  "verified_at": "2026-10-17T19:13:31.969861+00:00",
+  "reproduction_command": "python3 evidence/TSK-02/mel-capacity-adoption-20261018/focused.py.txt --run --label-prefix focused",
+  "environment": "command-environment.json",
+  "input_fingerprints": [
+    "formal-source.json",
+    "tests-frozen.json",
+    "adoption.json"
+  ],
+  "observed_result": {
+    "unit": {
+      "test_events": {
+        "pass": 100
+      },
+      "package_events": {
+        "pass": 1
+      },
+      "candidate_events_preserved": 100,
+      "new_capacity_pass_events": 19,
+      "log": "focused-unit.log",
+      "log_sha256": "61c5fc4accfec1bb6d2034a0af83b2bc3394a77cbb7e6a860e8b6a184a79cea6"
+    },
+    "race": {
+      "test_events": {
+        "pass": 100
+      },
+      "package_events": {
+        "pass": 1
+      },
+      "candidate_events_preserved": 100,
+      "new_capacity_pass_events": 19,
+      "log": "focused-race.log",
+      "log_sha256": "af0a0372b231810fa90656e9a352e67024c148492c7abcef4b6e58b8d74d882f"
+    }
+  },
+  "test_log": [
+    "focused-unit.log",
+    "focused-race.log"
+  ],
+  "formal_fix_adopted": true,
+  "engineering_passed": false,
+  "scope": "Formal complete audio-package acceptance only. Full framework engineering, final governance, cleanup and verified delivery remain."
+}

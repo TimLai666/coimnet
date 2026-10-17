@@ -26,8 +26,8 @@ Status：in_progress
 
 - [x] 公開重現三種尺寸在兩個入口的 panic，核對獨立算術與三項正常控制。
 - [x] Root 凍結先失敗的回歸，隔離候選一般／競態及正常輸出對照通過。
-- [ ] 正式採用最小修正，專項一般／競態與既有控制通過。
-- [ ] 格式、build、完整一般／競態、vet、固定模組與治理通過。
+- [x] 正式採用最小修正，專項一般／競態與既有控制通過。
+- [x] 格式、build、完整一般／競態、vet、固定模組與治理通過。
 - [ ] 保存證據、清除自有暫存、提交推送並核對遠端。
 
 ## 減法審查
@@ -44,4 +44,8 @@ Status：in_progress
 
 ## Root 決策（2026-10-18）：舊存檔相容性對照
 
-兩個小型人工存檔由原版保存，再由原版／候選的一般／競態四個新程序載入同一份檔案，完整訓練快照、task config與正常Features保持。巨大Window由panic改為error，snapshot未變，見[跨程序驗證](../../evidence/TSK-02/mel-capacity-audit-20261018/recognizer-compatibility-verification.json)。此證據只涵蓋這兩個人工存檔，不外推全部模型或訓練品質。3,405 bytes必要輸入已封存供恢復測試，22,051 bytes工作暫存已清除，見[清理](../../evidence/TSK-02/mel-capacity-audit-20261018/recognizer-cleanup.json)。本票仍2／5，正式採用與完整驗收待處理。
+兩個小型人工存檔由原版保存，再由原版／候選的一般／競態四個新程序載入同一份檔案，完整訓練快照、task config與正常Features保持。巨大Window由panic改為error，snapshot未變，見[跨程序驗證](../../evidence/TSK-02/mel-capacity-audit-20261018/recognizer-compatibility-verification.json)。此證據只涵蓋這兩個人工存檔，不外推全部模型或訓練品質。3,405 bytes必要輸入已封存供恢復測試，22,051 bytes工作暫存已清除，見[清理](../../evidence/TSK-02/mel-capacity-audit-20261018/recognizer-cleanup.json)。這份對照屬隔離候選階段，正式採用與完整驗收另列。
+
+## Root 決策（2026-10-18）：正式採用
+
+ticket144 已完成交付。原候選與兩份凍結回歸已逐位元組採用，其他 863 份既有來源保持，最終 866 份來源固定，見[採用紀錄](../../evidence/TSK-02/mel-capacity-adoption-20261018/adoption.json)。正式音訊套件一般／競態各 100 pass，隔離候選全部 100 個結果與原有 81 個結果保持，只新增 19 pass，見[專項驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-verification.json)及[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/focused-root-review.json)。格式、build 與完整一般 8,709 pass／23 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。正常音訊、九份報告與中性增益控制保持，見[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/unit-root-review.json)。首輪格式索引舊行號已修正，31 項治理重查通過，失敗紀錄另存。完整競態 8,708 pass／24 skip、58 套件通過，原有 8,713 個結果保持，只新增 19 pass。其餘九項工程步驟均已通過，見[正式驗收](../../evidence/TSK-02/mel-capacity-adoption-20261018/verification.json)與[Root 核對](../../evidence/TSK-02/mel-capacity-adoption-20261018/full-engineering-root-review.json)。最後 31 項治理通過，1,648,123,020 bytes 本票快取與暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/mel-capacity-adoption-20261018/cleanup.json)。目前 4／5，提交推送與遠端核對待完成。
