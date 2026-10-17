@@ -1,0 +1,27 @@
+{
+  "created_at": "2026-10-17T17:33:07.608260+00:00",
+  "owned_work": "runs/.tmp/resample-capacity-audit-20261018",
+  "work_inode": 60344888,
+  "source_count": 863,
+  "source_manifest": "evidence/TSK-02/audio-boundaries-adoption-20261018/formal-source.json",
+  "input_fingerprints": {
+    "tasks/asr/audio/signal.go": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+    "tasks/asr/audio/wav.go": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+    "probe.go": "2b00860d8e249366672c1751c8a4a58e77f89ef93b0aab2729ff67279495ea17"
+  },
+  "safety": {
+    "runtime_source": "/usr/local/go/src/runtime/slice.go",
+    "sha256": "ac595f1a822620fdc52271ef84f06b19c1f0abc0e53c0eb049dbad90b86abdbd",
+    "lines": "102-117",
+    "observation": "makeslice checks element-byte multiplication overflow before mallocgc. Probe independently requires that exact product to exceed uintptr before calling Resample. No giant backing allocation is attempted."
+  },
+  "pending_command": [
+    "python3",
+    "evidence/TSK-02/audio-boundaries-adoption-20261018/run-command.py.txt",
+    "resample-public-probe",
+    "go",
+    "run",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-audit-20261018/probe.go"
+  ],
+  "formal_source_changes": false
+}

@@ -1,0 +1,68 @@
+"""Verify both formally adopted audio fixes and the existing synthesis controls."""
+from pathlib import Path
+import argparse, collections, datetime, hashlib, json, re, subprocess, sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run ordinary/race formal regressions; require all41 frozen events and the unchanged normal synthesis payload. Preserve separate logs and receipts.')
+parser.add_argument('--label-prefix', choices=['focused', 'focused-final'], default='focused', help='Use focused-final for a new attempt while preserving first-attempt receipts and logs.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python cannot bypass checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / 'evidence/TSK-02/synth-shape-adoption-20261018'
+sha = lambda b: hashlib.sha256(b).hexdigest()
+frozen = json.loads((E / 'tests-frozen.json').read_text())
+pattern = '^Test(SynthConfigExactSampleLengths|SynthesizeRejectsUnrepresentableLength|SynthShapeNormalAndEmptyGeneration|GenerateRejectsUnrepresentableCapacity|GenerateRetainsNormalAndUnusedLength|WriteWAV(RejectsUnrepresentableMetadata|NormalMetadataAndBytes|ExistingPathPreserved)|WAVOutputBytesExactLimits)$'
+
+def parse(raw):
+    tests, packages, payload = {}, {}, []
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get('Action') in ['pass', 'skip', 'fail']:
+            if row.get('Test'):
+                key = (row['Package'], row['Test'])
+                assert key not in tests
+                tests[key] = row['Action']
+            else:
+                packages[row['Package']] = row['Action']
+        match = re.search(r'normal payload sha256=([0-9a-f]{64}) bytes=(\d+)', row.get('Output', ''))
+        if match:
+            payload.append({'sha256': match.group(1), 'bytes': int(match.group(2))})
+    return tests, packages, payload
+
+results = {}
+for build in ['unit', 'race']:
+    command = ['go', 'test', '-json', '-count=1', '-run', pattern]
+    if build == 'race':
+        command.append('-race')
+    command.extend(['./tasks/asr', './tasks/asr/audio'])
+    label = args.label_prefix + '-' + build
+    result = subprocess.run([sys.executable, str(E / 'run-command.py.txt'), label, *command], cwd=R)
+    receipt = json.loads((E / (label + '.json')).read_text())
+    raw = (E / receipt['log']).read_bytes()
+    assert result.returncode == receipt['exit_code'] == 0 and sha(raw) == receipt['log_sha256']
+    actual, packages, payload = parse(raw)
+    previous = json.loads((P / ('focused-' + build + '.json')).read_text())
+    old_raw = (P / previous['log']).read_bytes()
+    assert sha(old_raw) == previous['log_sha256']
+    old, _, old_payload = parse(old_raw)
+    assert len(old) == 13 and set(old.values()) == {'pass'}
+    expected = {(row['package'], row['test']): row['action'] for row in frozen['expected_new_events'][build]}
+    assert len(expected) == 28 and not (old.keys() & expected.keys())
+    expected.update(old)
+    assert actual == expected and len(actual) == 41 and set(actual.values()) == {'pass'}
+    assert collections.Counter(packages.values()) == {'pass': 2}
+    assert payload == old_payload == [{'sha256': 'a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac', 'bytes': 29121}]
+    results[build] = {'test_events': {'pass': len(actual)}, 'package_events': {'pass': len(packages)}, 'new_regressions': 28, 'retained_synthesis_controls': 13, 'normal_payload': payload[0], 'log': receipt['log'], 'log_sha256': receipt['log_sha256']}
+    print(json.dumps({'build': build, **results[build]}), flush=True)
+out = {'requirement': 'TSK-02', 'tickets': ['142', '143'], 'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'reproduction_command': 'python3 evidence/TSK-02/audio-boundaries-adoption-20261018/focused.py.txt --run --label-prefix ' + args.label_prefix, 'environment': 'command-environment.json', 'input_fingerprints': ['formal-source.json', 'tests-frozen.json'], 'observed_result': results, 'test_log': [args.label_prefix + '-unit.log', args.label_prefix + '-race.log'], 'formal_fix_adopted': True, 'engineering_passed': False, 'scope': 'Formal focused acceptance only. Complete engineering, final governance, cleanup and delivery still required.'}
+with (E / 'focused-verification.json').open('x') as handle:
+    json.dump(out, handle, indent=2)
+    handle.write('\n')

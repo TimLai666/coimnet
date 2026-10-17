@@ -1,0 +1,56 @@
+{
+  "requirement": "TSK-02",
+  "reviewed_at": "2026-10-17T17:25:21.896169+00:00",
+  "scope": "Readonly follow-up on decoder finite-value and format handling. No new defect confirmed and no code changes.",
+  "source_sha256": {
+    "tasks/asr/audio/wav.go": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+    "tasks/asr/audio/audio_test.go": "b6086a1e46cead7d5e7e89b4325ef9f69b59fd3922773fd404ed0ea025789650"
+  },
+  "source_facts": [
+    {
+      "path": "tasks/asr/audio/wav.go",
+      "lines": [
+        104,
+        156
+      ],
+      "fact": "parseWAV rejects every non-PCM format tag and every non-16 bit depth before decode. IEEE float NaN/Inf samples cannot enter through a supported format."
+    },
+    {
+      "path": "tasks/asr/audio/wav.go",
+      "lines": [
+        81,
+        102
+      ],
+      "fact": "Both public readers share decodeWAV; every decoded sample is an int16 divided by32768, so supported decoded sample values are finite and bounded. Partial frames are rejected."
+    },
+    {
+      "path": "tasks/asr/audio/audio_test.go",
+      "lines": [
+        152,
+        183
+      ],
+      "fact": "Existing rejection controls include float format tag, wrong bit depth, zero rate, missing fmt/data and truncated data."
+    }
+  ],
+  "observed_result": {
+    "same_source_full_unit_pass_events": 11,
+    "terminal_events": {
+      "TestWAVRoundTripIsExact": "pass",
+      "TestReadWAVRejects/not_riff": "pass",
+      "TestReadWAVRejects/fmt_chunk_missing": "pass",
+      "TestReadWAVRejects/float_format_tag": "pass",
+      "TestReadWAVRejects/eight_bit_depth": "pass",
+      "TestReadWAVRejects/zero_sample_rate": "pass",
+      "TestReadWAVRejects/data_chunk_missing": "pass",
+      "TestReadWAVRejects/data_longer_than_the_file": "pass",
+      "TestReadWAVRejects": "pass",
+      "TestReadWAVSkipsExtraChunks": "pass",
+      "TestDecodeWAVMatchesReadWAV": "pass"
+    }
+  },
+  "test_log": "engineering-unit.log.gz",
+  "test_log_sha256": "3a7841d5592fdb621934e58537db9eea4d778958a0ad758b41c575679413943b",
+  "new_go_commands_executed": false,
+  "runtime_scope": "Existing current-source full ordinary execution only; race74589 remains active. No universal WAV-format or32-bit runtime claim.",
+  "next_action": "No decoder finite-value repair justified. Continue the separate alphabet-contract audit and pending full engineering."
+}

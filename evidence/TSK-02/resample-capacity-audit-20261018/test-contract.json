@@ -1,0 +1,24 @@
+{
+  "target": "tasks/asr/audio/resample_capacity_test.go (overlay only before adoption)",
+  "package": "audio_test",
+  "allowed_worker_output": "evidence/TSK-02/resample-capacity-audit-20261018/regression.go.txt",
+  "expected": [
+    {
+      "parent": "TestResampleRejectsUnrepresentableBuffer",
+      "case": "One sample {0}, rates1\u2192MaxInt. Independently verify using math/big that MaxInt*8 exceeds uintptr, capture panic, require no panic, nonnil error, nil output and zero ResampleReport."
+    },
+    {
+      "parent": "TestResampleRetainsNormalAndCountOnly",
+      "case": "normal: {0.25,-0.75}, rates1\u21922, exact {.25,-.25,-.75,-.75}, exact linear report and unchanged input."
+    },
+    {
+      "parent": "TestResampleRetainsNormalAndCountOnly",
+      "case": "count_only: ResampleOutputLength(1,1,MaxInt) returns MaxInt with no error, never allocate it."
+    }
+  ],
+  "safety": "Never invoke allocating Resample for a merely large-but-representable byte count. The only huge allocating request must have independently proven uintptr byte overflow. Do not test actual memory exhaustion.",
+  "source_count": 863,
+  "original_source_sha256": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+  "candidate_signature": "Public signature unchanged: Resample([]float64,int,int)([]float64,ResampleReport,error).",
+  "implementation_slot": "After existing finite-input validation and before make, return nil,zero-report,error if n exceeds native MaxInt/8. Preserve resampleOutputLength/ResampleOutputLength and all interpolation."
+}

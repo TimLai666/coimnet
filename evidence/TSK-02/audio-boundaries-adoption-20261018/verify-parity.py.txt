@@ -1,0 +1,71 @@
+"""Verify normal synthesis/report bytes and the approved neutral-gain controls."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, json, re
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Require accepted full engineering, compare nine normal report payload hashes per build to both original and candidate logs, and save a new parity receipt.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+source = json.loads((E / 'formal-source.json').read_text())
+assert len(source) == 863
+for name, digest in source.items():
+    assert sha((R / name).read_bytes()) == digest, name
+assert json.loads((E / 'engineering-verification.json').read_text())['all_passed']
+
+def read_log(root, label):
+    receipt = json.loads((root / (label + '.json')).read_text())
+    packed = (root / receipt['log']).read_bytes()
+    assert sha(packed) == receipt['log_sha256']
+    raw = gzip.decompress(packed) if receipt['log'].endswith('.gz') else packed
+    if 'raw_sha256' in receipt:
+        assert sha(raw) == receipt['raw_sha256']
+    rows = []
+    for line in raw.splitlines():
+        try:
+            rows.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    reports = {}
+    for row in rows:
+        match = re.search(r'initial report JSON sha256=([0-9a-f]{64})', row.get('Output', ''))
+        if match:
+            key = row['Test']
+            assert key not in reports, key
+            reports[key] = match.group(1)
+    return receipt, rows, reports
+
+out = {}
+parents = {'TestNeutralGainRejectsConstructionAndRestore', 'TestNeutralGainRejectsExcludedRange', 'TestNeutralGainRetainsValidRanges'}
+for build in ['unit', 'race']:
+    final, rows, reports = read_log(E, 'engineering-' + build)
+    assert final['exit_code'] == 0 and not final['acceptance_errors']
+    expected = {}
+    for path in ['evidence/TSK-04/report-config-ownership-20261017', 'evidence/OPS-03/experiment-report-ownership-20261017']:
+        original, _, before = read_log(R / path, 'original-' + build)
+        candidate, _, after = read_log(R / path, 'candidate-' + build)
+        assert original['exit_code'] != 0 and candidate['exit_code'] == 0
+        assert before == after and after == candidate['initial_report_hashes']
+        assert not (expected.keys() & after.keys())
+        expected.update(after)
+    assert len(expected) == 9 and reports == expected
+    controls = [row for row in rows if row.get('Test', '').split('/')[0] in parents and row.get('Action') in ['pass', 'skip', 'fail']]
+    assert len(controls) == 21 and all(row['Action'] == 'pass' for row in controls)
+    synthesis = []
+    for row in rows:
+        match = re.search(r'normal payload sha256=([0-9a-f]{64}) bytes=(\d+)', row.get('Output', ''))
+        if match:
+            synthesis.append({'sha256': match.group(1), 'bytes': int(match.group(2))})
+    assert synthesis == [{'sha256': 'a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac', 'bytes': 29121}]
+    out[build] = {'synthesis_payload': synthesis[0], 'normal_reports_equal': reports, 'neutral_gain_pass_events': len(controls), 'full_test_events': final['test_events'], 'previous_events_preserved': final['prior_event_count'], 'new_pass_events': final['new_pass_events']}
+result = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'source_count': len(source), 'ordinary_and_race': out, 'model_quality_claim': False, 'scope': 'Exact normal synthesis payload and nine report JSON hashes within each build, plus approved gain controls. No cross-build numerical equality requirement.'}
+with (E / 'report-and-gain-parity.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

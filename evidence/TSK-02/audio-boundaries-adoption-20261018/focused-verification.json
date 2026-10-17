@@ -1,0 +1,55 @@
+{
+  "requirement": "TSK-02",
+  "tickets": [
+    "142",
+    "143"
+  ],
+  "verified_at": "2026-10-17T17:11:39.469986+00:00",
+  "reproduction_command": "python3 evidence/TSK-02/audio-boundaries-adoption-20261018/focused.py.txt --run --label-prefix focused-final",
+  "environment": "command-environment.json",
+  "input_fingerprints": [
+    "formal-source.json",
+    "tests-frozen.json"
+  ],
+  "observed_result": {
+    "unit": {
+      "test_events": {
+        "pass": 41
+      },
+      "package_events": {
+        "pass": 2
+      },
+      "new_regressions": 28,
+      "retained_synthesis_controls": 13,
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "log": "focused-final-unit.log",
+      "log_sha256": "b26456cabac7060d742dcbc8fad5492a076916ae1af85e634dd626ab21b87ec6"
+    },
+    "race": {
+      "test_events": {
+        "pass": 41
+      },
+      "package_events": {
+        "pass": 2
+      },
+      "new_regressions": 28,
+      "retained_synthesis_controls": 13,
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "log": "focused-final-race.log",
+      "log_sha256": "452093a47ff50406d501bdf1ca311d6cf76990d3a3beca1713b66b18d0d91752"
+    }
+  },
+  "test_log": [
+    "focused-final-unit.log",
+    "focused-final-race.log"
+  ],
+  "formal_fix_adopted": true,
+  "engineering_passed": false,
+  "scope": "Formal focused acceptance only. Complete engineering, final governance, cleanup and delivery still required."
+}

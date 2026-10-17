@@ -1,0 +1,33 @@
+{
+  "reviewed_at": "2026-10-17T17:14:51.513819+00:00",
+  "agent": "/root/synth_adoption_review_141",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "scope": "Readonly adversarial review of formal142/143 diff and three frozen regressions; no files changed or Go executed by agent.",
+  "source_sha256": {
+    "tasks/asr/audio/wav.go": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+    "tasks/asr/synth.go": "ed9e68db58ab4611515da0db9513c66c693fd43509cba5dcf8f82b4cce5a77a3",
+    "tasks/asr/audio/wav_metadata_test.go": "e1dd0bc3ad26dca0d515b09265cb431bef3bf21e400649f6c905714130aad224",
+    "tasks/asr/audio/wav_output_dimensions_test.go": "0d99e593e71521ca4665e6220aef26c4814b59eb360c0c044d62e8bdf091d9f3",
+    "tasks/asr/generate_capacity_test.go": "71460866c489de724fbb23c26ff63229a128e635f4f2246c04fc65761bdfb744"
+  },
+  "confirmed_findings": [],
+  "reviewed_conditions": [
+    "WriteWAV verifies positive channels/rate and nonnegative frames before its sole production helper call; stride cannot be zero.",
+    "uint16 stride, uint32 byte rate/data/RIFF, and native complete-file byte limits are enforced before buffer allocation and file opening.",
+    "Reader and pcm16 remain unchanged; Signal.Channels is not reinterpreted.",
+    "Generate conversion follows nonnegative validation; checked size uses native element widths; chosen length and PCG draw order are preserved.",
+    "Normal golden/readback controls and nontrivial synthesis payload have actual Root41pass ordinary/race acceptance."
+  ],
+  "limits": [
+    "No32-bit runtime evidence.",
+    "Full engineering74589 is still running.",
+    "Representable huge allocations do not guarantee runtime/physical-memory capacity."
+  ],
+  "root_disposition": "Accepted after Root full805d99 diff review and a81a38 independent focused log/source verification. Known resource/platform limits are not classified as confirmed defects.",
+  "opencode_probe": {
+    "exit_code": 1,
+    "chunk": "37c477",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  }
+}

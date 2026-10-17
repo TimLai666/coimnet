@@ -1,0 +1,89 @@
+{
+  "verified_at": "2026-10-17T17:34:27.525843+00:00",
+  "requirement": "TSK-02",
+  "reproduction_command": [
+    "python3",
+    "evidence/TSK-02/audio-boundaries-adoption-20261018/run-command.py.txt",
+    "resample-public-probe",
+    "go",
+    "run",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-audit-20261018/probe.go"
+  ],
+  "environment": {
+    "go_version": "go1.26.5",
+    "goarch": "arm64",
+    "goos": "darwin",
+    "native_int_bits": 64
+  },
+  "observed_result": {
+    "count_only_result": 9223372036854775807,
+    "go_version": "go1.26.5",
+    "goarch": "arm64",
+    "goos": "darwin",
+    "max_int": 9223372036854775807,
+    "native_int_bits": 64,
+    "normal": {
+      "name": "normal-control",
+      "output": [
+        0.25,
+        -0.25,
+        -0.75,
+        -0.75
+      ],
+      "report": {
+        "method": "linear",
+        "from": 1,
+        "to": 2,
+        "input_length": 2,
+        "output_length": 4
+      },
+      "error": "",
+      "panic": ""
+    },
+    "overflow": {
+      "name": "native-byte-overflow",
+      "output": null,
+      "report": {
+        "method": "",
+        "from": 0,
+        "to": 0,
+        "input_length": 0,
+        "output_length": 0
+      },
+      "error": "",
+      "panic": "runtime error: makeslice: len out of range"
+    },
+    "requested_bytes": "73786976294838206456",
+    "uintptr_max": "18446744073709551615"
+  },
+  "test_log": "probe.log",
+  "probe_terminal": {
+    "chunk": "e7b056",
+    "exit_code": 0
+  },
+  "source_manifest": "evidence/TSK-02/audio-boundaries-adoption-20261018/formal-source.json",
+  "source_count": 863,
+  "classification": "P2 CONFIRMED: public Resample byte-capacity validation missing before make.",
+  "cause": {
+    "source": "tasks/asr/audio/signal.go:110-119",
+    "sha256": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+    "description": "The exact helper accepts an element count up to MaxInt; Resample allocates float64 elements without validating count*8 against native int."
+  },
+  "scope": "Guard only the allocating Resample call. ResampleOutputLength remains a count-only helper and must keep representable large counts.",
+  "formal_adoption": false,
+  "complete_engineering": false,
+  "cleanup_complete": true,
+  "quality_claim": false,
+  "input_fingerprints": {
+    "tasks/asr/audio/signal.go": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+    "tasks/asr/audio/wav.go": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+    "probe.go": "2b00860d8e249366672c1751c8a4a58e77f89ef93b0aab2729ff67279495ea17"
+  },
+  "root_investigation_review": "root-investigation-review.json",
+  "isolated_candidate_verification": "candidate-verification.json",
+  "root_review": "root-review.md",
+  "cleanup_receipt": "regression-cleanup.json",
+  "fixed_checklist_items": 2,
+  "checklist_total": 5,
+  "scope_of_completion": "Public reproduction, frozen red regressions and isolated candidate ordinary/race acceptance with owned phase cleanup. Formal adoption and complete engineering remain pending."
+}

@@ -310,6 +310,10 @@ OCR 人工樣本共用 glyphs.ValidateGenerateDimensions，在 Generate、Render
 
 ASR 合成音訊以完整整數乘積計算 floor(取樣率 × 毫秒／1000)，不能因中間乘法溢位而截短結果，也不能拒絕最終可表示的商。Validate 檢查每字樣本數，Synthesize 只在兩個以上字元時檢查會使用的間隔，再確認總樣本與 float64 位元組大小可由原生 int 表示。正常音調、相位、雜訊與 PCG 串流保持，驗收由 [ticket141](docs/tickets/141-asr-synthesis-dimensions.md) 管理。
 
+ASR Generate 在配置 Utterance 容器前檢查元素位元組大小，在沿用既有 PCG 抽樣後檢查實際字長的 rune 位元組大小，再配置字元緩衝。兩處均使用平台型別大小與除法界線，零樣本保留未使用極端字長的空集合行為。不新增固定容量上限，正常亂數、合成與模型格式保持，驗收由 [ticket143](docs/tickets/143-asr-generation-capacity.md) 管理。
+
+WriteWAV 在配置緩衝與開檔前檢查 PCM16 的聲道、block align、byte rate、RIFF／data 尺寸與原生 int 檔案位元組限制。byte rate 以已驗證的 uint64 計算，再寫入固定欄位。聲道仍以 Samples 長度為準，NaN 樣本仍寫為靜音，正常檔案位元組與既有路徑保護保持，讀取器契約不變，驗收由 [ticket142](docs/tickets/142-wav-metadata-representability.md) 管理。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

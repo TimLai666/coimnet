@@ -1,0 +1,42 @@
+package main
+
+import (
+ "encoding/json"
+ "fmt"
+ "math/big"
+ "os"
+ "runtime"
+ "unsafe"
+
+ "github.com/TimLai666/coimnet/tasks/asr/audio"
+)
+
+type result struct {
+ Name string `json:"name"`
+ Output []float64 `json:"output"`
+ Report audio.ResampleReport `json:"report"`
+ Error string `json:"error"`
+ Panic string `json:"panic"`
+}
+
+func sample(name string, x []float64, from, to int) (r result) {
+ r.Name = name
+ defer func() { if p := recover(); p != nil { r.Panic = fmt.Sprint(p) } }()
+ var err error
+ r.Output, r.Report, err = audio.Resample(x,from,to)
+ if err != nil { r.Error=err.Error() }
+ return
+}
+
+func main() {
+ maxInt := int(^uint(0)>>1)
+ requested := new(big.Int).Mul(big.NewInt(int64(maxInt)),big.NewInt(int64(unsafe.Sizeof(float64(0)))))
+ uintptrMax := new(big.Int).SetUint64(uint64(^uintptr(0)))
+ if requested.Cmp(uintptrMax)<=0 { panic("probe must overflow uintptr bytes before any backing allocation") }
+ count,err := audio.ResampleOutputLength(1,1,maxInt)
+ if err!=nil || count!=maxInt { panic("count-only helper must retain exact representable element count") }
+ normal := sample("normal-control",[]float64{0.25,-0.75},1,2)
+ overflow := sample("native-byte-overflow",[]float64{0},1,maxInt)
+ out := map[string]any{"go_version":runtime.Version(),"goos":runtime.GOOS,"goarch":runtime.GOARCH,"native_int_bits":unsafe.Sizeof(int(0))*8,"max_int":maxInt,"requested_bytes":requested.String(),"uintptr_max":uintptrMax.String(),"count_only_result":count,"normal":normal,"overflow":overflow}
+ if err:=json.NewEncoder(os.Stdout).Encode(out);err!=nil { panic(err) }
+}

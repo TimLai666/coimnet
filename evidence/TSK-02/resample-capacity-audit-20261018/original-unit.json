@@ -1,0 +1,45 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/resample-capacity-audit-20261018/original-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^TestResample(RejectsUnrepresentableBuffer|RetainsNormalAndCountOnly)$",
+    "./tasks/asr/audio"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/audio-boundaries-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/audio-boundaries-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-audit-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-audit-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "started_at": "2026-10-17T17:39:07.974696+00:00",
+  "finished_at": "2026-10-17T17:39:09.820395+00:00",
+  "seconds": 1.8455776670000001,
+  "exit_code": 1,
+  "log": "original-unit.log",
+  "log_sha256": "537fdc359c810fe938f318f43bc22f92bfd5fa7bc1c60aaccb0f5f402e52f4be",
+  "test_events": {
+    "fail": 1,
+    "pass": 3
+  },
+  "terminal_events": {
+    "TestResampleRejectsUnrepresentableBuffer": "fail",
+    "TestResampleRetainsNormalAndCountOnly/normal": "pass",
+    "TestResampleRetainsNormalAndCountOnly/count_only": "pass",
+    "TestResampleRetainsNormalAndCountOnly": "pass"
+  },
+  "formal_source_entries_preserved": 863,
+  "test_sha256": "0607b099a1a37704a6d3a4bbb3a2700e2dd83201851cd480116fe790a134d02f"
+}

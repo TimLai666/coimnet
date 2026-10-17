@@ -1,0 +1,55 @@
+{
+  "reviewed_at": "2026-10-17T17:35:40.332523+00:00",
+  "worker": {
+    "agent": "/root/resample_capacity_audit_144",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "opencode_probe": {
+      "chunk": "f5dc21",
+      "exit_code": 1,
+      "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+    }
+  },
+  "disposition": "Accept P2 finding after independent Root source/runtime reads and actual public reproduction.",
+  "root_evidence": {
+    "source_read_chunk": "bbdcb1",
+    "runtime_source_chunk": "9c6f3c",
+    "public_execution_chunk": "e7b056",
+    "public_log_read_chunk": "ba01cf",
+    "dataset_flow": "Root read search_graph then both current function snippets; ResampleOutputLength precedes datasetProcessedBytes and per-file/total limits before DecodeWAV/Resample."
+  },
+  "sources": {
+    "tasks/asr/audio/signal.go": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+    "tasks/asr/audio/wav.go": "604b63ea870be0c2f94018a9d401ea05c142096dd4aec9101d5bd3ec8fe50719",
+    "tasks/asr/dataset.go": "9e991952dec85386bb1c0ba887536f6ac090549e6c68388c2680fb88bc0593c7",
+    "tasks/asr/audio/audio_test.go": "b6086a1e46cead7d5e7e89b4325ef9f69b59fd3922773fd404ed0ea025789650"
+  },
+  "producer_consumer_review": [
+    {
+      "path": "tasks/asr/audio/signal.go:110-119",
+      "result": "Exact positive count is computed, but n*8 is unchecked at the public allocator."
+    },
+    {
+      "path": "tasks/asr/audio/wav.go:72-79",
+      "result": "Count-only producer deliberately does not allocate; preserve its representable MaxInt result."
+    },
+    {
+      "path": "tasks/asr/dataset.go:458-480",
+      "result": "Dataset consumer checks processed byte estimates and limits before allocation."
+    },
+    {
+      "path": "tasks/asr/dataset.go:507-533",
+      "result": "Checked sample-buffer sums/products include float64 bytes; no duplicated fix needed."
+    },
+    {
+      "path": "tasks/asr/audio/audio_test.go:315-342",
+      "result": "Existing invalid-length tests cover zero and int-count overflow, not element-byte overflow."
+    }
+  ],
+  "limitations": [
+    "Worker did not run Go. Dynamic reproduction and runtime-source checks were performed by Root.",
+    "Runtime reproduction is darwin/arm64 only; no 32-bit execution claim.",
+    "Representability checks do not guarantee physical memory availability."
+  ],
+  "formal_sources_changed": false
+}

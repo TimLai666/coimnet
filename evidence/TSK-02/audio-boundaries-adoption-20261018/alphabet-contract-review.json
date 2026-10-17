@@ -1,0 +1,64 @@
+{
+  "verified_at": "2026-10-17T17:31:57.294568+00:00",
+  "scope": "Readonly SynthConfig alphabet contract investigation; no confirmed defect and no policy change.",
+  "source_count": 863,
+  "source_fingerprints": {
+    "tasks/asr/synth.go": "ed9e68db58ab4611515da0db9513c66c693fd43509cba5dcf8f82b4cce5a77a3",
+    "tasks/asr/recognizer.go": "cf3b1d1bd63660c341c5baec7561a2068b3625deaa854d167602df0d1bfd8f89",
+    "tasks/asr/recognizer_unicode_test.go": "087843c4cee200d9ba59d072099a2e3f74e4c3e54464941b3405936f6cad388a",
+    "tasks/asr/stream.go": "9c8bcdb1f432e25f0fa8bef16e64e3f7532dba1f61f4289e3d1ca440bab3c1a9",
+    "tasks/asr/recognizer_test.go": "dfceb586f75e8aca539e72f568c98a67cf0a9ec770abb451f39e0c0e8a70afcf",
+    "internal/cli/asr.go": "57afaa78a16ead5264938c79680c2dd2b2b463a22f5a8f5bad870696769c67f6"
+  },
+  "worker": {
+    "agent": "/root/synth_alphabet_audit_144",
+    "tool": "native Codex subagent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "opencode_probe": {
+      "chunk": "2ba828",
+      "exit_code": 1,
+      "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+    }
+  },
+  "root_review": {
+    "chunk": "b0d67f",
+    "disposition": "Do not extend RecognizerConfig scalar rejection to SynthConfig without an established supported-input failure or explicit helper contract. No confirmed product defect.",
+    "facts": [
+      {
+        "source": "tasks/asr/synth.go:12-61",
+        "observation": "Synth configuration documents nonempty, nonrepeating alphabets and numeric validation; it does not declare a scalar-value policy."
+      },
+      {
+        "source": "tasks/asr/synth.go:93-117",
+        "observation": "Synthesize validates text rune membership in the alphabet."
+      },
+      {
+        "source": "tasks/asr/synth.go:178-219",
+        "observation": "Generate draws rune entries, converts the slice to string, and then invokes Synthesize."
+      },
+      {
+        "source": "tasks/asr/recognizer.go:36-65",
+        "observation": "RecognizerConfig explicitly requires Unicode scalar values and calls utf8.ValidRune."
+      },
+      {
+        "source": "docs/tickets/107-recognizer-unicode-construction.md:1-18",
+        "sha256": "8049a283aa85eb09d7fc75c33bed4814dca050c54700d26ac2df8c28d688cd8b",
+        "observation": "The accepted constructor/persistence fix covers OCR/ASR recognizers, without declaring a SynthConfig scalar policy."
+      }
+    ],
+    "static_inference": "Invalid rune to string conversion can produce U+FFFD; an invalid-only alphabet then reaches a membership error, while an alphabet also containing U+FFFD can fold the drawn symbol. No runtime probe was run.",
+    "unknown": [
+      "Whether SynthConfig is intended to adopt the recognizer scalar policy.",
+      "No supported SDK caller using an invalid scalar alphabet was found by the worker."
+    ],
+    "limitations": [
+      "No new Go commands, runtime probe, 32-bit execution or full-alphabet behavioral claim.",
+      "Graph source locations were stale; current source hashes and line reads control."
+    ]
+  },
+  "confirmed_findings": [],
+  "formal_sources_changed": false,
+  "temporary_files_created": false,
+  "new_go_commands": 0
+}
