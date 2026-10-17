@@ -6,7 +6,7 @@ User Story：使用者的取樣率、聲道數或檔案長度若超出 PCM16 RIF
 
 Blocked by：139／140 的來源凍結驗收與交付；141 的合成尺寸修正先完成。
 
-Status：in_progress
+Status：completed
 
 相關需求：TSK-02 音訊匯入／輸出與錯誤處理。
 
@@ -22,7 +22,7 @@ WriteWAV 在 wav.go:178-192 以原生 int 計算長度，再將取樣率、聲�
 - [x] Root 凍結先失敗的回歸，涵蓋欄位、衍生長度、拒絕前不建立檔案及正常控制。
 - [x] 最小正式修正與專項一般／競態通過，正常 PCM16 位元組保持。
 - [x] 格式、build、完整一般／競態、vet、固定模組與治理通過。
-- [ ] 保存證據、清除本票自有暫存、提交推送並核對遠端。
+- [x] 保存證據、清除本票自有暫存、提交推送並核對遠端。
 
 ## 減法審查
 
@@ -34,6 +34,6 @@ WriteWAV 在 wav.go:178-192 以原生 int 計算長度，再將取樣率、聲�
 
 公開原版一般／競態各 6 fail／5 pass，五種非法 metadata 成功寫入的缺陷均重現，正常 golden 與既有路徑控制通過。另以未檢查算式的獨立私有函式骨架，一般／競態各 7 fail／4 pass，凍結不配置音訊的大整數尺寸界線測試。骨架不宣稱為既有正式實作，見[原版與骨架驗收](../../evidence/TSK-02/wav-metadata-audit-20261017/metadata-all-red-verification.json)。隔離回歸階段使用固定的 860 份正式來源，當時 WAV 正式檔尚未改動。
 
-隔離候選的一般／競態各 22 pass，單聲道／雙聲道完整 bytes、合法空檔與既有路徑保留控制保持，見[候選驗收](../../evidence/TSK-02/wav-metadata-audit-20261017/metadata-candidate-verification.json)。11,606 bytes 暫存已清除，三份必要輸入保存，見[清理](../../evidence/TSK-02/wav-metadata-audit-20261017/regression-cleanup.json)。ticket141 已交付，兩項精確候選與三份凍結回歸已正式採用，見[共用採用紀錄](../../evidence/TSK-02/audio-boundaries-adoption-20261018/adoption.json)。目前 863 份來源固定，正式專項已通過，完整工程驗證進行中。
+隔離候選的一般／競態各 22 pass，單聲道／雙聲道完整 bytes、合法空檔與既有路徑保留控制保持，見[候選驗收](../../evidence/TSK-02/wav-metadata-audit-20261017/metadata-candidate-verification.json)。11,606 bytes 暫存已清除，三份必要輸入保存，見[清理](../../evidence/TSK-02/wav-metadata-audit-20261017/regression-cleanup.json)。ticket141 已交付，兩項精確候選與三份凍結回歸已正式採用，見[共用採用紀錄](../../evidence/TSK-02/audio-boundaries-adoption-20261018/adoption.json)。863 份來源固定，正式專項與完整工程驗收均已通過。
 
-正式專項一般／競態各 41 pass，含本票及另一票的 28 個新事件、原有合成控制 13 個事件，29,121 bytes 正常音訊與抽樣資料指紋保持，見[正式專項驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/focused-verification.json)。完整一般 8,686 pass／23 skip、競態 8,685 pass／24 skip，各 58 套件通過，原有 8,681 個終端事件保持，只新增 28 pass。九項工程步驟、31 項治理、九份正常報告與中性增益控制均通過，見[正式驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/verification.json)。最後 31 項治理通過，1,546,088,321 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/audio-boundaries-adoption-20261018/cleanup.json)。目前 4／5，提交與推送接續。
+正式專項一般／競態各 41 pass，含本票及另一票的 28 個新事件、原有合成控制 13 個事件，29,121 bytes 正常音訊與抽樣資料指紋保持，見[正式專項驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/focused-verification.json)。完整一般 8,686 pass／23 skip、競態 8,685 pass／24 skip，各 58 套件通過，原有 8,681 個終端事件保持，只新增 28 pass。九項工程步驟、31 項治理、九份正常報告與中性增益控制均通過，見[正式驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/verification.json)。最後 31 項治理通過，1,546,088,321 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/audio-boundaries-adoption-20261018/cleanup.json)。修正 `9bce15d` 與主要證據 `66e6968` 已正常推送且遠端讀回相同，863 份提交來源與驗收指紋一致，見[交付](../../evidence/TSK-02/audio-boundaries-adoption-20261018/delivery.json)。本票 5／5。

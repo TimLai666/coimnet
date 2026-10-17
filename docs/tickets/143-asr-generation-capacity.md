@@ -6,7 +6,7 @@ User Story：使用者設定無法表示的樣本數或字長時，Generate 回�
 
 Blocked by：141 合成樣本尺寸修正的凍結驗收與交付。
 
-Status：in_progress
+Status：completed
 
 相關需求：TSK-02 合成資料 helper 與失敗處理。
 
@@ -22,7 +22,7 @@ Status：in_progress
 - [x] Root 凍結先失敗的公開回歸，保持正常亂數與空集合行為。
 - [x] 最小正式修正與專項一般／競態通過。
 - [x] 格式、build、完整一般／競態、vet、固定模組及治理通過。
-- [ ] 保存證據、清除本票自有暫存、提交推送並核對遠端。
+- [x] 保存證據、清除本票自有暫存、提交推送並核對遠端。
 
 ## 減法審查
 
@@ -38,6 +38,6 @@ Status：in_progress
 
 本票與 ticket142 的候選改動不同檔案、回歸已各自先失敗再通過。ticket141 交付後，兩票一起採用，凍結同一份最終來源執行完整工程驗證，避免對相同來源重跑整套測試。兩票的原版失敗、專項驗收與各自固定五項完成條件分開保留。
 
-兩項精確候選與三份凍結回歸已正式採用，見[共用採用紀錄](../../evidence/TSK-02/audio-boundaries-adoption-20261018/adoption.json)。目前 863 份來源固定，正式專項已通過，完整工程驗證進行中。
+兩項精確候選與三份凍結回歸已正式採用，見[共用採用紀錄](../../evidence/TSK-02/audio-boundaries-adoption-20261018/adoption.json)。863 份來源固定，正式專項與完整工程驗收均已通過。
 
-正式專項一般／競態各 41 pass，含本票及另一票的 28 個新事件、原有合成控制 13 個事件，29,121 bytes 正常音訊與抽樣資料指紋保持，見[正式專項驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/focused-verification.json)。完整一般 8,686 pass／23 skip、競態 8,685 pass／24 skip，各 58 套件通過，原有 8,681 個終端事件保持，只新增 28 pass。九項工程步驟、31 項治理、九份正常報告與中性增益控制均通過，見[正式驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/verification.json)。最後 31 項治理通過，1,546,088,321 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/audio-boundaries-adoption-20261018/cleanup.json)。目前 4／5，提交與推送接續。
+正式專項一般／競態各 41 pass，含本票及另一票的 28 個新事件、原有合成控制 13 個事件，29,121 bytes 正常音訊與抽樣資料指紋保持，見[正式專項驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/focused-verification.json)。完整一般 8,686 pass／23 skip、競態 8,685 pass／24 skip，各 58 套件通過，原有 8,681 個終端事件保持，只新增 28 pass。九項工程步驟、31 項治理、九份正常報告與中性增益控制均通過，見[正式驗收](../../evidence/TSK-02/audio-boundaries-adoption-20261018/verification.json)。最後 31 項治理通過，1,546,088,321 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理](../../evidence/TSK-02/audio-boundaries-adoption-20261018/cleanup.json)。修正 `9bce15d` 與主要證據 `66e6968` 已正常推送且遠端讀回相同，863 份提交來源與驗收指紋一致，見[交付](../../evidence/TSK-02/audio-boundaries-adoption-20261018/delivery.json)。本票 5／5。
