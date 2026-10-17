@@ -1,0 +1,85 @@
+{
+  "verified_at": "2026-10-17T23:29:49.677277+00:00",
+  "source_count": 895,
+  "three_loss_erasure_cases_confirmed_both_builds": true,
+  "two_normal_controls_passed_both_builds": true,
+  "original_failure_events_each_build": 4,
+  "original_passing_events_each_build": 2,
+  "precision_decimal_digits": 300,
+  "receipts": [
+    {
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=60s",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/ocr-reported-loss-probe-20261018/overlay.json",
+        "-run",
+        "^TestRootOCRReportedLoss148$",
+        "./tasks/ocr"
+      ],
+      "started_at": "2026-10-17T23:29:43.557801+00:00",
+      "finished_at": "2026-10-17T23:29:46.679458+00:00",
+      "seconds": 3.1215322089999997,
+      "exit_code": 1,
+      "source_count": 895,
+      "source_manifest": "source.json",
+      "frozen_sha256": "b6038b277e2b1c3fb6cc8c29937a61e5e975c5a83866862951793ae60234d589",
+      "log": "original-unit.log",
+      "log_sha256": "ee8379c8b34a75b279d088123eac0c90e9ad08ba9f8ca13576f7d54e3b071acc",
+      "log_bytes": 6178,
+      "test_events": {
+        "fail": 4,
+        "pass": 2
+      },
+      "failed_tests": [
+        "TestRootOCRReportedLoss148",
+        "TestRootOCRReportedLoss148/winner_first",
+        "TestRootOCRReportedLoss148/winner_last",
+        "TestRootOCRReportedLoss148/winner_middle"
+      ],
+      "formal_sources_changed": false
+    },
+    {
+      "command": [
+        "go",
+        "test",
+        "-json",
+        "-count=1",
+        "-timeout=60s",
+        "-overlay",
+        "/Users/timlai/Developer/coimnet/runs/.tmp/ocr-reported-loss-probe-20261018/overlay.json",
+        "-run",
+        "^TestRootOCRReportedLoss148$",
+        "-race",
+        "./tasks/ocr"
+      ],
+      "started_at": "2026-10-17T23:29:46.783799+00:00",
+      "finished_at": "2026-10-17T23:29:49.676934+00:00",
+      "seconds": 2.893122541,
+      "exit_code": 1,
+      "source_count": 895,
+      "source_manifest": "source.json",
+      "frozen_sha256": "b6038b277e2b1c3fb6cc8c29937a61e5e975c5a83866862951793ae60234d589",
+      "log": "original-race.log",
+      "log_sha256": "83e95e7be30cfd813d2925ac67b520297fb726f28fd4b1a7a8519fdd1621f75a",
+      "log_bytes": 6182,
+      "test_events": {
+        "fail": 4,
+        "pass": 2
+      },
+      "failed_tests": [
+        "TestRootOCRReportedLoss148",
+        "TestRootOCRReportedLoss148/winner_first",
+        "TestRootOCRReportedLoss148/winner_last",
+        "TestRootOCRReportedLoss148/winner_middle"
+      ],
+      "formal_sources_changed": false
+    }
+  ],
+  "formal_sources_changed": false,
+  "repair_complete": false,
+  "global_zero_bug_claim": false
+}

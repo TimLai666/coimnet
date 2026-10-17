@@ -1,0 +1,56 @@
+{
+  "verified_at": "2026-10-17T21:42:46.394346+00:00",
+  "requirement": "TSK-01",
+  "ticket": "147",
+  "source_manifest": "source.json",
+  "source_entries": 877,
+  "input_fingerprints": {
+    "frozen": "ocr-tests-frozen.json",
+    "independent_reference": "root-ocr-gradient-plan.json"
+  },
+  "environment": "candidate-command-environment.json",
+  "reproduction_command": [
+    "python3 evidence/TSK-03/categorical-gradient-audit-20261018/ocr-run.py.txt --run --frozen ocr-tests-frozen.json --label ocr-original-unit --pattern ^TestSingleCharacterGradientTail147$",
+    "same command with unique race label and --build race"
+  ],
+  "observed_result": {
+    "unit": {
+      "actual_terminal": {
+        "session_id": 75019,
+        "exit_code": 1,
+        "tool_chunk": "ff9e4e"
+      },
+      "fail_terminal_events": 4,
+      "target_zero_failures": [
+        "categorical_gradient147_test.go:63: gradient[1] target=true = 0, want negative",
+        "categorical_gradient147_test.go:63: gradient[2] target=true = 0, want negative",
+        "categorical_gradient147_test.go:63: gradient[3] target=true = 0, want negative"
+      ],
+      "no_other_assertion_failure": true,
+      "log": "ocr-original-unit.log",
+      "log_sha256": "39b3d256b8901d6b6510ffec1ed7d7a364879435598050b1a1eaba742f1b2f91"
+    },
+    "race": {
+      "actual_terminal": {
+        "session_id": 8679,
+        "exit_code": 1,
+        "tool_chunk": "effc8f"
+      },
+      "fail_terminal_events": 4,
+      "target_zero_failures": [
+        "categorical_gradient147_test.go:63: gradient[1] target=true = 0, want negative",
+        "categorical_gradient147_test.go:63: gradient[2] target=true = 0, want negative",
+        "categorical_gradient147_test.go:63: gradient[3] target=true = 0, want negative"
+      ],
+      "no_other_assertion_failure": true,
+      "log": "ocr-original-race.log",
+      "log_sha256": "68139a868fe807877912742e8bd3f544b4a5f3a19260827e70c4ad397ff9dc0f"
+    }
+  },
+  "test_log": [
+    "ocr-original-unit.log",
+    "ocr-original-race.log"
+  ],
+  "conclusion": "CONFIRMED: OCR single-character target derivatives are zero instead of independently representable negative values at all3 class positions. Blank exclusion and input/finite controls pass inside each failing case.",
+  "limitations": "Private arithmetic test only; TrainLine source dispatch read, no dynamic public TrainLine comparison, no model-quality conclusion. No production fix yet."
+}

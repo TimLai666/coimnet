@@ -1,0 +1,28 @@
+package categorical
+
+import (
+	"fmt"
+	"testing"
+)
+
+var gradientBenchmarkSink147 float64
+
+func BenchmarkGradientWork147(b *testing.B) {
+	for _, width := range []int{3, 259} {
+		b.Run(fmt.Sprintf("classes%d", width), func(b *testing.B) {
+			logits := make([]float64, width)
+			dst := make([]float64, width)
+			for i := 1; i < width; i++ {
+				logits[i] = -40
+			}
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				if err := Gradient(dst, logits, 0, 1, 2); err != nil {
+					b.Fatal(err)
+				}
+			}
+			gradientBenchmarkSink147 = dst[0]
+		})
+	}
+}

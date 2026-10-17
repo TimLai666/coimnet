@@ -1,0 +1,126 @@
+"""Check or clean only the completed, isolated gradient candidate work root."""
+from pathlib import Path
+import argparse, datetime, gzip, hashlib, json, os, shutil, subprocess, tarfile
+
+p = argparse.ArgumentParser(description=__doc__)
+mode = p.add_mutually_exclusive_group()
+mode.add_argument('--check', action='store_true', help='Verify completed receipts, exact preserved inputs and protected files; do not write or delete.')
+mode.add_argument('--run', action='store_true', help='After identical checks, preserve inventory and remove only this candidate work root, including its disposable private caches.')
+a = p.parse_args()
+if not (a.check or a.run):
+    p.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/categorical-gradient-candidate-20261018'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+sha = lambda b: hashlib.sha256(b).hexdigest()
+read = lambda p: json.loads(p.read_bytes())
+assert W.resolve() == W and not W.is_symlink() and W.stat().st_ino == 61043512
+assert shutil.rmtree.avoids_symlink_attacks
+verified = read(E / 'candidate-verification.json')
+assert verified['isolated_two_head_candidate_passed'] and not verified['formal_adopted']
+assert verified['source_entries'] == 877
+if not verified.get('cleanup_ready', False):
+    print(json.dumps({'ready': False, 'reason': 'Owned caches remain in use for the shared-helper and related-entry validation phase.', 'deleted': False}))
+    raise SystemExit(2)
+terminals = read(E / 'candidate-terminals.json')
+for name in verified['required_receipts']:
+    receipt = read(E / name)
+    terminal = terminals[name]
+    assert terminal['exit_code'] == receipt['exit_code']
+    assert terminal['actual_tool_chunk'] and terminal['session_id']
+    assert receipt['source_count'] == 877 and receipt['source_manifest'] == 'source.json'
+    assert sha((E / receipt['log']).read_bytes()) == receipt['log_sha256']
+source = read(E / 'source.json')
+models = read(P / 'protected-models.json')
+foreign = read(P / 'foreign-before.json')
+data = read(P / 'persistent-data.json')
+archive = P / 'preserved-work.tar.gz'
+assert sha(archive.read_bytes()) == '5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+with tarfile.open(archive, 'r:gz') as handle:
+    raw_modules = handle.extractfile('module-originals.json').read()
+assert sha(raw_modules) == '34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc'
+modules = json.loads(raw_modules)
+assert len(source) == 877 and len(models) == 18 and len(foreign) == 32 and len(data) == 6 and len(modules) == 15046
+
+def gate():
+    assert W.stat().st_ino == 61043512 and not W.is_symlink()
+    for name, h in {**source, **models}.items():
+        assert sha((R / name).read_bytes()) == h, name
+    for name, h in {**foreign, **modules}.items():
+        assert sha(Path(name).read_bytes()) == h, name
+    for name, item in data.items():
+        b = (R / name).read_bytes()
+        assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+    for name, inode in {'62': 49680181, 'real-task-quality-20261012': 50419696}.items():
+        path = R / 'runs/.tmp' / name
+        assert not path.is_symlink() and path.stat().st_ino == inode
+
+def inventory(root):
+    result = {}
+    for base, dirs, files in os.walk(root, followlinks=False):
+        for name in dirs + files:
+            path = Path(base) / name
+            key = str(path.relative_to(root))
+            assert not path.is_symlink(), path
+            if path.is_dir():
+                result[key] = {'directory': True, 'inode': path.stat().st_ino}
+            else:
+                assert path.is_file(), path
+                b = path.read_bytes()
+                result[key] = {'bytes': len(b), 'sha256': sha(b)}
+    return result
+
+gate()
+old_roots = {n: inventory(R / 'runs/.tmp' / n) for n in ['62', 'real-task-quality-20261012']}
+contents = inventory(W)
+preserved = read(E / 'candidate-preservation.json')
+overlay_archive = E / preserved['overlay_archive']
+assert sha(overlay_archive.read_bytes()) == preserved['overlay_archive_sha256']
+overlays = json.loads(gzip.decompress(overlay_archive.read_bytes()))
+accounted = {}
+for name, item in preserved['files'].items():
+    if item['kind'] == 'evidence':
+        b = (E / item['name']).read_bytes()
+    elif item['kind'] == 'module_manifest':
+        b = raw_modules
+    elif item['kind'] == 'overlay':
+        b = overlays[item['name']].encode()
+    else:
+        raise AssertionError(item['kind'])
+    assert sha(b) == item['sha256'] and len(b) == item['bytes']
+    assert (W / name).read_bytes() == b, name
+    accounted[name] = item
+noncache = {n for n, item in contents.items() if n.split('/')[0] not in ['go-cache', 'go-mod-cache', 'go-tmp'] and not item.get('directory')}
+assert noncache == set(accounted), noncache ^ set(accounted)
+handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+assert inventory(W) == contents
+gate()
+if a.check:
+    print(json.dumps({'ready': True, 'entries': len(contents), 'noncache_inputs_preserved': len(accounted), 'deleted': False}))
+    raise SystemExit(0)
+packed = gzip.compress(json.dumps(contents, sort_keys=True).encode(), mtime=0)
+with (E / 'candidate-cleanup-inventory.json.gz').open('xb') as handle:
+    handle.write(packed)
+assert json.loads(gzip.decompress(packed)) == contents
+assert W.resolve() == W and W.stat().st_ino == 61043512 and not W.is_symlink()
+shutil.rmtree(W)
+assert not W.exists()
+for n, before in old_roots.items():
+    assert inventory(R / 'runs/.tmp' / n) == before
+for name, h in {**source, **models}.items():
+    assert sha((R / name).read_bytes()) == h, name
+for name, h in {**foreign, **modules}.items():
+    assert sha(Path(name).read_bytes()) == h, name
+for name, item in data.items():
+    b = (R / name).read_bytes()
+    assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_directory': str(W.relative_to(R)), 'owned_inode': 61043512, 'removed_entries': len(contents), 'removed_bytes': sum(x.get('bytes', 0) for x in contents.values()), 'inventory_archive': 'candidate-cleanup-inventory.json.gz', 'inventory_archive_sha256': sha(packed), 'necessary_inputs_preserved': True, 'source_entries_preserved': 877, 'original_models_preserved': 18, 'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'original_module_files_preserved': 15046, 'protected_old_roots_full_inventory_preserved': True, 'no_open_handles': True, 'directory_removed': True}
+with (E / 'candidate-cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

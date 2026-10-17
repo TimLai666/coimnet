@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-10-17T22:42:51.653030+00:00",
+  "changes": "Only removed duplicate internal resultarray andcopy; v3 exactunit60 andrace60 passes alreadybound in root-continuation-acceptance-plan.json",
+  "proof": {
+    "v2": {
+      "receipt": "categorical-v2-benchmark.json",
+      "receipt_sha256": "5434b2fc00b419afe006fa3ea0164e9b3d97957d165f9a14ddd087dabb156ae4",
+      "log_sha256": "7b90ee7d9f36e2981dec22b7fcfe2d75a798c6a65070e147904e1746719892a0",
+      "results": [
+        {
+          "classes": 3.0,
+          "iterations": 1000.0,
+          "ns_per_op": 260.0,
+          "bytes_per_op": 0.0,
+          "allocs_per_op": 0.0
+        },
+        {
+          "classes": 259.0,
+          "iterations": 1000.0,
+          "ns_per_op": 14740.0,
+          "bytes_per_op": 2304.0,
+          "allocs_per_op": 1.0
+        }
+      ]
+    },
+    "v3": {
+      "receipt": "categorical-v3-benchmark.json",
+      "receipt_sha256": "aabb7a034148118e284cf9dd37a2b9cc16089a775e9b6db3f6c84bfe74d26088",
+      "log_sha256": "80db28c816ce6e4d457521ceb287427b814c015ada953f4567fd4d6f0080d76f",
+      "results": [
+        {
+          "classes": 3.0,
+          "iterations": 1000.0,
+          "ns_per_op": 209.8,
+          "bytes_per_op": 0.0,
+          "allocs_per_op": 0.0
+        },
+        {
+          "classes": 259.0,
+          "iterations": 1000.0,
+          "ns_per_op": 14052.0,
+          "bytes_per_op": 0.0,
+          "allocs_per_op": 0.0
+        }
+      ]
+    }
+  },
+  "conclusion": "259class Go microbenchmark removes2304B and1heapallocation perhelpercall; 3class was already0heapallocations in v2. Timing is single1000iteration observation on sharedmachine; no overalltraining speedclaim.",
+  "formal_adopted": false
+}

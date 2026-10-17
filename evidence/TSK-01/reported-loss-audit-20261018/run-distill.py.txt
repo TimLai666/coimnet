@@ -1,0 +1,85 @@
+"""Reproduce pure-label distillation loss erasure without changing formal sources."""
+from pathlib import Path
+import argparse, collections, datetime, hashlib, json, os, subprocess, time
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Run the five frozen cases in ordinary/race builds, retaining expected-failure receipts and logs; do not change or clean formal sources or caches.')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python disables required checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/distill-reported-loss-probe-20261018'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+sha = lambda b: hashlib.sha256(b).hexdigest()
+read = lambda p: json.loads(p.read_bytes())
+frozen_bytes = (E / 'distill-frozen.json').read_bytes()
+frozen = json.loads(frozen_bytes)
+source = read(E / 'source.json')
+env = dict(os.environ)
+env.update(read(R / 'evidence/TSK-03/categorical-gradient-adoption-20261018/command-environment.json'))
+
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == frozen['work_inode'] == 61140705
+    assert (E / 'distill-frozen.json').read_bytes() == frozen_bytes
+    assert sha((E / 'source.json').read_bytes()) == frozen['source_manifest_sha256']
+    paths = {n for n in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if n and (n.endswith('.go') or n in ['go.mod', 'go.sum'])}
+    assert paths == set(source) and len(source) == 895
+    for n, h in source.items():
+        assert sha((R / n).read_bytes()) == h, n
+    for n, h in frozen['files'].items():
+        assert sha((E / n).read_bytes()) == h, n
+    assert (W / 'distill_reported_loss_test.go').read_bytes() == (E / 'distill-reported-loss-test.go.txt').read_bytes()
+    assert read(W / 'overlay.json') == frozen['overlay']
+    for manifest in ['foreign-before.json', 'protected-models.json', 'persistent-data.json']:
+        for n, item in read(P / manifest).items():
+            q = Path(n) if Path(n).is_absolute() else R / n
+            expected = item['sha256'] if isinstance(item, dict) else item
+            assert sha(q.read_bytes()) == expected, n
+
+receipts = []
+for build in ['unit', 'race']:
+    gate()
+    command = ['go', 'test', '-json', '-count=1', '-timeout=60s', '-overlay', str(W / 'overlay.json'), '-run', '^TestRootDistillReportedLoss148$']
+    if build == 'race':
+        command.append('-race')
+    command.append('./distill')
+    started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    start = time.monotonic()
+    log = E / ('distill-original-' + build + '.log')
+    with log.open('xb') as handle:
+        result = subprocess.run(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT, timeout=180)
+    gate()
+    raw = log.read_bytes()
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            e = json.loads(line)
+        except ValueError:
+            continue
+        if e.get('Action') in ['pass', 'skip', 'fail']:
+            if e.get('Test'):
+                assert e['Test'] not in tests
+                tests[e['Test']] = e['Action']
+            else:
+                packages[e['Package']] = e['Action']
+    expected_failed = {'TestRootDistillReportedLoss148', *('TestRootDistillReportedLoss148/' + n for n in ['winner_first', 'winner_middle', 'winner_last'])}
+    counts = dict(collections.Counter(tests.values()))
+    receipt = {'command': command, 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'seconds': time.monotonic() - start, 'exit_code': result.returncode, 'source_count': 895, 'source_manifest': 'source.json', 'frozen_sha256': sha(frozen_bytes), 'log': log.name, 'log_sha256': sha(raw), 'log_bytes': len(raw), 'test_events': counts, 'failed_tests': sorted(n for n, action in tests.items() if action == 'fail'), 'formal_sources_changed': False}
+    with (E / ('distill-original-' + build + '.json')).open('x') as handle:
+        json.dump(receipt, handle, indent=2)
+        handle.write('\n')
+    assert result.returncode == 1 and counts == {'fail': 4, 'pass': 2}, receipt
+    assert {n for n, action in tests.items() if action == 'fail'} == expected_failed
+    assert packages == {'github.com/TimLai666/coimnet/distill': 'fail'}
+    assert b'WARNING: DATA RACE' not in raw
+    receipts.append(receipt)
+    print(json.dumps(receipt), flush=True)
+proof = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'source_count': 895, 'three_loss_erasure_cases_confirmed_both_builds': True, 'two_normal_controls_passed_both_builds': True, 'original_failure_events_each_build': 4, 'original_passing_events_each_build': 2, 'precision_decimal_digits': 300, 'receipts': receipts, 'formal_sources_changed': False, 'repair_complete': False, 'global_zero_bug_claim': False}
+with (E / 'distill-reproduction-verification.json').open('x') as handle:
+    json.dump(proof, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'reproduction_confirmed': True, 'formal_sources_changed': False, 'unit_and_race': {'fail': 4, 'pass': 2}}), flush=True)

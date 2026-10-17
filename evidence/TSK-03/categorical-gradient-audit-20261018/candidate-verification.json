@@ -1,0 +1,112 @@
+{
+  "verified_at": "2026-10-17T22:04:31.351082+00:00",
+  "ticket": "147",
+  "isolated_two_head_candidate_passed": true,
+  "formal_adopted": false,
+  "comprehensive_related_entry_fix_complete": false,
+  "source_entries": 877,
+  "source_manifest": "source.json",
+  "frozen": "candidate-v2-frozen.json",
+  "reproduction_command": [
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=10m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/candidate-v2-unit-overlay.json",
+      "-run",
+      "147$",
+      "./tasks/media",
+      "./tasks/textgen"
+    ],
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=10m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/candidate-v2-race-overlay.json",
+      "-run",
+      "147$",
+      "-race",
+      "./tasks/media",
+      "./tasks/textgen"
+    ],
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=10m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/candidate-v2-packages-unit-overlay.json",
+      "./tasks/media",
+      "./tasks/textgen"
+    ],
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=25m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/candidate-v2-packages-race-overlay.json",
+      "-race",
+      "./tasks/media",
+      "./tasks/textgen"
+    ]
+  ],
+  "environment": "candidate-environment.json",
+  "input_fingerprints": [
+    "candidate-v2-frozen.json",
+    "boundary-root-reference-review.json",
+    "root-gradient-scale-plan.json"
+  ],
+  "observed_result": {
+    "focused_pass_each_build": 40,
+    "wholepackage_pass_each_build": 345,
+    "wholepackage_skip_each_build": 5,
+    "prior_terminal_events_preserved_each_build": 310,
+    "new_pass_events_each_build": 40,
+    "old_candidates_rejected": true,
+    "public_update_twins_pass": true
+  },
+  "test_log": [
+    "candidate-v2-unit.log",
+    "candidate-v2-race.log",
+    "candidate-v2-packages-unit.log",
+    "candidate-v2-packages-race.log"
+  ],
+  "root_reviews": [
+    "candidate-v2-focused-root-review.json",
+    "candidate-v2-package-race-root-review.json"
+  ],
+  "required_receipts": [
+    "baseline-core-unit.json",
+    "baseline-boundary-unit.json",
+    "candidate-v1-unit.json",
+    "candidate-v1-scale-unit.json",
+    "candidate-v2-unit.json",
+    "candidate-v2-race.json",
+    "candidate-v2-packages-unit.json",
+    "candidate-v2-packages-race.json",
+    "ocr-original-unit.json",
+    "ocr-original-race.json",
+    "distill-original-unit.json",
+    "distill-original-race.json"
+  ],
+  "terminal_bindings": "candidate-terminals.json",
+  "additional_confirmed_unfixed": [
+    "ocr-reproduction-verification.json",
+    "distill-reproduction-verification.json"
+  ],
+  "model_loading_scope": "Existing taskpackage save/load tests pass; no147 dedicated old-artificialcheckpoint crossprocess controls yet.",
+  "cleanup_pending": true,
+  "cleanup_reason": "Owned caches are retained for sharedhelper andremainingrelatedentry validation; do notclean yet.",
+  "shared_helper_plan": "root-shared-gradient-plan.json",
+  "global_zero_bug_claim": false,
+  "cleanup_ready": false
+}

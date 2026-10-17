@@ -1,0 +1,33 @@
+{
+  "created_at": "2026-10-17T21:52:33.830244+00:00",
+  "scope": "Public DistributionDistiller.Loss purelabel component, Mix0 only; no teacherKL or mixedgoal modification.",
+  "source": "distill/distribution.go",
+  "source_sha256": "affac62481edd50b890b0d7a1bcc51b208980fa59a44aace378367c416b2f5c1",
+  "signature": "(DistributionDistiller).Loss(TeacherDistribution, student []float64, label int) (loss float64,grad []float64,report DistributionReport,err error)",
+  "slot": "distill-gradient-regression.go.txt; package distill_test; TestDistributionLabelGradient147",
+  "fixture": {
+    "temperature": 2,
+    "scale": 3,
+    "mix": 0,
+    "alignment_rule": "identical",
+    "vocab_hashes": [
+      "audit147",
+      "audit147"
+    ],
+    "teacher_probabilities": [
+      1,
+      0,
+      0
+    ],
+    "student_common_tail": -40,
+    "unique_winner_logit": 0,
+    "label": "winner; permute0/1/2"
+  },
+  "expected": [
+    "Gradient target negative and within4ULP of -0x1.39792499b1a24p-57; others positive and within4ULP of0x1.39792499b1a24p-58. References root Decimal1803-class unitdivisor, same root-ocr-gradient-plan.json withoutblank.",
+    "PurelabelCE divisor1 regardless validTemperature/Scale becauseMix0; noKLcontribution.",
+    "Lossfinite nonnegative,legal report matchesparameters andnotpartial; inputsstudent andteacher probabilities unchanged.",
+    "Expect3 zero-target failures+1parent onoriginal; no inference of taskquality or generalKLcorrectness."
+  ],
+  "production_changes_allowed": false
+}

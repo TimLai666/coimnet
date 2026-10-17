@@ -1,0 +1,58 @@
+{
+  "created_at": "2026-10-17T23:11:51.971160+00:00",
+  "source_count": 877,
+  "frozen": "shared-all-v3-frozen.json",
+  "frozen_sha256": "3ea3e615aa395450b83e63c9a96a1a9387ba99a9fc610719b115bb04d7d8c789",
+  "composite_race_acceptance": true,
+  "main_run": {
+    "receipt": "categorical-gradient-audit-20261018/shared-all-v3-packages-race.json",
+    "receipt_sha256": "537065ba01d8e646b085b82842712e1717d26e412ef8fe33d19e3afcfc34cd75",
+    "exit_code": 1,
+    "log_sha256": "76bd8ff8aab4809a817b46c3424d4e7a056aae4daadff5b61101fb982faf99c3",
+    "package_events": {
+      "github.com/TimLai666/coimnet/internal/categorical": "pass",
+      "github.com/TimLai666/coimnet/tasks/media": "pass",
+      "github.com/TimLai666/coimnet/tasks/ocr": "pass",
+      "github.com/TimLai666/coimnet/distill": "fail",
+      "github.com/TimLai666/coimnet/tasks/textgen": "pass",
+      "github.com/TimLai666/coimnet/experiment": "pass",
+      "github.com/TimLai666/coimnet/experiment/multimodaleval": "pass"
+    },
+    "only_failed_test": "TestUntrustedTeacherAnswersStayData",
+    "failure_reason": "httptest loopback bind: operation not permitted; original failed run retained",
+    "terminal_session_id": 80614,
+    "terminal_tool_chunk": "b2a414"
+  },
+  "distill_retry": {
+    "receipt": "categorical-gradient-audit-20261018/shared-distill-packages-race.json",
+    "receipt_sha256": "6d3551f9f1faabe72ab313df9b74c0ca5b0e1df8c74192f0b937e79fdd108237",
+    "exit_code": 0,
+    "log_sha256": "22f812a56eef89b253fbb5014600f0994affbad0bab148917f9233e9b998b363",
+    "test_events": {
+      "pass": 55
+    },
+    "package_events": {
+      "github.com/TimLai666/coimnet/distill": "pass"
+    },
+    "sandbox": "Tool-approved local HTTP test execution; identical frozen sources and tests"
+  },
+  "baseline": {
+    "receipt": "categorical-loss-adoption-20261018/engineering-final-race.json",
+    "receipt_sha256": "1e79dd0069128dbc260478c0a65155ee91848dbbe69b7e169af9d6d1c52b30ef",
+    "exit_code": 0,
+    "log_sha256": "f295163c17a4e655601ebde64dca394e882fd014efc86b91d3cb59d89d5f0914",
+    "identical_formal_source_manifest": true,
+    "affected_existing_test_events": 1190,
+    "existing_status_changes": [],
+    "compressed_and_raw_hashes_verified": true
+  },
+  "combined_test_events": {
+    "pass": 1316,
+    "skip": 14
+  },
+  "new_pass_events": 140,
+  "passed_packages": 7,
+  "formal_adopted": false,
+  "cleanup_ready": false,
+  "global_zero_bug_claim": false
+}

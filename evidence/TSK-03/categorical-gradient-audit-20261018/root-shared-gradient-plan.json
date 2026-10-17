@@ -1,0 +1,128 @@
+{
+  "created_at": "2026-10-17T22:01:06.147952+00:00",
+  "status": "Shared internal helper candidate contract; no formal adoption or publicAPI/model change.",
+  "reason": "11 related callsites across9 files; implementing ~same compensated/underflow algorithm repeatedly risks divergent fixes. Existing2-head v2 remainsimmutable control.",
+  "signature": "package categorical; func Gradient(dst, logits []float64, target int, factor, divisor float64) error",
+  "candidate_virtual_path": "internal/categorical/gradient.go",
+  "slots": {
+    "categorical-gradient-skeleton.go.txt": "Root error-returning TDDskeleton; notproductionoutput.",
+    "categorical-gradient-test.go.txt": "Independent testauthor writes packagecategorical tests against contract and highprecisionrefs; implementationauthor cannot edit.",
+    "categorical-gradient-reference.json": "Independent exactbinary64 Decimal references; rootrecomputes beforefreeze.",
+    "categorical-gradient-candidate.go.txt": "Future implementationonly after skeletonred; do notwriteuntilseparatelydispatched."
+  },
+  "contract": [
+    "Finite nonemptylogits;targetinrange;dstlengthsame;finitefactor>=0;finitedivisor>=1. Validate all before writingdst;invalidinput error anddstunchanged.",
+    "Callers supply fresh dst disjointfromlogits. Do notmutatelogits. Filloverwriteallentries, neveraccumulate. Factor0 producescanonicalzeros afterinputvalidation. Singleclass validgradient0.",
+    "Gradient= factor/divisor*(softmax(logits)-onehot), evaluated without targetp-1 cancellation,without orderdependentnaive normalization, andwithout earlysubnormal rounding.",
+    "Keep tinyaggregates andindividualweakclasses scaled throughnormalizer,factor anddivisor; representable finalderivatives must notbecome0 orInf. No silentclipping of wrong derivatives.",
+    "No new externaldependency, public configuration, modelversion or trainingmode. Complete related callsites only after objective-specific frozen red/update controls. PPO,CTC,teacherKL and sampling are separate objectives."
+  ],
+  "flows": [
+    {
+      "file": "tasks/media/external_tool.go",
+      "entry": "requestLossGradient",
+      "inputs": "colour/shape3-class slices",
+      "scaling": "factor1,divisor2",
+      "error_ownership": "existing finite-logit/loss checks; helper errors abort before StepFrom",
+      "source_sha256": "633baebc109798ce538bdf12fd7484ea1b18a6f8b755c85675031aa727df60b4"
+    },
+    {
+      "file": "tasks/textgen/model.go",
+      "entry": "lossAndUpstream",
+      "inputs": "all vocabulary logits; only scored settle row",
+      "scaling": "factor1,divisorcount",
+      "error_ownership": "preserve count,mask,loss,finite errors; helper failure returnsnilupstream",
+      "source_sha256": "d8c7f63565104949a9e49aef91aa35ddc7bf2dd7728c403d0757f464b43a2c06"
+    },
+    {
+      "file": "tasks/ocr/recognizer.go",
+      "entry": "singleCharacterLoss",
+      "inputs": "nonblank logits[1:]; target-1; blank gradient0",
+      "scaling": "factor1,divisor1",
+      "error_ownership": "validate even blank logit as before; preserveexistingloss checks",
+      "source_sha256": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863"
+    },
+    {
+      "file": "distill/distribution.go",
+      "entry": "DistributionDistiller.Loss label component",
+      "inputs": "full student space; separate CE vector added toKLgradient",
+      "scaling": "factor1-Mix,divisor1",
+      "error_ownership": "retainalignment/teacher/temperature/topk validation andKL code; noKL rewrite",
+      "source_sha256": "affac62481edd50b890b0d7a1bcc51b208980fa59a44aace378367c416b2f5c1"
+    },
+    {
+      "file": "experiment/imitation.go",
+      "entry": "imitationStep",
+      "inputs": "all3 actions on each row",
+      "scaling": "factor1,divisorlen(logits); preserve existing actual denominator",
+      "error_ownership": "preserve input topology/baseline; only derivative corrected; StepFrom atomicallycommits",
+      "source_sha256": "fb39e11027e45337ec6bc32b379e12a4864a735cbb5b7ffc7aae26a93bcf8961"
+    },
+    {
+      "file": "experiment/multitask_core.go",
+      "entry": "corridorStep",
+      "inputs": "first3 outputs; delayedMSEunchanged",
+      "scaling": "factorscale,divisorlen(obs)",
+      "error_ownership": "leaveotheroutputs0; cancellation/trainer errors propagate",
+      "source_sha256": "f01e85a2bd2c27ca12c80304001837a6b89759eda0dbb165637c9f08791e1982"
+    },
+    {
+      "file": "experiment/multitask_schedule.go",
+      "entry": "runSameExperience corridor branch",
+      "inputs": "first3 outputs; delayedMSEunchanged",
+      "scaling": "factor existingMixWeight*LossScale,divisorlen(obs)",
+      "error_ownership": "keep existing derived factor MixWeight*LossScale; helper rejects a nonfinite product before StepFrom. No new public setting constraint or claim that a finite true gradient was lost; noMSErewrite",
+      "source_sha256": "dcba1bea666922016d126299431d0a7cc5809a8a743e82f054c0ce8f9e182afd"
+    },
+    {
+      "file": "experiment/nav2d_policy.go",
+      "entry": "recurrent/feedforward train",
+      "inputs": "nav2d actionspace",
+      "scaling": "factorclassweight; recurrentdivisorlen(obs),feedforwarddivisor1",
+      "error_ownership": "retain inverse-frequencyweights andsettle indices",
+      "source_sha256": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7"
+    },
+    {
+      "file": "experiment/multimodaleval/model.go",
+      "entry": "train shape/colour branches",
+      "inputs": "two separate3-class actionspaces",
+      "scaling": "factor1,divisor1",
+      "error_ownership": "preservelabels,width andfinalrow;no otherheadupdate",
+      "source_sha256": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5"
+    }
+  ],
+  "failure_map": [
+    {
+      "operation": "validate shape/target/factors/logits",
+      "failure": "nil,empty,mismatch,outofrange,NaN,Inf,negativefactor,divisorbelow1",
+      "catch": "helpererror beforedstwrite; taskabortbeforeTrainer.StepFrom",
+      "check": "independentinvalidinput tables withdestinationunchanged"
+    },
+    {
+      "operation": "normalize/scalegradient",
+      "failure": "tinyaggregateorindividualclasslost;factorintermediateoverflow",
+      "catch": "stable arithmetic; true nonfinite finalresult error, no trainercommit",
+      "check": "independent exactbinary64 references plusexisting40 frozen tests"
+    },
+    {
+      "operation": "integratecaller",
+      "failure": "wrongscale,blank,target,mask oroverwriteKL",
+      "catch": "caller-specific derivative/public-update twins beforeformaladoption",
+      "check": "all9 flows requireown references,notjusthelperunitpass"
+    }
+  ],
+  "acceptance_flows": [
+    "Uniformtail3/259-class highconfidence -> correctnonzero target -> existingpublic twin updatesagree.",
+    "Tinyaggregate andmixedordinarynormalizerweakclass withmean/count/factor -> survivecorrectfinalrounding -> alloldfrozen40pass.",
+    "OCRblank exclusion / distillMix0 label / weighted recurrentpolicy -> preserve their ownscale andatomicupdate contracts."
+  ],
+  "shadow_paths": {
+    "nil_empty": "error; noassignment",
+    "zero_factor": "validzero gradient, still rejectnonfinitelogits",
+    "singleclass": "validallzero derivative",
+    "upstream_error": "taskpropagates existing error beforeupdate",
+    "parallel_calls": "functionlocalonly; no sharedmutablestate"
+  },
+  "migration": "Isolated overlay with877 formal sources unchanged. Twohead package race45683 completed exit0. Go list supports virtual files, but vet needs the physical package cwd: internal/categorical is an empty owned directory, inode61080414; no formal Go files. Later integrate all pureCE callers, fullengineering andmodel-loading beforedelivery.",
+  "test_thresholds": "Existingcore/boundary/scale thresholds immutable. Newstandardrefs <=4ULP;weighted factors <=8ULP; every nonzeroref must remainnonzero andsame-sign,zero ref mustbezero."
+}

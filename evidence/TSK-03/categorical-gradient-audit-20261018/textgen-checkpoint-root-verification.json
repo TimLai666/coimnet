@@ -1,0 +1,102 @@
+{
+  "created_at": "2026-10-17T23:02:59.278146+00:00",
+  "input_receipt": "compatibility-textgen-inputs.json",
+  "actual_processes": 4,
+  "checkpoint_paths": 4,
+  "distinct_checkpoint_contents": 2,
+  "proof": {
+    "unit": {
+      "processes": {
+        "original": {
+          "receipt": "textgen-checkpoint-original-unit.json",
+          "receipt_sha256": "c7388288ae367a13ac024df9a5fa8e5fd1b1530dfa1a07ce7511c0d7944af6cc",
+          "output_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa"
+        },
+        "candidate": {
+          "receipt": "textgen-checkpoint-candidate-unit.json",
+          "receipt_sha256": "3928fd53158b2678471ef5109b6df9bf7b1f88de7a7958e6d175432c68c1cdfd",
+          "output_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa"
+        }
+      },
+      "profiles": [
+        {
+          "profile": "settle3",
+          "load_forward_preStep_loss_exact": true,
+          "verified_loaded_checkpoint_sha256": "ce243c84b7713b2fce2d789d6bf41d6c6d12b8f595e89847d5da11468a6b2765",
+          "continuation_applied": true,
+          "before_updates": "3",
+          "after_updates": "4",
+          "step_result_bytes_equivalent": true,
+          "after_snapshot_bytes_equivalent": true,
+          "reported": {
+            "nll_sum": "16.633693229460608",
+            "step_mean": "5.544564409820203"
+          }
+        },
+        {
+          "profile": "settle1",
+          "load_forward_preStep_loss_exact": true,
+          "verified_loaded_checkpoint_sha256": "4927b89895c5be6af7d2366109a9b1fff08abfac5ddcf1a1375f70a021603625",
+          "continuation_applied": true,
+          "before_updates": "3",
+          "after_updates": "4",
+          "step_result_bytes_equivalent": true,
+          "after_snapshot_bytes_equivalent": true,
+          "reported": {
+            "nll_sum": "16.632642334124387",
+            "step_mean": "5.544214111374796"
+          }
+        }
+      ]
+    },
+    "race": {
+      "processes": {
+        "original": {
+          "receipt": "textgen-checkpoint-original-race.json",
+          "receipt_sha256": "1b120ec8784c83436490856bd7bbbcaa9fc54cb5a1f1debf0edd5554e56588d4",
+          "output_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa"
+        },
+        "candidate": {
+          "receipt": "textgen-checkpoint-candidate-race.json",
+          "receipt_sha256": "f4a7b39bb71d4272c26dd9315d9ea2fa06c1d30141d248e1b07190e97dfabf98",
+          "output_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa"
+        }
+      },
+      "profiles": [
+        {
+          "profile": "settle3",
+          "load_forward_preStep_loss_exact": true,
+          "verified_loaded_checkpoint_sha256": "ce243c84b7713b2fce2d789d6bf41d6c6d12b8f595e89847d5da11468a6b2765",
+          "continuation_applied": true,
+          "before_updates": "3",
+          "after_updates": "4",
+          "step_result_bytes_equivalent": true,
+          "after_snapshot_bytes_equivalent": true,
+          "reported": {
+            "nll_sum": "16.633693229460608",
+            "step_mean": "5.544564409820203"
+          }
+        },
+        {
+          "profile": "settle1",
+          "load_forward_preStep_loss_exact": true,
+          "verified_loaded_checkpoint_sha256": "4927b89895c5be6af7d2366109a9b1fff08abfac5ddcf1a1375f70a021603625",
+          "continuation_applied": true,
+          "before_updates": "3",
+          "after_updates": "4",
+          "step_result_bytes_equivalent": true,
+          "after_snapshot_bytes_equivalent": true,
+          "reported": {
+            "nll_sum": "16.632642334124387",
+            "step_mean": "5.544214111374796"
+          }
+        }
+      ]
+    }
+  },
+  "comparison": "parse_int/parse_float preserveJSONnumericstrings including negativezero; Go roundtripnumberrepresentation comparedexactly forpreStep fields; notPython numeric equality. Postupdateequality recorded, notrequirederroneousoracle. Actualhighgap correctness independentlycovered by140focusedcontrols.",
+  "original_output_matches_latest_prior_aggregate_baseline": true,
+  "formal_adopted": false,
+  "formal_final_source_verification_pending": true,
+  "global_zero_bug_claim": false
+}

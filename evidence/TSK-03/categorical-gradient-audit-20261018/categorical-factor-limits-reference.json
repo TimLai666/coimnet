@@ -1,0 +1,192 @@
+{
+  "created_at": "2026-10-17T22:33:10.377795+00:00",
+  "root_author": true,
+  "precision_decimal_digits": 1000,
+  "formula": "Exactbinary64 exp(centeredlogits)/sumexp;target=-sumotherexp/sumexp; factor/divisor applied beforefloat64conversion.",
+  "cases": [
+    {
+      "name": "gap1300_target0",
+      "classes": 3,
+      "gap_hex": "-0x1.4500000000000p+10",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0x8ac6925eb1948275",
+        "winner": "0x8ac6925eb1948275",
+        "other": "0x0ab6925eb1948275"
+      }
+    },
+    {
+      "name": "gap1300_target1",
+      "classes": 3,
+      "gap_hex": "-0x1.4500000000000p+10",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffefffffffffffff",
+        "winner": "0x7fefffffffffffff",
+        "other": "0x0ab6925eb1948275"
+      }
+    },
+    {
+      "name": "gap1400_target0",
+      "classes": 3,
+      "gap_hex": "-0x1.5e00000000000p+10",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0x81c2b9c33b18b05f",
+        "winner": "0x81c2b9c33b18b05f",
+        "other": "0x01b2b9c33b18b05f"
+      }
+    },
+    {
+      "name": "gap1400_target1",
+      "classes": 3,
+      "gap_hex": "-0x1.5e00000000000p+10",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffefffffffffffff",
+        "winner": "0x7fefffffffffffff",
+        "other": "0x01b2b9c33b18b05f"
+      }
+    },
+    {
+      "name": "gap1450_target0",
+      "classes": 3,
+      "gap_hex": "-0x1.6a80000000000p+10",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0x8000000000000088",
+        "winner": "0x8000000000000088",
+        "other": "0x0000000000000044"
+      }
+    },
+    {
+      "name": "gap1450_target1",
+      "classes": 3,
+      "gap_hex": "-0x1.6a80000000000p+10",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffefffffffffffff",
+        "winner": "0x7fefffffffffffff",
+        "other": "0x0000000000000044"
+      }
+    },
+    {
+      "name": "gap1490_target0",
+      "classes": 3,
+      "gap_hex": "-0x1.7480000000000p+10",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0x8000000000000000",
+        "winner": "0x8000000000000000",
+        "other": "0x0000000000000000"
+      }
+    },
+    {
+      "name": "gap1490_target1",
+      "classes": 3,
+      "gap_hex": "-0x1.7480000000000p+10",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffefffffffffffff",
+        "winner": "0x7fefffffffffffff",
+        "other": "0x0000000000000000"
+      }
+    },
+    {
+      "name": "gap1400_div3_target0",
+      "classes": 3,
+      "gap_hex": "-0x1.5e00000000000p+10",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.8000000000000p+1",
+      "expected_roles": {
+        "target": "0x81a8f7aef976407f",
+        "winner": "0x81a8f7aef976407f",
+        "other": "0x0198f7aef976407f"
+      }
+    },
+    {
+      "name": "gap1400_div3_target1",
+      "classes": 3,
+      "gap_hex": "-0x1.5e00000000000p+10",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.8000000000000p+1",
+      "expected_roles": {
+        "target": "0xffd5555555555555",
+        "winner": "0x7fd5555555555555",
+        "other": "0x0198f7aef976407f"
+      }
+    },
+    {
+      "name": "tie3_maxfactor",
+      "classes": 3,
+      "gap_hex": "0x0.0p+0",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffe5555555555555",
+        "winner": "0xffe5555555555555",
+        "other": "0x7fd5555555555555"
+      }
+    },
+    {
+      "name": "259_winner_maxfactor",
+      "classes": 259,
+      "gap_hex": "-0x1.4000000000000p+5",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xfcd3bec16e2e5052",
+        "winner": "0xfcd3bec16e2e5052",
+        "other": "0x7c539792499b1a1e"
+      }
+    },
+    {
+      "name": "259_weak_target_maxfactor",
+      "classes": 259,
+      "gap_hex": "-0x1.4000000000000p+5",
+      "target": 1,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.0000000000000p+0",
+      "expected_roles": {
+        "target": "0xffefffffffffffff",
+        "winner": "0x7feffffffffffff5",
+        "other": "0x7c539792499b1a1e"
+      }
+    },
+    {
+      "name": "maxfactor_maxdivisor",
+      "classes": 3,
+      "gap_hex": "-0x1.4000000000000p+5",
+      "target": 0,
+      "factor_hex": "0x1.fffffffffffffp+1023",
+      "divisor_hex": "0x1.fffffffffffffp+1023",
+      "expected_roles": {
+        "target": "0xbc639792499b1a24",
+        "winner": "0xbc639792499b1a24",
+        "other": "0x3c539792499b1a24"
+      }
+    }
+  ],
+  "source": "Root independentlygeneratedfixedGo boundary controls followingreadonlyreviewerleads; notreviewerPythonreportedcounts.",
+  "next_performance_step": "Afterv2 baselinepasses, drop private resultallocation innewv3: destinationisfreshdisjoint andinvalidargsallvalidatedbeforewrite; numericalerrorcalleraborts beforeTrainercommit. Preserveallfrozenchecks and fullcallererrorbehavior."
+}

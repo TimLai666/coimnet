@@ -1,0 +1,40 @@
+{
+  "recorded_at": "2026-10-17T21:54:09.794171+00:00",
+  "environment_file": "candidate-command-environment.json",
+  "checks": [
+    {
+      "command": [
+        "go",
+        "version"
+      ],
+      "exit_code": 0,
+      "output": "go version go1.26.5 darwin/arm64\n",
+      "output_sha256": "278375c8a03c34bb0f855154850de7c4f217fd3b8cdf37986819e3f05d0a4c33"
+    },
+    {
+      "command": [
+        "go",
+        "env",
+        "GOOS",
+        "GOARCH",
+        "GOVERSION"
+      ],
+      "exit_code": 0,
+      "output": "darwin\narm64\ngo1.26.5\n",
+      "output_sha256": "01b2369ac9df998372b72e5e162592d4055d17ed973959ce983af0673b20f80a"
+    },
+    {
+      "command": [
+        "go",
+        "list",
+        "-m",
+        "-f",
+        "{{.Version}}",
+        "github.com/HazelnutParadise/insyra"
+      ],
+      "exit_code": 0,
+      "output": "v0.3.4\n",
+      "output_sha256": "d2a3dba220e0d46fae7a350fb19f809ddf84741d7e7f6b147093e352571a860f"
+    }
+  ]
+}

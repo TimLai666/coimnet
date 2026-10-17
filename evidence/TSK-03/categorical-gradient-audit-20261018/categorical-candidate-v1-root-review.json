@@ -1,0 +1,23 @@
+{
+  "created_at": "2026-10-17T22:14:55.077174+00:00",
+  "candidate_sha256": "bfbac5423fac6e1b3c048afa2f6a79520119bdf984392bd2532976e48c903092",
+  "results": [
+    {
+      "receipt": "categorical-candidate-unit.json",
+      "exit_code": 0,
+      "counts": {
+        "pass": 41
+      }
+    },
+    {
+      "receipt": "categorical-candidate-wide-unit.json",
+      "exit_code": 1,
+      "counts": {
+        "fail": 4
+      }
+    }
+  ],
+  "root_decision": "Reject shared v1. Fixed2^512 intermediate can itself underflow to0 before a large finite factor restores a representable derivative. Original23valid+17invalid controls pass, but3 wider legalcases fail. Keep originaltests andcandidate frozen.",
+  "root_cause": "math.Ldexp(exp(gap/2),512)*exp(gap/2) rounds0 at gap-1400 or-1200 before applyScale seesfactor; Frexp afterthat cannot recoverlostmass.",
+  "formal_adopted": false
+}

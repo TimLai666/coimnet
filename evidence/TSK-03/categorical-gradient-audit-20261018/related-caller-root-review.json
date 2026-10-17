@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-10-17T22:12:20.875358+00:00",
+  "source_files": 9,
+  "source_hashes_match": true,
+  "critical_sources_root_read": [
+    "experiment/imitation.go:232-252",
+    "experiment/multitask_schedule.go:39-63",
+    "experiment/multitask_schedule.go:226-298"
+  ],
+  "accepted_correction": "imitation existing denominator is len(logits), not len(actions); sharedplan corrected.",
+  "distill_requirement": "Separatefresh CE vector, add to existing KL; helper overwritesdst. Do not pass prepopulated KL vector.",
+  "product_finiteness": {
+    "source": "experiment/multitask_schedule.go:280",
+    "observed": "Both validated finitepositive operands multiply before averaging; product may overflow. Planned finitefactor helper rejects before StepFrom.",
+    "classification": "NEEDS INVESTIGATION for a separate representable-final derivative counterexample; static nonfinite product alone is not proof of a new contract regression.",
+    "missing_evidence": "Actual entry/trainer with individually finite weights and independently representable final derivatives; no such test executed.",
+    "current_scope": "Preserve existing derivedfactor error ownership; no new public constraints or silentclaim of repair."
+  },
+  "go_runtime_caller_integration_verified": false,
+  "same_pattern_count_limit": "11 syntactic hits/9 files from prior scan; not exhaustiveallobjectives"
+}

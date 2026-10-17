@@ -111,7 +111,7 @@
 | `coimnet-graph-validate/v1` | `internal/cli` | 圖驗證報告格式 | [internal/cli/validate.go:16](../internal/cli/validate.go#L16) |
 | `coimnet-handoff-requirements/v1` | `docs/handoff` | 原始交接需求 JSON 的治理格式 | [docs/handoff/requirements.json:2](../docs/handoff/requirements.json#L2) |
 | `coimnet-handoff-sources/v1` | `docs/handoff` | 原始交接來源 JSON 的治理格式 | [docs/handoff/sources.json:2](../docs/handoff/sources.json#L2) |
-| `coimnet-imitation/v1` | `experiment` | 模仿學習報告格式 | [experiment/imitation.go:15](../experiment/imitation.go#L15) |
+| `coimnet-imitation/v1` | `experiment` | 模仿學習報告格式 | [experiment/imitation.go:16](../experiment/imitation.go#L16) |
 | `coimnet-individual-checkpoint/v1` | `checkpoint` | 連續個體快照格式 | [checkpoint/individual.go:25](../checkpoint/individual.go#L25) |
 | `coimnet-individual/v1` | `learning` | 持續個體與訓練狀態版本 | [learning/individual.go:20](../learning/individual.go#L20) |
 | `coimnet-lif-state/v1` | `dynamics` | LIF 個體狀態格式 | [dynamics/lif_state.go:16](../dynamics/lif_state.go#L16) |
@@ -213,6 +213,7 @@
 | `coimnet-connectome-builder/v999` | `connectome` | 接線建構器未知版本拒絕反例 | [connectome/store_receipt_test.go:82](../connectome/store_receipt_test.go#L82) |
 | `coimnet-dataset-manifest/v9` | `connectome` | 接線資料集未知版本拒絕反例 | [connectome/build_test.go:278](../connectome/build_test.go#L278) |
 | `coimnet-device-adamw/v2` | `backend/webgpu` | AdamW 快照未知版本拒絕反例 | [backend/webgpu/device_adam_test.go:293](../backend/webgpu/device_adam_test.go#L293) |
+| `coimnet-distill-public-gradient-147/v1` | `distill` | 公開標籤導數更新回歸的人工詞彙識別 | [distill/label_gradient_public_test.go:16](../distill/label_gradient_public_test.go#L16) |
 | `coimnet-graph-store/v9` | `connectome` | 圖儲存未知版本拒絕反例 | [connectome/store_test.go:246](../connectome/store_test.go#L246) |
 | `coimnet-individual-checkpoint/v9` | `checkpoint` | 個體快照未知版本拒絕反例 | [checkpoint/package_test.go:281](../checkpoint/package_test.go#L281) |
 | `coimnet-large-task-fixture/v1` | `checkpoint` | 任務 bundle 大型二進位陣列保存測試 | [checkpoint/bundle_presence_test.go:221](../checkpoint/bundle_presence_test.go#L221) |

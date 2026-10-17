@@ -1,0 +1,28 @@
+{
+  "created_at": "2026-10-17T23:42:21.635837+00:00",
+  "scope": "Public DistributionDistiller.Loss pure-label loss erasure reproduction only; Mix0 excludes teacher KL. No repair or task-quality claim.",
+  "signature": "DistributionDistiller.Loss(TeacherDistribution, []float64, int) (float64, []float64, DistributionReport, error)",
+  "expected": "Three high-confidence cases retain representable positive NLL; two ordinary controls remain within4ULP of independent Decimal300 reference; blank gradient excluded.",
+  "source_count": 895,
+  "source_manifest_sha256": "a246ecc456522d6637a4cd41584c1b77f5725225300563a651f8997f56b440bc",
+  "source_target": "distill/distribution.go",
+  "source_target_sha256": "ae4c04854369d6544d0f3c273fe692930a0c8e796f424422807d8483f2c98cce",
+  "work_root": "runs/.tmp/distill-reported-loss-probe-20261018",
+  "work_inode": 61140705,
+  "files": {
+    "distill-reported-loss-test.go.txt": "2af6e988ef8bdb356aef60658bbd2a070045e52e5be84318b90f149d4d688f2e",
+    "reference.json": "a9596fc6d69a03f3451a6e0b91b5a91ecb36205e2f46654d0886a4905fafccda"
+  },
+  "overlay": {
+    "Replace": {
+      "/Users/timlai/Developer/coimnet/distill/root_reported_loss_148_test.go": "/Users/timlai/Developer/coimnet/runs/.tmp/distill-reported-loss-probe-20261018/distill_reported_loss_test.go"
+    }
+  },
+  "environment": "../../TSK-03/categorical-gradient-adoption-20261018/command-environment.json",
+  "cache_owner": "ticket147; reused while its engineering process remains live; probe must not remove these caches",
+  "expected_red_events": {
+    "fail": 4,
+    "pass": 2
+  },
+  "formal_sources_changed": false
+}

@@ -1,0 +1,20 @@
+{
+  "files": [
+    {
+      "source": "tasks/media/external_tool.go",
+      "source_sha256": "633baebc109798ce538bdf12fd7484ea1b18a6f8b755c85675031aa727df60b4",
+      "candidate": "media-gradient-shared-candidate.go.txt",
+      "candidate_sha256": "30f66e921aa7641a3979de6dba69f3b5906ec66090543031383254a76cdc1a0d",
+      "change": "Replace only derivative loop withsharedhelper;remove nowredundant old expnormalization, addinternalimport. Loss/mask/scale/error-before-StepFrom unchanged."
+    },
+    {
+      "source": "tasks/textgen/model.go",
+      "source_sha256": "d8c7f63565104949a9e49aef91aa35ddc7bf2dd7728c403d0757f464b43a2c06",
+      "candidate": "textgen-gradient-shared-candidate.go.txt",
+      "candidate_sha256": "081b8df1174ddf3524862c5ef07a08987c3377c4f90633a875e70852eb194de8",
+      "change": "Replace only derivative loop withsharedhelper;remove nowredundant old expnormalization, addinternalimport. Loss/mask/scale/error-before-StepFrom unchanged."
+    }
+  ],
+  "reason_normalization_removed": "Media oldsum only fedoldgradient. Text oldexpSum guard is implied by finite positive-width row (validated before) and checked helper; remove duplicate exponentialpass. No observable legal public-input refusal removed.",
+  "validation": "Pendinghelperv2 and frozen40headtests; candidates only, no formal adoption."
+}

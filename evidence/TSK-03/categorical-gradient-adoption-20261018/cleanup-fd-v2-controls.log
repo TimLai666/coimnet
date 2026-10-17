@@ -1,0 +1,29 @@
+test_journal_publication_cannot_overwrite_existing_file (__main__.CleanupControls) ... ok
+test_journal_publication_writes_exact_bytes (__main__.CleanupControls) ... ok
+test_new_file_refuses_deletion (__main__.CleanupControls) ... ERROR
+test_protected_aliases_into_owned_root_are_rejected (__main__.CleanupControls) ... ok
+test_replaced_root_refuses_deletion (__main__.CleanupControls) ... ok
+test_replacement_during_delete_preserves_foreign (__main__.CleanupControls) ... ok
+test_scan_error_refuses_inventory (__main__.CleanupControls) ... ok
+test_success_preserves_original (__main__.CleanupControls) ... ok
+test_symlink_refuses_inventory (__main__.CleanupControls) ... ok
+test_wrong_device_refuses_deletion (__main__.CleanupControls) ... ok
+
+======================================================================
+ERROR: test_new_file_refuses_deletion (__main__.CleanupControls)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/timlai/Developer/coimnet/evidence/TSK-03/categorical-gradient-adoption-20261018/cleanup-fd-controls-v2.py.txt", line 60, in test_new_file_refuses_deletion
+    (self.root / 'new.txt').write_text('unaccounted')
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1275, in write_text
+    with self.open(mode='w', encoding=encoding, errors=errors) as f:
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1242, in open
+    return io.open(self, mode, buffering, encoding, errors, newline,
+  File "/Applications/Xcode.app/Contents/Developer/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/pathlib.py", line 1110, in _opener
+    return self._accessor.open(self, flags, mode)
+PermissionError: [Errno 13] Permission denied: '/Users/timlai/Developer/coimnet/runs/.tmp/cleanup-fd-controls-147-ed5qc1nl/owned/new.txt'
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.013s
+
+FAILED (errors=1)

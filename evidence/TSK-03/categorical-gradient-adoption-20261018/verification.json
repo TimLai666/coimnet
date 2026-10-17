@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-10-17T23:54:11.394385+00:00",
+  "engineering_passed": true,
+  "old_models_passed": true,
+  "source_count": 895,
+  "source_manifest": "formal-source.json",
+  "source_manifest_sha256": "a246ecc456522d6637a4cd41584c1b77f5725225300563a651f8997f56b440bc",
+  "runner_terminal": "runner-terminal.json",
+  "engineering": "engineering-verification.json",
+  "root_verification": "full-engineering-root-verification.json",
+  "old_models": "old-models-root-verification.json",
+  "environment": [
+    "command-environment.json",
+    "environment-go-version.json",
+    "environment-go-settings.json"
+  ],
+  "input_fingerprints": [
+    "formal-source.json",
+    "tests-frozen.json",
+    "compatibility-textgen-inputs.json",
+    "compatibility-ocr-inputs.json"
+  ],
+  "scope": "Nine classification-gradient callers preserve representable derivatives; 140 added passing events and all 8800 prior events preserved per build. Fixed old textgen/OCR models load and continue byte equally. No task-quality or biological claim.",
+  "known_unfixed_reported_loss": "../../TSK-01/reported-loss-audit-20261018/README.md",
+  "global_zero_bug_claim": false,
+  "requirement": "TSK-03",
+  "related_requirements": [
+    "LRN-09",
+    "TCH-03",
+    "TCH-04",
+    "TSK-01",
+    "TSK-07",
+    "TSK-08",
+    "TSK-09",
+    "TSK-10"
+  ],
+  "ticket": "147",
+  "reproduction_command": [
+    "python3 evidence/TSK-03/categorical-gradient-adoption-20261018/engineering.py.txt --run --label-prefix engineering",
+    "python3 evidence/TSK-03/categorical-gradient-adoption-20261018/verify-engineering-root.py.txt --run"
+  ],
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "unit": {
+      "pass": 8917,
+      "skip": 23
+    },
+    "race": {
+      "pass": 8916,
+      "skip": 24
+    },
+    "passed_packages_each_build": 59,
+    "prior_events_preserved_each_build": 8800,
+    "new_pass_events_each_build": 140,
+    "old_model_processes_verified": 12
+  },
+  "test_log": [
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-verification.json",
+    "old-models-root-verification.json"
+  ],
+  "final_governance": "metadata-governance.json",
+  "final_governance_pending": false,
+  "cleanup": "cleanup.json",
+  "cleanup_root_review": "cleanup-root-verification.json",
+  "cleanup_terminal": "cleanup-terminal.json",
+  "cleanup_pending": false,
+  "delivery_pending": true
+}

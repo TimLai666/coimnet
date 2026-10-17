@@ -1,0 +1,72 @@
+"""Run one immutable categorical-gradient overlay and preserve its exact receipt."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, re, subprocess, time
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Execute one run; without this flag print help only.')
+p.add_argument('--frozen', required=True, help='Evidence-local frozen JSON containing files and overlay Replace entries.')
+p.add_argument('--label', required=True, help='Unique receipt prefix, only letters, digits and hyphens; never overwrite prior evidence.')
+p.add_argument('--build', choices=['unit', 'race'], default='unit', help='Ordinary or race build.')
+p.add_argument('--pattern', default='147$', help='Go -run expression; an empty string runs both complete task packages.')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+assert re.fullmatch(r'[A-Za-z0-9-]+', a.label)
+assert Path(a.frozen).name == a.frozen
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/categorical-gradient-candidate-20261018'
+sha = lambda b: hashlib.sha256(b).hexdigest()
+frozen_raw = (E / a.frozen).read_bytes()
+frozen = json.loads(frozen_raw)
+source = json.loads((E / 'source.json').read_bytes())
+anchor = R / 'evidence/LRN-08/aggregate-range-20261017'
+
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == frozen['work_inode'] == 61043512
+    assert (E / a.frozen).read_bytes() == frozen_raw
+    paths = {x for x in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if x and (x.endswith('.go') or x in ['go.mod', 'go.sum'])}
+    assert paths == set(source) and len(source) == frozen['source_count'] == 877
+    for n, h in source.items():
+        assert sha((R / n).read_bytes()) == h, n
+    for n, h in frozen['files'].items():
+        assert sha((E / n).read_bytes()) == h, n
+    for target in frozen['overlay']['Replace'].values():
+        assert sha(Path(target).read_bytes()) in frozen['files'].values(), target
+    for manifest in ['foreign-before.json', 'protected-models.json']:
+        for n, h in json.loads((anchor / manifest).read_bytes()).items():
+            path = Path(n) if Path(n).is_absolute() else R / n
+            assert sha(path.read_bytes()) == h, n
+    for n, record in json.loads((anchor / 'persistent-data.json').read_bytes()).items():
+        b = (R / n).read_bytes()
+        assert len(b) == record['bytes'] and sha(b) == record['sha256'], n
+
+gate()
+overlay = W / (a.label + '-overlay.json')
+with overlay.open('x') as handle:
+    json.dump(frozen['overlay'], handle, indent=2)
+env = dict(os.environ)
+env.update(json.loads((E / 'candidate-command-environment.json').read_bytes()))
+command = ['go', 'test', '-json', '-count=1', '-timeout=10m', '-overlay', str(overlay)]
+if a.pattern:
+    command.extend(['-run', a.pattern])
+if a.build == 'race':
+    command.append('-race')
+command.extend(['./tasks/media', './tasks/textgen'])
+log = E / (a.label + '.log')
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+with log.open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'label': a.label, 'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+receipt = {'command': command, 'environment_file': 'candidate-command-environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic() - start, 'source_count': len(source), 'source_manifest': 'source.json', 'frozen': a.frozen, 'frozen_sha256': sha(frozen_raw), 'log': log.name, 'log_bytes': log.stat().st_size, 'log_sha256': sha(log.read_bytes())}
+with (E / (a.label + '.json')).open('x') as handle:
+    json.dump(receipt, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(receipt), flush=True)
+raise SystemExit(code)

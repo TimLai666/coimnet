@@ -1,0 +1,70 @@
+{
+  "verified_at": "2026-10-17T21:54:53.020285+00:00",
+  "requirement": "TCH-04",
+  "ticket": "147",
+  "environment": "candidate-environment.json",
+  "input_fingerprints": {
+    "source_manifest": "source.json",
+    "source_entries": 877,
+    "tests": "distill-tests-frozen.json",
+    "independent_reference": "root-distill-gradient-plan.json"
+  },
+  "reproduction_command": [
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=10m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/distill-original-unit-overlay.json",
+      "-run",
+      "^TestDistributionLabelGradient147$",
+      "./distill"
+    ],
+    [
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-timeout=10m",
+      "-overlay",
+      "/Users/timlai/Developer/coimnet/runs/.tmp/categorical-gradient-candidate-20261018/distill-original-race-overlay.json",
+      "-run",
+      "^TestDistributionLabelGradient147$",
+      "-race",
+      "./distill"
+    ]
+  ],
+  "observed_result": {
+    "unit": {
+      "receipt": "distill-original-unit.json",
+      "actual_session_id": 98969,
+      "fail_terminal_events": 4,
+      "only_zero_target_derivative_errors": [
+        "categorical_gradient147_test.go:85: gradient[0] target=true = 0, want negative",
+        "categorical_gradient147_test.go:85: gradient[1] target=true = 0, want negative",
+        "categorical_gradient147_test.go:85: gradient[2] target=true = 0, want negative"
+      ],
+      "no_fixture_report_input_failure": true,
+      "actual_tool_chunk": "a1ec08"
+    },
+    "race": {
+      "receipt": "distill-original-race.json",
+      "actual_session_id": 75726,
+      "fail_terminal_events": 4,
+      "only_zero_target_derivative_errors": [
+        "categorical_gradient147_test.go:85: gradient[0] target=true = 0, want negative",
+        "categorical_gradient147_test.go:85: gradient[1] target=true = 0, want negative",
+        "categorical_gradient147_test.go:85: gradient[2] target=true = 0, want negative"
+      ],
+      "no_fixture_report_input_failure": true,
+      "actual_tool_chunk": "ebd442"
+    }
+  },
+  "test_log": [
+    "distill-original-unit.log",
+    "distill-original-race.log"
+  ],
+  "conclusion": "Public DistributionDistiller.Loss at Mix0 loses all3 permuted target derivatives. NoKL or task-qualityclaim; notfixed."
+}

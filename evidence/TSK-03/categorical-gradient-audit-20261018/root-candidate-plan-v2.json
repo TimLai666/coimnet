@@ -1,0 +1,28 @@
+{
+  "created_at": "2026-10-17T21:46:29.892409+00:00",
+  "predecessor": "candidate-v1-frozen.json",
+  "decision": "Reject v1; actual Go unit fails media mean-745 and all3 added scale cases. Preserve both v1 frozen manifests and exact tests.",
+  "actual_scale_terminal": {
+    "session_id": 95768,
+    "exit_code": 1,
+    "tool_chunk": "1268a5",
+    "receipt": "candidate-v1-scale-unit.json",
+    "log_sha256": "280f4ef1bdb903c6eeaffc192bd7515f031d965077d0bd6daa5609b70f4579b2",
+    "fail_events": 4
+  },
+  "new_slots": [
+    "media-gradient-candidate-v2.go.txt",
+    "textgen-gradient-candidate-v2.go.txt"
+  ],
+  "root_cause": "Unscale happened before normalizer/divisor. Tiny individual non-target classes also require scaling based on their own logit gap even when the second maximum equals the maximum.",
+  "expected": [
+    "Target winner: retain scaled aggregate of all non-target mass through normalization and divisor, then unscale once.",
+    "Non-target tiny class: decide scaling from its own value-maximum gap, not just shared tailGap, then normalize/divide before final unscale.",
+    "Nonwinner target complement, ordinary probabilities, Kahan tail totals and loss remain correct. Keep146 loss and finite errors unchanged.",
+    "Pass all8 frozen Go tests (core4,boundary2,scale2), original reference JSON immutable. No test/threshold edits.",
+    "Only two isolated candidate .go.txt outputs. No formal Go writes or new abstraction/dependency."
+  ],
+  "reference": "root-gradient-scale-plan.json",
+  "source_entries": 877,
+  "ticket_progress": "2/5; other related entries remain required before closure."
+}

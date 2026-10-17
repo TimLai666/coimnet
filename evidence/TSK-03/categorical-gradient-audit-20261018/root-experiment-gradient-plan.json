@@ -1,0 +1,65 @@
+{
+  "created_at": "2026-10-17T22:28:18.249300+00:00",
+  "scope": "Ticket147 remaining7 pureonehot syntactichits in5files; controlledrealTrainerupdates atinternalcallerboundaries, not publicRun taskqualityclaims. Preserve originalmodeltopology/baselines.",
+  "sources": {
+    "experiment/imitation.go": "fb39e11027e45337ec6bc32b379e12a4864a735cbb5b7ffc7aae26a93bcf8961",
+    "experiment/multitask_core.go": "f01e85a2bd2c27ca12c80304001837a6b89759eda0dbb165637c9f08791e1982",
+    "experiment/multitask_schedule.go": "dcba1bea666922016d126299431d0a7cc5809a8a743e82f054c0ce8f9e182afd",
+    "experiment/nav2d_policy.go": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7",
+    "experiment/multimodaleval/model.go": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5"
+  },
+  "slots": {
+    "experiment-gradient-regression.go.txt": "Testauthor only packageexperiment; TestExperimentCategoricalGradient147: imitation, corridorStep, runSameExperience corridor, nav recurrent/rewired/feedforward; highconfidence reds + weightednormal controls.",
+    "multimodal-gradient-regression.go.txt": "Other testauthor only packagemultimodaleval; TestMultimodalCategoricalGradient147: bothshape/colourhead actualtrain updates againstanalytic StepFrom, multipletargetpermutations +normalcontrol.",
+    "implementation": "Rootfuture percaller3-linecategoricalhelper calls, existingmask/divisor/weights/failurepropagation preserved; no changesuntilfrozenoriginalred."
+  },
+  "shared_fixture": {
+    "model": "Artificiallegallearning.Trainer, DynamicsNodes1 selfedge0weight0, Bias1 LogTau-10 DT1 Activationtanh, InputNodes[0]ReadoutNodes[0] mayoverlap (NewNetwork accepts). Encoderall0 ofInputSize, OutputSize callerwidth, ReadoutEverySteptrue. lambda=Exp(-1/Exp(-10))=0, alpha1: allrowactivityconstanttanh1. Checkactualoutputsconstant; no productiontopologychanged.",
+    "readout": "BaselineReadoutall1, actualzfinite>0. NewfreshTrainer options Readoutonly, rate.01, WeightDecay0, ClipNorm0 (validateallows0), noaccumulation/schedule. targetcolumns0; otherclassesgap/z. Excluded fourthcorridoroutput1000/z, mustneverbeoptimized. Nooptimizerhistory.",
+    "reference": "Independently exponentiate actualselectedrow relativemax; eachnon-target numerator Exp; target negative sum(other exponentials); dividepositiveexpSum; applycallerfactor/divisor. Never callproductionsoftmax, lossorhelper. Width<=4, noextremes beyondgap-40/-2. Useactualpostupdateoutputs forfeedforwardsequentialreference.",
+    "comparison": "Sameinitialsnapshots; compare public/privateentry trainerresult versusreal independentStepFrom reference. TargetReadout atinitial0 mustnonzero forhighconfidence cases. Compare allReadout andAdamFirst/Second <=2e-6relative (zero expectedexact0), optimizersteps andUpdates exact; Core/Encoder frozen, inputunchanged. Validateweight/countscales via moments, ClipNormdisabled. Finiteparameters, successfulstep. Logactualgap,analyticgradient,targetupdates andsnapshotSHAs. Nohighprecisionmodelqualityclaim."
+  },
+  "experiment_cases": [
+    {
+      "entry": "imitationStep",
+      "input_width": 1,
+      "classes": 3,
+      "rows": "2 identical zeroobs, actions[0,0], target0 gap-40; normal3obsactions[0,0,1] gap-2",
+      "factor_divisor": "1 / len(logits), allrows scored, updates1"
+    },
+    {
+      "entry": "multiTaskModel.corridorStep",
+      "input_width": 5,
+      "classes": 4,
+      "rows": "2obs ofwidth4 actions[1,1], target1 gap-40; normal3obs actions[0,1,0], target0 gap-2; scale3.25",
+      "factor_divisor": "3.25 / len(obs), scoreonly (k+1)*3-1 first3classes; fourthoutputexcluded unchanged; updates1"
+    },
+    {
+      "entry": "runSameExperience",
+      "input_width": 5,
+      "classes": 4,
+      "rows": "gridnav.Config Length5TimeLimit6StepPenalty.01GoalReward1, seed17 episodes[0,0], tasksCorridor+Delayed, eligible[0] onlycorridor. Deriveexpertobs/actionsusingimitationExpertEpisode(c,imitationTrainSeed(seed,0)); assertallactions same left/right. Winneractions0. gap-40 andnormalgap-2. Independently repeatobs3, channel4zero, at least5rows.",
+      "factor_divisor": "Corridor MixWeight2 LossScale3, factor6 / len(obs), scoreeverythirdrowfirst3; inactiveMSEoutputunchanged; updates1"
+    },
+    {
+      "entry": "nav2dPolicy.train",
+      "input_width": 2,
+      "classes": 4,
+      "rows": "kinds recurrent,rewired,feedforward. settle3. high2obs actions[0,0], target0 gap-40; normal3obs actions[0,0,1], target0 gap-2. PolicycanholdlegalsyntheticTrainer; thischecksgradiententry, notnavigationperformance.",
+      "factor_divisor": "independentclassweights n/(distinct*count(a)); recurrent/rewireddividebylen(obs) andonewholeupdate; feedforwardfactorw only, oneStepFromperobservationusingcurrentreflogits; updateslen(obs)."
+    }
+  ],
+  "multimodal_cases": {
+    "model": "Sameconstantfixture InputSize1 OutputSizereadoutWidth=6, ReadoutEveryStep maytrue; singleexample twozerorows, epochs1; shapes3colours3.",
+    "heads": "case shape0colour0, shape1colour2, shape2colour1 allgap-40 andnormalshape0colour1gap-2. targetshapeandcolourreadoutcolumns0, remainingeachheadgap/z.",
+    "reference": "Separate3classanalyticgradientfactor1div1, bothheads lastrowonly, no1/2mean; earlierrows0; referenceStepFromoneupdate. Checkbothnonzero targetcolumns andmoments, untouchedCore/Encoder,input.",
+    "label": "example{Input:...,Label:synthetic.Label{Shape:...,Colour:...},Modality:\"image\"}; directtrain(ctx,tr,[]example{ex},1) andactualupdatecount1; no productionseam/APIadded."
+  },
+  "failure_maps": [
+    "Invalid source/fixture shape -> failtestsetup beforeupdate; do not weaken fixtures or thresholds.",
+    "Ordinarycontrol mismatch -> investigateintegration/testformula; notproof ofp-1bug.",
+    "Highconfidence targetupdate0 versusnonzeroanalyticref -> confirmedentryloss-of-gradient; expectedbeforefix, fixedcandidate mustpasssamefrozencheck."
+  ],
+  "acceptance": "Readalltests; actualunit/raceoriginalreds withnormalcontrols; minimalcandidateintegration; allfrozennew+existingunit/race andwholeaffectedpackages. Generichelperpassing alone notenough.",
+  "cleanup": "AllgeneratedGo onlyE*.go.txt andWoverlay; formal877sourcesunchanged. RootownsGo/caches/cleanup."
+}

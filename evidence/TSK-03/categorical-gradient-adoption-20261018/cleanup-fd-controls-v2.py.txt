@@ -1,0 +1,112 @@
+"""Exercise cleanup refusal and directory replacement using owned fixtures only."""
+from pathlib import Path
+import argparse, ast, os, runpy, stat, tempfile, unittest
+from unittest.mock import patch
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Run ten filesystem controls entirely inside a disposable project-local directory.')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+E = Path(__file__).resolve().parent
+R = E.parents[2]
+helper = runpy.run_path(str(E / 'cleanup-fd-v2.py.txt'))
+inventory, remove = helper['inventory'], helper['remove_owned']
+tree = ast.parse((E / 'cleanup-owned-v3.py.txt').read_text())
+definitions = {n.name: n for n in tree.body if isinstance(n, ast.FunctionDef)}
+
+class CleanupControls(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='cleanup-fd-controls-147-', dir=R / 'runs/.tmp')
+        self.base = Path(self.temp.name)
+        self.root = self.base / 'owned'
+        self.root.mkdir()
+        (self.root / 'input.txt').write_text('owned input')
+        self.original = self.base / 'original.txt'
+        self.original.write_text('protected original')
+        self.identity = self.root.stat()
+        self.contents = inventory(self.root)
+    def tearDown(self):
+        self.assertEqual(self.original.read_text(), 'protected original')
+        self.temp.cleanup()
+    def delete(self):
+        remove(self.root, self.identity.st_ino, self.identity.st_dev, self.contents)
+    def function(self, name):
+        namespace = {'Path': Path, 'os': os, 'stat': stat, 'E': self.base, 'W': self.root}
+        exec(compile(ast.Module(body=[definitions[name]], type_ignores=[]), 'actual-cleanup-v3-function', 'exec'), namespace)
+        return namespace[name]
+    def test_success_preserves_original(self):
+        (self.root / 'module').mkdir()
+        (self.root / 'module/file.txt').write_text('cached source')
+        (self.root / 'module').chmod(0o555)
+        self.contents = inventory(self.root)
+        self.delete()
+        self.assertFalse(self.root.exists())
+    def test_scan_error_refuses_inventory(self):
+        def denied(*args, **kwargs):
+            if kwargs.get('onerror'):
+                kwargs['onerror'](PermissionError('controlled scan refusal'))
+            return iter(())
+        with patch.object(os, 'walk', denied), self.assertRaises(PermissionError):
+            inventory(self.root)
+        self.assertEqual((self.root / 'input.txt').read_text(), 'owned input')
+    def test_symlink_refuses_inventory(self):
+        (self.root / 'link').symlink_to(self.original)
+        with self.assertRaises(AssertionError):
+            inventory(self.root)
+    def test_new_file_refuses_deletion(self):
+        (self.root / 'new.txt').write_text('unaccounted')
+        self.root.chmod(0o500)
+        with self.assertRaises(AssertionError):
+            self.delete()
+        self.assertTrue((self.root / 'input.txt').exists())
+        self.assertEqual(stat.S_IMODE(self.root.stat().st_mode), 0o500)
+        self.assertEqual((self.root / 'new.txt').read_text(), 'unaccounted')
+    def test_wrong_device_refuses_deletion(self):
+        with self.assertRaises(AssertionError):
+            remove(self.root, self.identity.st_ino, self.identity.st_dev + 1, self.contents)
+        self.assertEqual((self.root / 'input.txt').read_text(), 'owned input')
+    def test_protected_aliases_into_owned_root_are_rejected(self):
+        (self.base / 'leaf-link').symlink_to(self.root / 'input.txt')
+        (self.base / 'directory-link').symlink_to(self.root)
+        for path in [self.base / 'leaf-link', self.base / 'directory-link/input.txt']:
+            with self.subTest(path=path.name), self.assertRaises(AssertionError):
+                self.function('protected_bytes')(path)
+        self.assertEqual((self.root / 'input.txt').read_text(), 'owned input')
+    def test_journal_publication_writes_exact_bytes(self):
+        raw = b'{"state":"deletion_in_progress"}\n'
+        self.function('publish_new')('journal.json', raw)
+        self.assertEqual((self.base / 'journal.json').read_bytes(), raw)
+        self.assertFalse((self.base / 'journal.json.tmp').exists())
+    def test_journal_publication_cannot_overwrite_existing_file(self):
+        with self.assertRaises(AssertionError):
+            self.function('publish_new')('original.txt', b'overwrite forbidden')
+        self.assertEqual(self.original.read_text(), 'protected original')
+    def test_replaced_root_refuses_deletion(self):
+        self.root.rename(self.base / 'old-owned')
+        self.root.mkdir()
+        (self.root / 'foreign.txt').write_text('foreign')
+        with self.assertRaises(AssertionError):
+            self.delete()
+        self.assertEqual((self.root / 'foreign.txt').read_text(), 'foreign')
+        self.assertTrue((self.base / 'old-owned/input.txt').exists())
+    def test_replacement_during_delete_preserves_foreign(self):
+        real_scandir = os.scandir
+        replaced = False
+        def replacing(fd):
+            nonlocal replaced
+            if isinstance(fd, int) and os.fstat(fd).st_ino == self.identity.st_ino and not replaced:
+                replaced = True
+                self.root.rename(self.base / 'moved-owned')
+                self.root.mkdir()
+                (self.root / 'foreign.txt').write_text('foreign')
+            return real_scandir(fd)
+        with patch.object(os, 'scandir', replacing), self.assertRaises(AssertionError):
+            self.delete()
+        self.assertTrue(replaced)
+        self.assertEqual((self.root / 'foreign.txt').read_text(), 'foreign')
+        self.assertEqual(list((self.base / 'moved-owned').iterdir()), [])
+
+result = unittest.TextTestRunner(verbosity=2).run(unittest.defaultTestLoader.loadTestsFromTestCase(CleanupControls))
+raise SystemExit(0 if result.wasSuccessful() else 1)

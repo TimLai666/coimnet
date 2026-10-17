@@ -1,0 +1,23 @@
+{
+  "created_at": "2026-10-17T22:40:49.837217+00:00",
+  "sources": {
+    "experiment/imitation.go": "fb39e11027e45337ec6bc32b379e12a4864a735cbb5b7ffc7aae26a93bcf8961",
+    "experiment/multitask_core.go": "f01e85a2bd2c27ca12c80304001837a6b89759eda0dbb165637c9f08791e1982",
+    "experiment/multitask_schedule.go": "dcba1bea666922016d126299431d0a7cc5809a8a743e82f054c0ce8f9e182afd",
+    "experiment/nav2d_policy.go": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7",
+    "experiment/multimodaleval/model.go": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5"
+  },
+  "frozen_tests": [
+    "experiment-tests-frozen.json",
+    "multimodal-tests-frozen.json"
+  ],
+  "red_proof": "related-public-update-reproduction-verification.json",
+  "slots": {
+    "experiment-imitation-shared-candidate.go.txt": "imitationStep: fresh g len(row), categorical.Gradient(g,row,actions[t],1,float64(len(logits))); err->0,fmt.Errorf. Remove oldscale+softmax+subtract only; keepupstreamStepFrom.",
+    "experiment-corridor-shared-candidate.go.txt": "corridorStep: categorical.Gradient(upstream[t][:gridnav.Actions],logits[t][:gridnav.Actions],action,scale,float64(len(obs))); err->fmt.Errorf. Remove per and oldsoftmaxloop only; fourthoutput0 and inputvalidatepreserved.",
+    "experiment-schedule-shared-candidate.go.txt": "runSameExperience corridor: categorical.Gradient(upstream[t][:gridnav.Actions],outputs[t][:gridnav.Actions],action,task.MixWeight*task.LossScale,float64(len(corridorObs))); err->fmt.Errorf beforeStepFrom. Leave MSE delayed branch intact. Preexisting weightproductoverflow concern remains separately documented, do not alter weights contract.",
+    "experiment-nav-shared-candidate.go.txt": "nav recurrent/rewired: existingupstream[t] fresh, helper(upstream[t],logits[t],actions[t/p.settle],weights[...],float64(len(obs))). Feedforward helper(upstream[p.settle-1],logits[p.settle-1],actions[t],w,1). Error->0,fmt.Errorf before eachStepFrom. Remove oldscale/g/softmax only; classweights/timing/sequentialupdates unchanged.",
+    "multimodal-shared-candidate.go.txt": "train: helper(last[:synthetic.Shapes],logits[:synthetic.Shapes],ex.Label.Shape,1,1) and helper(last[synthetic.Shapes:],logits[synthetic.Shapes:],ex.Label.Colour,1,1), error->updates,fmt.Errorf. Preserve lastrowonly, noheadmean, Predict/StepFrom loops."
+  },
+  "acceptance": "Each frozen original regression reruns against minimal helperv3 integrations. Root reviews full exact diffs and runs actualGo. No implementation author may edit frozen tests or formal sources. Full affected packages still required."
+}

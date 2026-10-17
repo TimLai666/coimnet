@@ -1,0 +1,49 @@
+{
+  "created_at": "2026-10-17T22:49:32.147319+00:00",
+  "source_count": 877,
+  "frozen": "shared-all-v3-frozen.json",
+  "frozen_sha256": "3ea3e615aa395450b83e63c9a96a1a9387ba99a9fc610719b115bb04d7d8c789",
+  "composite_ordinary_acceptance": true,
+  "main_run": {
+    "receipt": "shared-all-v3-packages-unit.json",
+    "receipt_sha256": "9dbb7c347a5c0baf06e628ca814e56c968c83c0456b3e25ae58e1078b86accc4",
+    "exit_code": 1,
+    "reason": "Only distill TestUntrustedTeacherAnswersStayData panic: httptest listen tcp6 [::1]:0 bind operationnotpermitted. Six other packages passed.",
+    "package_events": {
+      "github.com/TimLai666/coimnet/internal/categorical": "pass",
+      "github.com/TimLai666/coimnet/tasks/media": "pass",
+      "github.com/TimLai666/coimnet/tasks/ocr": "pass",
+      "github.com/TimLai666/coimnet/distill": "fail",
+      "github.com/TimLai666/coimnet/tasks/textgen": "pass",
+      "github.com/TimLai666/coimnet/experiment/multimodaleval": "pass",
+      "github.com/TimLai666/coimnet/experiment": "pass"
+    }
+  },
+  "distill_retry": {
+    "receipt": "shared-distill-packages-unit.json",
+    "receipt_sha256": "162666e926f3d75685df25a7a91525678d753cfe2a6511f336002db4fd5cb77b",
+    "exit_code": 0,
+    "sandbox": "Tool-approved process escalation for localhost temporaryHTTP tests; no test/config/source changes.",
+    "package_events": {
+      "github.com/TimLai666/coimnet/distill": "pass"
+    }
+  },
+  "baseline": {
+    "receipt": "../categorical-loss-adoption-20261018/engineering-final-unit.json",
+    "receipt_sha256": "32f8bb1f5912afa3f91764c83e1f3ec50a48a5f5866af418b49531a84bd6c31e",
+    "identical_formal_source_manifest": true,
+    "compressed_and_raw_hashes_verified": true,
+    "affected_existing_test_events": 1190,
+    "existing_status_changes": []
+  },
+  "combined_test_events": {
+    "pass": 1316,
+    "skip": 14
+  },
+  "new_pass_events": 140,
+  "passed_packages": 7,
+  "race_acceptance_pending": true,
+  "formal_adopted": false,
+  "cleanup_ready": false,
+  "global_zero_bug_claim": false
+}

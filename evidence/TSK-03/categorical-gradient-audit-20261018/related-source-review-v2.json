@@ -1,0 +1,96 @@
+{
+  "reviewed_at": "2026-10-17T21:40:22.179371+00:00",
+  "command": [
+    "rg",
+    "-n",
+    "--glob",
+    "*.go",
+    "--glob",
+    "!**/*_test.go",
+    "probability--|\\[[^]]+\\]--|-= (1|scale|w)|dq--",
+    "tasks",
+    "experiment",
+    "distill"
+  ],
+  "hits": [
+    {
+      "file": "distill/distribution.go",
+      "line": 259,
+      "line_text": "\t\t\t\t\tdq--",
+      "source_sha256": "affac62481edd50b890b0d7a1bcc51b208980fa59a44aace378367c416b2f5c1"
+    },
+    {
+      "file": "experiment/multitask_core.go",
+      "line": 170,
+      "line_text": "\t\tp[action]--",
+      "source_sha256": "f01e85a2bd2c27ca12c80304001837a6b89759eda0dbb165637c9f08791e1982"
+    },
+    {
+      "file": "experiment/multitask_schedule.go",
+      "line": 284,
+      "line_text": "\t\t\tp[action]--",
+      "source_sha256": "dcba1bea666922016d126299431d0a7cc5809a8a743e82f054c0ce8f9e182afd"
+    },
+    {
+      "file": "experiment/multimodaleval/model.go",
+      "line": 229,
+      "line_text": "\t\t\tlast[ex.Label.Shape]--",
+      "source_sha256": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5"
+    },
+    {
+      "file": "experiment/multimodaleval/model.go",
+      "line": 234,
+      "line_text": "\t\t\tlast[synthetic.Shapes+ex.Label.Colour]--",
+      "source_sha256": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5"
+    },
+    {
+      "file": "tasks/media/external_tool.go",
+      "line": 268,
+      "line_text": "\t\t\t\tprobability--",
+      "source_sha256": "633baebc109798ce538bdf12fd7484ea1b18a6f8b755c85675031aa727df60b4"
+    },
+    {
+      "file": "experiment/imitation.go",
+      "line": 244,
+      "line_text": "\t\tg[actions[t]] -= scale",
+      "source_sha256": "fb39e11027e45337ec6bc32b379e12a4864a735cbb5b7ffc7aae26a93bcf8961"
+    },
+    {
+      "file": "experiment/nav2d_policy.go",
+      "line": 340,
+      "line_text": "\t\t\tg[actions[t/p.settle]] -= scale * w",
+      "source_sha256": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7"
+    },
+    {
+      "file": "experiment/nav2d_policy.go",
+      "line": 368,
+      "line_text": "\t\t\tg[actions[t]] -= w",
+      "source_sha256": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7"
+    },
+    {
+      "file": "tasks/textgen/model.go",
+      "line": 419,
+      "line_text": "\t\tgradient[ex.IDs[target]] -= 1 / float64(count)",
+      "source_sha256": "d8c7f63565104949a9e49aef91aa35ddc7bf2dd7728c403d0757f464b43a2c06"
+    },
+    {
+      "file": "tasks/ocr/recognizer.go",
+      "line": 370,
+      "line_text": "\tprobabilities[target]--",
+      "source_sha256": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863"
+    }
+  ],
+  "distinct_files": 9,
+  "scope_limit": "This exact syntactic family only, not proof of every categorical objective. MCP code search omitted media/raw and shape/colour forms; direct current filesystem fallback preserves all11 hits.",
+  "root_actual_reads": [
+    "multitask_core corridorStep",
+    "multitask_schedule runSameExperience corridor branch",
+    "multimodaleval train shape/colour branches",
+    "nav2d recurrent/feedforward weight factors",
+    "imitationStep per-episode scale",
+    "OCR singleCharacterLoss and TrainLine profile dispatch",
+    "distill label branch separate from teacherKL"
+  ],
+  "next_evidence": "OCR isolated gradient red pending; other related entry public derivative/update controls remain required before comprehensive147 closure.",
+  "production_modified": false
+}

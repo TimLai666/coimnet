@@ -1,0 +1,90 @@
+"""Inventory and delete an owned directory through pinned directory descriptors."""
+from pathlib import Path
+import hashlib, os, stat
+
+def inventory(root):
+    root = Path(root)
+    root_stat = root.lstat()
+    assert stat.S_ISDIR(root_stat.st_mode)
+    result = {}
+    def fail(error):
+        raise error
+    for base, dirs, files in os.walk(root, followlinks=False, onerror=fail):
+        for name in dirs + files:
+            p = Path(base) / name
+            item = p.lstat()
+            assert item.st_dev == root_stat.st_dev and not stat.S_ISLNK(item.st_mode), p
+            record = {'inode': item.st_ino, 'device': item.st_dev}
+            if stat.S_ISDIR(item.st_mode):
+                record['directory'] = True
+            else:
+                assert stat.S_ISREG(item.st_mode), p
+                raw = p.read_bytes()
+                record.update(bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
+            result[str(p.relative_to(root))] = record
+    return result
+
+def remove_owned(root, expected_inode, expected_device, contents):
+    root = Path(root)
+    flags = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW
+    parent_stat = root.parent.lstat()
+    parent = os.open(root.parent, flags)
+    def identity(item, inode, device):
+        assert item.st_ino == inode and item.st_dev == device
+    children = {}
+    for key, record in contents.items():
+        prefix, _, name = key.rpartition('/')
+        children.setdefault(prefix, {})[name] = record
+    def descend(fd, prefix):
+        current = os.fstat(fd)
+        assert current.st_dev == expected_device
+        entries = list(os.scandir(fd))
+        expected = children.get(prefix, {})
+        assert {e.name for e in entries} == set(expected), ('Directory changed', prefix)
+        os.fchmod(fd, stat.S_IMODE(current.st_mode) | 0o700)
+        for entry in entries:
+            record = expected[entry.name]
+            before = os.stat(entry.name, dir_fd=fd, follow_symlinks=False)
+            identity(before, record['inode'], record['device'])
+            key = prefix + '/' + entry.name if prefix else entry.name
+            if record.get('directory'):
+                assert stat.S_ISDIR(before.st_mode)
+                child = os.open(entry.name, flags, dir_fd=fd)
+                try:
+                    identity(os.fstat(child), record['inode'], record['device'])
+                    descend(child, key)
+                    identity(os.stat(entry.name, dir_fd=fd, follow_symlinks=False), record['inode'], record['device'])
+                    os.rmdir(entry.name, dir_fd=fd)
+                finally:
+                    os.close(child)
+            else:
+                assert stat.S_ISREG(before.st_mode)
+                child = os.open(entry.name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=fd)
+                try:
+                    identity(os.fstat(child), record['inode'], record['device'])
+                    digest = hashlib.sha256()
+                    size = 0
+                    while True:
+                        chunk = os.read(child, 1024 * 1024)
+                        if not chunk:
+                            break
+                        size += len(chunk)
+                        digest.update(chunk)
+                    assert size == record['bytes'] and digest.hexdigest() == record['sha256']
+                    identity(os.stat(entry.name, dir_fd=fd, follow_symlinks=False), record['inode'], record['device'])
+                    os.unlink(entry.name, dir_fd=fd)
+                finally:
+                    os.close(child)
+    try:
+        identity(os.fstat(parent), parent_stat.st_ino, parent_stat.st_dev)
+        fd = os.open(root.name, flags, dir_fd=parent)
+        try:
+            identity(os.fstat(fd), expected_inode, expected_device)
+            assert stat.S_ISDIR(os.fstat(fd).st_mode)
+            descend(fd, '')
+            identity(os.stat(root.name, dir_fd=parent, follow_symlinks=False), expected_inode, expected_device)
+            os.rmdir(root.name, dir_fd=parent)
+        finally:
+            os.close(fd)
+    finally:
+        os.close(parent)

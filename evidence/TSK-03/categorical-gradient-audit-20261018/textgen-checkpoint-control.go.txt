@@ -1,0 +1,247 @@
+package textgen_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"math"
+	"os"
+	"path/filepath"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/textgen"
+	"github.com/TimLai666/coimnet/tasks/textgen/tokenizer"
+)
+
+const (
+	textgenCompatibilityModeEnv146   = "COIMNET_146_COMPAT_MODE"
+	textgenCompatibilityRootEnv146   = "COIMNET_146_COMPAT_ROOT"
+	textgenCompatibilityOutputEnv146 = "COIMNET_146_COMPAT_OUTPUT"
+)
+
+type textgenCompatibilityProfile146 struct {
+	Name   string
+	Config textgen.ModelConfig
+}
+
+type textgenCompatibilityPreserved146 struct {
+	Config         textgen.ModelConfig       `json:"config"`
+	VocabHash      string                    `json:"vocab_hash"`
+	BeforeSnapshot learning.TrainingSnapshot `json:"before_snapshot"`
+	Logits         [][]float64               `json:"logits"`
+	ScoredCount    int                       `json:"scored_count"`
+	StepResult     learning.StepResult       `json:"step_result"`
+	AfterSnapshot  learning.TrainingSnapshot `json:"after_snapshot"`
+}
+
+type textgenCompatibilityReported146 struct {
+	NLLSum   float64 `json:"nll_sum"`
+	StepMean float64 `json:"step_mean"`
+}
+
+type textgenCompatibilityRecord146 struct {
+	Profile                string                           `json:"profile"`
+	Preserved              textgenCompatibilityPreserved146 `json:"preserved"`
+	Reported               textgenCompatibilityReported146  `json:"reported"`
+	LoadedCheckpointSHA256 string                           `json:"loaded_checkpoint_sha256"`
+}
+
+func TestRootTextgenCompatibility146(t *testing.T) {
+	mode := os.Getenv(textgenCompatibilityModeEnv146)
+	if mode != "save" && mode != "load" {
+		t.Fatalf("%s must be save or load, got %q", textgenCompatibilityModeEnv146, mode)
+	}
+	root := os.Getenv(textgenCompatibilityRootEnv146)
+	if root == "" {
+		t.Fatalf("%s must name an existing project-owned directory", textgenCompatibilityRootEnv146)
+	}
+	info, err := os.Stat(root)
+	if err != nil {
+		t.Fatalf("stat compatibility root %q: %v", root, err)
+	}
+	if !info.IsDir() {
+		t.Fatalf("compatibility root %q is not a directory", root)
+	}
+	output := os.Getenv(textgenCompatibilityOutputEnv146)
+	if output == "" {
+		t.Fatalf("%s must name a new JSON result path", textgenCompatibilityOutputEnv146)
+	}
+
+	profiles := []textgenCompatibilityProfile146{
+		{Name: "settle3", Config: textgen.ModelConfig{Embed: 4, Hidden: 8, Settle: 3, LearningRate: 0.01, Seed: 17}},
+		{Name: "settle1", Config: textgen.ModelConfig{Embed: 4, Hidden: 4, Settle: 1, LearningRate: 0.02, Seed: 29}},
+	}
+	ctx := context.Background()
+	records := make([]textgenCompatibilityRecord146, 0, len(profiles))
+	for _, profile := range profiles {
+		path := filepath.Join(root, profile.Name)
+		var model *textgen.Model
+		if mode == "save" {
+			model, err = textgenCompatibilityNewModel146(t, profile.Config)
+			if err != nil {
+				t.Fatalf("%s NewModel: %v", profile.Name, err)
+			}
+			textgenCompatibilityTrain146(t, model)
+			if err := model.Save(ctx, path); err != nil {
+				t.Fatalf("%s Save: %v", profile.Name, err)
+			}
+			if got := model.LoadedCheckpointSHA256(); got != "" {
+				t.Fatalf("%s new model reported checkpoint origin %q", profile.Name, got)
+			}
+		} else {
+			model, err = textgen.LoadModel(ctx, path)
+			if err != nil {
+				t.Fatalf("%s LoadModel: %v", profile.Name, err)
+			}
+			if got := model.LoadedCheckpointSHA256(); got == "" {
+				t.Fatalf("%s LoadModel returned an empty verified checkpoint receipt", profile.Name)
+			}
+		}
+		if got := model.Config(); got != profile.Config {
+			t.Fatalf("%s config = %+v, want %+v", profile.Name, got, profile.Config)
+		}
+		records = append(records, textgenCompatibilityObserve146(t, ctx, profile, model))
+	}
+	if err := textgenCompatibilityWriteJSON146(output, records); err != nil {
+		t.Fatalf("write compatibility output: %v", err)
+	}
+}
+
+func textgenCompatibilityNewModel146(t *testing.T, config textgen.ModelConfig) (*textgen.Model, error) {
+	t.Helper()
+	vocab, err := tokenizer.New(tokenizer.Config{
+		Format: tokenizer.FormatByte,
+		Specials: []tokenizer.SpecialToken{
+			{Name: "bos", Role: "bos"},
+			{Name: "eos", Role: "eos"},
+			{Name: "pad", Role: "pad"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("tokenizer.New: %w", err)
+	}
+	model, err := textgen.NewModel(vocab, config)
+	if err != nil {
+		return nil, fmt.Errorf("textgen.NewModel: %w", err)
+	}
+	return model, nil
+}
+
+func textgenCompatibilityExample146(t *testing.T, vocab tokenizer.Vocabulary, text string) textgen.Example {
+	t.Helper()
+	ids, err := vocab.Encode(text)
+	if err != nil {
+		t.Fatalf("Encode(%q): %v", text, err)
+	}
+	bos, ok := vocab.Special("bos")
+	if !ok {
+		t.Fatal("compatibility vocabulary has no bos special")
+	}
+	ids = append([]int{bos}, ids...)
+	scored := make([]bool, len(ids))
+	for i := 1; i < len(scored); i++ {
+		scored[i] = true
+	}
+	return textgen.Example{IDs: ids, Scored: scored}
+}
+
+func textgenCompatibilityTrain146(t *testing.T, model *textgen.Model) {
+	t.Helper()
+	for _, text := range []string{"abc", "cab", "bca"} {
+		example := textgenCompatibilityExample146(t, model.Vocabulary(), text)
+		result, _, err := model.Step(context.Background(), example)
+		if err != nil {
+			t.Fatalf("training Step(%q): %v", text, err)
+		}
+		if !result.Applied {
+			t.Fatalf("training Step(%q) did not apply an update: %+v", text, result)
+		}
+	}
+}
+
+func textgenCompatibilityObserve146(t *testing.T, ctx context.Context, profile textgenCompatibilityProfile146, model *textgen.Model) textgenCompatibilityRecord146 {
+	t.Helper()
+	vocab, ok := model.Vocabulary().(*tokenizer.ByteVocab)
+	if !ok || vocab == nil {
+		t.Fatalf("%s vocabulary type = %T, want *tokenizer.ByteVocab", profile.Name, model.Vocabulary())
+	}
+	example := textgenCompatibilityExample146(t, vocab, "abc")
+	before := model.Snapshot()
+	logits, err := model.Logits(ctx, example.IDs)
+	if err != nil {
+		t.Fatalf("%s continuation Logits: %v", profile.Name, err)
+	}
+	nllSum, scoredCount, err := model.NLL(ctx, example)
+	if err != nil {
+		t.Fatalf("%s continuation NLL: %v", profile.Name, err)
+	}
+	if scoredCount != len(example.IDs)-1 {
+		t.Fatalf("%s NLL count = %d, want %d", profile.Name, scoredCount, len(example.IDs)-1)
+	}
+	if !textgenCompatibilityFiniteNonnegative146(nllSum) {
+		t.Fatalf("%s NLL sum = %v, want finite nonnegative", profile.Name, nllSum)
+	}
+	if afterNLL := model.Snapshot(); !reflect.DeepEqual(afterNLL, before) {
+		t.Fatalf("%s NLL changed the complete training snapshot", profile.Name)
+	}
+	stepResult, stepMean, err := model.Step(ctx, example)
+	if err != nil {
+		t.Fatalf("%s continuation Step: %v", profile.Name, err)
+	}
+	if !stepResult.Applied {
+		t.Fatalf("%s continuation Step did not apply an update: %+v", profile.Name, stepResult)
+	}
+	if !textgenCompatibilityFiniteNonnegative146(stepMean) {
+		t.Fatalf("%s Step mean = %v, want finite nonnegative", profile.Name, stepMean)
+	}
+
+	return textgenCompatibilityRecord146{
+		Profile: profile.Name,
+		Preserved: textgenCompatibilityPreserved146{
+			Config:         model.Config(),
+			VocabHash:      vocab.Hash(),
+			BeforeSnapshot: before,
+			Logits:         logits,
+			ScoredCount:    scoredCount,
+			StepResult:     stepResult,
+			AfterSnapshot:  model.Snapshot(),
+		},
+		Reported: textgenCompatibilityReported146{
+			NLLSum:   nllSum,
+			StepMean: stepMean,
+		},
+		LoadedCheckpointSHA256: model.LoadedCheckpointSHA256(),
+	}
+}
+
+func textgenCompatibilityFiniteNonnegative146(value float64) bool {
+	return !math.IsNaN(value) && !math.IsInf(value, 0) && value >= 0
+}
+
+func textgenCompatibilityWriteJSON146(path string, value any) error {
+	data, err := json.MarshalIndent(value, "", "  ")
+	if err != nil {
+		return fmt.Errorf("encode JSON: %w", err)
+	}
+	data = append(data, '\n')
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return fmt.Errorf("create %q: %w", path, err)
+	}
+	written, writeErr := file.Write(data)
+	closeErr := file.Close()
+	if writeErr != nil {
+		return errors.Join(writeErr, closeErr)
+	}
+	if written != len(data) {
+		return errors.Join(io.ErrShortWrite, closeErr)
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	return nil
+}

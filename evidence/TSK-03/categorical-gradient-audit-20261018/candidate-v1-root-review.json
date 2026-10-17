@@ -1,0 +1,69 @@
+{
+  "reviewed_at": "2026-10-17T21:44:03.871223+00:00",
+  "root_decision": "REJECT v1; two target gradient terms are rounded before divisor2. Preserve candidate and tests; corrected version must use new files.",
+  "actual_terminals": {
+    "baseline_boundary": {
+      "session_id": 58951,
+      "exit_code": 1,
+      "tool_chunk": "f7006c"
+    },
+    "candidate_v1": {
+      "session_id": 92770,
+      "exit_code": 1,
+      "tool_chunk": "b7aa99"
+    }
+  },
+  "observed_results": {
+    "baseline-boundary-unit": {
+      "counts": {
+        "fail": 13,
+        "pass": 13
+      },
+      "failed_tests": [
+        "TestRequestLossGradientBoundary147/gap40_winner0_targets00",
+        "TestRequestLossGradientBoundary147/gap740_winner1_targets12",
+        "TestRequestLossGradientBoundary147/gap744_winner2_targets02",
+        "TestRequestLossGradientBoundary147/gap745_winner0_targets10",
+        "TestRequestLossGradientBoundary147",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count1_gap40_winner0_target0",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count1_gap744_winner258_target258",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count1_gap745_winner0_target1",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count1_gap746_winner129_target129",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count1_gap750_winner258_target258",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count3_gap745_winner0_targets01258",
+        "TestTextgenLossAndUpstreamGradientBoundary147/count2_gap40_internal_unscored_position",
+        "TestTextgenLossAndUpstreamGradientBoundary147"
+      ],
+      "selected_errors": [
+        "candidate_media-gradient-boundary-regression_test.go:159: group0 class0 became zero (bits 0x0000000000000000), want nonzero reference -4.248354255291589e-18 (bits 0xbc539792499b1a24)",
+        "candidate_media-gradient-boundary-regression_test.go:159: group1 class0 became zero (bits 0x0000000000000000), want nonzero reference -4.248354255291589e-18 (bits 0xbc539792499b1a24)",
+        "candidate_media-gradient-boundary-regression_test.go:159: group0 class1 became zero (bits 0x0000000000000000), want nonzero reference -4.2e-322 (bits 0x8000000000000055)",
+        "candidate_media-gradient-boundary-regression_test.go:159: group1 class2 became zero (bits 0x0000000000000000), want nonzero reference -1e-323 (bits 0x8000000000000002)",
+        "candidate_media-gradient-boundary-regression_test.go:159: group1 class0 became zero (bits 0x0000000000000000), want nonzero reference -5e-324 (bits 0x8000000000000001)",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class0 became zero (bits 0x0000000000000000), want nonzero reference -1.0960753978652287e-15 (bits 0xbcd3bec16e2e5052)",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class1 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class2 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class3 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class4 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class5 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4",
+        "candidate_textgen-gradient-boundary-regression_test.go:213: upstream row1 class6 = 4.248354255291589e-18 (bits 0x3c539792499b1a24), want 4.248354255291584e-18 (bits 0x3c539792499b1a1e), ULP=6 > 4"
+      ]
+    },
+    "candidate-v1-unit": {
+      "counts": {
+        "pass": 34,
+        "fail": 2
+      },
+      "failed_tests": [
+        "TestRequestLossGradientBoundary147/gap745_winner0_targets10",
+        "TestRequestLossGradientBoundary147"
+      ],
+      "selected_errors": [
+        "candidate_media-gradient-boundary-regression_test.go:159: group1 class0 became zero (bits 0x8000000000000000), want nonzero reference -5e-324 (bits 0x8000000000000001)"
+      ]
+    }
+  },
+  "independent_reference": "boundary-root-reference-review.json",
+  "source_entries": 877,
+  "formal_unchanged": true
+}

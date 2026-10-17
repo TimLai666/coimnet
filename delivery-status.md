@@ -28,9 +28,13 @@ tickets142／143 的固定 863 份來源已通過九項完整工程步驟，一�
 
 [ticket146](docs/tickets/146-categorical-loss-stability.md) 已正式採用媒體請求頭與文字生成的分類誤差修正。共同偏移、極小尾項、跨組／位置累加、長序列累加與極端平均的失敗證據均保留，最終 877 份來源固定，一般／競態專項各 68 個 pass 終端事件，見[正式核對](evidence/TSK-03/categorical-loss-adoption-20261018/formal-v2-focused-root-verification.json)。14 組梯度及三個受控公開觀察的狀態與更新保持，四份既有原版人工存檔的新程序接續、媒體十二次正常更新也保持，見[最新控制](evidence/TSK-03/categorical-loss-adoption-20261018/aggregate-controls-root-verification.json)。文字控制的回報誤差最多兩個 ULP，媒體最多一個 ULP。本票 5／5，完整工程與最後治理通過，自有暫存已清除。修正 `fc026d4` 與主要證據 `4f92071` 已正常推送且遠端讀回相同，877 份提交來源符合驗收指紋，見[交付](evidence/TSK-03/categorical-loss-adoption-20261018/delivery.json)。可變詞彙表的不等長 panic 已重現，但是否支援修改仍缺契約，不在本次更動公開 API。
 
-ticket146 的 877 份最終來源已通過九項完整工程，一般 8,777 pass／23 skip、競態 8,776 pass／24 skip，各 58 套件通過，原 8,732 個結果保持，只新增 68 pass，見[Root 核對](evidence/TSK-03/categorical-loss-adoption-20261018/full-engineering-root-review.json)。最後 31 項治理通過，2,041,297,098 bytes 本票暫存已清除，877 份來源、18 份原模型、6 份資料、32 份其他工作與 15,046 份原始模組保持，見[清理](evidence/TSK-03/categorical-loss-adoption-20261018/cleanup.json)。原 876 份來源的未完競態保留且不列驗收。91／91 是既有需求驗收記錄，已知 ticket147 梯度缺陷尚未修正，不能據此宣稱框架沒有 bug。
+ticket146 的 877 份最終來源已通過九項完整工程，一般 8,777 pass／23 skip、競態 8,776 pass／24 skip，各 58 套件通過，原 8,732 個結果保持，只新增 68 pass，見[Root 核對](evidence/TSK-03/categorical-loss-adoption-20261018/full-engineering-root-review.json)。最後 31 項治理通過，2,041,297,098 bytes 本票暫存已清除，877 份來源、18 份原模型、6 份資料、32 份其他工作與 15,046 份原始模組保持，見[清理](evidence/TSK-03/categorical-loss-adoption-20261018/cleanup.json)。原 876 份來源的未完競態保留且不列驗收。91／91 是既有需求驗收記錄，ticket147 的完整工程與交付尚未完成，不能據此宣稱框架沒有 bug。
 
-[ticket147](docs/tickets/147-categorical-gradient-stability.md) 已在隔離 Go 一般／競態確認兩處分類梯度缺陷，各六個子案例及兩個父測試失敗。公開更新雙模型對照也已重現：相同合法起始狀態中，公開 Step 的目標 Readout 為 0，獨立導數對照則產生 16 個媒體及 8 個文字非零參數，一般／競態各兩個公開測試只因目標參數不同而失敗，見[公開重現](evidence/TSK-03/categorical-gradient-audit-20261018/public-reproduction-verification.json)。兩次探測共 30,466 bytes 暫存已清除，正式 877 份來源保持，尚未修正，不能推論真實任務品質必然下降。本票 2／5，ticket146 已交付，接續驗證隔離候選及其他同型態入口。
+[ticket147](docs/tickets/147-categorical-gradient-stability.md) 已在隔離 Go 一般／競態確認兩處分類梯度缺陷，各六個子案例及兩個父測試失敗。公開更新雙模型對照也已重現：相同合法起始狀態中，公開 Step 的目標 Readout 為 0，獨立導數對照則產生 16 個媒體及 8 個文字非零參數，一般／競態各兩個公開測試只因目標參數不同而失敗，見[公開重現](evidence/TSK-03/categorical-gradient-audit-20261018/public-reproduction-verification.json)。兩次探測共 30,466 bytes 暫存已清除，正式 877 份來源保持，尚未修正，不能推論真實任務品質必然下降。以上為原版重現與初次探測，正式採用及目前驗收狀態見下段。
+
+ticket147 的九份入口與共用導數候選已完成隔離驗收，一般／競態各 1,316 pass／14 skip，原 1,190 個結果保持，只新增各 140 pass，見[整合驗收](evidence/TSK-03/categorical-gradient-audit-20261018/isolated-comprehensive-verification.json)。蒸餾的本機 HTTP 權限失敗原紀錄保持，同一固定版本的完整套件補跑通過。27 份正式檔案已採用，來源由 877 增為 895 份，見[採用](evidence/TSK-03/categorical-gradient-adoption-20261018/adoption.json)。兩種文字模型設定與三種 OCR 模式在正式來源的一般／競態新程序載入並接續訓練，完整輸出與修改前逐位元組相同，見[舊模型驗收](evidence/TSK-03/categorical-gradient-adoption-20261018/old-models-root-verification.json)。完整一般驗收為 8,917 pass／23 skip，各 59 套件通過，原 8,800 個結果保持，只新增 140 pass，見[Root 核對](evidence/TSK-03/categorical-gradient-adoption-20261018/full-unit-root-verification.json)。首次完整一般的格式索引失敗已修正並保存。session96150 已實際結束且 exit0，九項工程全數通過，競態 8,916 pass／24 skip，各 59 套件通過，原 8,800 個結果保持，各新增 140 pass，見[完整核對](evidence/TSK-03/categorical-gradient-adoption-20261018/full-engineering-root-verification.json)。新驗收回條缺少四個欄位的治理失敗已補正，31 項治理通過。本票更新為 4／5。149 個必要非快取輸入已封存，1,880,270,157 bytes 自有暫存已清除，895 份來源、18 份模型、6 份資料、32 份其他工作與 15,046 份原始模組保持，見[清理核對](evidence/TSK-03/categorical-gradient-adoption-20261018/cleanup-root-verification.json)。提交交付待完成。
+
+OCR 單字元與蒸餾純標籤分支另有回報誤差被算成零的缺陷，固定 895 份正式來源的一般／競態均已重現，見[兩項實證](evidence/TSK-01/reported-loss-audit-20261018/README.md)。兩次探測共 4,000 bytes 自有暫存已清除，必要證據保留。本票的梯度修正沒有處理這兩項回報缺陷，後續另案修正。
 
 線上回饋消費、取消與重試的補充唯讀稽核已完成，未確認產品缺陷，見[Root 核對](evidence/TSK-02/partition-state-20261017/online-audit-review.json)。Root 另核對同一凍結來源完整一般日誌中的 7 個父測試、13 個 pass 事件，這份補充稽核沒有執行新 Go。取得 learner 鎖後、無 target 或合法間隔 skip 時取消的行為尚無受控動態反例，且未確認有更強的逐筆取消契約，不據此修改學習機制。
 
@@ -412,7 +416,7 @@ SIG-04 已依 §6.4 保存選取、來源、神經元指紋與投影重建資料
 
 ## 目前阻礙
 
-ticket133重播恢復的必要驗證已正式修正並通過完整工程，本輪暫存已清除且遠端交付完成。ticket134極端有限MSE溢位的已確認缺陷仍待修正，LRN-07恢復passed，LRN-10保持specified，工程追蹤90／91。本階段沒有重新驗收真實品質與生物校準。混合重算是既有明示不支援的組合。
+目前沒有實作阻礙。ticket147 已完成正式來源的九項工程、舊模型接續與 31 項治理，剩下自有暫存清理與提交交付，見[目前工作](docs/tickets/147-categorical-gradient-stability.md)。工程需求既有記錄為 91／91，不能用來宣稱模型品質提升、生物機制校準完成或框架沒有 bug。
 
 ### 既有環境與研究限制
 
@@ -434,7 +438,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket133](docs/tickets/133-replay-restore-state-validation.md)已通過完整工程與舊重播存檔接續，必要證據封存、暫存清理與遠端交付均已完成。下一個可驗證成果是[ticket134](docs/tickets/134-evaluation-mse-representability.md)的有限MSE中間溢位修正。工程追蹤90／91，這些測試不作為模型品質或零bug的證明。
+接續 [ticket147](docs/tickets/147-categorical-gradient-stability.md)：驗收 895 份固定正式來源的完整工程結果，再保存必要證據、清除自有暫存並完成交付。正式來源的兩種文字設定與三種 OCR 模式已通過新程序接續，原模型與資料保持。OCR 單字元與蒸餾純標籤的回報誤差缺陷已有實證，尚未修正。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

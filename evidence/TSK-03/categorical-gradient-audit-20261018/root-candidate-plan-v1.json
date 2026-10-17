@@ -1,0 +1,43 @@
+{
+  "created_at": "2026-10-17T21:37:04.544405+00:00",
+  "previous_goal_turn": "progress:146 committed, pushed, exact remote verified and owned caches removed.",
+  "base_commit": "22bf276b4c74443e79e1ff5203da498b8c28b25c",
+  "scope": "Isolated candidate for the two dynamically confirmed public media/textgen gradient defects. This is not ticket147 completion; related onehot entries must be dynamically verified before full adoption.",
+  "work": "runs/.tmp/categorical-gradient-candidate-20261018",
+  "work_inode": 61043512,
+  "source_manifest": "source.json",
+  "source_entries": 877,
+  "production_sources_frozen": true,
+  "implementation_slots": {
+    "media-gradient-candidate.go.txt": "Copy tasks/media/external_tool.go; modify only gradient calculation and obsolete gradient-only normalizer; preserve146 loss calculation, finite rejection, signatures, formats.",
+    "textgen-gradient-candidate.go.txt": "Copy tasks/textgen/model.go; modify only gradient calculation and its normalizer, preserving loss/count/mask/settle/finite guards."
+  },
+  "root_cause": "A rounded softmax winner minus1 loses the nonzero derivative. Direct normalization also depends on ordering and can erase aggregated subnormal mass.",
+  "expected_results": [
+    "Existing four frozen private/public tests must pass, without editing tests or thresholds.",
+    "Compute target derivative using negative total non-target mass, never rounded target probability minus1. Accurate compensated normalization; preserve all scale/count factors.",
+    "Keep subnormal aggregate until after class accumulation and normalization/divisor, avoiding individual exponential underflow and early double rounding. Tests will freeze independent Decimal160 target/non-target references for tails near-740..-750, scored counts and permutations.",
+    "All finite nonwinner targets, ties, ordinary rows, masks, zero unscored rows, loss values and error behavior remain valid. Do not preserve known-incorrect historical gradient bits as truth.",
+    "Complete media/textgen package unit/race must run, plus independent normal derivative and restore/load controls; only then expand related same-formula entries."
+  ],
+  "test_slot": "Only new .go.txt tests and high-precision reference inputs; no production writes. Implementation author must not modify frozen/new tests.",
+  "non_goals": [
+    "No new shared numerical API, dependency or model version for this two-file candidate.",
+    "No mechanical onehot derivative substitution in PPO, CTC or teacher KL.",
+    "No imitation topology, input path or training baseline change. Related numeric path remains to be verified separately."
+  ],
+  "opencode": {
+    "command": [
+      "opencode",
+      "models"
+    ],
+    "exit_code": 1,
+    "tool_chunk": "d94591",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "fallback": {
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "authority": "Project AGENTS.md Sub-agent order"
+  }
+}

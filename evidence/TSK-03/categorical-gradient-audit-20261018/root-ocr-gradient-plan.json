@@ -1,0 +1,20 @@
+{
+  "scope": "Additional related pure onehot CE entry, isolated failing gradient test only. No OCR implementation changes or CTC substitution.",
+  "source": "tasks/ocr/recognizer.go",
+  "source_sha256": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863",
+  "signature": "singleCharacterLoss(logits []float64, target int) (float64, []float64, error)",
+  "test_slot": "ocr-gradient-regression.go.txt, package ocr, TestSingleCharacterGradientTail147",
+  "expected": [
+    "Use4 logits, blank index0 set1000 to prove excluded, one target/winner index1/2/3 at0, other nonblank logits-40.",
+    "Nonblank target derivative strictlynegative; allnonblank others strictlypositive; compare independent root Decimal180 hex values within4ULP. Blank gradient exactly0.",
+    "Loss finite nonnegative; inputs unchanged; finite normalization and legal target, no CTC changes.",
+    "Original expected3 subcases+1 parent fail from zero target derivative; this is private arithmetic evidence, not publicTrainLine/modelqualityproof."
+  ],
+  "independent_reference": {
+    "target_decimal": "-8.49670851058317791846441405190070975668584271209176111201253241429515745537440720830243393777784004808418308253154865125235162679787997519590193635226610054432134918643404304081026E-18",
+    "other_decimal": "4.24835425529158895923220702595035487834292135604588055600626620714757872768720360415121696888892002404209154126577432562617581339893998759795096817613305027216067459321702152040513E-18",
+    "target_hex": "-0x1.39792499b1a24p-57",
+    "other_hex": "0x1.39792499b1a24p-58"
+  },
+  "root_reviewed_source_lines": "335-371; TrainLine dispatch follows at404-435"
+}

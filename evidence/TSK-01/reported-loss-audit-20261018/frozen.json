@@ -1,0 +1,28 @@
+{
+  "created_at": "2026-10-17T23:28:42.974845+00:00",
+  "scope": "Reproduce only the already confirmed OCR single-character reported-loss erasure; no repair, source modification or broader task-quality claim. Related-loss inventory continues separately.",
+  "signature": "singleCharacterLoss(logits []float64, target int) (float64, []float64, error)",
+  "expected": "Three high-confidence cases retain representable positive NLL; two ordinary controls remain within4ULP of independent Decimal300 reference; blank gradient excluded.",
+  "source_count": 895,
+  "source_manifest_sha256": "a246ecc456522d6637a4cd41584c1b77f5725225300563a651f8997f56b440bc",
+  "source_target": "tasks/ocr/recognizer.go",
+  "source_target_sha256": "5e740a9e26a325109198ccb7d76e047f841baaafb93bb267cd561a7b9b2463f9",
+  "work_root": "runs/.tmp/ocr-reported-loss-probe-20261018",
+  "work_inode": 61132297,
+  "files": {
+    "reported-loss-test.go.txt": "638179441c7346332d0f4693dd5508c9996339ee128d11b647fbf6351a97691b",
+    "reference.json": "a9596fc6d69a03f3451a6e0b91b5a91ecb36205e2f46654d0886a4905fafccda"
+  },
+  "overlay": {
+    "Replace": {
+      "/Users/timlai/Developer/coimnet/tasks/ocr/root_reported_loss_148_test.go": "/Users/timlai/Developer/coimnet/runs/.tmp/ocr-reported-loss-probe-20261018/reported_loss_test.go"
+    }
+  },
+  "environment": "../../TSK-03/categorical-gradient-adoption-20261018/command-environment.json",
+  "cache_owner": "ticket147; reused while its engineering process remains live; probe must not remove these caches",
+  "expected_red_events": {
+    "fail": 4,
+    "pass": 2
+  },
+  "formal_sources_changed": false
+}

@@ -1,0 +1,46 @@
+{
+  "created_at": "2026-10-17T22:24:10.283208+00:00",
+  "prior_goal_turn": "progress:twohead fullrace complete; sharedv1rejected by3new actual counterexamples; sharedv2 actual45unit45race andhead40unit40race focusedpass; formal877sourcesunchanged",
+  "scope": "Ticket147 sameonehotCE gradientfix; first OCR and distill caller/public update twin proofs beforeintegration. Otherexperiment entriesremainownedbyrootsharedplan.",
+  "formal_adopted": false,
+  "sources": {
+    "tasks/ocr/recognizer.go": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863",
+    "distill/distribution.go": "affac62481edd50b890b0d7a1bcc51b208980fa59a44aace378367c416b2f5c1",
+    "distill/train.go": "ba701f1bcc7889646a5f30a42ac94f950328ddb33a397d03c19a76f1dff3be76"
+  },
+  "slots": {
+    "ocr-public-gradient-regression.go.txt": "Testauthor only: packageocr; TestOCRPublicGradient147; actualRecognizer.TrainLine vs independentreferenceTrainer.StepFrom, samelegalfreshsnapshot, Readoutonly.",
+    "distill-public-gradient-regression.go.txt": "Other testauthor only: packagedistill_test; TestDistillPublicGradient147 with realTrainerStepLabel/StepDistribution Mix0 + normalcontrol; TestDistillMixedGradient147 KLpreservationcontrol.",
+    "ocr-gradient-shared-candidate.go.txt": "Rootfuture minimalOCRderivative only; categorical.Gradient(gradient[1:], logits[1:], target-1,1,1); existinglosschecks andblank0 preserved.",
+    "distill-gradient-shared-candidate.go.txt": "Rootfuture CEseparatevector, helperfactor1-Mix,div1;add to existingKLgradient. PreserveteacherKL/loss/alignmentchecks. NoStepwrapperrewrite."
+  },
+  "ocr_contract": {
+    "config": "Height2 Hidden4 Alphabetabc single-character CharacterWidth2 Seed17 LearningRate.01",
+    "input": "2x2 lawfulglyph image; publicInputs returns2rows",
+    "fixture": "baselineallreadout1->nonzerofinalz; legalnewtrainer withtargetreadout0,othernonblankreadout-40/z,blank1000/z, readoutonlytrainable andzerooptimizer; testtarget1/2/3 permutations",
+    "reference": "Actualfinalnonblanklogits[0,d,d] attarget; dnear-40, blanknear1000 excluded. target=-2exp(d)/(1+2exp(d)), other=exp(d)/(1+2exp(d)); upstreamallzeros exceptlastnonblank3. Nohelper/lossusedforreference.",
+    "expected": "RealTrainLineoneupdate agreesnonzero targetreadoutwith independentStepFrom within2e-6relative, finiteparameters, Core/Encoder unchanged, blankreadoutunchanged, initialSnapshotsidentical, inputunchanged, reportFrames1Labels1Impossiblefalse. Lossfinite>=0only; positiveNLLrepairisnot147gradientassert.",
+    "failure": "beforefix onlytargetReadoutmismatch, normalcontrolsvalid; afterfix entiretestpasses."
+  },
+  "distill_contract": {
+    "fixture": "Real3node delayedchain Trainer, InputSize1OutputSize3, readoutonly; initialallreadout1->nonzerolastz; targetreadout0,othersgap/z, freshzerooptimizer; input{{1},{0},{0},{0}}",
+    "modes": "StepLabel classes3 and StepDistribution Mix0 Temperature2Scale3 identicalalignment withvalidteacher; labels0/1/2 arewinner permutations atgap-40; ordinarygap-2 target0positivecontrol",
+    "reference": "Same independentanalytical3classderivatives, upstreamfinalrowonly. TrackingStudentdelegatesactualTrainer, capturesactualupstream/callcounts/result. Comparetargetreadout2e-6relative andnonzero forbothpublicmodes.",
+    "mixed_control": "One moderate studentvector[0,1,-1], validteacher[.3,.2,.5], Mix.5 Temp2Scale3. Mixedgrad equalspublicsameconfigLoss(label=-1) KLgrad plusindependentonehotCEfactor.5; checkallclasses <=8ULP, finite, inputunchanged. DetectaccidentalKLoverwrite.",
+    "errors": "Do not alterwrapper/API/errorcontracts. NofakeStudent-onlyclaimofrealparameterupdate. Lossfinite>=0 forpureCE; do notrequirepositiveNLLforcurrentgradientassert."
+  },
+  "acceptance_flows": [
+    "OCR actualTrainLine -> correctlastnonblankgradient -> samelegalupdateasanalyticStepFrom;blank/core/encoderfrozen.",
+    "Distill actualStepLabel andStepDistribution Mix0 -> realTraineroneupdate agreesanalytic twin;validnormalcontrol.",
+    "Distill mixedteacher objective -> CEaddedtoKLnotreplace; existingteacher/alignment/temperature regressionsretain."
+  ],
+  "thresholds": "Privatehelperfrozen4/8ULP; actualFloat32bridgedpublicparameterupdates2e-6relative; any reference nonzero must notbecome0. Noassertions removed orloosenedtoacceptcandidate.",
+  "dispatch": {
+    "opencode_models_exit_code": 1,
+    "tool_chunk": "ec39b8",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+    "actual_fallback": "built-in gpt-5.6-luna/max perprojectAGENTS",
+    "no_OpenCode_model_dispatched": true
+  },
+  "delivery_gate": "Readalltests; runoriginalunit/race reds; Root integratesminimalcandidate; rerunfrozenprivate+public controls andwholeaffectedpackages; remainingexperimententryproofs/fullengineering/modelchecks/cleanup/delivery beforeticket3/5orcomplete."
+}

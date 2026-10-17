@@ -1,0 +1,158 @@
+{
+  "created_at": "2026-10-17T22:40:49.836712+00:00",
+  "root_review": "Root read full independent tests and actual source entrypoints; examined returned diagnostics, shapes and exact control cases. Original compiled and only highconfidence target updates/moments differ from independent real StepFrom twins. Ordinary controls and distill KL-preservation pass. No production sources changed.",
+  "proof": {
+    "experiment": {
+      "unit": {
+        "receipt": "experiment-original-unit.json",
+        "receipt_sha256": "17018fa783d4ef7443287143c5200c6a546f83779b6a00749ba5eac6aadb94e1",
+        "log_sha256": "49e98a8f10ba5fbf265b69d4cca91a5b8b2a89efc6818f203df5aae6cfa52e06",
+        "test_terminal_events": {
+          "fail": 7,
+          "pass": 6
+        },
+        "cases": {
+          "TestExperimentCategoricalGradient147/imitation/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/imitation/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/corridor_step/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/corridor_step/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/same_experience/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/same_experience/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_recurrent/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_recurrent/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_rewired/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_rewired/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_feedforward/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_feedforward/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147": "fail"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_categorical_gradient147_test.go:794: imitation readout[0] became zero, reference=6.4710434403919396e-12"
+      },
+      "race": {
+        "receipt": "experiment-original-race.json",
+        "receipt_sha256": "75e69a7dbf57122214674679161d46cea9b2e0d2d6259159ca0b8971e7bcdeaa",
+        "log_sha256": "54a37eccb37e0c4ce288882b665fff8f43c6c0cfb0fcb7387fc70967f54404d4",
+        "test_terminal_events": {
+          "fail": 7,
+          "pass": 6
+        },
+        "cases": {
+          "TestExperimentCategoricalGradient147/imitation/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/imitation/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/corridor_step/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/corridor_step/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/same_experience/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/same_experience/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_recurrent/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_recurrent/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_rewired/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_rewired/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147/nav_feedforward/high_gap40": "fail",
+          "TestExperimentCategoricalGradient147/nav_feedforward/normal_gap2": "pass",
+          "TestExperimentCategoricalGradient147": "fail"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_categorical_gradient147_test.go:794: imitation readout[0] became zero, reference=6.4710434403919396e-12"
+      }
+    },
+    "multimodal": {
+      "unit": {
+        "receipt": "multimodal-original-unit.json",
+        "receipt_sha256": "11f1384830e22322bbc4383da75475cb64da45c2a6f909094ca12b0feebe9f5e",
+        "log_sha256": "e38b929c61089f06be97857322705f2a07dfd833c5335e399a4354abebfb10af",
+        "test_terminal_events": {
+          "fail": 4,
+          "pass": 1
+        },
+        "cases": {
+          "TestMultimodalCategoricalGradient147/shape0-colour0-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape1-colour2-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape2-colour1-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape0-colour1-gap-2-normal": "pass",
+          "TestMultimodalCategoricalGradient147": "fail"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_categorical_gradient147_test.go:368: readout[0]=0 want 6.4710434403919396e-12, relative error=1 want <=2e-6"
+      },
+      "race": {
+        "receipt": "multimodal-original-race.json",
+        "receipt_sha256": "1b15c6e978348054fd0d0bc006f18cb774232388d31439c60b02f11e74888754",
+        "log_sha256": "6300aa6b618a7bee5545a8a54abc08e7c1c28757a5c3347b02d3fcbe4214d12d",
+        "test_terminal_events": {
+          "fail": 4,
+          "pass": 1
+        },
+        "cases": {
+          "TestMultimodalCategoricalGradient147/shape0-colour0-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape1-colour2-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape2-colour1-gap-40": "fail",
+          "TestMultimodalCategoricalGradient147/shape0-colour1-gap-2-normal": "pass",
+          "TestMultimodalCategoricalGradient147": "fail"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_categorical_gradient147_test.go:368: readout[0]=0 want 6.4710434403919396e-12, relative error=1 want <=2e-6"
+      }
+    },
+    "distill-public": {
+      "unit": {
+        "receipt": "distill-public-original-unit.json",
+        "receipt_sha256": "6cecd5a1481391011e224421116830f9dffc5c4ec24120fd27e0c95cdd43f030",
+        "log_sha256": "9067f284c2a02392f152f85fc578e08c93d7ca213f5e6c435bf7c6bf7cd3a697",
+        "test_terminal_events": {
+          "fail": 7,
+          "pass": 3
+        },
+        "cases": {
+          "TestDistillPublicGradient147/StepLabel-target0-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target1-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target2-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target0-gap-2-normal": "pass",
+          "TestDistillPublicGradient147/StepDistribution-target0-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target1-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target2-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target0-gap-2-normal": "pass",
+          "TestDistillPublicGradient147": "fail",
+          "TestDistillMixedGradient147": "pass"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_distill_public_gradient_test.go:372: upstream[3][0]=0 want -8.4967085105831777e-18, relative error=1 want <=2e-6"
+      },
+      "race": {
+        "receipt": "distill-public-original-race.json",
+        "receipt_sha256": "1ee078a11e66975e70a44b75153a4199dae36b9b32a3164a58113a440d2b7da1",
+        "log_sha256": "ac6ccf1600cef009248a4cfcf5a9b56989dc3cb0b86263205071c63023011daf",
+        "test_terminal_events": {
+          "fail": 7,
+          "pass": 3
+        },
+        "cases": {
+          "TestDistillPublicGradient147/StepLabel-target0-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target1-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target2-gap-40": "fail",
+          "TestDistillPublicGradient147/StepLabel-target0-gap-2-normal": "pass",
+          "TestDistillPublicGradient147/StepDistribution-target0-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target1-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target2-gap-40": "fail",
+          "TestDistillPublicGradient147/StepDistribution-target0-gap-2-normal": "pass",
+          "TestDistillPublicGradient147": "fail",
+          "TestDistillMixedGradient147": "pass"
+        },
+        "only_high_confidence_cases_fail": true,
+        "normal_controls_pass": true,
+        "example_failure": "candidate_distill_public_gradient_test.go:372: upstream[3][0]=0 want -8.4967085105831777e-18, relative error=1 want <=2e-6"
+      }
+    }
+  },
+  "independent_distill_gradient_decimal300": {
+    "input_gap": -40,
+    "target_hex": "-0x1.39792499b1a24p-57",
+    "target": -8.496708510583178e-18
+  },
+  "limitation": "Controlled valid Trainer states prove numerical update errors; not a real task quality or biology claim. Distill helper integration and experiment/multimodal repair remain pending."
+}

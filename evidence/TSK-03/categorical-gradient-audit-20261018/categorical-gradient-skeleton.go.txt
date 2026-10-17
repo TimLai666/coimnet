@@ -1,0 +1,13 @@
+// Package categorical provides the internal one-hot classification derivative.
+package categorical
+
+import "errors"
+
+// Gradient overwrites fresh dst with factor/divisor times the derivative of
+// cross-entropy. Logits must be finite and nonempty, target must be in range,
+// factor must be finite and nonnegative, and divisor must be finite and >= 1.
+// dst must match logits in length and must not alias logits. Invalid arguments
+// return an error before changing dst. This isolated skeleton is not adopted.
+func Gradient(dst, logits []float64, target int, factor, divisor float64) error {
+	return errors.New("categorical: not implemented")
+}
