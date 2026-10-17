@@ -6,7 +6,7 @@ User Story：使用者的重新取樣要求超出原生緩衝可表示範圍時�
 
 Blocked by：無，142／143 已完成凍結正式驗收與交付。
 
-Status：in_progress
+Status：done
 
 相關需求：TSK-02 音訊前處理與失敗處理。
 
@@ -22,7 +22,7 @@ Status：in_progress
 - [x] Root 凍結先失敗的公開回歸，完成隔離候選一般／競態對照。
 - [x] 正式採用最小修正，專項一般／競態與既有控制通過。
 - [x] 格式、build、完整一般／競態、vet、固定模組與治理通過。
-- [ ] 保存證據、清除自有暫存、提交推送並核對遠端。
+- [x] 保存證據、清除自有暫存、提交推送並核對遠端。
 
 ## 減法審查
 
@@ -34,4 +34,4 @@ Status：in_progress
 
 ## Root 決策（2026-10-18）：正式採用
 
-142／143 已交付且遠端提交 `b58ccb8` 核對相同。原候選與凍結回歸已逐位元組採用，其他 862 份既有來源保持，最終 864 份來源固定，見[採用紀錄](../../evidence/TSK-02/resample-capacity-adoption-20261018/adoption.json)。正式音訊套件一般／競態各 81 pass，與隔離候選事件逐項一致，見[專項驗收](../../evidence/TSK-02/resample-capacity-adoption-20261018/focused-verification.json)。格式、build 及完整一般 8,690 pass／23 skip、58 套件通過，原有 8,709 個結果保持，只新增 4 pass。正常音訊、九份正常報告與中性增益 21 項控制保持，見[Root 核對](../../evidence/TSK-02/resample-capacity-adoption-20261018/unit-root-review.json)。完整競態 8,689 pass／24 skip、58 套件與九項工程步驟均已通過，原有 8,709 個結果保持，只新增 4 pass，見[正式驗收](../../evidence/TSK-02/resample-capacity-adoption-20261018/verification.json)。最後 31 項治理通過，1,641,604,784 bytes 自有暫存已清除，原模型、必要資料、原始模組與其他工作保持，見[清理](../../evidence/TSK-02/resample-capacity-adoption-20261018/cleanup.json)。目前 4／5，提交與遠端核對待完成。
+142／143 已交付且遠端提交 `b58ccb8` 核對相同。原候選與凍結回歸已逐位元組採用，其他 862 份既有來源保持，最終 864 份來源固定，見[採用紀錄](../../evidence/TSK-02/resample-capacity-adoption-20261018/adoption.json)。正式音訊套件一般／競態各 81 pass，與隔離候選事件逐項一致，見[專項驗收](../../evidence/TSK-02/resample-capacity-adoption-20261018/focused-verification.json)。格式、build 及完整一般 8,690 pass／23 skip、58 套件通過，原有 8,709 個結果保持，只新增 4 pass。正常音訊、九份正常報告與中性增益 21 項控制保持，見[Root 核對](../../evidence/TSK-02/resample-capacity-adoption-20261018/unit-root-review.json)。完整競態 8,689 pass／24 skip、58 套件與九項工程步驟均已通過，原有 8,709 個結果保持，只新增 4 pass，見[正式驗收](../../evidence/TSK-02/resample-capacity-adoption-20261018/verification.json)。最後 31 項治理通過，1,641,604,784 bytes 自有暫存已清除，原模型、必要資料、原始模組與其他工作保持，見[清理](../../evidence/TSK-02/resample-capacity-adoption-20261018/cleanup.json)。修正 `7d5b313` 與主要證據 `fbd0905` 已正常推送且遠端讀回相同，864 份提交來源與驗收指紋一致，見[交付](../../evidence/TSK-02/resample-capacity-adoption-20261018/delivery.json)。本票 5／5。

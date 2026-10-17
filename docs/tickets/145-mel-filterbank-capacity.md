@@ -4,7 +4,7 @@ Epic：音訊尺寸與錯誤處理
 
 User Story：公開音訊特徵入口遇到無法表示的濾波器緩衝尺寸時回傳錯誤，避免在配置時 panic。
 
-Blocked by：正式採用須等 ticket144 的固定來源工程驗收與交付結束。
+Blocked by：無，ticket144 已完成固定來源工程驗收與交付。
 
 Status：in_progress
 
@@ -40,7 +40,7 @@ Status：in_progress
 
 ## Root 決策（2026-10-18）：隔離候選通過
 
-公開原版一般／競態各7 fail、4 pass，無檢查尺寸骨架各4 fail、4 pass，候選各19 pass。整個音訊套件各100 pass，原81個結果保持，只新增19 pass，見[候選驗收](../../evidence/TSK-02/mel-capacity-audit-20261018/candidate-verification.json)。每個建置三項正常輸出的位元與完整報告保持，基本Validate與STFT契約不變。34,128 bytes 隔離暫存已清除，原來源、模型、資料、模組與其他工作保持，見[隔離清理](../../evidence/TSK-02/mel-capacity-audit-20261018/regression-cleanup.json)。目前2／5，正式採用、完整工程與交付待ticket144原程序結束。
+公開原版一般／競態各7 fail、4 pass，無檢查尺寸骨架各4 fail、4 pass，候選各19 pass。整個音訊套件各100 pass，原81個結果保持，只新增19 pass，見[候選驗收](../../evidence/TSK-02/mel-capacity-audit-20261018/candidate-verification.json)。每個建置三項正常輸出的位元與完整報告保持，基本Validate與STFT契約不變。34,128 bytes 隔離暫存已清除，原來源、模型、資料、模組與其他工作保持，見[隔離清理](../../evidence/TSK-02/mel-capacity-audit-20261018/regression-cleanup.json)。目前2／5，ticket144 已交付，正式採用、完整工程與交付待接續。
 
 ## Root 決策（2026-10-18）：舊存檔相容性對照
 
