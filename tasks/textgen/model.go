@@ -8,6 +8,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/tasks/textgen/tokenizer"
 )
@@ -370,13 +371,6 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 				tailMaximum = value
 			}
 		}
-		expSum := 0.0
-		for _, value := range row {
-			expSum += math.Exp(value - maxLogit)
-		}
-		if !finite(expSum) || expSum <= 0 {
-			return 0, 0, nil, fmt.Errorf("invalid logit normalization at position %d", target-1)
-		}
 		// Keep the tail separate from the winning exponential and normalize
 		// it before exponentiation so a representable aggregate survives.
 		tailSum, compensation := 0.0, 0.0
@@ -413,10 +407,9 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 			return 0, 0, nil, fmt.Errorf("non-finite summed loss")
 		}
 		gradient := upstream[target*m.config.Settle-1]
-		for id, value := range row {
-			gradient[id] = math.Exp(value-maxLogit) / expSum / float64(count)
+		if err := categorical.Gradient(gradient, row, ex.IDs[target], 1, float64(count)); err != nil {
+			return 0, 0, nil, fmt.Errorf("gradient at position %d: %w", target-1, err)
 		}
-		gradient[ex.IDs[target]] -= 1 / float64(count)
 	}
 	return sum + math.Ldexp(tinyTailSum, -512), count, upstream, nil
 }

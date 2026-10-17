@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/teacher/tool"
 )
@@ -236,10 +237,6 @@ func requestLossGradient(logits []float64, colourIndex, shapeIndex int) (float64
 				tailMaximum = value
 			}
 		}
-		sum := 0.0
-		for _, value := range logits[start : start+groupSize] {
-			sum += math.Exp(value - maximum)
-		}
 		// Normalize the tail separately so adding it to 1 cannot erase it.
 		tailSum, compensation := 0.0, 0.0
 		for i, value := range logits[start : start+groupSize] {
@@ -262,12 +259,8 @@ func requestLossGradient(logits []float64, colourIndex, shapeIndex int) (float64
 		// Scale before subtracting so the target gap cannot overflow.
 		gapTerms[2*group], gapTerms[2*group+1] = maximum, -logits[start+target]
 		loss += maximum/2 - logits[start+target]/2
-		for i, value := range logits[start : start+groupSize] {
-			probability := math.Exp(value-maximum) / sum
-			if i == target {
-				probability--
-			}
-			gradient[start+i] = probability / 2
+		if err := categorical.Gradient(gradient[start:start+groupSize], logits[start:start+groupSize], target, 1, 2); err != nil {
+			return 0, nil, fmt.Errorf("media: request head gradient: %w", err)
 		}
 	}
 	if loss > math.MaxFloat64/2 {

@@ -6,6 +6,7 @@ import (
 	"math"
 
 	"github.com/TimLai666/coimnet/experiment/gridnav"
+	"github.com/TimLai666/coimnet/internal/categorical"
 )
 
 const (
@@ -277,13 +278,10 @@ func runSameExperience(ctx context.Context, m *multiTaskModel, tasks []TaskBindi
 		upstream[t] = make([]float64, multiTaskOutputs)
 	}
 	if task, ok := active[MultiTaskCorridor]; ok {
-		per := task.MixWeight * task.LossScale / float64(len(corridorObs))
 		for k, action := range corridorActions {
 			t := (k+1)*multiTaskSettle - 1
-			p := imitationSoftmax(outputs[t][:gridnav.Actions])
-			p[action]--
-			for j, v := range p {
-				upstream[t][j] = per * v
+			if err := categorical.Gradient(upstream[t][:gridnav.Actions], outputs[t][:gridnav.Actions], action, task.MixWeight*task.LossScale, float64(len(corridorObs))); err != nil {
+				return fmt.Errorf("same experience: gradient: %w", err)
 			}
 		}
 	}

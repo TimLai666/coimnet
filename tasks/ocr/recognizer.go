@@ -9,6 +9,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
 	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
@@ -354,20 +355,18 @@ func singleCharacterLoss(logits []float64, target int) (float64, []float64, erro
 		if math.IsNaN(value) || math.IsInf(value, 0) {
 			return 0, nil, errors.New("ocr: single-character normalization is not finite")
 		}
-		probabilities[class] = value
 		sum += value
 	}
 	if !(sum > 0) || math.IsNaN(sum) || math.IsInf(sum, 0) {
 		return 0, nil, errors.New("ocr: single-character normalization is invalid")
 	}
-	for class := 1; class < len(probabilities); class++ {
-		probabilities[class] /= sum
-	}
 	loss := -(logits[target] - maxLogit - math.Log(sum))
 	if math.IsNaN(loss) || math.IsInf(loss, 0) {
 		return 0, nil, errors.New("ocr: single-character loss is not finite")
 	}
-	probabilities[target]--
+	if err := categorical.Gradient(probabilities[1:], logits[1:], target-1, 1, 1); err != nil {
+		return 0, nil, fmt.Errorf("ocr: single-character gradient: %w", err)
+	}
 	return loss, probabilities, nil
 }
 

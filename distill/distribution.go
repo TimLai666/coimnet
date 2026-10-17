@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"math"
+
+	"github.com/TimLai666/coimnet/internal/categorical"
 )
 
 const (
@@ -248,17 +250,16 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 			return 0, nil, DistributionReport{}, fmt.Errorf("distill: label %d out of range for %d student classes", label, studentClasses)
 		}
 		if d.Mix < 1 {
-			logQ, q1, numericalErr := shiftedLogSoftmax(student, 1)
+			logQ, labelGradient, numericalErr := shiftedLogSoftmax(student, 1)
 			if numericalErr != nil {
 				return 0, nil, DistributionReport{}, numericalErr
 			}
 			loss += (1 - d.Mix) * -logQ[label]
+			if err := categorical.Gradient(labelGradient, student, label, 1-d.Mix, 1); err != nil {
+				return 0, nil, DistributionReport{}, fmt.Errorf("distill: label gradient: %w", err)
+			}
 			for j := range grad {
-				dq := q1[j]
-				if j == label {
-					dq--
-				}
-				grad[j] += (1 - d.Mix) * dq
+				grad[j] += labelGradient[j]
 			}
 		}
 	}

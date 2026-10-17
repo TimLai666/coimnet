@@ -7,6 +7,7 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/experiment/gridnav"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -163,13 +164,10 @@ func (m *multiTaskModel) corridorStep(ctx context.Context, obs [][]float64, acti
 	for t := range upstream {
 		upstream[t] = make([]float64, multiTaskOutputs)
 	}
-	per := scale / float64(len(obs))
 	for k, action := range actions {
 		t := (k+1)*multiTaskSettle - 1
-		p := imitationSoftmax(logits[t][:gridnav.Actions])
-		p[action]--
-		for j, v := range p {
-			upstream[t][j] = per * v
+		if err := categorical.Gradient(upstream[t][:gridnav.Actions], logits[t][:gridnav.Actions], action, scale, float64(len(obs))); err != nil {
+			return fmt.Errorf("corridor: gradient: %w", err)
 		}
 	}
 	_, err = m.trainer.StepFrom(ctx, input, upstream)

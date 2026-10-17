@@ -10,6 +10,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/TimLai666/coimnet/dynamics"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 	"github.com/TimLai666/coimnet/multimodal"
 	"github.com/TimLai666/coimnet/multimodal/synthetic"
@@ -222,16 +223,12 @@ func train(ctx context.Context, tr *learning.Trainer, examples []example, epochs
 				upstream[t] = make([]float64, readoutWidth)
 			}
 			last := upstream[len(upstream)-1]
-			shape := softmax(logits[:synthetic.Shapes])
-			for j, p := range shape {
-				last[j] = p
+			if err := categorical.Gradient(last[:synthetic.Shapes], logits[:synthetic.Shapes], ex.Label.Shape, 1, 1); err != nil {
+				return updates, fmt.Errorf("multimodal shape gradient: %w", err)
 			}
-			last[ex.Label.Shape]--
-			colour := softmax(logits[synthetic.Shapes:])
-			for j, p := range colour {
-				last[synthetic.Shapes+j] = p
+			if err := categorical.Gradient(last[synthetic.Shapes:], logits[synthetic.Shapes:], ex.Label.Colour, 1, 1); err != nil {
+				return updates, fmt.Errorf("multimodal colour gradient: %w", err)
 			}
-			last[synthetic.Shapes+ex.Label.Colour]--
 			result, err := tr.StepFrom(ctx, ex.Input, upstream)
 			if err != nil {
 				return updates, err

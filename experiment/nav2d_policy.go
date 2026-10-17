@@ -8,6 +8,7 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/experiment/nav2d"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -327,18 +328,14 @@ func (p *nav2dPolicy) train(ctx context.Context, obs [][]float64, actions []int)
 			return 0, err
 		}
 		upstream := make([][]float64, len(logits))
-		scale := 1 / float64(len(obs))
 		for t := range upstream {
 			upstream[t] = make([]float64, nav2d.Actions)
 		}
 		for t := p.settle - 1; t < len(logits); t += p.settle {
-			g := imitationSoftmax(logits[t])
 			w := weights[actions[t/p.settle]]
-			for j := range g {
-				g[j] *= scale * w
+			if err := categorical.Gradient(upstream[t], logits[t], actions[t/p.settle], w, float64(len(obs))); err != nil {
+				return 0, fmt.Errorf("nav2d: gradient: %w", err)
 			}
-			g[actions[t/p.settle]] -= scale * w
-			upstream[t] = g
 		}
 		result, err := p.trainer.StepFrom(ctx, in, upstream)
 		if err != nil {
@@ -361,12 +358,9 @@ func (p *nav2dPolicy) train(ctx context.Context, obs [][]float64, actions []int)
 				upstream[i] = make([]float64, nav2d.Actions)
 			}
 			w := weights[actions[t]]
-			g := imitationSoftmax(logits[p.settle-1])
-			for j := range g {
-				g[j] *= w
+			if err := categorical.Gradient(upstream[p.settle-1], logits[p.settle-1], actions[t], w, 1); err != nil {
+				return 0, fmt.Errorf("nav2d: gradient: %w", err)
 			}
-			g[actions[t]] -= w
-			upstream[p.settle-1] = g
 			result, err := p.trainer.StepFrom(ctx, in, upstream)
 			if err != nil {
 				return 0, err

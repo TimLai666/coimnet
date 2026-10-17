@@ -8,6 +8,7 @@ import (
 
 	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/experiment/gridnav"
+	"github.com/TimLai666/coimnet/internal/categorical"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -235,13 +236,11 @@ func imitationStep(ctx context.Context, tr *learning.Trainer, input [][]float64,
 		return 0, err
 	}
 	upstream := make([][]float64, len(logits))
-	scale := 1 / float64(len(logits))
 	for t, row := range logits {
-		g := imitationSoftmax(row)
-		for j := range g {
-			g[j] *= scale
+		g := make([]float64, len(row))
+		if err := categorical.Gradient(g, row, actions[t], 1, float64(len(logits))); err != nil {
+			return 0, fmt.Errorf("imitation: gradient: %w", err)
 		}
-		g[actions[t]] -= scale
 		upstream[t] = g
 	}
 	result, err := tr.StepFrom(ctx, input, upstream)
