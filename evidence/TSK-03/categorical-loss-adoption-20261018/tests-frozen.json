@@ -1,0 +1,692 @@
+{
+  "files": {
+    "tasks/media/request_loss_stability_test.go": "ca441f64b9d57095e0f7810fccb9ff34b1a04ef56f37e75d1560f7a1e8a26138",
+    "tasks/media/request_loss_tail_test.go": "ee11ddb04e72a86e2e0e23abbdf834c28c7b2e07124b78b3086c82bbd9629c35",
+    "tasks/media/request_loss_subnormal_test.go": "cb61d46b6246397af4d924668a78522781178b38091ad502fb861e2476cb8016",
+    "tasks/media/request_loss_public_tail_test.go": "e0330081aa146ada3efc2dd00609a7d680ce1c399ba2ca7de3962b529628f3c2",
+    "tasks/media/request_loss_mean_boundary_test.go": "91b8c60bd1cde42470ec95d076a2f1833523eef42ae05672e1629832e7597435",
+    "tasks/textgen/loss_stability_test.go": "36dd129e6a2507ed72d8c3e7d13d76d37e5b3d585eb89f9705a7fe6243899ae6",
+    "tasks/textgen/loss_tail_test.go": "f915d35c219844ae47289c44bca9c588ccaae485f291eb0c21cb7832e8e45e5d",
+    "tasks/textgen/loss_subnormal_test.go": "79dc6ae7fca6ffa6e23cc4096d973997bfcad79536dec9b283fe272665bd0331",
+    "tasks/textgen/loss_public_tail_test.go": "8260f46aeead96b33063729eece2d84309cd04018bbf9c48f63f73bf64fe671f",
+    "tasks/textgen/loss_tail_sum_test.go": "1e59ca89cd1cd39683690af307d87cc0fa6e6275109a2487e0d3b5a9f9a7bb73"
+  },
+  "source_count": 876,
+  "prior_event_count": 8732,
+  "new_event_count": 65,
+  "parents": [
+    "TestRequestHeadStepTinyTail146",
+    "TestRequestHeadStepUniformLargeReadout146",
+    "TestRequestLossFiniteMean146",
+    "TestRequestLossMeanRoundingBoundary146",
+    "TestRequestLossRejectsNonFiniteLogits146",
+    "TestRequestLossRejectsNonFiniteMean146",
+    "TestRequestLossRetainsTinyTail146",
+    "TestRequestLossSubnormal146",
+    "TestRequestLossTranslatedScores146",
+    "TestRequestLossUniformOffsets146",
+    "TestTextgenLargeReadoutLoss146",
+    "TestTextgenLossRejectsNonFiniteLogits146",
+    "TestTextgenLossRetainsTinyTail146",
+    "TestTextgenLossSubnormal146",
+    "TestTextgenLossTailSumAccuracy146",
+    "TestTextgenPublicTinyTail146",
+    "TestTextgenUniformLoss146"
+  ],
+  "expected_new_events": {
+    "unit": [
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/minimum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146/sum_overflows",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146/difference_overflows",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteMean146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestHeadStepUniformLargeReadout146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/nan",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/positive_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/negative_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/balanced_targets",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/rounds_to_maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/beyond_finite_rounding",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestHeadStepTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_gap_745_and_1000",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_equal_gap_745_5",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_equal_gap_746_round_to_zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/one_group_gap_745_and_1000_other_gap_1000",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_2",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/minimum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146/NLL",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146/Step",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/nan",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/positive_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/negative_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146/NLL",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146/Step",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/one_position_winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/one_position_winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/two_positions_winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/two_positions_winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_27",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_0_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_0_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_300_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_300_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_400_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_400_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146",
+        "action": "pass"
+      }
+    ],
+    "race": [
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/minimum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossUniformOffsets146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossTranslatedScores146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146/sum_overflows",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146/difference_overflows",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossFiniteMean146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteMean146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestHeadStepUniformLargeReadout146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/nan",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/positive_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146/negative_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRejectsNonFiniteLogits146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/balanced_targets",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/rounds_to_maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146/beyond_finite_rounding",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossMeanRoundingBoundary146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestHeadStepTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_gap_745_and_1000",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_equal_gap_745_5",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/both_groups_equal_gap_746_round_to_zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146/one_group_gap_745_and_1000_other_gap_1000",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossSubnormal146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146/winner_2",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/media",
+        "test": "TestRequestLossRetainsTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/zero",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/maximum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/minimum",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/positive",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146/negative",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenUniformLoss146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146/NLL",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146/Step",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLargeReadoutLoss146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/nan",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/positive_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146/negative_infinity",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRejectsNonFiniteLogits146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146/NLL",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146/Step",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenPublicTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/one_position_winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/one_position_winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/two_positions_winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146/two_positions_winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossSubnormal146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_0",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_27",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146/winner_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossRetainsTinyTail146",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_0_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_0_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_300_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_300_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_400_runnerup_1",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146/gap_400_runnerup_258",
+        "action": "pass"
+      },
+      {
+        "package": "github.com/TimLai666/coimnet/tasks/textgen",
+        "test": "TestTextgenLossTailSumAccuracy146",
+        "action": "pass"
+      }
+    ]
+  }
+}

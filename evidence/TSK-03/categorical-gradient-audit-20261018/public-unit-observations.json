@@ -1,0 +1,29 @@
+{
+  "actual_terminal": {
+    "session_id": 7081,
+    "exit_code": 1,
+    "tool_chunk": "a5ccd5"
+  },
+  "events": [
+    [
+      "TestRequestHeadPublicGradient147",
+      "fail"
+    ],
+    [
+      "TestTextgenPublicGradient147",
+      "fail"
+    ]
+  ],
+  "observations": [
+    {
+      "test": "TestRequestHeadPublicGradient147",
+      "output": "categorical_public_gradient_audit147_test.go:229: d=[-40 -40] reference_target_gradient=[-4.248354255291589e-18 -4.248354255291589e-18] public_target_readout=[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0] reference_target_readout=[1.4065211114591927e-13 1.4065211114591927e-13 2.4468087821720537e-13 2.4468087821720537e-13 -4.8130712400342413e-14 -4.8130712400342413e-14 -1.1649357757389335e-13 -1.1649357757389335e-13 1.7057413388281684e-15 1.7057413388281684e-15 4.702775833438555e-15 4.702775833438555e-15 3.531029566156528e-13 3.531029566156528e-13 -1.8576474522019597e-13 -1.8576474522019597e-13] before_snapshot_json_sha256=e953efd852bda9682abd5abc20cd86290f6a94acb2bb45a187b989b9066df787 public_after_snapshot_json_sha256=5fe2907ba6386938c13771b41bad3906d2976b6e906bc6e6255a4fe24e7da2c8 reference_after_snapshot_json_sha256=e098e6cf453104cb16cd3e602bd258f994e19921634e9fafa1bf1af5debf31d2 public_result={Loss:0 LossKnown:false GradientNorm:5.04731940570916e-19 UpdateNorm:4.955494368392321e-13 Updates:1 Projected:map[] Learni"
+    },
+    {
+      "test": "TestTextgenPublicGradient147",
+      "output": "categorical_public_gradient_audit147_test.go:217: d=-40 reference_target_gradient=-1.0960753978652287e-15 public_target_readout=[0 0 0 0 0 0 0 0] reference_target_readout=[2.332431442585955e-11 2.8415784777708756e-11 -8.42980754158909e-12 -2.7999226549744415e-11 -7.900524446982796e-12 -1.3972733233360791e-11 3.510041986247118e-11 -1.0426800207538762e-11] before_snapshot_json_sha256=1478d463e04476a1ccdbd05a17abccfe4c773057ef5a43304681e55342d94299 public_after_snapshot_json_sha256=c7281c34fe1ae32f18b38e15fd40630dcf62e4ce42a4f3da008ed2b5e005b726 reference_after_snapshot_json_sha256=6401b54c022c8f7dae6e35026c232b9b207eed77ef5c3aac8af72ae463a7eac8 public_result={Loss:0 LossKnown:false GradientNorm:3.8402762440637014e-18 UpdateNorm:0 Updates:1 Projected:map[] LearningRate:0.01 Applied:true Accumulated:0 GradientHorizonSteps:6} reference_result={Loss:0 LossKnown:false GradientNorm:6.180339595011473e-17 UpdateNorm:6.168396881021274e-11 Updates:1 Projected:map[] LearningRate:0.01 Applied:true Accumulated:0 Gradien"
+    }
+  ],
+  "target_mismatch_entries": 24,
+  "scope": "All failure diagnostics are target readout mismatches; no fixture/setup/contract failure."
+}

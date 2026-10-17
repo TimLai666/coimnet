@@ -1,0 +1,38 @@
+{
+  "boundary_reference_method": "Python Fraction exact sum of the four finite input terms /2, then nearest float64. The categorical normalizers underflow in these cases.",
+  "references": [
+    {
+      "case": "balanced",
+      "target_hex": "0x1.56716e5f76e21p+1021",
+      "gap_mean_delta_from_max": "0",
+      "rounded": "1.7976931348623157e+308"
+    },
+    {
+      "case": "rounds_max",
+      "target_hex": "0x1.56716e5f76e20p+1021",
+      "gap_mean_delta_from_max": "2494800386918399764570465891296048207584314075544321926878184053046514864836205082231197456865794626361678058555240619054965547485491992075923964747856039275400007091188857095646922151805453733978316695930679904991663513068901087986111069085560055196883901133594695052052948119037930012409856",
+      "rounded": "1.7976931348623157e+308"
+    },
+    {
+      "case": "beyond",
+      "target_hex": "0x1.56716e5f76e19p+1021",
+      "gap_mean_delta_from_max": "19958403095347198116563727130368385660674512604354575415025472424372118918689640657849579654926357010893424468441924952439724379883935936607391717982848314203200056729510856765175377214443629871826533567445439239933308104551208703888888552684480441575071209068757560416423584952303440099278848",
+      "rounded": "inf"
+    }
+  ],
+  "test_sources": {
+    "media-mean-boundary-regression.go.txt": "91b8c60bd1cde42470ec95d076a2f1833523eef42ae05672e1629832e7597435",
+    "media-public-tail-regression.go.txt": "e0330081aa146ada3efc2dd00609a7d680ce1c399ba2ca7de3962b529628f3c2",
+    "textgen-public-tail-regression.go.txt": "8260f46aeead96b33063729eece2d84309cd04018bbf9c48f63f73bf64fe671f"
+  },
+  "expected_original": {
+    "fail": 8
+  },
+  "expected_candidate_v3_boundary": {
+    "fail": 3,
+    "pass": 1
+  },
+  "expected_candidate_final": {
+    "pass": 8
+  }
+}

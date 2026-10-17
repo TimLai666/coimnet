@@ -1,0 +1,30 @@
+{
+  "checked_at": "2026-10-17T21:02:38.342254+00:00",
+  "session_id": 28014,
+  "exit_code": 1,
+  "terminal_tool_chunk": "46152d",
+  "source_count": 877,
+  "test_events": {
+    "fail": 8
+  },
+  "package_events": {
+    "fail": 2
+  },
+  "target_zero_observations": {
+    "TestRequestLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:68: gradient[0] target=true = 0, want negative; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestRequestLossGradientTail147/winner_1": "categorical_gradient_audit147_test.go:68: gradient[1] target=true = 0, want negative; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestRequestLossGradientTail147/winner_2": "categorical_gradient_audit147_test.go:68: gradient[2] target=true = 0, want negative; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestTextgenLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:83: gradient[0] target=true = 0, want negative; got_bits=0x0000000000000000 want_bits=0xbcd3bec16e2e5052 ulp=13606428637202894930"
+  },
+  "target_accuracy_observations": {
+    "TestRequestLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:68: gradient[0] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestRequestLossGradientTail147/winner_1": "categorical_gradient_audit147_test.go:68: gradient[1] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestRequestLossGradientTail147/winner_2": "categorical_gradient_audit147_test.go:68: gradient[2] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+    "TestTextgenLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:83: gradient[0] target=true = 0, want -1.0960753978652287e-15 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbcd3bec16e2e5052 ulp=13606428637202894930",
+    "TestTextgenLossGradientTail147/winner_27": "categorical_gradient_audit147_test.go:83: gradient[27] target=true = -2.2204460492503131e-16, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcb0000000000000 want_bits=0xbcd3bec16e2e5052 ulp=10061362171367506",
+    "TestTextgenLossGradientTail147/winner_258": "categorical_gradient_audit147_test.go:83: gradient[258] target=true = -1.1102230246251565e-15, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcd4000000000000 want_bits=0xbcd3bec16e2e5052 ulp=71736990216110"
+  },
+  "root_result": "All6 frozen subcases and2 parents fail through actual Go helpers; no compiler failure. Media3 placements and textwinner0 have zero target derivatives; textwinner27/258 remainnegative but inaccurate.",
+  "scope_limit": "No public trainer-state twin, candidate fix, real-task quality or global zero-bug claim.",
+  "review_correction": "Initial root parser incorrectly assumed textwinner27 waszero; actual Go shows a nonzero inaccurate negative value. Removed that unsupported assumption; original frozen tests unchanged. Initial parser stopped before writing any acceptance artifact, toola434c3."
+}

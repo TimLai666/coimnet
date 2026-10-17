@@ -1,0 +1,21 @@
+{
+  "reviewed_at": "2026-10-17T21:15:45.904316+00:00",
+  "full_test_text_read": true,
+  "input_hashes": {
+    "media-public-gradient-regression.go.txt": "c58300c911468f50296e2172f25748664025fd60e7cf2d2064393f72f3275f6f",
+    "textgen-public-gradient-regression.go.txt": "b2b376b3a721b2826600203bc092c7f78380443618f2a2995394ca769194fbc5"
+  },
+  "status": "returned to test author before freeze or Go execution",
+  "required_corrections": [
+    "StepResult from StepFrom must LossKnownfalse,Loss0; separatepublicLoss mustfinitepositive. Existing positiveStepResult.Loss assertion contradicts actualdocumentedcontract.",
+    "Require uniform nonwinner d within1e-4 of-40, notmerelynegative.",
+    "Require analytic targetDerivative<0 and otherDerivative>0."
+  ],
+  "thresholds_unchanged": "TargetReadout strictrelative2e-6,noabsoluteallowance; source147private4ULPchecks unchanged.",
+  "actual_sources": [
+    "learning/trainer.go:104-113",
+    "tasks/media/external_tool.go:148-161",
+    "tasks/textgen/model.go:281-289"
+  ],
+  "go_run": false
+}

@@ -1,0 +1,85 @@
+{
+  "checked_at": "2026-10-17T20:15:40.155730+00:00",
+  "source_count": 866,
+  "formal_sources_unchanged": true,
+  "results": {
+    "media-tail-original-unit": {
+      "terminal": {
+        "session_id": 82774,
+        "exit_code": 1,
+        "chunk_id": "ca64ea"
+      },
+      "receipt": "media-tail-original-unit.json",
+      "receipt_sha256": "52063d0246f87bb44d6674926b139cc75c99006aeb122e86f0e007e4743a477b",
+      "log_sha256": "d97ec3ec1cae4544dac3a70811ee04f6bbad16189179dde5e7baa1e561243055",
+      "test_terminal_counts": {
+        "fail": 4
+      },
+      "gradients": {
+        "TestRequestLossRetainsTinyTail146/winner_0": "0772dd82ff22e67a3ef559ece248e7a2e38b8e5c60a1874536c1e4c9a0cd154f",
+        "TestRequestLossRetainsTinyTail146/winner_1": "05a91ab54d7ce8d1c5a9054f9ef69dc02d2ff4e95ddced35a75795eb1f6d2330",
+        "TestRequestLossRetainsTinyTail146/winner_2": "c4d7a7ad0b0f3b71a15a3989cfe3c72327ed9906fe958b2847d7972954a2fb74"
+      }
+    },
+    "textgen-tail-original-unit": {
+      "terminal": {
+        "session_id": 89575,
+        "exit_code": 1,
+        "chunk_id": "8f3f43"
+      },
+      "receipt": "textgen-tail-original-unit.json",
+      "receipt_sha256": "e0ec5214e9530cf37cfc87f8b60e60b0974bdcbb4bbc430ddf99903ab8e5bfa3",
+      "log_sha256": "3318fecdfe9298e6d0caf1adbab44f2a5f9a3a92acb9094b125f402369831a1f",
+      "test_terminal_counts": {
+        "fail": 4
+      },
+      "gradients": {
+        "TestTextgenLossRetainsTinyTail146/winner_0": "5e41c825baa4c1908df97dee43b417fd2d7e42f64abe224508ba475485187216",
+        "TestTextgenLossRetainsTinyTail146/winner_27": "245e107de411c7c4e59e77abe61e6333bb4287ba0c7542af47058bb183a09605",
+        "TestTextgenLossRetainsTinyTail146/winner_258": "031b72888545baf72290dfd0d20d6b6090367a3bf5b2882007f2ed2ab29b254b"
+      }
+    },
+    "media-tail-shift-unit": {
+      "terminal": {
+        "session_id": 7026,
+        "exit_code": 1,
+        "chunk_id": "369c1e"
+      },
+      "receipt": "media-tail-shift-unit.json",
+      "receipt_sha256": "814bb96c12872a6eb7af5f4be9c88f7b1e8ab771c16f70097c1c5c8fe598e00b",
+      "log_sha256": "968f6201309f6636fc24ea2b8d7c743b55f3104a55849c6c2a896147445a7cec",
+      "test_terminal_counts": {
+        "fail": 4
+      },
+      "gradients": {
+        "TestRequestLossRetainsTinyTail146/winner_0": "0772dd82ff22e67a3ef559ece248e7a2e38b8e5c60a1874536c1e4c9a0cd154f",
+        "TestRequestLossRetainsTinyTail146/winner_1": "05a91ab54d7ce8d1c5a9054f9ef69dc02d2ff4e95ddced35a75795eb1f6d2330",
+        "TestRequestLossRetainsTinyTail146/winner_2": "c4d7a7ad0b0f3b71a15a3989cfe3c72327ed9906fe958b2847d7972954a2fb74"
+      }
+    },
+    "textgen-tail-shift-unit": {
+      "terminal": {
+        "session_id": 76237,
+        "exit_code": 1,
+        "chunk_id": "89fc39"
+      },
+      "receipt": "textgen-tail-shift-unit.json",
+      "receipt_sha256": "fe628d46e410c3f402e9d66defd1292e6ae9c729d2a8c241faa5cc83aa7ab948",
+      "log_sha256": "78e2e7caec579edf34bfbc7d7fb9970481862be3128a197f695e555dffaeda35",
+      "test_terminal_counts": {
+        "fail": 4
+      },
+      "gradients": {
+        "TestTextgenLossRetainsTinyTail146/winner_0": "5e41c825baa4c1908df97dee43b417fd2d7e42f64abe224508ba475485187216",
+        "TestTextgenLossRetainsTinyTail146/winner_27": "245e107de411c7c4e59e77abe61e6333bb4287ba0c7542af47058bb183a09605",
+        "TestTextgenLossRetainsTinyTail146/winner_258": "031b72888545baf72290dfd0d20d6b6090367a3bf5b2882007f2ed2ab29b254b"
+      }
+    }
+  },
+  "original_and_shift_gradient_bits_match": true,
+  "root_cause": "The original and shifted candidates accumulate exp(0)=1 with tiny exponentials before Log. The addition rounds away representable tail information; a target winner therefore receives zero or position-dependent NLL.",
+  "scope": "Analytic internal-helper cases only; not public trainer-state reproduction, model quality, race or full engineering acceptance.",
+  "candidate_adopted": false,
+  "remaining": "Freeze combined tail arithmetic including representable subnormal means, then verify candidate gradients, public updates, old saves and complete engineering.",
+  "zero_bug_claim": false
+}

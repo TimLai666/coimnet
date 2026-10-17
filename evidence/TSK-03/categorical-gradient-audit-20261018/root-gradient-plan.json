@@ -1,0 +1,39 @@
+{
+  "created_at": "2026-10-17T20:59:04.837809+00:00",
+  "status": "investigating; no Go reproduction yet",
+  "scope": "Existing categorical gradient loops in media and textgen; reported-loss Ticket146 remains separate and frozen at877 sources.",
+  "source_sha256": {
+    "tasks/media/external_tool.go": "633baebc109798ce538bdf12fd7484ea1b18a6f8b755c85675031aa727df60b4",
+    "tasks/textgen/model.go": "d8c7f63565104949a9e49aef91aa35ddc7bf2dd7728c403d0757f464b43a2c06"
+  },
+  "root_cause_hypothesis": "Adding tiny tails to1 can erase them in the normalizer; subtracting1 from a rounded winning probability can erase a representable negative derivative. Class order can change the normalizer.",
+  "regression_slots": {
+    "media-gradient-regression.go.txt": "package media, requestLossGradient, two identical3-class groups, target is unique0-logit winner and other logits-40; winner placements0,1,2. Compare all6 gradients to independent160-digit references after mean divisor2.",
+    "textgen-gradient-regression.go.txt": "package textgen, default259 classes, single scored target at previous row, winner placements0,27,258, other logits-40. Compare all259 gradients to independent160-digit references with count1."
+  },
+  "expected_results": [
+    "Loss remains finite and nonnegative; target derivative strictly negative and within4 ULP of frozen independent reference.",
+    "Each non-target derivative strictly positive and within4 ULP of frozen independent reference.",
+    "Reordering the winner and target preserves the corresponding derivative values within4 ULP.",
+    "No production or formal test edits while full877-source engineering runner36559 is active."
+  ],
+  "references": [
+    {
+      "classes": 3,
+      "normalization_divisor": 2,
+      "winner_gradient_decimal": "-4.248354255291588959232207025950354878342921356045880556006266207147578727687203604151216968888920024042091541265774325626175813398939987597950968176133050272160E-18",
+      "other_gradient_decimal": "2.124177127645794479616103512975177439171460678022940278003133103573789363843601802075608484444460012021045770632887162813087906699469993798975484088066525136080E-18",
+      "winner_gradient_float64": "-0x1.39792499b1a24p-58",
+      "other_gradient_float64": "0x1.39792499b1a24p-59"
+    },
+    {
+      "classes": 259,
+      "normalization_divisor": 1,
+      "winner_gradient_decimal": "-1.096075397865228759413664768556695275229866541512889583990090891769922737634118806228565138813492324966988928850966260779101290777587084279873724792116388471594E-15",
+      "other_gradient_decimal": "4.248354255291584338812654141692617345852195897336781333294925937092723789279530256699864879122063275065848561437853723950005003013903427441371026326032513455791E-18",
+      "winner_gradient_float64": "-0x1.3bec16e2e5052p-50",
+      "other_gradient_float64": "0x1.39792499b1a1ep-58"
+    }
+  ],
+  "required_next_check": "Root review test text, freeze hashes, run original via project-local overlay. No fix or confirmed task-quality claim until actual Go evidence."
+}

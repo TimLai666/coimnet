@@ -1,0 +1,28 @@
+{
+  "previous_goal_turn": "progress: four frozen ordinary red logs proved a new candidate counterexample, preserved gradients and 866 formal sources, and changed the adoption decision",
+  "scope": ["tasks/media/external_tool.go:requestLossGradient", "tasks/textgen/model.go:(*Model).lossAndUpstream"],
+  "root_causes": [
+    "Adding a large shared maximum before subtracting the target loses normalization information.",
+    "Adding tiny exponentials to 1 before Log loses representable tail information.",
+    "Computing individual tail exponentials before summing can underflow a representable aggregate.",
+    "Rounding each group or position before averaging or summing can lose a representable aggregate."
+  ],
+  "slots": {
+    "normalization": "Track the first maximum index and the maximum of the remaining entries during the finite-value scan. Keep the original gradient sum loop unchanged. Separately sum exp(value-tailMaximum) excluding the first maximum, and form logTail=(tailMaximum-maximum)+Log(tailSum).",
+    "ordinary_tail": "For logTail >= -512*Ln2, add Log1p(Exp(logTail)) to reported loss only. Preserve shifted target gaps and existing gradient calculations.",
+    "tiny_tail": "For logTail < -512*Ln2, accumulate Exp(logTail+512*Ln2) without rounding to the subnormal range. At this magnitude log(1+x) differs from x by a relative error below 2^-512, far below float64 precision. Convert the aggregate once with Ldexp after all groups/positions.",
+    "media_mean": "Add maximum/2-target/2 per group. Accumulate ordinary log-normalizers before dividing their sum by 2. Convert tiny aggregate with Ldexp(tinySum,-513), then add to the mean. Reject a genuinely non-finite mean with zero,nil,error.",
+    "textgen_sum": "Keep existing per-position finite gap/loss and running-sum guards, masks and count. Add the tiny aggregate with Ldexp(tinySum,-512) after all scored positions. No averaging or count-contract change."
+  },
+  "expected_results": [
+    "All frozen v2 uniform/common-offset/finite-mean/nonfinite regressions remain passing.",
+    "Media winner positions 0,1,2 each match Log1p(2*Exp(-40)). Textgen winner 0,27,258 each match Log1p(258*Exp(-40)).",
+    "Media equal groups [0,-745,-1000] and [0,-745.5,-745.5] each return Float64bits 1; [0,-746,-746] and a single contributing group correctly round to 0.",
+    "Textgen 258 tails at gap746 returns bits54. Two scored rows with 258 tails each at gap751 return summed NLL bits1.",
+    "Every recorded gradient bit hash stays equal to the original within the same build and input.",
+    "Twelve normal media updates and fresh-process continuation of the four already preserved original checkpoints keep complete state/optimizer/update bytes; reported normal loss is finite, nonnegative and within the existing 16-ULP control contract."
+  ],
+  "test_policy": "Freeze and observe original red tests before writing any candidate. The implementation author does not edit the frozen tests. Original and previous shifted artifacts remain immutable.",
+  "subtraction_review": "Fix two existing arithmetic paths. Do not add a public API, dependency, model version, generalized numerical subsystem or vocabulary redesign.",
+  "claims_excluded": ["global zero bugs", "all inputs correctly rounded", "all model compatibility", "default training naturally reaches controlled logits", "model task quality", "biological validity"]
+}

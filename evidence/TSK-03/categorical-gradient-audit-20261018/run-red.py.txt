@@ -1,0 +1,64 @@
+"""Reproduce the categorical gradient defect without modifying formal sources."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run the frozen tiny-tail gradient regressions through a project-local Go overlay. Exit1 is anticipated; accept reproduction only after verifying all8 frozen failure events in the JSON log.')
+parser.add_argument('--build', choices=['unit', 'race'], default='unit', help='Ordinary or race build; each label may run only once.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/categorical-gradient-audit-20261018'
+sha = lambda b: hashlib.sha256(b).hexdigest()
+source = json.loads((E / 'source.json').read_bytes())
+frozen = json.loads((E / 'tests-frozen.json').read_bytes())
+anchor = R / 'evidence/LRN-08/aggregate-range-20261017'
+
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == frozen['work_inode']
+    assert sha((E / 'source.json').read_bytes()) == frozen['source_manifest_sha256']
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert len(source) == 877 and paths == set(source)
+    for name, digest in source.items():
+        assert sha((R / name).read_bytes()) == digest, name
+    for name, digest in frozen['files'].items():
+        assert sha((E / name).read_bytes()) == digest, name
+    assert json.loads((W / 'overlay.json').read_bytes()) == frozen['overlay']
+    for target in frozen['overlay']['Replace'].values():
+        p = Path(target)
+        assert sha(p.read_bytes()) in frozen['files'].values()
+    for manifest in ['foreign-before.json', 'protected-models.json']:
+        for name, digest in json.loads((anchor / manifest).read_bytes()).items():
+            path = Path(name) if Path(name).is_absolute() else R / name
+            assert sha(path.read_bytes()) == digest, name
+    for name, record in json.loads((anchor / 'persistent-data.json').read_bytes()).items():
+        b = (R / name).read_bytes()
+        assert len(b) == record['bytes'] and sha(b) == record['sha256'], name
+
+gate()
+env = dict(os.environ)
+env.update(json.loads((E / 'command-environment.json').read_bytes()))
+command = ['go', 'test', '-json', '-count=1', '-timeout=2m', '-overlay', str(W / 'overlay.json'), '-run', '147$']
+if args.build == 'race':
+    command.append('-race')
+command.extend(['./tasks/media', './tasks/textgen'])
+label = 'original-' + args.build
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+log = E / (label + '.log')
+with log.open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'label': label, 'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+receipt = {'command': command, 'environment_file': 'command-environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic() - start, 'source_count': len(source), 'source_manifest': 'source.json', 'log': log.name, 'log_bytes': log.stat().st_size, 'log_sha256': sha(log.read_bytes())}
+with (E / (label + '.json')).open('x') as handle:
+    json.dump(receipt, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(receipt), flush=True)
+raise SystemExit(code)

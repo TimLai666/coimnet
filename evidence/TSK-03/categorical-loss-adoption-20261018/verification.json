@@ -1,0 +1,91 @@
+{
+  "requirement": "TSK-03",
+  "related_requirements": [
+    "TSK-07"
+  ],
+  "ticket": "146",
+  "verified_at": "2026-10-17T21:21:16.000529+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/TSK-03/categorical-loss-adoption-20261018/engineering-v2.py.txt --run --label-prefix engineering-final",
+    "python3 evidence/TSK-03/categorical-loss-adoption-20261018/verify-parity.py.txt --run"
+  ],
+  "environment": {
+    "command_environment": "command-environment.json",
+    "preparation": "preparation.json",
+    "go_environment": "environment-go.json",
+    "platform": {
+      "GOOS": "darwin",
+      "GOARCH": "arm64",
+      "GOVERSION": "go1.26.5"
+    },
+    "execution": "Project-local copiedmodules andcaches,GOMAXPROCS2,GOMEMLIMIT8GiB,Insyra v0.3.4; actualrunner36559terminal0at a2dfff."
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source-v2.json",
+    "source_manifest_sha256": "34b2b3b8439e8641a4aebe15b89e692ba7820d4f022d0180718efcd2212d1206",
+    "source_entries": 877,
+    "adoption": "adoption-v2.json",
+    "tests_frozen": "tests-frozen-v2.json"
+  },
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "full_results": {
+      "unit": {
+        "test_events": {
+          "pass": 8777,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8732,
+        "new_pass_events": 68
+      },
+      "race": {
+        "test_events": {
+          "pass": 8776,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8732,
+        "new_pass_events": 68
+      }
+    },
+    "focused_pass_events_each_build": 68,
+    "normal_report_hashes_unchanged_each_build": 9,
+    "approved_neutral_gain_pass_events_each_build": 21,
+    "old_artificial_checkpoints_loaded_and_resumed": 4,
+    "normal_media_updates_preserved_each_build": 12,
+    "reported_loss_control_max_ulps": {
+      "textgen": 2,
+      "media": 1
+    },
+    "final_governance_pass_events": 31
+  },
+  "test_log": [
+    "engineering-final-unit.log.gz",
+    "engineering-final-race.log.gz",
+    "engineering-verification.json",
+    "report-and-gain-parity.json",
+    "aggregate-controls-root-verification.json"
+  ],
+  "root_review": [
+    "full-engineering-root-review.json",
+    "independent-final-review.json",
+    "cleanup-root-review.json"
+  ],
+  "runner_terminal": "runner-terminal.json",
+  "scope_limit": "Ticket146 reportedloss only;147categoricalgradients remainincorrect andunfixed. No globalzero-bug or task-qualityclaim.",
+  "known_open_issue": "../categorical-gradient-audit-20261018/public-reproduction-verification.json",
+  "final_governance_pending": false,
+  "cleanup_pending": false,
+  "delivery_pending": true,
+  "final_governance": "metadata-governance.json",
+  "cleanup": "cleanup.json",
+  "cleanup_terminal": "cleanup-terminal.json"
+}

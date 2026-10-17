@@ -1,0 +1,25 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-overlay",
+    "runs/.tmp/categorical-loss-adoption-20261018/both-original-tail-overlay.json",
+    "-run",
+    "^Test(RequestLoss|TextgenLoss)(RetainsTinyTail|Subnormal)146$",
+    "./tasks/media",
+    "./tasks/textgen"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-17T20:20:38.810218+00:00",
+  "finished_at": "2026-10-17T20:21:04.633304+00:00",
+  "exit_code": 1,
+  "seconds": 25.823025333,
+  "source_count": 866,
+  "source_manifest": "prior-source.json",
+  "log": "tail-original-race.log",
+  "log_bytes": 23748,
+  "log_sha256": "6ad75bbb191af4d7f4fb256aae7ce3470e14ad6a25b2fd12b66e96023d597f44"
+}

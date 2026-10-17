@@ -1,0 +1,24 @@
+{
+  "scope": "Two internal categorical loss helpers. Tail tests use independent analytic Log1p reference; no public trainer-state claim.",
+  "expected_original": {
+    "media_fail_events": 4,
+    "textgen_fail_events": 4
+  },
+  "expected_shift_candidate": {
+    "media_fail_events": 4,
+    "textgen_fail_events": 4
+  },
+  "expected_tail_candidate": {
+    "media_pass_events": 4,
+    "textgen_pass_events": 4
+  },
+  "gradient_contract": "Each winner gradient must remain bit-identical within each build.",
+  "tests": {
+    "media-tail-regression.go.txt": "ee11ddb04e72a86e2e0e23abbdf834c28c7b2e07124b78b3086c82bbd9629c35",
+    "textgen-tail-regression.go.txt": "f915d35c219844ae47289c44bca9c588ccaae485f291eb0c21cb7832e8e45e5d"
+  },
+  "candidate_sources": {
+    "loss-candidate.go.txt": "0f92249c2f65daa7cfe37e44e7c0db1747a89d0393b5e15ed274fd1bf9cb57f4",
+    "textgen-candidate.go.txt": "35fd67c4daaa54c6c851a560e33b731997c64ac95aec41022adf8c0b79fc528c"
+  }
+}

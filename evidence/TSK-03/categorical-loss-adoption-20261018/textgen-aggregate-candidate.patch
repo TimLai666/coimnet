@@ -1,0 +1,35 @@
+--- tasks/textgen/model.go
++++ tasks/textgen/model.go
+@@ -349,7 +349,7 @@
+ 	for i := range upstream {
+ 		upstream[i] = make([]float64, m.vocabSize)
+ 	}
+-	var sum, tinyTailSum float64
++	var sum, tinyTailSum, lossCompensation, tinyCompensation float64
+ 	for target := 1; target < len(ex.IDs); target++ {
+ 		if !ex.Scored[target] {
+ 			continue
+@@ -394,7 +394,10 @@
+ 			// Here log(1+x) rounds to x. Keep tiny terms scaled until
+ 			// all scored positions have contributed to the summed NLL.
+ 			halfExp := math.Exp(tailGap / 2)
+-			tinyTailSum += math.Ldexp(halfExp, 512) * halfExp * tailSum
++			adjusted := math.Ldexp(halfExp, 512)*halfExp*tailSum - tinyCompensation
++			next := tinyTailSum + adjusted
++			tinyCompensation = (next - tinyTailSum) - adjusted
++			tinyTailSum = next
+ 		} else {
+ 			logNormalizer = math.Log1p(math.Exp(tailGap) * tailSum)
+ 		}
+@@ -402,7 +405,10 @@
+ 		if !finite(loss) {
+ 			return 0, 0, nil, fmt.Errorf("non-finite loss at position %d", target)
+ 		}
+-		sum += loss
++		adjusted := loss - lossCompensation
++		next := sum + adjusted
++		lossCompensation = (next - sum) - adjusted
++		sum = next
+ 		if !finite(sum) {
+ 			return 0, 0, nil, fmt.Errorf("non-finite summed loss")
+ 		}

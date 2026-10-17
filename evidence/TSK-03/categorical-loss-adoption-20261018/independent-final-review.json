@@ -1,0 +1,29 @@
+{
+  "reviewer": "/root/media_training_audit_146",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "mode": "read only; no Go execution",
+  "confirmed_findings_resolved": [
+    "runner-up tail summation loss and gap/log cancellation",
+    "false media mean overflow",
+    "ordinary and tiny long-sequence aggregation loss"
+  ],
+  "root_dynamic_evidence": [
+    "tail-sum-prior-candidate-unit.json",
+    "boundary-candidate-v3-unit.json",
+    "aggregate-prior-unit.json",
+    "formal-v2-focused-root-verification.json",
+    "aggregate-controls-root-verification.json"
+  ],
+  "actual_formal_source_count": 877,
+  "full_engineering_accepted": false,
+  "bounded_review_result": "No remaining confirmed defect in the last two Kahan updates. Full engineering remains pending.",
+  "finite_sum_boundary": "Kahan can correctly reject a genuinely unrepresentable sum that historical naive rounding left finite. Historical rounded output is not the correctness criterion. No public model-format or gradient change.",
+  "final_addition_analysis": "For finite valid dimensions, at most MaxInt positions and MaxInt tails occur. In the tiny branch each scaled contribution is bounded by MaxInt, so its decoded aggregate is conservatively below 2^-385 on64-bit hosts. It cannot overflow an already finite ordinary sum: above MaxFloat64/2 it is far below half an ULP, and below that threshold the result stays far from overflow. No extra speculative finite guard was added.",
+  "unverified": [
+    "complete877-source engineering",
+    "all models/platforms",
+    "task model quality",
+    "global zero bugs"
+  ]
+}

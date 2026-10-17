@@ -1,0 +1,18 @@
+{
+  "reviewer": "/root/categorical_gradient_audit_147",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "mode": "read-only code tracing and Python Decimal120; no Go",
+  "root_verification": "Root independently reproduced all6 cases through actual Go ordinary/race, each8 failing terminal events, at46152d and6ef841.",
+  "actual_paths": [
+    "tasks/media/external_tool.go:239-270",
+    "tasks/media/external_tool.go:148-157",
+    "tasks/textgen/model.go:373-419",
+    "tasks/textgen/model.go:281-289",
+    "learning/trainer.go:362-366"
+  ],
+  "bounded_result": "Stable loss is separate from old gradient normalizer; rounded winning probability loses the negative derivative. Class order changes text upstream. Both gradients are passed toStepFrom.",
+  "public_update_impact": "Unverified; next step is identical-snapshot public Step versus independent analytic-upstream StepFrom twin. Do not infer real-task quality loss from private helper red tests.",
+  "test_author": "/root/loss_subnormal_tests_146, gpt-5.6-luna/max",
+  "opencode_failure": "../categorical-loss-adoption-20261018/opencode-models-closure.json"
+}

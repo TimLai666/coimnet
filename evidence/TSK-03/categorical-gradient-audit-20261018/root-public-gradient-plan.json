@@ -1,0 +1,18 @@
+{
+  "created_at": "2026-10-17T21:11:52.230848+00:00",
+  "scope": "Public Step versus independent analytic upstream twin; no formal source edits while877-source runner36559 remains live.",
+  "fixtures": "Reuse legal finite trainer setup from formal146 public tiny-tail tests:Embed4 Hidden8 Settle3 LR.01 Seed17, readout-only training, all1 readout baseline to find nonzero a, target columns0 and non-target columns-40/a. Media red square; text ExampleIDs[0,1] Scored[false,true].",
+  "slots": {
+    "media-public-gradient-regression.go.txt": "TestRequestHeadPublicGradient147; two identical3-class groups; derive winners withrequestInput; independent reference upstream placed only in last input row, normalized by2.",
+    "textgen-public-gradient-regression.go.txt": "TestTextgenPublicGradient147; actual259-class uniformtail row0,targetID1,count1; independent reference upstream placed atSettle-1."
+  },
+  "independent_reference": "For actual common nonwinner logit d near-40 and winner0, q=Exp(d),t=(classes-1)*q, reference target=-t/(1+t)/divisor, other=q/(1+t)/divisor. Never use either production loss-gradient helper for reference. Verify all nonwinner logits exactly equal d and winner exactly0 first.",
+  "state_controls": [
+    "Both trainers constructed from same legal tail Parameters/Config/Options, freshly zeroedoptimizer; complete snapshots DeepEqual before either update.",
+    "OnlyReadout trains. Public Step and reference StepFrom must bothApplied=true and Updates advance by1. Core andEncoder remain equal tobefore.",
+    "Winner readout columns initially zero. Reference must produce at least one finite nonzero target readout entry. Public target readout entries must match reference with strict relative2e-6 tolerance and no absolute tolerance; referencezero requires exactpubliczero. This tolerance coversfloat32 parameter rounding; private4ULP regressions cover mathematical gradient accuracy.",
+    "Finite positive loss and bothfinitepositiveGradientNorm. Log actuald,reference target derivative,public/reference target readout entries,Before/PublicAfter/ReferenceAfter snapshot JSON hashes and StepResults before failing target comparisons."
+  ],
+  "root_dynamic_check": "Root independently recomputes derivatives from logged actuald with Decimal160, runs ordinary/race publictests throughproject-local overlay, then verifies failure is target update discrepancy rather than malformedfixture.",
+  "status": "Skeleton before test dispatch; not executed, no public-state claim yet."
+}

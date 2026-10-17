@@ -1,0 +1,88 @@
+--- tasks/media/external_tool.go
++++ tasks/media/external_tool.go
+@@ -6,6 +6,7 @@
+ 	"errors"
+ 	"fmt"
+ 	"math"
++	"math/big"
+ 	"sync"
+ 
+ 	"github.com/TimLai666/coimnet/dynamics"
+@@ -215,27 +216,48 @@
+ 	}
+ 	gradient := make([]float64, len(logits))
+ 	loss := 0.0
++	logNormalizerSum, tinyTailSum := 0.0, 0.0
++	var gapTerms [4]float64
+ 	for group := 0; group < 2; group++ {
+ 		start := group * groupSize
+ 		target := colourIndex
+ 		if group == 1 {
+ 			target = shapeIndex
+ 		}
+-		maximum := math.Inf(-1)
+-		for _, value := range logits[start : start+groupSize] {
++		maximum, tailMaximum := math.Inf(-1), math.Inf(-1)
++		maximumIndex := 0
++		for i, value := range logits[start : start+groupSize] {
+ 			if math.IsNaN(value) || math.IsInf(value, 0) {
+ 				return 0, nil, fmt.Errorf("media: request head produced non-finite logits")
+ 			}
+ 			if value > maximum {
+-				maximum = value
++				tailMaximum, maximum, maximumIndex = maximum, value, i
++			} else if value > tailMaximum {
++				tailMaximum = value
+ 			}
+ 		}
+ 		sum := 0.0
+ 		for _, value := range logits[start : start+groupSize] {
+ 			sum += math.Exp(value - maximum)
+ 		}
+-		logNormalizer := maximum + math.Log(sum)
+-		loss += logNormalizer - logits[start+target]
++		// Normalize the tail separately so adding it to 1 cannot erase it.
++		tailSum := 0.0
++		for i, value := range logits[start : start+groupSize] {
++			if i != maximumIndex {
++				tailSum += math.Exp(value - tailMaximum)
++			}
++		}
++		logTail := (tailMaximum - maximum) + math.Log(tailSum)
++		if logTail < -512*math.Ln2 {
++			// Here log(1+x) rounds to x. Scale before exponentiation and
++			// round only after both groups have contributed to the mean.
++			tinyTailSum += math.Exp(logTail + 512*math.Ln2)
++		} else {
++			logNormalizerSum += math.Log1p(math.Exp(logTail))
++		}
++		// Scale before subtracting so the target gap cannot overflow.
++		gapTerms[2*group], gapTerms[2*group+1] = maximum, -logits[start+target]
++		loss += maximum/2 - logits[start+target]/2
+ 		for i, value := range logits[start : start+groupSize] {
+ 			probability := math.Exp(value-maximum) / sum
+ 			if i == target {
+@@ -244,7 +266,22 @@
+ 			gradient[start+i] = probability / 2
+ 		}
+ 	}
+-	return loss / 2, gradient, nil
++	if loss > math.MaxFloat64/2 {
++		// Round the four original terms only once in the overflow-sensitive
++		// range; separately rounded half gaps can overflow a finite mean.
++		var exact, term big.Rat
++		for _, value := range gapTerms {
++			term.SetFloat64(value)
++			exact.Add(&exact, &term)
++		}
++		exact.Quo(&exact, big.NewRat(2, 1))
++		loss, _ = exact.Float64()
++	}
++	loss += logNormalizerSum/2 + math.Ldexp(tinyTailSum, -513)
++	if math.IsNaN(loss) || math.IsInf(loss, 0) {
++		return 0, nil, fmt.Errorf("media: request head mean loss is not finite")
++	}
++	return loss, gradient, nil
+ }
+ 
+ // argMax returns the first index containing the largest value.

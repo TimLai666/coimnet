@@ -1,0 +1,58 @@
+"""Copy pinned modules into the owned project-local validation root."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, shutil, tarfile
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--run", action="store_true", help="Copy and fingerprint pinned modules into this exact owned work root.")
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+W = R / 'runs/.tmp/categorical-loss-adoption-20261018'
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+baseline = json.loads((E / 'baseline.json').read_text())
+assert W.stat().st_ino == baseline['work_inode']
+preserved = json.loads((P / 'work-preservation.json').read_text())
+archive = P / preserved['archive']
+assert sha(archive) == preserved['archive_sha256']
+with tarfile.open(archive) as handle:
+    raw = handle.extractfile('module-originals.json').read()
+assert hashlib.sha256(raw).hexdigest() == preserved['payload']['module-originals.json']
+originals = json.loads(raw)
+assert len(originals) == 15046
+global_modules = Path('/Users/timlai/go/pkg/mod')
+roots = set()
+for name, digest in originals.items():
+    p = Path(name)
+    assert p.is_file() and not p.is_symlink() and sha(p) == digest, name
+    relative = p.relative_to(global_modules)
+    index = next(i for i, part in enumerate(relative.parts) if '@' in part)
+    roots.add(global_modules.joinpath(*relative.parts[:index + 1]))
+assert len(roots) == 45
+metadata = 0
+for root in sorted(roots):
+    relative = root.relative_to(global_modules)
+    shutil.copytree(root, W / 'go-mod-cache' / relative, copy_function=shutil.copy2)
+    module, version = str(relative).rsplit('@', 1)
+    for name in [version + '.mod', version + '.info', version + '.ziphash', version + '.lock', 'list']:
+        src = global_modules / 'cache/download' / module / '@v' / name
+        if src.is_file():
+            dst = W / 'go-mod-cache/cache/download' / module / '@v' / name
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dst)
+            metadata += 1
+for name, digest in originals.items():
+    p = W / 'go-mod-cache' / Path(name).relative_to(global_modules)
+    assert sha(p) == digest and p.stat().st_ino != Path(name).stat().st_ino, name
+with (W / 'module-originals.json').open('xb') as handle:
+    handle.write(raw)
+out = {'prepared_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'source_archive': str(archive.relative_to(R)), 'archive_sha256': preserved['archive_sha256'], 'member': 'module-originals.json', 'member_sha256': hashlib.sha256(raw).hexdigest(), 'module_files': len(originals), 'modules': len(roots), 'metadata_files': metadata, 'private_copies_match': True, 'private_inodes_differ': True}
+with (E / 'preparation.json').open('x') as handle:
+    json.dump(out, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(out), flush=True)

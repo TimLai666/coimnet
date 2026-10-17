@@ -1,0 +1,67 @@
+--- tasks/textgen/model.go
++++ tasks/textgen/model.go
+@@ -349,7 +349,7 @@
+ 	for i := range upstream {
+ 		upstream[i] = make([]float64, m.vocabSize)
+ 	}
+-	var sum float64
++	var sum, tinyTailSum float64
+ 	for target := 1; target < len(ex.IDs); target++ {
+ 		if !ex.Scored[target] {
+ 			continue
+@@ -358,13 +358,16 @@
+ 		if len(row) != m.vocabSize {
+ 			return 0, 0, nil, fmt.Errorf("logits at position %d have width %d, want %d", target-1, len(row), m.vocabSize)
+ 		}
+-		maxLogit := math.Inf(-1)
+-		for _, value := range row {
++		maxLogit, tailMaximum := math.Inf(-1), math.Inf(-1)
++		maximumIndex := 0
++		for i, value := range row {
+ 			if math.IsNaN(value) || math.IsInf(value, 0) {
+ 				return 0, 0, nil, fmt.Errorf("logits at position %d contain a non-finite value", target-1)
+ 			}
+ 			if value > maxLogit {
+-				maxLogit = value
++				tailMaximum, maxLogit, maximumIndex = maxLogit, value, i
++			} else if value > tailMaximum {
++				tailMaximum = value
+ 			}
+ 		}
+ 		expSum := 0.0
+@@ -374,8 +377,24 @@
+ 		if !finite(expSum) || expSum <= 0 {
+ 			return 0, 0, nil, fmt.Errorf("invalid logit normalization at position %d", target-1)
+ 		}
+-		logNormalizer := maxLogit + math.Log(expSum)
+-		loss := logNormalizer - row[ex.IDs[target]]
++		// Keep the tail separate from the winning exponential and normalize
++		// it before exponentiation so a representable aggregate survives.
++		tailSum := 0.0
++		for i, value := range row {
++			if i != maximumIndex {
++				tailSum += math.Exp(value - tailMaximum)
++			}
++		}
++		logTail := (tailMaximum - maxLogit) + math.Log(tailSum)
++		logNormalizer := 0.0
++		if logTail < -512*math.Ln2 {
++			// Here log(1+x) rounds to x. Keep tiny terms scaled until
++			// all scored positions have contributed to the summed NLL.
++			tinyTailSum += math.Exp(logTail + 512*math.Ln2)
++		} else {
++			logNormalizer = math.Log1p(math.Exp(logTail))
++		}
++		loss := (maxLogit - row[ex.IDs[target]]) + logNormalizer
+ 		if !finite(loss) {
+ 			return 0, 0, nil, fmt.Errorf("non-finite loss at position %d", target)
+ 		}
+@@ -389,7 +408,7 @@
+ 		}
+ 		gradient[ex.IDs[target]] -= 1 / float64(count)
+ 	}
+-	return sum, count, upstream, nil
++	return sum + math.Ldexp(tinyTailSum, -512), count, upstream, nil
+ }
+ 
+ // uniform returns n deterministic values in [-scale, scale) from source.

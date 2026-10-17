@@ -1,0 +1,9 @@
+{
+  "root_cause": "The two separately rounded half-gap differences can sum to infinity even when the exact four-term gap mean rounds to MaxFloat64. The frozen original and prior candidate both fail this case.",
+  "reproduction": "Both maxima are MaxFloat64; targets are opposite values with magnitude Float64frombits(0x7fc56716e5f76e21). Their exact target sum is zero. See public-and-boundary-tests-frozen.json and boundary-candidate-v3-unit.json.",
+  "slot": "Keep the normal half-gap fast path. Store the four original signed gap terms. If the computed gap mean exceeds MaxFloat64/2, recompute the four-term sum and division by 2 with math/big.Rat before rounding once to float64. The entire overflow-sensitive upper interval uses the fallback, including finite results, so it can detect false finite as well as false infinite rounding.",
+  "expected": "The balanced and just-above-MaxFloat64 exact means round to MaxFloat64 without error. A mean beyond finite rounding returns zero,nil,error. Frozen normal/tiny/common-offset cases and all gradient/update controls remain unchanged.",
+  "preserve": "No public API, model format, external dependency or normal gradient calculation changes. math/big is used only on the extreme upper-range fallback.",
+  "test_policy": "The three boundary subcases and their parent are frozen before this candidate. No test thresholds are weakened.",
+  "global_zero_bug_claim": false
+}

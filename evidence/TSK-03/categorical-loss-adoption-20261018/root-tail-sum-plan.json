@@ -1,0 +1,9 @@
+{
+  "root_cause": "Normalizing a runner-up tail can repeat the original 1+tiny loss. Adding Log(tailSum) to a large negative gap also discards its small correction before Exp. Independent Decimal references show 99/113-ULP errors in the prior text candidate.",
+  "places": ["media reported-loss tail loop", "textgen reported-loss tail loop"],
+  "slot": "Use Kahan accumulation for the separate runner-up-normalized tail sum. Multiply Exp(tailMaximum-maximum) by that sum directly for Log1p instead of a Log/Exp round trip. Preserve the original gradient normalization loops exactly.",
+  "tiny_slot": "Below -512*Ln2, let halfExp=Exp((tailMaximum-maximum)/2). Accumulate Ldexp(halfExp,512)*halfExp*tailSum and convert the aggregate once after groups/positions. This avoids adding a large scale constant to the log argument and retains the existing subnormal aggregate contract. Since tailSum<=MaxInt, the tail remains far below float64 relative precision and log(1+x) rounds to x.",
+  "checks": "Freeze and observe old-candidate failure on six Decimal-reference permutations at gaps0,300,400, with maximum error4ULP; preserve all prior58 focused outcomes,14 gradient hashes,3 public observations and normal/old-model state controls.",
+  "scope": "Reported loss only. The prior extreme-mean exact fallback remains. No public API, model version, external dependency or gradient changes.",
+  "global_zero_bug_claim": false
+}

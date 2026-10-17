@@ -1,0 +1,70 @@
+{
+  "created_at": "2026-10-17T21:22:48.849323+00:00",
+  "reviewer": "/root/categorical_gradient_audit_147",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "root_scope": "Root read actualsource for6additional files attool7fe150; remaining2delegatedleads explicitlyunverified. No additionalGo reproduction orfixclaim.",
+  "entries": [
+    {
+      "file": "experiment/multimodaleval/model.go",
+      "lines": "212-235,332-349",
+      "source_sha256": "5877401d5fd59c536e73e3c2be463676f1e51b840d25ce7653347748ec6181b5",
+      "objective": "Two3-class onehot CE heads; retain separatehead scale.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "experiment/imitation.go",
+      "lines": "232-247,374-391",
+      "source_sha256": "fb39e11027e45337ec6bc32b379e12a4864a735cbb5b7ffc7aae26a93bcf8961",
+      "objective": "Onehot CE with episode averaging.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "experiment/nav2d_policy.go",
+      "lines": "318-370",
+      "source_sha256": "ca30b91e03caa2461809af5a51b400ae3f779e38cbad7882050075f4313cc4f7",
+      "objective": "Onehot CE with inverse-frequency weights and settle/episode scale; preserveallweightfactors.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "tasks/ocr/recognizer.go",
+      "lines": "335-371",
+      "source_sha256": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863",
+      "objective": "Onehot CE over nonblankclasses1..N-1; preserveblankexclusion.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "distill/distribution.go",
+      "lines": "246-262,287-315",
+      "source_sha256": "affac62481edd50b890b0d7a1bcc51b208980fa59a44aace378367c416b2f5c1",
+      "objective": "LabelCE component sharespattern; teacherKL/mixedtarget mustseparate.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "learning/rl/objective.go",
+      "lines": "135-159,180-221",
+      "source_sha256": "30df00d2fdf9e9b0f5dbc4a9d4f28f7e5e763ceeb14d1668f6a3dee8ba44cf98",
+      "objective": "PPO clippedsurrogate,entropy,value andmaskedactions; notpureCE.",
+      "status": "root-read; noGo reproduction yet"
+    },
+    {
+      "file": "experiment/multitask_core.go",
+      "lines": "169-175,283-294",
+      "source_sha256": "f01e85a2bd2c27ca12c80304001837a6b89759eda0dbb165637c9f08791e1982",
+      "objective": "Corridor CE usesimitationSoftmax; delaytaskMSEseparate.",
+      "status": "delegatelead; caller detailsnotyetrootreviewed"
+    },
+    {
+      "file": "tasks/ocr/ctc/ctc.go",
+      "lines": "100-139,218-273",
+      "source_sha256": "8c9aa1b04eb50c7969b8dd0023483817928c64f5fd246511e862b90b77427058",
+      "objective": "CTCposterior derivative,notonehotCE; ownreference required.",
+      "status": "delegatelead; detailsnotyetrootreviewed"
+    }
+  ],
+  "sampling_exclusion": "PPOcollection andtextgeneration sampling have no upstream; do notmechanicallyapplytrainingderivatives.",
+  "current147scope": "Reproduce sameonehotCE mechanism atrelatedtrainingentrypoints beforeclaimingcompletefix. PPO/KL/CTC needobjective-specific evidence.",
+  "public_plan_review": "Nozeroerrorbypass: got0/wantnonzero hasrelativeerror1; actualGo unit/race nowconfirm24targetentries differ. Referenceupstream notproductionhelper.",
+  "root_precision_source": "learning/network.go:688-707 actualfloat32tensorconversion, source688 differsfromstalegraphline682.",
+  "known_fixed": false
+}

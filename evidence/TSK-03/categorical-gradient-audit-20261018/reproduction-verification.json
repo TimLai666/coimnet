@@ -1,0 +1,65 @@
+{
+  "verified_at": "2026-10-17T21:04:07.108273+00:00",
+  "source_count": 877,
+  "source_manifest": "source.json",
+  "source_manifest_sha256": "34b2b3b8439e8641a4aebe15b89e692ba7820d4f022d0180718efcd2212d1206",
+  "reproduction_confirmed": true,
+  "candidate_fixed": false,
+  "formal_sources_changed": false,
+  "results": {
+    "unit": {
+      "session_id": 28014,
+      "exit_code": 1,
+      "terminal_tool_chunk": "46152d",
+      "test_events": {
+        "fail": 8
+      },
+      "package_events": {
+        "fail": 2
+      },
+      "log": "original-unit.log",
+      "log_sha256": "f5c8a3d5b2a6705235cf3e4e3fa951f0098cb1056ac9793eaca7aa61d9bffd8a",
+      "expected_failures_exact": true,
+      "data_race_warning": false
+    },
+    "race": {
+      "session_id": 70636,
+      "exit_code": 1,
+      "terminal_tool_chunk": "6ef841",
+      "test_events": {
+        "fail": 8
+      },
+      "package_events": {
+        "fail": 2
+      },
+      "log": "original-race.log",
+      "log_sha256": "75032a27f24106bac36e531bb9cf34b57a413247723aea89c9d31a8c590b532d",
+      "expected_failures_exact": true,
+      "data_race_warning": false
+    }
+  },
+  "observations": {
+    "unit": {
+      "TestRequestLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:68: gradient[0] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestRequestLossGradientTail147/winner_1": "categorical_gradient_audit147_test.go:68: gradient[1] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestRequestLossGradientTail147/winner_2": "categorical_gradient_audit147_test.go:68: gradient[2] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestTextgenLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:83: gradient[0] target=true = 0, want -1.0960753978652287e-15 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbcd3bec16e2e5052 ulp=13606428637202894930",
+      "TestTextgenLossGradientTail147/winner_27": "categorical_gradient_audit147_test.go:83: gradient[27] target=true = -2.2204460492503131e-16, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcb0000000000000 want_bits=0xbcd3bec16e2e5052 ulp=10061362171367506",
+      "TestTextgenLossGradientTail147/winner_258": "categorical_gradient_audit147_test.go:83: gradient[258] target=true = -1.1102230246251565e-15, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcd4000000000000 want_bits=0xbcd3bec16e2e5052 ulp=71736990216110"
+    },
+    "race": {
+      "TestRequestLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:68: gradient[0] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestRequestLossGradientTail147/winner_1": "categorical_gradient_audit147_test.go:68: gradient[1] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestRequestLossGradientTail147/winner_2": "categorical_gradient_audit147_test.go:68: gradient[2] target=true = 0, want -4.2483542552915889e-18 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbc539792499b1a24 ulp=13570356756753357348",
+      "TestTextgenLossGradientTail147/winner_0": "categorical_gradient_audit147_test.go:83: gradient[0] target=true = 0, want -1.0960753978652287e-15 within 4 ULP; got_bits=0x0000000000000000 want_bits=0xbcd3bec16e2e5052 ulp=13606428637202894930",
+      "TestTextgenLossGradientTail147/winner_27": "categorical_gradient_audit147_test.go:83: gradient[27] target=true = -2.2204460492503131e-16, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcb0000000000000 want_bits=0xbcd3bec16e2e5052 ulp=10061362171367506",
+      "TestTextgenLossGradientTail147/winner_258": "categorical_gradient_audit147_test.go:83: gradient[258] target=true = -1.1102230246251565e-15, want -1.0960753978652287e-15 within 4 ULP; got_bits=0xbcd4000000000000 want_bits=0xbcd3bec16e2e5052 ulp=71736990216110"
+    }
+  },
+  "diagnostic_limit": "Test diagnostics label raw bit-pattern distance as ULP even across opposite signs. The zero-vs-negative values are established by the independent explicit sign checks; do not interpret that cross-sign diagnostic number as an ordered ULP metric. Same-sign4ULP checks remain valid. Tests have not been modified after freeze.",
+  "scope_limit": [
+    "Actual Go package-private helpers, six exact tiny-tail cases; no compiler failure.",
+    "Public trainer-state twin and actual model-quality impact not yet verified.",
+    "No fixed candidate, full147engineering, delivery or global zero-bug claim."
+  ]
+}

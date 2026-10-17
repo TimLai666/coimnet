@@ -1,0 +1,29 @@
+{
+  "command": [
+    "env",
+    "COIMNET_146_COMPAT_MODE=load",
+    "COIMNET_146_COMPAT_ROOT=/Users/timlai/Developer/coimnet/runs/.tmp/categorical-loss-adoption-20261018/models-race",
+    "COIMNET_146_COMPAT_OUTPUT=/Users/timlai/Developer/coimnet/runs/.tmp/categorical-loss-adoption-20261018/compat-aggregate-controls-race.json",
+    "go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-overlay",
+    "runs/.tmp/categorical-loss-adoption-20261018/aggregate-controls-overlay.json",
+    "-run",
+    "^TestRoot(ObserveRequestTraining|TextgenCompatibility)146$",
+    "./tasks/media",
+    "./tasks/textgen"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-17T20:43:46.592490+00:00",
+  "finished_at": "2026-10-17T20:43:50.673192+00:00",
+  "exit_code": 0,
+  "seconds": 4.080623834,
+  "source_count": 876,
+  "source_manifest": "formal-source.json",
+  "log": "controls-aggregate-race.log",
+  "log_bytes": 4335,
+  "log_sha256": "25c965ff465f0ee98a90aab543374832bb693eef25a44e4156b724c4673cdf06"
+}

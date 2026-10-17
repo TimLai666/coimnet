@@ -1,0 +1,8 @@
+{
+  "root_cause": "Plain per-position additions can discard many individually small reported losses after an earlier larger term. The same pattern occurs in both ordinary NLL and the scaled tiny accumulator.",
+  "slot": "Apply Kahan compensation independently to the ordinary sum and tinyTailSum in textgen lossAndUpstream. Keep per-position finite checks, count, mask and gradient loops. Convert the tiny aggregate only once after all scored positions.",
+  "expected": "Two frozen 2049-position default-259-vocabulary cases match independent Decimal500 references within4ULP; preserve all previous65 outcomes and original gradient/update/model controls.",
+  "source_policy": "Preserve the876-source manifest and stopped engineering attempt. Any new formal source and tests use versioned manifests so old receipts still resolve their original fingerprints.",
+  "scope": "Reported loss accumulation only; no public API, model format or external dependency changes.",
+  "global_zero_bug_claim": false
+}
