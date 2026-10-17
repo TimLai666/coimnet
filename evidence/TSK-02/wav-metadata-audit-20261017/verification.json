@@ -1,0 +1,129 @@
+{
+  "verified_at": "2026-10-17T16:05:49.482464+00:00",
+  "root_reviewed": true,
+  "observational_probe_passed": true,
+  "confirmed_product_defects": {
+    "metadata_truncation": {
+      "severity": "P2",
+      "source": "tasks/asr/audio/wav.go:178-192",
+      "root_cause": "Unchecked native int arithmetic and narrowing casts before PCM16 RIFF output.",
+      "public_cases": [
+        "byte_rate_overflow",
+        "channels_overflow",
+        "sample_rate_overflow"
+      ]
+    }
+  },
+  "normal_control_passed": true,
+  "rows": [
+    {
+      "name": "normal",
+      "int_bits": 64,
+      "input_rate": 8000,
+      "input_channels": 1,
+      "input_frames": 1,
+      "file_bytes": 46,
+      "sha256": "baee7bfeaadc5ce67fdcc38259844158c60cafd3a56eefae5e5566d097430cb6",
+      "header_hex": "524946462600000057415645666d74201000000001000100401f0000803e0000020010006461746102000000",
+      "header_rate": 8000,
+      "header_channels": 1,
+      "header_byte_rate": 16000,
+      "header_block_align": 2,
+      "decoded_rate": 8000,
+      "decoded_channels": 1,
+      "decoded_frames": 1,
+      "exact_byte_rate": 16000,
+      "exact_block_align": 2
+    },
+    {
+      "name": "byte_rate_overflow",
+      "int_bits": 64,
+      "input_rate": 1073749824,
+      "input_channels": 2,
+      "input_frames": 1,
+      "file_bytes": 48,
+      "sha256": "92055467ea0a35e2d1e8ce881e1f58a63713eb229941acb5ba1d4b3c880c2383",
+      "header_hex": "524946462800000057415645666d74201000000001000200401f0040007d0000040010006461746104000000",
+      "header_rate": 1073749824,
+      "header_channels": 2,
+      "header_byte_rate": 32000,
+      "header_block_align": 4,
+      "decoded_rate": 1073749824,
+      "decoded_channels": 2,
+      "decoded_frames": 1,
+      "exact_byte_rate": 4294999296,
+      "exact_block_align": 4
+    },
+    {
+      "name": "channels_overflow",
+      "int_bits": 64,
+      "input_rate": 8000,
+      "input_channels": 65536,
+      "input_frames": 1,
+      "read_error": "audio: channel count is zero",
+      "inspect_error": "audio: channel count is zero",
+      "file_bytes": 131116,
+      "sha256": "e8016711faa5811b5f60eb810fcc152a1c22b861aee5dc61c07686c76080db29",
+      "header_hex": "524946462400020057415645666d74201000000001000000401f00000000803e000010006461746100000200",
+      "header_rate": 8000,
+      "header_channels": 0,
+      "header_byte_rate": 1048576000,
+      "header_block_align": 0,
+      "decoded_rate": 0,
+      "decoded_channels": 0,
+      "decoded_frames": 0,
+      "exact_byte_rate": 1048576000,
+      "exact_block_align": 131072
+    },
+    {
+      "name": "sample_rate_overflow",
+      "int_bits": 64,
+      "input_rate": 4294975296,
+      "input_channels": 1,
+      "input_frames": 1,
+      "file_bytes": 46,
+      "sha256": "baee7bfeaadc5ce67fdcc38259844158c60cafd3a56eefae5e5566d097430cb6",
+      "header_hex": "524946462600000057415645666d74201000000001000100401f0000803e0000020010006461746102000000",
+      "header_rate": 8000,
+      "header_channels": 1,
+      "header_byte_rate": 16000,
+      "header_block_align": 2,
+      "decoded_rate": 8000,
+      "decoded_channels": 1,
+      "decoded_frames": 1,
+      "exact_byte_rate": 8589950592,
+      "exact_block_align": 2
+    }
+  ],
+  "probe_receipt": "probe.json",
+  "raw_log_sha256": "9cc8b37b31ef1226f7e024f1c36d2d14a33dfd32a7eb93fa95b5f85b4527846f",
+  "formal_source_manifest": "evidence/OPS-03/report-ownership-adoption-20261017/formal-source.json",
+  "formal_source_count": 859,
+  "formal_source_changed": false,
+  "formal_fix_adopted": false,
+  "engineering_passed": false,
+  "model_quality_claim": false,
+  "limitations": [
+    "64-bit runtime only; no claim of a new 32-bit execution.",
+    "No multi-gigabyte file or unrepresentable data-length allocation was attempted.",
+    "Reader leniency, Signal.Channels disagreement and documented NaN silence are not classified as defects."
+  ],
+  "delegation": {
+    "host": "Codex",
+    "readonly_worker": "/root/wav_metadata_readonly_142",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "basis": "Project-specific delegation rule overrides general skill model/effort. Root independently checked source and ran the public probe.",
+    "current_turn_opencode_models": {
+      "chunk": "908446",
+      "exit_code": 1,
+      "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+    },
+    "worker_modified_files": []
+  },
+  "milestones": {
+    "verified": 1,
+    "total": 5
+  },
+  "next": "Finish frozen report delivery, then ASR synthesis ticket141, then test-first WAV writer guards."
+}

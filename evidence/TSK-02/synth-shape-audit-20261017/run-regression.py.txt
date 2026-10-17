@@ -1,0 +1,65 @@
+"""Run frozen synthetic-audio regressions through a source-preserving overlay."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--implementation', choices=['original', 'candidate'], required=True, help='Original formal synth.go or the separately reviewed candidate source; never modifies formal Go files.')
+parser.add_argument('--race', action='store_true', help='Build and execute the same frozen tests with Go race instrumentation.')
+args = parser.parse_args()
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+baseline = json.loads((E / 'candidate-baseline.json').read_text())
+W = R / baseline['work_root']
+parent = R / baseline['parent_cache_root']
+source = json.loads((R / baseline['source_manifest']).read_text())
+frozen = json.loads((E / 'shape-tests-frozen.json').read_text())
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == baseline['work_inode']
+    assert not parent.is_symlink() and parent.stat().st_ino == baseline['parent_cache_inode']
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert len(source) == 859 and paths == set(source)
+    for name, digest in source.items():
+        assert sha((R / name).read_bytes()) == digest, name
+    assert sha((E / 'regression.go.txt').read_bytes()) == frozen['sha256']
+
+def own_copy(name, raw):
+    p = W / name
+    if p.exists():
+        assert p.is_file() and not p.is_symlink() and p.read_bytes() == raw
+    else:
+        with p.open('xb') as handle:
+            handle.write(raw)
+    return p
+
+gate()
+test = own_copy('regression.go', (E / 'regression.go.txt').read_bytes())
+replace = {str(R / frozen['future_path']): str(test)}
+if args.implementation == 'candidate':
+    candidate = json.loads((E / 'candidate-source.json').read_text())
+    raw = (E / candidate['path']).read_bytes()
+    assert sha(raw) == candidate['sha256']
+    replace[str(R / 'tasks/asr/synth.go')] = str(own_copy('candidate-synth.go', raw))
+overlay = own_copy(args.implementation + '-overlay.json', (json.dumps({'Replace': replace}, indent=2) + '\n').encode())
+label = 'tdd-' + args.implementation + ('-race' if args.race else '-unit')
+assert not (E / (label + '.json')).exists()
+command = ['go', 'test'] + (['-race'] if args.race else []) + ['-overlay=' + str(overlay), '-json', '-count=1', '-timeout=5m', '-run', '^Test(SynthConfigExactSampleLengths|SynthesizeRejectsUnrepresentableLength|SynthShapeNormalAndEmptyGeneration)$', './tasks/asr']
+env = dict(os.environ)
+env.update(json.loads((E / 'candidate-environment.json').read_text()))
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+log = E / (label + '.log')
+with log.open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'label': label, 'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+result = {'command': command, 'environment': 'candidate-environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic() - start, 'source_manifest': baseline['source_manifest'], 'source_count': len(source), 'frozen_tests': 'shape-tests-frozen.json', 'regression_sha256': frozen['sha256'], 'log': log.name, 'log_sha256': sha(log.read_bytes()), 'formal_go_unchanged': True}
+with (E / (label + '.json')).open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)
+raise SystemExit(code)

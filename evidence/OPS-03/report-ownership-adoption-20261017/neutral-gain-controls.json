@@ -1,0 +1,118 @@
+{
+  "checked_at": "2026-10-17T15:26:30.908678+00:00",
+  "authorization": "User approved refusing effective gain bounds which exclude neutral 1; implementation was already adopted and delivered in ticket89.",
+  "current_source": "modulation/effects.go:208",
+  "effective_rule": "0 < GammaMin <= 1 <= GammaMax (after existing zero defaults)",
+  "log": "engineering-final-unit.log.gz",
+  "log_sha256": "e81f954c1749a6918474bee2b85732e691dd9d13e0fc4e4364cdaf3d6682655d",
+  "control_events": [
+    {
+      "package": "github.com/TimLai666/coimnet/learning",
+      "test": "TestNeutralGainRejectsConstructionAndRestore/lower_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/learning",
+      "test": "TestNeutralGainRejectsConstructionAndRestore/upper_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/learning",
+      "test": "TestNeutralGainRejectsConstructionAndRestore/point_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/learning",
+      "test": "TestNeutralGainRejectsConstructionAndRestore",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange//lower_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange//upper_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange//point_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange//next_above_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange//next_below_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/sum/lower_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/sum/upper_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/sum/point_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/sum/next_above_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/sum/next_below_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/max/lower_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/max/upper_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/max/point_excludes",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/max/next_above_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange/max/next_below_one",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRejectsExcludedRange",
+      "action": "pass"
+    },
+    {
+      "package": "github.com/TimLai666/coimnet/modulation",
+      "test": "TestNeutralGainRetainsValidRanges",
+      "action": "pass"
+    }
+  ],
+  "scope": "These 21 controls passed in the first full ordinary run. That overall run failed solely on two stale format-index source links; it is not counted as accepted full engineering. Final ordinary and race results remain pending.",
+  "original_adoption_evidence": "evidence/MOD-04/neutral-gain-adoption-20261014/verification.json",
+  "compatibility": "Old invalid effective ranges are refused; no new migration or reimplementation in this stage."
+}

@@ -1,0 +1,97 @@
+package main
+
+import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strconv"
+
+	"github.com/TimLai666/coimnet/tasks/asr/audio"
+)
+
+type result struct {
+	Name             string `json:"name"`
+	IntBits          int    `json:"int_bits"`
+	InputRate        int    `json:"input_rate"`
+	InputChannels    int    `json:"input_channels"`
+	InputFrames      int    `json:"input_frames"`
+	WriteError       string `json:"write_error,omitempty"`
+	ReadError        string `json:"read_error,omitempty"`
+	InspectError     string `json:"inspect_error,omitempty"`
+	FileBytes        int    `json:"file_bytes"`
+	SHA256           string `json:"sha256,omitempty"`
+	HeaderHex        string `json:"header_hex,omitempty"`
+	HeaderRate       uint32 `json:"header_rate"`
+	HeaderChannels   uint16 `json:"header_channels"`
+	HeaderByteRate   uint32 `json:"header_byte_rate"`
+	HeaderBlockAlign uint16 `json:"header_block_align"`
+	DecodedRate      int    `json:"decoded_rate"`
+	DecodedChannels  int    `json:"decoded_channels"`
+	DecodedFrames    int    `json:"decoded_frames"`
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		panic("need owned output directory")
+	}
+	type testCase struct {
+		name           string
+		rate, channels int
+	}
+	cases := []testCase{{"normal", 8000, 1}, {"byte_rate_overflow", (1 << 30) + 8000, 2}, {"channels_overflow", 8000, 65536}}
+	if strconv.IntSize == 64 {
+		wide := uint64(1) << 32
+		cases = append(cases, testCase{"sample_rate_overflow", int(wide + 8000), 1})
+	}
+	out := make([]result, 0, len(cases))
+	for _, c := range cases {
+		samples := make([][]float64, c.channels)
+		frame := []float64{0.25}
+		for i := range samples {
+			samples[i] = frame
+		}
+		path := filepath.Join(os.Args[1], c.name+".wav")
+		row := result{Name: c.name, IntBits: strconv.IntSize, InputRate: c.rate, InputChannels: c.channels, InputFrames: 1}
+		if err := audio.WriteWAV(path, audio.Signal{SampleRate: c.rate, Channels: c.channels, Samples: samples}); err != nil {
+			row.WriteError = err.Error()
+			out = append(out, row)
+			continue
+		}
+		raw, err := os.ReadFile(path)
+		if err != nil {
+			panic(err)
+		}
+		if len(raw) < 44 {
+			panic("short written WAV")
+		}
+		digest := sha256.Sum256(raw)
+		row.FileBytes = len(raw)
+		row.SHA256 = fmt.Sprintf("%x", digest)
+		row.HeaderHex = hex.EncodeToString(raw[:44])
+		row.HeaderChannels = binary.LittleEndian.Uint16(raw[22:24])
+		row.HeaderRate = binary.LittleEndian.Uint32(raw[24:28])
+		row.HeaderByteRate = binary.LittleEndian.Uint32(raw[28:32])
+		row.HeaderBlockAlign = binary.LittleEndian.Uint16(raw[32:34])
+		decoded, err := audio.ReadWAV(path)
+		if err != nil {
+			row.ReadError = err.Error()
+		} else {
+			row.DecodedRate = decoded.SampleRate
+			row.DecodedChannels = decoded.Channels
+			if len(decoded.Samples) > 0 {
+				row.DecodedFrames = len(decoded.Samples[0])
+			}
+		}
+		if _, err := audio.InspectWAV(raw); err != nil {
+			row.InspectError = err.Error()
+		}
+		out = append(out, row)
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(out); err != nil {
+		panic(err)
+	}
+}

@@ -1,0 +1,36 @@
+{
+  "at": "2026-10-17T15:21:50.266792+00:00",
+  "readonly_agent": "/root/asr_shape_boundary_141",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "source_sha256": {
+    "tasks/asr/synth.go": "6b7c4f27c80afd43544c0a0d415fb50e538245108e67dd3b2d6d13ee8ab4e724",
+    "tasks/asr/dataset.go": "9e991952dec85386bb1c0ba887536f6ac090549e6c68388c2680fb88bc0593c7",
+    "tasks/asr/audio/signal.go": "d6a35017afefdb591c76cdbe8240ceb6f70b6a7f9fa5b04eeed8c6595c7d0bfb",
+    "tasks/asr/audio/wav.go": "6cd136a262dcef7722a370a19c8655bcb2531bf8416253502f4880e8c9af3824",
+    "tasks/asr/recognizer_test.go": "dfceb586f75e8aca539e72f568c98a67cf0a9ec770abb451f39e0c0e8a70afcf",
+    "tasks/asr/audio/audio_test.go": "b6086a1e46cead7d5e7e89b4325ef9f69b59fd3922773fd404ed0ea025789650"
+  },
+  "root_review": [
+    "Verified private duration/gap helpers have only Validate and Synthesize callers; public signatures can remain unchanged.",
+    "Existing checkedProduct and checkedAdd operate on nonnegative int64. Final native int and float64 byte bounds require separate checks on 32-bit platforms.",
+    "bits.Mul64/Div64 as used by audio.resampleOutputLength can preserve wide products, but synthesis must truncate rather than round.",
+    "Unused gap for a single character must not cause a new refusal; Generate n=0 still validates config and min/max ordering and returns a nonnil empty slice.",
+    "A duration quotient may be int-representable but exceed float64 byte capacity; validation of scalar sample count and allocation checks are separate. The small no-allocation validation fixture uses MaxInt/1000+1 ms or MaxInt Hz with 2 ms.",
+    "Root independently modeled all five rejection rows on both 32 and 64 bits: original allocations are 0, 1, 2 or negative/recoverable; no large allocation is needed to prove the defect."
+  ],
+  "root_integer_reference_chunk": "838ea1",
+  "confirmed_scope": "Synthetic helper arithmetic and preallocation refusal; no change to recognizer training or tone/noise formula.",
+  "excluded_candidates": [
+    {
+      "path": "tasks/asr/audio/wav.go:178-192",
+      "state": "unchecked header arithmetic and narrowing are a separate static candidate; no public failure verified in this ticket; do not include in synthesis fix"
+    },
+    {
+      "path": "tasks/asr/synth.go:143-145",
+      "state": "huge Generate capacities are a separate resource hypothesis; current min/max draw arithmetic is bounded by validated inputs; no arbitrary limits added"
+    }
+  ],
+  "no_go_run_by_agent": true,
+  "formal_synth_sha256_unchanged": true
+}

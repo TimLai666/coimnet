@@ -1,0 +1,19 @@
+{
+  "output": "candidate-synth.go.txt (full candidate source only; formal tasks/asr/synth.go must remain unchanged)",
+  "original_sha256": "6b7c4f27c80afd43544c0a0d415fb50e538245108e67dd3b2d6d13ee8ab4e724",
+  "helper": "synthSampleCount(rate, milliseconds int) (int, bool): callers have checked positive rate and nonnegative milliseconds. Use math/bits Mul64 and Div64 to compute exact floor(product/1000); if high word >=1000 or quotient exceeds native MaxInt return false. Zero quotient is representable; duration Validate separately requires >=1. No float approximation or rounded division.",
+  "private_methods": "durationSamples() and gapSamples() can return (int,bool) and delegate to the shared helper; only three physical call sites exist. No public signatures change.",
+  "validate": "Keep existing field validation and error ordering. At the existing duration sample validation point, reject a quotient that cannot fit int with a clear error, then retain the less-than-one-sample error. Do not derive/reject unused gap in Validate.",
+  "synthesize": "Keep unknown-rune checks and classes construction order. After Validate, obtain already-validated duration. Derive gap only when rune count>1 and return nil/error if its quotient is unrepresentable. Use existing checkedProduct/checkedAdd int64 helpers for tone samples, gap samples, total; reject on overflow or total>native MaxInt/8 before make([]float64). Ordinary values use identical exact integer counts. Skip final unused at increment; on nonfinal iterations total bound proves duration+gap safe.",
+  "preserve": [
+    "tone frequency/phase/amplitude expressions",
+    "PCG streams and seed behavior",
+    "truncation rather than rounding",
+    "single-character unused large gap",
+    "Generate behavior including n=0 and valid min/max; no unrelated Generate refactor",
+    "public JSON/API and dependencies",
+    "normal sample Float64bits and generated text/metadata"
+  ],
+  "tests": "Root-frozen regression.go.txt d74c86da28a83c1dbdd94f1d088b180ad6599c86609845b961ff00840f377df5; implementation worker must not modify tests.",
+  "scope_limit": "No WAV/header changes, no arbitrary resource cap, no formal Go source mutation, no test/Go execution by implementation worker."
+}

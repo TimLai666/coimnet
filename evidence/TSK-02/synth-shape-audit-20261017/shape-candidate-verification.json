@@ -1,0 +1,89 @@
+{
+  "verified_at": "2026-10-17T15:47:00.652282+00:00",
+  "requirement": "TSK-02",
+  "candidate_only": true,
+  "engineering_passed": false,
+  "formal_fix_adopted": false,
+  "reproduction_command": "run-regression.py.txt --implementation original/candidate [--race], fresh owned work and preserved source fingerprints required",
+  "environment": "candidate-environment.json",
+  "source_manifest": "evidence/OPS-03/report-ownership-adoption-20261017/formal-source.json",
+  "source_count": 859,
+  "frozen_tests": "shape-tests-frozen.json",
+  "candidate_source": "candidate-source.json",
+  "original_red": "shape-red-verification.json",
+  "observed_result": {
+    "unit": {
+      "pass_events": 13,
+      "terminal": {
+        "TestSynthConfigExactSampleLengths/normal_truncation": "pass",
+        "TestSynthConfigExactSampleLengths/too_short": "pass",
+        "TestSynthConfigExactSampleLengths/wide_product_representable_duration": "pass",
+        "TestSynthConfigExactSampleLengths/wide_rate_product_representable_duration": "pass",
+        "TestSynthConfigExactSampleLengths/duration_quotient_exceeds_int": "pass",
+        "TestSynthConfigExactSampleLengths": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int_minus_one": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_quotient_exceeds_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/sample_bytes_exceed_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/total_product_exceeds_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength": "pass",
+        "TestSynthShapeNormalAndEmptyGeneration": "pass"
+      },
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "normal_payload_equal_to_original": true,
+      "log": "tdd-candidate-unit.log",
+      "log_sha256": "436436accf648414a7591aca4388f578ecf99c43aa27980b640b33d90e9e1392"
+    },
+    "race": {
+      "pass_events": 13,
+      "terminal": {
+        "TestSynthConfigExactSampleLengths/normal_truncation": "pass",
+        "TestSynthConfigExactSampleLengths/too_short": "pass",
+        "TestSynthConfigExactSampleLengths/wide_product_representable_duration": "pass",
+        "TestSynthConfigExactSampleLengths/wide_rate_product_representable_duration": "pass",
+        "TestSynthConfigExactSampleLengths/duration_quotient_exceeds_int": "pass",
+        "TestSynthConfigExactSampleLengths": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int_minus_one": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_quotient_exceeds_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/sample_bytes_exceed_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength/total_product_exceeds_int": "pass",
+        "TestSynthesizeRejectsUnrepresentableLength": "pass",
+        "TestSynthShapeNormalAndEmptyGeneration": "pass"
+      },
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "normal_payload_equal_to_original": true,
+      "log": "tdd-candidate-race.log",
+      "log_sha256": "e91e15447c7b0845e8ac8693850b3a7dfb49bba267bf76da163aad4ca7f965dd"
+    }
+  },
+  "actual_terminal": {
+    "original_unit": {
+      "session_id": 32808,
+      "exit_code": 1,
+      "chunk": "8d37ec"
+    },
+    "original_race": {
+      "session_id": 44771,
+      "exit_code": 1,
+      "chunk": "a12a89"
+    },
+    "candidate_unit": {
+      "session_id": 34179,
+      "exit_code": 0,
+      "chunk": "a2c419"
+    },
+    "candidate_race": {
+      "session_id": 74731,
+      "exit_code": 0,
+      "chunk": "3e01fa"
+    }
+  },
+  "scope_limit": "Native darwin/arm64 focused overlay validation only; pure integer 32-bit reference was checked separately, no 32-bit Go execution. Formal adoption and full engineering remain pending after report stage. No recognizer quality, real audio, biological or zero-bug claim."
+}

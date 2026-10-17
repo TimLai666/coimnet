@@ -1,0 +1,102 @@
+{
+  "role": "Tests only; no production implementation, no Go execution. Root owns acceptance and will freeze reviewed tests before implementation.",
+  "future_path": "tasks/asr/synth_shape_test.go",
+  "package": "asr_test",
+  "allowed_source": "regression.go.txt",
+  "parents": [
+    "TestSynthConfigExactSampleLengths",
+    "TestSynthesizeRejectsUnrepresentableLength",
+    "TestSynthShapeNormalAndEmptyGeneration"
+  ],
+  "exact_reference": "math/big computes floor(rate*ms/1000), then runeCount*duration+(runeCount-1)*gap; independent test reference only. Native MaxInt and strconv.IntSize. No huge allocations or stress loops.",
+  "validate_cases": [
+    {
+      "name": "normal_truncation",
+      "rate": 11025,
+      "duration_ms": 17,
+      "want_error": false
+    },
+    {
+      "name": "too_short",
+      "rate": 999,
+      "duration_ms": 1,
+      "want_error": true
+    },
+    {
+      "name": "wide_product_representable_duration",
+      "rate": 1000,
+      "duration_ms": "MaxInt/1000+1",
+      "want_error": false
+    },
+    {
+      "name": "wide_rate_product_representable_duration",
+      "rate": "MaxInt",
+      "duration_ms": 2,
+      "want_error": false
+    },
+    {
+      "name": "duration_quotient_exceeds_int",
+      "rate": "MaxInt",
+      "duration_ms": 1001,
+      "want_error": true
+    }
+  ],
+  "synthesize_rejections": [
+    {
+      "name": "gap_max_int",
+      "rate": 1000,
+      "duration_ms": 1,
+      "gap_ms": "MaxInt",
+      "text": "aa",
+      "original_safe_allocation_samples": 1
+    },
+    {
+      "name": "gap_max_int_minus_one",
+      "rate": 1000,
+      "duration_ms": 1,
+      "gap_ms": "MaxInt-1",
+      "text": "aa",
+      "original_safe_allocation_samples": 0
+    },
+    {
+      "name": "gap_quotient_exceeds_int",
+      "rate": 2000,
+      "duration_ms": 1,
+      "gap_ms": "MaxInt",
+      "text": "aa",
+      "original_safe_allocation_samples": 2
+    },
+    {
+      "name": "sample_bytes_exceed_int",
+      "rate": 1000,
+      "duration_ms": 1,
+      "gap_ms": "MaxInt/2",
+      "text": "aa",
+      "original_safe_allocation_samples": 1
+    },
+    {
+      "name": "total_product_exceeds_int",
+      "rate": 1,
+      "duration_ms": 1000,
+      "gap_ms": "MaxInt",
+      "text": "strings.Repeat(a,1002)",
+      "original_safe_allocation_samples": "negative, recoverable make panic"
+    }
+  ],
+  "rejection_assertions": "All rows must exceed native MaxInt/8 float64 sample capacity by exact oracle. Wrap Synthesize with recover so old recoverable panics become failed assertions. Require no panic, nonnil error and nil output. Do not call with any other huge shape.",
+  "normal_controls": [
+    "one-character Synthesize at 1000Hz duration1 GapMS=MaxInt succeeds with exactly one sample; unused gap must not reject",
+    "Generate valid config, n=0,minLen=1,maxLen=MaxInt returns nonnil empty; validate ordering retained",
+    "Generate n=1,minLen=maxLen=1 with GapMS=MaxInt succeeds",
+    "ordinary 11025Hz duration17 gap3 noise .2 alphabet a,b,界; Synthesize ab界 with seed7, exact sample length; repeated seed exact float64bits",
+    "ordinary Generate n=3,minLen=1,maxLen=3 with same ordinary config, seed7; deterministic full utterances and valid metadata/texts"
+  ],
+  "normal_fingerprint": "Log full normal payload SHA256 with all sample Float64bits plus transcript/speaker/session so Root can compare original and fixed builds without mirroring tone or PRNG math. Do not hardcode a guessed digest.",
+  "scope_exclusions": [
+    "Do not test huge renderable-but-infeasible allocation",
+    "Do not add arbitrary capacity threshold",
+    "Do not change synthetic sound formula or recognizer",
+    "Do not assert Generate rejects large declared maxLen when n=0",
+    "WAV arithmetic is a separate unconfirmed candidate"
+  ]
+}

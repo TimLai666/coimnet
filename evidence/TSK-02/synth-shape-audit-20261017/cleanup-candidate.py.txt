@@ -1,0 +1,64 @@
+"""Remove only the finished synthetic-audio candidate's verified work root."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, shutil, subprocess
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Verify all four terminal commands, exact preserved inputs, source/model/data/foreign fingerprints and no open handles, then delete only the candidate work inode recorded by preflight.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+preflight = json.loads((E / 'shape-cleanup-preflight.json').read_text())
+baseline = json.loads((E / 'candidate-baseline.json').read_text())
+proof = json.loads((E / 'shape-candidate-verification.json').read_text())
+W = R / preflight['owned_root']
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+assert baseline['work_root'] == preflight['owned_root'] == 'runs/.tmp/asr-synth-shape-candidate-20261017'
+assert W.stat().st_ino == preflight['owned_inode'] == baseline['work_inode'] == 60177514
+assert not W.is_symlink() and W.resolve() == W and shutil.rmtree.avoids_symlink_attacks
+assert len(proof['actual_terminal']) == 4
+assert all(proof['actual_terminal'][name]['exit_code'] == code for name, code in [('original_unit', 1), ('original_race', 1), ('candidate_unit', 0), ('candidate_race', 0)])
+assert all(proof['observed_result'][build]['pass_events'] == 13 and proof['observed_result'][build]['normal_payload_equal_to_original'] for build in ['unit', 'race'])
+source = json.loads((R / baseline['source_manifest']).read_text())
+models = json.loads((P / 'protected-models.json').read_text())
+data = json.loads((P / 'persistent-data.json').read_text())
+foreign = json.loads((P / 'foreign-before.json').read_text())
+assert len(source) == 859 and len(models) == 18 and len(data) == 6 and len(foreign) == 32
+
+def gate():
+    for name, digest in {**source, **models}.items():
+        assert sha(R / name) == digest, name
+    for name, item in data.items():
+        assert sha(R / name) == item['sha256'], name
+    for name, digest in foreign.items():
+        assert sha(Path(name)) == digest, name
+    parent = R / baseline['parent_cache_root']
+    assert not parent.is_symlink() and parent.stat().st_ino == baseline['parent_cache_inode'] == 60115259
+    for name, inode in [('62', 49680181), ('real-task-quality-20261012', 50419696)]:
+        p = R / 'runs/.tmp' / name
+        assert not p.is_symlink() and p.stat().st_ino == inode
+
+def inventory():
+    assert not any(p.is_symlink() for p in W.rglob('*'))
+    return {str(p.relative_to(W)): {'bytes': p.stat().st_size, 'sha256': sha(p)} for p in W.rglob('*') if p.is_file()}
+
+gate()
+assert inventory() == preflight['files']
+for work, saved in preflight['necessary_inputs_preserved'].items():
+    assert (W / work).read_bytes() == (E / saved).read_bytes()
+handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr
+assert inventory() == preflight['files'] and not W.is_symlink() and W.stat().st_ino == 60177514
+gate()
+shutil.rmtree(W)
+assert not W.exists()
+gate()
+result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_root': preflight['owned_root'], 'owned_inode': 60177514, 'removed_files': len(preflight['files']), 'removed_bytes': sum(v['bytes'] for v in preflight['files'].values()), 'inventory': 'shape-cleanup-preflight.json', 'necessary_inputs_preserved': preflight['necessary_inputs_preserved'], 'no_open_handles': True, 'formal_source_entries_preserved': 859, 'original_model_files_preserved': 18, 'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'parent_cache_owner_retained': baseline['parent_cache_root'], 'protected_old_roots_preserved': ['62', 'real-task-quality-20261012'], 'directory_removed': True}
+with (E / 'shape-candidate-cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

@@ -1,0 +1,99 @@
+"""Preserve the completed WAV probe and remove only its owned temporary files."""
+from pathlib import Path
+import argparse, datetime, hashlib, io, json, os, shutil, subprocess, tarfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Verify the completed probe and protected inputs, archive its source and four WAV files, then remove only its exact owned work directory.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/wav-metadata-audit-20261017'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+read = lambda p: json.loads(p.read_text())
+sha = lambda b: hashlib.sha256(b).hexdigest()
+baseline = read(E / 'baseline.json')
+source = read(R / baseline['formal_source_manifest'])
+models = read(P / 'protected-models.json')
+data = read(P / 'persistent-data.json')
+foreign = read(P / 'foreign-before.json')
+probe = read(E / 'probe.json')
+assert probe['exit_code'] == 0 and probe['finished_at']
+assert sha((E / 'probe.log').read_bytes()) == probe['log_sha256']
+assert read(E / 'probe-terminal.json')['session_id'] == 81754
+assert read(E / 'probe-terminal.json')['exit_code'] == 0
+rows = read(E / 'probe.log')
+expected = {'main.go': baseline['probe_sha256']}
+expected.update({row['name'] + '.wav': row['sha256'] for row in rows})
+assert len(expected) == 5
+
+def gate():
+    assert W.resolve() == W and not W.is_symlink() and W.stat().st_ino == 60194146
+    assert (R / baseline['parent_cache_root']).stat().st_ino == 60115259
+    assert len(source) == 859 and len(models) == 18 and len(data) == 6 and len(foreign) == 32
+    for name, digest in {**source, **models}.items():
+        assert sha((R / name).read_bytes()) == digest, name
+    for name, item in data.items():
+        b = (R / name).read_bytes()
+        assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+    for name, digest in foreign.items():
+        assert sha(Path(name).read_bytes()) == digest, name
+    for name, inode in {'62': 49680181, 'real-task-quality-20261012': 50419696}.items():
+        p = R / 'runs/.tmp' / name
+        assert not p.is_symlink() and p.stat().st_ino == inode
+
+def contents():
+    out = {}
+    for p in sorted(W.rglob('*')):
+        assert not p.is_symlink(), p
+        if p.is_file():
+            b = p.read_bytes()
+            out[str(p.relative_to(W))] = b
+        else:
+            assert p.is_dir(), p
+    return out
+
+gate()
+before = contents()
+assert set(before) == set(expected), 'Unaccounted files refuse cleanup'
+for name, digest in expected.items():
+    assert sha(before[name]) == digest, name
+assert before['main.go'] == (E / 'probe.go.txt').read_bytes()
+for row in rows:
+    b = before[row['name'] + '.wav']
+    assert len(b) == row['file_bytes'] and b[:44].hex() == row['header_hex']
+handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+archive = E / 'preserved-probe.tar.gz'
+with archive.open('xb') as raw:
+    with tarfile.open(fileobj=raw, mode='w:gz') as handle:
+        for name, b in before.items():
+            info = tarfile.TarInfo(name)
+            info.size = len(b)
+            info.mode = 0o644
+            handle.addfile(info, io.BytesIO(b))
+with tarfile.open(archive, 'r:gz') as handle:
+    assert set(handle.getnames()) == set(before)
+    for name, b in before.items():
+        assert handle.extractfile(name).read() == b
+assert contents() == before
+gate()
+assert shutil.rmtree.avoids_symlink_attacks
+shutil.rmtree(W)
+assert not W.exists()
+for name, digest in {**source, **models}.items():
+    assert sha((R / name).read_bytes()) == digest, name
+for name, item in data.items():
+    b = (R / name).read_bytes()
+    assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+for name, digest in foreign.items():
+    assert sha(Path(name).read_bytes()) == digest, name
+result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_root': str(W.relative_to(R)), 'owned_inode': 60194146, 'removed_files': len(before), 'removed_bytes': sum(map(len, before.values())), 'files': {name: {'bytes': len(b), 'sha256': sha(b)} for name, b in before.items()}, 'archive': archive.name, 'archive_sha256': sha(archive.read_bytes()), 'no_open_handles': True, 'directory_removed': True, 'source_entries_preserved': 859, 'model_files_preserved': 18, 'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'parent_cache_retained_in_use': baseline['parent_cache_root']}
+with (E / 'cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

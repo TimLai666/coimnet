@@ -1,0 +1,133 @@
+{
+  "tickets": [
+    "139",
+    "140"
+  ],
+  "verified_at": "2026-10-17T16:07:10.527565+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/OPS-03/report-ownership-adoption-20261017/engineering.py.txt --run --label-prefix engineering",
+    "python3 evidence/OPS-03/report-ownership-adoption-20261017/verify-reports.py.txt --run"
+  ],
+  "environment": {
+    "command_environment": "command-environment.json",
+    "preparation": "preparation.json",
+    "execution": "Project-local private caches, GOMAXPROCS=2, GOMEMLIMIT=8GiB, pinned Insyra v0.3.4; full engineering runner terminal0 independently observed."
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source.json",
+    "source_manifest_sha256": "a080b6e4fe4913b83c0c13151813844d50a93e04e1db4d45b4c9e9843c289e62",
+    "source_entries": 859,
+    "adoption": "adoption.json",
+    "test_fingerprints": "tests-frozen.json"
+  },
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "full_results": {
+      "engineering-format": {
+        "exit_code": 0,
+        "log": "engineering-format.log",
+        "test_events": null,
+        "package_events": null
+      },
+      "engineering-build": {
+        "exit_code": 0,
+        "log": "engineering-build.log",
+        "test_events": null,
+        "package_events": null
+      },
+      "engineering-unit": {
+        "exit_code": 0,
+        "log": "engineering-unit.log.gz",
+        "test_events": {
+          "pass": 8645,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        }
+      },
+      "engineering-race": {
+        "exit_code": 0,
+        "log": "engineering-race.log.gz",
+        "test_events": {
+          "pass": 8644,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        }
+      },
+      "engineering-vet": {
+        "exit_code": 0,
+        "log": "engineering-vet.log",
+        "test_events": null,
+        "package_events": null
+      },
+      "engineering-module-verify": {
+        "exit_code": 0,
+        "log": "engineering-module-verify.log",
+        "test_events": null,
+        "package_events": null
+      },
+      "engineering-module-selection": {
+        "exit_code": 0,
+        "log": "engineering-module-selection.log",
+        "test_events": null,
+        "package_events": null
+      },
+      "engineering-governance": {
+        "exit_code": 0,
+        "log": "engineering-governance.log",
+        "test_events": {
+          "pass": 31
+        },
+        "package_events": {
+          "pass": 1
+        }
+      },
+      "engineering-closure-binary": {
+        "exit_code": 0,
+        "log": "engineering-closure-binary.log",
+        "test_events": null,
+        "package_events": null
+      }
+    },
+    "previous_terminal_events_preserved_each_build": 8656,
+    "new_pass_events_each_build": 12,
+    "normal_report_payloads_unchanged_each_build": 9,
+    "approved_neutral_gain_pass_events_each_build": 21,
+    "governance_pass_events": 31
+  },
+  "test_log": [
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-governance.log",
+    "engineering-verification.json",
+    "report-and-gain-parity.json"
+  ],
+  "root_review": [
+    "root-review.md",
+    "unit-root-review.json"
+  ],
+  "scope_limit": "Seven report producers now own mutable configuration declarations. Ordinary serialized report bytes and model/training behavior remain unchanged. Does not guarantee absence of all bugs or improve task/biological validity. ASR synthesis and WAV metadata issues are separate pending work. Final governance, cleanup and delivery recorded separately.",
+  "first_attempt_failure": "format-index-repair.json",
+  "parity": "report-and-gain-parity.json",
+  "requirement": [
+    "TSK-04",
+    "TSK-05",
+    "TSK-06",
+    "TSK-07",
+    "OPS-03",
+    "TSK-09",
+    "TSK-10",
+    "TCH-04",
+    "LRN-10"
+  ],
+  "final_governance": "final-governance.json",
+  "cleanup": "cleanup.json",
+  "cleanup_terminal": "cleanup-terminal.json",
+  "adversarial_review": "adversarial-review.json"
+}

@@ -19,7 +19,7 @@ SynthConfig 的 SampleRate*GapMS 在除以 1000 之前溢位，Validate 沒有�
 ## 固定完成條件
 
 - [x] 公開重現錯誤長度／panic，與獨立整數參考及正常控制核對。
-- [ ] Root 凍結失敗回歸，釐清每字／間隔／總長度與 Generate 的適用檢查。
+- [x] Root 凍結失敗回歸，釐清每字／間隔／總長度與 Generate 的適用檢查。
 - [ ] 最小修正與專項一般／競態通過，正常音訊及合法空集合行為保持。
 - [ ] 格式、build、完整一般／競態、vet、固定模組及治理通過。
 - [ ] 保存必要證據、清除自有暫存、提交推送並核對遠端。
@@ -30,4 +30,4 @@ SynthConfig 的 SampleRate*GapMS 在除以 1000 之前溢位，Validate 沒有�
 
 ## 證據
 
-[公開探測與獨立參考](../../evidence/TSK-02/synth-shape-audit-20261017/verification.json)。本輪僅確認缺陷，沒有正式修正；2,993 bytes 探測暫存已清除，正式來源保持 857 份。固定進度 1／5。
+[公開探測與獨立參考](../../evidence/TSK-02/synth-shape-audit-20261017/verification.json)。初次公開探測的 2,993 bytes 暫存已清除，該階段 857 份正式來源保持。Root 已凍結三個父測試、十個子案例，原版一般／競態各 10 fail／3 pass；八種錯誤情境重現，普通合成、單字元未使用間隔與合法空集合控制通過，見[失敗回歸驗收](../../evidence/TSK-02/synth-shape-audit-20261017/shape-red-verification.json)及[邊界核對](../../evidence/TSK-02/synth-shape-audit-20261017/boundary-review.json)。隔離候選的一般／競態各 13 pass，29,121 bytes 正常音訊 payload 的逐位元指紋在各建置內與原版相同，見[候選驗收](../../evidence/TSK-02/synth-shape-audit-20261017/shape-candidate-verification.json)。17,082 bytes 本次隔離暫存已清除，四份必要輸入已保存，見[清理](../../evidence/TSK-02/synth-shape-audit-20261017/shape-candidate-cleanup.json)。目前 859 份正式來源不含本票修正，正式採用與完整工程待報告階段驗收後接續，固定進度 2／5。

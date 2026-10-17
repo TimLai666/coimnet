@@ -1,0 +1,47 @@
+"""Observe fixed-width WAV metadata using small public write/read calls."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, subprocess, time
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run the preserved public Go probe once using owned project-local work, save raw JSON observations and a command receipt, and leave files for verified cleanup.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+baseline = json.loads((E / 'baseline.json').read_text())
+W = R / baseline['work_root']
+source = json.loads((R / baseline['formal_source_manifest']).read_text())
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+models = json.loads((P / 'protected-models.json').read_text())
+data = json.loads((P / 'persistent-data.json').read_text())
+foreign = json.loads((P / 'foreign-before.json').read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+    assert not W.is_symlink() and W.stat().st_ino == baseline['work_inode'] == 60194146
+    assert (R / baseline['parent_cache_root']).stat().st_ino == baseline['parent_cache_inode'] == 60115259
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert len(source) == 859 and paths == set(source)
+    for name, digest in {**source, **models}.items(): assert sha(R / name) == digest, name
+    for name, item in data.items(): assert sha(R / name) == item['sha256'], name
+    for name, digest in foreign.items(): assert sha(Path(name)) == digest, name
+    assert sha(W / 'main.go') == sha(E / 'probe.go.txt') == baseline['probe_sha256']
+gate()
+env = dict(os.environ)
+env.update(json.loads((E / 'environment.json').read_text()))
+command = ['go', 'run', str(W / 'main.go'), str(W)]
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+with (E / 'probe.log').open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+result = {'command': command, 'environment': 'environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic()-start, 'source_manifest': baseline['formal_source_manifest'], 'source_count': len(source), 'log': 'probe.log', 'log_sha256': sha(E / 'probe.log'), 'acceptance_note': 'Observational run only. Exit0 means the probe ran, not that WAV metadata was accepted as correct.'}
+with (E / 'probe.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)
+raise SystemExit(code)

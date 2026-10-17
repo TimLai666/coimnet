@@ -12,7 +12,7 @@ Status：in_progress
 
 ## Root 決策（2026-10-17）：骨架與共用契約
 
-Root 已讀取 RunMultiTask、multimodaleval.Run、studenteval.Run、RunAdaptiveEvaluation 的輸入、驗證與報告 producer。前三者淺複製可變設定，後者的固定／適應模式直接保存 FeedbackAvailable。這些目前是已核對的靜態候選，公開失敗測試尚未執行。
+Root 已讀取 RunMultiTask、multimodaleval.Run、studenteval.Run、RunAdaptiveEvaluation 的輸入、驗證與報告 producer。前三者淺複製可變設定，後者的固定／適應模式直接保存 FeedbackAvailable。公開正常案例已在原版一般／競態重現，隔離候選通過，詳見本票證據。
 
 沿用既有驗證與錯誤順序，在 producer 計算雜湊或派往模式分支前複製其保存在報告的清單：Schedule.Tasks、Holdout／Seeds、Seeds、FeedbackAvailable。巢狀元素都是純值。Adaptive 檔案已使用 slices，沿用 slices.Clone 保留 nil／空集合形式。報告本身仍可由持有人修改，沒有新增自動重算雜湊或執行期間輸入同步契約。
 
@@ -24,8 +24,8 @@ OCR 與 Textgen 已在 producer 複製清單。ASR 私有 CLI helper 的設定�
 
 - [x] Root 審查凍結公開回歸，原版各路徑在行為斷言失敗。
 - [x] 隔離候選的一般／競態通過，正常報告指紋保持。
-- [ ] 前票結束後採用四個 producer 的正式修正與回歸。
-- [ ] 與 ticket139 的最終來源一起通過完整工程與治理。
+- [x] 前票結束後採用四個 producer 的正式修正與回歸。
+- [x] 與 ticket139 的最終來源一起通過完整工程與治理。
 - [ ] 保存必要證據，清除自有暫存，提交推送並核對遠端。
 
 ## 減法審查
@@ -36,4 +36,6 @@ OCR 與 Textgen 已在 producer 複製清單。ASR 私有 CLI helper 的設定�
 
 [來源與靜態候選](../../evidence/OPS-03/experiment-report-ownership-20261017/baseline.json)、[媒體同型態修正](139-media-report-config-ownership.md)。
 
-Root 已執行原版一般／競態各 7 個預期失敗、候選各 7 pass，五份正常完整報告的 SHA-256 在各建置內保持。原版 32 則失敗均是報告變動、設定指紋或反向共用的斷言，沒有編譯錯誤、panic 或資料競態。65,120 bytes 探測暫存已清除。見[本輪驗收](../../evidence/OPS-03/experiment-report-ownership-20261017/verification.json)。正式採用與完整工程尚待接續，固定進度 2／5。
+Root 已執行原版一般／競態各 7 個預期失敗、候選各 7 pass，五份正常完整報告的 SHA-256 在各建置內保持。原版 32 則失敗均是報告變動、設定指紋或反向共用的斷言，沒有編譯錯誤、panic 或資料競態。65,120 bytes 探測暫存已清除。見[本輪驗收](../../evidence/OPS-03/experiment-report-ownership-20261017/verification.json)。正式四個 producer 的修正及凍結回歸已採用，見[採用紀錄](../../evidence/OPS-03/report-ownership-adoption-20261017/adoption.json)。固定進度 4／5，與 ticket139 共用完整工程驗證。
+
+正式最終來源完整一般 8,645 pass／23 skip、競態 8,644 pass／24 skip，各 58 套件通過。原有各 8,656 個終端事件保持，新增各 12 pass，九份正常完整報告及已核准中性增益各 21 個控制保持。九項工程步驟及 31 項治理通過，見[最終驗收](../../evidence/OPS-03/report-ownership-adoption-20261017/verification.json)。本票剩清理與交付。

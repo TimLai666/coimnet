@@ -1,0 +1,64 @@
+{
+  "reviewed_at": "2026-10-17T15:41:30.560596+00:00",
+  "original_source_sha256": "6b7c4f27c80afd43544c0a0d415fb50e538245108e67dd3b2d6d13ee8ab4e724",
+  "frozen_test_sha256": "d74c86da28a83c1dbdd94f1d088b180ad6599c86609845b961ff00840f377df5",
+  "observed": {
+    "unit": {
+      "exit_code": 1,
+      "terminal": {
+        "TestSynthConfigExactSampleLengths/normal_truncation": "pass",
+        "TestSynthConfigExactSampleLengths/too_short": "pass",
+        "TestSynthConfigExactSampleLengths/wide_product_representable_duration": "fail",
+        "TestSynthConfigExactSampleLengths/wide_rate_product_representable_duration": "fail",
+        "TestSynthConfigExactSampleLengths/duration_quotient_exceeds_int": "fail",
+        "TestSynthConfigExactSampleLengths": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int_minus_one": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_quotient_exceeds_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/sample_bytes_exceed_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/total_product_exceeds_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength": "fail",
+        "TestSynthShapeNormalAndEmptyGeneration": "pass"
+      },
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "log": "tdd-original-unit.log",
+      "log_sha256": "7c6b4a44413dc330b6da4be557d86ab82eb0b2f582bf75bf190e6592092bf14f"
+    },
+    "race": {
+      "exit_code": 1,
+      "terminal": {
+        "TestSynthConfigExactSampleLengths/normal_truncation": "pass",
+        "TestSynthConfigExactSampleLengths/too_short": "pass",
+        "TestSynthConfigExactSampleLengths/wide_product_representable_duration": "fail",
+        "TestSynthConfigExactSampleLengths/wide_rate_product_representable_duration": "fail",
+        "TestSynthConfigExactSampleLengths/duration_quotient_exceeds_int": "fail",
+        "TestSynthConfigExactSampleLengths": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_max_int_minus_one": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/gap_quotient_exceeds_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/sample_bytes_exceed_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength/total_product_exceeds_int": "fail",
+        "TestSynthesizeRejectsUnrepresentableLength": "fail",
+        "TestSynthShapeNormalAndEmptyGeneration": "pass"
+      },
+      "normal_payload": {
+        "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+        "bytes": 29121
+      },
+      "log": "tdd-original-race.log",
+      "log_sha256": "f4245f2eba19aee37dcb1fbeb39a9bebeac225b437e7418d922100917403a288"
+    }
+  },
+  "actual_terminal_chunks": {
+    "unit": "8d37ec",
+    "race": "a12a89"
+  },
+  "accepted_expected_failures": true,
+  "root_cause": "Product wraps before division; quotient overflow may also be silently accepted; final tone/gap multiplication and total float64 bytes lack checks. Eight child cases plus their two parents fail. All normal controls pass.",
+  "formal_go_sources_unchanged": 859,
+  "candidate_written_before_red": false,
+  "model_quality_claim": false
+}

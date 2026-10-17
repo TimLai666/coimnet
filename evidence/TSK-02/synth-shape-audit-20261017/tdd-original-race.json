@@ -1,0 +1,26 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-overlay=/Users/timlai/Developer/coimnet/runs/.tmp/asr-synth-shape-candidate-20261017/original-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^Test(SynthConfigExactSampleLengths|SynthesizeRejectsUnrepresentableLength|SynthShapeNormalAndEmptyGeneration)$",
+    "./tasks/asr"
+  ],
+  "environment": "candidate-environment.json",
+  "started_at": "2026-10-17T15:40:28.588283+00:00",
+  "finished_at": "2026-10-17T15:40:34.131373+00:00",
+  "exit_code": 1,
+  "seconds": 5.543129167,
+  "source_manifest": "evidence/OPS-03/report-ownership-adoption-20261017/formal-source.json",
+  "source_count": 859,
+  "frozen_tests": "shape-tests-frozen.json",
+  "regression_sha256": "d74c86da28a83c1dbdd94f1d088b180ad6599c86609845b961ff00840f377df5",
+  "log": "tdd-original-race.log",
+  "log_sha256": "f4245f2eba19aee37dcb1fbeb39a9bebeac225b437e7418d922100917403a288",
+  "formal_go_unchanged": true
+}
