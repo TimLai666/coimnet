@@ -259,7 +259,7 @@ func resetForItem(ctx context.Context, ind *learning.Individual, reset ResetPoli
 	if reset.ChemicalAtItemStart {
 		snap := ind.Snapshot()
 		if snap.Chemical != nil {
-			ind.DisableChemistry()
+			// Reset concentrations directly while preserving task resources and pending feedback.
 			if err := ind.EnableChemistry(snap.Chemical.Config); err != nil {
 				return err
 			}
