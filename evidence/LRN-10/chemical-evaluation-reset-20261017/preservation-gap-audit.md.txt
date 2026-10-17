@@ -1,0 +1,79 @@
+# W135／E135／E136 保存缺口稽核
+
+本檔是唯讀比對結果。使用 Python `pathlib`、`hashlib`、`tarfile` 比對文字檔 bytes。未執行 Go、未下載、未遍歷 `go-cache`、`go-mod-cache`、`go-tmp`，未讀取 binary 或 `.gz` 內容，也未對 live `engineering-final-race.log` 求 hash。上一輪的 `cleanup-audit.md.txt` 不屬於 ticket135/136 輸入，從 W135 比對計數排除。
+
+## 比對總數
+
+- W135 文字類檔案：111 個納入比對，106 個在 E135、E136 或 E135 archive 找到內容完全相同的 bytes，5 個沒有 exact-byte counterpart。
+- ticket136 候選、driver、overlay、log、receipt：39 個，39/39 對應到 E136 原檔，沒有缺漏。
+- ticket135 可重建診斷輸入：68 個，67 個 exact match，唯一未找到 exact-byte counterpart 的是 `source-before.json`。
+- W135 內另外 4 個 baseline snapshot 不是診斷輸入，均沒有 exact-byte counterpart：`README.md.before`、`ENG.md.before`、`delivery-status.md.before`、`docs__requirements-status.json.before`。
+- `evidence/LRN-10/chemical-evaluation-reset-20261017/preserved-work.tar.gz` 有 22 個檔案成員。逐一用 `work-preservation.json` 的 payload hash 比對，22/22 exact、無額外成員（`work-preservation.json:2-5,29-32`）。
+
+## ticket136：39/39 已保存
+
+以下 W135 檔案均以 bytes 比對到 E136，括號為對應原檔：
+
+| W135 路徑 | E136 對應 |
+| --- | --- |
+| `aggregate-candidate-overlay.json` | `candidate-overlay.json` |
+| `aggregate-fix-skeleton.md` | `fix-skeleton.md` |
+| `aggregate-green-ordinary.json`、`aggregate-green-ordinary.log` | 同名 `aggregate-green-ordinary.*` |
+| `aggregate-green-race.json`、`aggregate-green-race.log` | 同名 `aggregate-green-race.*` |
+| `aggregate-implementation-reviewed.go.txt` | `implementation-reviewed.go.txt` |
+| `aggregate-normal-before.json`、`aggregate-normal-before.log` | 同名 `aggregate-normal-before.*` |
+| `aggregate-normal-after.json`、`aggregate-normal-after.log` | 同名 `aggregate-normal-after.*` |
+| `aggregate-normal-race-before.json`、`aggregate-normal-race-before.log` | 同名 `aggregate-normal-race-before.*` |
+| `aggregate-normal-race-after.json`、`aggregate-normal-race-after.log` | 同名 `aggregate-normal-race-after.*` |
+| `aggregate-old-after-ordinary.json`、`aggregate-old-after-ordinary.log` | 同名 `aggregate-old-after-ordinary.*` |
+| `aggregate-old-after-race.json`、`aggregate-old-after-race.log` | 同名 `aggregate-old-after-race.*` |
+| `aggregate-ordinary/main.go` | `ordinary-probe.go.txt` |
+| `aggregate-original.json`、`aggregate-original.log` | `probe-original.json`、`probe-original.log` |
+| `aggregate-probe.go` | `probe.go.txt` |
+| `aggregate-public-after-ordinary.json`、`aggregate-public-after-ordinary.log` | 同名 `aggregate-public-after-ordinary.*` |
+| `aggregate-public-after-race.json`、`aggregate-public-after-race.log` | 同名 `aggregate-public-after-race.*` |
+| `aggregate-red-ordinary.json`、`aggregate-red-ordinary.log` | 同名 `aggregate-red-ordinary.*` |
+| `aggregate-red-race.json`、`aggregate-red-race.log` | 同名 `aggregate-red-race.*` |
+| `aggregate-related-ordinary.json`、`aggregate-related-ordinary.log` | 同名 `aggregate-related-ordinary.*` |
+| `aggregate-related-race.json`、`aggregate-related-race.log` | 同名 `aggregate-related-race.*` |
+| `aggregate-tests-frozen.go.txt` | `tests-frozen.go.txt` |
+| `aggregate-tests-overlay.json` | `test-overlay.json` |
+| `aggregate_implementation.go.txt` | `implementation-worker.go.txt` |
+| `aggregate_tests.go.txt` | `tests-worker.go.txt` |
+
+E136 目前仍明確標示 `formal_adopted=false`、`adopted=false`（`evidence/LRN-08/aggregate-range-20261017/candidate-validation.json:2-26`、`test-freeze.json:9-12`）。上述 39/39 只證明保存完整，不代表候選已正式採用，也不替代 ticket135 完整工程。
+
+## ticket135：可重建診斷輸入
+
+下列輸入已保存且 bytes 可核對：
+
+- E135 archive 的 22 個 immutable inputs：`probe.go`、`original-adaptive.go.txt`、`implementation.go.txt`、`chemical_reset_tests.go.txt`、`mutant-no-reset.go.txt`、`mutant-no-reset-overlay.json`、`run.py`、`module-originals.json`、`old-chemical/main.go`、`ordinary-probe/main.go`，以及 ordinary/race 各 6 個 old checkpoint。逐檔對應 `preserved-work.tar.gz` 成員，並由 `work-preservation.json:6-27` 列出 hash。
+- E135 原始與修正版診斷 receipts/logs：`probe-before.*` 對應 `setup-compile-error.*`、`probe-original*.json/log`、`probe-after*.json/log`、`ordinary-before/after.*`、`old-ordinary-before/after.*`、`old-race-before/after.*`、`green-related-ordinary/race.*`、`red-regression*.json/log`、`red-formatted-*.json/log`、`mutant-no-reset-ordinary/race.*`，均 exact match 到 `evidence/LRN-10/chemical-evaluation-reset-20261017/`。
+- E135 狀態與來源輸入：`environment.json`、`foreign-before.json`、`formal-source-before.json`、`fix-skeleton.md`、`live-engineering.json`，均在 E135 有 exact bytes 對應。`live-engineering.json` 對應 `work-in-progress.json`，只保存狀態快照，不代表 runner 已 terminal。
+- `opencode-models-continuation.json` 與 `.log` 目前均有 E135 exact bytes 對應，分別是同名檔與 `opencode-models-continuation.log`。OpenCode models 本輪仍是失敗收據，不得解讀成使用了免費模型。
+
+## 未找到 exact-byte counterpart 的路徑
+
+### `source-before.json`
+
+W135 的 `runs/.tmp/evaluation-reset-20261017/source-before.json` 沒有同 bytes 檔案。它有 851 筆來源映射，`evidence/LRN-10/chemical-evaluation-reset-20261017/formal-source-before.json` 有 853 筆，且 851 筆共同 key 的 hash 值全部相同；E135 formal source 多出的兩項是 `evidence/OPS-05/device-training-20261012/bundle_flow.go` 與 `evidence/TSK-11/ocr-raster-encoder-20261012/review/raster_overflow.go`。
+
+因此它不會阻礙 ticket135 診斷重建，因為 E135/E136 的 `formal-source-before.json` 是內容相同且涵蓋更多項目的來源快照；但若要求保存 W135 當時這份 851-entry scratch manifest 的歷史 provenance，仍有一個 exact-byte 保存缺口。
+
+### baseline snapshots
+
+以下 4 個檔案沒有在 E135、E136 或 22-member archive 找到相同 bytes：
+
+- `runs/.tmp/evaluation-reset-20261017/README.md.before`
+- `runs/.tmp/evaluation-reset-20261017/ENG.md.before`
+- `runs/.tmp/evaluation-reset-20261017/delivery-status.md.before`
+- `runs/.tmp/evaluation-reset-20261017/docs__requirements-status.json.before`
+
+它們不是 ticket135 public probe、old checkpoint、source、driver、candidate 或結果 log，因此不影響從已保存 inputs 重建診斷。若 Root 的保存格子要求保留本輪文件狀態快照，這 4 個路徑仍須另外保存，不能把它們說成已由 E135 archive 覆蓋。
+
+## 不能由本輪稽核查證的事項
+
+- 本輪沒有判斷 exec session 58245 是否 terminal，也沒有判斷完整 engineering race 是否通過。實際句柄與 runner 狀態由 Root 核對。
+- `evidence/LRN-10/chemical-evaluation-reset-20261017/engineering-final-race.log` 刻意排除於 hash 與內容比對，不能從本報告推導其完整性或結果。
+- cache、`.gz`、binary 沒有讀取，故不能對它們提供保存等價性結論。
+- `aggregate_tests.go.txt` 的 exact match 是本次讀取當下與 E136 `tests-worker.go.txt` 的 bytes 比對；E136 自身仍標示未 adopted。若候選 worker 後續改檔，Root 必須重新比對，不得把目前 candidate green 結果當正式採用。

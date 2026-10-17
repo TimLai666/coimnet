@@ -1,0 +1,33 @@
+package main
+
+import (
+	"encoding/json"
+	"os"
+
+	"github.com/TimLai666/coimnet/experiment"
+)
+
+func main() {
+	var results [][][]experiment.CellStat
+	for k := 0; k < 64; k++ {
+		seeds, rows, columns := k%7+1, k%3+1, k%5+1
+		values := make([][][]float64, seeds)
+		failed := make([][][]bool, seeds)
+		for seed := range values {
+			values[seed] = make([][]float64, rows)
+			failed[seed] = make([][]bool, rows)
+			for row := range values[seed] {
+				values[seed][row] = make([]float64, columns)
+				failed[seed][row] = make([]bool, columns)
+				for column := range values[seed][row] {
+					values[seed][row][column] = -.37 + .017*float64(k) - .13*float64(seed) + .23*float64(row) - .07*float64(column)
+					failed[seed][row][column] = (k+seed+row+column)%5 == 0
+				}
+			}
+		}
+		cells, err := experiment.AggregateCells(values, failed)
+		if err != nil { panic(err) }
+		results = append(results, cells)
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(results); err != nil { panic(err) }
+}

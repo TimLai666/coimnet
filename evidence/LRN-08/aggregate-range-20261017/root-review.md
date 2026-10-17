@@ -1,0 +1,11 @@
+# Root review of the numerical candidate
+
+The test worker originally allowed eight subnormal ulps, which would accept Std=0 when the expected smallest subnormal is1. Root rejected that gap before any red run: exact-bit cases now cover the smallest subnormal, symmetric maximum and equal maximum inputs. A nonzero subnormal variance case and an extreme cancellation mean (exact1/3) were added. Root read all251 lines, formatted and froze the candidate.
+
+Ordinary/race red runs on unchanged production use a new virtual test file in per-process Go overlays and each produce15fail/7pass. A different worker filled the implementation only after Root verified these failures. Root checked the full diff: ContinualEpisode and Forgetting remain byte-identical. Root simplified repeated NaN/Inf checks to the existing finite helper and documented the nonempty finite precondition of exactCellMoments.
+
+The numerical reference computes central squared deviations around an exact rational mean and a512-bit square root. The implementation fallback computes exact first/second moments and a256-bit square root. Both start from the exact float64 inputs. All22 candidate events pass in both builds;114 related events and64 normal reports per build also pass/retain exact bytes. Source and candidate fingerprints are recorded in candidate-validation.json.
+
+The candidate is not adopted. Root must wait for the existing ticket135 engine to reach a terminal result, complete its cleanup/delivery, then adopt ticket136 and execute its full engineering and compatibility gates. No extra API or model-format change is proposed. Successful nonfinite scores become errors; masked failed values remain ignored.
+
+Two deliberately incorrect numerical strategies are independently rejected in ordinary and race builds: summing value/n loses the 1/3 cancellation mean (20 pass/2 fail), and converting exact variance to float64 before sqrt loses representable standard deviations (14 pass/8 fail). Three public reproduction/control rows encode as finite JSON after the candidate. Twelve actual pre-change checkpoint continuations retain full output bytes within each build. These are still overlay-only acceptance controls, not formal adoption.

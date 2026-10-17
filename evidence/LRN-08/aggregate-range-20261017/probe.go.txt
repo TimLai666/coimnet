@@ -1,0 +1,23 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/experiment"
+)
+
+func main() {
+	for _, values := range [][]float64{{-1e308, -1e308}, {-8e307, -7e307}, {-8, -7}} {
+		seeds, failed := make([][][]float64, len(values)), make([][][]bool, len(values))
+		for k, v := range values { seeds[k], failed[k] = [][]float64{{v}}, [][]bool{{false}} }
+		cells, err := experiment.AggregateCells(seeds, failed)
+		if err != nil { panic(err) }
+		_, encodingErr := json.Marshal(cells)
+		c := cells[0][0]
+		row := map[string]any{"inputs": values, "mean": fmt.Sprintf("%.17g", c.Mean), "std": fmt.Sprintf("%.17g", c.Std), "succeeded": c.Succeeded}
+		if encodingErr != nil { row["json_error"] = encodingErr.Error() }
+		if err := json.NewEncoder(os.Stdout).Encode(row); err != nil { panic(err) }
+	}
+}

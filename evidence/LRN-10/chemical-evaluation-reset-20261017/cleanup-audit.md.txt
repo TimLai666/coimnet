@@ -1,0 +1,65 @@
+# Ticket135 清理稽核
+
+本檔只記錄唯讀核對結果。稽核範圍是 ticket135 的工作目錄 `runs/.tmp/evaluation-reset-20261017`、`evidence/LRN-10/chemical-evaluation-reset-20261017`、`evidence/LRN-08/aggregate-range-20261017` 及 ticket135/136 文件。沒有執行 Go、沒有刪除檔案、沒有重啟或干預 exec session 58245，也沒有計算 live race log 的雜湊。
+
+## 結論
+
+目前不能清理 W。`work-in-progress.json` 仍記錄 full engineering running、session 58245 的 race 只已開始，且明確要求等流程 terminal 後才移除 W（`evidence/LRN-10/chemical-evaluation-reset-20261017/work-in-progress.json:2-4,22-30`）。ticket135 仍是 `in_progress`，完整工程與保存清理兩項尚未勾選（`docs/tickets/135-chemical-evaluation-reset.md:6,18-19`）。
+
+目前目錄 inode 實測為 `59353824`，與基準相符（`evidence/LRN-10/chemical-evaluation-reset-20261017/baseline.json:4-9`）。這個 inode 必須作為清理 guard，不能只用路徑判斷。
+
+## 已核對的結果
+
+| 項目 | 可核對證據 | 結果 |
+| --- | --- | --- |
+| 相關 normal 診斷 | `runs/.tmp/evaluation-reset-20261017/green-related-ordinary.log` | JSON test events 為 run/pass 各 136，fail/skip 各 0。 |
+| 相關 race 診斷 | `runs/.tmp/evaluation-reset-20261017/green-related-race.log` | JSON test events 為 run/pass 各 136，fail/skip 各 0。這只代表相關診斷，不代表完整工程 race。 |
+| 舊模型數量 | `evidence/LRN-10/chemical-evaluation-reset-20261017/diagnostic-verification.json:10-13`；`old-chemical/chemical-models-ordinary` 與 `old-chemical/chemical-models-race` | `old_models=12`。兩個目錄各有 6 個 checkpoint。ordinary/race 的 before/after JSON log 各有 6 筆，逐組 bytes 相同。 |
+| 普通報告數量 | `diagnostic-verification.json:11-13`；`ordinary-before.log`、`ordinary-after.log` | 兩份 log 都是 64 筆 JSON report，bytes 相同。 |
+| 先失敗回歸 | `diagnostic-verification.json:14-21`；`red-regression*.log`、`red-formatted-*.log` | 原始程式 14 pass/5 fail；不重設 mutant 10 pass/9 fail。這些是回歸對照，不是完整工程結果。 |
+| P1 公開重現 | `evidence/LRN-10/chemical-evaluation-reset-20261017/reproduction.json:2-9`；`probe-original.log`、`probe-after.log` | 原始 reset=false 正常；ungated reset=true 遺失 `energy` 與 pending feedback；修正版四種組合均保留輸入。 |
+| P2 下一票錯誤對照 | `evidence/LRN-08/aggregate-range-20261017/reproduction.json:5-38`；`aggregate-original.log:1-3` | `AggregateCells` 極端有限輸入產生 `Inf` 並造成 JSON error，`[-8,-7]` 對照為 `-7.5/0.5`。目前沒有把它當成 ticket135 已完成。 |
+
+`diagnostic-verification.json` 的 136/136、12、64 與逐位元比較，均以對應 log 和 JSON 輸出重新核對；沒有把摘要欄位單獨當成證據（`evidence/LRN-10/chemical-evaluation-reset-20261017/diagnostic-verification.json:2-13`）。
+
+## 尚未完成或不可宣稱的項目
+
+- `evidence/LRN-10/chemical-evaluation-reset-20261017/engineering-final-race.log` 讀取時最後仍是 `Action=run` 後接 `Action=output`，停在 `TestConceptsTransferAcrossModalities`，沒有 terminal pass/package 結果。這個檔案是 live/未完成狀態，不能當成完整 race 通過，也不能重啟 session 取代它。
+- `engineering.py.txt` 定義的 `vet`、`module-verify`、`module-selection`、`governance`、`closure-binary` 完成收據目前不在指定 evidence 目錄。`work-in-progress.json` 也把 full race/vet/dependencies/governance 列為 remaining（同檔 `:25-28`）。這些數字與結果未完成，不能推測為通過。
+- ticket136 仍是 `specified`，且明確以 ticket135 的來源凍結和完整工程為前置條件（`docs/tickets/136-aggregate-cell-representability.md:5-6,14-19`）。
+- `aggregate_tests.go.txt` 在本次稽核期間仍可見內容變動，另有 `aggregate-tests-frozen.go.txt`、`aggregate-tests-overlay.json` 及 `aggregate-red-ordinary/race.*` 新增的下一票工作檔。這些只證明 E136 的候選紅測試與對照正在形成，不能視為 E136 完成。
+
+## 建議的必要 archive 白名單
+
+先把以下內容保存到正式 evidence 或等價的受控 archive，再考慮只清理本票 W。已存在於 evidence 的目錄應整目錄保留，避免只留摘要而失去原始 driver、log 或 receipt。
+
+### 已有 evidence
+
+- `evidence/LRN-10/chemical-evaluation-reset-20261017/` 全部檔案，包括 `formal-source-before.json`、`formal-source.json`、`regression-frozen.json`、`root-review.md`、P1 probe、相關 normal/race log、unit/build/format 收據、`engineering.py.txt`、`work-in-progress.json`、`foreign-before.json`、`protected-models.json`、`persistent-data.json`。
+- `evidence/LRN-08/aggregate-range-20261017/` 全部檔案，包括 P2 reproduction、原始 probe、driver snapshot、來源 snapshot 與 environment。
+- `docs/tickets/135-chemical-evaluation-reset.md` 與 `docs/tickets/136-aggregate-cell-representability.md`。
+
+### W 內尚未由上述 evidence 取代的必要輸入與對照
+
+- 來源與狀態 guard：`environment.json`、`run.py`、`live-engineering.json`、`module-originals.json`、`source-before.json`、`README.md.before`、`ENG.md.before`、`delivery-status.md.before`、`docs__requirements-status.json.before`。
+- ticket135 原始來源與候選：`original-adaptive.go.txt`、`mutant-no-reset.go.txt`、`mutant-no-reset-overlay.json`、`chemical_reset_tests.go.txt`、`implementation.go.txt`、`probe.go`、`ordinary-probe/main.go`。
+- ticket135 錯誤與成功對照：`probe-before.json`、`probe-before.log`、`probe-original*.json`、`probe-original*.log`、`probe-after*.json`、`probe-after*.log`、`ordinary-before/after.json`、`ordinary-before/after.log`、`old-ordinary-before/after.json`、`old-ordinary-before/after.log`、`old-race-before/after.json`、`old-race-before/after.log`、`green-related-ordinary/race.*`、`red-regression*.json/log`、`red-formatted-*.json/log`、`mutant-no-reset-ordinary/race.json/log`。
+- old checkpoint 輸入與 driver：`old-chemical/main.go`、`old-chemical/chemical-models-ordinary/`、`old-chemical/chemical-models-race/`。這兩個 checkpoint 目錄合計 12 個檔案，不能因 output log 已存證就先刪除。
+- ticket136 重現、候選及紅測試：`aggregate-probe.go`、`aggregate-original.json`、`aggregate-original.log`、`aggregate-fix-skeleton.md`、`aggregate_tests.go.txt`、`aggregate-tests-frozen.go.txt`、`aggregate-tests-overlay.json`、`aggregate-red-ordinary.json/log`、`aggregate-red-race.json/log`。`aggregate_tests.go.txt` 必須保留到 E136 完成並完成 archive，不能在 ticket135 清理時漏刪。
+- delegation audit：`opencode-models-continuation.json`、`opencode-models-continuation.log`。它們記錄 OpenCode continuation 失敗，與 evidence 的 delegation 結果互相對應。
+
+`go-cache/`、`go-mod-cache/`、`go-tmp/` 是執行環境，不是必要輸入 archive；但在 session 58245 還活著時不得刪除或重建。這份白名單不授權清理 W 以外的 `runs/` 內容。
+
+## 清理前 guard
+
+只有在 session 58245 已由既有 runner 正常 terminal、完整 race 有 exit 0 且收據已保存，並補齊 vet、module verify/selection、governance、closure binary 收據後，才可進入清理判斷。不得用 timeout、部分 race log 或重跑替代。
+
+清理前再次以唯讀方式確認：
+
+1. W 仍為目錄且 inode 是 `59353824`。
+2. `formal-source.json` 有 `854` 筆，`formal-source-before.json` 有 `853` 筆；前者是 ticket135 當下來源基準，後者是修改前來源基準。
+3. `module-originals.json` 有 `15046` 筆；`protected-models.json` 有 `18` 筆；`persistent-data.json` 有 `6` 筆；`foreign-before.json` 有 `32` 筆。這些數字均已實際核對，不能以檔名或過往摘要代替。
+4. 12 個 old checkpoint、64 份 ordinary report、normal/race 各 136 個相關 test events 的輸入、driver、log 與 receipt 已在 archive 中可獨立讀回。
+5. `aggregate_tests.go.txt` 及其 frozen/overlay/red 對照已由 E136 接手並完成保存。若 E136 尚未完成，保留整組檔案，不清理。
+
+在上述條件全部成立前，建議只更新 evidence 與狀態，不做任何刪除。完成後仍只可處理 `runs/.tmp/evaluation-reset-20261017` 這個已由 inode guard 鎖定的本票 W，不得宣稱或執行整個 `runs/` 清理。

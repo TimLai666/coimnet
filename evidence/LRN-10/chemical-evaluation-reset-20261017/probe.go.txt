@@ -1,0 +1,57 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"reflect"
+
+	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/modulation"
+	"github.com/TimLai666/coimnet/signal"
+)
+
+func main() {
+	for _, reset := range []bool{false, true} {
+		for _, gated := range []bool{false, true} {
+			a, _, err := experiment.AdaptiveFixture(7, experiment.EvaluationModeFixed, experiment.ResetPolicy{})
+			must(err)
+			c := modulation.ChemistryConfig{
+				Chemistry: modulation.Chemistry{Regions: 1, Channels: 1, DT: .5, Tau: []float64{2}},
+				Sources: []modulation.SourceSpec{{Kind: modulation.SourceInternalResource, Channel: 0,
+					Resource: &modulation.InternalResource{Resource: "energy", Coefficient: 2, Threshold: .25}}},
+				Receptors: modulation.Receptors{Records: []modulation.Receptor{{Cells: []int{0}, Signal: "octopamine", Channel: 0,
+					Status: modulation.StatusHypothesized, Kd: .5, N: 1, Evidence: "fixture", MeasurementKind: "declared", MappingVersion: "reset-probe/v1"}}},
+				Regions: modulation.RegionAssignment{NodeRegion: []int{0, 0}},
+			}
+			must(a.EnableChemistry(c))
+			if gated {
+				pc := a.Snapshot().Plastic.Config
+				index := 0
+				pc.Rule.GateReceptor = &index
+				must(a.EnablePlasticity(pc))
+			}
+			must(a.SetResource("energy", .75))
+			fb, err := signal.NewFeedback(signal.FeedbackSpec{SchemaVersion: signal.CurrentSchemaVersion(), ExperienceID: "resource", ActionID: "resource-action",
+				ProducedAt: signal.Timestamp{Unit: signal.TimeUnitModelStep}, AvailableAt: signal.Timestamp{Unit: signal.TimeUnitModelStep},
+				Source: "declared", Score: .5, ModelVersion: signal.CurrentSchemaVersion()})
+			must(err)
+			must(a.OfferFeedback(fb))
+			before := a.Snapshot()
+			r, evalErr := experiment.RunAdaptiveEvaluation(context.Background(), a, experiment.AdaptiveEvaluation{
+				Mode: experiment.EvaluationModeFixed, Reset: experiment.ResetPolicy{ChemicalAtItemStart: reset},
+				Scoring: []experiment.EvaluationItem{{ID: "score", Input: [][]float64{{1}, {.5}}, Target: []float64{.2}}},
+			})
+			after := a.Snapshot()
+			row := map[string]any{"reset": reset, "gated": gated, "report": r,
+				"resources_before": before.Chemical.Resources, "resources_after": after.Chemical.Resources,
+				"resources_preserved": reflect.DeepEqual(before.Chemical.Resources, after.Chemical.Resources),
+				"feedback_before": len(before.Chemical.PendingFeedback), "feedback_after": len(after.Chemical.PendingFeedback)}
+			if evalErr != nil { row["error"] = evalErr.Error() }
+			must(json.NewEncoder(os.Stdout).Encode(row))
+		}
+	}
+}
+
+func must(err error) { if err != nil { panic(fmt.Sprint(err)) } }

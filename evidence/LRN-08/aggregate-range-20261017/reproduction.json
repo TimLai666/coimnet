@@ -1,0 +1,39 @@
+{
+  "requirement": "LRN-08",
+  "date": "2026-10-17",
+  "severity": "P2",
+  "entry_point": "experiment.AggregateCells",
+  "cases": [
+    {
+      "inputs": [
+        -1e+308,
+        -1e+308
+      ],
+      "expected_mean": -1e+308,
+      "expected_std": 0,
+      "observed_mean": "-Inf",
+      "observed_std": "+Inf"
+    },
+    {
+      "inputs": [
+        -8e+307,
+        -7e+307
+      ],
+      "expected_mean": -7.5e+307,
+      "expected_std": 5e+306,
+      "observed_std": "+Inf"
+    },
+    {
+      "inputs": [
+        -8,
+        -7
+      ],
+      "expected_mean": -7.5,
+      "expected_std": 0.5,
+      "normal_control": true
+    }
+  ],
+  "test_log": "probe-original.log",
+  "reproduction_command": "probe-original.json",
+  "scope": "Public aggregate helper reproduced. Current generated task score range has not been shown to reach these inputs; no claim of ordinary task metric change."
+}

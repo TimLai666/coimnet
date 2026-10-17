@@ -1,0 +1,47 @@
+{
+  "host": "Codex",
+  "opencode_models": {
+    "exit_code": 1,
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+    "free_model_used": false
+  },
+  "fallback": {
+    "tool": "Codex native collaboration",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "reason": "Project AGENTS.md specifies this fallback after unavailable OpenCode free models."
+  },
+  "assignments": [
+    {
+      "agent": "continual_mean_audit_135",
+      "scope": "Read-only continual aggregation audit; later one-line implementation candidate after Root verified red tests.",
+      "allowed_write": "runs/.tmp/evaluation-reset-20261017/implementation.go.txt"
+    },
+    {
+      "agent": "adaptive_mean_audit_135",
+      "scope": "Read-only adaptive scoring/reset contract audit.",
+      "allowed_write": null
+    },
+    {
+      "agent": "chemical_reset_tests_135",
+      "scope": "Public regression text, no implementation edits or Go execution.",
+      "allowed_write": "runs/.tmp/evaluation-reset-20261017/chemical_reset_tests.go.txt"
+    },
+    {
+      "agent": "cleanup_plan_audit_135",
+      "scope": "Two read-only preservation audits; Root verifies all counts, fills five snapshot gaps and archives later numerical controls separately.",
+      "allowed_write": [
+        "runs/.tmp/evaluation-reset-20261017/cleanup-audit.md.txt",
+        "runs/.tmp/evaluation-reset-20261017/preservation-gap-audit.md.txt"
+      ]
+    }
+  ],
+  "root_review": {
+    "production_candidate": "Only DisableChemistry invocation replaced by a comment; all other bytes equal original source.",
+    "test_review": "Read all 179 lines, corrected source clock wording to source state, applied gofmt; final frozen tests rerun red in ordinary and race builds.",
+    "root_runs_all_go": true,
+    "source_fingerprint": "formal-source.json",
+    "regression_freeze": "regression-frozen.json"
+  },
+  "opencode_preservation_attempt": "opencode-models-preservation.json"
+}

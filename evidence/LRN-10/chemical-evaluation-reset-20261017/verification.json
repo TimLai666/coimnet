@@ -1,0 +1,131 @@
+{
+  "requirement": "LRN-10",
+  "engineering_passed": true,
+  "diagnostic_passed": true,
+  "acceptance_complete": false,
+  "stage": "Full engineering, final31 governance and owned temporary cleanup complete; source delivery pending.",
+  "reproduction_command": "Use command-environment.json and the exact commands in red-formatted, green-related, public-probe and compatibility receipts; engineering.py.txt is the complete engineering gate. Diagnostic drivers and old inputs are in preserved-work.tar.gz.",
+  "environment": {
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "go": "go version go1.26.5 darwin/arm64",
+    "platform": [
+      "darwin",
+      "arm64",
+      "1"
+    ],
+    "filesystem": "local APFS",
+    "go_environment": {
+      "GOMAXPROCS": "2",
+      "GOFLAGS": "-mod=readonly -p=2",
+      "GOMEMLIMIT": "8GiB",
+      "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/evaluation-reset-20261017/go-cache",
+      "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/evaluation-reset-20261017/go-mod-cache",
+      "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/evaluation-reset-20261017/go-tmp",
+      "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/evaluation-reset-20261017/go-tmp",
+      "GOTOOLCHAIN": "local",
+      "GOSUMDB": "off",
+      "GOTELEMETRY": "off",
+      "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+    }
+  },
+  "input_fingerprints": {
+    "formal_source": "formal-source.json",
+    "formal_source_sha256": "5871244348e5c4539ff313d7ff883dfe1a8d5117386883b229e528db5ec4f278",
+    "source_entries": 854,
+    "regression": "regression-frozen.json",
+    "necessary_inputs": [
+      "work-preservation.json",
+      "baseline-work-preservation.json"
+    ],
+    "original_models": "protected-models.json",
+    "persistent_data": "persistent-data.json",
+    "foreign": "foreign-before.json"
+  },
+  "observed_result": {
+    "diagnostic": {
+      "related": {
+        "ordinary": {
+          "pass": 136
+        },
+        "race": {
+          "pass": 136
+        }
+      },
+      "old_models": 12,
+      "normal_reports": 64,
+      "old_model_comparison": "exact bytes within each ordinary/race build",
+      "normal_report_comparison": "exact bytes",
+      "regression_events": 19,
+      "original_events": {
+        "pass": 14,
+        "fail": 5
+      },
+      "mutant_no_reset": {
+        "pass": 10,
+        "fail": 9
+      },
+      "changed_production_files": [
+        "experiment/adaptive_run.go"
+      ],
+      "added_test_files": [
+        "experiment/adaptive_chemical_reset_test.go"
+      ]
+    },
+    "engineering": {
+      "unit": {
+        "test_events": {
+          "pass": 8552,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8556
+      },
+      "race": {
+        "test_events": {
+          "pass": 8551,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8556
+      }
+    },
+    "engineering_receipt": "engineering-verification.json",
+    "approved_neutral_gain_controls": "neutral-gain-controls.json",
+    "scope": "Chemical reset preserves task-declared resources and pending feedback while actually resetting concentration/source state. No model format, API, dependency or training objective change. Ticket136 remains specified; no new task-quality or biological claim.",
+    "own_cleanup": {
+      "cleaned_at": "2026-10-17T07:16:59.975152+00:00",
+      "owned_directory": "runs/.tmp/evaluation-reset-20261017",
+      "owned_inode": 59353824,
+      "removed_entries": 25600,
+      "removed_bytes": 2156022451,
+      "inventory_archive": "cleanup-inventory.json.gz",
+      "inventory_archive_sha256": "b78874199cae39ed2d8ce0f76b7129f0536db4a2eae4791f4d911e30e10bdde7",
+      "no_open_handles": true,
+      "necessary_files_preserved": true,
+      "source_entries_preserved": 854,
+      "original_model_files_preserved": 18,
+      "persistent_data_files_preserved": 6,
+      "protected_old_roots_preserved": [
+        "62",
+        "real-task-quality-20261012"
+      ],
+      "directory_removed": true,
+      "original_module_files_preserved": 15046
+    },
+    "final_governance": "final-governance.json"
+  },
+  "test_log": [
+    "engineering-verification.json",
+    "diagnostic-verification.json",
+    "neutral-gain-controls.json",
+    "root-review.md",
+    "final-governance.json",
+    "cleanup.json"
+  ]
+}
