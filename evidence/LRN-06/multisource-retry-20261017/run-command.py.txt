@@ -1,0 +1,52 @@
+"""Run one validation command with frozen inputs and project-local caches."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, re, subprocess, time
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/multisource-retry-20261017'
+parser = argparse.ArgumentParser(description='Run a validation command against frozen inputs using project-local caches. Example: run-command.py.txt focused-unit go test -json ./tasks/asr')
+parser.add_argument('label', nargs='?', help='Unique lowercase output label; existing results are never overwritten.')
+parser.add_argument('command', nargs=argparse.REMAINDER, help='Command and arguments to execute; Go caches use command-environment.json.')
+args = parser.parse_args()
+if args.label is None:
+    parser.print_help()
+    raise SystemExit(0)
+label, command = args.label, args.command
+if not re.fullmatch('[a-z0-9-]+', label) or not command:
+    parser.error('a lowercase output label and command are required')
+source = json.loads((E / 'formal-source.json').read_text())
+foreign = json.loads((R / 'evidence/LRN-08/aggregate-range-20261017/foreign-before.json').read_text())
+models = json.loads((R / 'evidence/LRN-08/aggregate-range-20261017/protected-models.json').read_text())
+data_records = json.loads((R / 'evidence/LRN-08/aggregate-range-20261017/persistent-data.json').read_text())
+data = {name: value['sha256'] for name, value in data_records.items()}
+env = dict(os.environ)
+env.update(json.loads((E / 'command-environment.json').read_text()))
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def gate():
+    assert W.stat().st_ino == json.loads((E / 'baseline.json').read_text())['work_inode']
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert paths == set(source), 'source paths changed'
+    for name, digest in {**source, **models, **data}.items():
+        assert sha(R / name) == digest, name
+    for name, digest in foreign.items():
+        assert sha(Path(name)) == digest, name
+
+gate()
+start = time.monotonic()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+log = E / (label + '.log')
+with log.open('xb') as handle:
+    process = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'label': label, 'pid': process.pid, 'started_at': started}), flush=True)
+    code = process.wait()
+gate()
+result = {'command': command, 'environment_file': 'command-environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'exit_code': code, 'seconds': time.monotonic() - start, 'source_count': len(source), 'source_manifest': 'formal-source.json', 'log': log.name, 'log_bytes': log.stat().st_size, 'log_sha256': sha(log)}
+with (E / (label + '.json')).open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)
+raise SystemExit(code)

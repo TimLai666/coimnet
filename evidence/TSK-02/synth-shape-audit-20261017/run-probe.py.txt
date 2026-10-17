@@ -1,0 +1,39 @@
+"""Observe public synthetic-audio dimensions using tiny wrapped allocations."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, os, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run the fixed three-case public probe once with project-owned temporary files and caches; preserve the actual output and receipt.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/asr-synth-shape-audit-20261017'
+source = json.loads((R / 'evidence/LRN-06/multisource-retry-20261017/formal-source.json').read_text())
+baseline = json.loads((E / 'baseline.json').read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+def gate():
+    assert W.stat().st_ino == baseline['work_inode']
+    assert sha(W / 'main.go') == baseline['probe_sha256'] == sha(E / 'probe.go.txt')
+    assert len(source) == 857 and all(sha(R / p) == h for p, h in source.items())
+gate()
+env = dict(os.environ)
+env.update(json.loads((E / 'environment.json').read_text()))
+command = ['go', 'run', str(W / 'main.go')]
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+start = time.monotonic()
+with (E / 'probe.log').open('xb') as handle:
+    proc = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+    print(json.dumps({'command': command, 'started_at': started, 'pid': proc.pid}), flush=True)
+    code = proc.wait()
+gate()
+receipt = {'command': command, 'environment': 'environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'seconds': time.monotonic() - start, 'exit_code': code, 'log': 'probe.log', 'log_sha256': sha(E / 'probe.log'), 'probe_sha256': baseline['probe_sha256'], 'source_entries_unchanged': 857}
+with (E / 'probe.json').open('x') as handle:
+    json.dump(receipt, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(receipt), flush=True)
+raise SystemExit(code)

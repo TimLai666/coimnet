@@ -1,0 +1,62 @@
+{
+  "source": "evidence/TSK-04/report-config-ownership-20261017/validate-candidate.py.txt",
+  "source_sha256": "f99791da97c0e18b4d894dc58504a61b66115340abbb4b8dc5a215e222798e8f",
+  "literal_replacements": [
+    {
+      "before": "report-config-ownership-20261017",
+      "after": "experiment-report-ownership-20261017",
+      "occurrences": 1
+    },
+    {
+      "before": "59884782",
+      "after": "59982844",
+      "occurrences": 1
+    },
+    {
+      "before": "expected = {'TestMediaReportsOwnRunConfiguration'} | {'TestMediaReportsOwnRunConfiguration/' + name for name in ['image', 'audio', 'video', 'roles']}",
+      "after": "expected = {'TestExperimentReportsOwnConfiguration', 'TestEvaluationReportOwnsFeedbackDeclaration'} | {'TestExperimentReportsOwnConfiguration/' + name for name in ['multitask', 'multimodal', 'student']} | {'TestEvaluationReportOwnsFeedbackDeclaration/' + name for name in ['fixed', 'adaptive']}",
+      "occurrences": 1
+    },
+    {
+      "before": "^TestMediaReportsOwnRunConfiguration$",
+      "after": "^Test(ExperimentReportsOwnConfiguration|EvaluationReportOwnsFeedbackDeclaration)$",
+      "occurrences": 1
+    },
+    {
+      "before": "./tasks/media",
+      "after": "./experiment",
+      "occurrences": 1
+    },
+    {
+      "before": "github.com/TimLai666/coimnet/tasks/media",
+      "after": "github.com/TimLai666/coimnet/experiment",
+      "occurrences": 1
+    },
+    {
+      "before": "expected - {'TestMediaReportsOwnRunConfiguration'}",
+      "after": "expected - set(frozen['parents'])",
+      "occurrences": 1
+    },
+    {
+      "before": "'original_failures_each': 5",
+      "after": "'original_failures_each': 7",
+      "occurrences": 1
+    },
+    {
+      "before": "'candidate_passes_each': 5",
+      "after": "'candidate_passes_each': 7",
+      "occurrences": 1
+    },
+    {
+      "before": "'initial_report_hashes_preserved_each_build': 4",
+      "after": "'initial_report_hashes_preserved_each_build': 5",
+      "occurrences": 1
+    },
+    {
+      "before": "Four normal finite-fixture public runs",
+      "after": "Five normal finite-fixture public runs",
+      "occurrences": 1
+    }
+  ],
+  "generated_sha256": "20216b469bcf3c7d3c18a121d8f285339a8305b7bf0d81756bed724f7f3c0215"
+}

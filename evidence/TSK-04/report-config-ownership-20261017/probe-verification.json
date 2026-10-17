@@ -1,0 +1,58 @@
+{
+  "verified_at": "2026-10-17T10:41:55.869293+00:00",
+  "requirement": [
+    "TSK-04",
+    "TSK-05",
+    "TSK-06",
+    "TSK-07"
+  ],
+  "status": "confirmed report ownership defect; candidate not yet tested or adopted",
+  "severity": "P2",
+  "reproduction_command": "python3 evidence/TSK-04/report-config-ownership-20261017/run-valid.py.txt (fresh output names required for rerun)",
+  "environment": "environment.json",
+  "input_fingerprints": {
+    "formal_source_manifest": "../../LRN-06/multisource-retry-20261017/formal-source.json",
+    "source_count": 857,
+    "probe": "d42f49d8c972a61f49093e64e6034dcd0999345ff87704a48ed8bb5cc2609433"
+  },
+  "observed_result": {
+    "caller_config_after_change_valid": true,
+    "config_hash_matches_after": false,
+    "config_hash_matches_before": true,
+    "normal_run_succeeded": true,
+    "report_config_unchanged": false,
+    "report_holdout_after": "red square",
+    "report_holdout_before": "blue diagonal",
+    "report_seed_after": 2,
+    "report_seed_before": 1,
+    "run_seed": 1
+  },
+  "test_log": "probe-valid.log",
+  "terminal": {
+    "session_id": 76735,
+    "exit_code": 0,
+    "actual_tool_chunk": "6500a4"
+  },
+  "first_attempt": {
+    "session_id": 19113,
+    "exit_code": 1,
+    "actual_tool_chunk": "538074",
+    "receipt": "probe.json",
+    "interpretation": "Invalid probe fixture red horizontal; no product failure or bug acceptance is inferred from it."
+  },
+  "root_cause": "RunReport.Config copies slice headers from the caller; later caller writes change report.Config but not ConfigHash or Runs.",
+  "contract": [
+    "ENG.md:18",
+    "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md:780-793",
+    "docs/tickets/49-nav2d-report-config-ownership.md:9-25"
+  ],
+  "same_pattern": [
+    "tasks/media/run.go:174",
+    "tasks/media/video.go:371",
+    "tasks/media/roles.go:193"
+  ],
+  "scope_limit": "Only RunMedia image dynamically reproduced so far. Other entry points are statically traced and await public tests. No weight or accuracy change established. No mutation-during-run concurrency guarantee.",
+  "requirement_status_decision": "Keep prior capability acceptance unchanged: existing serialized evidence was produced before caller mutation. Record this separate SDK report provenance defect and attach supplemental proof when fixed.",
+  "formal_sources_modified": false,
+  "cleanup_authorized_now": false
+}

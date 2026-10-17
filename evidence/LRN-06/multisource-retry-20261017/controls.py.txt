@@ -1,0 +1,62 @@
+"""Verify that the new regression rejects source identity aliasing in isolation."""
+from pathlib import Path
+import argparse
+import collections
+import hashlib
+import json
+import subprocess
+import sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Create two private overlays and require the frozen new test to reject each in ordinary and race builds. Does not edit production Go.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python cannot disable control checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/multisource-retry-20261017'
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+source = json.loads((E / 'formal-source.json').read_text())
+assert W.stat().st_ino == json.loads((E / 'baseline.json').read_text())['work_inode']
+original = (R / 'learning/online.go').read_text()
+assert sha(R / 'learning/online.go') == source['learning/online.go']
+changes = {
+    'stage-action-only': ('key := [2]string{fb.ActionID(), fb.Source()}', 'key := [2]string{fb.ActionID(), ""}', 1),
+    'pending-action-only': (r'fb.ActionID()+"\x00"+fb.Source()', 'fb.ActionID()', 2),
+}
+results = []
+for name, (before, after, count) in changes.items():
+    assert original.count(before) == count, name
+    replacement = W / (name + '.go')
+    with replacement.open('x') as handle:
+        handle.write(original.replace(before, after))
+    overlay = W / (name + '.json')
+    with overlay.open('x') as handle:
+        json.dump({'Replace': {str(R / 'learning/online.go'): str(replacement)}}, handle)
+    for kind in ['unit', 'race']:
+        label = 'control-' + name + '-' + kind
+        command = ['go', 'test', '-json', '-count=1', '-timeout=20m', '-overlay=' + str(overlay), '-run', '^TestOnlineMixedSameActionIndependentSourceState$', './learning']
+        if kind == 'race':
+            command.insert(2, '-race')
+        result = subprocess.run([sys.executable, str(E / 'run-command.py.txt'), label, *command], cwd=R)
+        receipt = json.loads((E / (label + '.json')).read_text())
+        log = E / receipt['log']
+        assert result.returncode == receipt['exit_code'] == 1 and sha(log) == receipt['log_sha256']
+        events = [json.loads(line) for line in log.read_text().splitlines()]
+        terminal = [e for e in events if e.get('Test') and e['Action'] in ['pass', 'fail', 'skip']]
+        counts = dict(collections.Counter(e['Action'] for e in terminal))
+        assert counts == {'fail': 5}, (name, kind, counts)
+        assert all(e['Test'].startswith('TestOnlineMixedSameActionIndependentSourceState') for e in terminal)
+        output = ''.join(e.get('Output', '') for e in events)
+        assert 'DATA RACE' not in output and '[build failed]' not in output and 'undefined:' not in output
+        assert 'differs from complete independent phase state' in output or 'want (' in output
+        results.append({'mutation': name, 'build': kind, 'expected_exit_code': 1, 'failed_test_events': 5, 'receipt': label + '.json', 'replacement_sha256': sha(replacement), 'overlay_sha256': sha(overlay)})
+for name, digest in source.items():
+    assert sha(R / name) == digest, name
+with (E / 'controls-verification.json').open('x') as handle:
+    json.dump({'all_expected_failures_observed': True, 'production_sources_unchanged': True, 'results': results}, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'controls_accepted': len(results), 'production_sources_unchanged': True}), flush=True)

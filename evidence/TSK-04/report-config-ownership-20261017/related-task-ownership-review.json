@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-17T10:53:56.380582+00:00",
+  "scope": [
+    "tasks/ocr",
+    "tasks/asr",
+    "tasks/textgen"
+  ],
+  "method": "Read-only producer-to-consumer ownership review; Root verified decisive source sections and CLI caller. No new Go or dynamic probe.",
+  "confirmed_public_defects": [],
+  "excluded": [
+    {
+      "producer": "RunOCRFixture",
+      "reason": "Copies both Alphabet and Seeds before hashing and constructing OCRReport.Config.",
+      "source": "tasks/ocr/fixture.go:169-187"
+    },
+    {
+      "producer": "RunTextgen",
+      "reason": "Seeds is the only mutable config field and is copied before hashing and storing RunReport.Config.",
+      "source": "tasks/textgen/run.go:175-187"
+    },
+    {
+      "producer": "ASR recognizer reports",
+      "reason": "No mutable full run config is returned; FrontEndConfig is scalar and recognizer Alphabet is copied by constructor.",
+      "source": [
+        "tasks/asr/recognizer.go:113-123",
+        "tasks/asr/evaluate_stream.go:45-51"
+      ]
+    }
+  ],
+  "private_alias_ruling": {
+    "producer": "internal/cli.runASRFixture",
+    "source": "internal/cli/asr.go:170-183",
+    "static_alias": true,
+    "mutable_fields": [
+      "Seeds",
+      "Synth.Alphabet",
+      "Recognizer.Alphabet"
+    ],
+    "why_no_current_public_failure": "Only production caller runASR constructs a local config, calls the helper, immediately serializes its report and never mutates or reuses the config. The helper and config type are private; returned report has no ConfigHash. Root checked the caller and the downstream reads/constructor clone.",
+    "decision": "Do not expand the media fix or request a user decision; revisit if a supported caller begins reusing or exposing this config."
+  },
+  "graph_verification": "Root found RunOCRFixture, RunTextgen and runASRFixture with search_graph and read RunTextgen via exact snippet. trace_path confirms runASR then CLI Run. Worker search misses are not treated as proof that these packages are unindexed.",
+  "source_sha256": {
+    "tasks/ocr/fixture.go": "a7b1adcbd008e40250c3038fbf4e2219d8e1ba9f91cf14206f6d53d01ecd9ac1",
+    "tasks/ocr/recognizer.go": "5a93f129f0cb957aef85fbba464fe06ca73e461656e86d3254a0c7e4ea04d863",
+    "tasks/ocr/persistence.go": "29cddb3784cef059cd469c19bdc3d26f60bce1ebb15b6e7623a209e22811e90a",
+    "tasks/asr/recognizer.go": "cf3b1d1bd63660c341c5baec7561a2068b3625deaa854d167602df0d1bfd8f89",
+    "tasks/asr/synth.go": "6b7c4f27c80afd43544c0a0d415fb50e538245108e67dd3b2d6d13ee8ab4e724",
+    "tasks/asr/evaluate_stream.go": "e8c28bed21e0bdaaf13a2c666cc213ec5c155802bd686dc7e4bbff383553dae7",
+    "internal/cli/asr.go": "57afaa78a16ead5264938c79680c2dd2b2b463a22f5a8f5bad870696769c67f6",
+    "tasks/textgen/run.go": "2d6d352ec06bc8b05c64dae8e65ff8afa043c27745d583136ec5e093a8514333",
+    "tasks/textgen/tokenizer/tokenizer.go": "e35db2b3d9dd70643288621d7e8086e902964fe3bd4c8a0ac53090101b652c18"
+  },
+  "formal_source_changes": false,
+  "goal_status": "active"
+}

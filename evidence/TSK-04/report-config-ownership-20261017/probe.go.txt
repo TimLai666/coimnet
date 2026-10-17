@@ -1,0 +1,57 @@
+// Observational public API probe; no production source is modified.
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/TimLai666/coimnet/tasks/media"
+)
+
+func main() {
+	c := media.DefaultRunConfig(media.ModalityImage)
+	c.Epochs = 1
+	c.Seeds = []uint64{1}
+	report, err := media.RunMedia(context.Background(), c)
+	if err != nil || len(report.Runs) != 1 || report.Runs[0].Failed {
+		fmt.Fprintf(os.Stderr, "normal RunMedia failed: error=%v runs=%+v\n", err, report.Runs)
+		os.Exit(1)
+	}
+	before, err := json.Marshal(report.Config)
+	if err != nil {
+		panic(err)
+	}
+	beforeHash := sha256.Sum256(before)
+	beforeSeed, beforeHoldout := report.Config.Seeds[0], report.Config.Holdout[0]
+	// Only the caller's original configuration is changed, after RunMedia returned.
+	c.Seeds[0] = 2
+	c.Holdout[0] = "red horizontal"
+	if err := c.Validate(); err != nil {
+		panic(err)
+	}
+	after, err := json.Marshal(report.Config)
+	if err != nil {
+		panic(err)
+	}
+	afterHash := sha256.Sum256(after)
+	result := map[string]any{
+		"normal_run_succeeded":             true,
+		"caller_config_after_change_valid": true,
+		"report_seed_before":               beforeSeed,
+		"report_seed_after":                report.Config.Seeds[0],
+		"run_seed":                         report.Runs[0].Seed,
+		"report_holdout_before":            beforeHoldout,
+		"report_holdout_after":             report.Config.Holdout[0],
+		"report_config_unchanged":          bytes.Equal(before, after),
+		"config_hash_matches_before":       report.ConfigHash == hex.EncodeToString(beforeHash[:]),
+		"config_hash_matches_after":        report.ConfigHash == hex.EncodeToString(afterHash[:]),
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+		panic(err)
+	}
+}

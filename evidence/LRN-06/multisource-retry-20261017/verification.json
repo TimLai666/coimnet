@@ -1,0 +1,92 @@
+{
+  "requirement": "LRN-06",
+  "verified_at": "2026-10-17T15:00:40.669669+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/LRN-06/multisource-retry-20261017/run-command.py.txt focused-unit go test -json -count=1 -run '^TestOnlineMixedSameActionIndependentSourceState$' ./learning",
+    "python3 evidence/LRN-06/multisource-retry-20261017/run-command.py.txt focused-race go test -race -json -count=1 -run '^TestOnlineMixedSameActionIndependentSourceState$' ./learning",
+    "python3 evidence/LRN-06/multisource-retry-20261017/controls.py.txt --run",
+    "python3 evidence/LRN-06/multisource-retry-20261017/engineering.py.txt --run --label-prefix engineering-final"
+  ],
+  "environment": {
+    "command_environment": "command-environment.json",
+    "execution": "Complete final gate ran in approved local execution allowing httptest loopback binds; no persistent security change.",
+    "go_version_log": "environment-version.log"
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source.json",
+    "source_manifest_sha256": "b16960fc3d54e4f8f9f2ee6313a98c1f0985af16b6ba0ab9df2a68c470809cdc",
+    "source_entries": 857,
+    "unchanged_original_entries": 856,
+    "new_test": {
+      "path": "learning/online_multisource_state_test.go",
+      "sha256": "f37bfc5667071b3fbf39f6f3251f98ed5f620b1ed8dfa14a4807af6ae3697f85",
+      "parents": [
+        "TestOnlineMixedSameActionIndependentSourceState"
+      ],
+      "matrix": "UpdateEvery 1/2 x AccumulateSteps 1/2; two simultaneous incomplete sources for one action, backward now and two deferred sources",
+      "expected_new_child_cases": 4
+    },
+    "fixture": "Existing synthetic online learning fixture with no chemical receptor selector; independent public TrainEpisode and AdvanceGated phase composition."
+  },
+  "observed_result": {
+    "new_child_cases": 4,
+    "new_parent_tests": 1,
+    "focused_pass_events_each": 5,
+    "intentional_faults_rejected_in_both_builds": 2,
+    "full_results": {
+      "unit": {
+        "test_events": {
+          "pass": 8633,
+          "skip": 23
+        },
+        "packages": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_events_preserved": 8651,
+        "new_pass_events": 5
+      },
+      "race": {
+        "test_events": {
+          "pass": 8632,
+          "skip": 24
+        },
+        "packages": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_events_preserved": 8651,
+        "new_pass_events": 5
+      }
+    },
+    "governance_pass_events": 31,
+    "all_nine_engineering_steps_passed": true,
+    "product_go_changes": [],
+    "confirmed_online_product_findings": []
+  },
+  "test_log": [
+    "focused-unit.log",
+    "focused-race.log",
+    "controls-verification.json",
+    "engineering-final-unit.log.gz",
+    "engineering-final-race.log.gz",
+    "engineering-verification.json"
+  ],
+  "preservation": {
+    "source_entries": 857,
+    "foreign_files": 32,
+    "original_models": 18,
+    "persistent_data_files": 6,
+    "work_inputs": "work-preservation.json"
+  },
+  "root_review": [
+    "root-test-review.md",
+    "cleanup-recipe-review.json"
+  ],
+  "scope_limit": "Bounded feedback regression coverage. The report ownership and ASR synthesis issues are tracked separately; no proof that all bugs are absent, no task-quality or biological claim. Final governance, cleanup and delivery are separately recorded.",
+  "recorded_run_note": "Recorded commands refer to this exact run. Existing output labels or a different work inode are intentionally refused; repeat equivalent Go arguments with fresh project-owned work and the same frozen sources.",
+  "final_governance": "final-governance.json",
+  "cleanup": "cleanup.json",
+  "cleanup_terminal": "cleanup-terminal.json"
+}

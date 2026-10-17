@@ -1,0 +1,66 @@
+"""Remove only this completed probe's private work; retain its shared cache owner."""
+from pathlib import Path
+import argparse, datetime, hashlib, json, shutil, stat, subprocess
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Verify exact input copies, terminal evidence, frozen sources and ownership, then remove the completed probe work directory only.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip cleanup checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/report-config-ownership-20261017'
+cache_owner = R / 'runs/.tmp/multisource-retry-20261017'
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.parent.resolve() == R / 'runs/.tmp' and not W.is_symlink() and W.stat().st_ino == 59884782
+assert cache_owner.stat().st_ino == 59831855
+assert subprocess.run(['git', 'check-ignore', '--quiet', str(W.relative_to(R))], cwd=R).returncode == 0
+assert json.loads((E / 'candidate-verification.json').read_text())['all_passed']
+terminal = json.loads((E / 'runner-terminal.json').read_text())
+assert terminal['session_id'] == 74636 and terminal['exit_code'] == 0
+assert terminal['actual_tool_chunk'] == '3c0a2e'
+for label in ['probe', 'probe-valid', 'original-unit', 'original-race', 'candidate-unit', 'candidate-race']:
+    receipt = json.loads((E / (label + '.json')).read_text())
+    assert sha(E / receipt['log']) == receipt['log_sha256']
+    assert receipt['exit_code'] == (1 if label in ['probe', 'original-unit', 'original-race'] else 0)
+mapping = {'main.go': 'probe.go.txt', 'main-valid.go': 'probe-valid.go.txt', 'regression_test.go': 'regression.go.txt', 'original-overlay.json': 'original-overlay.json', 'candidate-overlay.json': 'candidate-overlay.json'}
+for rel, record in json.loads((E / 'candidate-sources.json').read_text()).items():
+    mapping[Path(rel).name] = record['candidate']
+for work, evidence in mapping.items():
+    assert (W / work).read_bytes() == (E / evidence).read_bytes()
+source = json.loads((R / 'evidence/LRN-06/multisource-retry-20261017/formal-source.json').read_text())
+assert len(source) == 857 and all(sha(R / p) == digest for p, digest in source.items())
+protected = R / 'evidence/LRN-08/aggregate-range-20261017'
+for name in ['protected-models.json', 'foreign-before.json']:
+    records = json.loads((protected / name).read_text())
+    for path, digest in records.items():
+        assert sha(R / path) == digest, path
+data = json.loads((protected / 'persistent-data.json').read_text())
+assert all(sha(R / path) == record['sha256'] for path, record in data.items())
+open_files = subprocess.run(['lsof', '-nP', '+D', str(W)], capture_output=True)
+assert open_files.returncode == 1 and not open_files.stdout and not open_files.stderr
+
+def inventory():
+    result = {}
+    for p in sorted(W.rglob('*')):
+        mode = p.lstat().st_mode
+        assert stat.S_ISDIR(mode) or stat.S_ISREG(mode), str(p)
+        result[str(p.relative_to(W))] = {'kind': 'dir'} if stat.S_ISDIR(mode) else {'kind': 'file', 'bytes': p.stat().st_size, 'sha256': sha(p)}
+    return result
+
+before = inventory()
+assert set(before) == set(mapping) | {'go-tmp', 'go-tmp/xcrun_db'}
+assert before['go-tmp']['kind'] == 'dir'
+assert W.stat().st_ino == 59884782 and inventory() == before
+assert shutil.rmtree.avoids_symlink_attacks
+shutil.rmtree(W)
+assert not W.exists() and cache_owner.stat().st_ino == 59831855
+assert all(sha(R / p) == digest for p, digest in source.items())
+result = {'at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'removed': str(W.relative_to(R)), 'work_inode': 59884782, 'files': sum(v['kind'] == 'file' for v in before.values()), 'logical_bytes': sum(v.get('bytes', 0) for v in before.values()), 'inventory': before, 'preserved_input_mapping': mapping, 'discarded_cache': 'go-tmp/xcrun_db is an execution cache, not an experiment input or model', 'shared_cache_owner_retained': str(cache_owner.relative_to(R)), 'formal_sources_unchanged': 857, 'protected_models_checked': 18, 'persistent_data_checked': 6, 'foreign_files_checked': 32, 'open_handles': 0, 'scope': 'Only the completed report probe work was deleted; active full engineering work and its caches remain.'}
+with (E / 'cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({k: v for k, v in result.items() if k not in ['inventory', 'preserved_input_mapping']}))

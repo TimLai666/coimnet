@@ -1,0 +1,53 @@
+{
+  "requirement": [
+    "OPS-03",
+    "TSK-09",
+    "TSK-10",
+    "TCH-04",
+    "LRN-10"
+  ],
+  "verified_at": "2026-10-17T15:04:33.465083+00:00",
+  "ticket": "140",
+  "milestones_verified": 2,
+  "milestones_total": 5,
+  "status": "four report producers publicly reproduced; isolated candidate verified; no formal adoption",
+  "engineering_passed": false,
+  "reproduction_command": "python3 evidence/OPS-03/experiment-report-ownership-20261017/validate-candidate.py.txt --run",
+  "environment": "environment.json",
+  "input_fingerprints": [
+    "baseline.json",
+    "candidate-sources.json",
+    "tests-frozen.json"
+  ],
+  "observed_result": {
+    "public_producers": [
+      "RunMultiTask",
+      "multimodaleval.Run",
+      "studenteval.Run",
+      "RunAdaptiveEvaluation fixed",
+      "RunAdaptiveEvaluation adaptive"
+    ],
+    "original_expected_fail_events_each": 7,
+    "candidate_pass_events_each": 7,
+    "normal_full_report_hashes_preserved_each_build": 5,
+    "root_observed_original_assertion_failures": 32,
+    "formal_sources_unchanged": 857
+  },
+  "test_log": [
+    "original-unit.log",
+    "original-race.log",
+    "candidate-unit.log",
+    "candidate-race.log",
+    "root-observed-failures.json"
+  ],
+  "actual_terminal": {
+    "session_id": 37859,
+    "exit_code": 0,
+    "chunk": "4f19a1"
+  },
+  "cleanup": "cleanup.json",
+  "removed_probe_bytes": 65120,
+  "scope_limit": "Synthetic normal run report ownership only. No new accuracy, task-generalization or biological conclusion. Combined final engineering with Ticket139 still required.",
+  "recorded_run_note": "Archived inputs and logs describe this exact guarded run. Existing output labels and old work inode intentionally refuse rerun; reconstruct equivalent overlays in a fresh project-owned work directory and use the same Go arguments.",
+  "goal_status": "active"
+}

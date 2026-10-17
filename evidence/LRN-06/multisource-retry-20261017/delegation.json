@@ -1,0 +1,29 @@
+{
+  "host": "Codex",
+  "opencode_probe": {
+    "command": "opencode models",
+    "exit_code": 1,
+    "actual_chunk": "175661",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+    "no_model_list_obtained": true
+  },
+  "fallback": {
+    "tool": "collaboration.followup_task",
+    "agent": "/root/online_feedback_identity_audit_138",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "instruction_source": "User-provided AGENTS.md specifies fallback model and max effort",
+    "file_permissions": "Read-only; no Go or tests run",
+    "tasks": [
+      "Verify prior same-action multi-source coverage",
+      "Adversarial review of the root-authored independent-phase test"
+    ]
+  },
+  "root_checked": {
+    "prior_tests": "The existing multi-source case has one outstanding marker; backward-time case uses two Act calls. New test holds two source markers for the same Act.",
+    "oracle": "Target zero/score one yields exact zero effective target; fixture has no chemistry or GateReceptor; public AdvanceGated is equivalent for this fixture.",
+    "source_sha256": "f37bfc5667071b3fbf39f6f3251f98ed5f620b1ed8dfa14a4807af6ae3697f85",
+    "agent_findings": "No confirmed test defect. Static report counts independently matched. Dynamic results are accepted only from root actual execution."
+  },
+  "product_findings": []
+}

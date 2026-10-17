@@ -1,0 +1,88 @@
+"""Verify the report-ownership regression against original and isolated candidates."""
+from pathlib import Path
+import argparse, collections, datetime, hashlib, json, os, re, subprocess, time
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run original and candidate ordinary/race public regressions, preserve logs, and compare initial report hashes within each build.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip acceptance checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/experiment-report-ownership-20261017'
+M = R / 'evidence/LRN-06/multisource-retry-20261017/formal-source.json'
+sources = json.loads(M.read_text())
+frozen = json.loads((E / 'tests-frozen.json').read_text())
+env = dict(os.environ)
+env.update(json.loads((E / 'environment.json').read_text()))
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def gate():
+    assert W.stat().st_ino == 59982844
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert paths == set(sources) and len(sources) == 857
+    assert all(sha(R / p) == digest for p, digest in sources.items())
+    assert sha(E / frozen['evidence_source']) == frozen['sha256'] == sha(W / 'regression_test.go')
+    for rel, record in json.loads((E / 'candidate-sources.json').read_text()).items():
+        assert sha(R / rel) == record['original_sha256']
+        assert sha(E / record['candidate']) == record['candidate_sha256'] == sha(W / Path(rel).name)
+
+expected = {'TestExperimentReportsOwnConfiguration', 'TestEvaluationReportOwnsFeedbackDeclaration'} | {'TestExperimentReportsOwnConfiguration/' + name for name in ['multitask', 'multimodal', 'student']} | {'TestEvaluationReportOwnsFeedbackDeclaration/' + name for name in ['fixed', 'adaptive']}
+reports, receipts = {}, []
+for kind in ['original', 'candidate']:
+    for build in ['unit', 'race']:
+        gate()
+        label = kind + '-' + build
+        overlay = W / (kind + '-overlay.json')
+        assert overlay.read_bytes() == (E / overlay.name).read_bytes()
+        command = ['go', 'test', '-overlay=' + str(overlay), '-json', '-count=1', '-timeout=5m', '-run', '^Test(ExperimentReportsOwnConfiguration|EvaluationReportOwnsFeedbackDeclaration)$']
+        if build == 'race':
+            command.append('-race')
+        command.append('./experiment')
+        start = time.monotonic()
+        started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        log = E / (label + '.log')
+        with log.open('xb') as handle:
+            proc = subprocess.Popen(command, cwd=R, env=env, stdin=subprocess.DEVNULL, stdout=handle, stderr=subprocess.STDOUT)
+            print(json.dumps({'label': label, 'started_at': started, 'pid': proc.pid}), flush=True)
+            code = proc.wait()
+        gate()
+        raw = log.read_bytes()
+        terminal, initial, packages = {}, {}, {}
+        for line in raw.splitlines():
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if row.get('Action') in ['pass', 'skip', 'fail']:
+                if row.get('Test'):
+                    assert row['Test'] not in terminal
+                    terminal[row['Test']] = row['Action']
+                else:
+                    packages[row['Package']] = row['Action']
+            match = re.search(r'initial report JSON sha256=([0-9a-f]{64})', row.get('Output', ''))
+            if match:
+                assert row['Test'] not in initial
+                initial[row['Test']] = match.group(1)
+        receipt = {'command': command, 'environment': 'environment.json', 'started_at': started, 'finished_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'seconds': time.monotonic() - start, 'exit_code': code, 'log': log.name, 'log_sha256': sha(log), 'test_events': dict(collections.Counter(terminal.values())), 'terminal': terminal, 'packages': packages, 'initial_report_hashes': initial, 'source_manifest': str(M.relative_to(R)), 'source_count': len(sources), 'regression_sha256': frozen['sha256']}
+        with (E / (label + '.json')).open('x') as handle:
+            json.dump(receipt, handle, indent=2)
+            handle.write('\n')
+        print(json.dumps({'label': label, 'exit_code': code, 'test_events': receipt['test_events']}), flush=True)
+        outcome = 'fail' if kind == 'original' else 'pass'
+        assert code == (1 if kind == 'original' else 0), receipt
+        assert terminal == {name: outcome for name in expected}, receipt
+        assert packages == {'github.com/TimLai666/coimnet/experiment': outcome}, receipt
+        assert set(initial) == expected - set(frozen['parents']), receipt
+        assert b'DATA RACE' not in raw and b'panic:' not in raw and b'[build failed]' not in raw, label
+        reports[kind, build] = initial
+        receipts.append(receipt)
+assert all(reports['original', build] == reports['candidate', build] for build in ['unit', 'race'])
+result = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'candidate_only': True, 'formal_source_changes': False, 'all_passed': True, 'original_failures_each': 7, 'candidate_passes_each': 7, 'initial_report_hashes_preserved_each_build': 5, 'runs': [r['log'].replace('.log', '.json') for r in receipts], 'scope': 'Five normal finite-fixture public runs; no model quality, full engineering, or production adoption claim.'}
+with (E / 'candidate-verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

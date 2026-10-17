@@ -1,0 +1,54 @@
+{
+  "at": "2026-10-17T15:02:40.452774+00:00",
+  "requirement": "TSK-02",
+  "status": "confirmed arithmetic validation defect; no fix adopted",
+  "severity": "P2",
+  "reproduction_command": "python3 evidence/TSK-02/synth-shape-audit-20261017/run-probe.py.txt --run (fresh output labels and work required for rerun)",
+  "environment": "environment.json",
+  "input_fingerprints": "baseline.json",
+  "observed_result": [
+    {
+      "name": "normal",
+      "int_bits": 64,
+      "config_valid": true,
+      "expected_samples": "4",
+      "expected_length_exceeds_int": false,
+      "returned": true,
+      "length": 4
+    },
+    {
+      "name": "gap_max_int",
+      "int_bits": 64,
+      "config_valid": true,
+      "expected_samples": "9223372036854775809",
+      "expected_length_exceeds_int": true,
+      "returned": true,
+      "length": 1
+    },
+    {
+      "name": "gap_max_int_minus_one",
+      "int_bits": 64,
+      "config_valid": true,
+      "expected_samples": "9223372036854775808",
+      "expected_length_exceeds_int": true,
+      "returned": false,
+      "length": 0,
+      "panic": "runtime error: index out of range [0] with length 0"
+    }
+  ],
+  "test_log": "probe.log",
+  "terminal": {
+    "session_id": 99892,
+    "exit_code": 0,
+    "actual_chunk": "1f6550"
+  },
+  "independent_reference": "Exact math/big arithmetic in the public probe and independent Python integers agree: at 1000 Hz, 1 ms per character and two characters, GapMS MaxInt or MaxInt-1 require MaxInt+2 or MaxInt+1 samples, respectively. Both lengths exceed the int range and must be refused before allocation. Current gap multiplication wraps to -1000 or -2000 before division.",
+  "root_cause": [
+    "tasks/asr/synth.go:64",
+    "tasks/asr/synth.go:94"
+  ],
+  "scope_limit": "A synthetic audio helper fails on extreme shape declarations; normal four-sample control remains correct. No ordinary ASR recognition or trained model quality conclusion.",
+  "engineering_passed": false,
+  "formal_sources_modified": false,
+  "goal_status": "active"
+}

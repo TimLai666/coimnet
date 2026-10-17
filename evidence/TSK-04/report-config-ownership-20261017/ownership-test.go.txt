@@ -1,0 +1,231 @@
+package media_test
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"testing"
+
+	"github.com/TimLai666/coimnet/tasks/media"
+)
+
+type reportOwnershipCheck struct {
+	name              string
+	beforeConfigJSON  []byte
+	beforeReportJSON  []byte
+	reportJSON        func() []byte
+	reportConfigJSON  func() []byte
+	reportConfigHash  func() string
+	runCount          func() int
+	runSeed           func() uint64
+	runFailed         func() bool
+	runError          func() string
+	mutateCaller      func()
+	validateCaller    func() error
+	callerValues      func() (uint64, string)
+	mutateReport      func()
+	wantCallerHoldout string
+}
+
+func mustJSON(t *testing.T, value any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal JSON: %v", err)
+	}
+	return append([]byte(nil), raw...)
+}
+
+func sha256Hex(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+func assertReportOwnership(t *testing.T, check reportOwnershipCheck) {
+	t.Helper()
+	if got := check.runCount(); got != 1 {
+		t.Fatalf("%s: run count = %d, want 1", check.name, got)
+	}
+	if got := check.runSeed(); got != 1 {
+		t.Fatalf("%s: run seed = %d, want 1", check.name, got)
+	}
+	if check.runFailed() {
+		t.Fatalf("%s: run is marked failed: %s", check.name, check.runError())
+	}
+	if got := check.runError(); got != "" {
+		t.Fatalf("%s: successful run has error %q", check.name, got)
+	}
+
+	wantHash := sha256Hex(check.beforeConfigJSON)
+	if got := check.reportConfigJSON(); !bytes.Equal(got, check.beforeConfigJSON) {
+		t.Fatalf("%s: report config differs from the pre-run config", check.name)
+	}
+	if got := check.reportConfigHash(); got != wantHash {
+		t.Fatalf("%s: config hash = %s, want %s", check.name, got, wantHash)
+	}
+	t.Logf("%s initial report JSON sha256=%s", check.name, sha256Hex(check.beforeReportJSON))
+
+	check.mutateCaller()
+	if err := check.validateCaller(); err != nil {
+		t.Fatalf("%s: caller config after mutation is invalid: %v", check.name, err)
+	}
+	callerSeed, callerHoldout := check.callerValues()
+	if callerSeed != 2 || callerHoldout != check.wantCallerHoldout {
+		t.Fatalf("%s: caller config after mutation = seed %d, holdout %q; want seed 2, holdout %q", check.name, callerSeed, callerHoldout, check.wantCallerHoldout)
+	}
+	if got := check.reportJSON(); !bytes.Equal(got, check.beforeReportJSON) {
+		t.Fatalf("%s: report changed after mutating the caller config", check.name)
+	}
+	if got := check.reportConfigJSON(); !bytes.Equal(got, check.beforeConfigJSON) {
+		t.Fatalf("%s: report config changed after mutating the caller config", check.name)
+	}
+	if got := check.reportConfigHash(); got != wantHash {
+		t.Fatalf("%s: config hash changed after mutating the caller config: got %s, want %s", check.name, got, wantHash)
+	}
+
+	check.mutateReport()
+	callerSeed, callerHoldout = check.callerValues()
+	if callerSeed != 2 || callerHoldout != check.wantCallerHoldout {
+		t.Fatalf("%s: caller config changed after mutating report.Config = seed %d, holdout %q; want seed 2, holdout %q", check.name, callerSeed, callerHoldout, check.wantCallerHoldout)
+	}
+}
+
+func TestMediaReportsOwnRunConfiguration(t *testing.T) {
+	t.Run("image", func(t *testing.T) {
+		testRunMediaOwnership(t, media.ModalityImage, "red square", "green cross")
+	})
+	t.Run("audio", func(t *testing.T) {
+		testRunMediaOwnership(t, media.ModalityAudio, "low steady", "mid fade")
+	})
+	t.Run("video", func(t *testing.T) {
+		testRunVideoOwnership(t, "left low", "right high")
+	})
+	t.Run("roles", func(t *testing.T) {
+		testRunRolesOwnership(t, "red square", "green cross")
+	})
+}
+
+func testRunMediaOwnership(t *testing.T, modality, callerHoldout, reportHoldout string) {
+	t.Helper()
+	c := media.DefaultRunConfig(modality)
+	c.Generator.Embed = 4
+	c.Generator.Hidden = 8
+	c.Generator.Settle = 1
+	c.Epochs = 1
+	c.Seeds = []uint64{1}
+	if modality == media.ModalityAudio {
+		c.Blocks = 1
+	}
+
+	beforeConfigJSON := mustJSON(t, c)
+	report, err := media.RunMedia(context.Background(), c)
+	if err != nil {
+		t.Fatalf("RunMedia(%s): %v", modality, err)
+	}
+	beforeReportJSON := mustJSON(t, report)
+	assertReportOwnership(t, reportOwnershipCheck{
+		name:             modality,
+		beforeConfigJSON: beforeConfigJSON,
+		beforeReportJSON: beforeReportJSON,
+		reportJSON:       func() []byte { return mustJSON(t, report) },
+		reportConfigJSON: func() []byte { return mustJSON(t, report.Config) },
+		reportConfigHash: func() string { return report.ConfigHash },
+		runCount:         func() int { return len(report.Runs) },
+		runSeed:          func() uint64 { return report.Runs[0].Seed },
+		runFailed:        func() bool { return report.Runs[0].Failed },
+		runError:         func() string { return report.Runs[0].Error },
+		mutateCaller: func() {
+			c.Seeds[0] = 2
+			c.Holdout[0] = callerHoldout
+		},
+		validateCaller: func() error { return c.Validate() },
+		callerValues:   func() (uint64, string) { return c.Seeds[0], c.Holdout[0] },
+		mutateReport: func() {
+			report.Config.Seeds[0] = 3
+			report.Config.Holdout[0] = reportHoldout
+		},
+		wantCallerHoldout: callerHoldout,
+	})
+}
+
+func testRunVideoOwnership(t *testing.T, callerHoldout, reportHoldout string) {
+	t.Helper()
+	c := media.DefaultVideoRunConfig()
+	c.Video.Embed = 4
+	c.Video.Hidden = 8
+	c.Video.Settle = 1
+	c.Epochs = 1
+	c.Seeds = []uint64{1}
+
+	beforeConfigJSON := mustJSON(t, c)
+	report, err := media.RunVideo(context.Background(), c)
+	if err != nil {
+		t.Fatalf("RunVideo: %v", err)
+	}
+	beforeReportJSON := mustJSON(t, report)
+	assertReportOwnership(t, reportOwnershipCheck{
+		name:             "video",
+		beforeConfigJSON: beforeConfigJSON,
+		beforeReportJSON: beforeReportJSON,
+		reportJSON:       func() []byte { return mustJSON(t, report) },
+		reportConfigJSON: func() []byte { return mustJSON(t, report.Config) },
+		reportConfigHash: func() string { return report.ConfigHash },
+		runCount:         func() int { return len(report.Runs) },
+		runSeed:          func() uint64 { return report.Runs[0].Seed },
+		runFailed:        func() bool { return report.Runs[0].Failed },
+		runError:         func() string { return report.Runs[0].Error },
+		mutateCaller: func() {
+			c.Seeds[0] = 2
+			c.Holdout[0] = callerHoldout
+		},
+		validateCaller: func() error { return c.Validate() },
+		callerValues:   func() (uint64, string) { return c.Seeds[0], c.Holdout[0] },
+		mutateReport: func() {
+			report.Config.Seeds[0] = 3
+			report.Config.Holdout[0] = reportHoldout
+		},
+		wantCallerHoldout: callerHoldout,
+	})
+}
+
+func testRunRolesOwnership(t *testing.T, callerHoldout, reportHoldout string) {
+	t.Helper()
+	c := media.DefaultRolesConfig()
+	c.Generator.Embed = 4
+	c.Generator.Hidden = 8
+	c.Generator.Settle = 1
+	c.Epochs = 1
+	c.Seeds = []uint64{1}
+
+	beforeConfigJSON := mustJSON(t, c)
+	report, err := media.RunRoles(context.Background(), c)
+	if err != nil {
+		t.Fatalf("RunRoles: %v", err)
+	}
+	beforeReportJSON := mustJSON(t, report)
+	assertReportOwnership(t, reportOwnershipCheck{
+		name:             "roles",
+		beforeConfigJSON: beforeConfigJSON,
+		beforeReportJSON: beforeReportJSON,
+		reportJSON:       func() []byte { return mustJSON(t, report) },
+		reportConfigJSON: func() []byte { return mustJSON(t, report.Config) },
+		reportConfigHash: func() string { return report.ConfigHash },
+		runCount:         func() int { return len(report.Runs) },
+		runSeed:          func() uint64 { return report.Runs[0].Seed },
+		runFailed:        func() bool { return report.Runs[0].Failed },
+		runError:         func() string { return report.Runs[0].Error },
+		mutateCaller: func() {
+			c.Seeds[0] = 2
+			c.Holdout[0] = callerHoldout
+		},
+		validateCaller: func() error { return c.Validate() },
+		callerValues:   func() (uint64, string) { return c.Seeds[0], c.Holdout[0] },
+		mutateReport: func() {
+			report.Config.Seeds[0] = 3
+			report.Config.Holdout[0] = reportHoldout
+		},
+		wantCallerHoldout: callerHoldout,
+	})
+}

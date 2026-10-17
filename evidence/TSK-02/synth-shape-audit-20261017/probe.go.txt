@@ -1,0 +1,49 @@
+package main
+
+import (
+ "encoding/json"
+ "fmt"
+ "math/big"
+ "os"
+ "strconv"
+
+ "github.com/TimLai666/coimnet/tasks/asr"
+)
+
+type result struct {
+ Name string `json:"name"`
+ IntBits int `json:"int_bits"`
+ ConfigValid bool `json:"config_valid"`
+ ValidationError string `json:"validation_error,omitempty"`
+ ExpectedSamples string `json:"expected_samples"`
+ ExpectedLengthExceedsInt bool `json:"expected_length_exceeds_int"`
+ Returned bool `json:"returned"`
+ Length int `json:"length"`
+ Error string `json:"error,omitempty"`
+ Panic string `json:"panic,omitempty"`
+}
+
+func observe(name string, gap, limit int) (r result) {
+ r.Name, r.IntBits = name, strconv.IntSize
+ c := asr.SynthConfig{SampleRate:1000, DurationMS:1, GapMS:gap, Alphabet:[]rune{'a'}}
+ err := c.Validate()
+ r.ConfigValid = err == nil
+ if err != nil {r.ValidationError = err.Error()}
+ duration := new(big.Int).Quo(new(big.Int).Mul(big.NewInt(int64(c.SampleRate)),big.NewInt(int64(c.DurationMS))),big.NewInt(1000))
+ separation := new(big.Int).Quo(new(big.Int).Mul(big.NewInt(int64(c.SampleRate)),big.NewInt(int64(c.GapMS))),big.NewInt(1000))
+ total := new(big.Int).Add(new(big.Int).Mul(duration,big.NewInt(2)),separation)
+ r.ExpectedSamples=total.String()
+ r.ExpectedLengthExceedsInt=total.Cmp(big.NewInt(int64(limit)))>0
+ defer func(){if p:=recover();p!=nil {r.Panic=fmt.Sprint(p)}}()
+ samples,err := asr.Synthesize(c,"aa",1)
+ r.Returned=true
+ r.Length=len(samples)
+ if err != nil {r.Error=err.Error()}
+ return r
+}
+
+func main(){
+ limit:=int(^uint(0)>>1)
+ results:=[]result{observe("normal",2,limit),observe("gap_max_int",limit,limit),observe("gap_max_int_minus_one",limit-1,limit)}
+ if err:=json.NewEncoder(os.Stdout).Encode(results);err!=nil {panic(err)}
+}

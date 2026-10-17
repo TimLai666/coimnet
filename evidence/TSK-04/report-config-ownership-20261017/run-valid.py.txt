@@ -1,0 +1,20 @@
+import datetime, hashlib, json, os, pathlib, subprocess, time
+R=pathlib.Path.cwd()
+E=R/"evidence/TSK-04/report-config-ownership-20261017"
+W=R/"runs/.tmp/report-config-ownership-20261017"
+assert W.stat().st_ino==59884782
+source=(E/"probe-valid.go.txt").read_bytes()
+assert source==(W/"main-valid.go").read_bytes()
+env=dict(os.environ)
+env.update(json.loads((E/"environment.json").read_text()))
+command=["go","run",str(W/"main-valid.go")]
+started=datetime.datetime.now(datetime.timezone.utc).isoformat()
+start=time.monotonic()
+with (E/"probe-valid.log").open("xb") as log:
+    proc=subprocess.Popen(command,cwd=R,env=env,stdout=log,stderr=subprocess.STDOUT)
+    print(json.dumps({"started_at":started,"pid":proc.pid,"command":command}),flush=True)
+    code=proc.wait()
+receipt={"command":command,"started_at":started,"finished_at":datetime.datetime.now(datetime.timezone.utc).isoformat(),"exit_code":code,"seconds":time.monotonic()-start,"log":"probe-valid.log","log_sha256":hashlib.sha256((E/"probe-valid.log").read_bytes()).hexdigest(),"probe_sha256":hashlib.sha256(source).hexdigest(),"first_attempt":"probe.json","fixture_correction":"The first attempt's red horizontal is not an image condition; use supported red square without changing any expected result."}
+with (E/"probe-valid.json").open("x") as f: json.dump(receipt,f,indent=2); f.write("\n")
+print(json.dumps(receipt),flush=True)
+raise SystemExit(code)

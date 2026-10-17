@@ -1,0 +1,245 @@
+package experiment_test
+
+import (
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"testing"
+
+	"github.com/TimLai666/coimnet/experiment"
+	"github.com/TimLai666/coimnet/experiment/multimodaleval"
+	"github.com/TimLai666/coimnet/experiment/studenteval"
+	"github.com/TimLai666/coimnet/multimodal/synthetic"
+	"github.com/TimLai666/coimnet/plasticity"
+)
+
+func executionOwnershipJSON(t *testing.T, value any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(value)
+	if err != nil {
+		t.Fatalf("marshal JSON: %v", err)
+	}
+	return raw
+}
+
+func executionOwnershipSHA256(raw []byte) string {
+	sum := sha256.Sum256(raw)
+	return hex.EncodeToString(sum[:])
+}
+
+func assertExecutionReportSnapshot(t *testing.T, name string, beforeConfig, beforeReport []byte, reportConfig, report any, configHash string) {
+	t.Helper()
+	currentConfig := executionOwnershipJSON(t, reportConfig)
+	if configHash != executionOwnershipSHA256(beforeConfig) {
+		t.Errorf("%s: config hash changed after caller mutation", name)
+	}
+	if !bytes.Equal(executionOwnershipJSON(t, report), beforeReport) {
+		t.Errorf("%s: report changed after mutating caller configuration", name)
+	}
+	if !bytes.Equal(currentConfig, beforeConfig) {
+		t.Errorf("%s: report config changed after mutating caller configuration", name)
+	}
+	if executionOwnershipSHA256(currentConfig) != configHash {
+		t.Errorf("%s: report config no longer matches its hash", name)
+	}
+}
+
+func TestExperimentReportsOwnConfiguration(t *testing.T) {
+	t.Run("multitask", func(t *testing.T) {
+		c := experiment.DefaultMultiTaskConfig()
+		c.Hidden = 2
+		c.EvalEpisodes = 1
+		c.Schedule.Schedule = experiment.MultiTaskSameExperience
+		c.Schedule.MissingEvery = 0
+		c.Schedule.Budget = 2
+		beforeConfigJSON := executionOwnershipJSON(t, c)
+
+		report, err := experiment.RunMultiTask(context.Background(), c)
+		if err != nil {
+			t.Fatalf("RunMultiTask: %v", err)
+		}
+		if len(report.Results) != 2 || report.TrainersBuilt != 1 || !report.SameBrain || report.Steps == 0 {
+			t.Fatalf("normal report quality = results %d, trainers %d, same_brain %t, steps %d", len(report.Results), report.TrainersBuilt, report.SameBrain, report.Steps)
+		}
+		beforeReportJSON := executionOwnershipJSON(t, report)
+		if !bytes.Equal(executionOwnershipJSON(t, report.Config), beforeConfigJSON) || report.ConfigHash != executionOwnershipSHA256(beforeConfigJSON) {
+			t.Fatal("initial report config or hash differs from the caller configuration")
+		}
+		t.Logf("multitask initial report JSON sha256=%s", executionOwnershipSHA256(beforeReportJSON))
+
+		if err := c.Validate(); err != nil {
+			t.Fatalf("initial multitask config is invalid: %v", err)
+		}
+		c.Schedule.Tasks[0].MixWeight = 2
+		if err := c.Validate(); err != nil {
+			t.Fatalf("changed multitask caller config is invalid: %v", err)
+		}
+		assertExecutionReportSnapshot(t, "multitask", beforeConfigJSON, beforeReportJSON, report.Config, report, report.ConfigHash)
+
+		report.Config.Schedule.Tasks[0].MixWeight = 3
+		if c.Schedule.Tasks[0].MixWeight != 2 {
+			t.Fatalf("caller mix weight changed after mutating report.Config: got %v, want 2", c.Schedule.Tasks[0].MixWeight)
+		}
+	})
+
+	t.Run("multimodal", func(t *testing.T) {
+		c := multimodaleval.DefaultConfig()
+		c.Seeds = []uint64{1}
+		c.Epochs = 1
+		c.Hidden = 2
+		c.Settle = 1
+		beforeConfigJSON := executionOwnershipJSON(t, c)
+
+		report, err := multimodaleval.Run(context.Background(), c)
+		if err != nil {
+			t.Fatalf("multimodaleval.Run: %v", err)
+		}
+		if len(report.Runs) != 1 {
+			t.Fatalf("normal multimodal report has %d runs, want 1", len(report.Runs))
+		}
+		if report.Runs[0].Seed != 1 || report.Runs[0].Failed || report.Runs[0].Error != "" {
+			t.Fatalf("normal report quality = runs %d, seed %d, failed %t, error %q", len(report.Runs), report.Runs[0].Seed, report.Runs[0].Failed, report.Runs[0].Error)
+		}
+		beforeReportJSON := executionOwnershipJSON(t, report)
+		if !bytes.Equal(executionOwnershipJSON(t, report.Config), beforeConfigJSON) || report.ConfigHash != executionOwnershipSHA256(beforeConfigJSON) {
+			t.Fatal("initial report config or hash differs from the caller configuration")
+		}
+		t.Logf("multimodal initial report JSON sha256=%s", executionOwnershipSHA256(beforeReportJSON))
+
+		if err := c.Validate(); err != nil {
+			t.Fatalf("initial multimodal config is invalid: %v", err)
+		}
+		callerHoldout := synthetic.Label{Shape: 0, Colour: 2}
+		c.Seeds[0] = 2
+		c.Holdout[0] = callerHoldout
+		if err := c.Validate(); err != nil {
+			t.Fatalf("changed multimodal caller config is invalid: %v", err)
+		}
+		assertExecutionReportSnapshot(t, "multimodal", beforeConfigJSON, beforeReportJSON, report.Config, report, report.ConfigHash)
+
+		report.Config.Seeds[0] = 3
+		report.Config.Holdout[0] = synthetic.Label{Shape: 1, Colour: 2}
+		if c.Seeds[0] != 2 || c.Holdout[0] != callerHoldout {
+			t.Fatalf("caller config changed after mutating report.Config: seed=%d holdout=%+v, want seed=2 holdout=%+v", c.Seeds[0], c.Holdout[0], callerHoldout)
+		}
+	})
+
+	t.Run("student", func(t *testing.T) {
+		c := studenteval.Config{
+			Mode:            studenteval.ModeStudent,
+			Seeds:           []uint64{1},
+			Episodes:        1,
+			HeldOut:         1,
+			Independent:     1,
+			CorruptFraction: 0,
+			Temperature:     2,
+			Mix:             0.7,
+			LearningRate:    0.05,
+		}
+		beforeConfigJSON := executionOwnershipJSON(t, c)
+
+		report, err := studenteval.Run(context.Background(), c, nil)
+		if err != nil {
+			t.Fatalf("studenteval.Run: %v", err)
+		}
+		if len(report.Seeds) != 1 {
+			t.Fatalf("normal student report has %d seeds, want 1", len(report.Seeds))
+		}
+		if !report.TeacherBlocked || report.Seeds[0].Seed != 1 || report.Seeds[0].Failed || report.Seeds[0].Error != "" || report.Seeds[0].TeacherCalls != 0 {
+			t.Fatalf("normal report quality = blocked %t, seeds %d, seed %d, failed %t, error %q, teacher calls %d", report.TeacherBlocked, len(report.Seeds), report.Seeds[0].Seed, report.Seeds[0].Failed, report.Seeds[0].Error, report.Seeds[0].TeacherCalls)
+		}
+		beforeReportJSON := executionOwnershipJSON(t, report)
+		if !bytes.Equal(executionOwnershipJSON(t, report.Config), beforeConfigJSON) || report.ConfigHash != executionOwnershipSHA256(beforeConfigJSON) {
+			t.Fatal("initial report config or hash differs from the caller configuration")
+		}
+		t.Logf("student initial report JSON sha256=%s", executionOwnershipSHA256(beforeReportJSON))
+
+		if err := c.Validate(); err != nil {
+			t.Fatalf("initial student config is invalid: %v", err)
+		}
+		c.Seeds[0] = 2
+		if err := c.Validate(); err != nil {
+			t.Fatalf("changed student caller config is invalid: %v", err)
+		}
+		assertExecutionReportSnapshot(t, "student", beforeConfigJSON, beforeReportJSON, report.Config, report, report.ConfigHash)
+
+		report.Config.Seeds[0] = 3
+		if c.Seeds[0] != 2 {
+			t.Fatalf("caller seed changed after mutating report.Config: got %d, want 2", c.Seeds[0])
+		}
+	})
+}
+
+func TestEvaluationReportOwnsFeedbackDeclaration(t *testing.T) {
+	t.Run("fixed", func(t *testing.T) {
+		ind := newAdaptiveIndividual(t)
+		e := fixedEvaluation()
+		e.FeedbackAvailable = []string{"score", "aux"}
+		report, err := experiment.RunAdaptiveEvaluation(context.Background(), ind, e)
+		if err != nil {
+			t.Fatalf("RunAdaptiveEvaluation fixed: %v", err)
+		}
+		if report.Mode != experiment.EvaluationModeFixed || report.AdaptationItems != 0 || report.ScoringItems != len(e.Scoring) || !report.Contamination.ParametersUnchanged {
+			t.Fatalf("normal fixed report quality = mode %q adaptation %d scoring %d unchanged %t", report.Mode, report.AdaptationItems, report.ScoringItems, report.Contamination.ParametersUnchanged)
+		}
+		beforeReportJSON := executionOwnershipJSON(t, report)
+		t.Logf("fixed evaluation initial report JSON sha256=%s", executionOwnershipSHA256(beforeReportJSON))
+		if len(report.FeedbackAvailable) != 2 {
+			t.Fatalf("feedback report length = %d, want 2", len(report.FeedbackAvailable))
+		}
+
+		e.FeedbackAvailable[1] = "other"
+		if err := e.Validate(); err != nil {
+			t.Fatalf("changed fixed caller declaration is invalid: %v", err)
+		}
+		if !bytes.Equal(executionOwnershipJSON(t, report), beforeReportJSON) || !bytes.Equal(executionOwnershipJSON(t, report.FeedbackAvailable), []byte(`["score","aux"]`)) {
+			t.Error("fixed report changed after mutating caller FeedbackAvailable")
+		}
+
+		report.FeedbackAvailable[1] = "report-only"
+		if e.FeedbackAvailable[1] != "other" {
+			t.Fatalf("fixed caller declaration changed after mutating report: got %q, want %q", e.FeedbackAvailable[1], "other")
+		}
+	})
+
+	t.Run("adaptive", func(t *testing.T) {
+		ind := newAdaptiveIndividual(t)
+		rule := plasticity.Rule{Kind: plasticity.RuleHebbianRate, DecayE: 0.5, DecayP: 0.5, PlasticMax: 1, WMin: 0.01}
+		if err := ind.EnablePlasticity(plasticity.Config{Rule: rule, Edges: []int{0}}); err != nil {
+			t.Fatalf("EnablePlasticity: %v", err)
+		}
+		e := experiment.AdaptiveEvaluation{
+			Mode:              experiment.EvaluationModeAdaptive,
+			FeedbackAvailable: []string{"score", "aux"},
+			Adaptation:        []experiment.EvaluationItem{{ID: "adapt-a", Input: [][]float64{{.5}, {0}, {.2}}, Target: []float64{.4}, AllowedFeedback: []string{"score"}}},
+			Scoring:           []experiment.EvaluationItem{{ID: "score-a", Input: [][]float64{{.5}, {0}, {.2}}, Target: []float64{.4}}},
+		}
+		report, err := experiment.RunAdaptiveEvaluation(context.Background(), ind, e)
+		if err != nil {
+			t.Fatalf("RunAdaptiveEvaluation adaptive: %v", err)
+		}
+		if report.Mode != experiment.EvaluationModeAdaptive || report.AdaptationItems != 1 || report.ScoringItems != 1 || !report.Contamination.ParametersUnchanged {
+			t.Fatalf("normal adaptive report quality = mode %q adaptation %d scoring %d unchanged %t", report.Mode, report.AdaptationItems, report.ScoringItems, report.Contamination.ParametersUnchanged)
+		}
+		beforeReportJSON := executionOwnershipJSON(t, report)
+		t.Logf("adaptive evaluation initial report JSON sha256=%s", executionOwnershipSHA256(beforeReportJSON))
+		if len(report.FeedbackAvailable) != 2 {
+			t.Fatalf("feedback report length = %d, want 2", len(report.FeedbackAvailable))
+		}
+
+		e.FeedbackAvailable[1] = "other"
+		if err := e.Validate(); err != nil {
+			t.Fatalf("changed adaptive caller declaration is invalid: %v", err)
+		}
+		if !bytes.Equal(executionOwnershipJSON(t, report), beforeReportJSON) || !bytes.Equal(executionOwnershipJSON(t, report.FeedbackAvailable), []byte(`["score","aux"]`)) {
+			t.Error("adaptive report changed after mutating caller FeedbackAvailable")
+		}
+
+		report.FeedbackAvailable[1] = "report-only"
+		if e.FeedbackAvailable[1] != "other" {
+			t.Fatalf("adaptive caller declaration changed after mutating report: got %q, want %q", e.FeedbackAvailable[1], "other")
+		}
+	})
+}

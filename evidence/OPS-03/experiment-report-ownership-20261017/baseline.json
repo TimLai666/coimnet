@@ -1,0 +1,33 @@
+{
+  "at": "2026-10-17T10:57:24.957845+00:00",
+  "status": "Root-confirmed static ownership candidates; no public dynamic acceptance yet",
+  "source_sha256": {
+    "experiment/multitask.go": "126f91e46c5d7f6ae77f0d03f2f8616e034f688dbcc20ebd14fb03c5ed788343",
+    "experiment/multitask_schedule.go": "dcba1bea666922016d126299431d0a7cc5809a8a743e82f054c0ce8f9e182afd",
+    "experiment/multimodaleval/run.go": "bf30cf92b53888dba12014b48e7d747435abd818a52af884f27f5981cc83f324",
+    "experiment/studenteval/studenteval.go": "bdf4cdda527fb69245fff45f588786668aca88c6ebd264e723d88ac63239065b",
+    "experiment/adaptive.go": "99bfcb18f514eeb7b3cd96804a60ea1a143aece2c08655d24bb1e03dd2d505e3",
+    "experiment/adaptive_run.go": "2608200e3504e3f5d8a2c6f370ce7e11618c3c41c0bc10c80a3aa0a7841241ba"
+  },
+  "source_manifest": "evidence/LRN-06/multisource-retry-20261017/formal-source.json",
+  "formal_source_count": 857,
+  "producer_fields": {
+    "RunMultiTask": [
+      "Schedule.Tasks"
+    ],
+    "multimodaleval.Run": [
+      "Seeds",
+      "Holdout"
+    ],
+    "studenteval.Run": [
+      "Seeds"
+    ],
+    "RunAdaptiveEvaluation": [
+      "FeedbackAvailable (fixed and adaptive)"
+    ]
+  },
+  "root_contract": "Public reports record the completed run. ENG.md:18 requires owned mutable exports; current callers can legally reuse input declarations after return. A ConfigHash is evidence of inconsistency but is not required for the report ownership rule.",
+  "public_probe_pending": true,
+  "product_sources_modified": false,
+  "paired_delivery": "After Ticket138 closes, adopt Ticket139 and this same-pattern repair together and run one complete final engineering gate for their combined frozen Go sources."
+}
