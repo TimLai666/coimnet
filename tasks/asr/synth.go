@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"math/bits"
 	"math/rand/v2"
 )
 
@@ -22,9 +23,9 @@ type SynthConfig struct {
 }
 
 // Validate reports the first field that cannot render a signal: a non-positive
-// sample rate, a character duration that is not at least one whole sample, a
-// negative gap, a noise amplitude outside [0, 1] (NaN included), or an empty
-// or repeating alphabet.
+// sample rate, a character duration whose whole sample count does not fit in
+// int or is less than one, a negative gap, a noise amplitude outside [0, 1]
+// (NaN included), or an empty or repeating alphabet.
 func (c SynthConfig) Validate() error {
 	if c.SampleRate < 1 {
 		return fmt.Errorf("asr: sample rate %d must be positive", c.SampleRate)
@@ -35,7 +36,11 @@ func (c SynthConfig) Validate() error {
 	if c.GapMS < 0 {
 		return fmt.Errorf("asr: gap %d ms must not be negative", c.GapMS)
 	}
-	if c.durationSamples() < 1 {
+	duration, ok := c.durationSamples()
+	if !ok {
+		return fmt.Errorf("asr: %d ms at %d Hz has too many samples", c.DurationMS, c.SampleRate)
+	}
+	if duration < 1 {
 		return fmt.Errorf("asr: %d ms at %d Hz is less than one sample", c.DurationMS, c.SampleRate)
 	}
 	// Written as a negated conjunction so a NaN amplitude is rejected too.
@@ -55,13 +60,34 @@ func (c SynthConfig) Validate() error {
 	return nil
 }
 
+// synthSampleCount computes floor(rate*milliseconds/1000) and reports whether
+// the result fits in int. Callers validate a positive rate and nonnegative
+// milliseconds before calling it.
+func synthSampleCount(rate, milliseconds int) (int, bool) {
+	productHi, productLo := bits.Mul64(uint64(rate), uint64(milliseconds))
+	const denominator = uint64(1000)
+	if productHi >= denominator {
+		return 0, false
+	}
+	quotient, _ := bits.Div64(productHi, productLo, denominator)
+	maxInt := uint64(^uint(0) >> 1)
+	if quotient > maxInt {
+		return 0, false
+	}
+	return int(quotient), true
+}
+
 // durationSamples is how many samples one character occupies, truncated to a
 // whole sample.
-func (c SynthConfig) durationSamples() int { return c.SampleRate * c.DurationMS / 1000 }
+func (c SynthConfig) durationSamples() (int, bool) {
+	return synthSampleCount(c.SampleRate, c.DurationMS)
+}
 
 // gapSamples is how many samples of silence separate two characters,
 // truncated to a whole sample.
-func (c SynthConfig) gapSamples() int { return c.SampleRate * c.GapMS / 1000 }
+func (c SynthConfig) gapSamples() (int, bool) {
+	return synthSampleCount(c.SampleRate, c.GapMS)
+}
 
 // Synthesize renders text (every rune must be in Alphabet) as one mono signal
 // in [-1, 1]. The result has len(text)*DurationMS + (len(text)-1)*GapMS worth
@@ -89,19 +115,47 @@ func Synthesize(c SynthConfig, text string, seed uint64) ([]float64, error) {
 		classes[i] = k
 	}
 
-	duration, gap := c.durationSamples(), c.gapSamples()
-	out := make([]float64, len(runes)*duration+(len(runes)-1)*gap)
+	duration, _ := c.durationSamples() // Validate already checked this count.
+	gap := 0
+	if len(runes) > 1 {
+		var ok bool
+		gap, ok = c.gapSamples()
+		if !ok {
+			return nil, fmt.Errorf("asr: gap %d ms at %d Hz has too many samples", c.GapMS, c.SampleRate)
+		}
+	}
+
+	toneSamples, ok := checkedProduct(int64(len(runes)), int64(duration))
+	if !ok {
+		return nil, errors.New("asr: tone sample count overflows int64")
+	}
+	totalSamples := toneSamples
+	if len(runes) > 1 {
+		gapSamples, ok := checkedProduct(int64(len(runes)-1), int64(gap))
+		if !ok {
+			return nil, errors.New("asr: gap sample count overflows int64")
+		}
+		totalSamples, ok = checkedAdd(toneSamples, gapSamples)
+		if !ok {
+			return nil, errors.New("asr: total sample count overflows int64")
+		}
+	}
+	nativeMaxInt := int64(^uint(0) >> 1)
+	if totalSamples > nativeMaxInt/8 {
+		return nil, errors.New("asr: float64 sample buffer exceeds native int capacity")
+	}
+	out := make([]float64, int(totalSamples))
 	amplitude := 1 - c.Noise
 	at := 0
-	for _, k := range classes {
+	for i, k := range classes {
 		frequency := 300 + 150*float64(k)
 		step := 2 * math.Pi * frequency / float64(c.SampleRate)
 		for n := 0; n < duration; n++ {
 			out[at+n] = amplitude * math.Sin(step*float64(n))
 		}
-		// The gap after the last character is not part of the utterance, so
-		// skipping past it simply runs off the end of the slice.
-		at += duration + gap
+		if i+1 < len(classes) {
+			at += duration + gap
+		}
 	}
 	rng := rand.New(rand.NewPCG(seed, 0))
 	for i := range out {
