@@ -360,6 +360,8 @@ func RunVideo(ctx context.Context, c VideoRunConfig) (VideoRunReport, error) {
 	if err := c.Validate(); err != nil {
 		return VideoRunReport{}, err
 	}
+	c.Holdout = append([]string(nil), c.Holdout...)
+	c.Seeds = append([]uint64(nil), c.Seeds...)
 	configJSON, err := json.Marshal(c)
 	if err != nil {
 		return VideoRunReport{}, fmt.Errorf("media: marshal video run config: %w", err)

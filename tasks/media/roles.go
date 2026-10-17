@@ -171,6 +171,8 @@ func runRoles(ctx context.Context, c RolesConfig, newRenderer func(ToolPolicy) (
 	if newRenderer == nil {
 		return RolesReport{}, fmt.Errorf("media: roles renderer factory is nil")
 	}
+	c.Holdout = append([]string(nil), c.Holdout...)
+	c.Seeds = append([]uint64(nil), c.Seeds...)
 	configJSON, err := json.Marshal(c)
 	if err != nil {
 		return RolesReport{}, fmt.Errorf("media: marshal roles config: %w", err)

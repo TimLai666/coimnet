@@ -175,6 +175,8 @@ func Run(ctx context.Context, c Config) (Report, error) {
 	if err := ctx.Err(); err != nil {
 		return Report{}, err
 	}
+	c.Holdout = append([]synthetic.Label(nil), c.Holdout...)
+	c.Seeds = append([]uint64(nil), c.Seeds...)
 	raw, err := json.Marshal(c)
 	if err != nil {
 		return Report{}, fmt.Errorf("marshal config: %w", err)

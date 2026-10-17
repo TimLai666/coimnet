@@ -202,6 +202,7 @@ func RunMultiTask(ctx context.Context, c MultiTaskConfig) (MultiTaskReport, erro
 	if ctx == nil {
 		return MultiTaskReport{}, fmt.Errorf("multitask context is nil")
 	}
+	c.Schedule.Tasks = append([]TaskBinding(nil), c.Schedule.Tasks...)
 	m, err := newMultiTaskModel(c.Seed, c.Hidden, c.LearningRate)
 	if err != nil {
 		return MultiTaskReport{}, err

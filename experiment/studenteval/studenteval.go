@@ -171,6 +171,7 @@ func Run(ctx context.Context, c Config, t teacher.Teacher) (Report, error) {
 	if c.Mode == ModeTeacherAssisted && t == nil {
 		return report, errors.New("studenteval: teacher_assisted requires a teacher")
 	}
+	c.Seeds = append([]uint64(nil), c.Seeds...)
 	report = Report{
 		SchemaVersion:  SchemaVersion,
 		Mode:           c.Mode,

@@ -52,6 +52,7 @@ func RunAdaptiveEvaluation(ctx context.Context, ind *learning.Individual, e Adap
 	if err := e.Validate(); err != nil {
 		return EvaluationReport{}, err
 	}
+	e.FeedbackAvailable = slices.Clone(e.FeedbackAvailable)
 	if e.Mode == EvaluationModeAdaptive {
 		return runAdaptiveEvaluation(ctx, ind, e)
 	}
