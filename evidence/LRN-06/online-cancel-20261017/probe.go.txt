@@ -1,0 +1,139 @@
+// Diagnostic-only overlay. No production source or permanent test is changed.
+package learning
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/signal"
+)
+
+func cancelProbeSnapshot(t *testing.T, individual *Individual) string {
+	t.Helper()
+	b, err := json.Marshal(individual.Snapshot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func cancelProbeSetup(t *testing.T, every uint64, targets []bool) (*Individual, *OnlineLearner, signal.Timestamp) {
+	t.Helper()
+	individual := onlineBoundaryControlIndividual(t)
+	learner := onlineBoundaryControlLearner(t, individual, every)
+	var now signal.Timestamp
+	for _, hasTarget := range targets {
+		action, err := learner.Act(context.Background(), onlineBoundaryControlObservation(t), onlineBoundaryControlInput)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if hasTarget {
+			if err = learner.SetTargets(map[string][]float64{action.ActionID: {.4}}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		now = onlineBoundaryControlAt(action.Step)
+		if err = learner.Receive(context.Background(), onlineBoundaryControlFeedback(t, action.ActionID, int64(action.Step), "probe")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return individual, learner, now
+}
+
+func TestOnlineCancelAfterLockProbe(t *testing.T) {
+	cases := []struct {
+		name     string
+		every    uint64
+		targets  []bool
+		consumed int
+		eligible uint64
+	}{
+		{"missing-target", 1, []bool{false}, 1, 0},
+		{"interval-skip", 2, []bool{true}, 1, 1},
+		{"due", 1, []bool{true}, 0, 0},
+		{"skip-then-due", 2, []bool{true, true}, 1, 1},
+		{"missing-then-due", 1, []bool{false, true}, 1, 0},
+	}
+	for _, tc := range cases {
+		for _, timing := range []string{"before-lock", "after-lock"} {
+			t.Run(tc.name+"/"+timing, func(t *testing.T) {
+				individual, learner, now := cancelProbeSetup(t, tc.every, tc.targets)
+				control, twin, twinNow := cancelProbeSetup(t, tc.every, tc.targets)
+				before := cancelProbeSnapshot(t, individual)
+				if before != cancelProbeSnapshot(t, control) || now != twinNow {
+					t.Fatal("normal twin did not start from the same complete state")
+				}
+				pending := append([]signal.Feedback(nil), learner.pending...)
+				logBefore := learner.Log()
+				ctx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+				hookCalls := 0
+				if timing == "before-lock" {
+					cancel()
+				} else {
+					onlineCancelProbeHook = func() {
+						hookCalls++
+						cancel()
+					}
+				}
+				t.Cleanup(func() { onlineCancelProbeHook = nil })
+				report, err := learner.Update(ctx, now)
+				onlineCancelProbeHook = nil
+				wantConsumed, wantEligible := tc.consumed, tc.eligible
+				wantCancel := tc.consumed < len(tc.targets)
+				if timing == "before-lock" {
+					wantConsumed, wantEligible, wantCancel = 0, 0, true
+				} else if hookCalls != 1 {
+					t.Fatalf("controlled post-lock cancellation ran %d times", hookCalls)
+				}
+				if wantCancel {
+					if !errors.Is(err, context.Canceled) {
+						t.Fatalf("report=%+v error=%v, want context.Canceled", report, err)
+					}
+				} else if err != nil {
+					t.Fatal(err)
+				}
+				if report != (UpdateReport{Consumed: wantConsumed}) {
+					t.Fatalf("report=%+v, want consumed=%d and no model updates", report, wantConsumed)
+				}
+				if learner.eligible != wantEligible || !reflect.DeepEqual(learner.pending, pending[wantConsumed:]) {
+					t.Fatalf("incorrect interval position or remaining feedback: eligible=%d pending=%d", learner.eligible, len(learner.pending))
+				}
+				if cancelProbeSnapshot(t, individual) != before || !reflect.DeepEqual(learner.Log(), logBefore) {
+					t.Fatal("cancelled observation changed complete model state or historical answers")
+				}
+				retry, err := learner.Update(context.Background(), now)
+				if err != nil {
+					t.Fatal(err)
+				}
+				normal, err := twin.Update(context.Background(), twinNow)
+				if err != nil {
+					t.Fatal(err)
+				}
+				wantUpdates := 0
+				if tc.consumed < len(tc.targets) {
+					wantUpdates = 1
+				}
+				if normal.GradientSteps != wantUpdates || (wantUpdates == 1 && cancelProbeSnapshot(t, control) == before) {
+					t.Fatal("normal positive control did not perform its expected training update")
+				}
+				combined := UpdateReport{Consumed: report.Consumed + retry.Consumed, GradientSteps: report.GradientSteps + retry.GradientSteps, PlasticSteps: report.PlasticSteps + retry.PlasticSteps, Deferred: retry.Deferred}
+				if combined != normal || cancelProbeSnapshot(t, individual) != cancelProbeSnapshot(t, control) {
+					t.Fatalf("retry differs from normal execution: combined=%+v normal=%+v", combined, normal)
+				}
+				if learner.eligible != twin.eligible || !reflect.DeepEqual(learner.pending, twin.pending) || len(learner.gradientDone) != 0 {
+					t.Fatal("retry left a different interval, pending queue or completed gradient stage")
+				}
+				after := cancelProbeSnapshot(t, individual)
+				empty, err := learner.Update(context.Background(), now)
+				if err != nil || empty != (UpdateReport{}) || cancelProbeSnapshot(t, individual) != after {
+					t.Fatalf("completed feedback was repeated: report=%+v error=%v", empty, err)
+				}
+				t.Logf("controlled=%s report=%+v canceled=%v retry=%+v normal=%+v full_state_equal=true", timing, report, wantCancel, retry, normal)
+			})
+		}
+	}
+}

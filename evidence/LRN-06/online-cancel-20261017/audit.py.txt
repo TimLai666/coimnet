@@ -1,0 +1,178 @@
+"""Prepare, run or clean the isolated online cancellation diagnostic."""
+import argparse
+import datetime
+import gzip
+import hashlib
+import json
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import tarfile
+import time
+
+if not __debug__:
+    raise SystemExit('Optimized Python cannot disable audit checks')
+parser = argparse.ArgumentParser(description=__doc__, epilog='Examples: audit.py.txt prepare; audit.py.txt run --kind unit; audit.py.txt cleanup. All caches are project-local; existing results are refused.')
+parser.add_argument('operation', nargs='?', choices=['prepare', 'run', 'cleanup'])
+parser.add_argument('--kind', choices=['unit', 'race'], default='unit', help='Diagnostic build; default unit.')
+args = parser.parse_args()
+if args.operation is None:
+    parser.print_help()
+    raise SystemExit(0)
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/online-cancel-20261017'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+F = R / 'evidence/TSK-02/partition-state-20261017/formal-source.json'
+read = lambda p: json.loads(p.read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+stamp = lambda: datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+def write(name, data):
+    with (E / name).open('x') as handle:
+        json.dump(data, handle, indent=2, ensure_ascii=False)
+        handle.write('\n')
+
+def gate():
+    assert sha(F) == '7209c401b88a0a59a131ee3f33d495ced0c37146fb12f99fc349bf898e80bef0'
+    source = read(F)
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert paths == set(source) and len(source) == 856
+    for name, digest in source.items():
+        assert sha(R / name) == digest, name
+    for name, digest in read(P / 'protected-models.json').items():
+        assert sha(R / name) == digest, name
+    for name, item in read(P / 'persistent-data.json').items():
+        assert sha(R / name) == item['sha256'], name
+    for name, digest in read(P / 'foreign-before.json').items():
+        assert sha(Path(name)) == digest, name
+
+def work_gate():
+    assert W.resolve() == W and not W.is_symlink()
+    baseline = read(E / 'baseline.json')
+    assert W.stat().st_ino == baseline['work_inode']
+    for name, digest in baseline['inputs'].items():
+        assert sha(E / name) == digest, name
+    for name, digest in baseline.get('work_inputs', {}).items():
+        assert sha(W / name) == digest, name
+
+def modules():
+    archive = P / 'preserved-work.tar.gz'
+    assert sha(archive) == '5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+    with tarfile.open(archive) as handle:
+        raw = handle.extractfile('module-originals.json').read()
+    assert hashlib.sha256(raw).hexdigest() == '34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc'
+    return json.loads(raw)
+
+gate()
+if args.operation == 'prepare':
+    assert not W.exists()
+    W.mkdir()
+    for directory in ['go-cache', 'go-mod-cache', 'go-tmp']:
+        (W / directory).mkdir()
+    env = read(R / 'evidence/TSK-02/partition-state-20261017/command-environment.json')
+    for key in ['GOCACHE', 'GOMODCACHE', 'GOTMPDIR', 'TMPDIR']:
+        env[key] = str(W / ('go-cache' if key == 'GOCACHE' else 'go-mod-cache' if key == 'GOMODCACHE' else 'go-tmp'))
+    write('environment.json', env)
+    global_modules = Path('/Users/timlai/go/pkg/mod')
+    originals = modules()
+    roots = set()
+    for name, digest in originals.items():
+        p = Path(name)
+        assert p.is_file() and not p.is_symlink() and sha(p) == digest, name
+        relative = p.relative_to(global_modules)
+        index = next(i for i, part in enumerate(relative.parts) if '@' in part)
+        roots.add(global_modules.joinpath(*relative.parts[:index + 1]))
+    for root in sorted(roots):
+        relative = root.relative_to(global_modules)
+        shutil.copytree(root, W / 'go-mod-cache' / relative, copy_function=shutil.copy2)
+        module, version = str(relative).rsplit('@', 1)
+        for name in [version + '.mod', version + '.info', version + '.ziphash', version + '.lock', 'list']:
+            src = global_modules / 'cache/download' / module / '@v' / name
+            if src.is_file():
+                dst = W / 'go-mod-cache/cache/download' / module / '@v' / name
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src, dst)
+    for name, digest in originals.items():
+        copy = W / 'go-mod-cache' / Path(name).relative_to(global_modules)
+        assert sha(copy) == digest and copy.stat().st_ino != Path(name).stat().st_ino, name
+    source = (R / 'learning/online.go').read_text()
+    anchor = '\tdefer l.mu.Unlock()\n\tavailable, err := signal.AvailableFeedback(l.pending, now)'
+    assert source.count(anchor) == 1
+    replacement = '\tdefer l.mu.Unlock()\n\tif onlineCancelProbeHook != nil {\n\t\tonlineCancelProbeHook()\n\t}\n\tavailable, err := signal.AvailableFeedback(l.pending, now)'
+    (W / 'online.go').write_text(source.replace(anchor, replacement) + '\nvar onlineCancelProbeHook func()\n')
+    shutil.copy2(E / 'probe.go.txt', W / 'probe_test.go')
+    synthetic = R / 'learning/zz_online_cancel_probe_test.go'
+    assert not synthetic.exists()
+    overlay = {'Replace': {str(R / 'learning/online.go'): str(W / 'online.go'), str(synthetic): str(W / 'probe_test.go')}}
+    (W / 'overlay.json').write_text(json.dumps(overlay))
+    baseline = {'at': stamp(), 'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=R, text=True).strip(), 'work_inode': W.stat().st_ino, 'formal_source': str(F.relative_to(R)), 'formal_source_sha256': sha(F), 'original_modules': len(originals), 'module_roots': len(roots), 'inputs': {name: sha(E / name) for name in ['plan.md', 'probe.go.txt', 'audit.py.txt', 'environment.json']}, 'work_inputs': {name: sha(W / name) for name in ['online.go', 'probe_test.go', 'overlay.json']}}
+    write('baseline.json', baseline)
+    gate()
+    print(json.dumps({'prepared': True, 'formal_sources_unchanged': 856, 'modules': len(roots), 'owned_root': str(W)}), flush=True)
+elif args.operation == 'run':
+    work_gate()
+    names = '^Test(OnlineCancelAfterLockProbe|OnlineIndividualBoundaryControlCanceledContextAndRetry|OnlineMixedRetryStageMarksMissingTargetComplete|OnlineMixedRetryStageIgnoresTargetReplacement|OnlineMixedRetryStageKeepsPendingStagesByActionAndTime|OnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation|OnlineFailedGradientIntervalIsRetriedWithoutConsumption|OnlineUpdateEveryNormalSkipAndAppliedControl)$'
+    cmd = ['go', 'test', '-json', '-count=1', '-timeout=20m', '-overlay=' + str(W / 'overlay.json'), '-run', names, './learning']
+    if args.kind == 'race':
+        cmd.insert(2, '-race')
+    env = dict(os.environ)
+    env.update(read(E / 'environment.json'))
+    started = stamp()
+    start = time.monotonic()
+    with (E / (args.kind + '.log')).open('xb') as log:
+        process = subprocess.Popen(cmd, cwd=R, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
+        print(json.dumps({'kind': args.kind, 'pid': process.pid, 'started_at': started}), flush=True)
+        code = process.wait()
+    gate()
+    work_gate()
+    result = {'command': cmd, 'environment': 'environment.json', 'started_at': started, 'finished_at': stamp(), 'exit_code': code, 'seconds': time.monotonic() - start, 'log': args.kind + '.log', 'log_sha256': sha(E / (args.kind + '.log'))}
+    write(args.kind + '.json', result)
+    print(json.dumps(result), flush=True)
+    raise SystemExit(code)
+else:
+    work_gate()
+    assert read(E / 'verification.json')['diagnostic_passed']
+    terminal = read(E / 'terminal.json')
+    assert all(terminal[k]['exit_code'] == 0 for k in ['unit', 'race'])
+    assert all(read(E / (k + '.json'))['exit_code'] == 0 for k in ['unit', 'race'])
+    for name, digest in modules().items():
+        assert sha(Path(name)) == digest, name
+    def inventory(root):
+        entries = {}
+        for base, dirs, files in os.walk(root, followlinks=False):
+            for name in dirs + files:
+                p = Path(base) / name
+                assert not p.is_symlink(), p
+                entries[str(p.relative_to(root))] = {'directory': True} if p.is_dir() else {'bytes': p.stat().st_size, 'sha256': sha(p)}
+        return entries
+    protected = {name: inventory(R / 'runs/.tmp' / name) for name in ['62', 'real-task-quality-20261012']}
+    items = inventory(W)
+    noncache = {n for n, v in items.items() if not v.get('directory') and n.split('/')[0] not in ['go-cache', 'go-mod-cache', 'go-tmp']}
+    assert noncache == {'online.go', 'probe_test.go', 'overlay.json'}
+    assert (E / 'probe.go.txt').read_bytes() == (W / 'probe_test.go').read_bytes()
+    handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+    assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+    assert inventory(W) == items
+    # Exact diagnostic inputs are retained; caches have no source/model value.
+    for name in ['overlay.json', 'online-overlay.go.txt', 'cleanup-inventory.json.gz', 'cleanup.json']:
+        assert not (E / name).exists(), name
+    write('overlay.json', read(W / 'overlay.json'))
+    with (E / 'online-overlay.go.txt').open('x') as handle:
+        handle.write((W / 'online.go').read_text())
+    packed = gzip.compress(json.dumps(items, sort_keys=True).encode(), mtime=0)
+    with (E / 'cleanup-inventory.json.gz').open('xb') as handle:
+        handle.write(packed)
+    gate()
+    work_gate()
+    assert shutil.rmtree.avoids_symlink_attacks
+    for base, dirs, files in os.walk(W, topdown=True, followlinks=False):
+        Path(base).chmod(Path(base).stat().st_mode | 0o700)
+    shutil.rmtree(W)
+    assert not W.exists()
+    gate()
+    assert protected == {name: inventory(R / 'runs/.tmp' / name) for name in protected}
+    result = {'at': stamp(), 'directory_removed': str(W), 'removed_entries': len(items), 'removed_bytes': sum(x.get('bytes', 0) for x in items.values()), 'sources_unchanged': 856, 'original_models_preserved': 18, 'persistent_data_preserved': 6, 'foreign_files_preserved': 32, 'protected_roots_preserved': list(protected), 'inventory_sha256': sha(E / 'cleanup-inventory.json.gz')}
+    write('cleanup.json', result)
+    print(json.dumps(result), flush=True)

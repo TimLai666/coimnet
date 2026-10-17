@@ -1,0 +1,61 @@
+{
+  "at": "2026-10-17T10:10:36.383182+00:00",
+  "requirements": [
+    "LRN-06",
+    "LRN-08"
+  ],
+  "diagnostic_passed": true,
+  "counts": {
+    "unit": {
+      "pass_events": 24,
+      "new_child_cases": 10,
+      "new_parent_tests": 1,
+      "existing_control_pass_events": 13,
+      "parents": [
+        "TestOnlineIndividualBoundaryControlCanceledContextAndRetry",
+        "TestOnlineCancelAfterLockProbe",
+        "TestOnlineFailedGradientIntervalIsRetriedWithoutConsumption",
+        "TestOnlineUpdateEveryNormalSkipAndAppliedControl",
+        "TestOnlineMixedRetryStageMarksMissingTargetComplete",
+        "TestOnlineMixedRetryStageIgnoresTargetReplacement",
+        "TestOnlineMixedRetryStageKeepsPendingStagesByActionAndTime",
+        "TestOnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation"
+      ]
+    },
+    "race": {
+      "pass_events": 24,
+      "new_child_cases": 10,
+      "new_parent_tests": 1,
+      "existing_control_pass_events": 13,
+      "parents": [
+        "TestOnlineIndividualBoundaryControlCanceledContextAndRetry",
+        "TestOnlineCancelAfterLockProbe",
+        "TestOnlineFailedGradientIntervalIsRetriedWithoutConsumption",
+        "TestOnlineUpdateEveryNormalSkipAndAppliedControl",
+        "TestOnlineMixedRetryStageMarksMissingTargetComplete",
+        "TestOnlineMixedRetryStageIgnoresTargetReplacement",
+        "TestOnlineMixedRetryStageKeepsPendingStagesByActionAndTime",
+        "TestOnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation"
+      ]
+    }
+  },
+  "source_manifest": "evidence/TSK-02/partition-state-20261017/formal-source.json",
+  "source_manifest_sha256": "7209c401b88a0a59a131ee3f33d495ced0c37146fb12f99fc349bf898e80bef0",
+  "formal_source_entries_unchanged": 856,
+  "diagnostic_inputs": "baseline.json",
+  "environment": "environment.json",
+  "actual_terminals": "terminal.json",
+  "observations": "observations.json",
+  "confirmed_product_findings": [],
+  "root_conclusion": "After-lock no-target and legal interval skips can complete without a cancellation error under the documented partial-success contract. All ten controlled cancellation/retry paths preserve the complete pre-training IndividualSnapshot and converge to the exact ordinary twin, including reports, pending feedback and interval state. No lost eligible update or repeated update was observed. No production change justified.",
+  "engineering_reused": {
+    "record": "evidence/TSK-02/partition-state-20261017/engineering-verification.json",
+    "sha256": "fd30b809d19b059cc36eb72d65fdee70d65d994b244d354d92db093391d98e06",
+    "basis": "Exact same 856 Go/module inputs; complete build, general, race, vet and pinned module checks already accepted. New work is diagnostic-only overlay, not a permanent Go source addition.",
+    "new_full_suite_run": false
+  },
+  "limits": "A synthetic controlled scheduling observation; no proof all bugs are absent, no new real-task quality or biological claim. Helper inputs and logs retained; project-owned caches cleaned separately.",
+  "root_review": "root-review.md",
+  "comparison_scope": "Complete IndividualSnapshot plus named queue, eligible and historical-log comparisons; no claim of complete private OnlineLearner or RewardGate state equality. New cases are gradient-only; mixed controls are the separately enumerated existing tests.",
+  "cleanup": "cleanup.json"
+}
