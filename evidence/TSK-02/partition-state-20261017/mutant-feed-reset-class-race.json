@@ -1,0 +1,25 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-timeout=20m",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/stream-partition-20261017/feed-reset-class.overlay.json",
+    "-run",
+    "^TestStreamPartition(FullState|RestoreFullState)$",
+    "./tasks/asr"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-17T08:54:57.197480+00:00",
+  "finished_at": "2026-10-17T08:55:13.941243+00:00",
+  "exit_code": 1,
+  "seconds": 16.74378875,
+  "source_count": 856,
+  "source_manifest": "formal-source.json",
+  "log": "mutant-feed-reset-class-race.log",
+  "log_bytes": 31060,
+  "log_sha256": "4d659a6acc7e8efaff1dde566f619cc04147ea70dfc45ac2968c28597a5d919f"
+}

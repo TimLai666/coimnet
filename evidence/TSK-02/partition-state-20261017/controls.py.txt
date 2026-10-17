@@ -1,0 +1,39 @@
+"""Verify the new tests reject two isolated intentional state errors."""
+from pathlib import Path
+import argparse, hashlib, json, subprocess, sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('--run', action='store_true', help='Run both overlays with ordinary and race builds; preserve logs and fail unless each is rejected by a snapshot assertion.')
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+mutations = json.loads((E / 'mutations.json').read_text())
+results = {}
+for name, mutation in mutations.items():
+    replacement = R / mutation['replacement']
+    assert hashlib.sha256(replacement.read_bytes()).hexdigest() == mutation['replacement_sha256']
+    for build in ['unit', 'race']:
+        label = 'mutant-' + name + '-' + build
+        command = ['go', 'test'] + (['-race'] if build == 'race' else []) + ['-json', '-count=1', '-timeout=20m', '-overlay', str(R / mutation['overlay']), '-run', '^TestStreamPartition(FullState|RestoreFullState)$', './tasks/asr']
+        process = subprocess.run([sys.executable, str(E / 'run-command.py.txt'), label, *command], cwd=R)
+        receipt = json.loads((E / (label + '.json')).read_text())
+        raw = (E / receipt['log']).read_bytes()
+        assert hashlib.sha256(raw).hexdigest() == receipt['log_sha256']
+        assert process.returncode == receipt['exit_code'] == 1
+        rows = [json.loads(line) for line in raw.splitlines() if line.startswith(b'{')]
+        failures = [row['Test'] for row in rows if row.get('Test') and row.get('Action') == 'fail']
+        outputs = [row.get('Output', '').strip() for row in rows if row.get('Action') == 'output']
+        assertions = [line for line in outputs if 'complete stream snapshot' in line]
+        assert failures and assertions, (label, failures, assertions)
+        assert all(test.split('/')[0] in ['TestStreamPartitionFullState', 'TestStreamPartitionRestoreFullState'] for test in failures)
+        assert b'[build failed]' not in raw and b'DATA RACE' not in raw
+        results[label] = {'intentional_control_rejected': True, 'receipt': label + '.json', 'failed_tests': failures, 'snapshot_assertions': assertions}
+        print(json.dumps({'control': label, 'failed_test_events': len(failures), 'snapshot_assertions': len(assertions), 'accepted': True}), flush=True)
+with (E / 'controls-verification.json').open('x') as handle:
+    json.dump(results, handle, indent=2)
+    handle.write('\n')

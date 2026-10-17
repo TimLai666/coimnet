@@ -1,0 +1,134 @@
+"""Check readiness or remove only this ticket's owned, verified work directory."""
+from pathlib import Path
+import argparse, datetime, gzip, hashlib, json, os, shutil, stat, subprocess, tarfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+mode = parser.add_mutually_exclusive_group()
+mode.add_argument('--check', action='store_true', help='Check completed validation, preserved inputs, original files and absence of open handles; do not delete or write anything.')
+mode.add_argument('--run', action='store_true', help='After all checks pass, save an exact inventory and remove only runs/.tmp/stream-partition-20261017. Preserve original modules, models, data and other work.')
+args = parser.parse_args()
+if not (args.check or args.run):
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python disables required checks; cleanup refused')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/stream-partition-20261017'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+PROTECTED = {'62': 49680181, 'real-task-quality-20261012': 50419696}
+read = lambda p: json.loads(p.read_text())
+sha = lambda b: hashlib.sha256(b).hexdigest()
+
+required = ['runner-terminal.json', 'engineering-verification.json', 'verification.json', 'final-governance.json', 'discarded-binaries.json']
+missing = [name for name in required if not (E / name).is_file()]
+if missing:
+    print(json.dumps({'ready': False, 'missing': missing, 'deleted': False}))
+    raise SystemExit(2)
+terminal = read(E / 'runner-terminal.json')
+assert terminal['session_id'] == 70673 and terminal['exit_code'] == 0
+assert read(E / 'engineering-verification.json')['all_passed']
+assert read(E / 'verification.json')['engineering_passed']
+governance = read(E / 'final-governance.json')
+assert governance['exit_code'] == 0 and governance['passed_events'] == 31
+assert not W.is_symlink() and W.stat().st_ino == 59633828 and W.resolve() == W
+assert shutil.rmtree.avoids_symlink_attacks
+
+def gate():
+    source = read(E / 'formal-source.json')
+    assert len(source) == 856
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert paths == set(source)
+    models = read(P / 'protected-models.json')
+    data = read(P / 'persistent-data.json')
+    foreign = read(P / 'foreign-before.json')
+    assert len(models) == 18 and len(data) == 6 and len(foreign) == 32
+    for name, digest in {**source, **models}.items():
+        assert sha((R / name).read_bytes()) == digest, name
+    for name, item in data.items():
+        b = (R / name).read_bytes()
+        assert len(b) == item['bytes'] and sha(b) == item['sha256'], name
+    for name, digest in foreign.items():
+        assert sha(Path(name).read_bytes()) == digest, name
+    for name, inode in PROTECTED.items():
+        p = R / 'runs/.tmp' / name
+        assert not p.is_symlink() and p.stat().st_ino == inode
+
+def inventory(root):
+    result = {}
+    for base, dirs, files in os.walk(root, followlinks=False):
+        for name in dirs + files:
+            p = Path(base) / name
+            key = str(p.relative_to(root))
+            if p.is_symlink():
+                result[key] = {'symlink': os.readlink(p)}
+            elif p.is_dir():
+                result[key] = {'directory': True, 'inode': p.stat().st_ino}
+            else:
+                assert p.is_file(), p
+                b = p.read_bytes()
+                result[key] = {'bytes': len(b), 'sha256': sha(b)}
+    return result
+
+preserved = read(E / 'work-preservation.json')
+archive = E / preserved['archive']
+assert sha(archive.read_bytes()) == preserved['archive_sha256']
+accounted = {}
+with tarfile.open(archive, 'r:gz') as handle:
+    assert set(handle.getnames()) == set(preserved['payload'])
+    for name, digest in preserved['payload'].items():
+        b = handle.extractfile(name).read()
+        assert sha(b) == digest and (W / name).read_bytes() == b
+        accounted[name] = preserved['archive'] + ':' + name
+anchor = preserved['reused_module_manifest']
+archive = R / anchor['archive']
+assert sha(archive.read_bytes()) == anchor['archive_sha256']
+with tarfile.open(archive, 'r:gz') as handle:
+    b = handle.extractfile(anchor['member']).read()
+    assert sha(b) == anchor['member_sha256'] and (W / 'module-originals.json').read_bytes() == b
+module_source = json.loads(b)
+assert len(module_source) == 15046
+for name, digest in module_source.items():
+    assert sha(Path(name).read_bytes()) == digest, name
+accounted['module-originals.json'] = anchor['archive'] + ':' + anchor['member']
+binaries = read(E / 'discarded-binaries.json')
+assert set(binaries) == {'final-root.test'}
+for name, item in binaries.items():
+    b = (W / name).read_bytes()
+    assert len(b) == item['bytes'] and sha(b) == item['sha256']
+    accounted[name] = 'discarded-binaries.json'
+gate()
+old_roots = {name: inventory(R / 'runs/.tmp' / name) for name in PROTECTED}
+contents = inventory(W)
+noncache = {name for name, item in contents.items() if name.split('/')[0] not in ['go-cache', 'go-mod-cache', 'go-tmp'] and not item.get('directory')}
+assert noncache == set(accounted), ('Unaccounted work files', noncache ^ set(accounted))
+handles = subprocess.run(['lsof', '-t', '+D', str(W)], capture_output=True)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+assert inventory(W) == contents, 'Owned contents changed before cleanup'
+gate()
+if args.check:
+    print(json.dumps({'ready': True, 'entries': len(contents), 'noncache_files_accounted': len(accounted), 'no_open_handles': True, 'deleted': False}))
+    raise SystemExit(0)
+packed = gzip.compress(json.dumps(contents, sort_keys=True).encode(), mtime=0)
+with (E / 'cleanup-inventory.json.gz').open('xb') as handle:
+    handle.write(packed)
+assert json.loads(gzip.decompress((E / 'cleanup-inventory.json.gz').read_bytes())) == contents
+with (E / 'cleanup-accounting.json').open('x') as handle:
+    json.dump(accounted, handle, indent=2)
+    handle.write('\n')
+assert not W.is_symlink() and W.stat().st_ino == 59633828 and W.resolve() == W
+for base, dirs, files in os.walk(W, topdown=True, followlinks=False):
+    directory = Path(base)
+    assert not directory.is_symlink() and (directory == W or W in directory.parents)
+    os.chmod(directory, stat.S_IMODE(directory.stat().st_mode) | 0o700)
+shutil.rmtree(W)
+assert not W.exists()
+for name, digest in module_source.items():
+    assert sha(Path(name).read_bytes()) == digest, name
+gate()
+assert old_roots == {name: inventory(R / 'runs/.tmp' / name) for name in PROTECTED}
+result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_directory': str(W.relative_to(R)), 'owned_inode': 59633828, 'removed_entries': len(contents), 'removed_bytes': sum(x.get('bytes', 0) for x in contents.values()), 'inventory_archive': 'cleanup-inventory.json.gz', 'inventory_archive_sha256': sha(packed), 'no_open_handles': True, 'necessary_files_preserved': True, 'source_entries_preserved': 856, 'original_model_files_preserved': 18, 'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'original_module_files_preserved': len(module_source), 'protected_old_roots_preserved': list(PROTECTED), 'directory_removed': True}
+with (E / 'cleanup.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result), flush=True)

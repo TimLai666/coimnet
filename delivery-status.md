@@ -2,7 +2,11 @@
 
 ## 目前階段
 
-語音串流與 OCR 頁面的一致性唯讀稽核已完成，沒有確認新缺陷，見[稽核結果](evidence/TSK-02/stream-consistency-20261017/verification.json)。Root 核對 855 份來源保持，重新讀取最近完整一般／競態日誌，ASR 各 12 個、OCR 各 19 個相關 pass 事件及已核准中性增益各 21 個 pass 事件相符。本輪沒有執行新 Go 測試或訓練，工程追蹤保持 91／91。OpenCode 稽核被自動核准審查拒絕，實際分工使用 Codex 內建子代理；本輪未使用的派工與工具探索暫存共 9,995 bytes 已清除，原有暫存目錄保持。證據提交 `ce75a69` 已推送且遠端讀回相同，見[交付](evidence/TSK-02/stream-consistency-20261017/delivery.json)。任意隨機 Feed 分段的完整快照比對尚未執行，整體零 bug 目標持續進行。
+[ticket137](docs/tickets/137-stream-partition-state.md) 已通過完整工程驗收，一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。新增 52 個語音分段／恢復子案例及 2 個父測試、兩種隔離刻意錯誤控制均驗收，格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[驗收](evidence/TSK-02/partition-state-20261017/verification.json)。855 份既有 Go／模組來源保持，只新增公開 SDK 性質回歸，目前沒有確認產品缺陷。早先沙箱禁止本機測試連接埠的失敗已保存[原因](evidence/TSK-02/partition-state-20261017/sandbox-failure.json)，最終完整驗收已在允許本機連線的環境通過。最後 31 項治理通過，1,551,595,591 bytes 本票暫存已清除，856 份來源、18 份原模型、6 份既有資料、15,046 份原始模組檔及其他工作保持，見[清理](evidence/TSK-02/partition-state-20261017/cleanup.json)。提交及遠端讀回尚未完成，本票 3／4，工程追蹤保持 91／91。
+
+線上回饋消費、取消與重試的補充唯讀稽核已完成，未確認產品缺陷，見[Root 核對](evidence/TSK-02/partition-state-20261017/online-audit-review.json)。Root 另核對同一凍結來源完整一般日誌中的 7 個父測試、13 個 pass 事件，這份補充稽核沒有執行新 Go。取得 learner 鎖後、無 target 或合法間隔 skip 時取消的行為尚無受控動態反例，且未確認有更強的逐筆取消契約，不據此修改學習機制。
+
+先前的語音串流與 OCR 頁面的一致性唯讀稽核已完成，沒有確認新缺陷，見[稽核結果](evidence/TSK-02/stream-consistency-20261017/verification.json)。Root 核對 855 份來源保持，重新讀取最近完整一般／競態日誌，ASR 各 12 個、OCR 各 19 個相關 pass 事件及已核准中性增益各 21 個 pass 事件相符。該次沒有執行新 Go 測試或訓練，工程追蹤保持 91／91。OpenCode 稽核被自動核准審查拒絕，實際分工使用 Codex 內建子代理；該次未使用的派工與工具探索暫存共 9,995 bytes 已清除，原有暫存目錄保持。證據提交 `ce75a69` 已推送且遠端讀回相同，見[交付](evidence/TSK-02/stream-consistency-20261017/delivery.json)。任意隨機 Feed 分段的完整快照比對已由 ticket137 補驗，整體零 bug 目標持續進行。
 
 [ticket136](docs/tickets/136-aggregate-cell-representability.md) 已通過完整工程驗收。855 份來源的一般／競態各 58 套件通過，8,574／8,573 pass、23／24 skip，原有各 8,575 個終端事件保持，只新增各 22 pass。正式原版各 15 fail／7 pass，修正後相關各 114 pass，各 64 份正常統計及合計 12 份舊模型接續逐位元組保持。格式、build、vet、固定 Insyra v0.3.4、模組及 31 項治理通過，已核准的中性增益控制各 21 pass，見[驗收](evidence/LRN-08/aggregate-range-20261017/verification.json)。LRN-08 恢復 passed，工程追蹤 91／91。最後 31 項治理通過，1,773,523,834 bytes 本輪暫存已清除，原模型、必要資料、原始模組及其他工作保持，見[清理](evidence/LRN-08/aggregate-range-20261017/cleanup.json)。本票 4／4，主要提交 `01e774e` 已推送且遠端讀回相同，見[交付](evidence/LRN-08/aggregate-range-20261017/delivery.json)。三條化學路徑的唯讀補充稽核未確認新缺陷，既有首步差異符合明文生命週期，見[補充稽核](evidence/LRN-08/aggregate-range-20261017/chemical-path-audit-review.json)。整體零 bug 目標保持進行中。
 

@@ -1,0 +1,99 @@
+{
+  "updated_at": "2026-10-17T09:54:38.433946+00:00",
+  "ticket": 137,
+  "goal_status": "active",
+  "milestones_verified": 3,
+  "milestones_total": 4,
+  "accepted": [
+    "52 child cases and 2 parents pass in focused ordinary/race builds",
+    "Two isolated intentional faults rejected in both builds; full Root test/output review",
+    "All 9 engineering steps passed; 8597 old events per build preserved, only 54 new pass"
+  ],
+  "pending": [
+    "Normal commit/push and exact remote readback"
+  ],
+  "running": {
+    "session_id": 70673,
+    "command": [
+      "python3",
+      "evidence/TSK-02/partition-state-20261017/engineering.py.txt",
+      "--run",
+      "--label-prefix",
+      "engineering-final"
+    ],
+    "execution": "Approved exec_command require_escalated; same frozen sources, environment and Go commands. No persistent permission changes.",
+    "known_terminal": true,
+    "instruction": "Resume this exact session; do not restart based on elapsed time or missing final receipt. Do not clean work root while live.",
+    "current_step": "All nine engineering steps complete",
+    "terminal_exit_code": 0,
+    "observed_tool_chunk": "9f8f50"
+  },
+  "formal_source_count": 856,
+  "formal_source_sha256": "7209c401b88a0a59a131ee3f33d495ced0c37146fb12f99fc349bf898e80bef0",
+  "product_go_changes": [],
+  "classification": "progress: complete engineering and final governance passed; owned cleanup completed; Git delivery pending",
+  "bounded_claim": "Synthetic partition and restore property checks do not prove zero bugs or real-task quality.",
+  "attempts": [
+    {
+      "session_id": 88442,
+      "command": [
+        "python3",
+        "evidence/TSK-02/partition-state-20261017/engineering.py.txt",
+        "--run"
+      ],
+      "known_terminal": true,
+      "instruction": "Resume this exact live session; do not restart from elapsed time or a missing final receipt. Do not clean its work root while live.",
+      "terminal_exit_code": 1,
+      "cause": "Sandbox denied local httptest loopback binds; six packages affected. See sandbox-failure.json."
+    }
+  ],
+  "full_engineering_verified_steps": [
+    "format",
+    "build",
+    "unit",
+    "race",
+    "vet",
+    "module-verify",
+    "module-selection",
+    "governance",
+    "closure-binary"
+  ],
+  "full_unit": {
+    "receipt": "engineering-final-unit.json",
+    "test_events": {
+      "pass": 8628,
+      "skip": 23
+    },
+    "package_events": {
+      "pass": 58,
+      "skip": 4
+    },
+    "prior_events_preserved": 8597,
+    "new_pass_events": 54
+  },
+  "readonly_online_audit": {
+    "status": "Root reviewed and complete; no confirmed product defect",
+    "verification": "online-audit-review.json",
+    "existing_unit_parent_count": 7,
+    "existing_unit_pass_events": 13,
+    "new_go_execution": false,
+    "unresolved_observation": "Cancellation during feedback filtering/no-target or interval-skip branch has no controlled witness or verified stronger per-feedback contract."
+  },
+  "previous_goal_turn_classification": "progress",
+  "cleanup_preparation": {
+    "control_files_preserved": 4,
+    "archive_bytes": 5212,
+    "preservation_receipt": "work-preservation.json",
+    "module_manifest_reused": true,
+    "guard_review": "cleanup-readiness.json",
+    "check_exit_code": 2,
+    "cleanup_executed": true
+  },
+  "cleanup": {
+    "receipt": "cleanup.json",
+    "removed_bytes": 1551595591,
+    "directory_removed": true,
+    "actual_tool_chunk": "cb3e39",
+    "actual_exit_code": 0
+  }
+}

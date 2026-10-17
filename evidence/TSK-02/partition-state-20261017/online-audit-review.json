@@ -1,0 +1,118 @@
+{
+  "reviewed_at": "2026-10-17T09:10:34.991915+00:00",
+  "scope": "Read-only online feedback consumption, update, cancellation and retry consistency.",
+  "agent": "/root/online_update_readonly_138",
+  "agent_status": "completed; static audit only; reported no Go execution",
+  "source_sha256": {
+    "learning/online.go": "37c593c2eeaacd272637ada339b154969dafd8d83a9fe1c9bfcb0a59f4853798",
+    "learning/individual_online.go": "c8f6f683cb047fb15aeb9e25f356343d63a3af4507173c51f9e0c6489dbf8402",
+    "learning/individual.go": "7bd1e70f01035d97a06dd70d74494928ac0aa8b92975f7998454ec8b7d36e952",
+    "learning/trainer.go": "404e2d932e369c48ee15c69c0f249b860ec7732135d26616ce34a376922ea686",
+    "learning/individual_chemical_training.go": "dcf14d76ede60f16e36f48f63fff48124d63c645dbde55355e43b617972f399e",
+    "signal/feedback_available.go": "a2ac881b6fe088b4e0d594aee39f7b41976bcc57dfebeae50b5693dba0c1c34e",
+    "learning/online_individual_boundary_controls_test.go": "adec4a483b0a3e849a01f94ef72f9fc2f42bc978c68619378c88606a58b7ed57",
+    "learning/online_mixed_retry_lifecycle_test.go": "939e0378c9058c9710e598265b77de5dc7f37d2154607243b8a51845f332a335",
+    "learning/online_failed_interval_test.go": "379c352fadeef6aa08c5f71c259c9eaa6a64dda75e5f735069f7d4cb12a954bf"
+  },
+  "contract_evidence": [
+    "docs/tickets/23-online-learning-replay-and-adaptive-evaluation.md:161-162",
+    "ENG.md:293-301",
+    "learning/online.go:334-386"
+  ],
+  "root_checked": [
+    "Update preserves successful earlier feedback and reports partial results; consumed prefix alone leaves the queue.",
+    "Mixed updates key gradient completion by action/source; successful gradient or accumulation is not repeated after a plastic-stage failure.",
+    "Gradient interval position commits only after the gradient phase succeeds.",
+    "Trainer partial accumulation checks context before commit at trainer.go:470-474; parameter/Adam commit checks at 568-575.",
+    "Individual chemical training uses a private candidate and checks context before publishing at individual_chemical_training.go:99-109.",
+    "Act generates act-N IDs, so no supported delimiter collision was found in remainingFeedback.",
+    "Public prediction validates finite float32 outputs at network.go:664-668; a speculative opposite-MaxFloat64 prediction overflow is not a supported producer."
+  ],
+  "confirmed_product_findings": [],
+  "needs_investigation": [
+    {
+      "location": "learning/online.go:395-418",
+      "observation": "No additional ctx.Err check in no-target and legal interval-skip branches after learner lock acquisition.",
+      "missing_decisive_evidence": "No dynamic controlled cancellation witness and no verified contract requiring an extra per-feedback cancellation boundary for a successful no-op.",
+      "next_check": "Observe cancellation after lock but before or during feedback filtering; compare consumption, model snapshot and retry. Do not assert an unagreed rollback or change behavior from a missing check alone."
+    }
+  ],
+  "dynamic_evidence_reused": {
+    "receipt": "engineering-final-unit.json",
+    "log": "engineering-final-unit.log.gz",
+    "log_sha256": "77ffba3b532ff8bc24f0d2ce8d6129ab0a94dbacc684e961a28b5d0bb79a321e",
+    "test_parent_count": 7,
+    "passing_terminal_events": 13,
+    "events": [
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineIndividualBoundaryControlCanceledContextAndRetry",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineFailedGradientIntervalIsRetriedWithoutConsumption",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineUpdateEveryNormalSkipAndAppliedControl/every_1_applies",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineUpdateEveryNormalSkipAndAppliedControl/every_2_skips_then_applies",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineUpdateEveryNormalSkipAndAppliedControl",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageMarksMissingTargetComplete",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageIgnoresTargetReplacement/completed_gradient",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageIgnoresTargetReplacement/completed_skip",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageIgnoresTargetReplacement",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageKeepsPendingStagesByActionAndTime",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation/two_gate_failures_then_success",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation/context_cancellation_then_retry",
+        "Action": "pass"
+      },
+      {
+        "Package": "github.com/TimLai666/coimnet/learning",
+        "Test": "TestOnlineMixedRetryStageSurvivesRepeatedFailureAndCancellation",
+        "Action": "pass"
+      }
+    ],
+    "new_go_execution_this_audit": false,
+    "current_full_race": "Still running in original session 70673; not accepted yet."
+  },
+  "root_decision": "No production or test modification justified by this read-only audit. Keep unresolved observation separate from confirmed defects.",
+  "scope_limit": "No claim that all bugs are absent, task quality improved, or biology validated."
+}

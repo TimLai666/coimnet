@@ -1,0 +1,30 @@
+{
+  "reviewed_at": "2026-10-17T09:25:58.633577+00:00",
+  "scope": "Read-only MSE error-to-training-commit path; no new Go execution or dependency changes.",
+  "question": "Could the loss exceed the float32 result range and be committed as a non-finite successful training result?",
+  "source_sha256": {
+    "learning/network.go": "ce0dea9b6d81a95ad48c7bd5befc69452f38ccc0d2877c171303d759ea6ea8a0",
+    "learning/trainer.go": "404e2d932e369c48ee15c69c0f249b860ec7732135d26616ce34a376922ea686",
+    "learning/individual_chemical_training.go": "dcf14d76ede60f16e36f48f63fff48124d63c645dbde55355e43b617972f399e"
+  },
+  "dependency": {
+    "module": "github.com/HazelnutParadise/insyra",
+    "version": "v0.3.4",
+    "original_source": "/Users/timlai/go/pkg/mod/github.com/!hazelnut!paradise/insyra@v0.3.4/nn/autodiff.go",
+    "sha256": "976f3ce1c6560121a2e85149888dfaebd01d0956b44b1e1a9de008ba8459ffe0",
+    "private_copy_matches_original_manifest": true,
+    "evidence": "nn/autodiff.go:1031-1049 returns a float32 scalar after accumulating squared differences in float64."
+  },
+  "root_verified": [
+    "learning/network.go:324-328 explicitly refuses non-finite loss before returning a gradient successfully.",
+    "learning/trainer.go:328-335 returns a lossGradient error before stepWithGradient can commit.",
+    "learning/individual_chemical_training.go:99-109 publishes the private candidate only after a successful Step and a final context check."
+  ],
+  "confirmed_findings": [],
+  "conclusion": "The suspected non-finite-loss commit is ruled out for this inspected path. A genuinely unrepresentable float32 loss may be refused under the declared tensor boundary; this is not proof of a missing Insyra feature.",
+  "not_claimed": [
+    "All numerical inputs are supported",
+    "Real-task quality improvement",
+    "All bugs absent"
+  ]
+}

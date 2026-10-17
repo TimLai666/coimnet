@@ -1,0 +1,83 @@
+{
+  "requirement": "TSK-02",
+  "verified_at": "2026-10-17T09:46:42.599355+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/TSK-02/partition-state-20261017/run-command.py.txt focused-unit go test -json -count=1 -timeout=20m -run '^TestStreamPartition(FullState|RestoreFullState)$' ./tasks/asr",
+    "python3 evidence/TSK-02/partition-state-20261017/run-command.py.txt focused-race go test -race -json -count=1 -timeout=20m -run '^TestStreamPartition(FullState|RestoreFullState)$' ./tasks/asr",
+    "python3 evidence/TSK-02/partition-state-20261017/controls.py.txt --run",
+    "python3 evidence/TSK-02/partition-state-20261017/engineering.py.txt --run --label-prefix engineering-final"
+  ],
+  "environment": {
+    "go": "go version go1.26.5 darwin/arm64",
+    "platform": "Darwin arm64",
+    "command_environment": "command-environment.json",
+    "execution": "Final full gate used approved local execution allowing httptest loopback binds; no persistent permission change."
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source.json",
+    "source_manifest_sha256": "7209c401b88a0a59a131ee3f33d495ced0c37146fb12f99fc349bf898e80bef0",
+    "source_entries": 856,
+    "unchanged_original_entries": 855,
+    "new_test": {
+      "path": "tasks/asr/stream_partition_test.go",
+      "sha256": "85a35858b74b67fd7d978deebf3a2e577bda5be55af4a029ada9270b38c6f9e6",
+      "parents": [
+        "TestStreamPartitionFullState",
+        "TestStreamPartitionRestoreFullState"
+      ]
+    },
+    "fixture": "Existing synthetic streamTestFixture; aligned full recording 7040 samples, Window 256, Hop 128. No real-task dataset/model claim."
+  },
+  "observed_result": {
+    "new_child_cases": 52,
+    "new_parent_tests": 2,
+    "focused_unit_pass_events": 54,
+    "focused_race_pass_events": 54,
+    "intentional_faults_rejected_in_both_builds": 2,
+    "full_unit": {
+      "pass": 8628,
+      "skip": 23,
+      "packages_passed": 58,
+      "packages_without_tests": 4
+    },
+    "full_race": {
+      "pass": 8627,
+      "skip": 24,
+      "packages_passed": 58,
+      "packages_without_tests": 4
+    },
+    "prior_terminal_events_preserved_per_build": 8597,
+    "new_pass_events_per_build": 54,
+    "governance_pass_events": 31,
+    "format_build_vet_modules_and_closure_build_passed": true,
+    "product_go_changes": [],
+    "confirmed_product_findings": []
+  },
+  "test_log": [
+    "focused-unit.log",
+    "focused-race.log",
+    "controls-verification.json",
+    "engineering-final-unit.log.gz",
+    "engineering-final-race.log.gz",
+    "engineering-verification.json"
+  ],
+  "preservation": {
+    "source_entries": 856,
+    "foreign_files": 32,
+    "original_models": 18,
+    "persistent_data_files": 6,
+    "work_inputs": "work-preservation.json"
+  },
+  "earlier_failed_attempt": {
+    "receipt": "engineering-unit.json",
+    "cause": "sandbox-failure.json",
+    "result": "Sandbox denied local test server binds; preserved as failed history, superseded by the complete final gate."
+  },
+  "supplemental_readonly_audits": [
+    "online-audit-review.json",
+    "loss-finiteness-review.json"
+  ],
+  "scope_limit": "Bounded engineering validation; no proof that all bugs are absent, real-task recognition improved, or biological mechanisms are validated. Final governance, owned cleanup and delivery are separately recorded.",
+  "recorded_run_note": "Guarded wrapper commands describe the accepted run. Existing receipts and a different work inode are intentionally refused; repeat equivalent Go arguments with the same frozen sources and fresh project-owned caches."
+}

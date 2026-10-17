@@ -1,0 +1,46 @@
+{
+  "reviewed_at": "2026-10-17T08:53:25.929038+00:00",
+  "host": "Codex",
+  "delegation": {
+    "preferred": "opencode models",
+    "actual_exit": 1,
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)",
+    "fallback": "Codex native subagent",
+    "agent": "/root/stream_partition_tests_137",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "effort_authority": "User-provided project AGENTS.md fallback explicitly sets max",
+    "allowed_writes": [
+      "tasks/asr/stream_partition_test.go"
+    ],
+    "child_executed_go": false
+  },
+  "review": {
+    "full_diff_read": true,
+    "original_source_count_unchanged": 855,
+    "new_test_file": "tasks/asr/stream_partition_test.go",
+    "new_test_sha256": "85a35858b74b67fd7d978deebf3a2e577bda5be55af4a029ada9270b38c6f9e6",
+    "expected_child_cases": 52,
+    "expected_parents": [
+      "TestStreamPartitionFullState",
+      "TestStreamPartitionRestoreFullState"
+    ],
+    "production_go_changes": [],
+    "root_static_correction": "Removed extra & from the *strings.Builder returned by runPartition; no compile/test failure or production defect claimed.",
+    "accepted_assertions": [
+      "Same-length single-Feed reference; complete StreamState JSON bytes before and after Flush",
+      "Fresh and warm empty Feed preserve complete state",
+      "Each Feed/Flush delta concatenates exactly to Text",
+      "JSON roundtrip and immediate full-state RestoreStream comparison after each chunk and after Flush",
+      "Full recording emits nonempty text",
+      "Shared recognizer full TrainingSnapshot and source audio preserved"
+    ],
+    "revision": "Rejected individual-only snapshot guard; accepted full Recognizer.Snapshot including optimizer/update count.",
+    "scope": "Bounded synthetic fixture property regression, not real-task quality or biological validation.",
+    "diff_inspector": "No confirmed production findings. Test-only diff does not modify API, persistence format, dependencies, data, or learning rules."
+  },
+  "execution_status": "Both focused builds, four intentional controls, all nine engineering steps and final 31-event governance accepted. Owned cleanup completed with original sources/models/data/modules and foreign work preserved. Git delivery remains pending.",
+  "execution_status_at": "2026-10-17T09:54:38.433361+00:00",
+  "final_verification": "verification.json",
+  "cleanup": "cleanup.json"
+}

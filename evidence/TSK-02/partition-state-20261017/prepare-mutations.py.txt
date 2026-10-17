@@ -1,0 +1,37 @@
+"""Create two isolated, intentionally wrong stream implementations."""
+from pathlib import Path
+import argparse, hashlib, json
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+argparse.ArgumentParser(description='Create project-local overlay inputs for the two declared negative controls; refuses existing files.').parse_args()
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/stream-partition-20261017'
+assert W.stat().st_ino == json.loads((E / 'baseline.json').read_text())['work_inode']
+path = R / 'tasks/asr/stream.go'
+raw = path.read_bytes()
+source = json.loads((R / 'evidence/LRN-08/aggregate-range-20261017/formal-source.json').read_text())
+assert hashlib.sha256(raw).hexdigest() == source['tasks/asr/stream.go']
+text = raw.decode()
+replacements = {
+    'feed-reset-class': ('\tcp := s.checkpoint()\n\ts.pending = append(s.pending, samples...)', '\tcp := s.checkpoint()\n\ts.prevClass = blankBreak\n\ts.pending = append(s.pending, samples...)'),
+    'restore-drop-pending': ('\t\tpending:   append([]float64(nil), st.Pending...),', '\t\tpending:   nil,'),
+}
+out = {}
+for name, (old, new) in replacements.items():
+    assert text.count(old) == 1
+    candidate = text.replace(old, new).encode()
+    replacement_path = W / (name + '.go.txt')
+    overlay_path = W / (name + '.overlay.json')
+    with replacement_path.open('xb') as handle:
+        handle.write(candidate)
+    with overlay_path.open('x') as handle:
+        json.dump({'Replace': {str(path): str(replacement_path)}}, handle, indent=2)
+        handle.write('\n')
+    out[name] = {'source': str(path.relative_to(R)), 'original_sha256': hashlib.sha256(raw).hexdigest(), 'replacement_sha256': hashlib.sha256(candidate).hexdigest(), 'overlay': str(overlay_path.relative_to(R)), 'replacement': str(replacement_path.relative_to(R)), 'old': old, 'new': new}
+assert path.read_bytes() == raw
+with (E / 'mutations.json').open('x') as handle:
+    json.dump(out, handle, indent=2)
+    handle.write('\n')
+print(json.dumps({'isolated_overlays': len(out), 'production_source_unchanged': True}), flush=True)

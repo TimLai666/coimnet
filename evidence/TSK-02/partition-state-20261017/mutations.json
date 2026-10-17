@@ -1,0 +1,20 @@
+{
+  "feed-reset-class": {
+    "source": "tasks/asr/stream.go",
+    "original_sha256": "9c8bcdb1f432e25f0fa8bef16e64e3f7532dba1f61f4289e3d1ca440bab3c1a9",
+    "replacement_sha256": "fa874628812c5d9cd38a1b44ae77cc4f6cbfee6e06eaa558da1901f7e3b10cdb",
+    "overlay": "runs/.tmp/stream-partition-20261017/feed-reset-class.overlay.json",
+    "replacement": "runs/.tmp/stream-partition-20261017/feed-reset-class.go.txt",
+    "old": "\tcp := s.checkpoint()\n\ts.pending = append(s.pending, samples...)",
+    "new": "\tcp := s.checkpoint()\n\ts.prevClass = blankBreak\n\ts.pending = append(s.pending, samples...)"
+  },
+  "restore-drop-pending": {
+    "source": "tasks/asr/stream.go",
+    "original_sha256": "9c8bcdb1f432e25f0fa8bef16e64e3f7532dba1f61f4289e3d1ca440bab3c1a9",
+    "replacement_sha256": "e583e4d12430a898d3c3ff016c097e3055eb1f4efce7e7ec6c04a58ef884ace5",
+    "overlay": "runs/.tmp/stream-partition-20261017/restore-drop-pending.overlay.json",
+    "replacement": "runs/.tmp/stream-partition-20261017/restore-drop-pending.go.txt",
+    "old": "\t\tpending:   append([]float64(nil), st.Pending...),",
+    "new": "\t\tpending:   nil,"
+  }
+}
