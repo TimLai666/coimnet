@@ -1,0 +1,35 @@
+{
+  "observed_at": "2026-10-17T08:31:10.061547+00:00",
+  "model": "opencode/deepseek-v4.1-flash-free",
+  "agent": "plan",
+  "model_listing_succeeded": true,
+  "audit_processes_started_by_current_attempt": false,
+  "audit_completed_by_opencode": false,
+  "dispatches": [
+    {
+      "kind": "asr",
+      "result": "automatic approval review rejected",
+      "reason": "此腳本會以外部 OpenCode 服務執行，可能將私有 repository 原始碼與稽核內容傳出；「可以用 OpenCode」不足以明確授權把這些敏感資料送至該目的地。"
+    },
+    {
+      "kind": "ocr",
+      "result": "automatic approval review rejected",
+      "reason": "此命令會把私有專案內容交給外部 OpenCode 模型分析；雖然使用 OpenCode 已獲授權，但未明確授權將這些具體資料外傳至該目的地。"
+    }
+  ],
+  "safe_alternative": {
+    "tool": "Codex native collaboration.spawn_agent",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "allowed_writes": [],
+    "tasks": [
+      "asr_stream_consistency_137",
+      "ocr_page_consistency_137"
+    ]
+  },
+  "earlier_launch_recovery": {
+    "specific_live_jobs_found": 0,
+    "opencode_audit_log_files_present": false,
+    "observation": "Read-only ps check; absence of a receipt alone was not treated as terminal evidence."
+  }
+}

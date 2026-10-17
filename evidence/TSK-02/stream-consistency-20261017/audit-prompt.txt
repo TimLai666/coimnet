@@ -1,0 +1,7 @@
+你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成
+角色：你是嚴謹的語音 SDK 稽核者，只回報正常有效輸入下有原始碼依據的實際錯誤，不能為了湊發現而臆測。
+檔案權限：可修改或新增的檔案為無。所有檔案唯讀。只讀 tasks/asr/、tasks/audio/、signal/ 的原始碼與測試，以及 README.md、ENG.md、tasks/asr/README.md、docs/handoff/CoImNet_Implementation_Plan.zh-TW.md 的相關契約。不得讀 data/、models/、checkpoints/、runs/、個人檔案或憑證。不得執行 Go、編譯器、測試、網路請求、Git 指令或其他 agent。不得建立計畫檔或暫存。
+任務：稽核 Recognizer.NewStream、Stream.Feed/Flush/Snapshot、RestoreStream、LoadStream 的分段邊界。使用同一組合法正常量級音訊及相同模型，檢查不同 Feed 分塊是否等價、保存恢復是否保留前處理/神經/CTC/文字狀態、取消或拒絕輸入是否留下半次更新。既有 README 明示整檔捨棄不足一窗尾端而串流 Flush 補零，不能把這個既定差異當 bug。同條串流不支援並行呼叫，也不能以此當 bug。請只深查最有證據的一個反例，不重複已修復 Unicode 或 StreamState 語意驗證問題。
+驗證：優先用 codebase-memory-mcp 找定義/關係，若該工具不存在再用內建 Read/Grep 找目前檔案。只做靜態讀取，不能宣稱執行重現或測試通過。找出相應既有測試，分清明確缺陷與缺證據的疑點。Repo HEAD b9228d2，855份來源剛通過完整一般/競態，這是背景而非全部行為正確的證明。
+回報：最多1000字，依序提供 1.已核對的契約與檔名行號 2.CONFIRMED 反例的最小合法呼叫序列、預期/實際、影響，或清楚寫沒有確認缺陷 3.Needs investigation 要寫缺什麼證據 4.下一個最小檢查。不要只交計畫或詢問是否繼續，直接完成報告。
+不要 commit，也不要 stash 或 reset。禁止一切 Git 寫入與所有其他檔案修改。

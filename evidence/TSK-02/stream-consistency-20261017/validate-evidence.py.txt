@@ -1,0 +1,106 @@
+from pathlib import Path
+import argparse, datetime, gzip, hashlib, json, subprocess
+
+R = Path(__file__).resolve().parents[3]
+E = R / 'evidence/TSK-02/stream-consistency-20261017'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+parser = argparse.ArgumentParser(description='Validate unchanged framework sources and reparse completed ASR/OCR/neutral-gain test evidence.')
+parser.add_argument('--check', action='store_true', help='Check the existing result without creating or changing files. Without this flag, create the initial result exclusively.')
+args = parser.parse_args()
+
+def sha(path):
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+source = json.loads((P / 'formal-source.json').read_text())
+foreign = json.loads((P / 'foreign-before.json').read_text())
+assert len(source) == 855
+assert all(sha(R / p) == value for p, value in source.items())
+assert all(sha(Path(p)) == value for p, value in foreign.items())
+tracked_sources = set(subprocess.check_output(['git', 'ls-files', '--', '*.go', 'go.mod', 'go.sum'], cwd=R, text=True).splitlines())
+assert tracked_sources == set(source)
+
+groups = {
+    'asr': ('github.com/TimLai666/coimnet/tasks/asr', {
+        'TestStreamMatchesWholeFile',
+        'TestStreamResumesFromSnapshot',
+        'TestStreamTailAndFlush',
+        'TestStreamUsesOnlyArrivedAudio',
+        'TestStreamRejectsNonFinite',
+        'TestStreamRollsBackAChunkWhenAWindowFails',
+        'TestStreamRollsBackWhenCanceledMidChunk',
+        'TestStreamCanceledFeedDoesNotConsumeAnInsufficientFrame',
+        'TestStreamCanceledFlushPreservesItsTail',
+        'TestStreamFlushesAnInitialShortTail',
+        'TestStreamFileAcrossProcess',
+        'TestStreamFileResumesExactlyAndDoesNotOverwrite',
+    }),
+    'ocr': ('github.com/TimLai666/coimnet/tasks/ocr', {
+        'TestSegmentLinesFindsStackedLines',
+        'TestSegmentLinesEmpty',
+        'TestSegmentLinesIgnoresNoiseBelowThreshold',
+        'TestOCRPageInferUsesTheRecognizerOnOwnedNormalizedCrops',
+        'TestOCRPageScalesDifferentLineHeightAndPreservesReadingOrder',
+        'TestOCRPageBlankIsSuccessfulWithNonNilEmptyBlocks',
+        'TestOCRPageRejectsInvalidNilCanceledAndLineLimitsWithoutPartialPage',
+    }),
+}
+neutral_names = {
+    'TestNeutralGainRejectsConstructionAndRestore',
+    'TestNeutralGainRejectsExcludedRange',
+    'TestNeutralGainRetainsValidRanges',
+}
+results = {}
+for build in ['unit', 'race']:
+    receipt_path = P / ('engineering-final-' + build + '.json')
+    receipt = json.loads(receipt_path.read_text())
+    log = P / receipt['log']
+    assert receipt['exit_code'] == 0
+    assert sha(log) == receipt['log_sha256']
+    raw = gzip.decompress(log.read_bytes())
+    assert hashlib.sha256(raw).hexdigest() == receipt['raw_sha256']
+    rows = [json.loads(line) for line in raw.splitlines()]
+    assert not any(row.get('Action') == 'fail' for row in rows)
+    terminal = [row for row in rows if row.get('Test') and row.get('Action') in ['pass', 'skip', 'fail']]
+    selected = {}
+    for kind, (package, parents) in groups.items():
+        events = [row for row in terminal if row['Package'] == package and row['Test'].split('/')[0] in parents]
+        assert all(row['Action'] == 'pass' for row in events)
+        assert {row['Test'] for row in events if '/' not in row['Test']} == parents
+        selected[kind] = {'parents': len(parents), 'pass_events': len(events), 'events': events}
+    neutral = [row for row in terminal if row['Test'].split('/')[0] in neutral_names]
+    assert len(neutral) == 21 and all(row['Action'] == 'pass' for row in neutral)
+    results[build] = {
+        'receipt': str(receipt_path.relative_to(R)),
+        'receipt_sha256': sha(receipt_path),
+        'log': str(log.relative_to(R)),
+        'log_sha256': sha(log),
+        'raw_sha256': receipt['raw_sha256'],
+        'selected': selected,
+        'neutral_gain_pass_events': len(neutral),
+    }
+
+protected_roots = {
+    'runs/.tmp/62': 49680181,
+    'runs/.tmp/real-task-quality-20261012': 50419696,
+}
+assert all((R / path).stat().st_ino == inode for path, inode in protected_roots.items())
+out = {
+    'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    'current_source_count': len(source),
+    'current_sources_match': True,
+    'source_manifest': str((P / 'formal-source.json').relative_to(R)),
+    'source_manifest_sha256': sha(P / 'formal-source.json'),
+    'foreign_files_unchanged': len(foreign),
+    'protected_roots': protected_roots,
+    'builds': results,
+    'new_go_execution': False,
+    'scope': 'Independent reparse of completed logs for byte-identical current sources; no new Go tests, no real-task quality or biological claim.',
+}
+if args.check:
+    recorded = json.loads((E / 'reused-test-evidence.json').read_text())
+    assert {k: v for k, v in recorded.items() if k != 'verified_at'} == {k: v for k, v in out.items() if k != 'verified_at'}
+else:
+    with (E / 'reused-test-evidence.json').open('x') as handle:
+        json.dump(out, handle, ensure_ascii=False, indent=2)
+        handle.write('\n')
+print(json.dumps({'source_count': len(source), 'foreign_unchanged': len(foreign), 'selected': {build: {kind: {'parents': row['parents'], 'pass_events': row['pass_events']} for kind, row in value['selected'].items()} for build, value in results.items()}, 'neutral_each': 21, 'new_go_execution': False}))

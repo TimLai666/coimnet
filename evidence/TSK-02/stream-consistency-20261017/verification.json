@@ -1,0 +1,64 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TSK-02",
+    "MOD-04"
+  ],
+  "mode": "read-only source/contract audit and independent reparse of completed identical-source engineering logs",
+  "reproduction_command": "python3 evidence/TSK-02/stream-consistency-20261017/validate-evidence.py.txt --check",
+  "environment": {
+    "working_directory": "/Users/timlai/Developer/coimnet",
+    "machine": "arm64",
+    "audit_runtime": "Python 3.9.6",
+    "completed_go_engineering_environment": "evidence/LRN-08/aggregate-range-20261017/command-environment.json",
+    "delegation": "delegation.json"
+  },
+  "input_fingerprints": {
+    "baseline_head": "b9228d2afee1682dccaee96c494c0c2bbf070231",
+    "formal_source_manifest": "evidence/LRN-08/aggregate-range-20261017/formal-source.json",
+    "formal_source_manifest_sha256": "30a0ccd70572a2385fe9124027e8b9394916bce976d39c1f57eda7dc2bf42941",
+    "source_count": 855,
+    "sources_match_current": true,
+    "test_evidence_sha256": "5a0a703c82c1feb5d5821dcccd449805bfcc0b975585e25e36b16b6a50c284cf",
+    "root_review_sha256": "692e0bb45ff214d4386570a42db281f6d8c892db780ffc1c12a824550bae541e",
+    "asr_worker_report_sha256": "bd7a76fe1ba98fffcb18711505367f8d9eec9ec62ed9e39fdb4446a5b7cd69a3",
+    "ocr_worker_report_sha256": "1244466df0edadedd34fb6822f876ada6af0e903fe9bfd9f03ae4277f89f43a1",
+    "validator_sha256": "10e32a8f48ef61e046ab92b01a238b412dd84543df18eed7b6e3acb6ecbb49d8"
+  },
+  "observed_result": {
+    "completed_static_reviews": 2,
+    "new_confirmed_defects": 0,
+    "formal_go_changes": 0,
+    "new_go_execution": false,
+    "reuse_for_identical_sources": true,
+    "asr_parent_tests_each_build": 12,
+    "asr_pass_events_each_build": 12,
+    "ocr_parent_tests_each_build": 7,
+    "ocr_pass_events_each_build": 19,
+    "approved_neutral_gain_pass_events_each_build": 21,
+    "engineering_requirements_unchanged": "91/91 passed",
+    "foreign_files_unchanged": 32,
+    "owned_unused_dispatch_script_removed_bytes": 1619,
+    "audit_complete": true,
+    "absolute_zero_bug_goal_complete": false,
+    "owned_temporary_files_removed_bytes": 9995
+  },
+  "test_log": [
+    "evidence/LRN-08/aggregate-range-20261017/engineering-final-unit.log.gz",
+    "evidence/LRN-08/aggregate-range-20261017/engineering-final-race.log.gz"
+  ],
+  "test_log_fingerprints": {
+    "unit": "205ba1653aa0364e20889e4d3d4ad5e1e50d1127fd63fa215358941aa5378941",
+    "race": "9ce76366707280e29c6195dfd2355bbd07cbf8daf5e3aa238ec3ea5c0f2ae87e"
+  },
+  "root_review": "root-review.md",
+  "delegation": "delegation.json",
+  "cleanup": "cleanup.json",
+  "limitations": [
+    "No new dynamic random Feed partition comparison was run.",
+    "The OCR cancellation theory has no failing witness; root found an end-of-forward context check.",
+    "No real-task accuracy improvement, whole-brain training result or biological validation is claimed.",
+    "OpenCode model discovery ran; both model audit dispatches were rejected by automatic approval review and produced no model audit results."
+  ],
+  "completed_at": "2026-10-17T08:35:25.880121+00:00"
+}
