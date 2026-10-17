@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/cmplx"
+	"unsafe"
 )
 
 // FrontEndVersion names the exact feature definition so two reports are only
@@ -104,9 +105,14 @@ func STFT(x []float64, c FrontEndConfig) ([][]float64, error) {
 // with centres equally spaced on the mel scale between FMin and FMax; every row
 // sums to a positive value. A filter so narrow that no FFT bin falls strictly
 // inside it would break that guarantee, so it is reported as an error naming
-// the filter rather than returned as a silent row of zeros.
+// the filter rather than returned as a silent row of zeros. Derived slice
+// capacities that cannot be represented are returned as errors before allocation.
 func MelFilterbank(sampleRate int, c FrontEndConfig) ([][]float64, error) {
 	if err := c.Validate(sampleRate); err != nil {
+		return nil, err
+	}
+	bins, err := melFilterbankBins(c)
+	if err != nil {
 		return nil, err
 	}
 	// Mels+2 mel-spaced edges: filter m runs from edge m to edge m+2 and peaks
@@ -116,7 +122,6 @@ func MelFilterbank(sampleRate int, c FrontEndConfig) ([][]float64, error) {
 	for i := range edges {
 		edges[i] = melToHz(loMel + (hiMel-loMel)*float64(i)/float64(c.Mels+1))
 	}
-	bins := c.Window/2 + 1
 	freq := make([]float64, bins)
 	for k := range freq {
 		freq[k] = float64(k) * float64(sampleRate) / float64(c.Window)
@@ -144,6 +149,30 @@ func MelFilterbank(sampleRate int, c FrontEndConfig) ([][]float64, error) {
 		bank[m] = row
 	}
 	return bank, nil
+}
+
+// melFilterbankBins checks each allocated array's byte size after basic
+// configuration validation and returns the shared frequency/filter row width.
+func melFilterbankBins(c FrontEndConfig) (int, error) {
+	// c.Validate has already succeeded. Keep each independent allocation's
+	// native-int byte calculation separate: the rows are allocated separately,
+	// so their aggregate Mels*bins product is not a capacity requirement.
+	maxInt := int(^uint(0) >> 1)
+	if c.Mels > maxInt/8-2 {
+		return 0, fmt.Errorf("audio: mel filterbank edge capacity is not representable for %d filters", c.Mels)
+	}
+
+	bins := c.Window/2 + 1
+	if bins > maxInt/8 {
+		return 0, fmt.Errorf("audio: mel filterbank frequency and row capacity is not representable for %d bins", bins)
+	}
+
+	bankHeaderBytes := int(unsafe.Sizeof([]float64(nil)))
+	if c.Mels > maxInt/bankHeaderBytes {
+		return 0, fmt.Errorf("audio: mel filterbank outer bank capacity is not representable for %d filters", c.Mels)
+	}
+
+	return bins, nil
 }
 
 // FrontEndReport declares the exact configuration a feature matrix came from,

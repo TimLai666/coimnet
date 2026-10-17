@@ -176,7 +176,7 @@
 | `coimnet-connectome-builder/v1` | `connectome` | 接線建構器的正規化規則版本 | [connectome/manifest.go:30](../connectome/manifest.go#L30) |
 | `coimnet-derivation-rules-hash/v1` | `params` | 參數推導規則雜湊識別 | [params/rules.go:39](../params/rules.go#L39) |
 | `coimnet-distill-label/v1` | `distill` | 標籤蒸餾的類別詞彙識別 | [distill/train.go:132](../distill/train.go#L132) |
-| `coimnet-logmel/v1` | `tasks/asr/audio` | Log-Mel 前端特徵版本 | [tasks/asr/audio/frontend.go:11](../tasks/asr/audio/frontend.go#L11) |
+| `coimnet-logmel/v1` | `tasks/asr/audio` | Log-Mel 前端特徵版本 | [tasks/asr/audio/frontend.go:12](../tasks/asr/audio/frontend.go#L12) |
 | `coimnet-nav2d-causal-next-displacement/v1` | `tasks/nav2d/trajectory` | 導航因果下一步位移取樣規則 | [tasks/nav2d/trajectory/trajectory.go:33](../tasks/nav2d/trajectory/trajectory.go#L33) |
 | `coimnet-policy-version/v2` | `learning/rl` | PPO 策略版本雜湊識別 | [learning/rl/update.go:35](../learning/rl/update.go#L35) |
 | `coimnet-realnav-memory-causal-features/v1` | `examples/realnavmemory` | 導航記憶因果特徵規則版本 | [examples/realnavmemory/storage.go:28](../examples/realnavmemory/storage.go#L28) |
