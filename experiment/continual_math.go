@@ -3,6 +3,7 @@ package experiment
 import (
 	"fmt"
 	"math"
+	"math/big"
 )
 
 // ContinualEpisode is the counter-based generator of delayed-correlation/v1
@@ -103,7 +104,8 @@ type CellStat struct {
 // AggregateCells summarises one cell across seeds using only the seeds whose
 // cell did not fail: Std is the population standard deviation (divide by
 // Succeeded); a cell with no successful seed reports zeros and Succeeded 0.
-// Every seed must have the same shape.
+// Every seed must have the same shape. Successful values must be finite;
+// non-finite successful values return an error and no result.
 func AggregateCells(perSeed [][][]float64, failed [][][]bool) ([][]CellStat, error) {
 	if len(perSeed) != len(failed) {
 		return nil, fmt.Errorf("perSeed and failed mask must have the same number of seeds")
@@ -139,6 +141,9 @@ func AggregateCells(perSeed [][][]float64, failed [][][]bool) ([][]CellStat, err
 					continue
 				}
 				v := perSeed[s][r][c]
+				if !finite(v) {
+					return nil, fmt.Errorf("seed %d row %d column %d: successful value is non-finite", s, r, c)
+				}
 				vals = append(vals, v)
 				sum += v
 			}
@@ -146,12 +151,26 @@ func AggregateCells(perSeed [][][]float64, failed [][][]bool) ([][]CellStat, err
 			if len(vals) > 0 {
 				mean := sum / float64(len(vals))
 				var dev float64
+				anyDeviation := false
 				for _, v := range vals {
 					d := v - mean
+					if d != 0 {
+						anyDeviation = true
+					}
 					dev += d * d
 				}
+				variance := dev / float64(len(vals))
+				std := math.Sqrt(variance)
+				if !finite(mean) || !finite(dev) || !finite(std) ||
+					(variance > 0 && variance < 0x1p-1022) ||
+					(variance == 0 && anyDeviation) {
+					mean, std = exactCellMoments(vals)
+				}
+				if !finite(mean) || !finite(std) {
+					return nil, fmt.Errorf("row %d column %d: non-finite cell statistics", r, c)
+				}
 				cs.Mean = mean
-				cs.Std = math.Sqrt(dev / float64(len(vals)))
+				cs.Std = std
 				cs.Min, cs.Max = vals[0], vals[0]
 				for _, v := range vals[1:] {
 					if v < cs.Min {
@@ -166,4 +185,28 @@ func AggregateCells(perSeed [][][]float64, failed [][][]bool) ([][]CellStat, err
 		}
 	}
 	return cells, nil
+}
+
+// exactCellMoments receives nonempty, finite values and avoids rounding the
+// variance to float64 before its high-precision square root.
+func exactCellMoments(vals []float64) (mean, std float64) {
+	count := new(big.Rat).SetInt64(int64(len(vals)))
+	sum := new(big.Rat)
+	sumSquares := new(big.Rat)
+	for _, value := range vals {
+		exact := new(big.Rat).SetFloat64(value)
+		sum.Add(sum, exact)
+		square := new(big.Rat).Mul(exact, exact)
+		sumSquares.Add(sumSquares, square)
+	}
+	meanExact := new(big.Rat).Quo(sum, count)
+	mean, _ = meanExact.Float64()
+	meanOfSquares := new(big.Rat).Quo(sumSquares, count)
+	meanSquared := new(big.Rat).Mul(meanExact, meanExact)
+	varianceExact := new(big.Rat).Sub(meanOfSquares, meanSquared)
+	varianceFloat := new(big.Float).SetPrec(256).SetRat(varianceExact)
+	stdFloat := new(big.Float).SetPrec(256)
+	stdFloat.Sqrt(varianceFloat)
+	std, _ = stdFloat.Float64()
+	return mean, std
 }
