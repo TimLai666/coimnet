@@ -2,7 +2,7 @@
 
 ## 目前階段
 
-語音串流與 OCR 頁面的一致性唯讀稽核已完成，沒有確認新缺陷，見[稽核結果](evidence/TSK-02/stream-consistency-20261017/verification.json)。Root 核對 855 份來源保持，重新讀取最近完整一般／競態日誌，ASR 各 12 個、OCR 各 19 個相關 pass 事件及已核准中性增益各 21 個 pass 事件相符。本輪沒有執行新 Go 測試或訓練，工程追蹤保持 91／91。OpenCode 稽核被自動核准審查拒絕，實際分工使用 Codex 內建子代理；未使用的派工腳本 1,619 bytes 已清除，原有暫存目錄保持。任意隨機 Feed 分段的完整快照比對尚未執行，整體零 bug 目標持續進行。
+語音串流與 OCR 頁面的一致性唯讀稽核已完成，沒有確認新缺陷，見[稽核結果](evidence/TSK-02/stream-consistency-20261017/verification.json)。Root 核對 855 份來源保持，重新讀取最近完整一般／競態日誌，ASR 各 12 個、OCR 各 19 個相關 pass 事件及已核准中性增益各 21 個 pass 事件相符。本輪沒有執行新 Go 測試或訓練，工程追蹤保持 91／91。OpenCode 稽核被自動核准審查拒絕，實際分工使用 Codex 內建子代理；本輪未使用的派工與工具探索暫存共 9,995 bytes 已清除，原有暫存目錄保持。證據提交 `ce75a69` 已推送且遠端讀回相同，見[交付](evidence/TSK-02/stream-consistency-20261017/delivery.json)。任意隨機 Feed 分段的完整快照比對尚未執行，整體零 bug 目標持續進行。
 
 [ticket136](docs/tickets/136-aggregate-cell-representability.md) 已通過完整工程驗收。855 份來源的一般／競態各 58 套件通過，8,574／8,573 pass、23／24 skip，原有各 8,575 個終端事件保持，只新增各 22 pass。正式原版各 15 fail／7 pass，修正後相關各 114 pass，各 64 份正常統計及合計 12 份舊模型接續逐位元組保持。格式、build、vet、固定 Insyra v0.3.4、模組及 31 項治理通過，已核准的中性增益控制各 21 pass，見[驗收](evidence/LRN-08/aggregate-range-20261017/verification.json)。LRN-08 恢復 passed，工程追蹤 91／91。最後 31 項治理通過，1,773,523,834 bytes 本輪暫存已清除，原模型、必要資料、原始模組及其他工作保持，見[清理](evidence/LRN-08/aggregate-range-20261017/cleanup.json)。本票 4／4，主要提交 `01e774e` 已推送且遠端讀回相同，見[交付](evidence/LRN-08/aggregate-range-20261017/delivery.json)。三條化學路徑的唯讀補充稽核未確認新缺陷，既有首步差異符合明文生命週期，見[補充稽核](evidence/LRN-08/aggregate-range-20261017/chemical-path-audit-review.json)。整體零 bug 目標保持進行中。
 
