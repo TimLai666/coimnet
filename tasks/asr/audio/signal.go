@@ -99,7 +99,8 @@ func resampleOutputLength(inputLength, from, to int) (int, error) {
 // reports the method; the output length is round(len(x)*to/from) and output
 // sample i reads input position i*from/to, clamped to the last input sample.
 // Errors: non-positive rates, empty or non-finite x, and an output length that
-// is zero, non-finite, or outside the int range.
+// is zero, non-finite, or outside the int range. The output buffer's byte size
+// must also fit in int.
 func Resample(x []float64, from, to int) ([]float64, ResampleReport, error) {
 	if from <= 0 || to <= 0 {
 		return nil, ResampleReport{}, fmt.Errorf("audio: resample rates must be positive, got %d Hz to %d Hz", from, to)
@@ -115,6 +116,9 @@ func Resample(x []float64, from, to int) ([]float64, ResampleReport, error) {
 		if math.IsNaN(v) || math.IsInf(v, 0) {
 			return nil, ResampleReport{}, fmt.Errorf("audio: resample input sample %d is non-finite: %v", i, v)
 		}
+	}
+	if n > int(^uint(0)>>1)/8 {
+		return nil, ResampleReport{}, errors.New("audio: resample output buffer exceeds native int capacity")
 	}
 	out := make([]float64, n)
 	step := float64(from) / float64(to)
