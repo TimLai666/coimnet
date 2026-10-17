@@ -1,0 +1,57 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/mel-capacity-audit-20261018/skeleton-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-race",
+    "-run",
+    "^TestMelFilterbankBinsCapacityOracle$",
+    "./tasks/asr/audio"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "implementation": "skeleton",
+  "scope": "focused",
+  "started_at": "2026-10-17T18:22:13.456768+00:00",
+  "finished_at": "2026-10-17T18:22:14.734234+00:00",
+  "seconds": 1.277461417,
+  "exit_code": 1,
+  "log": "skeleton-focused-race.log",
+  "log_sha256": "54f89161a4bebb5ec8a17790214a4c52f14d3077325ec3d802621006a2a8f2c8",
+  "log_bytes": 8687,
+  "source_count": 864,
+  "tests_frozen": "tests-frozen.json",
+  "terminal_events": {
+    "TestMelFilterbankBinsCapacityOracle/normal": "pass",
+    "TestMelFilterbankBinsCapacityOracle/max_bank_rows": "pass",
+    "TestMelFilterbankBinsCapacityOracle/bank_rows_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/edge_bytes_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/max_window_power": "pass",
+    "TestMelFilterbankBinsCapacityOracle/window_bytes_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/independent_rows_no_aggregate_cap": "pass",
+    "TestMelFilterbankBinsCapacityOracle": "fail"
+  },
+  "test_events": {
+    "pass": 4,
+    "fail": 4
+  },
+  "package_events": {
+    "fail": 1
+  },
+  "expected_outcome_observed": true
+}

@@ -1,0 +1,76 @@
+{
+  "requirement": "TSK-02",
+  "ticket": "144",
+  "verified_at": "2026-10-17T19:05:47.907695+00:00",
+  "engineering_passed": true,
+  "reproduction_command": [
+    "python3 evidence/TSK-02/resample-capacity-adoption-20261018/engineering.py.txt --run --label-prefix engineering",
+    "python3 evidence/TSK-02/resample-capacity-adoption-20261018/verify-parity.py.txt --run"
+  ],
+  "environment": {
+    "command_environment": "command-environment.json",
+    "preparation": "preparation.json",
+    "execution": "Project-local private caches; GOMAXPROCS=2, GOMEMLIMIT=8GiB; Insyra v0.3.4. Original full runner45356 terminal0 directly observed (bd31f6)."
+  },
+  "input_fingerprints": {
+    "source_manifest": "formal-source.json",
+    "source_manifest_sha256": "80baaba6797fa5b2415464a170e9025164b588e0a2ce59ef3a84f7fcc8cb30b3",
+    "source_entries": 864,
+    "adoption": "adoption.json",
+    "tests_frozen": "tests-frozen.json"
+  },
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "full_results": {
+      "unit": {
+        "test_events": {
+          "pass": 8690,
+          "skip": 23
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8709,
+        "new_pass_events": 4
+      },
+      "race": {
+        "test_events": {
+          "pass": 8689,
+          "skip": 24
+        },
+        "package_events": {
+          "pass": 58,
+          "skip": 4
+        },
+        "prior_event_count": 8709,
+        "new_pass_events": 4
+      }
+    },
+    "focused_pass_events_each_build": 81,
+    "normal_synthesis_payload": {
+      "sha256": "a764d8ef53bf12a1f08450fa5a080ebe6981a7ff6da56e60ef3023cd3cfa20ac",
+      "bytes": 29121
+    },
+    "normal_report_hashes_unchanged_each_build": 9,
+    "approved_neutral_gain_pass_events_each_build": 21,
+    "governance_pass_events": 31
+  },
+  "test_log": [
+    "engineering-unit.log.gz",
+    "engineering-race.log.gz",
+    "engineering-verification.json",
+    "report-and-gain-parity.json"
+  ],
+  "root_review": [
+    "root-review.md",
+    "independent-review.json",
+    "unit-root-review.json",
+    "full-engineering-root-review.json"
+  ],
+  "runner_terminal": "runner-terminal.json",
+  "scope_limit": "Resample native byte-capacity guard before allocation. Count-only length helper, normal interpolation and reports preserved. Ticket145 remains an isolated candidate. No physical-memory guarantee, model-quality, biological-validity, 32-bit runtime or global zero-bug claim.",
+  "final_governance": "final-governance.json",
+  "cleanup": "cleanup.json",
+  "cleanup_terminal": "cleanup-terminal.json"
+}

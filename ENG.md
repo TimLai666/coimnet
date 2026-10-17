@@ -314,6 +314,8 @@ ASR Generate 在配置 Utterance 容器前檢查元素位元組大小，在沿�
 
 WriteWAV 在配置緩衝與開檔前檢查 PCM16 的聲道、block align、byte rate、RIFF／data 尺寸與原生 int 檔案位元組限制。byte rate 以已驗證的 uint64 計算，再寫入固定欄位。聲道仍以 Samples 長度為準，NaN 樣本仍寫為靜音，正常檔案位元組與既有路徑保護保持，讀取器契約不變，驗收由 [ticket142](docs/tickets/142-wav-metadata-representability.md) 管理。
 
+Resample 在既有有限輸入檢查之後、配置之前，確認輸出樣本數乘以 8 的位元組大小可由原生 int 表示。超限時回傳 nil、零報告與 error。ResampleOutputLength 保留只查詢元素數的契約，不受配置限制影響，正常插值與報告保持。算術可表示不保證實體記憶體容量，驗收由 [ticket144](docs/tickets/144-resample-output-capacity.md) 管理。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

@@ -1,0 +1,36 @@
+"""Check or remove only this completed public probe's owned temporary file."""
+from pathlib import Path
+import argparse,datetime,hashlib,json,subprocess
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+p=argparse.ArgumentParser(description='Verify frozen sources, protected work and the completed probe; --run removes only the pinned owned probe directory.')
+p.add_argument('--run',action='store_true');args=p.parse_args()
+B=json.loads((E/'baseline.json').read_text());W=R/B['work_root']
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==B['work_inode']
+assert json.loads((E/'public-probe-terminal.json').read_text())=={'session_id':48329,'exit_code':0,'start_chunk':'93cb51','terminal_chunk':'08639a'}
+V=json.loads((E/'verification.json').read_text());assert V['observed_result']['invalid_dimension_panic_events']==6 and V['observed_result']['normal_controls']==3
+A=R/'evidence/TSK-02/resample-capacity-adoption-20261018';P=R/'evidence/LRN-08/aggregate-range-20261017'
+S=json.loads((A/'formal-source.json').read_text());assert len(S)==864
+paths={p for p in subprocess.check_output(['git','ls-files','-co','--exclude-standard','-z'],cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod','go.sum'])}
+assert paths==set(S)
+M=json.loads((P/'protected-models.json').read_text());D={n:v['sha256'] for n,v in json.loads((P/'persistent-data.json').read_text()).items()};F=json.loads((P/'foreign-before.json').read_text())
+originals=R/'runs/.tmp/resample-capacity-adoption-20261018/module-originals.json'
+assert sha(originals)=='34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc'
+O=json.loads(originals.read_text());assert len(O)==15046
+for name,digest in {**S,**M,**D,**F,**O}.items():
+    assert sha(R/name)==digest,name
+for name,inode in [('runs/.tmp/62',49680181),('runs/.tmp/real-task-quality-20261012',50419696)]:
+    assert (R/name).stat().st_ino==inode
+assert sha(P/'preserved-work.tar.gz')=='5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+files=list(W.iterdir());assert [f.name for f in files]==['main.go']
+f=files[0];assert f.is_file() and not f.is_symlink() and sha(f)==B['probe_sha256'] and f.read_bytes()==(E/'public-probe.go.txt').read_bytes()
+handles=subprocess.run(['/usr/sbin/lsof','-nP','+D',str(W)],capture_output=True,text=True)
+assert handles.returncode==1 and not handles.stdout.strip() and not handles.stderr.strip(),handles.stdout+handles.stderr
+record={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_root':B['work_root'],'work_inode':B['work_inode'],'files':{'main.go':{'bytes':f.stat().st_size,'sha256':sha(f)}},'source_count':len(S),'protected_models':len(M),'persistent_data':len(D),'foreign_paths':len(F),'original_module_files':len(O),'open_handles':False,'ticket144_cache_in_use_and_preserved':True,'removed':False}
+if args.run:
+    target=E/'cleanup.json';assert not target.exists()
+    f.unlink();W.rmdir();assert not W.exists();record['removed']=True
+    target.write_text(json.dumps(record,indent=2)+'\n')
+print(json.dumps(record))

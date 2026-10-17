@@ -1,0 +1,66 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/mel-capacity-audit-20261018/candidate-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^TestMelFilterbank(RejectsUnrepresentableBuffers|RetainsNormalAndFraming|BinsCapacityOracle)$",
+    "./tasks/asr/audio"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "implementation": "candidate",
+  "scope": "focused",
+  "started_at": "2026-10-17T18:25:47.857688+00:00",
+  "finished_at": "2026-10-17T18:26:04.680106+00:00",
+  "seconds": 16.822536583999998,
+  "exit_code": 0,
+  "log": "candidate-focused-unit.log",
+  "log_sha256": "6a022288b823e77f8a351163bd9bd3a23071b4b48a851a5a7d484597589b16d8",
+  "log_bytes": 17781,
+  "source_count": 864,
+  "tests_frozen": "tests-frozen.json",
+  "terminal_events": {
+    "TestMelFilterbankBinsCapacityOracle/normal": "pass",
+    "TestMelFilterbankBinsCapacityOracle/max_bank_rows": "pass",
+    "TestMelFilterbankBinsCapacityOracle/bank_rows_over": "pass",
+    "TestMelFilterbankBinsCapacityOracle/edge_bytes_over": "pass",
+    "TestMelFilterbankBinsCapacityOracle/max_window_power": "pass",
+    "TestMelFilterbankBinsCapacityOracle/window_bytes_over": "pass",
+    "TestMelFilterbankBinsCapacityOracle/independent_rows_no_aggregate_cap": "pass",
+    "TestMelFilterbankBinsCapacityOracle": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_bank": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_logmel": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_bank": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_logmel": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_bank": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_logmel": "pass",
+    "TestMelFilterbankRejectsUnrepresentableBuffers": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming/normal_bank": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming/normal_logmel": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming/unused_mels_stft": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming": "pass"
+  },
+  "test_events": {
+    "pass": 19
+  },
+  "package_events": {
+    "pass": 1
+  },
+  "expected_outcome_observed": true
+}

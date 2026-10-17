@@ -1,0 +1,60 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/mel-capacity-audit-20261018/original-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-race",
+    "-run",
+    "^TestMelFilterbank(RejectsUnrepresentableBuffers|RetainsNormalAndFraming)$",
+    "./tasks/asr/audio"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "implementation": "original",
+  "scope": "focused",
+  "started_at": "2026-10-17T18:22:07.983279+00:00",
+  "finished_at": "2026-10-17T18:22:10.180230+00:00",
+  "seconds": 2.196891875,
+  "exit_code": 1,
+  "log": "original-focused-race.log",
+  "log_sha256": "c76f9745f1510728f8f870c072a0c587036866cf9dd0c3dd772a66c4e00ec375",
+  "log_bytes": 12542,
+  "source_count": 864,
+  "tests_frozen": "tests-frozen.json",
+  "terminal_events": {
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_bank": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_logmel": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_bank": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_logmel": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_bank": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_logmel": "fail",
+    "TestMelFilterbankRejectsUnrepresentableBuffers": "fail",
+    "TestMelFilterbankRetainsNormalAndFraming/normal_bank": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming/normal_logmel": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming/unused_mels_stft": "pass",
+    "TestMelFilterbankRetainsNormalAndFraming": "pass"
+  },
+  "test_events": {
+    "fail": 7,
+    "pass": 4
+  },
+  "package_events": {
+    "fail": 1
+  },
+  "expected_outcome_observed": true
+}

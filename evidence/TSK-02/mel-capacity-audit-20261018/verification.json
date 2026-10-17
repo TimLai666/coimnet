@@ -1,0 +1,41 @@
+{
+  "requirement": "TSK-02",
+  "stage": "confirmed public reproduction only",
+  "reproduction_command": [
+    "go",
+    "run",
+    "./runs/.tmp/mel-capacity-audit-20261018/main.go"
+  ],
+  "environment": {
+    "go": "go1.26.5",
+    "os": "darwin",
+    "arch": "arm64",
+    "int_bits": 64
+  },
+  "input_fingerprints": {
+    "formal_source": "../resample-capacity-adoption-20261018/formal-source.json",
+    "source_count": 864,
+    "frontend.go": "3827e4f9bf629304c6a97b1426d86deaf9b596dd8cd108d1c9bbbdabc7bbb0fa",
+    "probe_sha256": "fde933bc729cb6619839b4998dade5edf0f6b2a22eadf9cce257a7509c4ef056"
+  },
+  "observed_result": {
+    "invalid_dimension_panic_events": 6,
+    "normal_controls": 3,
+    "all_bad_configs_pass_basic_validate": true,
+    "normal_payload_preserved_for_candidate_comparison": true,
+    "runtime_rejects_before_large_allocation": true
+  },
+  "test_log": "mel-public-probe.log",
+  "log_sha256": "001dd6207e18147077cc1edd10fb65058ed7a061f8f34768e15b0f477f5a175e",
+  "terminal": "public-probe-terminal.json",
+  "formal_source_changed": false,
+  "regression_written": false,
+  "isolated_candidate_verified": false,
+  "engineering_passed": false,
+  "limits": [
+    "Original public API reproduction; no repair adopted.",
+    "No 32-bit runtime execution.",
+    "No proof of task quality impact, biological validity or absence of other bugs.",
+    "Recognizer huge-Mels is separately guarded, but huge-Window path is only statically traced; no checkpoint restore was executed."
+  ]
+}

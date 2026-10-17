@@ -1,0 +1,315 @@
+package main
+
+import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"math"
+	"math/big"
+	"os"
+	"path/filepath"
+	"reflect"
+	"runtime"
+	"strconv"
+	"unsafe"
+
+	"github.com/TimLai666/coimnet/tasks/asr"
+	"github.com/TimLai666/coimnet/tasks/asr/audio"
+)
+
+type featureObservation struct {
+	Error                string               `json:"error"`
+	Panic                string               `json:"panic"`
+	NilOutput            bool                 `json:"nil_output"`
+	ZeroReport           bool                 `json:"zero_report"`
+	Bits                 [][]uint64           `json:"bits"`
+	Report               audio.FrontEndReport `json:"report"`
+	BeforeSnapshotSHA256 string               `json:"before_snapshot_sha256"`
+	AfterSnapshotSHA256  string               `json:"after_snapshot_sha256"`
+	SnapshotUnchanged    bool                 `json:"snapshot_unchanged"`
+}
+
+type capacityProof struct {
+	Window         int    `json:"window"`
+	Bins           string `json:"bins"`
+	ElementBytes   uint64 `json:"element_bytes"`
+	RequestedBytes string `json:"requested_bytes"`
+	UintptrMax     string `json:"uintptr_max"`
+	Exceeds        bool   `json:"exceeds_uintptr"`
+}
+
+type caseResult struct {
+	Name                   string               `json:"name"`
+	Checkpoint             string               `json:"checkpoint"`
+	Config                 asr.RecognizerConfig `json:"config"`
+	ConfigSHA256           string               `json:"config_sha256"`
+	SnapshotSHA256         string               `json:"snapshot_sha256"`
+	LoadedCheckpointSHA256 string               `json:"loaded_checkpoint_sha256"`
+	HugeWindowProof        *capacityProof       `json:"huge_window_proof,omitempty"`
+	Features               featureObservation   `json:"features"`
+}
+
+type payload struct {
+	Go         string       `json:"go"`
+	GOOS       string       `json:"goos"`
+	GOARCH     string       `json:"goarch"`
+	NativeBits int          `json:"nativebits"`
+	Mode       string       `json:"mode"`
+	Cases      []caseResult `json:"cases"`
+}
+
+type modelSpec struct {
+	Name   string
+	File   string
+	Config asr.RecognizerConfig
+	Huge   bool
+}
+
+func digestJSON(value any) string {
+	data, err := json.Marshal(value)
+	if err != nil {
+		panic(err)
+	}
+	sum := sha256.Sum256(data)
+	return hex.EncodeToString(sum[:])
+}
+
+func bits(rows [][]float64) [][]uint64 {
+	if rows == nil {
+		return nil
+	}
+	out := make([][]uint64, len(rows))
+	for i, row := range rows {
+		out[i] = make([]uint64, len(row))
+		for j, value := range row {
+			out[i][j] = math.Float64bits(value)
+		}
+	}
+	return out
+}
+
+func errorText(err error) string {
+	if err == nil {
+		return ""
+	}
+	return err.Error()
+}
+
+func proveHugeWindow(config asr.RecognizerConfig) capacityProof {
+	bins := config.FrontEnd.Window/2 + 1
+	elementBytes := uint64(unsafe.Sizeof(float64(0)))
+	requested := new(big.Int).Mul(new(big.Int).SetInt64(int64(bins)), new(big.Int).SetUint64(elementBytes))
+	uintptrMax := new(big.Int).SetUint64(uint64(^uintptr(0)))
+	if requested.Cmp(uintptrMax) <= 0 {
+		panic(fmt.Sprintf("huge-window proof failed: %s <= %s", requested, uintptrMax))
+	}
+	return capacityProof{
+		Window:         config.FrontEnd.Window,
+		Bins:           strconv.FormatInt(int64(bins), 10),
+		ElementBytes:   elementBytes,
+		RequestedBytes: requested.String(),
+		UintptrMax:     uintptrMax.String(),
+		Exceeds:        true,
+	}
+}
+
+func inspectFeatures(model *asr.Recognizer) (observation featureObservation) {
+	observation.BeforeSnapshotSHA256 = digestJSON(model.Snapshot())
+	var output [][]float64
+	var report audio.FrontEndReport
+	var err error
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			observation.Panic = fmt.Sprint(recovered)
+		}
+		observation.Error = errorText(err)
+		observation.NilOutput = output == nil
+		observation.ZeroReport = reflect.DeepEqual(report, audio.FrontEndReport{})
+		observation.Bits = bits(output)
+		observation.Report = report
+		observation.AfterSnapshotSHA256 = digestJSON(model.Snapshot())
+		observation.SnapshotUnchanged = observation.BeforeSnapshotSHA256 == observation.AfterSnapshotSHA256
+	}()
+	output, report, err = model.Features(make([]float64, 16))
+	return observation
+}
+
+func assertNormal(result caseResult, config asr.RecognizerConfig) {
+	if result.Features.Panic != "" || result.Features.Error != "" {
+		panic(fmt.Sprintf("normal Features failed: panic=%q error=%q", result.Features.Panic, result.Features.Error))
+	}
+	if !result.Features.SnapshotUnchanged {
+		panic("normal Features changed the complete training snapshot")
+	}
+	if result.Features.NilOutput || result.Features.ZeroReport || len(result.Features.Bits) != 1 || len(result.Features.Bits[0]) != 1 {
+		panic("normal Features did not return one frame with one value and a report")
+	}
+	if result.Features.Bits[0][0] != math.Float64bits(-10) {
+		panic(fmt.Sprintf("normal Features value bits=%d, want %d", result.Features.Bits[0][0], math.Float64bits(-10)))
+	}
+	wantReport := audio.FrontEndReport{
+		Version:    audio.FrontEndVersion,
+		SampleRate: config.SampleRate,
+		Config:     config.FrontEnd,
+		Frames:     1,
+	}
+	if !reflect.DeepEqual(result.Features.Report, wantReport) {
+		panic(fmt.Sprintf("normal Features report=%+v, want %+v", result.Features.Report, wantReport))
+	}
+}
+
+func ensureRoot(root string) {
+	info, err := os.Stat(root)
+	if err != nil {
+		panic(fmt.Errorf("root %q: %w", root, err))
+	}
+	if !info.IsDir() {
+		panic(fmt.Errorf("root %q is not a directory", root))
+	}
+}
+
+func ensureAbsent(path string) {
+	_, err := os.Lstat(path)
+	if err == nil {
+		panic(fmt.Errorf("checkpoint path already exists: %s", path))
+	}
+	if !os.IsNotExist(err) {
+		panic(fmt.Errorf("check checkpoint path %s: %w", path, err))
+	}
+}
+
+func observe(spec modelSpec, model *asr.Recognizer, path string, proof *capacityProof) caseResult {
+	config := model.Config()
+	result := caseResult{
+		Name:                   spec.Name,
+		Checkpoint:             filepath.Base(path),
+		Config:                 config,
+		ConfigSHA256:           digestJSON(config),
+		LoadedCheckpointSHA256: model.LoadedCheckpointSHA256(),
+		HugeWindowProof:        proof,
+	}
+	result.Features = inspectFeatures(model)
+	if !result.Features.SnapshotUnchanged {
+		panic(fmt.Sprintf("%s Features changed the complete training snapshot", spec.Name))
+	}
+	result.SnapshotSHA256 = result.Features.BeforeSnapshotSHA256
+	if result.Features.AfterSnapshotSHA256 != result.SnapshotSHA256 {
+		panic(fmt.Sprintf("%s snapshot hash changed after Features", spec.Name))
+	}
+	if spec.Name == "normal" {
+		assertNormal(result, config)
+	}
+	return result
+}
+
+func specs() []modelSpec {
+	base := func(window int) asr.RecognizerConfig {
+		return asr.RecognizerConfig{
+			SampleRate: 8000,
+			FrontEnd: audio.FrontEndConfig{
+				Window: window,
+				Hop:    8,
+				Mels:   1,
+				FMin:   0,
+				FMax:   4000,
+				Floor:  1e-10,
+			},
+			Hidden:       2,
+			Alphabet:     []rune{'a'},
+			LearningRate: 0.01,
+			Seed:         17,
+		}
+	}
+	return []modelSpec{
+		{Name: "normal", File: "normal.checkpoint", Config: base(16)},
+		{Name: "hugeWindow", File: "huge.checkpoint", Config: base(1 << (strconv.IntSize - 2)), Huge: true},
+	}
+}
+
+func runCreate(root string) payload {
+	ctx := context.Background()
+	rows := make([]caseResult, 0, 2)
+	for _, spec := range specs() {
+		model, err := asr.NewRecognizer(spec.Config)
+		if err != nil {
+			panic(fmt.Errorf("%s constructor: %w", spec.Name, err))
+		}
+		path := filepath.Join(root, spec.File)
+		ensureAbsent(path)
+		if err := model.Save(ctx, path); err != nil {
+			panic(fmt.Errorf("%s save: %w", spec.Name, err))
+		}
+		var proof *capacityProof
+		if spec.Huge {
+			p := proveHugeWindow(spec.Config)
+			proof = &p
+		}
+		rows = append(rows, observe(spec, model, path, proof))
+	}
+	return payload{Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, NativeBits: strconv.IntSize, Mode: "create", Cases: rows}
+}
+
+func runRead(root string) payload {
+	ctx := context.Background()
+	rows := make([]caseResult, 0, 2)
+	for _, spec := range specs() {
+		path := filepath.Join(root, spec.File)
+		model, err := asr.LoadRecognizer(ctx, path)
+		if err != nil {
+			panic(fmt.Errorf("%s load: %w", spec.Name, err))
+		}
+		if model.LoadedCheckpointSHA256() == "" {
+			panic(fmt.Sprintf("%s load did not report a verified checkpoint manifest", spec.Name))
+		}
+		var proof *capacityProof
+		if spec.Huge {
+			p := proveHugeWindow(model.Config())
+			proof = &p
+		}
+		rows = append(rows, observe(spec, model, path, proof))
+	}
+	return payload{Go: runtime.Version(), GOOS: runtime.GOOS, GOARCH: runtime.GOARCH, NativeBits: strconv.IntSize, Mode: "read", Cases: rows}
+}
+
+func main() {
+	flags := flag.NewFlagSet("recognizer-probe", flag.ContinueOnError)
+	flags.SetOutput(os.Stderr)
+	flags.Usage = func() {
+		fmt.Fprintln(flags.Output(), "Usage: recognizer-probe --mode create|read --root DIR")
+		fmt.Fprintln(flags.Output(), "Create or load the two fixed ASR recognizer checkpoints and emit one JSON payload.")
+		flags.PrintDefaults()
+	}
+	mode := flags.String("mode", "", "required: create or read")
+	root := flags.String("root", "", "required: existing project-internal checkpoint directory")
+	if len(os.Args) == 1 {
+		flags.Usage()
+		return
+	}
+	if err := flags.Parse(os.Args[1:]); err != nil {
+		if err == flag.ErrHelp {
+			return
+		}
+		os.Exit(2)
+	}
+	if *mode != "create" && *mode != "read" {
+		flags.Usage()
+		os.Exit(2)
+	}
+	if *root == "" {
+		flags.Usage()
+		os.Exit(2)
+	}
+	ensureRoot(*root)
+	var result payload
+	if *mode == "create" {
+		result = runCreate(*root)
+	} else {
+		result = runRead(*root)
+	}
+	if err := json.NewEncoder(os.Stdout).Encode(result); err != nil {
+		panic(err)
+	}
+}

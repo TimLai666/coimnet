@@ -1,0 +1,35 @@
+"""Check or clean only the completed tiny recognizer compatibility fixtures."""
+from pathlib import Path
+import argparse,datetime,hashlib,json,shutil,subprocess,tarfile
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+p=argparse.ArgumentParser(description=__doc__);p.add_argument('--run',action='store_true',help='Verify five actual terminals, archived original fixtures, frozen sources/protected files and no handles, then delete only the pinned owned compatibility directory.');args=p.parse_args()
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent;P=R/'evidence/LRN-08/aggregate-range-20261017';read=lambda p:json.loads(p.read_text());sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+C=read(E/'recognizer-compatibility-plan.json');F=read(E/'recognizer-inputs.json');V=read(E/'recognizer-compatibility-verification.json');W=R/C['work']
+assert not W.is_symlink() and W.stat().st_ino==C['work_inode']==60681306 and shutil.rmtree.avoids_symlink_attacks
+assert len(V['terminals'])==5 and all(x['exit_code']==0 and x['chunk'] for x in V['terminals'].values())
+assert all(x['original_checkpoints_loaded']==2 and x['full_snapshot_and_task_config_preserved']==2 and x['huge_window_error_without_panic'] for x in V['observed'].values())
+assert sha(R/C['source_manifest'])==C['source_manifest_sha256']==F['source_manifest_sha256']
+S=read(R/C['source_manifest']);assert len(S)==864
+paths={n for n in subprocess.check_output(['git','ls-files','-co','--exclude-standard','-z'],cwd=R).decode().split('\0') if n and (n.endswith('.go') or n in ['go.mod','go.sum'])};assert paths==set(S)
+M=read(P/'protected-models.json');D={n:v['sha256'] for n,v in read(P/'persistent-data.json').items()};B=read(P/'foreign-before.json')
+originals=R/'runs/.tmp/resample-capacity-adoption-20261018/module-originals.json';assert sha(originals)=='34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc';O=read(originals);assert len(O)==15046
+for n,v in {**S,**M,**D,**B,**O}.items():assert sha(R/n)==v,n
+assert sha(P/'preserved-work.tar.gz')=='5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+for n,i in [('runs/.tmp/62',49680181),('runs/.tmp/real-task-quality-20261012',50419696)]:assert (R/n).stat().st_ino==i
+archive=E/V['original_inputs_archive'];assert sha(archive)==V['original_inputs_archive_sha256'];checkpoint=read(E/'recognizer-checkpoints-before.json')
+with tarfile.open(archive,'r:gz') as t:
+    assert {m.name:{'bytes':m.size,'sha256':hashlib.sha256(t.extractfile(m).read()).hexdigest()} for m in t.getmembers()}==checkpoint
+for name,item in V['commands'].items():
+    receipt=read(E/item['receipt']);log=E/receipt['log'];assert receipt['exit_code']==0 and sha(log)==receipt['log_sha256']==item['log_sha256'];assert sha(E/receipt['origin_receipt'])==receipt['origin_receipt_sha256']
+expected=read(E/'recognizer-work-inventory.json');actual={}
+for f in W.rglob('*'):
+    assert not f.is_symlink()
+    if f.is_file():actual[str(f.relative_to(W))]={'bytes':f.stat().st_size,'sha256':sha(f)}
+assert actual==expected and set(actual)=={'main.go','candidate-frontend.go'}|{'checkpoints/'+n for n in checkpoint}
+assert sha(W/'main.go')==F['probe_sha256']==sha(E/'recognizer-probe.go.txt') and sha(W/'candidate-frontend.go')==F['candidate_sha256']
+handles=subprocess.run(['/usr/sbin/lsof','-nP','+D',str(W)],capture_output=True,text=True);assert handles.returncode==1 and not handles.stdout.strip() and not handles.stderr.strip(),handles.stdout+handles.stderr
+out={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_root':C['work'],'work_inode':C['work_inode'],'bytes':sum(x['bytes'] for x in actual.values()),'files':len(actual),'source_count':864,'protected_models':len(M),'persistent_data':len(D),'foreign_paths':len(B),'original_module_files':len(O),'original_inputs_archived':True,'no_open_handles':True,'ticket144_cache_in_use_and_preserved':True,'removed':False}
+if args.run:
+    target=E/'recognizer-cleanup.json';assert not target.exists();assert W.stat().st_ino==C['work_inode'];shutil.rmtree(W);assert not W.exists();out['removed']=True;target.write_text(json.dumps(out,indent=2)+'\n')
+print(json.dumps(out))

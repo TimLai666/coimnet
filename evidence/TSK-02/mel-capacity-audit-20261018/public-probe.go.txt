@@ -1,0 +1,76 @@
+package main
+
+import (
+ "encoding/json"
+ "fmt"
+ "math"
+ "math/big"
+ "os"
+ "reflect"
+ "runtime"
+ "strconv"
+ "unsafe"
+
+ "github.com/TimLai666/coimnet/tasks/asr/audio"
+)
+
+type result struct {
+ Name string `json:"name"`
+ API string `json:"api"`
+ Config audio.FrontEndConfig `json:"config"`
+ ValidationError string `json:"validation_error,omitempty"`
+ Safety string `json:"safety"`
+ Panic string `json:"panic,omitempty"`
+ Error string `json:"error,omitempty"`
+ NilOutput bool `json:"nil_output"`
+ ZeroReport bool `json:"zero_report"`
+ Bits [][]uint64 `json:"bits,omitempty"`
+ Report audio.FrontEndReport `json:"report"`
+}
+
+func bits(x [][]float64) [][]uint64 {
+ out:=make([][]uint64,len(x))
+ for i,row:=range x { out[i]=make([]uint64,len(row));for j,v:=range row {out[i][j]=math.Float64bits(v)} }
+ return out
+}
+
+func call(name, api, proof string, c audio.FrontEndConfig) (r result) {
+ r=result{Name:name,API:api,Config:c,Safety:proof}
+ if err:=c.Validate(8000);err!=nil { r.ValidationError=err.Error() }
+ defer func(){if p:=recover();p!=nil {r.Panic=fmt.Sprint(p)}}()
+ var out [][]float64;var err error
+ switch api {
+ case "MelFilterbank":out,err=audio.MelFilterbank(8000,c)
+ case "LogMel":out,r.Report,err=audio.LogMel(make([]float64,16),8000,c)
+ case "STFT":out,err=audio.STFT(make([]float64,16),c)
+ default:panic("unknown API")
+ }
+ if err!=nil {r.Error=err.Error()}
+ r.NilOutput=out==nil;r.ZeroReport=reflect.DeepEqual(r.Report,audio.FrontEndReport{});r.Bits=bits(out)
+ return r
+}
+
+func main(){
+ maxInt:=int(^uint(0)>>1);uMax:=new(big.Int).SetUint64(uint64(^uintptr(0)))
+ base:=audio.FrontEndConfig{Window:16,Hop:8,Mels:1,FMin:0,FMax:4000,Floor:1e-10}
+ var results []result
+ for _,kind:=range []string{"edge_add","edge_bytes","frequency_bytes"}{
+  c:=base;var proof string
+  switch kind {
+  case "edge_add":
+   c.Mels=maxInt;n:=new(big.Int).Add(big.NewInt(int64(c.Mels)),big.NewInt(2))
+   if n.Cmp(big.NewInt(int64(maxInt)))<=0 {panic("unsafe addition probe")};proof="exact edge count "+n.String()+" exceeds MaxInt "+strconv.Itoa(maxInt)
+  case "edge_bytes":
+   c.Mels=maxInt-2;n:=new(big.Int).Mul(big.NewInt(int64(c.Mels+2)),new(big.Int).SetUint64(uint64(unsafe.Sizeof(float64(0)))))
+   if n.Cmp(uMax)<=0 {panic("unsafe edge buffer probe")};proof="exact edge bytes "+n.String()+" exceeds uintptr "+uMax.String()
+  case "frequency_bytes":
+   c.Window=1<<(strconv.IntSize-2);n:=new(big.Int).Mul(big.NewInt(int64(c.Window/2+1)),new(big.Int).SetUint64(uint64(unsafe.Sizeof(float64(0)))))
+   if n.Cmp(uMax)<=0 {panic("unsafe frequency probe")};proof="exact frequency bytes "+n.String()+" exceeds uintptr "+uMax.String()
+  }
+  for _,api:=range []string{"MelFilterbank","LogMel"} {results=append(results,call(kind,api,proof,c))}
+ }
+ for _,api:=range []string{"MelFilterbank","LogMel"} {results=append(results,call("normal",api,"small allocation",base))}
+ c:=base;c.Mels=maxInt;results=append(results,call("unused_mels","STFT","STFT reads only Window and Hop; input16",c))
+ payload:=struct{Go string `json:"go"`;OS string `json:"os"`;Arch string `json:"arch"`;IntBits int `json:"int_bits"`;Results []result `json:"results"`}{runtime.Version(),runtime.GOOS,runtime.GOARCH,strconv.IntSize,results}
+ enc:=json.NewEncoder(os.Stdout);enc.SetIndent("","  ");if err:=enc.Encode(payload);err!=nil {panic(err)}
+}

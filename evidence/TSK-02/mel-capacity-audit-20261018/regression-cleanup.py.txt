@@ -1,0 +1,37 @@
+"""Check or remove only the completed isolated Mel capacity regression directory."""
+from pathlib import Path
+import argparse,datetime,hashlib,json,subprocess
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+p=argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run',action='store_true',help='After validating actual terminal receipts, hashes and no open handles, remove only the pinned five owned files and empty temp directories.')
+a=p.parse_args();R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+C=json.loads((E/'test-contract.json').read_text());F=json.loads((E/'tests-frozen.json').read_text());W=R/C['work'];sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+assert W.stat().st_ino==C['work_inode'] and not W.is_symlink()
+assert (R/C['parent_cache_root']).stat().st_ino==C['parent_cache_inode']
+V=json.loads((E/'candidate-verification.json').read_text());assert not V['formal_adoption'] and not V['engineering_passed'];assert V['observed_result']['candidate_full_audio_each_build']=={'pass':100,'prior_outcomes_preserved':81,'new_pass_events':19}
+T=json.loads((E/'regression-terminals.json').read_text());assert len(T)==6 and all(x['exit_code']==0 and x['session_id']>0 and x['terminal_chunk'] for x in T.values())
+for name in V['test_log']:
+    raw=E/name;receipt=json.loads(raw.with_suffix('.json').read_text());assert sha(raw)==receipt['log_sha256'] and receipt['expected_outcome_observed']
+for name,digest in F['files'].items():assert sha(R/name)==digest,name
+S=json.loads((R/C['source_manifest']).read_text());assert len(S)==864
+paths={n for n in subprocess.check_output(['git','ls-files','-co','--exclude-standard','-z'],cwd=R).decode().split('\0') if n and (n.endswith('.go') or n in ['go.mod','go.sum'])};assert paths==set(S)
+P=R/'evidence/LRN-08/aggregate-range-20261017';M=json.loads((P/'protected-models.json').read_text());D={n:v['sha256'] for n,v in json.loads((P/'persistent-data.json').read_text()).items()};B=json.loads((P/'foreign-before.json').read_text())
+originals=R/C['parent_cache_root']/'module-originals.json';assert sha(originals)=='34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc';O=json.loads(originals.read_text());assert len(O)==15046
+for name,digest in {**S,**M,**D,**B,**O}.items():assert sha(R/name)==digest,name
+assert sha(P/'preserved-work.tar.gz')=='5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+for name,inode in [('runs/.tmp/62',49680181),('runs/.tmp/real-task-quality-20261012',50419696)]:assert (R/name).stat().st_ino==inode
+candidate=json.loads((E/'candidate-source.json').read_text())
+expected={'public-regression.go':sha(E/'public-regression.go.txt'),'dimensions-regression.go':sha(E/'dimensions-regression.go.txt'),'skeleton-frontend.go':C['skeleton_sha256'],'candidate-frontend.go':candidate['candidate_sha256'],'probe.go':F['files'][str(Path(C['work'])/'probe.go')]}
+assert {x.name for x in W.iterdir()}==set(expected)|{'go-tmp'}
+assert (W/'go-tmp').is_dir() and not(W/'go-tmp').is_symlink() and not list((W/'go-tmp').iterdir())
+files={}
+for name,digest in expected.items():
+    f=W/name;assert f.is_file() and not f.is_symlink() and sha(f)==digest;files[name]={'bytes':f.stat().st_size,'sha256':digest}
+handles=subprocess.run(['/usr/sbin/lsof','-nP','+D',str(W)],capture_output=True,text=True);assert handles.returncode==1 and not handles.stdout.strip() and not handles.stderr.strip(),handles.stdout+handles.stderr
+record={'checked_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'owned_root':C['work'],'work_inode':C['work_inode'],'files':files,'bytes':sum(v['bytes'] for v in files.values()),'source_count':len(S),'protected_models':len(M),'persistent_data':len(D),'foreign_paths':len(B),'original_module_files':len(O),'open_handles':False,'ticket144_cache_preserved_in_use':True,'removed':False}
+if a.run:
+    target=E/'regression-cleanup.json';assert not target.exists()
+    for name,digest in expected.items():assert sha(W/name)==digest;(W/name).unlink()
+    (W/'go-tmp').rmdir();W.rmdir();assert not W.exists();record['removed']=True;target.write_text(json.dumps(record,indent=2)+'\n')
+print(json.dumps(record))

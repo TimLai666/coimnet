@@ -1,0 +1,93 @@
+{
+  "parents": [
+    "TestMelFilterbankRejectsUnrepresentableBuffers",
+    "TestMelFilterbankRetainsNormalAndFraming",
+    "TestMelFilterbankBinsCapacityOracle"
+  ],
+  "files": {
+    "evidence/TSK-02/mel-capacity-audit-20261018/public-regression.go.txt": "01214baf8eb82cd5a4e37a0bcc42081dfed532f5b0f11e8cebeda3f9fa27c2ef",
+    "evidence/TSK-02/mel-capacity-audit-20261018/dimensions-regression.go.txt": "66584399b51d01e02542fca5c6c5e6868736ae2d4de1228613d21cfdf9832039",
+    "runs/.tmp/mel-capacity-regression-20261018/public-regression.go": "01214baf8eb82cd5a4e37a0bcc42081dfed532f5b0f11e8cebeda3f9fa27c2ef",
+    "runs/.tmp/mel-capacity-regression-20261018/dimensions-regression.go": "66584399b51d01e02542fca5c6c5e6868736ae2d4de1228613d21cfdf9832039",
+    "runs/.tmp/mel-capacity-regression-20261018/probe.go": "0c11a98ec78c72b13d395832592eef222f6c61f2bc52ffe049b8777e7b793df9"
+  },
+  "expected_events": {
+    "original": {
+      "TestMelFilterbankRejectsUnrepresentableBuffers": "fail",
+      "TestMelFilterbankRetainsNormalAndFraming": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_bank": "fail",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_logmel": "fail",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_bank": "fail",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_logmel": "fail",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_bank": "fail",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_logmel": "fail",
+      "TestMelFilterbankRetainsNormalAndFraming/normal_bank": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming/normal_logmel": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming/unused_mels_stft": "pass"
+    },
+    "skeleton": {
+      "TestMelFilterbankBinsCapacityOracle": "fail",
+      "TestMelFilterbankBinsCapacityOracle/normal": "pass",
+      "TestMelFilterbankBinsCapacityOracle/max_bank_rows": "pass",
+      "TestMelFilterbankBinsCapacityOracle/bank_rows_over": "fail",
+      "TestMelFilterbankBinsCapacityOracle/edge_bytes_over": "fail",
+      "TestMelFilterbankBinsCapacityOracle/max_window_power": "pass",
+      "TestMelFilterbankBinsCapacityOracle/window_bytes_over": "fail",
+      "TestMelFilterbankBinsCapacityOracle/independent_rows_no_aggregate_cap": "pass"
+    },
+    "candidate": {
+      "TestMelFilterbankRejectsUnrepresentableBuffers": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_bank": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_add_logmel": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_bank": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/edge_bytes_logmel": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_bank": "pass",
+      "TestMelFilterbankRejectsUnrepresentableBuffers/frequency_bytes_logmel": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming/normal_bank": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming/normal_logmel": "pass",
+      "TestMelFilterbankRetainsNormalAndFraming/unused_mels_stft": "pass",
+      "TestMelFilterbankBinsCapacityOracle": "pass",
+      "TestMelFilterbankBinsCapacityOracle/normal": "pass",
+      "TestMelFilterbankBinsCapacityOracle/max_bank_rows": "pass",
+      "TestMelFilterbankBinsCapacityOracle/bank_rows_over": "pass",
+      "TestMelFilterbankBinsCapacityOracle/edge_bytes_over": "pass",
+      "TestMelFilterbankBinsCapacityOracle/max_window_power": "pass",
+      "TestMelFilterbankBinsCapacityOracle/window_bytes_over": "pass",
+      "TestMelFilterbankBinsCapacityOracle/independent_rows_no_aggregate_cap": "pass"
+    }
+  },
+  "patterns": {
+    "original": "^TestMelFilterbank(RejectsUnrepresentableBuffers|RetainsNormalAndFraming)$",
+    "skeleton": "^TestMelFilterbankBinsCapacityOracle$",
+    "candidate": "^TestMelFilterbank(RejectsUnrepresentableBuffers|RetainsNormalAndFraming|BinsCapacityOracle)$"
+  },
+  "root_review": {
+    "worker_public_sha256": "b74ea8bff746c38bbf5aeea922a0d6e0c44ad1894649ddd66be9b86c42342346",
+    "changes": "16 sample LogMel control; avoid panic in shape failure diagnostics; gofmt only",
+    "independent_htk_centre_decimal": "1113.83571472170543982329517030599830655270814626353189823792",
+    "reference_max_error": 2.7755575615628914e-16
+  },
+  "formatting": [
+    {
+      "file": "public-regression.go",
+      "before_sha256": "b9a036b677b2d7e0a385ec6ef89ed18d2b80aed1c93acfa0f8f07b22e17f702e",
+      "after_sha256": "01214baf8eb82cd5a4e37a0bcc42081dfed532f5b0f11e8cebeda3f9fa27c2ef"
+    },
+    {
+      "file": "dimensions-regression.go",
+      "before_sha256": "66584399b51d01e02542fca5c6c5e6868736ae2d4de1228613d21cfdf9832039",
+      "after_sha256": "66584399b51d01e02542fca5c6c5e6868736ae2d4de1228613d21cfdf9832039"
+    },
+    {
+      "file": "skeleton-frontend.go",
+      "before_sha256": "1eb1db68dfae88efc04f3adb84eb519b24f821bc9bd92ef5320929ac98126b8a",
+      "after_sha256": "1eb1db68dfae88efc04f3adb84eb519b24f821bc9bd92ef5320929ac98126b8a"
+    },
+    {
+      "file": "probe.go",
+      "before_sha256": "fde933bc729cb6619839b4998dade5edf0f6b2a22eadf9cce257a7509c4ef056",
+      "after_sha256": "0c11a98ec78c72b13d395832592eef222f6c61f2bc52ffe049b8777e7b793df9"
+    }
+  ]
+}

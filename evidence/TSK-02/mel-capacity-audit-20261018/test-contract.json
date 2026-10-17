@@ -1,0 +1,30 @@
+{
+  "created_at": "2026-10-17T18:18:35.088105+00:00",
+  "source_count": 864,
+  "source_manifest": "evidence/TSK-02/resample-capacity-adoption-20261018/formal-source.json",
+  "work": "runs/.tmp/mel-capacity-regression-20261018",
+  "work_inode": 60643289,
+  "parent_cache_root": "runs/.tmp/resample-capacity-adoption-20261018",
+  "parent_cache_inode": 60580540,
+  "parent_environment": "evidence/TSK-02/resample-capacity-adoption-20261018/command-environment.json",
+  "original_frontend_sha256": "3827e4f9bf629304c6a97b1426d86deaf9b596dd8cd108d1c9bbbdabc7bbb0fa",
+  "skeleton_sha256": "1eb1db68dfae88efc04f3adb84eb519b24f821bc9bd92ef5320929ac98126b8a",
+  "slot": {
+    "file": "candidate-frontend.go.txt",
+    "public_signature": "MelFilterbank(int,FrontEndConfig)([][]float64,error)",
+    "private_signature": "melFilterbankBins(FrontEndConfig)(int,error)",
+    "precondition": "FrontEndConfig.Validate succeeds; no audio/filter array allocation inside dimensions helper. Error formatting may allocate small strings.",
+    "expected": "Before any MelFilterbank allocation reject edge count/addition and bytes, frequency/row bytes, and outer bank slice-header bytes exceeding native MaxInt. Return0,error in helper and nil,error in public; LogMel returnsnil,zero-report,error. Preserve basic Validate, STFT, existing math and all normal bits/reports.",
+    "normal_controls": "No arbitrary memory or aggregate independent-row byte cap. Never try real memory exhaustion."
+  },
+  "opencode": {
+    "session_id": 14674,
+    "exit_code": 1,
+    "chunk": "3b2d91",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "allowed_worker_outputs": {
+    "public": "evidence/TSK-02/mel-capacity-audit-20261018/public-regression.go.txt",
+    "dimensions": "evidence/TSK-02/mel-capacity-audit-20261018/dimensions-regression.go.txt"
+  }
+}

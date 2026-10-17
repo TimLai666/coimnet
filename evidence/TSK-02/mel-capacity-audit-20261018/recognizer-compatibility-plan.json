@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-10-17T18:35:13.382630+00:00",
+  "work": "runs/.tmp/mel-model-compatibility-20261018",
+  "work_inode": 60681306,
+  "source_manifest": "evidence/TSK-02/resample-capacity-adoption-20261018/formal-source.json",
+  "source_manifest_sha256": "80baaba6797fa5b2415464a170e9025164b588e0a2ce59ef3a84f7fcc8cb30b3",
+  "source_count": 864,
+  "intent": "Verify an original small recognizer checkpoint restores in a separate process with candidate frontend and preserves full training snapshot. No real model or task-quality claim.",
+  "slot": {
+    "output": "recognizer-probe.go.txt",
+    "mode_create": "Create normal and huge-window tiny3-node recognizers with one mel, two hidden, one alphabet rune; Save only two new checkpoints under required root; print configs, snapshots and observations.",
+    "mode_read": "Load those exact same original checkpoints in another process, print same snapshot/config hashes, Features observation and loaded manifest hash.",
+    "config": {
+      "sample_rate": 8000,
+      "window_normal": 16,
+      "window_huge": "1<<(strconv.IntSize-2)",
+      "hop": 8,
+      "mels": 1,
+      "f_min": 0,
+      "f_max": 4000,
+      "floor": 1e-10,
+      "hidden": 2,
+      "alphabet": "a",
+      "learning_rate": 0.01,
+      "seed": 17
+    },
+    "features": "16zeros; normal1x1 -10; huge independently prove bins*8>uintptr before public Features; recover panic and compare entire Snapshot hash before/after each call.",
+    "evidence": "JSON one payload only; throw on constructor/save/load/config/snapshot errors. No opaque success flags without actual comparison."
+  },
+  "opencode": {
+    "session_id": 91673,
+    "exit_code": 1,
+    "chunk": "2796e9",
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  }
+}

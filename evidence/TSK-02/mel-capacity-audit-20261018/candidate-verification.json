@@ -1,0 +1,94 @@
+{
+  "requirement": "TSK-02",
+  "verified_at": "2026-10-17T18:28:25.432801+00:00",
+  "stage": "isolated candidate before formal adoption",
+  "reproduction_command": "python3 evidence/TSK-02/mel-capacity-audit-20261018/run-regression.py.txt --run --implementation candidate --scope full-audio",
+  "environment": {
+    "go": "go1.26.5",
+    "os": "darwin",
+    "arch": "arm64",
+    "parent_cache_environment": "../resample-capacity-adoption-20261018/command-environment.json"
+  },
+  "input_fingerprints": {
+    "formal_source": "../resample-capacity-adoption-20261018/formal-source.json",
+    "source_count": 864,
+    "candidate": "candidate-source.json",
+    "frozen_tests": "tests-frozen.json"
+  },
+  "observed_result": {
+    "public_original_each_build": {
+      "fail": 7,
+      "pass": 4,
+      "panic_calls": 6
+    },
+    "unguarded_private_skeleton_each_build": {
+      "fail": 4,
+      "pass": 4
+    },
+    "candidate_focused_each_build": {
+      "pass": 19
+    },
+    "candidate_full_audio_each_build": {
+      "pass": 100,
+      "prior_outcomes_preserved": 81,
+      "new_pass_events": 19
+    },
+    "normal_probe_controls_each_build": 3,
+    "normal_output_bits_and_complete_reports_unchanged": true
+  },
+  "test_log": [
+    "original-focused-unit.log",
+    "original-focused-race.log",
+    "skeleton-focused-unit.log",
+    "skeleton-focused-race.log",
+    "candidate-focused-unit.log",
+    "candidate-focused-race.log",
+    "candidate-full-audio-unit.log",
+    "candidate-full-audio-race.log",
+    "original-probe-unit.log",
+    "original-probe-race.log",
+    "candidate-probe-unit.log",
+    "candidate-probe-race.log"
+  ],
+  "normal_parity": {
+    "original-probe-unit": {
+      "normal_records": 3,
+      "sha256": "e82cb8a6aca0f4f2821698715f55b6872846b000f5e813a22d89f47b7f2ebfb3",
+      "log_sha256": "001dd6207e18147077cc1edd10fb65058ed7a061f8f34768e15b0f477f5a175e"
+    },
+    "candidate-probe-unit": {
+      "normal_records": 3,
+      "sha256": "e82cb8a6aca0f4f2821698715f55b6872846b000f5e813a22d89f47b7f2ebfb3",
+      "log_sha256": "4f718057ad4e6cd5c7946b9d2aca1537b828d38a1ccebad4f32d99b0d1f970f7"
+    },
+    "original-probe-race": {
+      "normal_records": 3,
+      "sha256": "e82cb8a6aca0f4f2821698715f55b6872846b000f5e813a22d89f47b7f2ebfb3",
+      "log_sha256": "001dd6207e18147077cc1edd10fb65058ed7a061f8f34768e15b0f477f5a175e"
+    },
+    "candidate-probe-race": {
+      "normal_records": 3,
+      "sha256": "e82cb8a6aca0f4f2821698715f55b6872846b000f5e813a22d89f47b7f2ebfb3",
+      "log_sha256": "4f718057ad4e6cd5c7946b9d2aca1537b828d38a1ccebad4f32d99b0d1f970f7"
+    }
+  },
+  "runner_terminals": "regression-terminals.json",
+  "root_review": {
+    "candidate_source_diff_chunk": "8de6c3",
+    "independent_tests_chunk": "d605f8",
+    "independent_original_red_chunk": "531ddf",
+    "integer_32_64_arithmetic_only_chunk": "25be28"
+  },
+  "formal_adoption": false,
+  "formal_source_changed": false,
+  "engineering_passed": false,
+  "limits": [
+    "Only darwin/arm64 runtime;32-bit cases are arithmetic only.",
+    "No audio/filter array is allocated by the private dimensions check; error formatting may allocate small strings.",
+    "Representable per-array sizes do not guarantee available physical memory.",
+    "Full engineering,final governance,formal adoption and delivery remain pending.",
+    "No task-quality/biological-validity or zero-bug claim."
+  ],
+  "supplementary_compatibility": "recognizer-compatibility-verification.json",
+  "supplementary_cleanup": "recognizer-cleanup.json"
+}

@@ -1,0 +1,94 @@
+"""Exercise frozen public/pure-capacity regressions without changing formal sources."""
+from pathlib import Path
+import argparse,collections,datetime,hashlib,json,os,subprocess,time
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+p=argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run',action='store_true',help='Run ordinary and race commands, preserve logs/receipts, require exact frozen outcomes and protect all formal inputs.')
+p.add_argument('--implementation',choices=['original','skeleton','candidate'],default='original',help='Original public API must fail frozen regressions. Skeleton exposes pure helper without guards. Candidate must pass.')
+p.add_argument('--scope',choices=['focused','full-audio','probe'],default='focused',help='Focused regressions, full audio package with old-event parity, or public probe with normal-bit/report parity.')
+a=p.parse_args()
+if not a.run:
+    p.print_help();raise SystemExit(0)
+assert not(a.implementation=='skeleton' and a.scope!='focused')
+assert not(a.scope=='full-audio' and a.implementation!='candidate')
+R=Path(__file__).resolve().parents[3];E=Path(__file__).resolve().parent
+C=json.loads((E/'test-contract.json').read_text());F=json.loads((E/'tests-frozen.json').read_text());W=R/C['work'];P=R/'evidence/LRN-08/aggregate-range-20261017'
+S=json.loads((R/C['source_manifest']).read_text());M=json.loads((P/'protected-models.json').read_text());D={n:v['sha256'] for n,v in json.loads((P/'persistent-data.json').read_text()).items()};O=json.loads((P/'foreign-before.json').read_text())
+sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest()
+replacements={str(R/'tasks/asr/audio/mel_capacity_test.go'):str(W/'public-regression.go')}
+if a.implementation!='original':
+    replacements[str(R/'tasks/asr/audio/mel_dimensions_test.go')]=str(W/'dimensions-regression.go')
+    replacements[str(R/'tasks/asr/audio/frontend.go')]=str(W/(a.implementation+'-frontend.go'))
+overlay=E/(a.implementation+'-overlay.json')
+
+def gate():
+    assert W.stat().st_ino==C['work_inode'] and not W.is_symlink()
+    assert (R/C['parent_cache_root']).stat().st_ino==C['parent_cache_inode']
+    assert len(S)==864
+    paths={n for n in subprocess.check_output(['git','ls-files','-co','--exclude-standard','-z'],cwd=R).decode().split('\0') if n and (n.endswith('.go') or n in ['go.mod','go.sum'])}
+    assert paths==set(S)
+    for name,digest in {**S,**M,**D,**O}.items():assert sha(R/name)==digest,name
+    assert not(R/'tasks/asr/audio/mel_capacity_test.go').exists() and not(R/'tasks/asr/audio/mel_dimensions_test.go').exists()
+    for name,digest in F['files'].items():assert sha(R/name)==digest,name
+    assert sha(W/'skeleton-frontend.go')==C['skeleton_sha256']
+    if a.implementation=='candidate':
+        candidate=json.loads((E/'candidate-source.json').read_text())
+        assert sha(E/'candidate-frontend.go.txt')==candidate['candidate_sha256']==sha(W/'candidate-frontend.go')
+    assert json.loads(overlay.read_text())=={'Replace':replacements}
+
+def events(raw):
+    tests,packages={},{}
+    for line in raw.splitlines():
+        try:row=json.loads(line)
+        except json.JSONDecodeError:continue
+        if row.get('Action') not in ['pass','fail','skip']:continue
+        if row.get('Test'):
+            assert row['Test'] not in tests;tests[row['Test']]=row['Action']
+        else:packages[row['Package']]=row['Action']
+    return tests,packages
+
+env=dict(os.environ);private=json.loads((R/C['parent_environment']).read_text());private.update(GOTMPDIR=str(W/'go-tmp'),TMPDIR=str(W/'go-tmp'));env.update(private)
+for build in ['unit','race']:
+    gate()
+    if a.scope=='probe':
+        command=['go','run']+(['-race'] if build=='race' else [])+['-overlay',str(overlay),str(W/'probe.go')]
+    else:
+        command=['go','test','-overlay',str(overlay),'-json','-count=1','-timeout=5m']+(['-race'] if build=='race' else [])
+        if a.scope=='focused':command+=['-run',F['patterns'][a.implementation]]
+        command+=['./tasks/asr/audio']
+    label=a.implementation+'-'+a.scope+'-'+build
+    started=datetime.datetime.now(datetime.timezone.utc).isoformat();clock=time.monotonic();log=E/(label+'.log')
+    with log.open('xb') as f:process=subprocess.run(command,cwd=R,env=env,stdin=subprocess.DEVNULL,stdout=f,stderr=subprocess.STDOUT)
+    gate();raw=log.read_bytes()
+    receipt={'command':command,'environment':private,'implementation':a.implementation,'scope':a.scope,'started_at':started,'finished_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'seconds':time.monotonic()-clock,'exit_code':process.returncode,'log':log.name,'log_sha256':sha(log),'log_bytes':len(raw),'source_count':len(S),'tests_frozen':'tests-frozen.json'}
+    expected_code=0
+    errors=[]
+    if a.scope=='probe':
+        payload=json.loads(raw);bad=payload['results'][:6];normal=payload['results'][6:]
+        assert len(bad)==6 and len(normal)==3
+        assert all(not row.get('validation_error') for row in payload['results'])
+        if a.implementation=='original':
+            assert all(row.get('panic')=='runtime error: makeslice: len out of range' for row in bad)
+        else:
+            assert all(not row.get('panic') and row.get('error') and row['nil_output'] and row['zero_report'] for row in bad)
+            old=json.loads((E/('original-probe-'+build+'.log')).read_bytes());assert normal==old['results'][6:]
+            assert {k:payload[k] for k in ['go','os','arch','int_bits']}=={k:old[k] for k in ['go','os','arch','int_bits']}
+        receipt['normal_controls']=len(normal);receipt['bad_dimensions']=len(bad)
+        receipt['normal_payload_sha256']=hashlib.sha256(json.dumps(normal,sort_keys=True,separators=(',',':')).encode()).hexdigest()
+    else:
+        tests,packages=events(raw);receipt['terminal_events']=tests;receipt['test_events']=dict(collections.Counter(tests.values()));receipt['package_events']=dict(collections.Counter(packages.values()))
+        if a.scope=='focused':
+            expected=F['expected_events'][a.implementation]
+            assert tests==expected,(tests,expected)
+            expected_code=0 if a.implementation=='candidate' else 1
+        else:
+            base=R/'evidence/TSK-02/resample-capacity-adoption-20261018';old_receipt=json.loads((base/('focused-'+build+'.json')).read_text());old_log=base/old_receipt['log'];assert sha(old_log)==old_receipt['log_sha256']
+            old,old_packages=events(old_log.read_bytes());expected={**old,**F['expected_events']['candidate']}
+            assert len(old)==81 and tests==expected and len(tests)==100 and packages==old_packages
+            receipt.update(prior_events_preserved=len(old),new_pass_events=19)
+        assert packages=={'github.com/TimLai666/coimnet/tasks/asr/audio':'pass' if expected_code==0 else 'fail'}
+    assert process.returncode==expected_code,receipt
+    receipt['expected_outcome_observed']=True
+    with (E/(label+'.json')).open('x') as f:json.dump(receipt,f,indent=2);f.write('\n')
+    print(json.dumps({'implementation':a.implementation,'scope':a.scope,'build':build,'exit_code':process.returncode,'test_events':receipt.get('test_events'),'normal_controls':receipt.get('normal_controls'),'expected_outcome_observed':True}),flush=True)

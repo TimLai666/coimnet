@@ -1,0 +1,56 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/mel-capacity-audit-20261018/skeleton-overlay.json",
+    "-json",
+    "-count=1",
+    "-timeout=5m",
+    "-run",
+    "^TestMelFilterbankBinsCapacityOracle$",
+    "./tasks/asr/audio"
+  ],
+  "environment": {
+    "GOMAXPROCS": "2",
+    "GOFLAGS": "-mod=readonly -p=2",
+    "GOMEMLIMIT": "8GiB",
+    "GOCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-cache",
+    "GOMODCACHE": "/Users/timlai/Developer/coimnet/runs/.tmp/resample-capacity-adoption-20261018/go-mod-cache",
+    "GOTMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "TMPDIR": "/Users/timlai/Developer/coimnet/runs/.tmp/mel-capacity-regression-20261018/go-tmp",
+    "GOTOOLCHAIN": "local",
+    "GOSUMDB": "off",
+    "GOTELEMETRY": "off",
+    "GOPROXY": "file:///Users/timlai/go/pkg/mod/cache/download"
+  },
+  "implementation": "skeleton",
+  "scope": "focused",
+  "started_at": "2026-10-17T18:22:11.813897+00:00",
+  "finished_at": "2026-10-17T18:22:13.352215+00:00",
+  "seconds": 1.538186209,
+  "exit_code": 1,
+  "log": "skeleton-focused-unit.log",
+  "log_sha256": "7b819a7b92d09690d2272264b1a2bcc549ec5a02ebf1e34bfacf7301f684f8bf",
+  "log_bytes": 8682,
+  "source_count": 864,
+  "tests_frozen": "tests-frozen.json",
+  "terminal_events": {
+    "TestMelFilterbankBinsCapacityOracle/normal": "pass",
+    "TestMelFilterbankBinsCapacityOracle/max_bank_rows": "pass",
+    "TestMelFilterbankBinsCapacityOracle/bank_rows_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/edge_bytes_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/max_window_power": "pass",
+    "TestMelFilterbankBinsCapacityOracle/window_bytes_over": "fail",
+    "TestMelFilterbankBinsCapacityOracle/independent_rows_no_aggregate_cap": "pass",
+    "TestMelFilterbankBinsCapacityOracle": "fail"
+  },
+  "test_events": {
+    "pass": 4,
+    "fail": 4
+  },
+  "package_events": {
+    "fail": 1
+  },
+  "expected_outcome_observed": true
+}
