@@ -6,7 +6,7 @@ User Story：同一行動的兩個來源各自完成梯度階段、局部可塑�
 
 Blocked by：23、85（已完成）
 
-Status：in_progress
+Status：completed
 
 對應需求：LRN-06。補充既有行為的回歸保護，沒有已確認的產品缺陷。
 
@@ -15,7 +15,7 @@ Status：in_progress
 - [x] Root 確認既有覆蓋缺口，定義同 action、不同 source、時間倒退及交錯成功階段的獨立參考。
 - [x] 新增公開 API 測試，交叉 UpdateEvery 1／2 與 AccumulateSteps 1／2；完整 IndividualSnapshot、報告、歷史答案及延後回饋保持。兩種刻意錯誤必須使測試失敗。
 - [x] 格式、build、完整一般／race、vet、固定模組及治理通過，既有每種建置各 8,651 個終端事件保持。
-- [ ] 保存必要證據，清除本輪暫存，提交推送並核對遠端。
+- [x] 保存必要證據，清除本輪暫存，提交推送並核對遠端。
 
 ## Root 決策（2026-10-17）
 
@@ -25,4 +25,4 @@ Status：in_progress
 
 相關低風險文件問題：online_mixed_retry_test.go:121-126 的「current implementation advances eligible again」是修正前狀態，建議下次修改該檔時改為描述原缺陷，不列為目前產品行為缺陷。
 
-原 session61304 已實際 terminal 0，九個工程步驟通過。一般 8,633 pass／23 skip、競態 8,632 pass／24 skip，各 58 套件通過，原有各 8,651 個終端事件保持，只新增各 5 pass。Root 已重新解析兩份壓縮日誌及所有回條，見[驗收](../../evidence/LRN-06/multisource-retry-20261017/verification.json)。固定進度 3／4，最後治理、清理與交付另記。
+原 session61304 已實際 terminal 0，九個工程步驟通過。一般 8,633 pass／23 skip、競態 8,632 pass／24 skip，各 58 套件通過，原有各 8,651 個終端事件保持，只新增各 5 pass。Root 已重新解析兩份壓縮日誌及所有回條，見[驗收](../../evidence/LRN-06/multisource-retry-20261017/verification.json)。最後 31 項治理通過，1,740,839,595 bytes 自有暫存已清除，主要提交 `4ccab07` 已推送且遠端讀回相同，見[交付](../../evidence/LRN-06/multisource-retry-20261017/delivery.json)。固定進度 4／4。

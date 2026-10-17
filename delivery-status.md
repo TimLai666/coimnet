@@ -6,7 +6,7 @@
 
 線上取消與回饋識別查核已完成本機驗證，10 個受控情境的一般／競態各 24 pass，重試後完整模型快照及明列的佇列／間隔狀態與正常孿生相同，沒有確認新產品缺陷，見[驗收](evidence/LRN-06/online-cancel-20261017/verification.json)及[Root 核對](evidence/LRN-06/online-cancel-20261017/root-review.md)。正式 856 份來源保持，沿用同源完整工程驗收。1,002,456,363 bytes 本輪暫存已清除，原模型、資料與其他工作保留，見[清理](evidence/LRN-06/online-cancel-20261017/cleanup.json)。本輪 4／4，主要提交 `c040d16` 已推送且遠端讀回一致，見[交付](evidence/LRN-06/online-cancel-20261017/delivery.json)。工程追蹤保持 91／91，整體排查持續。
 
-[ticket138](docs/tickets/138-online-multisource-retry.md) 已通過九個完整工程步驟，一般 8,633 pass／23 skip、競態 8,632 pass／24 skip，各 58 套件通過，原有各 8,651 個終端事件保持，只新增各 5 pass。Root 已重新解析日誌及逐筆比對，見[驗收](evidence/LRN-06/multisource-retry-20261017/verification.json)。只新增同一行動的多來源階段公開回歸，沒有確認線上學習產品缺陷。最後 31 項治理通過，1,740,839,595 bytes 本票暫存已清除，857 份來源、18 份模型、6 份必要資料、32 份其他工作與 15,046 份原始模組保持，見[清理](evidence/LRN-06/multisource-retry-20261017/cleanup.json)。固定進度 3／4，提交推送與遠端核對接續。
+[ticket138](docs/tickets/138-online-multisource-retry.md) 已通過九個完整工程步驟，一般 8,633 pass／23 skip、競態 8,632 pass／24 skip，各 58 套件通過，原有各 8,651 個終端事件保持，只新增各 5 pass。Root 已重新解析日誌及逐筆比對，見[驗收](evidence/LRN-06/multisource-retry-20261017/verification.json)。只新增同一行動的多來源階段公開回歸，沒有確認線上學習產品缺陷。最後 31 項治理通過，1,740,839,595 bytes 本票暫存已清除，857 份來源、18 份模型、6 份必要資料、32 份其他工作與 15,046 份原始模組保持，見[清理](evidence/LRN-06/multisource-retry-20261017/cleanup.json)。主要提交 `4ccab07` 已正常推送且遠端讀回相同，見[交付](evidence/LRN-06/multisource-retry-20261017/delivery.json)。本票 4／4。
 
 [ticket139](docs/tickets/139-media-report-config-ownership.md) 已確認媒體報告的設定共用缺陷：返回後修改呼叫端種子與保留條件，舊報告內容跟著變動，卻不重算 ConfigHash。四條公開流程在原版一般／競態均重現，六行隔離候選的一般／競態各 5 pass，四份正常完整報告的 SHA-256 在各建置內保持，見[驗收](evidence/TSK-04/report-config-ownership-20261017/verification.json)。這會影響實驗紀錄，尚無模型權重或品質改變證據。探測 68,295 bytes 暫存已清除，正式 Go 尚未套用候選。本票 2／5，前票完整驗收結束後才採用正式修正。
 
