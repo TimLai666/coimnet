@@ -349,7 +349,7 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 	for i := range upstream {
 		upstream[i] = make([]float64, m.vocabSize)
 	}
-	var sum float64
+	var sum, tinyTailSum, lossCompensation, tinyCompensation float64
 	for target := 1; target < len(ex.IDs); target++ {
 		if !ex.Scored[target] {
 			continue
@@ -358,13 +358,16 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 		if len(row) != m.vocabSize {
 			return 0, 0, nil, fmt.Errorf("logits at position %d have width %d, want %d", target-1, len(row), m.vocabSize)
 		}
-		maxLogit := math.Inf(-1)
-		for _, value := range row {
+		maxLogit, tailMaximum := math.Inf(-1), math.Inf(-1)
+		maximumIndex := 0
+		for i, value := range row {
 			if math.IsNaN(value) || math.IsInf(value, 0) {
 				return 0, 0, nil, fmt.Errorf("logits at position %d contain a non-finite value", target-1)
 			}
 			if value > maxLogit {
-				maxLogit = value
+				tailMaximum, maxLogit, maximumIndex = maxLogit, value, i
+			} else if value > tailMaximum {
+				tailMaximum = value
 			}
 		}
 		expSum := 0.0
@@ -374,12 +377,38 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 		if !finite(expSum) || expSum <= 0 {
 			return 0, 0, nil, fmt.Errorf("invalid logit normalization at position %d", target-1)
 		}
-		logNormalizer := maxLogit + math.Log(expSum)
-		loss := logNormalizer - row[ex.IDs[target]]
+		// Keep the tail separate from the winning exponential and normalize
+		// it before exponentiation so a representable aggregate survives.
+		tailSum, compensation := 0.0, 0.0
+		for i, value := range row {
+			if i != maximumIndex {
+				adjusted := math.Exp(value-tailMaximum) - compensation
+				next := tailSum + adjusted
+				compensation = (next - tailSum) - adjusted
+				tailSum = next
+			}
+		}
+		tailGap := tailMaximum - maxLogit
+		logNormalizer := 0.0
+		if tailGap < -512*math.Ln2 {
+			// Here log(1+x) rounds to x. Keep tiny terms scaled until
+			// all scored positions have contributed to the summed NLL.
+			halfExp := math.Exp(tailGap / 2)
+			adjusted := math.Ldexp(halfExp, 512)*halfExp*tailSum - tinyCompensation
+			next := tinyTailSum + adjusted
+			tinyCompensation = (next - tinyTailSum) - adjusted
+			tinyTailSum = next
+		} else {
+			logNormalizer = math.Log1p(math.Exp(tailGap) * tailSum)
+		}
+		loss := (maxLogit - row[ex.IDs[target]]) + logNormalizer
 		if !finite(loss) {
 			return 0, 0, nil, fmt.Errorf("non-finite loss at position %d", target)
 		}
-		sum += loss
+		adjusted := loss - lossCompensation
+		next := sum + adjusted
+		lossCompensation = (next - sum) - adjusted
+		sum = next
 		if !finite(sum) {
 			return 0, 0, nil, fmt.Errorf("non-finite summed loss")
 		}
@@ -389,7 +418,7 @@ func (m *Model) lossAndUpstream(ex Example, logits [][]float64) (float64, int, [
 		}
 		gradient[ex.IDs[target]] -= 1 / float64(count)
 	}
-	return sum, count, upstream, nil
+	return sum + math.Ldexp(tinyTailSum, -512), count, upstream, nil
 }
 
 // uniform returns n deterministic values in [-scale, scale) from source.
