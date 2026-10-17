@@ -6,7 +6,7 @@ User Story：研究者保留影像、音訊、影片及三種生成角色的報�
 
 Blocked by：138 的凍結來源完整驗證結束後，才採用正式 Go 修正。
 
-Status：in_progress
+Status：completed
 
 相關需求：TSK-04、TSK-05、TSK-06、TSK-07。既有能力及已序列化證據不因此撤銷，另補 SDK 報告設定的所有權驗證。
 
@@ -28,7 +28,7 @@ RunMedia 的影像／音訊、RunVideo 與 RunRoles 四條公開入口均在一�
 - [x] 隔離候選通過一般／競態，修改前完整報告與原版逐位元組相同。
 - [x] 前票驗收結束後採用三處正式修正及公開回歸，保留相容性。
 - [x] 格式、build、完整一般／競態、vet、固定模組與治理通過。
-- [ ] 保存必要證據、清除本輪暫存、審查提交推送並核對遠端。
+- [x] 保存必要證據、清除本輪暫存、審查提交推送並核對遠端。
 
 ## 減法審查
 
@@ -38,6 +38,6 @@ RunMedia 的影像／音訊、RunVideo 與 RunRoles 四條公開入口均在一�
 
 [合法公開探測](../../evidence/TSK-04/report-config-ownership-20261017/probe-verification.json)、[完整證據目錄](../../evidence/TSK-04/report-config-ownership-20261017/)、[既有導航同型態契約](49-nav2d-report-config-ownership.md)。
 
-Root 的原版一般／競態各 5 個預期失敗事件，候選各 5 pass，四份修改前完整報告的 SHA-256 在各建置內與原版相同。候選 runner session74636 實際 terminal 0，詳見[候選驗收](../../evidence/TSK-04/report-config-ownership-20261017/candidate-verification.json)。探測工作 9 個檔案、68,295 bytes 已清除，ticket138 的共用快取也已於前票驗收後清除。正式三處修正及凍結回歸已採用，見[採用紀錄](../../evidence/OPS-03/report-ownership-adoption-20261017/adoption.json)。固定進度 4／5，與 ticket140 共用最終完整驗證。
+Root 的原版一般／競態各 5 個預期失敗事件，候選各 5 pass，四份修改前完整報告的 SHA-256 在各建置內與原版相同。候選 runner session74636 實際 terminal 0，詳見[候選驗收](../../evidence/TSK-04/report-config-ownership-20261017/candidate-verification.json)。探測工作 9 個檔案、68,295 bytes 已清除，ticket138 的共用快取也已於前票驗收後清除。正式三處修正及凍結回歸已採用，見[採用紀錄](../../evidence/OPS-03/report-ownership-adoption-20261017/adoption.json)。固定進度 5／5，與 ticket140 共用最終完整驗證。
 
-正式最終來源完整一般 8,645 pass／23 skip、競態 8,644 pass／24 skip，各 58 套件通過。原有各 8,656 個終端事件保持，新增各 12 pass，九份正常完整報告及已核准中性增益各 21 個控制保持。九項工程步驟及 31 項治理通過，見[最終驗收](../../evidence/OPS-03/report-ownership-adoption-20261017/verification.json)。本票剩清理與交付。
+正式最終來源完整一般 8,645 pass／23 skip、競態 8,644 pass／24 skip，各 58 套件通過。原有各 8,656 個終端事件保持，新增各 12 pass，九份正常完整報告及已核准中性增益各 21 個控制保持。九項工程步驟及 31 項治理通過，見[最終驗收](../../evidence/OPS-03/report-ownership-adoption-20261017/verification.json)。最後 31 項治理通過，1,556,834,694 bytes 共用自有暫存已清除。修正 `6eebf25` 與主要證據 `a685b80` 已推送且遠端讀回完全相同，見[交付](../../evidence/OPS-03/report-ownership-adoption-20261017/delivery.json)。本票 5／5。
