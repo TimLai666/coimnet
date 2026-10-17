@@ -6,6 +6,7 @@ import (
 	"math"
 	"math/bits"
 	"math/rand/v2"
+	"unsafe"
 )
 
 // SynthConfig fixes the synthetic voice, so the fixture carries no audio file
@@ -191,12 +192,20 @@ func Generate(c SynthConfig, n, minLen, maxLen int, seed uint64) ([]Utterance, e
 	if maxLen < minLen {
 		return nil, fmt.Errorf("asr: maximum length %d is below the minimum %d", maxLen, minLen)
 	}
+	maxBytes := uintptr(^uint(0) >> 1)
+	if uintptr(n) > maxBytes/unsafe.Sizeof(Utterance{}) {
+		return nil, errors.New("asr: utterance container exceeds native int capacity")
+	}
 	rng := rand.New(rand.NewPCG(seed, 1))
 	speaker := fmt.Sprintf("spk%d", seed%4)
 	session := fmt.Sprintf("ses%d", seed)
 	out := make([]Utterance, 0, n)
 	for i := 0; i < n; i++ {
-		rs := make([]rune, minLen+rng.IntN(maxLen-minLen+1))
+		length := minLen + rng.IntN(maxLen-minLen+1)
+		if uintptr(length) > maxBytes/unsafe.Sizeof(rune(0)) {
+			return nil, errors.New("asr: rune buffer exceeds native int capacity")
+		}
+		rs := make([]rune, length)
 		for j := range rs {
 			rs[j] = c.Alphabet[rng.IntN(len(c.Alphabet))]
 		}

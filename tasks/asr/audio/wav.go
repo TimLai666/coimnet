@@ -159,7 +159,8 @@ func parseWAV(raw []byte, source string) (wavPayload, error) {
 // can be produced without any external tool. The channel count comes from
 // len(s.Samples); a NaN sample is written as silence so the output stays
 // deterministic.
-// Errors: no channels, ragged channels, sample rate <= 0, existing path.
+// Errors: no channels, ragged channels, sample rate <= 0, unrepresentable
+// PCM16 RIFF metadata or payload, existing path.
 func WriteWAV(path string, s Signal) error {
 	channels := len(s.Samples)
 	if channels == 0 {
@@ -175,7 +176,10 @@ func WriteWAV(path string, s Signal) error {
 		return fmt.Errorf("audio: sample rate %d is not positive", s.SampleRate)
 	}
 
-	dataBytes := frames * channels * 2
+	dataBytes, err := wavOutputBytes(frames, channels, s.SampleRate)
+	if err != nil {
+		return err
+	}
 	buf := bytes.NewBuffer(make([]byte, 0, 44+dataBytes))
 	buf.WriteString("RIFF")
 	writeU32(buf, uint32(36+dataBytes))
@@ -185,9 +189,9 @@ func WriteWAV(path string, s Signal) error {
 	writeU16(buf, 1) // PCM
 	writeU16(buf, uint16(channels))
 	writeU32(buf, uint32(s.SampleRate))
-	writeU32(buf, uint32(s.SampleRate*channels*2)) // byte rate
-	writeU16(buf, uint16(channels*2))              // block align
-	writeU16(buf, 16)                              // bits per sample
+	writeU32(buf, uint32(uint64(s.SampleRate)*uint64(channels)*2)) // byte rate
+	writeU16(buf, uint16(channels*2))                              // block align
+	writeU16(buf, 16)                                              // bits per sample
 	buf.WriteString("data")
 	writeU32(buf, uint32(dataBytes))
 	for f := 0; f < frames; f++ {
@@ -205,6 +209,32 @@ func WriteWAV(path string, s Signal) error {
 		return err
 	}
 	return f.Close()
+}
+
+// wavOutputBytes checks format and native-buffer limits without allocating
+// an audio or byte buffer. Callers already validated nonnegative frames and
+// positive channels and sampleRate.
+func wavOutputBytes(frames, channels, sampleRate int) (int, error) {
+	const (
+		maxWAVUint16 = uint64(1<<16 - 1)
+		maxWAVUint32 = uint64(1<<32 - 1)
+	)
+	if uint64(channels) > maxWAVUint16/2 {
+		return 0, fmt.Errorf("audio: block align for %d channels exceeds the WAV uint16 field", channels)
+	}
+	stride := uint64(channels) * 2
+	// A representable byte rate also bounds the positive sample rate.
+	if uint64(sampleRate) > maxWAVUint32/stride {
+		return 0, fmt.Errorf("audio: byte rate for %d Hz and %d channels exceeds the WAV uint32 field", sampleRate, channels)
+	}
+	maxPayload := maxWAVUint32 - 36
+	if filePayload := uint64(^uint(0)>>1) - 44; filePayload < maxPayload {
+		maxPayload = filePayload
+	}
+	if uint64(frames) > maxPayload/stride {
+		return 0, fmt.Errorf("audio: PCM16 payload for %d frames and %d channels is not representable", frames, channels)
+	}
+	return int(uint64(frames) * stride), nil
 }
 
 // pcm16 converts one sample in [-1, 1] to int16, rounding to nearest and
