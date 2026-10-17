@@ -2,7 +2,7 @@
 
 **Epic:** 持續學習與數值一致性
 **User Story:** 研究者可以彙整有限分數，取得可表示的平均與母體標準差。
-**Blocked by:** ticket135 的來源凍結與完整工程驗收
+**Blocked by:** 無，ticket135已完成完整驗收與交付
 **Status:** specified
 
 ## Root 決策｜2026-10-17
@@ -20,4 +20,4 @@
 
 scoreTwin、bootstrap 與比較差值的極端值尚未證明由合法模型路徑產生，不列為本票已重現缺陷，也不直接更改其正常算式。LRN-08 暫回 specified，待本票驗收。
 
-Root已固定候選回歸，一般／競態overlay各15fail／7pass。候選修正各22個事件、相關各114個事件通過，兩種建置各64份正常統計報告逐位保持。這些只屬隔離診斷，正式來源未採用，仍待ticket135的完整驗收及本票正式工程與交付，見[候選證據](../../evidence/LRN-08/aggregate-range-20261017/candidate-validation.json)。
+Root已固定候選回歸，一般／競態overlay各15fail／7pass。候選修正各22個事件、相關各114個事件通過，兩種建置各64份正常統計報告逐位保持。這些只屬隔離診斷，正式來源未採用，仍待本票正式工程與交付，見[候選證據](../../evidence/LRN-08/aggregate-range-20261017/candidate-validation.json)。
