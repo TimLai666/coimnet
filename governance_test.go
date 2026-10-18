@@ -217,10 +217,8 @@ func TestGovernancePassedRequirementsHaveEvidence(t *testing.T) {
 			}
 
 			// Resolve path relative to docs/
+			// filepath.Join cleans the path, which handles "../".
 			resolved := filepath.Join("docs", pathStr)
-			if !filepath.IsAbs(resolved) {
-				// filepath.Join cleans the path, which handles "../"
-			}
 
 			if _, err := os.Stat(resolved); os.IsNotExist(err) {
 				t.Errorf("id=%s: evidence file does not exist: %s (resolved: %s)", idStr, pathStr, resolved)

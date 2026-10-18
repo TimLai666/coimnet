@@ -162,8 +162,8 @@ func TestBenchmarkWritesReport(t *testing.T) {
 }
 
 func TestBenchmarkStoreMode(t *testing.T) {
-	dir, store, rules := deriveFixture(t)
-	store = addFullGraphFixtureClasses(t, dir)
+	dir, _, rules := deriveFixture(t)
+	store := addFullGraphFixtureClasses(t, dir)
 	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "benchmark-store-params.coimparams")
 	protocol := writeCompareProtocol(t, dir, "benchmark-store-compare.json", fullGraphCompareProtocol())
 	out := filepath.Join(t.TempDir(), "b.json")
@@ -242,8 +242,8 @@ func TestBenchmarkStoreMode(t *testing.T) {
 }
 
 func TestBenchmarkStoreModeRejects(t *testing.T) {
-	dir, store, rules := deriveFixture(t)
-	store = addFullGraphFixtureClasses(t, dir)
+	dir, _, rules := deriveFixture(t)
+	store := addFullGraphFixtureClasses(t, dir)
 	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "benchmark-store-reject-params.coimparams")
 	protocol := writeCompareProtocol(t, dir, "benchmark-store-reject-compare.json", fullGraphCompareProtocol())
 	base := []string{"benchmark", "--store", store, "--params", paramsPath, "--protocol", protocol, "--input-set", "in", "--readout-set", "out", "--steps", "4", "--repeat", "2"}

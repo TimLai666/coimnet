@@ -167,6 +167,8 @@ ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在
 
 建置、完整單元/race/vet、相依性驗證及已支援例子全部執行。真實子圖、全圖、各目標平台和 GPU 分開驗收。CPU 正確性是裝置比較基準。
 
+GitHub Actions（`.github/workflows/ci.yml`）在每個 PR 與 `main` 推送上跑：gofmt（排除 `evidence/` 的封存快照）、`go mod verify`、`go mod tidy` 無差異、`go vet`、golangci-lint（`.golangci.yml`，固定 v2.15.0）、Linux 與 macOS arm64 的完整 `go test`、Linux 的 `go test -race`，以及 linux/arm64、darwin/arm64、windows/amd64 的交叉建置與 vet。lint 只強制 errcheck、govet、ineffassign、staticcheck 的正確性檢查（SA）與 unused，命名與風格類不擋。CI 沒有 GPU，WebGPU 裝置測試依既有方式跳過，裝置驗收仍另外做。跨平台比對既有的數值基準時，非錄製平台只容許 float32 邊界的捨入差（`learning/upstream_baseline_test.go`），錄製平台仍逐位比對。
+
 ## 假設與資源
 
 本機優先、CPU、離線教師、零雲端費用。大型資料下載先查大小、可用空間與預算。全圖訓練須預估包括 E×B×T 的狀態歷史，超限拒絕而非自動縮小。外部資料 schema、Insyra 自訂梯度介面與裝置能力須由實測確認。

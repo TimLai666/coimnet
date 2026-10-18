@@ -65,5 +65,6 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 - `tasks/media/samples.go`：音訊多區塊樣本的輸入列建構與讀出列索引，和 `run.go` 的 `measureTemporal` 重複；抽成共用函式讓兩處一起用。
 - `experiment/fullgraph`／`internal/cli`：`resources.Estimate` 算的是存活陣列（全圖 16 步 7,220 MiB），但預設 GC 下程序峰值足跡會超出這個存活陣列估算；2026-09-24 已提交的 OPS-07 證據中，預設 GC 峰值足跡 12.22 GiB、85 秒，設 `GOMEMLIMIT=8GiB` 時 8.01 GiB、72 秒，接續摘要相同（`evidence/OPS-07/`）。可讓 `full-graph-short-training` 與 `benchmark --store` 在使用者沒設 `GOMEMLIMIT` 時，以預估值加固定餘裕呼叫 `debug.SetMemoryLimit`，並在報告記錄實際採用的上限；在那之前，執行全圖命令時建議明示 `GOMEMLIMIT=8GiB`。OPS-10 腳本本身尚未設定。
 - `cancel_release_test.go:174-188`：本輪全套平行 race 曾在 `TestCancelReleases/download_Fetch` 觀察到 7 個 goroutine，基準為 4；三次專項及一次整個根套件診斷均未重現。根因尚未確認，未改下載或放寬回收測試；下次重現時保存失敗當下的 goroutine stack，追查 HTTP 取消與測試伺服器清理順序。原始失敗與診斷見 `evidence/LRN-09/goal-cue-audit-20261003/`。
+- golangci-lint 的 errcheck 目前排除 `Close`／`Remove`／`RemoveAll`（`.golangci.yml`）。非 defer 的 `Close` 未檢查約 35 處，其中寫檔路徑（如 `gz.Close`、`summaryFile.Close`、`jsonFile.Close`）會吞掉最後寫入失敗；逐一改成檢查錯誤後拿掉這條排除（P2）。
 - `scripts/recompute-evidence.sh` 的 RSS 暫存使用專案根目錄 `.recompute-work`，`docs/resources.md` 的量測範例使用系統 `mktemp`。兩處尚未沿用 `runs/.tmp/` 的既有暫存規則，應調整路徑並保留清理保護（P2）。
 - `docs/model-and-mechanisms.md:65`：「暫時連線狀態、局部學習、近期參與紀錄」仍標為待實作，與 `evidence/LRN-04/`、`evidence/LRN-05/`、`evidence/MOD-05/` 的 CPU 小圖證據不一致；依各驗收範圍核對並更新機制表，保留完整圖與生物證據尚未驗證的限制（P2）。

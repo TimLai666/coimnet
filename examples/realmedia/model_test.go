@@ -19,8 +19,6 @@ import (
 	"github.com/TimLai666/coimnet/tasks/media/realdata"
 )
 
-const realMediaModelSchema = "coimnet-realmedia-model/v1"
-
 var (
 	realMediaFitOnce  sync.Once
 	realMediaFitValue fitResult

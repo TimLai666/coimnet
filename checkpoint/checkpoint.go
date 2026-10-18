@@ -577,23 +577,6 @@ func writeContext(ctx context.Context, writer io.Writer, data []byte) error {
 	return contextError(ctx)
 }
 
-func readBounded(ctx context.Context, reader io.Reader, limit int) ([]byte, error) {
-	if err := contextError(ctx); err != nil {
-		return nil, err
-	}
-	data, err := io.ReadAll(io.LimitReader(reader, int64(limit)+1))
-	if err != nil {
-		return nil, fmt.Errorf("read checkpoint: %w", err)
-	}
-	if len(data) > limit {
-		return nil, fmt.Errorf("checkpoint exceeds %d byte limit", limit)
-	}
-	if err := contextError(ctx); err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
 func syncDirectory(ctx context.Context, path string) error {
 	if err := contextError(ctx); err != nil {
 		return err

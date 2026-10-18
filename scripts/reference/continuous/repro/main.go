@@ -14,28 +14,6 @@ import (
 	"github.com/TimLai666/coimnet/learning"
 )
 
-func chain(n int) learning.Config {
-	c := learning.Config{InputSize: 1, OutputSize: 1, ReadoutNodes: []int{n - 1}, InputNodes: []int{0}}
-	c.Dynamics = dynamics.Config{Nodes: n, DT: 1, Activation: "tanh"}
-	for i := 0; i+1 < n; i++ {
-		c.Dynamics.Sources = append(c.Dynamics.Sources, i)
-		c.Dynamics.Targets = append(c.Dynamics.Targets, i+1)
-	}
-	return c
-}
-
-func params(c learning.Config) learning.Parameters {
-	n, e := c.Dynamics.Nodes, len(c.Dynamics.Sources)
-	p := learning.Parameters{Encoder: []float64{1}, Readout: []float64{1}}
-	p.Core.Weights = make([]float64, e)
-	for i := range p.Core.Weights {
-		p.Core.Weights[i] = 0.9
-	}
-	p.Core.Bias = make([]float64, n)
-	p.Core.LogTau = make([]float64, n)
-	return p
-}
-
 func main() {
 	ctx := context.Background()
 
