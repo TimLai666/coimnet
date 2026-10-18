@@ -129,6 +129,7 @@
 | `coimnet-ocr-checkpoint/v1` | `tasks/ocr` | OCR 任務模型與訓練狀態 bundle 格式 | [tasks/ocr/persistence.go:15](../tasks/ocr/persistence.go#L15) |
 | `coimnet-ocr-fixture/v1` | `tasks/ocr` | OCR fixture 報告格式 | [tasks/ocr/fixture.go:15](../tasks/ocr/fixture.go#L15) |
 | `coimnet-ocr-raster/v1` | `tasks/ocr` | 有上限 PNG／JPEG raster 與來源、尺寸、縮放 metadata 格式 | [tasks/ocr/raster.go:23](../tasks/ocr/raster.go#L23) |
+| `coimnet-online-ocr/v1` | `examples/onlineocr` | 部署後邊用邊學的 KMNIST 對決結果格式（Python 端由 scripts/bench/kmnist_online.py 寫出） | [examples/onlineocr/main.go:41](../examples/onlineocr/main.go#L41) |
 | `coimnet-parameter-derive/v1` | `internal/cli` | CLI 參數推導報告格式 | [internal/cli/derive.go:19](../internal/cli/derive.go#L19) |
 | `coimnet-parameter-set/v1` | `params` | 導出參數集格式 | [params/set.go:28](../params/set.go#L28) |
 | `coimnet-parameter-validate/v1` | `internal/cli` | CLI 參數驗證報告格式 | [internal/cli/derive.go:20](../internal/cli/derive.go#L20) |
