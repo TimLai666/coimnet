@@ -303,7 +303,7 @@ func main() {
 		writeJSON(filepath.Join(*out, "init.json"), map[string]any{
 			"encoder": init.Encoder, "weights": init.Core.Weights, "bias": init.Core.Bias,
 			"log_tau": init.Core.LogTau, "readout": init.Readout, "hidden": *hidden, "height": *inputNodes,
-			"readout_all": *mode == "custom" && *readout == "all",
+			"readout_all":   *mode == "custom" && *readout == "all",
 			"train_indices": ds.TrainIndices, "test_indices": ds.TestIndices, "train_labels": labels,
 		})
 		if rec != nil {

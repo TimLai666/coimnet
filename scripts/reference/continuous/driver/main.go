@@ -52,6 +52,7 @@ type netCase struct {
 	Params   learning.Parameters `json:"params"`
 	Options  learning.Options    `json:"options"`
 	Window   int                 `json:"window"`
+	Offset   int                 `json:"offset"`
 	Input    [][]float64         `json:"input"`
 	Target   []float64           `json:"target"`
 	Upstream [][]float64         `json:"upstream"`
@@ -72,6 +73,7 @@ type coreCase struct {
 	Inputs   [][]float64         `json:"inputs"`
 	Upstream [][]float64         `json:"upstream"`
 	Window   int                 `json:"window"`
+	Offset   int                 `json:"offset"`
 	Outputs  [][]float64         `json:"outputs"`
 	Grad     dynamics.Gradient   `json:"grad"`
 	// Stateful: Prefix inputs advance from NewState(Initial), then a
@@ -213,6 +215,9 @@ func randomNetCase(seed uint64) netCase {
 	o.WeightDecay = []float64{0, 0.01, 0.3}[r.IntN(3)]
 	o.ClipNorm = []float64{0, 0.05, 1}[r.IntN(3)]
 	o.Truncation = r.IntN(4)
+	if o.Truncation > 0 && seed%2 == 0 {
+		o.TruncationAlign = learning.TruncationAlignEnd
+	}
 	o.Trainable = learning.Trainable{Encoder: r.IntN(5) != 0, Weights: r.IntN(5) != 0, Bias: r.IntN(5) != 0, Tau: r.IntN(5) != 0, Readout: r.IntN(5) != 0}
 	if r.IntN(3) == 0 {
 		m := &learning.UpdateMasks{}
@@ -245,6 +250,7 @@ func randomNetCase(seed uint64) netCase {
 	}
 	steps := 1 + r.IntN(9)
 	cs := netCase{Kind: "net", Seed: seed, Config: c, Params: p, Options: o, Window: r.IntN(4)}
+	cs.Offset = seedOffset(seed, cs.Window)
 	cs.Input = matrix(r, steps, c.InputSize, 0.8)
 	cs.Target = normals(r, c.OutputSize, 0, 0.5)
 	cs.Upstream = matrix(r, steps, c.OutputSize, 0.5)
@@ -254,13 +260,13 @@ func randomNetCase(seed uint64) netCase {
 		cs.Error = "network: " + err.Error()
 		return cs
 	}
-	loss, g, err := net.LossGradient(ctx, p, cs.Input, cs.Target, cs.Window)
+	loss, g, err := net.LossGradientAligned(ctx, p, cs.Input, cs.Target, cs.Window, cs.Offset)
 	if err != nil {
 		cs.Error = "lossgradient: " + err.Error()
 		return cs
 	}
 	cs.Loss, cs.Grad = loss, toJSON(g)
-	gf, err := net.LossGradientFrom(ctx, p, cs.Input, cs.Upstream, cs.Window)
+	gf, err := net.LossGradientFromAligned(ctx, p, cs.Input, cs.Upstream, cs.Window, cs.Offset)
 	if err != nil {
 		cs.Error = "lossgradientfrom: " + err.Error()
 		return cs
@@ -270,7 +276,7 @@ func randomNetCase(seed uint64) netCase {
 	cw := c
 	cw.Dynamics.Workers = 3
 	if netw, err := learning.NewNetwork(cw); err == nil {
-		lw, gw, err := netw.LossGradient(ctx, p, cs.Input, cs.Target, cs.Window)
+		lw, gw, err := netw.LossGradientAligned(ctx, p, cs.Input, cs.Target, cs.Window, cs.Offset)
 		if err != nil || lw != loss || !reflect.DeepEqual(gw, g) {
 			cs.Internal = append(cs.Internal, fmt.Sprintf("workers3 LossGradient differs (err=%v)", err))
 		}
@@ -281,7 +287,9 @@ func randomNetCase(seed uint64) netCase {
 	{
 		dm, _ := dynamics.NewContinuous(c.Dynamics)
 		zs, err := dm.NewState(make([]float64, n))
-		if err == nil {
+		// LossGradientFromState has no aligned form; it is compared only on the
+		// start-aligned layout.
+		if err == nil && cs.Offset == 0 {
 			ns := learning.NeuralState{Core: learning.NeuralCoreContinuous, Continuous: &zs}
 			gs, err := net.LossGradientFromState(ctx, p, ns, cs.Input, cs.Upstream, cs.Window)
 			if err != nil || !reflect.DeepEqual(gs.Core.Weights, gf.Core.Weights) || !reflect.DeepEqual(gs.Core.Bias, gf.Core.Bias) || !reflect.DeepEqual(gs.Core.LogTau, gf.Core.LogTau) || !reflect.DeepEqual(gs.Encoder, gf.Encoder) || !reflect.DeepEqual(gs.Readout, gf.Readout) || !reflect.DeepEqual(gs.Inputs, gf.Inputs) {
@@ -316,7 +324,11 @@ func randomNetCase(seed uint64) netCase {
 			rec.Target = normals(r, c.OutputSize, 0, 0.5)
 		}
 		rec.Before = tr.Snapshot()
-		l, gg, err := net.LossGradient(ctx, rec.Before.Parameters, rec.Input, rec.Target, o.Truncation)
+		offset := 0
+		if o.TruncationAlign == learning.TruncationAlignEnd {
+			offset = dynamics.EndAlignedOffset(len(rec.Input), o.Truncation)
+		}
+		l, gg, err := net.LossGradientAligned(ctx, rec.Before.Parameters, rec.Input, rec.Target, o.Truncation, offset)
 		if err != nil {
 			rec.Error = "lossgradient: " + err.Error()
 			cs.Steps = append(cs.Steps, rec)
@@ -413,11 +425,21 @@ func mseUpstream(ctx context.Context, net *learning.Network, p learning.Paramete
 	return up, nil
 }
 
+// seedOffset picks a truncation offset from the seed alone, so adding it does
+// not shift the random stream every other field draws from.
+func seedOffset(seed uint64, window int) int {
+	if window <= 0 {
+		return 0
+	}
+	return int(seed % uint64(window))
+}
+
 func randomCoreCase(seed uint64) coreCase {
 	r := rand.New(rand.NewPCG(seed, 7))
 	c := randomTopology(r, 0)
 	n, e := c.Nodes, len(c.Sources)
 	cs := coreCase{Kind: "core", Seed: seed, Config: c, Window: r.IntN(4), SegWindow: r.IntN(4)}
+	cs.Offset = seedOffset(seed, cs.Window)
 	cs.Params = dynamics.Parameters{Weights: normals(r, e, 0, 0.6), Bias: normals(r, n, 0, 0.3), LogTau: normals(r, n, 0.3, 0.4)}
 	cs.Initial = normals(r, n, 0, 0.5)
 	steps := 1 + r.IntN(10)
@@ -435,7 +457,7 @@ func randomCoreCase(seed uint64) coreCase {
 		return cs
 	}
 	cs.Outputs = tr.Outputs()
-	if cs.Grad, err = m.Backward(ctx, tr, cs.Upstream, cs.Window); err != nil {
+	if cs.Grad, err = m.BackwardAligned(ctx, tr, cs.Upstream, cs.Window, cs.Offset); err != nil {
 		cs.Error = err.Error()
 		return cs
 	}
@@ -454,14 +476,14 @@ func randomCoreCase(seed uint64) coreCase {
 			bad("workers %d outputs differ", w)
 			continue
 		}
-		gw, err := mw.Backward(ctx, tw, cs.Upstream, cs.Window)
+		gw, err := mw.BackwardAligned(ctx, tw, cs.Upstream, cs.Window, cs.Offset)
 		if err != nil || !reflect.DeepEqual(gw, cs.Grad) {
 			bad("workers %d gradient differs", w)
 		}
 	}
 	// Recompute.
 	for _, s := range []int{1, 2, 3, 4, 100} {
-		g, err := m.BackwardRecompute(ctx, cs.Params, cs.Initial, cs.Inputs, cs.Upstream, cs.Window, s)
+		g, err := m.BackwardRecomputeAligned(ctx, cs.Params, cs.Initial, cs.Inputs, cs.Upstream, cs.Window, cs.Offset, s)
 		if err != nil || !reflect.DeepEqual(g, cs.Grad) {
 			bad("BackwardRecompute segment %d differs (err=%v)", s, err)
 		}

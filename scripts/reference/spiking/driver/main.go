@@ -112,11 +112,16 @@ func lifCase(r *rand.Rand, seed uint64) obj {
 	must(err)
 	window := 2 + r.IntN(3)
 	grads := obj{}
+	offset := dynamics.EndAlignedOffset(T, window)
 	for _, w := range []int{0, window} {
-		g, err := m.Backward(ctx, tr, upstream, w)
+		off := 0
+		if w > 0 {
+			off = offset
+		}
+		g, err := m.BackwardAligned(ctx, tr, upstream, w, off)
 		must(err)
 		grads[fmt.Sprint(w)] = g
-		gr, err := m.BackwardRecompute(ctx, p, initial, inputs, upstream, w, 3)
+		gr, err := m.BackwardRecomputeAligned(ctx, p, initial, inputs, upstream, w, off, 3)
 		must(err)
 		grads[fmt.Sprintf("recompute_equal_%d", w)] = bitsEqual(g, gr)
 	}
@@ -165,7 +170,7 @@ func lifCase(r *rand.Rand, seed uint64) obj {
 	must(err)
 	return obj{
 		"seed": seed, "config": m.Config(), "params": p, "initial": initial, "inputs": inputs, "upstream": upstream,
-		"window": window, "outputs": tr.Outputs(), "spikes": tr.Spikes(), "voltages": tr.Voltages(),
+		"window": window, "offset": offset, "outputs": tr.Outputs(), "spikes": tr.Spikes(), "voltages": tr.Voltages(),
 		"grads": grads, "checks": checks,
 		"modulation": mod, "mod_outputs": om, "mod_spikes": spm,
 	}
@@ -228,8 +233,13 @@ func mixedCase(r *rand.Rand, seed uint64) obj {
 	must(err)
 	window := 2 + r.IntN(3)
 	grads := obj{}
+	offset := dynamics.EndAlignedOffset(T, window)
 	for _, w := range []int{0, window} {
-		g, err := m.Backward(ctx, tr, upstream, w)
+		off := 0
+		if w > 0 {
+			off = offset
+		}
+		g, err := m.BackwardAligned(ctx, tr, upstream, w, off)
 		must(err)
 		grads[fmt.Sprint(w)] = g
 	}
@@ -293,7 +303,7 @@ func mixedCase(r *rand.Rand, seed uint64) obj {
 	must(err)
 	return obj{
 		"seed": seed, "config": m.Config(), "node_rule": rule, "params": p, "initial": initial, "inputs": inputs, "upstream": upstream,
-		"window": window, "outputs": tr.Outputs(), "spikes": tr.Spikes(), "voltages": tr.Voltages(),
+		"window": window, "offset": offset, "outputs": tr.Outputs(), "spikes": tr.Spikes(), "voltages": tr.Voltages(),
 		"grads": grads, "checks": checks, "modulation": mod, "mod_outputs": om, "mod_spikes": spm,
 	}
 }
@@ -321,8 +331,13 @@ func vectorCase(r *rand.Rand, seed uint64) obj {
 	must(err)
 	window := 2 + r.IntN(3)
 	grads := obj{}
+	offset := dynamics.EndAlignedOffset(T, window)
 	for _, w := range []int{0, window} {
-		g, err := m.Backward(ctx, tr, upstream, w)
+		off := 0
+		if w > 0 {
+			off = offset
+		}
+		g, err := m.BackwardAligned(ctx, tr, upstream, w, off)
 		must(err)
 		grads[fmt.Sprint(w)] = g
 	}
@@ -350,7 +365,7 @@ func vectorCase(r *rand.Rand, seed uint64) obj {
 	}
 	return obj{
 		"seed": seed, "config": c, "params": p, "initial": initial, "inputs": inputs, "upstream": upstream,
-		"window": window, "outputs": tr.Outputs(), "voltages": tr.Voltages(), "grads": grads, "checks": checks,
+		"window": window, "offset": offset, "outputs": tr.Outputs(), "voltages": tr.Voltages(), "grads": grads, "checks": checks,
 	}
 }
 

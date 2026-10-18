@@ -25,14 +25,21 @@ type Trainable struct {
 
 // Options specifies a local, serializable AdamW update and BPTT window.
 type Options struct {
-	LearningRate float64   `json:"learning_rate"`
-	Beta1        float64   `json:"beta1"`
-	Beta2        float64   `json:"beta2"`
-	Epsilon      float64   `json:"epsilon"`
-	WeightDecay  float64   `json:"weight_decay"`
-	ClipNorm     float64   `json:"clip_norm"`
-	Truncation   int       `json:"truncation"`
-	Trainable    Trainable `json:"trainable"`
+	LearningRate float64 `json:"learning_rate"`
+	Beta1        float64 `json:"beta1"`
+	Beta2        float64 `json:"beta2"`
+	Epsilon      float64 `json:"epsilon"`
+	WeightDecay  float64 `json:"weight_decay"`
+	ClipNorm     float64 `json:"clip_norm"`
+	Truncation   int     `json:"truncation"`
+	// TruncationAlign places the Truncation window boundaries. Empty or
+	// TruncationAlignStart counts them from the first row (0, w, 2w, ...), the
+	// usual fixed-chunk layout when every row carries a loss.
+	// TruncationAlignEnd shifts them so the last window ends at the final row,
+	// which lets a last-row loss reach back a full window. It needs a positive
+	// Truncation, since without one there is no boundary to place.
+	TruncationAlign string    `json:"truncation_align,omitempty"`
+	Trainable       Trainable `json:"trainable"`
 	// Masks narrows a trainable group to individual edges and nodes. The
 	// effective mask is the group flag AND the per-item mask; nil means every
 	// item of every group follows its group flag alone.
@@ -65,6 +72,12 @@ type Options struct {
 // DefaultOptions returns every group of the continuous core trainable and a
 // declared AdamW baseline. The LIF threshold group stays frozen; a spiking
 // model must enable it explicitly.
+// The values Options.TruncationAlign accepts besides empty.
+const (
+	TruncationAlignStart = "start"
+	TruncationAlignEnd   = "end"
+)
+
 func DefaultOptions() Options {
 	return Options{
 		LearningRate: .01, Beta1: .9, Beta2: .999, Epsilon: 1e-8, WeightDecay: 0, ClipNorm: 1, Truncation: 0,
@@ -336,7 +349,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	loss, g, err := tr.network.lossGradient(ctx, tr.parameters, input, target, tr.options.Truncation, recomputeSegment(tr.options))
+	loss, g, err := tr.network.lossGradient(ctx, tr.parameters, input, target, tr.options.Truncation, truncationOffset(tr.options, len(input)), recomputeSegment(tr.options))
 	if err != nil {
 		return zero, err
 	}
@@ -344,7 +357,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = gradientHorizon(len(input)-1, tr.options.Truncation)
+	result.GradientHorizonSteps = gradientHorizon(len(input)-1, tr.options.Truncation, truncationOffset(tr.options, len(input)))
 	return result, nil
 }
 
@@ -370,7 +383,7 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	g, err := tr.network.lossGradientFrom(ctx, tr.parameters, input, upstream, tr.options.Truncation, recomputeSegment(tr.options))
+	g, err := tr.network.lossGradientFrom(ctx, tr.parameters, input, upstream, tr.options.Truncation, truncationOffset(tr.options, len(input)), recomputeSegment(tr.options))
 	if err != nil {
 		return zero, err
 	}
@@ -378,7 +391,7 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation)
+	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation, truncationOffset(tr.options, len(input)))
 	return result, nil
 }
 
@@ -392,19 +405,26 @@ func recomputeSegment(o Options) int {
 }
 
 // gradientHorizon is StepResult.GradientHorizonSteps for a loss on row of an
-// episode under the truncation window: the fixed window boundaries mean the
-// row reaches back to the start of its own window only.
-func gradientHorizon(row, truncation int) int {
-	if truncation > 0 {
-		return row%truncation + 1
+// episode under the truncation window: the window boundaries mean the row
+// reaches back to the start of its own window only.
+func gradientHorizon(row, truncation, offset int) int {
+	return row - dynamics.WindowStart(row, truncation, offset) + 1
+}
+
+// truncationOffset is the window offset Options.TruncationAlign selects for
+// an episode of rows input rows: zero for the start-aligned default, and the
+// offset whose last window ends at the final row for TruncationAlignEnd.
+func truncationOffset(o Options, rows int) int {
+	if o.TruncationAlign == TruncationAlignEnd {
+		return dynamics.EndAlignedOffset(rows, o.Truncation)
 	}
-	return row + 1
+	return 0
 }
 
 // upstreamHorizon is the largest gradientHorizon over the rows a caller's
 // upstream actually scores. A last-step readout reads only the final row, so
 // only that row counts there.
-func upstreamHorizon(upstream [][]float64, everyStep bool, truncation int) int {
+func upstreamHorizon(upstream [][]float64, everyStep bool, truncation, offset int) int {
 	horizon := 0
 	for r, row := range upstream {
 		if !everyStep && r != len(upstream)-1 {
@@ -412,7 +432,7 @@ func upstreamHorizon(upstream [][]float64, everyStep bool, truncation int) int {
 		}
 		for _, v := range row {
 			if v != 0 {
-				horizon = max(horizon, gradientHorizon(r, truncation))
+				horizon = max(horizon, gradientHorizon(r, truncation, offset))
 				break
 			}
 		}
@@ -659,6 +679,15 @@ func validateOptions(o Options) error {
 	}
 	if o.LossScale < 0 {
 		return fmt.Errorf("loss scale %g cannot be negative", o.LossScale)
+	}
+	switch o.TruncationAlign {
+	case "", TruncationAlignStart:
+	case TruncationAlignEnd:
+		if o.Truncation == 0 {
+			return fmt.Errorf("truncation align %q needs a positive truncation", o.TruncationAlign)
+		}
+	default:
+		return fmt.Errorf("unsupported truncation align %q", o.TruncationAlign)
 	}
 	if o.AccumulateSteps < 0 {
 		return fmt.Errorf("accumulate steps %d cannot be negative", o.AccumulateSteps)

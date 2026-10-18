@@ -40,9 +40,20 @@ func (m *Continuous) BackwardRecompute(ctx context.Context, p Parameters, initia
 	return g, err
 }
 
+// BackwardRecomputeAligned is BackwardRecompute with the truncation
+// boundaries of BackwardAligned.
+func (m *Continuous) BackwardRecomputeAligned(ctx context.Context, p Parameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (Gradient, error) {
+	g, _, err := m.backwardRecomputeStats(ctx, p, initial, inputs, upstream, window, offset, segment)
+	return g, err
+}
+
 // BackwardRecomputeStats is BackwardRecompute and additionally reports what the
 // recompute kept in a RecomputeStats (see RecomputeStats for the fields).
 func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, initial []float64, inputs, upstream [][]float64, window, segment int) (Gradient, RecomputeStats, error) {
+	return m.backwardRecomputeStats(ctx, p, initial, inputs, upstream, window, 0, segment)
+}
+
+func (m *Continuous) backwardRecomputeStats(ctx context.Context, p Parameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (Gradient, RecomputeStats, error) {
 	var empty Gradient
 	var stats RecomputeStats
 	if ctx == nil {
@@ -67,6 +78,9 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 	}
 	if window < 0 || len(upstream) != steps {
 		return empty, stats, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, stats, err
 	}
 	if err := vector(initial, n, "initial voltage"); err != nil {
 		return empty, stats, err
@@ -184,10 +198,7 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 			if err := ctx.Err(); err != nil {
 				return empty, stats, err
 			}
-			wstart := 0
-			if window > 0 {
-				wstart = t / window * window
-			}
+			wstart := WindowStart(t, window, offset)
 			prev := make([]float64, n)
 			g.Inputs[t] = make([]float64, n)
 			drive := m.driveRow(p, inputs, outputRows, lo, t)

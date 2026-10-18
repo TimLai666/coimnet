@@ -43,12 +43,12 @@ func (g gpuContinuousCore) forward(ctx context.Context, p Parameters, initial []
 	return trace, trace.Outputs(), nil
 }
 
-func (g gpuContinuousCore) backward(ctx context.Context, trace coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+func (g gpuContinuousCore) backward(ctx context.Context, trace coreTrace, upstream [][]float64, window, offset int) (coreGradient, error) {
 	gpuTrace, ok := trace.(*dynamics.Trace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
 	}
-	gradient, err := g.gpu.Backward(ctx, gpuTrace, upstream, window)
+	gradient, err := g.gpu.BackwardAligned(ctx, gpuTrace, upstream, window, offset)
 	if err != nil {
 		return coreGradient{}, err
 	}

@@ -54,8 +54,15 @@ def leak(logtau, dt):
     return lam, alpha
 
 
+# OFFSET is the current case's truncation offset (boundaries at OFFSET,
+# OFFSET+W, ...); the run_*_case functions set it before replaying a case.
+OFFSET = 0
+
+
 def window_start(t, W):
-    return (t // W) * W if W > 0 else 0
+    if W <= 0 or t < OFFSET:
+        return 0
+    return OFFSET + ((t - OFFSET) // W) * W
 
 
 def edge_drive(n, C, sources, targets, delays, out_rows, weights, t, W, matrix=False):
@@ -190,6 +197,8 @@ def node_rule_from(case, n):
 
 
 def run_spiking_case(case, family):
+    global OFFSET
+    OFFSET = case.get("offset", 0)
     cfg = case["config"]
     n = cfg["nodes"]
     if family == "lif":
@@ -294,6 +303,8 @@ def vector_forward(cfg, w, b, lt, init, inputs, W):
 
 
 def run_vector_case(case):
+    global OFFSET
+    OFFSET = case.get("offset", 0)
     cfg = case["config"]
     p = case["params"]
     issues, results = [], {}
@@ -325,6 +336,8 @@ def run_vector_case(case):
 
 # ---------------------------------------------------------------- network
 def run_net_case(case):
+    global OFFSET
+    OFFSET = 0
     cfg = case["config"]
     p = case["params"]
     kind = case["kind"]

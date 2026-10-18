@@ -14,6 +14,12 @@ import (
 // segment-start voltage sensitivity and never updates the saved state. Any
 // validation, cancellation, or numerical failure returns a zero Gradient.
 func (n *Network) LossGradientFromState(ctx context.Context, p Parameters, initial NeuralState, input, upstream [][]float64, window int) (Gradient, error) {
+	return n.lossGradientFromState(ctx, p, initial, input, upstream, window, 0)
+}
+
+// lossGradientFromState is LossGradientFromState with the truncation
+// boundaries shifted by offset, as dynamics.Continuous.BackwardAligned takes.
+func (n *Network) lossGradientFromState(ctx context.Context, p Parameters, initial NeuralState, input, upstream [][]float64, window, offset int) (Gradient, error) {
 	var empty Gradient
 	if ctx == nil {
 		return empty, fmt.Errorf("nil context")
@@ -31,7 +37,7 @@ func (n *Network) LossGradientFromState(ctx context.Context, p Parameters, initi
 	if err != nil {
 		return empty, err
 	}
-	g, err := n.lossGradientReverse(ctx, input, e, upstream, window)
+	g, err := n.lossGradientReverse(ctx, input, e, upstream, window, offset)
 	if err != nil {
 		return empty, err
 	}
@@ -66,7 +72,7 @@ func (tr *Trainer) StepFromState(ctx context.Context, initial NeuralState, input
 	if tr.options.Recompute != nil {
 		return zero, fmt.Errorf("stateful continuous step does not support Recompute")
 	}
-	g, err := tr.network.LossGradientFromState(ctx, tr.parameters, initial, input, upstream, tr.options.Truncation)
+	g, err := tr.network.lossGradientFromState(ctx, tr.parameters, initial, input, upstream, tr.options.Truncation, truncationOffset(tr.options, len(input)))
 	if err != nil {
 		return zero, err
 	}
@@ -74,6 +80,6 @@ func (tr *Trainer) StepFromState(ctx context.Context, initial NeuralState, input
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation)
+	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation, truncationOffset(tr.options, len(input)))
 	return result, nil
 }

@@ -13,9 +13,20 @@ func (m *LIF) BackwardRecompute(ctx context.Context, p LIFParameters, initial []
 	return g, err
 }
 
+// BackwardRecomputeAligned is BackwardRecompute with the truncation
+// boundaries of BackwardAligned.
+func (m *LIF) BackwardRecomputeAligned(ctx context.Context, p LIFParameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (LIFGradient, error) {
+	g, _, err := m.backwardRecomputeStats(ctx, p, initial, inputs, upstream, window, offset, segment)
+	return g, err
+}
+
 // BackwardRecomputeStats is BackwardRecompute plus the rows it kept: FullHistoryRows = T+1; CheckpointRows = the sum of
 // len(cp.Syn) over all checkpoints; MaxSegmentRows = the largest len(cp.Syn) + (end − start) over the segments.
 func (m *LIF) BackwardRecomputeStats(ctx context.Context, p LIFParameters, initial []float64, inputs, upstream [][]float64, window, segment int) (LIFGradient, RecomputeStats, error) {
+	return m.backwardRecomputeStats(ctx, p, initial, inputs, upstream, window, 0, segment)
+}
+
+func (m *LIF) backwardRecomputeStats(ctx context.Context, p LIFParameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (LIFGradient, RecomputeStats, error) {
 	var empty LIFGradient
 	var stats RecomputeStats
 	if ctx == nil {
@@ -40,6 +51,9 @@ func (m *LIF) BackwardRecomputeStats(ctx context.Context, p LIFParameters, initi
 	}
 	if window < 0 || len(upstream) != steps {
 		return empty, stats, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, stats, err
 	}
 	if err := vector(initial, n, "initial voltage"); err != nil {
 		return empty, stats, err
@@ -129,10 +143,7 @@ func (m *LIF) BackwardRecomputeStats(ctx context.Context, p LIFParameters, initi
 			if err := ctx.Err(); err != nil {
 				return empty, stats, err
 			}
-			wstart := 0
-			if window > 0 {
-				wstart = t / window * window
-			}
+			wstart := WindowStart(t, window, offset)
 			keep := t > wstart || wstart == 0
 			prevV, prevA := make([]float64, n), make([]float64, n)
 			g.Inputs[t] = make([]float64, n)

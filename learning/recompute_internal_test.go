@@ -201,17 +201,18 @@ func TestRecomputeBackwardMatchesFullHistory(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: forward: %v", fx.name, err)
 		}
-		for _, window := range []int{0, 3} {
-			want, err := fx.core.backward(ctx, trace, upstream, window)
+		for _, tw := range []struct{ window, offset int }{{0, 0}, {3, 0}, {3, 1}, {3, 2}} {
+			window, offset := tw.window, tw.offset
+			want, err := fx.core.backward(ctx, trace, upstream, window, offset)
 			if err != nil {
 				t.Fatalf("%s window %d: backward: %v", fx.name, window, err)
 			}
 			for _, segment := range []int{1, 4, 7} {
-				got, err := backwardRecompute(ctx, fx.core, fx.params, initial, fx.inputs, upstream, window, segment)
+				got, err := backwardRecompute(ctx, fx.core, fx.params, initial, fx.inputs, upstream, window, offset, segment)
 				if err != nil {
 					t.Fatalf("%s window %d segment %d: backwardRecompute: %v", fx.name, window, segment, err)
 				}
-				assertRecomputeGradientEqual(t, fmt.Sprintf("%s window %d segment %d", fx.name, window, segment), got, want)
+				assertRecomputeGradientEqual(t, fmt.Sprintf("%s window %d offset %d segment %d", fx.name, window, offset, segment), got, want)
 			}
 		}
 	}
@@ -230,7 +231,7 @@ func TestRecomputeRejects(t *testing.T) {
 		if _, err := observe(ctx, cont.core, continuousRecomputeParameters(), initial, inputs, 0); err == nil {
 			t.Fatal("observe accepted segment 0")
 		}
-		if _, err := backwardRecompute(ctx, cont.core, continuousRecomputeParameters(), initial, inputs, recomputeUpstream(), 0, 0); err == nil {
+		if _, err := backwardRecompute(ctx, cont.core, continuousRecomputeParameters(), initial, inputs, recomputeUpstream(), 0, 0, 0); err == nil {
 			t.Fatal("backwardRecompute accepted segment 0")
 		}
 	})
@@ -264,7 +265,7 @@ func TestRecomputeRejects(t *testing.T) {
 		if _, err := observe(ctx, n.core, p, initial, inputs, 2); err == nil || !strings.Contains(err.Error(), "recompute supports the continuous and LIF cores") {
 			t.Fatalf("observe: %v", err)
 		}
-		if _, err := backwardRecompute(ctx, n.core, p, initial, inputs, upstream, 0, 2); err == nil || !strings.Contains(err.Error(), "recompute supports the continuous and LIF cores") {
+		if _, err := backwardRecompute(ctx, n.core, p, initial, inputs, upstream, 0, 0, 2); err == nil || !strings.Contains(err.Error(), "recompute supports the continuous and LIF cores") {
 			t.Fatalf("backwardRecompute: %v", err)
 		}
 	})
@@ -281,7 +282,7 @@ func TestRecomputeRejects(t *testing.T) {
 		if _, err := observe(ctx, cont.core, p, initial, inputs, 2); err == nil {
 			t.Fatal("observe accepted theta_raw on the continuous core")
 		}
-		if _, err := backwardRecompute(ctx, cont.core, p, initial, inputs, recomputeUpstream(), 0, 2); err == nil {
+		if _, err := backwardRecompute(ctx, cont.core, p, initial, inputs, recomputeUpstream(), 0, 0, 2); err == nil {
 			t.Fatal("backwardRecompute accepted theta_raw on the continuous core")
 		}
 	})
@@ -293,19 +294,19 @@ func TestRecomputeRejects(t *testing.T) {
 // upstream row, and an all-zero upstream reaches nothing.
 func TestGradientHorizonFollowsFixedWindows(t *testing.T) {
 	for truncation, want := range map[int]int{0: 5, 2: 1, 3: 2, 4: 1, 5: 5, 9: 5} {
-		if got := gradientHorizon(4, truncation); got != want {
+		if got := gradientHorizon(4, truncation, 0); got != want {
 			t.Errorf("gradientHorizon(4, %d) = %d, want %d", truncation, got, want)
 		}
 	}
 	upstream := [][]float64{{0}, {1}, {0}, {0}, {0}}
-	if got := upstreamHorizon(upstream, true, 4); got != 2 {
+	if got := upstreamHorizon(upstream, true, 4, 0); got != 2 {
 		t.Errorf("every-step horizon = %d, want 2", got)
 	}
-	if got := upstreamHorizon(upstream, false, 4); got != 0 {
+	if got := upstreamHorizon(upstream, false, 4, 0); got != 0 {
 		t.Errorf("last-step horizon with a zero final row = %d, want 0", got)
 	}
 	upstream[4][0] = 1
-	if got := upstreamHorizon(upstream, false, 4); got != 1 {
+	if got := upstreamHorizon(upstream, false, 4, 0); got != 1 {
 		t.Errorf("last-step horizon = %d, want 1", got)
 	}
 }

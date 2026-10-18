@@ -26,7 +26,7 @@ def act(v, kind):
     return torch.tanh(v) if kind == "tanh" else torch.clamp(v, min=0) + torch.log1p(torch.exp(-v.abs()))
 
 
-def core_forward(cfg, W, b, logtau, v0, inputs, window, state=None):
+def core_forward(cfg, W, b, logtau, v0, inputs, window, state=None, offset=0):
     """Documented continuous core.
 
     v[t+1] = lambda*v[t] + alpha*(u[t] + sum_e w_e*y_src(t - d_e) + b)
@@ -60,7 +60,9 @@ def core_forward(cfg, W, b, logtau, v0, inputs, window, state=None):
     srcT = torch.tensor(src, dtype=torch.long)
     tgtT = torch.tensor(tgt, dtype=torch.long)
     for t in range(T):
-        start = (t // window) * window if window > 0 else 0
+        # Boundaries at offset, offset+window, ...; rows before offset form a
+        # leading window that starts at 0.
+        start = 0 if window <= 0 or t < offset else offset + ((t - offset) // window) * window
         vin = V[t]
         if start > 0 and t == start:
             vin = vin.detach()
@@ -100,7 +102,7 @@ def check_core(case, report):
     v0 = torch.tensor(case["initial"], dtype=F64, requires_grad=True)
     u = torch.tensor(case["inputs"], dtype=F64, requires_grad=True)
     up = torch.tensor(case["upstream"], dtype=F64)
-    Y, _ = core_forward(cfg, W, b, lt, v0, u, case["window"])
+    Y, _ = core_forward(cfg, W, b, lt, v0, u, case["window"], offset=case.get("offset", 0))
     (Y * up).sum().backward()
     g = case["grad"]
     tag = f"core seed {case['seed']}"
@@ -129,7 +131,7 @@ def check_core(case, report):
 
 
 # ------------------------------------------------------------- network ----
-def net_grad(cfg, params, x_rows, target=None, upstream=None, window=0):
+def net_grad(cfg, params, x_rows, target=None, upstream=None, window=0, offset=0):
     """learning.Network.LossGradient (target) or LossGradientFrom (upstream).
 
     encoder [input, input-node] (float32) -> scatter to InputNodes -> core
@@ -163,7 +165,7 @@ def net_grad(cfg, params, x_rows, target=None, upstream=None, window=0):
     b = torch.tensor(params["core"]["bias"], dtype=F64, requires_grad=True)
     lt = torch.tensor(params["core"]["log_tau"], dtype=F64, requires_grad=True)
     v0 = torch.zeros(n, dtype=F64, requires_grad=True)
-    Y, _ = core_forward(dyn, W, b, lt, v0, u, window)
+    Y, _ = core_forward(dyn, W, b, lt, v0, u, window, offset=offset)
     rn = torch.tensor(rnodes)
     h = Y[:, rn] if every else Y[-1, rn]
     h32 = h.detach().to(F32).requires_grad_(True)
@@ -195,12 +197,12 @@ def net_grad(cfg, params, x_rows, target=None, upstream=None, window=0):
 def check_net_grads(case, report):
     cfg, p = case["config"], case["params"]
     tag = f"net seed {case['seed']}"
-    r = net_grad(cfg, p, case["input"], target=case["target"], window=case["window"])
+    r = net_grad(cfg, p, case["input"], target=case["target"], window=case["window"], offset=case.get("offset", 0))
     g = case["grad"]
     if abs(r["loss"] - case["loss"]) > 1e-5 * max(1, abs(r["loss"])):
         report.append((tag + " loss", r["loss"], case["loss"]))
     cmp_grad(report, tag + " LossGradient", r, g)
-    r = net_grad(cfg, p, case["input"], upstream=case["upstream"], window=case["window"])
+    r = net_grad(cfg, p, case["input"], upstream=case["upstream"], window=case["window"], offset=case.get("offset", 0))
     cmp_grad(report, tag + " LossGradientFrom", r, case["grad_from"])
 
 
@@ -394,7 +396,9 @@ def check_trainer(case, report):
             break
         before = st["before"]
         # (a) torch gradient at the Go pre-step parameters vs Go LossGradient.
-        r = net_grad(cfg, before["parameters"], st["input"], target=st["target"], window=o["truncation"])
+        trunc = o["truncation"]
+        offset = len(st["input"]) % trunc if trunc > 0 and o.get("truncation_align") == "end" else 0
+        r = net_grad(cfg, before["parameters"], st["input"], target=st["target"], window=trunc, offset=offset)
         cmp_grad(report, tag + f" step {k}", r, st["grad"])
         if abs(r["loss"] - st["result"]["loss"]) > 1e-5 * max(1, abs(r["loss"])):
             report.append((tag + f" step {k} loss", r["loss"], st["result"]["loss"]))
