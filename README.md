@@ -1,6 +1,6 @@
 # CoImNet
 
-目前工程追蹤為 89／91。[ticket148](docs/tickets/148-reported-classification-loss.md) 與 [ticket149](docs/tickets/149-categorical-gap-residual.md) 的分類誤差及導數修正已通過完整工程與舊模型接續驗證，最後治理與自有暫存清理已完成，遠端交付待完成。OCR 多字與語音訓練共用的文字對齊計算會遺失極小誤差與梯度，由 [ticket150](docs/tickets/150-ctc-tail-representability.md) 接續，見[查核](evidence/TSK-02/ctc-tail-audit-20261018/root-review.json)。這些數值觀察沒有證明辨識品質下降或改善。
+目前工程追蹤為 89／91。[ticket148](docs/tickets/148-reported-classification-loss.md) 與 [ticket149](docs/tickets/149-categorical-gap-residual.md) 的分類誤差及導數修正已通過完整工程與舊模型接續驗證，最後治理、自有暫存清理及[遠端交付](evidence/TSK-01/reported-loss-candidate-20261018/delivery.json)均已完成。OCR 多字與語音訓練共用的文字對齊計算會遺失極小誤差與梯度，由 [ticket150](docs/tickets/150-ctc-tail-representability.md) 接續，見[查核](evidence/TSK-02/ctc-tail-audit-20261018/root-review.json)。這些數值觀察沒有證明辨識品質下降或改善。
 
 **Connectome-Imprinted Network** 是以真實果蠅神經接線建立可訓練模型的框架，使用 Go 與 Insyra。目標是讓使用者定義輸入訊號、訓練神經動態與閾值，並保存及恢復模型的學習狀態。
 

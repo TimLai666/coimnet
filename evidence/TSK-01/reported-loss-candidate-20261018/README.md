@@ -1,6 +1,6 @@
 # OCR／蒸餾誤差與共用分類導數修正
 
-[ticket148](../../../docs/tickets/148-reported-classification-loss.md) 與 [ticket149](../../../docs/tickets/149-categorical-gap-residual.md) 均為 4／5。914 份正式來源的完整工程與舊模型接續已通過，恢復需求狀態後的 31 項治理已通過，99 份必要輸入已封存，2,715,076,500 bytes 自有暫存已清除，遠端交付尚未完成。
+[ticket148](../../../docs/tickets/148-reported-classification-loss.md) 與 [ticket149](../../../docs/tickets/149-categorical-gap-residual.md) 均為 5／5。914 份正式來源的完整工程與舊模型接續已通過，恢復需求狀態後的 31 項治理已通過，99 份必要輸入已封存，2,715,076,500 bytes 自有暫存已清除，主要提交 aa6e366 已正常推送，遠端讀回完全相同，見[交付](delivery.json)。
 
 工程追蹤為 89／91，TCH-03／TCH-04 恢復 passed。OCR 多字與語音共用 CTC 的極小值缺陷另由 [ticket150](../../../docs/tickets/150-ctc-tail-representability.md) 接續，TSK-01／TSK-02 保持 specified，見[獨立查核](../../TSK-02/ctc-tail-audit-20261018/root-review.json)。本次沒有量測真實任務品質或生物機制效益。
 
@@ -24,6 +24,6 @@ OCR 單字元與蒸餾標籤分支共用分類誤差函式，將最大類別以�
 
 ## 剩餘交付
 
-遠端交付完成後才勾選剩餘項目，狀態見 [progress.json](progress.json)。自有暫存 `runs/.tmp/reported-loss-candidate-20261018` 已清除，原模型、資料、模組及其他暫存保持，見[清理核對](cleanup-root-verification-joint.json)。
+本輪交付已完成，狀態見 [progress.json](progress.json)。自有暫存 `runs/.tmp/reported-loss-candidate-20261018` 已清除，原模型、資料、模組及其他暫存保持，見[清理核對](cleanup-root-verification-joint.json)。
 
 減法審查：共用兩個入口的必要算式，移除被替換的正規化工作，不新增訓練設定或依賴。

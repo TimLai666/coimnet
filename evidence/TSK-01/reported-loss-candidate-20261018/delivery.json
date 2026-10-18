@@ -1,0 +1,50 @@
+{
+  "requirement": "TSK-01",
+  "related_requirements": [
+    "TCH-03",
+    "TCH-04"
+  ],
+  "ticket": "148",
+  "related_ticket": "149",
+  "verified_at": "2026-10-18T05:18:21.864889+00:00",
+  "reproduction_command": [
+    [
+      "git",
+      "push",
+      "origin",
+      "HEAD:refs/heads/codex/receptor-chemistry-training"
+    ],
+    [
+      "git",
+      "ls-remote",
+      "--exit-code",
+      "origin",
+      "refs/heads/codex/receptor-chemistry-training"
+    ]
+  ],
+  "environment": {
+    "branch": "codex/receptor-chemistry-training",
+    "source_manifest": "formal-source-joint.json"
+  },
+  "observed_result": {
+    "implementation_head": "aa6e3660feadc9912125278f8a602b6bfe85e14f",
+    "remote_head": "aa6e3660feadc9912125278f8a602b6bfe85e14f",
+    "push_exit_code": 0,
+    "source_files_in_commit_matching_verified_manifest": 914,
+    "owned_temp_directory_absent": true,
+    "requirements_passed": 89,
+    "requirements_held": [
+      "TSK-01",
+      "TSK-02"
+    ]
+  },
+  "test_log": [
+    "delivery-implementation-remote.log"
+  ],
+  "log_sha256": "b6d0132548b3121fbf10efd3cd7ddec64e3f5e03367aedcfc20cd266ca0f0fa0",
+  "base_remote_head": "0e12cb1cf8d2187b5b74e6b91557848ffd1bf5a8",
+  "source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+  "scope": "Verified implementation and evidence commits; final completion metadata follows in a separate commit. Global zero-bug goal remains active.",
+  "actual_terminal_tool_chunk": "3370d6",
+  "final_completion_metadata_commit_follows": true
+}
