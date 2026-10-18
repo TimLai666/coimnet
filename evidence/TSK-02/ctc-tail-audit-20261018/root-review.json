@@ -1,0 +1,115 @@
+{
+  "requirement": "TSK-02",
+  "related_requirements": [
+    "TSK-01"
+  ],
+  "ticket": "150",
+  "reproduction_command": [
+    [
+      "go",
+      "run",
+      "runs/.tmp/reported-loss-candidate-20261018/ctc-single-frame-probe.go"
+    ],
+    [
+      "go",
+      "run",
+      "-race",
+      "runs/.tmp/reported-loss-candidate-20261018/ctc-single-frame-probe.go"
+    ],
+    [
+      "go",
+      "run",
+      "runs/.tmp/reported-loss-candidate-20261018/ctc-two-frame-probe.go"
+    ],
+    [
+      "go",
+      "run",
+      "-race",
+      "runs/.tmp/reported-loss-candidate-20261018/ctc-two-frame-probe.go"
+    ]
+  ],
+  "environment": [
+    "command-environment.json",
+    "../../TSK-01/reported-loss-candidate-20261018/environment-version.json"
+  ],
+  "input_fingerprints": [
+    "formal-source-joint.json",
+    "artifact-index.json",
+    "ctc-single-frame-probe.go.txt",
+    "ctc-two-frame-probe.go.txt"
+  ],
+  "observed_result": {
+    "confirmed_numerical_gap": true,
+    "zero_loss_and_gradient_cases_each_build": 4,
+    "normal_controls_each_build": 2,
+    "unit_race_complete_outputs_equal": true,
+    "first_gap": "sum of 1 and a tiny exponential is rounded before log; lse2 repeats the same pattern; y-occupancy cancels a representable winner derivative",
+    "ctc_specific_tolerance_declared": false,
+    "posterior_1e_minus8_guard_is_not_loss_or_component_accuracy": true,
+    "formal_regression_tests_pending": true,
+    "source_files_changed": false,
+    "end_to_end_model_quality_regression_measured": false,
+    "implementation_adopted": false
+  },
+  "test_log": [
+    "ctc-single-frame-probe-unit.log",
+    "ctc-single-frame-probe-race.log",
+    "ctc-two-frame-probe-unit.log",
+    "ctc-two-frame-probe-race.log"
+  ],
+  "verified_at": "2026-10-18T04:30:45.282962+00:00",
+  "source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+  "root_reviewed_sources": {
+    "tasks/ocr/ctc/ctc.go": "8c9aa1b04eb50c7969b8dd0023483817928c64f5fd246511e862b90b77427058",
+    "tasks/ocr/ctc/ctc_test.go": "a58697949e2922103a38f6e6d6ed8305f56a5b813dcbedf38a88b7b9c3320dc1",
+    "tasks/ocr/ctc/numerical_test.go": "1202f7d4ecd93fd19790c62071da17a1306584e8bf33f8d72644201c8bd57ab8",
+    "tasks/ocr/ctc/posterior_numerical_test.go": "d27b745e937ad76c01aed36fd9f8d75fa9dcd2fd8c612e4892946f9033b5cfe5",
+    "tasks/asr/recognizer.go": "cf3b1d1bd63660c341c5baec7561a2068b3625deaa854d167602df0d1bfd8f89",
+    "tasks/ocr/recognizer.go": "e01d7b42d7f95504ee09b88c49fe18cbd8f501b0be21740731b38d8f14cca67f",
+    "distill/distribution.go": "a48ede7ebc2f61587046bb241b4b17175b8b08a0c94b6054f11a309b68d0856b",
+    "distill/train.go": "ba701f1bcc7889646a5f30a42ac94f950328ddb33a397d03c19a76f1dff3be76",
+    "docs/handoff/requirements.json": "2f1718f53e9ec7d0ac56e2285609f404d165c96deb5c81703959aedf7ca1db3c",
+    "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md": "b92126883a10cdb9fb852276796e0521111520709bb7ca82d06f98dbab8935ea"
+  },
+  "evidence_references": [
+    "ctc-single-frame-reference.json",
+    "ctc-two-frame-reference.json"
+  ],
+  "source_locations": {
+    "normalization": "tasks/ocr/ctc/ctc.go:111-134",
+    "merge": "tasks/ocr/ctc/ctc.go:288-300",
+    "gradient": "tasks/ocr/ctc/ctc.go:262-271",
+    "near_zero_test_skip": "tasks/ocr/ctc/ctc_test.go:166-168",
+    "ocr_call": "tasks/ocr/recognizer.go:397-399",
+    "asr_call": "tasks/asr/recognizer.go:242-253",
+    "generic_tolerance": "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md:428-432"
+  },
+  "contract_review_agent": "/root/ctc_precision_contract",
+  "contract_review_model": "gpt-5.6-luna",
+  "contract_review_effort": "max",
+  "root_verified_agent_key_claims": true,
+  "distill_direct_ctc_import_or_call_found": false,
+  "opencode": {
+    "models_receipt": "ctc-review-opencode-models.json",
+    "provider_receipt": "ctc-review-opencode-provider.json",
+    "actual_terminal_tool_chunk": "d86396",
+    "model": "opencode/big-pickle",
+    "agent": "plan",
+    "error": "Error starting FSEvents stream",
+    "timeout_seconds": 60,
+    "project_source_sent": false,
+    "review_work_completed": false
+  },
+  "separate_from_148149_delivery": true,
+  "global_zero_bug_claim": false,
+  "distill_absence_query": {
+    "tool": "mcp__codebase_memory_mcp__search_code",
+    "project": "coimnet-chemistry-ocr",
+    "pattern": "tasks/ocr/ctc|ctc\\.",
+    "regex": true,
+    "path_filter": "^distill/",
+    "file_pattern": "*.go",
+    "total_grep_matches": 0,
+    "total_results": 0
+  }
+}

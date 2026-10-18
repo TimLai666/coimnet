@@ -1,0 +1,27 @@
+package main
+
+import (
+	"encoding/json"
+	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
+	"math"
+	"os"
+)
+
+func main() {
+	for _, r := range []struct {
+		Name   string
+		Logits [][]float64
+		Target []int
+	}{
+		{"two-label-winners", [][]float64{{-40, 0}, {-40, 0}}, []int{1}},
+		{"two-blank-winners-empty", [][]float64{{0, -40}, {0, -40}}, nil},
+		{"two-equal-control", [][]float64{{0, 0}, {0, 0}}, []int{1}},
+	} {
+		loss, grad, report, err := ctc.LossWith(r.Logits, r.Target, ctc.Options{})
+		var message string
+		if err != nil {
+			message = err.Error()
+		}
+		json.NewEncoder(os.Stdout).Encode(map[string]any{"name": r.Name, "loss": loss, "loss_bits": math.Float64bits(loss), "gradient": grad, "report": report, "error": message})
+	}
+}

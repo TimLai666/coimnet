@@ -1,0 +1,42 @@
+package main
+
+import (
+	"encoding/json"
+	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
+	"math"
+	"os"
+)
+
+func main() {
+	rows := []struct {
+		Name   string
+		Logits [][]float64
+		Target []int
+	}{
+		{"label-winner", [][]float64{{-40, 0}}, []int{1}},
+		{"blank-winner-empty", [][]float64{{0, -40}}, nil},
+		{"equal-score-control", [][]float64{{0, 0}}, []int{1}},
+	}
+	for _, r := range rows {
+		loss, grad, report, err := ctc.LossWith(r.Logits, r.Target, ctc.Options{})
+		bits := [][]uint64{}
+		for _, row := range grad {
+			b := []uint64{}
+			for _, x := range row {
+				b = append(b, math.Float64bits(x))
+			}
+			bits = append(bits, b)
+		}
+		var message string
+		if err != nil {
+			message = err.Error()
+		}
+		refLoss := math.Log1p(math.Exp(-40))
+		refTail := math.Exp(-40) / (1 + math.Exp(-40))
+		if r.Name == "equal-score-control" {
+			refLoss = math.Log(2)
+			refTail = 0.5
+		}
+		json.NewEncoder(os.Stdout).Encode(map[string]any{"name": r.Name, "loss": loss, "gradient": grad, "gradient_bits": bits, "report": report, "error": message, "reference_loss": refLoss, "reference_tail": refTail})
+	}
+}

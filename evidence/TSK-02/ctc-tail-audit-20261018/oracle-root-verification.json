@@ -1,0 +1,62 @@
+{
+  "requirement": "TSK-02",
+  "related_requirements": [
+    "TSK-01"
+  ],
+  "ticket": "150",
+  "verified_at": "2026-10-18T05:11:06.913245+00:00",
+  "reproduction_command": [
+    "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "/Users/timlai/Developer/coimnet/evidence/TSK-02/ctc-tail-audit-20261018/ctc-small-path-oracle.py.txt",
+    "--run"
+  ],
+  "reproduction_cwd": "/Users/timlai/Developer/coimnet/docs",
+  "environment": {
+    "python_executable": "/Applications/Xcode.app/Contents/Developer/usr/bin/python3",
+    "decimal_precision_digits": [
+      900,
+      1400
+    ]
+  },
+  "input_fingerprints": {
+    "formal_source_manifest": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+    "oracle_source": "0d2feb37cd3b5eac092ee44af69da35170628561a140e0279b91f377d38802b8",
+    "oracle_reference": "cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc"
+  },
+  "observed_result": {
+    "reference_cases": 38,
+    "maximum_enumerated_paths": 81,
+    "rounded_float64_and_unrounded_sign_fields_agree_at_both_precisions": true,
+    "existing_one_and_two_frame_independent_references_match": true,
+    "non_root_working_directory_succeeds": true,
+    "optimized_python_is_rejected_before_publishing": true,
+    "source_files_unchanged": 914
+  },
+  "test_log": [
+    "ctc-oracle-v2-generation.log",
+    "ctc-oracle-v2-optimized-refusal.log"
+  ],
+  "producer_receipt": "ctc-oracle-v2-generation.json",
+  "actual_terminal_tool_chunk": "d82b0f",
+  "read_only_reviewer": {
+    "agent": "ctc_oracle_math_review",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "file_changes": false,
+    "confirmed_math_or_path_count_errors": [],
+    "v1_helper_issues_fixed": [
+      "Reject optimized Python before required checks",
+      "Resolve replay path independently from caller working directory"
+    ]
+  },
+  "formal_regression_frozen": false,
+  "production_go_executed": false,
+  "model_quality_measured": false,
+  "remaining_controls": [
+    "Invalid inputs and existing numerical refusals",
+    "Impossible target policy",
+    "Public OCR and ASR training controls",
+    "Freeze precision and nonzero/sign acceptance rules",
+    "Run formal original-failure regressions after tickets148/149 delivery"
+  ]
+}

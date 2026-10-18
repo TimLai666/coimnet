@@ -1,0 +1,148 @@
+"""Enumerate small CTC paths with two independent Decimal precision levels."""
+import argparse
+import datetime
+import decimal
+import hashlib
+import itertools
+import json
+import math
+from pathlib import Path
+
+
+def collapse(path):
+    merged = [value for i, value in enumerate(path) if i == 0 or value != path[i - 1]]
+    return [value for value in merged if value != 0]
+
+
+def log1p(value):
+    if not value:
+        return value
+    # Adding a very small value to 1 would erase the reference itself.
+    if value.adjusted() < -decimal.getcontext().prec // 4:
+        total, power, n = value, value, 1
+        while True:
+            n += 1
+            power *= -value
+            updated = total + power / n
+            if updated == total:
+                return total
+            total = updated
+    return (decimal.Decimal(1) + value).ln()
+
+
+def cases():
+    result = []
+
+    def add(name, rows, target):
+        result.append({"name": name, "logits": rows, "target": target})
+
+    for gap in [16.0, 40.0, 700.0, 744.5, 745.0, 746.0]:
+        add("single-label-" + str(gap), [[-gap, 0.0]], [1])
+        add("single-empty-" + str(gap), [[0.0, -gap]], [])
+    for gap in [16.0, 40.0, 350.0, 372.0, 372.5, 373.0, 746.0]:
+        add("two-label-" + str(gap), [[-gap, 0.0]] * 2, [1])
+    for gap in [40.0, 745.0, 746.0]:
+        add("two-empty-" + str(gap), [[0.0, -gap]] * 2, [])
+    add("three-single", [[-40.0, 0.0]] * 3, [1])
+    add("three-repeated", [[-40.0, 0.0], [0.0, -40.0], [-40.0, 0.0]], [1, 1])
+    add("three-distinct", [[-40.0, 0.0, -40.0], [0.0, -40.0, -40.0], [-40.0, -40.0, 0.0]], [1, 2])
+    add("two-distinct", [[-40.0, 0.0, -40.0], [-40.0, -40.0, 0.0]], [1, 2])
+    add("uniform-single", [[0.0, 0.0]] * 3, [1])
+    add("uniform-repeated", [[0.0, 0.0]] * 3, [1, 1])
+    add("uniform-distinct", [[0.0, 0.0, 0.0]] * 3, [1, 2])
+    moderate = [[0.0, 0.25, -0.5], [1.0, -1.0, 0.5], [-0.75, 0.125, 0.25], [0.5, 0.75, -0.125]]
+    add("four-moderate", moderate, [1, 2])
+    add("four-moderate-permuted", [[row[0], row[2], row[1]] for row in moderate], [2, 1])
+    add("four-moderate-shifted", [[value + 1024.0 for value in row] for row in moderate], [1, 2])
+    with decimal.localcontext() as context:
+        context.prec = 1600
+        threshold = decimal.Decimal(1075) * decimal.Decimal(2).ln()
+        for frames in [1, 2]:
+            middle = float(threshold / frames)
+            for direction, gap in [("below", math.nextafter(middle, -math.inf)), ("center", middle), ("above", math.nextafter(middle, math.inf))]:
+                add("half-minimum-" + str(frames) + "-" + direction, [[-gap, 0.0]] * frames, [1])
+    assert len(result) == 38 and len({item["name"] for item in result}) == 38
+    return result
+
+
+def reference(case, precision):
+    with decimal.localcontext() as context:
+        context.prec = precision
+        rows = [[decimal.Decimal.from_float(value) for value in row] for row in case["logits"]]
+        weights = [[(value - max(row)).exp() for value in row] for row in rows]
+        frames, classes = len(rows), len(rows[0])
+        assert classes ** frames <= 81
+        valid, invalid = [], []
+        for path in itertools.product(range(classes), repeat=frames):
+            weight = decimal.Decimal(1)
+            for t, k in enumerate(path):
+                weight *= weights[t][k]
+            (valid if collapse(path) == case["target"] else invalid).append((path, weight))
+        A = sum((weight for _, weight in valid), decimal.Decimal(0))
+        B = sum((weight for _, weight in invalid), decimal.Decimal(0))
+        Z = A + B
+        assert A > 0 and Z > 0
+        loss = log1p(B / A)
+        gradient = []
+        for t in range(frames):
+            row = []
+            for k in range(classes):
+                At = sum((weight for path, weight in valid if path[t] == k), decimal.Decimal(0))
+                Bt = sum((weight for path, weight in invalid if path[t] == k), decimal.Decimal(0))
+                value = (A * Bt - B * At) / (Z * A)
+                rounded = float(value)
+                row.append(rounded if rounded else 0.0)
+            gradient.append(row)
+        return {"loss": float(loss), "gradient": gradient, "valid_paths": [list(path) for path, _ in valid], "invalid_path_count": len(invalid)}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run", action="store_true", help="Write a new reference JSON beside this script; no Go code or model is run or modified.")
+    args = parser.parse_args()
+    if not args.run:
+        parser.print_help()
+        return
+    output = Path(__file__).with_name("ctc-small-path-reference.json")
+    if output.exists():
+        parser.error("reference output already exists; never overwrite")
+    rows = []
+    for case in cases():
+        lower, upper = reference(case, 900), reference(case, 1400)
+        assert lower == upper, case["name"]
+        rows.append({**case, "input_float64_hex": [[value.hex() for value in row] for row in case["logits"]], **upper})
+    by_name = {row["name"]: row for row in rows}
+    assert len(by_name["three-single"]["valid_paths"]) == 6
+    assert by_name["three-repeated"]["valid_paths"] == [[1, 0, 1]]
+    assert len(by_name["three-distinct"]["valid_paths"]) == 5
+    for left, right in [("four-moderate", "four-moderate-permuted"), ("four-moderate", "four-moderate-shifted")]:
+        assert by_name[left]["loss"] == by_name[right]["loss"]
+        expected = by_name[left]["gradient"]
+        if right.endswith("permuted"):
+            expected = [[row[0], row[2], row[1]] for row in expected]
+        assert expected == by_name[right]["gradient"]
+    result = {
+        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "reproduction_command": "python3 " + str(Path(__file__).relative_to(Path.cwd())) + " --run",
+        "oracle_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "source_manifest": "formal-source-joint.json",
+        "source_manifest_sha256": hashlib.sha256(Path(__file__).with_name("formal-source-joint.json").read_bytes()).hexdigest(),
+        "method": "Enumerate every small path with exact binary64 inputs converted to Decimal. Use explicit valid/invalid partitions, loss=log1p(B/A), and gradient=(A*B_tk-B*A_tk)/((A+B)*A).",
+        "decimal_precisions": [900, 1400],
+        "both_precision_results_equal": True,
+        "case_count": len(rows),
+        "largest_path_count": 81,
+        "cases": rows,
+        "formal_regression_frozen": False,
+        "production_go_executed": False,
+        "model_quality_measured": False,
+        "remaining_controls": ["Invalid inputs and existing numerical refusals", "Impossible target policy", "Public OCR and ASR training controls", "Freeze precision and nonzero/sign acceptance rules", "Run formal original-failure regressions after tickets148/149 delivery"],
+    }
+    with output.open("x") as handle:
+        json.dump(result, handle, indent=2, allow_nan=False)
+        handle.write("\n")
+    print(json.dumps({"cases": len(rows), "precisions": result["decimal_precisions"], "all_rounded_results_equal": True, "formal_regression_frozen": False}))
+
+
+if __name__ == "__main__":
+    main()
