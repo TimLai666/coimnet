@@ -418,8 +418,8 @@ func decodeSegment(ctx context.Context, ffmpeg, path string, output OutputSpec, 
 	start, duration := formatSeconds(segment.StartMillis), formatSeconds(segment.DurationMillis)
 	filter := fmt.Sprintf("fps=%d,scale=%d:%d:force_original_aspect_ratio=decrease:flags=area,pad=%d:%d:(ow-iw)/2:(oh-ih)/2:black,format=rgb24",
 		output.FrameRate, output.FrameWidth, output.FrameHeight, output.FrameWidth, output.FrameHeight)
-	frameArgs := []string{"-nostdin", "-hide_banner", "-loglevel", "error", "-ss", start, "-i", path, "-t", duration,
-		"-map", "0:v:0", "-vf", filter, "-frames:v", strconv.Itoa(frameCount), "-an", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"}
+	frameArgs := append(inputArgs(segment.StartMillis, start, path), "-t", duration,
+		"-map", "0:v:0", "-vf", filter, "-frames:v", strconv.Itoa(frameCount), "-an", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1")
 	rawFrames, err := runLimited(ctx, ffmpeg, frameArgs, maxFrameBytes)
 	if err != nil {
 		return Sample{}, fmt.Errorf("realdata: decode source %q segment %q frames: %w", sourceID, segment.ID, err)
@@ -427,8 +427,8 @@ func decodeSegment(ctx context.Context, ffmpeg, path string, output OutputSpec, 
 	if len(rawFrames) != maxFrameBytes {
 		return Sample{}, fmt.Errorf("realdata: source %q segment %q decoded %d frame bytes, want %d", sourceID, segment.ID, len(rawFrames), maxFrameBytes)
 	}
-	audioArgs := []string{"-nostdin", "-hide_banner", "-loglevel", "error", "-ss", start, "-i", path, "-t", duration,
-		"-map", fmt.Sprintf("0:a:%d", audioOrdinal), "-vn", "-ac", "1", "-ar", strconv.Itoa(output.AudioSampleRate), "-f", "f32le", "pipe:1"}
+	audioArgs := append(inputArgs(segment.StartMillis, start, path), "-t", duration,
+		"-map", fmt.Sprintf("0:a:%d", audioOrdinal), "-vn", "-ac", "1", "-ar", strconv.Itoa(output.AudioSampleRate), "-f", "f32le", "pipe:1")
 	rawAudio, err := runLimited(ctx, ffmpeg, audioArgs, maxAudioBytes)
 	if err != nil {
 		return Sample{}, fmt.Errorf("realdata: decode source %q segment %q audio: %w", sourceID, segment.ID, err)
@@ -543,6 +543,18 @@ func runLimited(ctx context.Context, name string, args []string, maxOutput int) 
 		return nil, fmt.Errorf("%s failed: %w", filepath.Base(name), err)
 	}
 	return raw, nil
+}
+
+// inputArgs opens path for ffmpeg, input-seeking to start only when the segment
+// does not begin at zero. An input seek to 0 drops the AAC priming packet: older
+// ffmpeg then zeroes the first ~450 decoded samples, and newer ffmpeg drops the
+// first 1024 samples, which shifts the audio 128 ms at 8 kHz and shortens it.
+func inputArgs(startMillis int64, start, path string) []string {
+	args := []string{"-nostdin", "-hide_banner", "-loglevel", "error"}
+	if startMillis != 0 {
+		args = append(args, "-ss", start)
+	}
+	return append(args, "-i", path)
 }
 
 func formatSeconds(milliseconds int64) string {

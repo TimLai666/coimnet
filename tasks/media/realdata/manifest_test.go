@@ -203,6 +203,16 @@ func TestImportExtractsRealAVWithExplicitFrameAudioAlignment(t *testing.T) {
 	if len(sample.Frames) != 8 || len(sample.Audio) != 16000 {
 		t.Fatalf("decoded %d frames and %d audio samples, want 8 and 16000", len(sample.Frames), len(sample.Audio))
 	}
+	// The 440 Hz tone starts at t = 0, so the first 50 ms must carry it. An
+	// input seek to 0 used to drop the AAC priming packet and zero or shift
+	// this stretch, depending on the ffmpeg version.
+	peak := 0.0
+	for _, value := range sample.Audio[:400] {
+		peak = math.Max(peak, math.Abs(value))
+	}
+	if peak < 0.05 {
+		t.Fatalf("first 400 audio samples peak at %g, want the tone from t = 0", peak)
+	}
 	for i, frame := range sample.Frames {
 		if len(frame.Pixels) != 8*8*3 {
 			t.Fatalf("frame %d has %d pixels, want %d", i, len(frame.Pixels), 8*8*3)
