@@ -46,6 +46,9 @@ type Parameters struct {
 type Continuous struct {
 	config    Config
 	partition *targetPartition
+	// hash is the state configuration fingerprint, computed once from the
+	// owned configuration; empty means compute it on demand.
+	hash string
 }
 
 // Trace owns the parameter snapshot and neural history for one forward pass.
@@ -128,7 +131,11 @@ func NewContinuous(c Config) (*Continuous, error) {
 			return nil, err
 		}
 	}
-	return &Continuous{config: c, partition: partition}, nil
+	m := &Continuous{config: c, partition: partition}
+	if hash, err := m.stateConfigHash(); err == nil {
+		m.hash = hash
+	}
+	return m, nil
 }
 
 // Config returns an independent topology/configuration copy.

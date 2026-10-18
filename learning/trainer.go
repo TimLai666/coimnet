@@ -566,6 +566,12 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 		before = append([]float64(nil), p...)
 	}
 	var updateNorm float64
+	// Parameters usually share one step count, so the two bias corrections
+	// are computed once per distinct count rather than once per parameter.
+	var (
+		correctedAt   uint64
+		first, second float64
+	)
 	for i, v := range p {
 		if !mask[i] {
 			continue
@@ -574,11 +580,16 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 			return zero, fmt.Errorf("optimizer counter overflow")
 		}
 		state.Steps[i]++
+		if state.Steps[i] != correctedAt {
+			correctedAt = state.Steps[i]
+			first = 1 - math.Pow(tr.options.Beta1, float64(correctedAt))
+			second = 1 - math.Pow(tr.options.Beta2, float64(correctedAt))
+		}
 		d := mean[i] * scale
 		state.First[i] = tr.options.Beta1*state.First[i] + (1-tr.options.Beta1)*d
 		state.Second[i] = tr.options.Beta2*state.Second[i] + (1-tr.options.Beta2)*d*d
-		m := state.First[i] / (1 - math.Pow(tr.options.Beta1, float64(state.Steps[i])))
-		vhat := state.Second[i] / (1 - math.Pow(tr.options.Beta2, float64(state.Steps[i])))
+		m := state.First[i] / first
+		vhat := state.Second[i] / second
 		p[i] = v*(1-rate*tr.options.WeightDecay) - rate*m/(math.Sqrt(vhat)+tr.options.Epsilon)
 		if !finite(p[i]) || !finite(state.First[i]) || !finite(state.Second[i]) {
 			return zero, fmt.Errorf("non-finite optimizer result at parameter %d", i)
