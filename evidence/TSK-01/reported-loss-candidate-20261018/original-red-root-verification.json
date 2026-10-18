@@ -1,0 +1,50 @@
+{
+  "verified_at": "2026-10-18T00:16:40.331227+00:00",
+  "source_count": 895,
+  "frozen": "tests-frozen-v2.json",
+  "reference_root_review": "reference-root-verification.json",
+  "proof": [
+    {
+      "mode": "unit",
+      "receipt": "original-red-v2-unit.json",
+      "receipt_sha256": "d783c4e5d55b8c8a4be9dd3788c91397e4cf73422446e6edd09d12f40f622cb8",
+      "terminal_tool_chunk": "d2c4a6",
+      "test_events": {
+        "fail": 53,
+        "pass": 20
+      },
+      "helper_skeleton_events": {
+        "fail": 31,
+        "pass": 13
+      },
+      "existing_caller_events": {
+        "fail": 22,
+        "pass": 7
+      },
+      "public_update_pairs_equal_despite_scalar_failure": 9
+    },
+    {
+      "mode": "race",
+      "receipt": "original-red-v2-race.json",
+      "receipt_sha256": "de5e358b810206e6352c07238f608f4b1dd2bc1400b08d8c207dc200e8bd24f9",
+      "terminal_tool_chunk": "239d5a",
+      "test_events": {
+        "fail": 53,
+        "pass": 20
+      },
+      "helper_skeleton_events": {
+        "fail": 31,
+        "pass": 13
+      },
+      "existing_caller_events": {
+        "fail": 22,
+        "pass": 7
+      },
+      "public_update_pairs_equal_despite_scalar_failure": 9
+    }
+  ],
+  "same_test_outcomes_both_builds": true,
+  "test_setup_v1_error_preserved": "test-setup-correction.json",
+  "scope": "Helper skeleton failures establish the new contract, not existing product bugs. Existing OCR/distill scalar callers fail with correct input/report/gradient/update/refusal controls; no task-quality claim.",
+  "global_zero_bug_claim": false
+}

@@ -1,0 +1,143 @@
+"""Freeze scalar CE references from exact binary inputs using Decimal1250."""
+from pathlib import Path
+from decimal import Decimal, localcontext
+import argparse, json, math, struct
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Create reference.json and its Go regression once; never overwrite evidence.')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+E = Path(__file__).resolve().parent
+bits = lambda x: struct.unpack('>Q', struct.pack('>d', x))[0]
+maximum = float.fromhex('0x1.fffffffffffffp1023')
+minimum = float.fromhex('0x0.0000000000001p-1022')
+cases = []
+def add(name, logits, target=0, factor=1.0):
+    cases.append(dict(name=name, logits=logits, target=target, factor=factor))
+for i in range(3):
+    row = [-40.0] * 3
+    row[i] = 0.0
+    add('winner_' + str(i), row, i)
+add('ordinary_winner', [0.0, -1.0])
+add('ordinary_weak_target', [0.0, -1.0], 1)
+add('equal_three', [0.0, 0.0, 0.0])
+add('weak_target', [0.0, -40.0, -40.0], 1)
+add('weak_target_below_tie', [0.0, 0.0, -40.0], 2)
+add('one_ulp_gap', [0.0, -minimum], 1)
+add('positive_shift', [1e15, 1e15 - 40.0, 1e15 - 40.0])
+add('negative_shift', [-1e15, -1e15 - 40.0, -1e15 - 40.0])
+add('equal_maximum', [maximum, maximum], 1)
+add('equal_minimum', [-maximum, -maximum], 1)
+add('one_class', [maximum])
+add('unrepresentable_unused_gap', [maximum, -maximum])
+add('unrepresentable_final', [maximum, -maximum], 1)
+add('weighted_extreme_gap', [maximum, -maximum], 1, 0.5)
+add('zero_factor_extreme_gap', [maximum, -maximum], 1, 0.0)
+add('minimum_factor_ordinary', [0.0, -1.0], 1, minimum)
+add('minimum_factor_rounds_zero', [0.0, -1.0], 0, minimum)
+add('maximum_factor_normal', [0.0, -1.0], 0, maximum)
+add('maximum_factor_overflow', [0.0, 0.0, 0.0], 0, maximum)
+add('maximum_factor_tiny', [0.0, -800.0], 0, maximum)
+add('maximum_factor_deep', [0.0, -1400.0], 0, maximum)
+for gap in [-700.0, -740.0, -745.0, -746.0, -750.0]:
+    add('gap_' + str(int(-gap)), [0.0, gap, gap])
+add('many_underflowed_tails', [0.0] + [-750.0] * 258)
+add('factor_before_tiny_rounding', [0.0, -744.1], 0, 1.0 - 0.6)
+add('smallest_public_mix_weight', [0.0, -40.0, -40.0], 0, 1.0 - math.nextafter(1.0, 0.0))
+
+with localcontext() as ctx:
+    ctx.prec = 1250
+    cache = {}
+    for row in cases:
+        values = [Decimal.from_float(v) for v in row['logits']]
+        largest = max(values)
+        total = Decimal(0)
+        for value in values:
+            gap = value - largest
+            # These selected cases have <=259 classes and factor<=MaxFloat64.
+            # Terms beyond this cutoff cannot affect their float64 rounding.
+            if gap < -10000:
+                term = Decimal(0)
+            else:
+                if gap not in cache:
+                    cache[gap] = gap.exp()
+                term = cache[gap]
+            total += term
+        expected = (largest - values[row['target']] + total.ln()) * Decimal.from_float(row['factor'])
+        rounded = float(expected)
+        row.update(expected_decimal=str(expected), expected_error=math.isinf(rounded),
+                   expected_bits=None if math.isinf(rounded) else f'{bits(rounded):016x}',
+                   logits_bits=[f'{bits(v):016x}' for v in row['logits']], factor_bits=f'{bits(row["factor"]):016x}')
+out = {'precision_decimal_digits':1250, 'formula':'factor * (max(logits)-target + ln(sum(exp(logit-max))))', 'float_inputs':'Decimal.from_float; exact input binary values', 'omitted_exp_gap_below':-10000, 'cases':cases}
+with (E/'reference.json').open('x') as handle:
+    json.dump(out,handle,indent=2,allow_nan=False)
+    handle.write('\n')
+
+source = '''package categorical
+
+import (
+    "math"
+    "testing"
+)
+
+// Expected bits are frozen from Decimal1250, using exact float64 inputs.
+func TestCategoricalReportedLoss148(t *testing.T) {
+    cases := []struct {
+        name string
+        inputBits []uint64
+        target int
+        factorBits uint64
+        wantBits uint64
+        wantError bool
+    }{
+'''
+for row in cases:
+    inputs=', '.join('0x'+v for v in row['logits_bits'])
+    want='0' if row['expected_bits'] is None else '0x'+row['expected_bits']
+    source += '        {"%s", []uint64{%s}, %d, 0x%s, %s, %s},\n' % (row['name'],inputs,row['target'],row['factor_bits'],want,str(row['expected_error']).lower())
+source += '''    }
+    for _, tc := range cases {
+        t.Run(tc.name, func(t *testing.T) {
+            logits := make([]float64,len(tc.inputBits))
+            for i,b := range tc.inputBits { logits[i]=math.Float64frombits(b) }
+            got,err := Loss(logits,tc.target,math.Float64frombits(tc.factorBits))
+            for i,b := range tc.inputBits { if math.Float64bits(logits[i])!=b { t.Errorf("input %d mutated",i) } }
+            if tc.wantError {
+                if err==nil || math.Float64bits(got)!=0 { t.Fatalf("unrepresentable result: got %g, error %v; want zero and error",got,err) }
+                return
+            }
+            if err!=nil { t.Fatalf("valid result rejected: %v",err) }
+            want:=math.Float64frombits(tc.wantBits)
+            if want==0 {
+                if math.Float64bits(got)!=0 { t.Fatalf("zero result = %g (%016x), want +0",got,math.Float64bits(got)) }
+                return
+            }
+            if !(got>0) || math.IsNaN(got) || math.IsInf(got,0) { t.Fatalf("positive result erased: got %.17g, want %.17g",got,want) }
+            g:=math.Float64bits(got)
+            distance:=g-tc.wantBits
+            if g<tc.wantBits { distance=tc.wantBits-g }
+            if distance>4 { t.Fatalf("loss %.17g, want %.17g within 4 ULP; actual bits %016x expected %016x distance %d",got,want,g,tc.wantBits,distance) }
+        })
+    }
+}
+
+func TestCategoricalReportedLossInvalid148(t *testing.T) {
+    cases:=[]struct{name string; logits []float64; target int; factor float64}{
+        {"empty",nil,0,1}, {"negative_target",[]float64{0},-1,1}, {"large_target",[]float64{0},1,1},
+        {"nan_score",[]float64{math.NaN()},0,1}, {"positive_inf_score",[]float64{math.Inf(1)},0,1}, {"negative_inf_score",[]float64{math.Inf(-1)},0,1},
+        {"negative_factor",[]float64{0},0,-1}, {"nan_factor",[]float64{0},0,math.NaN()}, {"infinite_factor",[]float64{0},0,math.Inf(1)},
+        {"zero_factor_does_not_hide_invalid_score",[]float64{math.NaN()},0,0},
+    }
+    for _,tc:=range cases { t.Run(tc.name,func(t *testing.T){
+        before:=make([]uint64,len(tc.logits)); for i,v:=range tc.logits { before[i]=math.Float64bits(v) }
+        got,err:=Loss(tc.logits,tc.target,tc.factor)
+        if err==nil || math.Float64bits(got)!=0 { t.Fatalf("invalid input: loss %g, error %v; want zero and error",got,err) }
+        for i,b:=range before { if math.Float64bits(tc.logits[i])!=b { t.Errorf("input %d mutated",i) } }
+    }) }
+}
+'''
+with (E/'loss-reference-test.go.txt').open('x') as handle:
+    handle.write(source)
+print(json.dumps({'reference_cases':len(cases),'expected_rejections':sum(r['expected_error'] for r in cases),'new_helper_invalid_cases':10}))

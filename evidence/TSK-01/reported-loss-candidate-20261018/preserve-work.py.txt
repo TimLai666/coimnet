@@ -1,0 +1,84 @@
+"""Preserve necessary non-cache inputs after all ticket148 acceptance gates."""
+from pathlib import Path
+import argparse, datetime, gzip, hashlib, io, json, os, stat, tarfile
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Require completed engineering and final governance, then archive non-cache inputs; never delete or overwrite files.')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python cannot skip acceptance checks')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/reported-loss-candidate-20261018'
+read = lambda p: json.loads(p.read_bytes())
+sha = lambda b: hashlib.sha256(b).hexdigest()
+required = ['runner-terminal.json', 'engineering-verification.json', 'verification.json', 'metadata-governance.json', 'old-models-root-verification.json']
+missing = [name for name in required if not (E / name).is_file()]
+if missing:
+    print(json.dumps({'ready': False, 'missing': missing, 'archived': False, 'deleted': False}))
+    raise SystemExit(2)
+terminal, engineering, verification, governance, models = [read(E / n) for n in required]
+assert terminal['exit_code'] == 0 and terminal['session_id'] == 90461 and terminal['source_count'] == 901
+assert engineering['all_passed'] and len(engineering['steps']) == 9 and engineering['source_count'] == 901
+assert verification['engineering_passed'] and verification['old_models_passed'] and verification['source_count'] == 901
+assert governance['exit_code'] == 0 and governance['passed_events'] == 31 and governance['source_count'] == 901
+assert sha((E / governance['log']).read_bytes()) == governance['log_sha256']
+assert models['old_model_load_and_next_training_passed'] and models['original_candidate_formal_complete_outputs_byte_equal']
+source_raw = (E / 'formal-source.json').read_bytes()
+assert sha(source_raw) == verification['source_manifest_sha256'] == governance['source_manifest_sha256']
+for name, digest in json.loads(source_raw).items():
+    assert sha((R / name).read_bytes()) == digest, name
+assert not W.is_symlink() and W.resolve() == W and W.lstat().st_ino == 61150416 and W.lstat().st_dev == R.stat().st_dev
+files, payload = {}, {}
+def fail(error):
+    raise error
+for base, dirs, names in os.walk(W, followlinks=False, onerror=fail):
+    if Path(base) == W:
+        dirs[:] = [n for n in dirs if n not in ['go-cache', 'go-mod-cache', 'go-tmp']]
+    for name in dirs:
+        q = Path(base) / name
+        assert stat.S_ISDIR(q.lstat().st_mode) and not q.is_symlink(), q
+    for name in names:
+        q = Path(base) / name
+        info = q.lstat()
+        assert stat.S_ISREG(info.st_mode) and info.st_dev == R.stat().st_dev and not q.is_symlink(), q
+        if q == W / 'final-root.test':
+            continue
+        raw = q.read_bytes()
+        assert q.lstat().st_ino == info.st_ino and len(raw) == info.st_size
+        key = str(q.relative_to(W))
+        files[key] = {'bytes': len(raw), 'sha256': sha(raw)}
+        payload[key] = raw
+binary = W / 'final-root.test'
+assert binary.is_file() and not binary.is_symlink()
+binary_raw = binary.read_bytes()
+binaries = {'final-root.test': {'bytes': len(binary_raw), 'sha256': sha(binary_raw), 'purpose': 'Compiled final root test gate, reproducible from frozen901 sources'}}
+stream = io.BytesIO()
+with tarfile.open(fileobj=stream, mode='w') as archive:
+    for name, raw in sorted(payload.items()):
+        info = tarfile.TarInfo(name)
+        info.size, info.mode, info.mtime = len(raw), 0o600, 0
+        archive.addfile(info, io.BytesIO(raw))
+packed = gzip.compress(stream.getvalue(), mtime=0)
+with tarfile.open(fileobj=io.BytesIO(packed), mode='r:gz') as archive:
+    assert len(archive.getmembers()) == len(files)
+    for item in archive.getmembers():
+        raw = archive.extractfile(item).read()
+        assert item.isfile() and raw == payload[item.name] == (W / item.name).read_bytes()
+        assert sha(raw) == files[item.name]['sha256']
+for name in ['work-inputs.tar.gz', 'work-preservation.json', 'discarded-binaries.json']:
+    assert not (E / name).exists() and not (E / name).is_symlink(), name
+with (E / 'work-inputs.tar.gz').open('xb') as handle:
+    handle.write(packed)
+    handle.flush()
+    os.fsync(handle.fileno())
+result = {'preserved_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_root': str(W.relative_to(R)), 'owned_inode': 61150416, 'engineering_session_id': terminal['session_id'], 'archive': 'work-inputs.tar.gz', 'archive_sha256': sha(packed), 'archive_bytes': len(packed), 'files': files, 'cache_directories_excluded': ['go-cache', 'go-mod-cache', 'go-tmp'], 'deletion_performed': False}
+for name, value in [('work-preservation.json', result), ('discarded-binaries.json', binaries)]:
+    with (E / name).open('x') as handle:
+        json.dump(value, handle, indent=2)
+        handle.write('\n')
+assert (E / result['archive']).read_bytes() == packed
+print(json.dumps({'archived_files': len(files), 'archive_bytes': len(packed), 'archive_sha256': sha(packed), 'deleted': False}))

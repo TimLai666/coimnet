@@ -1,0 +1,31 @@
+{
+  "created_at": "2026-10-18T00:07:33.260191+00:00",
+  "ticket": "148",
+  "scope": [
+    "tasks/ocr/recognizer.go singleCharacterLoss scalar only",
+    "distill/distribution.go label CE branch scalar only",
+    "internal/categorical/loss.go new internal shared scalar helper"
+  ],
+  "contract": {
+    "signature": "categorical.Loss(logits []float64, target int, factor float64) (float64,error)",
+    "inputs": "Nonempty finite logits, valid target, finite nonnegative factor; no mutation. Invalid inputs return zero plus error.",
+    "output": "Correctly scaled finite nonnegative one-hot CE, preserving representable tiny aggregate and applying factor before underflow; reject genuinely nonfinite final result. Exact +0 when rounded reference is zero.",
+    "preserve": "Existing categorical.Gradient bytes/semantics, OCR blank exclusion and column CTC, distill teacher KL, Mix/Temperature/Scale interpretation, public signatures and model formats. Distill label path retains existing shiftedLogSoftmax call and its numerical refusals; shared scalar helper does not widen that public acceptance boundary."
+  },
+  "tests": [
+    "Existing original OCR and public distill red unit/race, same895 hashes verified",
+    "Independent Decimal1250 reference with exact float inputs; target permutations, ties, weak targets, shifts, extreme finite gaps, weighted tiny aggregates, factor zero/Min/Max and unrepresentable result rejection",
+    "Public TrainLine/StepLabel scalar report and update controls; mixed label-only contribution controlled without changing KL implementation",
+    "Gradient bit parity, inputs/report unchanged, full affected packages and actual old OCR model load/next-update snapshots",
+    "Formal final-source nine engineering gates, last31 governance, necessary evidence and owned cleanup, authorized commits/push/remote readback"
+  ],
+  "subtraction_review": "One shared scalar helper for two callers; remove only replaced OCR normalization work. Retain distill existing normalization call for its error contract and gradient buffer. No training mode, dependency, model version or broad log-softmax refactor.",
+  "opencode_models": {
+    "tool_chunk": "43aef4",
+    "exit_code": 1,
+    "model_called": false,
+    "error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "readonly_agent": "/root/loss_scope_148",
+  "global_goal_active": true
+}

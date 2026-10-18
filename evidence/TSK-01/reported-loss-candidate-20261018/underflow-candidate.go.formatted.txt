@@ -1,0 +1,26 @@
+package categorical
+
+import "math"
+
+// nearHalfMinimum selects a precision fallback; it never changes a value.
+func nearHalfMinimum(mantissa float64, exponent int) bool {
+	scaled := math.Ldexp(math.Abs(mantissa), exponent+1075)
+	const guard = 32 * 0x1p-52
+	return scaled >= 1-guard && scaled <= 1+guard
+}
+
+// preciseLoss receives validated finite logits and a positive finite factor.
+// Compute from the original operands with 2048-bit arithmetic, keeping the
+// winner separate in log1p, then round to float64 only at the final result.
+func preciseLoss(logits []float64, target int, factor float64) float64 {
+	return 0
+}
+
+// preciseGradient receives the same validated inputs as Gradient. Recompute
+// the whole row once, using a sum of non-target terms for the target component.
+// Keep factor/divisor and normalization at 2048 bits until final conversion.
+func preciseGradient(dst, logits []float64, target int, factor, divisor float64) {
+	for i := range dst {
+		dst[i] = 0
+	}
+}

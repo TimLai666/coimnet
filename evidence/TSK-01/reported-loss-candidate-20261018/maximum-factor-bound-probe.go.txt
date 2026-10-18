@@ -1,0 +1,39 @@
+package main
+
+import (
+ "encoding/json"
+ "flag"
+ "fmt"
+ "math"
+ "os"
+ "github.com/TimLai666/coimnet/internal/categorical"
+)
+
+func main() {
+ flag.Usage = func(){ fmt.Fprintln(os.Stderr, "Probe finite categorical gradient bounds at maximum legal factor; no input or model writes.") }
+ flag.Parse()
+ gaps := []float64{0, 0x1p-52, 0.01, 0.1, 0.5, 1, 2, 3, 4, 8, 16, 30, 40, 700, 745, 1000}
+ shapes := [][]float64{}
+ for _, a := range gaps {
+  shapes=append(shapes, []float64{0,-a})
+  for _, b := range gaps { shapes=append(shapes, []float64{0,-a,-b}) }
+ }
+ divisors:=[]float64{1,2,3,math.MaxFloat64}
+ count:=0
+ for _, scores:=range shapes {
+  for target:=range scores {
+   for _,divisor:=range divisors {
+    dst:=make([]float64,len(scores))
+    err:=categorical.Gradient(dst,scores,target,math.MaxFloat64,divisor)
+    count++
+    bad:=err!=nil
+    for _,value:=range dst { bad=bad||math.IsNaN(value)||math.IsInf(value,0)||math.Abs(value)>math.MaxFloat64/divisor }
+    if bad {
+     json.NewEncoder(os.Stdout).Encode(map[string]any{"case":count,"scores":scores,"target":target,"divisor":divisor,"error":fmt.Sprint(err),"gradient":fmt.Sprint(dst)})
+     os.Exit(1)
+    }
+   }
+  }
+ }
+ json.NewEncoder(os.Stdout).Encode(map[string]any{"finite_bound_cases":count,"all_finite_within_factor_over_divisor":true})
+}

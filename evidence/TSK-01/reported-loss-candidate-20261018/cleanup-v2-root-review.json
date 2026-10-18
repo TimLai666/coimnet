@@ -1,0 +1,31 @@
+{
+  "verified_at": "2026-10-18T01:07:12.314570+00:00",
+  "reviewed_scripts_and_inputs": {
+    "cleanup-owned-v2.py.txt": "17fa1481804659fd91ef172b82c859ba4d77555f4f8be6c86f6bf58ff645b73d",
+    "preserve-work-v2.py.txt": "34f32bd9a123f28d30f1bdc18565159736edfd96c8dacb76cb5cd0129ebb519f",
+    "verify-engineering-root-v2.py.txt": "085e3ba76341a4b25bd678f1e40112025307dab50769728a35294c377d10f0a4",
+    "engineering-v2.py.txt": "0b099e6835c97d7999f89175aaa26dddf8d4e58b8d0cb47bf81fcdbd918dafc4",
+    "formal-tests-frozen-v2.json": "24d57f85325d6c8e7e334856bc9e4a9ed58e1ffcc62a3439e681125a8f0fd4f2",
+    "old-models-root-verification-v2.json": "b4b0a772749343b9c087e38a67b13e6b33510e702ff8e4871fb319edf60e126d"
+  },
+  "baseline_receipts": {
+    "engineering-unit.json": "7958adbe2e1fb65873162282f9bc24d7713ebf16319715def49681d234fa6068",
+    "engineering-race.json": "6ff94992c07d7d87de8aaf3b26481855aa877f7d9194baece440b7f34d97f914"
+  },
+  "actual_negative_controls": "cleanup-v2-not-ready-root-verification.json",
+  "agent": {
+    "name": "/root/loss_scope_148",
+    "role": "Read-only consistency review",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "opencode_attempt": "opencode-models-cleanup-v2.json",
+    "confirmed_findings": []
+  },
+  "root_verdict": "No confirmed inconsistency remains in current903/84/session94403 producer-consumer fields; accepted147 engineering labels preserved. The initial broad replacement error was corrected before any cleanup invocation. Required engineering/governance receipts remain absent, so ready/deletion is not accepted.",
+  "nonblocking_observations": [
+    "Producer alone does not repeat every consumer gate; cleanup independently requires the stronger terminal/source/model checks. No incorrect archive or deletion observed.",
+    "Adaptation records historical pre-correction SHA; baseline-correction receipt links it to current script bytes. No consumer treats old adaptation SHA as final."
+  ],
+  "engineering_passed": false,
+  "cleanup_performed": false
+}

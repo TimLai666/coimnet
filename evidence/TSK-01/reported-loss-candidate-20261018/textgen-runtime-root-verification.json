@@ -1,0 +1,28 @@
+{
+  "at": "2026-10-18T02:52:57.797518+00:00",
+  "sample_receipt": "textgen-runtime-sample.json",
+  "sample_tool_chunk": "ed88b5",
+  "symbolization_receipt": "textgen-sample-symbolization.json",
+  "symbolization_actual_terminal_tool_chunk": "be8f70",
+  "symbolized_report": "textgen-runtime-symbolized.txt",
+  "symbolized_report_sha256": "566d6f613f0cc66835207270bd28ca9f6ab527a2bfe49d00fcf73425153ed57d",
+  "sampled_runtime_pcs": 74,
+  "resolved_pcs": 73,
+  "call_chain_required_functions": [
+    "github.com/HazelnutParadise/insyra/nn.(*Tape).BackwardFrom",
+    "github.com/TimLai666/coimnet/dynamics.(*Continuous).forward",
+    "github.com/TimLai666/coimnet/tasks/textgen.(*Model).Step",
+    "github.com/TimLai666/coimnet/tasks/textgen.TestRunTextgenDefaultLearnsEverySeed"
+  ],
+  "root_source_line_checks": [
+    "run_test.go120 RunTextgen call",
+    "run.go288 model.Step call",
+    "model.go286 Trainer.StepFrom call",
+    "trainer.go560 candidate trajectory validation via Predict (sample return PC at562)"
+  ],
+  "conclusion": "The one-second sample observed training forward computations and reverse matrix gradients with race instrumentation. This snapshot does not establish the cause of increased wall time or certify global absence of deadlock or performance regressions.",
+  "precision_fallback_in_this_sample": false,
+  "source_or_settings_changed": false,
+  "adopted": false,
+  "verification_ready": false
+}

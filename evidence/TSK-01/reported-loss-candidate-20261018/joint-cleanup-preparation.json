@@ -1,0 +1,52 @@
+{
+  "at": "2026-10-18T02:21:48.803603+00:00",
+  "purpose": "Bind preservation and cleanup to joint source,218 events and actual terminal receipt, retaining all original cleanup protections",
+  "scripts": {
+    "cleanup-owned-joint.py.txt": {
+      "sha256": "7fa04868af957fb9a94546b428324a422da57f8d80c0bed99f75ba8f8ee746bf",
+      "parent": "cleanup-owned-v2.py.txt",
+      "parent_sha256": "17fa1481804659fd91ef172b82c859ba4d77555f4f8be6c86f6bf58ff645b73d",
+      "ast_parse_passed": true,
+      "help_exit_code": 0,
+      "not_ready_exit_code": 2,
+      "refusal": {
+        "ready": false,
+        "missing": [
+          "runner-terminal.json",
+          "engineering-verification.json",
+          "verification.json",
+          "metadata-governance.json",
+          "old-models-root-verification-joint.json",
+          "work-preservation.json",
+          "discarded-binaries.json"
+        ],
+        "deleted": false
+      }
+    },
+    "preserve-work-joint.py.txt": {
+      "sha256": "20b4b66f00fbd6ce632c47e1427c8961f58cd1cbe64496807405d6325fc4d1e8",
+      "parent": "preserve-work-v2.py.txt",
+      "parent_sha256": "34f32bd9a123f28d30f1bdc18565159736edfd96c8dacb76cb5cd0129ebb519f",
+      "ast_parse_passed": true,
+      "help_exit_code": 0,
+      "not_ready_exit_code": 2,
+      "refusal": {
+        "ready": false,
+        "missing": [
+          "runner-terminal.json",
+          "engineering-verification.json",
+          "verification.json",
+          "metadata-governance.json",
+          "old-models-root-verification-joint.json"
+        ],
+        "archived": false,
+        "deleted": false
+      },
+      "initial_script_sha256": "c2b3b0683bf7239c4a94b0c06d4dab0deeda0ee27efcd0615dac06cd26e9a274",
+      "revision_review": "joint-preservation-root-review-v2.json",
+      "inventory_controls": "joint-preservation-inventory-controls.json"
+    }
+  },
+  "no_cleanup_performed": true,
+  "ready": false
+}

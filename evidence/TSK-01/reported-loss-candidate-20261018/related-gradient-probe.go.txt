@@ -1,0 +1,33 @@
+package main
+
+import (
+ "encoding/json"
+ "fmt"
+ "math"
+ "os"
+ "github.com/TimLai666/coimnet/internal/categorical"
+ "github.com/TimLai666/coimnet/distill"
+)
+
+func main() {
+ cases := []struct {name string; bits []uint64; target int; factor, divisor float64}{
+  {"winner_first", []uint64{0x40774910d52d3051,0xc0774910d52d3052},0,1,1},
+  {"winner_last", []uint64{0xc0774910d52d3052,0x40774910d52d3051},1,1,1},
+  {"maximum_factor", []uint64{0x40774910d52d3051,0xc0774910d52d3052},0,math.MaxFloat64,1},
+  {"ordinary_gap", []uint64{0,math.Float64bits(-40)},0,1,1},
+ }
+ for _,tc := range cases {
+  x:=make([]float64,len(tc.bits));for i,b:=range tc.bits{x[i]=math.Float64frombits(b)}
+  gradient:=make([]float64,len(x));err:=categorical.Gradient(gradient,x,tc.target,tc.factor,tc.divisor)
+  row:=map[string]any{"name":tc.name,"gradient_error":fmt.Sprint(err)}
+  out:=[]string{};for _,v:=range gradient{out=append(out,fmt.Sprintf("%016x",math.Float64bits(v)))};row["gradient_bits"]=out
+  if tc.factor==1 && tc.divisor==1 {
+   d:=distill.DistributionDistiller{Temperature:2,Scale:3,Mix:0,Alignment:distill.Alignment{Rule:distill.AlignmentIdentical,TeacherVocabHash:"probe",StudentVocabHash:"probe"}}
+   loss,g,_,publicErr:=d.Loss(distill.TeacherDistribution{Probabilities:[]float64{1,0}},x,tc.target)
+   row["public_error"]=fmt.Sprint(publicErr);row["public_loss_bits"]=fmt.Sprintf("%016x",math.Float64bits(loss))
+   out:=[]string{};for _,v:=range g{out=append(out,fmt.Sprintf("%016x",math.Float64bits(v)))};row["public_gradient_bits"]=out
+  }
+  for i,b:=range tc.bits{if math.Float64bits(x[i])!=b{panic("input mutated")}}
+  if err:=json.NewEncoder(os.Stdout).Encode(row);err!=nil{panic(err)}
+ }
+}

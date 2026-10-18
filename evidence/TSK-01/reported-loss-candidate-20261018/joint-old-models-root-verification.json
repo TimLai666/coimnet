@@ -1,0 +1,73 @@
+{
+  "verified_at": "2026-10-18T01:44:09.621699+00:00",
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": [
+    "joint-ocr-candidate-unit.json",
+    "joint-ocr-candidate-race.json",
+    "joint-textgen-candidate-unit.json",
+    "joint-textgen-candidate-race.json"
+  ],
+  "environment": "command-environment.json",
+  "observed_result": {
+    "proof": [
+      {
+        "kind": "ocr",
+        "mode": "unit",
+        "receipt": "joint-ocr-candidate-unit.json",
+        "baseline_receipt": "evidence/TSK-03/categorical-gradient-adoption-20261018/ocr-checkpoint-formal-unit.json",
+        "full_output_equal": true,
+        "raw_bytes": 85647,
+        "raw_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+        "actual_terminal_tool_chunk": "28e470"
+      },
+      {
+        "kind": "ocr",
+        "mode": "race",
+        "receipt": "joint-ocr-candidate-race.json",
+        "baseline_receipt": "evidence/TSK-03/categorical-gradient-adoption-20261018/ocr-checkpoint-formal-race.json",
+        "full_output_equal": true,
+        "raw_bytes": 85647,
+        "raw_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+        "actual_terminal_tool_chunk": "c339cc"
+      },
+      {
+        "kind": "textgen",
+        "mode": "unit",
+        "receipt": "joint-textgen-candidate-unit.json",
+        "baseline_receipt": "evidence/TSK-03/categorical-gradient-adoption-20261018/textgen-checkpoint-formal-unit.json",
+        "full_output_equal": true,
+        "raw_bytes": 1201241,
+        "raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+        "actual_terminal_tool_chunk": "9db242"
+      },
+      {
+        "kind": "textgen",
+        "mode": "race",
+        "receipt": "joint-textgen-candidate-race.json",
+        "baseline_receipt": "evidence/TSK-03/categorical-gradient-adoption-20261018/textgen-checkpoint-formal-race.json",
+        "full_output_equal": true,
+        "raw_bytes": 1201241,
+        "raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+        "actual_terminal_tool_chunk": "e41504"
+      }
+    ],
+    "ocr_distinct_old_models": 3,
+    "textgen_distinct_old_models": 2,
+    "full_output_equality": "loaded checkpoint receipt, configuration, vocabulary/contract, inference, reported loss, before snapshot, continued training result and after snapshot",
+    "textgen_12_input_files_unchanged": true,
+    "formal_source_count": 903,
+    "formal_source_changed": false
+  },
+  "test_log": [
+    "joint-ocr-candidate-unit.log",
+    "joint-ocr-candidate-race.log",
+    "joint-textgen-candidate-unit.log",
+    "joint-textgen-candidate-race.log"
+  ],
+  "affected_packages_race_pending": true,
+  "formal_adoption_and_full_engineering_pending": true
+}

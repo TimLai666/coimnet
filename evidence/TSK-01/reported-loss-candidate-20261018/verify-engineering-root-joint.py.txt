@@ -1,0 +1,179 @@
+"""Independently verify completed joint148/149 engineering and old-model receipts."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, json, subprocess
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Verify all completed receipts and publish new Root evidence without overwriting files.')
+p.add_argument('--session-id', type=int, help='Root-observed actual new full engineering session ID; required with --run')
+p.add_argument('--terminal-tool-chunk', help='Root-observed successful terminal tool chunk; required with --run')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+if not a.terminal_tool_chunk or a.session_id is None or a.session_id <= 0:
+    p.error('--session-id and --terminal-tool-chunk are required with --run')
+if not __debug__:
+    raise SystemExit('Optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+B = R / 'evidence/TSK-03/categorical-gradient-adoption-20261018'
+W = R / 'runs/.tmp/reported-loss-candidate-20261018'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+read = lambda path: json.loads(path.read_bytes())
+source_raw = (E / 'formal-source-joint.json').read_bytes()
+source = json.loads(source_raw)
+assert len(source) == read(E / 'formal-tests-frozen-joint.json')['source_count'] and sha(source_raw) == read(E / 'formal-tests-frozen-joint.json')['source_manifest_sha256']
+paths = {n for n in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if n and (n.endswith('.go') or n in ['go.mod', 'go.sum'])}
+assert paths == set(source), 'source manifest coverage differs'
+for name, digest in source.items():
+    assert sha((R / name).read_bytes()) == digest, name
+protected = R / 'evidence/LRN-08/aggregate-range-20261017'
+for manifest, expected_count in [('protected-models.json', 18), ('persistent-data.json', 6), ('foreign-before.json', 32)]:
+    records = read(protected / manifest)
+    assert len(records) == expected_count
+    for name, value in records.items():
+        path = Path(name) if Path(name).is_absolute() else R / name
+        raw = path.read_bytes()
+        assert sha(raw) == (value['sha256'] if isinstance(value, dict) else value), name
+        if isinstance(value, dict):
+            assert len(raw) == value['bytes'], name
+
+def log_bytes(directory, receipt):
+    assert Path(receipt['log']).name == receipt['log']
+    raw = (directory / receipt['log']).read_bytes()
+    assert len(raw) == receipt['log_bytes'] and sha(raw) == receipt['log_sha256']
+    if receipt['log'].endswith('.gz'):
+        raw = gzip.decompress(raw)
+        assert len(raw) == receipt['raw_bytes'] and sha(raw) == receipt['raw_sha256']
+    return raw
+
+def outcomes(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if row.get('Action') not in ['pass', 'skip', 'fail']:
+            continue
+        key = (row['Package'], row['Test']) if row.get('Test') else row['Package']
+        target = tests if row.get('Test') else packages
+        assert key not in target
+        target[key] = row['Action']
+    return tests, packages
+
+pattern = '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+expected = [
+    ('format', ['gofmt', '-l', *[n for n in source if n.endswith('.go') and not n.startswith('evidence/')]]),
+    ('build', ['go', 'build', './...']),
+    ('unit', ['go', 'test', '-json', '-count=1', '-timeout=60m', './...']),
+    ('race', ['go', 'test', '-race', '-json', '-count=1', '-timeout=60m', './...']),
+    ('vet', ['go', 'vet', './...']),
+    ('module-verify', ['go', 'mod', 'verify']),
+    ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+    ('governance', ['go', 'test', '-json', '-count=1', '-run', pattern, '.']),
+    ('closure-binary', ['go', 'test', '-c', '-o', str(W / 'final-root.test'), '.']),
+]
+engineering = read(E / 'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count'] == len(source) and len(engineering['steps']) == 9
+frozen = read(E / 'formal-tests-frozen-joint.json')
+proof = []
+for embedded, (name, command) in zip(engineering['steps'], expected):
+    receipt = read(E / ('engineering-joint-' + name + '.json'))
+    assert embedded == receipt and receipt['command'] == command
+    assert receipt['exit_code'] == 0 and receipt['source_count'] == len(source) and receipt['source_manifest'] == 'formal-source-joint.json' and receipt['acceptance_errors'] == []
+    assert receipt['log'] == 'engineering-joint-' + name + ('.log.gz' if name in ['unit', 'race'] else '.log')
+    raw = log_bytes(E, receipt)
+    item = {'step': name, 'receipt': 'engineering-joint-' + name + '.json', 'receipt_sha256': sha((E / ('engineering-joint-' + name + '.json')).read_bytes()), 'command': command, 'log': receipt['log'], 'log_sha256': receipt['log_sha256'], 'exit_code': 0}
+    if name in ['unit', 'race', 'governance']:
+        tests, packages = outcomes(raw)
+        assert tests and set(tests.values()) <= {'pass', 'skip'} and set(packages.values()) <= {'pass', 'skip'}
+        assert dict(collections.Counter(tests.values())) == receipt['test_events']
+        assert dict(collections.Counter(packages.values())) == receipt['package_events']
+        if name in ['unit', 'race']:
+            prior_receipt = read(B / ('engineering-' + name + '.json'))
+            assert prior_receipt['log'] == 'engineering-' + name + '.log.gz'
+            old, old_packages = outcomes(log_bytes(B, prior_receipt))
+            assert len(old) == 8940 and all(tests.get(k) == v for k, v in old.items())
+            rows = frozen['expected_new_events'][name]
+            new = {(r['package'], r['test']): r['action'] for r in rows}
+            assert len(new) == len(rows) == 218 and set(new.values()) == {'pass'}
+            assert all(k[1].split('/')[0] in frozen['parents'] for k in new)
+            assert {k: v for k, v in tests.items() if k not in old} == new
+            assert packages == old_packages
+            assert receipt['test_events'] == ({'pass': 9135, 'skip': 23} if name == 'unit' else {'pass': 9134, 'skip': 24})
+            item.update(prior_events_preserved=8940, added_pass_events=218)
+        else:
+            assert receipt['test_events'] == {'pass': 31}
+        item.update(test_events=receipt['test_events'], package_events=receipt['package_events'])
+    if name in ['format', 'build', 'vet', 'closure-binary']:
+        assert not raw.strip()
+    if name == 'module-verify':
+        assert raw.decode().strip() == 'all modules verified'
+    if name == 'module-selection':
+        assert raw.decode().strip() == 'github.com/HazelnutParadise/insyra v0.3.4'
+    if name == 'race':
+        assert b'WARNING: DATA RACE' not in raw
+    proof.append(item)
+
+models = read(E / 'old-models-root-verification-joint.json')
+assert models['source_manifest_sha256'] == sha(source_raw)
+assert models['all_full_outputs_equal'] and models['model_processes'] == 8
+expected_model_labels = {'precision-' + kind + '-candidate-' + mode for kind in ['ocr', 'textgen'] for mode in ['unit', 'race']} | {'joint-formal-' + kind + '-' + mode for kind in ['ocr', 'textgen'] for mode in ['unit', 'race']}
+assert len(models['proof']) == 8
+model_rows = {row['label']: row for row in models['proof']}
+assert len(model_rows) == 8 and set(model_rows) == expected_model_labels
+model_proof = []
+for mode in ['unit', 'race']:
+    for kind, count in [('ocr', 3), ('textgen', 2)]:
+        baseline = read(B / (kind + '-checkpoint-formal-' + mode + '.json'))
+        if kind == 'ocr':
+            baseline_raw = log_bytes(B, baseline)
+        else:
+            compressed = (B / baseline['output']).read_bytes()
+            assert sha(compressed) == baseline['output_sha256']
+            baseline_raw = gzip.decompress(compressed)
+            assert len(baseline_raw) == baseline['output_raw_bytes'] and sha(baseline_raw) == baseline['output_raw_sha256']
+        for stage in ['candidate', 'formal']:
+            label = ('precision-' + kind + '-candidate-' + mode) if stage == 'candidate' else ('joint-formal-' + kind + '-' + mode)
+            receipt = read(E / (label + '.json'))
+            assert receipt['exit_code'] == 0 and receipt['source_count'] == (903 if stage == 'candidate' else len(source))
+            assert receipt['source_manifest'] == ('formal-source-v2.json' if stage == 'candidate' else 'formal-source-joint.json')
+            command_raw = log_bytes(E, receipt)
+            row = model_rows[label]
+            assert row['producer_receipt'] == label + '.json'
+            assert row['producer_receipt_sha256'] == sha((E / row['producer_receipt']).read_bytes())
+            assert row['actual_terminal_tool_chunk']
+            if kind == 'ocr':
+                raw = command_raw
+                assert len(raw.splitlines()) == 3
+            else:
+                tests, packages = outcomes(command_raw)
+                assert tests == {('github.com/TimLai666/coimnet/tasks/textgen', 'TestRootTextgenCompatibility146'): 'pass'}
+                assert set(packages.values()) == {'pass'}
+                compressed = (E / (label + '-output.json.gz')).read_bytes()
+                assert sha(compressed) == row['compressed_sha256']
+                raw = gzip.decompress(compressed)
+            assert raw == baseline_raw
+            assert len(raw) == row['raw_bytes'] and sha(raw) == row['raw_sha256']
+            assert row['kind'] == kind and row['stage'] == stage and row['mode'] == mode
+            model_proof.append({'receipt': label + '.json', 'kind': kind, 'stage': stage, 'models': count, 'raw_sha256': sha(raw)})
+inputs = read(E / 'compatibility-ocr-inputs.json')
+for group in ['original_files', 'copied_files']:
+    for name, item in inputs[group].items():
+        raw = (R / name).read_bytes()
+        assert sha(raw) == item['sha256'] and len(raw) == item['bytes']
+text_inputs = read(E / 'joint-textgen-inputs.json')
+for name, item in text_inputs['files'].items():
+    raw = (R / name).read_bytes()
+    assert sha(raw) == item['sha256'] and len(raw) == item['bytes']
+assert len(model_proof) == 8 and (W / 'final-root.test').is_file()
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+def publish(name, data):
+    with (E / name).open('x') as handle:
+        json.dump(data, handle, indent=2)
+        handle.write('\n')
+publish('runner-terminal.json', {'observed_at': now, 'session_id': a.session_id, 'terminal_tool_chunk': a.terminal_tool_chunk, 'exit_code': 0, 'label_prefix': 'engineering-joint', 'source_count': len(source), 'source_manifest': 'formal-source-joint.json', 'source_manifest_sha256': sha(source_raw)})
+publish('full-engineering-root-verification.json', {'verified_at': now, 'source_count': len(source), 'source_manifest_sha256': sha(source_raw), 'all_nine_steps_independently_verified': True, 'steps': proof, 'model_processes_verified': model_proof, 'runner_terminal': 'runner-terminal.json', 'global_zero_bug_claim': False})
+publish('verification.json', {'requirement': 'TSK-01', 'related_requirements': ['TCH-03', 'TCH-04'], 'ticket': '148', 'related_ticket': '149', 'reproduction_command': ['python3 evidence/TSK-01/reported-loss-candidate-20261018/engineering-joint.py.txt --run --label-prefix engineering-joint', 'python3 evidence/TSK-01/reported-loss-candidate-20261018/verify-engineering-root-joint.py.txt --run --session-id ' + str(a.session_id) + ' --terminal-tool-chunk ' + a.terminal_tool_chunk], 'environment': ['command-environment.json', 'environment-version.json'], 'observed_result': {'all_nine_engineering_steps_passed': True, 'unit': {'pass': 9135, 'skip': 23}, 'race': {'pass': 9134, 'skip': 24}, 'passed_packages_each_build': 59, 'prior_events_preserved_each_build': 8940, 'new_pass_events_each_build': 218, 'candidate_and_formal_model_processes': 8, 'distinct_ocr_models': 3, 'distinct_text_models': 2}, 'test_log': ['engineering-joint-unit.log.gz', 'engineering-joint-race.log.gz', 'engineering-verification.json', 'old-models-root-verification-joint.json'], 'verified_at': now, 'engineering_passed': True, 'old_models_passed': True, 'source_count': len(source), 'source_manifest': 'formal-source-joint.json', 'source_manifest_sha256': sha(source_raw), 'runner_terminal': 'runner-terminal.json', 'engineering': 'engineering-verification.json', 'root_verification': 'full-engineering-root-verification.json', 'old_models': 'old-models-root-verification-joint.json', 'input_fingerprints': ['formal-source-joint.json', 'formal-tests-frozen-joint.json', 'compatibility-ocr-inputs.json', 'joint-textgen-inputs.json'], 'scope': 'Shared label classification loss and derivative preserve representable values; 218 new events and all8940 prior outcomes preserved. Teacher KL, public signatures and model formats unchanged. No task-quality or biological claim.', 'global_zero_bug_claim': False})
+print(json.dumps({'all_nine_steps_verified': True, 'source_count': len(source), 'old_model_processes_verified': len(model_proof), 'unit': {'pass': 9135, 'skip': 23}, 'race': {'pass': 9134, 'skip': 24}}))

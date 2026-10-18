@@ -1,0 +1,80 @@
+package categorical
+
+import (
+	"fmt"
+	"math"
+	"math/big"
+)
+
+// Loss returns factor times one-hot cross-entropy without changing logits.
+// Logits must be finite and nonempty, target must be in range, and factor must
+// be finite and nonnegative. An unrepresentable result returns zero and error.
+func Loss(logits []float64, target int, factor float64) (float64, error) {
+	if len(logits) == 0 || target < 0 || target >= len(logits) {
+		return 0, fmt.Errorf("categorical: invalid logits or target")
+	}
+	if math.IsNaN(factor) || math.IsInf(factor, 0) || factor < 0 {
+		return 0, fmt.Errorf("categorical: factor must be finite and nonnegative")
+	}
+	for i, value := range logits {
+		if math.IsNaN(value) || math.IsInf(value, 0) {
+			return 0, fmt.Errorf("categorical: logit %d is not finite", i)
+		}
+	}
+	if factor == 0 || len(logits) == 1 {
+		return 0, nil
+	}
+	maximum, tailMaximum := math.Inf(-1), math.Inf(-1)
+	winner := 0
+	for i, value := range logits {
+		if value > maximum {
+			tailMaximum, maximum, winner = maximum, value, i
+		} else if value > tailMaximum {
+			tailMaximum = value
+		}
+	}
+	tailSum, compensation := 0.0, 0.0
+	for i, value := range logits {
+		if i == winner {
+			continue
+		}
+		termMantissa, termExponent := expDifference(value, tailMaximum)
+		adjusted := math.Ldexp(termMantissa, termExponent) - compensation
+		next := tailSum + adjusted
+		compensation = (next - tailSum) - adjusted
+		tailSum = next
+	}
+	tailMantissa, tailExponent := expDifference(tailMaximum, maximum)
+	tailGap := tailMaximum - maximum
+	logNormalizer, weightedTiny := 0.0, 0.0
+	if tailGap < -512*math.Ln2 {
+		// Here log1p(x) rounds to x; retain the exponent until scaling.
+		sm, se := math.Frexp(tailSum)
+		fm, fe := math.Frexp(factor)
+		weightedTiny = math.Ldexp(tailMantissa*sm*fm, tailExponent+se+fe)
+	} else {
+		logNormalizer = math.Log1p(math.Ldexp(tailMantissa, tailExponent) * tailSum)
+	}
+	loss := factor*((maximum-logits[target])+logNormalizer) + weightedTiny
+	if math.IsNaN(loss) || math.IsInf(loss, 0) {
+		// A gap can overflow before a small factor makes its final value finite.
+		// Recompute only this exceptional branch from the original operands.
+		var exact, term big.Rat
+		exact.SetFloat64(maximum)
+		term.SetFloat64(logits[target])
+		exact.Sub(&exact, &term)
+		term.SetFloat64(logNormalizer)
+		exact.Add(&exact, &term)
+		term.SetFloat64(factor)
+		exact.Mul(&exact, &term)
+		loss, _ = exact.Float64()
+		loss += weightedTiny
+	}
+	if loss <= math.SmallestNonzeroFloat64 {
+		loss = preciseLoss(logits, target, factor)
+	}
+	if math.IsNaN(loss) || math.IsInf(loss, 0) {
+		return 0, fmt.Errorf("categorical: scaled loss is not finite")
+	}
+	return loss, nil
+}

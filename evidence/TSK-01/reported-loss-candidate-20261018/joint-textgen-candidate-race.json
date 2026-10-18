@@ -1,0 +1,29 @@
+{
+  "command": [
+    "env",
+    "COIMNET_146_COMPAT_MODE=load",
+    "COIMNET_146_COMPAT_ROOT=/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/compatibility-textgen/models-race",
+    "COIMNET_146_COMPAT_OUTPUT=/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/joint-textgen-race-output.json",
+    "go",
+    "test",
+    "-json",
+    "-race",
+    "-count=1",
+    "-timeout=10m",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/joint-textgen-candidate-overlay.json",
+    "-run",
+    "^TestRootTextgenCompatibility146$",
+    "./tasks/textgen"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-18T01:43:15.661142+00:00",
+  "finished_at": "2026-10-18T01:43:20.466855+00:00",
+  "exit_code": 0,
+  "seconds": 4.805731791,
+  "source_count": 903,
+  "source_manifest": "formal-source-v2.json",
+  "log": "joint-textgen-candidate-race.log",
+  "log_bytes": 1327,
+  "log_sha256": "3378534d4e4fbaa5d4d9fb8b44b171cef15fe739fffbe60d3279e263b7180ea1"
+}

@@ -1,0 +1,81 @@
+{
+  "created_at": "2026-10-18T01:27:12.621806+00:00",
+  "tickets": [
+    "148",
+    "149"
+  ],
+  "source_count": 903,
+  "source_manifest": "formal-source-v2.json",
+  "feature": "Users receive accurate label classification loss and derivative for exact finite inputs",
+  "root_cause": "Subtraction rounded before exponent evaluation in normal and tiny branches",
+  "flow": "OCR / distill -> categorical.Loss / Gradient -> shared expDifference -> scalar loss / derivative; Gradient also serves existing147 callers",
+  "helper_contract": {
+    "proposed_name": "expDifference",
+    "signature": "(left,right float64) -> (mantissa float64,exponent int)",
+    "preconditions": [
+      "Callers validate finite logits and select left<=right",
+      "Callers retain validation, loss weighting, normalization, output mutation and error handling"
+    ],
+    "expected": [
+      "Retain subtraction residual through exponent reduction",
+      "Represent exp(left-right) by mantissa/exponent until final weighting",
+      "Keep exact ordinary differences on the existing direct path where applicable",
+      "Return zero only below a bound that no finite factor and MaxInt64-class aggregate can rescue"
+    ],
+    "new_public_api": false,
+    "new_dependency": false
+  },
+  "error_rescue_map": [
+    {
+      "operation": "Invalid logits/target/factor/divisor",
+      "handler": "Existing Loss/Gradient validation",
+      "visible": "Existing error and untouched inputs",
+      "tests": "Existing147/148 invalid-input controls"
+    },
+    {
+      "operation": "Final nonrepresentable scalar",
+      "handler": "Existing Loss finite check and rational fallback",
+      "visible": "Existing error and cleared caller results",
+      "tests": "Existing148 overflow/refusal controls"
+    },
+    {
+      "operation": "Zero or singleton input semantics",
+      "handler": "Existing early returns",
+      "visible": "Existing zero output",
+      "tests": "Existing147/148 plus24 boundary controls"
+    },
+    {
+      "operation": "Caller error propagation",
+      "handler": "Existing OCR/distill wrappers",
+      "visible": "Existing error, no committed training update",
+      "tests": "Existing public refusal and model controls"
+    }
+  ],
+  "test_owners": {
+    "148": [
+      "Original84 scalar/caller controls",
+      "Expanded10 scalar residual regression events",
+      "Loss weighted overflow and neutrality controls"
+    ],
+    "149": [
+      "Existing147 derivative/caller controls",
+      "Initial9 gap regression events",
+      "Expanded24-case derivative assertion matrix",
+      "Affected caller and old-model next-step controls"
+    ]
+  },
+  "validation": [
+    "Keep source903 frozen during candidate work",
+    "Run isolated controls and affected packages in unit/race modes",
+    "Recheck old model loading, inference and next training before adoption",
+    "Adopt one shared final source only after both tickets candidate gates pass",
+    "Complete required full engineering,31 governance, owned preservation/cleanup and verified remote delivery"
+  ],
+  "assumptions_and_limits": [
+    "Precision acceptance retains4ULP and nonzero representability checks",
+    "No measured task-quality or biological benefit claimed",
+    "No SSH/device changes; all caches and temporary data remain inside this project"
+  ],
+  "subtraction_review": "Replace duplicated difference/exponent arithmetic with one internal helper used by both functions; preserve callers and public contracts; do not add training settings.",
+  "implementation_not_started": true
+}

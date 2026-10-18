@@ -1,0 +1,45 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": "run-command.py.txt; indexed original-red-v3 and candidate-v2 receipts",
+  "environment": "command-environment.json",
+  "observed_result": {
+    "candidate_accepted": true,
+    "proof": [
+      {
+        "mode": "unit",
+        "package_test_events": 393,
+        "prior_events_preserved": 316,
+        "new_pass": 77,
+        "receipt": "candidate-v2-packages-unit.json",
+        "log_sha256": "e2ac726db6f96a418fc6c33d9657f2aff5830cd08e985b2174225a9e7295f2ee"
+      },
+      {
+        "mode": "race",
+        "package_test_events": 393,
+        "prior_events_preserved": 316,
+        "new_pass": 77,
+        "receipt": "candidate-v2-packages-race.json",
+        "log_sha256": "29ab1e687bafc9846f8f2a50ced1e922308f6601f4c6545feb935f8f80bb0644"
+      }
+    ],
+    "independent_reference_cases": 36,
+    "old_models": "ocr-candidate-root-verification.json",
+    "old_model_production_candidate_bytes_unchanged": true,
+    "adversarial_concerns_four_controls_passed": true,
+    "formal_source_unchanged": 895,
+    "global_bug_free_claim": false
+  },
+  "test_log": [
+    "original-red-v3-unit.log",
+    "original-red-v3-race.log",
+    "candidate-v2-packages-unit.log",
+    "candidate-v2-packages-race.log",
+    "ocr-models-candidate-unit.log",
+    "ocr-models-candidate-race.log"
+  ],
+  "verified_at": "2026-10-18T00:27:53.752258+00:00"
+}

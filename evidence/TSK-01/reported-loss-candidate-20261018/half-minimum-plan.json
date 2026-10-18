@@ -1,0 +1,36 @@
+{
+  "created_at": "2026-10-18T01:53:15.719650+00:00",
+  "feature": "Representable one-hot loss and updates survive final half-minimum rounding",
+  "root_cause": "Rounded subtraction/reduction and rounded mantissa lose the side of a final half-minimum boundary",
+  "scope": [
+    "Existing Loss/Gradient API and caller behavior",
+    "Rare final-underflow recomputation from original logits/factor/divisor",
+    "No model schema, dependencies, training configuration or teacher-KL change"
+  ],
+  "flow": "OCR / distill and existing147 callers -> categorical Loss/Gradient -> existing fast path -> rare original-input high-precision calculation -> one final float64 conversion",
+  "test_reference": "half-minimum-expanded-reference.json",
+  "test_reference_sha256": "f708411c9bd86e84d480bd6d8df97b7cd3f6848ad407dd35b5ef6e3d1607dbf2",
+  "slots": [
+    {
+      "signature": "TestHalfMinimumCategorical149(t *testing.T)",
+      "expected": "44 exact-input cases: Loss and Gradient meet4ULP plus nonzero/sign/truezero/input-preservation checks; both logits orders, factors/divisors, aggregation and subnormal logit difference",
+      "file": "runs/.tmp/reported-loss-candidate-20261018/half-minimum-private-test.go"
+    },
+    {
+      "signature": "TestHalfMinimumDistill149(t *testing.T)",
+      "expected": "20 flagged unit-factor public distill cases exercise same scalar/gradient/report/input checks",
+      "file": "runs/.tmp/reported-loss-candidate-20261018/half-minimum-public-test.go"
+    }
+  ],
+  "validation": [
+    "Freeze new66 expected events without altering prior143",
+    "Run original903 and old isolated candidate in unit/race to establish failures",
+    "Root-owned zero implementation skeleton must fail confirmed positive cases",
+    "Implement2048-bit rare recomputation, then all209 focused events and7 affected packages",
+    "Recheck5 old models before joint adoption and full project engineering/cleanup/delivery"
+  ],
+  "precision_policy": "Existing4ULP tolerance is unchanged;1ULP next-subnormal rounding difference alone is not a confirmed defect",
+  "error_map": "Existing invalid/empty/zero/singleton/nonrepresentable checks and caller propagation remain; new branch only follows existing finite input validation",
+  "resource_limit": "Project-local inputs/caches, no new process until original candidate races are terminal, one O(N) fallback per Gradient invocation",
+  "subtraction_review": "Share one rare-path implementation; preserve fast path and public callers; do not force values to MinFloat or add configuration."
+}

@@ -1,0 +1,86 @@
+{
+  "verified_at": "2026-10-18T02:53:54.798382+00:00",
+  "all_passed": true,
+  "source_manifest": "formal-source-v2.json",
+  "source_manifest_sha256": "108685cf1004b53c18459222af1f4457a62a5a4f777595c5f98e5f9efd95adc8",
+  "physical_source_count": 903,
+  "candidate_input_manifest": "half-minimum-candidate-inputs.json",
+  "candidate_input_manifest_sha256": "ac10c17ee2fe7057c7bf9dc1e93c092023017d5b2e43c5d2936a16e56e91285a",
+  "frozen_events": "half-minimum-all-expected-events-v2.json",
+  "frozen_events_sha256": "e30696f6021cf3bccb4a59e8ca3b30151fa85e4c46359b0b2fffacf34d5ba514",
+  "candidate_mappings": 13,
+  "frozen_events_each_build": 218,
+  "package_proof": [
+    {
+      "mode": "unit",
+      "receipt": "precision-packages-unit.json",
+      "actual_terminal_tool_chunk": "43b045",
+      "log_sha256": "7824e0a492f6c085f8605cf5ac58e0880feacf4d17aaee29f1d30741cfbe706e",
+      "test_events": {
+        "pass": 1534,
+        "skip": 14
+      },
+      "packages_passed": 7,
+      "prior_events_preserved": 1330,
+      "added_pass_events": 218
+    },
+    {
+      "mode": "race",
+      "receipt": "precision-packages-race.json",
+      "actual_terminal_tool_chunk": "40ff90",
+      "log_sha256": "85a0ac787f42d3a84eecf592aa7b1efaa494f8eaa3e32e55c663ef611e3d99b4",
+      "test_events": {
+        "pass": 1534,
+        "skip": 14
+      },
+      "packages_passed": 7,
+      "prior_events_preserved": 1330,
+      "added_pass_events": 218
+    }
+  ],
+  "candidate_models": [
+    {
+      "label": "precision-ocr-candidate-unit",
+      "bytes": 85647,
+      "sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+      "baseline_byte_equal": true
+    },
+    {
+      "label": "precision-textgen-candidate-unit",
+      "bytes": 1201241,
+      "sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+      "baseline_byte_equal": true
+    },
+    {
+      "label": "precision-ocr-candidate-race",
+      "bytes": 85647,
+      "sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+      "baseline_byte_equal": true
+    },
+    {
+      "label": "precision-textgen-candidate-race",
+      "bytes": 1201241,
+      "sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+      "baseline_byte_equal": true
+    }
+  ],
+  "distinct_old_models": 5,
+  "seed_test_logged_metrics": {
+    "current": [
+      "run_test.go:128: seed=1 accuracy=1 validity=1 perplexity_after=1.3737",
+      "run_test.go:128: seed=2 accuracy=1 validity=1 perplexity_after=1.4344",
+      "run_test.go:128: seed=3 accuracy=1 validity=1 perplexity_after=1.5323"
+    ],
+    "baseline": [
+      "run_test.go:128: seed=1 accuracy=1 validity=1 perplexity_after=1.3737",
+      "run_test.go:128: seed=2 accuracy=1 validity=1 perplexity_after=1.4344",
+      "run_test.go:128: seed=3 accuracy=1 validity=1 perplexity_after=1.5323"
+    ]
+  },
+  "model_inputs_verified_in": "precision-old-models-root-verification.json",
+  "protected_models": 18,
+  "protected_data": 6,
+  "protected_foreign_files": 32,
+  "formal_adopted": false,
+  "global_goal_complete": false
+}

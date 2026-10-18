@@ -1,0 +1,20 @@
+package main
+import("encoding/json";"fmt";"math";"os";"github.com/TimLai666/coimnet/internal/categorical")
+func main(){
+ cases:=[]struct{Offset int;Maximum,Tail uint64}{
+{-3,0xbd104e7ce35362a1,0xc0874910d52d3052},
+{-2,0xbd104e7ce35362a0,0xc0874910d52d3052},
+{-1,0xbd104e7ce353629f,0xc0874910d52d3052},
+{0,0xbd104e7ce353629e,0xc0874910d52d3052},
+{1,0xbd104e7ce353629d,0xc0874910d52d3052},
+{2,0xbd104e7ce353629c,0xc0874910d52d3052},
+{3,0xbd104e7ce353629b,0xc0874910d52d3052},
+ }
+ for _,c:=range cases{for _,reverse:=range []bool{false,true}{
+ logits:=[]float64{math.Float64frombits(c.Maximum),math.Float64frombits(c.Tail)};target:=0
+ if reverse{logits[0],logits[1]=logits[1],logits[0];target=1}
+ loss,le:=categorical.Loss(logits,target,1);dst:=make([]float64,2);ge:=categorical.Gradient(dst,logits,target,1,1)
+ record:=struct{Offset int;Reverse bool;Loss string;Gradient []string;LossError,GradientError string}{c.Offset,reverse,fmt.Sprintf("%016x",math.Float64bits(loss)),[]string{fmt.Sprintf("%016x",math.Float64bits(dst[0])),fmt.Sprintf("%016x",math.Float64bits(dst[1]))},fmt.Sprint(le),fmt.Sprint(ge)}
+ if err:=json.NewEncoder(os.Stdout).Encode(record);err!=nil{panic(err)}
+ }}
+}

@@ -1,0 +1,125 @@
+package ocr
+
+import (
+	"context"
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/internal/categorical"
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+func TestOCRPublicReportedLoss148(t *testing.T) {
+	for target, text := range []string{"a", "b", "c"} {
+		t.Run(text, func(t *testing.T) {
+			ctx := context.Background()
+			r, err := NewRecognizer(RecognizerConfig{Height: 2, Hidden: 4, Alphabet: []rune{'a', 'b', 'c'}, LearningRate: .01, Seed: 17, InputProfile: "single-character", CharacterWidth: 2})
+			if err != nil {
+				t.Fatal(err)
+			}
+			image := glyphs.Image{Width: 2, Height: 2, Pixels: []float64{.1, .2, .3, .4}}
+			pixels := append([]float64(nil), image.Pixels...)
+			state := r.Snapshot()
+			state.Options.Trainable = learning.Trainable{Readout: true}
+			for i := range state.Parameters.Readout {
+				state.Parameters.Readout[i] = 1
+			}
+			r.trainer, err = learning.NewTrainer(state.Config, state.Parameters, state.Options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			input, err := r.Inputs(image)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows, err := r.trainer.PredictAll(ctx, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			last := len(rows) - 1
+			a := rows[last][0]
+			if a == 0 || math.IsNaN(a) || math.IsInf(a, 0) {
+				t.Fatalf("invalid fixture activation %g", a)
+			}
+			for _, v := range rows[last] {
+				if v != a {
+					t.Fatalf("fixture logits differ: %v", rows[last])
+				}
+			}
+			state = r.Snapshot()
+			class := target + 1
+			for i := range state.Parameters.Readout {
+				switch i % state.Config.OutputSize {
+				case 0:
+					state.Parameters.Readout[i] = 1000 / a
+				case class:
+					state.Parameters.Readout[i] = 0
+				default:
+					state.Parameters.Readout[i] = -40 / a
+				}
+			}
+			r.trainer, err = learning.NewTrainer(state.Config, state.Parameters, state.Options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			reference, err := learning.NewTrainer(state.Config, state.Parameters, state.Options)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rows, err = r.trainer.PredictAll(ctx, input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			logits := rows[last]
+			if logits[class] != 0 || len(logits) != 4 {
+				t.Fatalf("invalid controlled logits %v", logits)
+			}
+			tail := 0.0
+			for j, v := range logits {
+				if j > 0 && j != class {
+					if math.Abs(v+40) > 1e-4 {
+						t.Fatalf("unexpected tail %g", v)
+					}
+					tail += math.Exp(v)
+				}
+			}
+			// The reference never adds the tiny mass to one in float64.
+			want := math.Log1p(tail)
+			upstream := make([][]float64, len(input))
+			for i := range upstream {
+				upstream[i] = make([]float64, len(logits))
+			}
+			if err := categorical.Gradient(upstream[last][1:], logits[1:], class-1, 1, 1); err != nil {
+				t.Fatal(err)
+			}
+			report, err := r.TrainLine(ctx, image, text)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := reference.StepFrom(ctx, input, upstream); err != nil {
+				t.Fatal(err)
+			}
+			// The previously accepted derivative is only a state-parity control.
+			if !reflect.DeepEqual(r.Snapshot(), reference.Snapshot()) {
+				t.Fatal("scalar reporting changed the accepted parameter/optimizer update")
+			}
+			if !reflect.DeepEqual(image.Pixels, pixels) || report.Labels != 1 || report.Frames != 1 || report.Impossible {
+				t.Fatalf("input/report control changed: %+v", report)
+			}
+			gotBits, wantBits := math.Float64bits(report.Loss), math.Float64bits(want)
+			t.Logf("loss_bits=%016x reference_bits=%016x update_parity=true", gotBits, wantBits)
+			if !(report.Loss > 0) || math.IsNaN(report.Loss) || math.IsInf(report.Loss, 0) {
+				t.Fatalf("TrainLine erased positive scalar: got %.17g, want %.17g", report.Loss, want)
+			}
+			distance := gotBits - wantBits
+			if gotBits < wantBits {
+				distance = wantBits - gotBits
+			}
+			if distance > 4 {
+				t.Fatalf("TrainLine loss %.17g, want %.17g within4 ULP; distance %d", report.Loss, want, distance)
+			}
+		})
+	}
+}

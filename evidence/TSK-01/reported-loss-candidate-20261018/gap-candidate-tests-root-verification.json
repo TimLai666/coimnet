@@ -1,0 +1,52 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": "See gap-canonical-red and gap-candidate-packages receipts",
+  "environment": "command-environment.json",
+  "observed_result": {
+    "proof": [
+      {
+        "mode": "unit",
+        "red": {
+          "pass": 77,
+          "fail": 7
+        },
+        "candidate": {
+          "pass": 400
+        },
+        "prior_preserved": 316,
+        "new_pass": 84,
+        "receipt": "gap-candidate-packages-unit.json",
+        "log_sha256": "f522a2eae9c5d8512fad8374817e2a03b9a2acef83687f9cba02a7595a8fe2f0"
+      },
+      {
+        "mode": "race",
+        "red": {
+          "pass": 77,
+          "fail": 7
+        },
+        "candidate": {
+          "pass": 400
+        },
+        "prior_preserved": 316,
+        "new_pass": 84,
+        "receipt": "gap-candidate-packages-race.json",
+        "log_sha256": "e53e37a99091facf47bb619fe33b48317d3ea36a1af3e040d574f29e25d814fb"
+      }
+    ],
+    "all_old_thresholds_preserved": true,
+    "formal_source_unchanged": 901,
+    "old_models_pending": true,
+    "formal_adoption_pending": true
+  },
+  "test_log": [
+    "gap-canonical-red-unit.log",
+    "gap-canonical-red-race.log",
+    "gap-candidate-packages-unit.log",
+    "gap-candidate-packages-race.log"
+  ],
+  "verified_at": "2026-10-18T00:52:58.081352+00:00"
+}

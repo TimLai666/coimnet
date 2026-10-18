@@ -1,0 +1,15 @@
+{
+  "confirmed_at": "2026-10-18T00:14:34.774507+00:00",
+  "original_receipt": "original-red-unit.json",
+  "original_frozen": "tests-frozen.json",
+  "old_fixture_sha256": "8eef90dad6bcaae89248091edeb2f8064311c80b579a74ec1f7384ea8f1ea180",
+  "root_cause": "The new test incorrectly equated public TrainReport.Frames with neural rows. single-character profileLogits keeps only its final row; existing147 public control already requires Frames1.",
+  "source_evidence": [
+    "tasks/ocr/recognizer.go:264-292",
+    "tasks/ocr/single_character_gradient_public_test.go:376-378"
+  ],
+  "new_frozen": "tests-frozen-v2.json",
+  "only_change": "Frames must equal1 and Impossible must befalse; positive scalar target and4ULP threshold unchanged.",
+  "formal_source_changes": 0,
+  "v1_race_kept_on_original_frozen_inputs": true
+}

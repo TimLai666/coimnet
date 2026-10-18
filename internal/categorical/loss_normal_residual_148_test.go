@@ -1,0 +1,46 @@
+package categorical
+
+import (
+	"math"
+	"testing"
+)
+
+func TestReportedLossNormalResidual148(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		bits   []uint64
+		target int
+		want   uint64
+	}{
+		{"ordinary_gap", []uint64{0x0000000000000000, 0xc044000000000000}, 0, 0x3c539792499b1a24},
+		{"inexact40_first", []uint64{0x4034000000000001, 0xc034000000000000}, 0, 0x3c539792499b1a11},
+		{"inexact40_last", []uint64{0xc034000000000000, 0x4034000000000001}, 1, 0x3c539792499b1a11},
+		{"inexact16", []uint64{0x4020000000000001, 0xc020000000000000}, 0, 0x3e7e355b9e6a20e8},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			x := make([]float64, len(tc.bits))
+			for i, b := range tc.bits {
+				x[i] = math.Float64frombits(b)
+			}
+			loss, err := Loss(x, tc.target, 1)
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := math.Float64bits(loss)
+			d := got - tc.want
+			if got < tc.want {
+				d = tc.want - got
+			}
+			t.Logf("got=%016x want=%016x distance=%d", got, tc.want, d)
+			if !(loss > 0) || d > 4 {
+				t.Errorf("exact-input loss lost: got%016x want%016x distance%d", got, tc.want, d)
+			}
+			for i, b := range tc.bits {
+				if math.Float64bits(x[i]) != b {
+					t.Error("input mutated")
+				}
+			}
+		})
+	}
+}

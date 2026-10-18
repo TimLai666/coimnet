@@ -1,0 +1,119 @@
+"""Run the complete engineering gate and compare every prior test result."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, json, subprocess, sys
+
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("--run", action="store_true", help="Run format, build, full ordinary/race tests, vet, module checks, governance and closure build; preserve receipts and compare all prior events.")
+parser.add_argument("--label-prefix", choices=["engineering", "engineering-final"], default="engineering", help="Unique attempt prefix; use engineering-final to preserve the sandbox-denied attempt.")
+args = parser.parse_args()
+if not args.run:
+    parser.print_help()
+    raise SystemExit(0)
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+P = R / 'evidence/TSK-03/categorical-gradient-adoption-20261018'
+W = R / 'runs/.tmp/reported-loss-candidate-20261018'
+source = json.loads((E / 'formal-source.json').read_text())
+frozen = json.loads((E / 'formal-tests-frozen.json').read_text())
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+assert len(source) == frozen['source_count']
+for path, digest in frozen['files'].items():
+    assert sha(R / path) == digest
+
+def events(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if row.get('Action') not in ['pass', 'skip', 'fail']:
+            continue
+        if row.get('Test'):
+            key = (row['Package'], row['Test'])
+            assert key not in tests, key
+            tests[key] = row['Action']
+        else:
+            packages[row['Package']] = row['Action']
+    return tests, packages
+
+pattern = '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+go_files = [name for name in source if name.endswith('.go') and not name.startswith('evidence/')]
+steps = [
+    ('format', ['gofmt', '-l', *go_files]),
+    ('build', ['go', 'build', './...']),
+    ('unit', ['go', 'test', '-json', '-count=1', '-timeout=60m', './...']),
+    ('race', ['go', 'test', '-race', '-json', '-count=1', '-timeout=60m', './...']),
+    ('vet', ['go', 'vet', './...']),
+    ('module-verify', ['go', 'mod', 'verify']),
+    ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+    ('governance', ['go', 'test', '-json', '-count=1', '-run', pattern, '.']),
+    ('closure-binary', ['go', 'test', '-c', '-o', str(W / 'final-root.test'), '.']),
+]
+results = []
+for name, command in steps:
+    label = args.label_prefix + '-' + name
+    result = subprocess.run([sys.executable, str(E / 'run-command.py.txt'), label, *command], cwd=R)
+    receipt = json.loads((E / (label + '.json')).read_text())
+    log = E / receipt['log']
+    assert sha(log) == receipt['log_sha256']
+    raw = log.read_bytes()
+    errors = []
+    if result.returncode != 0 or receipt['exit_code'] != 0:
+        errors.append('command failed')
+    if name in ['unit', 'race', 'governance']:
+        tests, packages = events(raw)
+        receipt['test_events'] = dict(collections.Counter(tests.values()))
+        receipt['package_events'] = dict(collections.Counter(packages.values()))
+        if not tests or 'fail' in receipt['test_events'] or 'fail' in receipt['package_events']:
+            errors.append('missing results or failing tests')
+        if name in ['unit', 'race']:
+            old_receipt = json.loads((P / ('engineering-' + name + '.json')).read_text())
+            old_log = P / old_receipt['log']
+            assert sha(old_log) == old_receipt['log_sha256']
+            old_raw = gzip.decompress(old_log.read_bytes())
+            assert hashlib.sha256(old_raw).hexdigest() == old_receipt['raw_sha256'] and len(old_raw) == old_receipt['raw_bytes']
+            old, old_packages = events(old_raw)
+            expected = {(row['package'], row['test']): row['action'] for row in frozen['expected_new_events'][name]}
+            assert len(expected) == frozen['new_event_count'] and set(expected.values()) == {'pass'}
+            changed = [{'package': key[0], 'test': key[1], 'before': value, 'after': tests.get(key)} for key, value in old.items() if tests.get(key) != value]
+            added = {key: value for key, value in tests.items() if key not in old}
+            receipt.update(prior_event_count=len(old), changed_events=changed, new_pass_events=len(added))
+            if len(old) != frozen['prior_event_count'] or packages != old_packages or changed or added != expected:
+                errors.append('previous package/test outcomes changed or new events differ from frozen focused run')
+            if not added or any(key[1].split('/')[0] not in frozen['parents'] or value != 'pass' for key, value in added.items()):
+                errors.append('new test results are missing or unexpected')
+        elif receipt['test_events'] != {'pass': 31}:
+            errors.append('expected 31 passing governance events')
+    if name == 'race' and b'WARNING: DATA RACE' in raw:
+        errors.append('race warning in log')
+    if name == 'module-verify' and raw.decode().strip() != 'all modules verified':
+        errors.append('module verification confirmation missing')
+    if name == 'format' and raw.strip():
+        errors.append('unformatted sources')
+    if name == 'module-selection' and raw.decode().strip() != 'github.com/HazelnutParadise/insyra v0.3.4':
+        errors.append('pinned dependency differs')
+    if name in ['unit', 'race']:
+        archive = log.with_suffix('.log.gz')
+        with archive.open('xb') as handle:
+            handle.write(gzip.compress(raw, mtime=0))
+        assert gzip.decompress(archive.read_bytes()) == raw
+        receipt.update(raw_sha256=sha(log), raw_bytes=len(raw), log=archive.name, log_sha256=sha(archive), log_bytes=archive.stat().st_size)
+        assert log.read_bytes() == raw
+        log.unlink()
+    receipt['acceptance_errors'] = errors
+    path = E / (label + '.json')
+    previous = path.read_bytes()
+    assert json.loads(previous)['exit_code'] == result.returncode
+    assert path.read_bytes() == previous
+    path.write_text(json.dumps(receipt, indent=2) + '\n')
+    print(json.dumps({'step': name, 'exit_code': result.returncode, 'test_events': receipt.get('test_events'), 'package_events': receipt.get('package_events'), 'new_pass_events': receipt.get('new_pass_events'), 'errors': errors}), flush=True)
+    assert not errors, {'step': name, 'errors': errors}
+    results.append(receipt)
+out = {'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'source_count': len(source), 'all_passed': True, 'steps': results, 'scope': 'Ticket148: OCR and distill label scalar reporting; 77 frozen regression events and all 8940 prior events must remain; categorical.Gradient bytes, teacher KL, public signatures and model formats remain unchanged.'}
+with (E / 'engineering-verification.json').open('x') as handle:
+    json.dump(out, handle, indent=2)
+    handle.write('\n')

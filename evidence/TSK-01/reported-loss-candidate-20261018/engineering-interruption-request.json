@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-18T00:48:41.043535+00:00",
+  "reason": "Source901 gap-residual bug independently reproduced in actual Go unit/race. Stop obsolete acceptance before correcting it.",
+  "go_pid": 92913,
+  "observed_owned_process_tree": [
+    {
+      "pid": 92913,
+      "parent": 92911,
+      "command": "go test -race -json -count=1 -timeout=60m ./..."
+    },
+    {
+      "pid": 4991,
+      "parent": 92913,
+      "command": "/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/go-build3996773918/b514/cli.test -test.paniconexit0 -test.v=test2json -test.count=1 -test.timeout=1h0m0s"
+    },
+    {
+      "pid": 6109,
+      "parent": 92913,
+      "command": "/usr/local/go/pkg/tool/darwin_arm64/compile -o /Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/go-build3996773918/b548/_pkg_.a -trimpath /Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/go-build3996773918/b548=> -p github.com/TimLai666/coimnet/params -lang=go1.25 -complete -installsuffix race -buildid 41MVvxKTtB9C9ofNI6zW/41MVvxKTtB9C9ofNI6zW -goversion go1.26.5 -c=2 -shared -race -nolocalimports -importcfg /Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/go-build3996773918/b548/importcfg -pack /Users/timlai/Developer/coimnet/params/columns.go /Users/timlai/Developer/coimnet/params/derive.go /Users/timlai/Developer/coimnet/params/meta.go /Users/timlai/Developer/coimnet/params/report.go /Users/timlai/Developer/coimnet/params/rules.go /Users/timlai/Developer/coimnet/params/set.go /Users/timlai/Developer/coimnet/params/derive_test.go /Users/timlai/Developer/coimnet/params/fixture_test.go /Users/timlai/Developer/coimnet/params/rules_test.go /Users/timlai/Developer/coimnet/params/set_test.go"
+    }
+  ],
+  "signals_requested": [
+    "SIGSTOP",
+    "SIGTERM",
+    "SIGCONT"
+  ],
+  "terminal_still_requires_observation": true,
+  "reference": "gap-rounding-root-verification.json",
+  "source_count": 901
+}

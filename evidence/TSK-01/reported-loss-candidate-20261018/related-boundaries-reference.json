@@ -1,0 +1,404 @@
+{
+  "created_at": "2026-10-18T01:19:13.139013+00:00",
+  "precision": 1250,
+  "exact_binary_inputs": true,
+  "cases": [
+    {
+      "name": "winner_first",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000001",
+        "0000000000000001"
+      ],
+      "expected_loss_bits": "0000000000000001",
+      "expected_loss_error": false
+    },
+    {
+      "name": "winner_last",
+      "input_bits": [
+        "c0774910d52d3052",
+        "40774910d52d3051"
+      ],
+      "target": 1,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "0000000000000001",
+        "8000000000000001"
+      ],
+      "expected_loss_bits": "0000000000000001",
+      "expected_loss_error": false
+    },
+    {
+      "name": "maximum_factor",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bcc00000000000be",
+        "3cc00000000000be"
+      ],
+      "expected_loss_bits": "3cc00000000000be",
+      "expected_loss_error": false
+    },
+    {
+      "name": "ordinary_gap",
+      "input_bits": [
+        "0000000000000000",
+        "c044000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bc539792499b1a24",
+        "3c539792499b1a24"
+      ],
+      "expected_loss_bits": "3c539792499b1a24",
+      "expected_loss_error": false
+    },
+    {
+      "name": "inexact40_first",
+      "input_bits": [
+        "4034000000000001",
+        "c034000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bc539792499b1a11",
+        "3c539792499b1a11"
+      ],
+      "expected_loss_bits": "3c539792499b1a11",
+      "expected_loss_error": false
+    },
+    {
+      "name": "inexact40_last",
+      "input_bits": [
+        "c034000000000000",
+        "4034000000000001"
+      ],
+      "target": 1,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "3c539792499b1a11",
+        "bc539792499b1a11"
+      ],
+      "expected_loss_bits": "3c539792499b1a11",
+      "expected_loss_error": false
+    },
+    {
+      "name": "inexact16",
+      "input_bits": [
+        "4020000000000001",
+        "c020000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "be7e355b81e5bc39",
+        "3e7e355b81e5bc39"
+      ],
+      "expected_loss_bits": "3e7e355b9e6a20e8",
+      "expected_loss_error": false
+    },
+    {
+      "name": "near2_control",
+      "input_bits": [
+        "3ff0000000000001",
+        "bff0000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bfbe84152bac31ad",
+        "3fbe84152bac31ad"
+      ],
+      "expected_loss_bits": "3fc03f2d54301d48",
+      "expected_loss_error": false
+    },
+    {
+      "name": "inexact700",
+      "input_bits": [
+        "4075e00000000001",
+        "c075e00000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "80d14f2b0fb92f6a",
+        "00d14f2b0fb92f6a"
+      ],
+      "expected_loss_bits": "00d14f2b0fb92f6a",
+      "expected_loss_error": false
+    },
+    {
+      "name": "inexact701",
+      "input_bits": [
+        "4075f00000000001",
+        "c075e00000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "80b9788af0d60f4e",
+        "00b9788af0d60f4e"
+      ],
+      "expected_loss_bits": "00b9788af0d60f4e",
+      "expected_loss_error": false
+    },
+    {
+      "name": "exact700_control",
+      "input_bits": [
+        "0000000000000000",
+        "c085e00000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "80d14f2b0fb9307f",
+        "00d14f2b0fb9307f"
+      ],
+      "expected_loss_bits": "00d14f2b0fb9307f",
+      "expected_loss_error": false
+    },
+    {
+      "name": "exact701_control",
+      "input_bits": [
+        "0000000000000000",
+        "c085e80000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "80b9788af0d610e6",
+        "00b9788af0d610e6"
+      ],
+      "expected_loss_bits": "00b9788af0d610e6",
+      "expected_loss_error": false
+    },
+    {
+      "name": "weighted_inexact700",
+      "input_bits": [
+        "4075e00000000001",
+        "c075e00000000000"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "c0d14f2b0fb92f6a",
+        "40d14f2b0fb92f6a"
+      ],
+      "expected_loss_bits": "40d14f2b0fb92f6a",
+      "expected_loss_error": false
+    },
+    {
+      "name": "tiny_divisor2",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "4000000000000000",
+      "expected_gradient_bits": [
+        "8000000000000000",
+        "0000000000000000"
+      ],
+      "expected_loss_bits": "0000000000000001",
+      "expected_loss_error": false
+    },
+    {
+      "name": "factor_divisor_maximum",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "7fefffffffffffff",
+      "expected_gradient_bits": [
+        "8000000000000001",
+        "0000000000000001"
+      ],
+      "expected_loss_bits": "3cc00000000000be",
+      "expected_loss_error": false
+    },
+    {
+      "name": "three_classes",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000001",
+        "0000000000000001",
+        "0000000000000001"
+      ],
+      "expected_loss_bits": "0000000000000001",
+      "expected_loss_error": false
+    },
+    {
+      "name": "three_classes_last",
+      "input_bits": [
+        "c0774910d52d3052",
+        "c0774910d52d3052",
+        "40774910d52d3051"
+      ],
+      "target": 2,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "0000000000000001",
+        "0000000000000001",
+        "8000000000000001"
+      ],
+      "expected_loss_bits": "0000000000000001",
+      "expected_loss_error": false
+    },
+    {
+      "name": "three_classes_weighted",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bcd00000000000be",
+        "3cc00000000000be",
+        "3cc00000000000be"
+      ],
+      "expected_loss_bits": "3cd00000000000be",
+      "expected_loss_error": false
+    },
+    {
+      "name": "target_not_winner",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 1,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "3ff0000000000000",
+        "bff0000000000000"
+      ],
+      "expected_loss_bits": "40874910d52d3052",
+      "expected_loss_error": false
+    },
+    {
+      "name": "zero_factor",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "0000000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000000",
+        "0000000000000000"
+      ],
+      "expected_loss_bits": "0000000000000000",
+      "expected_loss_error": false
+    },
+    {
+      "name": "below_1600",
+      "input_bits": [
+        "0000000000000000",
+        "c099040000000000"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000000",
+        "0000000000000000"
+      ],
+      "expected_loss_bits": "0000000000000000",
+      "expected_loss_error": false
+    },
+    {
+      "name": "gap1500_control",
+      "input_bits": [
+        "0000000000000000",
+        "c097700000000000"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000000",
+        "0000000000000000"
+      ],
+      "expected_loss_bits": "0000000000000000",
+      "expected_loss_error": false
+    },
+    {
+      "name": "minimum_factor_extreme_gap",
+      "input_bits": [
+        "7fefffffffffffff",
+        "ffefffffffffffff"
+      ],
+      "target": 1,
+      "factor_bits": "0000000000000001",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "0000000000000001",
+        "8000000000000001"
+      ],
+      "expected_loss_bits": "3cdfffffffffffff",
+      "expected_loss_error": false
+    },
+    {
+      "name": "equal_maximum_scale",
+      "input_bits": [
+        "ffefffffffffffff",
+        "ffefffffffffffff",
+        "ffefffffffffffff"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "ffe5555555555555",
+        "7fd5555555555555",
+        "7fd5555555555555"
+      ],
+      "expected_loss_bits": null,
+      "expected_loss_error": true
+    }
+  ],
+  "case_count": 24,
+  "probe_sha256": "535d64df6acd77e3fee61364a737b120f8434ff9dd82e6313735c04c00e0b192",
+  "source_count": 903,
+  "source_manifest": "formal-source-v2.json",
+  "scope": "Independent loss and derivative audit; formal sources remain frozen."
+}

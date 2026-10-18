@@ -1,0 +1,22 @@
+{
+  "command": [
+    "env",
+    "XDG_DATA_HOME=/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/opencode-probe-data",
+    "XDG_CACHE_HOME=/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/opencode-probe-cache",
+    "XDG_STATE_HOME=/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/go-tmp/opencode-probe-state",
+    "OPENCODE_CONFIG_CONTENT={\"permission\":{\"*\":\"deny\"},\"agent\":{\"plan\":{\"permission\":{\"*\":\"deny\"}}},\"autoupdate\":false}",
+    "python3",
+    "-c",
+    "import subprocess,sys\np=subprocess.Popen(['opencode', 'run', '--agent', 'plan', '--model', 'opencode/big-pickle', '\u4f60\u662f\u88ab\u6d3e\u5de5\u7684\u57f7\u884c\u8005\uff0c\u4e0d\u5f97\u518d\u6d3e\u5de5\u7d66\u4efb\u4f55 agent \u6216 CLI\uff0c\u81ea\u5df1\u5b8c\u6210\\n\u89d2\u8272\uff1a\u5de5\u5177\u9023\u7dda\u9a57\u8b49\u54e1\uff0c\u53ea\u9a57\u8b49\u672c\u6b21\u6a21\u578b\u80fd\u5426\u56de\u8986\u3002\\n\u53ef\u4fee\u6539\u6a94\u6848\uff1a\u7121\u3002\u4e0d\u5f97\u8b80\u5beb\u4efb\u4f55\u6a94\u6848\u3001\u57f7\u884c\u547d\u4ee4\u6216\u4f7f\u7528\u4efb\u4f55\u5de5\u5177\u3002\\n\u4efb\u52d9\u8207\u9a57\u6536\uff1a\u53ea\u56de\u8986\u82f1\u6587\u55ae\u5b57 AVAILABLE\uff0c\u7121\u9700\u6aa2\u67e5\u5c08\u6848\u6216\u8aaa\u660e\u3002\\n\u9a57\u8b49\u6307\u4ee4\uff1a\u7121\uff0c\u7981\u6b62\u5de5\u5177\u547c\u53eb\u3002\\n\u56de\u5831\u683c\u5f0f\uff1a\u4e00\u884c AVAILABLE\u3002\\n\u4e0d\u8981 commit\uff0c\u4e5f\u4e0d\u8981 stash \u6216 reset\u3002'],stdin=subprocess.DEVNULL)\ntry:\n code=p.wait(timeout=60)\nexcept subprocess.TimeoutExpired:\n p.terminate()\n try:p.wait(timeout=5)\n except subprocess.TimeoutExpired:p.kill();p.wait()\n print(\"OPENCODE_PROBE_TIMEOUT_60S\",flush=True)\n code=124\nsys.exit(code)\n"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-18T03:37:56.564215+00:00",
+  "finished_at": "2026-10-18T03:38:14.056029+00:00",
+  "exit_code": 1,
+  "seconds": 17.491819957999997,
+  "source_count": 914,
+  "source_manifest": "formal-source-joint.json",
+  "log": "opencode-project-local-probe.log",
+  "log_bytes": 165,
+  "log_sha256": "3d5ca01ca4b6d0d998667ef13f383740e754f0403e3674f8a598550d1c086c15"
+}

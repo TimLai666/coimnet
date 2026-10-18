@@ -1,0 +1,59 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": "See ocr-models-formal-unit.json and ocr-models-formal-race.json; each launches a fresh Go process",
+  "environment": "command-environment.json",
+  "observed_result": {
+    "profiles": [
+      "",
+      "aligned-columns",
+      "single-character"
+    ],
+    "candidate_and_formal_new_processes": 4,
+    "old_models_per_process": 3,
+    "original_files_unchanged": 9,
+    "before_after_snapshots_and_full_outputs_byte_equal": true,
+    "proof": [
+      {
+        "stage": "candidate",
+        "mode": "unit",
+        "models": 3,
+        "receipt": "ocr-models-candidate-unit.json",
+        "log_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843"
+      },
+      {
+        "stage": "formal",
+        "mode": "unit",
+        "models": 3,
+        "receipt": "ocr-models-formal-unit.json",
+        "log_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843"
+      },
+      {
+        "stage": "candidate",
+        "mode": "race",
+        "models": 3,
+        "receipt": "ocr-models-candidate-race.json",
+        "log_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843"
+      },
+      {
+        "stage": "formal",
+        "mode": "race",
+        "models": 3,
+        "receipt": "ocr-models-formal-race.json",
+        "log_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843"
+      }
+    ]
+  },
+  "test_log": [
+    "ocr-models-formal-unit.log",
+    "ocr-models-formal-race.log"
+  ],
+  "old_model_load_and_next_training_passed": true,
+  "original_candidate_formal_complete_outputs_byte_equal": true,
+  "formal_source_manifest_sha256": "afdc6dc5fa36de64021153c9dba4ad839ae7dcd65544da7fd208096370f597cf",
+  "verified_at": "2026-10-18T00:30:07.923138+00:00",
+  "scope_limit": "Directly affected OCR old models; unchanged text/media packages are covered by full engineering, with no new task-quality claim."
+}

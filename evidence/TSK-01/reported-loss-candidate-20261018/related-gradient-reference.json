@@ -1,0 +1,67 @@
+{
+  "created_at": "2026-10-18T01:09:55.146672+00:00",
+  "precision": 1600,
+  "exact_binary_inputs": true,
+  "formula": "factor/divisor times (softmax-one_hot), target numerator computed as negative sum of other classes",
+  "cases": [
+    {
+      "name": "winner_first",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "8000000000000001",
+        "0000000000000001"
+      ]
+    },
+    {
+      "name": "winner_last",
+      "input_bits": [
+        "c0774910d52d3052",
+        "40774910d52d3051"
+      ],
+      "target": 1,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "0000000000000001",
+        "8000000000000001"
+      ]
+    },
+    {
+      "name": "maximum_factor",
+      "input_bits": [
+        "40774910d52d3051",
+        "c0774910d52d3052"
+      ],
+      "target": 0,
+      "factor_bits": "7fefffffffffffff",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bcc00000000000be",
+        "3cc00000000000be"
+      ]
+    },
+    {
+      "name": "ordinary_gap",
+      "input_bits": [
+        "0000000000000000",
+        "c044000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "3ff0000000000000",
+      "divisor_bits": "3ff0000000000000",
+      "expected_gradient_bits": [
+        "bc539792499b1a24",
+        "3c539792499b1a24"
+      ]
+    }
+  ],
+  "formal_source_count": 903,
+  "gradient_sha256": "e2ffc3a6e840cb139d6001599d903240e26d00ae40866c40be6107d1e4b61357",
+  "actual_go_observations_pending": true
+}

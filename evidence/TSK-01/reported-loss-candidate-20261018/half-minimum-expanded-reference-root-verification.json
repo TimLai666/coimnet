@@ -1,0 +1,74 @@
+{
+  "at": "2026-10-18T01:54:19.676092+00:00",
+  "reference": "half-minimum-expanded-reference.json",
+  "reference_sha256": "f708411c9bd86e84d480bd6d8df97b7cd3f6848ad407dd35b5ef6e3d1607dbf2",
+  "independent_decimal_precision": 1250,
+  "independent_gradient_formula": "target=-sum(other probabilities), non-target=probability, exact factor/divisor applied before float64 conversion",
+  "all44_expected_loss_and_gradient_bits_match_1600": true,
+  "minimum_factor_cases": [
+    {
+      "name": "minimum_factor_target0_first",
+      "logits_bits": [
+        "0000000000000000",
+        "8000000000000001"
+      ],
+      "target": 0,
+      "factor_bits": "0000000000000001",
+      "divisor_bits": "3ff0000000000000",
+      "public_distill": false,
+      "loss_bits": "0000000000000001",
+      "gradient_bits": [
+        "8000000000000000",
+        "0000000000000000"
+      ]
+    },
+    {
+      "name": "minimum_factor_target0_last",
+      "logits_bits": [
+        "8000000000000001",
+        "0000000000000000"
+      ],
+      "target": 1,
+      "factor_bits": "0000000000000001",
+      "divisor_bits": "3ff0000000000000",
+      "public_distill": false,
+      "loss_bits": "0000000000000001",
+      "gradient_bits": [
+        "0000000000000000",
+        "8000000000000000"
+      ]
+    },
+    {
+      "name": "minimum_factor_target1_first",
+      "logits_bits": [
+        "0000000000000000",
+        "8000000000000001"
+      ],
+      "target": 1,
+      "factor_bits": "0000000000000001",
+      "divisor_bits": "3ff0000000000000",
+      "public_distill": false,
+      "loss_bits": "0000000000000001",
+      "gradient_bits": [
+        "0000000000000001",
+        "8000000000000001"
+      ]
+    },
+    {
+      "name": "minimum_factor_target1_last",
+      "logits_bits": [
+        "8000000000000001",
+        "0000000000000000"
+      ],
+      "target": 0,
+      "factor_bits": "0000000000000001",
+      "divisor_bits": "3ff0000000000000",
+      "public_distill": false,
+      "loss_bits": "0000000000000001",
+      "gradient_bits": [
+        "8000000000000001",
+        "0000000000000001"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "requirement": "TSK-01",
+  "related_requirements": [
+    "TCH-03",
+    "TCH-04"
+  ],
+  "ticket": "148",
+  "related_ticket": "149",
+  "reproduction_command": [
+    "python3 evidence/TSK-01/reported-loss-candidate-20261018/engineering-joint.py.txt --run --label-prefix engineering-joint",
+    "python3 evidence/TSK-01/reported-loss-candidate-20261018/verify-engineering-root-joint.py.txt --run --session-id 20951 --terminal-tool-chunk 326417"
+  ],
+  "environment": [
+    "command-environment.json",
+    "environment-version.json"
+  ],
+  "observed_result": {
+    "all_nine_engineering_steps_passed": true,
+    "unit": {
+      "pass": 9135,
+      "skip": 23
+    },
+    "race": {
+      "pass": 9134,
+      "skip": 24
+    },
+    "passed_packages_each_build": 59,
+    "prior_events_preserved_each_build": 8940,
+    "new_pass_events_each_build": 218,
+    "candidate_and_formal_model_processes": 8,
+    "distinct_ocr_models": 3,
+    "distinct_text_models": 2
+  },
+  "test_log": [
+    "engineering-joint-unit.log.gz",
+    "engineering-joint-race.log.gz",
+    "engineering-verification.json",
+    "old-models-root-verification-joint.json"
+  ],
+  "verified_at": "2026-10-18T05:03:04.310697+00:00",
+  "engineering_passed": true,
+  "old_models_passed": true,
+  "source_count": 914,
+  "source_manifest": "formal-source-joint.json",
+  "source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+  "runner_terminal": "runner-terminal.json",
+  "engineering": "engineering-verification.json",
+  "root_verification": "full-engineering-root-verification.json",
+  "old_models": "old-models-root-verification-joint.json",
+  "input_fingerprints": [
+    "formal-source-joint.json",
+    "formal-tests-frozen-joint.json",
+    "compatibility-ocr-inputs.json",
+    "joint-textgen-inputs.json"
+  ],
+  "scope": "Shared label classification loss and derivative preserve representable values; 218 new events and all8940 prior outcomes preserved. Teacher KL, public signatures and model formats unchanged. No task-quality or biological claim.",
+  "global_zero_bug_claim": false
+}

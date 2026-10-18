@@ -1,0 +1,59 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": "See gap-rounding-formal-unit.json and gap-rounding-formal-race.json",
+  "environment": "command-environment.json",
+  "observed_result": {
+    "confirmed": true,
+    "independent_reference_digits": [
+      1250,
+      1600
+    ],
+    "source_count": 901,
+    "cause": "tailMaximum-maximum rounds before exponent reduction; exact residual is lost. Two permutations incorrectly return zero; maximum factor produces over4 ULP error.",
+    "proof": [
+      {
+        "mode": "unit",
+        "receipt": "gap-rounding-formal-unit.json",
+        "log_sha256": "90c77e74fcb16ac564571589ddc7aa189d2d9e1305c97c46df79e1fa914516c9",
+        "events": {
+          "fail": 4
+        },
+        "outputs": [
+          "gap_rounding_probe_test.go:8: got=0000000000000000 want=0000000000000001 distance=1",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 0000000000000000 want 0000000000000001 distance 1",
+          "gap_rounding_probe_test.go:8: got=0000000000000000 want=0000000000000001 distance=1",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 0000000000000000 want 0000000000000001 distance 1",
+          "gap_rounding_probe_test.go:8: got=3cbfffffffffff7d want=3cc00000000000be distance=321",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 3cbfffffffffff7d want 3cc00000000000be distance 321"
+        ]
+      },
+      {
+        "mode": "race",
+        "receipt": "gap-rounding-formal-race.json",
+        "log_sha256": "e362ffc42d1914150d0d875b42a39167629ff93a684902c613bae5195b4c81db",
+        "events": {
+          "fail": 4
+        },
+        "outputs": [
+          "gap_rounding_probe_test.go:8: got=0000000000000000 want=0000000000000001 distance=1",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 0000000000000000 want 0000000000000001 distance 1",
+          "gap_rounding_probe_test.go:8: got=0000000000000000 want=0000000000000001 distance=1",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 0000000000000000 want 0000000000000001 distance 1",
+          "gap_rounding_probe_test.go:8: got=3cbfffffffffff7d want=3cc00000000000be distance=321",
+          "gap_rounding_probe_test.go:8: exact-input reference lost: got 3cbfffffffffff7d want 3cc00000000000be distance 321"
+        ]
+      }
+    ],
+    "full_engineering_source_has_known_failure": true,
+    "not_task_quality_evidence": true
+  },
+  "test_log": [
+    "gap-rounding-formal-unit.log",
+    "gap-rounding-formal-race.log"
+  ],
+  "verified_at": "2026-10-18T00:45:14.807461+00:00"
+}

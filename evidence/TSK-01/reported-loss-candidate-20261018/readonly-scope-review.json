@@ -1,0 +1,18 @@
+{
+  "agent": "/root/loss_scope_148",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "max",
+  "read_only": true,
+  "root_accepted": [
+    "OCR blank exclusion and finite blank checks remain",
+    "CE factor is 1-Mix and independent of Temperature/Scale",
+    "Teacher KL uses same shiftedLogSoftmax, leave that helper unchanged",
+    "Retain label shiftedLogSoftmax call or equivalent validation to preserve its existing difference-error behavior"
+  ],
+  "needs_investigation": [
+    "Teacher one-hot KL may also erase tiny positive error; no Go reproduction yet",
+    "label<0 and Mix<1 documentation versus current implementation",
+    "private request target validation is only ensured by normal callers"
+  ],
+  "root_decision": "Retain label shiftedLogSoftmax call and reuse its returned independent gradient buffer. Add shared scalar Loss for the corrected weighted CE. Do not change teacher KL or existing distill normalization-error acceptance this ticket. OCR remains on its existing finite scalar-result acceptance."
+}

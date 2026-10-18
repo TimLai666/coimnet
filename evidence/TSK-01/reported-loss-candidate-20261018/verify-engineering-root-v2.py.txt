@@ -1,0 +1,132 @@
+"""Independently verify completed ticket148 engineering and old-model receipts."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, json
+
+p = argparse.ArgumentParser(description=__doc__)
+p.add_argument('--run', action='store_true', help='Verify all completed receipts and publish new Root evidence without overwriting files.')
+p.add_argument('--session-id', type=int, help='Root-observed actual new full engineering session ID; required with --run')
+p.add_argument('--terminal-tool-chunk', help='Root-observed successful terminal tool chunk; required with --run')
+a = p.parse_args()
+if not a.run:
+    p.print_help()
+    raise SystemExit(0)
+if not a.terminal_tool_chunk or a.session_id is None or a.session_id <= 0:
+    p.error('--session-id and --terminal-tool-chunk are required with --run')
+if not __debug__:
+    raise SystemExit('Optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+B = R / 'evidence/TSK-03/categorical-gradient-adoption-20261018'
+W = R / 'runs/.tmp/reported-loss-candidate-20261018'
+sha = lambda raw: hashlib.sha256(raw).hexdigest()
+read = lambda path: json.loads(path.read_bytes())
+source_raw = (E / 'formal-source-v2.json').read_bytes()
+source = json.loads(source_raw)
+assert len(source) == 903 and sha(source_raw) == read(E / 'formal-tests-frozen-v2.json')['source_manifest_sha256']
+for name, digest in source.items():
+    assert sha((R / name).read_bytes()) == digest, name
+
+def log_bytes(directory, receipt):
+    assert Path(receipt['log']).name == receipt['log']
+    raw = (directory / receipt['log']).read_bytes()
+    assert len(raw) == receipt['log_bytes'] and sha(raw) == receipt['log_sha256']
+    if receipt['log'].endswith('.gz'):
+        raw = gzip.decompress(raw)
+        assert len(raw) == receipt['raw_bytes'] and sha(raw) == receipt['raw_sha256']
+    return raw
+
+def outcomes(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if row.get('Action') not in ['pass', 'skip', 'fail']:
+            continue
+        key = (row['Package'], row['Test']) if row.get('Test') else row['Package']
+        target = tests if row.get('Test') else packages
+        assert key not in target
+        target[key] = row['Action']
+    return tests, packages
+
+pattern = '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$'
+expected = [
+    ('format', ['gofmt', '-l', *[n for n in source if n.endswith('.go') and not n.startswith('evidence/')]]),
+    ('build', ['go', 'build', './...']),
+    ('unit', ['go', 'test', '-json', '-count=1', '-timeout=60m', './...']),
+    ('race', ['go', 'test', '-race', '-json', '-count=1', '-timeout=60m', './...']),
+    ('vet', ['go', 'vet', './...']),
+    ('module-verify', ['go', 'mod', 'verify']),
+    ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+    ('governance', ['go', 'test', '-json', '-count=1', '-run', pattern, '.']),
+    ('closure-binary', ['go', 'test', '-c', '-o', str(W / 'final-root.test'), '.']),
+]
+engineering = read(E / 'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count'] == 903 and len(engineering['steps']) == 9
+frozen = read(E / 'formal-tests-frozen-v2.json')
+proof = []
+for embedded, (name, command) in zip(engineering['steps'], expected):
+    receipt = read(E / ('engineering-final-' + name + '.json'))
+    assert embedded == receipt and receipt['command'] == command
+    assert receipt['exit_code'] == 0 and receipt['source_count'] == 903 and receipt['source_manifest'] == 'formal-source-v2.json' and receipt['acceptance_errors'] == []
+    raw = log_bytes(E, receipt)
+    item = {'step': name, 'receipt': 'engineering-final-' + name + '.json', 'receipt_sha256': sha((E / ('engineering-final-' + name + '.json')).read_bytes()), 'command': command, 'log': receipt['log'], 'log_sha256': receipt['log_sha256'], 'exit_code': 0}
+    if name in ['unit', 'race', 'governance']:
+        tests, packages = outcomes(raw)
+        assert tests and set(tests.values()) <= {'pass', 'skip'} and set(packages.values()) <= {'pass', 'skip'}
+        assert dict(collections.Counter(tests.values())) == receipt['test_events']
+        assert dict(collections.Counter(packages.values())) == receipt['package_events']
+        if name in ['unit', 'race']:
+            old, old_packages = outcomes(log_bytes(B, read(B / ('engineering-' + name + '.json'))))
+            assert len(old) == 8940 and all(tests.get(k) == v for k, v in old.items())
+            rows = frozen['expected_new_events'][name]
+            new = {(r['package'], r['test']): r['action'] for r in rows}
+            assert len(new) == len(rows) == 84 and set(new.values()) == {'pass'}
+            assert all(k[1].split('/')[0] in frozen['parents'] for k in new)
+            assert {k: v for k, v in tests.items() if k not in old} == new
+            assert packages == old_packages
+            assert receipt['test_events'] == ({'pass': 9001, 'skip': 23} if name == 'unit' else {'pass': 9000, 'skip': 24})
+            item.update(prior_events_preserved=8940, added_pass_events=84)
+        else:
+            assert receipt['test_events'] == {'pass': 31}
+        item.update(test_events=receipt['test_events'], package_events=receipt['package_events'])
+    if name in ['format', 'build', 'vet', 'closure-binary']:
+        assert not raw.strip()
+    if name == 'module-verify':
+        assert raw.decode().strip() == 'all modules verified'
+    if name == 'module-selection':
+        assert raw.decode().strip() == 'github.com/HazelnutParadise/insyra v0.3.4'
+    if name == 'race':
+        assert b'WARNING: DATA RACE' not in raw
+    proof.append(item)
+
+models = read(E / 'old-models-root-verification-v2.json')
+assert models['formal_source_manifest_sha256'] == sha(source_raw) and models['old_model_load_and_next_training_passed'] and models['original_candidate_formal_complete_outputs_byte_equal']
+model_proof = []
+for mode in ['unit', 'race']:
+    baseline = read(B / ('ocr-checkpoint-formal-' + mode + '.json'))
+    baseline_raw = log_bytes(B, baseline)
+    for stage in ['candidate', 'formal']:
+        name = 'ocr-models-gap-' + stage + '-' + mode + '.json'
+        receipt = read(E / name)
+        assert receipt['exit_code'] == 0 and receipt['source_count'] == (901 if stage == 'candidate' else 903)
+        raw = log_bytes(E, receipt)
+        assert raw == baseline_raw and len(raw.splitlines()) == 3
+        model_proof.append({'receipt': name, 'log_sha256': receipt['log_sha256'], 'models': 3})
+inputs = read(E / 'compatibility-ocr-inputs.json')
+for group in ['original_files', 'copied_files']:
+    for name, item in inputs[group].items():
+        raw = (R / name).read_bytes()
+        assert sha(raw) == item['sha256'] and len(raw) == item['bytes']
+assert len(model_proof) == 4 and (W / 'final-root.test').is_file()
+assert sha((R / 'internal/categorical/gradient.go').read_bytes()) == frozen['categorical_gradient_sha256']
+now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+def publish(name, data):
+    with (E / name).open('x') as handle:
+        json.dump(data, handle, indent=2)
+        handle.write('\n')
+publish('runner-terminal.json', {'observed_at': now, 'session_id': a.session_id, 'terminal_tool_chunk': a.terminal_tool_chunk, 'exit_code': 0, 'label_prefix': 'engineering-final', 'source_count': 903, 'source_manifest': 'formal-source-v2.json', 'source_manifest_sha256': sha(source_raw)})
+publish('full-engineering-root-verification.json', {'verified_at': now, 'source_count': 903, 'source_manifest_sha256': sha(source_raw), 'all_nine_steps_independently_verified': True, 'steps': proof, 'ocr_model_processes_verified': model_proof, 'runner_terminal': 'runner-terminal.json', 'global_zero_bug_claim': False})
+publish('verification.json', {'requirement': 'TSK-01', 'related_requirements': ['TCH-03', 'TCH-04'], 'ticket': '148', 'reproduction_command': ['python3 evidence/TSK-01/reported-loss-candidate-20261018/engineering-v2.py.txt --run --label-prefix engineering-final', 'python3 evidence/TSK-01/reported-loss-candidate-20261018/verify-engineering-root-v2.py.txt --run --session-id ' + str(a.session_id) + ' --terminal-tool-chunk ' + a.terminal_tool_chunk], 'environment': ['command-environment.json', 'environment-version.json'], 'observed_result': {'all_nine_engineering_steps_passed': True, 'unit': {'pass': 9001, 'skip': 23}, 'race': {'pass': 9000, 'skip': 24}, 'passed_packages_each_build': 59, 'prior_events_preserved_each_build': 8940, 'new_pass_events_each_build': 84, 'ocr_candidate_and_formal_processes': 4, 'old_models_per_process': 3}, 'test_log': ['engineering-final-unit.log.gz', 'engineering-final-race.log.gz', 'engineering-verification.json', 'old-models-root-verification-v2.json'], 'verified_at': now, 'engineering_passed': True, 'old_models_passed': True, 'source_count': 903, 'source_manifest': 'formal-source-v2.json', 'source_manifest_sha256': sha(source_raw), 'runner_terminal': 'runner-terminal.json', 'engineering': 'engineering-verification.json', 'root_verification': 'full-engineering-root-verification.json', 'old_models': 'old-models-root-verification-v2.json', 'input_fingerprints': ['formal-source-v2.json', 'formal-tests-frozen-v2.json', 'compatibility-ocr-inputs.json'], 'scope': 'OCR and distill label scalar reporting preserves tiny positive values and weighted finite results; 84 new events and all 8940 prior outcomes preserved. Derivative bytes, teacher KL, public signatures and model formats unchanged. No task-quality or biological claim.', 'global_zero_bug_claim': False})
+print(json.dumps({'all_nine_steps_verified': True, 'source_count': 903, 'old_model_processes_verified': len(model_proof), 'unit': {'pass': 9001, 'skip': 23}, 'race': {'pass': 9000, 'skip': 24}}))

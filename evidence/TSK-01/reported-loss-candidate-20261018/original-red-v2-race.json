@@ -1,0 +1,27 @@
+{
+  "command": [
+    "go",
+    "test",
+    "-race",
+    "-json",
+    "-count=1",
+    "-timeout=10m",
+    "-overlay",
+    "/Users/timlai/Developer/coimnet/runs/.tmp/reported-loss-candidate-20261018/original-red-v2-overlay.json",
+    "-run",
+    "^Test(CategoricalReportedLoss148|CategoricalReportedLossInvalid148|RootOCRReportedLoss148|RootDistillReportedLoss148|OCRPublicReportedLoss148|DistillPublicReportedLoss148|DistillWeightedReportedLoss148|DistillLabelNumericalRefusal148)$",
+    "./internal/categorical",
+    "./tasks/ocr",
+    "./distill"
+  ],
+  "environment_file": "command-environment.json",
+  "started_at": "2026-10-18T00:14:54.627636+00:00",
+  "finished_at": "2026-10-18T00:14:57.496608+00:00",
+  "exit_code": 1,
+  "seconds": 2.86898775,
+  "source_count": 895,
+  "source_manifest": "source.json",
+  "log": "original-red-v2-race.log",
+  "log_bytes": 79833,
+  "log_sha256": "cd15d68856309eeb989b7a7e89893942024c52b1f144707cb7c03b9b92802654"
+}

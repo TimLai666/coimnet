@@ -1,0 +1,79 @@
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"github.com/TimLai666/coimnet/distill"
+	"github.com/TimLai666/coimnet/internal/categorical"
+	"math"
+	"os"
+)
+
+func main() {
+	cases := []struct {
+		name            string
+		bits            []uint64
+		target          int
+		factor, divisor uint64
+	}{
+		{"winner_first", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"winner_last", []uint64{0xc0774910d52d3052, 0x40774910d52d3051}, 1, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"maximum_factor", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+		{"ordinary_gap", []uint64{0x0000000000000000, 0xc044000000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"inexact40_first", []uint64{0x4034000000000001, 0xc034000000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"inexact40_last", []uint64{0xc034000000000000, 0x4034000000000001}, 1, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"inexact16", []uint64{0x4020000000000001, 0xc020000000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"near2_control", []uint64{0x3ff0000000000001, 0xbff0000000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"inexact700", []uint64{0x4075e00000000001, 0xc075e00000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"inexact701", []uint64{0x4075f00000000001, 0xc075e00000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"exact700_control", []uint64{0x0000000000000000, 0xc085e00000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"exact701_control", []uint64{0x0000000000000000, 0xc085e80000000000}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"weighted_inexact700", []uint64{0x4075e00000000001, 0xc075e00000000000}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+		{"tiny_divisor2", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 0, 0x3ff0000000000000, 0x4000000000000000},
+		{"factor_divisor_maximum", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 0, 0x7fefffffffffffff, 0x7fefffffffffffff},
+		{"three_classes", []uint64{0x40774910d52d3051, 0xc0774910d52d3052, 0xc0774910d52d3052}, 0, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"three_classes_last", []uint64{0xc0774910d52d3052, 0xc0774910d52d3052, 0x40774910d52d3051}, 2, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"three_classes_weighted", []uint64{0x40774910d52d3051, 0xc0774910d52d3052, 0xc0774910d52d3052}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+		{"target_not_winner", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 1, 0x3ff0000000000000, 0x3ff0000000000000},
+		{"zero_factor", []uint64{0x40774910d52d3051, 0xc0774910d52d3052}, 0, 0x0000000000000000, 0x3ff0000000000000},
+		{"below_1600", []uint64{0x0000000000000000, 0xc099040000000000}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+		{"gap1500_control", []uint64{0x0000000000000000, 0xc097700000000000}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+		{"minimum_factor_extreme_gap", []uint64{0x7fefffffffffffff, 0xffefffffffffffff}, 1, 0x0000000000000001, 0x3ff0000000000000},
+		{"equal_maximum_scale", []uint64{0xffefffffffffffff, 0xffefffffffffffff, 0xffefffffffffffff}, 0, 0x7fefffffffffffff, 0x3ff0000000000000},
+	}
+	for _, tc := range cases {
+		x := make([]float64, len(tc.bits))
+		for i, b := range tc.bits {
+			x[i] = math.Float64frombits(b)
+		}
+		g := make([]float64, len(x))
+		err := categorical.Gradient(g, x, tc.target, math.Float64frombits(tc.factor), math.Float64frombits(tc.divisor))
+		gb := []string{}
+		for _, v := range g {
+			gb = append(gb, fmt.Sprintf("%016x", math.Float64bits(v)))
+		}
+		loss, lossErr := categorical.Loss(x, tc.target, math.Float64frombits(tc.factor))
+		row := map[string]any{"name": tc.name, "gradient_bits": gb, "gradient_error": fmt.Sprint(err), "loss_bits": fmt.Sprintf("%016x", math.Float64bits(loss)), "loss_error": fmt.Sprint(lossErr)}
+		if tc.factor == 0x3ff0000000000000 && tc.divisor == 0x3ff0000000000000 {
+			d := distill.DistributionDistiller{Temperature: 2, Scale: 3, Mix: 0, Alignment: distill.Alignment{Rule: distill.AlignmentIdentical, TeacherVocabHash: "extended", StudentVocabHash: "extended"}}
+			teacher := make([]float64, len(x))
+			teacher[0] = 1
+			l, gg, _, e := d.Loss(distill.TeacherDistribution{Probabilities: teacher}, x, tc.target)
+			bg := []string{}
+			for _, v := range gg {
+				bg = append(bg, fmt.Sprintf("%016x", math.Float64bits(v)))
+			}
+			row["public_loss_bits"] = fmt.Sprintf("%016x", math.Float64bits(l))
+			row["public_gradient_bits"] = bg
+			row["public_error"] = fmt.Sprint(e)
+		}
+		for i, b := range tc.bits {
+			if math.Float64bits(x[i]) != b {
+				panic("input mutated")
+			}
+		}
+		if err := json.NewEncoder(os.Stdout).Encode(row); err != nil {
+			panic(err)
+		}
+	}
+}

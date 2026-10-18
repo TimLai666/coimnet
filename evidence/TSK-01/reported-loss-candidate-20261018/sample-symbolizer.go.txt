@@ -1,0 +1,79 @@
+package main
+
+import (
+	"debug/gosym"
+	"debug/macho"
+	"encoding/json"
+	"flag"
+	"fmt"
+	"os"
+)
+
+type row struct {
+	RuntimePC uint64
+	LinkedPC  uint64
+	Function  string
+	File      string
+	Line      int
+}
+
+func run() error {
+	binary := flag.String("binary", "", "Read-only Mach-O Go executable")
+	load := flag.Uint64("load", 0, "Runtime load address, decimal or hexadecimal")
+	input := flag.String("input", "", "JSON array of sampled runtime program counters")
+	flag.Parse()
+	if *binary == "" || *input == "" || *load == 0 {
+		flag.Usage()
+		return fmt.Errorf("binary, load and input are required")
+	}
+	f, err := macho.Open(*binary)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	text, pcln, segment := f.Section("__text"), f.Section("__gopclntab"), f.Segment("__TEXT")
+	if text == nil || pcln == nil || segment == nil {
+		return fmt.Errorf("required Go Mach-O sections missing")
+	}
+	data, err := pcln.Data()
+	if err != nil {
+		return err
+	}
+	table, err := gosym.NewTable(nil, gosym.NewLineTable(data, text.Addr))
+	if err != nil {
+		return err
+	}
+	raw, err := os.ReadFile(*input)
+	if err != nil {
+		return err
+	}
+	var addresses []uint64
+	if err = json.Unmarshal(raw, &addresses); err != nil {
+		return err
+	}
+	rows := make([]row, 0, len(addresses))
+	for _, pc := range addresses {
+		if pc < *load {
+			return fmt.Errorf("program counter below runtime load address")
+		}
+		linked := pc - *load + segment.Addr
+		file, line, fn := table.PCToLine(linked)
+		name := ""
+		if fn != nil {
+			name = fn.Name
+		}
+		rows = append(rows, row{pc, linked, name, file, line})
+	}
+	return json.NewEncoder(os.Stdout).Encode(struct {
+		PreferredBase uint64
+		TextStart     uint64
+		Functions     int
+		Rows          []row
+	}{segment.Addr, text.Addr, len(table.Funcs), rows})
+}
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}

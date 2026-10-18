@@ -1,0 +1,51 @@
+{
+  "verified_at": "2026-10-18T01:13:48.766472+00:00",
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": [
+    "See related-gradient-red-unit.json and related-gradient-red-race.json"
+  ],
+  "environment": "command-environment.json",
+  "observed_result": {
+    "proof": [
+      {
+        "mode": "unit",
+        "receipt": "related-gradient-red-unit.json",
+        "events": {
+          "fail": 7,
+          "pass": 2
+        },
+        "log_sha256": "8f375ebadbeff74a921a711a13d298a4a32e1c0d764080e7a303741211bb1317"
+      },
+      {
+        "mode": "race",
+        "receipt": "related-gradient-red-race.json",
+        "events": {
+          "fail": 7,
+          "pass": 2
+        },
+        "log_sha256": "9c6b0ebdb32a44420b9228685105b2babaef505374a0160c2a8367e9ee3a3d52"
+      }
+    ],
+    "ordinary_control_passes_each_build": 2,
+    "private_maximum_factor_ulp_distance_each_component": 323,
+    "public_tiny_gradient_zero": true,
+    "formal_source_count": 903,
+    "formal_gradient_identical_to_committed_base": true
+  },
+  "test_log": [
+    "related-gradient-red-unit.json",
+    "related-gradient-red-race.json",
+    "related-gradient-probe-unit.log",
+    "related-gradient-probe-race.log"
+  ],
+  "gradient_sha256": "e2ffc3a6e840cb139d6001599d903240e26d00ae40866c40be6107d1e4b61357",
+  "reference": "related-gradient-reference.json",
+  "tests_frozen": "related-gradient-tests-frozen.json",
+  "next_ticket": "149",
+  "formal_source_changed": false,
+  "scope_limit": "Confirmed numerical correctness failure; no measured task-quality or biological consequence. Existing source903 race gate continues unchanged."
+}

@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-18T02:05:33.260597+00:00",
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": [
+    "precision-ocr-candidate-unit.json",
+    "precision-ocr-candidate-race.json",
+    "precision-textgen-candidate-unit.json",
+    "precision-textgen-candidate-race.json"
+  ],
+  "environment": "command-environment.json",
+  "observed_result": {
+    "proof": [
+      {
+        "label": "precision-ocr-candidate-unit",
+        "full_raw_bytes": 85647,
+        "full_raw_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+        "baseline_equal": true,
+        "actual_terminal_tool_chunk": "74cf00"
+      },
+      {
+        "label": "precision-ocr-candidate-race",
+        "full_raw_bytes": 85647,
+        "full_raw_sha256": "0cefd6d5d17273b7a99d3d4810780b25b6df040901f12ae88b0a36c28251d843",
+        "baseline_equal": true,
+        "actual_terminal_tool_chunk": "07a237"
+      },
+      {
+        "label": "precision-textgen-candidate-unit",
+        "full_raw_bytes": 1201241,
+        "full_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+        "baseline_equal": true,
+        "actual_terminal_tool_chunk": "9131ea"
+      },
+      {
+        "label": "precision-textgen-candidate-race",
+        "full_raw_bytes": 1201241,
+        "full_raw_sha256": "ff80d50fb46407fe9b9730125a349f959563a63f2f7cbb2dad8484930a3a41aa",
+        "baseline_equal": true,
+        "actual_terminal_tool_chunk": "8956a4"
+      }
+    ],
+    "distinct_ocr_models": 3,
+    "distinct_text_models": 2,
+    "original_and_copied_model_input_files_unchanged": 30,
+    "full_output_covers": "checkpoint identity, configuration, input contract/vocabulary, inference, before snapshot, reported loss, continued training result and after snapshot",
+    "physical_source_count": 903,
+    "formal_adoption": false
+  },
+  "test_log": [
+    "precision-ocr-candidate-unit.log",
+    "precision-ocr-candidate-race.log",
+    "precision-textgen-candidate-unit.log",
+    "precision-textgen-candidate-race.log"
+  ],
+  "full_affected_packages_pending": true
+}

@@ -322,6 +322,12 @@ MelFilterbank 在基本設定驗證之後、首次配置之前，檢查 Mels+2 �
 
 分類導數使用內部 `categorical.Gradient(dst, logits, target, factor, divisor)`，避免九份檔案重複維護同一套數值算式。函式只計算單一正確類別的分類導數，各入口保留錯誤檢查、loss、平均、權重、blank 排除與更新提交責任。蒸餾的分類向量須另外加回教師梯度，不覆蓋既有項；PPO、CTC、教師 KL 與取樣不套用此函式。修正已正式採用，公開介面與模型格式保持。完整契約、各呼叫端的驗證及遷移由 [ticket147](docs/tickets/147-categorical-gradient-stability.md) 管理。 共用函式將尾數與二進位指數保留到權重、除數與正規化組合之後，再回傳 float64。呼叫端提供與 logits 分離的新梯度緩衝，非法引數在寫入前拒絕。蒸餾沿用該次 CE 正規化已配置的獨立機率緩衝作為標籤導數緩衝，再加回 KL 向量，避免另配一份相同大小的陣列。
 
+OCR 單字元與蒸餾標籤分支共用內部 `categorical.Loss(logits, target, factor)`，將最大類別與其餘質量分開，使用 Log1p 保存極小正誤差。尾項與權重保留二進位指數到最後縮放，極小尾項相減的捨入餘量保留到指數縮減後。差值中間溢位時才以原始差值與權重的有理數重算。OCR 排除 blank，蒸餾的分類權重為 1−Mix，且保留原有 shiftedLogSoftmax 的數值拒絕及獨立梯度緩衝。教師 KL、公開簽名與模型格式保持，驗收由 [ticket148](docs/tickets/148-reported-classification-loss.md) 管理。
+
+Loss 與 Gradient 共用內部 `expDifference(left, right)`，保留原始運算元的相減餘量，將尾數與指數留到既有縮放步驟。路徑為 `OCR／distill → Loss／Gradient → expDifference → scalar／derivative`，原有驗證、錯誤傳播、正規化與更新責任由呼叫端保留。正常分數差與極小分支皆須通過確切輸入參考，兩票共用同一份最終來源驗收。共用修正已正式採用，契約與驗收歸屬見[共同骨架](evidence/TSK-01/reported-loss-candidate-20261018/joint-exponent-plan.json)。
+
+最終捨入接近半個最小正值時，單一 float64 尾數仍可能遺失應非零的結果。精度補充分支保留一般路徑，僅對極小誤差或半最小值附近的導數，從原始 logits、factor、divisor 以 2048 位元的 `math/big.Float` 重算，最後一次轉為 float64。導數每次呼叫最多重算整列一次，避免逐分量重算造成平方成本。這不新增設定、依賴或模型格式，沿用 4 ULP、非零、符號與真正下溢的驗收條件，見[補充骨架](evidence/TSK-01/reported-loss-candidate-20261018/half-minimum-plan.json)。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

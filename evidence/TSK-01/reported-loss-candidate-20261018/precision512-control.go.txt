@@ -1,0 +1,154 @@
+package categorical
+
+import (
+	"math"
+	"math/big"
+)
+
+const preciseBits uint = 512
+
+func newBig() *big.Float {
+	return new(big.Float).SetPrec(preciseBits).SetMode(big.ToNearestEven)
+}
+
+func bigLogSeries(z *big.Float) *big.Float {
+	term := newBig().Set(z)
+	sum := newBig().Set(z)
+	zSquared := newBig().Mul(z, z)
+	for denominator := int64(3); ; denominator += 2 {
+		term.Mul(term, zSquared)
+		addend := newBig().Quo(term, newBig().SetInt64(denominator))
+		sum.Add(sum, addend)
+		if addend.Sign() == 0 || addend.MantExp(nil) < -int(preciseBits)-32 {
+			break
+		}
+	}
+	return sum.Mul(sum, newBig().SetInt64(2))
+}
+
+func bigLog1p(x *big.Float) *big.Float {
+	if x.Sign() == 0 {
+		return newBig()
+	}
+	one := newBig().SetInt64(1)
+	if x.Cmp(one) <= 0 {
+		denominator := newBig().Add(newBig().SetInt64(2), x)
+		z := newBig().Quo(x, denominator)
+		return bigLogSeries(z)
+	}
+
+	y := newBig().Add(one, x)
+	mantissa := newBig()
+	exponent := y.MantExp(mantissa)
+	z := newBig().Quo(newBig().Sub(mantissa, one), newBig().Add(mantissa, one))
+	logMantissa := bigLogSeries(z)
+	third := newBig().Quo(newBig().SetInt64(1), newBig().SetInt64(3))
+	logTwo := bigLogSeries(third)
+	logTwo.Mul(logTwo, newBig().SetInt64(int64(exponent)))
+	return logMantissa.Add(logMantissa, logTwo)
+}
+
+func expDifferenceBig(left, right float64) *big.Float {
+	result := newBig()
+	if left == right {
+		return result.SetInt64(1)
+	}
+	if left-right < -1600 {
+		return result
+	}
+
+	argument := newBig().Sub(newBig().SetFloat64(left), newBig().SetFloat64(right))
+	half := newBig().SetFloat64(0.5)
+	eighth := newBig().SetFloat64(0.125)
+	negativeEighth := newBig().SetFloat64(-0.125)
+	scale := 0
+	for argument.Cmp(eighth) > 0 || argument.Cmp(negativeEighth) < 0 {
+		argument.Mul(argument, half)
+		scale++
+	}
+
+	sum := newBig().SetInt64(1)
+	term := newBig().SetInt64(1)
+	for denominator := int64(1); ; denominator++ {
+		term.Mul(term, argument)
+		term.Quo(term, newBig().SetInt64(denominator))
+		sum.Add(sum, term)
+		if term.Sign() == 0 || term.MantExp(nil) < -int(preciseBits)-32 {
+			break
+		}
+	}
+	for i := 0; i < scale; i++ {
+		sum.Mul(sum, sum)
+	}
+	return sum
+}
+
+// nearHalfMinimum selects a precision fallback; it never changes a value.
+func nearHalfMinimum(mantissa float64, exponent int) bool {
+	scaled := math.Ldexp(math.Abs(mantissa), exponent+1075)
+	const guard = 32 * 0x1p-52
+	return scaled >= 1-guard && scaled <= 1+guard
+}
+
+// preciseLoss receives validated finite logits and a positive finite factor.
+// Compute from the original operands with 2048-bit arithmetic, keeping the
+// winner separate in log1p, then round to float64 only at the final result.
+func preciseLoss(logits []float64, target int, factor float64) float64 {
+	maximum := logits[0]
+	winner := 0
+	for i, value := range logits[1:] {
+		if value > maximum {
+			maximum = value
+			winner = i + 1
+		}
+	}
+	maximumBig := newBig().SetFloat64(maximum)
+	tail := newBig()
+	for i, value := range logits {
+		if i == winner {
+			continue
+		}
+		tail.Add(tail, expDifferenceBig(value, maximum))
+	}
+	gap := newBig().Sub(maximumBig, newBig().SetFloat64(logits[target]))
+	gap.Add(gap, bigLog1p(tail))
+	gap.Mul(gap, newBig().SetFloat64(factor))
+	result, _ := gap.Float64()
+	return result
+}
+
+// preciseGradient receives the same validated inputs as Gradient. Recompute
+// the whole row once, using a sum of non-target terms for the target component.
+// Keep factor/divisor and normalization at 2048 bits until final conversion.
+func preciseGradient(dst, logits []float64, target int, factor, divisor float64) {
+	maximum := logits[0]
+	for _, value := range logits[1:] {
+		if value > maximum {
+			maximum = value
+		}
+	}
+	normalizer := newBig()
+	nonTarget := newBig()
+	for i, value := range logits {
+		term := expDifferenceBig(value, maximum)
+		normalizer.Add(normalizer, term)
+		if i != target {
+			nonTarget.Add(nonTarget, term)
+		}
+	}
+	scale := newBig().Quo(newBig().SetFloat64(factor), newBig().SetFloat64(divisor))
+	targetValue := newBig().Mul(scale, nonTarget)
+	targetValue.Quo(targetValue, normalizer)
+	for i, value := range logits {
+		if i == target {
+			continue
+		}
+		term := expDifferenceBig(value, maximum)
+		result := newBig().Mul(scale, term)
+		result.Quo(result, normalizer)
+		converted, _ := result.Float64()
+		dst[i] = converted
+	}
+	converted, _ := targetValue.Float64()
+	dst[target] = -converted
+}

@@ -1,0 +1,74 @@
+{
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": "Copy candidate-v2-overlay.json exact checked bytes to target paths; no behavior migration",
+  "environment": "command-environment.json",
+  "observed_result": {
+    "source_before": 895,
+    "source_after": 901,
+    "replacements": 2,
+    "new_files": 6,
+    "changes": [
+      {
+        "path": "internal/categorical/loss.go",
+        "before_sha256": null,
+        "after_sha256": "d6151b577a50e5fd6727b07f68b9f084a762715eda00e75c567e68f6fed1cc63",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/loss-candidate-v1.go"
+      },
+      {
+        "path": "internal/categorical/loss_reported_test.go",
+        "before_sha256": null,
+        "after_sha256": "206e99eb49900b38ed47a78b1d801313b284c5c21c54cdbe9042d7e97d55ac0c",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/loss-reference-v2-test.go"
+      },
+      {
+        "path": "tasks/ocr/reported_loss_test.go",
+        "before_sha256": null,
+        "after_sha256": "829ec7f3a8aaec833733020e273d4ba34a89821028b9ab206ee06d874fabbd28",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/ocr-reported-loss-test.go"
+      },
+      {
+        "path": "distill/reported_loss_test.go",
+        "before_sha256": null,
+        "after_sha256": "2af6e988ef8bdb356aef60658bbd2a070045e52e5be84318b90f149d4d688f2e",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/distill-reported-loss-test.go"
+      },
+      {
+        "path": "tasks/ocr/reported_loss_public_test.go",
+        "before_sha256": null,
+        "after_sha256": "afd14f34662f60746fdfd61b06aaa3f7f47c96e46a27f506dee8a3cca0c1a5d2",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/ocr-public-loss-test-v2.go"
+      },
+      {
+        "path": "distill/reported_loss_public_test.go",
+        "before_sha256": null,
+        "after_sha256": "73ec121028171ac7a9cc833feba0aa8a012a33f608c1e6339096df1992a390af",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/distill-public-loss-test.go"
+      },
+      {
+        "path": "tasks/ocr/recognizer.go",
+        "before_sha256": "5e740a9e26a325109198ccb7d76e047f841baaafb93bb267cd561a7b9b2463f9",
+        "after_sha256": "e01d7b42d7f95504ee09b88c49fe18cbd8f501b0be21740731b38d8f14cca67f",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/recognizer-candidate-v1.go"
+      },
+      {
+        "path": "distill/distribution.go",
+        "before_sha256": "ae4c04854369d6544d0f3c273fe692930a0c8e796f424422807d8483f2c98cce",
+        "after_sha256": "a48ede7ebc2f61587046bb241b4b17175b8b08a0c94b6054f11a309b68d0856b",
+        "candidate_path": "runs/.tmp/reported-loss-candidate-20261018/distribution-candidate-v1.go"
+      }
+    ],
+    "candidate_accepted": "isolated-comprehensive-verification.json",
+    "adversarial_four_controls": "boundary-reference-root-verification.json",
+    "root_review": "All production/helper/tests read; only scalar reporting changes. Existing derivative bytes, teacher KL, normalization refusal, public signatures and persistence formats preserved."
+  },
+  "test_log": [
+    "candidate-v2-packages-unit.log",
+    "candidate-v2-packages-race.log"
+  ],
+  "adopted_at": "2026-10-18T00:28:16.745405+00:00",
+  "full_engineering_pending": true
+}

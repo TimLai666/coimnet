@@ -1,0 +1,77 @@
+{
+  "verified_at": "2026-10-18T01:24:03.211895+00:00",
+  "requirement": [
+    "TSK-01",
+    "TCH-03",
+    "TCH-04"
+  ],
+  "reproduction_command": [
+    "expanded-loss-red-v2-unit.json",
+    "expanded-loss-red-v2-race.json"
+  ],
+  "environment": "command-environment.json",
+  "observed_result": {
+    "proof": [
+      {
+        "mode": "unit",
+        "receipt": "expanded-loss-red-v2-unit.json",
+        "events": {
+          "fail": 8,
+          "pass": 2
+        },
+        "log_sha256": "42df4fad5c5c0231756349e582dddfa34e42d0a3a32cbb87c4c2b66ccf4bf094"
+      },
+      {
+        "mode": "race",
+        "receipt": "expanded-loss-red-v2-race.json",
+        "events": {
+          "fail": 8,
+          "pass": 2
+        },
+        "log_sha256": "3182a4180f21233b9a522d111a44bda9be2a6e6ceab86971b292a5b07363f1b1"
+      }
+    ],
+    "scalar_failures": [
+      {
+        "name": "inexact40_first",
+        "want_bits": "3c539792499b1a11",
+        "actual_bits": "3c539792499b1a24",
+        "ulp_distance": 19,
+        "public_and_private_match": true
+      },
+      {
+        "name": "inexact40_last",
+        "want_bits": "3c539792499b1a11",
+        "actual_bits": "3c539792499b1a24",
+        "ulp_distance": 19,
+        "public_and_private_match": true
+      },
+      {
+        "name": "inexact16",
+        "want_bits": "3e7e355b9e6a20e8",
+        "actual_bits": "3e7e355b9e6a20f8",
+        "ulp_distance": 16,
+        "public_and_private_match": true
+      }
+    ],
+    "independent_decimal_precisions": [
+      1250,
+      1600
+    ],
+    "source_count": 903,
+    "formal_sources_unchanged": true
+  },
+  "test_log": [
+    "expanded-loss-red-v2-unit.log",
+    "expanded-loss-red-v2-race.log"
+  ],
+  "source_manifest_sha256": "108685cf1004b53c18459222af1f4457a62a5a4f777595c5f98e5f9efd95adc8",
+  "scope": "Confirmed normal-gap scalar residual omission; source903 full engineering cannot establish acceptance of the current fix.",
+  "full_engineering_acceptance_revoked": true,
+  "unaccepted_fixture_attempts": [
+    "expanded-loss-red-unit.json",
+    "expanded-loss-red-race.json"
+  ],
+  "fixture_correction": "Distiller local variable renamed only; expected bits and4ULP thresholds unchanged.",
+  "global_zero_bug_claim": false
+}

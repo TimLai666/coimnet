@@ -1,0 +1,245 @@
+"""Verify final acceptance and remove only ticket148's owned work directory."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, io, json, os, runpy, shutil, stat, subprocess, tarfile
+
+parser = argparse.ArgumentParser(description=__doc__)
+mode = parser.add_mutually_exclusive_group()
+mode.add_argument('--check', action='store_true', help='Verify completed acceptance, preserved inputs, original files and absence of open handles; never write or delete.')
+mode.add_argument('--run', action='store_true', help='After the same checks, preserve an exact inventory and delete only runs/.tmp/reported-loss-candidate-20261018.')
+args = parser.parse_args()
+if not (args.check or args.run):
+    parser.print_help()
+    raise SystemExit(0)
+if not __debug__:
+    raise SystemExit('Optimized Python disables required checks; cleanup refused')
+R = Path(__file__).resolve().parents[3]
+E = Path(__file__).resolve().parent
+W = R / 'runs/.tmp/reported-loss-candidate-20261018'
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+PROTECTED = {'62': 49680181, 'real-task-quality-20261012': 50419696}
+def protected_bytes(path):
+    path = Path(path)
+    item = path.lstat()
+    assert stat.S_ISREG(item.st_mode) and not path.is_symlink(), path
+    assert not path.resolve(strict=True).is_relative_to(W), path
+    return path.read_bytes()
+read = lambda p: json.loads(protected_bytes(p))
+sha = lambda b: hashlib.sha256(b).hexdigest()
+required = ['runner-terminal.json', 'engineering-verification.json', 'verification.json',
+            'metadata-governance.json', 'old-models-root-verification.json',
+            'work-preservation.json', 'discarded-binaries.json']
+missing = [n for n in required if not (E / n).is_file()]
+if missing:
+    print(json.dumps({'ready': False, 'missing': missing, 'deleted': False}))
+    raise SystemExit(2)
+terminal = read(E / 'runner-terminal.json')
+assert terminal['session_id'] == 90461 and terminal['exit_code'] == 0
+assert terminal['source_count'] == 901 and terminal['source_manifest'] == 'formal-source.json'
+engineering = read(E / 'engineering-verification.json')
+assert engineering['all_passed'] and engineering['source_count'] == 901
+assert len(engineering['steps']) == 9
+step_source = read(E / 'formal-source.json')
+expected_steps = [
+    ('format', ['gofmt', '-l', *[n for n in step_source if n.endswith('.go') and not n.startswith('evidence/')]]),
+    ('build', ['go', 'build', './...']),
+    ('unit', ['go', 'test', '-json', '-count=1', '-timeout=60m', './...']),
+    ('race', ['go', 'test', '-race', '-json', '-count=1', '-timeout=60m', './...']),
+    ('vet', ['go', 'vet', './...']),
+    ('module-verify', ['go', 'mod', 'verify']),
+    ('module-selection', ['go', 'list', '-m', 'github.com/HazelnutParadise/insyra']),
+    ('governance', ['go', 'test', '-json', '-count=1', '-run', '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$', '.']),
+    ('closure-binary', ['go', 'test', '-c', '-o', str(W / 'final-root.test'), '.']),
+]
+assert terminal['label_prefix'] == 'engineering'
+def events(raw):
+    tests, packages = {}, {}
+    for line in raw.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if row.get('Action') in ['pass', 'skip', 'fail']:
+            if row.get('Test'):
+                key = (row['Package'], row['Test'])
+                assert key not in tests
+                tests[key] = row['Action']
+            else:
+                packages[row['Package']] = row['Action']
+    return tests, packages
+for step, (name, command) in zip(engineering['steps'], expected_steps):
+    assert step['command'] == command, name
+    assert step['log'] == 'engineering-' + name + ('.log.gz' if name in ['unit', 'race'] else '.log')
+    assert Path(step['log']).name == step['log']
+    assert step['exit_code'] == 0 and step['source_count'] == 901
+    assert step['source_manifest'] == 'formal-source.json' and not step['acceptance_errors']
+    raw = protected_bytes(E / step['log'])
+    assert sha(raw) == step['log_sha256']
+    if step['log'].endswith('.gz'):
+        raw = gzip.decompress(raw)
+        assert sha(raw) == step['raw_sha256'] and len(raw) == step['raw_bytes']
+    if name in ['unit', 'race', 'governance']:
+        actual, packages = events(raw)
+        assert actual and set(actual.values()) <= {'pass', 'skip'}
+        assert set(packages.values()) <= {'pass', 'skip'}
+        if name == 'governance':
+            assert dict(collections.Counter(actual.values())) == {'pass': 31}
+            governance_expected = {k[1] for k in actual}
+        else:
+            baseline = R / 'evidence/TSK-03/categorical-gradient-adoption-20261018'
+            prior = read(baseline / ('engineering-' + name + '.json'))
+            assert Path(prior['log']).name == prior['log']
+            packed_prior = protected_bytes(baseline / prior['log'])
+            assert sha(packed_prior) == prior['log_sha256']
+            prior_raw = gzip.decompress(packed_prior)
+            assert sha(prior_raw) == prior['raw_sha256'] and len(prior_raw) == prior['raw_bytes']
+            old, old_packages = events(prior_raw)
+            assert len(old) == 8940 and all(actual.get(k) == v for k, v in old.items())
+            frozen = read(E / 'formal-tests-frozen.json')
+            expected = {(r['package'], r['test']): r['action'] for r in frozen['expected_new_events'][name]}
+            assert len(frozen['expected_new_events'][name]) == len(expected) == 77
+            assert set(expected.values()) == {'pass'} and frozen['no_new_packages'] is True
+            assert all(k[1].split('/')[0] in frozen['parents'] for k in expected)
+            assert {k: v for k, v in actual.items() if k not in old} == expected
+            assert packages == old_packages
+    if name == 'format':
+        assert not raw.strip()
+    if name == 'module-verify':
+        assert raw.decode().strip() == 'all modules verified'
+    if name == 'module-selection':
+        assert raw.decode().strip() == 'github.com/HazelnutParadise/insyra v0.3.4'
+    if name == 'race':
+        assert b'WARNING: DATA RACE' not in raw
+verified = read(E / 'verification.json')
+assert verified['engineering_passed'] and verified['old_models_passed']
+assert verified['source_count'] == 901 and verified['runner_terminal'] == 'runner-terminal.json'
+source = read(E / 'formal-source.json')
+assert sha(protected_bytes(E / 'formal-source.json')) == verified['source_manifest_sha256']
+old_models = read(E / 'old-models-root-verification.json')
+assert old_models['old_model_load_and_next_training_passed']
+assert old_models['original_candidate_formal_complete_outputs_byte_equal']
+assert old_models['formal_source_manifest_sha256'] == verified['source_manifest_sha256']
+governance = read(E / 'metadata-governance.json')
+assert governance['exit_code'] == 0 and governance['passed_events'] == 31
+assert governance['source_count'] == 901 and governance['source_manifest'] == 'formal-source.json'
+assert sha(protected_bytes(E / governance['log'])) == governance['log_sha256']
+assert Path(governance['log']).name == governance['log']
+assert governance['source_manifest_sha256'] == verified['source_manifest_sha256']
+metadata_raw = protected_bytes(E / governance['log'])
+metadata_events, _ = events(metadata_raw)
+if metadata_events:
+    assert set(metadata_events.values()) == {'pass'}
+    metadata_names = [k[1] for k in metadata_events]
+else:
+    import re
+    metadata_names = re.findall(r'^\s*--- PASS: (\S+) ', metadata_raw.decode(), re.MULTILINE)
+    assert not re.search(r'^\s*--- FAIL:', metadata_raw.decode(), re.MULTILINE)
+assert len(metadata_names) == 31 and set(metadata_names) == governance_expected
+assert governance['command'] == [str(W / 'final-root.test'), '-test.v', '-test.run', '^Test(NoTelemetry|NoTelemetryProjectTempBoundary|NoTelemetrySourceErrorsRemainVisible|FormatIndex|FormatIndexControls|FormatIndexGoLiteralsAndScopes|FormatIndexNoGitAndReadErrors|GovernanceRequirementIDsMatchHandoff|GovernanceStatusValuesAreDeclared|GovernancePassedRequirementsHaveEvidence|GovernanceTicketsHaveDatedRootDecisions)$']
+helper = runpy.run_path(str(E / 'cleanup-fd-v2.py.txt'))
+inventory = helper['inventory']
+assert not W.is_symlink() and W.resolve() == W and W.stat().st_ino == 61150416
+anchor = P / 'preserved-work.tar.gz'
+anchor_bytes = protected_bytes(anchor)
+assert sha(anchor_bytes) == '5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4'
+with tarfile.open(fileobj=io.BytesIO(anchor_bytes), mode='r:gz') as handle:
+    raw_modules = handle.extractfile('module-originals.json').read()
+assert sha(raw_modules) == '34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc'
+modules = json.loads(raw_modules)
+models, foreign, data = (read(P / n) for n in ['protected-models.json', 'foreign-before.json', 'persistent-data.json'])
+assert (len(source), len(models), len(foreign), len(data), len(modules)) == (901, 18, 32, 6, 15046)
+
+def gate():
+    paths = {p for p in subprocess.check_output(['/usr/bin/git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ['go.mod', 'go.sum'])}
+    assert paths == set(source)
+    for n, h in {**source, **models}.items():
+        assert sha(protected_bytes(R / n)) == h, n
+    for n, h in {**foreign, **modules}.items():
+        assert sha(protected_bytes(Path(n))) == h, n
+    for n, item in data.items():
+        b = protected_bytes(R / n)
+        assert len(b) == item['bytes'] and sha(b) == item['sha256'], n
+    for n, inode in PROTECTED.items():
+        p = R / 'runs/.tmp' / n
+        assert not p.is_symlink() and p.stat().st_ino == inode
+
+
+gate()
+old_roots = {n: inventory(R / 'runs/.tmp' / n) for n in PROTECTED}
+contents = inventory(W)
+preserved = read(E / 'work-preservation.json')
+archive = E / preserved['archive']
+assert preserved['owned_root'] == str(W.relative_to(R)) and preserved['owned_inode'] == 61150416
+assert preserved['engineering_session_id'] == terminal['session_id']
+assert Path(preserved['archive']).name == preserved['archive']
+archive_bytes = protected_bytes(archive)
+assert sha(archive_bytes) == preserved['archive_sha256']
+accounted = set()
+with tarfile.open(fileobj=io.BytesIO(archive_bytes), mode='r:gz') as handle:
+    members = handle.getmembers()
+    assert len(members) == len(preserved['files'])
+    for member in members:
+        assert member.isfile() and member.name in preserved['files'] and member.name not in accounted
+        assert not Path(member.name).is_absolute() and '..' not in Path(member.name).parts
+        b = handle.extractfile(member).read()
+        item = preserved['files'][member.name]
+        assert len(b) == item['bytes'] and sha(b) == item['sha256']
+        assert (W / member.name).read_bytes() == b
+        accounted.add(member.name)
+binaries = read(E / 'discarded-binaries.json')
+assert set(binaries) == {'final-root.test'}
+for n, item in binaries.items():
+    b = (W / n).read_bytes()
+    assert len(b) == item['bytes'] and sha(b) == item['sha256']
+    accounted.add(n)
+noncache = {n for n, item in contents.items() if n.split('/')[0] not in ['go-cache', 'go-mod-cache', 'go-tmp'] and not item.get('directory')}
+assert noncache == accounted, ('Unaccounted inputs', noncache ^ accounted)
+handles = subprocess.run(['/usr/sbin/lsof', '-t', '+D', str(W)], capture_output=True, timeout=30)
+assert handles.returncode == 1 and not handles.stdout and not handles.stderr, handles
+assert inventory(W) == contents
+gate()
+if args.check:
+    print(json.dumps({'ready': True, 'entries': len(contents), 'noncache_files_preserved_or_discarded': len(accounted), 'no_open_handles': True, 'deleted': False}))
+    raise SystemExit(0)
+packed = gzip.compress(json.dumps(contents, sort_keys=True).encode(), mtime=0)
+def publish_new(name, raw):
+    target = E / name
+    temporary = E / (name + '.tmp')
+    assert not target.exists() and not target.is_symlink()
+    with temporary.open('xb') as handle:
+        handle.write(raw)
+        handle.flush()
+        os.fsync(handle.fileno())
+    os.link(temporary, target)
+    temporary.unlink()
+    fd = os.open(E, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+for name in ['cleanup.json', 'cleanup-journal-start.json', 'cleanup-partial.json', 'cleanup-inventory.json.gz']:
+    assert not (E / name).exists() and not (E / name).is_symlink()
+publish_new('cleanup-inventory.json.gz', packed)
+assert json.loads(gzip.decompress(protected_bytes(E / 'cleanup-inventory.json.gz'))) == contents
+assert not W.is_symlink() and W.resolve() == W and W.stat().st_ino == 61150416
+owned_device = W.lstat().st_dev
+assert owned_device == R.stat().st_dev
+journal = {'started_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'state': 'deletion_in_progress', 'owned_root': str(W.relative_to(R)), 'owned_inode': 61150416, 'owned_device': owned_device, 'inventory_sha256': sha(packed), 'necessary_inputs_archive_sha256': preserved['archive_sha256'], 'directory_removed': False}
+publish_new('cleanup-journal-start.json', (json.dumps(journal, indent=2) + '\n').encode())
+try:
+    helper['remove_owned'](W, 61150416, owned_device, contents)
+    assert not W.exists() and not W.is_symlink()
+    gate()
+    assert old_roots == {n: inventory(R / 'runs/.tmp' / n) for n in PROTECTED}
+    result = {'cleaned_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'owned_directory': str(W.relative_to(R)), 'owned_inode': 61150416,
+              'removed_entries': len(contents), 'removed_bytes': sum(x.get('bytes', 0) for x in contents.values()),
+              'inventory_archive': 'cleanup-inventory.json.gz', 'inventory_archive_sha256': sha(packed),
+              'necessary_inputs_preserved': True, 'source_entries_preserved': 901, 'original_models_preserved': 18,
+              'persistent_data_files_preserved': 6, 'foreign_files_preserved': 32, 'original_module_files_preserved': 15046,
+              'protected_old_roots_full_inventory_preserved': True, 'no_open_handles': True, 'directory_removed': True}
+    result.update(owned_device=owned_device, descriptor_pinned_deletion=True, write_ahead_journal='cleanup-journal-start.json')
+    publish_new('cleanup.json', (json.dumps(result, indent=2) + '\n').encode())
+except BaseException as error:
+    partial = {**journal, 'state': 'deletion_or_postcheck_failed', 'error': repr(error), 'owned_path_exists': W.exists()}
+    publish_new('cleanup-partial.json', (json.dumps(partial, indent=2) + '\n').encode())
+    raise
+print(json.dumps(result), flush=True)

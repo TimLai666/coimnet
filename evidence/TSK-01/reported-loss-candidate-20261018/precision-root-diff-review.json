@@ -1,0 +1,30 @@
+{
+  "at": "2026-10-18T02:05:33.260597+00:00",
+  "scope": "four internal candidate production files and9 supplemental test files; original903 physical sources unchanged",
+  "reviewed_evidence": [
+    "joint-implementation-root-review.json",
+    "half-minimum-agent-scope-verification.json",
+    "half-minimum-candidate-inputs.json",
+    "half-minimum-focused-root-verification.json",
+    "precision-old-models-root-verification.json"
+  ],
+  "verified_focused_events": 218,
+  "root_review": {
+    "full_helper_source_read": true,
+    "full_wiring_diff_read": true,
+    "all_new_test_source_and_oracle_rows_checked": true,
+    "new_stdlib_dependency_only": "math/big already in existing Loss; no module change",
+    "invalid_input_and_early_returns_preserved": true,
+    "rare_path_only": "Loss<=MinFloat; Gradient computed<=MinFloat and within32ULP of the half-minimum magnitude",
+    "per_gradient_recomputation": "at most one whole-row two-pass O(N) precision fallback",
+    "precision": "2048-bit ToNearestEven, original exactFloat64 operands, finalFloat64 conversion once",
+    "no_forced_minimum_value": true,
+    "removed_agent_redundancy": "two unreachable empty-input guards removed after validated caller contract",
+    "peer_review_correction": "1ULP differences at the next subnormal rounding boundary meet the existing4ULP contract; no scope expansion from that observation"
+  },
+  "unverified": [
+    "complete seven-package unit/race",
+    "formal source adoption and full engineering",
+    "governance, preservation, owned cleanup and remote delivery"
+  ]
+}
