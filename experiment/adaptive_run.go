@@ -228,8 +228,11 @@ func scoreItems(ctx context.Context, ind *learning.Individual, items []Evaluatio
 }
 
 // resetForItem applies the declared reset policy before one item. The plasticity
-// reset re-enables the mechanism from the config that was active before the
-// reset, which starts the fast state over.
+// and chemical resets re-enable each mechanism from the config that was active
+// before the reset, which starts its state over. Plasticity is switched off
+// before chemistry and back on after it, because a rule that reads a receptor
+// keeps DisableChemistry from running; a chemical-only reset under such a rule
+// fails instead of silently keeping the old resources and queued feedback.
 func resetForItem(ctx context.Context, ind *learning.Individual, reset ResetPolicy, itemID string) error {
 	if reset.NeuralAtItemStart {
 		nodes := len(ind.Snapshot().Parameters.Core.Bias)
@@ -237,22 +240,22 @@ func resetForItem(ctx context.Context, ind *learning.Individual, reset ResetPoli
 			return err
 		}
 	}
-	if reset.PlasticAtItemStart {
-		snap := ind.Snapshot()
-		if snap.Plastic != nil {
-			ind.DisablePlasticity()
-			if err := ind.EnablePlasticity(snap.Plastic.Config); err != nil {
-				return err
-			}
+	snap := ind.Snapshot()
+	plastic := reset.PlasticAtItemStart && snap.Plastic != nil
+	if plastic {
+		ind.DisablePlasticity()
+	}
+	if reset.ChemicalAtItemStart && snap.Chemical != nil {
+		if err := ind.DisableChemistry(); err != nil {
+			return fmt.Errorf("reset chemistry before item %q: %w", itemID, err)
+		}
+		if err := ind.EnableChemistry(snap.Chemical.Config); err != nil {
+			return err
 		}
 	}
-	if reset.ChemicalAtItemStart {
-		snap := ind.Snapshot()
-		if snap.Chemical != nil {
-			ind.DisableChemistry()
-			if err := ind.EnableChemistry(snap.Chemical.Config); err != nil {
-				return err
-			}
+	if plastic {
+		if err := ind.EnablePlasticity(snap.Plastic.Config); err != nil {
+			return err
 		}
 	}
 	return nil
