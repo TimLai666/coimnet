@@ -32,7 +32,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 HF = "https://huggingface.co"
-TEXT_CATEGORIES = {"language", "tool-use", "code", "pii"}
+# Plain-text formats shrink a lot under heavy zstd; parquet, images, audio and
+# video are already compressed, so a fast level is enough for them.
+TEXT_SUFFIXES = {".json", ".jsonl", ".txt", ".csv", ".tsv", ".md", ".npy"}
 CHUNK = 8 << 20
 
 
@@ -220,17 +222,27 @@ def run(e, args, dest):
     ext = ".tar.zst" if shutil.which("zstd") else ".tar.gz"
     archive = dest / "archives" / f"{e['id']}{ext}"
     receipt = dest / "archives" / f"{e['id']}.json"
-    if archive.exists() and receipt.exists():
+    if archive.exists() and receipt.exists() and not args.raw_only:
         log(f"= {e['id']}: already packed, skipping")
         return "skipped"
-    source, files = LISTERS[e["source"]["type"]](e, args.tier)
+    pinned = args.match / f"{e['id']}.json" if args.match else None
+    if pinned and pinned.exists():
+        # Re-fetch exactly the files an earlier receipt recorded and require the same hashes.
+        old = json.loads(pinned.read_text())
+        source = old["source"]
+        files = [{"path": f["path"], "url": f["url"], "bytes": f["bytes"], "upstream_sha256": f["sha256"]}
+                 for f in old["files"]]
+    else:
+        source, files = LISTERS[e["source"]["type"]](e, args.tier)
     total = sum(f["bytes"] for f in files)
     log(f"+ {e['id']}: {len(files)} files, {human(total)}")
+    work = args.work or dest / "raw"
+    work.mkdir(parents=True, exist_ok=True)
     need = total * 2
-    free = shutil.disk_usage(dest).free
+    free = shutil.disk_usage(work).free
     if need > free:
-        raise RuntimeError(f"needs about {human(need)} free, only {human(free)} left")
-    raw = dest / "raw" / e["id"]
+        raise RuntimeError(f"needs about {human(need)} free in {work}, only {human(free)} left")
+    raw = work / e["id"]
     for i, f in enumerate(files, 1):
         log(f"  [{i}/{len(files)}] {f['path']} ({human(f['bytes'])})")
         download(f, raw / f["path"])
@@ -241,9 +253,22 @@ def run(e, args, dest):
             raise RuntimeError(f"{f['path']}: sha256 differs from upstream")
         if f.get("upstream_md5") and file_hash(p, "md5") != f["upstream_md5"]:
             raise RuntimeError(f"{f['path']}: md5 differs from upstream")
-    level = 19 if e["category"] in TEXT_CATEGORIES else 3
+    if args.raw_only:
+        log(f"  verified {len(files)} files in {raw}")
+        return "downloaded"
+    level = 19 if all(Path(f["path"]).suffix in TEXT_SUFFIXES for f in files) else 3
     log(f"  packing into {archive.name} ...")
-    pack(raw, [f["path"] for f in files], archive, level)
+    local = work / archive.name
+    pack(raw, [f["path"] for f in files], local, level)
+    archive_bytes, archive_sha256 = local.stat().st_size, file_hash(local)
+    if local != archive:
+        # Pack on local disk, then copy once: the destination may be a network mount.
+        part = archive.with_name(archive.name + ".part")
+        shutil.copyfile(local, part)
+        if part.stat().st_size != archive_bytes:
+            raise RuntimeError(f"copy to {archive} is incomplete")
+        part.rename(archive)
+        local.unlink()
     rec = {
         "schema_version": "coimnet-dataset-receipt/v1",
         "id": e["id"],
@@ -256,11 +281,11 @@ def run(e, args, dest):
         "files": [{k: f[k] for k in ("path", "bytes", "sha256", "url")} for f in files],
         "raw_bytes": total,
         "archive": archive.name,
-        "archive_bytes": archive.stat().st_size,
-        "archive_sha256": file_hash(archive),
+        "archive_bytes": archive_bytes,
+        "archive_sha256": archive_sha256,
     }
     receipt.write_text(json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
-    log(f"  done: {human(total)} -> {human(rec['archive_bytes'])}")
+    log(f"  done: {human(total)} -> {human(archive_bytes)}")
     if not args.keep_raw:
         shutil.rmtree(raw)
     return "packed"
@@ -271,6 +296,9 @@ def main():
     ap.add_argument("--catalog", type=Path, default=HERE / "catalog.json")
     ap.add_argument("--dest", type=Path, default=REPO_ROOT / "data" / "datasets",
                     help="storage root (default: <repo>/data/datasets, ignored by git)")
+    ap.add_argument("--work", type=Path, default=None,
+                    help="local scratch for downloads and packing (default: <dest>/raw); "
+                         "set it to local disk when --dest is a network mount")
     ap.add_argument("--tier", choices=["core", "full"], default="core",
                     help="core = small enough for one GPU box; full adds large and restricted sets")
     ap.add_argument("--only", nargs="*", default=[], help="dataset ids to fetch (ignores --tier)")
@@ -278,6 +306,11 @@ def main():
     ap.add_argument("--category", nargs="*", default=[])
     ap.add_argument("--clear-only", action="store_true", help="skip unclear and restricted licenses")
     ap.add_argument("--keep-raw", action="store_true", help="keep the unpacked download next to the archive")
+    ap.add_argument("--match", type=Path, default=None,
+                    help="directory of earlier receipts; datasets found there are re-fetched at the "
+                         "recorded revision and must reproduce the recorded sha256 of every file")
+    ap.add_argument("--raw-only", action="store_true",
+                    help="download and verify into --work without packing (for training on a device)")
     ap.add_argument("--list", action="store_true", help="print the plan and exit")
     args = ap.parse_args()
 
@@ -308,7 +341,7 @@ def main():
     log("\nsummary:")
     for k, v in results.items():
         log(f"  {k:28} {v}")
-    return 0 if all(v in ("packed", "skipped") for v in results.values()) else 1
+    return 0 if all(v in ("packed", "skipped", "downloaded") for v in results.values()) else 1
 
 
 if __name__ == "__main__":
