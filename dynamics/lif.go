@@ -111,6 +111,9 @@ type LIF struct {
 	// It is a test reference inside this package, never a product mode, and
 	// disables the refractory mechanism because that mechanism is an event.
 	smooth bool
+	// hash is the state configuration fingerprint, computed once from the
+	// owned configuration; empty means compute it on demand.
+	hash string
 }
 
 // LIFTrace owns the parameter snapshot and neural history of one forward pass.
@@ -226,7 +229,11 @@ func NewLIF(c LIFConfig) (*LIF, error) {
 			return nil, err
 		}
 	}
-	return &LIF{config: c, partition: partition, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho, rateStep: rateStep, offsetStep: offsetStep}, nil
+	m := &LIF{config: c, partition: partition, kappa: math.Exp(-c.DT / c.TauSyn), rho: rho, rateStep: rateStep, offsetStep: offsetStep}
+	if hash, err := m.lifStateConfigHash(); err == nil {
+		m.hash = hash
+	}
+	return m, nil
 }
 
 // homeostatic reports whether a declared and enabled slow stabiliser exists.

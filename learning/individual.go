@@ -502,7 +502,7 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}
-	enc, err := tensor([]int{n.config.InputSize, inputWidth(n.config)}, p.Encoder)
+	enc, err := n.encoderCache.get(n.config.InputSize, inputWidth(n.config), p.Encoder)
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}
@@ -575,7 +575,7 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}
-	r, err := tensor([]int{len(n.config.ReadoutNodes), n.config.OutputSize}, p.Readout)
+	r, err := n.readoutCache.get(len(n.config.ReadoutNodes), n.config.OutputSize, p.Readout)
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}

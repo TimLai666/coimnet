@@ -595,6 +595,51 @@ func TestActionRecordNamesTheModelThatProducedIt(t *testing.T) {
 	}
 }
 
+// TestModelVersionFollowsEveryParameterChange checks the remembered version
+// against a fresh fingerprint after a gradient update and after parameters
+// are replaced from outside the learner, including back to earlier values.
+func TestModelVersionFollowsEveryParameterChange(t *testing.T) {
+	a := onlineIndividual(t)
+	l := newLearner(t, a, onlinePolicy(), nil)
+	fingerprint := func() string {
+		data, err := json.Marshal(a.Snapshot().Parameters)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sum := sha256.Sum256(data)
+		return hex.EncodeToString(sum[:])
+	}
+	original := a.Snapshot().Parameters
+	first := act(t, l, onlineInput())
+	if first.ModelVersion != fingerprint() {
+		t.Fatal("the first version is not the parameter fingerprint")
+	}
+	if err := l.SetTargets(map[string][]float64{first.ActionID: {.4}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := l.Receive(context.Background(), feedback(t, first.ActionID, "teacher", 3, 3, 1)); err != nil {
+		t.Fatal(err)
+	}
+	update(t, l, 3)
+	if got := act(t, l, onlineInput()).ModelVersion; got != fingerprint() || got == first.ModelVersion {
+		t.Fatal("the version after an update is not the new fingerprint")
+	}
+	if err := a.ResetParameters(context.Background(), original); err != nil {
+		t.Fatal(err)
+	}
+	if got := act(t, l, onlineInput()).ModelVersion; got != first.ModelVersion {
+		t.Fatal("restoring the original parameters did not restore the original version")
+	}
+	changed := a.Snapshot().Parameters
+	changed.Readout[0] += 0.125
+	if err := a.ResetParameters(context.Background(), changed); err != nil {
+		t.Fatal(err)
+	}
+	if got := act(t, l, onlineInput()).ModelVersion; got != fingerprint() || got == first.ModelVersion {
+		t.Fatal("a one-value change outside the learner kept the old version")
+	}
+}
+
 // TestSetTargetsRefusesWhatTheTrainerCannotUse keeps the target path on the
 // trainer side and checked: targets belong to actions that happened, and they
 // have the model's own output shape.

@@ -274,6 +274,9 @@ func (m *Continuous) stateHistoryRows(steps uint64) (int, error) {
 	return int(age) + 1, nil
 }
 func (m *Continuous) stateConfigHash() (string, error) {
+	if m.hash != "" {
+		return m.hash, nil
+	}
 	data, err := json.Marshal(m.Config())
 	if err != nil {
 		return "", err
