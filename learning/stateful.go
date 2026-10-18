@@ -33,7 +33,7 @@ func (n *Network) lossGradientFromState(ctx context.Context, p Parameters, initi
 	if window < 0 {
 		return empty, fmt.Errorf("negative truncation window")
 	}
-	e, err := n.forwardSegmentState(ctx, p, input, 0, &initial)
+	e, err := n.forwardSegmentState(ctx, p, input, 0, &initial, true)
 	if err != nil {
 		return empty, err
 	}

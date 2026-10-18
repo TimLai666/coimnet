@@ -603,7 +603,7 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	// Includes positive representable tau, tensor casts and finite forward state.
 	// Validate the candidate on the trajectory used to obtain the gradient.
 	if initial != nil {
-		_, err = tr.network.forwardSegmentState(ctx, candidate, input, 0, initial)
+		_, err = tr.network.forwardSegmentState(ctx, candidate, input, 0, initial, false)
 	} else {
 		_, err = tr.network.Predict(ctx, candidate, input)
 	}

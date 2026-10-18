@@ -83,6 +83,9 @@ type Network struct {
 	config Config
 	core   coreModel
 	fixed  bool
+	// encoderCache and readoutCache hold the float32 tensors last built from
+	// the encoder and readout parameters.
+	encoderCache, readoutCache tensorCache
 }
 
 // NewNetwork validates dimensions and copies connectivity and readout selection.
@@ -137,7 +140,7 @@ func NewNetwork(c Config) (*Network, error) {
 	c.EdgeSigns = append([]int8(nil), c.EdgeSigns...)
 	c.LIFIndex = append([]int(nil), c.LIFIndex...)
 	c.Sharing = copySharing(c.Sharing)
-	return &Network{c, core, hasFixedSigns(c.EdgeSigns)}, nil
+	return &Network{config: c, core: core, fixed: hasFixedSigns(c.EdgeSigns)}, nil
 }
 
 // Config returns an independent copy of the complete model configuration.
@@ -499,8 +502,10 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 	return g, nil
 }
 
+// forward serves passes that never run the reverse pass, so it records no
+// tape; the products are the same Insyra kernels the tapes call.
 func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) (*execution, error) {
-	return n.forwardSegment(ctx, p, input, 0)
+	return n.forwardSegmentState(ctx, p, input, 0, nil, false)
 }
 
 // forwardSegment runs one episode through the encoder, the core and the
@@ -508,14 +513,16 @@ func (n *Network) forward(ctx context.Context, p Parameters, input [][]float64) 
 // positive segment keeps no trace and records what the reverse pass needs to
 // recompute the history in segments of that many steps.
 func (n *Network) forwardSegment(ctx context.Context, p Parameters, input [][]float64, segment int) (*execution, error) {
-	return n.forwardSegmentState(ctx, p, input, segment, nil)
+	return n.forwardSegmentState(ctx, p, input, segment, nil, true)
 }
 
 // forwardSegmentState is forwardSegment with an optional saved scalar
 // continuous state. The encoder and readout remain the same Insyra tapes; only
 // the core's initial trajectory changes. A non-nil state is deliberately
 // limited to the concrete CPU scalar continuous core.
-func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [][]float64, segment int, initial *NeuralState) (*execution, error) {
+// record keeps the encoder and readout tapes for the reverse pass; without it
+// the execution carries no tapes and only its tensors may be read.
+func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [][]float64, segment int, initial *NeuralState, record bool) (*execution, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -561,18 +568,24 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 		return nil, err
 	}
 	encoderWidth := inputWidth(n.config)
-	encoder, err := tensor([]int{n.config.InputSize, encoderWidth}, p.Encoder)
+	encoder, err := n.encoderCache.get(n.config.InputSize, encoderWidth, p.Encoder)
 	if err != nil {
 		return nil, err
 	}
-	et := nn.NewTape()
-	if _, err = et.Param(x); err != nil {
-		return nil, err
+	var et *nn.Tape
+	var z *nn.Tensor
+	if record {
+		et = nn.NewTape()
+		if _, err = et.Param(x); err != nil {
+			return nil, err
+		}
+		if _, err = et.Param(encoder); err != nil {
+			return nil, err
+		}
+		z, err = et.MatMul(x, encoder)
+	} else {
+		z, err = nn.MatMul(x, encoder)
 	}
-	if _, err = et.Param(encoder); err != nil {
-		return nil, err
-	}
-	z, err := et.MatMul(x, encoder)
 	if err != nil {
 		return nil, err
 	}
@@ -644,18 +657,24 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 	if err != nil {
 		return nil, err
 	}
-	r, err := tensor([]int{readoutCount, n.config.OutputSize}, p.Readout)
+	r, err := n.readoutCache.get(readoutCount, n.config.OutputSize, p.Readout)
 	if err != nil {
 		return nil, err
 	}
-	rt := nn.NewTape()
-	if _, err = rt.Param(h); err != nil {
-		return nil, err
+	var rt *nn.Tape
+	var pred *nn.Tensor
+	if record {
+		rt = nn.NewTape()
+		if _, err = rt.Param(h); err != nil {
+			return nil, err
+		}
+		if _, err = rt.Param(r); err != nil {
+			return nil, err
+		}
+		pred, err = rt.MatMul(h, r)
+	} else {
+		pred, err = nn.MatMul(h, r)
 	}
-	if _, err = rt.Param(r); err != nil {
-		return nil, err
-	}
-	pred, err := rt.MatMul(h, r)
 	if err != nil {
 		return nil, err
 	}
