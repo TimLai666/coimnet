@@ -17,6 +17,7 @@ a token in HF_TOKEN.
 import argparse
 import fnmatch
 import hashlib
+import http.client
 import json
 import os
 import shutil
@@ -134,8 +135,12 @@ def download(f, dest):
     if dest.exists() and dest.stat().st_size == f["bytes"]:
         return
     part = dest.with_name(dest.name + ".part")
-    for attempt in range(5):
+    # Connections to large hosts sometimes end early without an error, so a
+    # short file is resumed with a Range request like any other failure.
+    for attempt in range(20):
         have = part.stat().st_size if part.exists() else 0
+        if have == f["bytes"]:
+            break
         headers = {"Range": f"bytes={have}-"} if have else {}
         try:
             with urllib.request.urlopen(request(f["url"], headers), timeout=120) as resp:
@@ -143,16 +148,18 @@ def download(f, dest):
                     have = 0  # server ignored Range; start over
                 with open(part, "ab" if have else "wb") as out:
                     shutil.copyfileobj(resp, out, CHUNK)
-            break
+            err = f"connection closed at {human(part.stat().st_size)} of {human(f['bytes'])}"
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise GatedError(f["url"]) from e
             if e.code == 416:  # already complete
                 break
             err = e
-        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+        except (OSError, http.client.HTTPException) as e:
             err = e
-        wait = 2 ** (attempt + 1)
+        if part.exists() and part.stat().st_size == f["bytes"]:
+            break
+        wait = min(2 ** (attempt + 1), 60)
         log(f"    retry in {wait}s after: {err}")
         time.sleep(wait)
     else:
@@ -172,6 +179,43 @@ def file_hash(path, algo="sha256"):
 
 
 # ---------- packing ----------
+
+def textify(path):
+    """Rewrite a parquet file whose columns hold no binary data as JSON Lines.
+
+    Parquet pages are already compressed (mostly snappy), which leaves little
+    for zstd. The same rows as plain text compress about 2.8x smaller under
+    zstd -19 (TinyStories: 249 MB parquet -> 89 MB). Every column and value is
+    kept; only the container changes. Returns the new path, or None when the
+    file has binary columns (images, audio) or pyarrow is not installed.
+    """
+    try:
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+    except ImportError:
+        return None
+
+    def has_binary(t):
+        if pa.types.is_binary(t) or pa.types.is_large_binary(t) or pa.types.is_fixed_size_binary(t):
+            return True
+        if pa.types.is_struct(t):
+            return any(has_binary(t.field(i).type) for i in range(t.num_fields))
+        if pa.types.is_list(t) or pa.types.is_large_list(t) or pa.types.is_fixed_size_list(t):
+            return has_binary(t.value_type)
+        if pa.types.is_map(t):
+            return has_binary(t.key_type) or has_binary(t.item_type)
+        return False
+
+    pf = pq.ParquetFile(path)
+    if any(has_binary(f.type) for f in pf.schema_arrow):
+        return None
+    out = path.with_name(path.name + ".jsonl")
+    with open(out, "w", encoding="utf-8") as fh:
+        for batch in pf.iter_batches(batch_size=8192):
+            for row in batch.to_pylist():
+                fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+    path.unlink()
+    return out
 
 def pack(raw_dir, paths, archive, level):
     """Write a deterministic tar (sorted names, zero mtime/owner) through zstd."""
@@ -256,10 +300,17 @@ def run(e, args, dest):
     if args.raw_only:
         log(f"  verified {len(files)} files in {raw}")
         return "downloaded"
-    level = 19 if all(Path(f["path"]).suffix in TEXT_SUFFIXES for f in files) else 3
-    log(f"  packing into {archive.name} ...")
+    for f in files:
+        f["stored_as"] = f["path"]
+        if f["path"].endswith(".parquet") and not args.keep_parquet:
+            out = textify(raw / f["path"])
+            if out:
+                f["stored_as"] = out.relative_to(raw).as_posix()
+                f["stored_sha256"] = file_hash(out)
+    level = 19 if all(Path(f["stored_as"]).suffix in TEXT_SUFFIXES for f in files) else 3
+    log(f"  packing into {archive.name} (zstd -{level}) ...")
     local = work / archive.name
-    pack(raw, [f["path"] for f in files], local, level)
+    pack(raw, [f["stored_as"] for f in files], local, level)
     archive_bytes, archive_sha256 = local.stat().st_size, file_hash(local)
     if local != archive:
         # Pack on local disk, then copy once: the destination may be a network mount.
@@ -278,7 +329,8 @@ def run(e, args, dest):
         "license_status": e["license_status"],
         "source": source,
         "fetched_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "files": [{k: f[k] for k in ("path", "bytes", "sha256", "url")} for f in files],
+        "files": [{k: f[k] for k in ("path", "bytes", "sha256", "url", "stored_as", "stored_sha256") if k in f}
+                  for f in files],
         "raw_bytes": total,
         "archive": archive.name,
         "archive_bytes": archive_bytes,
@@ -311,6 +363,8 @@ def main():
                          "recorded revision and must reproduce the recorded sha256 of every file")
     ap.add_argument("--raw-only", action="store_true",
                     help="download and verify into --work without packing (for training on a device)")
+    ap.add_argument("--keep-parquet", action="store_true",
+                    help="store text parquet files as-is instead of converting them to JSON Lines")
     ap.add_argument("--list", action="store_true", help="print the plan and exit")
     args = ap.parse_args()
 
