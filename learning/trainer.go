@@ -67,7 +67,20 @@ type Options struct {
 	// omitted when nil, so every existing configuration and snapshot keeps its
 	// exact JSON and its recorded hash.
 	Recompute *Recompute `json:"recompute,omitempty"`
+	// Loss selects the objective Step scores the last readout row with. Empty
+	// and LossMSE keep the mean squared error. LossSoftmaxCrossEntropy reads
+	// the readout as class logits and the target as a one-hot row, the usual
+	// classification objective. StepFrom ignores it, because its caller
+	// supplies the gradient. The field is omitted when empty, so every existing
+	// configuration and snapshot keeps its exact JSON and its recorded hash.
+	Loss string `json:"loss,omitempty"`
 }
+
+// The objectives Options.Loss accepts besides empty.
+const (
+	LossMSE                 = "mse"
+	LossSoftmaxCrossEntropy = "softmax_cross_entropy"
+)
 
 // DefaultOptions returns every group of the continuous core trainable and a
 // declared AdamW baseline. The LIF threshold group stays frozen; a spiking
@@ -349,7 +362,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if tr.updates == math.MaxUint64 {
 		return zero, fmt.Errorf("update counter overflow")
 	}
-	loss, g, err := tr.network.lossGradient(ctx, tr.parameters, input, target, tr.options.Truncation, truncationOffset(tr.options, len(input)), recomputeSegment(tr.options))
+	loss, g, err := tr.network.lossGradient(ctx, tr.parameters, input, target, tr.options.Truncation, truncationOffset(tr.options, len(input)), recomputeSegment(tr.options), tr.options.Loss)
 	if err != nil {
 		return zero, err
 	}
@@ -694,6 +707,11 @@ func validateOptions(o Options) error {
 	}
 	if o.Recompute != nil && o.Recompute.SegmentSteps < 1 {
 		return fmt.Errorf("recompute segment_steps %d must be at least 1", o.Recompute.SegmentSteps)
+	}
+	switch o.Loss {
+	case "", LossMSE, LossSoftmaxCrossEntropy:
+	default:
+		return fmt.Errorf("unsupported loss %q", o.Loss)
 	}
 	if err := validateSchedule(o.Schedule); err != nil {
 		return err

@@ -247,19 +247,29 @@ func (n *Network) spikeEvents(ctx context.Context, p Parameters, input [][]float
 // readout, the recurrent core and Insyra's input encoder. No update occurs.
 // The core uses float64; Insyra encoders/loss/readout use float32.
 func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window int) (float64, Gradient, error) {
-	return n.lossGradient(ctx, p, input, target, window, 0, 0)
+	return n.lossGradient(ctx, p, input, target, window, 0, 0, LossMSE)
 }
 
 // LossGradientAligned is LossGradient with the truncation boundaries at
 // offset, offset+window, ...; dynamics.EndAlignedOffset(len(input), window)
 // makes the last window end at the final row the loss scores.
 func (n *Network) LossGradientAligned(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset int) (float64, Gradient, error) {
-	return n.lossGradient(ctx, p, input, target, window, offset, 0)
+	return n.lossGradient(ctx, p, input, target, window, offset, 0, LossMSE)
+}
+
+// LossGradientCrossEntropy is LossGradientAligned with the softmax
+// cross-entropy objective: the last readout row is read as class logits and
+// target must be a one-hot row (exactly one 1, every other entry 0). The loss
+// and its gradient come from Insyra's SoftmaxCrossEntropy on the readout's
+// float32 logits.
+func (n *Network) LossGradientCrossEntropy(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset int) (float64, Gradient, error) {
+	return n.lossGradient(ctx, p, input, target, window, offset, 0, LossSoftmaxCrossEntropy)
 }
 
 // lossGradient is LossGradient whose core reverse pass recomputes the forward
-// history in segments of segment steps; zero keeps the full history.
-func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset, segment int) (float64, Gradient, error) {
+// history in segments of segment steps; zero keeps the full history. kind is
+// an Options.Loss value.
+func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset, segment int, kind string) (float64, Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return 0, empty, fmt.Errorf("nil network")
@@ -287,6 +297,9 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 			return 0, empty, err
 		}
 	}
+	if kind == LossSoftmaxCrossEntropy {
+		return n.crossEntropyGradient(ctx, input, e, last, target, window, offset)
+	}
 	loss, err := e.readoutTape.MSELoss(last, targetTensor)
 	if err != nil {
 		return 0, empty, err
@@ -310,6 +323,63 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 	}
 	if err = mse.Backward(upLoss); err != nil {
 		return 0, empty, err
+	}
+	up[len(up)-1] = doubles(param.Grad().Data())
+	g, err := n.lossGradientReverse(ctx, input, e, up, window, offset)
+	if err != nil {
+		return 0, empty, err
+	}
+	l := float64(loss.Data()[0])
+	if !finite(l) {
+		return 0, empty, fmt.Errorf("non-finite loss")
+	}
+	return l, g, nil
+}
+
+// crossEntropyGradient scores the last readout row last as logits against the
+// class that the one-hot target names, and seeds the shared reverse pass with
+// Insyra's SoftmaxCrossEntropy VJP, softmax(logits) - onehot.
+func (n *Network) crossEntropyGradient(ctx context.Context, input [][]float64, e *execution, last *nn.Tensor, target []float64, window, offset int) (float64, Gradient, error) {
+	var empty Gradient
+	label := -1
+	for i, v := range target {
+		switch v {
+		case 0:
+		case 1:
+			if label >= 0 {
+				return 0, empty, fmt.Errorf("cross-entropy target has more than one 1")
+			}
+			label = i
+		default:
+			return 0, empty, fmt.Errorf("cross-entropy target[%d] = %g is not 0 or 1", i, v)
+		}
+	}
+	if label < 0 {
+		return 0, empty, fmt.Errorf("cross-entropy target has no 1")
+	}
+	logits, err := nn.NewFloat32Tensor([]int{1, n.config.OutputSize}, last.Data())
+	if err != nil {
+		return 0, empty, err
+	}
+	labels, err := nn.NewInt64Tensor([]int{1}, []int64{int64(label)})
+	if err != nil {
+		return 0, empty, err
+	}
+	tape := nn.NewTape()
+	param, err := tape.Param(logits)
+	if err != nil {
+		return 0, empty, err
+	}
+	loss, err := tape.SoftmaxCrossEntropy(param.Value(), labels)
+	if err != nil {
+		return 0, empty, err
+	}
+	if err = tape.Backward(loss); err != nil {
+		return 0, empty, err
+	}
+	up := make([][]float64, len(input))
+	for i := range up {
+		up[i] = make([]float64, n.config.OutputSize)
 	}
 	up[len(up)-1] = doubles(param.Grad().Data())
 	g, err := n.lossGradientReverse(ctx, input, e, up, window, offset)

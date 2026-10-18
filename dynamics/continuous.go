@@ -162,7 +162,7 @@ type forwardReader struct {
 	startSteps uint64
 }
 
-func (r forwardReader) at(e int) float64 {
+func (r *forwardReader) at(e int) float64 {
 	if r.history != nil {
 		step := r.startSteps + uint64(r.t)
 		past := uint64(0)
@@ -204,7 +204,18 @@ func (r ringReader) at(e int) float64 {
 
 // accumulateSerial adds weights[e]*r.at(e) to drive[targets[e]] in declared
 // edge order, bit-identical to the original eager single threaded loop.
-func (r forwardReader) accumulateSerial(drive, weights []float64, targets []int) {
+func (r *forwardReader) accumulateSerial(drive, weights []float64, targets []int) {
+	if r.history == nil {
+		// The same rows r.at(e) reads, without the per-edge call.
+		for e, w := range weights {
+			past := 0
+			if r.delays[e] < r.t {
+				past = r.t - r.delays[e]
+			}
+			drive[targets[e]] += w * r.output[past][r.sources[e]]
+		}
+		return
+	}
 	for e := range weights {
 		drive[targets[e]] += weights[e] * r.at(e)
 	}
@@ -439,10 +450,16 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 				}
 			}
 			driveGrad := g.Inputs[t][m.config.Targets[e]]
-			g.Weights[e] += driveGrad * r.at(e)
 			past := 0
 			if m.config.Delays[e] < t {
 				past = t - m.config.Delays[e]
+			}
+			// A fresh trace reads exactly the row r.at(e) would; only a
+			// stateful segment needs the history lookup.
+			if tr.history == nil {
+				g.Weights[e] += driveGrad * tr.output[past][s]
+			} else {
+				g.Weights[e] += driveGrad * r.at(e)
 			}
 			// A stateful segment's past==0 source came from the saved
 			// prefix, so it contributes no reverse signal. Fresh Forward
