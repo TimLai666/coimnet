@@ -33,7 +33,7 @@ type coreModel interface {
 	// readout observes: activated outputs for the continuous core and the
 	// synaptic trace x for the LIF core.
 	forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (coreTrace, [][]float64, error)
-	backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error)
+	backward(ctx context.Context, tr coreTrace, upstream [][]float64, window, offset int) (coreGradient, error)
 	events(tr coreTrace) ([][]float64, error)
 	// fill writes this core's owned configuration copy into c.
 	fill(c *Config)
@@ -101,12 +101,12 @@ func (c continuousCore) forward(ctx context.Context, p Parameters, initial []flo
 	return trace, trace.Outputs(), nil
 }
 
-func (c continuousCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+func (c continuousCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window, offset int) (coreGradient, error) {
 	trace, ok := tr.(*dynamics.Trace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
 	}
-	g, err := c.model.Backward(ctx, trace, upstream, window)
+	g, err := c.model.BackwardAligned(ctx, trace, upstream, window, offset)
 	if err != nil {
 		return coreGradient{}, err
 	}
@@ -191,12 +191,12 @@ func (l lifCore) forward(ctx context.Context, p Parameters, initial []float64, i
 	return trace, trace.Outputs(), nil
 }
 
-func (l lifCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+func (l lifCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window, offset int) (coreGradient, error) {
 	trace, ok := tr.(*dynamics.LIFTrace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
 	}
-	g, err := l.model.Backward(ctx, trace, upstream, window)
+	g, err := l.model.BackwardAligned(ctx, trace, upstream, window, offset)
 	if err != nil {
 		return coreGradient{}, err
 	}
@@ -296,12 +296,12 @@ func (x mixedCore) forward(ctx context.Context, p Parameters, initial []float64,
 	return trace, trace.Outputs(), nil
 }
 
-func (x mixedCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+func (x mixedCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window, offset int) (coreGradient, error) {
 	trace, ok := tr.(*dynamics.MixedTrace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
 	}
-	g, err := x.model.Backward(ctx, trace, upstream, window)
+	g, err := x.model.BackwardAligned(ctx, trace, upstream, window, offset)
 	if err != nil {
 		return coreGradient{}, err
 	}

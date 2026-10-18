@@ -244,12 +244,19 @@ func (n *Network) spikeEvents(ctx context.Context, p Parameters, input [][]float
 // readout, the recurrent core and Insyra's input encoder. No update occurs.
 // The core uses float64; Insyra encoders/loss/readout use float32.
 func (n *Network) LossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window int) (float64, Gradient, error) {
-	return n.lossGradient(ctx, p, input, target, window, 0)
+	return n.lossGradient(ctx, p, input, target, window, 0, 0)
+}
+
+// LossGradientAligned is LossGradient with the truncation boundaries at
+// offset, offset+window, ...; dynamics.EndAlignedOffset(len(input), window)
+// makes the last window end at the final row the loss scores.
+func (n *Network) LossGradientAligned(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset int) (float64, Gradient, error) {
+	return n.lossGradient(ctx, p, input, target, window, offset, 0)
 }
 
 // lossGradient is LossGradient whose core reverse pass recomputes the forward
 // history in segments of segment steps; zero keeps the full history.
-func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window, segment int) (float64, Gradient, error) {
+func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset, segment int) (float64, Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return 0, empty, fmt.Errorf("nil network")
@@ -302,7 +309,7 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 		return 0, empty, err
 	}
 	up[len(up)-1] = doubles(param.Grad().Data())
-	g, err := n.lossGradientReverse(ctx, input, e, up, window)
+	g, err := n.lossGradientReverse(ctx, input, e, up, window, offset)
 	if err != nil {
 		return 0, empty, err
 	}
@@ -320,12 +327,18 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 // window truncates the recurrent reverse pass exactly as LossGradient's does;
 // zero keeps the full history.
 func (n *Network) LossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window int) (Gradient, error) {
-	return n.lossGradientFrom(ctx, p, input, upstream, window, 0)
+	return n.lossGradientFrom(ctx, p, input, upstream, window, 0, 0)
+}
+
+// LossGradientFromAligned is LossGradientFrom with the truncation boundaries
+// of LossGradientAligned.
+func (n *Network) LossGradientFromAligned(ctx context.Context, p Parameters, input, upstream [][]float64, window, offset int) (Gradient, error) {
+	return n.lossGradientFrom(ctx, p, input, upstream, window, offset, 0)
 }
 
 // lossGradientFrom is LossGradientFrom whose core reverse pass recomputes the
 // forward history in segments of segment steps; zero keeps the full history.
-func (n *Network) lossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window, segment int) (Gradient, error) {
+func (n *Network) lossGradientFrom(ctx context.Context, p Parameters, input, upstream [][]float64, window, offset, segment int) (Gradient, error) {
 	var empty Gradient
 	if n == nil {
 		return empty, fmt.Errorf("nil network")
@@ -337,7 +350,7 @@ func (n *Network) lossGradientFrom(ctx context.Context, p Parameters, input, ups
 	if err != nil {
 		return empty, err
 	}
-	return n.lossGradientReverse(ctx, input, e, upstream, window)
+	return n.lossGradientReverse(ctx, input, e, upstream, window, offset)
 }
 
 // lossGradientReverse is the shared reverse pass both gradient entry points
@@ -346,7 +359,7 @@ func (n *Network) lossGradientFrom(ctx context.Context, p Parameters, input, ups
 // only the final step, so upstream rows before the last are shape-checked,
 // validated as finite and otherwise unused; a ReadoutEveryStep readout carries
 // every row into both the readout and the core.
-func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e *execution, upstream [][]float64, window int) (Gradient, error) {
+func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e *execution, upstream [][]float64, window, offset int) (Gradient, error) {
 	var empty Gradient
 	if len(upstream) != len(input) {
 		return empty, fmt.Errorf("upstream has %d rows, want %d", len(upstream), len(input))
@@ -416,9 +429,9 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 	}
 	var cg coreGradient
 	if e.segment > 0 {
-		cg, err = backwardRecompute(ctx, n.core, e.coreParams, make([]float64, coreWidth), e.coreInputs, up, window, e.segment)
+		cg, err = backwardRecompute(ctx, n.core, e.coreParams, make([]float64, coreWidth), e.coreInputs, up, window, offset, e.segment)
 	} else {
-		cg, err = n.core.backward(ctx, e.trace, up, window)
+		cg, err = n.core.backward(ctx, e.trace, up, window, offset)
 	}
 	if err != nil {
 		return empty, err

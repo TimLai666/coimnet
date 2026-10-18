@@ -295,6 +295,13 @@ func gpuFloat32Values(values []float64, name string) ([]float32, error) {
 // activation and recurrent chain-rule terms; the GPU primitive supplies sparse
 // source and per-edge gradients for each zero-delay step.
 func (g *GPUContinuous) Backward(ctx context.Context, tr *Trace, upstream [][]float64, window int) (Gradient, error) {
+	return g.BackwardAligned(ctx, tr, upstream, window, 0)
+}
+
+// BackwardAligned is Backward with truncation boundaries at offset,
+// offset+window, offset+2*window, ...; offset must be in [0, window), and
+// EndAlignedOffset gives the offset whose last window ends at the final step.
+func (g *GPUContinuous) BackwardAligned(ctx context.Context, tr *Trace, upstream [][]float64, window, offset int) (Gradient, error) {
 	var empty Gradient
 	if ctx == nil {
 		return empty, errors.New("dynamics gpu continuous: nil context")
@@ -317,6 +324,9 @@ func (g *GPUContinuous) Backward(ctx context.Context, tr *Trace, upstream [][]fl
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, err
 	}
 	weights32, err := gpuFloat32Values(tr.parameters.Weights, "weights")
 	if err != nil {
@@ -344,10 +354,7 @@ func (g *GPUContinuous) Backward(ctx context.Context, tr *Trace, upstream [][]fl
 		if err := ctx.Err(); err != nil {
 			return empty, err
 		}
-		start := 0
-		if window > 0 {
-			start = t / window * window
-		}
+		start := WindowStart(t, window, offset)
 		prev := make([]float64, n)
 		gradient.Inputs[t] = make([]float64, n)
 		for i := 0; i < n; i++ {

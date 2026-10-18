@@ -78,7 +78,7 @@ func observe(ctx context.Context, core coreModel, p Parameters, initial []float6
 // backwardRecompute returns core.backward(core.forward(p, initial, inputs), upstream, window) through the core's
 // BackwardRecompute with the given segment, mapped to coreGradient exactly as continuousCore.backward and lifCore.backward map
 // theirs (for the LIF core: core = Weights, Bias, LogTau, Inputs, Initial and thetaRaw = ThetaRaw).
-func backwardRecompute(ctx context.Context, core coreModel, p Parameters, initial []float64, inputs, upstream [][]float64, window, segment int) (coreGradient, error) {
+func backwardRecompute(ctx context.Context, core coreModel, p Parameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (coreGradient, error) {
 	if segment <= 0 {
 		return coreGradient{}, fmt.Errorf("recompute segment must be positive")
 	}
@@ -90,15 +90,15 @@ func backwardRecompute(ctx context.Context, core coreModel, p Parameters, initia
 	}
 	switch c := core.(type) {
 	case continuousCore:
-		g, err := c.model.BackwardRecompute(ctx, p.Core, initial, inputs, upstream, window, segment)
+		g, err := c.model.BackwardRecomputeAligned(ctx, p.Core, initial, inputs, upstream, window, offset, segment)
 		if err != nil {
 			return coreGradient{}, err
 		}
 		return coreGradient{core: g}, nil
 	case lifCore:
-		g, err := c.model.BackwardRecompute(ctx, dynamics.LIFParameters{
+		g, err := c.model.BackwardRecomputeAligned(ctx, dynamics.LIFParameters{
 			Weights: p.Core.Weights, Bias: p.Core.Bias, LogTau: p.Core.LogTau, ThetaRaw: p.ThetaRaw,
-		}, initial, inputs, upstream, window, segment)
+		}, initial, inputs, upstream, window, offset, segment)
 		if err != nil {
 			return coreGradient{}, err
 		}

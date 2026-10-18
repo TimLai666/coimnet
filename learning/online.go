@@ -30,6 +30,11 @@ var ErrEvaluateMode = errors.New("learning: evaluate mode refuses online updates
 // this package, so naming modulation here closes an import cycle. Declaring
 // the rule as a value the caller supplies keeps the dependency pointing one
 // way and still leaves the mapping rule where it was decided.
+//
+// The learner calls Applied exactly once per plastic feedback and never to probe
+// the gate, because a mapper with a running baseline remembers every score it
+// maps. A gate that fails or returns no channel is reported by the Update that
+// reaches it.
 type RewardGate interface {
 	// Applied returns the release per modulation channel for one raw score.
 	// The first channel is the gate an online plastic update opens.
@@ -173,13 +178,6 @@ func NewOnlineLearner(ind *Individual, p OnlinePolicy, gate RewardGate) (*Online
 	if p.AllowPlastic {
 		if gate == nil {
 			return nil, fmt.Errorf("learning: a plastic online policy needs a reward gate")
-		}
-		applied, err := gate.Applied(0)
-		if err != nil {
-			return nil, fmt.Errorf("learning: reward gate: %w", err)
-		}
-		if len(applied) == 0 {
-			return nil, fmt.Errorf("learning: the reward gate produced no release channel")
 		}
 		if !ind.plasticityEnabled() {
 			return nil, fmt.Errorf("learning: a plastic online policy needs an individual with local plasticity enabled")

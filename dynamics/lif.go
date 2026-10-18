@@ -495,6 +495,13 @@ func (tr *LIFTrace) FinalVoltage() []float64 {
 // nothing to its drive, input or previous voltage. Trace and upstream are
 // unchanged and no parameter is updated.
 func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, window int) (LIFGradient, error) {
+	return m.BackwardAligned(ctx, tr, upstream, window, 0)
+}
+
+// BackwardAligned is Backward with truncation boundaries at offset,
+// offset+window, offset+2*window, ...; offset must be in [0, window), and
+// EndAlignedOffset gives the offset whose last window ends at the final step.
+func (m *LIF) BackwardAligned(ctx context.Context, tr *LIFTrace, upstream [][]float64, window, offset int) (LIFGradient, error) {
 	var empty LIFGradient
 	if ctx == nil {
 		return empty, fmt.Errorf("nil context")
@@ -508,6 +515,9 @@ func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, 
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, err
 	}
 	gx := make([][]float64, steps+1)
 	for t := range gx {
@@ -530,10 +540,7 @@ func (m *LIF) Backward(ctx context.Context, tr *LIFTrace, upstream [][]float64, 
 		if err := ctx.Err(); err != nil {
 			return empty, err
 		}
-		start := 0
-		if window > 0 {
-			start = t / window * window
-		}
+		start := WindowStart(t, window, offset)
 		keep := t > start || start == 0
 		prevV, prevA := make([]float64, n), make([]float64, n)
 		g.Inputs[t] = make([]float64, n)

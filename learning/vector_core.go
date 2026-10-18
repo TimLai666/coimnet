@@ -67,12 +67,12 @@ func (v vectorCore) forward(ctx context.Context, p Parameters, initial []float64
 	return trace, outs, nil
 }
 
-func (v vectorCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window int) (coreGradient, error) {
+func (v vectorCore) backward(ctx context.Context, tr coreTrace, upstream [][]float64, window, offset int) (coreGradient, error) {
 	trace, ok := tr.(*dynamics.VectorTrace)
 	if !ok {
 		return coreGradient{}, fmt.Errorf("trace belongs to a different core")
 	}
-	g, err := v.model.Backward(ctx, trace, upstream, window)
+	g, err := v.model.BackwardAligned(ctx, trace, upstream, window, offset)
 	if err != nil {
 		return coreGradient{}, err
 	}

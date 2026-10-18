@@ -373,6 +373,13 @@ func (tr *Trace) FinalVoltage() []float64 {
 // (0, window, 2*window, ...), including delayed edges, without resetting voltage.
 // Trace and upstream are unchanged. This function does not update parameters.
 func (m *Continuous) Backward(ctx context.Context, tr *Trace, upstream [][]float64, window int) (Gradient, error) {
+	return m.BackwardAligned(ctx, tr, upstream, window, 0)
+}
+
+// BackwardAligned is Backward with truncation boundaries at offset,
+// offset+window, offset+2*window, ...; offset must be in [0, window), and
+// EndAlignedOffset gives the offset whose last window ends at the final step.
+func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream [][]float64, window, offset int) (Gradient, error) {
 	var empty Gradient
 	if ctx == nil {
 		return empty, fmt.Errorf("nil context")
@@ -386,6 +393,9 @@ func (m *Continuous) Backward(ctx context.Context, tr *Trace, upstream [][]float
 	steps, n := len(tr.drive), m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, err
 	}
 	gy := make([][]float64, steps+1)
 	for t := range gy {
@@ -403,10 +413,7 @@ func (m *Continuous) Backward(ctx context.Context, tr *Trace, upstream [][]float
 		if err := ctx.Err(); err != nil {
 			return empty, err
 		}
-		start := 0
-		if window > 0 {
-			start = t / window * window
-		}
+		start := WindowStart(t, window, offset)
 		prev := make([]float64, n)
 		g.Inputs[t] = make([]float64, n)
 		for i := 0; i < n; i++ {

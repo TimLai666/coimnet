@@ -535,6 +535,13 @@ type VectorGradient struct {
 // [step][N*C] (dL/d out at each step), window is the truncation window with
 // the same meaning as the scalar core.
 func (m *VectorContinuous) Backward(ctx context.Context, tr *VectorTrace, upstream [][]float64, window int) (VectorGradient, error) {
+	return m.BackwardAligned(ctx, tr, upstream, window, 0)
+}
+
+// BackwardAligned is Backward with truncation boundaries at offset,
+// offset+window, offset+2*window, ...; offset must be in [0, window), and
+// EndAlignedOffset gives the offset whose last window ends at the final step.
+func (m *VectorContinuous) BackwardAligned(ctx context.Context, tr *VectorTrace, upstream [][]float64, window, offset int) (VectorGradient, error) {
 	var empty VectorGradient
 	if ctx == nil {
 		return empty, fmt.Errorf("nil context")
@@ -549,6 +556,9 @@ func (m *VectorContinuous) Backward(ctx context.Context, tr *VectorTrace, upstre
 	n := m.config.Nodes
 	if window < 0 || len(upstream) != steps {
 		return empty, fmt.Errorf("invalid backward window or sequence length")
+	}
+	if err := checkWindowOffset(window, offset); err != nil {
+		return empty, err
 	}
 	if m.layout.C <= 0 || m.layout.Edges != len(m.config.Sources) {
 		return empty, fmt.Errorf("layout does not match configuration")
@@ -581,10 +591,7 @@ func (m *VectorContinuous) Backward(ctx context.Context, tr *VectorTrace, upstre
 		if err := ctx.Err(); err != nil {
 			return empty, err
 		}
-		start := 0
-		if window > 0 {
-			start = t / window * window
-		}
+		start := WindowStart(t, window, offset)
 		prev := make([]float64, nv)
 		g.Inputs[t] = make([]float64, nv)
 		for i := 0; i < n; i++ {
