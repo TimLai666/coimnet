@@ -49,7 +49,7 @@
 
 ## KMNIST 部署後邊用邊學對決（2026-10-18）
 
-雲端 VM 單執行緒，3 個初始值。新類別情境（預先訓練只看 5 類）中，CoImNet 逐筆梯度更新學完後測試 57.9%，PyTorch MLP 逐筆 SGD 52.5%；圖片反相情境 PyTorch 略好（反相測試 16.0% 對 13.3%）。CoImNet 局部可塑性兩個情境都沒有幫助。每次更新 CoImNet 約 3.8 ms、PyTorch 約 0.6 ms；`learning.Individual` 路徑的預測 2.9 ms。證據與重跑命令見 [online-kmnist-20261018](../evidence/online-kmnist-20261018/README.md)。
+雲端 VM 單執行緒，3 個初始值。新類別情境（預先訓練只看 5 類）中，CoImNet 逐筆梯度更新學完後測試 57.9%，PyTorch MLP 逐筆 SGD 52.5%；圖片反相情境 PyTorch 略好（反相測試 16.0% 對 13.3%）。CoImNet 局部可塑性兩個情境都沒有幫助。消融顯示新類別的差距主要來自有效學習率，兩邊各自挑過學習率後打平（54.7% 對 54.9%）。每次更新 CoImNet 約 3.8 ms、PyTorch 約 0.6 ms；`learning.Individual` 路徑的預測 2.9 ms。證據與重跑命令見 [online-kmnist-20261018](../evidence/online-kmnist-20261018/README.md)。
 
 ## 真實影音小樣本（2026-09-25）
 
