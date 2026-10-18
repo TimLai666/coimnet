@@ -4,7 +4,7 @@ Epic：訓練與評分的數值正確性
 
 User Story：分類模型應收到可表示的正確更新訊號，不能因類別排列而改變導數。
 
-Status：in_progress
+Status：completed
 
 相關需求：TSK-01 OCR、TSK-03 文字生成、TSK-07 外部工具請求頭。
 
@@ -28,7 +28,7 @@ ticket146 的 877 份來源已完成固定工程驗證與交付。本票接續�
 - [x] 相同合法起始狀態的公開更新與獨立參考 upstream 對照，確認可觀察影響。
 - [x] 隔離修正通過凍結回歸、正常控制及相關既有測試。
 - [x] 正式採用後，固定最終來源通過完整工程、模型載入與最後治理。
-- [ ] 保存必要證據、清除自有暫存、提交推送並核對遠端。
+- [x] 保存必要證據、清除自有暫存、提交推送並核對遠端。
 
 ## 減法審查
 
@@ -80,4 +80,4 @@ OCR 的公開 TrainLine，以及蒸餾的 StepLabel／StepDistribution 都已用
 
 正式來源的一般／競態均已在新程序載入兩種文字模型設定及三種 OCR 模式，再執行一次訓練。完整輸出與修改前、隔離候選逐位元組相同，見[舊模型驗收](../../evidence/TSK-03/categorical-gradient-adoption-20261018/old-models-root-verification.json)。這些固定人工模型的接續結果不等於真實任務品質改善。完成完整工程、最後治理與證據保存後才可清除自有暫存及交付。
 
-session96150 已實際結束且 exit0，895 份正式來源通過九項完整工程，一般 8,917 pass／23 skip、競態 8,916 pass／24 skip，各 59 套件通過。Root 已重新解析原始及壓縮日誌，確認原 8,800 個結果保持、各新增 140 pass，並核對 12 次舊模型程序的完整輸出，見[完整驗收](../../evidence/TSK-03/categorical-gradient-adoption-20261018/full-engineering-root-verification.json)。新驗收回條起初缺少四個必要欄位，已補齊實際證據並通過 31 項治理，原失敗與原因保持。本票 4／5。149 個必要非快取輸入已封存，1,880,270,157 bytes 自有暫存已清除，895 份來源、18 份原模型、6 份既有資料、32 份其他工作與 15,046 份原始模組保持，見[清理核對](../../evidence/TSK-03/categorical-gradient-adoption-20261018/cleanup-root-verification.json)。提交交付尚未完成。
+session96150 已實際結束且 exit0，895 份正式來源通過九項完整工程，一般 8,917 pass／23 skip、競態 8,916 pass／24 skip，各 59 套件通過。Root 已重新解析原始及壓縮日誌，確認原 8,800 個結果保持、各新增 140 pass，並核對 12 次舊模型程序的完整輸出，見[完整驗收](../../evidence/TSK-03/categorical-gradient-adoption-20261018/full-engineering-root-verification.json)。新驗收回條起初缺少四個必要欄位，已補齊實際證據並通過 31 項治理，原失敗與原因保持。149 個必要非快取輸入已封存，1,880,270,157 bytes 自有暫存已清除，895 份來源、18 份原模型、6 份既有資料、32 份其他工作與 15,046 份原始模組保持，見[清理核對](../../evidence/TSK-03/categorical-gradient-adoption-20261018/cleanup-root-verification.json)。修正 `ff7868e` 與主要驗收 `83853c2` 已正常推送，遠端讀回一致，見[交付](../../evidence/TSK-03/categorical-gradient-adoption-20261018/delivery.json)。本票完成 5／5，整體零 bug 目標持續。

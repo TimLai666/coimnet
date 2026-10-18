@@ -28,4 +28,4 @@
 
 [配置量測](helper-allocation-root-verification.json)確認 259 類的單次 helper 額外配置由 2,304 B／1 次降為 0 B／0 次，不代表整體訓練加速。另已確認 OCR 與蒸餾純標籤的回報誤差可能被算成零，兩項獨立正值及一般／競態實證見[後續缺陷](../../TSK-01/reported-loss-audit-20261018/README.md)，本票沒有修正它們。
 
-正式 895 份來源已通過九項完整工程，一般 8,917 pass／23 skip、競態 8,916 pass／24 skip，原 8,800 個結果保持，各新增 140 pass，見[完整核對](../categorical-gradient-adoption-20261018/full-engineering-root-verification.json)。12 次舊模型程序的完整輸出保持，31 項治理通過。本票目前 4／5，必要輸入已封存，1,880,270,157 bytes 自有暫存已[清除](../categorical-gradient-adoption-20261018/cleanup.json)，剩下提交交付。
+正式 895 份來源已通過九項完整工程，一般 8,917 pass／23 skip、競態 8,916 pass／24 skip，原 8,800 個結果保持，各新增 140 pass，見[完整核對](../categorical-gradient-adoption-20261018/full-engineering-root-verification.json)。12 次舊模型程序的完整輸出保持，31 項治理通過。本票已完成 5／5，必要輸入已封存，1,880,270,157 bytes 自有暫存已[清除](../categorical-gradient-adoption-20261018/cleanup.json)，修正與驗收已[推送並核對遠端](../categorical-gradient-adoption-20261018/delivery.json)。
