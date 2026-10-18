@@ -380,6 +380,15 @@ def main():
         print(f"{len(entries)} datasets, about {human(total)} before compression")
         return 0
 
+    if not (args.keep_parquet or args.raw_only):
+        try:
+            import pyarrow  # noqa: F401
+        except ImportError:
+            # Packing parquet as-is would silently make text archives about 2.8x larger.
+            log("! pyarrow is not installed for this python; text parquet would be packed unconverted.\n"
+                "  Install it (python3 -m pip install pyarrow) or pass --keep-parquet.")
+            return 2
+
     args.dest.mkdir(parents=True, exist_ok=True)
     (args.dest / "archives").mkdir(exist_ok=True)
     results = {}
