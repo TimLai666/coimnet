@@ -43,6 +43,10 @@
 
 文字生成的留出困惑度下降，但實際續寫仍是破碎片段；KMNIST 每張圖只有一個字，不能當整頁 OCR 的速度或品質。兩者也沒有使用 MaleCNS 全圖。Insyra 曾在文字執行日誌顯示 Metal session，但這不是 CoImNet 稀疏核心或文字模型使用 GPU 的證據。
 
+## KMNIST 跨框架量測（2026-10-18）
+
+雲端 VM（Intel Xeon、單執行緒）上，CoImNet 單字元 OCR 與同參數量的 PyTorch MLP 各在新程序量 2,000 張測試圖。CoImNet 71.25%、23,568 參數、程序 RSS 峰值 57.8 MiB、p50 0.155 ms；PyTorch 71.75%、22,926 參數、242.9 MiB、p50 0.018 ms。CoImNet 只有記憶體較少，且其中約 20 MiB 是 Go 垃圾回收餘裕（`GOGC=25` 時 41.1 MiB）。量測方式見 ENG.md，證據與重跑命令見 [bench-kmnist-20261018](../evidence/bench-kmnist-20261018/README.md)。
+
 ## 真實影音小樣本（2026-09-25）
 
 `examples/realmedia` 從兩部有授權的影片匯入四段各 2 秒片段，將影像縮為 8×8、每秒 4 格，並取 8 kHz 單聲道音訊。兩段訓練、同來源一段驗證、另一部影片一段測試；60 輪共 120 次更新。Mac Apple M3 上，一次已建置程式的完整程序耗時 2.15 秒、最高 RSS 117,506,048 bytes（約 112.1 MiB），含本機匯入、解碼、訓練、推論與輸出 PNG／WAV／MP4，不含下載與編譯。未清除快取或隔離負載；另一程序的指標與輸出檔指紋相同。[來源指紋、命令、原始日誌與報告](../evidence/TSK-11/real-media-20260925/verification.json)。

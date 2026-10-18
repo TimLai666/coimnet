@@ -1,0 +1,41 @@
+{
+  "schema_version": "coimnet-bench/v1",
+  "framework": "coimnet",
+  "model": "coimnet-h24-te",
+  "task": "kmnist-t10k-single-character",
+  "split": "balanced_round_robin_by_label_v1:2000:7f6498faa80e165d8cb7b88618ae8e2ce9bbc655af6ae79d338647f3fb3436ec",
+  "host": {
+    "machine": "vm",
+    "os": "linux",
+    "arch": "amd64",
+    "cpu": "Intel(R) Xeon(R) Processor",
+    "logical_cpus": 4,
+    "memory_bytes": 16874930176,
+    "runtime": "go1.25.12"
+  },
+  "parameters": 23568,
+  "trainable": 23516,
+  "peak_rss_bytes": 60608512,
+  "idle_rss_bytes": 38928384,
+  "device": "cpu",
+  "threads": 1,
+  "latency": {
+    "warmup": 50,
+    "samples": 2000,
+    "mean_ms": 0.18768714749999982,
+    "p50_ms": 0.154636,
+    "p90_ms": 0.222595,
+    "p99_ms": 0.480369,
+    "min_ms": 0.137456,
+    "max_ms": 14.686388
+  },
+  "quality": {
+    "accuracy": 0.7125
+  },
+  "higher_is_better": [
+    "accuracy"
+  ],
+  "notes": [
+    "one image per call; latency covers tasks/ocr.Recognizer.Infer including decoding"
+  ]
+}

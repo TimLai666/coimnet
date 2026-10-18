@@ -78,6 +78,9 @@ Commands:
   benchmark [flags]              Time import, forward, backward, local
                                  plasticity, modulation and snapshot on a
                                  synthetic topology and write the report JSON
+  bench compare [flags]          Judge a candidate bench result against baseline
+                                 results measured on the same machine, task and
+                                 split: quality, parameters, peak RSS, latency
   model inspect [flags]          Inspect one model package or individual
                                  snapshot: topology, parameters, modes,
                                  evidence, mapping and a memory estimate
@@ -156,6 +159,10 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 		return runCheckpoint(ctx, args[1:], stdout, stderr)
 	case "benchmark":
 		return runBenchmark(ctx, args[1:], stdout, stderr)
+	case "bench":
+		if len(args) >= 2 && args[1] == "compare" {
+			return runBenchCompare(ctx, args[2:], stdout, stderr)
+		}
 	case "model":
 		return runModel(ctx, args[1:], stdout, stderr)
 	case "export":
