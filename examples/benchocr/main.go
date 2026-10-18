@@ -7,33 +7,23 @@
 package main
 
 import (
-	"compress/gzip"
 	"context"
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
-	"strconv"
-	"strings"
 
 	"github.com/TimLai666/coimnet/bench"
+	"github.com/TimLai666/coimnet/examples/internal/kmnist"
 	"github.com/TimLai666/coimnet/tasks/ocr"
 	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
 )
 
-const (
-	imageSide = 28
-	classes   = 10
-	// Task names the shared evaluation; the split hash pins the exact images.
-	task = "kmnist-t10k-single-character"
-)
+// task names the shared evaluation; the split hash pins the exact images.
+const task = "kmnist-t10k-single-character"
 
 func main() {
 	var (
@@ -63,17 +53,17 @@ func main() {
 
 func run(dataDir, modelDir, name string, testCount, warmup, threads int, machine, gpu, out string) error {
 	ctx := context.Background()
-	labels, err := readLabels(filepath.Join(dataDir, "t10k-labels-idx1-ubyte.gz"))
+	test, err := kmnist.Load(dataDir, "t10k")
 	if err != nil {
 		return err
 	}
-	indices, err := balancedIndices(labels, testCount)
+	indices, err := test.Balanced(testCount)
 	if err != nil {
 		return err
 	}
-	images, err := readImages(filepath.Join(dataDir, "t10k-images-idx3-ubyte.gz"), len(labels), indices)
-	if err != nil {
-		return err
+	images := make([]glyphs.Image, len(indices))
+	for i, idx := range indices {
+		images[i] = test.Image(idx, false)
 	}
 	idle := bench.PeakRSS()
 	model, err := ocr.LoadRecognizer(ctx, modelDir)
@@ -81,8 +71,8 @@ func run(dataDir, modelDir, name string, testCount, warmup, threads int, machine
 		return err
 	}
 	alphabet := model.Config().Alphabet
-	if len(alphabet) != classes {
-		return fmt.Errorf("model has %d classes, KMNIST has %d", len(alphabet), classes)
+	if len(alphabet) != kmnist.Classes {
+		return fmt.Errorf("model has %d classes, KMNIST has %d", len(alphabet), kmnist.Classes)
 	}
 	// The timed pass overwrites every prediction the warmup calls left behind.
 	predictions := make([]string, len(images))
@@ -96,7 +86,7 @@ func run(dataDir, modelDir, name string, testCount, warmup, threads int, machine
 	}
 	correct := 0
 	for i, text := range predictions {
-		if text == string(alphabet[labels[indices[i]]]) {
+		if text == string(alphabet[test.Labels[indices[i]]]) {
 			correct++
 		}
 	}
@@ -106,7 +96,7 @@ func run(dataDir, modelDir, name string, testCount, warmup, threads int, machine
 	}
 	result := bench.Result{
 		SchemaVersion: bench.SchemaVersion, Framework: "coimnet", Model: name,
-		Task: task, Split: SplitID(indices), Host: bench.CurrentHost(machine, gpu),
+		Task: task, Split: kmnist.SplitID("balanced_round_robin_by_label_v1", indices), Host: bench.CurrentHost(machine, gpu),
 		Parameters:   bench.CountParameters(snapshot.Parameters),
 		Trainable:    bench.CountTrainable(snapshot.Parameters, snapshot.Options),
 		PeakRSSBytes: bench.PeakRSS(), IdleRSSBytes: idle,
@@ -131,105 +121,6 @@ func run(dataDir, modelDir, name string, testCount, warmup, threads int, machine
 		return err
 	}
 	return f.Close()
-}
-
-// SplitID names the evaluated selection: the SHA-256 of the test indices
-// joined by commas. scripts/bench/kmnist_mlp.py computes the same string.
-func SplitID(indices []int) string {
-	parts := make([]string, len(indices))
-	for i, v := range indices {
-		parts[i] = strconv.Itoa(v)
-	}
-	sum := sha256.Sum256([]byte(strings.Join(parts, ",")))
-	return "balanced_round_robin_by_label_v1:" + strconv.Itoa(len(indices)) + ":" + hex.EncodeToString(sum[:])
-}
-
-// balancedIndices takes the first index of each label in turn, the same
-// selection examples/realocr uses.
-func balancedIndices(labels []int, limit int) ([]int, error) {
-	byClass := make([][]int, classes)
-	for i, l := range labels {
-		if l < 0 || l >= classes {
-			return nil, fmt.Errorf("label %d at index %d is outside the class count", l, i)
-		}
-		byClass[l] = append(byClass[l], i)
-	}
-	out := make([]int, 0, limit)
-	for round := 0; len(out) < limit; round++ {
-		progress := false
-		for c := 0; c < classes && len(out) < limit; c++ {
-			if round < len(byClass[c]) {
-				out = append(out, byClass[c][round])
-				progress = true
-			}
-		}
-		if !progress {
-			return nil, fmt.Errorf("only %d balanced examples for the requested %d", len(out), limit)
-		}
-	}
-	return out, nil
-}
-
-func readGzip(path string, magic uint32, dims int) ([]byte, []uint32, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, nil, err
-	}
-	defer f.Close()
-	z, err := gzip.NewReader(f)
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", path, err)
-	}
-	b, err := io.ReadAll(io.LimitReader(z, 64<<20))
-	if err != nil {
-		return nil, nil, fmt.Errorf("%s: %w", path, err)
-	}
-	head := 4 + 4*dims
-	if len(b) < head || binary.BigEndian.Uint32(b) != magic {
-		return nil, nil, fmt.Errorf("%s: not an IDX file with magic %d", path, magic)
-	}
-	shape := make([]uint32, dims)
-	size := 1
-	for i := range shape {
-		shape[i] = binary.BigEndian.Uint32(b[4+4*i:])
-		size *= int(shape[i])
-	}
-	if len(b)-head != size {
-		return nil, nil, fmt.Errorf("%s: payload has %d bytes, header says %d", path, len(b)-head, size)
-	}
-	return b[head:], shape, nil
-}
-
-func readLabels(path string) ([]int, error) {
-	b, _, err := readGzip(path, 2049, 1)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]int, len(b))
-	for i, v := range b {
-		out[i] = int(v)
-	}
-	return out, nil
-}
-
-func readImages(path string, count int, indices []int) ([]glyphs.Image, error) {
-	b, shape, err := readGzip(path, 2051, 3)
-	if err != nil {
-		return nil, err
-	}
-	if int(shape[0]) != count || shape[1] != imageSide || shape[2] != imageSide {
-		return nil, fmt.Errorf("%s: shape %v, want %d×28×28", path, shape, count)
-	}
-	const n = imageSide * imageSide
-	out := make([]glyphs.Image, len(indices))
-	for k, idx := range indices {
-		pixels := make([]float64, n)
-		for j := range pixels {
-			pixels[j] = float64(b[idx*n+j]) / 255
-		}
-		out[k] = glyphs.Image{Width: imageSide, Height: imageSide, Pixels: pixels}
-	}
-	return out, nil
 }
 
 func fatal(err error) {
