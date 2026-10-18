@@ -37,7 +37,17 @@ python3 examples/datasets/fetch.py --clear-only
 - `core`：一台 Mac 加一張 RTX 4070 就訓練得動的規模，下載量約 34 GB。
 - `full`：再加上 FineWeb-Edu 全部 10B token、FineVideo 60 個分片、FSD50K、UCF101，以及授權受限、只能內部比較的資料，下載量約 116 GB。
 
-文字、程式、工具呼叫與個資資料用 zstd 最高壓縮（-19）；圖片、聲音、影片上游大多已經是壓縮格式（parquet、tgz、mp4），再壓幾乎不會變小，所以只用 -3 打包，省時間。
+## 壓縮方式
+
+- 只含文字欄位的 parquet 會先轉成 JSON Lines（`原檔名.parquet.jsonl`，每行一筆、所有欄位都保留），再用 zstd -19 壓。parquet 內部已經用 snappy 壓過，直接再壓幾乎不會變小；轉成純文字後 TinyStories 從 1.0 GB 壓到 368 MB。回條同時記錄原檔 sha256（`sha256`）與轉檔後的 sha256（`stored_sha256`）。要保留原 parquet 加 `--keep-parquet`。
+- 全部是 JSON、文字檔的資料集也用 zstd -19；含圖片、聲音、影片的資料集上游已是壓縮格式（JPEG、FLAC、MP4），無損再壓幾乎不會變小，只用 -3 打包。
+- 需要 `pyarrow` 才會轉換 parquet，沒裝時照原檔打包。
+
+## 其他選項
+
+- `--work 路徑`：下載與打包用的暫存位置，`--dest` 在網路磁碟時設到本機磁碟。
+- `--match 回條資料夾`：照之前的回條重抓同一版本的檔案，sha256 不同就報錯。換一台機器時用它確保拿到一模一樣的資料。
+- `--raw-only`：只下載並核對，不打包，原始檔留在 `--work`，適合直接拿來訓練。
 
 ## 授權狀態
 
