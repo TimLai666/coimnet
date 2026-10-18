@@ -64,6 +64,7 @@
 - [examples/realmedia/README.md](../examples/realmedia/README.md)：Blender 開源影片的影像、音訊與影片小樣本流程驗證。
 - [examples/realnav/README.md](../examples/realnav/README.md)：果蠅軌跡的單步位移預測與自主行走工程評估範例。
 - [examples/realnavmemory/README.md](../examples/realnavmemory/README.md)：完整刺激歷史、遮罩模仿學習、控制組與凍結模型刺激清除檢查的工程範例。
+- [examples/datasets/README.md](../examples/datasets/README.md)：訓練用公開資料集清單，以及下載、核對與壓縮打包腳本。
 
 用 `coimnet examples list` 列出所有內建例子，`coimnet examples run <name>` 執行。命令本身的權限與用法用 `coimnet examples run <name> --help` 查。
 
