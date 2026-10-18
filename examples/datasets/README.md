@@ -41,7 +41,7 @@ python3 examples/datasets/fetch.py --clear-only
 
 - 只含文字欄位的 parquet 會先轉成 JSON Lines（`原檔名.parquet.jsonl`，每行一筆、所有欄位都保留），再用 zstd -19 壓。parquet 內部已經用 snappy 壓過，直接再壓幾乎不會變小；轉成純文字後 TinyStories 從 1.0 GB 壓到 368 MB。回條同時記錄原檔 sha256（`sha256`）與轉檔後的 sha256（`stored_sha256`）。要保留原 parquet 加 `--keep-parquet`。
 - 全部是 JSON、文字檔的資料集也用 zstd -19；含圖片、聲音、影片的資料集上游已是壓縮格式（JPEG、FLAC、MP4），無損再壓幾乎不會變小，只用 -3 打包。
-- 需要 `pyarrow` 才會轉換 parquet，沒裝時照原檔打包。
+- 需要 `pyarrow` 才會轉換 parquet。沒裝時腳本直接停下並提示安裝；確定要照原檔打包就加 `--keep-parquet`。
 
 ## 其他選項
 
