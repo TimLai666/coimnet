@@ -57,6 +57,11 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      - name: Install ffmpeg
+        # tasks/media/realdata and examples/realmedia import MP4 through
+        # ffmpeg/ffprobe; without it those tests fail or skip.
+        run: |
+          if [ "$RUNNER_OS" = macOS ]; then brew install ffmpeg; else sudo apt-get update && sudo apt-get install -y ffmpeg; fi
       - name: go build
         run: go build ./...
       - name: go test
@@ -70,6 +75,8 @@ jobs:
       - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
+      - name: Install ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: go test -race
         run: go test -race -count=1 -timeout 90m ./...
 
