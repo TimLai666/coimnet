@@ -210,3 +210,84 @@ func TestStepBatchRejectsMismatchedPairs(t *testing.T) {
 		t.Fatalf("failing pair: %v, %d results", err, len(results))
 	}
 }
+
+// gatedClassifierFixture is classifierFixture with the current gate.
+func gatedClassifierFixture() (learning.Config, learning.Parameters) {
+	c, p := classifierFixture()
+	c.Dynamics.Gate = dynamics.GateCurrent
+	p.Core.GateGain = []float64{.3, -.2, .5, .1, -.4, .2}
+	p.Core.GateBias = []float64{0, .1, -.1, .2, 0, -.3}
+	return c, p
+}
+
+// TestGatedTrainerUpdatesGateOnlyWhenTrainable trains the gated fixture with
+// the gate frozen and then trainable, round-trips the snapshot through JSON,
+// and checks the shape validation that guards the gate groups.
+func TestGatedTrainerUpdatesGateOnlyWhenTrainable(t *testing.T) {
+	ctx := context.Background()
+	c, p := gatedClassifierFixture()
+	inputs, targets := classifierEpisodes(4)
+	for _, trainGate := range []bool{false, true} {
+		o := learning.DefaultOptions()
+		o.Loss = learning.LossSoftmaxCrossEntropy
+		o.Trainable.Gate = trainGate
+		tr, err := learning.NewTrainer(c, p, o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tr.StepBatch(ctx, inputs, targets, 2); err != nil {
+			t.Fatal(err)
+		}
+		s := tr.Snapshot()
+		moved := !reflect.DeepEqual(s.Parameters.Core.GateGain, p.Core.GateGain) && !reflect.DeepEqual(s.Parameters.Core.GateBias, p.Core.GateBias)
+		if moved != trainGate {
+			t.Fatalf("trainable gate %v: gate parameters moved %v", trainGate, moved)
+		}
+		if reflect.DeepEqual(s.Parameters.Core.Weights, p.Core.Weights) {
+			t.Fatal("weights did not train")
+		}
+		b, err := json.Marshal(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var back learning.TrainingSnapshot
+		if err := json.Unmarshal(b, &back); err != nil {
+			t.Fatal(err)
+		}
+		restored, err := learning.RestoreTrainer(back)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := tr.Predict(ctx, inputs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := restored.Predict(ctx, inputs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatal("restored gated trainer predicts differently")
+		}
+	}
+	o := learning.DefaultOptions()
+	missing := p
+	missing.Core.GateGain, missing.Core.GateBias = nil, nil
+	if _, err := learning.NewTrainer(c, missing, o); err == nil {
+		t.Fatal("gated core accepted without gate parameters")
+	}
+	plain, plainParams := classifierFixture()
+	o.Trainable.Gate = true
+	if _, err := learning.NewTrainer(plain, plainParams, o); err == nil {
+		t.Fatal("trainable gate accepted on an ungated core")
+	}
+	o.Trainable.Gate = false
+	o.Recompute = &learning.Recompute{SegmentSteps: 2}
+	tr, err := learning.NewTrainer(c, p, o)
+	if err == nil {
+		_, err = tr.Step(ctx, inputs[0], targets[0])
+	}
+	if err == nil {
+		t.Fatal("recompute ran a gated core")
+	}
+}

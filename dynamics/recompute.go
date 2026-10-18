@@ -56,6 +56,9 @@ func (m *Continuous) BackwardRecomputeStats(ctx context.Context, p Parameters, i
 func (m *Continuous) backwardRecomputeStats(ctx context.Context, p Parameters, initial []float64, inputs, upstream [][]float64, window, offset, segment int) (Gradient, RecomputeStats, error) {
 	var empty Gradient
 	var stats RecomputeStats
+	if err := m.refuseGate("recompute"); err != nil {
+		return empty, stats, err
+	}
 	if ctx == nil {
 		return empty, stats, fmt.Errorf("nil context")
 	}

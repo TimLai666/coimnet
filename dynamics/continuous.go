@@ -32,7 +32,22 @@ type Config struct {
 	// StateDimension > 1: "" or "scalar" broadcast one weight per edge to
 	// all C components, "matrix" stores one C*C row-major matrix per edge.
 	EdgeShape string `json:"edge_shape,omitempty"`
+	// Gate selects an optional per-neuron integration gate. Empty keeps the
+	// leaky integrator v' = lambda*v + alpha*I. GateCurrent lets each neuron
+	// set its own update rate from its total input current I (external input,
+	// synaptic drive and bias):
+	//
+	//	a = min(1, 2*alpha*sigmoid(gate_gain*I + gate_bias)),  v' = (1-a)*v + a*I
+	//
+	// two learnable values per neuron. Zero gain and bias give a = alpha, the
+	// plain integrator up to rounding. It is supported by Forward and Backward
+	// on fresh episodes; recompute, persistent state, vector nodes and the GPU
+	// adapter refuse a gated model.
+	Gate string `json:"gate,omitempty"`
 }
+
+// GateCurrent is the Config.Gate value of the input-current gate.
+const GateCurrent = "current"
 
 // Parameters separates learnable quantities from immutable anatomy. Tau is
 // exp(LogTau), so finite, representable positive time constants are required.
@@ -40,6 +55,10 @@ type Parameters struct {
 	Weights []float64 `json:"weights"`
 	Bias    []float64 `json:"bias"`
 	LogTau  []float64 `json:"log_tau"`
+	// GateGain and GateBias hold one value per neuron when Config.Gate is set
+	// and must be empty otherwise.
+	GateGain []float64 `json:"gate_gain,omitempty"`
+	GateBias []float64 `json:"gate_bias,omitempty"`
 }
 
 // Continuous is immutable and safe for concurrent independent trajectories.
@@ -78,6 +97,9 @@ type Trace struct {
 	voltage, output, drive [][]float64
 	lambda                 []float64
 	alpha                  []float64
+	// gate and gateSigmoid are the per-step update rate a and the sigmoid it
+	// came from, kept only for a gated model.
+	gate, gateSigmoid [][]float64
 	// history is the owned prefix retained by a stateful segment. The final
 	// row is output at startSteps; rows before it are the preceding delayed
 	// outputs. A nil history identifies the original fresh-zero style path.
@@ -88,8 +110,10 @@ type Trace struct {
 // Gradient contains summed parameter derivatives and per-step input gradients.
 type Gradient struct {
 	Weights, Bias, LogTau []float64
-	Inputs                [][]float64
-	Initial               []float64
+	// GateGain and GateBias are nil for an ungated model.
+	GateGain, GateBias []float64
+	Inputs             [][]float64
+	Initial            []float64
 }
 
 // NewContinuous validates and copies the topology. Duplicate edges are separate
@@ -120,6 +144,9 @@ func NewContinuous(c Config) (*Continuous, error) {
 	}
 	if c.Activation != "tanh" && c.Activation != "softplus" {
 		return nil, fmt.Errorf("unsupported activation %q", c.Activation)
+	}
+	if c.Gate != "" && c.Gate != GateCurrent {
+		return nil, fmt.Errorf("unsupported gate %q", c.Gate)
 	}
 	if len(c.Sources) != len(c.Targets) || (len(c.Delays) != 0 && len(c.Delays) != len(c.Sources)) {
 		return nil, fmt.Errorf("edge arrays have different lengths")
@@ -322,6 +349,13 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	if err := vector(p.LogTau, n, "log_tau"); err != nil {
 		return nil, err
 	}
+	gated := m.config.Gate != ""
+	if err := m.checkGateParameters(p); err != nil {
+		return nil, err
+	}
+	if gated && saved != nil {
+		return nil, fmt.Errorf("a gated model does not support persistent state")
+	}
 	if len(inputs) > int(^uint(0)>>1)/n/3-1 {
 		return nil, fmt.Errorf("sequence shape overflows")
 	}
@@ -361,6 +395,9 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	}
 	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha, history: history, startSteps: startSteps}
 	tr.voltage[0] = append([]float64(nil), initial...)
+	if gated {
+		tr.gate, tr.gateSigmoid = make([][]float64, len(inputs)), make([][]float64, len(inputs))
+	}
 	if saved != nil {
 		// The saved latest output is authoritative. In particular, it may be
 		// within the State validator's four-ULP portability allowance, so do
@@ -391,9 +428,20 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			return nil, err
 		}
 		vnext, ynext := make([]float64, n), make([]float64, n)
+		var gate, sigmoid []float64
+		if gated {
+			gate, sigmoid = make([]float64, n), make([]float64, n)
+			tr.gate[t], tr.gateSigmoid[t] = gate, sigmoid
+		}
 		for i := range drive {
 			drive[i] += p.Bias[i]
-			vnext[i] = lambda[i]*tr.voltage[t][i] + alpha[i]*drive[i]
+			if gated {
+				sigmoid[i] = 1 / (1 + math.Exp(-(p.GateGain[i]*drive[i] + p.GateBias[i])))
+				gate[i] = math.Min(1, 2*alpha[i]*sigmoid[i])
+				vnext[i] = (1-gate[i])*tr.voltage[t][i] + gate[i]*drive[i]
+			} else {
+				vnext[i] = lambda[i]*tr.voltage[t][i] + alpha[i]*drive[i]
+			}
 			ynext[i] = m.activate(vnext[i])
 			if !finite(drive[i]) || !finite(vnext[i]) || !finite(ynext[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
@@ -464,6 +512,10 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 		copy(gy[t+1], row)
 	}
 	g := Gradient{Weights: make([]float64, len(tr.parameters.Weights)), Bias: make([]float64, n), LogTau: make([]float64, n), Inputs: make([][]float64, steps), Initial: make([]float64, n)}
+	gated := tr.gate != nil
+	if gated {
+		g.GateGain, g.GateBias = make([]float64, n), make([]float64, n)
+	}
 	gv := make([]float64, n)
 	for t := steps - 1; t >= 0; t-- {
 		if err := ctx.Err(); err != nil {
@@ -474,14 +526,35 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 		g.Inputs[t] = make([]float64, n)
 		for i := 0; i < n; i++ {
 			dv := gv[i] + gy[t+1][i]*m.derivative(tr.voltage[t+1][i])
-			g.Inputs[t][i] = tr.alpha[i] * dv
-			g.Bias[i] += g.Inputs[t][i]
 			// d exp(-dt/exp(log_tau)) / d log_tau = lambda*dt/tau.
 			dlambda := tr.lambda[i] * (m.config.DT / math.Exp(tr.parameters.LogTau[i]))
 			// Underflowed lambda has zero derivative, even if dt/tau overflowed.
 			if tr.lambda[i] == 0 {
 				dlambda = 0
 			}
+			if gated {
+				a, sig := tr.gate[t][i], tr.gateSigmoid[t][i]
+				drive := tr.drive[t][i]
+				dDrive := a * dv
+				// A rate clamped at 1 passes no gradient to the gate.
+				if 2*tr.alpha[i]*sig <= 1 {
+					da := dv * (drive - tr.voltage[t][i])
+					dz := da * 2 * tr.alpha[i] * sig * (1 - sig)
+					dDrive += dz * tr.parameters.GateGain[i]
+					g.GateGain[i] += dz * drive
+					g.GateBias[i] += dz
+					// alpha = 1 - lambda, so d alpha / d log_tau = -dlambda.
+					g.LogTau[i] -= da * 2 * sig * dlambda
+				}
+				g.Inputs[t][i] = dDrive
+				g.Bias[i] += dDrive
+				if t > start || start == 0 {
+					prev[i] = (1 - a) * dv
+				}
+				continue
+			}
+			g.Inputs[t][i] = tr.alpha[i] * dv
+			g.Bias[i] += g.Inputs[t][i]
 			g.LogTau[i] += dv * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
 			if t > start || start == 0 {
 				prev[i] = tr.lambda[i] * dv
@@ -524,7 +597,7 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 			g.Initial[i] = gv[i] + gy[0][i]*m.derivative(tr.voltage[0][i])
 		}
 	}
-	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.Initial} {
+	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.GateGain, g.GateBias, g.Initial} {
 		if err := vector(v, len(v), "gradient"); err != nil {
 			return empty, err
 		}
@@ -567,7 +640,34 @@ func vector(v []float64, n int, name string) error {
 }
 func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
 func cloneParameters(p Parameters) Parameters {
-	return Parameters{append([]float64(nil), p.Weights...), append([]float64(nil), p.Bias...), append([]float64(nil), p.LogTau...)}
+	c := Parameters{Weights: append([]float64(nil), p.Weights...), Bias: append([]float64(nil), p.Bias...), LogTau: append([]float64(nil), p.LogTau...)}
+	if p.GateGain != nil || p.GateBias != nil {
+		c.GateGain, c.GateBias = append([]float64(nil), p.GateGain...), append([]float64(nil), p.GateBias...)
+	}
+	return c
+}
+
+// checkGateParameters requires one finite gate gain and bias per neuron on a
+// gated model and none on an ungated one.
+func (m *Continuous) checkGateParameters(p Parameters) error {
+	if m.config.Gate == "" {
+		if len(p.GateGain) != 0 || len(p.GateBias) != 0 {
+			return fmt.Errorf("gate parameters require Config.Gate")
+		}
+		return nil
+	}
+	if err := vector(p.GateGain, m.config.Nodes, "gate_gain"); err != nil {
+		return err
+	}
+	return vector(p.GateBias, m.config.Nodes, "gate_bias")
+}
+
+// refuseGate is the error of an execution path the gate does not cover.
+func (m *Continuous) refuseGate(path string) error {
+	if m != nil && m.config.Gate != "" {
+		return fmt.Errorf("%s does not support a gated model", path)
+	}
+	return nil
 }
 func cloneRows(rows [][]float64) [][]float64 {
 	c := make([][]float64, len(rows))

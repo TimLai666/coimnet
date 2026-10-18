@@ -21,6 +21,10 @@ type Trainable struct {
 	Tau     bool `json:"tau"`
 	Theta   bool `json:"theta,omitempty"`
 	Readout bool `json:"readout"`
+	// Gate trains the gate gain and bias of a core declared with
+	// dynamics.Config.Gate. DefaultOptions leaves it false so that existing
+	// options keep their exact JSON; a gated model must enable it explicitly.
+	Gate bool `json:"gate,omitempty"`
 }
 
 // Options specifies a local, serializable AdamW update and BPTT window.
@@ -218,6 +222,16 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	stateDim := n.core.stateDim()
 	if len(p.Core.Weights) != n.core.weightCount() || len(p.Core.Bias) != n.core.biasCount() || len(p.Core.LogTau) != nodeCount || len(p.ThetaRaw) != theta || len(p.Encoder) != encoderSize || len(p.Readout) != len(c.ReadoutNodes)*stateDim*c.OutputSize {
 		return nil, fmt.Errorf("parameter shape mismatch")
+	}
+	gates := 0
+	if n.config.Dynamics.Gate != "" {
+		gates = nodeCount
+	}
+	if len(p.Core.GateGain) != gates || len(p.Core.GateBias) != gates {
+		return nil, fmt.Errorf("gate parameter shape mismatch")
+	}
+	if o.Trainable.Gate && gates == 0 {
+		return nil, fmt.Errorf("trainable gate requires a gated core")
 	}
 	if c.Sharing != nil {
 		if err := validateSharingParameters(c.Sharing, p, c, n.core); err != nil {
@@ -728,21 +742,25 @@ func validateTrainable(m Trainable, theta bool) error {
 	return nil
 }
 func copyParameters(p Parameters) Parameters {
-	return Parameters{Core: dynamics.Parameters{Weights: append([]float64(nil), p.Core.Weights...), Bias: append([]float64(nil), p.Core.Bias...), LogTau: append([]float64(nil), p.Core.LogTau...)}, ThetaRaw: append([]float64(nil), p.ThetaRaw...), Encoder: append([]float64(nil), p.Encoder...), Readout: append([]float64(nil), p.Readout...)}
+	c := Parameters{Core: dynamics.Parameters{Weights: append([]float64(nil), p.Core.Weights...), Bias: append([]float64(nil), p.Core.Bias...), LogTau: append([]float64(nil), p.Core.LogTau...)}, ThetaRaw: append([]float64(nil), p.ThetaRaw...), Encoder: append([]float64(nil), p.Encoder...), Readout: append([]float64(nil), p.Readout...)}
+	if p.Core.GateGain != nil || p.Core.GateBias != nil {
+		c.Core.GateGain, c.Core.GateBias = append([]float64(nil), p.Core.GateGain...), append([]float64(nil), p.Core.GateBias...)
+	}
+	return c
 }
 func copyAdam(s AdamState) AdamState {
 	return AdamState{append([]float64(nil), s.First...), append([]float64(nil), s.Second...), append([]uint64(nil), s.Steps...)}
 }
 func flatParameters(p Parameters) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout} {
+	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias} {
 		out = append(out, v...)
 	}
 	return out
 }
 func flatGradient(g Gradient) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout} {
+	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout, g.Core.GateGain, g.Core.GateBias} {
 		out = append(out, v...)
 	}
 	return out
@@ -750,7 +768,7 @@ func flatGradient(g Gradient) []float64 {
 func unflatten(v []float64, shape Parameters) Parameters {
 	p := copyParameters(shape)
 	offset := 0
-	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout} {
+	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias} {
 		copy(dst, v[offset:offset+len(dst)])
 		offset += len(dst)
 	}
@@ -806,6 +824,7 @@ func parameterMask(p Parameters, o Options, thetaNodes []int, core ...coreModel)
 		{len(p.Core.Weights), m.Weights, edges, weightSpan}, {len(p.Core.Bias), m.Bias, nodes, biasSpan},
 		{len(p.Core.LogTau), m.Tau, nodes, 1}, {len(p.ThetaRaw), m.Theta, theta, 1},
 		{len(p.Encoder), m.Encoder, nil, 1}, {len(p.Readout), m.Readout, nil, 1},
+		{len(p.Core.GateGain), m.Gate, nodes, 1}, {len(p.Core.GateBias), m.Gate, nodes, 1},
 	} {
 		for i := range g.size {
 			enabled := g.enabled

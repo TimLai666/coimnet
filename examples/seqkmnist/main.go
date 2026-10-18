@@ -50,6 +50,7 @@ type settings struct {
 	TestCount    int     `json:"test_count"`
 	Seed         uint64  `json:"seed"`
 	Workers      int     `json:"workers"`
+	Gate         bool    `json:"gate,omitempty"`
 }
 
 type report struct {
@@ -75,6 +76,7 @@ func main() {
 	flag.IntVar(&s.TestCount, "test-count", 10000, "test images, from the start of the official test split")
 	flag.Uint64Var(&s.Seed, "seed", 0, "initialization and shuffling seed")
 	flag.IntVar(&s.Workers, "workers", runtime.NumCPU(), "goroutines computing gradients of one batch")
+	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	machine := flag.String("machine", "", "machine name for the bench result (default: host name)")
@@ -122,6 +124,7 @@ func run(s settings, reportPath, benchPath, machine string) error {
 	o.LearningRate = s.LearningRate
 	o.Loss = learning.LossSoftmaxCrossEntropy
 	o.AccumulateSteps = s.Batch
+	o.Trainable.Gate = s.Gate
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
 	tr, err := learning.NewTrainer(cfg, params, o)
@@ -224,6 +227,10 @@ func build(s settings) (learning.Config, learning.Parameters) {
 		Encoder: normal(side*s.InputNodes, 1/math.Sqrt(side)),
 		Readout: readout,
 	}
+	if s.Gate {
+		cfg.Dynamics.Gate = dynamics.GateCurrent
+		p.Core.GateGain, p.Core.GateBias = make([]float64, s.Nodes), make([]float64, s.Nodes)
+	}
 	return cfg, p
 }
 
@@ -293,7 +300,7 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 	snapshot := tr.Snapshot()
 	result := bench.Result{
 		SchemaVersion: bench.SchemaVersion, Framework: "coimnet",
-		Model: fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree),
+		Model: modelName(s),
 		Task:  "kmnist-t10k-column-sequence", Split: fmt.Sprintf("first:%d", len(xs)),
 		Host:       bench.CurrentHost(machine, ""),
 		Parameters: bench.CountParameters(snapshot.Parameters),
@@ -310,6 +317,14 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 		return err
 	}
 	return writeNew(path, result)
+}
+
+func modelName(s settings) string {
+	name := fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree)
+	if s.Gate {
+		name += "-gate"
+	}
+	return name
 }
 
 func writeNew(path string, v any) error {

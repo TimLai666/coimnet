@@ -6,7 +6,7 @@ import "github.com/TimLai666/coimnet/learning"
 // inference: core weights, biases and time constants, LIF thresholds, the
 // encoder and the readout.
 func CountParameters(p learning.Parameters) int64 {
-	return int64(len(p.Core.Weights) + len(p.Core.Bias) + len(p.Core.LogTau) + len(p.ThetaRaw) + len(p.Encoder) + len(p.Readout))
+	return int64(len(p.Core.Weights) + len(p.Core.Bias) + len(p.Core.LogTau) + len(p.ThetaRaw) + len(p.Encoder) + len(p.Readout) + len(p.Core.GateGain) + len(p.Core.GateBias))
 }
 
 // CountTrainable is the number of those values o lets training change: each
@@ -35,5 +35,6 @@ func CountTrainable(p learning.Parameters, o learning.Options) int64 {
 	t := o.Trainable
 	return count(t.Weights, len(p.Core.Weights), edges) + count(t.Bias, len(p.Core.Bias), nodes) +
 		count(t.Tau, len(p.Core.LogTau), nodes) + count(t.Theta, len(p.ThetaRaw), nil) +
-		count(t.Encoder, len(p.Encoder), nil) + count(t.Readout, len(p.Readout), nil)
+		count(t.Encoder, len(p.Encoder), nil) + count(t.Readout, len(p.Readout), nil) +
+		count(t.Gate, len(p.Core.GateGain), nodes) + count(t.Gate, len(p.Core.GateBias), nodes)
 }

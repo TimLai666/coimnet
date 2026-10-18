@@ -1,0 +1,197 @@
+package dynamics
+
+import (
+	"context"
+	"math"
+	"math/rand/v2"
+	"strings"
+	"testing"
+)
+
+type gateFixture struct {
+	model   *Continuous
+	params  Parameters
+	initial []float64
+	inputs  [][]float64
+	up      [][]float64
+}
+
+// newGateFixture builds a random delayed graph with the current gate. logTau
+// sets every time constant; a small one makes 2*alpha*sigmoid exceed one at
+// some steps, so the clamp branch is exercised.
+func newGateFixture(t *testing.T, seed uint64, logTau float64) gateFixture {
+	t.Helper()
+	rnd := rand.New(rand.NewPCG(seed, 3))
+	const nodes, edges, steps = 7, 30, 9
+	c := Config{Nodes: nodes, DT: 1, Activation: "tanh", Gate: GateCurrent}
+	for range edges {
+		c.Sources = append(c.Sources, rnd.IntN(nodes))
+		c.Targets = append(c.Targets, rnd.IntN(nodes))
+		c.Delays = append(c.Delays, rnd.IntN(3))
+	}
+	m, err := NewContinuous(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	normal := func(n int, std, mean float64) []float64 {
+		v := make([]float64, n)
+		for i := range v {
+			v[i] = mean + std*rnd.NormFloat64()
+		}
+		return v
+	}
+	f := gateFixture{model: m, initial: normal(nodes, .3, 0), inputs: make([][]float64, steps), up: make([][]float64, steps)}
+	f.params = Parameters{Weights: normal(edges, .5, 0), Bias: normal(nodes, .2, 0), LogTau: normal(nodes, .2, logTau), GateGain: normal(nodes, .8, 0), GateBias: normal(nodes, .5, 0)}
+	for i := range f.inputs {
+		f.inputs[i], f.up[i] = normal(nodes, 1, 0), normal(nodes, 1, 0)
+	}
+	return f
+}
+
+func (f gateFixture) loss(t *testing.T, p Parameters, inputs [][]float64) float64 {
+	t.Helper()
+	tr, err := f.model.Forward(context.Background(), p, f.initial, inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var l float64
+	for s, row := range tr.Outputs() {
+		for i, y := range row {
+			l += f.up[s][i] * y
+		}
+	}
+	return l
+}
+
+// TestGateGradientMatchesFiniteDifferences checks every gradient group of the
+// gated core, inputs included, against central differences of the forward
+// pass, once without and once with clamped update rates.
+func TestGateGradientMatchesFiniteDifferences(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		logTau float64
+	}{{"unclamped", math.Log(2)}, {"clamped", math.Log(.4)}} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newGateFixture(t, 11, tc.logTau)
+			tr, err := f.model.Forward(context.Background(), f.params, f.initial, f.inputs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			clamped := 0
+			for _, row := range tr.gate {
+				for _, a := range row {
+					if a == 1 {
+						clamped++
+					}
+				}
+			}
+			if (clamped > 0) != (tc.name == "clamped") {
+				t.Fatalf("%d clamped rates in the %s fixture", clamped, tc.name)
+			}
+			g, err := f.model.Backward(context.Background(), tr, f.up, 0)
+			if err != nil {
+				t.Fatal(err)
+			}
+			const h = 1e-6
+			check := func(name string, values, grad []float64, eval func() float64) {
+				t.Helper()
+				for i := range values {
+					orig := values[i]
+					values[i] = orig + h
+					plus := eval()
+					values[i] = orig - h
+					minus := eval()
+					values[i] = orig
+					want := (plus - minus) / (2 * h)
+					if math.Abs(grad[i]-want) > 1e-6*(1+math.Abs(want)) {
+						t.Fatalf("%s[%d] gradient %.10g, finite difference %.10g", name, i, grad[i], want)
+					}
+				}
+			}
+			p := cloneParameters(f.params)
+			eval := func() float64 { return f.loss(t, p, f.inputs) }
+			check("weights", p.Weights, g.Weights, eval)
+			check("bias", p.Bias, g.Bias, eval)
+			check("log_tau", p.LogTau, g.LogTau, eval)
+			check("gate_gain", p.GateGain, g.GateGain, eval)
+			check("gate_bias", p.GateBias, g.GateBias, eval)
+			inputs := cloneRows(f.inputs)
+			for s := range inputs {
+				check("input", inputs[s], g.Inputs[s], func() float64 { return f.loss(t, f.params, inputs) })
+			}
+		})
+	}
+}
+
+// TestZeroGateIsThePlainIntegrator compares a gated model whose gain and bias
+// are zero with the ungated model: a = alpha, so only the rounding of
+// (1-alpha) against lambda can differ.
+func TestZeroGateIsThePlainIntegrator(t *testing.T) {
+	f := newGateFixture(t, 4, math.Log(2))
+	p := cloneParameters(f.params)
+	clear(p.GateGain)
+	clear(p.GateBias)
+	gated, err := f.model.Forward(context.Background(), p, f.initial, f.inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := f.model.Config()
+	c.Gate = ""
+	plain, err := NewContinuous(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p.GateGain, p.GateBias = nil, nil
+	ref, err := plain.Forward(context.Background(), p, f.initial, f.inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for s := range ref.voltage {
+		for i := range ref.voltage[s] {
+			if d := math.Abs(gated.voltage[s][i] - ref.voltage[s][i]); d > 1e-12 {
+				t.Fatalf("step %d node %d differs by %g", s, i, d)
+			}
+		}
+	}
+}
+
+func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
+	ctx := context.Background()
+	base := Config{Nodes: 2, Sources: []int{0}, Targets: []int{1}, DT: 1, Activation: "tanh"}
+	bad := base
+	bad.Gate = "voltage"
+	if _, err := NewContinuous(bad); err == nil {
+		t.Fatal("unknown gate accepted")
+	}
+	plain, err := NewContinuous(base)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := Parameters{Weights: []float64{.5}, Bias: []float64{0, 0}, LogTau: []float64{0, 0}}
+	withGate := p
+	withGate.GateGain, withGate.GateBias = []float64{0, 0}, []float64{0, 0}
+	inputs := [][]float64{{1, 0}}
+	if _, err := plain.Forward(ctx, withGate, []float64{0, 0}, inputs); err == nil {
+		t.Fatal("gate parameters accepted by an ungated model")
+	}
+	gatedConfig := base
+	gatedConfig.Gate = GateCurrent
+	gated, err := NewContinuous(gatedConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := gated.Forward(ctx, p, []float64{0, 0}, inputs); err == nil {
+		t.Fatal("gated model ran without gate parameters")
+	}
+	if _, err := gated.ForwardRecompute(ctx, withGate, []float64{0, 0}, inputs, 1); err == nil || !strings.Contains(err.Error(), "gated") {
+		t.Fatalf("recompute: %v", err)
+	}
+	if _, err := gated.NewState([]float64{0, 0}); err == nil || !strings.Contains(err.Error(), "gated") {
+		t.Fatalf("persistent state: %v", err)
+	}
+	vector := gatedConfig
+	vector.StateDimension = 2
+	if _, err := NewVectorContinuous(vector); err == nil {
+		t.Fatal("vector core accepted a gate")
+	}
+}

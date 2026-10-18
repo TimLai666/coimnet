@@ -60,7 +60,13 @@ func policyVersionSnapshot(s learning.IndividualSnapshot) string {
 	binary.LittleEndian.PutUint64(buf[:], uint64(len(config)))
 	h.Write(buf[:])
 	h.Write(config)
-	for _, group := range [][]float64{s.Parameters.Core.Weights, s.Parameters.Core.Bias, s.Parameters.Core.LogTau, s.Parameters.ThetaRaw, s.Parameters.Encoder, s.Parameters.Readout} {
+	groups := [][]float64{s.Parameters.Core.Weights, s.Parameters.Core.Bias, s.Parameters.Core.LogTau, s.Parameters.ThetaRaw, s.Parameters.Encoder, s.Parameters.Readout}
+	// Gate groups join the hash only when present, so ungated hashes keep
+	// their recorded values.
+	if s.Parameters.Core.GateGain != nil || s.Parameters.Core.GateBias != nil {
+		groups = append(groups, s.Parameters.Core.GateGain, s.Parameters.Core.GateBias)
+	}
+	for _, group := range groups {
 		binary.LittleEndian.PutUint64(buf[:], uint64(len(group)))
 		h.Write(buf[:])
 		for _, v := range group {
