@@ -48,6 +48,10 @@ func TestNamedSetsResolveAsTheIntersectionOfTheirSelectors(t *testing.T) {
 		t.Fatalf("resolve: %v", err)
 	}
 	want := map[string][]int{"alpn": {1, 2}, "left_alpn": {2}, "alin": {0}}
+	declared := make(map[string]int)
+	for _, set := range metricSets() {
+		declared[set.Name] = len(set.Selectors)
+	}
 	for _, set := range resolved {
 		nodes, known := want[set.Name]
 		if !known {
@@ -65,7 +69,7 @@ func TestNamedSetsResolveAsTheIntersectionOfTheirSelectors(t *testing.T) {
 		if set.NodeHash != hex.EncodeToString(digest.Sum(nil)) {
 			t.Fatalf("set %q node hash = %q", set.Name, set.NodeHash)
 		}
-		if len(set.Selectors) != len(set.Selectors) || set.Selectors[0].Field == "" {
+		if len(set.Selectors) != declared[set.Name] || set.Selectors[0].Field == "" {
 			t.Fatalf("set %q kept no selector resolution: %+v", set.Name, set.Selectors)
 		}
 	}

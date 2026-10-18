@@ -7,37 +7,6 @@ import (
 	"testing"
 )
 
-func workerFixture(t *testing.T) (*Continuous, Parameters, []float64, [][]float64) {
-	t.Helper()
-	m, err := NewContinuous(Config{
-		Nodes:      3,
-		Sources:    []int{0, 1, 2, 1},
-		Targets:    []int{1, 2, 0, 0},
-		Delays:     []int{0, 1, 3, 2},
-		DT:         0.3,
-		Activation: "tanh",
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := Parameters{
-		Weights: []float64{0.2, -0.15, 0.1, 0.05},
-		Bias:    []float64{0.1, -0.2, 0.05},
-		LogTau:  []float64{0.2, -0.1, 0.3},
-	}
-	initial := []float64{0.2, -0.3, 0.1}
-	inputs := [][]float64{
-		{0.1, 0.3, -0.2},
-		{-0.2, 0.4, 0.1},
-		{0.5, -0.1, 0.2},
-		{0.2, 0.2, -0.4},
-		{-0.3, 0.1, 0.3},
-		{0.1, -0.5, 0.2},
-		{0.4, 0.2, 0.1},
-	}
-	return m, p, initial, inputs
-}
-
 func newWithWorkers(t *testing.T, c Config, workers int) *Continuous {
 	t.Helper()
 	c2 := c

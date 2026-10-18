@@ -205,7 +205,7 @@ func TestUntrustedTeacherAnswersStayData(t *testing.T) {
 	var decoyHits atomic.Int64
 	decoy := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		decoyHits.Add(1)
-		io.Copy(io.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, r.Body)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer decoy.Close()

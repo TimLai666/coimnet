@@ -35,12 +35,11 @@ type ntRow struct {
 	confidence *float64
 }
 
-func i64(v int64) *int64       { return &v }
-func str(v string) *string     { return &v }
-func f64(v float64) *float64   { return &v }
-func hugeID() int64            { return 9007199254740993 } // 2^53 + 1, not exactly representable as float64
-func testNamespace() string    { return "fixture-v1" }
-func defaultBatches(n int) int { return n }
+func i64(v int64) *int64     { return &v }
+func str(v string) *string   { return &v }
+func f64(v float64) *float64 { return &v }
+func hugeID() int64          { return 9007199254740993 } // 2^53 + 1, not exactly representable as float64
+func testNamespace() string  { return "fixture-v1" }
 
 // happyAnnotations returns the annotation rows used by most Build tests.
 // Selected (status == Traced with valid unique IDs): 10, 20, 30, huge, 60.

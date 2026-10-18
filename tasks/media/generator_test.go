@@ -235,14 +235,17 @@ func generatorTrainingSet(t *testing.T, modality string) ([]string, map[string][
 		for _, second := range words[3:] {
 			prompt := first + " " + second
 			var target []float64
+			var err error
 			if modality == ModalityImage {
-				condition, err := ParseImagePrompt(prompt)
+				var condition ImageCondition
+				condition, err = ParseImagePrompt(prompt)
 				if err != nil {
 					t.Fatal(err)
 				}
 				target, err = RenderImage(condition)
 			} else {
-				condition, err := ParseAudioPrompt(prompt)
+				var condition AudioCondition
+				condition, err = ParseAudioPrompt(prompt)
 				if err != nil {
 					t.Fatal(err)
 				}

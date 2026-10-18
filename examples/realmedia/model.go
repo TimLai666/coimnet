@@ -149,11 +149,6 @@ func fitFromSnapshot(ctx context.Context, samples []realdata.Sample, snapshot le
 	}, nil
 }
 
-// run retains the original entry point for callers that do not use model flags.
-func run(ctx context.Context, dataRoot, outDir string) error {
-	return runWithModel(ctx, dataRoot, outDir, "", "")
-}
-
 func mediaContextError(ctx context.Context) error {
 	if ctx == nil {
 		return fmt.Errorf("realmedia: nil context")

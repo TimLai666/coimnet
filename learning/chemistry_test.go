@@ -313,7 +313,9 @@ func TestChemistryDisabledIsBitIdentical(t *testing.T) {
 
 		toggled := newIndividual(t, fixture.config, fixture.params)
 		enableChemistry(t, toggled, fixture.decl)
-		toggled.DisableChemistry()
+		if err := toggled.DisableChemistry(); err != nil {
+			t.Fatalf("%s: DisableChemistry: %v", name, err)
+		}
 		got := advance(t, toggled, fixture.input)
 		if !sameRows(got, want) {
 			t.Fatalf("%s: outputs after disabling = %v, want %v", name, got, want)

@@ -292,7 +292,7 @@ func TestFetchCheckpointsMetadataDuringTransfer(t *testing.T) {
 		}
 		if time.Now().After(deadline) {
 			close(release)
-			<-result
+			_ = <-result
 			t.Fatalf("no mid-transfer checkpoint reached %d bytes, last read error = %v", checkpointBytes, err)
 		}
 		time.Sleep(time.Millisecond)

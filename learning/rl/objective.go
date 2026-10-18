@@ -219,15 +219,3 @@ func logSoftmax(x []float64) ([]float64, error) {
 	}
 	return logP, nil
 }
-
-func softmax(x []float64) []float64 {
-	logP, err := logSoftmax(x)
-	if err != nil {
-		return nil
-	}
-	p := make([]float64, len(logP))
-	for i, v := range logP {
-		p[i] = math.Exp(v)
-	}
-	return p
-}

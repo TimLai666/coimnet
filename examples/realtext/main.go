@@ -202,10 +202,6 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) error {
 	return executeWithModel(ctx, manifestPath, stdout, modelInput, modelOutput)
 }
 
-func execute(ctx context.Context, manifestPath string, stdout io.Writer) error {
-	return executeWithModel(ctx, manifestPath, stdout, "", "")
-}
-
 func executeWithModel(ctx context.Context, manifestPath string, stdout io.Writer, modelInput, modelOutput string) error {
 	corpus, err := textgen.ReadCorpus(ctx, manifestPath)
 	if err != nil {

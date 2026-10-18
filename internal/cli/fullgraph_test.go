@@ -20,8 +20,8 @@ import (
 )
 
 func TestExamplesRunFullGraphEndToEnd(t *testing.T) {
-	dir, store, rules := deriveFixture(t)
-	store = addFullGraphFixtureClasses(t, dir)
+	dir, _, rules := deriveFixture(t)
+	store := addFullGraphFixtureClasses(t, dir)
 	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "fullgraph-params.coimparams")
 	protocol := writeCompareProtocol(t, dir, "fullgraph-compare.json", fullGraphCompareProtocol())
 	outDir := filepath.Join(dir, "fullgraph-out")
@@ -112,8 +112,8 @@ func TestExamplesRunFullGraphEndToEnd(t *testing.T) {
 }
 
 func TestExamplesRunFullGraphRejects(t *testing.T) {
-	dir, store, rules := deriveFixture(t)
-	store = addFullGraphFixtureClasses(t, dir)
+	dir, _, rules := deriveFixture(t)
+	store := addFullGraphFixtureClasses(t, dir)
 	paramsPath, _ := deriveParameterSet(t, dir, store, rules, "fullgraph-reject-params.coimparams")
 	protocol := writeCompareProtocol(t, dir, "fullgraph-reject-compare.json", fullGraphCompareProtocol())
 	args := []string{"examples", "run", "full-graph-short-training", "--store", store, "--params", paramsPath,

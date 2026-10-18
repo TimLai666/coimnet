@@ -613,7 +613,7 @@ func simulateRolloutTraceInternal(ctx context.Context, model savedModel, start r
 		}
 		input := trajectory.Input{CurrentXCM: x, CurrentYCM: y, PreviousDXCM: previousDX, PreviousDYCM: previousDY, PreviousDT: previousDT}
 		base := directionBaseline(causalSample{Input: sampleInput(input)}, model.TrainMeanDisplacement)
-		action := base
+		var action [2]float64
 		switch strategy {
 		case rolloutStrategyModel:
 			rows, advanceErr := individual.Advance(ctx, [][]float64{sampleInput(input)})

@@ -336,7 +336,6 @@ func read(ctx context.Context, path string, source Source, limits Limits, collec
 				return Dataset{}, fmt.Errorf("trajectory: trial %q rows are not contiguous at row %d", point.TrialID, rowNumber)
 			}
 			activeTrial = point.TrialID
-			previousT = point.T
 		} else if point.T <= previousT {
 			if point.T == previousT {
 				return Dataset{}, fmt.Errorf("trajectory: duplicate time %v in trial %q at row %d", point.T, point.TrialID, rowNumber)

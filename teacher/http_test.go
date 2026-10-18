@@ -183,7 +183,7 @@ func TestHTTPTimeout(t *testing.T) {
 		if r.Context().Err() != nil {
 			return
 		}
-		io.Copy(io.Discard, r.Body)
+		_, _ = io.Copy(io.Discard, r.Body)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer srv.Close()
