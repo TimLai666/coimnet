@@ -94,7 +94,9 @@ func pretrain(args []string) error {
 	modelOut := fs.String("model-out", "", "new bundle directory")
 	epochs := fs.Int("epochs", 20, "passes over the pretraining images")
 	seed := fs.Uint64("seed", 20260924, "recognizer initialization seed")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 	classes, _, err := scenarioClasses(*scenario)
 	if err != nil {
 		return err
@@ -183,7 +185,9 @@ func run(args []string) error {
 	stream := fs.String("stream", "main", "main (positions 600-799 per class) or tune (800-899)")
 	machine := fs.String("machine", "", "machine name (default: host name)")
 	out := fs.String("out", "", "new result file")
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
 	pretrained, invert, err := scenarioClasses(*scenario)
 	if err != nil {
 		return err
@@ -275,17 +279,22 @@ func run(args []string) error {
 			if err := freeze.freeze(true); err != nil {
 				return nil, err
 			}
-			defer freeze.freeze(false)
 		}
 		acc, err := evaluate(false)
-		if err != nil || !invert {
-			return acc, err
+		if err == nil && invert {
+			var shifted map[string]float64
+			if shifted, err = evaluate(true); err == nil {
+				acc["shifted"] = shifted["shifted"]
+			}
 		}
-		shifted, err := evaluate(true)
+		if freeze != nil {
+			if ferr := freeze.freeze(false); err == nil {
+				err = ferr
+			}
+		}
 		if err != nil {
 			return nil, err
 		}
-		acc["shifted"] = shifted["shifted"]
 		return acc, nil
 	}
 	before, err := both()

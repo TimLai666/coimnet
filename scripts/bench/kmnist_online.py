@@ -31,6 +31,86 @@ TUNE_FROM, TUNE_PER_CLASS, TEST_COUNT, WINDOW = 800, 100, 2000, 200
 ALL = list(range(CLASSES))
 
 
+class CoimReplica(nn.Module):
+    """The tasks/ocr single-character network written in PyTorch.
+
+    784 pixels -> 28 input nodes (encoder, no bias) -> 24 hidden nodes fed by
+    all 52 nodes -> 10 class logits (no bias), two leaky tanh steps with
+    tau = 2 (lam = exp(-1/2), alpha = 1 - lam), as scripts/reference/ocr/
+    torch_replica.py pins against the Go code. init "coimnet" draws the
+    framework's ranges (encoder U(+-1/28), core and readout U(+-0.3), zero
+    bias); init "torch" draws PyTorch's nn.Linear defaults for the same
+    shapes.
+    """
+
+    def __init__(self, init, leak=True):
+        super().__init__()
+        self.E = nn.Parameter(torch.empty(784, 28))
+        self.W = nn.Parameter(torch.empty(52, 24))
+        self.R = nn.Parameter(torch.empty(24, CLASSES))
+        self.b = nn.Parameter(torch.zeros(52))
+        nn.init.uniform_(self.E, -1 / 28, 1 / 28)
+        if init == "coimnet":
+            nn.init.uniform_(self.W, -0.3, 0.3)
+            nn.init.uniform_(self.R, -0.3, 0.3)
+        elif init == "torch":
+            nn.init.uniform_(self.W, -1 / math.sqrt(52), 1 / math.sqrt(52))
+            nn.init.uniform_(self.R, -1 / math.sqrt(24), 1 / math.sqrt(24))
+            nn.init.uniform_(self.b[:28], -1 / 28, 1 / 28)
+            nn.init.uniform_(self.b[28:], -1 / math.sqrt(52), 1 / math.sqrt(52))
+        else:
+            raise SystemExit(f"unknown init {init!r}")
+        # leak=False is the ablation without the leaky update: v' = drive.
+        self.lam = math.exp(-0.5) if leak else 0.0
+        self.alpha = 1 - math.exp(-0.5) if leak else 1.0
+
+    def forward(self, x):
+        n = x.shape[0]
+        v1 = self.alpha * (torch.cat([x @ self.E, torch.zeros(n, 24)], 1) + self.b)
+        y1 = torch.tanh(v1)
+        v2 = self.lam * v1[:, 28:] + self.alpha * (y1 @ self.W + self.b[28:])
+        return torch.tanh(v2) @ self.R
+
+
+class GainMLP(nn.Module):
+    """784-28-24-10 tanh MLP whose hidden pre-activations are scaled by the
+    replica's alpha = 1 - exp(-1/2), the one place its leaky step differs
+    from a plain layer."""
+
+    def __init__(self):
+        super().__init__()
+        self.l1, self.l2, self.l3 = nn.Linear(784, 28), nn.Linear(28, 24), nn.Linear(24, CLASSES)
+        self.alpha = 1 - math.exp(-0.5)
+
+    def forward(self, x):
+        h = torch.tanh(self.alpha * self.l1(x))
+        return self.l3(torch.tanh(self.alpha * self.l2(h)))
+
+
+def make_model(arch):
+    """mlp: 784-28-24-10 tanh with PyTorch defaults; mlp-coiminit: the same
+    MLP with the framework's ranges (hidden and output U(+-0.3), zero bias,
+    first layer U(+-1/28)); coim / coim-torchinit: CoimReplica."""
+    if arch == "mlp":
+        return build([28, 24], "tanh")
+    if arch == "mlp-coiminit":
+        net = build([28, 24], "tanh")
+        for i, layer in enumerate(m for m in net if isinstance(m, nn.Linear)):
+            bound = 1 / 28 if i == 0 else 0.3
+            nn.init.uniform_(layer.weight, -bound, bound)
+            nn.init.zeros_(layer.bias)
+        return net
+    if arch == "coim":
+        return CoimReplica("coimnet")
+    if arch == "coim-torchinit":
+        return CoimReplica("torch")
+    if arch == "coim-noleak":
+        return CoimReplica("coimnet", leak=False)
+    if arch == "mlp-gain":
+        return GainMLP()
+    raise SystemExit(f"unknown arch {arch!r}")
+
+
 def scenario_classes(name):
     if name == "new-classes":
         return [0, 1, 2, 3, 4], False
@@ -78,7 +158,7 @@ def pretrain(a):
     classes, _ = scenario_classes(a.scenario)
     labels, images = load(a.data_dir, "train")
     x, y = tensors(labels, images, round_robin(labels, classes, 0, PRETRAIN_PER_CLASS), False)
-    net = build([28, 24], "tanh")
+    net = make_model(a.arch)
     opt = torch.optim.Adam(net.parameters(), lr=a.lr)
     lossf = nn.CrossEntropyLoss()
     for e in range(a.epochs):
@@ -86,7 +166,7 @@ def pretrain(a):
             step(net, opt, lossf, x[i:i + 1], y[i:i + 1])
         print(f"epoch {e + 1}/{a.epochs}", file=sys.stderr)
     with open(a.out, "xb") as f:
-        torch.save({"state": net.state_dict(), "opt": opt.state_dict(), "lr": a.lr}, f)
+        torch.save({"arch": a.arch, "state": net.state_dict(), "opt": opt.state_dict(), "lr": a.lr}, f)
 
 
 def run(a):
@@ -98,7 +178,7 @@ def run(a):
     stream = round_robin(labels, ALL, start, per)
     test = balanced(tlabels, TEST_COUNT)
     saved = torch.load(a.model, weights_only=True)
-    net = build([28, 24], "tanh")
+    net = make_model(saved.get("arch", "mlp"))
     net.load_state_dict(saved["state"])
     opt = torch.optim.Adam(net.parameters(), lr=saved["lr"])
     opt.load_state_dict(saved["opt"])
@@ -155,7 +235,7 @@ def run(a):
     predict_ms.sort()
     res = {
         "schema_version": "coimnet-online-ocr/v1", "framework": "pytorch", "scenario": a.scenario,
-        "learner": a.learner, "stream": a.stream,
+        "learner": a.learner, "arch": saved.get("arch", "mlp"), "stream": a.stream,
         "stream_split": split_id(stream).replace("balanced_round_robin_by_label_v1", "round_robin_by_label_v1"),
         "test_split": split_id(test),
         "host": coimbench.current_host(a.machine, "", "python" + sys.version.split()[0] + " torch" + torch.__version__),
@@ -182,6 +262,7 @@ def main():
     t.add_argument("--epochs", type=int, default=20)
     t.add_argument("--lr", type=float, default=0.002)
     t.add_argument("--seed", type=int, default=0)
+    t.add_argument("--arch", default="mlp", choices=["mlp", "mlp-coiminit", "mlp-gain", "coim", "coim-torchinit", "coim-noleak"])
     t.add_argument("--out", required=True)
     r = sub.add_parser("run")
     r.add_argument("--data-dir", required=True)
