@@ -79,6 +79,8 @@ func main() {
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
+	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
+	loadPath := flag.String("load", "", "skip training: load this TrainingSnapshot JSON, evaluate it and (with --bench) measure it in this fresh process")
 	machine := flag.String("machine", "", "machine name for the bench result (default: host name)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile of the run to this new file")
 	flag.Parse()
@@ -98,14 +100,57 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: go run ./examples/seqkmnist --data-dir DIR [--report NEW.json] [--bench NEW.json]")
 		os.Exit(2)
 	}
-	if err := run(s, *reportPath, *benchPath, *machine); err != nil {
+	var err error
+	if *loadPath != "" {
+		err = runLoaded(s, *loadPath, *benchPath, *machine)
+	} else {
+		err = run(s, *reportPath, *benchPath, *savePath, *machine)
+	}
+	if err != nil {
 		pprof.StopCPUProfile()
 		fmt.Fprintln(os.Stderr, "seqkmnist:", err)
 		os.Exit(1)
 	}
 }
 
-func run(s settings, reportPath, benchPath, machine string) error {
+// runLoaded evaluates a saved model in a process that never trained, so the
+// measured peak memory covers loading the model and the test images only.
+func runLoaded(s settings, loadPath, benchPath, machine string) error {
+	ctx := context.Background()
+	testX, testY, err := readSplit(s.DataDir, "t10k", s.TestCount)
+	if err != nil {
+		return err
+	}
+	b, err := os.ReadFile(loadPath)
+	if err != nil {
+		return err
+	}
+	var snapshot learning.TrainingSnapshot
+	if err := json.Unmarshal(b, &snapshot); err != nil {
+		return err
+	}
+	tr, err := learning.RestoreTrainer(snapshot)
+	if err != nil {
+		return err
+	}
+	defer tr.Close()
+	acc, err := evaluate(ctx, tr, testX, testY, s.Workers)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("loaded %s: test %.4f\n", loadPath, acc)
+	if benchPath == "" {
+		return nil
+	}
+	c := snapshot.Config.Dynamics
+	s.Nodes, s.Gate = c.Nodes, c.Gate != ""
+	if c.Nodes > 0 {
+		s.InDegree = len(c.Sources) / c.Nodes
+	}
+	return measure(ctx, tr, s, testX, testY, acc, machine, benchPath)
+}
+
+func run(s settings, reportPath, benchPath, savePath, machine string) error {
 	ctx := context.Background()
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
@@ -171,6 +216,11 @@ func run(s settings, reportPath, benchPath, machine string) error {
 	rep.Accuracy = rep.EpochAccuracy[len(rep.EpochAccuracy)-1]
 	if reportPath != "" {
 		if err := writeNew(reportPath, rep); err != nil {
+			return err
+		}
+	}
+	if savePath != "" {
+		if err := writeNew(savePath, tr.Snapshot()); err != nil {
 			return err
 		}
 	}
@@ -305,13 +355,13 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 		Host:       bench.CurrentHost(machine, ""),
 		Parameters: bench.CountParameters(snapshot.Parameters),
 		Trainable:  bench.CountTrainable(snapshot.Parameters, snapshot.Options),
-		// The peak covers the training run in the same process, so it is an
-		// upper bound for inference alone.
+		// After --load the peak covers loading and evaluation only; after
+		// training in the same process it is an upper bound.
 		PeakRSSBytes: bench.PeakRSS(),
 		Device:       "cpu", Threads: 1, Latency: latency,
 		Quality: map[string]float64{"accuracy": accuracy},
 		Higher:  []string{"accuracy"},
-		Notes:   []string{"one image per call (28 column steps); peak RSS includes training in the same process"},
+		Notes:   []string{"one image per call (28 column steps); peak RSS covers this process (training too unless --load)"},
 	}
 	if err := result.Validate(); err != nil {
 		return err
