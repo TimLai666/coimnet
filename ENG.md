@@ -328,6 +328,8 @@ Loss 與 Gradient 共用內部 `expDifference(left, right)`，保留原始運算
 
 最終捨入接近半個最小正值時，單一 float64 尾數仍可能遺失應非零的結果。精度補充分支保留一般路徑，僅對極小誤差或半最小值附近的導數，從原始 logits、factor、divisor 以 2048 位元的 `math/big.Float` 重算，最後一次轉為 float64。導數每次呼叫最多重算整列一次，避免逐分量重算造成平方成本。這不新增設定、依賴或模型格式，沿用 4 ULP、非零、符號與真正下溢的驗收條件，見[補充骨架](evidence/TSK-01/reported-loss-candidate-20261018/half-minimum-plan.json)。
 
+CTC 的路徑機率總和檢查不能取代誤差與逐項導數的獨立精度驗收。共用 CTC、OCR 多字與語音公開訓練須分別驗證，公開訓練同時檢查回報及真實參數更新。先凍結參考與原版失敗，再由不同實作者製作隔離候選。精度條件、正常／非法／不可對齊控制及驗收歸屬由 [ticket150](docs/tickets/150-ctc-tail-representability.md) 管理，尚未採用新的正式計算或公開契約。
+
 ## 局部可塑性的資料列與時間定義
 
 `learning.Individual.AdvanceGated` 與 `simulate.Run` 先以目前有效權重推進核心，再把該輸入列的核心輸出交給局部更新，更新後的快速權重從下一列生效。這裡的 `pre`／`post` 指連線兩端，兩者取核心推進後同一列的結果。LIF 使用來源突觸跡與目標當列放電事件，連續核心兩端都使用啟動後輸出。混合個體按每個節點的核心種類選擇目標訊號，來源仍使用該列輸出。

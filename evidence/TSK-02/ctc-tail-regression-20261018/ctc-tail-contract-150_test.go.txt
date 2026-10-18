@@ -1,0 +1,125 @@
+package ctc_test
+
+import (
+	"errors"
+	"math"
+	"reflect"
+	"strconv"
+	"testing"
+
+	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
+)
+
+func TestTailContractControls150(t *testing.T) {
+	invalid := []struct {
+		name   string
+		logits [][]float64
+		target []int
+	}{
+		{"no-frames", nil, nil},
+		{"nil-frame", [][]float64{nil}, nil},
+		{"empty-frame", [][]float64{{}}, nil},
+		{"one-class", [][]float64{{0}}, nil},
+		{"ragged", [][]float64{{0, 0}, {0}}, []int{1}},
+		{"blank-target", [][]float64{{0, 0}}, []int{0}},
+		{"negative-target", [][]float64{{0, 0}}, []int{-1}},
+		{"large-target", [][]float64{{0, 0}}, []int{2}},
+		{"nan", [][]float64{{math.NaN(), 0}}, []int{1}},
+		{"positive-inf", [][]float64{{math.Inf(1), 0}}, []int{1}},
+		{"negative-inf", [][]float64{{math.Inf(-1), 0}}, []int{1}},
+		{"normalization-overflow", [][]float64{{math.MaxFloat64, -math.MaxFloat64}}, []int{1}},
+		{"path-product-overflow", [][]float64{{0, -math.MaxFloat64}, {0, -math.MaxFloat64}}, []int{1}},
+		{"lost-posterior", [][]float64{{0, -1e16}, {0, -1e16}}, []int{1}},
+	}
+	for _, tc := range invalid {
+		for _, zero := range []bool{false, true} {
+			t.Run("invalid-"+tc.name+"-zero-"+strconv.FormatBool(zero), func(t *testing.T) {
+				before := tail150Copy(tc.logits)
+				targetBefore := append([]int(nil), tc.target...)
+				loss, gradient, report, err := ctc.LossWith(tc.logits, tc.target, ctc.Options{ZeroOnImpossible: zero})
+				if err == nil || errors.Is(err, ctc.ErrNoValidPath) {
+					t.Errorf("invalid input must have a non-impossible error: %v", err)
+				}
+				if loss != 0 || gradient != nil || report != (ctc.Report{}) {
+					t.Errorf("error leaked outputs: loss=%g gradient=%v report=%+v", loss, gradient, report)
+				}
+				tail150InputBits(t, tc.logits, before)
+				if !reflect.DeepEqual(tc.target, targetBefore) {
+					t.Fatal("invalid input changed target")
+				}
+			})
+		}
+	}
+
+	impossible := []struct {
+		name   string
+		logits [][]float64
+		target []int
+	}{
+		{"repeated", [][]float64{{0, 0}, {0, 0}}, []int{1, 1}},
+		{"too-long", [][]float64{{0, 0, 0}}, []int{1, 2}},
+	}
+	for _, tc := range impossible {
+		for _, zero := range []bool{false, true} {
+			t.Run("impossible-"+tc.name+"-zero-"+strconv.FormatBool(zero), func(t *testing.T) {
+				loss, gradient, report, err := ctc.LossWith(tc.logits, tc.target, ctc.Options{ZeroOnImpossible: zero})
+				if zero && err != nil || !zero && !errors.Is(err, ctc.ErrNoValidPath) {
+					t.Fatalf("impossible policy: zero=%v err=%v", zero, err)
+				}
+				if loss != 0 || report != (ctc.Report{Impossible: true, Frames: len(tc.logits), Labels: len(tc.target)}) {
+					t.Fatalf("impossible result: loss=%g report=%+v", loss, report)
+				}
+				if !zero {
+					if gradient != nil {
+						t.Fatal("refused impossible target returned a gradient")
+					}
+					return
+				}
+				want := make([][]float64, len(tc.logits))
+				for i := range want {
+					want[i] = make([]float64, len(tc.logits[i]))
+				}
+				tail150Gradient(t, gradient, want)
+			})
+		}
+	}
+	for _, nilTarget := range []bool{false, true} {
+		for _, zero := range []bool{false, true} {
+			t.Run("empty-target-nil-"+strconv.FormatBool(nilTarget)+"-zero-"+strconv.FormatBool(zero), func(t *testing.T) {
+				target := []int{}
+				if nilTarget {
+					target = nil
+				}
+				loss, gradient, report, err := ctc.LossWith([][]float64{{0, 0}}, target, ctc.Options{ZeroOnImpossible: zero})
+				if err != nil || report != (ctc.Report{Frames: 1, Labels: 0}) {
+					t.Fatalf("valid empty target: err=%v report=%+v", err, report)
+				}
+				tail150Close(t, "empty target loss", loss, math.Ln2)
+				tail150Gradient(t, gradient, [][]float64{{-0.5, 0.5}})
+			})
+		}
+	}
+}
+
+func tail150InputBits(t *testing.T, got, want [][]float64) {
+	t.Helper()
+	if (got == nil) != (want == nil) {
+		t.Fatal("caller input nil frames changed")
+	}
+	if len(got) != len(want) {
+		t.Fatal("caller input frame count changed")
+	}
+	for i := range want {
+		if (got[i] == nil) != (want[i] == nil) {
+			t.Fatal("caller input nil row changed")
+		}
+		if len(got[i]) != len(want[i]) {
+			t.Fatal("caller input class count changed")
+		}
+		for k := range want[i] {
+			if math.Float64bits(got[i][k]) != math.Float64bits(want[i][k]) {
+				t.Fatalf("caller input bits changed at %d,%d", i, k)
+			}
+		}
+	}
+}

@@ -1,0 +1,143 @@
+package ctc_test
+
+import (
+	"math"
+	"reflect"
+	"testing"
+
+	"github.com/TimLai666/coimnet/tasks/ocr/ctc"
+)
+
+// References enumerate all paths independently at 900 and 1400 Decimal digits.
+// Oracle reference SHA-256: cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc.
+// Four ULP is supplemented by strict nonzero, sign and actual-underflow checks.
+func TestTailRepresentability150(t *testing.T) {
+	cases := []struct {
+		name     string
+		logits   [][]float64
+		target   []int
+		loss     float64
+		gradient [][]float64
+	}{
+		{"single-label-16.0", [][]float64{{-0x1.0000000000000p+4, 0x0.0p+0}}, []int{1}, 0x1.e355b9e6a20f7p-24, [][]float64{{0x1.e355b81e5bc48p-24, -0x1.e355b81e5bc48p-24}}},
+		{"single-empty-16.0", [][]float64{{0x0.0p+0, -0x1.0000000000000p+4}}, []int{}, 0x1.e355b9e6a20f7p-24, [][]float64{{-0x1.e355b81e5bc48p-24, 0x1.e355b81e5bc48p-24}}},
+		{"single-label-40.0", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0}}, []int{1}, 0x1.39792499b1a24p-58, [][]float64{{0x1.39792499b1a24p-58, -0x1.39792499b1a24p-58}}},
+		{"single-empty-40.0", [][]float64{{0x0.0p+0, -0x1.4000000000000p+5}}, []int{}, 0x1.39792499b1a24p-58, [][]float64{{-0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58}}},
+		{"single-label-700.0", [][]float64{{-0x1.5e00000000000p+9, 0x0.0p+0}}, []int{1}, 0x1.14f2b0fb9307fp-1010, [][]float64{{0x1.14f2b0fb9307fp-1010, -0x1.14f2b0fb9307fp-1010}}},
+		{"single-empty-700.0", [][]float64{{0x0.0p+0, -0x1.5e00000000000p+9}}, []int{}, 0x1.14f2b0fb9307fp-1010, [][]float64{{-0x1.14f2b0fb9307fp-1010, 0x1.14f2b0fb9307fp-1010}}},
+		{"single-label-744.5", [][]float64{{-0x1.7440000000000p+9, 0x0.0p+0}}, []int{1}, 0x0.0000000000001p-1022, [][]float64{{0x0.0000000000001p-1022, -0x0.0000000000001p-1022}}},
+		{"single-empty-744.5", [][]float64{{0x0.0p+0, -0x1.7440000000000p+9}}, []int{}, 0x0.0000000000001p-1022, [][]float64{{-0x0.0000000000001p-1022, 0x0.0000000000001p-1022}}},
+		{"single-label-745.0", [][]float64{{-0x1.7480000000000p+9, 0x0.0p+0}}, []int{1}, 0x0.0000000000001p-1022, [][]float64{{0x0.0000000000001p-1022, -0x0.0000000000001p-1022}}},
+		{"single-empty-745.0", [][]float64{{0x0.0p+0, -0x1.7480000000000p+9}}, []int{}, 0x0.0000000000001p-1022, [][]float64{{-0x0.0000000000001p-1022, 0x0.0000000000001p-1022}}},
+		{"single-label-746.0", [][]float64{{-0x1.7500000000000p+9, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}}},
+		{"single-empty-746.0", [][]float64{{0x0.0p+0, -0x1.7500000000000p+9}}, []int{}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}}},
+		{"two-label-16.0", [][]float64{{-0x1.0000000000000p+4, 0x0.0p+0}, {-0x1.0000000000000p+4, 0x0.0p+0}}, []int{1}, 0x1.c84648bb2b713p-47, [][]float64{{0x1.c846455db611ap-47, -0x1.c846455db611ap-47}, {0x1.c846455db611ap-47, -0x1.c846455db611ap-47}}},
+		{"two-label-40.0", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0}, {-0x1.4000000000000p+5, 0x0.0p+0}}, []int{1}, 0x1.7fd974d372e44p-116, [][]float64{{0x1.7fd974d372e44p-116, -0x1.7fd974d372e44p-116}, {0x1.7fd974d372e44p-116, -0x1.7fd974d372e44p-116}}},
+		{"two-label-350.0", [][]float64{{-0x1.5e00000000000p+8, 0x0.0p+0}, {-0x1.5e00000000000p+8, 0x0.0p+0}}, []int{1}, 0x1.14f2b0fb9307fp-1010, [][]float64{{0x1.14f2b0fb9307fp-1010, -0x1.14f2b0fb9307fp-1010}, {0x1.14f2b0fb9307fp-1010, -0x1.14f2b0fb9307fp-1010}}},
+		{"two-label-372.0", [][]float64{{-0x1.7400000000000p+8, 0x0.0p+0}, {-0x1.7400000000000p+8, 0x0.0p+0}}, []int{1}, 0x0.0000000000002p-1022, [][]float64{{0x0.0000000000002p-1022, -0x0.0000000000002p-1022}, {0x0.0000000000002p-1022, -0x0.0000000000002p-1022}}},
+		{"two-label-372.5", [][]float64{{-0x1.7480000000000p+8, 0x0.0p+0}, {-0x1.7480000000000p+8, 0x0.0p+0}}, []int{1}, 0x0.0000000000001p-1022, [][]float64{{0x0.0000000000001p-1022, -0x0.0000000000001p-1022}, {0x0.0000000000001p-1022, -0x0.0000000000001p-1022}}},
+		{"two-label-373.0", [][]float64{{-0x1.7500000000000p+8, 0x0.0p+0}, {-0x1.7500000000000p+8, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}},
+		{"two-label-746.0", [][]float64{{-0x1.7500000000000p+9, 0x0.0p+0}, {-0x1.7500000000000p+9, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}},
+		{"two-empty-40.0", [][]float64{{0x0.0p+0, -0x1.4000000000000p+5}, {0x0.0p+0, -0x1.4000000000000p+5}}, []int{}, 0x1.39792499b1a24p-57, [][]float64{{-0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58}, {-0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58}}},
+		{"two-empty-745.0", [][]float64{{0x0.0p+0, -0x1.7480000000000p+9}, {0x0.0p+0, -0x1.7480000000000p+9}}, []int{}, 0x0.0000000000001p-1022, [][]float64{{-0x0.0000000000001p-1022, 0x0.0000000000001p-1022}, {-0x0.0000000000001p-1022, 0x0.0000000000001p-1022}}},
+		{"two-empty-746.0", [][]float64{{0x0.0p+0, -0x1.7500000000000p+9}, {0x0.0p+0, -0x1.7500000000000p+9}}, []int{}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}},
+		{"three-single", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0}, {-0x1.4000000000000p+5, 0x0.0p+0}, {-0x1.4000000000000p+5, 0x0.0p+0}}, []int{1}, 0x1.39792499b1a24p-58, [][]float64{{-0x1.7fd974d372e44p-116, 0x1.7fd974d372e44p-116}, {0x1.39792499b1a24p-58, -0x1.39792499b1a24p-58}, {-0x1.7fd974d372e44p-116, 0x1.7fd974d372e44p-116}}},
+		{"three-repeated", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0}, {0x0.0p+0, -0x1.4000000000000p+5}, {-0x1.4000000000000p+5, 0x0.0p+0}}, []int{1, 1}, 0x1.d635b6e68a736p-57, [][]float64{{0x1.39792499b1a24p-58, -0x1.39792499b1a24p-58}, {-0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58}, {0x1.39792499b1a24p-58, -0x1.39792499b1a24p-58}}},
+		{"three-distinct", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0, -0x1.4000000000000p+5}, {0x0.0p+0, -0x1.4000000000000p+5, -0x1.4000000000000p+5}, {-0x1.4000000000000p+5, -0x1.4000000000000p+5, 0x0.0p+0}}, []int{1, 2}, 0x1.39792499b1a24p-56, [][]float64{{0x1.39792499b1a24p-58, -0x1.39792499b1a24p-57, 0x1.39792499b1a24p-58}, {0x1.7fd974d372e44p-115, -0x1.7fd974d372e44p-116, -0x1.7fd974d372e44p-116}, {0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58, -0x1.39792499b1a24p-57}}},
+		{"two-distinct", [][]float64{{-0x1.4000000000000p+5, 0x0.0p+0, -0x1.4000000000000p+5}, {-0x1.4000000000000p+5, -0x1.4000000000000p+5, 0x0.0p+0}}, []int{1, 2}, 0x1.39792499b1a24p-56, [][]float64{{0x1.39792499b1a24p-58, -0x1.39792499b1a24p-57, 0x1.39792499b1a24p-58}, {0x1.39792499b1a24p-58, 0x1.39792499b1a24p-58, -0x1.39792499b1a24p-57}}},
+		{"uniform-single", [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}, []int{1}, 0x1.269621134db92p-2, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x1.5555555555555p-3, -0x1.5555555555555p-3}, {0x0.0p+0, 0x0.0p+0}}},
+		{"uniform-repeated", [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}, []int{1, 1}, 0x1.0a2b23f3bab73p+1, [][]float64{{0x1.0000000000000p-1, -0x1.0000000000000p-1}, {-0x1.0000000000000p-1, 0x1.0000000000000p-1}, {0x1.0000000000000p-1, -0x1.0000000000000p-1}}},
+		{"uniform-distinct", [][]float64{{0x0.0p+0, 0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0, 0x0.0p+0}}, []int{1, 2}, 0x1.afb7d78197becp+0, [][]float64{{0x1.1111111111111p-3, -0x1.ddddddddddddep-2, 0x1.5555555555555p-2}, {0x1.1111111111111p-3, -0x1.1111111111111p-4, -0x1.1111111111111p-4}, {0x1.1111111111111p-3, 0x1.5555555555555p-2, -0x1.ddddddddddddep-2}}},
+		{"four-moderate", [][]float64{{0x0.0p+0, 0x1.0000000000000p-2, -0x1.0000000000000p-1}, {0x1.0000000000000p+0, -0x1.0000000000000p+0, 0x1.0000000000000p-1}, {-0x1.8000000000000p-1, 0x1.0000000000000p-3, 0x1.0000000000000p-2}, {0x1.0000000000000p-1, 0x1.8000000000000p-1, -0x1.0000000000000p-3}}, []int{1, 2}, 0x1.e2072733bffe8p+0, [][]float64{{0x1.7fbe2b4b75b7ep-3, -0x1.96bd3d1f52f47p-2, 0x1.adbc4ef330310p-3}, {0x1.3bc23a18ac802p-6, -0x1.00101465f36c9p-4, 0x1.623f0bbf90991p-5}, {0x1.477f37537362bp-5, 0x1.0f473a0396c2bp-2, -0x1.383720ee052f0p-2}, {-0x1.89cf2b69e9524p-3, 0x1.d25fbd26cef88p-2, -0x1.0d782771da4f6p-2}}},
+		{"four-moderate-permuted", [][]float64{{0x0.0p+0, -0x1.0000000000000p-1, 0x1.0000000000000p-2}, {0x1.0000000000000p+0, 0x1.0000000000000p-1, -0x1.0000000000000p+0}, {-0x1.8000000000000p-1, 0x1.0000000000000p-2, 0x1.0000000000000p-3}, {0x1.0000000000000p-1, -0x1.0000000000000p-3, 0x1.8000000000000p-1}}, []int{2, 1}, 0x1.e2072733bffe8p+0, [][]float64{{0x1.7fbe2b4b75b7ep-3, 0x1.adbc4ef330310p-3, -0x1.96bd3d1f52f47p-2}, {0x1.3bc23a18ac802p-6, 0x1.623f0bbf90991p-5, -0x1.00101465f36c9p-4}, {0x1.477f37537362bp-5, -0x1.383720ee052f0p-2, 0x1.0f473a0396c2bp-2}, {-0x1.89cf2b69e9524p-3, -0x1.0d782771da4f6p-2, 0x1.d25fbd26cef88p-2}}},
+		{"four-moderate-shifted", [][]float64{{0x1.0000000000000p+10, 0x1.0010000000000p+10, 0x1.ffc0000000000p+9}, {0x1.0040000000000p+10, 0x1.ff80000000000p+9, 0x1.0020000000000p+10}, {0x1.ffa0000000000p+9, 0x1.0008000000000p+10, 0x1.0010000000000p+10}, {0x1.0020000000000p+10, 0x1.0030000000000p+10, 0x1.fff0000000000p+9}}, []int{1, 2}, 0x1.e2072733bffe8p+0, [][]float64{{0x1.7fbe2b4b75b7ep-3, -0x1.96bd3d1f52f47p-2, 0x1.adbc4ef330310p-3}, {0x1.3bc23a18ac802p-6, -0x1.00101465f36c9p-4, 0x1.623f0bbf90991p-5}, {0x1.477f37537362bp-5, 0x1.0f473a0396c2bp-2, -0x1.383720ee052f0p-2}, {-0x1.89cf2b69e9524p-3, 0x1.d25fbd26cef88p-2, -0x1.0d782771da4f6p-2}}},
+		{"half-minimum-1-below", [][]float64{{-0x1.74910d52d3051p+9, 0x0.0p+0}}, []int{1}, 0x0.0000000000001p-1022, [][]float64{{0x0.0000000000001p-1022, -0x0.0000000000001p-1022}}},
+		{"half-minimum-1-center", [][]float64{{-0x1.74910d52d3052p+9, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}}},
+		{"half-minimum-1-above", [][]float64{{-0x1.74910d52d3053p+9, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}}},
+		{"half-minimum-2-below", [][]float64{{-0x1.74910d52d3051p+8, 0x0.0p+0}, {-0x1.74910d52d3051p+8, 0x0.0p+0}}, []int{1}, 0x0.0000000000001p-1022, [][]float64{{0x0.0000000000001p-1022, -0x0.0000000000001p-1022}, {0x0.0000000000001p-1022, -0x0.0000000000001p-1022}}},
+		{"half-minimum-2-center", [][]float64{{-0x1.74910d52d3052p+8, 0x0.0p+0}, {-0x1.74910d52d3052p+8, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}},
+		{"half-minimum-2-above", [][]float64{{-0x1.74910d52d3053p+8, 0x0.0p+0}, {-0x1.74910d52d3053p+8, 0x0.0p+0}}, []int{1}, 0x0.0p+0, [][]float64{{0x0.0p+0, 0x0.0p+0}, {0x0.0p+0, 0x0.0p+0}}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			logits := tail150Copy(tc.logits)
+			before := tail150Copy(logits)
+			target := append([]int{}, tc.target...)
+			beforeTarget := append([]int{}, target...)
+			loss, gradient, report, err := ctc.LossWith(logits, target, ctc.Options{})
+			if err != nil {
+				t.Fatalf("valid finite case refused: %v", err)
+			}
+			if report != (ctc.Report{Frames: len(logits), Labels: len(target)}) {
+				t.Errorf("report=%+v, want valid exact frame/label counts", report)
+			}
+			tail150Close(t, "loss", loss, tc.loss)
+			tail150Gradient(t, gradient, tc.gradient)
+			if !reflect.DeepEqual(logits, before) || !reflect.DeepEqual(target, beforeTarget) {
+				t.Fatal("LossWith changed caller inputs")
+			}
+			wrapperLoss, wrapperGradient, wrapperErr := ctc.Loss(logits, target)
+			if wrapperErr != nil {
+				t.Fatalf("Loss wrapper refused valid input: %v", wrapperErr)
+			}
+			tail150Close(t, "wrapper loss", wrapperLoss, tc.loss)
+			tail150Gradient(t, wrapperGradient, tc.gradient)
+			if !reflect.DeepEqual(logits, before) || !reflect.DeepEqual(target, beforeTarget) {
+				t.Fatal("Loss changed caller inputs")
+			}
+		})
+	}
+}
+
+func tail150Copy(rows [][]float64) [][]float64 {
+	if rows == nil {
+		return nil
+	}
+	copied := make([][]float64, len(rows))
+	for i := range rows {
+		if rows[i] != nil {
+			copied[i] = append([]float64{}, rows[i]...)
+		}
+	}
+	return copied
+}
+
+func tail150Close(t *testing.T, label string, got, want float64) {
+	t.Helper()
+	if math.IsNaN(got) || math.IsInf(got, 0) {
+		t.Errorf("%s non-finite: got=%g want=%g", label, got, want)
+		return
+	}
+	if want == 0 {
+		if got != 0 {
+			t.Errorf("%s true rounded zero: got=%g", label, got)
+		}
+		return
+	}
+	if got == 0 || math.Signbit(got) != math.Signbit(want) {
+		t.Errorf("%s lost nonzero/sign: got=%g want=%g", label, got, want)
+		return
+	}
+	a, b := math.Float64bits(got), math.Float64bits(want)
+	if a < b {
+		a, b = b, a
+	}
+	if a-b > 4 {
+		t.Errorf("%s outside four ULP: got=%g want=%g distance=%d", label, got, want, a-b)
+	}
+}
+
+func tail150Gradient(t *testing.T, got, want [][]float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("gradient rows=%d want=%d", len(got), len(want))
+	}
+	for i := range want {
+		if len(got[i]) != len(want[i]) {
+			t.Fatalf("gradient row %d columns=%d want=%d", i, len(got[i]), len(want[i]))
+		}
+		for k := range want[i] {
+			tail150Close(t, "gradient", got[i][k], want[i][k])
+		}
+	}
+}

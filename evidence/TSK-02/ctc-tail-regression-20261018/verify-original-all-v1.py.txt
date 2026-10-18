@@ -1,0 +1,103 @@
+"""Verify the frozen original-source CTC regression without executing Go."""
+from pathlib import Path
+import collections, datetime, gzip, hashlib, json, subprocess
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip validation')
+R = Path(__file__).resolve().parents[3]
+B = Path(__file__).resolve().parent
+E = R / 'evidence/TSK-01/reported-loss-candidate-20261018'
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+freeze = json.loads((B / 'tests-frozen-all.json').read_text())
+assert sha(B / 'tests-frozen-all.json') == '4116466372eb48bcc9683fa0da3adf2344f0a410098700ba16304ed74117f877'
+assert sha(B / 'original-source.json') == freeze['source_manifest_sha256']
+assert sha(B / freeze['overlay']) == freeze['overlay_sha256']
+assert sha(B / 'root-plan.json') == freeze['root_plan_sha256']
+for name, digest in freeze['files'].items():
+    assert sha(B / name) == digest, name
+source = json.loads((B / 'original-source.json').read_text())
+paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ('go.mod', 'go.sum'))}
+assert len(source) == 914 and paths == set(source)
+for name, digest in source.items():
+    assert sha(R / name) == digest, name
+overlay = json.loads((B / freeze['overlay']).read_text())['Replace']
+assert len(overlay) == 4 and all(not Path(name).exists() for name in overlay)
+reference_path = R / 'evidence/TSK-02/ctc-tail-audit-20261018/ctc-small-path-reference-v2.json'
+assert sha(reference_path) == freeze['reference_sha256']
+reference = {c['name']: c for c in json.loads(reference_path.read_text())['cases']}
+assert float.fromhex('0x1.39792499b1a24p-58') == reference['single-label-40.0']['loss']
+assert float.fromhex('0x1.7fd974d372e44p-116') == reference['two-label-40.0']['loss']
+prefix = 'github.com/TimLai666/coimnet/tasks/'
+expected = {(prefix + 'ocr/ctc', name) for name in freeze['expected_primitive_events']}
+for package, names in freeze['expected_public_events'].items():
+    expected.update((prefix + package, name) for name in names)
+assert len(expected) == freeze['expected_new_event_count'] == 84
+
+def read_events(raw):
+    events, outputs, packages = {}, collections.defaultdict(list), {}
+    for line in raw.decode().splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        package, name, action = event.get('Package'), event.get('Test'), event.get('Action')
+        if action == 'output' and name:
+            outputs[(package, name)].append(event.get('Output', ''))
+        if action in ('pass', 'fail', 'skip'):
+            if name:
+                key = (package, name)
+                assert key not in events, key
+                events[key] = action
+            else:
+                packages[package] = action
+    return events, outputs, packages
+
+results, maps = {}, {}
+for mode in ('unit', 'race'):
+    receipt = json.loads((B / ('root-all-original-' + mode + '.json')).read_text())
+    log_path = B / receipt['log']
+    assert receipt['exit_code'] == 1 and receipt['source_count'] == 914
+    assert sha(log_path) == receipt['log_sha256'] and log_path.stat().st_size == receipt['log_bytes']
+    assert receipt['started_at'] > freeze['frozen_at']
+    raw = log_path.read_bytes()
+    assert b'WARNING: DATA RACE' not in raw and b'[build failed]' not in raw
+    events, outputs, packages = read_events(raw)
+    old_receipt = json.loads((E / ('engineering-joint-' + mode + '.json')).read_text())
+    old_path = E / old_receipt['log']
+    assert sha(old_path) == old_receipt['log_sha256']
+    old_raw = gzip.decompress(old_path.read_bytes())
+    assert hashlib.sha256(old_raw).hexdigest() == old_receipt['raw_sha256']
+    old_events = read_events(old_raw)[0]
+    old = {key: value for key, value in old_events.items() if key[0] in packages}
+    assert len(old) == 495 and all(value == 'pass' for value in old.values())
+    assert all(events.get(key) == value for key, value in old.items())
+    assert set(events) - set(old) == expected
+    new = {key: events[key] for key in expected}
+    assert collections.Counter(new.values()) == {'pass': 49, 'fail': 35}
+    assert set(packages.values()) == {'fail'} and len(packages) == 3
+    public = {}
+    for package in ('ocr', 'asr'):
+        parent = 'TestOCRCTCTailTraining150' if package == 'ocr' else 'TestASRCTCTailTraining150'
+        cases = {}
+        for case in ('one-frame', 'two-frame', 'normal'):
+            key = (prefix + package, parent + '/' + case)
+            text = ''.join(outputs[key])
+            lines = [line.strip() for line in text.splitlines() if 'target_readout_before=' in line]
+            assert len(lines) == 1
+            if case == 'normal':
+                assert events[key] == 'pass' and 'target_readout_after=0.0099999998000000027' in text
+            else:
+                assert events[key] == 'fail'
+                assert 'erased finite positive loss' in text
+                assert 'want strict finite positive update from zero' in text
+                assert 'target_readout_before=0 target_readout_after=0\n' in text
+            cases[case] = {'outcome': events[key], 'observation': lines[0]}
+        public[package] = cases
+    maps[mode] = events
+    results[mode] = {'receipt': 'root-all-original-' + mode + '.json', 'log': receipt['log'], 'log_sha256': receipt['log_sha256'], 'prior_pass_events_preserved': len(old), 'new_pass_events': 49, 'new_fail_events': 35, 'public_training': public}
+assert maps['unit'] == maps['race']
+result = {'requirement': 'TSK-02', 'related_requirements': ['TSK-01'], 'ticket': '150', 'verified_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'reproduction_command': ['python3', str(Path(__file__).relative_to(R))], 'environment': ['command-environment.json', 'environment-go.json'], 'input_fingerprints': {'original_source': sha(B / 'original-source.json'), 'frozen_tests': sha(B / 'tests-frozen-all.json'), 'oracle_reference': sha(reference_path)}, 'observed_result': {'source_files_unchanged': 914, 'new_test_events_per_build': 84, 'failing_reference_cases_per_build': 28, 'normal_contract_and_public_control_events_pass': 39, 'prior_pass_events_preserved_per_build': 495, 'unit_and_race_outcomes_equal': True, 'public_loss_and_missing_parameter_update_both_observed': True, 'candidate_implemented': False, 'milestones_complete': 2, 'milestones_total': 5, 'builds': results}, 'model_quality_measured': False, 'global_zero_bug_claim': False}
+with (B / 'original-all-root-verification.json').open('x') as handle:
+    json.dump(result, handle, indent=2)
+    handle.write('\n')
+print(json.dumps(result))

@@ -1,0 +1,34 @@
+{
+  "reviewed_at": "2026-10-18T05:54:35.806672+00:00",
+  "host": "Codex",
+  "test_agent": {
+    "name": "/root/ctc_public_tests_150",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "root_read_both_files_in_full": true,
+    "root_reran_unit_and_race": true
+  },
+  "adversarial_review": {
+    "agent": "/root/ctc_regression_review_150",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "mode": "read-only",
+    "confirmed_findings": [],
+    "initial_evidence_chain_concern": "The original verifier did not explicitly compare the old run source manifest and command to the current original source.",
+    "root_resolution": "The revised verifier requires exact914 source manifest equality, successful old full-suite commands and old command flags, then reran without Go.",
+    "resolution_evidence": "original-all-root-verification-v2.json",
+    "actual_root_tool_chunk": "db0a5c"
+  },
+  "root_independent_reference_counts": {
+    "cases": 38,
+    "gradient_cells": 166,
+    "nonzero_cells": 134,
+    "zero_cells": 32
+  },
+  "frozen_tests_unchanged": 4,
+  "production_go_changes": 0,
+  "candidate_implemented": false,
+  "next_output": "Different implementation worker produces an isolated CTC candidate against the frozen84 test events.",
+  "milestones_complete": 2,
+  "milestones_total": 5
+}

@@ -1,0 +1,78 @@
+{
+  "requirement": "TSK-02",
+  "related_requirements": [
+    "TSK-01"
+  ],
+  "ticket": "150",
+  "verified_at": "2026-10-18T05:35:18.098612+00:00",
+  "reproduction_command": [
+    "go",
+    "test",
+    "-json",
+    "-count=1",
+    "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-02/ctc-tail-regression-20261018/root-tests-overlay.json",
+    "./tasks/ocr/ctc"
+  ],
+  "environment": "command-environment.json",
+  "input_fingerprints": {
+    "original_source_manifest": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+    "tests_frozen_sha256": "5b55503425b836146be8c643bc75bb4e1a69219501f2524efd5c93c238ca00aa",
+    "reference_sha256": "cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc"
+  },
+  "observed_result": {
+    "original_command_exit_code": 1,
+    "actual_terminal_tool_chunk": "94f90e",
+    "prior_events_preserved": 34,
+    "new_events": {
+      "fail": 29,
+      "pass": 47
+    },
+    "new_normal_contract_control_pass_events": 37,
+    "independent_reference_failing_cases": 28,
+    "compile_failure": false,
+    "source_count": 914,
+    "formal_source_unchanged": true,
+    "public_training_slot_pending": true,
+    "candidate_implemented": false
+  },
+  "test_log": [
+    "root-original-unit.log"
+  ],
+  "producer_receipt": "root-original-unit.json",
+  "producer_receipt_sha256": "929acc0f85ec11a86db1c3a95655ff929ecfdd04966ff790103c6f1011715935",
+  "failing_test_names": [
+    "TestTailRepresentability150/single-label-16.0",
+    "TestTailRepresentability150/single-empty-16.0",
+    "TestTailRepresentability150/single-label-40.0",
+    "TestTailRepresentability150/single-empty-40.0",
+    "TestTailRepresentability150/single-label-700.0",
+    "TestTailRepresentability150/single-empty-700.0",
+    "TestTailRepresentability150/single-label-744.5",
+    "TestTailRepresentability150/single-empty-744.5",
+    "TestTailRepresentability150/single-label-745.0",
+    "TestTailRepresentability150/single-empty-745.0",
+    "TestTailRepresentability150/two-label-16.0",
+    "TestTailRepresentability150/two-label-40.0",
+    "TestTailRepresentability150/two-label-350.0",
+    "TestTailRepresentability150/two-label-372.0",
+    "TestTailRepresentability150/two-label-372.5",
+    "TestTailRepresentability150/two-empty-40.0",
+    "TestTailRepresentability150/two-empty-745.0",
+    "TestTailRepresentability150/three-single",
+    "TestTailRepresentability150/three-repeated",
+    "TestTailRepresentability150/three-distinct",
+    "TestTailRepresentability150/two-distinct",
+    "TestTailRepresentability150/uniform-single",
+    "TestTailRepresentability150/uniform-distinct",
+    "TestTailRepresentability150/four-moderate",
+    "TestTailRepresentability150/four-moderate-permuted",
+    "TestTailRepresentability150/four-moderate-shifted",
+    "TestTailRepresentability150/half-minimum-1-below",
+    "TestTailRepresentability150/half-minimum-2-below",
+    "TestTailRepresentability150"
+  ],
+  "formal_regression_frozen": false,
+  "milestones_complete": 1,
+  "milestones_total": 5,
+  "global_zero_bug_claim": false
+}

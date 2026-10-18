@@ -1,0 +1,55 @@
+"""Check the current free OpenCode listing and actual provider availability."""
+from pathlib import Path
+import argparse
+import datetime
+import hashlib
+import json
+import os
+import subprocess
+import time
+
+if not __debug__:
+    raise SystemExit("Optimized Python cannot bypass probe checks")
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument("mode", choices=["models", "provider"])
+args = parser.parse_args()
+R = Path(__file__).resolve().parents[3]
+B = Path(__file__).resolve().parent
+W = R / "runs/.tmp/ctc-tail-regression-20261018"
+assert W.stat().st_ino == json.loads((B / "baseline.json").read_bytes())["work_inode"]
+env = os.environ.copy()
+scoped = {key: str(W / "go-tmp" / ("opencode-" + name)) for key, name in [("XDG_DATA_HOME", "data"), ("XDG_CACHE_HOME", "cache"), ("XDG_STATE_HOME", "state")]}
+scoped["OPENCODE_CONFIG_CONTENT"] = json.dumps({"autoupdate": False, "permission": {"*": "deny"}})
+env.update(scoped)
+command = ["opencode", "models"]
+timeout = 30
+if args.mode == "provider":
+    assert "opencode/big-pickle" in (B / "opencode-models.log").read_text().splitlines()
+    command = ["opencode", "run", "--agent", "plan", "--model", "opencode/big-pickle", "你是被派工的執行者，不得再派工給任何 agent 或 CLI，自己完成\n角色：嚴謹的工具可用性檢查員。\n可改檔案：無，禁止讀取或修改任何檔案。\n任務與驗收：只回覆 AVAILABLE，不處理專案內容。\n驗證指令：無，禁止執行工具與命令。\n回報格式：只有 AVAILABLE。\n不要 commit，也不要 stash 或 reset"]
+    timeout = 55
+log = B / ("opencode-" + args.mode + ".log")
+receipt = B / ("opencode-" + args.mode + ".json")
+assert not log.exists() and not receipt.exists()
+started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+tic = time.monotonic()
+process = subprocess.Popen(command, cwd=W / "opencode-cwd", env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+print(json.dumps({"pid": process.pid, "mode": args.mode, "started_at": started}), flush=True)
+timed_out = False
+try:
+    raw = process.communicate(timeout=timeout)[0]
+except subprocess.TimeoutExpired:
+    timed_out = True
+    process.terminate()
+    try:
+        raw = process.communicate(timeout=5)[0]
+    except subprocess.TimeoutExpired:
+        process.kill()
+        raw = process.communicate()[0]
+with log.open("xb") as handle:
+    handle.write(raw)
+result = {"started_at": started, "finished_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "command": command, "cwd": str(W / "opencode-cwd"), "scoped_environment": scoped, "seconds": time.monotonic() - tic, "exit_code": process.returncode, "timeout": timed_out, "tools_denied": True, "project_source_sent": False, "log": log.name, "log_bytes": len(raw), "log_sha256": hashlib.sha256(raw).hexdigest()}
+with receipt.open("x") as handle:
+    json.dump(result, handle, indent=2)
+    handle.write("\n")
+print(json.dumps(result), flush=True)
+print(raw.decode(errors="replace"), flush=True)

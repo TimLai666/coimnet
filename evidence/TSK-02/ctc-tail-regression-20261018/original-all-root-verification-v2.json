@@ -1,0 +1,139 @@
+{
+  "requirement": "TSK-02",
+  "related_requirements": [
+    "TSK-01"
+  ],
+  "ticket": "150",
+  "verified_at": "2026-10-18T05:53:54.240040+00:00",
+  "reproduction_command": [
+    "python3",
+    "evidence/TSK-02/ctc-tail-regression-20261018/verify-original-all.py.txt",
+    "--output",
+    "original-all-root-verification-v2.json"
+  ],
+  "environment": [
+    "command-environment.json",
+    "environment-go.json"
+  ],
+  "input_fingerprints": {
+    "original_source": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+    "frozen_tests": "4116466372eb48bcc9683fa0da3adf2344f0a410098700ba16304ed74117f877",
+    "oracle_reference": "cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc"
+  },
+  "observed_result": {
+    "source_files_unchanged": 914,
+    "new_test_events_per_build": 84,
+    "failing_reference_cases_per_build": 28,
+    "normal_contract_and_public_control_events_pass": 39,
+    "prior_pass_events_preserved_per_build": 495,
+    "unit_and_race_outcomes_equal": true,
+    "public_loss_and_missing_parameter_update_both_observed": true,
+    "candidate_implemented": false,
+    "milestones_complete": 2,
+    "milestones_total": 5,
+    "builds": {
+      "unit": {
+        "receipt": "root-all-original-unit.json",
+        "log": "root-all-original-unit.log",
+        "log_sha256": "6c07271edb018d9fd2a824ffbfd3edebdfeea9639b3db901bb8e1a63ed27fd66",
+        "prior_pass_events_preserved": 495,
+        "prior_source_manifest_matches_original": true,
+        "prior_source_count": 914,
+        "prior_source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+        "prior_command": [
+          "go",
+          "test",
+          "-json",
+          "-count=1",
+          "-timeout=60m",
+          "./..."
+        ],
+        "new_pass_events": 49,
+        "new_fail_events": 35,
+        "public_training": {
+          "ocr": {
+            "one-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:94: frames=1 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "two-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:94: frames=2 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "normal": {
+              "outcome": "pass",
+              "observation": "ctc_tail_150_test.go:94: frames=1 labels=1 impossible=false loss=0.69314718055994529 target_readout_before=0 target_readout_after=0.0099999998000000027"
+            }
+          },
+          "asr": {
+            "one-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:76: frames=1 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "two-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:76: frames=2 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "normal": {
+              "outcome": "pass",
+              "observation": "ctc_tail_150_test.go:76: frames=1 labels=1 impossible=false loss=0.69314718055994529 target_readout_before=0 target_readout_after=0.0099999998000000027"
+            }
+          }
+        }
+      },
+      "race": {
+        "receipt": "root-all-original-race.json",
+        "log": "root-all-original-race.log",
+        "log_sha256": "3d26de81cfca27a5c4300c7b3e3850a292d4934b771f823a282b82247470c816",
+        "prior_pass_events_preserved": 495,
+        "prior_source_manifest_matches_original": true,
+        "prior_source_count": 914,
+        "prior_source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+        "prior_command": [
+          "go",
+          "test",
+          "-race",
+          "-json",
+          "-count=1",
+          "-timeout=60m",
+          "./..."
+        ],
+        "new_pass_events": 49,
+        "new_fail_events": 35,
+        "public_training": {
+          "ocr": {
+            "one-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:94: frames=1 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "two-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:94: frames=2 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "normal": {
+              "outcome": "pass",
+              "observation": "ctc_tail_150_test.go:94: frames=1 labels=1 impossible=false loss=0.69314718055994529 target_readout_before=0 target_readout_after=0.0099999998000000027"
+            }
+          },
+          "asr": {
+            "one-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:76: frames=1 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "two-frame": {
+              "outcome": "fail",
+              "observation": "ctc_tail_150_test.go:76: frames=2 labels=1 impossible=false loss=-0 target_readout_before=0 target_readout_after=0"
+            },
+            "normal": {
+              "outcome": "pass",
+              "observation": "ctc_tail_150_test.go:76: frames=1 labels=1 impossible=false loss=0.69314718055994529 target_readout_before=0 target_readout_after=0.0099999998000000027"
+            }
+          }
+        }
+      }
+    }
+  },
+  "model_quality_measured": false,
+  "global_zero_bug_claim": false,
+  "verifier_source_sha256": "3684e1871cc0b929734c4e47fdb153906c31ed2a44b7b34faf99dd5a7e1fb749"
+}

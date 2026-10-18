@@ -6,7 +6,7 @@
 
 工程追蹤為 89／91。TCH-03／TCH-04 已依[本次驗收](evidence/TSK-01/reported-loss-candidate-20261018/verification.json)恢復 passed，TSK-01／TSK-02 維持 specified。恢復需求狀態後的 31 項治理已通過。99 份必要輸入已封存，2,715,076,500 bytes 自有暫存已清除，原模型、資料、模組與其他工作保持，見[清理核對](evidence/TSK-01/reported-loss-candidate-20261018/cleanup-root-verification-joint.json)。主要提交 aa6e366 已正常推送，遠端讀回完全相同，914 份提交來源與驗收指紋相符，見[交付](evidence/TSK-01/reported-loss-candidate-20261018/delivery.json)。
 
-[ticket150](docs/tickets/150-ctc-tail-representability.md) 為 1／5。OCR 多字與語音共用的 CTC 在四個合法一／兩時間點案例遺失可表示的正誤差或導數，一般／競態完整輸出相同，兩個正常控制保持，見[Root 查核](evidence/TSK-02/ctc-tail-audit-20261018/root-review.json)。本次分類修正沒有處理此缺陷，TSK-01／TSK-02 須等本票驗證後才能恢復 passed。148／149 的清理與交付已完成，下一個成果為固定 CTC 精度條件及正式回歸，模型品質影響尚未量測。
+[ticket150](docs/tickets/150-ctc-tail-representability.md) 為 2／5。四份回歸與精度條件已凍結，914 份正式來源保持。原版一般／競態各 84 個新增事件為 49 pass／35 fail，28 個參考案例失敗，四個 OCR／語音公開訓練案例都重現正誤差歸零與目標係數沒有更新。39 個錯誤處理及正常控制事件、495 個既有測試保持通過，見[Root 驗收](evidence/TSK-02/ctc-tail-regression-20261018/original-all-root-verification-v2.json)。31 項治理通過，本輪 1,158,914,368 bytes 自有暫存已清除，原模型、資料、模組及其他工作保持，見[清理](evidence/TSK-02/ctc-tail-regression-20261018/cleanup.json)。下一個成果為通過凍結回歸及舊模型接續的隔離候選，演算法尚未選定。TSK-01／TSK-02 保持 specified，辨識率及長期品質影響尚未量測。
 
 [ticket137](docs/tickets/137-stream-partition-state.md) 已通過完整工程驗收，一般／競態各 58 套件通過，8,628／8,627 pass、23／24 skip，原有各 8,597 個終端事件保持，只新增各 54 pass。新增 52 個語音分段／恢復子案例及 2 個父測試、兩種隔離刻意錯誤控制均驗收，格式、build、vet、固定 Insyra v0.3.4、模組驗證及 31 項治理通過，見[驗收](evidence/TSK-02/partition-state-20261017/verification.json)。855 份既有 Go／模組來源保持，只新增公開 SDK 性質回歸，目前沒有確認產品缺陷。早先沙箱禁止本機測試連接埠的失敗已保存[原因](evidence/TSK-02/partition-state-20261017/sandbox-failure.json)，最終完整驗收已在允許本機連線的環境通過。最後 31 項治理通過，1,551,595,591 bytes 本票暫存已清除，856 份來源、18 份原模型、6 份既有資料、15,046 份原始模組檔及其他工作保持，見[清理](evidence/TSK-02/partition-state-20261017/cleanup.json)。主要提交 `23fdec0` 已正常推送且遠端讀回完全相同，見[交付](evidence/TSK-02/partition-state-20261017/delivery.json)。本票 4／4，工程追蹤保持 91／91，整體零 bug 目標持續進行。
 
@@ -444,7 +444,7 @@ Mac 可執行本機測試。Ubuntu 1 過去已實際連線並確認 RTX 4070 12 
 
 ## 下一個可驗證成果與 ticket
 
-[ticket148](docs/tickets/148-reported-classification-loss.md) 與 [ticket149](docs/tickets/149-categorical-gap-residual.md) 均已完成 5／5，914 份提交來源與驗收指紋相符。下一個成果依 [ticket150](docs/tickets/150-ctc-tail-representability.md) 固定 CTC 的精度規則、獨立參考及原版失敗回歸。
+[ticket148](docs/tickets/148-reported-classification-loss.md) 與 [ticket149](docs/tickets/149-categorical-gap-residual.md) 均已完成 5／5，914 份提交來源與驗收指紋相符。下一個成果依 [ticket150](docs/tickets/150-ctc-tail-representability.md) 製作隔離候選，通過已凍結的誤差／導數、公開參數更新及舊模型接續驗收。
 
 [ticket 66](docs/tickets/66-real-ocr-chemical-comparison.md) 已完成 5／5，沒有剩餘任務工作。下一個建議成果是以獨立開發資料改善新圖片的辨識，另留最終測試，避免用本輪測試結果挑參數。尚未建立或執行新票。固定化學設定的結果只適用於本輪人工核心與單字元任務。
 

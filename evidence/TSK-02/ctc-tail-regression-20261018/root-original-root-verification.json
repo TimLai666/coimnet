@@ -1,0 +1,105 @@
+{
+  "requirement": "TSK-02",
+  "related_requirements": [
+    "TSK-01"
+  ],
+  "ticket": "150",
+  "verified_at": "2026-10-18T05:37:20.150504+00:00",
+  "reproduction_command": [
+    [
+      "python3",
+      "evidence/TSK-02/ctc-tail-regression-20261018/run-command.py.txt",
+      "root-original-unit",
+      "go",
+      "test",
+      "-json",
+      "-count=1",
+      "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-02/ctc-tail-regression-20261018/root-tests-overlay.json",
+      "./tasks/ocr/ctc"
+    ],
+    [
+      "python3",
+      "evidence/TSK-02/ctc-tail-regression-20261018/run-command.py.txt",
+      "root-original-race",
+      "go",
+      "test",
+      "-race",
+      "-json",
+      "-count=1",
+      "-overlay=/Users/timlai/Developer/coimnet/evidence/TSK-02/ctc-tail-regression-20261018/root-tests-overlay.json",
+      "./tasks/ocr/ctc"
+    ]
+  ],
+  "environment": "command-environment.json",
+  "input_fingerprints": {
+    "original_source_manifest": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+    "frozen_tests": "5b55503425b836146be8c643bc75bb4e1a69219501f2524efd5c93c238ca00aa",
+    "oracle_reference": "cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc"
+  },
+  "observed_result": {
+    "unit_and_race_outcomes_equal": true,
+    "builds": {
+      "unit": {
+        "receipt": "root-original-unit.json",
+        "receipt_sha256": "929acc0f85ec11a86db1c3a95655ff929ecfdd04966ff790103c6f1011715935",
+        "actual_terminal_tool_chunk": "94f90e",
+        "prior_events_preserved": 34,
+        "new_pass": 47,
+        "new_fail": 29,
+        "failing_reference_cases": 28,
+        "normal_contract_controls_pass": 37
+      },
+      "race": {
+        "receipt": "root-original-race.json",
+        "receipt_sha256": "132f21ad3cd6d2c31d377e148055e6cd6c642addc8b7171f83c9caa0cf467a75",
+        "actual_terminal_tool_chunk": "727c68",
+        "prior_events_preserved": 34,
+        "new_pass": 47,
+        "new_fail": 29,
+        "failing_reference_cases": 28,
+        "normal_contract_controls_pass": 37
+      }
+    },
+    "source_files_unchanged": 914,
+    "candidate_implemented": false,
+    "public_training_slot_pending": true,
+    "milestones_complete": 1,
+    "milestones_total": 5
+  },
+  "test_log": [
+    "root-original-unit.log",
+    "root-original-race.log"
+  ],
+  "failing_test_names": [
+    "TestTailRepresentability150/single-label-16.0",
+    "TestTailRepresentability150/single-empty-16.0",
+    "TestTailRepresentability150/single-label-40.0",
+    "TestTailRepresentability150/single-empty-40.0",
+    "TestTailRepresentability150/single-label-700.0",
+    "TestTailRepresentability150/single-empty-700.0",
+    "TestTailRepresentability150/single-label-744.5",
+    "TestTailRepresentability150/single-empty-744.5",
+    "TestTailRepresentability150/single-label-745.0",
+    "TestTailRepresentability150/single-empty-745.0",
+    "TestTailRepresentability150/two-label-16.0",
+    "TestTailRepresentability150/two-label-40.0",
+    "TestTailRepresentability150/two-label-350.0",
+    "TestTailRepresentability150/two-label-372.0",
+    "TestTailRepresentability150/two-label-372.5",
+    "TestTailRepresentability150/two-empty-40.0",
+    "TestTailRepresentability150/two-empty-745.0",
+    "TestTailRepresentability150/three-single",
+    "TestTailRepresentability150/three-repeated",
+    "TestTailRepresentability150/three-distinct",
+    "TestTailRepresentability150/two-distinct",
+    "TestTailRepresentability150/uniform-single",
+    "TestTailRepresentability150/uniform-distinct",
+    "TestTailRepresentability150/four-moderate",
+    "TestTailRepresentability150/four-moderate-permuted",
+    "TestTailRepresentability150/four-moderate-shifted",
+    "TestTailRepresentability150/half-minimum-1-below",
+    "TestTailRepresentability150/half-minimum-2-below",
+    "TestTailRepresentability150"
+  ],
+  "global_zero_bug_claim": false
+}

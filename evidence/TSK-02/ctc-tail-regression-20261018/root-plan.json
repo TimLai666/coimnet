@@ -1,0 +1,49 @@
+{
+  "ticket": "150",
+  "milestones_complete": 1,
+  "milestones_total": 5,
+  "scope": "Shared CTC loss and every derivative component, including OCR and ASR public training; no API, model format, dependency or impossible-target policy change.",
+  "source_manifest": "original-source.json",
+  "source_count": 914,
+  "reference": "../ctc-tail-audit-20261018/ctc-small-path-reference-v2.json",
+  "reference_sha256": "cd3f295f07d8254ae1ebff4b5ddfcd6db88b714dc17c04e3a2be7250d3842cdc",
+  "test_slots": {
+    "root": [
+      "ctc-tail-150_test.go.txt",
+      "ctc-tail-contract-150_test.go.txt"
+    ],
+    "test_agent": [
+      "ctc-public-ocr-150_test.go.txt",
+      "ctc-public-asr-150_test.go.txt"
+    ]
+  },
+  "acceptance": {
+    "small_enumerated_reference_cases": 38,
+    "max_ulp_loss_and_gradient": 4,
+    "nonzero_reference_requires_nonzero_actual": true,
+    "nonzero_gradient_sign_must_match": true,
+    "reference_rounded_zero_requires_exact_zero": true,
+    "zero_sign_is_not_constrained": true,
+    "inputs_unchanged": true,
+    "valid_reports_exact_shape_and_not_impossible": true,
+    "errors_clear_loss_gradient_report_except_declared_impossible_report": true,
+    "existing_impossible_and_numerical_refusals_preserved": true,
+    "public_training": "Controlled constant CTC logits, returned positive loss matches independent reference, target Readout coefficient initially zero receives a positive nonzero update through verified positive hidden activity; normal zero-logit controls also receive a real positive target coefficient update. learning.Parameters has no ReadoutBias field, so the fixture uses the existing public Readout coefficient. Loss and update checks execute independently."
+  },
+  "sequence": [
+    "Write tests only as .go.txt and use overlays against unchanged914 original sources",
+    "Root reviews and freezes tests, then observes original unit/race failures and valid controls before implementation",
+    "Only a different implementation worker may implement; tests stay immutable",
+    "Verify affected packages, old models, full engineering and representative runtime costs",
+    "Preserve evidence, clean owned temporary files, commit/push and verify remote"
+  ],
+  "algorithm_selected": false,
+  "new_public_contract_or_configuration": false,
+  "wont_list": [
+    "Do not operate the editor or Computer Use",
+    "Do not modify production Go until original-failure tests pass Root review",
+    "Do not weaken existing tests or route just single-frame inputs around the shared CTC",
+    "Do not change native simulation, chemistry, teacher KL, model formats or dependencies"
+  ],
+  "cleanup": "All new caches and transient overlays stay inside runs/.tmp/ctc-tail-regression-20261018; remove after final verification and preservation."
+}

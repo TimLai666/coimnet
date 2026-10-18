@@ -1,0 +1,127 @@
+"""Preserve the owned regression inputs, then remove only its temporary root."""
+from pathlib import Path
+import argparse, collections, datetime, gzip, hashlib, io, json, os, shutil, stat, subprocess, tarfile
+
+if not __debug__:
+    raise SystemExit('optimized Python cannot skip cleanup guards')
+parser = argparse.ArgumentParser(description=__doc__)
+parser.add_argument('phase', choices=('prepare', 'remove'))
+args = parser.parse_args()
+R = Path(__file__).resolve().parents[3]
+B = Path(__file__).resolve().parent
+P = R / 'evidence/LRN-08/aggregate-range-20261017'
+base = json.loads((B / 'baseline.json').read_text())
+W = R / base['work_root']
+sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+
+def require(condition, message):
+    if not condition:
+        raise SystemExit(message)
+
+def root_gate():
+    info = W.lstat()
+    require(stat.S_ISDIR(info.st_mode) and not W.is_symlink(), 'temporary root is not an ordinary directory')
+    require((info.st_ino, info.st_dev) == (base['work_inode'], base['work_device']), 'temporary root identity changed')
+    require(W.resolve() == R / 'runs/.tmp/ctc-tail-regression-20261018', 'unexpected temporary root')
+    require({p.name for p in W.iterdir()} == {'go-cache', 'go-mod-cache', 'go-tmp', 'agent-public', 'opencode-cwd'}, 'temporary root has unexpected content')
+    # Inspect process command lines in memory; do not print unrelated arguments.
+    rows = subprocess.check_output(['ps', '-axo', 'pid=,command=']).decode().splitlines()
+    for row in rows:
+        parts = row.strip().split(None, 1)
+        if len(parts) == 2 and int(parts[0]) != os.getpid():
+            require(str(W) not in parts[1], 'a process still references the temporary root')
+
+def protected_gate():
+    source = json.loads((B / 'original-source.json').read_text())
+    paths = {p for p in subprocess.check_output(['git', 'ls-files', '-co', '--exclude-standard', '-z'], cwd=R).decode().split('\0') if p and (p.endswith('.go') or p in ('go.mod', 'go.sum'))}
+    require(paths == set(source) and len(source) == 914, 'formal source paths changed')
+    for name, digest in source.items():
+        require(sha(R / name) == digest, 'formal source changed: ' + name)
+    counts = {'source': len(source)}
+    for name, label, relative in [('foreign-before.json', 'foreign', False), ('protected-models.json', 'models', True), ('persistent-data.json', 'data', True)]:
+        items = json.loads((P / name).read_text())
+        for path, record in items.items():
+            digest = record['sha256'] if isinstance(record, dict) else record
+            require(sha(R / path if relative else Path(path)) == digest, label + ' changed: ' + path)
+        counts[label] = len(items)
+    archive_path = P / 'preserved-work.tar.gz'
+    require(sha(archive_path) == '5104cdb4f97eaaacf951574b0162a008156fa112f4a65b856e47cd3c36c801c4', 'original module manifest archive changed')
+    with tarfile.open(archive_path, 'r:gz') as archive:
+        raw = archive.extractfile('module-originals.json').read()
+    require(hashlib.sha256(raw).hexdigest() == '34a6c7b8759c70527992dfc0967823ff93dda447d9c3c8e539342b4fae1238fc', 'original module manifest changed')
+    modules = json.loads(raw)
+    require(len(modules) == 15046, 'unexpected original module count')
+    for path, digest in modules.items():
+        require(sha(Path(path)) == digest, 'original module changed: ' + path)
+    counts['original_module_files'] = len(modules)
+    for path, inode in [('runs/.tmp/62', 49680181), ('runs/.tmp/real-task-quality-20261012', 50419696)]:
+        require((R / path).lstat().st_ino == inode, 'unrelated temporary root changed: ' + path)
+    return counts
+
+def inventory():
+    records = {}
+    for path in sorted(W.rglob('*')):
+        info = path.lstat()
+        require(not path.is_symlink(), 'symlink in owned temporary root: ' + str(path.relative_to(W)))
+        entry = {'inode': info.st_ino, 'device': info.st_dev, 'mode': stat.S_IMODE(info.st_mode), 'size': info.st_size}
+        if stat.S_ISDIR(info.st_mode):
+            entry['kind'] = 'directory'
+        elif stat.S_ISREG(info.st_mode):
+            entry['kind'] = 'file'
+            entry['sha256'] = sha(path)
+        else:
+            raise SystemExit('special entry in owned temporary root')
+        records[str(path.relative_to(W))] = entry
+    return records
+
+root_gate()
+counts = protected_gate()
+require(json.loads((B / 'original-all-root-verification.json').read_text())['observed_result']['milestones_complete'] == 2, 'original regression acceptance incomplete')
+governance = json.loads((B / 'metadata-governance.json').read_text())
+require(governance['exit_code'] == 0 and sha(B / governance['log']) == governance['log_sha256'], 'governance command failed or log changed')
+events = [json.loads(line) for line in (B / governance['log']).read_text().splitlines() if line.startswith('{')]
+outcomes = collections.Counter(e['Action'] for e in events if e.get('Test') and e.get('Action') in ('pass', 'fail', 'skip'))
+require(outcomes == {'pass': 31}, 'governance outcomes differ from 31 pass')
+if args.phase == 'prepare':
+    current = inventory()
+    raw = json.dumps(current, sort_keys=True).encode()
+    with (B / 'cleanup-inventory.json.gz').open('xb') as handle:
+        handle.write(gzip.compress(raw, mtime=0))
+    input_path = W / 'agent-public/ctc-public-overlay.json'
+    input_raw = input_path.read_bytes()
+    with (B / 'work-inputs.tar.gz').open('xb') as handle:
+        with gzip.GzipFile(fileobj=handle, mode='wb', mtime=0) as zipped:
+            with tarfile.open(fileobj=zipped, mode='w') as archive:
+                info = tarfile.TarInfo('agent-public/ctc-public-overlay.json')
+                info.size = len(input_raw)
+                info.mode = 0o600
+                archive.addfile(info, io.BytesIO(input_raw))
+    result = {'prepared_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'root': str(W.relative_to(R)), 'root_inode': base['work_inode'], 'inventory': 'cleanup-inventory.json.gz', 'inventory_sha256': sha(B / 'cleanup-inventory.json.gz'), 'entries': len(current), 'owned_file_bytes': sum(e['size'] for e in current.values() if e['kind'] == 'file'), 'archived_inputs': {'agent-public/ctc-public-overlay.json': hashlib.sha256(input_raw).hexdigest()}, 'archive': 'work-inputs.tar.gz', 'archive_sha256': sha(B / 'work-inputs.tar.gz'), 'protected_counts': counts, 'governance_pass_events': 31}
+    with (B / 'cleanup-preparation.json').open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+    print(json.dumps(result), flush=True)
+else:
+    prepared = json.loads((B / 'cleanup-preparation.json').read_text())
+    require(sha(B / prepared['inventory']) == prepared['inventory_sha256'], 'cleanup inventory changed')
+    require(sha(B / prepared['archive']) == prepared['archive_sha256'], 'preserved input archive changed')
+    with tarfile.open(B / prepared['archive'], 'r:gz') as archive:
+        require(len(archive.getmembers()) == 1, 'unexpected preserved archive entries')
+        for name, digest in prepared['archived_inputs'].items():
+            require(hashlib.sha256(archive.extractfile(name).read()).hexdigest() == digest, 'preserved input mismatch')
+    expected = json.loads(gzip.decompress((B / prepared['inventory']).read_bytes()))
+    require(inventory() == expected, 'temporary contents changed after inspection')
+    root_gate()
+    require(shutil.rmtree.avoids_symlink_attacks, 'platform lacks fd-safe temporary removal')
+    for name, entry in expected.items():
+        if entry['kind'] == 'directory':
+            os.chmod(W / name, entry['mode'] | 0o700)
+    shutil.rmtree(W)
+    require(not W.exists(), 'temporary root still exists')
+    after = protected_gate()
+    require(after == counts, 'protected inputs differ after cleanup')
+    result = {'completed_at': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'removed_root': str(W.relative_to(R)), 'removed_root_inode': base['work_inode'], 'removed_entries': prepared['entries'], 'removed_file_bytes': prepared['owned_file_bytes'], 'preserved_inputs_archive': prepared['archive'], 'archive_sha256': prepared['archive_sha256'], 'protected_counts': after, 'unrelated_temporary_roots_preserved': 2, 'formal_go_changes': 0, 'ticket_milestones_complete': 2, 'ticket_milestones_total': 5, 'candidate_implemented': False}
+    with (B / 'cleanup.json').open('x') as handle:
+        json.dump(result, handle, indent=2)
+        handle.write('\n')
+    print(json.dumps(result), flush=True)

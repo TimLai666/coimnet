@@ -1,0 +1,229 @@
+package ocr_test
+
+import (
+	"context"
+	"math"
+	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
+	"github.com/TimLai666/coimnet/tasks/ocr"
+	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
+)
+
+const (
+	ocrCTCTailOneFrameLoss150 = 0x1.39792499b1a24p-58
+	ocrCTCTailTwoFrameLoss150 = 0x1.7fd974d372e44p-116
+)
+
+// TestOCRCTCTailTraining150 exercises the public OCR CTC path. The one-frame
+// case uses the legacy columns profile; the two-frame and normal controls use
+// aligned-columns so both shared CTC entry paths are covered.
+func TestOCRCTCTailTraining150(t *testing.T) {
+	cases := []struct {
+		name       string
+		profile    string
+		image      glyphs.Image
+		wantFrames int
+		wantLoss   float64
+		normal     bool
+	}{
+		{
+			name:       "one-frame",
+			profile:    "columns",
+			image:      glyphs.Image{Width: 1, Height: 1, Pixels: []float64{0}},
+			wantFrames: 1,
+			wantLoss:   ocrCTCTailOneFrameLoss150,
+		},
+		{
+			name:       "two-frame",
+			profile:    "aligned-columns",
+			image:      glyphs.Image{Width: 2, Height: 1, Pixels: []float64{0, 0}},
+			wantFrames: 2,
+			wantLoss:   ocrCTCTailTwoFrameLoss150,
+		},
+		{
+			name:       "normal",
+			profile:    "aligned-columns",
+			image:      glyphs.Image{Width: 1, Height: 1, Pixels: []float64{1}},
+			wantFrames: 1,
+			wantLoss:   math.Ln2,
+			normal:     true,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			config := ocrCTCTailConfig150(tc.profile)
+			model, err := ocr.NewRecognizer(config)
+			if err != nil {
+				t.Fatalf("NewRecognizer: %v", err)
+			}
+			parameters := ocrCTCTailParameters150(t, model, tc.normal)
+			model, err = ocr.NewRecognizerWith(config, parameters)
+			if err != nil {
+				t.Fatalf("NewRecognizerWith: %v", err)
+			}
+
+			beforeImage := append([]float64(nil), tc.image.Pixels...)
+			before := model.Snapshot()
+			if before.Options.WeightDecay != 0 {
+				t.Fatalf("weight decay=%g, want 0", before.Options.WeightDecay)
+			}
+			if before.Parameters.Readout[1] != 0 {
+				t.Fatalf("initial target readout=%g, want exact zero", before.Parameters.Readout[1])
+			}
+			if tc.normal {
+				for index, value := range before.Parameters.Readout {
+					if value != 0 {
+						t.Fatalf("normal readout[%d]=%g, want exact zero", index, value)
+					}
+				}
+				readoutNode := before.Config.ReadoutNodes[0]
+				if !(before.Parameters.Core.Bias[readoutNode] > 0) || math.IsInf(before.Parameters.Core.Bias[readoutNode], 0) {
+					t.Fatalf("normal hidden bias[%d]=%g, want finite positive activity source", readoutNode, before.Parameters.Core.Bias[readoutNode])
+				}
+			}
+
+			ocrCTCTailAssertLogits150(t, model, tc.image, tc.wantFrames, tc.normal)
+			report, err := model.TrainLine(ctx, tc.image, "a")
+			if err != nil {
+				t.Fatalf("TrainLine: %v", err)
+			}
+			after := model.Snapshot()
+			t.Logf("frames=%d labels=%d impossible=%t loss=%.17g target_readout_before=%.17g target_readout_after=%.17g", report.Frames, report.Labels, report.Impossible, report.Loss, before.Parameters.Readout[1], after.Parameters.Readout[1])
+			if report.Frames != tc.wantFrames || report.Labels != 1 || report.Impossible {
+				t.Errorf("TrainLine report=%+v, want frames=%d labels=1 impossible=false", report, tc.wantFrames)
+			}
+			if !sameFloatBits150(report.Loss, tc.wantLoss) && ulpDistance150(report.Loss, tc.wantLoss) > 4 {
+				t.Errorf("TrainLine loss=%.17g, want %.17g within 4 ULP (distance=%d)", report.Loss, tc.wantLoss, ulpDistance150(report.Loss, tc.wantLoss))
+			}
+			if !(report.Loss > 0) || math.IsInf(report.Loss, 0) {
+				t.Errorf("TrainLine erased finite positive loss: %.17g", report.Loss)
+			}
+			if after.Updates != before.Updates+1 {
+				t.Errorf("updates=%d, want %d", after.Updates, before.Updates+1)
+			}
+			if !sameFloatSlice150(tc.image.Pixels, beforeImage) {
+				t.Error("TrainLine mutated image pixels")
+			}
+			// The independent oracle gives one positive and one negative derivative
+			// per row. With a positive hidden activity, AdamW therefore moves the
+			// target readout coefficient strictly positive from its exact zero.
+			if !(after.Parameters.Readout[1] > 0) || math.IsInf(after.Parameters.Readout[1], 0) {
+				t.Errorf("target readout=%g, want strict finite positive update from zero", after.Parameters.Readout[1])
+			}
+		})
+	}
+}
+
+func ocrCTCTailConfig150(profile string) ocr.RecognizerConfig {
+	return ocr.RecognizerConfig{
+		Height:       1,
+		Hidden:       2,
+		Alphabet:     []rune{'a'},
+		LearningRate: 0.01,
+		Seed:         150,
+		InputProfile: profile,
+	}
+}
+
+func ocrCTCTailParameters150(t *testing.T, model *ocr.Recognizer, normal bool) learning.Parameters {
+	t.Helper()
+	snapshot := model.Snapshot()
+	parameters := snapshot.Parameters
+	parameters.Core.Weights = make([]float64, len(parameters.Core.Weights))
+	parameters.Core.Bias = make([]float64, len(parameters.Core.Bias))
+	parameters.Core.LogTau = make([]float64, len(parameters.Core.LogTau))
+	for i := range parameters.Core.LogTau {
+		parameters.Core.LogTau[i] = math.Log(2)
+	}
+	parameters.Encoder = make([]float64, len(parameters.Encoder))
+	parameters.Readout = make([]float64, len(parameters.Readout))
+
+	if normal {
+		// Keep the readout weights at [0,0] but retain the same constant positive
+		// hidden activity as the tiny fixture. This makes the ln(2) control's
+		// target coefficient update independently observable.
+		parameters.Core.Bias[snapshot.Config.ReadoutNodes[0]] = 100
+		return parameters
+	}
+
+	// The original public SDK has no separate ReadoutBias field. To create the
+	// same constant logits using only public Parameters, saturate the first
+	// readout node at exactly one and use its blank readout coefficient -40;
+	// the target coefficient starts at zero. All encoder and core edge weights
+	// are zero, and the effective readout rows are exactly [-40,0].
+	readoutNode := snapshot.Config.ReadoutNodes[0]
+	parameters.Core.Bias[readoutNode] = 100
+	if len(parameters.Readout) < 2 {
+		t.Fatalf("readout length=%d, want at least two", len(parameters.Readout))
+	}
+	parameters.Readout[0] = -40
+	return parameters
+}
+
+func ocrCTCTailAssertLogits150(t *testing.T, model *ocr.Recognizer, image glyphs.Image, wantFrames int, normal bool) {
+	t.Helper()
+	snapshot := model.Snapshot()
+	inputs, err := model.Inputs(image)
+	if err != nil {
+		t.Fatalf("Inputs: %v", err)
+	}
+	network, err := learning.NewNetwork(snapshot.Config)
+	if err != nil {
+		t.Fatalf("learning.NewNetwork: %v", err)
+	}
+	all, err := network.PredictAll(context.Background(), snapshot.Parameters, inputs)
+	if err != nil {
+		t.Fatalf("PredictAll: %v", err)
+	}
+	visible := all
+	if model.Config().InputProfile == "aligned-columns" {
+		if len(all) < 2 {
+			t.Fatalf("aligned logits rows=%d, want blind row plus visible rows", len(all))
+		}
+		visible = all[1:]
+	}
+	if len(visible) != wantFrames {
+		t.Fatalf("visible logits frames=%d, want %d", len(visible), wantFrames)
+	}
+	for frame, row := range all {
+		if len(row) != 2 {
+			t.Fatalf("logits frame %d width=%d, want 2", frame, len(row))
+		}
+		if normal {
+			if row[0] != 0 || row[1] != 0 {
+				t.Fatalf("normal logits frame %d=%v, want exact [0,0]", frame, row)
+			}
+			continue
+		}
+		if row[0] != -40 || row[1] != 0 {
+			t.Fatalf("tail logits frame %d=%v, want exact [-40,0]", frame, row)
+		}
+	}
+}
+
+func sameFloatBits150(a, b float64) bool {
+	return math.Float64bits(a) == math.Float64bits(b)
+}
+
+func sameFloatSlice150(a, b []float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if !sameFloatBits150(a[i], b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func ulpDistance150(a, b float64) uint64 {
+	ua, ub := math.Float64bits(a), math.Float64bits(b)
+	if ua > ub {
+		return ua - ub
+	}
+	return ub - ua
+}
