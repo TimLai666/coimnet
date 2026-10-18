@@ -250,11 +250,15 @@ func (d DistributionDistiller) Loss(teacher TeacherDistribution, student []float
 			return 0, nil, DistributionReport{}, fmt.Errorf("distill: label %d out of range for %d student classes", label, studentClasses)
 		}
 		if d.Mix < 1 {
-			logQ, labelGradient, numericalErr := shiftedLogSoftmax(student, 1)
+			_, labelGradient, numericalErr := shiftedLogSoftmax(student, 1)
 			if numericalErr != nil {
 				return 0, nil, DistributionReport{}, numericalErr
 			}
-			loss += (1 - d.Mix) * -logQ[label]
+			labelLoss, numericalErr := categorical.Loss(student, label, 1-d.Mix)
+			if numericalErr != nil {
+				return 0, nil, DistributionReport{}, fmt.Errorf("distill: label loss: %w", numericalErr)
+			}
+			loss += labelLoss
 			if err := categorical.Gradient(labelGradient, student, label, 1-d.Mix, 1); err != nil {
 				return 0, nil, DistributionReport{}, fmt.Errorf("distill: label gradient: %w", err)
 			}

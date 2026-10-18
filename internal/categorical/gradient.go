@@ -48,28 +48,8 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 		}
 	}
 
-	// Represent exp(gap) as mantissa*2^exponent. Squaring exp(gap/2) keeps
-	// the exponent available when exp(gap) itself is below the subnormal range.
-	// Keep the direct path in the normal range; below this point the
-	// half-exponential path avoids losing subnormal precision before scaling.
-	const directGap = -700.0
-	expRepresentation := func(gap float64) (float64, int, bool) {
-		if gap >= directGap {
-			value := math.Exp(gap)
-			if value == 0 {
-				return 0, 0, false
-			}
-			mantissa, exponent := math.Frexp(value)
-			return mantissa, exponent, true
-		}
-		half := math.Exp(gap / 2)
-		if half == 0 {
-			return 0, 0, false
-		}
-		halfMantissa, halfExponent := math.Frexp(half)
-		squareMantissa, squareExponent := math.Frexp(halfMantissa * halfMantissa)
-		return squareMantissa, 2*halfExponent + squareExponent, true
-	}
+	// Smaller relative terms cannot affect an aggregate of at most MaxInt64 classes.
+	const relativeGapCutoff = -700.0
 
 	// Use the largest non-winner gap as a common aggregate scale. Relative
 	// terms are ordinary-sized, while the absolute scale retains the tail
@@ -80,10 +60,7 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 			tailMaximum = logit
 		}
 	}
-	tailScaleMantissa, tailScaleExponent, tailScaleOK := expRepresentation(tailMaximum - maximum)
-	if !tailScaleOK {
-		tailScaleMantissa, tailScaleExponent = 0, 0
-	}
+	tailScaleMantissa, tailScaleExponent := expDifference(tailMaximum, maximum)
 	tailSum, tailCompensation := 0.0, 0.0
 	nonTargetTailSum, nonTargetTailCompensation := 0.0, 0.0
 	for i, logit := range logits {
@@ -92,8 +69,9 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 		}
 		relativeGap := logit - tailMaximum
 		term := 0.0
-		if relativeGap >= directGap {
-			term = math.Exp(relativeGap)
+		if relativeGap >= relativeGapCutoff {
+			termMantissa, termExponent := expDifference(logit, tailMaximum)
+			term = math.Ldexp(termMantissa, termExponent)
 		}
 		adjusted := term - tailCompensation
 		next := tailSum + adjusted
@@ -136,6 +114,7 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 		return fmt.Errorf("categorical: non-finite inverse normalizer")
 	}
 
+	needsPreciseUnderflow := false
 	inverseMantissa, inverseExponent := math.Frexp(inverseNormalizer)
 	factorMantissa, factorExponent := math.Frexp(factor)
 	divisorMantissa, divisorExponent := math.Frexp(divisor)
@@ -148,7 +127,11 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 		mantissa *= inverseMantissa
 		mantissa *= factorMantissa
 		mantissa /= divisorMantissa
-		result := math.Ldexp(mantissa, relativeExponent+scaleExponent+inverseExponent+factorExponent-divisorExponent)
+		exponent := relativeExponent + scaleExponent + inverseExponent + factorExponent - divisorExponent
+		result := math.Ldexp(mantissa, exponent)
+		if result <= math.SmallestNonzeroFloat64 && nearHalfMinimum(mantissa, exponent) {
+			needsPreciseUnderflow = true
+		}
 		if math.IsNaN(result) || math.IsInf(result, 0) {
 			return 0, fmt.Errorf("categorical: final gradient is non-finite")
 		}
@@ -170,8 +153,8 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 				value, err = applyValue(1)
 			}
 		} else {
-			classMantissa, classExponent, classOK := expRepresentation(logit - maximum)
-			if classOK {
+			classMantissa, classExponent := expDifference(logit, maximum)
+			if classMantissa != 0 {
 				value, err = applyScaled(1, classMantissa, classExponent)
 			}
 		}
@@ -197,5 +180,8 @@ func Gradient(dst, logits []float64, target int, factor, divisor float64) error 
 		dst[target] = -value
 	}
 
+	if needsPreciseUnderflow {
+		preciseGradient(dst, logits, target, factor, divisor)
+	}
 	return nil
 }

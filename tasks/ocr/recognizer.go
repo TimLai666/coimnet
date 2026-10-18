@@ -342,28 +342,11 @@ func singleCharacterLoss(logits []float64, target int) (float64, []float64, erro
 			return 0, nil, fmt.Errorf("ocr: single-character logit class %d is not finite", class)
 		}
 	}
-	maxLogit := logits[1]
-	for _, value := range logits[2:] {
-		if value > maxLogit {
-			maxLogit = value
-		}
+	loss, err := categorical.Loss(logits[1:], target-1, 1)
+	if err != nil {
+		return 0, nil, fmt.Errorf("ocr: single-character loss: %w", err)
 	}
-	sum := 0.0
 	probabilities := make([]float64, len(logits))
-	for class := 1; class < len(logits); class++ {
-		value := math.Exp(logits[class] - maxLogit)
-		if math.IsNaN(value) || math.IsInf(value, 0) {
-			return 0, nil, errors.New("ocr: single-character normalization is not finite")
-		}
-		sum += value
-	}
-	if !(sum > 0) || math.IsNaN(sum) || math.IsInf(sum, 0) {
-		return 0, nil, errors.New("ocr: single-character normalization is invalid")
-	}
-	loss := -(logits[target] - maxLogit - math.Log(sum))
-	if math.IsNaN(loss) || math.IsInf(loss, 0) {
-		return 0, nil, errors.New("ocr: single-character loss is not finite")
-	}
 	if err := categorical.Gradient(probabilities[1:], logits[1:], target-1, 1, 1); err != nil {
 		return 0, nil, fmt.Errorf("ocr: single-character gradient: %w", err)
 	}
