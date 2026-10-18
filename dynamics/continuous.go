@@ -46,6 +46,28 @@ type Parameters struct {
 type Continuous struct {
 	config    Config
 	partition *targetPartition
+	// runs groups consecutive edges that share a target, in declared order,
+	// and zeroDelay records that no edge is delayed. Together they let the
+	// single threaded fresh-trace loops keep each target's running sum in a
+	// register: the additions happen in the same order, so the result is
+	// bit-identical to adding into drive[target] edge by edge.
+	runs      []edgeRun
+	zeroDelay bool
+}
+
+// edgeRun is the half-open edge range [start, end) whose target is target.
+type edgeRun struct{ start, end, target int }
+
+func edgeRuns(targets []int) []edgeRun {
+	var runs []edgeRun
+	for e, t := range targets {
+		if len(runs) == 0 || runs[len(runs)-1].target != t {
+			runs = append(runs, edgeRun{start: e, end: e + 1, target: t})
+		} else {
+			runs[len(runs)-1].end = e + 1
+		}
+	}
+	return runs
 }
 
 // Trace owns the parameter snapshot and neural history for one forward pass.
@@ -128,7 +150,14 @@ func NewContinuous(c Config) (*Continuous, error) {
 			return nil, err
 		}
 	}
-	return &Continuous{config: c, partition: partition}, nil
+	zeroDelay := true
+	for _, d := range c.Delays {
+		if d != 0 {
+			zeroDelay = false
+			break
+		}
+	}
+	return &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay}, nil
 }
 
 // Config returns an independent topology/configuration copy.
@@ -226,6 +255,20 @@ func (r *forwardReader) accumulateSerial(drive, weights []float64, targets []int
 func (r ringReader) accumulateSerial(drive, weights []float64, targets []int) {
 	for e := range weights {
 		drive[targets[e]] += weights[e] * r.at(e)
+	}
+}
+
+// accumulateRuns adds weights[e]*row[source[e]] into drive[target[e]] for an
+// undelayed model reading one fresh output row, summing each run of edges that
+// share a target in declared order.
+func (m *Continuous) accumulateRuns(drive, weights, row []float64) {
+	sources := m.config.Sources
+	for _, run := range m.runs {
+		sum := drive[run.target]
+		for e := run.start; e < run.end; e++ {
+			sum += weights[e] * row[sources[e]]
+		}
+		drive[run.target] = sum
 	}
 }
 
@@ -338,6 +381,8 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			if err := m.synapticDriveParallel(drive, p.Weights, &forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}); err != nil {
 				return nil, err
 			}
+		} else if m.zeroDelay && tr.history == nil {
+			m.accumulateRuns(drive, p.Weights, tr.output[t])
 		} else {
 			r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}
 			r.accumulateSerial(drive, p.Weights, m.config.Targets)
