@@ -1,0 +1,104 @@
+{
+  "task": "kmnist-t10k-single-character",
+  "split": "balanced_round_robin_by_label_v1:2000:7f6498faa80e165d8cb7b88618ae8e2ce9bbc655af6ae79d338647f3fb3436ec",
+  "machine": "vm",
+  "metric": "accuracy",
+  "candidate": {
+    "schema_version": "coimnet-bench/v1",
+    "framework": "coimnet",
+    "model": "coimnet-h24-te",
+    "task": "kmnist-t10k-single-character",
+    "split": "balanced_round_robin_by_label_v1:2000:7f6498faa80e165d8cb7b88618ae8e2ce9bbc655af6ae79d338647f3fb3436ec",
+    "host": {
+      "machine": "vm",
+      "os": "linux",
+      "arch": "amd64",
+      "cpu": "Intel(R) Xeon(R) Processor",
+      "logical_cpus": 4,
+      "memory_bytes": 16874930176,
+      "runtime": "go1.25.12"
+    },
+    "parameters": 23568,
+    "trainable": 23516,
+    "peak_rss_bytes": 60739584,
+    "idle_rss_bytes": 41541632,
+    "device": "cpu",
+    "threads": 1,
+    "latency": {
+      "warmup": 50,
+      "samples": 2000,
+      "mean_ms": 0.09181377899999994,
+      "p50_ms": 0.084371,
+      "p90_ms": 0.115053,
+      "p99_ms": 0.178667,
+      "min_ms": 0.071591,
+      "max_ms": 0.523799
+    },
+    "quality": {
+      "accuracy": 0.7125
+    },
+    "higher_is_better": [
+      "accuracy"
+    ],
+    "notes": [
+      "one image per call; latency covers tasks/ocr.Recognizer.Infer including decoding"
+    ]
+  },
+  "baselines": [
+    {
+      "schema_version": "coimnet-bench/v1",
+      "framework": "pytorch",
+      "model": "mlp-28-24",
+      "task": "kmnist-t10k-single-character",
+      "split": "balanced_round_robin_by_label_v1:2000:7f6498faa80e165d8cb7b88618ae8e2ce9bbc655af6ae79d338647f3fb3436ec",
+      "host": {
+        "machine": "vm",
+        "os": "linux",
+        "arch": "amd64",
+        "cpu": "Intel(R) Xeon(R) Processor",
+        "logical_cpus": 4,
+        "memory_bytes": 16874930176,
+        "runtime": "python3.13.16 torch2.14.1+cpu"
+      },
+      "parameters": 22926,
+      "trainable": 22926,
+      "peak_rss_bytes": 254730240,
+      "idle_rss_bytes": 254730240,
+      "device": "cpu",
+      "threads": 1,
+      "latency": {
+        "warmup": 50,
+        "samples": 2000,
+        "mean_ms": 0.019512434,
+        "p50_ms": 0.018186,
+        "p90_ms": 0.02061,
+        "p99_ms": 0.041455,
+        "min_ms": 0.016908,
+        "max_ms": 0.085301
+      },
+      "quality": {
+        "accuracy": 0.7175
+      },
+      "higher_is_better": [
+        "accuracy"
+      ],
+      "notes": [
+        "one image per call under torch.inference_mode; latency covers forward and argmax"
+      ]
+    }
+  ],
+  "versus": [
+    {
+      "baseline": "pytorch/mlp-28-24",
+      "quality_delta": -0.0050000000000000044,
+      "higher_quality": false,
+      "parameters_ratio": 1.028003140539126,
+      "peak_rss_ratio": 0.23844669561022672,
+      "latency_p50_ratio": 4.639337952270978,
+      "within_parameters": false,
+      "within_peak_rss": true,
+      "not_slower": false,
+      "wins": false
+    }
+  ]
+}

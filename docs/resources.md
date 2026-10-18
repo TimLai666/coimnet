@@ -45,7 +45,7 @@
 
 ## KMNIST 跨框架量測（2026-10-18）
 
-雲端 VM（Intel Xeon、單執行緒）上，CoImNet 單字元 OCR 與同參數量的 PyTorch MLP 各在新程序量 2,000 張測試圖。CoImNet 71.25%、23,568 參數、程序 RSS 峰值 57.8 MiB、p50 0.155 ms；PyTorch 71.75%、22,926 參數、242.9 MiB、p50 0.018 ms。CoImNet 只有記憶體較少，且其中約 20 MiB 是 Go 垃圾回收餘裕（`GOGC=25` 時 41.1 MiB）。量測方式見 ENG.md，證據與重跑命令見 [bench-kmnist-20261018](../evidence/bench-kmnist-20261018/README.md)。
+雲端 VM（Intel Xeon、單執行緒）上，CoImNet 單字元 OCR 與同參數量的 PyTorch MLP 各在新程序量 2,000 張測試圖。CoImNet 71.25%、23,568 參數、程序 RSS 峰值 57.8 MiB、p50 0.155 ms；PyTorch 71.75%、22,926 參數、242.9 MiB、p50 0.018 ms。CoImNet 只有記憶體較少，且其中約 20 MiB 是 Go 垃圾回收餘裕（`GOGC=25` 時 41.1 MiB）。同日加入推論張量快取後 CoImNet p50 降為 0.084 ms，正確率不變。量測方式見 ENG.md，證據與重跑命令見 [bench-kmnist-20261018](../evidence/bench-kmnist-20261018/README.md)。
 
 ## 真實影音小樣本（2026-09-25）
 

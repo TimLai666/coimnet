@@ -13,6 +13,10 @@
 - CoImNet 參數量含 52 個固定的時間常數，可訓練參數 23,516。
 - 只在雲端 VM 量過，Mac 與 ubuntu-1 尚未量測；VM 有其他工作同時執行，延遲數值只用於兩者相對比較。
 
+## 推論優化後（同日）
+
+`learning.Network` 快取由 encoder／readout 參數轉成的 float32 張量（來源值逐位元相同才沿用），推論路徑不再建立自動微分紀錄。同一模型重量：正確率不變 71.25%，p50 0.155 → 0.084 ms，p99 0.480 → 0.179 ms，峰值 57.9 MiB（`coimnet-h24-cached.json`、`compare-cached.json`）。仍慢 PyTorch 約 4.6 倍，剩下的時間約一半在 Insyra 的 float32 矩陣乘法（逐值純量迴圈）。改前改後以 1,000／200 張、2 輪訓練的 realocr 報告比對，除程式指紋外逐位元組相同。
+
 ## 重跑
 
 ```sh

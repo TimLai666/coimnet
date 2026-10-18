@@ -175,7 +175,7 @@ ticket 26 的 `RunPPO` 沿用此更新器，人工模型與走廊收集器放在
 
 連續核心的分段重算在單段及必要延遲前史內保存活化輸出，供驅動與權重梯度共用。每次段落前向建立輸出列時，每個節點活化只計算一次，相鄰相同延遲的邊共用選出的列，連續相同目標的邊在 float64 本機變數依原順序累加，換目標前及結尾寫回。已驗證等長的連線陣列在迴圈前切片，避免重複索引檢查。宣告邊順序、乘加式及導數保持。檢查點仍只保存電位，`RecomputeStats` 仍只統計電位列，新增輸出暫存的實際成本須另量測。零邊反向略過輸出暫存，零邊前向維持原本的公開輸出計算。有邊的 `ForwardRecompute` 回傳新產生的輸出列，不另活化一次。公開契約與快照格式保持，驗收見 [ticket 57](docs/tickets/57-recompute-activation-reuse.md)。
 
-跨框架比較用 `bench` 套件的 `coimnet-bench/v1` JSON（2026-10-18）。每份結果記錄參數量、可訓練參數量、新程序從載入模型到評估結束的程序 RSS 峰值（另記載入模型前的峰值）、單筆推論延遲（暖身後逐筆計時，最近排名分位數）、任務品質與主機。Python 端由 `scripts/bench/coimbench.py` 寫出同格式，主機欄位讀法與 Go 相同。`coimnet bench compare` 只在任務與評估切分相同、機器與 CPU 相同時比較，品質較好且參數量、程序 RSS 峰值、p50 延遲都不高於對手才判定勝出；RSS 包含各自執行環境（Go 執行期或 Python 加 PyTorch）的成本，這是使用者實際要付的記憶體。KMNIST 範例：`examples/realocr --model-output` 訓練、`examples/benchocr` 量測，PyTorch 對手是 `scripts/bench/kmnist_mlp.py`。
+跨框架比較用 `bench` 套件的 `coimnet-bench/v1` JSON（2026-10-18）。每份結果記錄參數量、可訓練參數量、新程序從載入模型到評估結束的程序 RSS 峰值（另記載入模型前的峰值）、單筆推論延遲（暖身後逐筆計時，最近排名分位數）、任務品質與主機。Python 端由 `scripts/bench/coimbench.py` 寫出同格式，主機欄位讀法與 Go 相同。`coimnet bench compare` 只在任務與評估切分相同、機器與 CPU 相同時比較，品質較好且參數量、程序 RSS 峰值、p50 延遲都不高於對手才判定勝出；RSS 包含各自執行環境（Go 執行期或 Python 加 PyTorch）的成本，這是使用者實際要付的記憶體。`learning.Network` 快取由 encoder 與 readout 參數轉成的 float32 張量，只有來源值逐位元相同才沿用，呼叫端原地改值或換參數都會重新轉換並檢查；`Predict`、`PredictAll` 與候選更新檢查不建 Insyra tape，直接呼叫 tape 內部用的同一個 `nn.MatMul`，結果逐位元相同。KMNIST 範例：`examples/realocr --model-output` 訓練、`examples/benchocr` 量測，PyTorch 對手是 `scripts/bench/kmnist_mlp.py`。
 
 目前沒有資料庫或已發布格式，不需要資料庫遷移。建立第一版外部格式後，版本變更必須保存舊原件並提供相容性驗證。
 
