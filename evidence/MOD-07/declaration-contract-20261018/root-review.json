@@ -1,0 +1,169 @@
+{
+  "reviewed_at": "2026-10-18T03:30:40.808754+00:00",
+  "scope": "Existing follow-up: direct declaration mutation after controller activity history exists",
+  "method": "Read-only specification, caller and source trace; no Go execution or runtime reproduction",
+  "agent": {
+    "name": "memory_declaration_contract",
+    "model": "gpt-5.6-luna",
+    "reasoning_effort": "max",
+    "opencode_discovery_tool_chunk": "24fad9",
+    "opencode_error": "Unknown: FileSystem.open (/Users/timlai/.local/share/opencode/log/opencode.log)"
+  },
+  "base_commit": "0e12cb1cf8d2187b5b74e6b91557848ffd1bf5a8",
+  "source_manifest": "../../TSK-01/reported-loss-candidate-20261018/formal-source-joint.json",
+  "source_manifest_sha256": "f56ffe2059eadd326c6ad8bb6f262e004a34840630922f932aa076a74da8c767",
+  "input_fingerprints": {
+    "modulation/controller.go": "1974c542a20f123cb3640d8ca6453d861f57afc4ff2a54c5552cbbe4011e1bab",
+    "modulation/memory_controller.go": "6125b0a52055fb265e323854d1ceeb3ce3d9beb6d09718cd7cecd7127f84a084",
+    "modulation/controller_state.go": "c568341acf0662a81ebc8a0ddc09eae04c80edbf001fda4a446e670b6aa2b58f",
+    "modulation/config.go": "888441fa39463afe1afe0fb28c8e008d23c55f5e6b8e6aab171e4fd434928a01",
+    "experiment/ablation_controllers.go": "cf1088a427abeae36cdfcbd23016998fb8c2bdaae8d4e0e6c7d087e33b7f3d99",
+    "learning/chemistry.go": "4e6164cbafd843c56c357558e9b8a580598b607daeccffbfc74a714052a52032",
+    "learning/chemical_source_state.go": "881a24b1d7be6884d787d6ce05db8019a2bac18b13581ef275b295766924b59e",
+    "learning/individual.go": "7bd1e70f01035d97a06dd70d74494928ac0aa8b92975f7998454ec8b7d36e952",
+    "docs/individual-state.md": "c69a2cfdfd5a91739e49b57cffbae151b483a402db9cf01c72d2e8fb3f0f947f",
+    "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md": "b92126883a10cdb9fb852276796e0521111520709bb7ca82d06f98dbab8935ea",
+    "docs/handoff/requirements.json": "2f1718f53e9ec7d0ac56e2285609f404d165c96deb5c81703959aedf7ca1db3c",
+    "ENG.md": "e180ca67010740bd39cfba377c4912e93a8cc84b2500c512f34388bafca6681c"
+  },
+  "static_observations": [
+    {
+      "fact": "Controller.Release validates its existing ring against the current declaration before observing a new row. A shape mismatch is refused.",
+      "references": [
+        {
+          "file": "modulation/controller.go",
+          "line_start": 123,
+          "line_end": 144
+        },
+        {
+          "file": "modulation/controller_state.go",
+          "line_start": 249,
+          "line_end": 294
+        }
+      ]
+    },
+    {
+      "fact": "MemoryController.Offset clones its summary and applies current declarations before observe; observe rebuilds mismatched row count/node width and clears filled. A successful Offset commits the new ring.",
+      "references": [
+        {
+          "file": "modulation/memory_controller.go",
+          "line_start": 96,
+          "line_end": 109
+        },
+        {
+          "file": "modulation/memory_controller.go",
+          "line_start": 151,
+          "line_end": 153
+        },
+        {
+          "file": "modulation/controller.go",
+          "line_start": 205,
+          "line_end": 229
+        }
+      ]
+    },
+    {
+      "fact": "Only SummaryWindow and Nodes directly determine the activity ring shape. Resources and UseFeedback affect MLP input width instead.",
+      "references": [
+        {
+          "file": "modulation/controller.go",
+          "line_start": 50,
+          "line_end": 56
+        },
+        {
+          "file": "modulation/controller.go",
+          "line_start": 216,
+          "line_end": 221
+        }
+      ]
+    },
+    {
+      "fact": "Normal SourceSpec.Build and NewCapacityMatched copy declarations; the capacity-matched training caller creates the controller once and uses Offset/Gradient/Update.",
+      "references": [
+        {
+          "file": "modulation/config.go",
+          "line_start": 127,
+          "line_end": 141
+        },
+        {
+          "file": "modulation/memory_controller.go",
+          "line_start": 31,
+          "line_end": 39
+        },
+        {
+          "file": "experiment/ablation_controllers.go",
+          "line_start": 216,
+          "line_end": 270
+        }
+      ]
+    }
+  ],
+  "contract_assessment": {
+    "confirmed_product_defect": false,
+    "classification": "NEEDS INVESTIGATION - direct mutation support is not specified in the inspected contract sources",
+    "unresolved_decision": "Whether active declarations may change directly, and whether an accepted replacement must refuse, explicitly reset, or preserve history. No new behavior selected.",
+    "references": [
+      {
+        "file": "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md",
+        "line_start": 296,
+        "line_end": 304
+      },
+      {
+        "file": "docs/handoff/CoImNet_Implementation_Plan.zh-TW.md",
+        "line_start": 761,
+        "line_end": 767
+      },
+      {
+        "file": "docs/handoff/requirements.json",
+        "line_start": 951,
+        "line_end": 965
+      },
+      {
+        "file": "ENG.md",
+        "line_start": 263,
+        "line_end": 265
+      }
+    ],
+    "normal_caller_quality_failure_confirmed": false
+  },
+  "root_rejected_documentation_concern": {
+    "claim": "SourceStates being stored makes the documented previous-activity reconstruction obsolete",
+    "assessment": "Not established: the source input row is reconstructed from NeuralState history, while SourceStates stores the independent controller multi-row window. Both claims can be true.",
+    "references": [
+      {
+        "file": "docs/individual-state.md",
+        "line_start": 76,
+        "line_end": 76
+      },
+      {
+        "file": "learning/chemistry.go",
+        "line_start": 474,
+        "line_end": 509
+      },
+      {
+        "file": "learning/individual.go",
+        "line_start": 724,
+        "line_end": 728
+      },
+      {
+        "file": "learning/chemical_source_state.go",
+        "line_start": 9,
+        "line_end": 40
+      },
+      {
+        "file": "learning/individual.go",
+        "line_start": 429,
+        "line_end": 435
+      }
+    ],
+    "documentation_changed": false
+  },
+  "limits": [
+    "No new mutation runtime cases were executed.",
+    "Static path differences do not establish that direct active declaration mutation is a supported public operation.",
+    "Existing full engineering session20951 is independent of this source-only review and remains pending."
+  ],
+  "source_files_changed": false,
+  "requirements_status_changed": false,
+  "global_zero_bug_claim": false
+}
