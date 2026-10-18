@@ -218,8 +218,11 @@ func assertUpstreamValues(t *testing.T, label string, got, want []float64, exact
 			}
 			continue
 		}
-		if math.Abs(got[index]-want[index]) > 1e-12*math.Max(1, math.Abs(want[index])) {
-			t.Fatalf("%s[%d] = %.17g, want %.17g within 1e-12 relative scale", label, index, got[index], want[index])
+		// Another platform may order or fuse the float32 Insyra encoder and
+		// readout arithmetic differently, so only float32 agreement holds
+		// there; the recorded platform still compares every bit above.
+		if math.Abs(got[index]-want[index]) > 1e-5*math.Abs(want[index])+1e-9 {
+			t.Fatalf("%s[%d] = %.17g, want %.17g within float32 tolerance", label, index, got[index], want[index])
 		}
 	}
 }

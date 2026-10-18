@@ -40,9 +40,12 @@ type Options struct {
 	// Ranges bounds parameter values by projection after each update. nil, and
 	// every zero field inside it, mean unlimited.
 	Ranges *ParameterRanges `json:"ranges,omitempty"`
-	// LossScale multiplies the loss gradient before it is divided back, so a
-	// gradient that would underflow survives the round trip. A scaled value
-	// that is not finite rejects the whole step. Zero means one.
+	// LossScale multiplies the finished float64 loss gradient and divides it
+	// back before accumulation. A scaled value that is not finite rejects the
+	// whole step, so the option guards against overflow only. It does not
+	// rescue an underflowing gradient: the float32 Insyra readout and encoder
+	// gradients are already computed when it applies, and a power-of-two
+	// factor leaves every bit unchanged. Zero means one.
 	LossScale float64 `json:"loss_scale,omitempty"`
 	// AccumulateSteps is how many Step gradients one update averages over.
 	// Zero and one apply every step. A larger value makes Step accumulate into
@@ -121,11 +124,15 @@ type StepResult struct {
 	// which is zero on an applied step.
 	Accumulated int `json:"accumulated"`
 	// GradientHorizonSteps is the furthest number of steps back the gradient
-	// of any row's loss reached in this step: Options.Truncation when it is
-	// positive and below the number of input rows, the number of input rows
-	// otherwise. Earlier rows still shaped the prediction and the neural state
-	// but received no gradient, so the loss cannot be claimed to reach back
-	// indefinitely.
+	// of any row's loss reached in this step, counting the loss row itself.
+	// Truncation detaches at the fixed boundaries 0, w, 2w, ..., so a loss on
+	// row r reaches back r%w+1 rows, and r+1 rows when Truncation is zero. Step
+	// scores only the last row, so with T input rows it reports (T-1)%w+1,
+	// which is below w unless T is a multiple of w. StepFrom counts the rows
+	// whose upstream is non-zero, and only the last row for a last-step
+	// readout, and reports zero when no row carries a gradient. Earlier rows
+	// still shaped the prediction and the neural state but received no
+	// gradient, so the loss cannot be claimed to reach back further.
 	GradientHorizonSteps int `json:"gradient_horizon_steps,omitempty"`
 }
 
@@ -337,7 +344,7 @@ func (tr *Trainer) Step(ctx context.Context, input [][]float64, target []float64
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = gradientHorizon(len(input), tr.options.Truncation)
+	result.GradientHorizonSteps = gradientHorizon(len(input)-1, tr.options.Truncation)
 	return result, nil
 }
 
@@ -371,7 +378,7 @@ func (tr *Trainer) StepFrom(ctx context.Context, input, upstream [][]float64) (S
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = gradientHorizon(len(input), tr.options.Truncation)
+	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation)
 	return result, nil
 }
 
@@ -384,13 +391,33 @@ func recomputeSegment(o Options) int {
 	return o.Recompute.SegmentSteps
 }
 
-// gradientHorizon is StepResult.GradientHorizonSteps for an episode of rows
-// input rows under the truncation window.
-func gradientHorizon(rows, truncation int) int {
-	if truncation > 0 && truncation < rows {
-		return truncation
+// gradientHorizon is StepResult.GradientHorizonSteps for a loss on row of an
+// episode under the truncation window: the fixed window boundaries mean the
+// row reaches back to the start of its own window only.
+func gradientHorizon(row, truncation int) int {
+	if truncation > 0 {
+		return row%truncation + 1
 	}
-	return rows
+	return row + 1
+}
+
+// upstreamHorizon is the largest gradientHorizon over the rows a caller's
+// upstream actually scores. A last-step readout reads only the final row, so
+// only that row counts there.
+func upstreamHorizon(upstream [][]float64, everyStep bool, truncation int) int {
+	horizon := 0
+	for r, row := range upstream {
+		if !everyStep && r != len(upstream)-1 {
+			continue
+		}
+		for _, v := range row {
+			if v != 0 {
+				horizon = max(horizon, gradientHorizon(r, truncation))
+				break
+			}
+		}
+	}
+	return horizon
 }
 
 // stepWithGradient is the mask, loss-scale, accumulation, clipping, scheduled

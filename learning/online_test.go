@@ -56,8 +56,8 @@ func rewardGate() learning.RewardGate {
 	})
 }
 
-// brokenGate is a mapper the modulation package itself refuses, so the learner
-// has to find that out at construction rather than at the first update.
+// brokenGate is a mapper the modulation package itself refuses, so the first
+// plastic update has to report it.
 func brokenGate() learning.RewardGate {
 	mapper := &modulation.RewardMapper{Baseline: "guess", Kind: modulation.KindRelu}
 	return learning.RewardGateFunc(func(score float64) ([]float64, error) {
@@ -155,10 +155,6 @@ func TestNewOnlineLearnerRejectsAnUndeclaredLoop(t *testing.T) {
 		"plastic without the mechanism": func(t *testing.T) (*learning.Individual, learning.OnlinePolicy, learning.RewardGate) {
 			return onlineIndividual(t), learning.OnlinePolicy{AllowPlastic: true, ClockUnit: signal.TimeUnitModelStep}, rewardGate()
 		},
-		"invalid mapper": func(t *testing.T) (*learning.Individual, learning.OnlinePolicy, learning.RewardGate) {
-			p := learning.OnlinePolicy{AllowPlastic: true, ClockUnit: signal.TimeUnitModelStep}
-			return onlinePlasticIndividual(t), p, brokenGate()
-		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			a, p, mapper := build(t)
@@ -166,6 +162,48 @@ func TestNewOnlineLearnerRejectsAnUndeclaredLoop(t *testing.T) {
 				t.Fatal("an undeclared online policy was accepted")
 			}
 		})
+	}
+}
+
+// TestOnlineGateIsNeverProbed keeps a running-baseline mapper's history to the
+// scores that actually arrived. Two feedbacks of score 1 under
+// running_mean(window 2) and relu expect 0 then 1, so the gates are 1 then 0;
+// a probe of score 0 at construction would make the second expectation 0.5.
+// A broken mapper is reported by the update that reaches it.
+func TestOnlineGateIsNeverProbed(t *testing.T) {
+	mapper := &modulation.RewardMapper{Baseline: modulation.BaselineRunningMean, Window: 2, Kind: modulation.KindRelu}
+	var gates []float64
+	gate := learning.RewardGateFunc(func(score float64) ([]float64, error) {
+		record, err := mapper.Map(score)
+		if err == nil {
+			gates = append(gates, record.Applied[0])
+		}
+		return record.Applied, err
+	})
+	policy := learning.OnlinePolicy{AllowPlastic: true, ClockUnit: signal.TimeUnitModelStep}
+	l := newLearner(t, onlinePlasticIndividual(t), policy, gate)
+	if len(gates) != 0 {
+		t.Fatalf("NewOnlineLearner called the gate %d times", len(gates))
+	}
+	for i := 0; i < 2; i++ {
+		record := act(t, l, onlineInput())
+		step := int64(3 * (i + 1))
+		if err := l.Receive(context.Background(), feedback(t, record.ActionID, "teacher", step, step, 1)); err != nil {
+			t.Fatal(err)
+		}
+		update(t, l, step)
+	}
+	if want := []float64{1, 0}; !reflect.DeepEqual(gates, want) {
+		t.Fatalf("gates = %v, want %v", gates, want)
+	}
+
+	broken := newLearner(t, onlinePlasticIndividual(t), policy, brokenGate())
+	record := act(t, broken, onlineInput())
+	if err := broken.Receive(context.Background(), feedback(t, record.ActionID, "teacher", 3, 3, 1)); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := broken.Update(context.Background(), at(3)); err == nil {
+		t.Fatal("Update() error = nil with a mapper the modulation package refuses")
 	}
 }
 

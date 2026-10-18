@@ -267,14 +267,16 @@ func TestRecomputeTrainerMatchesFullHistory(t *testing.T) {
 }
 
 // TestRecomputeGradientHorizon reads how far back the gradient of a step
-// reached: the truncation window when it is shorter than the episode, the
-// whole episode otherwise, on applied and accumulate-only steps alike and
-// whether or not the history is recomputed.
+// reached, on applied and accumulate-only steps alike and whether or not the
+// history is recomputed. Truncation detaches at the fixed boundaries 0, w,
+// 2w, ..., so Step's last-row loss on row 22 reaches 22%3+1 = 2 rows under
+// truncation 3, while StepFrom's every-step upstream also scores row 20,
+// which reaches the full 3.
 func TestRecomputeGradientHorizon(t *testing.T) {
 	ctx := context.Background()
 	for _, fx := range recomputeTrainerFixtures() {
-		for _, tc := range []struct{ truncation, want int }{
-			{0, recomputeTrainerSteps}, {3, 3}, {50, recomputeTrainerSteps},
+		for _, tc := range []struct{ truncation, wantStep, wantFrom int }{
+			{0, recomputeTrainerSteps, recomputeTrainerSteps}, {3, 2, 3}, {50, recomputeTrainerSteps, recomputeTrainerSteps},
 		} {
 			for _, recompute := range []*learning.Recompute{nil, {SegmentSteps: 4}} {
 				for _, accumulate := range []int{0, 2} {
@@ -295,14 +297,15 @@ func TestRecomputeGradientHorizon(t *testing.T) {
 							label   string
 							result  learning.StepResult
 							applied bool
+							want    int
 						}{
-							{"Step", step, accumulate == 0}, {"StepFrom", from, true},
+							{"Step", step, accumulate == 0, tc.wantStep}, {"StepFrom", from, true, tc.wantFrom},
 						} {
 							if r.result.Applied != r.applied {
 								t.Fatalf("%s applied %t, want %t", r.label, r.result.Applied, r.applied)
 							}
-							if r.result.GradientHorizonSteps != tc.want {
-								t.Fatalf("%s gradient horizon %d steps, want %d", r.label, r.result.GradientHorizonSteps, tc.want)
+							if r.result.GradientHorizonSteps != r.want {
+								t.Fatalf("%s gradient horizon %d steps, want %d", r.label, r.result.GradientHorizonSteps, r.want)
 							}
 						}
 					})

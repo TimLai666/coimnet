@@ -87,9 +87,6 @@ func TestRecomputeOnlineLearnerMakesNoExtraCalls(t *testing.T) {
 			calls++
 			return mapper.Applied(score)
 		}))
-		// NewOnlineLearner validates the gate with one call of its own; only the
-		// calls of the loop below are counted.
-		calls = 0
 		records := make([]learning.ActionRecord, 3)
 		for i := range records {
 			records[i] = act(t, l, onlineInput())

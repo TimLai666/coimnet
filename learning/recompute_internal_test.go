@@ -286,3 +286,26 @@ func TestRecomputeRejects(t *testing.T) {
 		}
 	})
 }
+
+// TestGradientHorizonFollowsFixedWindows pins the horizon to what the reverse
+// pass actually reaches: with five rows and a last-row loss, truncation 2, 3,
+// 4 and 5 reach 1, 2, 1 and 5 rows. A last-step readout counts only the final
+// upstream row, and an all-zero upstream reaches nothing.
+func TestGradientHorizonFollowsFixedWindows(t *testing.T) {
+	for truncation, want := range map[int]int{0: 5, 2: 1, 3: 2, 4: 1, 5: 5, 9: 5} {
+		if got := gradientHorizon(4, truncation); got != want {
+			t.Errorf("gradientHorizon(4, %d) = %d, want %d", truncation, got, want)
+		}
+	}
+	upstream := [][]float64{{0}, {1}, {0}, {0}, {0}}
+	if got := upstreamHorizon(upstream, true, 4); got != 2 {
+		t.Errorf("every-step horizon = %d, want 2", got)
+	}
+	if got := upstreamHorizon(upstream, false, 4); got != 0 {
+		t.Errorf("last-step horizon with a zero final row = %d, want 0", got)
+	}
+	upstream[4][0] = 1
+	if got := upstreamHorizon(upstream, false, 4); got != 1 {
+		t.Errorf("last-step horizon = %d, want 1", got)
+	}
+}

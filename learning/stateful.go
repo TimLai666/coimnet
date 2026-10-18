@@ -74,6 +74,6 @@ func (tr *Trainer) StepFromState(ctx context.Context, initial NeuralState, input
 	if err != nil {
 		return zero, err
 	}
-	result.GradientHorizonSteps = gradientHorizon(len(input), tr.options.Truncation)
+	result.GradientHorizonSteps = upstreamHorizon(upstream, tr.network.config.ReadoutEveryStep, tr.options.Truncation)
 	return result, nil
 }

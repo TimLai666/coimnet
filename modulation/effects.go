@@ -204,6 +204,11 @@ func checkedEffect(i int, e Effect) (Effect, error) {
 		if !finite(e.GammaMin) || !finite(e.GammaMax) || e.GammaMin <= 0 || e.GammaMin > e.GammaMax {
 			return Effect{}, fmt.Errorf("modulation: effect %d needs finite gamma_min and gamma_max with 0 < gamma_min <= gamma_max, got %v and %v", i, e.GammaMin, e.GammaMax)
 		}
+		// Zero occupancy gives gamma 1, which must stay inside the bounds for
+		// an effect with no chemical present to be the neutral gain.
+		if e.GammaMin > 1 || e.GammaMax < 1 {
+			return Effect{}, fmt.Errorf("modulation: effect %d needs gamma_min <= 1 <= gamma_max so zero occupancy stays neutral, got %v and %v", i, e.GammaMin, e.GammaMax)
+		}
 		if !finite(e.BetaAbsMax) || e.BetaAbsMax < 0 {
 			return Effect{}, fmt.Errorf("modulation: effect %d needs a finite non-negative beta_abs_max, got %v", i, e.BetaAbsMax)
 		}

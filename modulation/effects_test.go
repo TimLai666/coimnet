@@ -193,6 +193,8 @@ func TestApplyEffectsRejectsAnInvalidDeclaration(t *testing.T) {
 		{"negative beta bound", []Effect{{Kind: EffectSensitivity, Receptor: 0, BetaScale: 1, BetaAbsMax: -1}}, occ, MixSum, 3, "beta_abs_max"},
 		{"gamma bounds crossed", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaScale: 1, GammaMin: 2, GammaMax: 1}}, occ, MixSum, 3, "gamma_min"},
 		{"negative gamma minimum", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaScale: 1, GammaMin: -1, GammaMax: 2}}, occ, MixSum, 3, "gamma_min"},
+		{"gamma bounds above one", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaMin: 1.5, GammaMax: 2}}, occ, MixSum, 3, "neutral"},
+		{"gamma bounds below one", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaMin: 0.25, GammaMax: 0.5}}, occ, MixSum, 3, "neutral"},
 		{"non-finite scale", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaScale: math.Inf(1)}}, occ, MixSum, 3, "finite"},
 		{"sensitivity with a threshold knob", []Effect{{Kind: EffectSensitivity, Receptor: 0, GammaScale: 1, ThetaScale: 1}}, occ, MixSum, 3, "never reads"},
 		{"threshold with a sensitivity knob", []Effect{{Kind: EffectThreshold, Receptor: 0, ThetaScale: 1, ThetaAbsMax: 1, GammaScale: 1}}, occ, MixSum, 3, "never reads"},
