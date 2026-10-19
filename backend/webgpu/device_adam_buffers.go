@@ -327,12 +327,13 @@ func (o *DeviceAdamW) compileAdamPipeline() error {
 		Module:     shader,
 		EntryPoint: "main",
 	})
-	pipelineLayout.Release()
 	if err != nil {
+		pipelineLayout.Release()
 		layout.Release()
 		return fmt.Errorf("%w: create compute pipeline: %v", ErrShaderCompile, err)
 	}
 	o.bindGroupLayout = layout
+	o.pipelineLayout = pipelineLayout
 	o.pipeline = pipeline
 	return nil
 }
@@ -482,6 +483,10 @@ func (o *DeviceAdamW) releaseAdamResources() {
 	if o.pipeline != nil {
 		o.pipeline.Release()
 		o.pipeline = nil
+	}
+	if o.pipelineLayout != nil {
+		o.pipelineLayout.Release()
+		o.pipelineLayout = nil
 	}
 	if o.bindGroupLayout != nil {
 		o.bindGroupLayout.Release()

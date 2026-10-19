@@ -60,13 +60,18 @@ type SparseBackward struct {
 	edges        int
 	cpuEdgeOrder []uint32
 
-	pipeline              *wgpu.ComputePipeline
+	pipeline *wgpu.ComputePipeline
+	// gogpu/wgpu's Vulkan pipelines keep only the raw layout handle, so a
+	// pipeline layout must live until its pipeline is released.
+	pipelineLayout        *wgpu.PipelineLayout
 	bindGroupLayout       *wgpu.BindGroupLayout
 	bindGroup             *wgpu.BindGroup
 	weightPipeline        *wgpu.ComputePipeline
+	weightPipelineLayout  *wgpu.PipelineLayout
 	weightBindGroupLayout *wgpu.BindGroupLayout
 	weightBindGroup       *wgpu.BindGroup
 	firstPipeline         *wgpu.ComputePipeline
+	firstPipelineLayout   *wgpu.PipelineLayout
 	firstBindGroupLayout  *wgpu.BindGroupLayout
 	firstBindGroup        *wgpu.BindGroup
 
@@ -375,12 +380,13 @@ func (b *SparseBackward) compilePipeline() error {
 		return fmt.Errorf("%w: create pipeline layout: %v", ErrShaderCompile, err)
 	}
 	pipeline, err := b.device.CreateComputePipeline(&wgpu.ComputePipelineDescriptor{Label: "coimnet-sparse-backward-pipeline", Layout: pipelineLayout, Module: shader, EntryPoint: "main"})
-	pipelineLayout.Release()
 	if err != nil {
+		pipelineLayout.Release()
 		layout.Release()
 		return fmt.Errorf("%w: create compute pipeline: %v", ErrShaderCompile, err)
 	}
 	b.bindGroupLayout = layout
+	b.pipelineLayout = pipelineLayout
 	b.pipeline = pipeline
 
 	weightShader, err := b.device.CreateShaderModule(&wgpu.ShaderModuleDescriptor{Label: "coimnet-sparse-weight-backward-shader", WGSL: sparseWeightBackwardWGSL})
@@ -405,12 +411,13 @@ func (b *SparseBackward) compilePipeline() error {
 		return fmt.Errorf("%w: create weight-gradient pipeline layout: %v", ErrShaderCompile, err)
 	}
 	weightPipeline, err := b.device.CreateComputePipeline(&wgpu.ComputePipelineDescriptor{Label: "coimnet-sparse-weight-backward-pipeline", Layout: weightPipelineLayout, Module: weightShader, EntryPoint: "main"})
-	weightPipelineLayout.Release()
 	if err != nil {
+		weightPipelineLayout.Release()
 		weightLayout.Release()
 		return fmt.Errorf("%w: create weight-gradient compute pipeline: %v", ErrShaderCompile, err)
 	}
 	b.weightBindGroupLayout = weightLayout
+	b.weightPipelineLayout = weightPipelineLayout
 	b.weightPipeline = weightPipeline
 
 	firstWGSL := fmt.Sprintf(sparseFirstWeightBackwardWGSL, b.firstSourceIndex, b.firstTargetIndex)
@@ -434,12 +441,13 @@ func (b *SparseBackward) compilePipeline() error {
 		return fmt.Errorf("%w: create first edge pipeline layout: %v", ErrShaderCompile, err)
 	}
 	firstPipeline, err := b.device.CreateComputePipeline(&wgpu.ComputePipelineDescriptor{Label: "coimnet-sparse-first-weight-backward-pipeline", Layout: firstPipelineLayout, Module: firstShader, EntryPoint: "main"})
-	firstPipelineLayout.Release()
 	if err != nil {
+		firstPipelineLayout.Release()
 		firstLayout.Release()
 		return fmt.Errorf("%w: create first edge compute pipeline: %v", ErrShaderCompile, err)
 	}
 	b.firstBindGroupLayout = firstLayout
+	b.firstPipelineLayout = firstPipelineLayout
 	b.firstPipeline = firstPipeline
 	return nil
 }
@@ -824,6 +832,12 @@ func (b *SparseBackward) releaseResources() {
 	if b.weightPipeline != nil {
 		b.weightPipeline.Release()
 		b.weightPipeline = nil
+	}
+	for _, layout := range []**wgpu.PipelineLayout{&b.pipelineLayout, &b.firstPipelineLayout, &b.weightPipelineLayout} {
+		if *layout != nil {
+			(*layout).Release()
+			*layout = nil
+		}
 	}
 	if b.bindGroupLayout != nil {
 		b.bindGroupLayout.Release()
