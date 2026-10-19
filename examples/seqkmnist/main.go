@@ -61,7 +61,13 @@ type settings struct {
 	// forward and backward run on the device, the encoder, readout and AdamW
 	// on the host. Evaluation and --bench stay on the CPU.
 	GPU bool `json:"gpu,omitempty"`
+	// Cols groups this many adjacent image columns into one step (28/Cols
+	// steps of 28*Cols pixels); zero means one column per step.
+	Cols int `json:"cols,omitempty"`
 }
+
+// columns is the number of image columns fed per step.
+func (s settings) columns() int { return max(s.Cols, 1) }
 
 type report struct {
 	Settings      settings  `json:"settings"`
@@ -100,6 +106,7 @@ func main() {
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
+	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
@@ -142,16 +149,19 @@ func main() {
 // measured peak memory covers loading the model and the test images only.
 func runLoaded(s settings, loadPath, benchPath, machine string) error {
 	ctx := context.Background()
-	testX, testY, err := readSplit(s.DataDir, "t10k", s.TestCount)
-	if err != nil {
-		return err
-	}
 	b, err := os.ReadFile(loadPath)
 	if err != nil {
 		return err
 	}
 	var snapshot learning.TrainingSnapshot
 	if err := json.Unmarshal(b, &snapshot); err != nil {
+		return err
+	}
+	if in := snapshot.Config.InputSize; in > side && in%side == 0 {
+		s.Cols = in / side
+	}
+	testX, testY, err := readSplit(s.DataDir, "t10k", s.TestCount, s.columns())
+	if err != nil {
 		return err
 	}
 	tr, err := learning.RestoreTrainer(snapshot)
@@ -186,11 +196,14 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if (s.GateSquash != "" && s.GateSquash != "softsign") || (s.GateSquash != "" && !s.Gate) {
 		return errors.New(`--gate-squash takes "softsign" and needs --gate`)
 	}
-	trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount)
+	if s.Cols < 0 || side%s.columns() != 0 {
+		return fmt.Errorf("--cols must divide %d", side)
+	}
+	trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount, s.columns())
 	if err != nil {
 		return err
 	}
-	testX, testY, err := readSplit(s.DataDir, "t10k", s.TestCount)
+	testX, testY, err := readSplit(s.DataDir, "t10k", s.TestCount, s.columns())
 	if err != nil {
 		return err
 	}
@@ -318,7 +331,7 @@ func build(s settings) (learning.Config, learning.Parameters) {
 	}
 	cfg := learning.Config{
 		Dynamics:     dynamics.Config{Nodes: s.Nodes, Sources: sources, Targets: targets, DT: 1, Activation: activation(s)},
-		InputSize:    side,
+		InputSize:    side * s.columns(),
 		OutputSize:   classes,
 		InputNodes:   inputNodes,
 		ReadoutNodes: readoutNodes,
@@ -341,7 +354,7 @@ func build(s settings) (learning.Config, learning.Parameters) {
 	}
 	p := learning.Parameters{
 		Core:    dynamics.Parameters{Weights: normal(len(sources), 1/math.Sqrt(float64(s.InDegree))), Bias: make([]float64, s.Nodes), LogTau: logTau},
-		Encoder: normal(side*s.InputNodes, 1/math.Sqrt(side)),
+		Encoder: normal(side*s.columns()*s.InputNodes, 1/math.Sqrt(float64(side*s.columns()))),
 		Readout: readout,
 	}
 	if s.Gate {
@@ -462,6 +475,9 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 
 func modelName(s settings) string {
 	name := fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree)
+	if c := s.columns(); c > 1 {
+		name += fmt.Sprintf("-cols%d", c)
+	}
 	if a := activation(s); a != "tanh" {
 		name += "-" + a
 	}
@@ -556,7 +572,9 @@ func writeNew(path string, v any) error {
 
 // readSplit reads the first limit images of a split as [column][row] pixel
 // sequences scaled to [0, 1], with their labels.
-func readSplit(dir, split string, limit int) ([][][]float64, []int, error) {
+// readSplit returns each image as 28/cols steps; step t holds columns
+// t*cols..t*cols+cols-1, each top to bottom.
+func readSplit(dir, split string, limit, cols int) ([][][]float64, []int, error) {
 	labels, err := readIDX(filepath.Join(dir, split+"-labels-idx1-ubyte.gz"), 8)
 	if err != nil {
 		return nil, nil, err
@@ -573,11 +591,14 @@ func readSplit(dir, split string, limit int) ([][][]float64, []int, error) {
 	ys := make([]int, count)
 	for i := range xs {
 		img := pixels[i*side*side : (i+1)*side*side]
-		xs[i] = make([][]float64, side)
-		for col := range xs[i] {
-			xs[i][col] = make([]float64, side)
-			for row := 0; row < side; row++ {
-				xs[i][col][row] = float64(img[row*side+col]) / 255
+		xs[i] = make([][]float64, side/cols)
+		for t := range xs[i] {
+			xs[i][t] = make([]float64, side*cols)
+			for c := range cols {
+				col := t*cols + c
+				for row := 0; row < side; row++ {
+					xs[i][t][c*side+row] = float64(img[row*side+col]) / 255
+				}
 			}
 		}
 		ys[i] = int(labels[i])

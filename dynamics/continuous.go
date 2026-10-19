@@ -513,6 +513,14 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 		}
 		ynext := make([]float64, n)
 		softsignGate := m.config.Gate == GateCurrentSoftsign
+		if !keep && softsignGate && m.act == activationSoftsign {
+			if i := softsignStep(drive, voltage, ynext, p.Bias, p.GateGain, p.GateBias, alpha); i >= 0 {
+				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
+			}
+			voltage = vnext
+			tr.output[t+1] = ynext
+			continue
+		}
 		for i := range drive {
 			drive[i] += p.Bias[i]
 			if gated {
@@ -556,6 +564,31 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 		tr.output[t+1] = ynext
 	}
 	return tr, nil
+}
+
+// softsignStep is the record-free step of the softsign-gated softsign core:
+// the general loop's arithmetic in the same order, without its per-neuron
+// branches and stores. It updates v in place, writes y, and returns the first
+// neuron whose voltage is non-finite, or -1.
+func softsignStep(drive, v, y, bias, gain, gateBias, alpha []float64) int {
+	n := len(drive)
+	v, y, bias, gain, gateBias, alpha = v[:n], y[:n], bias[:n], gain[:n], gateBias[:n], alpha[:n]
+	for i, x := range drive {
+		d := x + bias[i]
+		z := gain[i]*d + gateBias[i]
+		squash := (1 + z/(1+math.Abs(z))) / 2
+		a := 2 * alpha[i] * squash
+		if a > 1 {
+			a = 1
+		}
+		nv := (1-a)*v[i] + a*d
+		v[i] = nv
+		y[i] = nv / (1 + math.Abs(nv))
+		if !finite(nv) {
+			return i
+		}
+	}
+	return -1
 }
 
 // Outputs returns activated outputs after each input step, excluding prehistory.
