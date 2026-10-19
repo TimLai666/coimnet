@@ -34,6 +34,11 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
+try:
+    import fcntl
+except ImportError:  # Windows
+    fcntl = None
+
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parent.parent
 HF = "https://huggingface.co"
@@ -298,6 +303,22 @@ def selected(catalog, args):
         yield e
 
 
+def hold_lock(path):
+    """Refuse to work on a dataset another fetch.py process is already working on.
+
+    Two runs on the same work directory rename and delete each other's .part
+    files. The lock is released when the returned file is closed or the process ends.
+    """
+    fh = open(path, "a")
+    if fcntl:
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            fh.close()
+            raise RuntimeError(f"another fetch.py is already working on this dataset ({path})")
+    return fh
+
+
 def planned_bytes(e, tier):
     return e.get(f"{tier}_bytes") or (e.get("core_bytes") if tier == "core" else None) or e["bytes"]
 
@@ -326,6 +347,7 @@ def run(e, args, dest):
     free = shutil.disk_usage(work).free
     if need > free:
         raise RuntimeError(f"needs about {human(need)} free in {work}, only {human(free)} left")
+    lock = hold_lock(work / f".{e['id']}.lock")  # noqa: F841 (held until run returns)
     raw = work / e["id"]
     for i, f in enumerate(files, 1):
         # A parquet already converted by an interrupted run is gone; its sidecar
