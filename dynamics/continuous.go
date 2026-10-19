@@ -541,7 +541,10 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 				vnext[i] = lambda[i]*voltage[i] + alpha[i]*drive[i]
 			}
 			ynext[i] = m.activate(vnext[i])
-			if !finite(drive[i]) || !finite(vnext[i]) || !finite(ynext[i]) {
+			// A non-finite drive always reaches vnext (g*NaN, g*Inf, 0*Inf
+			// and a NaN gate are all non-finite), and every activation maps
+			// a finite voltage to a finite output, so one check covers all.
+			if !finite(vnext[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
 		}

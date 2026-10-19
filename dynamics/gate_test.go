@@ -252,3 +252,46 @@ func TestInferMatchesForwardOutputs(t *testing.T) {
 		}
 	}
 }
+
+func TestOverflowingDriveIsRejected(t *testing.T) {
+	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
+		for _, activation := range []string{"tanh", "softsign", "softplus"} {
+			for _, gain := range []float64{0, 1} {
+				f := newGateFixture(t, 7, math.Log(.4), GateCurrent, activation)
+				c := f.model.Config()
+				c.Gate = gate
+				m, err := NewContinuous(c)
+				if err != nil {
+					t.Fatal(err)
+				}
+				p := cloneParameters(f.params)
+				if gate == "" {
+					p.GateGain, p.GateBias = nil, nil
+				} else {
+					for i := range p.GateGain {
+						p.GateGain[i] = gain
+					}
+				}
+				// Bias plus a same-signed drive overflows to an infinite drive.
+				for i := range p.Bias {
+					p.Bias[i] = math.MaxFloat64
+				}
+				for i := range p.Weights {
+					p.Weights[i] = math.MaxFloat64
+				}
+				inputs := cloneRows(f.inputs)
+				for s := range inputs {
+					for i := range inputs[s] {
+						inputs[s][i] = math.MaxFloat64
+					}
+				}
+				if _, err := m.Forward(context.Background(), p, f.initial, inputs); err == nil || !strings.Contains(err.Error(), "non-finite state") {
+					t.Fatalf("gate %q %s gain %v: Forward error %v", gate, activation, gain, err)
+				}
+				if _, err := m.Infer(context.Background(), p, f.initial, inputs); err == nil || !strings.Contains(err.Error(), "non-finite state") {
+					t.Fatalf("gate %q %s gain %v: Infer error %v", gate, activation, gain, err)
+				}
+			}
+		}
+	}
+}
