@@ -95,7 +95,10 @@ type SparseDrive struct {
 	nodes int
 	edges int
 
-	pipeline        *wgpu.ComputePipeline
+	pipeline *wgpu.ComputePipeline
+	// gogpu/wgpu's Vulkan pipelines keep only the raw layout handle, so a
+	// pipeline layout must live until its pipeline is released.
+	pipelineLayout  *wgpu.PipelineLayout
 	bindGroupLayout *wgpu.BindGroupLayout
 	bindGroup       *wgpu.BindGroup
 
@@ -417,12 +420,13 @@ func (d *SparseDrive) compilePipeline() error {
 		Module:     shader,
 		EntryPoint: "main",
 	})
-	pipelineLayout.Release()
 	if err != nil {
+		pipelineLayout.Release()
 		layout.Release()
 		return fmt.Errorf("%w: create compute pipeline: %v", ErrShaderCompile, err)
 	}
 	d.bindGroupLayout = layout
+	d.pipelineLayout = pipelineLayout
 	d.pipeline = pipeline
 	return nil
 }
@@ -739,6 +743,10 @@ func (d *SparseDrive) releaseResources() {
 	if d.pipeline != nil {
 		d.pipeline.Release()
 		d.pipeline = nil
+	}
+	if d.pipelineLayout != nil {
+		d.pipelineLayout.Release()
+		d.pipelineLayout = nil
 	}
 	if d.bindGroupLayout != nil {
 		d.bindGroupLayout.Release()

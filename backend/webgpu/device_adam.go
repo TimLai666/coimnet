@@ -86,7 +86,10 @@ type DeviceAdamW struct {
 	snapshotSize    uint64
 	snapshotStaging *wgpu.Buffer
 
-	pipeline        *wgpu.ComputePipeline
+	pipeline *wgpu.ComputePipeline
+	// gogpu/wgpu's Vulkan pipelines keep only the raw layout handle, so a
+	// pipeline layout must live until its pipeline is released.
+	pipelineLayout  *wgpu.PipelineLayout
 	bindGroupLayout *wgpu.BindGroupLayout
 
 	cfg     AdamWConfig

@@ -52,6 +52,9 @@ func newGPUContinuous(ctx context.Context, cfg Config, withBackward bool) (*GPUC
 	if ctx == nil {
 		return nil, errors.New("dynamics gpu continuous: nil context")
 	}
+	if cfg.Gate != "" {
+		return nil, errors.New("dynamics gpu continuous: the GPU adapter does not support a gated model")
+	}
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

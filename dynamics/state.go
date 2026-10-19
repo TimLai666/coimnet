@@ -250,6 +250,9 @@ func (m *Continuous) stateModelValid() error {
 	if m == nil || m.config.Nodes <= 0 {
 		return fmt.Errorf("uninitialized continuous model")
 	}
+	if err := m.refuseGate("persistent state"); err != nil {
+		return err
+	}
 	if m.config.Nodes > MaxStateValues {
 		return fmt.Errorf("state voltage exceeds %d values", MaxStateValues)
 	}

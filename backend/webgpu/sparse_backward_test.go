@@ -332,8 +332,8 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
 	if err != nil {
 		return err
 	}
+	defer pipelineLayout.Release()
 	pipeline, err := device.CreateComputePipeline(&wgpu.ComputePipelineDescriptor{Label: "coimnet-sparse-backward-test-sentinel-pipeline", Layout: pipelineLayout, Module: shader, EntryPoint: "main"})
-	pipelineLayout.Release()
 	if err != nil {
 		return err
 	}

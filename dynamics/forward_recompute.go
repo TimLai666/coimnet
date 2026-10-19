@@ -11,6 +11,9 @@ import (
 // Segment must be positive. It does not construct or export persistent state.
 // Errors and cancellation return no outputs and do not change any arguments.
 func (m *Continuous) ForwardRecompute(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, segment int) ([][]float64, error) {
+	if err := m.refuseGate("recompute"); err != nil {
+		return nil, err
+	}
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
