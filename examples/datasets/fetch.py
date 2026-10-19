@@ -15,17 +15,21 @@ a token in HF_TOKEN.
 """
 
 import argparse
+import errno
+import faulthandler
 import fnmatch
 import hashlib
 import http.client
 import json
 import os
 import shutil
+import signal
 import subprocess
 import sys
 import tarfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
@@ -37,6 +41,9 @@ HF = "https://huggingface.co"
 # video are already compressed, so a fast level is enough for them.
 TEXT_SUFFIXES = {".json", ".jsonl", ".txt", ".csv", ".tsv", ".md", ".npy"}
 CHUNK = 8 << 20
+# SMB mounts on macOS answer large writes, and reads of just-written files,
+# with EAGAIN for a while; these errors are retried instead of failing a run.
+TRANSIENT = {errno.EAGAIN, errno.EWOULDBLOCK, errno.EINTR, errno.ETIMEDOUT}
 
 
 def log(msg):
@@ -56,6 +63,18 @@ def request(url, headers=None):
         hdrs["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
     hdrs.update(headers or {})
     return urllib.request.Request(url, headers=hdrs)
+
+
+def retry(fn, *args, attempts=12):
+    for attempt in range(attempts):
+        try:
+            return fn(*args)
+        except OSError as e:
+            if e.errno not in TRANSIENT or attempt == attempts - 1:
+                raise
+            wait = min(2 ** (attempt + 1), 60)
+            log(f"    retry in {wait}s after: {e}")
+            time.sleep(wait)
 
 
 def get_json(url):
@@ -101,7 +120,9 @@ def list_hf(entry, tier):
         size = f.get("lfs", {}).get("size", f["size"])
         out.append({
             "path": f["path"],
-            "url": f"{HF}/datasets/{repo}/resolve/{sha}/{f['path']}",
+            # Quote the path: names such as "Day_#_2.mp4" would otherwise lose
+            # everything after "#" as a URL fragment.
+            "url": f"{HF}/datasets/{repo}/resolve/{sha}/{urllib.parse.quote(f['path'])}",
             "bytes": size,
             "upstream_sha256": f.get("lfs", {}).get("oid"),
         })
@@ -171,11 +192,28 @@ def download(f, dest):
 
 
 def file_hash(path, algo="sha256"):
-    h = hashlib.new(algo)
-    with open(path, "rb") as fh:
-        while chunk := fh.read(CHUNK):
-            h.update(chunk)
-    return h.hexdigest()
+    def once():
+        h = hashlib.new(algo)
+        with open(path, "rb") as fh:
+            while chunk := fh.read(CHUNK):
+                h.update(chunk)
+        return h.hexdigest()
+    return retry(once)
+
+
+def copy_resumable(src, dst):
+    """Copy src to dst, continuing from what dst already holds after each transient error."""
+    size = src.stat().st_size
+
+    def step():
+        have = dst.stat().st_size if dst.exists() else 0
+        if have > size:
+            dst.unlink()
+            have = 0
+        with open(src, "rb") as fin, open(dst, "ab") as fout:
+            fin.seek(have)
+            shutil.copyfileobj(fin, fout, CHUNK)
+    retry(step)
 
 
 # ---------- packing ----------
@@ -186,7 +224,8 @@ def textify(path):
     Parquet pages are already compressed (mostly snappy), which leaves little
     for zstd. The same rows as plain text compress about 2.8x smaller under
     zstd -19 (TinyStories: 249 MB parquet -> 89 MB). Every column and value is
-    kept; only the container changes. Returns the new path, or None when the
+    kept; only the container changes. The caller removes the parquet once it
+    has recorded the hashes. Returns the new path, or None when the
     file has binary columns (images, audio) or pyarrow is not installed.
     """
     try:
@@ -210,11 +249,12 @@ def textify(path):
     if any(has_binary(f.type) for f in pf.schema_arrow):
         return None
     out = path.with_name(path.name + ".jsonl")
-    with open(out, "w", encoding="utf-8") as fh:
+    tmp = out.with_name(out.name + ".part")
+    with open(tmp, "w", encoding="utf-8") as fh:
         for batch in pf.iter_batches(batch_size=8192):
             for row in batch.to_pylist():
                 fh.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
-    path.unlink()
+    tmp.rename(out)
     return out
 
 def pack(raw_dir, paths, archive, level):
@@ -288,9 +328,20 @@ def run(e, args, dest):
         raise RuntimeError(f"needs about {human(need)} free in {work}, only {human(free)} left")
     raw = work / e["id"]
     for i, f in enumerate(files, 1):
+        # A parquet already converted by an interrupted run is gone; its sidecar
+        # keeps the hashes so the file is not downloaded again.
+        side = raw / (f["path"] + ".src.json")
+        if not (args.raw_only or args.keep_parquet) and side.exists() and (raw / (f["path"] + ".jsonl")).exists():
+            f.update(json.loads(side.read_text()))
+            log(f"  [{i}/{len(files)}] {f['path']} (converted earlier)")
+            continue
         log(f"  [{i}/{len(files)}] {f['path']} ({human(f['bytes'])})")
         download(f, raw / f["path"])
     for f in files:
+        if "stored_as" in f:
+            if f.get("upstream_sha256") and f["upstream_sha256"] != f["sha256"]:
+                raise RuntimeError(f"{f['path']}: sha256 differs from upstream")
+            continue
         p = raw / f["path"]
         f["sha256"] = file_hash(p)
         if f.get("upstream_sha256") and f["upstream_sha256"] != f["sha256"]:
@@ -301,12 +352,18 @@ def run(e, args, dest):
         log(f"  verified {len(files)} files in {raw}")
         return "downloaded"
     for f in files:
+        if "stored_as" in f:
+            continue
         f["stored_as"] = f["path"]
         if f["path"].endswith(".parquet") and not args.keep_parquet:
-            out = textify(raw / f["path"])
+            src = raw / f["path"]
+            out = textify(src)
             if out:
                 f["stored_as"] = out.relative_to(raw).as_posix()
                 f["stored_sha256"] = file_hash(out)
+                side = raw / (f["path"] + ".src.json")
+                side.write_text(json.dumps({k: f[k] for k in ("sha256", "stored_as", "stored_sha256")}))
+                src.unlink()
     level = 19 if all(Path(f["stored_as"]).suffix in TEXT_SUFFIXES for f in files) else 3
     log(f"  packing into {archive.name} (zstd -{level}) ...")
     local = work / archive.name
@@ -315,10 +372,11 @@ def run(e, args, dest):
     if local != archive:
         # Pack on local disk, then copy once: the destination may be a network mount.
         part = archive.with_name(archive.name + ".part")
-        shutil.copyfile(local, part)
-        if part.stat().st_size != archive_bytes:
-            raise RuntimeError(f"copy to {archive} is incomplete")
-        part.rename(archive)
+        copy_resumable(local, part)
+        if file_hash(part) != archive_sha256:
+            part.unlink()
+            raise RuntimeError(f"copy to {archive} differs from the packed archive")
+        retry(part.rename, archive)
         local.unlink()
     rec = {
         "schema_version": "coimnet-dataset-receipt/v1",
@@ -336,14 +394,25 @@ def run(e, args, dest):
         "archive_bytes": archive_bytes,
         "archive_sha256": archive_sha256,
     }
-    receipt.write_text(json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
+    retry(receipt.write_text, json.dumps(rec, indent=2, ensure_ascii=False) + "\n")
     log(f"  done: {human(total)} -> {human(archive_bytes)}")
     if not args.keep_raw:
         shutil.rmtree(raw)
     return "packed"
 
 
+def on_signal(signum, frame):
+    log(f"! stopped by signal {signal.Signals(signum).name}")
+    sys.exit(128 + signum)
+
+
 def main():
+    # Two runs ended with no message at all; a native crash now prints a
+    # traceback and a termination signal leaves a line in the log.
+    faulthandler.enable()
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        if signal.getsignal(sig) != signal.SIG_IGN:  # keep nohup's ignored SIGHUP
+            signal.signal(sig, on_signal)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--catalog", type=Path, default=HERE / "catalog.json")
     ap.add_argument("--dest", type=Path, default=REPO_ROOT / "data" / "datasets",
