@@ -81,6 +81,29 @@ type Continuous struct {
 	// hash is the state configuration fingerprint, computed once from the
 	// owned configuration; empty means compute it on demand.
 	hash string
+	// act is Config.Activation resolved once, so the per-neuron activation
+	// does not compare strings.
+	act activationKind
+}
+
+// activationKind is a resolved Config.Activation. The zero value is softplus,
+// matching the fallback of the string switch it replaces.
+type activationKind uint8
+
+const (
+	activationSoftplus activationKind = iota
+	activationTanh
+	activationSoftsign
+)
+
+func resolveActivation(name string) activationKind {
+	switch name {
+	case "tanh":
+		return activationTanh
+	case "softsign":
+		return activationSoftsign
+	}
+	return activationSoftplus
 }
 
 // edgeRun is the half-open edge range [start, end) whose target is target.
@@ -194,7 +217,7 @@ func NewContinuous(c Config) (*Continuous, error) {
 			break
 		}
 	}
-	m := &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay}
+	m := &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay, act: resolveActivation(c.Activation)}
 	if hash, err := m.stateConfigHash(); err == nil {
 		m.hash = hash
 	}
@@ -496,12 +519,22 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 				if softsignGate {
 					d := 1 + math.Abs(z)
 					squash[i] = (1 + z/d) / 2
-					slope[i] = 1 / (2 * d * d)
+					if keep {
+						slope[i] = 1 / (2 * d * d)
+					}
 				} else {
 					squash[i] = 1 / (1 + math.Exp(-z))
-					slope[i] = squash[i] * (1 - squash[i])
+					if keep {
+						slope[i] = squash[i] * (1 - squash[i])
+					}
 				}
-				gate[i] = math.Min(1, 2*alpha[i]*squash[i])
+				// Same as math.Min(1, x) for the nonnegative or NaN x here,
+				// without Min's signed-zero handling.
+				a := 2 * alpha[i] * squash[i]
+				if a > 1 {
+					a = 1
+				}
+				gate[i] = a
 				vnext[i] = (1-gate[i])*voltage[i] + gate[i]*drive[i]
 			} else {
 				vnext[i] = lambda[i]*voltage[i] + alpha[i]*drive[i]
@@ -678,20 +711,20 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 }
 
 func (m *Continuous) activate(v float64) float64 {
-	switch m.config.Activation {
-	case "tanh":
+	switch m.act {
+	case activationTanh:
 		return math.Tanh(v)
-	case "softsign":
+	case activationSoftsign:
 		return v / (1 + math.Abs(v))
 	}
 	return math.Max(v, 0) + math.Log1p(math.Exp(-math.Abs(v)))
 }
 func (m *Continuous) derivative(v float64) float64 {
-	switch m.config.Activation {
-	case "tanh":
+	switch m.act {
+	case activationTanh:
 		y := math.Tanh(v)
 		return 1 - y*y
-	case "softsign":
+	case activationSoftsign:
 		d := 1 + math.Abs(v)
 		return 1 / (d * d)
 	}
@@ -712,7 +745,9 @@ func vector(v []float64, n int, name string) error {
 	}
 	return nil
 }
-func finite(v float64) bool { return !math.IsNaN(v) && !math.IsInf(v, 0) }
+// finite reports whether v is neither NaN nor infinite: NaN fails every
+// comparison and an infinity exceeds MaxFloat64.
+func finite(v float64) bool { return math.Abs(v) <= math.MaxFloat64 }
 func cloneParameters(p Parameters) Parameters {
 	c := Parameters{Weights: append([]float64(nil), p.Weights...), Bias: append([]float64(nil), p.Bias...), LogTau: append([]float64(nil), p.LogTau...)}
 	if p.GateGain != nil || p.GateBias != nil {
