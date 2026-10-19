@@ -5,7 +5,8 @@
 // the parameter count grows with edges rather than with nodes squared.
 //
 // It trains with softmax cross-entropy and minibatches (AccumulateSteps plus
-// Trainer.StepBatch), evaluates the official test split and, with --bench,
+// Trainer.StepBatch; with --gpu the core of each minibatch runs on the device
+// through learning.NewGPUBatchTrainer), evaluates the official test split and, with --bench,
 // writes a bench.Result measured one image per call on one thread, so it can be
 // compared with scripts/research/seqlab.py on the same machine.
 package main
@@ -56,6 +57,10 @@ type settings struct {
 	GateSquash string `json:"gate_squash,omitempty"`
 	// Activation is the core activation; empty means tanh.
 	Activation string `json:"activation,omitempty"`
+	// GPU trains with learning.NewGPUBatchTrainer: each minibatch's core
+	// forward and backward run on the device, the encoder, readout and AdamW
+	// on the host. Evaluation and --bench stay on the CPU.
+	GPU bool `json:"gpu,omitempty"`
 }
 
 type report struct {
@@ -95,6 +100,7 @@ func main() {
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
+	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer); evaluation stays on the CPU")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
@@ -204,17 +210,27 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	}
 	var tr *learning.Trainer
 	done, elapsed := 0, 0.0
-	if resumed != nil {
+	switch {
+	case resumed != nil && s.GPU:
+		tr, err = learning.RestoreGPUBatchTrainer(ctx, resumed.Trainer)
+	case resumed != nil:
 		tr, err = learning.RestoreTrainer(resumed.Trainer)
-		done, elapsed, rep.EpochAccuracy = resumed.Epochs, resumed.TrainSeconds, resumed.EpochAccuracy
-		fmt.Printf("resuming from %s after epoch %d\n", checkpointPath, done-1)
-	} else {
+	case s.GPU:
+		tr, err = learning.NewGPUBatchTrainer(ctx, cfg, params, o)
+	default:
 		tr, err = learning.NewTrainer(cfg, params, o)
 	}
 	if err != nil {
 		return err
 	}
 	defer tr.Close()
+	if resumed != nil {
+		done, elapsed, rep.EpochAccuracy = resumed.Epochs, resumed.TrainSeconds, resumed.EpochAccuracy
+		fmt.Printf("resuming from %s after epoch %d\n", checkpointPath, done-1)
+	}
+	if info, ok := tr.GPUAdapterInfo(); ok {
+		fmt.Printf("training the core on %s (%s, %s)\n", info.Forward.Adapter, info.Forward.Backend, info.Forward.DeviceType)
+	}
 	fmt.Printf("nodes %d edges %d parameters %d updates %d\n", s.Nodes, rep.Edges, rep.Parameters, steps)
 	rng := rand.New(rand.NewPCG(s.Seed, 99))
 	order := make([]int, len(trainX))
@@ -458,9 +474,10 @@ func readCheckpoint(path string, s settings) (*checkpoint, error) {
 		return nil, fmt.Errorf("checkpoint %s: %w", path, err)
 	}
 	want, got := s, c.Settings
-	// Workers only changes how a batch's gradients are scheduled, and the data
-	// directory is not recorded.
+	// Workers only changes how a batch's gradients are scheduled, GPU only
+	// where the core runs, and the data directory is not recorded.
 	want.Workers, got.Workers, want.DataDir = 0, 0, ""
+	want.GPU, got.GPU = false, false
 	if got != want {
 		return nil, fmt.Errorf("checkpoint %s was written with settings %+v, not %+v", path, c.Settings, s)
 	}
