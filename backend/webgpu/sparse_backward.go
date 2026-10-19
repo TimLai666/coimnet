@@ -50,11 +50,10 @@ type SparseBackward struct {
 	mu     sync.Mutex
 	closed bool
 
-	instance *wgpu.Instance
-	adapter  *wgpu.Adapter
-	device   *wgpu.Device
-	info     DeviceInfo
-	limits   gputypes.Limits
+	adapter *wgpu.Adapter
+	device  *wgpu.Device
+	info    DeviceInfo
+	limits  gputypes.Limits
 
 	nodes        int
 	edges        int
@@ -189,44 +188,9 @@ func NewSparseBackward(ctx context.Context, cfg Config) (*SparseBackward, error)
 	}
 
 	initStart := time.Now()
-	instance, err := wgpu.CreateInstance(nil)
+	adapter, device, info, err := openDevice(ctx, false)
 	if err != nil {
-		return nil, fmt.Errorf("%w: create instance: %v", ErrUnavailable, err)
-	}
-	cleanup := func() { instance.Release() }
-	if err := ctx.Err(); err != nil {
-		cleanup()
 		return nil, err
-	}
-	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{PowerPreference: wgpu.PowerPreferenceHighPerformance})
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request adapter: %v", ErrUnavailable, err)
-	}
-	cleanup = func() {
-		adapter.Release()
-		instance.Release()
-	}
-	adapterInfo := adapter.Info()
-	if !usableHardwareAdapter(adapterInfo) {
-		cleanup()
-		return nil, fmt.Errorf("%w: adapter %q backend=%s type=%s", ErrUnavailable, adapterInfo.Name, adapterInfo.Backend, adapterInfo.DeviceType)
-	}
-	if err := ctx.Err(); err != nil {
-		cleanup()
-		return nil, err
-	}
-	device, err := adapter.RequestDevice(nil)
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request device for adapter %q: %v", ErrDevice, adapterInfo.Name, err)
-	}
-	info := DeviceInfo{
-		Adapter:    adapterInfo.Name,
-		Backend:    adapterInfo.Backend.String(),
-		Vendor:     adapterInfo.Vendor,
-		Driver:     adapterInfo.Driver,
-		DeviceType: adapterInfo.DeviceType.String(),
 	}
 	var firstSourceIndex, firstTargetIndex uint32
 	firstEdge := -1
@@ -240,7 +204,6 @@ func NewSparseBackward(ctx context.Context, cfg Config) (*SparseBackward, error)
 		firstTargetIndex = uint32(cfg.Targets[firstEdge])
 	}
 	b := &SparseBackward{
-		instance:         instance,
 		adapter:          adapter,
 		device:           device,
 		info:             info,
@@ -252,7 +215,7 @@ func NewSparseBackward(ctx context.Context, cfg Config) (*SparseBackward, error)
 		firstTargetIndex: firstTargetIndex,
 		metrics:          BackwardMetrics{DeviceInfo: info, Nodes: cfg.Nodes, Edges: len(cfg.Sources)},
 	}
-	cleanup = b.releaseResources
+	cleanup := b.releaseResources
 
 	for _, check := range []struct {
 		label string
@@ -874,9 +837,5 @@ func (b *SparseBackward) releaseResources() {
 	if b.adapter != nil {
 		b.adapter.Release()
 		b.adapter = nil
-	}
-	if b.instance != nil {
-		b.instance.Release()
-		b.instance = nil
 	}
 }

@@ -277,120 +277,137 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 	if window < 0 {
 		return 0, empty, fmt.Errorf("negative truncation window")
 	}
-	targetTensor, err := tensor([]int{n.config.OutputSize}, target)
-	if err != nil {
+	if _, err := tensor([]int{n.config.OutputSize}, target); err != nil {
 		return 0, empty, err
 	}
 	e, err := n.forwardSegment(ctx, p, input, segment)
 	if err != nil {
 		return 0, empty, err
 	}
-	// The mean squared error is taken against the last step in both readout
-	// modes: target is one row, so a per-step model scores its final row and
-	// leaves the earlier rows out of the loss, exactly as the last-step model
-	// does. A caller that wants every step to carry a loss supplies its own
-	// upstream through LossGradientFrom.
-	last := e.prediction
-	if n.config.ReadoutEveryStep {
-		all := doubles(e.prediction.Data())
-		if last, err = tensor([]int{n.config.OutputSize}, all[len(all)-n.config.OutputSize:]); err != nil {
-			return 0, empty, err
-		}
-	}
-	if kind == LossSoftmaxCrossEntropy {
-		return n.crossEntropyGradient(ctx, input, e, last, target, window, offset)
-	}
-	loss, err := e.readoutTape.MSELoss(last, targetTensor)
+	loss, up, err := n.lossUpstream(e, len(input), target, kind)
 	if err != nil {
 		return 0, empty, err
 	}
-	// Seed the shared reverse pass with the MSE VJP dL/dy from Insyra's own
-	// tape, so the refactored path carries the same bits Backward(loss) used to
-	// seed the readout with. Only the last row matters: the loss reads the
-	// final step alone.
-	up := make([][]float64, len(input))
-	for i := range up {
-		up[i] = make([]float64, n.config.OutputSize)
-	}
-	mse := nn.NewTape()
-	param, err := mse.Param(last)
-	if err != nil {
-		return 0, empty, err
-	}
-	upLoss, err := mse.MSELoss(param.Value(), targetTensor)
-	if err != nil {
-		return 0, empty, err
-	}
-	if err = mse.Backward(upLoss); err != nil {
-		return 0, empty, err
-	}
-	up[len(up)-1] = doubles(param.Grad().Data())
 	g, err := n.lossGradientReverse(ctx, input, e, up, window, offset)
 	if err != nil {
 		return 0, empty, err
 	}
-	l := float64(loss.Data()[0])
-	if !finite(l) {
-		return 0, empty, fmt.Errorf("non-finite loss")
-	}
-	return l, g, nil
+	return loss, g, nil
 }
 
-// crossEntropyGradient scores the last readout row last as logits against the
-// class that the one-hot target names, and seeds the shared reverse pass with
-// Insyra's SoftmaxCrossEntropy VJP, softmax(logits) - onehot.
-func (n *Network) crossEntropyGradient(ctx context.Context, input [][]float64, e *execution, last *nn.Tensor, target []float64, window, offset int) (float64, Gradient, error) {
-	var empty Gradient
+// lossUpstream scores the last readout row of e against target with the
+// objective kind and returns the loss and the readout upstream, one row per
+// input step with only the last row nonzero.
+//
+// The loss is taken against the last step in both readout modes: target is
+// one row, so a per-step model scores its final row and leaves the earlier
+// rows out of the loss, exactly as the last-step model does. A caller that
+// wants every step to carry a loss supplies its own upstream through
+// LossGradientFrom.
+func (n *Network) lossUpstream(e *execution, rows int, target []float64, kind string) (float64, [][]float64, error) {
+	last := e.prediction
+	if n.config.ReadoutEveryStep {
+		all := doubles(e.prediction.Data())
+		var err error
+		if last, err = tensor([]int{n.config.OutputSize}, all[len(all)-n.config.OutputSize:]); err != nil {
+			return 0, nil, err
+		}
+	}
+	var loss float64
+	var seed []float64
+	var err error
+	if kind == LossSoftmaxCrossEntropy {
+		loss, seed, err = n.crossEntropySeed(last, target)
+	} else {
+		loss, seed, err = n.mseSeed(e.readoutTape, last, target)
+	}
+	if err != nil {
+		return 0, nil, err
+	}
+	up := make([][]float64, rows)
+	for i := range up {
+		up[i] = make([]float64, n.config.OutputSize)
+	}
+	up[rows-1] = seed
+	return loss, up, nil
+}
+
+// mseSeed is the mean squared error of last against target and its VJP
+// dL/dy from Insyra's own tape, the same bits Backward(loss) used to seed the
+// readout with. The loss value is recorded on the readout tape, as before.
+func (n *Network) mseSeed(readoutTape *nn.Tape, last *nn.Tensor, target []float64) (float64, []float64, error) {
+	targetTensor, err := tensor([]int{n.config.OutputSize}, target)
+	if err != nil {
+		return 0, nil, err
+	}
+	loss, err := readoutTape.MSELoss(last, targetTensor)
+	if err != nil {
+		return 0, nil, err
+	}
+	mse := nn.NewTape()
+	param, err := mse.Param(last)
+	if err != nil {
+		return 0, nil, err
+	}
+	upLoss, err := mse.MSELoss(param.Value(), targetTensor)
+	if err != nil {
+		return 0, nil, err
+	}
+	if err = mse.Backward(upLoss); err != nil {
+		return 0, nil, err
+	}
+	l := float64(loss.Data()[0])
+	if !finite(l) {
+		return 0, nil, fmt.Errorf("non-finite loss")
+	}
+	return l, doubles(param.Grad().Data()), nil
+}
+
+// crossEntropySeed scores last as logits against the class that the one-hot
+// target names and returns Insyra's SoftmaxCrossEntropy loss and VJP,
+// softmax(logits) - onehot.
+func (n *Network) crossEntropySeed(last *nn.Tensor, target []float64) (float64, []float64, error) {
 	label := -1
 	for i, v := range target {
 		switch v {
 		case 0:
 		case 1:
 			if label >= 0 {
-				return 0, empty, fmt.Errorf("cross-entropy target has more than one 1")
+				return 0, nil, fmt.Errorf("cross-entropy target has more than one 1")
 			}
 			label = i
 		default:
-			return 0, empty, fmt.Errorf("cross-entropy target[%d] = %g is not 0 or 1", i, v)
+			return 0, nil, fmt.Errorf("cross-entropy target[%d] = %g is not 0 or 1", i, v)
 		}
 	}
 	if label < 0 {
-		return 0, empty, fmt.Errorf("cross-entropy target has no 1")
+		return 0, nil, fmt.Errorf("cross-entropy target has no 1")
 	}
 	logits, err := nn.NewFloat32Tensor([]int{1, n.config.OutputSize}, last.Data())
 	if err != nil {
-		return 0, empty, err
+		return 0, nil, err
 	}
 	labels, err := nn.NewInt64Tensor([]int{1}, []int64{int64(label)})
 	if err != nil {
-		return 0, empty, err
+		return 0, nil, err
 	}
 	tape := nn.NewTape()
 	param, err := tape.Param(logits)
 	if err != nil {
-		return 0, empty, err
+		return 0, nil, err
 	}
 	loss, err := tape.SoftmaxCrossEntropy(param.Value(), labels)
 	if err != nil {
-		return 0, empty, err
+		return 0, nil, err
 	}
 	if err = tape.Backward(loss); err != nil {
-		return 0, empty, err
-	}
-	up := make([][]float64, len(input))
-	for i := range up {
-		up[i] = make([]float64, n.config.OutputSize)
-	}
-	up[len(up)-1] = doubles(param.Grad().Data())
-	g, err := n.lossGradientReverse(ctx, input, e, up, window, offset)
-	if err != nil {
-		return 0, empty, err
+		return 0, nil, err
 	}
 	l := float64(loss.Data()[0])
 	if !finite(l) {
-		return 0, empty, fmt.Errorf("non-finite loss")
+		return 0, nil, fmt.Errorf("non-finite loss")
 	}
-	return l, g, nil
+	return l, doubles(param.Grad().Data()), nil
 }
 
 // LossGradientFrom runs one forward pass and the reverse pass with a
@@ -447,29 +464,7 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			}
 		}
 	}
-	// The readout VJP is seeded directly with the caller's upstream. A
-	// last-step model uses only the final row; a per-step model carries every
-	// row in the prediction's [step,output] shape.
-	seedValues := upstream[len(upstream)-1]
-	if n.config.ReadoutEveryStep {
-		flatUpstream := make([]float64, 0, len(upstream)*n.config.OutputSize)
-		for _, row := range upstream {
-			flatUpstream = append(flatUpstream, row...)
-		}
-		seedValues = flatUpstream
-	}
-	seed, err := tensor(e.prediction.Shape(), seedValues)
-	if err != nil {
-		return empty, err
-	}
-	if err = e.readoutTape.BackwardFrom(e.prediction, seed); err != nil {
-		return empty, err
-	}
-	dh, err := e.readoutTape.Grad(e.h)
-	if err != nil {
-		return empty, err
-	}
-	dr, err := e.readoutTape.Grad(e.readout)
+	dh, dr, err := n.readoutReverse(e, upstream)
 	if err != nil {
 		return empty, err
 	}
@@ -536,40 +531,88 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 			flat = append(flat, row[id*stateDim:(id+1)*stateDim]...)
 		}
 	}
-	seed, err = tensor(e.encoded.Shape(), flat)
+	encoder, inputs, err := n.encoderReverse(e, flat)
 	if err != nil {
 		return empty, err
 	}
-	if err = e.encoderTape.BackwardFrom(e.encoded, seed); err != nil {
-		return empty, err
-	}
-	de, err := e.encoderTape.Grad(e.encoder)
-	if err != nil {
-		return empty, err
-	}
-	dx, err := e.encoderTape.Grad(e.x)
-	if err != nil {
-		return empty, err
-	}
-	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: doubles(de.Data()), Readout: doubles(dr.Data()), Inputs: rows(doubles(dx.Data()), n.config.InputSize)}
-	for _, v := range [][]float64{g.Encoder, g.Readout} {
-		for _, x := range v {
-			if !finite(x) {
-				return empty, fmt.Errorf("non-finite boundary gradient")
-			}
-		}
-	}
-	for _, row := range g.Inputs {
-		for _, x := range row {
-			if !finite(x) {
-				return empty, fmt.Errorf("non-finite input gradient")
-			}
+	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: encoder, Readout: doubles(dr.Data()), Inputs: inputs}
+	for _, x := range g.Readout {
+		if !finite(x) {
+			return empty, fmt.Errorf("non-finite boundary gradient")
 		}
 	}
 	if err := ctx.Err(); err != nil {
 		return empty, err
 	}
 	return g, nil
+}
+
+// readoutReverse seeds the readout VJP directly with the caller's upstream
+// and returns the gradients of the selected core activity h and of the
+// readout matrix. A last-step model uses only the final row; a per-step model
+// carries every row in the prediction's [step,output] shape. The caller has
+// validated upstream's shape and values.
+func (n *Network) readoutReverse(e *execution, upstream [][]float64) (*nn.Tensor, *nn.Tensor, error) {
+	seedValues := upstream[len(upstream)-1]
+	if n.config.ReadoutEveryStep {
+		flatUpstream := make([]float64, 0, len(upstream)*n.config.OutputSize)
+		for _, row := range upstream {
+			flatUpstream = append(flatUpstream, row...)
+		}
+		seedValues = flatUpstream
+	}
+	seed, err := tensor(e.prediction.Shape(), seedValues)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = e.readoutTape.BackwardFrom(e.prediction, seed); err != nil {
+		return nil, nil, err
+	}
+	dh, err := e.readoutTape.Grad(e.h)
+	if err != nil {
+		return nil, nil, err
+	}
+	dr, err := e.readoutTape.Grad(e.readout)
+	if err != nil {
+		return nil, nil, err
+	}
+	return dh, dr, nil
+}
+
+// encoderReverse seeds the encoder VJP directly with the core input gradient
+// of the encoded columns, row-major [step][encoder width], and returns the
+// encoder and observation gradients. This upstream is a reverse-pass device,
+// not the optimization objective.
+func (n *Network) encoderReverse(e *execution, flat []float64) ([]float64, [][]float64, error) {
+	seed, err := tensor(e.encoded.Shape(), flat)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err = e.encoderTape.BackwardFrom(e.encoded, seed); err != nil {
+		return nil, nil, err
+	}
+	de, err := e.encoderTape.Grad(e.encoder)
+	if err != nil {
+		return nil, nil, err
+	}
+	dx, err := e.encoderTape.Grad(e.x)
+	if err != nil {
+		return nil, nil, err
+	}
+	encoder, inputs := doubles(de.Data()), rows(doubles(dx.Data()), n.config.InputSize)
+	for _, x := range encoder {
+		if !finite(x) {
+			return nil, nil, fmt.Errorf("non-finite boundary gradient")
+		}
+	}
+	for _, row := range inputs {
+		for _, x := range row {
+			if !finite(x) {
+				return nil, nil, fmt.Errorf("non-finite input gradient")
+			}
+		}
+	}
+	return encoder, inputs, nil
 }
 
 // forward serves passes that never run the reverse pass, so it records no
@@ -613,53 +656,12 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 			return nil, err
 		}
 	}
-	if len(input) == 0 {
-		return nil, fmt.Errorf("empty input sequence")
-	}
-	count, err := size(len(input), n.config.InputSize)
+	e, encodedRows, err := n.encode(p, input, record)
 	if err != nil {
 		return nil, err
 	}
-	nodes := configNodes(n.config)
 	stateDim := n.core.stateDim()
-	coreWidth := nodes * stateDim
-	if _, err := size(len(input), coreWidth); err != nil {
-		return nil, err
-	}
-	flat := make([]float64, 0, count)
-	for i, row := range input {
-		if len(row) != n.config.InputSize {
-			return nil, fmt.Errorf("input[%d] width %d, want %d", i, len(row), n.config.InputSize)
-		}
-		flat = append(flat, row...)
-	}
-	x, err := tensor([]int{len(input), n.config.InputSize}, flat)
-	if err != nil {
-		return nil, err
-	}
-	encoderWidth := inputWidth(n.config)
-	encoder, err := n.encoderCache.get(n.config.InputSize, encoderWidth, p.Encoder)
-	if err != nil {
-		return nil, err
-	}
-	var et *nn.Tape
-	var z *nn.Tensor
-	if record {
-		et = nn.NewTape()
-		if _, err = et.Param(x); err != nil {
-			return nil, err
-		}
-		if _, err = et.Param(encoder); err != nil {
-			return nil, err
-		}
-		z, err = et.MatMul(x, encoder)
-	} else {
-		z, err = nn.MatMul(x, encoder)
-	}
-	if err != nil {
-		return nil, err
-	}
-	encodedRows := rows(doubles(z.Data()), encoderWidth)
+	coreWidth := configNodes(n.config) * stateDim
 	coreInputs := encodedRows
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(encodedRows))
@@ -726,48 +728,108 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 		}
 		shape = []int{readoutCount}
 	}
-	h, err := tensor(shape, selected)
-	if err != nil {
+	if err := n.readoutFrom(e, p, selected, shape, record); err != nil {
 		return nil, err
 	}
-	r, err := n.readoutCache.get(readoutCount, n.config.OutputSize, p.Readout)
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return nil, err
+	}
+	if n.fixed {
+		e.weights = core.Core.Weights
+	}
+	e.trace = tr
+	if segment > 0 {
+		e.coreInputs, e.coreParams, e.segment = coreInputs, core, segment
+	}
+	return e, nil
+}
+
+// encode validates one episode's observations and runs Insyra's encoder,
+// recording its tape when record is set. It returns the execution holding the
+// encoder half and the encoded rows, one row of inputWidth values per step.
+func (n *Network) encode(p Parameters, input [][]float64, record bool) (*execution, [][]float64, error) {
+	if len(input) == 0 {
+		return nil, nil, fmt.Errorf("empty input sequence")
+	}
+	count, err := size(len(input), n.config.InputSize)
+	if err != nil {
+		return nil, nil, err
+	}
+	coreWidth := configNodes(n.config) * n.core.stateDim()
+	if _, err := size(len(input), coreWidth); err != nil {
+		return nil, nil, err
+	}
+	flat := make([]float64, 0, count)
+	for i, row := range input {
+		if len(row) != n.config.InputSize {
+			return nil, nil, fmt.Errorf("input[%d] width %d, want %d", i, len(row), n.config.InputSize)
+		}
+		flat = append(flat, row...)
+	}
+	x, err := tensor([]int{len(input), n.config.InputSize}, flat)
+	if err != nil {
+		return nil, nil, err
+	}
+	encoderWidth := inputWidth(n.config)
+	encoder, err := n.encoderCache.get(n.config.InputSize, encoderWidth, p.Encoder)
+	if err != nil {
+		return nil, nil, err
+	}
+	var et *nn.Tape
+	var z *nn.Tensor
+	if record {
+		et = nn.NewTape()
+		if _, err = et.Param(x); err != nil {
+			return nil, nil, err
+		}
+		if _, err = et.Param(encoder); err != nil {
+			return nil, nil, err
+		}
+		z, err = et.MatMul(x, encoder)
+	} else {
+		z, err = nn.MatMul(x, encoder)
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	return &execution{encoderTape: et, x: x, encoder: encoder, encoded: z}, rows(doubles(z.Data()), encoderWidth), nil
+}
+
+// readoutFrom runs Insyra's readout on the selected core activity, shaped
+// [readout] or [step,readout], recording its tape into e when record is set.
+func (n *Network) readoutFrom(e *execution, p Parameters, selected []float64, shape []int, record bool) error {
+	h, err := tensor(shape, selected)
+	if err != nil {
+		return err
+	}
+	r, err := n.readoutCache.get(shape[len(shape)-1], n.config.OutputSize, p.Readout)
+	if err != nil {
+		return err
 	}
 	var rt *nn.Tape
 	var pred *nn.Tensor
 	if record {
 		rt = nn.NewTape()
 		if _, err = rt.Param(h); err != nil {
-			return nil, err
+			return err
 		}
 		if _, err = rt.Param(r); err != nil {
-			return nil, err
+			return err
 		}
 		pred, err = rt.MatMul(h, r)
 	} else {
 		pred, err = nn.MatMul(h, r)
 	}
 	if err != nil {
-		return nil, err
+		return err
 	}
 	for _, v := range pred.Data() {
 		if !finite(float64(v)) {
-			return nil, fmt.Errorf("non-finite prediction")
+			return fmt.Errorf("non-finite prediction")
 		}
 	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	effective := []float64(nil)
-	if n.fixed {
-		effective = core.Core.Weights
-	}
-	e := &execution{encoderTape: et, readoutTape: rt, x: x, encoder: encoder, encoded: z, h: h, readout: r, prediction: pred, trace: tr, weights: effective}
-	if segment > 0 {
-		e.coreInputs, e.coreParams, e.segment = coreInputs, core, segment
-	}
-	return e, nil
+	e.readoutTape, e.h, e.readout, e.prediction = rt, h, r, pred
+	return nil
 }
 
 func tensor(shape []int, values []float64) (*nn.Tensor, error) {

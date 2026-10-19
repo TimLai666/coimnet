@@ -6,6 +6,7 @@ require (
 	github.com/HazelnutParadise/insyra v0.3.4
 	github.com/apache/arrow/go/v17 v17.0.0
 	github.com/gogpu/gputypes v0.8.0
+	github.com/gogpu/naga v0.19.0
 	github.com/gogpu/wgpu v0.34.5
 	golang.org/x/sys v0.47.0
 )
@@ -20,7 +21,6 @@ require (
 	github.com/go-webgpu/webgpu v0.5.5 // indirect
 	github.com/goccy/go-json v0.11.1 // indirect
 	github.com/gogpu/gpucontext v0.31.3 // indirect
-	github.com/gogpu/naga v0.19.0 // indirect
 	github.com/google/flatbuffers v25.12.19+incompatible // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect

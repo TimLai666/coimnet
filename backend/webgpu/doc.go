@@ -30,11 +30,29 @@
 // learning.RestoreGPUDeviceTrainer use this checked path; their neural state,
 // activations, and sparse weight transfers remain host-side.
 //
-// These are primitives, not a complete continuous network Forward or
+// ContinuousBatch is the batched continuous core: a scalar, undelayed leaky
+// integrator, optionally gated (GateSigmoid, GateSoftsign), with tanh,
+// softsign or softplus activation, starting every sequence at zero voltage.
+// Forward runs all steps of a B-sequence minibatch in one submission and keeps
+// the voltage, output, drive and gate history resident; Backward runs full
+// BPTT over it, writes per-(step, sequence, node) intermediates, reduces every
+// parameter gradient in separate kernels (no float atomics) and scatters to
+// sources through a transpose CSR. Only the readout nodes and the final
+// gradients are read back. dynamics.NewGPUContinuousBatch and
+// learning.NewGPUBatchTrainer build on it. It is implemented and checked
+// against the float64 CPU core on gogpu's software adapter in tests only; it
+// is not yet verified on hardware.
+//
+// The other types are primitives, not a complete continuous network Forward or
 // Backward pass, neural-state system, or training integration. The package
 // never silently falls back to the CPU.
 // A missing or software-only adapter is reported as ErrUnavailable; execution
 // errors are returned to the caller and are never silently rerun on the CPU.
+// Every executor opens its adapter and device from one process-wide instance
+// and releases only its own device and adapter on Close. Once this process
+// has opened a hardware device (HardwareAdapterSeen), a later missing adapter
+// is reported as ErrDevice instead, so hardware tests fail rather than skip
+// when an adapter that worked is lost.
 // Metrics identify the selected adapter and backend and expose measured
 // initialization, shader compilation, topology transfer, warmup, per-call
 // transfer, dispatch, and readback durations. AdamW MaxBytes is a logical

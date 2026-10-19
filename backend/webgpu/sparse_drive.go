@@ -86,11 +86,10 @@ type SparseDrive struct {
 	mu     sync.Mutex
 	closed bool
 
-	instance *wgpu.Instance
-	adapter  *wgpu.Adapter
-	device   *wgpu.Device
-	info     DeviceInfo
-	limits   gputypes.Limits
+	adapter *wgpu.Adapter
+	device  *wgpu.Device
+	info    DeviceInfo
+	limits  gputypes.Limits
 
 	nodes int
 	edges int
@@ -232,69 +231,26 @@ func NewSparseDrive(ctx context.Context, cfg Config) (*SparseDrive, error) {
 	}
 
 	initStart := time.Now()
-	instance, err := wgpu.CreateInstance(nil)
+	adapter, device, info, err := openDevice(ctx, false)
 	if err != nil {
-		return nil, fmt.Errorf("%w: create instance: %v", ErrUnavailable, err)
+		return nil, err
 	}
 	cleanup := func() {
-		if instance != nil {
-			instance.Release()
-		}
-	}
-	if err := ctx.Err(); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{PowerPreference: wgpu.PowerPreferenceHighPerformance})
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request adapter: %v", ErrUnavailable, err)
-	}
-	cleanup = func() {
-		adapter.Release()
-		instance.Release()
-	}
-	adapterInfo := adapter.Info()
-	if !usableHardwareAdapter(adapterInfo) {
-		cleanup()
-		return nil, fmt.Errorf("%w: adapter %q backend=%s type=%s", ErrUnavailable, adapterInfo.Name, adapterInfo.Backend, adapterInfo.DeviceType)
-	}
-	if err := ctx.Err(); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	device, err := adapter.RequestDevice(nil)
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request device for adapter %q: %v", ErrDevice, adapterInfo.Name, err)
-	}
-	cleanup = func() {
 		device.Release()
 		adapter.Release()
-		instance.Release()
 	}
 	if err := ctx.Err(); err != nil {
 		cleanup()
 		return nil, err
 	}
 
-	info := DeviceInfo{
-		Adapter:    adapterInfo.Name,
-		Backend:    adapterInfo.Backend.String(),
-		Vendor:     adapterInfo.Vendor,
-		Driver:     adapterInfo.Driver,
-		DeviceType: adapterInfo.DeviceType.String(),
-	}
 	d := &SparseDrive{
-		instance: instance,
-		adapter:  adapter,
-		device:   device,
-		info:     info,
-		limits:   adapter.Limits(),
-		nodes:    cfg.Nodes,
-		edges:    len(cfg.Sources),
+		adapter: adapter,
+		device:  device,
+		info:    info,
+		limits:  adapter.Limits(),
+		nodes:   cfg.Nodes,
+		edges:   len(cfg.Sources),
 		metrics: Metrics{
 			Adapter:    info.Adapter,
 			Backend:    info.Backend,
@@ -772,10 +728,6 @@ func (d *SparseDrive) releaseResources() {
 	if d.adapter != nil {
 		d.adapter.Release()
 		d.adapter = nil
-	}
-	if d.instance != nil {
-		d.instance.Release()
-		d.instance = nil
 	}
 }
 
