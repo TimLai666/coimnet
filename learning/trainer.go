@@ -177,6 +177,9 @@ type Trainer struct {
 	updates     uint64
 	accumulator *GradientAccumulator
 	deviceAdam  *webgpu.DeviceAdamW
+	// batch is the device core StepBatch drives on a NewGPUBatchTrainer
+	// trainer; nil on every other trainer.
+	batch batchCore
 }
 
 // NewTrainer validates the entire model before making an owned parameter copy.
@@ -303,6 +306,11 @@ func (tr *Trainer) Close() error {
 	}
 	if core, ok := tr.network.core.(gpuContinuousCore); ok && core.gpu != nil {
 		if err := core.gpu.Close(); err != nil {
+			closeErrs = append(closeErrs, err)
+		}
+	}
+	if tr.batch != nil {
+		if err := tr.batch.Close(); err != nil {
 			closeErrs = append(closeErrs, err)
 		}
 	}
@@ -472,11 +480,9 @@ func upstreamHorizon(upstream [][]float64, everyStep bool, truncation, offset in
 // with LossKnown true; external-upstream steps report zero with LossKnown false.
 func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss float64, known bool, g Gradient, initial *NeuralState) (StepResult, error) {
 	var zero StepResult
-	var err error
 	if tr.deviceAdam != nil && initial != nil {
 		return zero, ErrGPUTrainerStateUnsupported
 	}
-	p := flatParameters(tr.parameters)
 	grad := flatGradient(g)
 	mask := parameterMask(tr.parameters, tr.options, tr.network.core.thetaNodes(), tr.network.core)
 	// A sharing declaration reduces each group's gradient to its members' sum
@@ -519,10 +525,26 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 	if !finite(norm) {
 		return zero, fmt.Errorf("non-finite gradient norm")
 	}
+	return tr.applyGradientSum(ctx, input, loss, known, grad, 1, norm, mask, plan, initial)
+}
+
+// applyGradientSum is the accumulation, clipping, scheduled AdamW and
+// projection half of stepWithGradient. grad is the masked sum of count
+// gradients taken from the current parameters: Step passes one gradient, the
+// batched device path the sum of a whole chunk. Either way the accumulator
+// gains the sum and count, so a full window averages exactly the gradients it
+// holds. norm is reported as StepResult.GradientNorm.
+func (tr *Trainer) applyGradientSum(ctx context.Context, input [][]float64, loss float64, known bool, grad []float64, count int, norm float64, mask []bool, plan *sharePlan, initial *NeuralState) (StepResult, error) {
+	var zero StepResult
+	var err error
+	p := flatParameters(tr.parameters)
 	// Accumulation. A window of one uses this step's gradient directly, which
 	// allocates nothing extra and stays bit-identical to the behaviour before
 	// this ticket. A larger window sums first and only a full window continues.
 	window, mean := accumulateSteps(tr.options), grad
+	if count < 1 || (window == 1 && count != 1) {
+		return zero, fmt.Errorf("a gradient sum of %d steps does not fit an accumulation window of %d", count, window)
+	}
 	var accumulator *GradientAccumulator
 	if window > 1 {
 		accumulator = copyAccumulator(tr.accumulator)
@@ -535,12 +557,15 @@ func (tr *Trainer) stepWithGradient(ctx context.Context, input [][]float64, loss
 		if accumulator == nil {
 			accumulator = &GradientAccumulator{Sum: make([]float64, len(grad))}
 		}
+		if accumulator.Count+count > window {
+			return zero, fmt.Errorf("a gradient sum of %d steps overflows the open window (%d of %d)", count, accumulator.Count, window)
+		}
 		for i, v := range grad {
 			if mask[i] {
 				accumulator.Sum[i] += v
 			}
 		}
-		accumulator.Count++
+		accumulator.Count += count
 		if accumulator.Count < window {
 			if err := ctx.Err(); err != nil {
 				return zero, err

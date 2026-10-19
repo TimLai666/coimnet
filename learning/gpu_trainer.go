@@ -140,7 +140,8 @@ func attachGPUTrainer(ctx context.Context, trainer *Trainer) (*Trainer, error) {
 	return trainer, nil
 }
 
-// GPUAdapterInfo reports the forward and backward adapter identities. The
+// GPUAdapterInfo reports the forward and backward adapter identities; a
+// NewGPUBatchTrainer trainer reports its batched core's adapter for both. The
 // boolean is false for a CPU trainer.
 func (tr *Trainer) GPUAdapterInfo() (GPUAdapterInfo, bool) {
 	if tr == nil || tr.network == nil {
@@ -148,6 +149,10 @@ func (tr *Trainer) GPUAdapterInfo() (GPUAdapterInfo, bool) {
 	}
 	tr.mu.Lock()
 	defer tr.mu.Unlock()
+	if tr.batch != nil {
+		info := tr.batch.Info()
+		return GPUAdapterInfo{Forward: info, Backward: info}, true
+	}
 	core, ok := tr.network.core.(gpuContinuousCore)
 	if !ok || core.gpu == nil {
 		return GPUAdapterInfo{}, false

@@ -22,6 +22,9 @@ import (
 // When a pair fails, the pairs before it stay committed exactly as if Step had
 // been called for them, the returned slice holds their results, and the error
 // names the failing pair.
+//
+// On a NewGPUBatchTrainer trainer each such window chunk runs as one batched
+// device episode instead; see NewGPUBatchTrainer for what differs.
 func (tr *Trainer) StepBatch(ctx context.Context, inputs [][][]float64, targets [][]float64, workers int) ([]StepResult, error) {
 	if tr == nil || ctx == nil {
 		return nil, fmt.Errorf("nil trainer or context")
@@ -42,6 +45,9 @@ func (tr *Trainer) StepBatch(ctx context.Context, inputs [][][]float64, targets 
 		return nil, err
 	}
 	defer tr.mu.Unlock()
+	if tr.batch != nil {
+		return tr.stepBatchCore(ctx, inputs, targets, workers)
+	}
 	results := make([]StepResult, 0, len(inputs))
 	window := accumulateSteps(tr.options)
 	for start := 0; start < len(inputs); {
