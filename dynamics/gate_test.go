@@ -205,3 +205,50 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 		t.Fatal("vector core accepted a gate")
 	}
 }
+
+// TestInferMatchesForwardOutputs checks that the record-free pass returns
+// exactly Forward's outputs for delayed and undelayed graphs, serial and
+// partitioned, with and without each gate.
+func TestInferMatchesForwardOutputs(t *testing.T) {
+	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
+		for _, activation := range []string{"tanh", "softsign", "softplus"} {
+			for _, delayed := range []bool{true, false} {
+				for _, workers := range []int{1, 3} {
+					f := newGateFixture(t, 7, math.Log(.4), GateCurrent, activation)
+					c := f.model.Config()
+					c.Gate, c.Workers = gate, workers
+					if !delayed {
+						c.Delays = nil
+					}
+					m, err := NewContinuous(c)
+					if err != nil {
+						t.Fatal(err)
+					}
+					p := cloneParameters(f.params)
+					if gate == "" {
+						p.GateGain, p.GateBias = nil, nil
+					}
+					tr, err := m.Forward(context.Background(), p, f.initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := tr.Outputs()
+					got, err := m.Infer(context.Background(), p, f.initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(got) != len(want) {
+						t.Fatalf("%d rows, want %d", len(got), len(want))
+					}
+					for s := range want {
+						for i := range want[s] {
+							if math.Float64bits(got[s][i]) != math.Float64bits(want[s][i]) {
+								t.Fatalf("gate %q %s delayed=%v workers=%d: step %d node %d = %v, want %v", gate, activation, delayed, workers, s, i, got[s][i], want[s][i])
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

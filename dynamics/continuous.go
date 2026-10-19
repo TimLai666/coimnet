@@ -328,13 +328,27 @@ func (m *Continuous) synapticDriveParallel(drive, weights []float64, r reader) e
 // Forward evolves a nonempty sequence without changing its arguments. The
 // returned trace owns its buffers. Cancellation or errors publish no state.
 func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (*Trace, error) {
-	return m.forward(ctx, p, initial, inputs, nil)
+	return m.forward(ctx, p, initial, inputs, nil, true)
+}
+
+// Infer evolves a nonempty sequence like Forward and returns only the
+// activated outputs after each input step, bit-identical to
+// Forward(...).Outputs(). It keeps no reverse-pass record and reuses its step
+// buffers, so it is the cheaper path for prediction.
+func (m *Continuous) Infer(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) ([][]float64, error) {
+	tr, err := m.forward(ctx, p, initial, inputs, nil, false)
+	if err != nil {
+		return nil, err
+	}
+	return tr.output[1:], nil
 }
 
 // forward is the shared scalar forward implementation. A non-nil saved state
 // supplies a copied, constant delayed-output prefix and makes the segment's
-// first absolute step saved.Steps.
-func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, saved *State) (*Trace, error) {
+// first absolute step saved.Steps. Without keep only the output rows are
+// recorded: voltage, drive and gate rows are step buffers reused in place, so
+// the trace serves Infer and nothing that reads them.
+func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, saved *State, keep bool) (*Trace, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -407,11 +421,25 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 		history = cloneRows(saved.History)
 		startSteps = saved.Steps
 	}
-	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha, history: history, startSteps: startSteps}
+	tr := &Trace{model: m, voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha, history: history, startSteps: startSteps}
 	tr.voltage[0] = append([]float64(nil), initial...)
-	if gated {
+	if keep {
+		tr.parameters = cloneParameters(p)
+	}
+	if gated && keep {
 		tr.gate, tr.gateSquash, tr.gateSlope = make([][]float64, len(inputs)), make([][]float64, len(inputs)), make([][]float64, len(inputs))
 	}
+	// Step buffers for a pass that keeps no record: drive and gate rows are
+	// overwritten every step, and the voltage is updated in place because
+	// neuron i's next voltage reads only its own current one.
+	var driveBuf, gateBuf, squashBuf, slopeBuf []float64
+	if !keep {
+		driveBuf = make([]float64, n)
+		if gated {
+			gateBuf, squashBuf, slopeBuf = make([]float64, n), make([]float64, n), make([]float64, n)
+		}
+	}
+	voltage := tr.voltage[0]
 	if saved != nil {
 		// The saved latest output is authoritative. In particular, it may be
 		// within the State validator's four-ULP portability allowance, so do
@@ -427,7 +455,13 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		drive := append([]float64(nil), in...)
+		var drive []float64
+		if keep {
+			drive = append([]float64(nil), in...)
+		} else {
+			drive = driveBuf
+			copy(drive, in)
+		}
 		if m.partition != nil {
 			if err := m.synapticDriveParallel(drive, p.Weights, &forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}); err != nil {
 				return nil, err
@@ -441,12 +475,19 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		vnext, ynext := make([]float64, n), make([]float64, n)
+		var vnext []float64
 		var gate, squash, slope []float64
-		if gated {
-			gate, squash, slope = make([]float64, n), make([]float64, n), make([]float64, n)
-			tr.gate[t], tr.gateSquash[t], tr.gateSlope[t] = gate, squash, slope
+		if keep {
+			vnext = make([]float64, n)
+			if gated {
+				gate, squash, slope = make([]float64, n), make([]float64, n), make([]float64, n)
+				tr.gate[t], tr.gateSquash[t], tr.gateSlope[t] = gate, squash, slope
+			}
+		} else {
+			vnext = voltage
+			gate, squash, slope = gateBuf, squashBuf, slopeBuf
 		}
+		ynext := make([]float64, n)
 		softsignGate := m.config.Gate == GateCurrentSoftsign
 		for i := range drive {
 			drive[i] += p.Bias[i]
@@ -461,17 +502,20 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 					slope[i] = squash[i] * (1 - squash[i])
 				}
 				gate[i] = math.Min(1, 2*alpha[i]*squash[i])
-				vnext[i] = (1-gate[i])*tr.voltage[t][i] + gate[i]*drive[i]
+				vnext[i] = (1-gate[i])*voltage[i] + gate[i]*drive[i]
 			} else {
-				vnext[i] = lambda[i]*tr.voltage[t][i] + alpha[i]*drive[i]
+				vnext[i] = lambda[i]*voltage[i] + alpha[i]*drive[i]
 			}
 			ynext[i] = m.activate(vnext[i])
 			if !finite(drive[i]) || !finite(vnext[i]) || !finite(ynext[i]) {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
 		}
-		tr.drive[t] = drive
-		tr.voltage[t+1] = vnext
+		if keep {
+			tr.drive[t] = drive
+			tr.voltage[t+1] = vnext
+		}
+		voltage = vnext
 		tr.output[t+1] = ynext
 	}
 	return tr, nil
