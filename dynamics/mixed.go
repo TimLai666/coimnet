@@ -122,6 +122,10 @@ type Mixed struct {
 	// is a test reference inside this package, never a product mode, and it
 	// disables the refractory mechanism because that mechanism is an event.
 	smooth bool
+
+	// hash is the state configuration fingerprint, computed once from the
+	// owned configuration; empty means compute it on demand.
+	hash string
 }
 
 // MixedTrace owns the parameter snapshot and neural history of one forward
@@ -220,6 +224,9 @@ func NewMixed(c MixedConfig) (*Mixed, error) {
 		}
 	}
 	m.config = c
+	if hash, err := m.mixedStateConfigHash(); err == nil {
+		m.hash = hash
+	}
 	return m, nil
 }
 

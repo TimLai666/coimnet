@@ -49,6 +49,9 @@ type VectorContinuous struct {
 	config Config
 	layout VectorLayout
 	act    activation
+	// hash is the state configuration fingerprint, computed once from the
+	// owned configuration; empty means compute it on demand.
+	hash string
 }
 
 // VectorState mirrors State with N*C-wide arrays and the same delay history
@@ -117,7 +120,11 @@ func NewVectorContinuous(c Config) (*VectorContinuous, error) {
 	} else {
 		act = activation(vectorSoftplus)
 	}
-	return &VectorContinuous{config: c, layout: layout, act: act}, nil
+	m := &VectorContinuous{config: c, layout: layout, act: act}
+	if hash, err := m.stateConfigHash(); err == nil {
+		m.hash = hash
+	}
+	return m, nil
 }
 
 func vectorSoftplus(v float64) float64 {
@@ -516,6 +523,9 @@ func (m *VectorContinuous) stateHistoryRows(steps uint64) (int, error) {
 }
 
 func (m *VectorContinuous) stateConfigHash() (string, error) {
+	if m.hash != "" {
+		return m.hash, nil
+	}
 	data, err := json.Marshal(m.config)
 	if err != nil {
 		return "", err

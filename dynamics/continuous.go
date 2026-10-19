@@ -72,6 +72,9 @@ type Continuous struct {
 	// bit-identical to adding into drive[target] edge by edge.
 	runs      []edgeRun
 	zeroDelay bool
+	// hash is the state configuration fingerprint, computed once from the
+	// owned configuration; empty means compute it on demand.
+	hash string
 }
 
 // edgeRun is the half-open edge range [start, end) whose target is target.
@@ -184,7 +187,11 @@ func NewContinuous(c Config) (*Continuous, error) {
 			break
 		}
 	}
-	return &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay}, nil
+	m := &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay}
+	if hash, err := m.stateConfigHash(); err == nil {
+		m.hash = hash
+	}
+	return m, nil
 }
 
 // Config returns an independent topology/configuration copy.

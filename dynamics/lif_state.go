@@ -427,6 +427,9 @@ func (m *LIF) lifStateHistoryRows(steps uint64) (int, error) {
 }
 
 func (m *LIF) lifStateConfigHash() (string, error) {
+	if m.hash != "" {
+		return m.hash, nil
+	}
 	data, err := json.Marshal(m.Config())
 	if err != nil {
 		return "", err

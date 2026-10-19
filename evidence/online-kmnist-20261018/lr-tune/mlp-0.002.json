@@ -1,0 +1,44 @@
+{
+  "schema_version": "coimnet-online-ocr/v1",
+  "framework": "pytorch",
+  "scenario": "new-classes",
+  "learner": "sgd",
+  "arch": "mlp",
+  "stream": "tune",
+  "stream_split": "round_robin_by_label_v1:1000:f2aaae1c0f2aa67615273c796a53f432c4ab14e4259a2ca525be0379ddce7865",
+  "test_split": "balanced_round_robin_by_label_v1:2000:7f6498faa80e165d8cb7b88618ae8e2ce9bbc655af6ae79d338647f3fb3436ec",
+  "host": {
+    "machine": "vm",
+    "os": "linux",
+    "arch": "amd64",
+    "cpu": "Intel(R) Xeon(R) Processor",
+    "logical_cpus": 4,
+    "memory_bytes": 16874930176,
+    "gpu": "",
+    "runtime": "python3.13.16 torch2.14.1+cpu"
+  },
+  "parameters": 22926,
+  "prequential": [
+    0.415,
+    0.57,
+    0.575,
+    0.6,
+    0.58
+  ],
+  "prequential_all": 0.548,
+  "test_before": {
+    "original": 0.41350001096725464,
+    "original_old": 0.8270000219345093,
+    "original_new": 0.0
+  },
+  "test": {
+    "original": 0.47450000047683716,
+    "original_old": 0.5960000157356262,
+    "original_new": 0.3529999852180481
+  },
+  "predict_p50_ms": 0.048256,
+  "update_mean_ms": 0.5653996609999998,
+  "peak_rss_bytes": 400031744,
+  "prequential_old": 0.746,
+  "prequential_new": 0.35
+}

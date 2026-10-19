@@ -160,6 +160,9 @@ type OnlineLearner struct {
 	actions    uint64
 	eligible   uint64
 	outputSize int
+	// version remembers the parameters the last model version was hashed
+	// from, so an action under unchanged parameters reuses it.
+	version parameterVersionCache
 }
 
 // NewOnlineLearner validates the whole loop before it can run once. The reward
@@ -260,7 +263,7 @@ func (l *OnlineLearner) Act(ctx context.Context, obs signal.Observation, input [
 	if err != nil {
 		return ActionRecord{}, err
 	}
-	version, err := parameterVersion(l.individual.Snapshot().Parameters)
+	version, err := l.individual.parameterVersion(&l.version)
 	if err != nil {
 		return ActionRecord{}, err
 	}
@@ -512,6 +515,49 @@ func parameterVersion(p Parameters) (string, error) {
 	}
 	sum := sha256.Sum256(data)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+// parameterVersionCache holds a copy of the parameters a version was last
+// computed from. A hit needs every value to be bitwise equal to that copy, so
+// any change to the parameters, in place or not, computes the hash again.
+type parameterVersionCache struct {
+	source  Parameters
+	version string
+}
+
+// parameterVersion returns parameterVersion of the current parameters,
+// comparing them with the cached copy instead of encoding them again.
+func (i *Individual) parameterVersion(c *parameterVersionCache) (string, error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	p := i.trainer.parameters
+	if c.version != "" && sameParameters(c.source, p) {
+		return c.version, nil
+	}
+	// The copy is what Snapshot hands out, so the hash is the one a snapshot's
+	// parameters give: copyParameters stores an empty group as nil.
+	source := copyParameters(p)
+	version, err := parameterVersion(source)
+	if err != nil {
+		return "", err
+	}
+	c.source, c.version = source, version
+	return version, nil
+}
+
+// sameParameters compares lengths and bits group by group; an empty group
+// equals a nil one, as copyParameters makes them.
+func sameParameters(a, b Parameters) bool {
+	pairs := [][2][]float64{
+		{a.Core.Weights, b.Core.Weights}, {a.Core.Bias, b.Core.Bias}, {a.Core.LogTau, b.Core.LogTau},
+		{a.ThetaRaw, b.ThetaRaw}, {a.Encoder, b.Encoder}, {a.Readout, b.Readout},
+	}
+	for _, pair := range pairs {
+		if !sameBits(pair[0], pair[1]) {
+			return false
+		}
+	}
+	return true
 }
 
 // rowMajorHash is SHA-256 over the little-endian IEEE-754 bits of every value
