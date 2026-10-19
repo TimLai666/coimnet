@@ -14,7 +14,7 @@ def load(d):
 class CoimCore(nn.Module):
     """v' = lam*v + alpha*(E x + W y + b), y = tanh(v); W restricted to mask.
     Input enters n_in input nodes, readout reads n_out readout nodes."""
-    def __init__(s, n, n_in, n_out, mask, d_in=28, classes=10, tau0=2.0, learn_tau=True, gate=False):
+    def __init__(s, n, n_in, n_out, mask, d_in=28, classes=10, tau0=2.0, learn_tau=True, gate=False, act="tanh"):
         super().__init__()
         s.n, s.n_in, s.n_out = n, n_in, n_out
         s.register_buffer("mask", mask.float())
@@ -25,18 +25,19 @@ class CoimCore(nn.Module):
         s.logtau = nn.Parameter(torch.full((n,), math.log(tau0)), requires_grad=learn_tau)
         s.R = nn.Linear(n_out, classes)
         s.gate = gate
+        s.act = {"tanh": torch.tanh, "softsign": F.softsign}[act]
         if gate == True or gate == "input":  # input-dependent update gate from raw x
             s.gate = "input"; s.G = nn.Parameter(torch.zeros(d_in, n)); s.gb = nn.Parameter(torch.zeros(n))
-        elif gate == "local":  # gate from the neuron's own total input current: 2 params/neuron
+        elif gate in ("local", "local_softsign"):  # gate from the neuron's own total input current: 2 params/neuron
             s.gg = nn.Parameter(torch.zeros(n)); s.gb = nn.Parameter(torch.zeros(n))
     def params(s):
         c = int(s.mask.sum()) + s.E.numel() + s.n * (2 if s.logtau.requires_grad else 1) + sum(p.numel() for p in s.R.parameters())
         if s.gate == "input": c += s.G.numel() + s.n
-        elif s.gate == "local": c += 2 * s.n
+        elif s.gate in ("local", "local_softsign"): c += 2 * s.n
         return c
     def forward(s, x):  # x [B,T,d]
         B, T, _ = x.shape
-        v = x.new_zeros(B, s.n); y = torch.tanh(v)
+        v = x.new_zeros(B, s.n); y = s.act(v)
         W = s.W * s.mask
         alpha = -torch.expm1(-1.0 / torch.exp(s.logtau)); lam = 1 - alpha
         pad = s.n - s.n_in
@@ -46,9 +47,10 @@ class CoimCore(nn.Module):
             I = u + y @ W + s.b
             if s.gate == "input": a = alpha * 2 * torch.sigmoid(x[:, t] @ s.G + s.gb)
             elif s.gate == "local": a = alpha * 2 * torch.sigmoid(s.gg * I + s.gb)
+            elif s.gate == "local_softsign": a = alpha * (1 + F.softsign(s.gg * I + s.gb))  # 2*sigmoid without exp
             a = a.clamp(max=1.0)
             v = (1 - a) * v + a * I
-            y = torch.tanh(v)
+            y = s.act(v)
         return s.R(y[:, s.n - s.n_out:])
 
 class RNNBase(nn.Module):
@@ -117,7 +119,7 @@ if __name__ == "__main__":
         m = RNNBase(spec["model"], spec["h"])
     else:
         n = spec["n"]; mask = make_mask(spec["topo"], n, spec["n_in"], spec["n_out"], spec.get("k", 0), a.seed)
-        m = CoimCore(n, spec["n_in"], spec["n_out"], mask, learn_tau=spec.get("learn_tau", True), gate=spec.get("gate", False), tau0=spec.get("tau0", 2.0))
+        m = CoimCore(n, spec["n_in"], spec["n_out"], mask, learn_tau=spec.get("learn_tau", True), gate=spec.get("gate", False), act=spec.get("act", "tanh"), tau0=spec.get("tau0", 2.0))
     m = m.to(a.device)
     log = lambda s: print(s, flush=True)
     log(f"{json.dumps(spec)} params={m.params()}")

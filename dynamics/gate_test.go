@@ -19,11 +19,11 @@ type gateFixture struct {
 // newGateFixture builds a random delayed graph with the current gate. logTau
 // sets every time constant; a small one makes 2*alpha*sigmoid exceed one at
 // some steps, so the clamp branch is exercised.
-func newGateFixture(t *testing.T, seed uint64, logTau float64) gateFixture {
+func newGateFixture(t *testing.T, seed uint64, logTau float64, gate, activation string) gateFixture {
 	t.Helper()
 	rnd := rand.New(rand.NewPCG(seed, 3))
 	const nodes, edges, steps = 7, 30, 9
-	c := Config{Nodes: nodes, DT: 1, Activation: "tanh", Gate: GateCurrent}
+	c := Config{Nodes: nodes, DT: 1, Activation: activation, Gate: gate}
 	for range edges {
 		c.Sources = append(c.Sources, rnd.IntN(nodes))
 		c.Targets = append(c.Targets, rnd.IntN(nodes))
@@ -65,61 +65,65 @@ func (f gateFixture) loss(t *testing.T, p Parameters, inputs [][]float64) float6
 
 // TestGateGradientMatchesFiniteDifferences checks every gradient group of the
 // gated core, inputs included, against central differences of the forward
-// pass, once without and once with clamped update rates.
+// pass, once without and once with clamped update rates, for both gate
+// squashings and with the softsign activation.
 func TestGateGradientMatchesFiniteDifferences(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		logTau float64
-	}{{"unclamped", math.Log(2)}, {"clamped", math.Log(.4)}} {
-		t.Run(tc.name, func(t *testing.T) {
-			f := newGateFixture(t, 11, tc.logTau)
-			tr, err := f.model.Forward(context.Background(), f.params, f.initial, f.inputs)
-			if err != nil {
-				t.Fatal(err)
-			}
-			clamped := 0
-			for _, row := range tr.gate {
-				for _, a := range row {
-					if a == 1 {
-						clamped++
+	type variant struct{ gate, activation string }
+	for _, v := range []variant{{GateCurrent, "tanh"}, {GateCurrentSoftsign, "tanh"}, {GateCurrentSoftsign, "softsign"}} {
+		for _, tc := range []struct {
+			name   string
+			logTau float64
+		}{{"unclamped", math.Log(2)}, {"clamped", math.Log(.4)}} {
+			t.Run(v.gate+"/"+v.activation+"/"+tc.name, func(t *testing.T) {
+				f := newGateFixture(t, 11, tc.logTau, v.gate, v.activation)
+				tr, err := f.model.Forward(context.Background(), f.params, f.initial, f.inputs)
+				if err != nil {
+					t.Fatal(err)
+				}
+				clamped := 0
+				for _, row := range tr.gate {
+					for _, a := range row {
+						if a == 1 {
+							clamped++
+						}
 					}
 				}
-			}
-			if (clamped > 0) != (tc.name == "clamped") {
-				t.Fatalf("%d clamped rates in the %s fixture", clamped, tc.name)
-			}
-			g, err := f.model.Backward(context.Background(), tr, f.up, 0)
-			if err != nil {
-				t.Fatal(err)
-			}
-			const h = 1e-6
-			check := func(name string, values, grad []float64, eval func() float64) {
-				t.Helper()
-				for i := range values {
-					orig := values[i]
-					values[i] = orig + h
-					plus := eval()
-					values[i] = orig - h
-					minus := eval()
-					values[i] = orig
-					want := (plus - minus) / (2 * h)
-					if math.Abs(grad[i]-want) > 1e-6*(1+math.Abs(want)) {
-						t.Fatalf("%s[%d] gradient %.10g, finite difference %.10g", name, i, grad[i], want)
+				if (clamped > 0) != (tc.name == "clamped") {
+					t.Fatalf("%d clamped rates in the %s fixture", clamped, tc.name)
+				}
+				g, err := f.model.Backward(context.Background(), tr, f.up, 0)
+				if err != nil {
+					t.Fatal(err)
+				}
+				const h = 1e-6
+				check := func(name string, values, grad []float64, eval func() float64) {
+					t.Helper()
+					for i := range values {
+						orig := values[i]
+						values[i] = orig + h
+						plus := eval()
+						values[i] = orig - h
+						minus := eval()
+						values[i] = orig
+						want := (plus - minus) / (2 * h)
+						if math.Abs(grad[i]-want) > 1e-6*(1+math.Abs(want)) {
+							t.Fatalf("%s[%d] gradient %.10g, finite difference %.10g", name, i, grad[i], want)
+						}
 					}
 				}
-			}
-			p := cloneParameters(f.params)
-			eval := func() float64 { return f.loss(t, p, f.inputs) }
-			check("weights", p.Weights, g.Weights, eval)
-			check("bias", p.Bias, g.Bias, eval)
-			check("log_tau", p.LogTau, g.LogTau, eval)
-			check("gate_gain", p.GateGain, g.GateGain, eval)
-			check("gate_bias", p.GateBias, g.GateBias, eval)
-			inputs := cloneRows(f.inputs)
-			for s := range inputs {
-				check("input", inputs[s], g.Inputs[s], func() float64 { return f.loss(t, f.params, inputs) })
-			}
-		})
+				p := cloneParameters(f.params)
+				eval := func() float64 { return f.loss(t, p, f.inputs) }
+				check("weights", p.Weights, g.Weights, eval)
+				check("bias", p.Bias, g.Bias, eval)
+				check("log_tau", p.LogTau, g.LogTau, eval)
+				check("gate_gain", p.GateGain, g.GateGain, eval)
+				check("gate_bias", p.GateBias, g.GateBias, eval)
+				inputs := cloneRows(f.inputs)
+				for s := range inputs {
+					check("input", inputs[s], g.Inputs[s], func() float64 { return f.loss(t, f.params, inputs) })
+				}
+			})
+		}
 	}
 }
 
@@ -127,7 +131,13 @@ func TestGateGradientMatchesFiniteDifferences(t *testing.T) {
 // are zero with the ungated model: a = alpha, so only the rounding of
 // (1-alpha) against lambda can differ.
 func TestZeroGateIsThePlainIntegrator(t *testing.T) {
-	f := newGateFixture(t, 4, math.Log(2))
+	for _, gate := range []string{GateCurrent, GateCurrentSoftsign} {
+		t.Run(gate, func(t *testing.T) { checkZeroGate(t, gate) })
+	}
+}
+
+func checkZeroGate(t *testing.T, gate string) {
+	f := newGateFixture(t, 4, math.Log(2), gate, "tanh")
 	p := cloneParameters(f.params)
 	clear(p.GateGain)
 	clear(p.GateBias)
@@ -193,5 +203,52 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 	vector.StateDimension = 2
 	if _, err := NewVectorContinuous(vector); err == nil {
 		t.Fatal("vector core accepted a gate")
+	}
+}
+
+// TestInferMatchesForwardOutputs checks that the record-free pass returns
+// exactly Forward's outputs for delayed and undelayed graphs, serial and
+// partitioned, with and without each gate.
+func TestInferMatchesForwardOutputs(t *testing.T) {
+	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
+		for _, activation := range []string{"tanh", "softsign", "softplus"} {
+			for _, delayed := range []bool{true, false} {
+				for _, workers := range []int{1, 3} {
+					f := newGateFixture(t, 7, math.Log(.4), GateCurrent, activation)
+					c := f.model.Config()
+					c.Gate, c.Workers = gate, workers
+					if !delayed {
+						c.Delays = nil
+					}
+					m, err := NewContinuous(c)
+					if err != nil {
+						t.Fatal(err)
+					}
+					p := cloneParameters(f.params)
+					if gate == "" {
+						p.GateGain, p.GateBias = nil, nil
+					}
+					tr, err := m.Forward(context.Background(), p, f.initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					want := tr.Outputs()
+					got, err := m.Infer(context.Background(), p, f.initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					if len(got) != len(want) {
+						t.Fatalf("%d rows, want %d", len(got), len(want))
+					}
+					for s := range want {
+						for i := range want[s] {
+							if math.Float64bits(got[s][i]) != math.Float64bits(want[s][i]) {
+								t.Fatalf("gate %q %s delayed=%v workers=%d: step %d node %d = %v, want %v", gate, activation, delayed, workers, s, i, got[s][i], want[s][i])
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 }

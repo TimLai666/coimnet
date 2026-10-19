@@ -691,6 +691,9 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 		if err == nil {
 			tr, y = trace, trace.Outputs()
 		}
+	} else if cpu, ok := n.core.(continuousCore); ok && !record && len(core.ThetaRaw) == 0 {
+		// Nothing will run the reverse pass, so the core keeps no trace.
+		y, err = cpu.model.Infer(ctx, core.Core, make([]float64, coreWidth), coreInputs)
 	} else {
 		tr, y, err = n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
 	}
