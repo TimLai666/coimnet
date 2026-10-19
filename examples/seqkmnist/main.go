@@ -62,6 +62,17 @@ type report struct {
 	Accuracy      float64   `json:"test_accuracy"`
 }
 
+// checkpoint is the state after a whole epoch. Resuming replays the earlier
+// epochs' shuffles from the seed, so a resumed run takes the same batches and
+// ends with the same trainer state as an uninterrupted one.
+type checkpoint struct {
+	Settings      settings                  `json:"settings"`
+	Epochs        int                       `json:"epochs_done"`
+	EpochAccuracy []float64                 `json:"epoch_test_accuracy"`
+	TrainSeconds  float64                   `json:"train_seconds"`
+	Trainer       learning.TrainingSnapshot `json:"trainer"`
+}
+
 func main() {
 	var s settings
 	flag.StringVar(&s.DataDir, "data-dir", "", "directory with the official KMNIST IDX gzip files")
@@ -80,6 +91,7 @@ func main() {
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
+	checkpointPath := flag.String("checkpoint", "", "file rewritten after every epoch; a run started with an existing checkpoint of the same settings resumes from it")
 	loadPath := flag.String("load", "", "skip training: load this TrainingSnapshot JSON, evaluate it and (with --bench) measure it in this fresh process")
 	machine := flag.String("machine", "", "machine name for the bench result (default: host name)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile of the run to this new file")
@@ -104,7 +116,7 @@ func main() {
 	if *loadPath != "" {
 		err = runLoaded(s, *loadPath, *benchPath, *machine)
 	} else {
-		err = run(s, *reportPath, *benchPath, *savePath, *machine)
+		err = run(s, *reportPath, *benchPath, *savePath, *checkpointPath, *machine)
 	}
 	if err != nil {
 		pprof.StopCPUProfile()
@@ -150,7 +162,7 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 	return measure(ctx, tr, s, testX, testY, acc, machine, benchPath)
 }
 
-func run(s settings, reportPath, benchPath, savePath, machine string) error {
+func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine string) error {
 	ctx := context.Background()
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
@@ -172,21 +184,37 @@ func run(s settings, reportPath, benchPath, savePath, machine string) error {
 	o.Trainable.Gate = s.Gate
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
-	tr, err := learning.NewTrainer(cfg, params, o)
+	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
+	resumed, err := readCheckpoint(checkpointPath, s)
+	if err != nil {
+		return err
+	}
+	var tr *learning.Trainer
+	done, elapsed := 0, 0.0
+	if resumed != nil {
+		tr, err = learning.RestoreTrainer(resumed.Trainer)
+		done, elapsed, rep.EpochAccuracy = resumed.Epochs, resumed.TrainSeconds, resumed.EpochAccuracy
+		fmt.Printf("resuming from %s after epoch %d\n", checkpointPath, done-1)
+	} else {
+		tr, err = learning.NewTrainer(cfg, params, o)
+	}
 	if err != nil {
 		return err
 	}
 	defer tr.Close()
-	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
 	fmt.Printf("nodes %d edges %d parameters %d updates %d\n", s.Nodes, rep.Edges, rep.Parameters, steps)
 	rng := rand.New(rand.NewPCG(s.Seed, 99))
 	order := make([]int, len(trainX))
 	for i := range order {
 		order[i] = i
 	}
-	start := time.Now()
-	for epoch := 0; epoch < s.Epochs; epoch++ {
-		rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] })
+	shuffle := func() { rng.Shuffle(len(order), func(i, j int) { order[i], order[j] = order[j], order[i] }) }
+	for range done {
+		shuffle()
+	}
+	start := time.Now().Add(-time.Duration(elapsed * float64(time.Second)))
+	for epoch := done; epoch < s.Epochs; epoch++ {
+		shuffle()
 		var loss float64
 		for b := 0; b+s.Batch <= len(order); b += s.Batch {
 			inputs := make([][][]float64, s.Batch)
@@ -211,6 +239,12 @@ func run(s settings, reportPath, benchPath, savePath, machine string) error {
 		}
 		rep.EpochAccuracy = append(rep.EpochAccuracy, acc)
 		fmt.Printf("epoch %d batch loss %.3f test %.4f (%.0fs)\n", epoch, loss, acc, time.Since(start).Seconds())
+		if checkpointPath != "" {
+			c := checkpoint{Settings: s, Epochs: epoch + 1, EpochAccuracy: rep.EpochAccuracy, TrainSeconds: time.Since(start).Seconds(), Trainer: tr.Snapshot()}
+			if err := writeAtomic(checkpointPath, c); err != nil {
+				return err
+			}
+		}
 	}
 	rep.TrainSeconds = time.Since(start).Seconds()
 	rep.Accuracy = rep.EpochAccuracy[len(rep.EpochAccuracy)-1]
@@ -375,6 +409,62 @@ func modelName(s settings) string {
 		name += "-gate"
 	}
 	return name
+}
+
+// readCheckpoint returns nil when path is empty or missing, and refuses a
+// checkpoint written with other settings.
+func readCheckpoint(path string, s settings) (*checkpoint, error) {
+	if path == "" {
+		return nil, nil
+	}
+	b, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var c checkpoint
+	if err := json.Unmarshal(b, &c); err != nil {
+		return nil, fmt.Errorf("checkpoint %s: %w", path, err)
+	}
+	want, got := s, c.Settings
+	// Workers only changes how a batch's gradients are scheduled, and the data
+	// directory is not recorded.
+	want.Workers, got.Workers, want.DataDir = 0, 0, ""
+	if got != want {
+		return nil, fmt.Errorf("checkpoint %s was written with settings %+v, not %+v", path, c.Settings, s)
+	}
+	if c.Epochs < 1 || c.Epochs > s.Epochs || len(c.EpochAccuracy) != c.Epochs {
+		return nil, fmt.Errorf("checkpoint %s records %d epochs", path, c.Epochs)
+	}
+	return &c, nil
+}
+
+// writeAtomic replaces path through a synced temporary file and a rename, so a
+// crash leaves either the previous checkpoint or the new one.
+func writeAtomic(path string, v any) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+	tmp := path + ".tmp"
+	f, err := os.Create(tmp)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(b); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Sync(); err != nil {
+		f.Close()
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp, path)
 }
 
 func writeNew(path string, v any) error {
