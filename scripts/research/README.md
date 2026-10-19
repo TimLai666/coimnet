@@ -40,9 +40,9 @@ Go 框架少 10 個參數，是因為讀出層沒有 bias。
 | LSTM h=56（PyTorch） | 0.21 ms | 約 235 MiB |
 | GRU h=64（PyTorch） | 0.57 ms | 約 235 MiB |
 | 稀疏核心（Go） | 1.02 ms | – |
-| 稀疏核心＋閘門（Go，全新程序量測） | 1.74 ms | 68 MiB |
+| 稀疏核心＋閘門（Go，全新程序量測） | 1.49 ms | 56 MiB |
 
-PyTorch 的記憶體峰值大多是函式庫本身。
+兩邊都在全新程序裡跑 2,000 張圖、單執行緒量測；Go 的數字來自 `examples/seqkmnist --load` 載入存好的模型。PyTorch 的記憶體峰值大多是函式庫本身。
 
 ## 目前結論
 
