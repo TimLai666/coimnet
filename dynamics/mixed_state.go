@@ -147,7 +147,7 @@ func (m *Mixed) ValidateState(s MixedState) error {
 			return fmt.Errorf("continuous history[%d]: %w", t, err)
 		}
 		for k, y := range row {
-			if (m.config.Continuous.Activation == "tanh" && (y < -1 || y > 1)) ||
+			if ((m.config.Continuous.Activation == "tanh" || m.config.Continuous.Activation == "softsign") && (y < -1 || y > 1)) ||
 				(m.config.Continuous.Activation == "softplus" && y < 0) {
 				return fmt.Errorf("continuous history[%d][%d] is outside activation range", t, k)
 			}

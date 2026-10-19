@@ -40,7 +40,9 @@ type Config struct {
 	//	a = min(1, 2*alpha*sigmoid(gate_gain*I + gate_bias)),  v' = (1-a)*v + a*I
 	//
 	// two learnable values per neuron. Zero gain and bias give a = alpha, the
-	// plain integrator up to rounding. It is supported by Forward and Backward
+	// plain integrator up to rounding. GateCurrentSoftsign is the same gate
+	// with the exponential-free squashing (1 + softsign(z))/2 in place of
+	// sigmoid(z). Both are supported by Forward and Backward
 	// on fresh episodes; recompute, persistent state, vector nodes and the GPU
 	// adapter refuse a gated model.
 	Gate string `json:"gate,omitempty"`
@@ -48,6 +50,10 @@ type Config struct {
 
 // GateCurrent is the Config.Gate value of the input-current gate.
 const GateCurrent = "current"
+
+// GateCurrentSoftsign is the input-current gate squashed by
+// (1 + z/(1+|z|))/2, which needs no exponential.
+const GateCurrentSoftsign = "current_softsign"
 
 // Parameters separates learnable quantities from immutable anatomy. Tau is
 // exp(LogTau), so finite, representable positive time constants are required.
@@ -100,9 +106,10 @@ type Trace struct {
 	voltage, output, drive [][]float64
 	lambda                 []float64
 	alpha                  []float64
-	// gate and gateSigmoid are the per-step update rate a and the sigmoid it
-	// came from, kept only for a gated model.
-	gate, gateSigmoid [][]float64
+	// gate, gateSquash and gateSlope are the per-step update rate a, the
+	// squashed gate input s it came from and ds/dz, kept only for a gated
+	// model.
+	gate, gateSquash, gateSlope [][]float64
 	// history is the owned prefix retained by a stateful segment. The final
 	// row is output at startSteps; rows before it are the preceding delayed
 	// outputs. A nil history identifies the original fresh-zero style path.
@@ -145,10 +152,10 @@ func NewContinuous(c Config) (*Continuous, error) {
 	if c.Nodes <= 0 || !finite(c.DT) || c.DT <= 0 {
 		return nil, fmt.Errorf("nodes and finite dt must be positive")
 	}
-	if c.Activation != "tanh" && c.Activation != "softplus" {
+	if c.Activation != "tanh" && c.Activation != "softplus" && c.Activation != "softsign" {
 		return nil, fmt.Errorf("unsupported activation %q", c.Activation)
 	}
-	if c.Gate != "" && c.Gate != GateCurrent {
+	if c.Gate != "" && c.Gate != GateCurrent && c.Gate != GateCurrentSoftsign {
 		return nil, fmt.Errorf("unsupported gate %q", c.Gate)
 	}
 	if len(c.Sources) != len(c.Targets) || (len(c.Delays) != 0 && len(c.Delays) != len(c.Sources)) {
@@ -403,7 +410,7 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	tr := &Trace{model: m, parameters: cloneParameters(p), voltage: make([][]float64, len(inputs)+1), output: make([][]float64, len(inputs)+1), drive: make([][]float64, len(inputs)), lambda: lambda, alpha: alpha, history: history, startSteps: startSteps}
 	tr.voltage[0] = append([]float64(nil), initial...)
 	if gated {
-		tr.gate, tr.gateSigmoid = make([][]float64, len(inputs)), make([][]float64, len(inputs))
+		tr.gate, tr.gateSquash, tr.gateSlope = make([][]float64, len(inputs)), make([][]float64, len(inputs)), make([][]float64, len(inputs))
 	}
 	if saved != nil {
 		// The saved latest output is authoritative. In particular, it may be
@@ -435,16 +442,25 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			return nil, err
 		}
 		vnext, ynext := make([]float64, n), make([]float64, n)
-		var gate, sigmoid []float64
+		var gate, squash, slope []float64
 		if gated {
-			gate, sigmoid = make([]float64, n), make([]float64, n)
-			tr.gate[t], tr.gateSigmoid[t] = gate, sigmoid
+			gate, squash, slope = make([]float64, n), make([]float64, n), make([]float64, n)
+			tr.gate[t], tr.gateSquash[t], tr.gateSlope[t] = gate, squash, slope
 		}
+		softsignGate := m.config.Gate == GateCurrentSoftsign
 		for i := range drive {
 			drive[i] += p.Bias[i]
 			if gated {
-				sigmoid[i] = 1 / (1 + math.Exp(-(p.GateGain[i]*drive[i] + p.GateBias[i])))
-				gate[i] = math.Min(1, 2*alpha[i]*sigmoid[i])
+				z := p.GateGain[i]*drive[i] + p.GateBias[i]
+				if softsignGate {
+					d := 1 + math.Abs(z)
+					squash[i] = (1 + z/d) / 2
+					slope[i] = 1 / (2 * d * d)
+				} else {
+					squash[i] = 1 / (1 + math.Exp(-z))
+					slope[i] = squash[i] * (1 - squash[i])
+				}
+				gate[i] = math.Min(1, 2*alpha[i]*squash[i])
 				vnext[i] = (1-gate[i])*tr.voltage[t][i] + gate[i]*drive[i]
 			} else {
 				vnext[i] = lambda[i]*tr.voltage[t][i] + alpha[i]*drive[i]
@@ -540,13 +556,13 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 				dlambda = 0
 			}
 			if gated {
-				a, sig := tr.gate[t][i], tr.gateSigmoid[t][i]
+				a, sig := tr.gate[t][i], tr.gateSquash[t][i]
 				drive := tr.drive[t][i]
 				dDrive := a * dv
 				// A rate clamped at 1 passes no gradient to the gate.
 				if 2*tr.alpha[i]*sig <= 1 {
 					da := dv * (drive - tr.voltage[t][i])
-					dz := da * 2 * tr.alpha[i] * sig * (1 - sig)
+					dz := da * 2 * tr.alpha[i] * tr.gateSlope[t][i]
 					dDrive += dz * tr.parameters.GateGain[i]
 					g.GateGain[i] += dz * drive
 					g.GateBias[i] += dz
@@ -618,15 +634,22 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 }
 
 func (m *Continuous) activate(v float64) float64 {
-	if m.config.Activation == "tanh" {
+	switch m.config.Activation {
+	case "tanh":
 		return math.Tanh(v)
+	case "softsign":
+		return v / (1 + math.Abs(v))
 	}
 	return math.Max(v, 0) + math.Log1p(math.Exp(-math.Abs(v)))
 }
 func (m *Continuous) derivative(v float64) float64 {
-	if m.config.Activation == "tanh" {
+	switch m.config.Activation {
+	case "tanh":
 		y := math.Tanh(v)
 		return 1 - y*y
+	case "softsign":
+		d := 1 + math.Abs(v)
+		return 1 / (d * d)
 	}
 	if v >= 0 {
 		return 1 / (1 + math.Exp(-v))

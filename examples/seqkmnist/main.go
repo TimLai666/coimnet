@@ -51,6 +51,11 @@ type settings struct {
 	Seed         uint64  `json:"seed"`
 	Workers      int     `json:"workers"`
 	Gate         bool    `json:"gate,omitempty"`
+	// GateSquash "softsign" selects dynamics.GateCurrentSoftsign; empty keeps
+	// the sigmoid gate.
+	GateSquash string `json:"gate_squash,omitempty"`
+	// Activation is the core activation; empty means tanh.
+	Activation string `json:"activation,omitempty"`
 }
 
 type report struct {
@@ -88,6 +93,8 @@ func main() {
 	flag.Uint64Var(&s.Seed, "seed", 0, "initialization and shuffling seed")
 	flag.IntVar(&s.Workers, "workers", runtime.NumCPU(), "goroutines computing gradients of one batch")
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
+	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
+	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
@@ -155,7 +162,10 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 		return nil
 	}
 	c := snapshot.Config.Dynamics
-	s.Nodes, s.Gate = c.Nodes, c.Gate != ""
+	s.Nodes, s.Gate, s.Activation = c.Nodes, c.Gate != "", c.Activation
+	if c.Gate == dynamics.GateCurrentSoftsign {
+		s.GateSquash = "softsign"
+	}
 	if c.Nodes > 0 {
 		s.InDegree = len(c.Sources) / c.Nodes
 	}
@@ -166,6 +176,9 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	ctx := context.Background()
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
+	}
+	if (s.GateSquash != "" && s.GateSquash != "softsign") || (s.GateSquash != "" && !s.Gate) {
+		return errors.New(`--gate-squash takes "softsign" and needs --gate`)
 	}
 	trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount)
 	if err != nil {
@@ -284,7 +297,7 @@ func build(s settings) (learning.Config, learning.Parameters) {
 		readoutNodes[i] = s.Nodes - s.ReadoutNodes + i
 	}
 	cfg := learning.Config{
-		Dynamics:     dynamics.Config{Nodes: s.Nodes, Sources: sources, Targets: targets, DT: 1, Activation: "tanh"},
+		Dynamics:     dynamics.Config{Nodes: s.Nodes, Sources: sources, Targets: targets, DT: 1, Activation: activation(s)},
 		InputSize:    side,
 		OutputSize:   classes,
 		InputNodes:   inputNodes,
@@ -313,6 +326,9 @@ func build(s settings) (learning.Config, learning.Parameters) {
 	}
 	if s.Gate {
 		cfg.Dynamics.Gate = dynamics.GateCurrent
+		if s.GateSquash == "softsign" {
+			cfg.Dynamics.Gate = dynamics.GateCurrentSoftsign
+		}
 		p.Core.GateGain, p.Core.GateBias = make([]float64, s.Nodes), make([]float64, s.Nodes)
 	}
 	return cfg, p
@@ -405,10 +421,23 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 
 func modelName(s settings) string {
 	name := fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree)
+	if a := activation(s); a != "tanh" {
+		name += "-" + a
+	}
 	if s.Gate {
 		name += "-gate"
+		if s.GateSquash != "" {
+			name += "-" + s.GateSquash
+		}
 	}
 	return name
+}
+
+func activation(s settings) string {
+	if s.Activation == "" {
+		return "tanh"
+	}
+	return s.Activation
 }
 
 // readCheckpoint returns nil when path is empty or missing, and refuses a

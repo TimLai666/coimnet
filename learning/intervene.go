@@ -205,7 +205,7 @@ func checkNodeInterventions(plan InterventionPlan, c Config) error {
 		case InterventionSilence:
 			// The continuous half silences by writing the voltage whose
 			// activation is zero; tanh has one at 0, softplus has none.
-			if c.Dynamics.Activation != "" && c.Dynamics.Activation != "tanh" {
+			if c.Dynamics.Activation != "" && c.Dynamics.Activation != "tanh" && c.Dynamics.Activation != "softsign" {
 				return fmt.Errorf("learning: silence needs an activation with a zero, activation %q has none", c.Dynamics.Activation)
 			}
 		}
@@ -562,8 +562,11 @@ func applyContinuousIntervention(item Intervention, activation func(float64) flo
 // continuousActivation is the dynamics activation of a continuous core,
 // replicated here so a clamp writes the same output the core would have.
 func continuousActivation(name string) func(float64) float64 {
-	if name == "softplus" {
+	switch name {
+	case "softplus":
 		return softplus
+	case "softsign":
+		return func(v float64) float64 { return v / (1 + math.Abs(v)) }
 	}
 	return math.Tanh
 }

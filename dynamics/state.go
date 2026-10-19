@@ -85,7 +85,7 @@ func (m *Continuous) ValidateState(s State) error {
 			return fmt.Errorf("history[%d]: %w", t, err)
 		}
 		for i, y := range row {
-			if (m.config.Activation == "tanh" && (y < -1 || y > 1)) || (m.config.Activation == "softplus" && y < 0) {
+			if ((m.config.Activation == "tanh" || m.config.Activation == "softsign") && (y < -1 || y > 1)) || (m.config.Activation == "softplus" && y < 0) {
 				return fmt.Errorf("history[%d][%d] is outside activation range", t, i)
 			}
 		}
