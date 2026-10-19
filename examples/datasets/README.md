@@ -28,7 +28,7 @@ python3 examples/datasets/fetch.py --clear-only
 - `data/datasets/archives/<id>.tar.zst`：壓縮檔，檔案順序固定、時間戳與擁有者歸零，同樣的上游內容會得到同樣的 tar。
 - `data/datasets/archives/<id>.json`：回條，記錄上游版本（Hugging Face 的 commit、Zenodo 的版本）、每個檔案的大小與 sha256、授權、壓縮檔的 sha256。
 
-已經有壓縮檔和回條的資料集會直接跳過；下載中斷時重跑會從斷點續傳。下載完的原始檔在打包後刪除，加 `--keep-raw` 才保留。解開：`zstd -dc data/datasets/archives/tinystories.tar.zst | tar -x -C 目標資料夾`。
+已經有壓縮檔和回條的資料集會直接跳過；下載中斷時重跑會從斷點續傳，已轉成 JSON Lines 的檔案也不會重抓（旁邊的 `.src.json` 記著原檔 sha256）。下載完的原始檔在打包後刪除，加 `--keep-raw` 才保留。解開：`zstd -dc data/datasets/archives/tinystories.tar.zst | tar -x -C 目標資料夾`。
 
 標成 gated 的資料集（xLAM、The Stack smol、FineVideo）要先登入 Hugging Face、在資料集頁面按同意條款，再把 token 放進 `HF_TOKEN` 環境變數。沒做的話腳本會跳過它們並在最後的摘要列出，其他資料集照常完成。
 
@@ -45,7 +45,7 @@ python3 examples/datasets/fetch.py --clear-only
 
 ## 其他選項
 
-- `--work 路徑`：下載與打包用的暫存位置，`--dest` 在網路磁碟時設到本機磁碟。
+- `--work 路徑`：下載與打包用的暫存位置，`--dest` 在網路磁碟時設到本機磁碟。打包好的壓縮檔複製過去時，遇到網路磁碟的暫時錯誤（例如 macOS SMB 的 Errno 35）會從斷點續傳重試，最後比對 sha256。
 - `--match 回條資料夾`：照之前的回條重抓同一版本的檔案，sha256 不同就報錯。換一台機器時用它確保拿到一模一樣的資料。
 - `--raw-only`：只下載並核對，不打包，原始檔留在 `--work`，適合直接拿來訓練。
 
