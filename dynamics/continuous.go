@@ -745,6 +745,7 @@ func vector(v []float64, n int, name string) error {
 	}
 	return nil
 }
+
 // finite reports whether v is neither NaN nor infinite: NaN fails every
 // comparison and an infinity exceeds MaxFloat64.
 func finite(v float64) bool { return math.Abs(v) <= math.MaxFloat64 }
