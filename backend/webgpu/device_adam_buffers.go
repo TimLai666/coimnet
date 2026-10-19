@@ -38,71 +38,26 @@ type deviceAdamChunk struct {
 
 func newDeviceAdamW(ctx context.Context, parameters, first, second []float32, steps []uint32, cfg AdamWConfig) (*DeviceAdamW, error) {
 	initStart := time.Now()
-	instance, err := wgpu.CreateInstance(nil)
+	adapter, device, info, err := openDevice(ctx, false)
 	if err != nil {
-		return nil, fmt.Errorf("%w: create instance: %v", ErrUnavailable, err)
+		return nil, err
 	}
 	cleanup := func() {
-		if instance != nil {
-			instance.Release()
-		}
-	}
-	if err := ctx.Err(); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{PowerPreference: wgpu.PowerPreferenceHighPerformance})
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request adapter: %v", ErrUnavailable, err)
-	}
-	cleanup = func() {
-		adapter.Release()
-		instance.Release()
-	}
-	adapterInfo := adapter.Info()
-	if !usableHardwareAdapter(adapterInfo) {
-		cleanup()
-		return nil, fmt.Errorf("%w: adapter %q backend=%s type=%s", ErrUnavailable, adapterInfo.Name, adapterInfo.Backend, adapterInfo.DeviceType)
-	}
-	if err := ctx.Err(); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	// A nil descriptor requests the adapter's actual limits. Do not replace
-	// them with WebGPU minimums or a guessed storage-buffer size.
-	device, err := adapter.RequestDevice(nil)
-	if err != nil {
-		cleanup()
-		return nil, fmt.Errorf("%w: request device for adapter %q: %v", ErrDevice, adapterInfo.Name, err)
-	}
-	cleanup = func() {
 		device.Release()
 		adapter.Release()
-		instance.Release()
 	}
 	if err := ctx.Err(); err != nil {
 		cleanup()
 		return nil, err
 	}
 
-	info := DeviceInfo{
-		Adapter:    adapterInfo.Name,
-		Backend:    adapterInfo.Backend.String(),
-		Vendor:     adapterInfo.Vendor,
-		Driver:     adapterInfo.Driver,
-		DeviceType: adapterInfo.DeviceType.String(),
-	}
 	optimizer := &DeviceAdamW{
-		instance: instance,
-		adapter:  adapter,
-		device:   device,
-		info:     info,
-		limits:   device.Limits(),
-		values:   len(parameters),
-		cfg:      cfg,
+		adapter: adapter,
+		device:  device,
+		info:    info,
+		limits:  device.Limits(),
+		values:  len(parameters),
+		cfg:     cfg,
 		metrics: AdamWMetrics{
 			Device: info,
 			Values: len(parameters),
@@ -523,9 +478,5 @@ func (o *DeviceAdamW) releaseAdamResources() {
 	if o.adapter != nil {
 		o.adapter.Release()
 		o.adapter = nil
-	}
-	if o.instance != nil {
-		o.instance.Release()
-		o.instance = nil
 	}
 }

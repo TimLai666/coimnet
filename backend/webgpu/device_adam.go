@@ -72,11 +72,10 @@ type DeviceAdamW struct {
 	// further Step or Snapshot may reuse them.
 	unusable error
 
-	instance *wgpu.Instance
-	adapter  *wgpu.Adapter
-	device   *wgpu.Device
-	info     DeviceInfo
-	limits   gputypes.Limits
+	adapter *wgpu.Adapter
+	device  *wgpu.Device
+	info    DeviceInfo
+	limits  gputypes.Limits
 
 	values          int
 	chunks          []deviceAdamChunk

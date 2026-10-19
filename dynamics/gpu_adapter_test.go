@@ -106,7 +106,7 @@ func TestGPUContinuousBackwardMatchesCPUWithTruncation(t *testing.T) {
 		if errors.Is(err, ErrGPUContinuousBackwardUnavailable) {
 			t.Skipf("GPU backward primitive unavailable: %v", err)
 		}
-		if errors.Is(err, webgpu.ErrUnavailable) || errors.Is(err, webgpu.ErrDevice) {
+		if errors.Is(err, webgpu.ErrUnavailable) || (errors.Is(err, webgpu.ErrDevice) && !webgpu.HardwareAdapterSeen()) {
 			t.Skipf("GPU unavailable: %v", err)
 		}
 		t.Fatalf("NewGPUContinuous() error = %v", err)
@@ -221,7 +221,7 @@ func newGPUContinuousForwardOrSkip(t *testing.T, cfg Config) *GPUContinuous {
 	t.Helper()
 	gpu, err := NewGPUContinuousForward(context.Background(), cfg)
 	if err != nil {
-		if errors.Is(err, webgpu.ErrUnavailable) || errors.Is(err, webgpu.ErrDevice) {
+		if errors.Is(err, webgpu.ErrUnavailable) || (errors.Is(err, webgpu.ErrDevice) && !webgpu.HardwareAdapterSeen()) {
 			t.Skipf("GPU unavailable: %v", err)
 		}
 		t.Fatalf("NewGPUContinuousForward() error = %v", err)
