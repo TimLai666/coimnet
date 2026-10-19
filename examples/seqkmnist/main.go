@@ -2,7 +2,9 @@
 // (EXAMPLE ONLY): each image is read one column per step, 28 steps of 28
 // pixels, and the class is read from the readout nodes after the last step.
 // Every target node receives in-degree edges from uniformly drawn sources, so
-// the parameter count grows with edges rather than with nodes squared.
+// the parameter count grows with edges rather than with nodes squared. With
+// --store the edges come from a connectome subgraph store instead, and
+// --rewire trains a same-size null model of them.
 //
 // It trains with softmax cross-entropy and minibatches (AccumulateSteps plus
 // Trainer.StepBatch; with --gpu the core of each minibatch runs on the device
@@ -26,6 +28,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 	"time"
 
 	"github.com/TimLai666/coimnet/bench"
@@ -64,6 +67,12 @@ type settings struct {
 	// Cols groups this many adjacent image columns into one step (28/Cols
 	// steps of 28*Cols pixels); zero means one column per step.
 	Cols int `json:"cols,omitempty"`
+	// Store is a connectome.Save subgraph store whose annotated edges replace
+	// the uniform random topology; Nodes then is its node count.
+	Store string `json:"store,omitempty"`
+	// Rewire, with Store, replaces the store's edges by a null model of the
+	// same size: "in-degree" or "swap" (see rewire).
+	Rewire string `json:"rewire,omitempty"`
 }
 
 // columns is the number of image columns fed per step.
@@ -107,6 +116,8 @@ func main() {
 	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
+	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
+	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
 	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
@@ -190,6 +201,19 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 
 func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine string) error {
 	ctx := context.Background()
+	var topo *topology
+	if s.Store != "" {
+		t, err := loadStore(ctx, s.Store)
+		if err != nil {
+			return err
+		}
+		if t, err = rewire(t, s.Rewire, s.Seed); err != nil {
+			return err
+		}
+		topo, s.Nodes, s.InDegree = &t, t.nodes, (len(t.sources)+t.nodes/2)/t.nodes
+	} else if s.Rewire != "" {
+		return errors.New("--rewire needs --store")
+	}
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
 	}
@@ -207,7 +231,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if err != nil {
 		return err
 	}
-	cfg, params := build(s)
+	cfg, params := build(s, topo)
 	steps := s.Epochs * (len(trainX) / s.Batch)
 	o := learning.DefaultOptions()
 	o.LearningRate = s.LearningRate
@@ -310,16 +334,25 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	return nil
 }
 
-// build lays out the sparse topology and the seeded initialization: weights
-// N(0, 1/in-degree), encoder N(0, 1/28), readout U(-1/sqrt(r), 1/sqrt(r)),
-// zero bias and tau = 2.
-func build(s settings) (learning.Config, learning.Parameters) {
+// build lays out the sparse topology (topo, or uniform random sources when
+// topo is nil) and the seeded initialization: each weight N(0, 1/in-degree of
+// its target), encoder N(0, 1/28), readout U(-1/sqrt(r), 1/sqrt(r)), zero bias
+// and tau = 2.
+func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 	rng := rand.New(rand.NewPCG(s.Seed, 1))
 	var sources, targets []int
-	for t := 0; t < s.Nodes; t++ {
-		for _, src := range rng.Perm(s.Nodes)[:s.InDegree] {
-			sources, targets = append(sources, src), append(targets, t)
+	if topo != nil {
+		sources, targets = topo.sources, topo.targets
+	} else {
+		for t := 0; t < s.Nodes; t++ {
+			for _, src := range rng.Perm(s.Nodes)[:s.InDegree] {
+				sources, targets = append(sources, src), append(targets, t)
+			}
 		}
+	}
+	degree := make([]int, s.Nodes)
+	for _, t := range targets {
+		degree[t]++
 	}
 	inputNodes := make([]int, s.InputNodes)
 	for i := range inputNodes {
@@ -348,12 +381,16 @@ func build(s settings) (learning.Config, learning.Parameters) {
 	for i := range readout {
 		readout[i] = (2*rng.Float64() - 1) * bound
 	}
+	weights := make([]float64, len(sources))
+	for e, t := range targets {
+		weights[e] = rng.NormFloat64() * (1 / math.Sqrt(float64(degree[t])))
+	}
 	logTau := make([]float64, s.Nodes)
 	for i := range logTau {
 		logTau[i] = math.Log(2)
 	}
 	p := learning.Parameters{
-		Core:    dynamics.Parameters{Weights: normal(len(sources), 1/math.Sqrt(float64(s.InDegree))), Bias: make([]float64, s.Nodes), LogTau: logTau},
+		Core:    dynamics.Parameters{Weights: weights, Bias: make([]float64, s.Nodes), LogTau: logTau},
 		Encoder: normal(side*s.columns()*s.InputNodes, 1/math.Sqrt(float64(side*s.columns()))),
 		Readout: readout,
 	}
@@ -475,6 +512,12 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 
 func modelName(s settings) string {
 	name := fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree)
+	if s.Store != "" {
+		name = fmt.Sprintf("store-%s-n%d-k%d", strings.TrimSuffix(filepath.Base(s.Store), filepath.Ext(s.Store)), s.Nodes, s.InDegree)
+		if s.Rewire != "" {
+			name += "-rewire-" + s.Rewire
+		}
+	}
 	if c := s.columns(); c > 1 {
 		name += fmt.Sprintf("-cols%d", c)
 	}
