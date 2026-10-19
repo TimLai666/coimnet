@@ -1,6 +1,6 @@
 # 訓練用資料集清單與下載腳本
 
-這是範例，不是框架的一部分。這裡列出之後用 CoImNet 訓練各種用途模型時會用到的公開資料集，並提供一支可重跑的腳本，把每個資料集下載下來、逐檔核對 sha256，再各自打包成一個壓縮檔。資料本身不進 git：預設存到專案內已忽略的 `data/datasets/`。
+這是範例，不是框架的一部分。這裡列出之後用 CoImNet 訓練各種用途模型時會用到的公開資料集，並提供一支可重跑的腳本，把每個資料集下載下來、逐檔核對 sha256，再各自打包成一個壓縮檔。資料本身不進 git：存放位置由環境變數 `COIMNET_DATASETS` 決定，例如多個專案共用的 `/Volumes/timlai/data/ML-Corpus`；沒設定時存到專案內已忽略的 `data/datasets/`。下文的 `data/datasets` 都指這個位置。
 
 - `catalog.json`：每個資料集的來源、上游大小、授權、授權狀態、是否需要先同意條款、用途（訓練或只當評測）。
 - `fetch.py`：只用 Python 標準函式庫加 `zstd` 指令。沒有 `zstd` 時改產生 `.tar.gz`。
@@ -30,7 +30,7 @@ python3 examples/datasets/fetch.py --clear-only
 
 已經有壓縮檔和回條的資料集會直接跳過；下載中斷時重跑會從斷點續傳，已轉成 JSON Lines 的檔案也不會重抓（旁邊的 `.src.json` 記著原檔 sha256）。下載完的原始檔在打包後刪除，加 `--keep-raw` 才保留。解開：`zstd -dc data/datasets/archives/tinystories.tar.zst | tar -x -C 目標資料夾`。
 
-標成 gated 的資料集（xLAM、The Stack smol、FineVideo）要先登入 Hugging Face、在資料集頁面按同意條款，再把 token 放進 `HF_TOKEN` 環境變數。沒做的話腳本會跳過它們並在最後的摘要列出，其他資料集照常完成。
+標成 gated 的資料集（xLAM、The Stack smol、FineVideo）要先在資料集頁面按同意條款，再執行 `hf auth login` 登入；腳本會讀登入時存下的 token，也可以改用 `HF_TOKEN` 環境變數。沒做的話腳本會跳過它們並在最後的摘要列出，其他資料集照常完成。
 
 ## 分級
 

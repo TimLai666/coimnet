@@ -11,7 +11,7 @@ downloads. Uses only the Python standard library plus the `zstd` command
 (falls back to .tar.gz when `zstd` is missing).
 
 Gated Hugging Face datasets need the terms accepted on the dataset page and
-a token in HF_TOKEN.
+a token in HF_TOKEN or saved by `hf auth login`.
 """
 
 import argparse
@@ -62,10 +62,28 @@ def human(n):
         n /= 1000
 
 
+def default_dest():
+    # The archives can live outside the repo, e.g. in a corpus folder shared by several projects.
+    env = os.environ.get("COIMNET_DATASETS")
+    return Path(env).expanduser() if env else REPO_ROOT / "data" / "datasets"
+
+
+def hf_token():
+    """HF_TOKEN, else the token saved by `hf auth login`."""
+    if os.environ.get("HF_TOKEN"):
+        return os.environ["HF_TOKEN"]
+    home = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")).expanduser()
+    try:
+        return (home / "token").read_text().strip() or None
+    except OSError:
+        return None
+
+
 def request(url, headers=None):
     hdrs = {"User-Agent": "coimnet-dataset-fetch/1"}
-    if url.startswith(HF) and os.environ.get("HF_TOKEN"):
-        hdrs["Authorization"] = "Bearer " + os.environ["HF_TOKEN"]
+    token = hf_token() if url.startswith(HF) else None
+    if token:
+        hdrs["Authorization"] = "Bearer " + token
     hdrs.update(headers or {})
     return urllib.request.Request(url, headers=hdrs)
 
@@ -437,8 +455,8 @@ def main():
             signal.signal(sig, on_signal)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--catalog", type=Path, default=HERE / "catalog.json")
-    ap.add_argument("--dest", type=Path, default=REPO_ROOT / "data" / "datasets",
-                    help="storage root (default: <repo>/data/datasets, ignored by git)")
+    ap.add_argument("--dest", type=Path, default=default_dest(),
+                    help="storage root (default: $COIMNET_DATASETS, else <repo>/data/datasets)")
     ap.add_argument("--work", type=Path, default=None,
                     help="local scratch for downloads and packing (default: <dest>/raw); "
                          "set it to local disk when --dest is a network mount")
