@@ -100,7 +100,7 @@ func main() {
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
-	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer); evaluation stays on the CPU")
+	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
@@ -262,7 +262,11 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 				loss += r.Loss / float64(len(results))
 			}
 		}
-		acc, err := evaluate(ctx, tr, testX, testY, s.Workers)
+		evalFn := evaluate
+		if s.GPU {
+			evalFn = evaluateBatched
+		}
+		acc, err := evalFn(ctx, tr, testX, testY, s.Workers)
 		if err != nil {
 			return err
 		}
@@ -396,6 +400,27 @@ func evaluate(ctx context.Context, tr *learning.Trainer, xs [][][]float64, ys []
 	for _, c := range correct {
 		if c {
 			count++
+		}
+	}
+	return float64(count) / float64(len(xs)), nil
+}
+
+// evaluateBatched is evaluate through Trainer.PredictBatch, so a --gpu
+// trainer runs the test episodes' core on the device in float32, in chunks of
+// evalChunk images.
+func evaluateBatched(ctx context.Context, tr *learning.Trainer, xs [][][]float64, ys []int, workers int) (float64, error) {
+	const evalChunk = 256
+	count := 0
+	for start := 0; start < len(xs); start += evalChunk {
+		end := min(start+evalChunk, len(xs))
+		logits, err := tr.PredictBatch(ctx, xs[start:end], workers)
+		if err != nil {
+			return 0, err
+		}
+		for i, l := range logits {
+			if argmax(l) == ys[start+i] {
+				count++
+			}
 		}
 	}
 	return float64(count) / float64(len(xs)), nil
