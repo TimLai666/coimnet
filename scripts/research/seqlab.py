@@ -73,14 +73,15 @@ def make_mask(kind, n, n_in, n_out, k, seed):
     m[:, :n_in] = m[:, :n_in]  # input nodes may also receive recurrent input
     return m
 
-def run(model, data, epochs, lr, bs, seed, log, device="cpu"):
+def run(model, data, epochs, lr, bs, seed, log, device="cpu", cols=1):
     Xtr, Ytr, Xte, Yte = data
     torch.manual_seed(seed)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
     steps = epochs * (len(Xtr) // bs)
     sched = torch.optim.lr_scheduler.OneCycleLR(opt, lr, total_steps=steps)
-    Xtr_t = torch.from_numpy(Xtr).transpose(1, 2).contiguous().to(device)  # columns as time
-    Xte_t = torch.from_numpy(Xte).transpose(1, 2).contiguous().to(device)
+    # columns as time; cols adjacent columns share one step (28/cols steps)
+    Xtr_t = torch.from_numpy(Xtr).transpose(1, 2).reshape(len(Xtr), 28 // cols, 28 * cols).contiguous().to(device)
+    Xte_t = torch.from_numpy(Xte).transpose(1, 2).reshape(len(Xte), 28 // cols, 28 * cols).contiguous().to(device)
     Ytr_t, Yte_t = torch.from_numpy(Ytr).to(device), torch.from_numpy(Yte).to(device)
     t0 = time.time()
     for ep in range(epochs):
@@ -115,13 +116,14 @@ if __name__ == "__main__":
     if a.val:
         Xtr, Ytr, _, _ = data; data = (Xtr[:-6000], Ytr[:-6000], Xtr[-6000:], Ytr[-6000:])
     spec = json.loads(a.spec); torch.manual_seed(a.seed)
+    cols = spec.get("cols", 1); d_in = 28 * cols
     if spec["model"] in ("gru", "lstm", "rnn"):
-        m = RNNBase(spec["model"], spec["h"])
+        m = RNNBase(spec["model"], spec["h"], d_in=d_in)
     else:
         n = spec["n"]; mask = make_mask(spec["topo"], n, spec["n_in"], spec["n_out"], spec.get("k", 0), a.seed)
-        m = CoimCore(n, spec["n_in"], spec["n_out"], mask, learn_tau=spec.get("learn_tau", True), gate=spec.get("gate", False), act=spec.get("act", "tanh"), tau0=spec.get("tau0", 2.0))
+        m = CoimCore(n, spec["n_in"], spec["n_out"], mask, learn_tau=spec.get("learn_tau", True), gate=spec.get("gate", False), act=spec.get("act", "tanh"), tau0=spec.get("tau0", 2.0), d_in=d_in)
     m = m.to(a.device)
     log = lambda s: print(s, flush=True)
     log(f"{json.dumps(spec)} params={m.params()}")
-    acc = run(m, data, a.epochs, a.lr, a.bs, a.seed, log, a.device)
+    acc = run(m, data, a.epochs, a.lr, a.bs, a.seed, log, a.device, cols)
     print("RESULT", json.dumps({"spec": spec, "params": m.params(), "acc": acc, "seed": a.seed, "lr": a.lr, "val": a.val}), flush=True)
