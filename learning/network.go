@@ -665,8 +665,9 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 	coreInputs := encodedRows
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(encodedRows))
+		flat := make([]float64, len(encodedRows)*coreWidth)
 		for t, row := range encodedRows {
-			coreInputs[t] = make([]float64, coreWidth)
+			coreInputs[t] = flat[t*coreWidth : (t+1)*coreWidth : (t+1)*coreWidth]
 			for i, id := range n.config.InputNodes {
 				copy(coreInputs[t][id*stateDim:(id+1)*stateDim], row[i*stateDim:(i+1)*stateDim])
 			}
@@ -694,8 +695,15 @@ func (n *Network) forwardSegmentState(ctx context.Context, p Parameters, input [
 			tr, y = trace, trace.Outputs()
 		}
 	} else if cpu, ok := n.core.(continuousCore); ok && !record && len(core.ThetaRaw) == 0 {
-		// Nothing will run the reverse pass, so the core keeps no trace.
-		y, err = cpu.model.Infer(ctx, core.Core, make([]float64, coreWidth), coreInputs)
+		// Nothing will run the reverse pass, so the core keeps no trace, and a
+		// last-step readout needs only the final output row.
+		if n.config.ReadoutEveryStep {
+			y, err = cpu.model.Infer(ctx, core.Core, make([]float64, coreWidth), coreInputs)
+		} else {
+			var final []float64
+			final, err = cpu.model.InferLast(ctx, core.Core, make([]float64, coreWidth), coreInputs)
+			y = [][]float64{final}
+		}
 	} else {
 		tr, y, err = n.core.forward(ctx, core, make([]float64, coreWidth), coreInputs)
 	}

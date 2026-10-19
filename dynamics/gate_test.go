@@ -206,8 +206,8 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 	}
 }
 
-// TestInferMatchesForwardOutputs checks that the record-free pass returns
-// exactly Forward's outputs for delayed and undelayed graphs, serial and
+// TestInferMatchesForwardOutputs checks that the record-free passes return
+// exactly Forward's outputs (InferLast its last row) for delayed and undelayed graphs, serial and
 // partitioned, with and without each gate.
 func TestInferMatchesForwardOutputs(t *testing.T) {
 	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
@@ -245,6 +245,19 @@ func TestInferMatchesForwardOutputs(t *testing.T) {
 							if math.Float64bits(got[s][i]) != math.Float64bits(want[s][i]) {
 								t.Fatalf("gate %q %s delayed=%v workers=%d: step %d node %d = %v, want %v", gate, activation, delayed, workers, s, i, got[s][i], want[s][i])
 							}
+						}
+					}
+					last, err := m.InferLast(context.Background(), p, f.initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					final := want[len(want)-1]
+					if len(last) != len(final) {
+						t.Fatalf("last row has %d nodes, want %d", len(last), len(final))
+					}
+					for i := range final {
+						if math.Float64bits(last[i]) != math.Float64bits(final[i]) {
+							t.Fatalf("gate %q %s delayed=%v workers=%d: InferLast node %d = %v, want %v", gate, activation, delayed, workers, i, last[i], final[i])
 						}
 					}
 				}

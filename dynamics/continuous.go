@@ -352,7 +352,7 @@ func (m *Continuous) synapticDriveParallel(drive, weights []float64, r reader) e
 // Forward evolves a nonempty sequence without changing its arguments. The
 // returned trace owns its buffers. Cancellation or errors publish no state.
 func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) (*Trace, error) {
-	return m.forward(ctx, p, initial, inputs, nil, true)
+	return m.forward(ctx, p, initial, inputs, nil, true, false)
 }
 
 // Infer evolves a nonempty sequence like Forward and returns only the
@@ -360,19 +360,33 @@ func (m *Continuous) Forward(ctx context.Context, p Parameters, initial []float6
 // Forward(...).Outputs(). It keeps no reverse-pass record and reuses its step
 // buffers, so it is the cheaper path for prediction.
 func (m *Continuous) Infer(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) ([][]float64, error) {
-	tr, err := m.forward(ctx, p, initial, inputs, nil, false)
+	tr, err := m.forward(ctx, p, initial, inputs, nil, false, false)
 	if err != nil {
 		return nil, err
 	}
 	return tr.output[1:], nil
 }
 
+// InferLast evolves a nonempty sequence like Infer and returns only the
+// activated output after the last input step, bit-identical to the last row
+// of Infer. When every edge reads the previous step it keeps one output row
+// instead of one per step.
+func (m *Continuous) InferLast(ctx context.Context, p Parameters, initial []float64, inputs [][]float64) ([]float64, error) {
+	tr, err := m.forward(ctx, p, initial, inputs, nil, false, true)
+	if err != nil {
+		return nil, err
+	}
+	return tr.output[len(tr.output)-1], nil
+}
+
 // forward is the shared scalar forward implementation. A non-nil saved state
 // supplies a copied, constant delayed-output prefix and makes the segment's
 // first absolute step saved.Steps. Without keep only the output rows are
 // recorded: voltage, drive and gate rows are step buffers reused in place, so
-// the trace serves Infer and nothing that reads them.
-func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, saved *State, keep bool) (*Trace, error) {
+// the trace serves Infer and nothing that reads them. With last as well, and
+// only the previous output read by any edge, each step overwrites the output
+// row its drive read, so only the final row of the trace is meaningful.
+func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float64, inputs [][]float64, saved *State, keep, last bool) (*Trace, error) {
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}
@@ -463,6 +477,7 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			gateBuf, squashBuf, slopeBuf = make([]float64, n), make([]float64, n), make([]float64, n)
 		}
 	}
+	inPlace := !keep && last && saved == nil && m.zeroDelay && m.partition == nil
 	voltage := tr.voltage[0]
 	if saved != nil {
 		// The saved latest output is authoritative. In particular, it may be
@@ -511,7 +526,13 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			vnext = voltage
 			gate, squash, slope = gateBuf, squashBuf, slopeBuf
 		}
-		ynext := make([]float64, n)
+		var ynext []float64
+		if inPlace {
+			// The drive above was the only reader of tr.output[t].
+			ynext = tr.output[t]
+		} else {
+			ynext = make([]float64, n)
+		}
 		softsignGate := m.config.Gate == GateCurrentSoftsign
 		if !keep && softsignGate && m.act == activationSoftsign {
 			if i := softsignStep(drive, voltage, ynext, p.Bias, p.GateGain, p.GateBias, alpha); i >= 0 {

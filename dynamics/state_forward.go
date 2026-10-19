@@ -39,7 +39,7 @@ func (m *Continuous) ForwardFromState(ctx context.Context, p Parameters, initial
 	if _, err := m.stateHistoryRows(finalSteps); err != nil {
 		return nil, err
 	}
-	trace, err := m.forward(ctx, p, initial.Voltage, inputs, &initial, true)
+	trace, err := m.forward(ctx, p, initial.Voltage, inputs, &initial, true, false)
 	if err != nil {
 		return nil, err
 	}
