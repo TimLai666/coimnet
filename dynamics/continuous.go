@@ -43,8 +43,9 @@ type Config struct {
 	// plain integrator up to rounding. GateCurrentSoftsign is the same gate
 	// with the exponential-free squashing (1 + softsign(z))/2 in place of
 	// sigmoid(z). Both are supported by Forward and Backward
-	// on fresh episodes; recompute, persistent state, vector nodes and the GPU
-	// adapter refuse a gated model.
+	// on fresh episodes, and by the batched GPUContinuousBatch; recompute,
+	// persistent state, vector nodes and the per-step GPU adapter refuse a
+	// gated model.
 	Gate string `json:"gate,omitempty"`
 }
 
