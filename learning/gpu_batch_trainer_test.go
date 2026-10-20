@@ -256,6 +256,35 @@ func batchTargets(f batchFixture, targets [][]float64, steps int) [][]float64 {
 	return out
 }
 
+// batchSumNear allows the float32 rounding of the batched encoder and readout
+// gradient sums, which carry about seven significant digits.
+func batchSumNear(want, got float64) bool {
+	return math.Abs(want-got) <= 1e-6*(1+math.Abs(want))
+}
+
+// lossesAgree compares a pair's loss: bit for bit while neither trainer has
+// applied an update, so both hold the same parameters, and to the batch-sum
+// rounding afterwards, since the float32 gradient sums move the parameters
+// by that much.
+func lossesAgree(want, got StepResult) bool {
+	if want.Updates == 0 {
+		return want.Loss == got.Loss
+	}
+	return batchSumNear(want.Loss, got.Loss)
+}
+
+func nearBatchSums(t *testing.T, name string, want, got []float64) {
+	t.Helper()
+	if len(want) != len(got) {
+		t.Fatalf("%s has %d values, CPU %d", name, len(got), len(want))
+	}
+	for i := range want {
+		if !batchSumNear(want[i], got[i]) {
+			t.Fatalf("%s[%d] = %.17g, CPU %.17g", name, i, got[i], want[i])
+		}
+	}
+}
+
 func newBatchCoreTrainers(t *testing.T, f batchFixture, accumulate int) (*Trainer, *Trainer) {
 	t.Helper()
 	c, p, o := newBatchFixture(f, accumulate)
@@ -275,9 +304,11 @@ func newBatchCoreTrainers(t *testing.T, f batchFixture, accumulate int) (*Traine
 }
 
 // TestBatchCoreStepMatchesStepBatch drives the batched trainer path with the
-// float64 stand-in core. When every chunk starts a fresh accumulation window
-// the sums are formed in the same order as StepBatch's accumulator, so the
-// parameters, optimizer state and per-pair losses must match bit for bit.
+// float64 stand-in core. The forward pass is the same products row for row,
+// so per-pair losses match bit for bit until the first update. The batch runs one encoder and one
+// readout product, so their gradients are summed in float32 within the
+// product instead of per pair and then in float64; parameters and optimizer
+// state agree to that rounding.
 func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 	ctx := context.Background()
 	for name, f := range map[string]batchFixture{
@@ -303,18 +334,21 @@ func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 				}
 				for i := range want {
 					w, g := want[i], got[i]
-					if w.Loss != g.Loss || w.Applied != g.Applied || w.Accumulated != g.Accumulated || w.Updates != g.Updates || w.LearningRate != g.LearningRate || w.GradientHorizonSteps != g.GradientHorizonSteps {
+					if !lossesAgree(w, g) || w.Applied != g.Applied || w.Accumulated != g.Accumulated || w.Updates != g.Updates || w.LearningRate != g.LearningRate || w.GradientHorizonSteps != g.GradientHorizonSteps {
 						t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, w, g)
 					}
 				}
-				if !got[3].Applied || got[3].UpdateNorm != want[3].UpdateNorm {
+				if !got[3].Applied || !batchSumNear(want[3].UpdateNorm, got[3].UpdateNorm) {
 					t.Fatalf("round %d: last pair %+v, want %+v", round, got[3], want[3])
 				}
 			}
 			ws, gs := cpu.Snapshot(), batched.Snapshot()
-			if !reflect.DeepEqual(ws.Parameters, gs.Parameters) || !reflect.DeepEqual(ws.Optimizer, gs.Optimizer) || ws.Updates != gs.Updates {
+			if ws.Updates != gs.Updates || !reflect.DeepEqual(ws.Optimizer.Steps, gs.Optimizer.Steps) {
 				t.Fatal("batched path diverged from StepBatch")
 			}
+			nearBatchSums(t, "parameters", flatParameters(ws.Parameters), flatParameters(gs.Parameters))
+			nearBatchSums(t, "first moment", ws.Optimizer.First, gs.Optimizer.First)
+			nearBatchSums(t, "second moment", ws.Optimizer.Second, gs.Optimizer.Second)
 		})
 	}
 }
@@ -322,7 +356,7 @@ func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 // TestBatchCoreAccumulatesAcrossCalls splits accumulation windows across
 // StepBatch calls and chunks (window 3, batches of 4), so chunks join open
 // windows and the sum order differs from the accumulator's; the trainers must
-// agree to float64 rounding and hold the same open window.
+// agree to the batch-sum rounding and hold the same open window.
 func TestBatchCoreAccumulatesAcrossCalls(t *testing.T) {
 	ctx := context.Background()
 	cpu, batched := newBatchCoreTrainers(t, batchFixture{loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrent, input: true}, 3)
@@ -337,7 +371,7 @@ func TestBatchCoreAccumulatesAcrossCalls(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := range want {
-			if want[i].Applied != got[i].Applied || want[i].Accumulated != got[i].Accumulated || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+			if want[i].Applied != got[i].Applied || want[i].Accumulated != got[i].Accumulated || want[i].Updates != got[i].Updates || !lossesAgree(want[i], got[i]) {
 				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 			}
 		}
@@ -346,24 +380,16 @@ func TestBatchCoreAccumulatesAcrossCalls(t *testing.T) {
 	if ws.Updates != 2 || gs.Updates != 2 || ws.Accumulator == nil || gs.Accumulator == nil || ws.Accumulator.Count != gs.Accumulator.Count {
 		t.Fatalf("updates %d/%d, accumulators %+v / %+v", ws.Updates, gs.Updates, ws.Accumulator, gs.Accumulator)
 	}
-	near := func(name string, a, b []float64) {
-		t.Helper()
-		for i := range a {
-			if math.Abs(a[i]-b[i]) > 1e-12*(1+math.Abs(a[i])) {
-				t.Fatalf("%s[%d] = %.17g, CPU %.17g", name, i, b[i], a[i])
-			}
-		}
-	}
-	near("parameters", flatParameters(ws.Parameters), flatParameters(gs.Parameters))
-	near("first moment", ws.Optimizer.First, gs.Optimizer.First)
-	near("second moment", ws.Optimizer.Second, gs.Optimizer.Second)
-	near("accumulator", ws.Accumulator.Sum, gs.Accumulator.Sum)
+	nearBatchSums(t, "parameters", flatParameters(ws.Parameters), flatParameters(gs.Parameters))
+	nearBatchSums(t, "first moment", ws.Optimizer.First, gs.Optimizer.First)
+	nearBatchSums(t, "second moment", ws.Optimizer.Second, gs.Optimizer.Second)
+	nearBatchSums(t, "accumulator", ws.Accumulator.Sum, gs.Accumulator.Sum)
 }
 
 // TestBatchCoreFixedSignsMatchesStepBatch trains a core whose edges are
 // excitatory, inhibitory or free. The batched path converts the summed weight
 // gradient to log magnitudes once per chunk while StepBatch converts each
-// pair's, so the trainers agree to float64 rounding, and the fixed-sign
+// pair's, so the trainers agree to the batch-sum rounding, and the fixed-sign
 // edges keep their signs.
 func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
 	ctx := context.Background()
@@ -384,18 +410,13 @@ func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := range want {
-			if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+			if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || !lossesAgree(want[i], got[i]) {
 				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 			}
 		}
 	}
 	ws, gs := cpu.Snapshot(), batched.Snapshot()
-	a, b := flatParameters(ws.Parameters), flatParameters(gs.Parameters)
-	for i := range a {
-		if math.Abs(a[i]-b[i]) > 1e-12*(1+math.Abs(a[i])) {
-			t.Fatalf("parameter %d = %.17g, CPU %.17g", i, b[i], a[i])
-		}
-	}
+	nearBatchSums(t, "parameters", flatParameters(ws.Parameters), flatParameters(gs.Parameters))
 	moved := false
 	for i, w := range gs.Parameters.Core.Weights {
 		if w != before[i] {
@@ -528,7 +549,7 @@ func TestBatchCoreGradientNormIsTheChunkMean(t *testing.T) {
 		t.Fatal(err)
 	}
 	for i, r := range got {
-		if math.Abs(r.GradientNorm-want) > 1e-12*want {
+		if !batchSumNear(want, r.GradientNorm) {
 			t.Fatalf("pair %d gradient norm %.17g, chunk mean %.17g", i, r.GradientNorm, want)
 		}
 	}
