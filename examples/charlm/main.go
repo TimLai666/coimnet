@@ -3,10 +3,12 @@
 // after every step is scored with the softmax cross-entropy against the next
 // byte (learning.LossSoftmaxCrossEntropyEveryStep). The core is the one
 // examples/seqkmnist uses: in-degree edges from uniformly drawn sources, with
-// the optional current gate and softsign activation. By default every node
-// receives the encoded byte: a readout node that only hears the input through
-// k hops answers k steps late, which a last-step classifier never notices but
-// a next-byte model pays for at every position.
+// the optional current gate and softsign activation. The encoded byte enters
+// the last --input-nodes nodes and the readout reads the last --readout-nodes,
+// so with at least as many input nodes as readout nodes every readout node
+// hears the current byte: a readout node that only hears the input through k
+// hops answers k steps late, which a last-step classifier never notices but a
+// next-byte model pays for at every position.
 //
 // The text is a UTF-8 .txt file, or a .jsonl file whose lines carry a "text"
 // field (one document each, such as TinyStories). Documents are split by
@@ -101,7 +103,7 @@ func main() {
 	flag.StringVar(&s.Text, "text", "", "UTF-8 .txt file, or .jsonl file with a \"text\" field per line")
 	flag.IntVar(&s.MaxBytes, "max-bytes", 32<<20, "bytes of text read at most")
 	flag.IntVar(&s.Nodes, "nodes", 512, "core nodes")
-	flag.IntVar(&s.InputNodes, "input-nodes", 0, "nodes receiving the encoded byte (the first ones); 0 means every node")
+	flag.IntVar(&s.InputNodes, "input-nodes", 0, "nodes receiving the encoded byte (the last ones, so they hold the readout nodes); 0 means every node")
 	flag.IntVar(&s.ReadoutNodes, "readout-nodes", 64, "nodes read by the next-byte readout (the last ones)")
 	flag.IntVar(&s.InDegree, "in-degree", 22, "incoming edges per node, sources drawn uniformly without repetition")
 	flag.IntVar(&s.Window, "window", 64, "bytes per training and evaluation window")
@@ -273,7 +275,7 @@ func build(s settings, vocab int) (learning.Config, learning.Parameters) {
 	}
 	inputNodes := make([]int, s.InputNodes)
 	for i := range inputNodes {
-		inputNodes[i] = i
+		inputNodes[i] = s.Nodes - s.InputNodes + i
 	}
 	readoutNodes := make([]int, s.ReadoutNodes)
 	for i := range readoutNodes {
