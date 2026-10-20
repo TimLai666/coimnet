@@ -35,6 +35,7 @@ import (
 	"math/rand/v2"
 	"os"
 	"runtime"
+	"runtime/pprof"
 	"sort"
 	"strings"
 	"time"
@@ -121,12 +122,26 @@ func main() {
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
 	checkpointPath := flag.String("checkpoint", "", "file rewritten at every validation; a run started with an existing checkpoint of the same settings resumes from it")
+	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile of the run to this new file")
 	flag.Parse()
+	if *cpuProfile != "" {
+		f, err := os.OpenFile(*cpuProfile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o644)
+		if err == nil {
+			err = pprof.StartCPUProfile(f)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "charlm:", err)
+			os.Exit(1)
+		}
+		defer f.Close()
+		defer pprof.StopCPUProfile()
+	}
 	if s.Text == "" {
 		fmt.Fprintln(os.Stderr, "usage: go run ./examples/charlm --text FILE [--gpu] [--report NEW.json]")
 		os.Exit(2)
 	}
 	if err := run(s, *reportPath, *savePath, *checkpointPath); err != nil {
+		pprof.StopCPUProfile()
 		fmt.Fprintln(os.Stderr, "charlm:", err)
 		os.Exit(1)
 	}
