@@ -14,6 +14,9 @@ func (m *Continuous) ForwardRecompute(ctx context.Context, p Parameters, initial
 	if err := m.refuseGate("recompute"); err != nil {
 		return nil, err
 	}
+	if err := m.refuseChemistry("recompute"); err != nil {
+		return nil, err
+	}
 	if ctx == nil {
 		return nil, fmt.Errorf("nil context")
 	}

@@ -47,6 +47,10 @@ type Config struct {
 	// persistent state, vector nodes and the per-step GPU adapter refuse a
 	// gated model.
 	Gate string `json:"gate,omitempty"`
+	// Chemistry declares the optional activity-driven modulation block (see
+	// Chemistry). nil keeps the core, its JSON and its fingerprints exactly as
+	// they were before the block existed.
+	Chemistry *Chemistry `json:"chemistry,omitempty"`
 }
 
 // GateCurrent is the Config.Gate value of the input-current gate.
@@ -66,6 +70,12 @@ type Parameters struct {
 	// and must be empty otherwise.
 	GateGain []float64 `json:"gate_gain,omitempty"`
 	GateBias []float64 `json:"gate_bias,omitempty"`
+	// ChemRelease holds one release gain per Config.Chemistry channel, and
+	// ChemGain and ChemOffset one gain and offset per declared receptor. All
+	// three must be empty without Config.Chemistry.
+	ChemRelease []float64 `json:"chem_release,omitempty"`
+	ChemGain    []float64 `json:"chem_gain,omitempty"`
+	ChemOffset  []float64 `json:"chem_offset,omitempty"`
 }
 
 // Continuous is immutable and safe for concurrent independent trajectories.
@@ -85,6 +95,8 @@ type Continuous struct {
 	// act is Config.Activation resolved once, so the per-neuron activation
 	// does not compare strings.
 	act activationKind
+	// chem is Config.Chemistry resolved for the step loops; nil without it.
+	chem *chemPlan
 }
 
 // activationKind is a resolved Config.Activation. The zero value is softplus,
@@ -134,6 +146,11 @@ type Trace struct {
 	// squashed gate input s it came from and ds/dz, kept only for a gated
 	// model.
 	gate, gateSquash, gateSlope [][]float64
+	// chemMean and chemConc are the per-channel mean source output m(t) and
+	// concentration c(t), chemCurrent the per-node input current before
+	// modulation, and chemG and chemB the unclamped gain and offset sums, kept
+	// only for a model with chemistry.
+	chemMean, chemConc, chemCurrent, chemG, chemB [][]float64
 	// history is the owned prefix retained by a stateful segment. The final
 	// row is output at startSteps; rows before it are the preceding delayed
 	// outputs. A nil history identifies the original fresh-zero style path.
@@ -146,8 +163,10 @@ type Gradient struct {
 	Weights, Bias, LogTau []float64
 	// GateGain and GateBias are nil for an ungated model.
 	GateGain, GateBias []float64
-	Inputs             [][]float64
-	Initial            []float64
+	// ChemRelease, ChemGain and ChemOffset are nil without Config.Chemistry.
+	ChemRelease, ChemGain, ChemOffset []float64
+	Inputs                            [][]float64
+	Initial                           []float64
 }
 
 // NewContinuous validates and copies the topology. Duplicate edges are separate
@@ -218,7 +237,12 @@ func NewContinuous(c Config) (*Continuous, error) {
 			break
 		}
 	}
-	m := &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay, act: resolveActivation(c.Activation)}
+	chem, err := newChemPlan(c.Chemistry, c.Nodes, c.DT)
+	if err != nil {
+		return nil, err
+	}
+	c.Chemistry = copyChemistry(c.Chemistry)
+	m := &Continuous{config: c, partition: partition, runs: edgeRuns(c.Targets), zeroDelay: zeroDelay, act: resolveActivation(c.Activation), chem: chem}
 	if hash, err := m.stateConfigHash(); err == nil {
 		m.hash = hash
 	}
@@ -235,6 +259,7 @@ func (m *Continuous) Config() Config {
 	c.Sources = append([]int(nil), c.Sources...)
 	c.Targets = append([]int(nil), c.Targets...)
 	c.Delays = append([]int(nil), c.Delays...)
+	c.Chemistry = copyChemistry(c.Chemistry)
 	return c
 }
 
@@ -422,6 +447,13 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	if gated && saved != nil {
 		return nil, fmt.Errorf("a gated model does not support persistent state")
 	}
+	if err := m.checkChemistryParameters(p); err != nil {
+		return nil, err
+	}
+	chem := m.chem
+	if chem != nil && saved != nil {
+		return nil, fmt.Errorf("a model with chemistry does not support persistent state")
+	}
 	if len(inputs) > int(^uint(0)>>1)/n/3-1 {
 		return nil, fmt.Errorf("sequence shape overflows")
 	}
@@ -471,6 +503,19 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	// overwritten every step, and the voltage is updated in place because
 	// neuron i's next voltage reads only its own current one.
 	var driveBuf, gateBuf, squashBuf, slopeBuf []float64
+	// Chemistry carries the concentration across steps in conc; the other
+	// rows are recorded per step with keep and reused otherwise.
+	var conc, chemMean, chemOcc, chemG, chemB, chemCur []float64
+	if chem != nil {
+		k := len(chem.lambda)
+		conc, chemOcc = make([]float64, k), make([]float64, k)
+		if keep {
+			tr.chemMean, tr.chemConc = make([][]float64, len(inputs)), make([][]float64, len(inputs))
+			tr.chemCurrent, tr.chemG, tr.chemB = make([][]float64, len(inputs)), make([][]float64, len(inputs)), make([][]float64, len(inputs))
+		} else {
+			chemMean, chemG, chemB, chemCur = make([]float64, k), make([]float64, n), make([]float64, n), make([]float64, n)
+		}
+	}
 	if !keep {
 		driveBuf = make([]float64, n)
 		if gated {
@@ -493,6 +538,18 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 	for t, in := range inputs {
 		if err := ctx.Err(); err != nil {
 			return nil, err
+		}
+		if chem != nil {
+			// Release reads the outputs at the start of this step, before any
+			// in-place write below can overwrite them.
+			if keep {
+				chemMean, chemG, chemB, chemCur = make([]float64, len(chem.lambda)), make([]float64, n), make([]float64, n), make([]float64, n)
+				tr.chemMean[t], tr.chemG[t], tr.chemB[t], tr.chemCurrent[t] = chemMean, chemG, chemB, chemCur
+			}
+			chem.step(p, tr.output[t], conc, chemMean, chemOcc, chemG, chemB)
+			if keep {
+				tr.chemConc[t] = append([]float64(nil), conc...)
+			}
 		}
 		var drive []float64
 		if keep {
@@ -534,7 +591,7 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			ynext = make([]float64, n)
 		}
 		softsignGate := m.config.Gate == GateCurrentSoftsign
-		if !keep && softsignGate && m.act == activationSoftsign {
+		if !keep && softsignGate && m.act == activationSoftsign && chem == nil {
 			if i := softsignStep(drive, voltage, ynext, p.Bias, p.GateGain, p.GateBias, alpha); i >= 0 {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
 			}
@@ -543,6 +600,10 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			continue
 		}
 		for i := range drive {
+			if chem != nil {
+				chemCur[i] = drive[i]
+				drive[i] = chem.modulate(drive[i], chemG[i], chemB[i])
+			}
 			drive[i] += p.Bias[i]
 			if gated {
 				z := p.GateGain[i]*drive[i] + p.GateBias[i]
@@ -674,6 +735,18 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 	if gated {
 		g.GateGain, g.GateBias = make([]float64, n), make([]float64, n)
 	}
+	chem := m.chem
+	if tr.chemConc == nil {
+		chem = nil
+	}
+	// gc carries dL/dc_k(t+1)*lambda_k back to step t; docc collects the
+	// per-channel occupancy gradient of one step.
+	var gc, docc, occ, occSlope []float64
+	if chem != nil {
+		k := len(chem.lambda)
+		g.ChemRelease, g.ChemGain, g.ChemOffset = make([]float64, k), make([]float64, chem.receptors), make([]float64, chem.receptors)
+		gc, docc, occ, occSlope = make([]float64, k), make([]float64, k), make([]float64, k), make([]float64, k)
+	}
 	gv := make([]float64, n)
 	for t := steps - 1; t >= 0; t-- {
 		if err := ctx.Err(); err != nil {
@@ -682,6 +755,12 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 		start := WindowStart(t, window, offset)
 		prev := make([]float64, n)
 		g.Inputs[t] = make([]float64, n)
+		if chem != nil {
+			for k, c := range tr.chemConc[t] {
+				occ[k], occSlope[k] = occupancy(c, chem.kd[k], chem.hill[k])
+			}
+			clear(docc)
+		}
 		for i := 0; i < n; i++ {
 			dv := gv[i] + gy[t+1][i]*m.derivative(tr.voltage[t+1][i])
 			// d exp(-dt/exp(log_tau)) / d log_tau = lambda*dt/tau.
@@ -704,18 +783,44 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 					// alpha = 1 - lambda, so d alpha / d log_tau = -dlambda.
 					g.LogTau[i] -= da * 2 * sig * dlambda
 				}
-				g.Inputs[t][i] = dDrive
+				g.Inputs[t][i] = chemBackward(chem, tr, &g, t, i, dDrive, occ, docc)
 				g.Bias[i] += dDrive
 				if t > start || start == 0 {
 					prev[i] = (1 - a) * dv
 				}
 				continue
 			}
-			g.Inputs[t][i] = tr.alpha[i] * dv
-			g.Bias[i] += g.Inputs[t][i]
+			dDrive := tr.alpha[i] * dv
+			g.Inputs[t][i] = chemBackward(chem, tr, &g, t, i, dDrive, occ, docc)
+			g.Bias[i] += dDrive
 			g.LogTau[i] += dv * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
 			if t > start || start == 0 {
 				prev[i] = tr.lambda[i] * dv
+			}
+		}
+		if chem != nil {
+			pass := t > start || start == 0
+			for k, sources := range chem.sources {
+				// The concentration gradient of this step: the occupancy
+				// path of step t plus the decay path from step t+1.
+				dc := gc[k] + docc[k]*occSlope[k]
+				mean := tr.chemMean[t][k]
+				a := tr.parameters.ChemRelease[k] * mean
+				da := dc * chem.weight[k] * sigmoid(a)
+				g.ChemRelease[k] += da * mean
+				// The release read the outputs at the start of step t, the
+				// row a zero-delay edge reads, so the same boundary cuts it.
+				if dm := da * tr.parameters.ChemRelease[k]; dm != 0 && pass {
+					share := dm / float64(len(sources))
+					for _, j := range sources {
+						gy[t][j] += share
+					}
+				}
+				if pass {
+					gc[k] = chem.lambda[k] * dc
+				} else {
+					gc[k] = 0
+				}
 			}
 		}
 		r := forwardReader{output: tr.output, sources: m.config.Sources, delays: m.config.Delays, t: t, history: tr.history, startSteps: tr.startSteps}
@@ -755,7 +860,7 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 			g.Initial[i] = gv[i] + gy[0][i]*m.derivative(tr.voltage[0][i])
 		}
 	}
-	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.GateGain, g.GateBias, g.Initial} {
+	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.GateGain, g.GateBias, g.ChemRelease, g.ChemGain, g.ChemOffset, g.Initial} {
 		if err := vector(v, len(v), "gradient"); err != nil {
 			return empty, err
 		}
@@ -811,6 +916,9 @@ func cloneParameters(p Parameters) Parameters {
 	c := Parameters{Weights: append([]float64(nil), p.Weights...), Bias: append([]float64(nil), p.Bias...), LogTau: append([]float64(nil), p.LogTau...)}
 	if p.GateGain != nil || p.GateBias != nil {
 		c.GateGain, c.GateBias = append([]float64(nil), p.GateGain...), append([]float64(nil), p.GateBias...)
+	}
+	if p.ChemRelease != nil || p.ChemGain != nil || p.ChemOffset != nil {
+		c.ChemRelease, c.ChemGain, c.ChemOffset = append([]float64(nil), p.ChemRelease...), append([]float64(nil), p.ChemGain...), append([]float64(nil), p.ChemOffset...)
 	}
 	return c
 }
