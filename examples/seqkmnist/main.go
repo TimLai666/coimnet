@@ -89,6 +89,17 @@ type settings struct {
 	// TauMax, when above 2, draws each node's initial time constant
 	// log-uniformly from [2, TauMax] instead of setting every tau to 2.
 	TauMax float64 `json:"tau_max,omitempty"`
+	// Core "lif" swaps the continuous core for the spiking dynamics.LIF on
+	// the same edges and initial weights, with a trainable base threshold in
+	// [0.05, 1], v_reset 0, tau_syn 2 and the fast-sigmoid surrogate of
+	// scale SurrogateScale. Adapt adds short-term threshold adaptation
+	// (tau_adapt 20, beta 0.2) and Homeostasis the slow stabiliser (tau_rate
+	// 50, target rate 0.1, eta 0.01, h_max 0.5). These are engineering values,
+	// not measured ones. The spiking core is CPU-only and takes no gate.
+	Core           string  `json:"core,omitempty"`
+	SurrogateScale float64 `json:"surrogate_scale,omitempty"`
+	Adapt          bool    `json:"adapt,omitempty"`
+	Homeostasis    bool    `json:"homeostasis,omitempty"`
 }
 
 // columns is the number of image columns fed per step.
@@ -134,11 +145,15 @@ func main() {
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
-	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, readout (comma separated)")
+	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
 	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law; CPU core only)")
 	flag.Float64Var(&s.Inhibitory, "inhibitory", 0.5, "with --dale, the probability that a node is inhibitory")
 	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
+	flag.StringVar(&s.Core, "core", "", `"lif" trains the spiking core on the same edges (CPU only)`)
+	flag.Float64Var(&s.SurrogateScale, "surrogate-scale", 5, "with --core lif, the fast-sigmoid surrogate scale")
+	flag.BoolVar(&s.Adapt, "adapt", false, "with --core lif, add short-term threshold adaptation")
+	flag.BoolVar(&s.Homeostasis, "homeostasis", false, "with --core lif, add the slow activity stabiliser")
 	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
@@ -247,11 +262,24 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if !s.Dale {
 		s.Inhibitory = 0
 	}
+	switch s.Core {
+	case "":
+		if s.Adapt || s.Homeostasis {
+			return errors.New("--adapt and --homeostasis need --core lif")
+		}
+		s.SurrogateScale = 0
+	case "lif":
+		if s.Gate || s.Activation != "" || s.SurrogateScale <= 0 {
+			return errors.New("--core lif takes no gate or activation and needs a positive --surrogate-scale")
+		}
+	default:
+		return fmt.Errorf(`--core takes "lif", not %q`, s.Core)
+	}
 	if s.Delays < 0 || s.Inhibitory < 0 || s.Inhibitory > 1 || (s.TauMax != 0 && s.TauMax <= 2) {
 		return errors.New("--delays must be non-negative, --inhibitory within [0, 1] and --tau-max above 2")
 	}
 	trainable := learning.DefaultOptions().Trainable
-	trainable.Gate = s.Gate
+	trainable.Gate, trainable.Theta = s.Gate, s.Core == "lif"
 	trainable, err := freeze(trainable, s.Freeze)
 	if err != nil {
 		return err
@@ -274,6 +302,9 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
 	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
+	if cfg.LIF != nil {
+		rep.Edges = len(cfg.LIF.Sources)
+	}
 	resumed, err := readCheckpoint(checkpointPath, s)
 	if err != nil {
 		return err
@@ -457,6 +488,22 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 			logTau[i] = math.Log(2) + r.Float64()*(math.Log(s.TauMax)-math.Log(2))
 		}
 	}
+	if s.Core == "lif" {
+		d := cfg.Dynamics
+		lif := dynamics.LIFConfig{
+			Nodes: d.Nodes, Sources: d.Sources, Targets: d.Targets, Delays: d.Delays, DT: d.DT,
+			TauSyn: 2, ThetaMin: 0.05, ThetaMax: 1, VReset: 0,
+			Surrogate: dynamics.LIFSurrogate{Kind: "fast_sigmoid", Scale: s.SurrogateScale},
+		}
+		if s.Adapt {
+			lif.Adaptation = dynamics.LIFAdaptation{Enabled: true, TauAdapt: 20, Beta: 0.2}
+		}
+		if s.Homeostasis {
+			lif.Homeostasis = &dynamics.LIFHomeostasis{Enabled: true, TauRate: 50, TargetRate: 0.1, Eta: 0.01, HMax: 0.5}
+		}
+		cfg.Dynamics, cfg.LIF = dynamics.Config{}, &lif
+		p.ThetaRaw = make([]float64, s.Nodes)
+	}
 	if s.Gate {
 		cfg.Dynamics.Gate = dynamics.GateCurrent
 		if s.GateSquash == "softsign" {
@@ -484,6 +531,8 @@ func freeze(t learning.Trainable, list string) (learning.Trainable, error) {
 			t.Tau = false
 		case "gate":
 			t.Gate = false
+		case "theta":
+			t.Theta = false
 		case "readout":
 			t.Readout = false
 		default:

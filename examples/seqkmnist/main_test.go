@@ -221,3 +221,26 @@ func TestFreezeTurnsOffNamedGroups(t *testing.T) {
 		t.Fatal("an unknown group was accepted")
 	}
 }
+
+func TestLIFCoreKeepsEdgesAndWeights(t *testing.T) {
+	base := settings{Nodes: 30, InputNodes: 4, ReadoutNodes: 5, InDegree: 3, Seed: 2, Delays: 2}
+	c0, p0 := build(base, nil)
+	s := base
+	s.Core, s.SurrogateScale, s.Adapt, s.Homeostasis = "lif", 5, true, true
+	c, p := build(s, nil)
+	if c.LIF == nil || len(c.Dynamics.Sources) != 0 {
+		t.Fatal("the spiking core was not selected alone")
+	}
+	if !reflect.DeepEqual(c.LIF.Sources, c0.Dynamics.Sources) || !reflect.DeepEqual(c.LIF.Targets, c0.Dynamics.Targets) || !reflect.DeepEqual(c.LIF.Delays, c0.Dynamics.Delays) {
+		t.Fatal("the spiking core has other edges or delays")
+	}
+	if !reflect.DeepEqual(p.Core, p0.Core) || len(p.ThetaRaw) != s.Nodes {
+		t.Fatal("the spiking core changed the weights or has no threshold per node")
+	}
+	if !c.LIF.Adaptation.Enabled || c.LIF.Homeostasis == nil || !c.LIF.Homeostasis.Enabled {
+		t.Fatal("adaptation or homeostasis was not declared")
+	}
+	if _, err := learning.NewTrainer(c, p, learning.DefaultOptions()); err != nil {
+		t.Fatal(err)
+	}
+}
