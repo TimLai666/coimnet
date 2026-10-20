@@ -59,6 +59,9 @@ func (m *Continuous) backwardRecomputeStats(ctx context.Context, p Parameters, i
 	if err := m.refuseGate("recompute"); err != nil {
 		return empty, stats, err
 	}
+	if err := m.refuseChemistry("recompute"); err != nil {
+		return empty, stats, err
+	}
 	if ctx == nil {
 		return empty, stats, fmt.Errorf("nil context")
 	}

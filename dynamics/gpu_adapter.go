@@ -140,6 +140,9 @@ func verifyGPUBackwardPrimitive(ctx context.Context, backward *webgpu.SparseBack
 }
 
 func validateGPUContinuousConfig(cfg Config) error {
+	if cfg.Chemistry != nil {
+		return fmt.Errorf("%w: a model with chemistry runs on the CPU core only", ErrGPUContinuousUnsupported)
+	}
 	if cfg.StateDimension < 0 || cfg.StateDimension > 1 {
 		return fmt.Errorf("%w: only scalar state is supported, state dimension %d", ErrGPUContinuousUnsupported, cfg.StateDimension)
 	}

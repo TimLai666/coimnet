@@ -253,6 +253,9 @@ func (m *Continuous) stateModelValid() error {
 	if err := m.refuseGate("persistent state"); err != nil {
 		return err
 	}
+	if err := m.refuseChemistry("persistent state"); err != nil {
+		return err
+	}
 	if m.config.Nodes > MaxStateValues {
 		return fmt.Errorf("state voltage exceeds %d values", MaxStateValues)
 	}

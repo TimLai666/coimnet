@@ -66,6 +66,10 @@ func policyVersionSnapshot(s learning.IndividualSnapshot) string {
 	if s.Parameters.Core.GateGain != nil || s.Parameters.Core.GateBias != nil {
 		groups = append(groups, s.Parameters.Core.GateGain, s.Parameters.Core.GateBias)
 	}
+	// Chemistry groups likewise join only when present.
+	if c := s.Parameters.Core; c.ChemRelease != nil || c.ChemGain != nil || c.ChemOffset != nil {
+		groups = append(groups, c.ChemRelease, c.ChemGain, c.ChemOffset)
+	}
 	for _, group := range groups {
 		binary.LittleEndian.PutUint64(buf[:], uint64(len(group)))
 		h.Write(buf[:])
