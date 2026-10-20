@@ -43,13 +43,8 @@ func (tr *Trainer) PredictBatch(ctx context.Context, inputs [][][]float64, worke
 	if err != nil {
 		return nil, err
 	}
-	executions := make([]*execution, len(inputs))
-	coreInputs := make([][][]float64, len(inputs))
-	if err := forPairs(ctx, len(inputs), workers, func(i int) error {
-		e, encoded, err := n.encode(p, inputs[i], false)
-		executions[i], coreInputs[i] = e, encoded
-		return err
-	}); err != nil {
+	host, coreInputs, err := n.encodeBatch(p, inputs, false)
+	if err != nil {
 		return nil, err
 	}
 	readouts, err := tr.batch.Forward(ctx, core.Core, coreInputs)
@@ -59,24 +54,21 @@ func (tr *Trainer) PredictBatch(ctx context.Context, inputs [][][]float64, worke
 	if len(readouts) != len(inputs) {
 		return nil, fmt.Errorf("batched core returned %d readouts for %d inputs", len(readouts), len(inputs))
 	}
-	readoutCount := len(n.config.ReadoutNodes)
-	err = forPairs(ctx, len(inputs), workers, func(i int) error {
-		rows := readouts[i]
+	// Predict reads out the last step; an every-step model's last row is the
+	// same readout.
+	last := make([][][]float64, len(inputs))
+	for i, rows := range readouts {
 		if len(rows) == 0 {
-			return fmt.Errorf("batched core returned no readout rows")
+			return nil, fmt.Errorf("batched core returned no readout rows")
 		}
-		// Predict reads out the last step; an every-step model's last row is
-		// the same readout.
-		last := rows[len(rows)-1]
-		if len(last) != readoutCount {
-			return fmt.Errorf("batched core returned a readout row of %d values, want %d", len(last), readoutCount)
-		}
-		e := executions[i]
-		if err := n.readoutFrom(e, p, last, []int{readoutCount}, false); err != nil {
-			return err
-		}
+		last[i] = rows[len(rows)-1:]
+	}
+	executions, err := n.readoutBatch(host, p, last, 1, false)
+	if err != nil {
+		return nil, err
+	}
+	for i, e := range executions {
 		out[i] = doubles(e.prediction.Data())
-		return nil
-	})
-	return out, err
+	}
+	return out, nil
 }

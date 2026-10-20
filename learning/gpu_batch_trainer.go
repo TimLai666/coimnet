@@ -25,14 +25,19 @@ type batchCore interface {
 // core of each minibatch on the device in one batched episode: the core
 // forward and full reverse pass of every pair stay on the GPU and only the
 // readout activity, the summed core gradients and the input gradients come
-// back. Encoding and readout stay on Insyra on the host, as does AdamW.
+// back. Encoding and readout stay on Insyra on the host, as does AdamW: the
+// chunk's observation rows are stacked and run through one encoder product
+// (a one-hot chunk through Tape.Embedding) and one readout product.
 //
 // The batch gradient enters the same accumulation, clipping, schedule and
 // AdamW path as StepBatch on a CPU trainer: the accumulator gains the sum of
 // the chunk's gradients and the chunk's pair count, so a full window applies
-// their mean. Two things differ. Each pair's StepResult.GradientNorm is the
-// norm of its chunk's mean gradient, because single pairs' core gradients
-// never leave the device; and a chunk that fails commits none of its pairs.
+// their mean. Three things differ. The encoder and readout gradients are
+// summed over the chunk in float32 inside one product, not per pair and then
+// in float64, so they match StepBatch to float32 rounding. Each pair's
+// StepResult.GradientNorm is the norm of its chunk's mean gradient, because
+// single pairs' core gradients never leave the device. And a chunk that fails
+// commits none of its pairs.
 // Pairs within one chunk must have equal length.
 //
 // Step, StepFrom, Predict and the candidate check of every update keep the
@@ -141,13 +146,8 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	if err != nil {
 		return nil, err
 	}
-	executions := make([]*execution, k)
-	coreInputs := make([][][]float64, k)
-	if err := forPairs(ctx, k, workers, func(i int) error {
-		e, encoded, err := n.encode(p, inputs[i], true)
-		executions[i], coreInputs[i] = e, encoded
-		return err
-	}); err != nil {
+	host, coreInputs, err := n.encodeBatch(p, inputs, true)
+	if err != nil {
 		return nil, err
 	}
 	readouts, err := tr.batch.Forward(ctx, core.Core, coreInputs)
@@ -157,43 +157,25 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	if len(readouts) != k {
 		return nil, fmt.Errorf("batched core returned %d readouts for %d pairs", len(readouts), k)
 	}
+	readRows := 1
+	if n.config.ReadoutEveryStep {
+		readRows = steps
+	}
+	executions, err := n.readoutBatch(host, p, readouts, readRows, true)
+	if err != nil {
+		return nil, err
+	}
 	losses := make([]float64, k)
-	readoutGrads := make([][]float64, k)
-	upstream := make([][][]float64, k)
-	readoutCount := len(n.config.ReadoutNodes)
+	lossUp := make([][][]float64, k)
 	if err := forPairs(ctx, k, workers, func(i int) error {
-		var selected []float64
-		shape := []int{readoutCount}
-		for _, row := range readouts[i] {
-			if len(row) != readoutCount {
-				return fmt.Errorf("batched core returned a readout row of %d values, want %d", len(row), readoutCount)
-			}
-			selected = append(selected, row...)
-		}
-		if n.config.ReadoutEveryStep {
-			if len(readouts[i]) != steps {
-				return fmt.Errorf("batched core returned %d readout steps, want %d", len(readouts[i]), steps)
-			}
-			shape = []int{steps, readoutCount}
-		} else if len(readouts[i]) != 1 {
-			return fmt.Errorf("batched core returned %d readout rows for a last-step readout", len(readouts[i]))
-		}
-		e := executions[i]
-		if err := n.readoutFrom(e, p, selected, shape, true); err != nil {
-			return err
-		}
-		loss, up, err := n.lossUpstream(e, steps, targets[i], tr.options.Loss)
-		if err != nil {
-			return err
-		}
-		dh, dr, err := n.readoutReverse(e, up)
-		if err != nil {
-			return err
-		}
-		losses[i], readoutGrads[i] = loss, doubles(dr.Data())
-		upstream[i] = rows(doubles(dh.Data()), readoutCount)
-		return nil
+		loss, up, err := n.lossUpstream(executions[i], steps, targets[i], tr.options.Loss)
+		losses[i], lossUp[i] = loss, up
+		return err
 	}); err != nil {
+		return nil, err
+	}
+	upstream, readoutGrad, err := n.readoutBatchReverse(host, lossUp)
+	if err != nil {
 		return nil, err
 	}
 	g, err := tr.batch.Backward(ctx, upstream)
@@ -217,29 +199,12 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	if len(g.Inputs) != k {
 		return nil, fmt.Errorf("batched core returned input gradients for %d pairs, want %d", len(g.Inputs), k)
 	}
-	encoderGrads := make([][]float64, k)
-	width := inputWidth(n.config)
-	if err := forPairs(ctx, k, workers, func(i int) error {
-		flat := make([]float64, 0, steps*width)
-		for _, row := range g.Inputs[i] {
-			flat = append(flat, row...)
-		}
-		encoder, _, err := n.encoderReverse(executions[i], flat)
-		encoderGrads[i] = encoder
-		return err
-	}); err != nil {
+	encoderGrad, err := n.encoderBatchReverse(host, g.Inputs)
+	if err != nil {
 		return nil, err
 	}
 	sum := Gradient{Core: dynamics.Gradient{Weights: g.Weights, Bias: g.Bias, LogTau: g.LogTau, GateGain: g.GateGain, GateBias: g.GateBias}}
-	sum.Encoder, sum.Readout = make([]float64, len(p.Encoder)), make([]float64, len(p.Readout))
-	for i := range k {
-		for j, v := range encoderGrads[i] {
-			sum.Encoder[j] += v
-		}
-		for j, v := range readoutGrads[i] {
-			sum.Readout[j] += v
-		}
-	}
+	sum.Encoder, sum.Readout = encoderGrad, readoutGrad
 	grad := flatGradient(sum)
 	if len(grad) != len(flatParameters(p)) {
 		return nil, fmt.Errorf("batched gradient has %d values, the model has %d parameters", len(grad), len(flatParameters(p)))
