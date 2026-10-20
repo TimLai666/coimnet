@@ -73,6 +73,9 @@ type settings struct {
 	// Rewire, with Store, replaces the store's edges by a null model of the
 	// same size: "in-degree" or "swap" (see rewire).
 	Rewire string `json:"rewire,omitempty"`
+	// Tie, with Store, ties the core parameters by annotated cell type
+	// ("type", see tieByType); the gate parameters stay per node.
+	Tie string `json:"tie,omitempty"`
 	// Freeze lists parameter groups kept at their initial values: encoder,
 	// weights, bias, tau, gate and readout (comma separated). Freezing
 	// weights, bias, tau and gate leaves a fixed reservoir.
@@ -129,12 +132,15 @@ type settings struct {
 func (s settings) columns() int { return max(s.Cols, 1) }
 
 type report struct {
-	Settings      settings  `json:"settings"`
-	Parameters    int64     `json:"parameters"`
-	Edges         int       `json:"edges"`
-	EpochAccuracy []float64 `json:"epoch_test_accuracy"`
-	TrainSeconds  float64   `json:"train_seconds"`
-	Accuracy      float64   `json:"test_accuracy"`
+	Settings   settings `json:"settings"`
+	Parameters int64    `json:"parameters"`
+	Edges      int      `json:"edges"`
+	// TrainedParameters counts each tied group once; it equals Parameters
+	// when nothing is tied.
+	TrainedParameters int64     `json:"trained_parameters"`
+	EpochAccuracy     []float64 `json:"epoch_test_accuracy"`
+	TrainSeconds      float64   `json:"train_seconds"`
+	Accuracy          float64   `json:"test_accuracy"`
 }
 
 // checkpoint is the state after a whole epoch. Resuming replays the earlier
@@ -167,6 +173,7 @@ func main() {
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
+	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type"`)
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
 	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
@@ -280,8 +287,11 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 			return err
 		}
 		topo, s.Nodes, s.InDegree = &t, t.nodes, (len(t.sources)+t.nodes/2)/t.nodes
-	} else if s.Rewire != "" {
-		return errors.New("--rewire needs --store")
+	} else if s.Rewire != "" || s.Tie != "" {
+		return errors.New("--rewire and --tie need --store")
+	}
+	if s.Tie != "" && (s.Tie != "type" || s.Dale || s.Core != "") {
+		return errors.New(`--tie takes "type" and does not combine with --dale or --core`)
 	}
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
@@ -329,7 +339,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if err != nil {
 		return err
 	}
-	cfg, params := build(s, topo)
+	cfg, params, tiedAway := build(s, topo)
 	steps := s.Epochs * (len(trainX) / s.Batch)
 	o := learning.DefaultOptions()
 	o.LearningRate = s.LearningRate
@@ -340,6 +350,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
 	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
+	rep.TrainedParameters = rep.Parameters - int64(tiedAway)
 	if cfg.LIF != nil {
 		rep.Edges = len(cfg.LIF.Sources)
 	}
@@ -440,7 +451,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 // topo is nil) and the seeded initialization: each weight N(0, 1/in-degree of
 // its target), encoder N(0, 1/28), readout U(-1/sqrt(r), 1/sqrt(r)), zero bias
 // and tau = 2.
-func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
+func build(s settings, topo *topology) (learning.Config, learning.Parameters, int) {
 	rng := rand.New(rand.NewPCG(s.Seed, 1))
 	var sources, targets []int
 	if topo != nil {
@@ -552,7 +563,11 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 	if s.ChemChannels > 0 {
 		cfg.Dynamics.Chemistry, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset = buildChemistry(s)
 	}
-	return cfg, p
+	tiedAway := 0
+	if s.Tie == "type" && topo != nil {
+		cfg.Sharing, tiedAway = tieByType(topo.types, sources, targets, &p)
+	}
+	return cfg, p, tiedAway
 }
 
 // freeze turns off the training of each named parameter group.

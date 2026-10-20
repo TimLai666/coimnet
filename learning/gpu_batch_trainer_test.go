@@ -126,8 +126,8 @@ func (f *cpuBatchCore) Info() webgpu.DeviceInfo { return webgpu.DeviceInfo{Adapt
 func (f *cpuBatchCore) Close() error            { f.closed = true; return nil }
 
 type batchFixture struct {
-	gate, loss              string
-	everyStep, input, signs bool
+	gate, loss                       string
+	everyStep, input, signs, sharing bool
 }
 
 // newBatchFixture is a seeded eight-node core with three readout nodes and
@@ -169,8 +169,49 @@ func newBatchFixture(f batchFixture, accumulate int) (Config, Parameters, Option
 			}
 		}
 	}
+	if f.sharing {
+		// Edges tie by their target's parity and the time constants pairwise,
+		// as a cell-type sharing would; the first bias stays individual. A
+		// group's members start equal, as the trainer requires.
+		share := &ParameterSharing{Weights: make([]int32, len(sources)), Bias: make([]int32, nodes), LogTau: make([]int32, nodes), Groups: 2 + 3 + nodes/2}
+		for i, t := range targets {
+			share.Weights[i] = int32(t % 2)
+			if c.EdgeSigns != nil {
+				// A group shares one sign: even targets excite, odd inhibit.
+				c.EdgeSigns[i] = int8(1 - 2*(t%2))
+			}
+		}
+		share.Bias[0] = -1
+		for i := 1; i < nodes; i++ {
+			share.Bias[i] = int32(2 + i%3)
+		}
+		for i := range nodes {
+			share.LogTau[i] = int32(5 + i/2)
+		}
+		for _, family := range []struct {
+			values []float64
+			groups []int32
+		}{{p.Core.Weights, share.Weights}, {p.Core.Bias, share.Bias}, {p.Core.LogTau, share.LogTau}} {
+			first := map[int32]float64{}
+			for i, g := range family.groups {
+				if g < 0 {
+					continue
+				}
+				if v, ok := first[g]; ok {
+					family.values[i] = v
+				} else {
+					first[g] = family.values[i]
+				}
+			}
+		}
+		c.Sharing = share
+	}
 	o := DefaultOptions()
 	o.Loss, o.AccumulateSteps, o.LearningRate = f.loss, accumulate, .02
+	if f.sharing {
+		// A tight clip makes the window's reduced norm decide every update.
+		o.ClipNorm = .05
+	}
 	if f.gate != "" {
 		p.Core.GateGain, p.Core.GateBias = fill(nodes, .5), fill(nodes, .5)
 		o.Trainable.Gate = true
@@ -375,6 +416,62 @@ func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
 	}
 }
 
+// TestBatchCoreSharingMatchesStepBatch ties weights, biases and time
+// constants into groups. The batched path reduces the chunk's summed gradient
+// once and StepBatch each pair's, so the trainers agree to float64 rounding,
+// and every group's members stay equal.
+func TestBatchCoreSharingMatchesStepBatch(t *testing.T) {
+	ctx := context.Background()
+	for name, f := range map[string]batchFixture{
+		"shared":       {loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrentSoftsign, input: true, sharing: true},
+		"shared signs": {loss: LossMSE, input: true, sharing: true, signs: true},
+	} {
+		t.Run(name, func(t *testing.T) {
+			cpu, batched := newBatchCoreTrainers(t, f, 4)
+			for round := range 3 {
+				inputs, targets := batchEpisodes(4, 5, uint64(30+round))
+				targets = batchTargets(f, targets, 5)
+				want, err := cpu.StepBatch(ctx, inputs, targets, 2)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := batched.StepBatch(ctx, inputs, targets, 3)
+				if err != nil {
+					t.Fatal(err)
+				}
+				for i := range want {
+					if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+						t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
+					}
+				}
+			}
+			ws, gs := cpu.Snapshot(), batched.Snapshot()
+			a, b := flatParameters(ws.Parameters), flatParameters(gs.Parameters)
+			for i := range a {
+				if math.Abs(a[i]-b[i]) > 1e-12*(1+math.Abs(a[i])) {
+					t.Fatalf("parameter %d = %.17g, CPU %.17g", i, b[i], a[i])
+				}
+			}
+			share := gs.Config.Sharing
+			for _, family := range []struct {
+				values []float64
+				groups []int32
+			}{{gs.Parameters.Core.Weights, share.Weights}, {gs.Parameters.Core.Bias, share.Bias}, {gs.Parameters.Core.LogTau, share.LogTau}} {
+				first := map[int32]float64{}
+				for i, g := range family.groups {
+					if g < 0 {
+						continue
+					}
+					if v, ok := first[g]; ok && v != family.values[i] {
+						t.Fatalf("group %d members differ: %g and %g", g, v, family.values[i])
+					}
+					first[g] = family.values[i]
+				}
+			}
+		})
+	}
+}
+
 // TestBatchCoreWindowOfOneUpdatesEveryPair keeps AccumulateSteps at one, so
 // every chunk is a single pair and the batched path reproduces StepBatch bit
 // for bit, gradient norms included.
@@ -471,10 +568,7 @@ func TestGPUBatchTrainerRefusesUnsupportedBeforeDeviceOpen(t *testing.T) {
 			c.Dynamics.Delays[0] = 1
 		},
 		"vector state": func(c *Config, _ *Parameters, _ *Options) { c.Dynamics.StateDimension = 2 },
-		"sharing": func(c *Config, _ *Parameters, _ *Options) {
-			c.Sharing = &ParameterSharing{}
-		},
-		"lif": func(c *Config, _ *Parameters, _ *Options) { c.LIF = &dynamics.LIFConfig{} },
+		"lif":          func(c *Config, _ *Parameters, _ *Options) { c.LIF = &dynamics.LIFConfig{} },
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {

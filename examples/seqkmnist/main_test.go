@@ -50,7 +50,7 @@ func TestChemistryLeavesTheBaseModelUnchanged(t *testing.T) {
 	if strings.Contains(string(b), "chem") {
 		t.Fatalf("settings without chemistry record %s", b)
 	}
-	cfgOff, pOff := build(off, nil)
+	cfgOff, pOff, _ := build(off, nil)
 	if cfgOff.Dynamics.Chemistry != nil || pOff.Core.ChemRelease != nil || pOff.Core.ChemGain != nil || pOff.Core.ChemOffset != nil {
 		t.Fatal("chemistry present without --chem-channels")
 	}
@@ -60,7 +60,7 @@ func TestChemistryLeavesTheBaseModelUnchanged(t *testing.T) {
 		if err := checkChemistry(on); err != nil {
 			t.Fatal(err)
 		}
-		cfgOn, pOn := build(on, nil)
+		cfgOn, pOn, _ := build(on, nil)
 		chem := cfgOn.Dynamics.Chemistry
 		if chem == nil || len(chem.Channels) != 3 || len(pOn.Core.ChemRelease) != 3 || len(pOn.Core.ChemGain) != len(chem.Receptors) || len(chem.Receptors) == 0 || len(chem.Receptors) == 3*on.Nodes {
 			t.Fatalf("%s: chemistry block %+v", source, chem)
@@ -73,7 +73,7 @@ func TestChemistryLeavesTheBaseModelUnchanged(t *testing.T) {
 		if !reflect.DeepEqual(cfgOn, cfgOff) || !reflect.DeepEqual(pOn, pOff) {
 			t.Fatalf("%s: chemistry changed the base model", source)
 		}
-		cfg, p := build(on, nil)
+		cfg, p, _ := build(on, nil)
 		o := learning.DefaultOptions()
 		o.Trainable.Gate, o.Trainable.Chemistry = true, true
 		if _, err := learning.NewTrainer(cfg, p, o); err != nil {
@@ -203,11 +203,11 @@ func TestRewireKeepsDegrees(t *testing.T) {
 // sign parametrization) the weights stay those of the plain model.
 func TestMechanismsLeaveTheBaseModelUnchanged(t *testing.T) {
 	base := settings{Nodes: 40, InputNodes: 5, ReadoutNodes: 6, InDegree: 4, Seed: 7}
-	c0, p0 := build(base, nil)
+	c0, p0, _ := build(base, nil)
 
 	s := base
 	s.Delays = 3
-	c, p := build(s, nil)
+	c, p, _ := build(s, nil)
 	if !reflect.DeepEqual(c.Dynamics.Sources, c0.Dynamics.Sources) || !reflect.DeepEqual(p, p0) {
 		t.Fatal("delays changed the topology or the parameters")
 	}
@@ -224,7 +224,7 @@ func TestMechanismsLeaveTheBaseModelUnchanged(t *testing.T) {
 
 	s = base
 	s.Dale, s.Inhibitory = true, 0.3
-	c, p = build(s, nil)
+	c, p, _ = build(s, nil)
 	weights, err := learning.EffectiveWeights(c, p)
 	if err != nil {
 		t.Fatal(err)
@@ -252,7 +252,7 @@ func TestMechanismsLeaveTheBaseModelUnchanged(t *testing.T) {
 
 	s = base
 	s.TauMax = 20
-	_, p = build(s, nil)
+	_, p, _ = build(s, nil)
 	spread := false
 	for i, v := range p.Core.LogTau {
 		if tau := math.Exp(v); tau < 2-1e-12 || tau > 20+1e-12 {
@@ -282,10 +282,10 @@ func TestFreezeTurnsOffNamedGroups(t *testing.T) {
 
 func TestLIFCoreKeepsEdgesAndWeights(t *testing.T) {
 	base := settings{Nodes: 30, InputNodes: 4, ReadoutNodes: 5, InDegree: 3, Seed: 2, Delays: 2}
-	c0, p0 := build(base, nil)
+	c0, p0, _ := build(base, nil)
 	s := base
 	s.Core, s.SurrogateScale, s.Adapt, s.Homeostasis = "lif", 5, true, true
-	c, p := build(s, nil)
+	c, p, _ := build(s, nil)
 	if c.LIF == nil || len(c.Dynamics.Sources) != 0 {
 		t.Fatal("the spiking core was not selected alone")
 	}
@@ -300,5 +300,60 @@ func TestLIFCoreKeepsEdgesAndWeights(t *testing.T) {
 	}
 	if _, err := learning.NewTrainer(c, p, learning.DefaultOptions()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestTieByTypeSharesOneValuePerType ties a six-node store topology with
+// types A, A, B, B, unknown, A. Edges between the same type pair share a
+// weight, nodes of a type share bias and tau, the unknown node and its edges
+// stay individual, and the trainer accepts the declaration.
+func TestTieByTypeSharesOneValuePerType(t *testing.T) {
+	topo := topology{
+		nodes:   6,
+		sources: []int{0, 1, 2, 3, 4, 0, 5, 2},
+		targets: []int{2, 3, 0, 1, 0, 4, 2, 5},
+		types:   []string{"A", "A", "B", "B", "", "A"},
+	}
+	s := settings{Nodes: 6, InputNodes: 2, ReadoutNodes: 2, InDegree: 1, Seed: 7, Gate: true, GateSquash: "softsign", Activation: "softsign", TauMax: 20, Tie: "type"}
+	c, p, removed := build(s, &topo)
+	share := c.Sharing
+	if share == nil {
+		t.Fatal("no sharing declared")
+	}
+	// Weight groups: A->B (edges 0, 1, 6), B->A (2, 3, 7); edges 4 and 5
+	// touch the unknown node. Bias and tau groups: A (0, 1, 5), B (2, 3).
+	wantW := []int32{0, 0, 1, 1, -1, -1, 0, 1}
+	wantN := []int32{2, 2, 3, 3, -1, 2}
+	if !reflect.DeepEqual(share.Weights, wantW) || !reflect.DeepEqual(share.Bias, wantN) || share.Groups != 6 {
+		t.Fatalf("sharing = %+v", share)
+	}
+	for i, g := range wantN {
+		wantN[i] = g + 2
+		if g < 0 {
+			wantN[i] = -1
+		}
+	}
+	if !reflect.DeepEqual(share.LogTau, wantN) {
+		t.Fatalf("log_tau groups = %v, want %v", share.LogTau, wantN)
+	}
+	// Removed values: weights 2+2, bias 2+1, tau 2+1.
+	if removed != 10 {
+		t.Fatalf("removed %d values, want 10", removed)
+	}
+	w, tau := p.Core.Weights, p.Core.LogTau
+	if w[0] != w[1] || w[0] != w[6] || w[2] != w[3] || w[2] != w[7] || w[0] == w[2] {
+		t.Fatalf("tied weights %v", w)
+	}
+	if tau[0] != tau[1] || tau[0] != tau[5] || tau[2] != tau[3] || tau[0] == tau[2] || tau[4] == tau[0] {
+		t.Fatalf("tied tau %v", tau)
+	}
+	if _, err := learning.NewTrainer(c, p, learning.DefaultOptions()); err != nil {
+		t.Fatalf("trainer refused the tied model: %v", err)
+	}
+	untied := s
+	untied.Tie = ""
+	c0, p0, removed0 := build(untied, &topo)
+	if c0.Sharing != nil || removed0 != 0 || p0.Core.Weights[4] != w[4] || p0.Core.Weights[0] != w[0] {
+		t.Fatal("tying changed more than the tied values")
 	}
 }

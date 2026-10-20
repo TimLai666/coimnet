@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 
 	"github.com/TimLai666/coimnet/connectome"
+	"github.com/TimLai666/coimnet/learning"
 )
 
 // topology is a fixed directed edge list over nodes 0..nodes-1, edge e
@@ -13,6 +14,9 @@ import (
 type topology struct {
 	nodes            int
 	sources, targets []int
+	// types holds each node's annotated cell type, "" when unknown; it is
+	// empty for a random topology.
+	types []string
 }
 
 // storeLimits bounds the subgraph stores this example reads; a store for a
@@ -33,6 +37,16 @@ func loadStore(ctx context.Context, path string) (topology, error) {
 		return topology{}, err
 	}
 	t := topology{nodes: int(g.NodeCount())}
+	t.types = make([]string, t.nodes)
+	for i := range t.types {
+		n, err := g.Node(uint64(i))
+		if err != nil {
+			return topology{}, err
+		}
+		if n.Type.Valid {
+			t.types[i] = n.Type.Value
+		}
+	}
 	seen := make(map[[2]int]bool)
 	err = g.StreamAnnotatedEdges(ctx, func(e connectome.EdgeRecord) error {
 		s, d := int(e.Source), int(e.Target)
@@ -62,7 +76,7 @@ func loadStore(ctx context.Context, path string) (topology, error) {
 // any swap that would duplicate an edge. An empty mode returns t unchanged.
 func rewire(t topology, mode string, seed uint64) (topology, error) {
 	rng := rand.New(rand.NewPCG(seed, 2))
-	out := topology{nodes: t.nodes, sources: append([]int(nil), t.sources...), targets: append([]int(nil), t.targets...)}
+	out := topology{nodes: t.nodes, sources: append([]int(nil), t.sources...), targets: append([]int(nil), t.targets...), types: t.types}
 	switch mode {
 	case "":
 		return out, nil
@@ -97,4 +111,48 @@ func rewire(t topology, mode string, seed uint64) (topology, error) {
 		return out, nil
 	}
 	return topology{}, fmt.Errorf(`--rewire takes "in-degree" or "swap", not %q`, mode)
+}
+
+// tieByType ties the core parameters by annotated cell type, as a
+// connectome-constrained model shares one value per type: every edge between
+// the same (source type, target type) pair shares a weight, and every node of
+// a type shares its bias and time constant. A node of unknown type ("") and
+// its edges stay individual. Groups are numbered in order of first
+// appearance, weights first, and each starts at its first member's initial
+// value, as learning requires. It returns the declaration and the number of
+// distinct trained values it removes.
+func tieByType(types []string, sources, targets []int, p *learning.Parameters) (*learning.ParameterSharing, int) {
+	share := &learning.ParameterSharing{Weights: make([]int32, len(sources)), Bias: make([]int32, len(types)), LogTau: make([]int32, len(types))}
+	members := 0
+	assign := func(indices []int32, values []float64, key func(int) (string, bool)) {
+		type group struct {
+			id    int32
+			first int
+		}
+		groups := map[string]group{}
+		for i := range indices {
+			k, ok := key(i)
+			if !ok {
+				indices[i] = -1
+				continue
+			}
+			g, seen := groups[k]
+			if !seen {
+				g = group{id: int32(share.Groups), first: i}
+				groups[k] = g
+				share.Groups++
+			}
+			indices[i] = g.id
+			members++
+			values[i] = values[g.first]
+		}
+	}
+	assign(share.Weights, p.Core.Weights, func(e int) (string, bool) {
+		a, b := types[sources[e]], types[targets[e]]
+		return a + "\x00" + b, a != "" && b != ""
+	})
+	node := func(i int) (string, bool) { return types[i], types[i] != "" }
+	assign(share.Bias, p.Core.Bias, node)
+	assign(share.LogTau, p.Core.LogTau, node)
+	return share, members - share.Groups
 }
