@@ -790,7 +790,10 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 				}
 				continue
 			}
-			dDrive := tr.alpha[i] * dv
+			// The explicit conversion rounds the product before the bias
+			// sum, as the stored input gradient did, so no FMA fusion makes
+			// this path differ from the recompute reverse pass.
+			dDrive := float64(tr.alpha[i] * dv)
 			g.Inputs[t][i] = chemBackward(chem, tr, &g, t, i, dDrive, occ, docc)
 			g.Bias[i] += dDrive
 			g.LogTau[i] += dv * (tr.voltage[t][i] - tr.drive[t][i]) * dlambda
