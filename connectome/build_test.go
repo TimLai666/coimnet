@@ -1,10 +1,13 @@
 package connectome
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -229,6 +232,30 @@ func TestBuildHappyPathViewsAndReport(t *testing.T) {
 	}
 	if err := mapping.ValidateAgainst(g.NeuronIDs()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestBuildAnySelectsTheUnionWithItsCrossEdges adds the Orphan node 40 to the
+// Traced selection: the union keeps every Traced edge and gains the edge
+// 10 -> 40 between the two groups.
+func TestBuildAnySelectsTheUnionWithItsCrossEdges(t *testing.T) {
+	manifest, _ := happyFixture(t, []int{7, 4})
+	base := build(t, manifest, fixtureLimits()).Graph
+	manifest.Selection = SelectionPredicate{Source: RoleAnnotations, Field: "status", Any: []string{"Orphan", "Traced"}, Label: "traced and orphan bodies"}
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := DecodeManifest(bytes.NewReader(encoded))
+	if err != nil || !reflect.DeepEqual(decoded.Selection, manifest.Selection) {
+		t.Fatalf("decoded selection = %#v, %v", decoded.Selection, err)
+	}
+	union := build(t, decoded, fixtureLimits()).Graph
+	if union.NodeCount() != base.NodeCount()+1 || union.EdgeCount() != base.EdgeCount()+1 {
+		t.Fatalf("union nodes=%d edges=%d, base nodes=%d edges=%d", union.NodeCount(), union.EdgeCount(), base.NodeCount(), base.EdgeCount())
+	}
+	if _, err := union.IndexOf(signal.NeuronID{Namespace: testNamespace(), ExternalID: "40"}); err != nil {
+		t.Fatalf("union lacks node 40: %v", err)
 	}
 }
 

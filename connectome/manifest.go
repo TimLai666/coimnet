@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -141,12 +142,24 @@ type IdentityMapping struct {
 }
 
 // SelectionPredicate is the explicit, serializable node selection rule:
-// annotation rows whose Field equals Equals are selected.
+// annotation rows whose Field equals Equals are selected. Any instead selects
+// the rows whose Field equals one of several values, so a union of regions
+// keeps the edges between them; exactly one of Equals and Any is set.
 type SelectionPredicate struct {
 	Source FileRole `json:"source"`
 	Field  string   `json:"field"`
-	Equals string   `json:"equals"`
+	Equals string   `json:"equals,omitempty"`
+	Any    []string `json:"any,omitempty"`
 	Label  string   `json:"label"`
+}
+
+// Matches reports whether a non-null annotation value is selected. It
+// assumes a validated predicate.
+func (p SelectionPredicate) Matches(value string) bool {
+	if len(p.Any) == 0 {
+		return value == p.Equals
+	}
+	return slices.Contains(p.Any, value)
 }
 
 var fieldNamePattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
@@ -158,8 +171,27 @@ func (p SelectionPredicate) validate() error {
 	if !fieldNamePattern.MatchString(p.Field) {
 		return fmt.Errorf("%w: field %q is not a plain column name", ErrInvalidSelection, p.Field)
 	}
-	if p.Equals == "" {
-		return fmt.Errorf("%w: equals value must not be empty", ErrInvalidSelection)
+	if len(p.Any) == 0 {
+		if p.Equals == "" {
+			return fmt.Errorf("%w: equals value must not be empty", ErrInvalidSelection)
+		}
+	} else {
+		if p.Equals != "" {
+			return fmt.Errorf("%w: set equals or any, not both", ErrInvalidSelection)
+		}
+		if len(p.Any) < 2 {
+			return fmt.Errorf("%w: any needs at least two values; use equals for one", ErrInvalidSelection)
+		}
+		seen := make(map[string]bool, len(p.Any))
+		for _, v := range p.Any {
+			if v == "" {
+				return fmt.Errorf("%w: any value must not be empty", ErrInvalidSelection)
+			}
+			if seen[v] {
+				return fmt.Errorf("%w: any repeats %q", ErrInvalidSelection, v)
+			}
+			seen[v] = true
+		}
 	}
 	if strings.TrimSpace(p.Label) == "" {
 		return fmt.Errorf("%w: label must state what the selection means", ErrInvalidSelection)
@@ -173,7 +205,18 @@ func (p SelectionPredicate) Canonical() (string, error) {
 	if err := p.validate(); err != nil {
 		return "", err
 	}
-	return string(p.Source) + "." + p.Field + " == " + strconv.Quote(p.Equals), nil
+	if len(p.Any) == 0 {
+		return string(p.Source) + "." + p.Field + " == " + strconv.Quote(p.Equals), nil
+	}
+	// The value order is not part of the selection, so the canonical form
+	// lists the values sorted and two orderings hash the same.
+	values := slices.Clone(p.Any)
+	slices.Sort(values)
+	quoted := make([]string, len(values))
+	for i, v := range values {
+		quoted[i] = strconv.Quote(v)
+	}
+	return string(p.Source) + "." + p.Field + " in [" + strings.Join(quoted, ", ") + "]", nil
 }
 
 // Hash returns the SHA-256 of the canonical form as lowercase hex.

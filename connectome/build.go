@@ -342,7 +342,7 @@ func (b *builder) scanAnnotations() error {
 			if predicateColumn.IsNull(i) {
 				entry.fieldNull = true
 			} else {
-				entry.selected = predicateColumn.Value(i) == predicate.Equals
+				entry.selected = predicate.Matches(predicateColumn.Value(i))
 			}
 			stringBytes := int64(0)
 			for f := range names {
