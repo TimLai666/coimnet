@@ -25,6 +25,11 @@ type Trainable struct {
 	// dynamics.Config.Gate. DefaultOptions leaves it false so that existing
 	// options keep their exact JSON; a gated model must enable it explicitly.
 	Gate bool `json:"gate,omitempty"`
+	// Chemistry trains the release gains and the receptor gains and offsets
+	// of a core declared with dynamics.Config.Chemistry. DefaultOptions leaves
+	// it false so that existing options keep their exact JSON; a model with
+	// chemistry must enable it explicitly.
+	Chemistry bool `json:"chemistry,omitempty"`
 }
 
 // Options specifies a local, serializable AdamW update and BPTT window.
@@ -243,6 +248,16 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	}
 	if o.Trainable.Gate && gates == 0 {
 		return nil, fmt.Errorf("trainable gate requires a gated core")
+	}
+	channels, receptors := 0, 0
+	if chem := n.config.Dynamics.Chemistry; chem != nil {
+		channels, receptors = len(chem.Channels), len(chem.Receptors)
+	}
+	if len(p.Core.ChemRelease) != channels || len(p.Core.ChemGain) != receptors || len(p.Core.ChemOffset) != receptors {
+		return nil, fmt.Errorf("chemistry parameter shape mismatch")
+	}
+	if o.Trainable.Chemistry && channels == 0 {
+		return nil, fmt.Errorf("trainable chemistry requires a core with chemistry")
 	}
 	if c.Sharing != nil {
 		if err := validateSharingParameters(c.Sharing, p, c, n.core); err != nil {
@@ -794,6 +809,9 @@ func copyParameters(p Parameters) Parameters {
 	if p.Core.GateGain != nil || p.Core.GateBias != nil {
 		c.Core.GateGain, c.Core.GateBias = append([]float64(nil), p.Core.GateGain...), append([]float64(nil), p.Core.GateBias...)
 	}
+	if p.Core.ChemRelease != nil || p.Core.ChemGain != nil || p.Core.ChemOffset != nil {
+		c.Core.ChemRelease, c.Core.ChemGain, c.Core.ChemOffset = append([]float64(nil), p.Core.ChemRelease...), append([]float64(nil), p.Core.ChemGain...), append([]float64(nil), p.Core.ChemOffset...)
+	}
 	return c
 }
 func copyAdam(s AdamState) AdamState {
@@ -801,14 +819,14 @@ func copyAdam(s AdamState) AdamState {
 }
 func flatParameters(p Parameters) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias} {
+	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
 		out = append(out, v...)
 	}
 	return out
 }
 func flatGradient(g Gradient) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout, g.Core.GateGain, g.Core.GateBias} {
+	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout, g.Core.GateGain, g.Core.GateBias, g.Core.ChemRelease, g.Core.ChemGain, g.Core.ChemOffset} {
 		out = append(out, v...)
 	}
 	return out
@@ -816,7 +834,7 @@ func flatGradient(g Gradient) []float64 {
 func unflatten(v []float64, shape Parameters) Parameters {
 	p := copyParameters(shape)
 	offset := 0
-	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias} {
+	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
 		copy(dst, v[offset:offset+len(dst)])
 		offset += len(dst)
 	}
@@ -873,6 +891,7 @@ func parameterMask(p Parameters, o Options, thetaNodes []int, core ...coreModel)
 		{len(p.Core.LogTau), m.Tau, nodes, 1}, {len(p.ThetaRaw), m.Theta, theta, 1},
 		{len(p.Encoder), m.Encoder, nil, 1}, {len(p.Readout), m.Readout, nil, 1},
 		{len(p.Core.GateGain), m.Gate, nodes, 1}, {len(p.Core.GateBias), m.Gate, nodes, 1},
+		{len(p.Core.ChemRelease), m.Chemistry, nil, 1}, {len(p.Core.ChemGain), m.Chemistry, nil, 1}, {len(p.Core.ChemOffset), m.Chemistry, nil, 1},
 	} {
 		for i := range g.size {
 			enabled := g.enabled

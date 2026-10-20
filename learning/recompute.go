@@ -18,8 +18,13 @@ type Recompute struct {
 // fmt.Errorf("learning: recompute supports the continuous and LIF cores, not %s", name) where name is "mixed" for mixedCore,
 // "vector" for the vector core (*vectorCore, learning/vector_core.go) and fmt.Sprintf("%T", core) otherwise.
 func recomputeSupported(core coreModel) error {
-	switch core.(type) {
-	case continuousCore, lifCore:
+	switch c := core.(type) {
+	case continuousCore:
+		if c.model.Config().Chemistry != nil {
+			return fmt.Errorf("learning: recompute does not support a core with chemistry")
+		}
+		return nil
+	case lifCore:
 		return nil
 	case mixedCore:
 		return fmt.Errorf("learning: recompute supports the continuous and LIF cores, not %s", "mixed")

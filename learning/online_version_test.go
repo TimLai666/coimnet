@@ -7,11 +7,11 @@ import (
 )
 
 // TestSameParametersSeesEveryGroup changes one value in each parameter group
-// in turn, gate groups included, and requires the cached version to miss.
+// in turn, gate and chemistry groups included, and requires the cached version to miss.
 func TestSameParametersSeesEveryGroup(t *testing.T) {
 	base := func() Parameters {
 		return Parameters{
-			Core:     dynamics.Parameters{Weights: []float64{1}, Bias: []float64{2}, LogTau: []float64{3}, GateGain: []float64{4}, GateBias: []float64{5}},
+			Core:     dynamics.Parameters{Weights: []float64{1}, Bias: []float64{2}, LogTau: []float64{3}, GateGain: []float64{4}, GateBias: []float64{5}, ChemRelease: []float64{9}, ChemGain: []float64{10}, ChemOffset: []float64{11}},
 			ThetaRaw: []float64{6},
 			Encoder:  []float64{7},
 			Readout:  []float64{8},
@@ -21,14 +21,17 @@ func TestSameParametersSeesEveryGroup(t *testing.T) {
 		t.Fatal("equal parameters reported different")
 	}
 	groups := map[string]func(*Parameters) []float64{
-		"weights":   func(p *Parameters) []float64 { return p.Core.Weights },
-		"bias":      func(p *Parameters) []float64 { return p.Core.Bias },
-		"log_tau":   func(p *Parameters) []float64 { return p.Core.LogTau },
-		"gate_gain": func(p *Parameters) []float64 { return p.Core.GateGain },
-		"gate_bias": func(p *Parameters) []float64 { return p.Core.GateBias },
-		"theta_raw": func(p *Parameters) []float64 { return p.ThetaRaw },
-		"encoder":   func(p *Parameters) []float64 { return p.Encoder },
-		"readout":   func(p *Parameters) []float64 { return p.Readout },
+		"weights":      func(p *Parameters) []float64 { return p.Core.Weights },
+		"bias":         func(p *Parameters) []float64 { return p.Core.Bias },
+		"log_tau":      func(p *Parameters) []float64 { return p.Core.LogTau },
+		"gate_gain":    func(p *Parameters) []float64 { return p.Core.GateGain },
+		"gate_bias":    func(p *Parameters) []float64 { return p.Core.GateBias },
+		"theta_raw":    func(p *Parameters) []float64 { return p.ThetaRaw },
+		"encoder":      func(p *Parameters) []float64 { return p.Encoder },
+		"readout":      func(p *Parameters) []float64 { return p.Readout },
+		"chem_release": func(p *Parameters) []float64 { return p.Core.ChemRelease },
+		"chem_gain":    func(p *Parameters) []float64 { return p.Core.ChemGain },
+		"chem_offset":  func(p *Parameters) []float64 { return p.Core.ChemOffset },
 	}
 	for name, group := range groups {
 		changed := base()

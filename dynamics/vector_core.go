@@ -75,6 +75,9 @@ func NewVectorContinuous(c Config) (*VectorContinuous, error) {
 	if c.Gate != "" {
 		return nil, fmt.Errorf("vector nodes do not support a gated model")
 	}
+	if c.Chemistry != nil {
+		return nil, fmt.Errorf("vector nodes do not support a model with chemistry")
+	}
 	if c.Workers < 0 || c.Workers > 1024 {
 		return nil, fmt.Errorf("workers must be in [0, 1024]")
 	}
