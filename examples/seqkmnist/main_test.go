@@ -2,9 +2,15 @@ package main
 
 import (
 	"compress/gzip"
+	"encoding/json"
+	"math"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
 )
 
 func writeGzip(t *testing.T, path string, data []byte) {
@@ -22,6 +28,62 @@ func writeGzip(t *testing.T, path string, data []byte) {
 	}
 	if err := f.Close(); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestChemistryLeavesTheBaseModelUnchanged builds the model with and without
+// --chem-channels: the chemistry block draws from its own stream, so every
+// base configuration field and parameter is identical, and a run without it
+// records no chemistry setting at all.
+func TestChemistryLeavesTheBaseModelUnchanged(t *testing.T) {
+	base := settings{Nodes: 40, InputNodes: 8, ReadoutNodes: 10, InDegree: 5, Seed: 3, Gate: true, GateSquash: "softsign", Activation: "softsign"}
+	off := normalizeChemistry(base)
+	off.ChemTau, off.ChemSource = 5, "all" // flag defaults that normalize must drop
+	off = normalizeChemistry(off)
+	if off != base {
+		t.Fatalf("normalized settings %+v, want %+v", off, base)
+	}
+	b, err := json.Marshal(off)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "chem") {
+		t.Fatalf("settings without chemistry record %s", b)
+	}
+	cfgOff, pOff := build(off, nil)
+	if cfgOff.Dynamics.Chemistry != nil || pOff.Core.ChemRelease != nil || pOff.Core.ChemGain != nil || pOff.Core.ChemOffset != nil {
+		t.Fatal("chemistry present without --chem-channels")
+	}
+	for _, source := range []string{"all", "split", "input", "readout", "hidden"} {
+		on := base
+		on.ChemChannels, on.ChemTau, on.ChemHill, on.ChemSource, on.ChemReceptors, on.ChemInit = 3, 4, 2, source, .5, .01
+		if err := checkChemistry(on); err != nil {
+			t.Fatal(err)
+		}
+		cfgOn, pOn := build(on, nil)
+		chem := cfgOn.Dynamics.Chemistry
+		if chem == nil || len(chem.Channels) != 3 || len(pOn.Core.ChemRelease) != 3 || len(pOn.Core.ChemGain) != len(chem.Receptors) || len(chem.Receptors) == 0 || len(chem.Receptors) == 3*on.Nodes {
+			t.Fatalf("%s: chemistry block %+v", source, chem)
+		}
+		if want := 4 * math.Ln2; chem.Channels[0].Kd != want {
+			t.Fatalf("%s: default kd %v, want %v", source, chem.Channels[0].Kd, want)
+		}
+		cfgOn.Dynamics.Chemistry = nil
+		pOn.Core.ChemRelease, pOn.Core.ChemGain, pOn.Core.ChemOffset = nil, nil, nil
+		if !reflect.DeepEqual(cfgOn, cfgOff) || !reflect.DeepEqual(pOn, pOff) {
+			t.Fatalf("%s: chemistry changed the base model", source)
+		}
+		cfg, p := build(on, nil)
+		o := learning.DefaultOptions()
+		o.Trainable.Gate, o.Trainable.Chemistry = true, true
+		if _, err := learning.NewTrainer(cfg, p, o); err != nil {
+			t.Fatalf("%s: %v", source, err)
+		}
+	}
+	gpu := base
+	gpu.ChemChannels, gpu.ChemTau, gpu.ChemHill, gpu.ChemSource, gpu.ChemReceptors, gpu.GPU = 1, 4, 2, "all", 1, true
+	if err := checkChemistry(gpu); err == nil {
+		t.Fatal("--chem-channels accepted with --gpu")
 	}
 }
 

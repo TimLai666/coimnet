@@ -73,6 +73,29 @@ type settings struct {
 	// Rewire, with Store, replaces the store's edges by a null model of the
 	// same size: "in-degree" or "swap" (see rewire).
 	Rewire string `json:"rewire,omitempty"`
+	// ChemChannels adds a trainable dynamics.Chemistry block of this many
+	// channels (zero keeps the model without it). The other Chem fields are
+	// zeroed while it is zero, so a run without chemistry records the same
+	// settings as before the flags existed.
+	ChemChannels int `json:"chem_channels,omitempty"`
+	// ChemTau is every channel's concentration time constant in steps.
+	ChemTau float64 `json:"chem_tau,omitempty"`
+	// ChemKd is the receptors' dissociation constant; zero means
+	// ChemTau*log(2), the steady concentration of a zero release gain.
+	ChemKd float64 `json:"chem_kd,omitempty"`
+	// ChemHill is the receptors' Hill exponent.
+	ChemHill float64 `json:"chem_hill,omitempty"`
+	// ChemSource names the nodes whose mean output releases each channel:
+	// "all", "split" (K contiguous blocks, one per channel), "input",
+	// "readout" or "hidden" (neither input nor readout).
+	ChemSource string `json:"chem_source,omitempty"`
+	// ChemReceptors is the fraction of (node, channel) pairs given a
+	// receptor, drawn from the chemistry stream; 1 gives every node every
+	// channel.
+	ChemReceptors float64 `json:"chem_receptors,omitempty"`
+	// ChemInit is the standard deviation of the initial receptor gains and
+	// offsets; release gains start at 1 plus a tenth of it times N(0, 1).
+	ChemInit float64 `json:"chem_init,omitempty"`
 }
 
 // columns is the number of image columns fed per step.
@@ -119,6 +142,13 @@ func main() {
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
 	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
+	flag.IntVar(&s.ChemChannels, "chem-channels", 0, "add a trainable activity-driven chemistry block (dynamics.Chemistry) with this many channels; 0 turns it off (CPU only)")
+	flag.Float64Var(&s.ChemTau, "chem-tau", 5, "with --chem-channels, every channel's concentration time constant in steps")
+	flag.Float64Var(&s.ChemKd, "chem-kd", 0, "with --chem-channels, the receptor dissociation constant; 0 means chem-tau*ln 2")
+	flag.Float64Var(&s.ChemHill, "chem-hill", 2, "with --chem-channels, the receptor Hill exponent")
+	flag.StringVar(&s.ChemSource, "chem-source", "all", `with --chem-channels, the releasing nodes of each channel: "all", "split", "input", "readout" or "hidden"`)
+	flag.Float64Var(&s.ChemReceptors, "chem-receptors", 1, "with --chem-channels, the fraction of (node, channel) pairs that get a receptor; 1 is every node")
+	flag.Float64Var(&s.ChemInit, "chem-init", .01, "with --chem-channels, the standard deviation of the initial receptor gains and offsets")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
@@ -190,6 +220,9 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 	}
 	c := snapshot.Config.Dynamics
 	s.Nodes, s.Gate, s.Activation = c.Nodes, c.Gate != "", c.Activation
+	if c.Chemistry != nil {
+		s.ChemChannels = len(c.Chemistry.Channels)
+	}
 	if c.Gate == dynamics.GateCurrentSoftsign {
 		s.GateSquash = "softsign"
 	}
@@ -223,6 +256,10 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if s.Cols < 0 || side%s.columns() != 0 {
 		return fmt.Errorf("--cols must divide %d", side)
 	}
+	s = normalizeChemistry(s)
+	if err := checkChemistry(s); err != nil {
+		return err
+	}
 	trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount, s.columns())
 	if err != nil {
 		return err
@@ -238,6 +275,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	o.Loss = learning.LossSoftmaxCrossEntropy
 	o.AccumulateSteps = s.Batch
 	o.Trainable.Gate = s.Gate
+	o.Trainable.Chemistry = s.ChemChannels > 0
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
 	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
@@ -401,7 +439,101 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 		}
 		p.Core.GateGain, p.Core.GateBias = make([]float64, s.Nodes), make([]float64, s.Nodes)
 	}
+	if s.ChemChannels > 0 {
+		cfg.Dynamics.Chemistry, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset = buildChemistry(s)
+	}
 	return cfg, p
+}
+
+// normalizeChemistry zeroes the chemistry settings of a run without the
+// block, so its recorded settings and checkpoints match a run made before
+// the flags existed.
+func normalizeChemistry(s settings) settings {
+	if s.ChemChannels == 0 {
+		s.ChemTau, s.ChemKd, s.ChemHill, s.ChemSource, s.ChemReceptors, s.ChemInit = 0, 0, 0, "", 0, 0
+	}
+	return s
+}
+
+func checkChemistry(s settings) error {
+	if s.ChemChannels == 0 {
+		return nil
+	}
+	if s.ChemChannels < 0 || s.ChemChannels > dynamics.MaxChemistryChannels {
+		return fmt.Errorf("--chem-channels must be in [0, %d]", dynamics.MaxChemistryChannels)
+	}
+	if s.GPU {
+		return errors.New("--chem-channels runs on the CPU core only; drop --gpu")
+	}
+	if s.ChemTau <= 0 || s.ChemKd < 0 || s.ChemHill <= 0 || s.ChemReceptors <= 0 || s.ChemReceptors > 1 || s.ChemInit < 0 {
+		return errors.New("--chem-tau and --chem-hill must be positive, --chem-kd and --chem-init nonnegative and --chem-receptors in (0, 1]")
+	}
+	switch s.ChemSource {
+	case "all", "input", "readout":
+	case "split":
+		if s.ChemChannels > s.Nodes {
+			return errors.New(`--chem-source "split" needs at most one channel per node`)
+		}
+	case "hidden":
+		if s.InputNodes+s.ReadoutNodes >= s.Nodes {
+			return errors.New(`--chem-source "hidden" needs nodes that are neither input nor readout`)
+		}
+	default:
+		return fmt.Errorf("unknown --chem-source %q", s.ChemSource)
+	}
+	return nil
+}
+
+// buildChemistry declares the chemistry block and draws its initial values
+// from a PCG stream of its own, so the base model's initialization is the
+// same with and without it. The effect range is gamma in [0, 3] and
+// |beta| <= 1, fixed engineering bounds.
+func buildChemistry(s settings) (*dynamics.Chemistry, []float64, []float64, []float64) {
+	rng := rand.New(rand.NewPCG(s.Seed, 7))
+	kd := s.ChemKd
+	if kd == 0 {
+		kd = s.ChemTau * math.Ln2
+	}
+	c := &dynamics.Chemistry{GammaMin: 0, GammaMax: 3, BetaAbsMax: 1}
+	readoutStart := s.Nodes - s.ReadoutNodes
+	for k := 0; k < s.ChemChannels; k++ {
+		var sources []int
+		for j := 0; j < s.Nodes; j++ {
+			var keep bool
+			switch s.ChemSource {
+			case "all":
+				keep = true
+			case "split":
+				keep = j*s.ChemChannels/s.Nodes == k
+			case "input":
+				keep = j < s.InputNodes
+			case "readout":
+				keep = j >= readoutStart
+			case "hidden":
+				keep = j >= s.InputNodes && j < readoutStart
+			}
+			if keep {
+				sources = append(sources, j)
+			}
+		}
+		c.Channels = append(c.Channels, dynamics.ChemistryChannel{Tau: s.ChemTau, Kd: kd, Hill: s.ChemHill, Sources: sources})
+	}
+	for i := 0; i < s.Nodes; i++ {
+		for k := 0; k < s.ChemChannels; k++ {
+			if s.ChemReceptors >= 1 || rng.Float64() < s.ChemReceptors {
+				c.Receptors = append(c.Receptors, dynamics.ChemistryReceptor{Node: i, Channel: k})
+			}
+		}
+	}
+	release := make([]float64, s.ChemChannels)
+	for k := range release {
+		release[k] = 1 + s.ChemInit/10*rng.NormFloat64()
+	}
+	gain, offset := make([]float64, len(c.Receptors)), make([]float64, len(c.Receptors))
+	for e := range gain {
+		gain[e], offset[e] = s.ChemInit*rng.NormFloat64(), s.ChemInit*rng.NormFloat64()
+	}
+	return c, release, gain, offset
 }
 
 func oneHot(label int) []float64 {
@@ -529,6 +661,9 @@ func modelName(s settings) string {
 		if s.GateSquash != "" {
 			name += "-" + s.GateSquash
 		}
+	}
+	if s.ChemChannels > 0 {
+		name += fmt.Sprintf("-chem%d", s.ChemChannels)
 	}
 	return name
 }
