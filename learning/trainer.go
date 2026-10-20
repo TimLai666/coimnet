@@ -74,7 +74,10 @@ type Options struct {
 	// Loss selects the objective Step scores the last readout row with. Empty
 	// and LossMSE keep the mean squared error. LossSoftmaxCrossEntropy reads
 	// the readout as class logits and the target as a one-hot row, the usual
-	// classification objective. StepFrom ignores it, because its caller
+	// classification objective. LossSoftmaxCrossEntropyEveryStep scores every
+	// readout row of a ReadoutEveryStep model the same way, with a target of
+	// one row per step (an all-zero row is not scored); see
+	// Network.LossGradientCrossEntropyEveryStep. StepFrom ignores it, because its caller
 	// supplies the gradient. The field is omitted when empty, so every existing
 	// configuration and snapshot keeps its exact JSON and its recorded hash.
 	Loss string `json:"loss,omitempty"`
@@ -84,6 +87,8 @@ type Options struct {
 const (
 	LossMSE                 = "mse"
 	LossSoftmaxCrossEntropy = "softmax_cross_entropy"
+
+	LossSoftmaxCrossEntropyEveryStep = "softmax_cross_entropy_every_step"
 )
 
 // DefaultOptions returns every group of the continuous core trainable and a
@@ -193,6 +198,9 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	n, err := NewNetwork(c)
 	if err != nil {
 		return nil, err
+	}
+	if o.Loss == LossSoftmaxCrossEntropyEveryStep && !c.ReadoutEveryStep {
+		return nil, fmt.Errorf("loss %q needs readout_every_step", o.Loss)
 	}
 	// Root decision 6 of ticket 25 defines a fixed sign per scalar edge only;
 	// a C*C matrix weight has no declared sign, so a nonzero declaration on a
@@ -760,6 +768,10 @@ func validateOptions(o Options) error {
 	}
 	switch o.Loss {
 	case "", LossMSE, LossSoftmaxCrossEntropy:
+	case LossSoftmaxCrossEntropyEveryStep:
+		if o.Truncation != 0 {
+			return fmt.Errorf("loss %q does not support truncation", o.Loss)
+		}
 	default:
 		return fmt.Errorf("unsupported loss %q", o.Loss)
 	}

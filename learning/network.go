@@ -266,6 +266,18 @@ func (n *Network) LossGradientCrossEntropy(ctx context.Context, p Parameters, in
 	return n.lossGradient(ctx, p, input, target, window, offset, 0, LossSoftmaxCrossEntropy)
 }
 
+// LossGradientCrossEntropyEveryStep scores every readout row with the softmax
+// cross-entropy, the next-token objective of a sequence model. The network
+// must read out every step. target is len(input) rows of OutputSize values,
+// row after row: a one-hot row is scored against that row's logits, an
+// all-zero row (padding, or a prompt that is not predicted) is skipped, and
+// at least one row must be scored. The loss is the mean over the scored rows,
+// from one Insyra SoftmaxCrossEntropy over their float32 logits. window and
+// offset must be zero: truncation is defined for the last-row objectives.
+func (n *Network) LossGradientCrossEntropyEveryStep(ctx context.Context, p Parameters, input [][]float64, target []float64, window, offset int) (float64, Gradient, error) {
+	return n.lossGradient(ctx, p, input, target, window, offset, 0, LossSoftmaxCrossEntropyEveryStep)
+}
+
 // lossGradient is LossGradient whose core reverse pass recomputes the forward
 // history in segments of segment steps; zero keeps the full history. kind is
 // an Options.Loss value.
@@ -277,7 +289,14 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 	if window < 0 {
 		return 0, empty, fmt.Errorf("negative truncation window")
 	}
-	if _, err := tensor([]int{n.config.OutputSize}, target); err != nil {
+	if kind == LossSoftmaxCrossEntropyEveryStep {
+		if window != 0 || offset != 0 {
+			return 0, empty, fmt.Errorf("the per-step cross-entropy does not support truncation")
+		}
+		if len(target) != len(input)*n.config.OutputSize {
+			return 0, empty, fmt.Errorf("per-step target has %d values, want %d steps of %d", len(target), len(input), n.config.OutputSize)
+		}
+	} else if _, err := tensor([]int{n.config.OutputSize}, target); err != nil {
 		return 0, empty, err
 	}
 	e, err := n.forwardSegment(ctx, p, input, segment)
@@ -305,6 +324,9 @@ func (n *Network) lossGradient(ctx context.Context, p Parameters, input [][]floa
 // wants every step to carry a loss supplies its own upstream through
 // LossGradientFrom.
 func (n *Network) lossUpstream(e *execution, rows int, target []float64, kind string) (float64, [][]float64, error) {
+	if kind == LossSoftmaxCrossEntropyEveryStep {
+		return n.everyStepCrossEntropy(e, rows, target)
+	}
 	last := e.prediction
 	if n.config.ReadoutEveryStep {
 		all := doubles(e.prediction.Data())
@@ -408,6 +430,84 @@ func (n *Network) crossEntropySeed(last *nn.Tensor, target []float64) (float64, 
 		return 0, nil, fmt.Errorf("non-finite loss")
 	}
 	return l, doubles(param.Grad().Data()), nil
+}
+
+// everyStepCrossEntropy is the mean softmax cross-entropy of the scored rows
+// of a per-step readout and its upstream: (softmax(logits) - onehot) / scored
+// on each scored row, zero on the others.
+func (n *Network) everyStepCrossEntropy(e *execution, rows int, target []float64) (float64, [][]float64, error) {
+	if !n.config.ReadoutEveryStep {
+		return 0, nil, fmt.Errorf("the per-step cross-entropy needs readout_every_step")
+	}
+	width := n.config.OutputSize
+	if len(target) != rows*width {
+		return 0, nil, fmt.Errorf("per-step target has %d values, want %d steps of %d", len(target), rows, width)
+	}
+	all := e.prediction.Data()
+	if len(all) != rows*width {
+		return 0, nil, fmt.Errorf("per-step readout has %d values, want %d", len(all), rows*width)
+	}
+	var scored []int
+	var labels []int64
+	var logits []float32
+	for r := range rows {
+		label := -1
+		for k, v := range target[r*width : (r+1)*width] {
+			switch v {
+			case 0:
+			case 1:
+				if label >= 0 {
+					return 0, nil, fmt.Errorf("per-step target row %d has more than one 1", r)
+				}
+				label = k
+			default:
+				return 0, nil, fmt.Errorf("per-step target row %d has %g, not 0 or 1", r, v)
+			}
+		}
+		if label < 0 {
+			continue
+		}
+		scored, labels = append(scored, r), append(labels, int64(label))
+		for _, z := range all[r*width : (r+1)*width] {
+			logits = append(logits, float32(z))
+		}
+	}
+	if len(scored) == 0 {
+		return 0, nil, fmt.Errorf("per-step target scores no row")
+	}
+	logitTensor, err := nn.NewFloat32Tensor([]int{len(scored), width}, logits)
+	if err != nil {
+		return 0, nil, err
+	}
+	labelTensor, err := nn.NewInt64Tensor([]int{len(scored)}, labels)
+	if err != nil {
+		return 0, nil, err
+	}
+	tape := nn.NewTape()
+	param, err := tape.Param(logitTensor)
+	if err != nil {
+		return 0, nil, err
+	}
+	loss, err := tape.SoftmaxCrossEntropy(param.Value(), labelTensor)
+	if err != nil {
+		return 0, nil, err
+	}
+	if err = tape.Backward(loss); err != nil {
+		return 0, nil, err
+	}
+	l := float64(loss.Data()[0])
+	if !finite(l) {
+		return 0, nil, fmt.Errorf("non-finite loss")
+	}
+	grad := doubles(param.Grad().Data())
+	up := make([][]float64, rows)
+	for i := range up {
+		up[i] = make([]float64, width)
+	}
+	for i, r := range scored {
+		copy(up[r], grad[i*width:(i+1)*width])
+	}
+	return l, up, nil
 }
 
 // LossGradientFrom runs one forward pass and the reverse pass with a
