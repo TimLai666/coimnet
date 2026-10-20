@@ -182,6 +182,28 @@ func batchEpisodes(count, steps int, seed uint64) ([][][]float64, [][]float64) {
 	return inputs, targets
 }
 
+// batchTargets returns targets as they are, or for the per-step loss one row
+// per step: the first row unscored, then classes that cycle from the pair's.
+func batchTargets(f batchFixture, targets [][]float64, steps int) [][]float64 {
+	if f.loss != LossSoftmaxCrossEntropyEveryStep {
+		return targets
+	}
+	out := make([][]float64, len(targets))
+	for i, target := range targets {
+		label := 0
+		for k, v := range target {
+			if v == 1 {
+				label = k
+			}
+		}
+		out[i] = make([]float64, 3*steps)
+		for r := 1; r < steps; r++ {
+			out[i][3*r+(label+r)%3] = 1
+		}
+	}
+	return out
+}
+
 func newBatchCoreTrainers(t *testing.T, f batchFixture, accumulate int) (*Trainer, *Trainer) {
 	t.Helper()
 	c, p, o := newBatchFixture(f, accumulate)
@@ -212,11 +234,13 @@ func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 		"softsign gate all in":  {loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrentSoftsign},
 		"every step readout":    {loss: LossMSE, everyStep: true, input: true},
 		"every step cross gate": {loss: LossSoftmaxCrossEntropy, everyStep: true, gate: dynamics.GateCurrent},
+		"per-step cross gate":   {loss: LossSoftmaxCrossEntropyEveryStep, everyStep: true, gate: dynamics.GateCurrentSoftsign, input: true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			cpu, batched := newBatchCoreTrainers(t, f, 4)
 			for round := range 3 {
 				inputs, targets := batchEpisodes(4, 5, uint64(round))
+				targets = batchTargets(f, targets, 5)
 				want, err := cpu.StepBatch(ctx, inputs, targets, 2)
 				if err != nil {
 					t.Fatal(err)
@@ -414,6 +438,7 @@ func TestGPUBatchTrainerMatchesCPUStepBatch(t *testing.T) {
 	for name, f := range map[string]batchFixture{
 		"cross entropy gated": {loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrentSoftsign, input: true},
 		"mse every step":      {loss: LossMSE, everyStep: true},
+		"per-step cross":      {loss: LossSoftmaxCrossEntropyEveryStep, everyStep: true, gate: dynamics.GateCurrentSoftsign, input: true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			c, p, o := newBatchFixture(f, 4)
@@ -435,6 +460,7 @@ func TestGPUBatchTrainerMatchesCPUStepBatch(t *testing.T) {
 			}()
 			for round := range 3 {
 				inputs, targets := batchEpisodes(4, 6, uint64(round))
+				targets = batchTargets(f, targets, 6)
 				want, err := cpu.StepBatch(ctx, inputs, targets, 2)
 				if err != nil {
 					t.Fatal(err)
