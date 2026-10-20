@@ -36,10 +36,10 @@ type batchCore interface {
 // Pairs within one chunk must have equal length.
 //
 // Step, StepFrom, Predict and the candidate check of every update keep the
-// CPU core. The configuration must be a scalar continuous core without delays
-// or parameter sharing, trained with full BPTT (Truncation
-// zero), no recompute and no loss scale; fixed edge signs are supported by
-// converting the device's weight gradient on the host. Anything else is refused with
+// CPU core. The configuration must be a scalar continuous core without
+// delays, trained with full BPTT (Truncation zero), no recompute and no loss
+// scale. Fixed edge signs and parameter sharing are supported by converting
+// and reducing the summed gradient on the host. Anything else is refused with
 // ErrGPUTrainerUnsupported before a device is opened. GPU errors are returned
 // directly: there is no CPU fallback for the batched core.
 func NewGPUBatchTrainer(ctx context.Context, c Config, p Parameters, o Options) (*Trainer, error) {
@@ -73,9 +73,6 @@ func validateGPUBatchTrainerSupport(c Config, o Options) error {
 	}
 	if o.Truncation != 0 {
 		return fmt.Errorf("%w: truncated BPTT window %d; the batched core runs full BPTT only", ErrGPUTrainerUnsupported, o.Truncation)
-	}
-	if c.Sharing != nil {
-		return fmt.Errorf("%w: parameter sharing", ErrGPUTrainerUnsupported)
 	}
 	if o.LossScale != 0 && o.LossScale != 1 {
 		return fmt.Errorf("%w: loss scale %g", ErrGPUTrainerUnsupported, o.LossScale)
@@ -245,20 +242,32 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 		return nil, fmt.Errorf("batched gradient has %d values, the model has %d parameters", len(grad), len(flatParameters(p)))
 	}
 	mask := parameterMask(p, tr.options, n.core.thetaNodes(), n.core)
-	var norm float64
 	for i, v := range grad {
 		if !finite(v) {
 			return nil, fmt.Errorf("non-finite batched gradient at parameter %d", i)
 		}
-		if mask[i] {
-			norm = math.Hypot(norm, v/float64(k))
+	}
+	// Sharing sums each group's member gradients, a linear map, so reducing
+	// the chunk sum equals summing the per-pair reductions StepBatch forms.
+	var plan *sharePlan
+	var norm float64
+	if n.config.Sharing != nil {
+		plan = newSharePlan(n.config.Sharing, len(p.Core.Weights), len(p.Core.Bias), len(p.Core.LogTau))
+		reduceSharedGradients(grad, plan)
+		mask, _ = sharedMaskFreeze(mask, plan)
+		norm = reducedNorm(grad, mask, plan) / float64(k)
+	} else {
+		for i, v := range grad {
+			if mask[i] {
+				norm = math.Hypot(norm, v/float64(k))
+			}
 		}
 	}
 	if !finite(norm) {
 		return nil, fmt.Errorf("non-finite gradient norm")
 	}
 	updates := tr.updates
-	last, err := tr.applyGradientSum(ctx, inputs[k-1], losses[k-1], true, grad, k, norm, mask, nil, nil)
+	last, err := tr.applyGradientSum(ctx, inputs[k-1], losses[k-1], true, grad, k, norm, mask, plan, nil)
 	if err != nil {
 		return nil, err
 	}
