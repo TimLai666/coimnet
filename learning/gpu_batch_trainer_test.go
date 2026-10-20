@@ -221,6 +221,17 @@ func batchSumNear(want, got float64) bool {
 	return math.Abs(want-got) <= 1e-6*(1+math.Abs(want))
 }
 
+// lossesAgree compares a pair's loss: bit for bit while neither trainer has
+// applied an update, so both hold the same parameters, and to the batch-sum
+// rounding afterwards, since the float32 gradient sums move the parameters
+// by that much.
+func lossesAgree(want, got StepResult) bool {
+	if want.Updates == 0 {
+		return want.Loss == got.Loss
+	}
+	return batchSumNear(want.Loss, got.Loss)
+}
+
 func nearBatchSums(t *testing.T, name string, want, got []float64) {
 	t.Helper()
 	if len(want) != len(got) {
@@ -253,7 +264,7 @@ func newBatchCoreTrainers(t *testing.T, f batchFixture, accumulate int) (*Traine
 
 // TestBatchCoreStepMatchesStepBatch drives the batched trainer path with the
 // float64 stand-in core. The forward pass is the same products row for row,
-// so per-pair losses match bit for bit. The batch runs one encoder and one
+// so per-pair losses match bit for bit until the first update. The batch runs one encoder and one
 // readout product, so their gradients are summed in float32 within the
 // product instead of per pair and then in float64; parameters and optimizer
 // state agree to that rounding.
@@ -282,7 +293,7 @@ func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 				}
 				for i := range want {
 					w, g := want[i], got[i]
-					if w.Loss != g.Loss || w.Applied != g.Applied || w.Accumulated != g.Accumulated || w.Updates != g.Updates || w.LearningRate != g.LearningRate || w.GradientHorizonSteps != g.GradientHorizonSteps {
+					if !lossesAgree(w, g) || w.Applied != g.Applied || w.Accumulated != g.Accumulated || w.Updates != g.Updates || w.LearningRate != g.LearningRate || w.GradientHorizonSteps != g.GradientHorizonSteps {
 						t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, w, g)
 					}
 				}
@@ -319,7 +330,7 @@ func TestBatchCoreAccumulatesAcrossCalls(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := range want {
-			if want[i].Applied != got[i].Applied || want[i].Accumulated != got[i].Accumulated || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+			if want[i].Applied != got[i].Applied || want[i].Accumulated != got[i].Accumulated || want[i].Updates != got[i].Updates || !lossesAgree(want[i], got[i]) {
 				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 			}
 		}
@@ -358,7 +369,7 @@ func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := range want {
-			if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+			if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || !lossesAgree(want[i], got[i]) {
 				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 			}
 		}

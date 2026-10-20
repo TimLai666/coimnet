@@ -121,7 +121,7 @@ func TestBatchCoreOneHotMatchesStepBatch(t *testing.T) {
 			t.Fatal(err)
 		}
 		for i := range want {
-			if want[i].Loss != got[i].Loss || want[i].Applied != got[i].Applied {
+			if !lossesAgree(want[i], got[i]) || want[i].Applied != got[i].Applied {
 				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 			}
 		}
