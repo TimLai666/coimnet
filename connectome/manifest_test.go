@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +25,7 @@ func TestManifestJSONRoundTripIsStrict(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if decoded.Namespace != manifest.Namespace || len(decoded.Files) != 3 || decoded.Selection != manifest.Selection || decoded.Identity != manifest.Identity || decoded.Files[0] != manifest.Files[0] {
+	if decoded.Namespace != manifest.Namespace || len(decoded.Files) != 3 || !reflect.DeepEqual(decoded.Selection, manifest.Selection) || decoded.Identity != manifest.Identity || decoded.Files[0] != manifest.Files[0] {
 		t.Fatalf("decoded = %#v", decoded)
 	}
 	hashA, err := manifest.Hash()
@@ -125,6 +126,96 @@ func TestSelectionPredicateCanonicalFormAndHash(t *testing.T) {
 	} {
 		if _, err := bad.Canonical(); !errors.Is(err, ErrInvalidSelection) {
 			t.Fatalf("predicate %#v: %v", bad, err)
+		}
+	}
+}
+
+func TestSelectionPredicateAnyIsAnOrderFreeUnion(t *testing.T) {
+	p := SelectionPredicate{Source: RoleAnnotations, Field: "superclass", Any: []string{"visual_projection", "central"}, Label: "two regions"}
+	canonical, err := p.Canonical()
+	if err != nil || canonical != `annotations.superclass in ["central", "visual_projection"]` {
+		t.Fatalf("canonical = %q, %v", canonical, err)
+	}
+	reordered := p
+	reordered.Any = []string{"central", "visual_projection"}
+	a, _ := p.Hash()
+	b, _ := reordered.Hash()
+	if a != b {
+		t.Fatal("value order changed the predicate hash")
+	}
+	single := SelectionPredicate{Source: RoleAnnotations, Field: "superclass", Equals: "central", Label: "x"}
+	c, _ := single.Hash()
+	if c == a {
+		t.Fatal("a union hashed the same as one of its values")
+	}
+	for value, want := range map[string]bool{"central": true, "visual_projection": true, "optic": false, "": false} {
+		if p.Matches(value) != want {
+			t.Fatalf("Matches(%q) = %v, want %v", value, !want, want)
+		}
+	}
+	if !single.Matches("central") || single.Matches("visual_projection") {
+		t.Fatal("an equals predicate matched the wrong values")
+	}
+	raw, err := json.Marshal(single)
+	if err != nil || strings.Contains(string(raw), `"any"`) {
+		t.Fatalf("equals predicate JSON = %s, %v", raw, err)
+	}
+	for name, bad := range map[string]SelectionPredicate{
+		"both":      {Source: RoleAnnotations, Field: "f", Equals: "a", Any: []string{"b", "c"}, Label: "x"},
+		"one value": {Source: RoleAnnotations, Field: "f", Any: []string{"a"}, Label: "x"},
+		"empty":     {Source: RoleAnnotations, Field: "f", Any: []string{"a", ""}, Label: "x"},
+		"repeat":    {Source: RoleAnnotations, Field: "f", Any: []string{"a", "a"}, Label: "x"},
+	} {
+		if _, err := bad.Canonical(); !errors.Is(err, ErrInvalidSelection) {
+			t.Fatalf("%s: %v", name, err)
+		}
+	}
+}
+
+func TestHexPatchCountsAndValidation(t *testing.T) {
+	for radius, want := range []int{1, 7, 19, 37, 61} {
+		h := HexPatch{Field1: "a", Field2: "b", Center1: 19, Center2: 20, Radius: int64(radius)}
+		count := 0
+		for c1 := 0.0; c1 <= 40; c1++ {
+			for c2 := 0.0; c2 <= 40; c2++ {
+				in, err := h.Contains(c1, c2)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if in {
+					count++
+				}
+			}
+		}
+		if count != want {
+			t.Fatalf("radius %d holds %d columns, want %d", radius, count, want)
+		}
+	}
+	h := HexPatch{Field1: "a", Field2: "b", Radius: 1}
+	if in, err := h.Contains(math.NaN(), 0); in || err != nil {
+		t.Fatalf("NaN column: %v, %v", in, err)
+	}
+	for _, c := range [][2]float64{{0.5, 0}, {0, math.Inf(1)}, {1 << 21, 0}} {
+		if _, err := h.Contains(c[0], c[1]); !errors.Is(err, ErrInvalidSelection) {
+			t.Fatalf("column %v: %v", c, err)
+		}
+	}
+	p := SelectionPredicate{Source: RoleAnnotations, Field: "somaSide", Equals: "R", Hex: &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Center1: 19, Center2: 20, Radius: 4}, Label: "right optic lobe patch"}
+	canonical, err := p.Canonical()
+	if err != nil || canonical != `annotations.somaSide == "R" and hex(annotations.assignedOlHex1, annotations.assignedOlHex2) within 4 of (19, 20)` {
+		t.Fatalf("canonical = %q, %v", canonical, err)
+	}
+	for name, bad := range map[string]HexPatch{
+		"same fields":     {Field1: "a", Field2: "a"},
+		"selection field": {Field1: "somaSide", Field2: "b"},
+		"bad name":        {Field1: "a b", Field2: "b"},
+		"negative radius": {Field1: "a", Field2: "b", Radius: -1},
+		"huge centre":     {Field1: "a", Field2: "b", Center1: 1 << 30},
+	} {
+		q := p
+		q.Hex = &bad
+		if _, err := q.Canonical(); !errors.Is(err, ErrInvalidSelection) {
+			t.Fatalf("%s: %v", name, err)
 		}
 	}
 }

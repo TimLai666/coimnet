@@ -1,10 +1,13 @@
 package connectome
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -229,6 +232,68 @@ func TestBuildHappyPathViewsAndReport(t *testing.T) {
 	}
 	if err := mapping.ValidateAgainst(g.NeuronIDs()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// TestBuildAnySelectsTheUnionWithItsCrossEdges adds the Orphan node 40 to the
+// Traced selection: the union keeps every Traced edge and gains the edge
+// 10 -> 40 between the two groups.
+func TestBuildAnySelectsTheUnionWithItsCrossEdges(t *testing.T) {
+	manifest, _ := happyFixture(t, []int{7, 4})
+	base := build(t, manifest, fixtureLimits()).Graph
+	manifest.Selection = SelectionPredicate{Source: RoleAnnotations, Field: "status", Any: []string{"Orphan", "Traced"}, Label: "traced and orphan bodies"}
+	encoded, err := json.Marshal(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded, err := DecodeManifest(bytes.NewReader(encoded))
+	if err != nil || !reflect.DeepEqual(decoded.Selection, manifest.Selection) {
+		t.Fatalf("decoded selection = %#v, %v", decoded.Selection, err)
+	}
+	union := build(t, decoded, fixtureLimits()).Graph
+	if union.NodeCount() != base.NodeCount()+1 || union.EdgeCount() != base.EdgeCount()+1 {
+		t.Fatalf("union nodes=%d edges=%d, base nodes=%d edges=%d", union.NodeCount(), union.EdgeCount(), base.NodeCount(), base.EdgeCount())
+	}
+	if _, err := union.IndexOf(signal.NeuronID{Namespace: testNamespace(), ExternalID: "40"}); err != nil {
+		t.Fatalf("union lacks node 40: %v", err)
+	}
+}
+
+// TestBuildHexSelectsAColumnPatch keeps the Traced rows within one column of
+// (0, 0): 10 at (0, 0), 20 at (1, 1) and the huge ID at (0, 1). 30 at (2, 0)
+// is two columns away and 60 has no column.
+func TestBuildHexSelectsAColumnPatch(t *testing.T) {
+	manifest, _ := happyFixture(t, []int{7, 4})
+	manifest.Selection.Hex = &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Radius: 1}
+	g := build(t, manifest, fixtureLimits()).Graph
+	want := []string{"10", "20", "9007199254740993"}
+	ids := g.NeuronIDs()
+	if len(ids) != len(want) {
+		t.Fatalf("neuron IDs = %v, want %v", ids, want)
+	}
+	for i, id := range ids {
+		if id.ExternalID != want[i] {
+			t.Fatalf("neuron IDs = %v, want %v", ids, want)
+		}
+	}
+	if g.EdgeCount() == 0 {
+		t.Fatal("the patch kept no edge")
+	}
+	manifest.Selection.Hex.Radius = 0
+	if g := build(t, manifest, fixtureLimits()).Graph; g.NodeCount() != 1 {
+		t.Fatalf("radius 0 kept %d nodes, want 1", g.NodeCount())
+	}
+}
+
+func TestBuildHexRejectsFractionalColumns(t *testing.T) {
+	rows := happyAnnotations()
+	rows[1].hex1 = f64(0.5)
+	dir := t.TempDir()
+	manifest := fixtureManifest(t, writeWeights(t, dir, happyWeights(), []int{11}), writeAnnotations(t, dir, rows, []int{10}), writeNeurotransmitters(t, dir, happyNeurotransmitters()))
+	manifest.Selection.Hex = &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Radius: 3}
+	_, err := Build(context.Background(), BuildRequest{Manifest: manifest, Limits: fixtureLimits(), TempDir: t.TempDir()})
+	if !errors.Is(err, ErrInvalidSelection) {
+		t.Fatalf("fractional column: %v", err)
 	}
 }
 

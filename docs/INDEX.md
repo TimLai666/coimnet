@@ -92,7 +92,7 @@
 | `coimnet-continual-matrix/v1` | `experiment` | 持續學習矩陣報告格式 | [experiment/continual.go:9](../experiment/continual.go#L9) |
 | `coimnet-continuous-state/v1` | `dynamics` | 連續核心個體狀態格式 | [dynamics/state.go:14](../dynamics/state.go#L14) |
 | `coimnet-data-sources/v1` | `internal/cli` | 資料來源清單報告格式 | [internal/cli/data.go:16](../internal/cli/data.go#L16) |
-| `coimnet-dataset-manifest/v1` | `connectome` | 接線資料集 manifest 格式 | [connectome/manifest.go:25](../connectome/manifest.go#L25) |
+| `coimnet-dataset-manifest/v1` | `connectome` | 接線資料集 manifest 格式 | [connectome/manifest.go:27](../connectome/manifest.go#L27) |
 | `coimnet-delayed-report/v2` | `experiment` | 延遲任務報告格式 | [experiment/delayed.go:116](../experiment/delayed.go#L116) |
 | `coimnet-derivation-report/v1` | `params` | 參數推導報告格式 | [params/report.go:10](../params/report.go#L10) |
 | `coimnet-derivation-rules/v1` | `params` | 參數推導規則文件格式 | [params/rules.go:33](../params/rules.go#L33) |
@@ -108,7 +108,7 @@
 | `coimnet-full-graph-resume/v1` | `experiment/fullgraph` | 全圖續跑摘要格式 | [experiment/fullgraph/resume.go:13](../experiment/fullgraph/resume.go#L13) |
 | `coimnet-full-graph-short-training/v1` | `experiment/fullgraph` | 全圖短訓練報告格式 | [experiment/fullgraph/run.go:23](../experiment/fullgraph/run.go#L23) |
 | `coimnet-graph-import/v1` | `internal/cli` | 圖匯入報告格式 | [internal/cli/validate.go:15](../internal/cli/validate.go#L15) |
-| `coimnet-graph-report/v1` | `connectome` | 標準化接線圖報告格式 | [connectome/manifest.go:27](../connectome/manifest.go#L27) |
+| `coimnet-graph-report/v1` | `connectome` | 標準化接線圖報告格式 | [connectome/manifest.go:29](../connectome/manifest.go#L29) |
 | `coimnet-graph-store/v1` | `connectome` | 圖儲存格式 | [connectome/store.go:27](../connectome/store.go#L27) |
 | `coimnet-graph-validate/v1` | `internal/cli` | 圖驗證報告格式 | [internal/cli/validate.go:16](../internal/cli/validate.go#L16) |
 | `coimnet-handoff-requirements/v1` | `docs/handoff` | 原始交接需求 JSON 的治理格式 | [docs/handoff/requirements.json:2](../docs/handoff/requirements.json#L2) |
@@ -176,7 +176,7 @@
 
 | 版本 | 套件/用途範圍 | 用途說明 | 來源 |
 | --- | --- | --- | --- |
-| `coimnet-connectome-builder/v1` | `connectome` | 接線建構器的正規化規則版本 | [connectome/manifest.go:30](../connectome/manifest.go#L30) |
+| `coimnet-connectome-builder/v1` | `connectome` | 接線建構器的正規化規則版本 | [connectome/manifest.go:32](../connectome/manifest.go#L32) |
 | `coimnet-derivation-rules-hash/v1` | `params` | 參數推導規則雜湊識別 | [params/rules.go:39](../params/rules.go#L39) |
 | `coimnet-distill-label/v1` | `distill` | 標籤蒸餾的類別詞彙識別 | [distill/train.go:132](../distill/train.go#L132) |
 | `coimnet-logmel/v1` | `tasks/asr/audio` | Log-Mel 前端特徵版本 | [tasks/asr/audio/frontend.go:11](../tasks/asr/audio/frontend.go#L11) |
@@ -213,7 +213,7 @@
 | 版本 | 套件/用途範圍 | 用途說明 | 來源 |
 | --- | --- | --- | --- |
 | `coimnet-connectome-builder/v999` | `connectome` | 接線建構器未知版本拒絕反例 | [connectome/store_receipt_test.go:82](../connectome/store_receipt_test.go#L82) |
-| `coimnet-dataset-manifest/v9` | `connectome` | 接線資料集未知版本拒絕反例 | [connectome/build_test.go:278](../connectome/build_test.go#L278) |
+| `coimnet-dataset-manifest/v9` | `connectome` | 接線資料集未知版本拒絕反例 | [connectome/build_test.go:343](../connectome/build_test.go#L343) |
 | `coimnet-device-adamw/v2` | `backend/webgpu` | AdamW 快照未知版本拒絕反例 | [backend/webgpu/device_adam_test.go:293](../backend/webgpu/device_adam_test.go#L293) |
 | `coimnet-graph-store/v9` | `connectome` | 圖儲存未知版本拒絕反例 | [connectome/store_test.go:246](../connectome/store_test.go#L246) |
 | `coimnet-individual-checkpoint/v9` | `checkpoint` | 個體快照未知版本拒絕反例 | [checkpoint/package_test.go:281](../checkpoint/package_test.go#L281) |

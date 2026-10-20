@@ -20,6 +20,7 @@ import (
 	"github.com/TimLai666/coimnet/internal/extsort"
 	"github.com/TimLai666/coimnet/internal/fileio"
 	"github.com/apache/arrow/go/v17/arrow"
+	"github.com/apache/arrow/go/v17/arrow/array"
 )
 
 // Accounted sizes of the private row structures, excluding string contents.
@@ -296,6 +297,9 @@ func (b *builder) scanAnnotations() error {
 	predicate := b.manifest.Selection
 	names := b.annotationColumns()
 	want := map[string]string{mapping.ID: "int64", predicate.Field: "string"}
+	if predicate.Hex != nil {
+		want[predicate.Hex.Field1], want[predicate.Hex.Field2] = "float64", "float64"
+	}
 	for _, name := range names {
 		if name != "" {
 			want[name] = "string"
@@ -310,6 +314,15 @@ func (b *builder) scanAnnotations() error {
 		predicateColumn, err := stringColumn(record, predicate.Field)
 		if err != nil {
 			return err
+		}
+		var hex1, hex2 *array.Float64
+		if predicate.Hex != nil {
+			if hex1, err = float64Column(record, predicate.Hex.Field1); err != nil {
+				return err
+			}
+			if hex2, err = float64Column(record, predicate.Hex.Field2); err != nil {
+				return err
+			}
 		}
 		var columns [annotationFieldCount]stringValues
 		for i, name := range names {
@@ -342,7 +355,14 @@ func (b *builder) scanAnnotations() error {
 			if predicateColumn.IsNull(i) {
 				entry.fieldNull = true
 			} else {
-				entry.selected = predicateColumn.Value(i) == predicate.Equals
+				entry.selected = predicate.Matches(predicateColumn.Value(i))
+			}
+			if entry.selected && predicate.Hex != nil {
+				if hex1.IsNull(i) || hex2.IsNull(i) {
+					entry.selected = false
+				} else if entry.selected, err = predicate.Hex.Contains(hex1.Value(i), hex2.Value(i)); err != nil {
+					return fmt.Errorf("annotation row %d: %w", absRow, err)
+				}
 			}
 			stringBytes := int64(0)
 			for f := range names {
