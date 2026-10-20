@@ -22,6 +22,8 @@ type annotationRow struct {
 	class        *string
 	typeName     *string
 	receptorType *string
+	// hex1 and hex2 are optic-lobe column coordinates (assignedOlHex1/2).
+	hex1, hex2 *float64
 }
 
 type weightRow struct {
@@ -45,12 +47,12 @@ func testNamespace() string  { return "fixture-v1" }
 // Selected (status == Traced with valid unique IDs): 10, 20, 30, huge, 60.
 func happyAnnotations() []annotationRow {
 	return []annotationRow{
-		{id: i64(10), status: str("Traced"), statusLabel: str("Reviewed"), class: str("A"), typeName: str("T1")},
-		{id: i64(20), status: str("Traced"), statusLabel: str("Roughly traced"), typeName: str("T2"), receptorType: str("R1")},
-		{id: i64(30), status: str("Traced"), class: str("B")},
+		{id: i64(10), status: str("Traced"), statusLabel: str("Reviewed"), class: str("A"), typeName: str("T1"), hex1: f64(0), hex2: f64(0)},
+		{id: i64(20), status: str("Traced"), statusLabel: str("Roughly traced"), typeName: str("T2"), receptorType: str("R1"), hex1: f64(1), hex2: f64(1)},
+		{id: i64(30), status: str("Traced"), class: str("B"), hex1: f64(2), hex2: f64(0)},
 		{id: i64(40), status: str("Orphan"), statusLabel: str("Orphan")},
 		{id: i64(50), statusLabel: str("Unimportant")},
-		{id: i64(hugeID()), status: str("Traced"), statusLabel: str("Reviewed")},
+		{id: i64(hugeID()), status: str("Traced"), statusLabel: str("Reviewed"), hex1: f64(0), hex2: f64(1)},
 		{id: i64(-5), status: str("Traced")},
 		{status: str("Traced")},
 		{id: i64(10), status: str("Traced")},
@@ -94,6 +96,8 @@ func annotationSchema() *arrow.Schema {
 		{Name: "type", Type: arrow.BinaryTypes.String, Nullable: true},
 		{Name: "receptorType", Type: arrow.BinaryTypes.String, Nullable: true},
 		{Name: "somaLocation", Type: arrow.ListOf(arrow.PrimitiveTypes.Int64), Nullable: true},
+		{Name: "assignedOlHex1", Type: arrow.PrimitiveTypes.Float64, Nullable: true},
+		{Name: "assignedOlHex2", Type: arrow.PrimitiveTypes.Float64, Nullable: true},
 	}, nil)
 }
 
@@ -162,6 +166,8 @@ func writeAnnotations(t *testing.T, dir string, rows []annotationRow, batchSizes
 		receptor := array.NewStringBuilder(memory.DefaultAllocator)
 		soma := array.NewListBuilder(memory.DefaultAllocator, arrow.PrimitiveTypes.Int64)
 		somaValues := soma.ValueBuilder().(*array.Int64Builder)
+		hex1 := array.NewFloat64Builder(memory.DefaultAllocator)
+		hex2 := array.NewFloat64Builder(memory.DefaultAllocator)
 		for _, row := range rows[start : start+size] {
 			appendInt64(ids, row.id)
 			appendString(status, row.status)
@@ -179,16 +185,26 @@ func writeAnnotations(t *testing.T, dir string, rows []annotationRow, batchSizes
 			} else {
 				soma.AppendNull()
 			}
+			for _, pair := range []struct {
+				b *array.Float64Builder
+				v *float64
+			}{{hex1, row.hex1}, {hex2, row.hex2}} {
+				if pair.v == nil {
+					pair.b.AppendNull()
+				} else {
+					pair.b.Append(*pair.v)
+				}
+			}
 		}
 		indexArray := indices.NewArray()
 		labelArray := array.NewDictionaryArray(schema.Field(2).Type, indexArray, dictionary)
 		indexArray.Release()
-		columns := []arrow.Array{ids.NewArray(), status.NewArray(), labelArray, class.NewArray(), typeName.NewArray(), receptor.NewArray(), soma.NewArray()}
+		columns := []arrow.Array{ids.NewArray(), status.NewArray(), labelArray, class.NewArray(), typeName.NewArray(), receptor.NewArray(), soma.NewArray(), hex1.NewArray(), hex2.NewArray()}
 		records = append(records, array.NewRecord(schema, columns, int64(size)))
 		for _, column := range columns {
 			column.Release()
 		}
-		for _, b := range []interface{ Release() }{ids, status, indices, class, typeName, receptor, soma} {
+		for _, b := range []interface{ Release() }{ids, status, indices, class, typeName, receptor, soma, hex1, hex2} {
 			b.Release()
 		}
 		start += size

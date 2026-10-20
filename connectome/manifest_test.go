@@ -172,6 +172,54 @@ func TestSelectionPredicateAnyIsAnOrderFreeUnion(t *testing.T) {
 	}
 }
 
+func TestHexPatchCountsAndValidation(t *testing.T) {
+	for radius, want := range []int{1, 7, 19, 37, 61} {
+		h := HexPatch{Field1: "a", Field2: "b", Center1: 19, Center2: 20, Radius: int64(radius)}
+		count := 0
+		for c1 := 0.0; c1 <= 40; c1++ {
+			for c2 := 0.0; c2 <= 40; c2++ {
+				in, err := h.Contains(c1, c2)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if in {
+					count++
+				}
+			}
+		}
+		if count != want {
+			t.Fatalf("radius %d holds %d columns, want %d", radius, count, want)
+		}
+	}
+	h := HexPatch{Field1: "a", Field2: "b", Radius: 1}
+	if in, err := h.Contains(math.NaN(), 0); in || err != nil {
+		t.Fatalf("NaN column: %v, %v", in, err)
+	}
+	for _, c := range [][2]float64{{0.5, 0}, {0, math.Inf(1)}, {1 << 21, 0}} {
+		if _, err := h.Contains(c[0], c[1]); !errors.Is(err, ErrInvalidSelection) {
+			t.Fatalf("column %v: %v", c, err)
+		}
+	}
+	p := SelectionPredicate{Source: RoleAnnotations, Field: "somaSide", Equals: "R", Hex: &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Center1: 19, Center2: 20, Radius: 4}, Label: "right optic lobe patch"}
+	canonical, err := p.Canonical()
+	if err != nil || canonical != `annotations.somaSide == "R" and hex(annotations.assignedOlHex1, annotations.assignedOlHex2) within 4 of (19, 20)` {
+		t.Fatalf("canonical = %q, %v", canonical, err)
+	}
+	for name, bad := range map[string]HexPatch{
+		"same fields":     {Field1: "a", Field2: "a"},
+		"selection field": {Field1: "somaSide", Field2: "b"},
+		"bad name":        {Field1: "a b", Field2: "b"},
+		"negative radius": {Field1: "a", Field2: "b", Radius: -1},
+		"huge centre":     {Field1: "a", Field2: "b", Center1: 1 << 30},
+	} {
+		q := p
+		q.Hex = &bad
+		if _, err := q.Canonical(); !errors.Is(err, ErrInvalidSelection) {
+			t.Fatalf("%s: %v", name, err)
+		}
+	}
+}
+
 func TestExternalIDsAreLosslessAndBounded(t *testing.T) {
 	id, err := ParseExternalID(testNamespace(), "9007199254740993")
 	if err != nil || id.Value != 9007199254740993 || id.NeuronID().ExternalID != "9007199254740993" {

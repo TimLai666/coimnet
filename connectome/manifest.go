@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"slices"
 	"strconv"
@@ -150,7 +151,67 @@ type SelectionPredicate struct {
 	Field  string   `json:"field"`
 	Equals string   `json:"equals,omitempty"`
 	Any    []string `json:"any,omitempty"`
-	Label  string   `json:"label"`
+	// Hex, when set, also requires the row to lie in a patch of the optic
+	// lobe's hexagonal column grid.
+	Hex   *HexPatch `json:"hex,omitempty"`
+	Label string    `json:"label"`
+}
+
+// HexPatch selects the columns of an axial hexagonal grid within Radius of
+// a centre column: with d1 and d2 the coordinate offsets, a column's distance
+// is max(|d1|, |d2|, |d1-d2|), so radius 0, 1, 2 hold 1, 7, 19 columns. Field1
+// and Field2 name float64 annotation columns holding whole-number coordinates;
+// a row with a null or NaN coordinate has no column and is not selected.
+type HexPatch struct {
+	Field1  string `json:"field1"`
+	Field2  string `json:"field2"`
+	Center1 int64  `json:"center1"`
+	Center2 int64  `json:"center2"`
+	Radius  int64  `json:"radius"`
+}
+
+// maxHexCoordinate bounds hex centres and radii so distances cannot overflow.
+const maxHexCoordinate = 1 << 20
+
+func (h HexPatch) validate(field string) error {
+	for _, name := range []string{h.Field1, h.Field2} {
+		if !fieldNamePattern.MatchString(name) {
+			return fmt.Errorf("%w: hex field %q is not a plain column name", ErrInvalidSelection, name)
+		}
+	}
+	if h.Field1 == h.Field2 || h.Field1 == field || h.Field2 == field {
+		return fmt.Errorf("%w: hex fields and the selection field must be distinct", ErrInvalidSelection)
+	}
+	for _, v := range []int64{h.Center1, h.Center2, h.Radius} {
+		if v < -maxHexCoordinate || v > maxHexCoordinate {
+			return fmt.Errorf("%w: hex coordinate %d is outside +-%d", ErrInvalidSelection, v, maxHexCoordinate)
+		}
+	}
+	if h.Radius < 0 {
+		return fmt.Errorf("%w: hex radius %d is negative", ErrInvalidSelection, h.Radius)
+	}
+	return nil
+}
+
+// Contains reports whether the column (c1, c2) lies in the patch. A
+// coordinate that is not a whole number is an error: the grid is integral,
+// and rounding it would silently move a neuron between columns.
+func (h HexPatch) Contains(c1, c2 float64) (bool, error) {
+	if math.IsNaN(c1) || math.IsNaN(c2) {
+		return false, nil
+	}
+	if c1 != math.Trunc(c1) || c2 != math.Trunc(c2) || math.Abs(c1) > maxHexCoordinate || math.Abs(c2) > maxHexCoordinate {
+		return false, fmt.Errorf("%w: hex coordinate (%g, %g) is not a whole number within +-%d", ErrInvalidSelection, c1, c2, maxHexCoordinate)
+	}
+	d1, d2 := int64(c1)-h.Center1, int64(c2)-h.Center2
+	return max(abs64(d1), abs64(d2), abs64(d1-d2)) <= h.Radius, nil
+}
+
+func abs64(v int64) int64 {
+	if v < 0 {
+		return -v
+	}
+	return v
 }
 
 // Matches reports whether a non-null annotation value is selected. It
@@ -193,6 +254,11 @@ func (p SelectionPredicate) validate() error {
 			seen[v] = true
 		}
 	}
+	if p.Hex != nil {
+		if err := p.Hex.validate(p.Field); err != nil {
+			return err
+		}
+	}
 	if strings.TrimSpace(p.Label) == "" {
 		return fmt.Errorf("%w: label must state what the selection means", ErrInvalidSelection)
 	}
@@ -205,8 +271,20 @@ func (p SelectionPredicate) Canonical() (string, error) {
 	if err := p.validate(); err != nil {
 		return "", err
 	}
+	return p.valueClause() + p.hexClause(), nil
+}
+
+func (p SelectionPredicate) hexClause() string {
+	if p.Hex == nil {
+		return ""
+	}
+	h := p.Hex
+	return fmt.Sprintf(" and hex(%s.%s, %s.%s) within %d of (%d, %d)", p.Source, h.Field1, p.Source, h.Field2, h.Radius, h.Center1, h.Center2)
+}
+
+func (p SelectionPredicate) valueClause() string {
 	if len(p.Any) == 0 {
-		return string(p.Source) + "." + p.Field + " == " + strconv.Quote(p.Equals), nil
+		return string(p.Source) + "." + p.Field + " == " + strconv.Quote(p.Equals)
 	}
 	// The value order is not part of the selection, so the canonical form
 	// lists the values sorted and two orderings hash the same.
@@ -216,7 +294,7 @@ func (p SelectionPredicate) Canonical() (string, error) {
 	for i, v := range values {
 		quoted[i] = strconv.Quote(v)
 	}
-	return string(p.Source) + "." + p.Field + " in [" + strings.Join(quoted, ", ") + "]", nil
+	return string(p.Source) + "." + p.Field + " in [" + strings.Join(quoted, ", ") + "]"
 }
 
 // Hash returns the SHA-256 of the canonical form as lowercase hex.

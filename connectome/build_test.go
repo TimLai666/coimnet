@@ -259,6 +259,44 @@ func TestBuildAnySelectsTheUnionWithItsCrossEdges(t *testing.T) {
 	}
 }
 
+// TestBuildHexSelectsAColumnPatch keeps the Traced rows within one column of
+// (0, 0): 10 at (0, 0), 20 at (1, 1) and the huge ID at (0, 1). 30 at (2, 0)
+// is two columns away and 60 has no column.
+func TestBuildHexSelectsAColumnPatch(t *testing.T) {
+	manifest, _ := happyFixture(t, []int{7, 4})
+	manifest.Selection.Hex = &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Radius: 1}
+	g := build(t, manifest, fixtureLimits()).Graph
+	want := []string{"10", "20", "9007199254740993"}
+	ids := g.NeuronIDs()
+	if len(ids) != len(want) {
+		t.Fatalf("neuron IDs = %v, want %v", ids, want)
+	}
+	for i, id := range ids {
+		if id.ExternalID != want[i] {
+			t.Fatalf("neuron IDs = %v, want %v", ids, want)
+		}
+	}
+	if g.EdgeCount() == 0 {
+		t.Fatal("the patch kept no edge")
+	}
+	manifest.Selection.Hex.Radius = 0
+	if g := build(t, manifest, fixtureLimits()).Graph; g.NodeCount() != 1 {
+		t.Fatalf("radius 0 kept %d nodes, want 1", g.NodeCount())
+	}
+}
+
+func TestBuildHexRejectsFractionalColumns(t *testing.T) {
+	rows := happyAnnotations()
+	rows[1].hex1 = f64(0.5)
+	dir := t.TempDir()
+	manifest := fixtureManifest(t, writeWeights(t, dir, happyWeights(), []int{11}), writeAnnotations(t, dir, rows, []int{10}), writeNeurotransmitters(t, dir, happyNeurotransmitters()))
+	manifest.Selection.Hex = &HexPatch{Field1: "assignedOlHex1", Field2: "assignedOlHex2", Radius: 3}
+	_, err := Build(context.Background(), BuildRequest{Manifest: manifest, Limits: fixtureLimits(), TempDir: t.TempDir()})
+	if !errors.Is(err, ErrInvalidSelection) {
+		t.Fatalf("fractional column: %v", err)
+	}
+}
+
 func TestBuildIsDeterministicAcrossBatchSegmentationAndRunCounts(t *testing.T) {
 	manifestA, _ := happyFixture(t, []int{7, 4})
 	manifestB, _ := happyFixture(t, []int{2, 2, 2, 2, 2, 1})
