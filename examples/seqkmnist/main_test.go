@@ -2,9 +2,13 @@ package main
 
 import (
 	"compress/gzip"
+	"math"
 	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
+
+	"github.com/TimLai666/coimnet/learning"
 )
 
 func writeGzip(t *testing.T, path string, data []byte) {
@@ -133,5 +137,87 @@ func TestRewireKeepsDegrees(t *testing.T) {
 		if same.sources[e] != g.sources[e] || same.targets[e] != g.targets[e] {
 			t.Fatal("empty mode changed the edges")
 		}
+	}
+}
+
+// TestMechanismsLeaveTheBaseModelUnchanged checks that each optional mechanism
+// draws from its own stream: the topology, encoder, readout and (up to the
+// sign parametrization) the weights stay those of the plain model.
+func TestMechanismsLeaveTheBaseModelUnchanged(t *testing.T) {
+	base := settings{Nodes: 40, InputNodes: 5, ReadoutNodes: 6, InDegree: 4, Seed: 7}
+	c0, p0 := build(base, nil)
+
+	s := base
+	s.Delays = 3
+	c, p := build(s, nil)
+	if !reflect.DeepEqual(c.Dynamics.Sources, c0.Dynamics.Sources) || !reflect.DeepEqual(p, p0) {
+		t.Fatal("delays changed the topology or the parameters")
+	}
+	seen := map[int]bool{}
+	for _, d := range c.Dynamics.Delays {
+		if d < 0 || d > 3 {
+			t.Fatalf("delay %d outside 0..3", d)
+		}
+		seen[d] = true
+	}
+	if len(c.Dynamics.Delays) != len(c0.Dynamics.Sources) || len(seen) != 4 {
+		t.Fatalf("%d delays covering %d values, want %d covering 4", len(c.Dynamics.Delays), len(seen), len(c0.Dynamics.Sources))
+	}
+
+	s = base
+	s.Dale, s.Inhibitory = true, 0.3
+	c, p = build(s, nil)
+	weights, err := learning.EffectiveWeights(c, p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bySource := map[int]int8{}
+	negative := 0
+	for e, src := range c.Dynamics.Sources {
+		sign := c.EdgeSigns[e]
+		if want, ok := bySource[src]; ok && want != sign {
+			t.Fatalf("source %d has edges of both signs", src)
+		}
+		bySource[src] = sign
+		if math.Abs(weights[e]-float64(sign)*math.Abs(p0.Core.Weights[e])) > 1e-12 {
+			t.Fatalf("edge %d effective weight %g, want %g", e, weights[e], float64(sign)*math.Abs(p0.Core.Weights[e]))
+		}
+	}
+	for _, sign := range bySource {
+		if sign < 0 {
+			negative++
+		}
+	}
+	if negative == 0 || negative == len(bySource) {
+		t.Fatalf("%d of %d sources inhibitory", negative, len(bySource))
+	}
+
+	s = base
+	s.TauMax = 20
+	_, p = build(s, nil)
+	spread := false
+	for i, v := range p.Core.LogTau {
+		if tau := math.Exp(v); tau < 2-1e-12 || tau > 20+1e-12 {
+			t.Fatalf("node %d tau %g outside [2, 20]", i, tau)
+		}
+		spread = spread || math.Abs(v-math.Log(2)) > 0.1
+	}
+	if !spread || !reflect.DeepEqual(p.Core.Weights, p0.Core.Weights) {
+		t.Fatal("tau-max did not spread tau, or changed the weights")
+	}
+}
+
+func TestFreezeTurnsOffNamedGroups(t *testing.T) {
+	all := learning.Trainable{Encoder: true, Weights: true, Bias: true, Tau: true, Readout: true, Gate: true}
+	got, err := freeze(all, "weights, tau,gate")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := learning.Trainable{Encoder: true, Bias: true, Readout: true}
+	if got != want {
+		t.Fatalf("freeze gave %+v, want %+v", got, want)
+	}
+	if _, err := freeze(all, "weights,nope"); err == nil {
+		t.Fatal("an unknown group was accepted")
 	}
 }

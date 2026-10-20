@@ -73,6 +73,22 @@ type settings struct {
 	// Rewire, with Store, replaces the store's edges by a null model of the
 	// same size: "in-degree" or "swap" (see rewire).
 	Rewire string `json:"rewire,omitempty"`
+	// Freeze lists parameter groups kept at their initial values: encoder,
+	// weights, bias, tau, gate and readout (comma separated). Freezing
+	// weights, bias, tau and gate leaves a fixed reservoir.
+	Freeze string `json:"freeze,omitempty"`
+	// Delays draws every edge's delay uniformly from 0..Delays steps; zero
+	// keeps every edge undelayed. The GPU core refuses delayed edges.
+	Delays int `json:"delays,omitempty"`
+	// Dale fixes every edge's sign by its source node: a node is inhibitory
+	// with probability Inhibitory and all its outgoing edges are negative,
+	// otherwise positive (learning.Config.EdgeSigns, log-magnitude weights).
+	// The GPU core refuses fixed signs.
+	Dale       bool    `json:"dale,omitempty"`
+	Inhibitory float64 `json:"inhibitory,omitempty"`
+	// TauMax, when above 2, draws each node's initial time constant
+	// log-uniformly from [2, TauMax] instead of setting every tau to 2.
+	TauMax float64 `json:"tau_max,omitempty"`
 }
 
 // columns is the number of image columns fed per step.
@@ -118,6 +134,11 @@ func main() {
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
+	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, readout (comma separated)")
+	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
+	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law; CPU core only)")
+	flag.Float64Var(&s.Inhibitory, "inhibitory", 0.5, "with --dale, the probability that a node is inhibitory")
+	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
 	flag.BoolVar(&s.GPU, "gpu", false, "train each minibatch's core on the GPU (learning.NewGPUBatchTrainer) and evaluate the test split there in float32 (Trainer.PredictBatch)")
 	reportPath := flag.String("report", "", "new file for the JSON training report")
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
@@ -223,6 +244,18 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if s.Cols < 0 || side%s.columns() != 0 {
 		return fmt.Errorf("--cols must divide %d", side)
 	}
+	if !s.Dale {
+		s.Inhibitory = 0
+	}
+	if s.Delays < 0 || s.Inhibitory < 0 || s.Inhibitory > 1 || (s.TauMax != 0 && s.TauMax <= 2) {
+		return errors.New("--delays must be non-negative, --inhibitory within [0, 1] and --tau-max above 2")
+	}
+	trainable := learning.DefaultOptions().Trainable
+	trainable.Gate = s.Gate
+	trainable, err := freeze(trainable, s.Freeze)
+	if err != nil {
+		return err
+	}
 	trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount, s.columns())
 	if err != nil {
 		return err
@@ -237,7 +270,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	o.LearningRate = s.LearningRate
 	o.Loss = learning.LossSoftmaxCrossEntropy
 	o.AccumulateSteps = s.Batch
-	o.Trainable.Gate = s.Gate
+	o.Trainable = trainable
 	warmup := uint64(steps * 3 / 10)
 	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
 	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
@@ -394,6 +427,36 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 		Encoder: normal(side*s.columns()*s.InputNodes, 1/math.Sqrt(float64(side*s.columns()))),
 		Readout: readout,
 	}
+	// The optional mechanisms draw from their own streams, so turning one on
+	// leaves the topology and every other initial value unchanged.
+	if s.Delays > 0 {
+		r := rand.New(rand.NewPCG(s.Seed, 3))
+		cfg.Dynamics.Delays = make([]int, len(sources))
+		for e := range cfg.Dynamics.Delays {
+			cfg.Dynamics.Delays[e] = r.IntN(s.Delays + 1)
+		}
+	}
+	if s.Dale {
+		r := rand.New(rand.NewPCG(s.Seed, 4))
+		sign := make([]int8, s.Nodes)
+		for i := range sign {
+			sign[i] = 1
+			if r.Float64() < s.Inhibitory {
+				sign[i] = -1
+			}
+		}
+		cfg.EdgeSigns = make([]int8, len(sources))
+		for e, src := range sources {
+			cfg.EdgeSigns[e] = sign[src]
+			weights[e] = math.Log(math.Abs(weights[e]))
+		}
+	}
+	if s.TauMax > 0 {
+		r := rand.New(rand.NewPCG(s.Seed, 5))
+		for i := range logTau {
+			logTau[i] = math.Log(2) + r.Float64()*(math.Log(s.TauMax)-math.Log(2))
+		}
+	}
 	if s.Gate {
 		cfg.Dynamics.Gate = dynamics.GateCurrent
 		if s.GateSquash == "softsign" {
@@ -402,6 +465,32 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters) {
 		p.Core.GateGain, p.Core.GateBias = make([]float64, s.Nodes), make([]float64, s.Nodes)
 	}
 	return cfg, p
+}
+
+// freeze turns off the training of each named parameter group.
+func freeze(t learning.Trainable, list string) (learning.Trainable, error) {
+	if list == "" {
+		return t, nil
+	}
+	for _, name := range strings.Split(list, ",") {
+		switch strings.TrimSpace(name) {
+		case "encoder":
+			t.Encoder = false
+		case "weights":
+			t.Weights = false
+		case "bias":
+			t.Bias = false
+		case "tau":
+			t.Tau = false
+		case "gate":
+			t.Gate = false
+		case "readout":
+			t.Readout = false
+		default:
+			return t, fmt.Errorf("--freeze: unknown parameter group %q", name)
+		}
+	}
+	return t, nil
 }
 
 func oneHot(label int) []float64 {
