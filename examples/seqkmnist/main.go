@@ -83,7 +83,7 @@ type settings struct {
 	// Dale fixes every edge's sign by its source node: a node is inhibitory
 	// with probability Inhibitory and all its outgoing edges are negative,
 	// otherwise positive (learning.Config.EdgeSigns, log-magnitude weights).
-	// The GPU core refuses fixed signs.
+	// The GPU core trains them too; the host converts its weight gradient.
 	Dale       bool    `json:"dale,omitempty"`
 	Inhibitory float64 `json:"inhibitory,omitempty"`
 	// TauMax, when above 2, draws each node's initial time constant
@@ -170,7 +170,7 @@ func main() {
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
 	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
-	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law; CPU core only)")
+	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law)")
 	flag.Float64Var(&s.Inhibitory, "inhibitory", 0.5, "with --dale, the probability that a node is inhibitory")
 	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
 	flag.StringVar(&s.Core, "core", "", `"lif" trains the spiking core on the same edges (CPU only)`)

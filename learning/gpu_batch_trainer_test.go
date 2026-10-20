@@ -126,8 +126,8 @@ func (f *cpuBatchCore) Info() webgpu.DeviceInfo { return webgpu.DeviceInfo{Adapt
 func (f *cpuBatchCore) Close() error            { f.closed = true; return nil }
 
 type batchFixture struct {
-	gate, loss       string
-	everyStep, input bool
+	gate, loss              string
+	everyStep, input, signs bool
 }
 
 // newBatchFixture is a seeded eight-node core with three readout nodes and
@@ -158,6 +158,17 @@ func newBatchFixture(f batchFixture, accumulate int) (Config, Parameters, Option
 		logTau[i] = math.Log(2) + .1*rng.NormFloat64()
 	}
 	p := Parameters{Core: dynamics.Parameters{Weights: fill(len(sources), .8), Bias: fill(nodes, .2), LogTau: logTau}, Encoder: fill(2*width, 1), Readout: fill(3*3, 1)}
+	if f.signs {
+		// Edges cycle through excitatory, inhibitory and free; a fixed-sign
+		// edge stores the log magnitude of its weight.
+		c.EdgeSigns = make([]int8, len(sources))
+		for i := range c.EdgeSigns {
+			c.EdgeSigns[i] = int8(1 - i%3)
+			if c.EdgeSigns[i] != 0 {
+				p.Core.Weights[i] = math.Log(math.Abs(p.Core.Weights[i]) + .05)
+			}
+		}
+	}
 	o := DefaultOptions()
 	o.Loss, o.AccumulateSteps, o.LearningRate = f.loss, accumulate, .02
 	if f.gate != "" {
@@ -308,6 +319,62 @@ func TestBatchCoreAccumulatesAcrossCalls(t *testing.T) {
 	near("accumulator", ws.Accumulator.Sum, gs.Accumulator.Sum)
 }
 
+// TestBatchCoreFixedSignsMatchesStepBatch trains a core whose edges are
+// excitatory, inhibitory or free. The batched path converts the summed weight
+// gradient to log magnitudes once per chunk while StepBatch converts each
+// pair's, so the trainers agree to float64 rounding, and the fixed-sign
+// edges keep their signs.
+func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
+	ctx := context.Background()
+	f := batchFixture{loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrentSoftsign, input: true, signs: true}
+	cpu, batched := newBatchCoreTrainers(t, f, 4)
+	if !batched.network.fixed {
+		t.Fatal("fixture declares no fixed sign")
+	}
+	before := batched.Snapshot().Parameters.Core.Weights
+	for round := range 3 {
+		inputs, targets := batchEpisodes(4, 5, uint64(20+round))
+		want, err := cpu.StepBatch(ctx, inputs, targets, 2)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := batched.StepBatch(ctx, inputs, targets, 3)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for i := range want {
+			if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+				t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
+			}
+		}
+	}
+	ws, gs := cpu.Snapshot(), batched.Snapshot()
+	a, b := flatParameters(ws.Parameters), flatParameters(gs.Parameters)
+	for i := range a {
+		if math.Abs(a[i]-b[i]) > 1e-12*(1+math.Abs(a[i])) {
+			t.Fatalf("parameter %d = %.17g, CPU %.17g", i, b[i], a[i])
+		}
+	}
+	moved := false
+	for i, w := range gs.Parameters.Core.Weights {
+		if w != before[i] {
+			moved = true
+		}
+	}
+	if !moved {
+		t.Fatal("training left every weight unchanged")
+	}
+	effective, err := EffectiveWeights(gs.Config, gs.Parameters)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, sign := range gs.Config.EdgeSigns {
+		if sign != 0 && (effective[i] > 0) != (sign > 0) {
+			t.Fatalf("edge %d sign %d has effective weight %g", i, sign, effective[i])
+		}
+	}
+}
+
 // TestBatchCoreWindowOfOneUpdatesEveryPair keeps AccumulateSteps at one, so
 // every chunk is a single pair and the batched path reproduces StepBatch bit
 // for bit, gradient norms included.
@@ -404,10 +471,6 @@ func TestGPUBatchTrainerRefusesUnsupportedBeforeDeviceOpen(t *testing.T) {
 			c.Dynamics.Delays[0] = 1
 		},
 		"vector state": func(c *Config, _ *Parameters, _ *Options) { c.Dynamics.StateDimension = 2 },
-		"edge signs": func(c *Config, _ *Parameters, _ *Options) {
-			c.EdgeSigns = make([]int8, len(c.Dynamics.Sources))
-			c.EdgeSigns[0] = 1
-		},
 		"sharing": func(c *Config, _ *Parameters, _ *Options) {
 			c.Sharing = &ParameterSharing{}
 		},

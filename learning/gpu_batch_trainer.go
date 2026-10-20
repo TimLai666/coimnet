@@ -36,9 +36,10 @@ type batchCore interface {
 // Pairs within one chunk must have equal length.
 //
 // Step, StepFrom, Predict and the candidate check of every update keep the
-// CPU core. The configuration must be a scalar continuous core without delays,
-// fixed edge signs or parameter sharing, trained with full BPTT (Truncation
-// zero), no recompute and no loss scale; anything else is refused with
+// CPU core. The configuration must be a scalar continuous core without delays
+// or parameter sharing, trained with full BPTT (Truncation
+// zero), no recompute and no loss scale; fixed edge signs are supported by
+// converting the device's weight gradient on the host. Anything else is refused with
 // ErrGPUTrainerUnsupported before a device is opened. GPU errors are returned
 // directly: there is no CPU fallback for the batched core.
 func NewGPUBatchTrainer(ctx context.Context, c Config, p Parameters, o Options) (*Trainer, error) {
@@ -75,9 +76,6 @@ func validateGPUBatchTrainerSupport(c Config, o Options) error {
 	}
 	if c.Sharing != nil {
 		return fmt.Errorf("%w: parameter sharing", ErrGPUTrainerUnsupported)
-	}
-	if hasFixedSigns(c.EdgeSigns) {
-		return fmt.Errorf("%w: fixed edge signs", ErrGPUTrainerUnsupported)
 	}
 	if o.LossScale != 0 && o.LossScale != 1 {
 		return fmt.Errorf("%w: loss scale %g", ErrGPUTrainerUnsupported, o.LossScale)
@@ -201,6 +199,20 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	g, err := tr.batch.Backward(ctx, upstream)
 	if err != nil {
 		return nil, err
+	}
+	// The device integrated the effective weights, so a fixed-sign edge's
+	// summed gradient is with respect to w = sign * exp(rho); the chain rule
+	// d loss/d rho = d loss/d w * w applies to the sum because w is the same
+	// for every pair of the chunk.
+	if n.fixed {
+		if len(g.Weights) != len(n.config.EdgeSigns) {
+			return nil, fmt.Errorf("batched weight gradient has %d values, the core declares %d signs", len(g.Weights), len(n.config.EdgeSigns))
+		}
+		for i, sign := range n.config.EdgeSigns {
+			if sign != 0 {
+				g.Weights[i] *= core.Core.Weights[i]
+			}
+		}
 	}
 	if len(g.Inputs) != k {
 		return nil, fmt.Errorf("batched core returned input gradients for %d pairs, want %d", len(g.Inputs), k)
