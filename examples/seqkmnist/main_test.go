@@ -420,3 +420,63 @@ func TestShuffledTypesKeepGroupSizes(t *testing.T) {
 		t.Fatalf("type-shuffled sharing %+v, want %+v", c.Sharing, want.Sharing)
 	}
 }
+
+// writeSplit writes count synthetic images and labels as the IDX gzip pair
+// readSplit expects: image i is bright in the column band of its label.
+func writeSplit(t *testing.T, dir, split string, count int) {
+	t.Helper()
+	be := func(v int) []byte { return []byte{byte(v >> 24), byte(v >> 16), byte(v >> 8), byte(v)} }
+	images := append([]byte{0, 0, 8, 3}, be(count)...)
+	images = append(images, be(side)...)
+	images = append(images, be(side)...)
+	labels := append([]byte{0, 0, 8, 1}, be(count)...)
+	for i := range count {
+		label := i % classes
+		for row := range side {
+			for col := range side {
+				v := byte((i*7 + row*3 + col) % 40)
+				if col/3 == label {
+					v += 180
+				}
+				images = append(images, v)
+			}
+		}
+		labels = append(labels, byte(label))
+	}
+	writeGzip(t, filepath.Join(dir, split+"-images-idx3-ubyte.gz"), images)
+	writeGzip(t, filepath.Join(dir, split+"-labels-idx1-ubyte.gz"), labels)
+}
+
+// TestEvalFinalOnlyKeepsTheFinalAccuracies trains the same small model with
+// and without --eval-final-only: training is untouched, so both end with the
+// same test and validation accuracy, and the final-only run records just the
+// last epoch's.
+func TestEvalFinalOnlyKeepsTheFinalAccuracies(t *testing.T) {
+	dir := t.TempDir()
+	writeSplit(t, dir, "train", 160)
+	writeSplit(t, dir, "t10k", 40)
+	s := settings{DataDir: dir, Nodes: 24, InputNodes: 8, ReadoutNodes: 8, InDegree: 3, Epochs: 3, Batch: 16, LearningRate: .02,
+		TrainCount: 160, TestCount: 40, ValCount: 32, Workers: 2, Gate: true, GateSquash: "softsign", Activation: "softsign", SurrogateScale: 5, ChemTau: 5, ChemHill: 2, ChemSource: "all", ChemReceptors: 1, ChemInit: .01}
+	reports := make([]report, 2)
+	for i, final := range []bool{false, true} {
+		s.EvalFinalOnly = final
+		path := filepath.Join(dir, map[bool]string{false: "every.json", true: "final.json"}[final])
+		if err := run(s, path, "", "", path+".ckpt", ""); err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, &reports[i]); err != nil {
+			t.Fatal(err)
+		}
+	}
+	every, final := reports[0], reports[1]
+	if len(every.EpochAccuracy) != 3 || len(final.EpochAccuracy) != 1 || len(final.EpochValAccuracy) != 1 {
+		t.Fatalf("epoch curves: every %v, final %v / %v", every.EpochAccuracy, final.EpochAccuracy, final.EpochValAccuracy)
+	}
+	if final.Accuracy != every.Accuracy || final.ValAccuracy != every.ValAccuracy || every.Accuracy != every.EpochAccuracy[2] {
+		t.Fatalf("final-only test/val %v/%v, every-epoch %v/%v", final.Accuracy, final.ValAccuracy, every.Accuracy, every.ValAccuracy)
+	}
+}

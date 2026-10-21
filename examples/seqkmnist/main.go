@@ -57,10 +57,14 @@ type settings struct {
 	// ValCount holds out the last ValCount of the TrainCount training images
 	// as a validation split scored after every epoch, so hyperparameters can
 	// be chosen without looking at the test split; zero trains on them all.
-	ValCount int    `json:"val_count,omitempty"`
-	Seed     uint64 `json:"seed"`
-	Workers  int    `json:"workers"`
-	Gate     bool   `json:"gate,omitempty"`
+	ValCount int `json:"val_count,omitempty"`
+	// EvalFinalOnly scores the test and validation splits after the last
+	// epoch only. Training is unchanged, so the final accuracies equal a run
+	// that scores every epoch; the per-epoch curves then hold one value.
+	EvalFinalOnly bool   `json:"-"`
+	Seed          uint64 `json:"seed"`
+	Workers       int    `json:"workers"`
+	Gate          bool   `json:"gate,omitempty"`
 	// GateSquash "softsign" selects dynamics.GateCurrentSoftsign; empty keeps
 	// the sigmoid gate.
 	GateSquash string `json:"gate_squash,omitempty"`
@@ -179,6 +183,7 @@ func main() {
 	flag.Float64Var(&s.LearningRate, "lr", 3e-3, "peak AdamW learning rate (30% linear warmup, cosine decay)")
 	flag.IntVar(&s.TrainCount, "train-count", 60000, "training images, from the start of the official train split")
 	flag.IntVar(&s.TestCount, "test-count", 10000, "test images, from the start of the official test split")
+	flag.BoolVar(&s.EvalFinalOnly, "eval-final-only", false, "score the test and validation splits after the last epoch only (same final numbers, faster)")
 	flag.IntVar(&s.ValCount, "val-count", 0, "hold out the last N training images as a validation split scored every epoch; 0 trains on all of them")
 	flag.Uint64Var(&s.Seed, "seed", 0, "initialization and shuffling seed")
 	flag.IntVar(&s.Workers, "workers", runtime.NumCPU(), "goroutines computing gradients of one batch")
@@ -429,6 +434,16 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 			for _, r := range results {
 				loss += r.Loss / float64(len(results))
 			}
+		}
+		if s.EvalFinalOnly && epoch < s.Epochs-1 {
+			fmt.Printf("epoch %d batch loss %.3f (%.0fs)\n", epoch, loss, time.Since(start).Seconds())
+			if checkpointPath != "" {
+				c := checkpoint{Settings: s, Epochs: epoch + 1, EpochAccuracy: rep.EpochAccuracy, EpochValAccuracy: rep.EpochValAccuracy, TrainSeconds: time.Since(start).Seconds(), Trainer: tr.Snapshot()}
+				if err := writeAtomic(checkpointPath, c); err != nil {
+					return err
+				}
+			}
+			continue
 		}
 		evalFn := evaluate
 		if s.GPU {
