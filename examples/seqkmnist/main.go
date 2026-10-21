@@ -8,7 +8,9 @@
 //
 // It trains with softmax cross-entropy and minibatches (AccumulateSteps plus
 // Trainer.StepBatch; with --gpu the core of each minibatch runs on the device
-// through learning.NewGPUBatchTrainer), evaluates the official test split and, with --bench,
+// through learning.NewGPUBatchTrainer), evaluates the official test split
+// (and, with --val-count, a validation split held out of the training images,
+// for choosing hyperparameters without the test split) and, with --bench,
 // writes a bench.Result measured one image per call on one thread, so it can be
 // compared with scripts/research/seqlab.py on the same machine.
 package main
@@ -52,9 +54,13 @@ type settings struct {
 	LearningRate float64 `json:"learning_rate"`
 	TrainCount   int     `json:"train_count"`
 	TestCount    int     `json:"test_count"`
-	Seed         uint64  `json:"seed"`
-	Workers      int     `json:"workers"`
-	Gate         bool    `json:"gate,omitempty"`
+	// ValCount holds out the last ValCount of the TrainCount training images
+	// as a validation split scored after every epoch, so hyperparameters can
+	// be chosen without looking at the test split; zero trains on them all.
+	ValCount int    `json:"val_count,omitempty"`
+	Seed     uint64 `json:"seed"`
+	Workers  int    `json:"workers"`
+	Gate     bool   `json:"gate,omitempty"`
 	// GateSquash "softsign" selects dynamics.GateCurrentSoftsign; empty keeps
 	// the sigmoid gate.
 	GateSquash string `json:"gate_squash,omitempty"`
@@ -75,6 +81,9 @@ type settings struct {
 	Rewire string `json:"rewire,omitempty"`
 	// Tie, with Store, ties the core parameters by annotated cell type
 	// ("type", see tieByType); the gate parameters stay per node.
+	// "type-shuffled" ties by the same labels permuted across the nodes
+	// (shuffleTypes), a control with the same group sizes but no relation
+	// between a node's group and its real type.
 	Tie string `json:"tie,omitempty"`
 	// Freeze lists parameter groups kept at their initial values: encoder,
 	// weights, bias, tau, gate and readout (comma separated). Freezing
@@ -139,19 +148,23 @@ type report struct {
 	// when nothing is tied.
 	TrainedParameters int64     `json:"trained_parameters"`
 	EpochAccuracy     []float64 `json:"epoch_test_accuracy"`
-	TrainSeconds      float64   `json:"train_seconds"`
-	Accuracy          float64   `json:"test_accuracy"`
+	// EpochValAccuracy and ValAccuracy score the --val-count split.
+	EpochValAccuracy []float64 `json:"epoch_val_accuracy,omitempty"`
+	TrainSeconds     float64   `json:"train_seconds"`
+	Accuracy         float64   `json:"test_accuracy"`
+	ValAccuracy      float64   `json:"val_accuracy,omitempty"`
 }
 
 // checkpoint is the state after a whole epoch. Resuming replays the earlier
 // epochs' shuffles from the seed, so a resumed run takes the same batches and
 // ends with the same trainer state as an uninterrupted one.
 type checkpoint struct {
-	Settings      settings                  `json:"settings"`
-	Epochs        int                       `json:"epochs_done"`
-	EpochAccuracy []float64                 `json:"epoch_test_accuracy"`
-	TrainSeconds  float64                   `json:"train_seconds"`
-	Trainer       learning.TrainingSnapshot `json:"trainer"`
+	Settings         settings                  `json:"settings"`
+	Epochs           int                       `json:"epochs_done"`
+	EpochAccuracy    []float64                 `json:"epoch_test_accuracy"`
+	EpochValAccuracy []float64                 `json:"epoch_val_accuracy,omitempty"`
+	TrainSeconds     float64                   `json:"train_seconds"`
+	Trainer          learning.TrainingSnapshot `json:"trainer"`
 }
 
 func main() {
@@ -166,6 +179,7 @@ func main() {
 	flag.Float64Var(&s.LearningRate, "lr", 3e-3, "peak AdamW learning rate (30% linear warmup, cosine decay)")
 	flag.IntVar(&s.TrainCount, "train-count", 60000, "training images, from the start of the official train split")
 	flag.IntVar(&s.TestCount, "test-count", 10000, "test images, from the start of the official test split")
+	flag.IntVar(&s.ValCount, "val-count", 0, "hold out the last N training images as a validation split scored every epoch; 0 trains on all of them")
 	flag.Uint64Var(&s.Seed, "seed", 0, "initialization and shuffling seed")
 	flag.IntVar(&s.Workers, "workers", runtime.NumCPU(), "goroutines computing gradients of one batch")
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
@@ -173,7 +187,7 @@ func main() {
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
-	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type"`)
+	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type", or "type-shuffled" for the same labels permuted across nodes`)
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
 	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
@@ -290,8 +304,8 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	} else if s.Rewire != "" || s.Tie != "" {
 		return errors.New("--rewire and --tie need --store")
 	}
-	if s.Tie != "" && (s.Tie != "type" || s.Dale || s.Core != "") {
-		return errors.New(`--tie takes "type" and does not combine with --dale or --core`)
+	if s.Tie != "" && ((s.Tie != "type" && s.Tie != "type-shuffled") || s.Dale || s.Core != "") {
+		return errors.New(`--tie takes "type" or "type-shuffled" and does not combine with --dale or --core`)
 	}
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
@@ -339,6 +353,10 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if err != nil {
 		return err
 	}
+	trainX, valX, trainY, valY, err := holdOut(trainX, trainY, s.ValCount)
+	if err != nil {
+		return err
+	}
 	cfg, params, tiedAway := build(s, topo)
 	steps := s.Epochs * (len(trainX) / s.Batch)
 	o := learning.DefaultOptions()
@@ -375,7 +393,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	}
 	defer tr.Close()
 	if resumed != nil {
-		done, elapsed, rep.EpochAccuracy = resumed.Epochs, resumed.TrainSeconds, resumed.EpochAccuracy
+		done, elapsed, rep.EpochAccuracy, rep.EpochValAccuracy = resumed.Epochs, resumed.TrainSeconds, resumed.EpochAccuracy, resumed.EpochValAccuracy
 		fmt.Printf("resuming from %s after epoch %d\n", checkpointPath, done-1)
 	}
 	if info, ok := tr.GPUAdapterInfo(); ok {
@@ -421,9 +439,18 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 			return err
 		}
 		rep.EpochAccuracy = append(rep.EpochAccuracy, acc)
-		fmt.Printf("epoch %d batch loss %.3f test %.4f (%.0fs)\n", epoch, loss, acc, time.Since(start).Seconds())
+		val := ""
+		if len(valX) > 0 {
+			vacc, err := evalFn(ctx, tr, valX, valY, s.Workers)
+			if err != nil {
+				return err
+			}
+			rep.EpochValAccuracy = append(rep.EpochValAccuracy, vacc)
+			val = fmt.Sprintf(" val %.4f", vacc)
+		}
+		fmt.Printf("epoch %d batch loss %.3f%s test %.4f (%.0fs)\n", epoch, loss, val, acc, time.Since(start).Seconds())
 		if checkpointPath != "" {
-			c := checkpoint{Settings: s, Epochs: epoch + 1, EpochAccuracy: rep.EpochAccuracy, TrainSeconds: time.Since(start).Seconds(), Trainer: tr.Snapshot()}
+			c := checkpoint{Settings: s, Epochs: epoch + 1, EpochAccuracy: rep.EpochAccuracy, EpochValAccuracy: rep.EpochValAccuracy, TrainSeconds: time.Since(start).Seconds(), Trainer: tr.Snapshot()}
 			if err := writeAtomic(checkpointPath, c); err != nil {
 				return err
 			}
@@ -431,6 +458,9 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	}
 	rep.TrainSeconds = time.Since(start).Seconds()
 	rep.Accuracy = rep.EpochAccuracy[len(rep.EpochAccuracy)-1]
+	if n := len(rep.EpochValAccuracy); n > 0 {
+		rep.ValAccuracy = rep.EpochValAccuracy[n-1]
+	}
 	if reportPath != "" {
 		if err := writeNew(reportPath, rep); err != nil {
 			return err
@@ -564,8 +594,12 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 		cfg.Dynamics.Chemistry, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset = buildChemistry(s)
 	}
 	tiedAway := 0
-	if s.Tie == "type" && topo != nil {
-		cfg.Sharing, tiedAway = tieByType(topo.types, sources, targets, &p)
+	if topo != nil && s.Tie != "" {
+		types := topo.types
+		if s.Tie == "type-shuffled" {
+			types = shuffleTypes(types, s.Seed)
+		}
+		cfg.Sharing, tiedAway = tieByType(types, sources, targets, &p)
 	}
 	return cfg, p, tiedAway
 }
@@ -902,6 +936,16 @@ func writeNew(path string, v any) error {
 		return err
 	}
 	return f.Close()
+}
+
+// holdOut splits the last n images off as the validation split. The
+// official train split is not ordered by class, so its tail is a fair sample.
+func holdOut(xs [][][]float64, ys []int, n int) (trainX, valX [][][]float64, trainY, valY []int, err error) {
+	if n < 0 || n >= len(xs) {
+		return nil, nil, nil, nil, fmt.Errorf("--val-count %d must be in [0, %d)", n, len(xs))
+	}
+	k := len(xs) - n
+	return xs[:k], xs[k:], ys[:k], ys[k:], nil
 }
 
 // readSplit reads the first limit images of a split as [column][row] pixel
