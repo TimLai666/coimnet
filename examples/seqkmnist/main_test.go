@@ -357,3 +357,66 @@ func TestTieByTypeSharesOneValuePerType(t *testing.T) {
 		t.Fatal("tying changed more than the tied values")
 	}
 }
+
+// TestHoldOutKeepsTheTailForValidation splits five labelled images: the last
+// two become the validation split, the rest stay for training in order, and
+// a split that would leave nothing to train on is refused.
+func TestHoldOutKeepsTheTailForValidation(t *testing.T) {
+	xs := make([][][]float64, 5)
+	ys := []int{0, 1, 2, 3, 4}
+	for i := range xs {
+		xs[i] = [][]float64{{float64(i)}}
+	}
+	trainX, valX, trainY, valY, err := holdOut(xs, ys, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(trainY, []int{0, 1, 2}) || !reflect.DeepEqual(valY, []int{3, 4}) || len(trainX) != 3 || valX[0][0][0] != 3 {
+		t.Fatalf("train %v, val %v", trainY, valY)
+	}
+	if _, _, trainY, valY, _ = holdOut(xs, ys, 0); len(trainY) != 5 || len(valY) != 0 {
+		t.Fatalf("no hold-out: train %v, val %v", trainY, valY)
+	}
+	for _, n := range []int{-1, 5} {
+		if _, _, _, _, err := holdOut(xs, ys, n); err == nil {
+			t.Fatalf("--val-count %d accepted", n)
+		}
+	}
+}
+
+// TestShuffledTypesKeepGroupSizes ties the six-node topology of
+// TestTieByTypeSharesOneValuePerType by permuted labels: the permutation is
+// seeded, keeps how many nodes carry each label, and moves at least one.
+func TestShuffledTypesKeepGroupSizes(t *testing.T) {
+	types := []string{"A", "A", "B", "B", "", "A", "C", "C"}
+	count := func(v []string) map[string]int {
+		m := map[string]int{}
+		for _, s := range v {
+			m[s]++
+		}
+		return m
+	}
+	moved := false
+	for seed := range uint64(4) {
+		got := shuffleTypes(types, seed)
+		if !reflect.DeepEqual(count(got), count(types)) || !reflect.DeepEqual(got, shuffleTypes(types, seed)) {
+			t.Fatalf("seed %d: %v", seed, got)
+		}
+		moved = moved || !reflect.DeepEqual(got, types)
+	}
+	if !moved || types[0] != "A" || types[4] != "" {
+		t.Fatal("shuffling moved no label or changed its input")
+	}
+	topo := topology{
+		nodes:   6,
+		sources: []int{0, 1, 2, 3, 4, 0, 5, 2},
+		targets: []int{2, 3, 0, 1, 0, 4, 2, 5},
+		types:   []string{"A", "A", "B", "B", "", "A"},
+	}
+	s := settings{Nodes: 6, InputNodes: 2, ReadoutNodes: 2, InDegree: 1, Seed: 3, Tie: "type-shuffled"}
+	c, _, _ := build(s, &topo)
+	want, _, _ := build(settings{Nodes: 6, InputNodes: 2, ReadoutNodes: 2, InDegree: 1, Seed: 3, Tie: "type"}, &topology{nodes: 6, sources: topo.sources, targets: topo.targets, types: shuffleTypes(topo.types, 3)})
+	if c.Sharing == nil || !reflect.DeepEqual(c.Sharing, want.Sharing) {
+		t.Fatalf("type-shuffled sharing %+v, want %+v", c.Sharing, want.Sharing)
+	}
+}

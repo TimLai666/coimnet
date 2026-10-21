@@ -156,3 +156,13 @@ func tieByType(types []string, sources, targets []int, p *learning.Parameters) (
 	assign(share.LogTau, p.Core.LogTau, node)
 	return share, members - share.Groups
 }
+
+// shuffleTypes permutes the cell-type labels across the nodes with a stream
+// of its own, so tying by them keeps every group's size while a node's group
+// no longer says anything about its real type.
+func shuffleTypes(types []string, seed uint64) []string {
+	out := append([]string(nil), types...)
+	rng := rand.New(rand.NewPCG(seed, 23))
+	rng.Shuffle(len(out), func(i, j int) { out[i], out[j] = out[j], out[i] })
+	return out
+}

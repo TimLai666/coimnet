@@ -439,8 +439,9 @@ func TestBatchCoreFixedSignsMatchesStepBatch(t *testing.T) {
 
 // TestBatchCoreSharingMatchesStepBatch ties weights, biases and time
 // constants into groups. The batched path reduces the chunk's summed gradient
-// once and StepBatch each pair's, so the trainers agree to float64 rounding,
-// and every group's members stay equal.
+// once and StepBatch each pair's, and sums the encoder and readout gradients
+// in float32, so the trainers agree to the batch-sum rounding, and every
+// group's members stay equal.
 func TestBatchCoreSharingMatchesStepBatch(t *testing.T) {
 	ctx := context.Background()
 	for name, f := range map[string]batchFixture{
@@ -461,18 +462,13 @@ func TestBatchCoreSharingMatchesStepBatch(t *testing.T) {
 					t.Fatal(err)
 				}
 				for i := range want {
-					if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || want[i].Loss != got[i].Loss {
+					if want[i].Applied != got[i].Applied || want[i].Updates != got[i].Updates || !lossesAgree(want[i], got[i]) {
 						t.Fatalf("round %d pair %d: CPU %+v, batched %+v", round, i, want[i], got[i])
 					}
 				}
 			}
 			ws, gs := cpu.Snapshot(), batched.Snapshot()
-			a, b := flatParameters(ws.Parameters), flatParameters(gs.Parameters)
-			for i := range a {
-				if math.Abs(a[i]-b[i]) > 1e-12*(1+math.Abs(a[i])) {
-					t.Fatalf("parameter %d = %.17g, CPU %.17g", i, b[i], a[i])
-				}
-			}
+			nearBatchSums(t, "parameters", flatParameters(ws.Parameters), flatParameters(gs.Parameters))
 			share := gs.Config.Sharing
 			for _, family := range []struct {
 				values []float64
