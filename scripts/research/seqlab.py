@@ -111,10 +111,19 @@ if __name__ == "__main__":
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--device", default="cpu", help="torch device, e.g. cuda")
     ap.add_argument("--val", action="store_true", help="hold out the last 6000 train images and score on them instead of test")
+    ap.add_argument("--val-count", type=int, default=0, help="hold out the last N train images, train on the rest, and report both val and test accuracy")
     a = ap.parse_args(); torch.set_num_threads(a.threads)
     data = load(a.data)
+    if a.val and a.val_count:
+        sys.exit("--val and --val-count are exclusive")
     if a.val:
         Xtr, Ytr, _, _ = data; data = (Xtr[:-6000], Ytr[:-6000], Xtr[-6000:], Ytr[-6000:])
+    held = None
+    if a.val_count:
+        Xtr, Ytr, Xte, Yte = data
+        if not 0 < a.val_count < len(Xtr):
+            sys.exit(f"--val-count must be between 1 and {len(Xtr) - 1}")
+        held = (Xtr[-a.val_count:], Ytr[-a.val_count:]); data = (Xtr[:-a.val_count], Ytr[:-a.val_count], Xte, Yte)
     spec = json.loads(a.spec); torch.manual_seed(a.seed)
     cols = spec.get("cols", 1); d_in = 28 * cols
     if spec["model"] in ("gru", "lstm", "rnn"):
@@ -126,4 +135,8 @@ if __name__ == "__main__":
     log = lambda s: print(s, flush=True)
     log(f"{json.dumps(spec)} params={m.params()}")
     acc = run(m, data, a.epochs, a.lr, a.bs, a.seed, log, a.device, cols)
-    print("RESULT", json.dumps({"spec": spec, "params": m.params(), "acc": acc, "seed": a.seed, "lr": a.lr, "val": a.val}), flush=True)
+    result = {"spec": spec, "params": m.params(), "acc": acc, "seed": a.seed, "lr": a.lr, "val": a.val}
+    if held is not None:
+        Xv = torch.from_numpy(held[0]).transpose(1, 2).reshape(len(held[0]), 28 // cols, 28 * cols).contiguous().to(a.device)
+        result["val_count"] = a.val_count; result["val_acc"] = evaluate(m, Xv, torch.from_numpy(held[1]).to(a.device))
+    print("RESULT", json.dumps(result), flush=True)
