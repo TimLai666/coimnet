@@ -527,3 +527,22 @@ func TestEvalFinalOnlyResumesFromItsCheckpoint(t *testing.T) {
 		t.Fatalf("resumed run test/val %v/%v, original %v/%v", b.Accuracy, b.ValAccuracy, a.Accuracy, a.ValAccuracy)
 	}
 }
+
+// TestWarmupFraction pins the schedule --warmup builds: zero keeps the 30%
+// default, a fraction sets the warmup length, and the decay always ends at
+// the last update.
+func TestWarmupFraction(t *testing.T) {
+	for _, c := range []struct {
+		warmup float64
+		want   uint64
+	}{{0, 300}, {.1, 100}, {.05, 50}} {
+		got := schedule(settings{Warmup: c.warmup}, 1000)
+		if got.WarmupUpdates != c.want || got.WarmupUpdates+got.DecayUpdates != 1000 {
+			t.Fatalf("--warmup %g: warmup %d decay %d, want warmup %d of 1000", c.warmup, got.WarmupUpdates, got.DecayUpdates, c.want)
+		}
+	}
+	s := settings{Nodes: 24, InputNodes: 8, ReadoutNodes: 8, InDegree: 3, Epochs: 1, Batch: 16, LearningRate: .02, SurrogateScale: 5, Warmup: 1}
+	if err := run(s, "", "", "", "", ""); err == nil || !strings.Contains(err.Error(), "--warmup") {
+		t.Fatalf("--warmup 1 error = %v", err)
+	}
+}

@@ -77,6 +77,9 @@ type settings struct {
 	// Cols groups this many adjacent image columns into one step (28/Cols
 	// steps of 28*Cols pixels); zero means one column per step.
 	Cols int `json:"cols,omitempty"`
+	// Warmup is the fraction of all updates spent on the linear learning-rate
+	// warmup before the cosine decay; zero keeps the default 0.3.
+	Warmup float64 `json:"warmup,omitempty"`
 	// Store is a connectome.Save subgraph store whose annotated edges replace
 	// the uniform random topology; Nodes then is its node count.
 	Store string `json:"store,omitempty"`
@@ -180,7 +183,7 @@ func main() {
 	flag.IntVar(&s.InDegree, "in-degree", 24, "incoming edges per node, sources drawn uniformly without repetition")
 	flag.IntVar(&s.Epochs, "epochs", 8, "training epochs")
 	flag.IntVar(&s.Batch, "batch", 128, "images per update")
-	flag.Float64Var(&s.LearningRate, "lr", 3e-3, "peak AdamW learning rate (30% linear warmup, cosine decay)")
+	flag.Float64Var(&s.LearningRate, "lr", 3e-3, "peak AdamW learning rate (linear warmup over --warmup, then cosine decay)")
 	flag.IntVar(&s.TrainCount, "train-count", 60000, "training images, from the start of the official train split")
 	flag.IntVar(&s.TestCount, "test-count", 10000, "test images, from the start of the official test split")
 	flag.BoolVar(&s.EvalFinalOnly, "eval-final-only", false, "score the test and validation splits after the last epoch only (same final numbers, faster)")
@@ -190,6 +193,7 @@ func main() {
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
 	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
+	flag.Float64Var(&s.Warmup, "warmup", 0, "fraction of updates spent on the linear learning-rate warmup; 0 keeps 0.3")
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type", or "type-shuffled" for the same labels permuted across nodes`)
@@ -337,6 +341,9 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	default:
 		return fmt.Errorf(`--core takes "lif", not %q`, s.Core)
 	}
+	if s.Warmup < 0 || s.Warmup >= 1 {
+		return errors.New("--warmup must be within [0, 1)")
+	}
 	if s.Delays < 0 || s.Inhibitory < 0 || s.Inhibitory > 1 || (s.TauMax != 0 && s.TauMax <= 2) {
 		return errors.New("--delays must be non-negative, --inhibitory within [0, 1] and --tau-max above 2")
 	}
@@ -370,8 +377,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	o.AccumulateSteps = s.Batch
 	o.Trainable = trainable
 	o.Trainable.Chemistry = s.ChemChannels > 0
-	warmup := uint64(steps * 3 / 10)
-	o.Schedule = &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
+	o.Schedule = schedule(s, steps)
 	rep := report{Settings: s, Parameters: bench.CountParameters(params), Edges: len(cfg.Dynamics.Sources)}
 	rep.TrainedParameters = rep.Parameters - int64(tiedAway)
 	if cfg.LIF != nil {
@@ -847,6 +853,17 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 	return writeNew(path, result)
 }
 
+// schedule warms the learning rate up linearly over the --warmup fraction of
+// all updates (30% by default) and then decays it along a cosine to a
+// thousandth of the peak at the last update.
+func schedule(s settings, steps int) *learning.Schedule {
+	warmup := uint64(steps * 3 / 10)
+	if s.Warmup > 0 {
+		warmup = uint64(float64(steps) * s.Warmup)
+	}
+	return &learning.Schedule{Kind: learning.ScheduleCosine, WarmupUpdates: warmup, DecayUpdates: uint64(steps) - warmup, FinalFactor: 1e-3}
+}
+
 func modelName(s settings) string {
 	name := fmt.Sprintf("sparse-core-n%d-k%d", s.Nodes, s.InDegree)
 	if s.Store != "" {
@@ -869,6 +886,9 @@ func modelName(s settings) string {
 	}
 	if s.ChemChannels > 0 {
 		name += fmt.Sprintf("-chem%d", s.ChemChannels)
+	}
+	if s.Warmup > 0 {
+		name += fmt.Sprintf("-warmup%g", s.Warmup)
 	}
 	return name
 }
