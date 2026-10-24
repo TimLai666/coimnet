@@ -107,7 +107,11 @@ func (n *Network) encodeBatch(p Parameters, inputs [][][]float64, record bool) (
 	if err != nil {
 		return nil, nil, err
 	}
-	all := rows(doubles(b.encoded.Data()), encoderWidth)
+	encoded, err := values(b.encoded)
+	if err != nil {
+		return nil, nil, err
+	}
+	all := rows(encoded, encoderWidth)
 	out := make([][][]float64, pairs)
 	for i := range out {
 		out[i] = all[i*steps : (i+1)*steps]
@@ -178,8 +182,11 @@ func (n *Network) readoutBatch(b *batchHost, p Parameters, selected [][][]float6
 	if err != nil {
 		return nil, err
 	}
-	values := b.prediction.Data()
-	for _, v := range values {
+	predictions, err := b.prediction.Float32Data()
+	if err != nil {
+		return nil, err
+	}
+	for _, v := range predictions {
 		if !finite(float64(v)) {
 			return nil, fmt.Errorf("non-finite prediction")
 		}
@@ -191,7 +198,7 @@ func (n *Network) readoutBatch(b *batchHost, p Parameters, selected [][][]float6
 	width := readRows * n.config.OutputSize
 	executions := make([]*execution, b.pairs)
 	for i := range executions {
-		pred, err := nn.NewFloat32Tensor(shape, values[i*width:(i+1)*width])
+		pred, err := nn.NewTensor(shape, predictions[i*width:(i+1)*width])
 		if err != nil {
 			return nil, err
 		}
@@ -233,12 +240,20 @@ func (n *Network) readoutBatchReverse(b *batchHost, upstream [][][]float64) ([][
 	if err != nil {
 		return nil, nil, err
 	}
-	all := rows(doubles(dh.Data()), len(n.config.ReadoutNodes))
+	dhValues, err := values(dh)
+	if err != nil {
+		return nil, nil, err
+	}
+	all := rows(dhValues, len(n.config.ReadoutNodes))
 	out := make([][][]float64, b.pairs)
 	for i := range out {
 		out[i] = all[i*readRows : (i+1)*readRows]
 	}
-	return out, doubles(dr.Data()), nil
+	readout, err := values(dr)
+	if err != nil {
+		return nil, nil, err
+	}
+	return out, readout, nil
 }
 
 // encoderBatchReverse seeds the batched encoder with every pair's core input
@@ -269,7 +284,10 @@ func (n *Network) encoderBatchReverse(b *batchHost, inputs [][][]float64) ([]flo
 	if err != nil {
 		return nil, err
 	}
-	encoder := doubles(de.Data())
+	encoder, err := values(de)
+	if err != nil {
+		return nil, err
+	}
 	for _, x := range encoder {
 		if !finite(x) {
 			return nil, fmt.Errorf("non-finite boundary gradient")

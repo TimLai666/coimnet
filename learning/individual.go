@@ -510,7 +510,11 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}
-	encoded := rows(doubles(z.Data()), inputWidth(n.config))
+	zValues, err := values(z)
+	if err != nil {
+		return nil, PlasticReport{}, err
+	}
+	encoded := rows(zValues, inputWidth(n.config))
 	coreInputs := encoded
 	if n.config.InputNodes != nil {
 		coreInputs = make([][]float64, len(input))
@@ -583,8 +587,11 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 	if err != nil {
 		return nil, PlasticReport{}, err
 	}
-	values := doubles(result.Data())
-	for _, v := range values {
+	readout, err := values(result)
+	if err != nil {
+		return nil, PlasticReport{}, err
+	}
+	for _, v := range readout {
 		if !finite(v) {
 			return nil, PlasticReport{}, fmt.Errorf("non-finite individual readout")
 		}
@@ -600,7 +607,7 @@ func (i *Individual) advanceRows(ctx context.Context, input [][]float64, gate []
 		i.chemical.state = stepwise.chemical
 		i.chemical.report = stepwise.chemistry
 	}
-	return rows(values, n.config.OutputSize), report, nil
+	return rows(readout, n.config.OutputSize), report, nil
 }
 
 // stepwiseResult is the candidate state of one row-by-row advance. Nothing in

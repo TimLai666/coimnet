@@ -208,7 +208,10 @@ func (n *Network) Predict(ctx context.Context, p Parameters, input [][]float64) 
 	if err != nil {
 		return nil, err
 	}
-	out := doubles(e.prediction.Data())
+	out, err := values(e.prediction)
+	if err != nil {
+		return nil, err
+	}
 	if n.config.ReadoutEveryStep {
 		return out[len(out)-n.config.OutputSize:], nil
 	}
@@ -230,7 +233,11 @@ func (n *Network) PredictAll(ctx context.Context, p Parameters, input [][]float6
 	if err != nil {
 		return nil, err
 	}
-	return rows(doubles(e.prediction.Data()), n.config.OutputSize), nil
+	out, err := values(e.prediction)
+	if err != nil {
+		return nil, err
+	}
+	return rows(out, n.config.OutputSize), nil
 }
 
 // spikeEvents runs one independent frozen episode and returns the 0/1 events of
@@ -329,8 +336,10 @@ func (n *Network) lossUpstream(e *execution, rows int, target []float64, kind st
 	}
 	last := e.prediction
 	if n.config.ReadoutEveryStep {
-		all := doubles(e.prediction.Data())
-		var err error
+		all, err := values(e.prediction)
+		if err != nil {
+			return 0, nil, err
+		}
 		if last, err = tensor([]int{n.config.OutputSize}, all[len(all)-n.config.OutputSize:]); err != nil {
 			return 0, nil, err
 		}
@@ -378,11 +387,19 @@ func (n *Network) mseSeed(readoutTape *nn.Tape, last *nn.Tensor, target []float6
 	if err = mse.Backward(upLoss); err != nil {
 		return 0, nil, err
 	}
-	l := float64(loss.Data()[0])
+	lossData, err := loss.Float32Data()
+	if err != nil {
+		return 0, nil, err
+	}
+	l := float64(lossData[0])
 	if !finite(l) {
 		return 0, nil, fmt.Errorf("non-finite loss")
 	}
-	return l, doubles(param.Grad().Data()), nil
+	grad, err := values(param.Grad())
+	if err != nil {
+		return 0, nil, err
+	}
+	return l, grad, nil
 }
 
 // crossEntropySeed scores last as logits against the class that the one-hot
@@ -405,7 +422,11 @@ func (n *Network) crossEntropySeed(last *nn.Tensor, target []float64) (float64, 
 	if label < 0 {
 		return 0, nil, fmt.Errorf("cross-entropy target has no 1")
 	}
-	logits, err := nn.NewFloat32Tensor([]int{1, n.config.OutputSize}, last.Data())
+	lastData, err := last.Float32Data()
+	if err != nil {
+		return 0, nil, err
+	}
+	logits, err := nn.NewTensor([]int{1, n.config.OutputSize}, lastData)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -425,11 +446,19 @@ func (n *Network) crossEntropySeed(last *nn.Tensor, target []float64) (float64, 
 	if err = tape.Backward(loss); err != nil {
 		return 0, nil, err
 	}
-	l := float64(loss.Data()[0])
+	lossData, err := loss.Float32Data()
+	if err != nil {
+		return 0, nil, err
+	}
+	l := float64(lossData[0])
 	if !finite(l) {
 		return 0, nil, fmt.Errorf("non-finite loss")
 	}
-	return l, doubles(param.Grad().Data()), nil
+	grad, err := values(param.Grad())
+	if err != nil {
+		return 0, nil, err
+	}
+	return l, grad, nil
 }
 
 // everyStepCrossEntropy is the mean softmax cross-entropy of the scored rows
@@ -443,7 +472,10 @@ func (n *Network) everyStepCrossEntropy(e *execution, rows int, target []float64
 	if len(target) != rows*width {
 		return 0, nil, fmt.Errorf("per-step target has %d values, want %d steps of %d", len(target), rows, width)
 	}
-	all := e.prediction.Data()
+	all, err := e.prediction.Float32Data()
+	if err != nil {
+		return 0, nil, err
+	}
 	if len(all) != rows*width {
 		return 0, nil, fmt.Errorf("per-step readout has %d values, want %d", len(all), rows*width)
 	}
@@ -475,7 +507,7 @@ func (n *Network) everyStepCrossEntropy(e *execution, rows int, target []float64
 	if len(scored) == 0 {
 		return 0, nil, fmt.Errorf("per-step target scores no row")
 	}
-	logitTensor, err := nn.NewFloat32Tensor([]int{len(scored), width}, logits)
+	logitTensor, err := nn.NewTensor([]int{len(scored), width}, logits)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -495,11 +527,18 @@ func (n *Network) everyStepCrossEntropy(e *execution, rows int, target []float64
 	if err = tape.Backward(loss); err != nil {
 		return 0, nil, err
 	}
-	l := float64(loss.Data()[0])
+	lossData, err := loss.Float32Data()
+	if err != nil {
+		return 0, nil, err
+	}
+	l := float64(lossData[0])
 	if !finite(l) {
 		return 0, nil, fmt.Errorf("non-finite loss")
 	}
-	grad := doubles(param.Grad().Data())
+	grad, err := values(param.Grad())
+	if err != nil {
+		return 0, nil, err
+	}
 	up := make([][]float64, rows)
 	for i := range up {
 		up[i] = make([]float64, width)
@@ -574,7 +613,10 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 	for i := range up {
 		up[i] = make([]float64, coreWidth)
 	}
-	hGradient := dh.Data()
+	hGradient, err := dh.Float32Data()
+	if err != nil {
+		return empty, err
+	}
 	readout := len(n.config.ReadoutNodes)
 	if n.config.ReadoutEveryStep {
 		// dh is [step,readout] row-major, one row per step of the episode,
@@ -635,7 +677,11 @@ func (n *Network) lossGradientReverse(ctx context.Context, input [][]float64, e 
 	if err != nil {
 		return empty, err
 	}
-	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: encoder, Readout: doubles(dr.Data()), Inputs: inputs}
+	readoutGrad, err := values(dr)
+	if err != nil {
+		return empty, err
+	}
+	g := Gradient{Core: cg.core, ThetaRaw: cg.thetaRaw, Encoder: encoder, Readout: readoutGrad, Inputs: inputs}
 	for _, x := range g.Readout {
 		if !finite(x) {
 			return empty, fmt.Errorf("non-finite boundary gradient")
@@ -699,7 +745,15 @@ func (n *Network) encoderReverse(e *execution, flat []float64) ([]float64, [][]f
 	if err != nil {
 		return nil, nil, err
 	}
-	encoder, inputs := doubles(de.Data()), rows(doubles(dx.Data()), n.config.InputSize)
+	encoder, err := values(de)
+	if err != nil {
+		return nil, nil, err
+	}
+	dxValues, err := values(dx)
+	if err != nil {
+		return nil, nil, err
+	}
+	inputs := rows(dxValues, n.config.InputSize)
 	for _, x := range encoder {
 		if !finite(x) {
 			return nil, nil, fmt.Errorf("non-finite boundary gradient")
@@ -900,7 +954,11 @@ func (n *Network) encode(p Parameters, input [][]float64, record bool) (*executi
 	if err != nil {
 		return nil, nil, err
 	}
-	return &execution{encoderTape: et, x: x, encoder: encoder, encoded: z}, rows(doubles(z.Data()), encoderWidth), nil
+	encoded, err := values(z)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &execution{encoderTape: et, x: x, encoder: encoder, encoded: z}, rows(encoded, encoderWidth), nil
 }
 
 // readoutFrom runs Insyra's readout on the selected core activity, shaped
@@ -931,7 +989,11 @@ func (n *Network) readoutFrom(e *execution, p Parameters, selected []float64, sh
 	if err != nil {
 		return err
 	}
-	for _, v := range pred.Data() {
+	predData, err := pred.Float32Data()
+	if err != nil {
+		return err
+	}
+	for _, v := range predData {
 		if !finite(float64(v)) {
 			return fmt.Errorf("non-finite prediction")
 		}
@@ -961,6 +1023,18 @@ func tensor(shape []int, values []float64) (*nn.Tensor, error) {
 	}
 	return nn.NewTensor(shape, f)
 }
+
+// values copies a float32 tensor's data as float64, or reports why it cannot:
+// a nil tensor (such as a missing gradient), another dtype, or a tensor that
+// lives on a device.
+func values(t *nn.Tensor) ([]float64, error) {
+	v, err := t.Float32Data()
+	if err != nil {
+		return nil, err
+	}
+	return doubles(v), nil
+}
+
 func doubles(v []float32) []float64 {
 	out := make([]float64, len(v))
 	for i, x := range v {

@@ -1,8 +1,8 @@
 # Insyra 整合查核
 
-CoImNet 固定使用 Insyra `v0.3.4`，模組來源為
+CoImNet 固定使用 Insyra `v0.3.5`，模組來源為
 `github.com/HazelnutParadise/insyra`，對應提交
-`90f3935d02b52ce0fd51a86ed95f340cff9030a8`。本文件記錄目前公開 API 查核與
+`80cbad8284e3782e56606aafdaaa85dc25205a98`。本文件記錄目前公開 API 查核與
 Doctor 的實際探測結果，不把計畫中的能力當成已完成。
 
 ## 公開 API 與梯度邊界
@@ -61,6 +61,14 @@ Insyra 的矩陣能力另外標示 `scope=2d_float32_matmul`、
 `core_gpu_equivalent` 固定為 `false`。這表示固定版本提供矩陣裝置介面，
 不表示 CoImNet 已啟用或執行該加速器。報告修正與驗收見
 [ticket 44](tickets/44-doctor-gpu-capabilities.md)，OPS-05 的未驗收條件保持。
+
+## v0.3.5 相容性驗收
+
+2026-10-24 升級到 v0.3.5。Insyra 從這版起要求 Go 1.26，CoImNet 的 `go` 指示也隨之改為 `1.26.9`。完整建置、vet 與 `go test ./...` 通過。
+
+這版把 `Tensor.Data` 與 `NewFloat32Tensor` 標為棄用，0.4 會移除。`Data` 遇到空張量、其他資料型別或放在裝置上的張量時默默回傳 nil，CoImNet 讀取預測、損失與梯度的地方已全部改用 `Float32Data`，取不到值時回傳錯誤，不再把缺少的梯度當成空陣列繼續算。`NewFloat32Tensor` 改用同義的 `NewTensor`。
+
+v0.3.5 的 CPU `MatMul` 改了迴圈順序，非 NaN 的結果逐位元組不變。KMNIST 逐欄序列範例（n=512 k=12、1 epoch、CPU、2 workers、雲端 4 核 Xeon）新舊版報告除訓練秒數外完全相同，訓練時間從 107～110 秒降到約 98 秒。
 
 ## v0.3.4 相容性驗收
 

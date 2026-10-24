@@ -68,7 +68,9 @@ func (tr *Trainer) PredictBatch(ctx context.Context, inputs [][][]float64, worke
 		return nil, err
 	}
 	for i, e := range executions {
-		out[i] = doubles(e.prediction.Data())
+		if out[i], err = values(e.prediction); err != nil {
+			return nil, err
+		}
 	}
 	return out, nil
 }

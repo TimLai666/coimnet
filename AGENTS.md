@@ -26,7 +26,7 @@ CoImNet（Connectome-Imprinted Network）以真實果蠅接線建立可模擬、
 
 ## 實作與驗證
 
-- Go module 為 `github.com/TimLai666/coimnet`。Insyra 固定 `v0.3.4`，對應提交 `90f3935d02b52ce0fd51a86ed95f340cff9030a8`。更新依賴時記錄理由與相容性測試，不使用浮動 `@latest`。
+- Go module 為 `github.com/TimLai666/coimnet`。Insyra 固定 `v0.3.5`，對應提交 `80cbad8284e3782e56606aafdaaa85dc25205a98`。更新依賴時記錄理由與相容性測試，不使用浮動 `@latest`。
 - 沿用主規格的必要功能與外部契約，按功能需要建立套件，避免空介面與假輸出。
 - 數值核心先寫可失敗的測試，以手算值或獨立參考驗證。Insyra 必須實際參與運算，完整梯度不能在核心與外圍之間中斷。
 - 建立 Go 程式後，執行 `gofmt`、`go build ./...`、`go test ./...`、`go test -race ./...`、`go vet ./...` 與相依性檢查。依需求補真實資料、跨程序恢復、教師移除、全腦及裝置驗證。

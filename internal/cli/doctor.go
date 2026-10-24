@@ -415,9 +415,15 @@ func runInsyraProbe(ctx context.Context) (InsyraReport, error) {
 	if err != nil {
 		return failInsyraProbe(report, err)
 	}
-	report.Probe.Output = prediction.Data()
-	report.Probe.Loss = loss.Data()
-	report.Probe.Gradient = gradient.Data()
+	if report.Probe.Output, err = prediction.Float32Data(); err != nil {
+		return failInsyraProbe(report, err)
+	}
+	if report.Probe.Loss, err = loss.Float32Data(); err != nil {
+		return failInsyraProbe(report, err)
+	}
+	if report.Probe.Gradient, err = gradient.Float32Data(); err != nil {
+		return failInsyraProbe(report, err)
+	}
 	if !equalFloat32(report.Probe.Output, []float32{23}) ||
 		!equalFloat32(report.Probe.Loss, []float32{484}) ||
 		!equalFloat32(report.Probe.Gradient, []float32{88, 132}) {
