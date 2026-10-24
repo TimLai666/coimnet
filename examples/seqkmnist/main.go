@@ -899,14 +899,25 @@ func readCheckpoint(path string, s settings) (*checkpoint, error) {
 	}
 	want, got := s, c.Settings
 	// Workers only changes how a batch's gradients are scheduled, GPU only
-	// where the core runs, and the data directory is not recorded.
+	// where the core runs, EvalFinalOnly only which epochs are scored, and
+	// neither the data directory nor EvalFinalOnly is recorded.
 	want.Workers, got.Workers, want.DataDir = 0, 0, ""
 	want.GPU, got.GPU = false, false
+	want.EvalFinalOnly = false
 	if got != want {
 		return nil, fmt.Errorf("checkpoint %s was written with settings %+v, not %+v", path, c.Settings, s)
 	}
-	if c.Epochs < 1 || c.Epochs > s.Epochs || len(c.EpochAccuracy) != c.Epochs {
+	if c.Epochs < 1 || c.Epochs > s.Epochs {
 		return nil, fmt.Errorf("checkpoint %s records %d epochs", path, c.Epochs)
+	}
+	// A run scoring every epoch records one accuracy per epoch. A final-only
+	// run records none until its last epoch and then one, so only a final-only
+	// run may resume from such a checkpoint: an every-epoch run would be left
+	// with a curve missing the unscored epochs.
+	scored := len(c.EpochAccuracy)
+	finalOnly := (scored == 0 && c.Epochs < s.Epochs) || (scored == 1 && c.Epochs == s.Epochs)
+	if scored != c.Epochs && !(s.EvalFinalOnly && finalOnly) {
+		return nil, fmt.Errorf("checkpoint %s records %d epochs but scores %d of them", path, c.Epochs, scored)
 	}
 	return &c, nil
 }

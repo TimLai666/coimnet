@@ -480,3 +480,50 @@ func TestEvalFinalOnlyKeepsTheFinalAccuracies(t *testing.T) {
 		t.Fatalf("final-only test/val %v/%v, every-epoch %v/%v", final.Accuracy, final.ValAccuracy, every.Accuracy, every.ValAccuracy)
 	}
 }
+
+// TestEvalFinalOnlyResumesFromItsCheckpoint pins that a final-only run can
+// resume: its checkpoints hold no per-epoch scores before the last epoch and
+// do not record EvalFinalOnly, which readCheckpoint once refused. An
+// every-epoch run must still refuse a checkpoint with unscored epochs.
+func TestEvalFinalOnlyResumesFromItsCheckpoint(t *testing.T) {
+	dir := t.TempDir()
+	writeSplit(t, dir, "train", 160)
+	writeSplit(t, dir, "t10k", 40)
+	s := settings{DataDir: dir, Nodes: 24, InputNodes: 8, ReadoutNodes: 8, InDegree: 3, Epochs: 3, Batch: 16, LearningRate: .02,
+		TrainCount: 160, TestCount: 40, ValCount: 32, Workers: 2, Gate: true, GateSquash: "softsign", Activation: "softsign", SurrogateScale: 5, ChemTau: 5, ChemHill: 2, ChemSource: "all", ChemReceptors: 1, ChemInit: .01, EvalFinalOnly: true}
+
+	mid := filepath.Join(dir, "mid.ckpt")
+	if err := writeAtomic(mid, checkpoint{Settings: s, Epochs: 1}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := readCheckpoint(mid, s); err != nil {
+		t.Fatalf("final-only run refused its own mid-run checkpoint: %v", err)
+	}
+	every := s
+	every.EvalFinalOnly = false
+	if _, err := readCheckpoint(mid, every); err == nil {
+		t.Fatal("every-epoch run accepted a checkpoint with unscored epochs")
+	}
+
+	first, second := filepath.Join(dir, "first.json"), filepath.Join(dir, "second.json")
+	ckpt := filepath.Join(dir, "run.ckpt")
+	if err := run(s, first, "", "", ckpt, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := run(s, second, "", "", ckpt, ""); err != nil {
+		t.Fatalf("resuming from a finished final-only checkpoint: %v", err)
+	}
+	var a, b report
+	for path, r := range map[string]*report{first: &a, second: &b} {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(data, r); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if a.Accuracy != b.Accuracy || a.ValAccuracy != b.ValAccuracy {
+		t.Fatalf("resumed run test/val %v/%v, original %v/%v", b.Accuracy, b.ValAccuracy, a.Accuracy, a.ValAccuracy)
+	}
+}
