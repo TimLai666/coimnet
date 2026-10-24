@@ -350,7 +350,7 @@ func (n *Network) lossUpstream(e *execution, rows int, target []float64, kind st
 	if kind == LossSoftmaxCrossEntropy {
 		loss, seed, err = n.crossEntropySeed(last, target)
 	} else {
-		loss, seed, err = n.mseSeed(e.readoutTape, last, target)
+		loss, seed, err = n.mseSeed(last, target)
 	}
 	if err != nil {
 		return 0, nil, err
@@ -365,13 +365,9 @@ func (n *Network) lossUpstream(e *execution, rows int, target []float64, kind st
 
 // mseSeed is the mean squared error of last against target and its VJP
 // dL/dy from Insyra's own tape, the same bits Backward(loss) used to seed the
-// readout with. The loss value is recorded on the readout tape, as before.
-func (n *Network) mseSeed(readoutTape *nn.Tape, last *nn.Tensor, target []float64) (float64, []float64, error) {
+// readout with.
+func (n *Network) mseSeed(last *nn.Tensor, target []float64) (float64, []float64, error) {
 	targetTensor, err := tensor([]int{n.config.OutputSize}, target)
-	if err != nil {
-		return 0, nil, err
-	}
-	loss, err := readoutTape.MSELoss(last, targetTensor)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -380,11 +376,11 @@ func (n *Network) mseSeed(readoutTape *nn.Tape, last *nn.Tensor, target []float6
 	if err != nil {
 		return 0, nil, err
 	}
-	upLoss, err := mse.MSELoss(param.Value(), targetTensor)
+	loss, err := mse.MSELoss(param.Value(), targetTensor)
 	if err != nil {
 		return 0, nil, err
 	}
-	if err = mse.Backward(upLoss); err != nil {
+	if err = mse.Backward(loss); err != nil {
 		return 0, nil, err
 	}
 	lossData, err := loss.Float32Data()
