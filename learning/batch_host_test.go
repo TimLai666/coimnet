@@ -93,7 +93,10 @@ func TestEncodeBatchMatchesDenseProduct(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := doubles(de.Data())
+			want, err := values(de)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for j := range want {
 				if math.Float64bits(got[j]) != math.Float64bits(want[j]) {
 					t.Fatalf("encoder gradient[%d] = %v, dense product %v", j, got[j], want[j])
@@ -127,4 +130,30 @@ func TestBatchCoreOneHotMatchesStepBatch(t *testing.T) {
 		}
 	}
 	nearBatchSums(t, "parameters", flatParameters(cpu.parameters), flatParameters(batched.parameters))
+}
+
+// TestValuesRefusesWhatItCannotRead pins that a missing gradient or a tensor of
+// another dtype is an error, not an empty slice the caller would keep using.
+func TestValuesRefusesWhatItCannotRead(t *testing.T) {
+	if _, err := values(nil); err == nil {
+		t.Fatal("values(nil) returned no error")
+	}
+	labels, err := nn.NewInt64Tensor([]int{2}, []int64{0, 1})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := values(labels); err == nil {
+		t.Fatal("values(int64 tensor) returned no error")
+	}
+	x, err := nn.NewTensor([]int{2}, []float32{0.5, -2})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := values(x)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 2 || got[0] != 0.5 || got[1] != -2 {
+		t.Fatalf("values = %v, want [0.5 -2]", got)
+	}
 }

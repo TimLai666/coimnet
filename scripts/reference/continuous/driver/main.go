@@ -419,7 +419,11 @@ func mseUpstream(ctx context.Context, net *learning.Network, p learning.Paramete
 	for i := range up {
 		up[i] = make([]float64, c.OutputSize)
 	}
-	for i, v := range param.Grad().Data() {
+	grad, err := param.Grad().Float32Data()
+	if err != nil {
+		return nil, err
+	}
+	for i, v := range grad {
 		up[len(up)-1][i] = float64(v)
 	}
 	return up, nil
