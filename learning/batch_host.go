@@ -202,9 +202,7 @@ func (n *Network) readoutBatch(b *batchHost, p Parameters, selected [][][]float6
 		if err != nil {
 			return nil, err
 		}
-		// The loss code records an MSE value on readoutTape; a fresh tape per
-		// pair keeps that off the shared readout tape.
-		executions[i] = &execution{readoutTape: nn.NewTape(), prediction: pred}
+		executions[i] = &execution{prediction: pred}
 	}
 	return executions, nil
 }
