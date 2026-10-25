@@ -114,8 +114,10 @@ class Population:
         return torch.bmm(y, p["R"] * s.rmask)
 
     @torch.no_grad()
-    def adam_step(s, lrs, clip=1.0, b1=0.9, b2=0.999, eps=1e-8):
-        s.updates += 1
+    def adam_step(s, lrs, clip=1.0, b1=0.9, b2=0.999, eps=1e-8, step=None):
+        """step, a 0-dim float64 device tensor holding the new update count,
+        replaces the Python counter for the bias corrections so the update can
+        be captured in a CUDA graph; the caller then advances s.updates."""
         sq = None
         for k, w in s.params.items():
             g = w.grad.mul_(s.gmask[k])
@@ -123,7 +125,11 @@ class Population:
             sq = n2 if sq is None else sq + n2
         norm = sq.sqrt()
         scale = torch.where(norm > clip, clip / norm, torch.ones_like(norm))
-        c1, c2 = 1 - b1 ** s.updates, 1 - b2 ** s.updates
+        if step is None:
+            s.updates += 1
+            c1, c2 = 1 - b1 ** s.updates, 1 - b2 ** s.updates
+        else:
+            c1, c2 = (1 - b1 ** step).float(), (1 - b2 ** step).float()
         for k, w in s.params.items():
             shape = (-1,) + (1,) * (w.dim() - 1)
             g = w.grad * scale.view(shape)
@@ -152,6 +158,21 @@ def accuracy(pop, X, Y, chunk=0):
     return (correct / len(X)).tolist()
 
 
+def cpu_temp():
+    """Hottest CPU package reading in degrees C (k10temp or coretemp hwmon)."""
+    import glob
+    best = 0.0
+    for d in glob.glob("/sys/class/hwmon/hwmon*"):
+        try:
+            if open(d + "/name").read().strip() not in ("k10temp", "coretemp"):
+                continue
+            for f in glob.glob(d + "/temp*_input"):
+                best = max(best, int(open(f).read()) / 1000)
+        except OSError:
+            pass
+    return best
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True)
@@ -166,6 +187,8 @@ def main():
     ap.add_argument("--compile", default="", help="torch.compile mode for the loss (e.g. default, max-autotune-no-cudagraphs)")
     ap.add_argument("--tf32", action="store_true", help="allow TF32 matmuls (changes rounding)")
     ap.add_argument("--profile", type=int, default=0, help="after this many warm-up updates, profile 10 updates, print the kernel table and exit")
+    ap.add_argument("--graph", action="store_true", help="capture one whole update (forward, backward, AdamW) in a CUDA graph and replay it; the CPU then sleeps while the GPU works")
+    ap.add_argument("--cool", default="", help="HIGH:LOW in degrees C: when the CPU sensor (hwmon k10temp/coretemp) reaches HIGH, pause until it is back to LOW; paused time is reported apart from train_seconds")
     ap.add_argument("--kernel", default="dense", choices=["dense", "sparse"], help="dense masked bmm, or the Triton gather kernels of popsparse.py")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
@@ -197,13 +220,53 @@ def main():
     t0 = time.time()
     curves = [[] for _ in range(P)]
     lr_table = torch.tensor([[lr_at(pk, u, steps) for pk in peaks] for u in range(steps)], device=dev)
+    graph = None
+    if a.graph:
+        static_idx = torch.zeros(P, bs, dtype=torch.long, device=dev)
+        step_t = torch.zeros((), dtype=torch.long, device=dev)  # completed updates
+
+        def train_step():
+            batch_loss(Xt[static_idx], Yt[static_idx]).backward()
+            pop.adam_step(lr_table.index_select(0, step_t.view(1)).view(-1), step=(step_t + 1).double())
+            step_t.add_(1)
+        # Warm up (kernel compilation, allocator) on forward and backward only,
+        # so the parameters and optimizer state stay untouched.
+        side = torch.cuda.Stream()
+        side.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(side):
+            for _ in range(2):
+                batch_loss(Xt[static_idx], Yt[static_idx]).backward()
+                for w in pop.params.values():
+                    w.grad = None
+        torch.cuda.current_stream().wait_stream(side)
+        graph = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(graph):
+            train_step()
+        done = torch.cuda.Event(blocking=True)
+    cool = [float(v) for v in a.cool.split(":")] if a.cool else None
+    paused = 0.0
     for ep in range(a.epochs):
         order = torch.stack([torch.randperm(len(Xt), generator=g, device=dev) for g in gens])  # [P, Ntr]
         for i in range(per_epoch):
             idx = order[:, i * bs:(i + 1) * bs]
-            xb, yb = Xt[idx], Yt[idx]  # [P, B, T, d], [P, B]
-            batch_loss(xb, yb).backward()
-            pop.adam_step(lr_table[pop.updates])
+            if graph is not None:
+                static_idx.copy_(idx)
+                graph.replay()
+                pop.updates += 1
+                done.record()
+                done.synchronize()
+            else:
+                xb, yb = Xt[idx], Yt[idx]  # [P, B, T, d], [P, B]
+                batch_loss(xb, yb).backward()
+                pop.adam_step(lr_table[pop.updates])
+            if cool and i % 20 == 0 and cpu_temp() >= cool[0]:
+                if dev.type == "cuda":
+                    torch.cuda.synchronize()
+                t1 = time.time()
+                while cpu_temp() > cool[1]:
+                    time.sleep(2)
+                paused += time.time() - t1
+                print(f"paused {time.time() - t1:.0f}s to cool at update {pop.updates}", flush=True)
             if a.profile and pop.updates == a.profile:
                 from torch.profiler import profile, ProfilerActivity
                 with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
@@ -221,13 +284,13 @@ def main():
             print(f"epoch {ep} val {['%.4f' % v for v in va]} ({time.time() - t0:.1f}s)", flush=True)
     if dev.type == "cuda":
         torch.cuda.synchronize()
-    train_s = time.time() - t0
+    train_s = time.time() - t0 - paused
     te = accuracy(pop, Xs, Ys)
     for p, m in enumerate(members):
         print("RESULT", json.dumps({"member": m, "params": pop.count[p], "epochs": a.epochs, "bs": bs,
                                     "val_acc": curves[p][-1], "val_curve": curves[p], "test_acc": te[p]}), flush=True)
     print("TIMING", json.dumps({"members": P, "train_seconds": train_s, "seconds_per_member": train_s / P,
-                                "device": str(dev), "updates": steps}), flush=True)
+                                "device": str(dev), "updates": steps, "paused_seconds": paused, "graph": a.graph}), flush=True)
 
 
 if __name__ == "__main__":
