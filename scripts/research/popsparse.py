@@ -64,9 +64,11 @@ def _fwd(U, VH, IH, ALPHA, GG, GB, BIAS, SRC, W,
 
 
 @triton.jit
-def _bwd(GYT, VH, IH, DI, ALPHA, GG, GB, OUT_T, OUT_W, PART,
-         B, T, N, KO, NB,
-         BB: tl.constexpr, NP: tl.constexpr):
+def _bwd(GYT, VH, IH, DI, ALPHA, GG, GB, OUT_T, OUT_W, PART, SRC, GWP,
+         B, T, N, KO, NB, K,
+         BB: tl.constexpr, NP: tl.constexpr, FUSE: tl.constexpr):
+    # With FUSE, the weight gradient of this block's samples is accumulated
+    # here as well, into GWP[p, blk, j, n], instead of by _gw afterwards.
     p = tl.program_id(0)
     blk = tl.program_id(1)
     b = blk * BB + tl.arange(0, BB)
@@ -103,6 +105,14 @@ def _bwd(GYT, VH, IH, DI, ALPHA, GG, GB, OUT_T, OUT_W, PART,
         ggg += tl.sum(gd * alpha * slope * I, axis=1)
         ggb += tl.sum(gd * alpha * slope, axis=1)
         tl.store(DI + (here + n[:, None]) * B + cols, dI, mask=m2)
+        if FUSE:
+            gbase = (p * NB + blk) * K * N
+            for j in range(K):
+                sj = tl.load(SRC + pn * K + j, mask=nm, other=0)
+                vs = tl.load(VH + ((p * (T + 1) + t) * N + sj[:, None]) * B + cols, mask=m2, other=0.0)
+                c = tl.sum(dI * (vs / (1 + tl.abs(vs))), axis=1)
+                gp = GWP + gbase + j * N + n
+                tl.store(gp, tl.load(gp, mask=nm, other=0.0) + c, mask=nm)
         tl.debug_barrier()
         gy = tl.zeros((NP, BB), dtype=tl.float32)
         for o in range(KO):
@@ -169,7 +179,7 @@ def transpose_slots(src, w_shape_only_n):
 
 # Launch shapes; the environment overrides are for tuning sweeps.
 TUNE = {k: int(os.environ.get("POP_" + k, d)) for k, d in
-        (("BB", 32), ("WARPS", 16), ("GW_BI", 8), ("GW_RB", 32), ("GW_WARPS", 8))}
+        (("BB", 32), ("WARPS", 16), ("GW_BI", 8), ("GW_RB", 32), ("GW_WARPS", 8), ("FUSE_GW", 0))}
 
 
 class Core(torch.autograd.Function):
@@ -205,11 +215,16 @@ class Core(torch.autograd.Function):
         out_w = torch.gather(flat_w, 1, torch.where(out_slot < 0, N * K, out_slot).reshape(P, -1)).view(P, N, KO).contiguous()
         DI = torch.empty(P, T, N, B, device=VH.device, dtype=torch.float32)
         PART = torch.empty(P, NB, 3, N, device=VH.device, dtype=torch.float32)
-        _bwd[(P, NB)](gyT.transpose(1, 2).contiguous(), VH, IH, DI, alpha.contiguous(), gg.contiguous(), gb.contiguous(), out_t, out_w, PART,
-                      B, T, N, KO, NB, BB=BB, NP=NP, num_warps=TUNE["WARPS"])
-        GW = torch.empty(P, N, K, device=VH.device, dtype=torch.float32)
-        BI = TUNE["GW_BI"]
-        _gw[(triton.cdiv(N, BI), P)](DI, VH, src, GW, B, T, N, K, BI=BI, KP=triton.next_power_of_2(K), RB=TUNE["GW_RB"], num_warps=TUNE["GW_WARPS"])
+        fuse = TUNE["FUSE_GW"]
+        GWP = torch.zeros(P, NB, K, N, device=VH.device, dtype=torch.float32) if fuse else PART
+        _bwd[(P, NB)](gyT.transpose(1, 2).contiguous(), VH, IH, DI, alpha.contiguous(), gg.contiguous(), gb.contiguous(), out_t, out_w, PART, src, GWP,
+                      B, T, N, KO, NB, K, BB=BB, NP=NP, FUSE=fuse, num_warps=TUNE["WARPS"])
+        if fuse:
+            GW = GWP.sum(1).transpose(1, 2).contiguous()
+        else:
+            GW = torch.empty(P, N, K, device=VH.device, dtype=torch.float32)
+            BI = TUNE["GW_BI"]
+            _gw[(triton.cdiv(N, BI), P)](DI, VH, src, GW, B, T, N, K, BI=BI, KP=triton.next_power_of_2(K), RB=TUNE["GW_RB"], num_warps=TUNE["GW_WARPS"])
         part = PART.sum(1)
         gbias = DI.sum((1, 3))
         return DI, part[:, 0], part[:, 1], part[:, 2], gbias, GW, None, None, None
