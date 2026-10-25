@@ -213,7 +213,8 @@ def main():
     per_epoch = len(Xt) // bs
     steps = a.epochs * per_epoch
     peaks = [float(m["lr"]) for m in members]
-    gens = [torch.Generator(device=dev).manual_seed(int(m["seed"]) * 7919 + 99) for m in members]
+    # Shuffles come from CPU generators, so every device trains on the same batches.
+    gens = [torch.Generator().manual_seed(int(m["seed"]) * 7919 + 99) for m in members]
     print(f"members {P} pad-nodes {pop.N} updates {steps} params {pop.count}", flush=True)
     if dev.type == "cuda":
         torch.cuda.synchronize()
@@ -246,7 +247,7 @@ def main():
     cool = [float(v) for v in a.cool.split(":")] if a.cool else None
     paused = 0.0
     for ep in range(a.epochs):
-        order = torch.stack([torch.randperm(len(Xt), generator=g, device=dev) for g in gens])  # [P, Ntr]
+        order = torch.stack([torch.randperm(len(Xt), generator=g) for g in gens]).to(dev)  # [P, Ntr]
         for i in range(per_epoch):
             idx = order[:, i * bs:(i + 1) * bs]
             if graph is not None:
