@@ -144,6 +144,8 @@ def main():
     ap.add_argument("--device", default="cpu")
     ap.add_argument("--threads", type=int, default=1)
     ap.add_argument("--eval-every", action="store_true", help="score val after every epoch")
+    ap.add_argument("--compile", default="", help="torch.compile mode for the loss (e.g. default, max-autotune-no-cudagraphs)")
+    ap.add_argument("--tf32", action="store_true", help="allow TF32 matmuls (changes rounding)")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     spec = open(a.pop[1:]).read() if a.pop.startswith("@") else a.pop
@@ -155,7 +157,14 @@ def main():
     Xv, Yv = to_steps(Xtr[k:]).to(dev), torch.from_numpy(Ytr[k:]).to(dev)
     Xt, Yt = to_steps(Xtr[:k]).to(dev), torch.from_numpy(Ytr[:k]).to(dev)
     Xs, Ys = to_steps(Xte).to(dev), torch.from_numpy(Yte).to(dev)
+    torch.backends.cuda.matmul.allow_tf32 = a.tf32
     pop = Population(members, 28, 10, dev)
+
+    def batch_loss(xb, yb):
+        logits = pop.forward(xb)
+        return torch.nn.functional.cross_entropy(logits.reshape(-1, 10), yb.reshape(-1), reduction="none").view(pop.P, -1).mean(1).sum()
+    if a.compile:
+        batch_loss = torch.compile(batch_loss, mode=a.compile, dynamic=False)
     P, bs = pop.P, a.bs
     per_epoch = len(Xt) // bs
     steps = a.epochs * per_epoch
@@ -171,9 +180,7 @@ def main():
         for i in range(per_epoch):
             idx = order[:, i * bs:(i + 1) * bs]
             xb, yb = Xt[idx], Yt[idx]  # [P, B, T, d], [P, B]
-            logits = pop.forward(xb)
-            loss = torch.nn.functional.cross_entropy(logits.reshape(-1, 10), yb.reshape(-1), reduction="none").view(P, bs).mean(1)
-            loss.sum().backward()
+            batch_loss(xb, yb).backward()
             lrs = torch.tensor([lr_at(pk, pop.updates, steps) for pk in peaks], device=dev)
             pop.adam_step(lrs)
         if a.eval_every or ep == a.epochs - 1:
