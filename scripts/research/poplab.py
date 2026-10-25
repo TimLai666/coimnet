@@ -163,6 +163,7 @@ def main():
     ap.add_argument("--eval-every", action="store_true", help="score val after every epoch")
     ap.add_argument("--compile", default="", help="torch.compile mode for the loss (e.g. default, max-autotune-no-cudagraphs)")
     ap.add_argument("--tf32", action="store_true", help="allow TF32 matmuls (changes rounding)")
+    ap.add_argument("--profile", type=int, default=0, help="after this many warm-up updates, profile 10 updates, print the kernel table and exit")
     ap.add_argument("--kernel", default="dense", choices=["dense", "sparse"], help="dense masked bmm, or the Triton gather kernels of popsparse.py")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
@@ -201,6 +202,16 @@ def main():
             xb, yb = Xt[idx], Yt[idx]  # [P, B, T, d], [P, B]
             batch_loss(xb, yb).backward()
             pop.adam_step(lr_table[pop.updates])
+            if a.profile and pop.updates == a.profile:
+                from torch.profiler import profile, ProfilerActivity
+                with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as prof:
+                    for r in range(1, 11):
+                        idx = order[:, (i + r) * bs:(i + r + 1) * bs]
+                        batch_loss(Xt[idx], Yt[idx]).backward()
+                        pop.adam_step(lr_table[pop.updates])
+                    torch.cuda.synchronize()
+                print(prof.key_averages().table(sort_by="cuda_time_total", row_limit=25), flush=True)
+                return
         if a.eval_every or ep == a.epochs - 1:
             va = accuracy(pop, Xv, Yv)
             for p in range(P):
