@@ -93,11 +93,13 @@ class Population:
         """x [P, B, T, d] -> logits [P, B, classes]."""
         p = s.params
         P, B, T, _ = x.shape
-        u = torch.matmul(x, p["E"].unsqueeze(1))  # [P, B, T, N]
         if s.kernel == "sparse":
+            # [P, 1, N, d] @ [P, T, d, B] -> [P, T, N, B], the kernels' sample-minor layout
+            u = torch.matmul(p["E"].transpose(1, 2).unsqueeze(1), x.permute(0, 2, 3, 1))
             alpha = -torch.expm1(-torch.exp(-p["logtau"]))
             y = s.core(u, alpha, p["gg"], p["gb"], p["b"], p["W"], s.slots, s.out_t, s.out_slot)
             return torch.bmm(y, p["R"] * s.rmask)
+        u = torch.matmul(x, p["E"].unsqueeze(1))  # [P, B, T, N]
         W = p["W"] * s.mask
         alpha = (-torch.expm1(-torch.exp(-p["logtau"]))).unsqueeze(1)  # 1 - exp(-dt/tau)
         gg, gb, bias = p["gg"].unsqueeze(1), p["gb"].unsqueeze(1), p["b"].unsqueeze(1)

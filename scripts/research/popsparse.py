@@ -9,9 +9,9 @@ transpose of the slots (padded to the largest out-degree with zero weights)
 so it gathers instead of scattering, and nothing uses atomics: every sum has
 a fixed order and reruns are bit-identical.
 
-core(u, alpha, gg, gb, bias, src, w) -> y_T is a torch.autograd.Function:
-  u     [P, B, T, N]  encoded input (zero outside the input nodes); the kernels
-                      work on a sample-minor copy [P, T, N, B]
+core(u, alpha, gg, gb, bias, w, src, out_t, out_slot) -> y_T [P, B, N] is a torch.autograd.Function:
+  u     [P, T, N, B]  encoded input (zero outside the input nodes), sample-minor
+                      so that a slot's gather over a block of samples is contiguous
   alpha, gg, gb, bias [P, N]
   src   [P, N, K] int32 source of each slot, w [P, N, K] its weight
 Each step: I = u_t + bias + sum_j w*y[src]; z = gg*I + gb;
@@ -118,25 +118,28 @@ def _bwd(GYT, VH, IH, DI, ALPHA, GG, GB, OUT_T, OUT_W, PART,
 
 @triton.jit
 def _gw(DI, VH, SRC, GW, B, T, N, K,
-        BI: tl.constexpr, RB: tl.constexpr):
-    # gW[p, i, j] = sum over (t, b) of dI[p, t, i, b] * y[p, t, src[p, i, j], b];
-    # one program per (member, target block, slot).
-    p = tl.program_id(0)
-    it = tl.program_id(1)
-    j = tl.program_id(2)
+        BI: tl.constexpr, KP: tl.constexpr, RB: tl.constexpr):
+    # gW[p, i, j] = sum over (t, b) of dI[p, t, i, b] * y[p, t, src[p, i, j], b].
+    # One program per (target block, member) holds all K slots, so each dI
+    # tile is read once; the target block is the fast grid axis, so the
+    # programs of one member run together and share its history in L2.
+    it = tl.program_id(0)
+    p = tl.program_id(1)
     i = it * BI + tl.arange(0, BI)
+    jj = tl.arange(0, KP)
     im = i < N
     pi = p * N + i
-    s = tl.load(SRC + pi * K + j, mask=im, other=0)
-    acc = tl.zeros((BI, RB), dtype=tl.float32)
+    sm = im[:, None] & (jj < K)[None, :]
+    s = tl.load(SRC + pi[:, None] * K + jj[None, :], mask=sm, other=0)
+    acc = tl.zeros((BI, KP), dtype=tl.float32)
     for t in range(T):
         for b0 in range(0, B, RB):
             b = b0 + tl.arange(0, RB)
-            m2 = im[:, None] & (b < B)[None, :]
-            di = tl.load(DI + ((p * T + t) * N + i[:, None]) * B + b[None, :], mask=m2, other=0.0)
-            vs = tl.load(VH + ((p * (T + 1) + t) * N + s[:, None]) * B + b[None, :], mask=m2, other=0.0)
-            acc += di * (vs / (1 + tl.abs(vs)))
-    tl.store(GW + pi * K + j, tl.sum(acc, axis=1), mask=im)
+            bm = b < B
+            di = tl.load(DI + ((p * T + t) * N + i[:, None]) * B + b[None, :], mask=im[:, None] & bm[None, :], other=0.0)
+            vs = tl.load(VH + ((p * (T + 1) + t) * N + s[:, :, None]) * B + b[None, None, :], mask=sm[:, :, None] & bm[None, None, :], other=0.0)
+            acc += tl.sum(di[:, None, :] * (vs / (1 + tl.abs(vs))), axis=2)
+    tl.store(GW + pi[:, None] * K + jj[None, :], acc, mask=sm)
 
 
 def transpose_slots(src, w_shape_only_n):
@@ -168,10 +171,10 @@ class Core(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, u, alpha, gg, gb, bias, w, src, out_t, out_slot):
-        P, B, T, N = u.shape
+        P, T, N, B = u.shape
         K = src.shape[2]
         NP = triton.next_power_of_2(N)
-        U = u.permute(0, 2, 3, 1).contiguous()  # [P, T, N, B]
+        U = u.contiguous()
         VH = torch.empty(P, T + 1, N, B, device=u.device, dtype=torch.float32)
         IH = torch.empty(P, T, N, B, device=u.device, dtype=torch.float32)
         BB = Core.BB
@@ -199,11 +202,11 @@ class Core(torch.autograd.Function):
         _bwd[(P, NB)](gyT.transpose(1, 2).contiguous(), VH, IH, DI, alpha.contiguous(), gg.contiguous(), gb.contiguous(), out_t, out_w, PART,
                       B, T, N, KO, NB, BB=BB, NP=NP, num_warps=16)
         GW = torch.empty(P, N, K, device=VH.device, dtype=torch.float32)
-        BI = 64
-        _gw[(P, triton.cdiv(N, BI), K)](DI, VH, src, GW, B, T, N, K, BI=BI, RB=32, num_warps=4)
+        BI = 8
+        _gw[(triton.cdiv(N, BI), P)](DI, VH, src, GW, B, T, N, K, BI=BI, KP=triton.next_power_of_2(K), RB=32, num_warps=8)
         part = PART.sum(1)
         gbias = DI.sum((1, 3))
-        return DI.permute(0, 3, 1, 2), part[:, 0], part[:, 1], part[:, 2], gbias, GW, None, None, None
+        return DI, part[:, 0], part[:, 1], part[:, 2], gbias, GW, None, None, None
 
 
 def core(u, alpha, gg, gb, bias, w, src, out_t, out_slot):
