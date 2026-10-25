@@ -116,9 +116,10 @@ def _bwd(GYT, VH, IH, DI, ALPHA, GG, GB, OUT_T, OUT_W, PART, SRC, GWP,
         tl.debug_barrier()
         gy = tl.zeros((NP, BB), dtype=tl.float32)
         for o in range(KO):
-            tg = tl.load(OUT_T + pn * KO + o, mask=nm, other=0)
+            tg = tl.load(OUT_T + pn * KO + o, mask=nm, other=-1)
             wo = tl.load(OUT_W + pn * KO + o, mask=nm, other=0.0)
-            gy += wo[:, None] * tl.load(DI + (here + tg[:, None]) * B + cols, mask=m2, other=0.0)
+            # Padding slots (-1) past a source's out-degree load nothing.
+            gy += wo[:, None] * tl.load(DI + (here + tg[:, None]) * B + cols, mask=m2 & (tg >= 0)[:, None], other=0.0)
         dv = 1 + tl.abs(v)
         gvn = gvn * (1 - a) + gy / (dv * dv)
     base = (p * NB + blk) * 3 * N
@@ -155,7 +156,7 @@ def _gw(DI, VH, SRC, GW, B, T, N, K,
 
 def transpose_slots(src, w_shape_only_n):
     """Out-edge lists of every source, padded to the largest out-degree.
-    Returns (out_target [P, N, KO] int32, out_slot [P, N, KO] int64 flat slot
+    Returns (out_target [P, N, KO] int32 or -1 for padding, out_slot [P, N, KO] int64 flat slot
     index into [N*K] or -1 for padding)."""
     P, N, K = src.shape
     s = src.long().cpu()
@@ -163,7 +164,7 @@ def transpose_slots(src, w_shape_only_n):
     for p in range(P):
         deg[p] = torch.bincount(s[p].reshape(-1), minlength=N)
     KO = max(int(deg.max()), 1)
-    out_t = torch.zeros(P, N, KO, dtype=torch.int32)
+    out_t = torch.full((P, N, KO), -1, dtype=torch.int32)
     out_slot = torch.full((P, N, KO), -1, dtype=torch.long)
     for p in range(P):
         flat = s[p].reshape(-1)  # slot e = i*K + j has source flat[e], target i
@@ -179,7 +180,7 @@ def transpose_slots(src, w_shape_only_n):
 
 # Launch shapes; the environment overrides are for tuning sweeps.
 TUNE = {k: int(os.environ.get("POP_" + k, d)) for k, d in
-        (("BB", 32), ("WARPS", 16), ("GW_BI", 8), ("GW_RB", 32), ("GW_WARPS", 8), ("FUSE_GW", 0))}
+        (("BB", 32), ("WARPS", 16), ("GW_BI", 8), ("GW_RB", 32), ("GW_WARPS", 8), ("FUSE_GW", 1))}
 
 
 class Core(torch.autograd.Function):
