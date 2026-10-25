@@ -17,6 +17,7 @@ core(u, alpha, gg, gb, bias, w, src, out_t, out_slot) -> y_T [P, B, N] is a torc
 Each step: I = u_t + bias + sum_j w*y[src]; z = gg*I + gb;
 a = min(1, alpha*(1 + z/(1+|z|))); v += a*(I - v); y = v/(1+|v|).
 """
+import os
 import torch
 import triton
 import triton.language as tl
@@ -166,8 +167,13 @@ def transpose_slots(src, w_shape_only_n):
     return out_t, out_slot, KO
 
 
+# Launch shapes; the environment overrides are for tuning sweeps.
+TUNE = {k: int(os.environ.get("POP_" + k, d)) for k, d in
+        (("BB", 32), ("WARPS", 16), ("GW_BI", 8), ("GW_RB", 32), ("GW_WARPS", 8))}
+
+
 class Core(torch.autograd.Function):
-    BB = 32
+    BB = TUNE["BB"]
 
     @staticmethod
     def forward(ctx, u, alpha, gg, gb, bias, w, src, out_t, out_slot):
@@ -180,7 +186,7 @@ class Core(torch.autograd.Function):
         BB = Core.BB
         grid = (P, triton.cdiv(B, BB))
         _fwd[grid](U, VH, IH, alpha.contiguous(), gg.contiguous(), gb.contiguous(), bias.contiguous(), src, w.contiguous(),
-                   B, T, N, K, BB=BB, NP=NP, num_warps=16)
+                   B, T, N, K, BB=BB, NP=NP, num_warps=TUNE["WARPS"])
         ctx.save_for_backward(VH, IH, alpha, gg, gb, w, src, out_t, out_slot)
         vT = VH[:, T].transpose(1, 2)  # [P, B, N]
         return vT / (1 + vT.abs())
@@ -200,10 +206,10 @@ class Core(torch.autograd.Function):
         DI = torch.empty(P, T, N, B, device=VH.device, dtype=torch.float32)
         PART = torch.empty(P, NB, 3, N, device=VH.device, dtype=torch.float32)
         _bwd[(P, NB)](gyT.transpose(1, 2).contiguous(), VH, IH, DI, alpha.contiguous(), gg.contiguous(), gb.contiguous(), out_t, out_w, PART,
-                      B, T, N, KO, NB, BB=BB, NP=NP, num_warps=16)
+                      B, T, N, KO, NB, BB=BB, NP=NP, num_warps=TUNE["WARPS"])
         GW = torch.empty(P, N, K, device=VH.device, dtype=torch.float32)
-        BI = 8
-        _gw[(triton.cdiv(N, BI), P)](DI, VH, src, GW, B, T, N, K, BI=BI, KP=triton.next_power_of_2(K), RB=32, num_warps=8)
+        BI = TUNE["GW_BI"]
+        _gw[(triton.cdiv(N, BI), P)](DI, VH, src, GW, B, T, N, K, BI=BI, KP=triton.next_power_of_2(K), RB=TUNE["GW_RB"], num_warps=TUNE["GW_WARPS"])
         part = PART.sum(1)
         gbias = DI.sum((1, 3))
         return DI, part[:, 0], part[:, 1], part[:, 2], gbias, GW, None, None, None
