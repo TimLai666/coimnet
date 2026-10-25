@@ -3,9 +3,11 @@ package webgpu
 import (
 	"context"
 	"fmt"
+	"os"
 	"sync"
 	"sync/atomic"
 
+	"github.com/gogpu/gputypes"
 	"github.com/gogpu/wgpu"
 )
 
@@ -47,8 +49,33 @@ func unavailable(format string, args ...any) error {
 	return fmt.Errorf("%w: "+format, append([]any{ErrUnavailable}, args...)...)
 }
 
-// openDevice selects a high-performance adapter from the shared instance and
-// requests a device with the adapter's own limits. A software adapter is
+// AdapterEnv names the environment variable that chooses which kind of GPU
+// executors open: "discrete" (the default when unset) or "integrated". A
+// machine with both, such as a desktop with an iGPU beside a graphics card,
+// can then run one process on each.
+const AdapterEnv = "COIMNET_GPU_ADAPTER"
+
+// adapterPreference turns the AdapterEnv value into a power preference and the
+// device type it demands. An empty value keeps the high-performance default
+// without demanding a type, so a machine with only an integrated GPU still
+// uses it. An explicit value must be met exactly: gogpu silently falls back
+// to another GPU when the preferred kind is missing, and a run that names the
+// iGPU must not quietly train on the graphics card instead.
+func adapterPreference(value string) (gputypes.PowerPreference, gputypes.DeviceType, bool, error) {
+	switch value {
+	case "":
+		return wgpu.PowerPreferenceHighPerformance, 0, false, nil
+	case "discrete":
+		return wgpu.PowerPreferenceHighPerformance, gputypes.DeviceTypeDiscreteGPU, true, nil
+	case "integrated":
+		return wgpu.PowerPreferenceLowPower, gputypes.DeviceTypeIntegratedGPU, true, nil
+	}
+	return 0, 0, false, fmt.Errorf("%s=%q: want discrete or integrated", AdapterEnv, value)
+}
+
+// openDevice selects the adapter AdapterEnv asks for (high-performance by
+// default) from the shared instance and requests a device with the adapter's
+// own limits. A software adapter is
 // refused unless allowSoftware is set, which only tests do. The caller owns
 // the returned adapter and device and releases them, device first.
 func openDevice(ctx context.Context, allowSoftware bool) (*wgpu.Adapter, *wgpu.Device, DeviceInfo, error) {
@@ -59,11 +86,19 @@ func openDevice(ctx context.Context, allowSoftware bool) (*wgpu.Adapter, *wgpu.D
 	if err := ctx.Err(); err != nil {
 		return nil, nil, DeviceInfo{}, err
 	}
-	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{PowerPreference: wgpu.PowerPreferenceHighPerformance})
+	preference, wantType, exact, err := adapterPreference(os.Getenv(AdapterEnv))
+	if err != nil {
+		return nil, nil, DeviceInfo{}, err
+	}
+	adapter, err := instance.RequestAdapter(&wgpu.RequestAdapterOptions{PowerPreference: preference})
 	if err != nil {
 		return nil, nil, DeviceInfo{}, unavailable("request adapter: %v", err)
 	}
 	adapterInfo := adapter.Info()
+	if exact && adapterInfo.DeviceType != wantType {
+		adapter.Release()
+		return nil, nil, DeviceInfo{}, unavailable("%s asks for a %s adapter, got %q (%s)", AdapterEnv, wantType, adapterInfo.Name, adapterInfo.DeviceType)
+	}
 	hardware := usableHardwareAdapter(adapterInfo)
 	if !hardware && !allowSoftware {
 		adapter.Release()
