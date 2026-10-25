@@ -39,10 +39,14 @@ def to_steps(x):
 class Population:
     """Stacked parameters of P members, every tensor with a leading P axis."""
 
-    def __init__(s, members, d_in, classes, device):
+    def __init__(s, members, d_in, classes, device, kernel="dense"):
         P = len(members)
         N = max(m["n"] for m in members)
-        s.P, s.N, s.members = P, N, members
+        K = max(m["k"] for m in members)
+        s.P, s.N, s.members, s.kernel = P, N, members, kernel
+        slots = torch.zeros(P, N, K, dtype=torch.int32)  # source of each target's slot
+        wk = torch.zeros(P, N, K)
+        smask = torch.zeros(P, N, K)
         mask = torch.zeros(P, N, N)  # mask[p, src, tgt]
         emask = torch.zeros(P, 1, N)
         rmask = torch.zeros(P, N, 1)
@@ -55,8 +59,10 @@ class Population:
             g = torch.Generator().manual_seed(int(m["seed"]) * 1000003 + 17)
             for t in range(n):
                 src = torch.randperm(n, generator=g)[:k]
+                w0 = torch.randn(k, generator=g) / math.sqrt(k)
                 mask[p, src, t] = 1
-                W[p, src, t] = torch.randn(k, generator=g) / math.sqrt(k)
+                W[p, src, t] = w0
+                slots[p, t, :k], wk[p, t, :k], smask[p, t, :k] = src.int(), w0, 1
             E[p, :, :ni] = torch.randn(d_in, ni, generator=g) / math.sqrt(d_in)
             emask[p, 0, :ni] = 1
             b = 1 / math.sqrt(no)
@@ -66,12 +72,18 @@ class Population:
         s.mask, s.emask, s.rmask, s.nmask = (t.to(device) for t in (mask, emask, rmask, nmask))
         logtau = torch.full((P, N), math.log(2.0)) * nmask.cpu()
         s.params = {
-            "W": W, "b": torch.zeros(P, N), "logtau": logtau,
+            "W": W if kernel == "dense" else wk, "b": torch.zeros(P, N), "logtau": logtau,
             "gg": torch.zeros(P, N), "gb": torch.zeros(P, N), "E": E, "R": R,
         }
         s.params = {k: v.to(device).requires_grad_() for k, v in s.params.items()}
-        s.gmask = {"W": s.mask, "b": s.nmask, "logtau": s.nmask, "gg": s.nmask, "gb": s.nmask,
+        s.gmask = {"W": s.mask if kernel == "dense" else smask.to(device), "b": s.nmask, "logtau": s.nmask, "gg": s.nmask, "gb": s.nmask,
                    "E": s.emask.expand(P, d_in, N), "R": s.rmask.expand(P, N, classes)}
+        if kernel == "sparse":
+            import popsparse
+            s.core = popsparse.core
+            s.slots = slots.to(device)
+            ot, osl, _ = popsparse.transpose_slots(slots, None)
+            s.out_t, s.out_slot = ot.to(device), osl.to(device)
         s.m = {k: torch.zeros_like(v) for k, v in s.params.items()}
         s.v = {k: torch.zeros_like(v) for k, v in s.params.items()}
         s.updates = 0
@@ -82,6 +94,10 @@ class Population:
         p = s.params
         P, B, T, _ = x.shape
         u = torch.matmul(x, p["E"].unsqueeze(1))  # [P, B, T, N]
+        if s.kernel == "sparse":
+            alpha = -torch.expm1(-torch.exp(-p["logtau"]))
+            y = s.core(u, alpha, p["gg"], p["gb"], p["b"], p["W"], s.slots, s.out_t, s.out_slot)
+            return torch.bmm(y, p["R"] * s.rmask)
         W = p["W"] * s.mask
         alpha = (-torch.expm1(-torch.exp(-p["logtau"]))).unsqueeze(1)  # 1 - exp(-dt/tau)
         gg, gb, bias = p["gg"].unsqueeze(1), p["gb"].unsqueeze(1), p["b"].unsqueeze(1)
@@ -125,7 +141,8 @@ def lr_at(peak, updates, steps, warmup_frac=0.3, final=1e-3):
 
 
 @torch.no_grad()
-def accuracy(pop, X, Y, chunk=2000):
+def accuracy(pop, X, Y, chunk=0):
+    chunk = chunk or max(8192 // pop.P, 16)
     correct = torch.zeros(pop.P, device=X.device)
     for i in range(0, len(X), chunk):
         xb = X[i:i + chunk].unsqueeze(0).expand(pop.P, -1, -1, -1)
@@ -146,6 +163,7 @@ def main():
     ap.add_argument("--eval-every", action="store_true", help="score val after every epoch")
     ap.add_argument("--compile", default="", help="torch.compile mode for the loss (e.g. default, max-autotune-no-cudagraphs)")
     ap.add_argument("--tf32", action="store_true", help="allow TF32 matmuls (changes rounding)")
+    ap.add_argument("--kernel", default="dense", choices=["dense", "sparse"], help="dense masked bmm, or the Triton gather kernels of popsparse.py")
     a = ap.parse_args()
     torch.set_num_threads(a.threads)
     spec = open(a.pop[1:]).read() if a.pop.startswith("@") else a.pop
@@ -158,7 +176,7 @@ def main():
     Xt, Yt = to_steps(Xtr[:k]).to(dev), torch.from_numpy(Ytr[:k]).to(dev)
     Xs, Ys = to_steps(Xte).to(dev), torch.from_numpy(Yte).to(dev)
     torch.backends.cuda.matmul.allow_tf32 = a.tf32
-    pop = Population(members, 28, 10, dev)
+    pop = Population(members, 28, 10, dev, a.kernel)
 
     def batch_loss(xb, yb):
         logits = pop.forward(xb)
@@ -175,14 +193,14 @@ def main():
         torch.cuda.synchronize()
     t0 = time.time()
     curves = [[] for _ in range(P)]
+    lr_table = torch.tensor([[lr_at(pk, u, steps) for pk in peaks] for u in range(steps)], device=dev)
     for ep in range(a.epochs):
         order = torch.stack([torch.randperm(len(Xt), generator=g, device=dev) for g in gens])  # [P, Ntr]
         for i in range(per_epoch):
             idx = order[:, i * bs:(i + 1) * bs]
             xb, yb = Xt[idx], Yt[idx]  # [P, B, T, d], [P, B]
             batch_loss(xb, yb).backward()
-            lrs = torch.tensor([lr_at(pk, pop.updates, steps) for pk in peaks], device=dev)
-            pop.adam_step(lrs)
+            pop.adam_step(lr_table[pop.updates])
         if a.eval_every or ep == a.epochs - 1:
             va = accuracy(pop, Xv, Yv)
             for p in range(P):
