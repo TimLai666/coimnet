@@ -86,6 +86,10 @@ type settings struct {
 	// Rewire, with Store, replaces the store's edges by a null model of the
 	// same size: "in-degree" or "swap" (see rewire).
 	Rewire string `json:"rewire,omitempty"`
+	// InputTypePrefix, with Store, moves the nodes whose annotated cell type
+	// starts with it to the front, so they are the input nodes; --input-nodes
+	// must equal their count. The null model of Rewire keeps this order.
+	InputTypePrefix string `json:"input_type_prefix,omitempty"`
 	// Tie, with Store, ties the core parameters by annotated cell type
 	// ("type", see tieByType); the gate parameters stay per node.
 	// "type-shuffled" ties by the same labels permuted across the nodes
@@ -198,6 +202,7 @@ func main() {
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type", or "type-shuffled" for the same labels permuted across nodes`)
 	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
+	flag.StringVar(&s.InputTypePrefix, "input-type-prefix", "", "with --store, make the nodes whose cell type starts with this the input nodes; --input-nodes must equal their count")
 	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")
 	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law)")
@@ -306,12 +311,19 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 		if err != nil {
 			return err
 		}
+		if s.InputTypePrefix != "" {
+			var inputs int
+			t, inputs = inputsFirst(t, s.InputTypePrefix)
+			if inputs != s.InputNodes {
+				return fmt.Errorf("--input-type-prefix %q matches %d nodes but --input-nodes is %d", s.InputTypePrefix, inputs, s.InputNodes)
+			}
+		}
 		if t, err = rewire(t, s.Rewire, s.Seed); err != nil {
 			return err
 		}
 		topo, s.Nodes, s.InDegree = &t, t.nodes, (len(t.sources)+t.nodes/2)/t.nodes
-	} else if s.Rewire != "" || s.Tie != "" {
-		return errors.New("--rewire and --tie need --store")
+	} else if s.Rewire != "" || s.Tie != "" || s.InputTypePrefix != "" {
+		return errors.New("--rewire, --tie and --input-type-prefix need --store")
 	}
 	if s.Tie != "" && ((s.Tie != "type" && s.Tie != "type-shuffled") || s.Dale || s.Core != "") {
 		return errors.New(`--tie takes "type" or "type-shuffled" and does not combine with --dale or --core`)

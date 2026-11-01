@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand/v2"
+	"strings"
 
 	"github.com/TimLai666/coimnet/connectome"
 	"github.com/TimLai666/coimnet/learning"
@@ -67,6 +68,31 @@ func loadStore(ctx context.Context, path string) (topology, error) {
 		return topology{}, fmt.Errorf("store %s has no edges between selected nodes", path)
 	}
 	return t, nil
+}
+
+// inputsFirst renumbers t's nodes so those whose cell type starts with prefix
+// come first, each group keeping its order, and returns how many matched. The
+// edges are the same edges under the new numbers.
+func inputsFirst(t topology, prefix string) (topology, int) {
+	var matched, rest []int
+	for i := range t.nodes {
+		if strings.HasPrefix(t.types[i], prefix) {
+			matched = append(matched, i)
+		} else {
+			rest = append(rest, i)
+		}
+	}
+	order := append(matched, rest...)
+	number := make([]int, t.nodes)
+	out := topology{nodes: t.nodes, sources: make([]int, len(t.sources)), targets: make([]int, len(t.targets)), types: make([]string, t.nodes)}
+	for to, from := range order {
+		number[from] = to
+		out.types[to] = t.types[from]
+	}
+	for e := range t.sources {
+		out.sources[e], out.targets[e] = number[t.sources[e]], number[t.targets[e]]
+	}
+	return out, len(matched)
 }
 
 // rewire returns a null-model copy of t. "in-degree" keeps every target's

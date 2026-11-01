@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -126,6 +127,32 @@ func TestReadSplitGroupsColumns(t *testing.T) {
 // TestRewireKeepsDegrees checks both null models on a skewed graph: each
 // keeps the edge count, adds no duplicate edge, keeps every target's
 // in-degree, "swap" also every source's out-degree, and both move edges.
+func TestInputsFirstMovesTheTypeAndKeepsTheEdges(t *testing.T) {
+	g := topology{
+		nodes:   4,
+		types:   []string{"AMMC1", "JO-A", "WED1", "JO-B"},
+		sources: []int{1, 3, 0, 2},
+		targets: []int{0, 0, 2, 1},
+	}
+	got, inputs := inputsFirst(g, "JO-")
+	if inputs != 2 {
+		t.Fatalf("matched %d nodes, want 2", inputs)
+	}
+	if want := []string{"JO-A", "JO-B", "AMMC1", "WED1"}; !slices.Equal(got.types, want) {
+		t.Fatalf("types %v, want %v", got.types, want)
+	}
+	// Old numbers 1, 3, 0, 2 become 0, 1, 2, 3.
+	if want := []int{0, 1, 2, 3}; !slices.Equal(got.sources, want) {
+		t.Fatalf("sources %v, want %v", got.sources, want)
+	}
+	if want := []int{2, 2, 3, 0}; !slices.Equal(got.targets, want) {
+		t.Fatalf("targets %v, want %v", got.targets, want)
+	}
+	if g.sources[0] != 1 || g.types[0] != "AMMC1" {
+		t.Fatal("inputsFirst changed its input")
+	}
+}
+
 func TestRewireKeepsDegrees(t *testing.T) {
 	const nodes = 40
 	var g topology
