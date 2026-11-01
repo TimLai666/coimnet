@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/HazelnutParadise/insyra/accel"
 	"github.com/HazelnutParadise/insyra/nn"
 	"github.com/TimLai666/coimnet/dynamics"
 )
@@ -86,6 +87,9 @@ type Network struct {
 	// encoderCache and readoutCache hold the float32 tensors last built from
 	// the encoder and readout parameters.
 	encoderCache, readoutCache tensorCache
+	// encoderDevice, when not the host, is the Insyra device the batched GPU
+	// trainer runs dense encoder products on (see encodeBatch).
+	encoderDevice accel.Device
 }
 
 // NewNetwork validates dimensions and copies connectivity and readout selection.

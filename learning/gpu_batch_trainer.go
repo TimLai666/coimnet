@@ -6,6 +6,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/HazelnutParadise/insyra/accel"
 	"github.com/TimLai666/coimnet/backend/webgpu"
 	"github.com/TimLai666/coimnet/dynamics"
 )
@@ -25,9 +26,12 @@ type batchCore interface {
 // core of each minibatch on the device in one batched episode: the core
 // forward and full reverse pass of every pair stay on the GPU and only the
 // readout activity, the summed core gradients and the input gradients come
-// back. Encoding and readout stay on Insyra on the host, as does AdamW: the
+// back. Encoding and readout run on Insyra and AdamW on the host: the
 // chunk's observation rows are stacked and run through one encoder product
-// (a one-hot chunk through Tape.Embedding) and one readout product.
+// (a one-hot chunk through Tape.Embedding) and one readout product. When
+// Insyra has a resident device (accel.ResidentDevice), the dense encoder
+// product and its gradient run there in accel.PrecisionFloat32Rounded, so
+// they no longer cost host time; otherwise they stay on the host.
 //
 // The batch gradient enters the same accumulation, clipping, schedule and
 // AdamW path as StepBatch on a CPU trainer: the accumulator gains the sum of
@@ -99,6 +103,11 @@ func attachGPUBatch(ctx context.Context, trainer *Trainer) (*Trainer, error) {
 		return nil, fmt.Errorf("construct batched GPU core: %w", err)
 	}
 	trainer.batch = gpu
+	// The dense encoder products run on Insyra's resident device when it has
+	// one; without one they stay on the host exactly as before.
+	if device, err := accel.ResidentDevice(); err == nil {
+		trainer.network.encoderDevice = device
+	}
 	return trainer, nil
 }
 
@@ -147,6 +156,7 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	if err != nil {
 		return nil, err
 	}
+	defer host.release()
 	readouts, err := tr.batch.Forward(ctx, core.Core, coreInputs)
 	if err != nil {
 		return nil, err
