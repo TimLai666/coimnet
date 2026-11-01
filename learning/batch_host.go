@@ -3,6 +3,7 @@ package learning
 import (
 	"fmt"
 
+	"github.com/HazelnutParadise/insyra/accel"
 	"github.com/HazelnutParadise/insyra/nn"
 )
 
@@ -16,11 +17,34 @@ import (
 // the batch sums, accumulated in float32 inside one product rather than per
 // pair and then in float64, so they can differ from the per-pair sum by
 // float32 rounding.
+//
+// With a resident encoder device the dense encoder product and its gradient
+// run there instead, on a tape in accel.PrecisionFloat32Rounded: each value is
+// the exact product rounded once to float32, so it can differ from the host
+// product by float32 rounding but is the same on every device.
 type batchHost struct {
 	encoderTape, readoutTape *nn.Tape
 	encoder, encoded         *nn.Tensor
 	h, readout, prediction   *nn.Tensor
 	pairs, steps             int
+	// device holds the resident inputs of a device-encoded chunk; release
+	// frees them.
+	device []*nn.Tensor
+}
+
+// release frees the device tensors of a chunk and its encoder tape. It is
+// safe on a nil host and on a host-only chunk.
+func (b *batchHost) release() {
+	if b == nil {
+		return
+	}
+	if b.device != nil && b.encoderTape != nil {
+		b.encoderTape.Close()
+	}
+	for _, t := range b.device {
+		t.Release()
+	}
+	b.device = nil
 }
 
 // encodeBatch validates the observations of a chunk of equal-length episodes
@@ -98,6 +122,14 @@ func (n *Network) encodeBatch(p Parameters, inputs [][][]float64, record bool) (
 		if x, err = tensor([]int{total, n.config.InputSize}, flat); err != nil {
 			return nil, nil, err
 		}
+		if n.encoderDevice.ID != "" {
+			out, err := n.encodeOnDevice(b, x, encoderWidth, record)
+			if err != nil {
+				b.release()
+				return nil, nil, err
+			}
+			return b, out, nil
+		}
 		if record {
 			b.encoded, err = b.encoderTape.MatMul(x, encoder)
 		} else {
@@ -117,6 +149,53 @@ func (n *Network) encodeBatch(p Parameters, inputs [][][]float64, record bool) (
 		out[i] = all[i*steps : (i+1)*steps]
 	}
 	return b, out, nil
+}
+
+// encodeOnDevice runs the encoder product of x on the resident encoder
+// device. The encoded rows come back to the host for the batched core; when
+// record is set the tape keeps the device product for encoderBatchReverse.
+func (n *Network) encodeOnDevice(b *batchHost, x *nn.Tensor, width int, record bool) ([][][]float64, error) {
+	tape := nn.NewTape()
+	b.encoderTape = tape
+	if err := tape.SetPrecision(accel.PrecisionFloat32Rounded); err != nil {
+		return nil, err
+	}
+	xd, err := x.To(n.encoderDevice)
+	if err != nil {
+		return nil, err
+	}
+	b.device = append(b.device, xd)
+	ed, err := b.encoder.To(n.encoderDevice)
+	if err != nil {
+		return nil, err
+	}
+	b.device = append(b.device, ed)
+	if _, err = tape.Param(ed); err != nil {
+		return nil, err
+	}
+	encodedDevice, err := tape.MatMul(xd, ed)
+	if err != nil {
+		return nil, err
+	}
+	host, err := encodedDevice.ToHost()
+	if err != nil {
+		return nil, err
+	}
+	encoded, err := values(host)
+	if err != nil {
+		return nil, err
+	}
+	if record {
+		b.encoder, b.encoded = ed, encodedDevice
+	} else {
+		b.release()
+	}
+	all := rows(encoded, width)
+	out := make([][][]float64, b.pairs)
+	for i := range out {
+		out[i] = all[i*b.steps : (i+1)*b.steps]
+	}
+	return out, nil
 }
 
 // oneHotIndex reports the position of the single 1 of a row whose other
@@ -275,12 +354,32 @@ func (n *Network) encoderBatchReverse(b *batchHost, inputs [][][]float64) ([]flo
 	if err != nil {
 		return nil, err
 	}
+	if b.device != nil {
+		defer b.release()
+		if seedTensor, err = seedTensor.To(n.encoderDevice); err != nil {
+			return nil, err
+		}
+		b.device = append(b.device, seedTensor)
+		// BackwardFrom copies the seed on the device. On Vulkan that copy can
+		// run before the upload lands and read zeros (gogpu flushes the upload
+		// without a transfer barrier), so wait for the upload first.
+		if err = accel.SynchronizeResident(); err != nil {
+			return nil, err
+		}
+	}
 	if err = b.encoderTape.BackwardFrom(b.encoded, seedTensor); err != nil {
 		return nil, err
 	}
 	de, err := b.encoderTape.Grad(b.encoder)
 	if err != nil {
 		return nil, err
+	}
+	if b.device != nil {
+		// Grad returns a copy the caller owns, on the device here.
+		b.device = append(b.device, de)
+		if de, err = de.ToHost(); err != nil {
+			return nil, err
+		}
 	}
 	encoder, err := values(de)
 	if err != nil {
