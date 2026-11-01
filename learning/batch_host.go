@@ -369,6 +369,8 @@ func (n *Network) encoderBatchReverse(b *batchHost, inputs [][][]float64) ([]flo
 		return nil, err
 	}
 	if b.device != nil {
+		// Grad returns a copy the caller owns, on the device here.
+		b.device = append(b.device, de)
 		if de, err = de.ToHost(); err != nil {
 			return nil, err
 		}
