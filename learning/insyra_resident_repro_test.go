@@ -78,6 +78,12 @@ func TestInsyraResidentReproChild(t *testing.T) {
 			t.Fatalf("repro: %v", err)
 		}
 	}
+	data := func(t2 *nn.Tensor) []float32 {
+		t.Helper()
+		v, err := t2.Float32Data()
+		must(err)
+		return v
+	}
 	compare := func(what string, want, got []float32) {
 		t.Helper()
 		for i := range want {
@@ -100,7 +106,7 @@ func TestInsyraResidentReproChild(t *testing.T) {
 		defer clone.Release()
 		host, err := clone.ToHost()
 		must(err)
-		compare("clone after upload", seed.Data(), host.Data())
+		compare("clone after upload", data(seed), data(host))
 	case "backward":
 		gradient := func(on accel.Device) []float32 {
 			tape := nn.NewTape()
@@ -134,7 +140,7 @@ func TestInsyraResidentReproChild(t *testing.T) {
 			defer g.Release()
 			host, err := g.ToHost()
 			must(err)
-			return host.Data()
+			return data(host)
 		}
 		want := gradient(accel.Device{})
 		got := gradient(device)
