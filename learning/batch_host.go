@@ -360,6 +360,12 @@ func (n *Network) encoderBatchReverse(b *batchHost, inputs [][][]float64) ([]flo
 			return nil, err
 		}
 		b.device = append(b.device, seedTensor)
+		// BackwardFrom copies the seed on the device. On Vulkan that copy can
+		// run before the upload lands and read zeros (gogpu flushes the upload
+		// without a transfer barrier), so wait for the upload first.
+		if err = accel.SynchronizeResident(); err != nil {
+			return nil, err
+		}
 	}
 	if err = b.encoderTape.BackwardFrom(b.encoded, seedTensor); err != nil {
 		return nil, err
