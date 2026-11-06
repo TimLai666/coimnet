@@ -35,6 +35,9 @@ func (m *Continuous) CompileInfer32(p Parameters) (*Infer32, error) {
 		return nil, fmt.Errorf("Infer32 needs an undelayed softsign-gated softsign model without chemistry")
 	}
 	n := m.config.Nodes
+	if len(m.config.Sources) > math.MaxInt32 {
+		return nil, fmt.Errorf("Infer32 indexes edges with int32; %d edges do not fit", len(m.config.Sources))
+	}
 	if err := vector(p.Weights, len(m.config.Sources), "weights"); err != nil {
 		return nil, err
 	}

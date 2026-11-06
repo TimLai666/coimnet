@@ -265,6 +265,10 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: go run ./examples/seqkmnist --data-dir DIR [--report NEW.json] [--bench NEW.json]")
 		os.Exit(2)
 	}
+	if *fastPredict && *loadPath == "" {
+		fmt.Fprintln(os.Stderr, "seqkmnist: --fast-predict needs --load")
+		os.Exit(2)
+	}
 	var err error
 	if *loadPath != "" {
 		err = runLoaded(s, *loadPath, *benchPath, *machine, *fastPredict)
