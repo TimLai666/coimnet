@@ -28,12 +28,12 @@ class CoimCore(nn.Module):
         s.act = {"tanh": torch.tanh, "softsign": F.softsign}[act]
         if gate == True or gate == "input":  # input-dependent update gate from raw x
             s.gate = "input"; s.G = nn.Parameter(torch.zeros(d_in, n)); s.gb = nn.Parameter(torch.zeros(n))
-        elif gate in ("local", "local_softsign"):  # gate from the neuron's own total input current: 2 params/neuron
+        elif gate in ("local", "local_softsign", "dt_softsign"):  # gate from the neuron's own total input current: 2 params/neuron
             s.gg = nn.Parameter(torch.zeros(n)); s.gb = nn.Parameter(torch.zeros(n))
     def params(s):
         c = int(s.mask.sum()) + s.E.numel() + s.n * (2 if s.logtau.requires_grad else 1) + sum(p.numel() for p in s.R.parameters())
         if s.gate == "input": c += s.G.numel() + s.n
-        elif s.gate in ("local", "local_softsign"): c += 2 * s.n
+        elif s.gate in ("local", "local_softsign", "dt_softsign"): c += 2 * s.n
         return c
     def forward(s, x):  # x [B,T,d]
         B, T, _ = x.shape
@@ -48,6 +48,11 @@ class CoimCore(nn.Module):
             if s.gate == "input": a = alpha * 2 * torch.sigmoid(x[:, t] @ s.G + s.gb)
             elif s.gate == "local": a = alpha * 2 * torch.sigmoid(s.gg * I + s.gb)
             elif s.gate == "local_softsign": a = alpha * (1 + F.softsign(s.gg * I + s.gb))  # 2*sigmoid without exp
+            elif s.gate == "dt_softsign":
+                # The gate scales the neuron's integration step: dt_eff = (1+softsign(z))*dt in
+                # (0, 2dt), so a = 1-exp(-dt_eff/tau). Same rate as alpha at z=0, below 1 for any
+                # finite tau, and smooth everywhere: no clamp that cuts the gate and tau gradients.
+                a = -torch.expm1(-(1 + F.softsign(s.gg * I + s.gb)) / torch.exp(s.logtau))
             a = a.clamp(max=1.0)
             v = (1 - a) * v + a * I
             y = s.act(v)
@@ -62,14 +67,36 @@ class RNNBase(nn.Module):
     def forward(s, x):
         o, _ = s.rnn(x); return s.R(o[:, -1])
 
-def make_mask(kind, n, n_in, n_out, k, seed):
+def add_reciprocity(m, target, g):
+    """Turn one-way edges s->t into pairs by adding t->s and dropping a random one-way
+    input of s, so every in-degree is kept, until `target` of edges are reciprocal."""
+    n = m.shape[0]
+    m = m.clone().bool()
+    while True:
+        rec = m & m.T
+        if rec.sum().item() >= target * m.sum().item():
+            return m.float()
+        one = (m & ~m.T).nonzero()
+        s, t = one[torch.randint(len(one), (1,), generator=g).item()].tolist()
+        if s == t:
+            continue
+        drop = ((m[:, s]) & ~(m[s, :])).nonzero().flatten()  # one-way inputs of s
+        drop = drop[drop != t]
+        if len(drop) == 0:
+            continue
+        m[drop[torch.randint(len(drop), (1,), generator=g).item()], s] = False
+        m[t, s] = True
+
+def make_mask(kind, n, n_in, n_out, k, seed, recip=0.0):
     g = torch.Generator().manual_seed(seed)
     if kind == "dense":
         m = torch.ones(n, n)
-    elif kind == "random":  # each target gets k random sources
+    elif kind in ("random", "recip"):  # each target gets k random sources
         m = torch.zeros(n, n)
         for t in range(n):
             m[torch.randperm(n, generator=g)[:k], t] = 1
+        if kind == "recip":  # raise the share of edges in two-way pairs to `recip`, keeping every in-degree k
+            m = add_reciprocity(m, recip, g)
     m[:, :n_in] = m[:, :n_in]  # input nodes may also receive recurrent input
     return m
 
@@ -129,7 +156,7 @@ if __name__ == "__main__":
     if spec["model"] in ("gru", "lstm", "rnn"):
         m = RNNBase(spec["model"], spec["h"], d_in=d_in)
     else:
-        n = spec["n"]; mask = make_mask(spec["topo"], n, spec["n_in"], spec["n_out"], spec.get("k", 0), a.seed)
+        n = spec["n"]; mask = make_mask(spec["topo"], n, spec["n_in"], spec["n_out"], spec.get("k", 0), a.seed, spec.get("recip", 0.0))
         m = CoimCore(n, spec["n_in"], spec["n_out"], mask, learn_tau=spec.get("learn_tau", True), gate=spec.get("gate", False), act=spec.get("act", "tanh"), tau0=spec.get("tau0", 2.0), d_in=d_in)
     m = m.to(a.device)
     log = lambda s: print(s, flush=True)
