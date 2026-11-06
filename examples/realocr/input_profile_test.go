@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 	"unicode/utf8"
 
 	"github.com/TimLai666/coimnet/tasks/ocr"
@@ -415,12 +413,11 @@ func TestRealOCRInputProfileRejectsUnknownAndInvalidShapeBeforeUpdates(t *testin
 }
 
 func TestRealOCRInputProfileCLIHelpIsEnglishAndListsProfiles(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	cmd, cancel := cliCommand(t, "--help")
 	defer cancel()
-	cmd := exec.CommandContext(ctx, "go", "run", ".", "--help")
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("go run --help: %v\n%s", err, output)
+		t.Fatalf("realocr --help: %v\n%s", err, output)
 	}
 	help := string(output)
 	if !utf8.ValidString(help) {
