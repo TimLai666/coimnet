@@ -123,6 +123,15 @@ type settings struct {
 	// the last one also used for farther and unreachable nodes. It replaces
 	// TauMax's draw.
 	TauHops string `json:"tau_hops,omitempty"`
+	// SpreadInputs, with Store, moves every edge that leaves an input node
+	// to a uniformly drawn non-input target (spreadInputs). Each input keeps
+	// its out-degree and the edge count is unchanged; it tests whether the
+	// circuit funnelling its inputs through few nodes is what costs accuracy.
+	SpreadInputs bool `json:"spread_inputs,omitempty"`
+	// DropSelfLoops, with Store, moves every self edge the topology has
+	// (a swap null model creates some) to another target of the same source
+	// (dropSelfLoops), so the edge count and out-degrees stay the same.
+	DropSelfLoops bool `json:"drop_self_loops,omitempty"`
 	// Wiring "block8" draws each node's in-edges as whole aligned windows of
 	// 8 consecutive source nodes (distinct windows; the last one is cut to
 	// InDegree mod 8), instead of InDegree independent sources, so a
@@ -227,6 +236,8 @@ func main() {
 	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
 	flag.BoolVar(&s.SelfLoops, "self-loops", false, "add a self edge to every node, weight 0 at the start")
 	flag.StringVar(&s.Wiring, "wiring", "", `"block8" draws each node's in-edges as aligned windows of 8 consecutive sources (needs --nodes divisible by 8, no --store)`)
+	flag.BoolVar(&s.SpreadInputs, "spread-inputs", false, "with --store, move every edge leaving an input node to a random non-input target (same edge count and input out-degrees)")
+	flag.BoolVar(&s.DropSelfLoops, "drop-self-loops", false, "with --store, move every self edge to another target of the same source (same edge count and out-degrees)")
 	flag.StringVar(&s.TauHops, "tau-hops", "", `initial tau by hop distance from the input nodes, e.g. "1,3,15" (the last value covers farther nodes)`)
 	flag.StringVar(&s.Core, "core", "", `"lif" trains the spiking core on the same edges (CPU only)`)
 	flag.Float64Var(&s.SurrogateScale, "surrogate-scale", 5, "with --core lif, the fast-sigmoid surrogate scale")
@@ -361,9 +372,22 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 		if t, err = rewire(t, s.Rewire, s.Seed); err != nil {
 			return err
 		}
+		if s.SpreadInputs {
+			if t, err = spreadInputs(t, s.InputNodes, s.Seed); err != nil {
+				return err
+			}
+		}
+		if s.DropSelfLoops {
+			if s.SelfLoops {
+				return errors.New("--drop-self-loops and --self-loops contradict each other; pass one")
+			}
+			if t, err = dropSelfLoops(t, s.Seed); err != nil {
+				return err
+			}
+		}
 		topo, s.Nodes, s.InDegree = &t, t.nodes, (len(t.sources)+t.nodes/2)/t.nodes
-	} else if s.Rewire != "" || s.Tie != "" || s.InputTypePrefix != "" {
-		return errors.New("--rewire, --tie and --input-type-prefix need --store")
+	} else if s.Rewire != "" || s.Tie != "" || s.InputTypePrefix != "" || s.SpreadInputs || s.DropSelfLoops {
+		return errors.New("--rewire, --tie, --input-type-prefix, --spread-inputs and --drop-self-loops need --store")
 	}
 	if s.Wiring != "" && (s.Wiring != "block8" || s.Store != "" || s.Nodes%8 != 0) {
 		return errors.New(`--wiring takes "block8", needs --nodes divisible by 8 and does not combine with --store`)
@@ -961,6 +985,12 @@ func modelName(s settings) string {
 		name = fmt.Sprintf("store-%s-n%d-k%d", strings.TrimSuffix(filepath.Base(s.Store), filepath.Ext(s.Store)), s.Nodes, s.InDegree)
 		if s.Rewire != "" {
 			name += "-rewire-" + s.Rewire
+		}
+		if s.SpreadInputs {
+			name += "-spread"
+		}
+		if s.DropSelfLoops {
+			name += "-noself"
 		}
 	}
 	if c := s.columns(); c > 1 {
