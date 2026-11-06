@@ -47,6 +47,17 @@
 
 雲端 VM（Intel Xeon、單執行緒）上，CoImNet 單字元 OCR 與同參數量的 PyTorch MLP 各在新程序量 2,000 張測試圖。CoImNet 71.25%、23,568 參數、程序 RSS 峰值 57.8 MiB、p50 0.155 ms；PyTorch 71.75%、22,926 參數、242.9 MiB、p50 0.018 ms。CoImNet 只有記憶體較少，且其中約 20 MiB 是 Go 垃圾回收餘裕（`GOGC=25` 時 41.1 MiB）。同日加入推論張量快取後 CoImNet p50 降為 0.084 ms，正確率不變。量測方式見 ENG.md，證據與重跑命令見 [bench-kmnist-20261018](../evidence/bench-kmnist-20261018/README.md)。
 
+## KMNIST float32 快速推論（2026-11-06）
+
+`learning.Network.CompileFastPredict` 是選用的推論路徑：核心改用 float32（`dynamics.Infer32`，每個節點的入邊連續存放、四個累加器），輸入投影與讀出仍是 Insyra float32 矩陣乘法、不建 tape。量測環境為雲端 4 核 Xeon（AVX2／AVX-512），Go 1.26.9，`seqkmnist --load --bench` 的 batch 1、單執行緒協定，2,000 張、暖身 50 張。模型是 n512、k36、512 個讀出節點、softsign 閘門與活化的 29,184 參數模型，在同一台機器訓練 3 個 epoch（測試集 0.9070）。
+
+| 路徑 | p50 | p90 | p99 |
+| --- | --- | --- | --- |
+| `Trainer.Predict`（float64 核心） | 0.611 ms | 0.659 ms | 1.707 ms |
+| `FastPredictor`（float32 核心） | 0.413 ms | 0.612 ms | 0.807 ms |
+
+整個測試集 10,000 張的 argmax 與 `Trainer.Predict` 全部一致，logit 最大差 3.81e-6；正確率同為 0.9070。只看核心（`dynamics` 的 `BenchmarkInfer32K22`／`K36`，n512、28 步）：k22 280→245 µs、k36 550→363 µs。純量 gather 每條邊約 0.6–0.7 ns，已接近讀取上限，batch 1 要再快需要改接線（例如 `seqkmnist --wiring block8`）讓向量指令不必 gather。
+
 ## KMNIST 部署後邊用邊學對決（2026-10-18）
 
 雲端 VM 單執行緒，3 個初始值。新類別情境（預先訓練只看 5 類）中，CoImNet 逐筆梯度更新學完後測試 57.9%，PyTorch MLP 逐筆 SGD 52.5%；圖片反相情境 PyTorch 略好（反相測試 16.0% 對 13.3%）。CoImNet 局部可塑性兩個情境都沒有幫助。消融顯示新類別的差距主要來自有效學習率，兩邊各自挑過學習率後打平（54.7% 對 54.9%）。每次更新 CoImNet 約 3.8 ms、PyTorch 約 0.6 ms；`learning.Individual` 路徑的預測 2.9 ms。證據與重跑命令見 [online-kmnist-20261018](../evidence/online-kmnist-20261018/README.md)。
