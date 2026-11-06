@@ -610,3 +610,55 @@ func TestWarmupFraction(t *testing.T) {
 		t.Fatalf("--warmup 1 error = %v", err)
 	}
 }
+
+func TestSelfLoopsStartAtZeroAndLeaveTheRestUnchanged(t *testing.T) {
+	base := settings{Nodes: 40, InputNodes: 5, ReadoutNodes: 6, InDegree: 4, Seed: 7}
+	c0, p0, _ := build(base, nil)
+	s := base
+	s.SelfLoops = true
+	c, p, _ := build(s, nil)
+	n0 := len(c0.Dynamics.Sources)
+	if !reflect.DeepEqual(c.Dynamics.Sources[:n0], c0.Dynamics.Sources) || !reflect.DeepEqual(p.Core.Weights[:n0], p0.Core.Weights) ||
+		!reflect.DeepEqual(p.Encoder, p0.Encoder) || !reflect.DeepEqual(p.Readout, p0.Readout) {
+		t.Fatal("self-loops changed the base edges or another draw")
+	}
+	had := map[int]bool{}
+	for e, src := range c0.Dynamics.Sources {
+		if src == c0.Dynamics.Targets[e] {
+			had[src] = true
+		}
+	}
+	if got, want := len(c.Dynamics.Sources)-n0, base.Nodes-len(had); got != want {
+		t.Fatalf("added %d self-loops, want %d", got, want)
+	}
+	self := map[int]int{}
+	for e, src := range c.Dynamics.Sources {
+		if src == c.Dynamics.Targets[e] {
+			self[src]++
+		}
+		if e >= n0 && (src != c.Dynamics.Targets[e] || p.Core.Weights[e] != 0) {
+			t.Fatalf("added edge %d is (%d,%d) with weight %g, want a self-loop at 0", e, src, c.Dynamics.Targets[e], p.Core.Weights[e])
+		}
+	}
+	for i := range base.Nodes {
+		if self[i] != 1 {
+			t.Fatalf("node %d has %d self-loops", i, self[i])
+		}
+	}
+}
+
+func TestTauHopsSetsTauByDistanceFromTheInputs(t *testing.T) {
+	// 0 -> 1 -> 2 -> 3, node 4 unreachable; node 0 is the input.
+	topo := &topology{nodes: 5, sources: []int{0, 1, 2, 4}, targets: []int{1, 2, 3, 0}}
+	s := settings{Nodes: 5, InputNodes: 1, ReadoutNodes: 1, Seed: 1, TauHops: "1,3,15"}
+	_, p, _ := build(s, topo)
+	want := []float64{1, 3, 15, 15, 15}
+	for i, v := range p.Core.LogTau {
+		if math.Abs(math.Exp(v)-want[i]) > 1e-12 {
+			t.Fatalf("node %d tau %g, want %g", i, math.Exp(v), want[i])
+		}
+	}
+	if _, err := parseTauHops("1,0"); err == nil {
+		t.Fatal("parseTauHops accepted a zero tau")
+	}
+}

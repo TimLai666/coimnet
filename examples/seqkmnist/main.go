@@ -30,6 +30,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/pprof"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,6 +113,16 @@ type settings struct {
 	// TauMax, when above 2, draws each node's initial time constant
 	// log-uniformly from [2, TauMax] instead of setting every tau to 2.
 	TauMax float64 `json:"tau_max,omitempty"`
+	// SelfLoops adds an edge from every node to itself, weight 0 at the
+	// start, so each node can learn to inhibit (or excite) itself. Nodes
+	// that already have one keep only theirs. It adds up to Nodes
+	// parameters.
+	SelfLoops bool `json:"self_loops,omitempty"`
+	// TauHops sets each node's initial time constant by its hop distance
+	// from the input nodes: comma-separated taus for 0, 1, 2, ... hops,
+	// the last one also used for farther and unreachable nodes. It replaces
+	// TauMax's draw.
+	TauHops string `json:"tau_hops,omitempty"`
 	// Core "lif" swaps the continuous core for the spiking dynamics.LIF on
 	// the same edges and initial weights, with a trainable base threshold in
 	// [0.05, 1], v_reset 0, tau_syn 2 and the fast-sigmoid surrogate of
@@ -208,6 +219,8 @@ func main() {
 	flag.BoolVar(&s.Dale, "dale", false, "fix each edge's sign by its source node (Dale's law)")
 	flag.Float64Var(&s.Inhibitory, "inhibitory", 0.5, "with --dale, the probability that a node is inhibitory")
 	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
+	flag.BoolVar(&s.SelfLoops, "self-loops", false, "add a self edge to every node, weight 0 at the start")
+	flag.StringVar(&s.TauHops, "tau-hops", "", `initial tau by hop distance from the input nodes, e.g. "1,3,15" (the last value covers farther nodes)`)
 	flag.StringVar(&s.Core, "core", "", `"lif" trains the spiking core on the same edges (CPU only)`)
 	flag.Float64Var(&s.SurrogateScale, "surrogate-scale", 5, "with --core lif, the fast-sigmoid surrogate scale")
 	flag.BoolVar(&s.Adapt, "adapt", false, "with --core lif, add short-term threshold adaptation")
@@ -358,6 +371,17 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	}
 	if s.Delays < 0 || s.Inhibitory < 0 || s.Inhibitory > 1 || (s.TauMax != 0 && s.TauMax <= 2) {
 		return errors.New("--delays must be non-negative, --inhibitory within [0, 1] and --tau-max above 2")
+	}
+	if s.SelfLoops && (s.Dale || s.Tie != "") {
+		return errors.New("--self-loops takes no --dale (a self edge would get its source's sign) or --tie")
+	}
+	if s.TauHops != "" {
+		if s.TauMax != 0 {
+			return errors.New("--tau-hops and --tau-max both set the initial tau; pass one")
+		}
+		if _, err := parseTauHops(s.TauHops); err != nil {
+			return err
+		}
 	}
 	trainable := learning.DefaultOptions().Trainable
 	trainable.Gate, trainable.Theta = s.Gate, s.Core == "lif"
@@ -518,7 +542,7 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 	rng := rand.New(rand.NewPCG(s.Seed, 1))
 	var sources, targets []int
 	if topo != nil {
-		sources, targets = topo.sources, topo.targets
+		sources, targets = append([]int(nil), topo.sources...), append([]int(nil), topo.targets...)
 	} else {
 		for t := 0; t < s.Nodes; t++ {
 			for _, src := range rng.Perm(s.Nodes)[:s.InDegree] {
@@ -526,8 +550,12 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 			}
 		}
 	}
+	base := len(sources)
+	if s.SelfLoops {
+		sources, targets = addSelfLoops(s.Nodes, sources, targets)
+	}
 	degree := make([]int, s.Nodes)
-	for _, t := range targets {
+	for _, t := range targets[:base] {
 		degree[t]++
 	}
 	inputNodes := make([]int, s.InputNodes)
@@ -558,7 +586,9 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 		readout[i] = (2*rng.Float64() - 1) * bound
 	}
 	weights := make([]float64, len(sources))
-	for e, t := range targets {
+	// Added self-loops take no draw and start at 0, so the base edges and
+	// every later draw stay as without them.
+	for e, t := range targets[:base] {
 		weights[e] = rng.NormFloat64() * (1 / math.Sqrt(float64(degree[t])))
 	}
 	logTau := make([]float64, s.Nodes)
@@ -598,6 +628,15 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 		r := rand.New(rand.NewPCG(s.Seed, 5))
 		for i := range logTau {
 			logTau[i] = math.Log(2) + r.Float64()*(math.Log(s.TauMax)-math.Log(2))
+		}
+	}
+	if s.TauHops != "" {
+		taus, _ := parseTauHops(s.TauHops) // validated before build
+		for i, h := range hopDistances(s.Nodes, sources, targets, inputNodes) {
+			if h < 0 || h >= len(taus) {
+				h = len(taus) - 1
+			}
+			logTau[i] = math.Log(taus[h])
 		}
 	}
 	if s.Core == "lif" {
@@ -887,6 +926,12 @@ func modelName(s settings) string {
 	if c := s.columns(); c > 1 {
 		name += fmt.Sprintf("-cols%d", c)
 	}
+	if s.SelfLoops {
+		name += "-self"
+	}
+	if s.TauHops != "" {
+		name += "-tauhops" + strings.ReplaceAll(s.TauHops, ",", "_")
+	}
 	if a := activation(s); a != "tanh" {
 		name += "-" + a
 	}
@@ -1061,4 +1106,65 @@ func readIDX(path string, header int) ([]byte, error) {
 		return nil, fmt.Errorf("%s is not an unsigned-byte IDX file", path)
 	}
 	return b[header:], nil
+}
+
+// addSelfLoops appends an edge from every node to itself, after the given
+// edges and in node order, skipping nodes that already have one.
+func addSelfLoops(nodes int, sources, targets []int) ([]int, []int) {
+	has := make([]bool, nodes)
+	for e, src := range sources {
+		if src == targets[e] {
+			has[src] = true
+		}
+	}
+	for i := range nodes {
+		if !has[i] {
+			sources, targets = append(sources, i), append(targets, i)
+		}
+	}
+	return sources, targets
+}
+
+// parseTauHops reads --tau-hops: positive taus for 0, 1, 2, ... hops.
+func parseTauHops(list string) ([]float64, error) {
+	var taus []float64
+	for _, f := range strings.Split(list, ",") {
+		v, err := strconv.ParseFloat(strings.TrimSpace(f), 64)
+		if err != nil || !(v > 0) || math.IsInf(v, 0) {
+			return nil, fmt.Errorf("--tau-hops takes positive comma-separated taus, not %q", list)
+		}
+		taus = append(taus, v)
+	}
+	return taus, nil
+}
+
+// hopDistances is each node's directed hop distance from the nearest input
+// node along the edges (0 for an input node), or -1 when none reaches it.
+func hopDistances(nodes int, sources, targets, inputs []int) []int {
+	out := make([][]int, nodes)
+	for e, src := range sources {
+		out[src] = append(out[src], targets[e])
+	}
+	dist := make([]int, nodes)
+	for i := range dist {
+		dist[i] = -1
+	}
+	queue := make([]int, 0, nodes)
+	for _, i := range inputs {
+		if dist[i] < 0 {
+			dist[i] = 0
+			queue = append(queue, i)
+		}
+	}
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+		for _, m := range out[n] {
+			if dist[m] < 0 {
+				dist[m] = dist[n] + 1
+				queue = append(queue, m)
+			}
+		}
+	}
+	return dist
 }
