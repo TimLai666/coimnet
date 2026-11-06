@@ -90,7 +90,7 @@ func TestBatchCoefficientsMatchTheIntegrator(t *testing.T) {
 // webgpu.ErrUnavailable when no hardware adapter exists.
 func TestGPUContinuousBatchHardwareMatchesForwardBackward(t *testing.T) {
 	type variant struct{ gate, activation string }
-	for _, v := range []variant{{"", "tanh"}, {"", "softsign"}, {GateCurrent, "tanh"}, {GateCurrent, "softsign"}, {GateCurrentSoftsign, "tanh"}, {GateCurrentSoftsign, "softsign"}} {
+	for _, v := range []variant{{"", "tanh"}, {"", "softsign"}, {GateCurrent, "tanh"}, {GateCurrent, "softsign"}, {GateCurrentSoftsign, "tanh"}, {GateCurrentSoftsign, "softsign"}, {GateCurrentState, "tanh"}, {GateCurrentState, "softsign"}} {
 		for _, tc := range []struct {
 			name      string
 			logTau    float64
@@ -134,6 +134,9 @@ func checkGPUBatchAgainstContinuous(t *testing.T, gate, activation string, logTa
 	want := Gradient{Weights: make([]float64, len(p.Weights)), Bias: make([]float64, c.Nodes), LogTau: make([]float64, c.Nodes)}
 	if gate != "" {
 		want.GateGain, want.GateBias = make([]float64, c.Nodes), make([]float64, c.Nodes)
+	}
+	if gate == GateCurrentState {
+		want.GateState = make([]float64, c.Nodes)
 	}
 	inputs := make([][][]float64, batch)
 	upstream := make([][][]float64, batch)
@@ -190,7 +193,7 @@ func checkGPUBatchAgainstContinuous(t *testing.T, gate, activation string, logTa
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, pair := range [][2][]float64{{want.Weights, g.Weights}, {want.Bias, g.Bias}, {want.LogTau, g.LogTau}, {want.GateGain, g.GateGain}, {want.GateBias, g.GateBias}} {
+		for _, pair := range [][2][]float64{{want.Weights, g.Weights}, {want.Bias, g.Bias}, {want.LogTau, g.LogTau}, {want.GateGain, g.GateGain}, {want.GateBias, g.GateBias}, {want.GateState, g.GateState}} {
 			for i, x := range pair[1] {
 				pair[0][i] += x
 			}
@@ -241,6 +244,7 @@ func checkGPUBatchAgainstContinuous(t *testing.T, gate, activation string, logTa
 	closeRows(t, "log_tau", got.LogTau, want.LogTau)
 	closeRows(t, "gate_gain", got.GateGain, want.GateGain)
 	closeRows(t, "gate_bias", got.GateBias, want.GateBias)
+	closeRows(t, "gate_state", got.GateState, want.GateState)
 	for b := range wantInputs {
 		for s := range wantInputs[b] {
 			closeRows(t, "inputs", got.Inputs[b][s], wantInputs[b][s])

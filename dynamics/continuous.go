@@ -42,10 +42,16 @@ type Config struct {
 	// two learnable values per neuron. Zero gain and bias give a = alpha, the
 	// plain integrator up to rounding. GateCurrentSoftsign is the same gate
 	// with the exponential-free squashing (1 + softsign(z))/2 in place of
-	// sigmoid(z). Both are supported by Forward and Backward
-	// on fresh episodes, and by the batched GPUContinuousBatch; recompute,
-	// persistent state, vector nodes and the per-step GPU adapter refuse a
-	// gated model.
+	// sigmoid(z). GateCurrentState is the sigmoid gate that also sees the
+	// neuron's own voltage v at the start of the step:
+	//
+	//	a = min(1, 2*alpha*sigmoid(gate_gain*I + gate_state*v + gate_bias))
+	//
+	// one more learnable value per neuron; zero gate_state is GateCurrent
+	// exactly. All three are supported by Forward and Backward on fresh
+	// episodes, and by the batched GPUContinuousBatch; recompute, persistent
+	// state, vector nodes and the per-step GPU adapter refuse a gated model,
+	// and Infer32 supports only GateCurrentSoftsign.
 	Gate string `json:"gate,omitempty"`
 	// Chemistry declares the optional activity-driven modulation block (see
 	// Chemistry). nil keeps the core, its JSON and its fingerprints exactly as
@@ -60,6 +66,10 @@ const GateCurrent = "current"
 // (1 + z/(1+|z|))/2, which needs no exponential.
 const GateCurrentSoftsign = "current_softsign"
 
+// GateCurrentState is the sigmoid input-current gate whose argument also
+// carries gate_state times the voltage before the update.
+const GateCurrentState = "current_state"
+
 // Parameters separates learnable quantities from immutable anatomy. Tau is
 // exp(LogTau), so finite, representable positive time constants are required.
 type Parameters struct {
@@ -70,6 +80,9 @@ type Parameters struct {
 	// and must be empty otherwise.
 	GateGain []float64 `json:"gate_gain,omitempty"`
 	GateBias []float64 `json:"gate_bias,omitempty"`
+	// GateState holds one voltage weight per neuron exactly when Config.Gate
+	// is GateCurrentState, and must be empty otherwise.
+	GateState []float64 `json:"gate_state,omitempty"`
 	// ChemRelease holds one release gain per Config.Chemistry channel, and
 	// ChemGain and ChemOffset one gain and offset per declared receptor. All
 	// three must be empty without Config.Chemistry.
@@ -161,8 +174,9 @@ type Trace struct {
 // Gradient contains summed parameter derivatives and per-step input gradients.
 type Gradient struct {
 	Weights, Bias, LogTau []float64
-	// GateGain and GateBias are nil for an ungated model.
-	GateGain, GateBias []float64
+	// GateGain and GateBias are nil for an ungated model; GateState is nil
+	// unless Config.Gate is GateCurrentState.
+	GateGain, GateBias, GateState []float64
 	// ChemRelease, ChemGain and ChemOffset are nil without Config.Chemistry.
 	ChemRelease, ChemGain, ChemOffset []float64
 	Inputs                            [][]float64
@@ -198,7 +212,7 @@ func NewContinuous(c Config) (*Continuous, error) {
 	if c.Activation != "tanh" && c.Activation != "softplus" && c.Activation != "softsign" {
 		return nil, fmt.Errorf("unsupported activation %q", c.Activation)
 	}
-	if c.Gate != "" && c.Gate != GateCurrent && c.Gate != GateCurrentSoftsign {
+	if c.Gate != "" && c.Gate != GateCurrent && c.Gate != GateCurrentSoftsign && c.Gate != GateCurrentState {
 		return nil, fmt.Errorf("unsupported gate %q", c.Gate)
 	}
 	if len(c.Sources) != len(c.Targets) || (len(c.Delays) != 0 && len(c.Delays) != len(c.Sources)) {
@@ -591,6 +605,7 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			ynext = make([]float64, n)
 		}
 		softsignGate := m.config.Gate == GateCurrentSoftsign
+		stateGate := m.config.Gate == GateCurrentState
 		if !keep && softsignGate && m.act == activationSoftsign && chem == nil {
 			if i := softsignStep(drive, voltage, ynext, p.Bias, p.GateGain, p.GateBias, alpha); i >= 0 {
 				return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
@@ -607,6 +622,9 @@ func (m *Continuous) forward(ctx context.Context, p Parameters, initial []float6
 			drive[i] += p.Bias[i]
 			if gated {
 				z := p.GateGain[i]*drive[i] + p.GateBias[i]
+				if stateGate {
+					z += p.GateState[i] * voltage[i]
+				}
 				if softsignGate {
 					d := 1 + math.Abs(z)
 					squash[i] = (1 + z/d) / 2
@@ -735,6 +753,10 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 	if gated {
 		g.GateGain, g.GateBias = make([]float64, n), make([]float64, n)
 	}
+	stateGate := gated && m.config.Gate == GateCurrentState
+	if stateGate {
+		g.GateState = make([]float64, n)
+	}
 	chem := m.chem
 	if tr.chemConc == nil {
 		chem = nil
@@ -773,6 +795,7 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 				a, sig := tr.gate[t][i], tr.gateSquash[t][i]
 				drive := tr.drive[t][i]
 				dDrive := a * dv
+				dVoltage := 0.0
 				// A rate clamped at 1 passes no gradient to the gate.
 				if 2*tr.alpha[i]*sig <= 1 {
 					da := dv * (drive - tr.voltage[t][i])
@@ -780,6 +803,10 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 					dDrive += dz * tr.parameters.GateGain[i]
 					g.GateGain[i] += dz * drive
 					g.GateBias[i] += dz
+					if stateGate {
+						g.GateState[i] += dz * tr.voltage[t][i]
+						dVoltage = dz * tr.parameters.GateState[i]
+					}
 					// alpha = 1 - lambda, so d alpha / d log_tau = -dlambda.
 					g.LogTau[i] -= da * 2 * sig * dlambda
 				}
@@ -787,6 +814,11 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 				g.Bias[i] += dDrive
 				if t > start || start == 0 {
 					prev[i] = (1 - a) * dv
+					// A zero term is skipped so a zero gate_state leaves
+					// GateCurrent's gradient bit for bit, signed zeros included.
+					if dVoltage != 0 {
+						prev[i] += dVoltage
+					}
 				}
 				continue
 			}
@@ -863,7 +895,7 @@ func (m *Continuous) BackwardAligned(ctx context.Context, tr *Trace, upstream []
 			g.Initial[i] = gv[i] + gy[0][i]*m.derivative(tr.voltage[0][i])
 		}
 	}
-	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.GateGain, g.GateBias, g.ChemRelease, g.ChemGain, g.ChemOffset, g.Initial} {
+	for _, v := range [][]float64{g.Weights, g.Bias, g.LogTau, g.GateGain, g.GateBias, g.GateState, g.ChemRelease, g.ChemGain, g.ChemOffset, g.Initial} {
 		if err := vector(v, len(v), "gradient"); err != nil {
 			return empty, err
 		}
@@ -920,6 +952,9 @@ func cloneParameters(p Parameters) Parameters {
 	if p.GateGain != nil || p.GateBias != nil {
 		c.GateGain, c.GateBias = append([]float64(nil), p.GateGain...), append([]float64(nil), p.GateBias...)
 	}
+	if p.GateState != nil {
+		c.GateState = append([]float64(nil), p.GateState...)
+	}
 	if p.ChemRelease != nil || p.ChemGain != nil || p.ChemOffset != nil {
 		c.ChemRelease, c.ChemGain, c.ChemOffset = append([]float64(nil), p.ChemRelease...), append([]float64(nil), p.ChemGain...), append([]float64(nil), p.ChemOffset...)
 	}
@@ -927,10 +962,11 @@ func cloneParameters(p Parameters) Parameters {
 }
 
 // checkGateParameters requires one finite gate gain and bias per neuron on a
-// gated model and none on an ungated one.
+// gated model and none on an ungated one, and one finite gate_state per
+// neuron exactly on a GateCurrentState model.
 func (m *Continuous) checkGateParameters(p Parameters) error {
 	if m.config.Gate == "" {
-		if len(p.GateGain) != 0 || len(p.GateBias) != 0 {
+		if len(p.GateGain) != 0 || len(p.GateBias) != 0 || len(p.GateState) != 0 {
 			return fmt.Errorf("gate parameters require Config.Gate")
 		}
 		return nil
@@ -938,7 +974,16 @@ func (m *Continuous) checkGateParameters(p Parameters) error {
 	if err := vector(p.GateGain, m.config.Nodes, "gate_gain"); err != nil {
 		return err
 	}
-	return vector(p.GateBias, m.config.Nodes, "gate_bias")
+	if err := vector(p.GateBias, m.config.Nodes, "gate_bias"); err != nil {
+		return err
+	}
+	if m.config.Gate != GateCurrentState {
+		if len(p.GateState) != 0 {
+			return fmt.Errorf("gate_state requires gate %q, not %q", GateCurrentState, m.config.Gate)
+		}
+		return nil
+	}
+	return vector(p.GateState, m.config.Nodes, "gate_state")
 }
 
 // refuseGate is the error of an execution path the gate does not cover.

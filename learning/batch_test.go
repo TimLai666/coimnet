@@ -291,3 +291,84 @@ func TestGatedTrainerUpdatesGateOnlyWhenTrainable(t *testing.T) {
 		t.Fatal("recompute ran a gated core")
 	}
 }
+
+// TestStateGatedTrainerTrainsGateState trains the gated fixture with
+// dynamics.GateCurrentState: gate_state moves only with Trainable.Gate, the
+// snapshot round-trips it through JSON, and the shape check requires it on
+// this gate and refuses it on the others.
+func TestStateGatedTrainerTrainsGateState(t *testing.T) {
+	ctx := context.Background()
+	c, p := gatedClassifierFixture()
+	c.Dynamics.Gate = dynamics.GateCurrentState
+	p.Core.GateState = []float64{.2, -.1, 0, .4, -.3, .1}
+	inputs, targets := classifierEpisodes(4)
+	for _, trainGate := range []bool{false, true} {
+		o := learning.DefaultOptions()
+		o.Loss = learning.LossSoftmaxCrossEntropy
+		o.Trainable.Gate = trainGate
+		tr, err := learning.NewTrainer(c, p, o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tr.StepBatch(ctx, inputs, targets, 2); err != nil {
+			t.Fatal(err)
+		}
+		s := tr.Snapshot()
+		if moved := !reflect.DeepEqual(s.Parameters.Core.GateState, p.Core.GateState); moved != trainGate {
+			t.Fatalf("trainable gate %v: gate_state moved %v", trainGate, moved)
+		}
+		b, err := json.Marshal(s)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), `"gate_state"`) {
+			t.Fatal("snapshot JSON has no gate_state")
+		}
+		var back learning.TrainingSnapshot
+		if err := json.Unmarshal(b, &back); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(back.Parameters.Core.GateState, s.Parameters.Core.GateState) {
+			t.Fatal("gate_state did not round-trip")
+		}
+		restored, err := learning.RestoreTrainer(back)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want, err := tr.Predict(ctx, inputs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		got, err := restored.Predict(ctx, inputs[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Fatal("restored state-gated trainer predicts differently")
+		}
+	}
+	o := learning.DefaultOptions()
+	missing := p
+	missing.Core.GateState = nil
+	if _, err := learning.NewTrainer(c, missing, o); err == nil {
+		t.Fatal("state gate accepted without gate_state")
+	}
+	current, currentParams := gatedClassifierFixture()
+	currentParams.Core.GateState = p.Core.GateState
+	if _, err := learning.NewTrainer(current, currentParams, o); err == nil {
+		t.Fatal("gate_state accepted on the current gate")
+	}
+	// An old snapshot of the current gate carries no gate_state and loads.
+	currentParams.Core.GateState = nil
+	tr, err := learning.NewTrainer(current, currentParams, o)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := json.Marshal(tr.Snapshot())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "gate_state") {
+		t.Fatal("current-gate snapshot records gate_state")
+	}
+}

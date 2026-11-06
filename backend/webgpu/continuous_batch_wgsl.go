@@ -11,15 +11,21 @@ package webgpu
 //	topology  u32: offsets[N+1] | slot source[E] | slot target[E] |
 //	               transpose offsets[N+1] | transpose target[E] | transpose slot[E]
 //	nodeIndex u32: input column[N] | readout column[N] | input node[W] | readout node[R]
-//	coef      f32: bias[N] | lambda[N] | alpha[N] | dlambda/dlog_tau[N] | gate gain[N] | gate bias[N]
+//	coef      f32: bias[N] | lambda[N] | alpha[N] | dlambda/dlog_tau[N] | gate gain[N] | gate bias[N] |
+//	               gate state[N]
 //	inputs    f32: [b][t][w]
 //	voltage, output f32: [t][b][i] for t in [0, T]
 //	history   f32: drive[P] | gate rate[P] | gate squash[P] | gate slope[P]
 //	upstream  f32: [b][s][r]
 //	driveGrad f32: [t][b][i]
-//	partial   f32: log_tau[P] | gate gain[P] | gate bias[P] contributions
+//	partial   f32: log_tau[P] | gate gain[P] | gate bias[P] contributions, then
+//	               gate state[P] with gate 3 only
 //	carry     f32: voltage gradient[BN] | recurrent output gradient[BN]
-//	gradient  f32: weights in slot order[E] | bias[N] | log_tau[N] | gate gain[N] | gate bias[N]
+//	gradient  f32: weights in slot order[E] | bias[N] | log_tau[N] | gate gain[N] | gate bias[N],
+//	               then gate state[N] with gate 3 only
+//
+// Gate codes: 0 none, 1 sigmoid, 2 softsign, 3 sigmoid with the voltage term
+// gate_state*v added to its argument.
 const continuousBatchPrelude = `
 struct Dims {
     step: u32,
@@ -133,10 +139,13 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     if (dims.gate == 0u) {
         next = coef[n + i] * v + coef[2u * n + i] * drive;
     } else {
-        let z = coef[4u * n + i] * drive + coef[5u * n + i];
+        var z = coef[4u * n + i] * drive + coef[5u * n + i];
+        if (dims.gate == 3u) {
+            z = z + coef[6u * n + i] * v;
+        }
         var squash: f32;
         var slope: f32;
-        if (dims.gate == 1u) {
+        if (dims.gate == 1u || dims.gate == 3u) {
             squash = 1.0 / (1.0 + exp(-z));
             slope = squash * (1.0 - squash);
         } else {
@@ -236,6 +245,7 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     var tau = 0.0;
     var gain = 0.0;
     var bias = 0.0;
+    var state = 0.0;
     var previous = 0.0;
     if (dims.gate == 0u) {
         grad = alpha * dv;
@@ -254,13 +264,20 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
             gain = dz * drive;
             bias = dz;
             tau = -(da * 2.0 * squash * dlambda);
+            if (dims.gate == 3u) {
+                state = dz * v;
+                previous = dz * coef[6u * n + i];
+            }
         }
-        previous = (1.0 - rate) * dv;
+        previous = (1.0 - rate) * dv + previous;
     }
     drive_grad[cell] = grad;
     partial[cell] = tau;
     partial[plane + cell] = gain;
     partial[2u * plane + cell] = bias;
+    if (dims.gate == 3u) {
+        partial[3u * plane + cell] = state;
+    }
     carry[index] = previous;
 }
 `
@@ -353,28 +370,37 @@ fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(num_workgroups) 
     var tau = 0.0;
     var gain = 0.0;
     var offset = 0.0;
+    var state = 0.0;
     for (var t = 0u; t < dims.steps; t = t + 1u) {
         var pb = 0.0;
         var pt = 0.0;
         var pg = 0.0;
         var po = 0.0;
+        var ps = 0.0;
         for (var b = 0u; b < dims.batch; b = b + 1u) {
             let cell = t * bn + b * n + i;
             pb = pb + drive_grad[cell];
             pt = pt + partial[cell];
             pg = pg + partial[plane + cell];
             po = po + partial[2u * plane + cell];
+            if (dims.gate == 3u) {
+                ps = ps + partial[3u * plane + cell];
+            }
         }
         bias = bias + pb;
         tau = tau + pt;
         gain = gain + pg;
         offset = offset + po;
+        state = state + ps;
     }
     let e = dims.edges;
     gradient[e + i] = bias;
     gradient[e + n + i] = tau;
     gradient[e + 2u * n + i] = gain;
     gradient[e + 3u * n + i] = offset;
+    if (dims.gate == 3u) {
+        gradient[e + 4u * n + i] = state;
+    }
 }
 `
 

@@ -105,8 +105,11 @@ func (f *cpuBatchCore) Backward(ctx context.Context, upstream [][][]float64) (dy
 			if g.GateGain != nil {
 				sum.GateGain, sum.GateBias = make([]float64, nodes), make([]float64, nodes)
 			}
+			if g.GateState != nil {
+				sum.GateState = make([]float64, nodes)
+			}
 		}
-		for _, pair := range [][2][]float64{{sum.Weights, g.Weights}, {sum.Bias, g.Bias}, {sum.LogTau, g.LogTau}, {sum.GateGain, g.GateGain}, {sum.GateBias, g.GateBias}} {
+		for _, pair := range [][2][]float64{{sum.Weights, g.Weights}, {sum.Bias, g.Bias}, {sum.LogTau, g.LogTau}, {sum.GateGain, g.GateGain}, {sum.GateBias, g.GateBias}, {sum.GateState, g.GateState}} {
 			for i, v := range pair[1] {
 				pair[0][i] += v
 			}
@@ -214,6 +217,9 @@ func newBatchFixture(f batchFixture, accumulate int) (Config, Parameters, Option
 	}
 	if f.gate != "" {
 		p.Core.GateGain, p.Core.GateBias = fill(nodes, .5), fill(nodes, .5)
+		if f.gate == dynamics.GateCurrentState {
+			p.Core.GateState = fill(nodes, .5)
+		}
 		o.Trainable.Gate = true
 	}
 	return c, p, o
@@ -318,6 +324,8 @@ func TestBatchCoreStepMatchesStepBatch(t *testing.T) {
 		"every step readout":    {loss: LossMSE, everyStep: true, input: true},
 		"every step cross gate": {loss: LossSoftmaxCrossEntropy, everyStep: true, gate: dynamics.GateCurrent},
 		"per-step cross gate":   {loss: LossSoftmaxCrossEntropyEveryStep, everyStep: true, gate: dynamics.GateCurrentSoftsign, input: true},
+		"state gate":            {loss: LossSoftmaxCrossEntropy, gate: dynamics.GateCurrentState, input: true},
+		"every step state gate": {loss: LossSoftmaxCrossEntropyEveryStep, everyStep: true, gate: dynamics.GateCurrentState},
 	} {
 		t.Run(name, func(t *testing.T) {
 			cpu, batched := newBatchCoreTrainers(t, f, 4)

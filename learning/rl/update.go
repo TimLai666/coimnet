@@ -66,6 +66,11 @@ func policyVersionSnapshot(s learning.IndividualSnapshot) string {
 	if s.Parameters.Core.GateGain != nil || s.Parameters.Core.GateBias != nil {
 		groups = append(groups, s.Parameters.Core.GateGain, s.Parameters.Core.GateBias)
 	}
+	// GateState likewise joins only when present, so current and
+	// current_softsign hashes keep their recorded values.
+	if s.Parameters.Core.GateState != nil {
+		groups = append(groups, s.Parameters.Core.GateState)
+	}
 	// Chemistry groups likewise join only when present.
 	if c := s.Parameters.Core; c.ChemRelease != nil || c.ChemGain != nil || c.ChemOffset != nil {
 		groups = append(groups, c.ChemRelease, c.ChemGain, c.ChemOffset)

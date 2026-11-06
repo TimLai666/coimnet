@@ -164,6 +164,19 @@ func TestContinuousBatchValidatesParameterShapes(t *testing.T) {
 		t.Fatalf("missing gate bias: %v", err)
 	}
 	p = good()
+	p.GateState = []float32{0, 0}
+	if err := l.validateParameters(p); !errors.Is(err, ErrShape) {
+		t.Fatalf("gate state on the softsign gate: %v", err)
+	}
+	l.gate = 3
+	if err := l.validateParameters(good()); !errors.Is(err, ErrShape) {
+		t.Fatalf("state gate without gate state: %v", err)
+	}
+	if err := l.validateParameters(p); err != nil {
+		t.Fatal(err)
+	}
+	l.gate = 2
+	p = good()
 	p.Alpha[1] = float32(math.Inf(1))
 	if err := l.validateParameters(p); !errors.Is(err, ErrNonFinite) {
 		t.Fatalf("infinite alpha: %v", err)
@@ -188,6 +201,13 @@ func TestContinuousBatchEpisodeCounts(t *testing.T) {
 		if counts[name] != count {
 			t.Errorf("%s count %d, want %d", name, counts[name], count)
 		}
+	}
+	l.gate = 3
+	if counts, err = l.episodeCounts(5, 7); err != nil {
+		t.Fatal(err)
+	}
+	if counts["partial"] != 560 || counts["gradient"] != 23 {
+		t.Fatalf("state gate partial %d and gradient %d, want 560 and 23", counts["partial"], counts["gradient"])
 	}
 	if _, err := l.episodeCounts(0, 3); !errors.Is(err, ErrShape) {
 		t.Fatalf("zero batch: %v", err)
@@ -239,8 +259,15 @@ func TestContinuousBatchSplitGradientRestoresDeclaredOrder(t *testing.T) {
 	equalF32(t, "log tau", g.LogTau, []float32{3, 4})
 	equalF32(t, "gate gain", g.GateGain, []float32{5, 6})
 	equalF32(t, "gate bias", g.GateBias, []float32{7, 8})
+	if g.GateState != nil {
+		t.Fatal("sigmoid gate split returned a gate_state gradient")
+	}
+	l.gate = 3
+	g = l.splitGradient(append(sums, 11, 12), nil)
+	equalF32(t, "gate bias", g.GateBias, []float32{7, 8})
+	equalF32(t, "gate state", g.GateState, []float32{11, 12})
 	l.gate = 0
-	if g := l.splitGradient(sums, nil); g.GateGain != nil || g.GateBias != nil {
+	if g := l.splitGradient(sums, nil); g.GateGain != nil || g.GateBias != nil || g.GateState != nil {
 		t.Fatal("ungated split returned gate gradients")
 	}
 }

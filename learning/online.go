@@ -551,7 +551,7 @@ func sameParameters(a, b Parameters) bool {
 	pairs := [][2][]float64{
 		{a.Core.Weights, b.Core.Weights}, {a.Core.Bias, b.Core.Bias}, {a.Core.LogTau, b.Core.LogTau},
 		{a.ThetaRaw, b.ThetaRaw}, {a.Encoder, b.Encoder}, {a.Readout, b.Readout},
-		{a.Core.GateGain, b.Core.GateGain}, {a.Core.GateBias, b.Core.GateBias},
+		{a.Core.GateGain, b.Core.GateGain}, {a.Core.GateBias, b.Core.GateBias}, {a.Core.GateState, b.Core.GateState},
 		{a.Core.ChemRelease, b.Core.ChemRelease}, {a.Core.ChemGain, b.Core.ChemGain}, {a.Core.ChemOffset, b.Core.ChemOffset},
 	}
 	for _, pair := range pairs {

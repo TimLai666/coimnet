@@ -210,7 +210,7 @@ func (tr *Trainer) batchChunk(ctx context.Context, inputs [][][]float64, targets
 	if err != nil {
 		return nil, err
 	}
-	sum := Gradient{Core: dynamics.Gradient{Weights: g.Weights, Bias: g.Bias, LogTau: g.LogTau, GateGain: g.GateGain, GateBias: g.GateBias}}
+	sum := Gradient{Core: dynamics.Gradient{Weights: g.Weights, Bias: g.Bias, LogTau: g.LogTau, GateGain: g.GateGain, GateBias: g.GateBias, GateState: g.GateState}}
 	sum.Encoder, sum.Readout = encoderGrad, readoutGrad
 	grad := flatGradient(sum)
 	if len(grad) != len(flatParameters(p)) {

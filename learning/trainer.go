@@ -21,8 +21,8 @@ type Trainable struct {
 	Tau     bool `json:"tau"`
 	Theta   bool `json:"theta,omitempty"`
 	Readout bool `json:"readout"`
-	// Gate trains the gate gain and bias of a core declared with
-	// dynamics.Config.Gate. DefaultOptions leaves it false so that existing
+	// Gate trains the gate gain and bias, and with dynamics.GateCurrentState
+	// the gate_state, of a core declared with dynamics.Config.Gate. DefaultOptions leaves it false so that existing
 	// options keep their exact JSON; a gated model must enable it explicitly.
 	Gate bool `json:"gate,omitempty"`
 	// Chemistry trains the release gains and the receptor gains and offsets
@@ -243,7 +243,11 @@ func NewTrainer(c Config, p Parameters, o Options) (*Trainer, error) {
 	if n.config.Dynamics.Gate != "" {
 		gates = nodeCount
 	}
-	if len(p.Core.GateGain) != gates || len(p.Core.GateBias) != gates {
+	states := 0
+	if n.config.Dynamics.Gate == dynamics.GateCurrentState {
+		states = nodeCount
+	}
+	if len(p.Core.GateGain) != gates || len(p.Core.GateBias) != gates || len(p.Core.GateState) != states {
 		return nil, fmt.Errorf("gate parameter shape mismatch")
 	}
 	if o.Trainable.Gate && gates == 0 {
@@ -809,6 +813,9 @@ func copyParameters(p Parameters) Parameters {
 	if p.Core.GateGain != nil || p.Core.GateBias != nil {
 		c.Core.GateGain, c.Core.GateBias = append([]float64(nil), p.Core.GateGain...), append([]float64(nil), p.Core.GateBias...)
 	}
+	if p.Core.GateState != nil {
+		c.Core.GateState = append([]float64(nil), p.Core.GateState...)
+	}
 	if p.Core.ChemRelease != nil || p.Core.ChemGain != nil || p.Core.ChemOffset != nil {
 		c.Core.ChemRelease, c.Core.ChemGain, c.Core.ChemOffset = append([]float64(nil), p.Core.ChemRelease...), append([]float64(nil), p.Core.ChemGain...), append([]float64(nil), p.Core.ChemOffset...)
 	}
@@ -819,14 +826,14 @@ func copyAdam(s AdamState) AdamState {
 }
 func flatParameters(p Parameters) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
+	for _, v := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.GateState, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
 		out = append(out, v...)
 	}
 	return out
 }
 func flatGradient(g Gradient) []float64 {
 	out := []float64{}
-	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout, g.Core.GateGain, g.Core.GateBias, g.Core.ChemRelease, g.Core.ChemGain, g.Core.ChemOffset} {
+	for _, v := range [][]float64{g.Core.Weights, g.Core.Bias, g.Core.LogTau, g.ThetaRaw, g.Encoder, g.Readout, g.Core.GateGain, g.Core.GateBias, g.Core.GateState, g.Core.ChemRelease, g.Core.ChemGain, g.Core.ChemOffset} {
 		out = append(out, v...)
 	}
 	return out
@@ -834,7 +841,7 @@ func flatGradient(g Gradient) []float64 {
 func unflatten(v []float64, shape Parameters) Parameters {
 	p := copyParameters(shape)
 	offset := 0
-	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
+	for _, dst := range [][]float64{p.Core.Weights, p.Core.Bias, p.Core.LogTau, p.ThetaRaw, p.Encoder, p.Readout, p.Core.GateGain, p.Core.GateBias, p.Core.GateState, p.Core.ChemRelease, p.Core.ChemGain, p.Core.ChemOffset} {
 		copy(dst, v[offset:offset+len(dst)])
 		offset += len(dst)
 	}
@@ -890,7 +897,7 @@ func parameterMask(p Parameters, o Options, thetaNodes []int, core ...coreModel)
 		{len(p.Core.Weights), m.Weights, edges, weightSpan}, {len(p.Core.Bias), m.Bias, nodes, biasSpan},
 		{len(p.Core.LogTau), m.Tau, nodes, 1}, {len(p.ThetaRaw), m.Theta, theta, 1},
 		{len(p.Encoder), m.Encoder, nil, 1}, {len(p.Readout), m.Readout, nil, 1},
-		{len(p.Core.GateGain), m.Gate, nodes, 1}, {len(p.Core.GateBias), m.Gate, nodes, 1},
+		{len(p.Core.GateGain), m.Gate, nodes, 1}, {len(p.Core.GateBias), m.Gate, nodes, 1}, {len(p.Core.GateState), m.Gate, nodes, 1},
 		{len(p.Core.ChemRelease), m.Chemistry, nil, 1}, {len(p.Core.ChemGain), m.Chemistry, nil, 1}, {len(p.Core.ChemOffset), m.Chemistry, nil, 1},
 	} {
 		for i := range g.size {
