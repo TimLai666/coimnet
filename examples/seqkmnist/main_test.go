@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 
@@ -126,6 +127,69 @@ func TestReadSplitGroupsColumns(t *testing.T) {
 // TestRewireKeepsDegrees checks both null models on a skewed graph: each
 // keeps the edge count, adds no duplicate edge, keeps every target's
 // in-degree, "swap" also every source's out-degree, and both move edges.
+func TestInputsFirstMovesTheTypeAndKeepsTheEdges(t *testing.T) {
+	g := topology{
+		nodes:   4,
+		types:   []string{"AMMC1", "JO-A", "WED1", "JO-B"},
+		sources: []int{1, 3, 0, 2},
+		targets: []int{0, 0, 2, 1},
+	}
+	got, inputs := inputsFirst(g, "JO-")
+	if inputs != 2 {
+		t.Fatalf("matched %d nodes, want 2", inputs)
+	}
+	if want := []string{"JO-A", "JO-B", "AMMC1", "WED1"}; !slices.Equal(got.types, want) {
+		t.Fatalf("types %v, want %v", got.types, want)
+	}
+	// Old numbers 1, 3, 0, 2 become 0, 1, 2, 3.
+	if want := []int{0, 1, 2, 3}; !slices.Equal(got.sources, want) {
+		t.Fatalf("sources %v, want %v", got.sources, want)
+	}
+	if want := []int{2, 2, 3, 0}; !slices.Equal(got.targets, want) {
+		t.Fatalf("targets %v, want %v", got.targets, want)
+	}
+	if g.sources[0] != 1 || g.types[0] != "AMMC1" {
+		t.Fatal("inputsFirst changed its input")
+	}
+}
+
+func TestUniformRewireKeepsOnlyTheEdgeCount(t *testing.T) {
+	// A hub graph: node 0 feeds every other node, so its out-degree is 29.
+	g := topology{nodes: 30}
+	for d := 1; d < g.nodes; d++ {
+		g.sources, g.targets = append(g.sources, 0), append(g.targets, d)
+	}
+	r, err := rewire(g, "uniform", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.nodes != g.nodes || len(r.sources) != len(g.sources) {
+		t.Fatalf("nodes %d edges %d, want %d and %d", r.nodes, len(r.sources), g.nodes, len(g.sources))
+	}
+	seen := map[[2]int]bool{}
+	hub := 0
+	for e := range r.sources {
+		k := [2]int{r.sources[e], r.targets[e]}
+		if seen[k] || k[0] == k[1] {
+			t.Fatalf("edge %v repeats or loops", k)
+		}
+		seen[k] = true
+		if k[0] == 0 {
+			hub++
+		}
+	}
+	if hub > 10 {
+		t.Fatalf("node 0 still sends %d of %d edges", hub, len(r.sources))
+	}
+	again, err := rewire(g, "uniform", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(again.sources, r.sources) || !slices.Equal(again.targets, r.targets) {
+		t.Fatal("the same seed drew different edges")
+	}
+}
+
 func TestRewireKeepsDegrees(t *testing.T) {
 	const nodes = 40
 	var g topology
@@ -544,5 +608,57 @@ func TestWarmupFraction(t *testing.T) {
 	s := settings{Nodes: 24, InputNodes: 8, ReadoutNodes: 8, InDegree: 3, Epochs: 1, Batch: 16, LearningRate: .02, SurrogateScale: 5, Warmup: 1}
 	if err := run(s, "", "", "", "", ""); err == nil || !strings.Contains(err.Error(), "--warmup") {
 		t.Fatalf("--warmup 1 error = %v", err)
+	}
+}
+
+func TestSelfLoopsStartAtZeroAndLeaveTheRestUnchanged(t *testing.T) {
+	base := settings{Nodes: 40, InputNodes: 5, ReadoutNodes: 6, InDegree: 4, Seed: 7}
+	c0, p0, _ := build(base, nil)
+	s := base
+	s.SelfLoops = true
+	c, p, _ := build(s, nil)
+	n0 := len(c0.Dynamics.Sources)
+	if !reflect.DeepEqual(c.Dynamics.Sources[:n0], c0.Dynamics.Sources) || !reflect.DeepEqual(p.Core.Weights[:n0], p0.Core.Weights) ||
+		!reflect.DeepEqual(p.Encoder, p0.Encoder) || !reflect.DeepEqual(p.Readout, p0.Readout) {
+		t.Fatal("self-loops changed the base edges or another draw")
+	}
+	had := map[int]bool{}
+	for e, src := range c0.Dynamics.Sources {
+		if src == c0.Dynamics.Targets[e] {
+			had[src] = true
+		}
+	}
+	if got, want := len(c.Dynamics.Sources)-n0, base.Nodes-len(had); got != want {
+		t.Fatalf("added %d self-loops, want %d", got, want)
+	}
+	self := map[int]int{}
+	for e, src := range c.Dynamics.Sources {
+		if src == c.Dynamics.Targets[e] {
+			self[src]++
+		}
+		if e >= n0 && (src != c.Dynamics.Targets[e] || p.Core.Weights[e] != 0) {
+			t.Fatalf("added edge %d is (%d,%d) with weight %g, want a self-loop at 0", e, src, c.Dynamics.Targets[e], p.Core.Weights[e])
+		}
+	}
+	for i := range base.Nodes {
+		if self[i] != 1 {
+			t.Fatalf("node %d has %d self-loops", i, self[i])
+		}
+	}
+}
+
+func TestTauHopsSetsTauByDistanceFromTheInputs(t *testing.T) {
+	// 0 -> 1 -> 2 -> 3, node 4 unreachable; node 0 is the input.
+	topo := &topology{nodes: 5, sources: []int{0, 1, 2, 4}, targets: []int{1, 2, 3, 0}}
+	s := settings{Nodes: 5, InputNodes: 1, ReadoutNodes: 1, Seed: 1, TauHops: "1,3,15"}
+	_, p, _ := build(s, topo)
+	want := []float64{1, 3, 15, 15, 15}
+	for i, v := range p.Core.LogTau {
+		if math.Abs(math.Exp(v)-want[i]) > 1e-12 {
+			t.Fatalf("node %d tau %g, want %g", i, math.Exp(v), want[i])
+		}
+	}
+	if _, err := parseTauHops("1,0"); err == nil {
+		t.Fatal("parseTauHops accepted a zero tau")
 	}
 }
