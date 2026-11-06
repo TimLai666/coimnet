@@ -84,7 +84,7 @@ type settings struct {
 	// the uniform random topology; Nodes then is its node count.
 	Store string `json:"store,omitempty"`
 	// Rewire, with Store, replaces the store's edges by a null model of the
-	// same size: "in-degree" or "swap" (see rewire).
+	// same size: "in-degree", "swap" or "uniform" (see rewire).
 	Rewire string `json:"rewire,omitempty"`
 	// InputTypePrefix, with Store, moves the nodes whose annotated cell type
 	// starts with it to the front, so they are the input nodes; --input-nodes
@@ -201,7 +201,7 @@ func main() {
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
 	flag.StringVar(&s.Store, "store", "", "connectome.Save subgraph store whose edges replace the random topology (--nodes and --in-degree are then ignored)")
 	flag.StringVar(&s.Tie, "tie", "", `with --store, tie the core weights, biases and time constants by annotated cell type: "type", or "type-shuffled" for the same labels permuted across nodes`)
-	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree`)
+	flag.StringVar(&s.Rewire, "rewire", "", `with --store, train on a null model of its edges: "in-degree" keeps each target's in-degree, "swap" keeps every in- and out-degree, "uniform" keeps only the edge count`)
 	flag.StringVar(&s.InputTypePrefix, "input-type-prefix", "", "with --store, make the nodes whose cell type starts with this the input nodes; --input-nodes must equal their count")
 	flag.StringVar(&s.Freeze, "freeze", "", "parameter groups kept at their initial values: encoder, weights, bias, tau, gate, theta, readout (comma separated)")
 	flag.IntVar(&s.Delays, "delays", 0, "draw each edge's delay uniformly from 0..N steps (CPU core only)")

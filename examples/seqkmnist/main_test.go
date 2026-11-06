@@ -153,6 +153,43 @@ func TestInputsFirstMovesTheTypeAndKeepsTheEdges(t *testing.T) {
 	}
 }
 
+func TestUniformRewireKeepsOnlyTheEdgeCount(t *testing.T) {
+	// A hub graph: node 0 feeds every other node, so its out-degree is 29.
+	g := topology{nodes: 30}
+	for d := 1; d < g.nodes; d++ {
+		g.sources, g.targets = append(g.sources, 0), append(g.targets, d)
+	}
+	r, err := rewire(g, "uniform", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.nodes != g.nodes || len(r.sources) != len(g.sources) {
+		t.Fatalf("nodes %d edges %d, want %d and %d", r.nodes, len(r.sources), g.nodes, len(g.sources))
+	}
+	seen := map[[2]int]bool{}
+	hub := 0
+	for e := range r.sources {
+		k := [2]int{r.sources[e], r.targets[e]}
+		if seen[k] || k[0] == k[1] {
+			t.Fatalf("edge %v repeats or loops", k)
+		}
+		seen[k] = true
+		if k[0] == 0 {
+			hub++
+		}
+	}
+	if hub > 10 {
+		t.Fatalf("node 0 still sends %d of %d edges", hub, len(r.sources))
+	}
+	again, err := rewire(g, "uniform", 7)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(again.sources, r.sources) || !slices.Equal(again.targets, r.targets) {
+		t.Fatal("the same seed drew different edges")
+	}
+}
+
 func TestRewireKeepsDegrees(t *testing.T) {
 	const nodes = 40
 	var g topology

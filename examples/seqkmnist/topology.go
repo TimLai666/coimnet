@@ -99,7 +99,9 @@ func inputsFirst(t topology, prefix string) (topology, int) {
 // in-degree and draws its sources uniformly without repetition, as the random
 // topology does. "swap" keeps every node's in- and out-degree: it performs
 // 10*edges attempted double-edge swaps (a->b, c->d to a->d, c->b), rejecting
-// any swap that would duplicate an edge. An empty mode returns t unchanged.
+// any swap that would duplicate an edge. "uniform" keeps only the node and
+// edge counts and draws every edge uniformly. An empty mode returns t
+// unchanged.
 func rewire(t topology, mode string, seed uint64) (topology, error) {
 	rng := rand.New(rand.NewPCG(seed, 2))
 	out := topology{nodes: t.nodes, sources: append([]int(nil), t.sources...), targets: append([]int(nil), t.targets...), types: t.types}
@@ -135,8 +137,29 @@ func rewire(t topology, mode string, seed uint64) (topology, error) {
 			out.targets[i], out.targets[j] = d, b
 		}
 		return out, nil
+	case "uniform":
+		// Every ordered pair is equally likely, as in a G(n, m) random graph;
+		// a self-loop is allowed only when t already has one.
+		loops := false
+		for e := range t.sources {
+			loops = loops || t.sources[e] == t.targets[e]
+		}
+		if pairs := t.nodes * t.nodes; len(t.sources) > pairs || (!loops && len(t.sources) > pairs-t.nodes) {
+			return topology{}, fmt.Errorf("%d edges do not fit %d nodes", len(t.sources), t.nodes)
+		}
+		edges := make(map[[2]int]bool, len(t.sources))
+		out.sources, out.targets = out.sources[:0], out.targets[:0]
+		for len(out.sources) < len(t.sources) {
+			a, b := rng.IntN(t.nodes), rng.IntN(t.nodes)
+			if (a == b && !loops) || edges[[2]int{a, b}] {
+				continue
+			}
+			edges[[2]int{a, b}] = true
+			out.sources, out.targets = append(out.sources, a), append(out.targets, b)
+		}
+		return out, nil
 	}
-	return topology{}, fmt.Errorf(`--rewire takes "in-degree" or "swap", not %q`, mode)
+	return topology{}, fmt.Errorf(`--rewire takes "in-degree", "swap" or "uniform", not %q`, mode)
 }
 
 // tieByType ties the core parameters by annotated cell type, as a
