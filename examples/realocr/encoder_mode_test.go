@@ -4,11 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/TimLai666/coimnet/tasks/ocr"
 	"github.com/TimLai666/coimnet/tasks/ocr/glyphs"
@@ -107,12 +105,11 @@ func TestRealOCREncoderEvalResultCarriesEmptyOutputMetrics(t *testing.T) {
 }
 
 func TestRealOCREncoderCLIFlagHelp(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	help, cancel := cliCommand(t, "--help")
 	defer cancel()
-	help := exec.CommandContext(ctx, "go", "run", ".", "--help")
 	helpOutput, err := help.CombinedOutput()
 	if err != nil {
-		t.Fatalf("go run --help: %v\n%s", err, helpOutput)
+		t.Fatalf("realocr --help: %v\n%s", err, helpOutput)
 	}
 	helpText := string(helpOutput)
 	if !strings.Contains(helpText, "--encoder") || !strings.Contains(helpText, "fixed") || !strings.Contains(helpText, "trainable") {
@@ -121,21 +118,20 @@ func TestRealOCREncoderCLIFlagHelp(t *testing.T) {
 }
 
 func TestRealOCREncoderCLIFlagRun(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	defer cancel()
 	dir := t.TempDir()
 	writeMetadata(t, dir)
 	writeOfficialFixture(t, dir)
-	cmd := exec.CommandContext(ctx, "go", "run", ".",
+	cmd, cancel := cliCommand(t,
 		"--data-dir", dir,
 		"--train-count", "1", "--test-count", "1", "--epochs", "1",
 		"--hidden", "4", "--learning-rate", "0.02", "--encoder", "trainable",
 	)
+	defer cancel()
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("go run --encoder trainable: %v\nstderr=%s\nstdout=%s", err, stderr.Bytes(), stdout.Bytes())
+		t.Fatalf("realocr --encoder trainable: %v\nstderr=%s\nstdout=%s", err, stderr.Bytes(), stdout.Bytes())
 	}
 	var report Report
 	if err := json.Unmarshal(stdout.Bytes(), &report); err != nil {
