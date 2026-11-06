@@ -70,29 +70,52 @@ func (m *Continuous) CompileInfer32(p Parameters) (*Infer32, error) {
 	return f, nil
 }
 
-// InferLast runs the sequence from initial voltage and returns the output
-// after the last step. inputs[t] is the external drive (length n) and is read
-// as float32. The returned slice is owned by f and overwritten by the next call.
-func (f *Infer32) InferLast(ctx context.Context, initial []float32, inputs [][]float32) ([]float32, error) {
+// Nodes is the core width every input row and the initial voltage must have.
+func (f *Infer32) Nodes() int { return f.n }
+
+// Reset starts an episode at the initial voltage (length Nodes).
+func (f *Infer32) Reset(initial []float32) error {
 	if len(initial) != f.n {
-		return nil, fmt.Errorf("initial voltage length %d, want %d", len(initial), f.n)
+		return fmt.Errorf("initial voltage length %d, want %d", len(initial), f.n)
 	}
 	copy(f.v, initial)
 	for i, v := range f.v {
 		f.y[i] = v / (1 + abs32(v))
 	}
+	return nil
+}
+
+// Step advances one step with in (length Nodes) as the external drive.
+func (f *Infer32) Step(in []float32) error {
+	if len(in) != f.n {
+		return fmt.Errorf("input length %d, want %d", len(in), f.n)
+	}
+	f.accumulate(in)
+	if i := f.step(); i >= 0 {
+		return fmt.Errorf("non-finite state at neuron %d", i)
+	}
+	return nil
+}
+
+// Output is the activated output after the last Step, owned by f and
+// overwritten by the next Reset or Step.
+func (f *Infer32) Output() []float32 { return f.y }
+
+// InferLast runs the sequence from initial voltage and returns the output
+// after the last step. inputs[t] is the external drive (length n). The returned
+// slice is owned by f and overwritten by the next call.
+func (f *Infer32) InferLast(ctx context.Context, initial []float32, inputs [][]float32) ([]float32, error) {
+	if err := f.Reset(initial); err != nil {
+		return nil, err
+	}
 	for t, in := range inputs {
-		if len(in) != f.n {
-			return nil, fmt.Errorf("input[%d] length %d, want %d", t, len(in), f.n)
-		}
 		if t%8 == 0 {
 			if err := ctx.Err(); err != nil {
 				return nil, err
 			}
 		}
-		f.accumulate(in)
-		if i := f.step(); i >= 0 {
-			return nil, fmt.Errorf("non-finite state at step %d neuron %d", t, i)
+		if err := f.Step(in); err != nil {
+			return nil, fmt.Errorf("step %d: %w", t, err)
 		}
 	}
 	return f.y, nil

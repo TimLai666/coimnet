@@ -123,6 +123,12 @@ type settings struct {
 	// the last one also used for farther and unreachable nodes. It replaces
 	// TauMax's draw.
 	TauHops string `json:"tau_hops,omitempty"`
+	// Wiring "block8" draws each node's in-edges as whole aligned windows of
+	// 8 consecutive source nodes (distinct windows; the last one is cut to
+	// InDegree mod 8), instead of InDegree independent sources, so a
+	// vectorized kernel can load a window without a gather. Empty keeps the
+	// uniform random sources.
+	Wiring string `json:"wiring,omitempty"`
 	// Core "lif" swaps the continuous core for the spiking dynamics.LIF on
 	// the same edges and initial weights, with a trainable base threshold in
 	// [0.05, 1], v_reset 0, tau_syn 2 and the fast-sigmoid surrogate of
@@ -220,6 +226,7 @@ func main() {
 	flag.Float64Var(&s.Inhibitory, "inhibitory", 0.5, "with --dale, the probability that a node is inhibitory")
 	flag.Float64Var(&s.TauMax, "tau-max", 0, "draw each node's initial tau log-uniformly from [2, N] (0 keeps tau = 2)")
 	flag.BoolVar(&s.SelfLoops, "self-loops", false, "add a self edge to every node, weight 0 at the start")
+	flag.StringVar(&s.Wiring, "wiring", "", `"block8" draws each node's in-edges as aligned windows of 8 consecutive sources (needs --nodes divisible by 8, no --store)`)
 	flag.StringVar(&s.TauHops, "tau-hops", "", `initial tau by hop distance from the input nodes, e.g. "1,3,15" (the last value covers farther nodes)`)
 	flag.StringVar(&s.Core, "core", "", `"lif" trains the spiking core on the same edges (CPU only)`)
 	flag.Float64Var(&s.SurrogateScale, "surrogate-scale", 5, "with --core lif, the fast-sigmoid surrogate scale")
@@ -237,7 +244,8 @@ func main() {
 	benchPath := flag.String("bench", "", "new file for a bench.Result measured after training")
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
 	checkpointPath := flag.String("checkpoint", "", "file rewritten after every epoch; a run started with an existing checkpoint of the same settings resumes from it")
-	loadPath := flag.String("load", "", "skip training: load this TrainingSnapshot JSON, evaluate it and (with --bench) measure it in this fresh process")
+	loadPath := flag.String("load", "", "skip training: load this TrainingSnapshot JSON (or a --checkpoint file), evaluate it and (with --bench) measure it in this fresh process")
+	fastPredict := flag.Bool("fast-predict", false, "with --load, also score the test split with the float32 learning.FastPredictor, report its argmax agreement with Trainer.Predict, and measure it with --bench")
 	machine := flag.String("machine", "", "machine name for the bench result (default: host name)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile of the run to this new file")
 	flag.Parse()
@@ -259,7 +267,7 @@ func main() {
 	}
 	var err error
 	if *loadPath != "" {
-		err = runLoaded(s, *loadPath, *benchPath, *machine)
+		err = runLoaded(s, *loadPath, *benchPath, *machine, *fastPredict)
 	} else {
 		err = run(s, *reportPath, *benchPath, *savePath, *checkpointPath, *machine)
 	}
@@ -272,15 +280,15 @@ func main() {
 
 // runLoaded evaluates a saved model in a process that never trained, so the
 // measured peak memory covers loading the model and the test images only.
-func runLoaded(s settings, loadPath, benchPath, machine string) error {
+func runLoaded(s settings, loadPath, benchPath, machine string, fast bool) error {
 	ctx := context.Background()
 	b, err := os.ReadFile(loadPath)
 	if err != nil {
 		return err
 	}
-	var snapshot learning.TrainingSnapshot
-	if err := json.Unmarshal(b, &snapshot); err != nil {
-		return err
+	snapshot, err := decodeSnapshot(b)
+	if err != nil {
+		return fmt.Errorf("%s: %w", loadPath, err)
 	}
 	if in := snapshot.Config.InputSize; in > side && in%side == 0 {
 		s.Cols = in / side
@@ -299,6 +307,21 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 		return err
 	}
 	fmt.Printf("loaded %s: test %.4f\n", loadPath, acc)
+	var fp *learning.FastPredictor
+	if fast {
+		net, err := learning.NewNetwork(snapshot.Config)
+		if err != nil {
+			return err
+		}
+		if fp, err = net.CompileFastPredict(snapshot.Parameters); err != nil {
+			return err
+		}
+		a, err := compareFast(ctx, tr, fp, testX, testY)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("fast predict: test %.4f, argmax agrees on %d of %d images, max |logit difference| %.3g\n", a.accuracy, a.agree, len(testX), a.maxDiff)
+	}
 	if benchPath == "" {
 		return nil
 	}
@@ -313,7 +336,7 @@ func runLoaded(s settings, loadPath, benchPath, machine string) error {
 	if c.Nodes > 0 {
 		s.InDegree = len(c.Sources) / c.Nodes
 	}
-	return measure(ctx, tr, s, testX, testY, acc, machine, benchPath)
+	return measure(ctx, tr, fp, s, testX, testY, acc, machine, benchPath)
 }
 
 func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine string) error {
@@ -337,6 +360,9 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 		topo, s.Nodes, s.InDegree = &t, t.nodes, (len(t.sources)+t.nodes/2)/t.nodes
 	} else if s.Rewire != "" || s.Tie != "" || s.InputTypePrefix != "" {
 		return errors.New("--rewire, --tie and --input-type-prefix need --store")
+	}
+	if s.Wiring != "" && (s.Wiring != "block8" || s.Store != "" || s.Nodes%8 != 0) {
+		return errors.New(`--wiring takes "block8", needs --nodes divisible by 8 and does not combine with --store`)
 	}
 	if s.Tie != "" && ((s.Tie != "type" && s.Tie != "type-shuffled") || s.Dale || s.Core != "") {
 		return errors.New(`--tie takes "type" or "type-shuffled" and does not combine with --dale or --core`)
@@ -529,7 +555,7 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 		}
 	}
 	if benchPath != "" {
-		return measure(ctx, tr, s, testX, testY, rep.Accuracy, machine, benchPath)
+		return measure(ctx, tr, nil, s, testX, testY, rep.Accuracy, machine, benchPath)
 	}
 	return nil
 }
@@ -543,6 +569,8 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 	var sources, targets []int
 	if topo != nil {
 		sources, targets = append([]int(nil), topo.sources...), append([]int(nil), topo.targets...)
+	} else if s.Wiring == "block8" {
+		sources, targets = block8Wiring(rng, s.Nodes, s.InDegree)
 	} else {
 		for t := 0; t < s.Nodes; t++ {
 			for _, src := range rng.Perm(s.Nodes)[:s.InDegree] {
@@ -870,13 +898,21 @@ func evaluateBatched(ctx context.Context, tr *learning.Trainer, xs [][][]float64
 	return float64(count) / float64(len(xs)), nil
 }
 
-// measure times Trainer.Predict one image per call on one thread, the same
-// protocol as scripts/research/seqlab.py --bench.
-func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]float64, ys []int, accuracy float64, machine, path string) error {
+// measure times Trainer.Predict (or fp.Predict when fp is not nil) one image
+// per call on one thread, the same protocol as scripts/research/seqlab.py
+// --bench. accuracy is the one the timed path scored.
+func measure(ctx context.Context, tr *learning.Trainer, fp *learning.FastPredictor, s settings, xs [][][]float64, ys []int, accuracy float64, machine, path string) error {
 	runtime.GOMAXPROCS(1)
 	samples := min(2000, len(xs))
+	predict := tr.Predict
+	model, notes := modelName(s), []string{"one image per call (28 column steps); peak RSS covers this process (training too unless --load)"}
+	if fp != nil {
+		predict = fp.Predict
+		model += "-fast32"
+		notes = append(notes, "learning.FastPredictor: float32 core (dynamics.Infer32), Insyra float32 encoder and readout without a tape")
+	}
 	latency, err := bench.Measure(ctx, 50, samples, func(ctx context.Context, i int) error {
-		_, err := tr.Predict(ctx, xs[i])
+		_, err := predict(ctx, xs[i])
 		return err
 	})
 	if err != nil {
@@ -885,7 +921,7 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 	snapshot := tr.Snapshot()
 	result := bench.Result{
 		SchemaVersion: bench.SchemaVersion, Framework: "coimnet",
-		Model: modelName(s),
+		Model: model,
 		Task:  "kmnist-t10k-column-sequence", Split: fmt.Sprintf("first:%d", len(xs)),
 		Host:       bench.CurrentHost(machine, ""),
 		Parameters: bench.CountParameters(snapshot.Parameters),
@@ -896,7 +932,7 @@ func measure(ctx context.Context, tr *learning.Trainer, s settings, xs [][][]flo
 		Device:       "cpu", Threads: 1, Latency: latency,
 		Quality: map[string]float64{"accuracy": accuracy},
 		Higher:  []string{"accuracy"},
-		Notes:   []string{"one image per call (28 column steps); peak RSS covers this process (training too unless --load)"},
+		Notes:   notes,
 	}
 	if err := result.Validate(); err != nil {
 		return err
@@ -928,6 +964,9 @@ func modelName(s settings) string {
 	}
 	if s.SelfLoops {
 		name += "-self"
+	}
+	if s.Wiring != "" {
+		name += "-" + s.Wiring
 	}
 	if s.TauHops != "" {
 		name += "-tauhops" + strings.ReplaceAll(s.TauHops, ",", "_")
