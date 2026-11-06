@@ -662,3 +662,62 @@ func TestTauHopsSetsTauByDistanceFromTheInputs(t *testing.T) {
 		t.Fatal("parseTauHops accepted a zero tau")
 	}
 }
+
+func TestSpreadInputsMovesOnlyInputEdgesToNonInputs(t *testing.T) {
+	// Nodes 0 and 1 are inputs. Input 0 feeds input 1 and node 2; input 1
+	// feeds node 2; the rest is a 2->3->4->5->2 cycle.
+	g := topology{nodes: 6, sources: []int{0, 0, 1, 2, 3, 4, 5}, targets: []int{1, 2, 2, 3, 4, 5, 2}}
+	r, err := spreadInputs(g, 2, 9)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[[2]int]bool{}
+	for e := range r.sources {
+		if r.sources[e] != g.sources[e] {
+			t.Fatalf("edge %d changed source", e)
+		}
+		if r.sources[e] >= 2 && r.targets[e] != g.targets[e] {
+			t.Fatalf("non-input edge %d moved", e)
+		}
+		if r.sources[e] < 2 && r.targets[e] < 2 {
+			t.Fatalf("input edge %d still targets input %d", e, r.targets[e])
+		}
+		pair := [2]int{r.sources[e], r.targets[e]}
+		if seen[pair] {
+			t.Fatalf("duplicate edge %v", pair)
+		}
+		seen[pair] = true
+	}
+	again, _ := spreadInputs(g, 2, 9)
+	if !slices.Equal(again.targets, r.targets) {
+		t.Fatal("same seed gave different targets")
+	}
+	if _, err := spreadInputs(g, 0, 1); err == nil {
+		t.Fatal("zero inputs accepted")
+	}
+}
+
+func TestDropSelfLoopsKeepsOutDegreesAndRemovesLoops(t *testing.T) {
+	g := topology{nodes: 4, sources: []int{0, 0, 1, 2, 3, 3}, targets: []int{0, 1, 1, 3, 3, 0}}
+	r, err := dropSelfLoops(g, 5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	seen := map[[2]int]bool{}
+	for e := range r.sources {
+		if r.sources[e] != g.sources[e] {
+			t.Fatalf("edge %d changed source", e)
+		}
+		if r.sources[e] == r.targets[e] {
+			t.Fatalf("self edge %d remains", e)
+		}
+		if g.sources[e] != g.targets[e] && r.targets[e] != g.targets[e] {
+			t.Fatalf("ordinary edge %d moved", e)
+		}
+		pair := [2]int{r.sources[e], r.targets[e]}
+		if seen[pair] {
+			t.Fatalf("duplicate edge %v", pair)
+		}
+		seen[pair] = true
+	}
+}

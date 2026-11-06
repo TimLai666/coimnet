@@ -162,6 +162,74 @@ func rewire(t topology, mode string, seed uint64) (topology, error) {
 	return topology{}, fmt.Errorf(`--rewire takes "in-degree", "swap" or "uniform", not %q`, mode)
 }
 
+// spreadInputs moves every edge whose source is one of the first inputs nodes
+// to a target drawn uniformly from the non-input nodes that source does not
+// reach yet. Each input keeps its out-degree, every other edge is untouched,
+// and the edge order stays the same.
+func spreadInputs(t topology, inputs int, seed uint64) (topology, error) {
+	if inputs <= 0 || inputs >= t.nodes {
+		return topology{}, fmt.Errorf("--spread-inputs needs between 1 and %d input nodes, not %d", t.nodes-1, inputs)
+	}
+	rng := rand.New(rand.NewPCG(seed, 3))
+	out := topology{nodes: t.nodes, sources: append([]int(nil), t.sources...), targets: append([]int(nil), t.targets...), types: t.types}
+	outDegree := make([]int, inputs)
+	for _, s := range t.sources {
+		if s < inputs {
+			outDegree[s]++
+		}
+	}
+	for s, k := range outDegree {
+		if k > t.nodes-inputs {
+			return topology{}, fmt.Errorf("input node %d has %d out-edges but only %d non-input targets", s, k, t.nodes-inputs)
+		}
+	}
+	chosen := make([][]int, inputs)
+	for s, k := range outDegree {
+		perm := rng.Perm(t.nodes - inputs)[:k]
+		for i := range perm {
+			perm[i] += inputs
+		}
+		chosen[s] = perm
+	}
+	for e, s := range out.sources {
+		if s < inputs {
+			out.targets[e], chosen[s] = chosen[s][0], chosen[s][1:]
+		}
+	}
+	return out, nil
+}
+
+// dropSelfLoops moves every self edge to a target drawn uniformly from the
+// nodes its source does not reach yet, so the edge count and every
+// out-degree stay the same and no self edge remains.
+func dropSelfLoops(t topology, seed uint64) (topology, error) {
+	rng := rand.New(rand.NewPCG(seed, 4))
+	out := topology{nodes: t.nodes, sources: append([]int(nil), t.sources...), targets: append([]int(nil), t.targets...), types: t.types}
+	edges := make(map[[2]int]bool, len(t.sources))
+	for e := range t.sources {
+		edges[[2]int{t.sources[e], t.targets[e]}] = true
+	}
+	for e, s := range out.sources {
+		if out.targets[e] != s {
+			continue
+		}
+		var free []int
+		for d := range t.nodes {
+			if d != s && !edges[[2]int{s, d}] {
+				free = append(free, d)
+			}
+		}
+		if len(free) == 0 {
+			return topology{}, fmt.Errorf("node %d has no free target for its self edge", s)
+		}
+		d := free[rng.IntN(len(free))]
+		delete(edges, [2]int{s, s})
+		edges[[2]int{s, d}] = true
+		out.targets[e] = d
+	}
+	return out, nil
+}
+
 // tieByType ties the core parameters by annotated cell type, as a
 // connectome-constrained model shares one value per type: every edge between
 // the same (source type, target type) pair shares a weight, and every node of
