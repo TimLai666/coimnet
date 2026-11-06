@@ -45,6 +45,9 @@ func newGateFixture(t *testing.T, seed uint64, logTau float64, gate, activation 
 	for i := range f.inputs {
 		f.inputs[i], f.up[i] = normal(nodes, 1, 0), normal(nodes, 1, 0)
 	}
+	if gate == GateCurrentState {
+		f.params.GateState = normal(nodes, .6, 0)
+	}
 	return f
 }
 
@@ -69,7 +72,7 @@ func (f gateFixture) loss(t *testing.T, p Parameters, inputs [][]float64) float6
 // squashings and with the softsign activation.
 func TestGateGradientMatchesFiniteDifferences(t *testing.T) {
 	type variant struct{ gate, activation string }
-	for _, v := range []variant{{GateCurrent, "tanh"}, {GateCurrentSoftsign, "tanh"}, {GateCurrentSoftsign, "softsign"}} {
+	for _, v := range []variant{{GateCurrent, "tanh"}, {GateCurrentSoftsign, "tanh"}, {GateCurrentSoftsign, "softsign"}, {GateCurrentState, "tanh"}, {GateCurrentState, "softsign"}} {
 		for _, tc := range []struct {
 			name   string
 			logTau float64
@@ -118,6 +121,27 @@ func TestGateGradientMatchesFiniteDifferences(t *testing.T) {
 				check("log_tau", p.LogTau, g.LogTau, eval)
 				check("gate_gain", p.GateGain, g.GateGain, eval)
 				check("gate_bias", p.GateBias, g.GateBias, eval)
+				if v.gate == GateCurrentState {
+					check("gate_state", p.GateState, g.GateState, eval)
+				} else if g.GateState != nil {
+					t.Fatalf("gate %q returned a gate_state gradient", v.gate)
+				}
+				// The initial voltage reaches the loss through the leak and,
+				// with GateCurrentState, through the gate's voltage term.
+				initial := append([]float64(nil), f.initial...)
+				check("initial", initial, g.Initial, func() float64 {
+					tr, err := f.model.Forward(context.Background(), f.params, initial, f.inputs)
+					if err != nil {
+						t.Fatal(err)
+					}
+					var l float64
+					for s, row := range tr.Outputs() {
+						for i, y := range row {
+							l += f.up[s][i] * y
+						}
+					}
+					return l
+				})
 				inputs := cloneRows(f.inputs)
 				for s := range inputs {
 					check("input", inputs[s], g.Inputs[s], func() float64 { return f.loss(t, f.params, inputs) })
@@ -199,6 +223,34 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 	if _, err := gated.NewState([]float64{0, 0}); err == nil || !strings.Contains(err.Error(), "gated") {
 		t.Fatalf("persistent state: %v", err)
 	}
+	withState := withGate
+	withState.GateState = []float64{0, 0}
+	if _, err := gated.Forward(ctx, withState, []float64{0, 0}, inputs); err == nil || !strings.Contains(err.Error(), "gate_state") {
+		t.Fatalf("gate_state accepted by gate %q: %v", GateCurrent, err)
+	}
+	stateConfig := base
+	stateConfig.Gate = GateCurrentState
+	stateGated, err := NewContinuous(stateConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stateGated.Forward(ctx, withGate, []float64{0, 0}, inputs); err == nil || !strings.Contains(err.Error(), "gate_state") {
+		t.Fatalf("state gate ran without gate_state: %v", err)
+	}
+	if _, err := stateGated.Forward(ctx, withState, []float64{0, 0}, inputs); err != nil {
+		t.Fatal(err)
+	}
+	nonFinite := withState
+	nonFinite.GateState = []float64{0, math.NaN()}
+	if _, err := stateGated.Forward(ctx, nonFinite, []float64{0, 0}, inputs); err == nil {
+		t.Fatal("non-finite gate_state accepted")
+	}
+	if _, err := stateGated.CompileInfer32(withState); err == nil {
+		t.Fatal("Infer32 accepted the state gate")
+	}
+	if _, err := stateGated.ForwardRecompute(ctx, withState, []float64{0, 0}, inputs, 1); err == nil || !strings.Contains(err.Error(), "gated") {
+		t.Fatalf("recompute with the state gate: %v", err)
+	}
 	vector := gatedConfig
 	vector.StateDimension = 2
 	if _, err := NewVectorContinuous(vector); err == nil {
@@ -210,7 +262,7 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 // exactly Forward's outputs (InferLast its last row) for delayed and undelayed graphs, serial and
 // partitioned, with and without each gate.
 func TestInferMatchesForwardOutputs(t *testing.T) {
-	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
+	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign, GateCurrentState} {
 		for _, activation := range []string{"tanh", "softsign", "softplus"} {
 			for _, delayed := range []bool{true, false} {
 				for _, workers := range []int{1, 3} {
@@ -227,6 +279,9 @@ func TestInferMatchesForwardOutputs(t *testing.T) {
 					p := cloneParameters(f.params)
 					if gate == "" {
 						p.GateGain, p.GateBias = nil, nil
+					}
+					if gate == GateCurrentState {
+						p.GateState = []float64{.4, -.7, .2, .9, -.3, .5, -.1}
 					}
 					tr, err := m.Forward(context.Background(), p, f.initial, f.inputs)
 					if err != nil {
@@ -267,7 +322,7 @@ func TestInferMatchesForwardOutputs(t *testing.T) {
 }
 
 func TestOverflowingDriveIsRejected(t *testing.T) {
-	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign} {
+	for _, gate := range []string{"", GateCurrent, GateCurrentSoftsign, GateCurrentState} {
 		for _, activation := range []string{"tanh", "softsign", "softplus"} {
 			for _, gain := range []float64{0, 1} {
 				f := newGateFixture(t, 7, math.Log(.4), GateCurrent, activation)
@@ -284,6 +339,9 @@ func TestOverflowingDriveIsRejected(t *testing.T) {
 					for i := range p.GateGain {
 						p.GateGain[i] = gain
 					}
+				}
+				if gate == GateCurrentState {
+					p.GateState = make([]float64, c.Nodes)
 				}
 				// Bias plus a same-signed drive overflows to an infinite drive.
 				for i := range p.Bias {
@@ -306,5 +364,112 @@ func TestOverflowingDriveIsRejected(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+// TestZeroGateStateIsGateCurrent checks that GateCurrentState with every
+// gate_state zero reproduces GateCurrent bit for bit: voltages, outputs and
+// every gradient group, with clamped and unclamped rates.
+func TestZeroGateStateIsGateCurrent(t *testing.T) {
+	for _, logTau := range []float64{math.Log(2), math.Log(.4)} {
+		for _, activation := range []string{"tanh", "softsign", "softplus"} {
+			f := newGateFixture(t, 5, logTau, GateCurrent, activation)
+			c := f.model.Config()
+			c.Gate = GateCurrentState
+			state, err := NewContinuous(c)
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := cloneParameters(f.params)
+			p.GateState = make([]float64, c.Nodes)
+			ctx := context.Background()
+			wantTrace, err := f.model.Forward(ctx, f.params, f.initial, f.inputs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotTrace, err := state.Forward(ctx, p, f.initial, f.inputs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			same := func(name string, got, want []float64) {
+				t.Helper()
+				if len(got) != len(want) {
+					t.Fatalf("%s/%s: %s has %d values, want %d", activation, c.Gate, name, len(got), len(want))
+				}
+				for i := range want {
+					if math.Float64bits(got[i]) != math.Float64bits(want[i]) {
+						t.Fatalf("%s logTau %.2f: %s[%d] = %v, GateCurrent %v", activation, logTau, name, i, got[i], want[i])
+					}
+				}
+			}
+			for s := range wantTrace.voltage {
+				same("voltage", gotTrace.voltage[s], wantTrace.voltage[s])
+				same("output", gotTrace.output[s], wantTrace.output[s])
+			}
+			for _, window := range []int{0, 4} {
+				want, err := f.model.Backward(ctx, wantTrace, f.up, window)
+				if err != nil {
+					t.Fatal(err)
+				}
+				got, err := state.Backward(ctx, gotTrace, f.up, window)
+				if err != nil {
+					t.Fatal(err)
+				}
+				same("weights", got.Weights, want.Weights)
+				same("bias", got.Bias, want.Bias)
+				same("log_tau", got.LogTau, want.LogTau)
+				same("gate_gain", got.GateGain, want.GateGain)
+				same("gate_bias", got.GateBias, want.GateBias)
+				same("initial", got.Initial, want.Initial)
+				for s := range want.Inputs {
+					same("inputs", got.Inputs[s], want.Inputs[s])
+				}
+				if len(got.GateState) != c.Nodes || want.GateState != nil {
+					t.Fatalf("gate_state gradient lengths %d and %d", len(got.GateState), len(want.GateState))
+				}
+			}
+		}
+	}
+}
+
+// TestGateStateWindowCutsTheVoltagePath checks that a truncated window cuts
+// the gate's voltage term at a boundary exactly like the leak: with window 1
+// and only the last step's upstream nonzero, no gradient reaches the initial
+// voltage, while the untruncated pass differs from the truncated one.
+func TestGateStateWindowCutsTheVoltagePath(t *testing.T) {
+	f := newGateFixture(t, 9, math.Log(2), GateCurrentState, "tanh")
+	ctx := context.Background()
+	tr, err := f.model.Forward(ctx, f.params, f.initial, f.inputs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	full, err := f.model.Backward(ctx, tr, f.up, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cut, err := f.model.Backward(ctx, tr, f.up, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	up := make([][]float64, len(f.up))
+	for s := range up {
+		up[s] = make([]float64, len(f.up[s]))
+	}
+	copy(up[len(up)-1], f.up[len(up)-1])
+	last, err := f.model.Backward(ctx, tr, up, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, v := range last.Initial {
+		if v != 0 {
+			t.Fatalf("initial[%d] = %v across a window boundary", i, v)
+		}
+	}
+	differs := false
+	for i := range full.Initial {
+		differs = differs || full.Initial[i] != cut.Initial[i]
+	}
+	if !differs {
+		t.Fatal("window 1 left the initial gradient unchanged; the fixture exercises nothing")
 	}
 }

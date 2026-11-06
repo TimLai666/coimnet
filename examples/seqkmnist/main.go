@@ -66,8 +66,9 @@ type settings struct {
 	Seed          uint64 `json:"seed"`
 	Workers       int    `json:"workers"`
 	Gate          bool   `json:"gate,omitempty"`
-	// GateSquash "softsign" selects dynamics.GateCurrentSoftsign; empty keeps
-	// the sigmoid gate.
+	// GateSquash "softsign" selects dynamics.GateCurrentSoftsign and "state"
+	// dynamics.GateCurrentState (the sigmoid gate that also sees the neuron's
+	// voltage); empty keeps the sigmoid gate.
 	GateSquash string `json:"gate_squash,omitempty"`
 	// Activation is the core activation; empty means tanh.
 	Activation string `json:"activation,omitempty"`
@@ -221,7 +222,7 @@ func main() {
 	flag.Uint64Var(&s.Seed, "seed", 0, "initialization and shuffling seed")
 	flag.IntVar(&s.Workers, "workers", runtime.NumCPU(), "goroutines computing gradients of one batch")
 	flag.BoolVar(&s.Gate, "gate", false, "add the per-neuron input-current gate (dynamics.GateCurrent), initialized to the plain integrator")
-	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign)`)
+	flag.StringVar(&s.GateSquash, "gate-squash", "", `with --gate, "softsign" squashes the gate without an exponential (dynamics.GateCurrentSoftsign); "state" adds a learnable per-neuron voltage term to the sigmoid gate (dynamics.GateCurrentState), initialized to zero`)
 	flag.StringVar(&s.Activation, "activation", "", "core activation: tanh (default), softsign or softplus")
 	flag.Float64Var(&s.Warmup, "warmup", 0, "fraction of updates spent on the linear learning-rate warmup; 0 keeps 0.3")
 	flag.IntVar(&s.Cols, "cols", 0, "adjacent image columns fed per step (28/cols steps); 0 means 1")
@@ -345,13 +346,28 @@ func runLoaded(s settings, loadPath, benchPath, machine string, fast bool) error
 	if c.Chemistry != nil {
 		s.ChemChannels = len(c.Chemistry.Channels)
 	}
-	if c.Gate == dynamics.GateCurrentSoftsign {
+	switch c.Gate {
+	case dynamics.GateCurrentSoftsign:
 		s.GateSquash = "softsign"
+	case dynamics.GateCurrentState:
+		s.GateSquash = "state"
 	}
 	if c.Nodes > 0 {
 		s.InDegree = len(c.Sources) / c.Nodes
 	}
 	return measure(ctx, tr, fp, s, testX, testY, acc, machine, benchPath)
+}
+
+// checkGateSquash accepts an empty --gate-squash, or "softsign" or "state"
+// together with --gate.
+func checkGateSquash(s settings) error {
+	if s.GateSquash == "" {
+		return nil
+	}
+	if (s.GateSquash != "softsign" && s.GateSquash != "state") || !s.Gate {
+		return errors.New(`--gate-squash takes "softsign" or "state" and needs --gate`)
+	}
+	return nil
 }
 
 func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine string) error {
@@ -398,8 +414,8 @@ func run(s settings, reportPath, benchPath, savePath, checkpointPath, machine st
 	if s.InputNodes > s.Nodes || s.ReadoutNodes > s.Nodes || s.InDegree > s.Nodes || s.Batch < 1 || s.Epochs < 1 {
 		return errors.New("input/readout nodes and in-degree must not exceed nodes; batch and epochs must be positive")
 	}
-	if (s.GateSquash != "" && s.GateSquash != "softsign") || (s.GateSquash != "" && !s.Gate) {
-		return errors.New(`--gate-squash takes "softsign" and needs --gate`)
+	if err := checkGateSquash(s); err != nil {
+		return err
 	}
 	if s.Cols < 0 || side%s.columns() != 0 {
 		return fmt.Errorf("--cols must divide %d", side)
@@ -713,8 +729,13 @@ func build(s settings, topo *topology) (learning.Config, learning.Parameters, in
 	}
 	if s.Gate {
 		cfg.Dynamics.Gate = dynamics.GateCurrent
-		if s.GateSquash == "softsign" {
+		switch s.GateSquash {
+		case "softsign":
 			cfg.Dynamics.Gate = dynamics.GateCurrentSoftsign
+		case "state":
+			cfg.Dynamics.Gate = dynamics.GateCurrentState
+			// Zero gate_state starts exactly as the plain sigmoid gate.
+			p.Core.GateState = make([]float64, s.Nodes)
 		}
 		p.Core.GateGain, p.Core.GateBias = make([]float64, s.Nodes), make([]float64, s.Nodes)
 	}

@@ -23,11 +23,13 @@ type BatchLayout struct {
 // BatchGradient is the reverse pass of one batched episode. The parameter
 // groups are summed over every sequence of the batch, exactly the sum of the
 // per-sequence Backward gradients; GateGain and GateBias are nil without a
-// gate. Inputs[b][t] is sequence b's gradient of its input columns at step t,
-// in BatchLayout.InputNodes order.
+// gate, and GateState is nil unless the gate is GateCurrentState.
+// Inputs[b][t] is sequence b's gradient of its input columns at step t, in
+// BatchLayout.InputNodes order.
 type BatchGradient struct {
 	Weights, Bias, LogTau []float64
 	GateGain, GateBias    []float64
+	GateState             []float64
 	Inputs                [][][]float64
 }
 
@@ -190,6 +192,11 @@ func (g *GPUContinuousBatch) Forward(ctx context.Context, p Parameters, inputs [
 			return nil, err
 		}
 	}
+	if m.config.Gate == GateCurrentState {
+		if params.GateState, err = gpuFloat32Values(p.GateState, "gate_state"); err != nil {
+			return nil, err
+		}
+	}
 	values, err := g.exec.Forward(ctx, params, batch, steps, inputs32)
 	if err != nil {
 		return nil, err
@@ -268,6 +275,9 @@ func (g *GPUContinuousBatch) Backward(ctx context.Context, upstream [][][]float6
 	grad := BatchGradient{Weights: doubles32(got.Weights), Bias: doubles32(got.Bias), LogTau: doubles32(got.LogTau), Inputs: make([][][]float64, batch)}
 	if g.model.config.Gate != "" {
 		grad.GateGain, grad.GateBias = doubles32(got.GateGain), doubles32(got.GateBias)
+	}
+	if g.model.config.Gate == GateCurrentState {
+		grad.GateState = doubles32(got.GateState)
 	}
 	for b := range grad.Inputs {
 		grad.Inputs[b] = make([][]float64, steps)

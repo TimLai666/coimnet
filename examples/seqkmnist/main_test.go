@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/TimLai666/coimnet/dynamics"
 	"github.com/TimLai666/coimnet/learning"
 )
 
@@ -719,5 +720,48 @@ func TestDropSelfLoopsKeepsOutDegreesAndRemovesLoops(t *testing.T) {
 			t.Fatalf("duplicate edge %v", pair)
 		}
 		seen[pair] = true
+	}
+}
+
+// TestGateSquashState checks the "state" squash: it needs --gate, selects
+// dynamics.GateCurrentState with a zero gate_state per node, names the model
+// "-gate-state", and is otherwise the sigmoid-gated model.
+func TestGateSquashState(t *testing.T) {
+	for _, tc := range []struct {
+		s  settings
+		ok bool
+	}{
+		{settings{}, true}, {settings{Gate: true}, true},
+		{settings{Gate: true, GateSquash: "softsign"}, true}, {settings{Gate: true, GateSquash: "state"}, true},
+		{settings{GateSquash: "state"}, false}, {settings{Gate: true, GateSquash: "voltage"}, false},
+	} {
+		if err := checkGateSquash(tc.s); (err == nil) != tc.ok {
+			t.Fatalf("%+v: error %v, want ok=%v", tc.s, err, tc.ok)
+		}
+	}
+	base := settings{Nodes: 40, InputNodes: 5, ReadoutNodes: 6, InDegree: 4, Seed: 7, Gate: true}
+	c0, p0, _ := build(base, nil)
+	s := base
+	s.GateSquash = "state"
+	c, p, _ := build(s, nil)
+	if c.Dynamics.Gate != dynamics.GateCurrentState || len(p.Core.GateState) != s.Nodes {
+		t.Fatalf("gate %q with %d gate_state values", c.Dynamics.Gate, len(p.Core.GateState))
+	}
+	for i, v := range p.Core.GateState {
+		if v != 0 {
+			t.Fatalf("gate_state[%d] = %v, want 0", i, v)
+		}
+	}
+	if name := modelName(s); !strings.Contains(name, "-gate-state") {
+		t.Fatalf("model name %q", name)
+	}
+	o := learning.DefaultOptions()
+	o.Trainable.Gate = true
+	if _, err := learning.NewTrainer(c, p, o); err != nil {
+		t.Fatal(err)
+	}
+	c.Dynamics.Gate, p.Core.GateState = dynamics.GateCurrent, nil
+	if !reflect.DeepEqual(c, c0) || !reflect.DeepEqual(p, p0) {
+		t.Fatal("the state squash changed more than the gate")
 	}
 }

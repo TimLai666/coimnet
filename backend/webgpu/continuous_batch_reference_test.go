@@ -27,14 +27,14 @@ type batchCase struct {
 
 func batchCases() []batchCase {
 	var cases []batchCase
-	for _, gate := range []string{"", dynamics.GateCurrent, dynamics.GateCurrentSoftsign} {
+	for _, gate := range []string{"", dynamics.GateCurrent, dynamics.GateCurrentSoftsign, dynamics.GateCurrentState} {
 		for _, activation := range []string{"tanh", "softsign"} {
 			for _, logTau := range []float64{math.Log(2), math.Log(.4)} {
 				cases = append(cases, batchCase{gate: gate, activation: activation, logTau: logTau, everyStep: logTau < 0})
 			}
 		}
 	}
-	return append(cases, batchCase{gate: dynamics.GateCurrent, activation: "softplus", logTau: math.Log(.4)}, batchCase{activation: "softplus", logTau: math.Log(2), everyStep: true})
+	return append(cases, batchCase{gate: dynamics.GateCurrent, activation: "softplus", logTau: math.Log(.4)}, batchCase{gate: dynamics.GateCurrentState, activation: "softplus", logTau: math.Log(.4), everyStep: true}, batchCase{activation: "softplus", logTau: math.Log(2), everyStep: true})
 }
 
 func (c batchCase) name() string {
@@ -74,6 +74,9 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 	if c.gate != "" {
 		p.GateGain, p.GateBias = normal(nodes, .8, 0), normal(nodes, .5, 0)
 	}
+	if c.gate == dynamics.GateCurrentState {
+		p.GateState = normal(nodes, .7, 0)
+	}
 	readSteps := 1
 	if c.everyStep {
 		readSteps = steps
@@ -97,7 +100,7 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 			v[i] = float64(float32(v[i]))
 		}
 	}
-	for _, v := range [][]float64{p.Weights, p.Bias, p.GateGain, p.GateBias} {
+	for _, v := range [][]float64{p.Weights, p.Bias, p.GateGain, p.GateBias, p.GateState} {
 		round(v)
 	}
 	for b := range inputs {
@@ -113,6 +116,9 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 	want := dynamics.Gradient{Weights: make([]float64, edges), Bias: make([]float64, nodes), LogTau: make([]float64, nodes)}
 	if c.gate != "" {
 		want.GateGain, want.GateBias = make([]float64, nodes), make([]float64, nodes)
+	}
+	if c.gate == dynamics.GateCurrentState {
+		want.GateState = make([]float64, nodes)
 	}
 	wantReadout := make([][][]float64, batch)
 	wantInputs := make([][][]float64, batch)
@@ -153,7 +159,7 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, pair := range [][2][]float64{{want.Weights, g.Weights}, {want.Bias, g.Bias}, {want.LogTau, g.LogTau}, {want.GateGain, g.GateGain}, {want.GateBias, g.GateBias}} {
+		for _, pair := range [][2][]float64{{want.Weights, g.Weights}, {want.Bias, g.Bias}, {want.LogTau, g.LogTau}, {want.GateGain, g.GateGain}, {want.GateBias, g.GateBias}, {want.GateState, g.GateState}} {
 			for i, v := range pair[1] {
 				pair[0][i] += v
 			}
@@ -181,7 +187,7 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 			t.Errorf("Close: %v", err)
 		}
 	}()
-	params := webgpu.ContinuousBatchParameters{Weights: f32(p.Weights), Bias: f32(p.Bias), GateGain: f32(p.GateGain), GateBias: f32(p.GateBias)}
+	params := webgpu.ContinuousBatchParameters{Weights: f32(p.Weights), Bias: f32(p.Bias), GateGain: f32(p.GateGain), GateBias: f32(p.GateBias), GateState: f32(p.GateState)}
 	for _, raw := range p.LogTau {
 		tau := math.Exp(raw)
 		lambda := math.Exp(-1 / tau)
@@ -222,6 +228,7 @@ func compareBatchWithContinuous(t *testing.T, open batchOpener, c batchCase, see
 		assertClose(t, "log_tau", got.LogTau, want.LogTau)
 		assertClose(t, "gate_gain", got.GateGain, want.GateGain)
 		assertClose(t, "gate_bias", got.GateBias, want.GateBias)
+		assertClose(t, "gate_state", got.GateState, want.GateState)
 		var flatInputGrad []float64
 		for b := range wantInputs {
 			for s := range wantInputs[b] {

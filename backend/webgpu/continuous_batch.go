@@ -21,6 +21,7 @@ const (
 	GateNone           = ""
 	GateSigmoid        = "current"
 	GateSoftsign       = "current_softsign"
+	GateSigmoidState   = "current_state"
 )
 
 const (
@@ -53,29 +54,33 @@ type ContinuousBatchConfig struct {
 // Weights follow the declared edge order. Lambda is exp(-dt/tau), Alpha is
 // 1-Lambda, and TauSlope is dLambda/dlog_tau = Lambda*dt/tau, all computed by
 // the caller so their precision is the caller's choice. GateGain and GateBias
-// are required exactly when the configuration declares a gate.
+// are required exactly when the configuration declares a gate, and GateState
+// exactly when it is GateSigmoidState.
 type ContinuousBatchParameters struct {
-	Weights  []float32
-	Bias     []float32
-	Lambda   []float32
-	Alpha    []float32
-	TauSlope []float32
-	GateGain []float32
-	GateBias []float32
+	Weights   []float32
+	Bias      []float32
+	Lambda    []float32
+	Alpha     []float32
+	TauSlope  []float32
+	GateGain  []float32
+	GateBias  []float32
+	GateState []float32
 }
 
 // ContinuousBatchGradient is the reverse pass of the last Forward. Weights
-// (declared edge order), Bias, LogTau, GateGain and GateBias are summed over
-// every sequence and step; GateGain and GateBias are nil without a gate.
+// (declared edge order), Bias, LogTau, GateGain, GateBias and GateState are
+// summed over every sequence and step; GateGain and GateBias are nil without
+// a gate, and GateState is nil unless the gate is GateSigmoidState.
 // Inputs is the gradient of every input column, laid out [batch][step][width]
 // like the Forward inputs.
 type ContinuousBatchGradient struct {
-	Weights  []float32
-	Bias     []float32
-	LogTau   []float32
-	GateGain []float32
-	GateBias []float32
-	Inputs   []float32
+	Weights   []float32
+	Bias      []float32
+	LogTau    []float32
+	GateGain  []float32
+	GateBias  []float32
+	GateState []float32
+	Inputs    []float32
 }
 
 // ContinuousBatchMetrics are host wall-clock measurements of construction and
@@ -211,6 +216,8 @@ func buildContinuousBatchLayout(cfg ContinuousBatchConfig) (continuousBatchLayou
 		l.gate = 1
 	case GateSoftsign:
 		l.gate = 2
+	case GateSigmoidState:
+		l.gate = 3
 	default:
 		return l, fmt.Errorf("%w: unsupported gate %q", ErrInvalidConfig, cfg.Gate)
 	}
@@ -441,7 +448,7 @@ func (c *ContinuousBatch) createModelBuffers() error {
 	if c.nodeIndex, err = c.newBuffer("node-index", uint64(len(l.nodeIndex)), storage); err != nil {
 		return err
 	}
-	if c.coef, err = c.newBuffer("coefficients", 6*uint64(l.nodes), storage); err != nil {
+	if c.coef, err = c.newBuffer("coefficients", 7*uint64(l.nodes), storage); err != nil {
 		return err
 	}
 	if c.slotWeights, err = c.newBuffer("slot-weights", uint64(l.edges), storage); err != nil {
@@ -473,6 +480,12 @@ func (l continuousBatchLayout) episodeCounts(b, t int) (map[string]uint64, error
 	}
 	bn := uint64(b) * uint64(l.nodes)
 	plane := bn * uint64(t)
+	// The state gate adds a gate_state plane and gradient block; the other
+	// gates keep the buffers they had before it existed.
+	partials, nodeGroups := uint64(3), uint64(4)
+	if l.gate == 3 {
+		partials, nodeGroups = 4, 5
+	}
 	counts := map[string]uint64{
 		"inputs":   uint64(b) * uint64(t) * uint64(l.width),
 		"voltage":  plane + bn,
@@ -480,10 +493,10 @@ func (l continuousBatchLayout) episodeCounts(b, t int) (map[string]uint64, error
 		"history":  4 * plane,
 		"upstream": uint64(b) * uint64(l.readSteps(t)) * uint64(l.readout),
 		"drive":    plane,
-		"partial":  3 * plane,
+		"partial":  partials * plane,
 		"carry":    2 * bn,
 		"readout":  uint64(b) * uint64(l.readSteps(t)) * uint64(l.readout),
-		"gradient": uint64(l.edges) + 4*uint64(l.nodes),
+		"gradient": uint64(l.edges) + nodeGroups*uint64(l.nodes),
 		"inputGrad": uint64(b) * uint64(t) *
 			uint64(l.width),
 	}
@@ -653,9 +666,12 @@ func (l continuousBatchLayout) validateParameters(p ContinuousBatchParameters) e
 		{"weights", p.Weights, l.edges}, {"bias", p.Bias, l.nodes}, {"lambda", p.Lambda, l.nodes},
 		{"alpha", p.Alpha, l.nodes}, {"tau slope", p.TauSlope, l.nodes},
 	}
-	gates := 0
+	gates, states := 0, 0
 	if l.gate != 0 {
 		gates = l.nodes
+	}
+	if l.gate == 3 {
+		states = l.nodes
 	}
 	checks = append(checks, struct {
 		name   string
@@ -665,7 +681,11 @@ func (l continuousBatchLayout) validateParameters(p ContinuousBatchParameters) e
 		name   string
 		values []float32
 		want   int
-	}{"gate bias", p.GateBias, gates})
+	}{"gate bias", p.GateBias, gates}, struct {
+		name   string
+		values []float32
+		want   int
+	}{"gate state", p.GateState, states})
 	for _, check := range checks {
 		if err := validateValues(check.values, check.want, check.name); err != nil {
 			return err
@@ -708,7 +728,7 @@ func (c *ContinuousBatch) Forward(ctx context.Context, p ContinuousBatchParamete
 	}
 	transferStart := time.Now()
 	queue := c.device.Queue()
-	coef := make([]float32, 0, 6*l.nodes)
+	coef := make([]float32, 0, 7*l.nodes)
 	coef = append(coef, p.Bias...)
 	coef = append(coef, p.Lambda...)
 	coef = append(coef, p.Alpha...)
@@ -718,6 +738,11 @@ func (c *ContinuousBatch) Forward(ctx context.Context, p ContinuousBatchParamete
 		coef = append(coef, p.GateBias...)
 	} else {
 		coef = append(coef, make([]float32, 2*l.nodes)...)
+	}
+	if l.gate == 3 {
+		coef = append(coef, p.GateState...)
+	} else {
+		coef = append(coef, make([]float32, l.nodes)...)
 	}
 	slotWeights := make([]float32, l.edges)
 	for slot, edge := range l.slotEdge {
@@ -918,6 +943,9 @@ func (l continuousBatchLayout) splitGradient(sums, inputs []float32) ContinuousB
 	if l.gate != 0 {
 		g.GateGain = append([]float32(nil), sums[e+2*n:e+3*n]...)
 		g.GateBias = append([]float32(nil), sums[e+3*n:e+4*n]...)
+	}
+	if l.gate == 3 {
+		g.GateState = append([]float32(nil), sums[e+4*n:e+5*n]...)
 	}
 	return g
 }
