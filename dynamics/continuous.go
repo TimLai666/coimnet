@@ -51,7 +51,7 @@ type Config struct {
 	// exactly. All three are supported by Forward and Backward on fresh
 	// episodes, and by the batched GPUContinuousBatch; recompute, persistent
 	// state, vector nodes and the per-step GPU adapter refuse a gated model,
-	// and Infer32 supports only GateCurrentSoftsign.
+	// and Infer32 supports all three with the softsign or tanh activation.
 	Gate string `json:"gate,omitempty"`
 	// Chemistry declares the optional activity-driven modulation block (see
 	// Chemistry). nil keeps the core, its JSON and its fingerprints exactly as

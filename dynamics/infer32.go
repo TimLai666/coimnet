@@ -6,8 +6,9 @@ import (
 	"math"
 )
 
-// Infer32 is a float32 prediction path for an undelayed continuous model with
-// the softsign gate and softsign activation and no chemistry. It stores each
+// Infer32 is a float32 prediction path for an undelayed continuous model
+// without chemistry, gated by GateCurrentSoftsign, GateCurrent or
+// GateCurrentState, with the softsign or tanh activation. It stores each
 // node's in-edges contiguously (int32 sources, float32 weights) and sums them
 // with four independent accumulators, so its outputs differ from Infer by
 // float32 rounding and summation order; it is not bit-identical and is meant
@@ -20,19 +21,26 @@ type Infer32 struct {
 	bias  []float32
 	gain  []float32
 	gbias []float32
-	alpha []float32
-	v, y  []float32
-	drive []float32
+	// gstate is the GateCurrentState voltage weight, nil for other gates.
+	gstate []float32
+	alpha  []float32
+	// sigmoid selects the sigmoid gate (GateCurrent, GateCurrentState) over
+	// the softsign one; tanh selects the tanh activation over softsign.
+	sigmoid, tanh bool
+	v, y          []float32
+	drive         []float32
 }
 
 // CompileInfer32 packs m and p for Infer32. It refuses delayed edges,
-// chemistry, partitions, and gate or activation kinds other than softsign.
+// chemistry, partitions, an ungated model, and activations other than
+// softsign and tanh.
 func (m *Continuous) CompileInfer32(p Parameters) (*Infer32, error) {
 	if m == nil || m.config.Nodes <= 0 {
 		return nil, fmt.Errorf("uninitialized model")
 	}
-	if !m.zeroDelay || m.chem != nil || m.config.Gate != GateCurrentSoftsign || m.act != activationSoftsign {
-		return nil, fmt.Errorf("Infer32 needs an undelayed softsign-gated softsign model without chemistry")
+	gate := m.config.Gate
+	if !m.zeroDelay || m.chem != nil || gate == "" || (m.act != activationSoftsign && m.act != activationTanh) {
+		return nil, fmt.Errorf("Infer32 needs an undelayed gated softsign or tanh model without chemistry")
 	}
 	n := m.config.Nodes
 	if len(m.config.Sources) > math.MaxInt32 {
@@ -48,7 +56,17 @@ func (m *Continuous) CompileInfer32(p Parameters) (*Infer32, error) {
 	}
 	f := &Infer32{n: n, start: make([]int32, n+1), src: make([]int32, len(p.Weights)), w: make([]float32, len(p.Weights)),
 		bias: make([]float32, n), gain: make([]float32, n), gbias: make([]float32, n), alpha: make([]float32, n),
-		v: make([]float32, n), y: make([]float32, n), drive: make([]float32, n)}
+		v: make([]float32, n), y: make([]float32, n), drive: make([]float32, n),
+		sigmoid: gate != GateCurrentSoftsign, tanh: m.act == activationTanh}
+	if gate == GateCurrentState {
+		if err := vector(p.GateState, n, "gate_state"); err != nil {
+			return nil, err
+		}
+		f.gstate = make([]float32, n)
+		for i, x := range p.GateState {
+			f.gstate[i] = float32(x)
+		}
+	}
 	for _, t := range m.config.Targets {
 		f.start[t+1]++
 	}
@@ -83,7 +101,7 @@ func (f *Infer32) Reset(initial []float32) error {
 	}
 	copy(f.v, initial)
 	for i, v := range f.v {
-		f.y[i] = v / (1 + abs32(v))
+		f.y[i] = f.activate(v)
 	}
 	return nil
 }
@@ -146,9 +164,19 @@ func (f *Infer32) accumulate(in []float32) {
 	}
 }
 
-// step applies the softsign gate and activation in place. The drive reads the
+func (f *Infer32) activate(v float32) float32 {
+	if f.tanh {
+		return float32(math.Tanh(float64(v)))
+	}
+	return v / (1 + abs32(v))
+}
+
+// step applies the gate and activation in place. The drive reads the
 // previous outputs, so y can be overwritten only after accumulate finished.
 func (f *Infer32) step() int {
+	if f.sigmoid || f.tanh {
+		return f.stepGeneral()
+	}
 	n := f.n
 	drive, v, y, bias, gain, gb, alpha := f.drive[:n], f.v[:n], f.y[:n], f.bias[:n], f.gain[:n], f.gbias[:n], f.alpha[:n]
 	bad := -1
@@ -162,6 +190,37 @@ func (f *Infer32) step() int {
 		nv := v[i] + a*(d-v[i])
 		v[i] = nv
 		y[i] = nv / (1 + abs32(nv))
+		if bad < 0 && nv-nv != 0 {
+			bad = i
+		}
+	}
+	return bad
+}
+
+// stepGeneral is step for the sigmoid gates or the tanh activation. The
+// sigmoid and tanh run in float64 and are rounded to float32.
+func (f *Infer32) stepGeneral() int {
+	n := f.n
+	drive, v, y, bias, gain, gb, alpha := f.drive[:n], f.v[:n], f.y[:n], f.bias[:n], f.gain[:n], f.gbias[:n], f.alpha[:n]
+	bad := -1
+	for i, x := range drive {
+		d := x + bias[i]
+		z := gain[i]*d + gb[i]
+		if f.gstate != nil {
+			z += f.gstate[i] * v[i]
+		}
+		var a float32
+		if f.sigmoid {
+			a = 2 * alpha[i] * float32(1/(1+math.Exp(-float64(z))))
+		} else {
+			a = alpha[i] * (1 + z/(1+abs32(z)))
+		}
+		if a > 1 {
+			a = 1
+		}
+		nv := v[i] + a*(d-v[i])
+		v[i] = nv
+		y[i] = f.activate(nv)
 		if bad < 0 && nv-nv != 0 {
 			bad = i
 		}

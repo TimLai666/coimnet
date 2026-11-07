@@ -245,8 +245,8 @@ func TestGateConfigurationAndUnsupportedPaths(t *testing.T) {
 	if _, err := stateGated.Forward(ctx, nonFinite, []float64{0, 0}, inputs); err == nil {
 		t.Fatal("non-finite gate_state accepted")
 	}
-	if _, err := stateGated.CompileInfer32(withState); err == nil {
-		t.Fatal("Infer32 accepted the state gate")
+	if _, err := stateGated.CompileInfer32(withGate); err == nil || !strings.Contains(err.Error(), "gate_state") {
+		t.Fatalf("Infer32 compiled the state gate without gate_state: %v", err)
 	}
 	if _, err := stateGated.ForwardRecompute(ctx, withState, []float64{0, 0}, inputs, 1); err == nil || !strings.Contains(err.Error(), "gated") {
 		t.Fatalf("recompute with the state gate: %v", err)

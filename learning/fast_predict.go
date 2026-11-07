@@ -10,8 +10,8 @@ import (
 )
 
 // FastPredictor is an opt-in float32 prediction path for a last-step network
-// whose core is an undelayed continuous core with the softsign gate and
-// softsign activation and no chemistry. The encoder and readout stay Insyra
+// whose core is an undelayed gated continuous core (any gate) with the
+// softsign or tanh activation and no chemistry. The encoder and readout stay Insyra
 // float32 products with no tape; the core runs dynamics.Infer32. Its logits
 // differ from Network.Predict by float32 rounding in the core, so it is meant
 // for latency measurement and deployment, not as the reference result.

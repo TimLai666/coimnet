@@ -11,10 +11,15 @@ import (
 
 func fastPredictFixture(t *testing.T, inputNodes bool, signs bool) (*Network, Parameters, [][]float64) {
 	t.Helper()
+	return fastPredictFixtureGate(t, inputNodes, signs, dynamics.GateCurrentSoftsign)
+}
+
+func fastPredictFixtureGate(t *testing.T, inputNodes bool, signs bool, gate string) (*Network, Parameters, [][]float64) {
+	t.Helper()
 	const nodes, degree, inputs, outputs, steps = 64, 9, 7, 5, 12
 	rnd := rand.New(rand.NewPCG(3, 4))
 	c := Config{
-		Dynamics:  dynamics.Config{Nodes: nodes, DT: 1, Activation: "softsign", Gate: dynamics.GateCurrentSoftsign},
+		Dynamics:  dynamics.Config{Nodes: nodes, DT: 1, Activation: "softsign", Gate: gate},
 		InputSize: inputs, OutputSize: outputs,
 	}
 	for target := range nodes {
@@ -57,6 +62,12 @@ func fastPredictFixture(t *testing.T, inputNodes bool, signs bool) (*Network, Pa
 		p.Core.Bias[i], p.Core.LogTau[i] = rnd.NormFloat64()*.1, rnd.Float64()*2
 		p.Core.GateGain[i], p.Core.GateBias[i] = rnd.NormFloat64(), rnd.NormFloat64()
 	}
+	if gate == dynamics.GateCurrentState {
+		p.Core.GateState = make([]float64, nodes)
+		for i := range nodes {
+			p.Core.GateState[i] = rnd.NormFloat64()
+		}
+	}
 	for i := range p.Encoder {
 		p.Encoder[i] = rnd.NormFloat64() * .4
 	}
@@ -78,9 +89,11 @@ func TestFastPredictMatchesPredict(t *testing.T) {
 	for _, tc := range []struct {
 		name               string
 		inputNodes, signed bool
-	}{{"all-nodes", false, false}, {"input-nodes", true, false}, {"edge-signs", true, true}} {
+		gate               string
+	}{{"all-nodes", false, false, dynamics.GateCurrentSoftsign}, {"input-nodes", true, false, dynamics.GateCurrentSoftsign},
+		{"edge-signs", true, true, dynamics.GateCurrentSoftsign}, {"state-gate", true, false, dynamics.GateCurrentState}} {
 		t.Run(tc.name, func(t *testing.T) {
-			n, p, x := fastPredictFixture(t, tc.inputNodes, tc.signed)
+			n, p, x := fastPredictFixtureGate(t, tc.inputNodes, tc.signed, tc.gate)
 			want, err := n.Predict(ctx, p, x)
 			if err != nil {
 				t.Fatal(err)

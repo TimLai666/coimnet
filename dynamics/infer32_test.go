@@ -15,8 +15,12 @@ type infer32Case struct {
 }
 
 func newInfer32Case(tb testing.TB, nodes, degree, steps int, shuffled bool) infer32Case {
+	return newInfer32CaseWith(tb, nodes, degree, steps, shuffled, GateCurrentSoftsign, "softsign")
+}
+
+func newInfer32CaseWith(tb testing.TB, nodes, degree, steps int, shuffled bool, gate, activation string) infer32Case {
 	rnd := rand.New(rand.NewPCG(1, 2))
-	c := Config{Nodes: nodes, DT: 1, Activation: "softsign", Gate: GateCurrentSoftsign}
+	c := Config{Nodes: nodes, DT: 1, Activation: activation, Gate: gate}
 	for target := range nodes {
 		for range degree {
 			c.Sources = append(c.Sources, rnd.IntN(nodes))
@@ -42,6 +46,12 @@ func newInfer32Case(tb testing.TB, nodes, degree, steps int, shuffled bool) infe
 		p.LogTau[i] = rnd.Float64() * 2
 		p.GateGain[i] = rnd.NormFloat64()
 		p.GateBias[i] = rnd.NormFloat64()
+	}
+	if gate == GateCurrentState {
+		p.GateState = make([]float64, nodes)
+		for i := range nodes {
+			p.GateState[i] = rnd.NormFloat64()
+		}
 	}
 	k := infer32Case{m: m, p: p, inputs: make([][]float64, steps), inputs3: make([][]float32, steps)}
 	for t := range steps {
@@ -78,6 +88,34 @@ func TestInfer32MatchesInfer(t *testing.T) {
 		}
 		if worst > 1e-4 {
 			t.Fatalf("shuffled=%v: max |float32 - float64| = %g, want <= 1e-4", shuffled, worst)
+		}
+	}
+}
+
+func TestInfer32MatchesInferForEveryGateAndActivation(t *testing.T) {
+	ctx := context.Background()
+	for _, gate := range []string{GateCurrentSoftsign, GateCurrent, GateCurrentState} {
+		for _, act := range []string{"softsign", "tanh"} {
+			k := newInfer32CaseWith(t, 200, 17, 40, true, gate, act)
+			want, err := k.m.InferLast(ctx, k.p, make([]float64, 200), k.inputs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			f, err := k.m.CompileInfer32(k.p)
+			if err != nil {
+				t.Fatalf("%s/%s: %v", gate, act, err)
+			}
+			got, err := f.InferLast(ctx, make([]float32, 200), k.inputs3)
+			if err != nil {
+				t.Fatal(err)
+			}
+			worst := 0.0
+			for i := range want {
+				worst = math.Max(worst, math.Abs(want[i]-float64(got[i])))
+			}
+			if worst > 1e-4 {
+				t.Fatalf("%s/%s: max |float32 - float64| = %g, want <= 1e-4", gate, act, worst)
+			}
 		}
 	}
 }
