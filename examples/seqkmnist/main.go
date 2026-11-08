@@ -257,6 +257,7 @@ func main() {
 	savePath := flag.String("save", "", "new file for the trained learning.TrainingSnapshot JSON")
 	checkpointPath := flag.String("checkpoint", "", "file rewritten after every epoch; a run started with an existing checkpoint of the same settings resumes from it")
 	loadPath := flag.String("load", "", "skip training: load this TrainingSnapshot JSON (or a --checkpoint file), evaluate it and (with --bench) measure it in this fresh process")
+	prune := flag.Float64("prune", 0, "with --fast-predict, leave out this fraction of core edges with the smallest |weight| (learning.CompileFastPredictPruned); with --val-count the held-out training images are scored too, to choose the fraction")
 	fastPredict := flag.Bool("fast-predict", false, "with --load, also score the test split with the float32 learning.FastPredictor, report its argmax agreement with Trainer.Predict, and measure it with --bench")
 	machine := flag.String("machine", "", "machine name for the bench result (default: host name)")
 	cpuProfile := flag.String("cpuprofile", "", "write a CPU profile of the run to this new file")
@@ -281,9 +282,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, "seqkmnist: --fast-predict needs --load")
 		os.Exit(2)
 	}
+	if *prune != 0 && !*fastPredict {
+		fmt.Fprintln(os.Stderr, "seqkmnist: --prune needs --fast-predict")
+		os.Exit(2)
+	}
 	var err error
 	if *loadPath != "" {
-		err = runLoaded(s, *loadPath, *benchPath, *machine, *fastPredict)
+		err = runLoaded(s, *loadPath, *benchPath, *machine, *fastPredict, *prune)
 	} else {
 		err = run(s, *reportPath, *benchPath, *savePath, *checkpointPath, *machine)
 	}
@@ -295,8 +300,9 @@ func main() {
 }
 
 // runLoaded evaluates a saved model in a process that never trained, so the
-// measured peak memory covers loading the model and the test images only.
-func runLoaded(s settings, loadPath, benchPath, machine string, fast bool) error {
+// measured peak memory covers loading the model and the test images only
+// (and, with --prune and --val-count, the held-out training images).
+func runLoaded(s settings, loadPath, benchPath, machine string, fast bool, prune float64) error {
 	ctx := context.Background()
 	b, err := os.ReadFile(loadPath)
 	if err != nil {
@@ -329,14 +335,34 @@ func runLoaded(s settings, loadPath, benchPath, machine string, fast bool) error
 		if err != nil {
 			return err
 		}
-		if fp, err = net.CompileFastPredict(snapshot.Parameters); err != nil {
+		if fp, err = net.CompileFastPredictPruned(snapshot.Parameters, prune); err != nil {
 			return err
+		}
+		label := "fast predict"
+		if prune > 0 {
+			label = fmt.Sprintf("fast predict pruned %g (%d of %d core edges)", prune, fp.CoreEdges(), len(snapshot.Config.Dynamics.Sources))
+			if s.ValCount > 0 {
+				trainX, trainY, err := readSplit(s.DataDir, "train", s.TrainCount, s.columns())
+				if err != nil {
+					return err
+				}
+				_, valX, _, valY, err := holdOut(trainX, trainY, s.ValCount)
+				if err != nil {
+					return err
+				}
+				a, err := compareFast(ctx, tr, fp, valX, valY)
+				if err != nil {
+					return err
+				}
+				fmt.Printf("%s: val %.4f, argmax agrees with the unpruned model on %d of %d images\n", label, a.accuracy, a.agree, len(valX))
+			}
 		}
 		a, err := compareFast(ctx, tr, fp, testX, testY)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("fast predict: test %.4f, argmax agrees on %d of %d images, max |logit difference| %.3g\n", a.accuracy, a.agree, len(testX), a.maxDiff)
+		fmt.Printf("%s: test %.4f, argmax agrees on %d of %d images, max |logit difference| %.3g\n", label, a.accuracy, a.agree, len(testX), a.maxDiff)
+		acc = a.accuracy
 	}
 	if benchPath == "" {
 		return nil
@@ -960,6 +986,16 @@ func measure(ctx context.Context, tr *learning.Trainer, fp *learning.FastPredict
 		model += "-fast32"
 		notes = append(notes, "learning.FastPredictor: float32 core (dynamics.Infer32), Insyra float32 encoder and readout without a tape")
 	}
+	snapshot := tr.Snapshot()
+	parameters := bench.CountParameters(snapshot.Parameters)
+	trainable := bench.CountTrainable(snapshot.Parameters, snapshot.Options)
+	if fp != nil {
+		if dropped := len(snapshot.Config.Dynamics.Sources) - fp.CoreEdges(); dropped > 0 {
+			model += fmt.Sprintf("-pruned%d", dropped)
+			parameters, trainable = parameters-int64(dropped), trainable-int64(dropped)
+			notes = append(notes, fmt.Sprintf("%d core edges with the smallest |weight| pruned; parameter counts exclude them", dropped))
+		}
+	}
 	latency, err := bench.Measure(ctx, 50, samples, func(ctx context.Context, i int) error {
 		_, err := predict(ctx, xs[i])
 		return err
@@ -967,14 +1003,13 @@ func measure(ctx context.Context, tr *learning.Trainer, fp *learning.FastPredict
 	if err != nil {
 		return err
 	}
-	snapshot := tr.Snapshot()
 	result := bench.Result{
 		SchemaVersion: bench.SchemaVersion, Framework: "coimnet",
 		Model: model,
 		Task:  "kmnist-t10k-column-sequence", Split: fmt.Sprintf("first:%d", len(xs)),
 		Host:       bench.CurrentHost(machine, ""),
-		Parameters: bench.CountParameters(snapshot.Parameters),
-		Trainable:  bench.CountTrainable(snapshot.Parameters, snapshot.Options),
+		Parameters: parameters,
+		Trainable:  trainable,
 		// After --load the peak covers loading and evaluation only; after
 		// training in the same process it is an upper bound.
 		PeakRSSBytes: bench.PeakRSS(),

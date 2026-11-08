@@ -1,9 +1,11 @@
 package learning
 
 import (
+	"cmp"
 	"context"
 	"fmt"
 	"math"
+	"slices"
 
 	"github.com/HazelnutParadise/insyra/nn"
 	"github.com/TimLai666/coimnet/dynamics"
@@ -31,6 +33,18 @@ type FastPredictor struct {
 // float32 path does not reproduce: other cores, vector nodes, a readout of
 // every step, delayed edges, chemistry, or another gate or activation.
 func (n *Network) CompileFastPredict(p Parameters) (*FastPredictor, error) {
+	return n.CompileFastPredictPruned(p, 0)
+}
+
+// CompileFastPredictPruned is CompileFastPredict with the fraction drop of
+// core edges with the smallest effective |weight| left out (ties broken by
+// edge order), so the core sums fewer edges per step. drop is in [0, 1); 0
+// keeps every edge. A pruned predictor is a different model from p: its
+// accuracy has to be measured, and CoreEdges reports how many edges it kept.
+func (n *Network) CompileFastPredictPruned(p Parameters, drop float64) (*FastPredictor, error) {
+	if !(drop >= 0 && drop < 1) {
+		return nil, fmt.Errorf("prune fraction %v is not in [0, 1)", drop)
+	}
 	if n == nil {
 		return nil, fmt.Errorf("nil network")
 	}
@@ -50,6 +64,9 @@ func (n *Network) CompileFastPredict(p Parameters) (*FastPredictor, error) {
 	core, err := n.coreParameters(p)
 	if err != nil {
 		return nil, err
+	}
+	if k := int(drop * float64(len(core.Core.Weights))); k > 0 {
+		core.Core.Weights = pruneSmallest(core.Core.Weights, k)
 	}
 	f, err := cpu.model.CompileInfer32(core.Core)
 	if err != nil {
@@ -71,6 +88,24 @@ func (n *Network) CompileFastPredict(p Parameters) (*FastPredictor, error) {
 		encoder: encoder, readout: readout, core: f,
 		row: make([]float32, nodes), initial: make([]float32, nodes), sel: make([]float32, len(n.config.ReadoutNodes)),
 	}, nil
+}
+
+// CoreEdges is the number of core edges the predictor sums per step.
+func (fp *FastPredictor) CoreEdges() int { return fp.core.Edges() }
+
+// pruneSmallest returns a copy of w with its k smallest-magnitude entries set
+// to zero, ties going to the lower index.
+func pruneSmallest(w []float64, k int) []float64 {
+	order := make([]int, len(w))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int { return cmp.Compare(math.Abs(w[a]), math.Abs(w[b])) })
+	out := append([]float64(nil), w...)
+	for _, e := range order[:k] {
+		out[e] = 0
+	}
+	return out
 }
 
 // Predict starts an independent episode at zero voltage and returns the

@@ -58,6 +58,17 @@
 
 整個測試集 10,000 張的 argmax 與 `Trainer.Predict` 全部一致，logit 最大差 3.81e-6；正確率同為 0.9070。只看核心（`dynamics` 的 `BenchmarkInfer32K22`／`K36`，n512、28 步）：k22 280→245 µs、k36 550→363 µs。純量 gather 每條邊約 0.6–0.7 ns，已接近讀取上限，batch 1 要再快需要改接線（例如 `seqkmnist --wiring block8`）讓向量指令不必 gather。
 
+## 語音配方的快速推論（2026-11-08）
+
+語音指令的勝出配方（swap 接線、自環、sigmoid 閘門、tanh 活化，416 個節點、約 22,500 條邊、28 步）在 ubuntu-1 單執行緒 batch 1 量到 `FastPredictor` 1.9 ms，GRU h84 是 1.23 ms。剖析後核心時間約一半是邊的加總，約四成是每顆神經元每步各一次的 sigmoid 與 tanh（原本以 float64 的 `math.Exp`、`math.Tanh` 計算）。
+
+- sigmoid 改成 float32 的 `expNeg32`（Cephes expf 多項式），以位元遮罩選正負號，沒有分支；相對誤差 1.9e-7。
+- tanh 改成 13/6 次有理函數（Eigen 的 float tanh 近似），不用指數函數；絕對誤差 3.6e-7。`TestFloat32TanhAndSigmoidAreAccurate` 在 ±30 的密集格點上釘住這兩個誤差。
+- sigmoid 閘門配 tanh 的組合另有展開的迴圈 `stepSigmoidTanh`；每條邊的權重與來源包成一個 64 位元字，加總時每條邊少讀一次記憶體。
+- `dynamics` 的 `BenchmarkInfer32Speech`（同形狀、隨機參數）在雲端 4 核 Xeon 上，最佳值從 0.775–0.789 ms 降到 0.547–0.559 ms，約快 1.42 倍。ubuntu-1 的新數字待量測。
+
+`learning.Network.CompileFastPredictPruned(p, drop)` 會在編譯時略去 |有效權重| 最小的 `drop` 比例核心邊（權重 float32 為 0 的邊 `Infer32` 一律不加總），加總的工作量隨保留的邊數下降。剪過的是不同的模型，準確率要另外量測：`seqkmnist --load CKPT --fast-predict --prune 0.25 --val-count N` 會印出驗證集與測試集準確率，以及和未剪模型的 argmax 一致數；加上 `--bench` 時模型名稱標上剪掉的邊數，參數量也扣掉它們。
+
 ## KMNIST 部署後邊用邊學對決（2026-10-18）
 
 雲端 VM 單執行緒，3 個初始值。新類別情境（預先訓練只看 5 類）中，CoImNet 逐筆梯度更新學完後測試 57.9%，PyTorch MLP 逐筆 SGD 52.5%；圖片反相情境 PyTorch 略好（反相測試 16.0% 對 13.3%）。CoImNet 局部可塑性兩個情境都沒有幫助。消融顯示新類別的差距主要來自有效學習率，兩邊各自挑過學習率後打平（54.7% 對 54.9%）。每次更新 CoImNet 約 3.8 ms、PyTorch 約 0.6 ms；`learning.Individual` 路徑的預測 2.9 ms。證據與重跑命令見 [online-kmnist-20261018](../evidence/online-kmnist-20261018/README.md)。
