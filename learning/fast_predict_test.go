@@ -129,3 +129,57 @@ func TestCompileFastPredictRefusesEveryStepReadout(t *testing.T) {
 		t.Fatal("compiled a network that reads every step")
 	}
 }
+
+func TestFastPredictPrunedMatchesPredictWithZeroedWeights(t *testing.T) {
+	ctx := context.Background()
+	n, p, x := fastPredictFixtureGate(t, true, false, dynamics.GateCurrent)
+	edges := len(p.Core.Weights)
+	full, err := n.CompileFastPredict(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if full.CoreEdges() != edges {
+		t.Fatalf("unpruned predictor sums %d edges, want %d", full.CoreEdges(), edges)
+	}
+	fp, err := n.CompileFastPredictPruned(p, .5)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := edges - edges/2; fp.CoreEdges() != want {
+		t.Fatalf("pruned predictor sums %d edges, want %d", fp.CoreEdges(), want)
+	}
+	zeroed := p
+	zeroed.Core.Weights = pruneSmallest(p.Core.Weights, edges/2)
+	want, err := n.Predict(ctx, zeroed, x)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := fp.Predict(ctx, x)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := range want {
+		if d := math.Abs(want[i] - got[i]); d > 1e-4 {
+			t.Fatalf("logit %d: pruned fast %g, Predict on zeroed weights %g", i, got[i], want[i])
+		}
+	}
+	for _, drop := range []float64{-.1, 1, math.NaN()} {
+		if _, err := n.CompileFastPredictPruned(p, drop); err == nil {
+			t.Fatalf("accepted prune fraction %v", drop)
+		}
+	}
+}
+
+func TestPruneSmallestDropsTheSmallestMagnitudes(t *testing.T) {
+	w := []float64{.3, -.1, .2, .1, -.5}
+	got := pruneSmallest(w, 3)
+	want := []float64{.3, 0, 0, 0, -.5}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("pruneSmallest = %v, want %v", got, want)
+		}
+	}
+	if w[1] != -.1 {
+		t.Fatal("pruneSmallest changed its input")
+	}
+}
