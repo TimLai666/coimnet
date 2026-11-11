@@ -30,8 +30,11 @@ type Infer32 struct {
 	// sigmoid selects the sigmoid gate (GateCurrent, GateCurrentState) over
 	// the softsign one; tanh selects the tanh activation over softsign.
 	sigmoid, tanh bool
-	v, y          []float32
-	drive         []float32
+	// noSIMD keeps stepSigmoidTanh on the Go loop; tests set it to compare
+	// the SSE path with it.
+	noSIMD bool
+	v, y   []float32
+	drive  []float32
 }
 
 // CompileInfer32 packs m and p for Infer32, leaving out edges whose weight
@@ -305,7 +308,9 @@ func (f *Infer32) stepGeneral() int {
 // stepSigmoidTanh is stepGeneral for a sigmoid gate with the tanh
 // activation, the speech recipe, with sigmoid32 and tanh32 written out in the
 // loop: the compiler does not inline them, and the calls keep neighbouring
-// neurons from overlapping.
+// neurons from overlapping. On amd64, without the voltage gate term, it runs
+// the bulk of the neurons four at a time through stepSigmoidTanhSSE, which is
+// bit-identical to this loop.
 func (f *Infer32) stepSigmoidTanh() int {
 	n := f.n
 	drive, v, y, bias, gain, gb, alpha := f.drive[:n], f.v[:n], f.y[:n], f.bias[:n], f.gain[:n], f.gbias[:n], f.alpha[:n]
@@ -313,8 +318,19 @@ func (f *Infer32) stepSigmoidTanh() int {
 	if gstate != nil {
 		gstate = gstate[:n]
 	}
+	start := 0
+	if haveSSEStep && gstate == nil && !f.noSIMD && n >= 4 {
+		start = n &^ 3
+		stepSigmoidTanhSSE(&drive[0], &v[0], &y[0], &bias[0], &gain[0], &gb[0], &alpha[0], &sseTable, start)
+	}
 	bad := -1
-	for i, x := range drive {
+	for i := range start {
+		if nv := v[i]; bad < 0 && nv-nv != 0 {
+			bad = i
+		}
+	}
+	for i := start; i < n; i++ {
+		x := drive[i]
 		d := x + bias[i]
 		z := gain[i]*d + gb[i]
 		if gstate != nil {
