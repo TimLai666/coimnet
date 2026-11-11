@@ -1,0 +1,164 @@
+#include "textflag.h"
+
+// func stepSigmoidTanhSSE(drive, v, y, bias, gain, gb, alpha *float32, k *[29][4]uint32, n int)
+// Each line mirrors one float32 operation of stepSigmoidTanh, in its order.
+TEXT ·stepSigmoidTanhSSE(SB), NOSPLIT, $0-72
+	MOVQ drive+0(FP), DI
+	MOVQ v+8(FP), R8
+	MOVQ y+16(FP), R9
+	MOVQ bias+24(FP), R10
+	MOVQ gain+32(FP), R11
+	MOVQ gb+40(FP), R12
+	MOVQ alpha+48(FP), R13
+	MOVQ k+56(FP), CX
+	MOVQ n+64(FP), DX
+	SHLQ $2, DX
+	XORQ SI, SI
+	CMPQ SI, DX
+	JGE done
+loop:
+	// d = drive + bias
+	MOVUPS (DI)(SI*1), X0
+	MOVUPS (R10)(SI*1), X1
+	ADDPS X1, X0
+	// z = gain*d + gb
+	MOVUPS (R11)(SI*1), X1
+	MULPS X0, X1
+	MOVUPS (R12)(SI*1), X2
+	ADDPS X2, X1
+	// mask = all ones where z < 0
+	MOVAPS X1, X2
+	PSRAL $31, X2
+	// x = max(-|z|, -87)
+	MOVAPS X1, X3
+	MOVUPS 0(CX), X15
+	ANDPS X15, X3
+	MOVUPS 16(CX), X15
+	XORPS X15, X3
+	MOVUPS 32(CX), X15
+	MAXPS X15, X3
+	// n = float32(int32(x*log2e - .5))
+	MOVAPS X3, X4
+	MOVUPS 48(CX), X15
+	MULPS X15, X4
+	MOVUPS 64(CX), X15
+	SUBPS X15, X4
+	CVTTPS2PL X4, X5
+	CVTPL2PS X5, X6
+	// r = x - n*c1 - n*c2
+	MOVAPS X6, X7
+	MOVUPS 80(CX), X15
+	MULPS X15, X7
+	MOVAPS X3, X8
+	SUBPS X7, X8
+	MOVAPS X6, X7
+	MOVUPS 96(CX), X15
+	MULPS X15, X7
+	SUBPS X7, X8
+	// p = ((((p0*r+p1)*r+p2)*r+p3)*r+p4)*r + p5
+	MOVUPS 112(CX), X9
+	MULPS X8, X9
+	MOVUPS 128(CX), X15
+	ADDPS X15, X9
+	MULPS X8, X9
+	MOVUPS 144(CX), X15
+	ADDPS X15, X9
+	MULPS X8, X9
+	MOVUPS 160(CX), X15
+	ADDPS X15, X9
+	MULPS X8, X9
+	MOVUPS 176(CX), X15
+	ADDPS X15, X9
+	MULPS X8, X9
+	MOVUPS 192(CX), X15
+	ADDPS X15, X9
+	// p = p*r*r + r + 1
+	MULPS X8, X9
+	MULPS X8, X9
+	ADDPS X8, X9
+	MOVUPS 208(CX), X15
+	ADDPS X15, X9
+	// e = p * 2^n
+	MOVUPS 240(CX), X15
+	PADDL X15, X5
+	PSLLL $23, X5
+	MULPS X5, X9
+	// s = 1/(1+e); se = e*s; s = z < 0 ? se : s
+	MOVUPS 208(CX), X10
+	ADDPS X9, X10
+	MOVUPS 208(CX), X11
+	DIVPS X10, X11
+	MOVAPS X9, X12
+	MULPS X11, X12
+	MOVAPS X2, X13
+	ANDNPS X11, X13
+	ANDPS X2, X12
+	ORPS X12, X13
+	// a = min(2*alpha*s, 1)
+	MOVUPS (R13)(SI*1), X14
+	MOVUPS 224(CX), X15
+	MULPS X15, X14
+	MULPS X13, X14
+	MOVUPS 208(CX), X15
+	MINPS X15, X14
+	// nv = v + a*(d - v)
+	MOVUPS (R8)(SI*1), X1
+	MOVAPS X0, X2
+	SUBPS X1, X2
+	MULPS X14, X2
+	ADDPS X2, X1
+	MOVUPS X1, (R8)(SI*1)
+	// tanh: x = max(min(nv, clamp), -clamp)
+	MOVAPS X1, X3
+	MOVUPS 256(CX), X15
+	MINPS X15, X3
+	MOVUPS 272(CX), X15
+	MAXPS X15, X3
+	MOVAPS X3, X4
+	MULPS X3, X4
+	MOVAPS X4, X5
+	MULPS X4, X5
+	// t1 = a1 + a3*y
+	MOVUPS 304(CX), X6
+	MULPS X4, X6
+	MOVUPS 288(CX), X15
+	ADDPS X15, X6
+	// t2 = y2*(a5 + a7*y)
+	MOVUPS 336(CX), X7
+	MULPS X4, X7
+	MOVUPS 320(CX), X15
+	ADDPS X15, X7
+	MULPS X5, X7
+	// t3 = (y2*y2)*((a9 + a11*y) + y2*a13)
+	MOVUPS 368(CX), X8
+	MULPS X4, X8
+	MOVUPS 352(CX), X15
+	ADDPS X15, X8
+	MOVUPS 384(CX), X9
+	MULPS X5, X9
+	ADDPS X9, X8
+	MOVAPS X5, X9
+	MULPS X5, X9
+	MULPS X9, X8
+	// p = x*((t1 + t2) + t3)
+	ADDPS X7, X6
+	ADDPS X8, X6
+	MULPS X3, X6
+	// q = (b0 + b2*y) + y2*(b4 + b6*y)
+	MOVUPS 416(CX), X7
+	MULPS X4, X7
+	MOVUPS 400(CX), X15
+	ADDPS X15, X7
+	MOVUPS 448(CX), X8
+	MULPS X4, X8
+	MOVUPS 432(CX), X15
+	ADDPS X15, X8
+	MULPS X5, X8
+	ADDPS X8, X7
+	DIVPS X7, X6
+	MOVUPS X6, (R9)(SI*1)
+	ADDQ $16, SI
+	CMPQ SI, DX
+	JLT loop
+done:
+	RET

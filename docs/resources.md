@@ -67,6 +67,8 @@
 - sigmoid 閘門配 tanh 的組合另有展開的迴圈 `stepSigmoidTanh`；每條邊的權重與來源包成一個 64 位元字，加總時每條邊少讀一次記憶體。
 - `dynamics` 的 `BenchmarkInfer32Speech`（同形狀、隨機參數）在雲端 4 核 Xeon 上，最佳值從 0.775–0.789 ms 降到 0.547–0.559 ms，約快 1.42 倍。ubuntu-1 的新數字待量測。
 
+2026-11-11 在 ubuntu-1（AMD FX-4300）量真正訓練好的 checkpoint（seed 2，test .9524）：`FastPredictor` 1.75 ms，GRU h84 1.22–1.27 ms。剪掉一半的邊只省約 20% 的時間，所以那台機器上大部分時間花在每一步、每顆神經元固定要做的閘門與活化計算，不在邊上。這段在 amd64 上改用 SSE2 一次算 4 顆神經元（`stepSigmoidTanhSSE`，組合語言，每一步運算與 Go 迴圈同序，`TestSSEStepIsBitIdentical` 檢查結果逐位元相同；有 `gate_state` 的模型與其他架構仍走 Go 迴圈）。雲端 Xeon 上 `BenchmarkInfer32SpeechParts/step` 從 9.7 µs 降到 2.5 µs，整個核心從 0.55 ms 降到約 0.44 ms。
+
 `learning.Network.CompileFastPredictPruned(p, drop)` 會在編譯時略去 |有效權重| 最小的 `drop` 比例核心邊（權重 float32 為 0 的邊 `Infer32` 一律不加總），加總的工作量隨保留的邊數下降。剪過的是不同的模型，準確率要另外量測：`seqkmnist --load CKPT --fast-predict --prune 0.25 --val-count N` 會印出驗證集與測試集準確率，以及和未剪模型的 argmax 一致數；加上 `--bench` 時模型名稱標上剪掉的邊數，參數量也扣掉它們。
 
 ## KMNIST 部署後邊用邊學對決（2026-10-18）
